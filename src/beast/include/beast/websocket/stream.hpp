@@ -10,7 +10,7 @@
 
 #include <beast/websocket/option.hpp>
 #include <beast/websocket/detail/stream_base.hpp>
-#include <beast/http/message_v1.hpp>
+#include <beast/http/message.hpp>
 #include <beast/http/string_body.hpp>
 #include <beast/core/dynabuf_readstream.hpp>
 #include <beast/core/async_completion.hpp>
@@ -72,8 +72,8 @@ struct frame_info
     For asynchronous operations, the type must support the
     @b `AsyncStream` concept.
 
-    @note A stream object must not be destroyed while there are
-    pending asynchronous operations associated with it.
+    @note A stream object must not be moved or destroyed while there
+    are pending asynchronous operations associated with it.
 
     @par Concepts
         @b `AsyncStream`,
@@ -168,18 +168,34 @@ public:
 
     /// Set the automatic fragment size option
     void
-    set_option(auto_fragment_size const& o)
+    set_option(auto_fragment const& o)
     {
-        if(o.value <= 0)
-            wr_frag_size_ =
-                std::numeric_limits<std::size_t>::max();
-        else
-            wr_frag_size_ = o.value;
+        wr_autofrag_ = o.value;
     }
 
-    /// Set the decorator used for HTTP messages
+    /** Set the decorator used for HTTP messages.
+
+        The value for this option is a callable type with two
+        optional signatures:
+
+        @code
+            void(request_type&);
+
+            void(response_type&);
+        @endcode
+
+        If a matching signature is provided, the callable type
+        will be invoked with the HTTP request or HTTP response
+        object as appropriate. When a signature is omitted,
+        a default consisting of the string Beast followed by
+        the version number is used.
+    */
     void
+#if GENERATING_DOCS
+    set_option(implementation_defined o)
+#else
     set_option(detail::decorator_type o)
+#endif
     {
         d_ = std::move(o);
     }
@@ -198,6 +214,17 @@ public:
         wr_opcode_ = o.value;
     }
 
+    /// Set the permessage-deflate extension options
+    void
+    set_option(permessage_deflate const& o);
+
+    /// Get the permessage-deflate extension options
+    void
+    get_option(permessage_deflate& o)
+    {
+        o = pmd_opts_;
+    }
+
     /// Set the pong callback
     void
     set_option(pong_callback o)
@@ -209,7 +236,9 @@ public:
     void
     set_option(read_buffer_size const& o)
     {
-        stream_.capacity(o.value);
+        rd_buf_size_ = o.value;
+        // VFALCO What was the thinking here?
+        //stream_.capacity(o.value);
     }
 
     /// Set the maximum incoming message size allowed
@@ -219,12 +248,11 @@ public:
         rd_msg_max_ = o.value;
     }
 
-    /// Set the size of the mask buffer
+    /// Set the size of the write buffer
     void
-    set_option(mask_buffer_size const& o)
+    set_option(write_buffer_size const& o)
     {
-        mask_buf_size_ = o.value;
-        stream_.capacity(o.value);
+        wr_buf_size_ = o.value;
     }
 
     /** Get the io_service associated with the stream.
@@ -332,7 +360,7 @@ public:
         HTTP response is sent indicating the reason and status code
         (typically 400, "Bad Request"). This counts as a failure.
 
-        @throws boost::system::system_error Thrown on failure.
+        @throws system_error Thrown on failure.
     */
     void
     accept();
@@ -442,7 +470,7 @@ public:
         then to received WebSocket frames. The implementation will
         copy the caller provided data before the function returns.
 
-        @throws boost::system::system_error Thrown on failure.
+        @throws system_error Thrown on failure.
     */
     template<class ConstBufferSequence>
     void
@@ -565,12 +593,12 @@ public:
         Ownership is not transferred, the implementation will not access
         this object from other threads.
 
-        @throws boost::system::system_error Thrown on failure.
+        @throws system_error Thrown on failure.
     */
     // VFALCO TODO This should also take a DynamicBuffer with any leftover bytes.
-    template<class Body, class Headers>
+    template<class Body, class Fields>
     void
-    accept(http::request_v1<Body, Headers> const& request);
+    accept(http::request<Body, Fields> const& request);
 
     /** Respond to a WebSocket HTTP Upgrade request
 
@@ -600,9 +628,9 @@ public:
 
         @param ec Set to indicate what error occurred, if any.
     */
-    template<class Body, class Headers>
+    template<class Body, class Fields>
     void
-    accept(http::request_v1<Body, Headers> const& request,
+    accept(http::request<Body, Fields> const& request,
         error_code& ec);
 
     /** Start responding to a WebSocket HTTP Upgrade request.
@@ -646,14 +674,14 @@ public:
         this function. Invocation of the handler will be performed in a
         manner equivalent to using `boost::asio::io_service::post`.
     */
-    template<class Body, class Headers, class AcceptHandler>
+    template<class Body, class Fields, class AcceptHandler>
 #if GENERATING_DOCS
     void_or_deduced
 #else
     typename async_completion<
         AcceptHandler, void(error_code)>::result_type
 #endif
-    async_accept(http::request_v1<Body, Headers> const& request,
+    async_accept(http::request<Body, Fields> const& request,
         AcceptHandler&& handler);
 
     /** Send a HTTP WebSocket Upgrade request and receive the response.
@@ -680,7 +708,7 @@ public:
         @param resource The requesting URI, which may not be empty,
         required by the HTTP protocol.
 
-        @throws boost::system::system_error Thrown on failure.
+        @throws system_error Thrown on failure.
 
         @par Example
         @code
@@ -802,13 +830,13 @@ public:
 
         @li An error occurs on the stream.
 
-        This function is implemented in terms of one or more calls to the
-        next layer's `write_some` functions.
+        This function is implemented in terms of one or more calls
+        to the next layer's `write_some` functions.
 
         If the close reason specifies a close code other than
-        @ref close_code::none, the close frame is sent with the close
-        code and optional reason string. Otherwise, the close frame
-        is sent with no payload.
+        @ref beast::websocket::close_code::none, the close frame is
+        sent with the close code and optional reason string. Otherwise,
+        the close frame is sent with no payload.
 
         Callers should not attempt to write WebSocket data after
         initiating the close. Instead, callers should continue
@@ -817,7 +845,7 @@ public:
 
         @param cr The reason for the close.
 
-        @throws boost::system::system_error Thrown on failure.
+        @throws system_error Thrown on failure.
     */
     void
     close(close_reason const& cr);
@@ -831,13 +859,13 @@ public:
 
         @li An error occurs on the stream.
 
-        This function is implemented in terms of one or more calls to the
-        next layer's `write_some` functions.
+        This function is implemented in terms of one or more calls
+        to the next layer's `write_some` functions.
 
         If the close reason specifies a close code other than
-        @ref close_code::none, the close frame is sent with the close
-        code and optional reason string. Otherwise, the close frame
-        is sent with no payload.
+        @ref beast::websocket::close_code::none, the close frame is
+        sent with the close code and optional reason string. Otherwise,
+        the close frame is sent with no payload.
 
         Callers should not attempt to write WebSocket data after
         initiating the close. Instead, callers should continue
@@ -870,9 +898,9 @@ public:
         @ref stream::async_close) until this operation completes.
 
         If the close reason specifies a close code other than
-        @ref close_code::none, the close frame is sent with the close
-        code and optional reason string. Otherwise, the close frame
-        is sent with no payload.
+        @ref beast::websocket::close_code::none, the close frame is
+        sent with the close code and optional reason string. Otherwise,
+        the close frame is sent with no payload.
 
         Callers should not attempt to write WebSocket data after
         initiating the close. Instead, callers should continue
@@ -917,7 +945,7 @@ public:
 
         @param payload The payload of the ping message, which may be empty.
 
-        @throws boost::system::system_error Thrown on failure.
+        @throws system_error Thrown on failure.
     */
     void
     ping(ping_data const& payload);
@@ -972,14 +1000,107 @@ public:
         this function. Invocation of the handler will be performed in a
         manner equivalent to using `boost::asio::io_service::post`.
     */
-    template<class PingHandler>
+    template<class WriteHandler>
 #if GENERATING_DOCS
     void_or_deduced
 #else
     typename async_completion<
-        PingHandler, void(error_code)>::result_type
+        WriteHandler, void(error_code)>::result_type
 #endif
-    async_ping(ping_data const& payload, PingHandler&& handler);
+    async_ping(ping_data const& payload, WriteHandler&& handler);
+
+    /** Send a WebSocket pong frame.
+
+        This function is used to synchronously send a pong frame on
+        the stream. The call blocks until one of the following is true:
+
+        @li The pong frame finishes sending.
+
+        @li An error occurs on the stream.
+
+        This function is implemented in terms of one or more calls to the
+        next layer's `write_some` functions.
+
+        The WebSocket protocol allows pong frames to be sent from either
+        end at any time. It is not necessary to first receive a ping in
+        order to send a pong. The remote peer may use the receipt of a
+        pong frame as an indication that the connection is not dead.
+
+        @param payload The payload of the pong message, which may be empty.
+
+        @throws system_error Thrown on failure.
+    */
+    void
+    pong(ping_data const& payload);
+
+    /** Send a WebSocket pong frame.
+
+        This function is used to synchronously send a pong frame on
+        the stream. The call blocks until one of the following is true:
+
+        @li The pong frame finishes sending.
+
+        @li An error occurs on the stream.
+
+        This function is implemented in terms of one or more calls to the
+        next layer's `write_some` functions.
+
+        The WebSocket protocol allows pong frames to be sent from either
+        end at any time. It is not necessary to first receive a ping in
+        order to send a pong. The remote peer may use the receipt of a
+        pong frame as an indication that the connection is not dead.
+
+        @param payload The payload of the pong message, which may be empty.
+
+        @param ec Set to indicate what error occurred, if any.
+    */
+    void
+    pong(ping_data const& payload, error_code& ec);
+
+    /** Start an asynchronous operation to send a WebSocket pong frame.
+
+        This function is used to asynchronously send a pong frame to
+        the stream. The function call always returns immediately. The
+        asynchronous operation will continue until one of the following
+        is true:
+
+        @li The entire pong frame is sent.
+
+        @li An error occurs on the stream.
+
+        This operation is implemented in terms of one or more calls to the
+        next layer's `async_write_some` functions, and is known as a
+        <em>composed operation</em>. The program must ensure that the
+        stream performs no other writes until this operation completes.
+
+        The WebSocket protocol allows pong frames to be sent from either
+        end at any time. It is not necessary to first receive a ping in
+        order to send a pong. The remote peer may use the receipt of a
+        pong frame as an indication that the connection is not dead.
+
+        @param payload The payload of the pong message, which may be empty.
+
+        @param handler The handler to be called when the read operation
+        completes. Copies will be made of the handler as required. The
+        function signature of the handler must be:
+        @code
+        void handler(
+            error_code const& error     // Result of operation
+        );
+        @endcode
+        Regardless of whether the asynchronous operation completes
+        immediately or not, the handler will not be invoked from within
+        this function. Invocation of the handler will be performed in a
+        manner equivalent to using `boost::asio::io_service::post`.
+    */
+    template<class WriteHandler>
+#if GENERATING_DOCS
+    void_or_deduced
+#else
+    typename async_completion<
+        WriteHandler, void(error_code)>::result_type
+#endif
+    async_pong(ping_data const& payload, WriteHandler&& handler);
 
     /** Read a message from the stream.
 
@@ -998,7 +1119,8 @@ public:
         hold all the message payload bytes (which may be zero in length).
 
         Control frames encountered while reading frame or message data
-        are handled automatically. Pings are replied to, pongs are noted,
+        are handled automatically. Pings are replied to automatically,
+        pongs are routed to the pong callback if the option is set,
         and close frames initiate the WebSocket close procedure. When a
         close frame is received, this call will eventually return
         @ref error::closed. Because of the need to handle control frames,
@@ -1010,7 +1132,7 @@ public:
         @param dynabuf A dynamic buffer to hold the message data after
         any masking or decompression has been applied.
 
-        @throws boost::system::system_error Thrown on failure.
+        @throws system_error Thrown on failure.
     */
     template<class DynamicBuffer>
     void
@@ -1033,7 +1155,8 @@ public:
         hold all the message payload bytes (which may be zero in length).
 
         Control frames encountered while reading frame or message data
-        are handled automatically. Pings are replied to, pongs are noted,
+        are handled automatically. Pings are replied to automatically,
+        pongs are routed to the pong callback if the option is set,
         and close frames initiate the WebSocket close procedure. When a
         close frame is received, this call will eventually return
         @ref error::closed. Because of the need to handle control frames,
@@ -1073,10 +1196,10 @@ public:
         hold all the message payload bytes (which may be zero in length).
 
         Control frames encountered while reading frame or message data
-        are handled automatically. Pings are replied to, pongs cause
-        an outstanding call to `async_ping` to complete, and close
-        frames initiate the WebSocket close procedure. When a close
-        frame is received, this call will eventually return
+        are handled automatically. Pings are replied to automatically,
+        pongs are routed to the pong callback if the option is set,
+        and close frames initiate the WebSocket close procedure. When a
+        close frame is received, this call will eventually return
         @ref error::closed. Because of the need to handle control
         frames, these read operations can cause writes to take place.
         Despite this, calls to `async_read` and `async_read_frame`
@@ -1132,7 +1255,8 @@ public:
         fi.fin == true, and zero bytes placed into the stream buffer.
 
         Control frames encountered while reading frame or message data
-        are handled automatically. Pings are replied to, pongs are noted,
+        are handled automatically. Pings are replied to automatically,
+        pongs are routed to the pong callback if the option is set,
         and close frames initiate the WebSocket close procedure. When a
         close frame is received, this call will eventually return
         @ref error::closed. Because of the need to handle control frames,
@@ -1143,7 +1267,7 @@ public:
         @param dynabuf A dynamic buffer to hold the message data after
         any masking or decompression has been applied.
 
-        @throws boost::system::system_error Thrown on failure.
+        @throws system_error Thrown on failure.
     */
     template<class DynamicBuffer>
     void
@@ -1170,7 +1294,8 @@ public:
         fi.fin == true, and zero bytes placed into the stream buffer.
 
         Control frames encountered while reading frame or message data
-        are handled automatically. Pings are replied to, pongs are noted,
+        are handled automatically. Pings are replied to automatically,
+        pongs are routed to the pong callback if the option is set,
         and close frames initiate the WebSocket close procedure. When a
         close frame is received, this call will eventually return
         @ref error::closed. Because of the need to handle control frames,
@@ -1213,7 +1338,8 @@ public:
         the stream buffer.
 
         Control frames encountered while reading frame or message data
-        are handled automatically. Pings are replied to, pongs are noted,
+        are handled automatically. Pings are replied to automatically,
+        pongs are routed to the pong callback if the option is set,
         and close frames initiate the WebSocket close procedure. When a
         close frame is received, this call will eventually return
         @ref error::closed. Because of the need to handle control frames,
@@ -1268,7 +1394,7 @@ public:
 
         The current setting of the @ref message_type option controls
         whether the message opcode is set to text or binary. If the
-        @ref auto_fragment_size option is set, the message will be split
+        @ref auto_fragment option is set, the message will be split
         into one or more frames as necessary. The actual payload contents
         sent may be transformed as per the WebSocket protocol settings.
 
@@ -1279,7 +1405,7 @@ public:
         the memory locations pointed to by buffers remains valid
         until the completion handler is called.
 
-        @throws boost::system::system_error Thrown on failure.
+        @throws system_error Thrown on failure.
 
         @note This function always sends an entire message. To
         send a message in fragments, use @ref write_frame.
@@ -1303,7 +1429,7 @@ public:
 
         The current setting of the @ref message_type option controls
         whether the message opcode is set to text or binary. If the
-        @ref auto_fragment_size option is set, the message will be split
+        @ref auto_fragment option is set, the message will be split
         into one or more frames as necessary. The actual payload contents
         sent may be transformed as per the WebSocket protocol settings.
 
@@ -1316,7 +1442,7 @@ public:
 
         @param ec Set to indicate what error occurred, if any.
 
-        @throws boost::system::system_error Thrown on failure.
+        @throws system_error Thrown on failure.
 
         @note This function always sends an entire message. To
         send a message in fragments, use @ref write_frame.
@@ -1345,7 +1471,7 @@ public:
 
         The current setting of the @ref message_type option controls
         whether the message opcode is set to text or binary. If the
-        @ref auto_fragment_size option is set, the message will be split
+        @ref auto_fragment option is set, the message will be split
         into one or more frames as necessary. The actual payload contents
         sent may be transformed as per the WebSocket protocol settings.
 
@@ -1379,12 +1505,15 @@ public:
     async_write(ConstBufferSequence const& buffers,
         WriteHandler&& handler);
 
-    /** Send a message frame on the stream.
+    /** Write partial message data on the stream.
 
-        This function is used to write a frame to the stream. The
-        call will block until one of the following conditions is true:
+        This function is used to write some or all of a message's
+        payload to the stream. The call will block until one of the
+        following conditions is true:
 
-        @li The entire frame is sent.
+        @li A frame is sent.
+
+        @li Message data is transferred to the write buffer.
 
         @li An error occurs.
 
@@ -1398,27 +1527,30 @@ public:
 
         @param fin `true` if this is the last frame in the message.
 
-        @param buffers One or more buffers containing the frame's
-        payload data.
+        @param buffers The input buffer sequence holding the data to write.
 
-        @throws boost::system::system_error Thrown on failure.
+        @return The number of bytes consumed in the input buffers.
+
+        @throws system_error Thrown on failure.
     */
     template<class ConstBufferSequence>
     void
     write_frame(bool fin, ConstBufferSequence const& buffers);
 
-    /** Send a message frame on the stream.
+    /** Write partial message data on the stream.
 
-        This function is used to write a frame to the stream. The
-        call will block until one of the following conditions is true:
+        This function is used to write some or all of a message's
+        payload to the stream. The call will block until one of the
+        following conditions is true:
 
-        @li The entire frame is sent.
+        @li A frame is sent.
+
+        @li Message data is transferred to the write buffer.
 
         @li An error occurs.
 
         This operation is implemented in terms of one or more calls
-        to the stream's `write_some` function. The actual payload sent
-        may be transformed as per the WebSocket protocol settings.
+        to the stream's `write_some` function.
 
         If this is the beginning of a new message, the message opcode
         will be set to text or binary as per the current setting of
@@ -1427,10 +1559,11 @@ public:
 
         @param fin `true` if this is the last frame in the message.
 
-        @param buffers One or more buffers containing the frame's
-        payload data.
+        @param buffers The input buffer sequence holding the data to write.
 
         @param ec Set to indicate what error occurred, if any.
+
+        @return The number of bytes consumed in the input buffers.
     */
     template<class ConstBufferSequence>
     void
@@ -1475,7 +1608,7 @@ public:
         Copies will be made of the handler as required. The equivalent
         function signature of the handler must be:
         @code void handler(
-            boost::system::error_code const& error // result of operation
+            error_code const& error // result of operation
         ); @endcode
     */
     template<class ConstBufferSequence, class WriteHandler>
@@ -1502,28 +1635,30 @@ private:
     void
     reset();
 
-    http::request_v1<http::empty_body>
+    http::request<http::empty_body>
     build_request(boost::string_ref const& host,
         boost::string_ref const& resource,
             std::string& key);
 
-    template<class Body, class Headers>
-    http::response_v1<http::string_body>
-    build_response(http::request_v1<Body, Headers> const& req);
+    template<class Body, class Fields>
+    http::response<http::string_body>
+    build_response(http::request<Body, Fields> const& req);
 
-    template<class Body, class Headers>
+    template<class Body, class Fields>
     void
-    do_response(http::response_v1<Body, Headers> const& resp,
+    do_response(http::response<Body, Fields> const& resp,
         boost::string_ref const& key, error_code& ec);
-
-    void
-    do_read_fh(detail::frame_streambuf& fb,
-        close_code::value& code, error_code& ec);
 };
 
 } // websocket
 } // beast
 
+#include <beast/websocket/impl/accept.ipp>
+#include <beast/websocket/impl/close.ipp>
+#include <beast/websocket/impl/handshake.ipp>
+#include <beast/websocket/impl/ping.ipp>
+#include <beast/websocket/impl/read.ipp>
 #include <beast/websocket/impl/stream.ipp>
+#include <beast/websocket/impl/write.ipp>
 
 #endif

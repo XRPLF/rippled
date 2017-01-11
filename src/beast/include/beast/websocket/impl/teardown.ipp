@@ -10,6 +10,8 @@
 
 #include <beast/core/async_completion.hpp>
 #include <beast/core/handler_concepts.hpp>
+#include <beast/core/handler_helpers.hpp>
+#include <beast/core/handler_ptr.hpp>
 #include <memory>
 
 namespace beast {
@@ -25,32 +27,29 @@ class teardown_tcp_op
 
     struct data
     {
-        socket_type& socket;
-        Handler h;
-        char buf[8192];
         bool cont;
+        socket_type& socket;
+        char buf[2048];
         int state = 0;
 
-        template<class DeducedHandler>
-        data(DeducedHandler&& h_, socket_type& socket_)
-            : socket(socket_)
-            , h(std::forward<DeducedHandler>(h_))
-            , cont(boost_asio_handler_cont_helpers::
-                is_continuation(h))
+        data(Handler& handler, socket_type& socket_)
+            : cont(beast_asio_helpers::
+                is_continuation(handler))
+            , socket(socket_)
         {
         }
     };
 
-    std::shared_ptr<data> d_;
+    handler_ptr<data, Handler> d_;
 
 public:
     template<class DeducedHandler>
     teardown_tcp_op(
         DeducedHandler&& h,
             socket_type& socket)
-        : d_(std::make_shared<data>(
-            std::forward<DeducedHandler>(h),
-                socket))
+        : d_(make_handler_ptr<data, Handler>(
+            std::forward<DeducedHandler>(
+                h), socket))
     {
         (*this)(error_code{}, 0, false);
     }
@@ -62,16 +61,16 @@ public:
     void* asio_handler_allocate(std::size_t size,
         teardown_tcp_op* op)
     {
-        return boost_asio_handler_alloc_helpers::
-            allocate(size, op->d_->h);
+        return beast_asio_helpers::
+            allocate(size, op->d_.handler());
     }
 
     friend
     void asio_handler_deallocate(void* p,
         std::size_t size, teardown_tcp_op* op)
     {
-        return boost_asio_handler_alloc_helpers::
-            deallocate(p, size, op->d_->h);
+        return beast_asio_helpers::
+            deallocate(p, size, op->d_.handler());
     }
 
     friend
@@ -85,8 +84,8 @@ public:
     void asio_handler_invoke(Function&& f,
         teardown_tcp_op* op)
     {
-        return boost_asio_handler_invoke_helpers::
-            invoke(f, op->d_->h);
+        return beast_asio_helpers::
+            invoke(f, op->d_.handler());
     }
 };
 
@@ -119,7 +118,7 @@ operator()(error_code ec, std::size_t, bool again)
         d.socket.close(ec);
         ec = error_code{};
     }
-    d.h(ec);
+    d_.invoke(ec);
 }
 
 } // detail

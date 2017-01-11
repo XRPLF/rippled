@@ -8,7 +8,7 @@
 #ifndef BEAST_HANDLER_ALLOC_HPP
 #define BEAST_HANDLER_ALLOC_HPP
 
-#include <boost/asio/detail/handler_alloc_helpers.hpp>
+#include <beast/core/handler_helpers.hpp>
 #include <cstdlib>
 #include <memory>
 #include <type_traits>
@@ -23,15 +23,15 @@ namespace beast {
 
     This allocator uses the handler customizations `asio_handler_allocate`
     and `asio_handler_deallocate` to manage memory. It meets the requirements
-    of `Allocator` and can be used anywhere a `std::allocator` is
+    of @b Allocator and can be used anywhere a `std::allocator` is
     accepted.
 
     @tparam T The type of objects allocated by the allocator.
 
     @tparam CompletionHandler The type of handler.
 
-    @note Allocated memory is only valid until the handler is called. The
-    caller is still responsible for freeing memory.
+    @note Memory allocated by this allocator must be freed before
+          the handler is invoked or undefined behavior results.
 */
 #if GENERATING_DOCS
 template<class T, class CompletionHandler>
@@ -49,11 +49,17 @@ private:
     template<class U, class H>
     friend class handler_alloc;
 
-    CompletionHandler h_;
+    CompletionHandler& h_;
 
 public:
     using value_type = T;
     using is_always_equal = std::true_type;
+
+    template<class U>
+    struct rebind
+    {
+        using other = handler_alloc<U, CompletionHandler>;
+    };
 
     handler_alloc() = delete;
     handler_alloc(handler_alloc&&) = default;
@@ -63,31 +69,16 @@ public:
 
     /** Construct the allocator.
 
-        The handler is moved or copied into the allocator.
+        A reference of the handler is stored. The handler must
+        remain valid for at least the lifetime of the allocator.
     */
     explicit
-    handler_alloc(CompletionHandler&& h)
-        : h_(std::move(h))
-    {
-    }
-
-    /** Construct the allocator.
-
-        A copy of the handler is made.
-    */
-    explicit
-    handler_alloc(CompletionHandler const& h)
+    handler_alloc(CompletionHandler& h)
         : h_(h)
     {
     }
 
-    template<class U>
-    handler_alloc(
-            handler_alloc<U, CompletionHandler>&& other)
-        : h_(std::move(other.h_))
-    {
-    }
-
+    /// Copy constructor
     template<class U>
     handler_alloc(
             handler_alloc<U, CompletionHandler> const& other)
@@ -100,7 +91,7 @@ public:
     {
         auto const size = n * sizeof(T);
         return static_cast<value_type*>(
-            boost_asio_handler_alloc_helpers::allocate(
+            beast_asio_helpers::allocate(
                 size, h_));
     }
 
@@ -108,7 +99,7 @@ public:
     deallocate(value_type* p, std::ptrdiff_t n)
     {
         auto const size = n * sizeof(T);
-        boost_asio_handler_alloc_helpers::deallocate(
+        beast_asio_helpers::deallocate(
             p, size, h_);
     }
 

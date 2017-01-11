@@ -43,8 +43,11 @@ public:
         {
             s.push_back(';');
             s.append(str(p.first));
-            s.push_back('=');
-            s.append(str(p.second));
+            if(! p.second.empty())
+            {
+                s.push_back('=');
+                s.append(str(p.second));
+            }
         }
         return s;
     }
@@ -74,17 +77,18 @@ public:
             };
 
         ce("");
+        ce(";x");
+        ce(";xy");
+        ce(";x;y");
+
+        ce("");
         cs(" ;\t i =\t 1 \t", ";i=1");
         cq("\t; \t xyz=1 ; ijk=\"q\\\"t\"", ";xyz=1;ijk=q\"t");
+        ce(";x;y");
 
         // invalid strings
         cs(";", "");
         cs(";,", "");
-        cs(";xy", "");
-        cs(";xy", "");
-        cs(";xy ", "");
-        cs(";xy,", "");
-
         cq(";x=,", "");
         cq(";xy=\"", "");
         cq(";xy=\"\x7f", "");
@@ -136,7 +140,6 @@ public:
         param-list  = *( OWS ";" OWS param )
         param       = token OWS "=" OWS ( token / quoted-string )
     */
-        ce("");
         cs(",", "");
         cs(", ", "");
         cs(",\t", "");
@@ -147,12 +150,16 @@ public:
         cs("\t , \t", "");
         cs(",,", "");
         cs(" , \t,, \t,", "");
+        cs( "permessage-deflate; client_no_context_takeover; client_max_window_bits",
+            "permessage-deflate;client_no_context_takeover;client_max_window_bits");
 
         ce("a");
         ce("ab");
         ce("a,b");
         cs(" a ", "a");
         cs("\t a, b\t  ,  c\t", "a,b,c");
+        ce("a;b");
+        ce("a;b;c");
 
         cs("a; \t i\t=\t \t1\t ", "a;i=1");
         ce("a;i=1;j=2;k=3");

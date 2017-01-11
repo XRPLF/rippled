@@ -18,6 +18,8 @@ Core:
 * Complete allocator testing in basic_streambuf
 
 WebSocket:
+* Minimize sizeof(websocket::stream)
+* Move check for message size limit to account for compression
 * more invokable unit test coverage
 * More control over the HTTP request and response during handshakes
 * optimized versions of key/masking, choose prepared_key size

@@ -13,11 +13,9 @@
 namespace beast {
 namespace test {
 
-enum error
+enum class error
 {
-    success = 0,
-
-    fail_error
+    fail_error = 1
 };
 
 namespace detail {
@@ -79,14 +77,15 @@ inline
 error_code
 make_error_code(error ev)
 {
-    return error_code{static_cast<int>(ev),
-        detail::get_error_category()};
+    return error_code{
+        static_cast<std::underlying_type<error>::type>(ev),
+            detail::get_error_category()};
 }
 
 /** A countdown to simulated failure.
 
     On the Nth operation, the class will fail with the specified
-    error code, or the default error code of @ref fail_error.
+    error code, or the default error code of @ref error::fail_error.
 */
 class fail_counter
 {
@@ -102,7 +101,7 @@ public:
     */
     explicit
     fail_counter(std::size_t n,
-            error_code ev = make_error_code(fail_error))
+            error_code ev = make_error_code(error::fail_error))
         : n_(n)
         , ec_(ev)
     {

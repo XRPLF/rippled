@@ -9,7 +9,9 @@
 #define BEAST_WEBSOCKET_IMPL_SSL_IPP_INCLUDED
 
 #include <beast/core/async_completion.hpp>
+#include <beast/core/handler_helpers.hpp>
 #include <beast/core/handler_concepts.hpp>
+#include <beast/core/handler_ptr.hpp>
 
 namespace beast {
 namespace websocket {
@@ -38,31 +40,28 @@ class teardown_ssl_op
 
     struct data
     {
-        stream_type& stream;
-        Handler h;
         bool cont;
+        stream_type& stream;
         int state = 0;
 
-        template<class DeducedHandler>
-        data(DeducedHandler&& h_,
-                stream_type& stream_)
-            : stream(stream_)
-            , h(std::forward<DeducedHandler>(h_))
-            , cont(boost_asio_handler_cont_helpers::
-                is_continuation(h))
+        data(Handler& handler, stream_type& stream_)
+            : cont(beast_asio_helpers::
+                is_continuation(handler))
+            , stream(stream_)
         {
         }
     };
 
-    std::shared_ptr<data> d_;
+    handler_ptr<data, Handler> d_;
 
 public:
     template<class DeducedHandler>
     explicit
     teardown_ssl_op(
             DeducedHandler&& h, stream_type& stream)
-        : d_(std::make_shared<data>(
-            std::forward<DeducedHandler>(h), stream))
+        : d_(make_handler_ptr<data, Handler>(
+            std::forward<DeducedHandler>(
+                h), stream))
     {
         (*this)(error_code{}, false);
     }
@@ -74,16 +73,16 @@ public:
     void* asio_handler_allocate(std::size_t size,
         teardown_ssl_op* op)
     {
-        return boost_asio_handler_alloc_helpers::
-            allocate(size, op->d_->h);
+        return beast_asio_helpers::
+            allocate(size, op->d_.handler());
     }
 
     friend
     void asio_handler_deallocate(void* p,
         std::size_t size, teardown_ssl_op* op)
     {
-        return boost_asio_handler_alloc_helpers::
-            deallocate(p, size, op->d_->h);
+        return beast_asio_helpers::
+            deallocate(p, size, op->d_.handler());
     }
 
     friend
@@ -98,8 +97,8 @@ public:
     void asio_handler_invoke(Function&& f,
         teardown_ssl_op* op)
     {
-        return boost_asio_handler_invoke_helpers::
-            invoke(f, op->d_->h);
+        return beast_asio_helpers::
+            invoke(f, op->d_.handler());
     }
 };
 
@@ -120,7 +119,7 @@ operator()(error_code ec, bool again)
             return;
         }
     }
-    d.h(ec);
+    d_.invoke(ec);
 }
 
 } // detail

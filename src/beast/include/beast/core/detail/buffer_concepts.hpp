@@ -85,53 +85,93 @@ public:
         type3::value && type4::value>;
 };
 
+template<class B1, class... Bn>
+struct is_all_ConstBufferSequence
+    : std::integral_constant<bool,
+        is_BufferSequence<B1, boost::asio::const_buffer>::type::value &&
+        is_all_ConstBufferSequence<Bn...>::value>
+{
+};
+
+template<class B1>
+struct is_all_ConstBufferSequence<B1>
+    : is_BufferSequence<B1, boost::asio::const_buffer>::type
+{
+};
+
 template<class T>
 class is_DynamicBuffer
 {
-    template<class U, class R = std::integral_constant<
-        bool, is_BufferSequence<decltype(
-            std::declval<U>().prepare(1)),
-                boost::asio::mutable_buffer>::type::value>>
+    // size()
+    template<class U, class R = std::is_convertible<decltype(
+        std::declval<U const>().size()), std::size_t>>
     static R check1(int);
     template<class>
     static std::false_type check1(...);
     using type1 = decltype(check1<T>(0));
 
-    template<class U, class R = std::integral_constant<
-        bool, is_BufferSequence<decltype(
-            std::declval<U>().data()),
-                boost::asio::const_buffer>::type::value>>
+    // max_size()
+    template<class U, class R = std::is_convertible<decltype(
+        std::declval<U const>().max_size()), std::size_t>>
     static R check2(int);
     template<class>
     static std::false_type check2(...);
     using type2 = decltype(check2<T>(0));
 
-    template<class U, class R = decltype(
-        std::declval<U>().commit(1), std::true_type{})>
+    // capacity()
+    template<class U, class R = std::is_convertible<decltype(
+        std::declval<U const>().capacity()), std::size_t>>
     static R check3(int);
     template<class>
     static std::false_type check3(...);
     using type3 = decltype(check3<T>(0));
 
-    template<class U, class R = decltype(
-        std::declval<U>().consume(1), std::true_type{})>
+    // data()
+    template<class U, class R = std::integral_constant<
+        bool, is_BufferSequence<decltype(
+            std::declval<U const>().data()),
+                boost::asio::const_buffer>::type::value>>
     static R check4(int);
     template<class>
     static std::false_type check4(...);
     using type4 = decltype(check4<T>(0));
 
-    template<class U, class R = std::is_same<decltype(
-        std::declval<U>().size()), std::size_t>>
+    // prepare()
+    template<class U, class R = std::integral_constant<
+        bool, is_BufferSequence<decltype(
+            std::declval<U>().prepare(1)),
+                boost::asio::mutable_buffer>::type::value>>
     static R check5(int);
     template<class>
     static std::false_type check5(...);
     using type5 = decltype(check5<T>(0));
 
+    // commit()
+    template<class U, class R = decltype(
+        std::declval<U>().commit(1), std::true_type{})>
+    static R check6(int);
+    template<class>
+    static std::false_type check6(...);
+    using type6 = decltype(check6<T>(0));
+
+    // consume
+    template<class U, class R = decltype(
+        std::declval<U>().consume(1), std::true_type{})>
+    static R check7(int);
+    template<class>
+    static std::false_type check7(...);
+    using type7 = decltype(check7<T>(0));
+
 public:
     using type = std::integral_constant<bool,
-        type1::value && type2::value &&
-        type3::value && type4::value &&
-        type5::value>;
+        type1::value
+        && type2::value
+        //&& type3::value // Networking TS
+        && type4::value
+        && type5::value
+        && type6::value
+        && type7::value
+    >;
 };
 
 } // detail

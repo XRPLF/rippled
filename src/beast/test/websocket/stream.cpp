@@ -133,15 +133,15 @@ public:
 
     struct identity
     {
-        template<class Body, class Headers>
+        template<class Body, class Fields>
         void
-        operator()(http::message<true, Body, Headers>&)
+        operator()(http::message<true, Body, Fields>&)
         {
         }
 
-        template<class Body, class Headers>
+        template<class Body, class Fields>
         void
-        operator()(http::message<false, Body, Headers>&)
+        operator()(http::message<false, Body, Fields>&)
         {
         }
     };
@@ -149,16 +149,16 @@ public:
     void testOptions()
     {
         stream<socket_type> ws(ios_);
-        ws.set_option(auto_fragment_size{2048});
+        ws.set_option(auto_fragment{true});
         ws.set_option(decorate(identity{}));
         ws.set_option(keep_alive{false});
-        ws.set_option(mask_buffer_size(2048));
+        ws.set_option(write_buffer_size{2048});
         ws.set_option(message_type{opcode::text});
-        ws.set_option(read_buffer_size(8192));
-        ws.set_option(read_message_max(1 * 1024 * 1024));
+        ws.set_option(read_buffer_size{8192});
+        ws.set_option(read_message_max{1 * 1024 * 1024});
         try
         {
-            ws.set_option(mask_buffer_size(0));
+            ws.set_option(write_buffer_size{7});
             fail();
         }
         catch(std::exception const&)
@@ -184,15 +184,15 @@ public:
             for(n = 0; n < limit; ++n)
             {
                 // valid
-                http::request_v1<http::empty_body> req;
+                http::request<http::empty_body> req;
                 req.method = "GET";
                 req.url = "/";
                 req.version = 11;
-                req.headers.insert("Host", "localhost");
-                req.headers.insert("Upgrade", "websocket");
-                req.headers.insert("Connection", "upgrade");
-                req.headers.insert("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
-                req.headers.insert("Sec-WebSocket-Version", "13");
+                req.fields.insert("Host", "localhost");
+                req.fields.insert("Upgrade", "websocket");
+                req.fields.insert("Connection", "upgrade");
+                req.fields.insert("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
+                req.fields.insert("Sec-WebSocket-Version", "13");
                 stream<test::fail_stream<
                     test::string_stream>> ws(n, ios_, "");
                 try
@@ -263,7 +263,7 @@ public:
                     }
                     catch(system_error const& se)
                     {
-                        BEAST_EXPECT(se.code() == ev);
+                        BEAST_EXPECTS(se.code() == ev, se.what());
                     }
                 }
             };
@@ -490,7 +490,7 @@ public:
         }
     }
 
-    void testClose(endpoint_type const& ep, yield_context do_yield)
+    void testClose(endpoint_type const& ep, yield_context)
     {
         {
             // payload length 1
@@ -802,7 +802,7 @@ public:
         using boost::asio::buffer;
         static std::size_t constexpr limit = 200;
         std::size_t n;
-        for(n = 0; n < limit; ++n)
+        for(n = 0; n <= limit; ++n)
         {
             stream<test::fail_stream<socket_type>> ws(n, ios_);
             auto const restart =
@@ -816,7 +816,7 @@ public:
                         fail();
                         return false;
                     }
-                    catch(boost::system::system_error const& se)
+                    catch(system_error const& se)
                     {
                         if(se.code() != ev)
                             throw;
@@ -840,7 +840,7 @@ public:
                 ws.handshake("localhost", "/");
 
                 // send message
-                ws.set_option(auto_fragment_size(0));
+                ws.set_option(auto_fragment{false});
                 ws.set_option(message_type(opcode::text));
                 ws.write(sbuf("Hello"));
                 {
@@ -910,22 +910,27 @@ public:
                 }
                 ws.set_option(pong_callback{});
 
+                // send pong
+                ws.pong("");
+
                 // send auto fragmented message
-                ws.set_option(auto_fragment_size(3));
-                ws.write(sbuf("Hello"));
+                ws.set_option(auto_fragment{true});
+                ws.set_option(write_buffer_size{8});
+                ws.write(sbuf("Now is the time for all good men"));
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf db;
-                    ws.read(op, db);
-                    BEAST_EXPECT(to_string(db.data()) == "Hello");
+                    streambuf sb;
+                    ws.read(op, sb);
+                    BEAST_EXPECT(to_string(sb.data()) == "Now is the time for all good men");
                 }
-                ws.set_option(auto_fragment_size(0));
+                ws.set_option(auto_fragment{false});
+                ws.set_option(write_buffer_size{4096});
 
                 // send message with write buffer limit
                 {
                     std::string s(2000, '*');
-                    ws.set_option(mask_buffer_size(1200));
+                    ws.set_option(write_buffer_size(1200));
                     ws.write(buffer(s.data(), s.size()));
                     {
                         // receive echoed message
@@ -1033,7 +1038,7 @@ public:
         using boost::asio::buffer;
         static std::size_t constexpr limit = 200;
         std::size_t n;
-        for(n = 190; n < limit; ++n)
+        for(n = 0; n < limit; ++n)
         {
             stream<test::fail_stream<socket_type>> ws(n, ios_);
             auto const restart =
@@ -1077,7 +1082,7 @@ public:
                     throw system_error{ec};
 
                 // send message
-                ws.set_option(auto_fragment_size(0));
+                ws.set_option(auto_fragment{false});
                 ws.set_option(message_type(opcode::text));
                 ws.async_write(sbuf("Hello"), do_yield[ec]);
                 if(ec)
@@ -1170,9 +1175,13 @@ public:
                     ws.set_option(pong_callback{});
                 }
 
+                // send pong
+                ws.async_pong("", do_yield[ec]);
+
                 // send auto fragmented message
-                ws.set_option(auto_fragment_size(3));
-                ws.async_write(sbuf("Hello"), do_yield[ec]);
+                ws.set_option(auto_fragment{true});
+                ws.set_option(write_buffer_size{8});
+                ws.async_write(sbuf("Now is the time for all good men"), do_yield[ec]);
                 {
                     // receive echoed message
                     opcode op;
@@ -1180,14 +1189,15 @@ public:
                     ws.async_read(op, db, do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
-                    BEAST_EXPECT(to_string(db.data()) == "Hello");
+                    BEAST_EXPECT(to_string(db.data()) == "Now is the time for all good men");
                 }
-                ws.set_option(auto_fragment_size(0));
+                ws.set_option(auto_fragment{false});
+                ws.set_option(write_buffer_size{4096});
 
                 // send message with mask buffer limit
                 {
                     std::string s(2000, '*');
-                    ws.set_option(mask_buffer_size(1200));
+                    ws.set_option(write_buffer_size(1200));
                     ws.async_write(buffer(s.data(), s.size()), do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
@@ -1379,6 +1389,9 @@ public:
         static_assert(! std::is_move_assignable<
             stream<socket_type&>>::value, "");
 
+        log << "sizeof(websocket::stream) == " <<
+            sizeof(websocket::stream<boost::asio::ip::tcp::socket&>) << std::endl;
+
         auto const any = endpoint_type{
             address_type::from_string("127.0.0.1"), 0};
 
@@ -1391,19 +1404,22 @@ public:
             {
                 sync_echo_server server(true, any);
                 auto const ep = server.local_endpoint();
-            
+
                 //testInvokable1(ep);
                 testInvokable2(ep);
                 testInvokable3(ep);
                 testInvokable4(ep);
                 //testInvokable5(ep);
-            
+
                 testSyncClient(ep);
                 testAsyncWriteFrame(ep);
                 yield_to_mf(ep, &stream_test::testAsyncClient);
             }
             {
-                async_echo_server server(true, any, 4);
+                error_code ec;
+                async_echo_server server{nullptr, 4};
+                server.open(true, any, ec);
+                BEAST_EXPECTS(! ec, ec.message());
                 auto const ep = server.local_endpoint();
                 testSyncClient(ep);
                 testAsyncWriteFrame(ep);

@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/sh
 
 # Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
 #

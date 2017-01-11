@@ -24,10 +24,12 @@ public:
         BEAST_EXPECT(! ec.message().empty());
         BEAST_EXPECT(std::addressof(ec.category()) ==
             std::addressof(detail::get_error_category()));
-        BEAST_EXPECT(detail::get_error_category().equivalent(static_cast<int>(ev),
-            ec.category().default_error_condition(static_cast<int>(ev))));
         BEAST_EXPECT(detail::get_error_category().equivalent(
-            ec, static_cast<int>(ev)));
+            static_cast<std::underlying_type<error>::type>(ev),
+                ec.category().default_error_condition(
+                    static_cast<std::underlying_type<error>::type>(ev))));
+        BEAST_EXPECT(detail::get_error_category().equivalent(
+            ec, static_cast<std::underlying_type<error>::type>(ev)));
     }
 
     void run() override
@@ -48,5 +50,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(error,websocket,beast);
 
-} // http
+} // websocket
 } // beast

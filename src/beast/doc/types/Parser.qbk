@@ -5,19 +5,22 @@
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 ]
 
-[section:Parser Parser]
+[section:Parser Parser requirements]
 
-A [*`Parser`] is used to deserialize HTTP/1 messages from [link beast.types.streams streams].
-Objects of this type are used with [link beast.ref.http__parse http::parse] and
-[link beast.ref.http__async_parse http::async_parse].
+A [*Parser] is used to deserialize objects from
+[link beast.ref.streams streams]. Objects of this type are used with
+[link beast.ref.http__parse http::parse] and
+[link beast.ref.http__async_parse http::async_parse]. The definition of
+an object, and the predicate defining when the parse is complete, are
+determined by the implementation.
 
 In this table:
 
-* `X` denotes a type meeting the requirements of [*`Parser`].
+* `X` denotes a type meeting the requirements of [*Parser].
 
 * `a` denotes a value of type `X`.
 
-* `b` is a value meeting the requirements of [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/ConvertibleToConstBuffer.html [*`ConvertibleToConstBuffer`]].
+* `b` is a value meeting the requirements of __ConstBufferSequence__.
 
 * `ec` is a value of type [link beast.ref.error_code `error_code&`].
 
@@ -27,18 +30,18 @@ In this table:
     [`a.complete()`]
     [`bool`]
     [
-        Returns `true` when a complete HTTP/1 message has been parsed.
+        Returns `true` when parsing is complete.
     ]
 ]
 [
     [`a.write(b, ec)`]
     [`std::size_t`]
     [
-        Parses the octets in the specified input buffer sequentially until
-        an error occurs, the end of the buffer is reached, or a complete
-        HTTP/1 message has been parsed. If an error occurs, `ec` is set
-        to the error code and parsing stops. This function returns the
-        number of bytes consumed from the input buffer.
+        Sequentially parses the octets in the specified input buffer sequence
+        until an error occurs, the end of the buffer is reached, or parsing is
+        complete. Upon success, this function returns the number of bytes used
+        from the input. If an error occurs, `ec` is set to the error code and
+        parsing stops.
     ]
 ]
 [
@@ -48,9 +51,9 @@ In this table:
         Indicates to the parser that no more octets will be available.
         Typically this function is called when the end of stream is reached.
         For example, if a call to `boost::asio::ip::tcp::socket::read_some`
-        generates a `boost::asio::error::eof` error. Some HTTP/1 messages
-        determine the end of the message body by an end of file marker or
-        closing of the connection.
+        generates a `boost::asio::error::eof` error. Some objects, such as
+        certain HTTP/1 messages, determine the end of the message body by
+        an end of file marker or closing of the connection.
     ]
 ]
 ]

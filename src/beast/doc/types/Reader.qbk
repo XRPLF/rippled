@@ -5,11 +5,11 @@
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 ]
 
-[section:Reader Reader]
+[section:Reader Reader requirements]
 
-Parser implementations will construct the corresponding `reader` object
-during the parse. This customization point allows the Body to determine
-the strategy for storing incoming message body data.
+Parsers provided by the implementation will construct the corresponding
+`reader` object during parsing. This customization point allows the
+Body to determine the strategy for storing incoming message body data.
 
 In this table:
 
@@ -17,15 +17,14 @@ In this table:
 
 * `a` denotes a value of type `X`.
 
-* `p` is any pointer.
-
 * `n` is a value convertible to `std::size_t`.
 
-* `ec` is a value of type `error_code&`.
+* `p` is a `void const*` to valid memory of at least `n` bytes.
 
-* `m` denotes a value of type `message const&` where
-    `std::is_same<decltype(m.body), Body::value_type>:value == true`
+* `ec` is a value of type [link beast.ref.error_code `error_code&`].
 
+* `m` denotes a value of type `message&` where
+    `std::is_same<decltype(m.body), Body::value_type>::value == true`.
 
 [table Reader requirements
 [[operation] [type] [semantics, pre/post-conditions]]
@@ -33,22 +32,38 @@ In this table:
     [`X a(m);`]
     []
     [
-        `a` is constructible from `m`. The lifetime of `m` is
-        guaranteed to end no earlier than after `a` is destroyed.
+        `a` is constructible from `m`. The lifetime of `m` is guaranteed
+        to end no earlier than after `a` is destroyed. The constructor
+        will be called after all headers have been stored in `m`, and
+        before any body data is deserialized. This function must be
+        `noexcept`.
+    ]
+]
+[
+    [`a.init(ec)`]
+    [`void`]
+    [
+        Called immediately after construction. If the function sets
+        an error code in `ec`, the parse is aborted and the error is
+        propagated to the caller. This function must be `noexcept`.
     ]
 ]
 [
     [`a.write(p, n, ec)`]
     [`void`]
     [
-        Deserializes the input sequence into the body.
-        If `ec` is set, the deserialization is aborted and the error
-        is returned to the caller.
+        Deserializes the input sequence into the body. If `ec` is set,
+        the deserialization is aborted and the error is propagated to
+        the caller. If the message headers specify a chunked transfer
+        encoding, the reader will receive the decoded version of the
+        body. This function must be `noexcept`.
     ]
 ]
 ]
 
-[note Definitions for required `Reader` member functions should be declared
-inline so the generated code becomes part of the implementation. ]
+[note
+    Definitions for required `Reader` member functions should be declared
+    inline so the generated code can become part of the implementation.
+]
 
 [endsect]

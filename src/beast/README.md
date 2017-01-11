@@ -12,16 +12,15 @@
 
 ---
 
-## CppCon 2016
+## Beast at CppCon 2016
 
-I will be giving a lightning talk on Beast at CppCon 2016 in Bellevue,
-Washington from September 18 to September 22. If you'd like to meet me
-and hear the talk or ask questions about Beast feel free to approach
-me in person or send me an email at vinnie.falco@gmail.com to schedule
-some time.
+Presentation
+(slides: <a href="https://raw.githubusercontent.com/vinniefalco/Beast/master/doc/images/CppCon2016.pdf">CppCon2016.pdf</a>)
 
-About CppCon 2016:
-http://cppcon.org
+<a href="https://www.youtube.com/watch?v=uJZgRcvPFwI">
+<img width="320" height = "180" alt = "Beast"
+    src="https://raw.githubusercontent.com/vinniefalco/Beast/master/doc/images/CppCon2016.png">
+</a>
 
 ---
 
@@ -96,7 +95,7 @@ using the `git subtree` or `git submodule` commands). Then, edit your
  build scripts to add the `include/` directory to the list of paths checked
  by the C++ compiler when searching for includes. Beast `#include` lines
  will look like this:
-```
+```C++
 #include <beast/http.hpp>
 #include <beast/websocket.hpp>
 ```
@@ -137,6 +136,7 @@ The files in the repository are laid out thusly:
 ./
     bin/            Holds executables and project files
     bin64/          Holds 64-bit Windows executables and project files
+    doc/            Source code and scripts for the documentation
     include/        Add this to your compiler includes
         beast/
     extras/         Additional APIs, may change
@@ -171,14 +171,14 @@ int main()
     // WebSocket connect and send message using beast
     beast::websocket::stream<boost::asio::ip::tcp::socket&> ws{sock};
     ws.handshake(host, "/");
-    ws.write(boost::asio::buffer("Hello, world!"));
+    ws.write(boost::asio::buffer(std::string("Hello, world!")));
 
     // Receive WebSocket message, print and close using beast
     beast::streambuf sb;
     beast::websocket::opcode op;
     ws.read(op, sb);
     ws.close(beast::websocket::close_code::normal);
-    std::cout << to_string(sb.data()) << "\n";
+    std::cout << beast::to_string(sb.data()) << "\n";
 }
 ```
 
@@ -186,6 +186,7 @@ Example HTTP program:
 ```C++
 #include <beast/http.hpp>
 #include <boost/asio.hpp>
+#include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <string>
 
@@ -200,18 +201,19 @@ int main()
         r.resolve(boost::asio::ip::tcp::resolver::query{host, "http"}));
 
     // Send HTTP request using beast
-    beast::http::request_v1<beast::http::empty_body> req;
+    beast::http::request<beast::http::empty_body> req;
     req.method = "GET";
     req.url = "/";
     req.version = 11;
-    req.headers.replace("Host", host + ":" + std::to_string(sock.remote_endpoint().port()));
-    req.headers.replace("User-Agent", "Beast");
+    req.fields.replace("Host", host + ":" +
+        boost::lexical_cast<std::string>(sock.remote_endpoint().port()));
+    req.fields.replace("User-Agent", "Beast");
     beast::http::prepare(req);
     beast::http::write(sock, req);
 
     // Receive and print HTTP response using beast
     beast::streambuf sb;
-    beast::http::response_v1<beast::http::streambuf_body> resp;
+    beast::http::response<beast::http::streambuf_body> resp;
     beast::http::read(sock, sb, resp);
     std::cout << resp;
 }

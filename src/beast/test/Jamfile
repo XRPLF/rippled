@@ -11,6 +11,7 @@ compile core.cpp : : ;
 compile http.cpp : : ;
 compile version.cpp : : ;
 compile websocket.cpp : : ;
+compile zlib.cpp : : ;
 
 unit-test core-tests :
     ../extras/beast/unit_test/main.cpp
@@ -20,11 +21,13 @@ unit-test core-tests :
     core/buffer_cat.cpp
     core/buffer_concepts.cpp
     core/buffers_adapter.cpp
+    core/clamp.cpp
     core/consuming_buffers.cpp
     core/dynabuf_readstream.cpp
     core/error.cpp
     core/handler_alloc.cpp
     core/handler_concepts.cpp
+    core/handler_ptr.cpp
     core/placeholders.cpp
     core/prepare_buffers.cpp
     core/static_streambuf.cpp
@@ -42,14 +45,14 @@ unit-test core-tests :
 unit-test http-tests :
     ../extras/beast/unit_test/main.cpp
     http/basic_dynabuf_body.cpp
-    http/basic_headers.cpp
+    http/basic_fields.cpp
     http/basic_parser_v1.cpp
-    http/body_type.cpp
     http/concepts.cpp
     http/empty_body.cpp
-    http/headers.cpp
+    http/fields.cpp
+    http/header_parser_v1.cpp
     http/message.cpp
-    http/message_v1.cpp
+    http/parse.cpp
     http/parse_error.cpp
     http/parser_v1.cpp
     http/read.cpp
@@ -77,10 +80,27 @@ unit-test websocket-tests :
     websocket/teardown.cpp
     websocket/frame.cpp
     websocket/mask.cpp
-    websocket/stream_base.cpp
     websocket/utf8_checker.cpp
     ;
 
 exe websocket-echo :
     websocket/websocket_echo.cpp
+    ;
+
+unit-test zlib-tests :
+    ../extras/beast/unit_test/main.cpp
+    zlib/zlib-1.2.8/adler32.c
+    zlib/zlib-1.2.8/compress.c
+    zlib/zlib-1.2.8/crc32.c
+    zlib/zlib-1.2.8/deflate.c
+    zlib/zlib-1.2.8/infback.c
+    zlib/zlib-1.2.8/inffast.c
+    zlib/zlib-1.2.8/inflate.c
+    zlib/zlib-1.2.8/inftrees.c
+    zlib/zlib-1.2.8/trees.c
+    zlib/zlib-1.2.8/uncompr.c
+    zlib/zlib-1.2.8/zutil.c
+    zlib/deflate_stream.cpp
+    zlib/error.cpp
+    zlib/inflate_stream.cpp
     ;

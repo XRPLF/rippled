@@ -61,6 +61,8 @@ struct is_call_possible_udt3
     int operator()(int);
 };
 
+#ifndef __INTELLISENSE__
+// VFALCO Fails to compile with Intellisense
 static_assert(is_call_possible<
     is_call_possible_udt1, void(int)>::value, "");
 
@@ -81,6 +83,7 @@ static_assert(is_call_possible<
 
 static_assert(! is_call_possible<
     is_call_possible_udt3 const, int(int)>::value, "");
+#endif
 
 } // test
 

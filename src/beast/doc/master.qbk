@@ -8,7 +8,7 @@
 [library Beast
     [quickbook 1.6]
     [copyright 2013 - 2016 Vinnie Falco]
-    [purpose C++ Library]
+    [purpose Networking Protocol Library]
     [license
         Distributed under the Boost Software License, Version 1.0.
         (See accompanying file LICENSE_1_0.txt or copy at
@@ -22,174 +22,85 @@
 [template mdash[] '''&mdash; ''']
 [template indexterm1[term1] '''<indexterm><primary>'''[term1]'''</primary></indexterm>''']
 [template indexterm2[term1 term2] '''<indexterm><primary>'''[term1]'''</primary><secondary>'''[term2]'''</secondary></indexterm>''']
-[def __POSIX__ /POSIX/]
-[def __Windows__ /Windows/]
-[def __accept__ [@http://www.opengroup.org/onlinepubs/000095399/functions/accept.html `accept()`]]
-[def __connect__ [@http://www.opengroup.org/onlinepubs/000095399/functions/connect.html `connect()`]]
-[def __getpeername__ [@http://www.opengroup.org/onlinepubs/000095399/functions/getpeername.html `getpeername()`]]
-[def __getsockname__ [@http://www.opengroup.org/onlinepubs/000095399/functions/getsockname.html `getsockname()`]]
-[def __getsockopt__ [@http://www.opengroup.org/onlinepubs/000095399/functions/getsockopt.html `getsockopt()`]]
-[def __ioctl__ [@http://www.opengroup.org/onlinepubs/000095399/functions/ioctl.html `ioctl()`]]
-[def __recvfrom__ [@http://www.opengroup.org/onlinepubs/000095399/functions/recvfrom.html `recvfrom()`]]
-[def __sendto__ [@http://www.opengroup.org/onlinepubs/000095399/functions/sendto.html `sendto()`]]
-[def __setsockopt__ [@http://www.opengroup.org/onlinepubs/000095399/functions/setsockopt.html `setsockopt()`]]
-[def __socket__ [@http://www.opengroup.org/onlinepubs/000095399/functions/socket.html `socket()`]]
 
+[def __N4588__ [@http://cplusplus.github.io/networking-ts/draft.pdf [*N4588]]]
+[def __rfc6455__ [@https://tools.ietf.org/html/rfc6455 rfc6455]]
+[def __rfc7230__ [@https://tools.ietf.org/html/rfc7230 rfc7230]]
 
+[def __asio_handler_invoke__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/asio_handler_invoke.html `asio_handler_invoke`]]
+[def __asio_handler_allocate__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/asio_handler_allocate.html `asio_handler_allocate`]]
+[def __void_or_deduced__ [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/asynchronous_operations.html#boost_asio.reference.asynchronous_operations.return_type_of_an_initiating_function ['void-or-deduced]]]
 
-[section:intro Introduction]
+[def __AsyncReadStream__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/AsyncReadStream.html [*AsyncReadStream]]]
+[def __AsyncWriteStream__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/AsyncWriteStream.html [*AsyncWriteStream]]]
+[def __CompletionHandler__ [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/CompletionHandler.html [*CompletionHandler]]]
+[def __ConstBufferSequence__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/ConstBufferSequence.html [*ConstBufferSequence]]]
+[def __MutableBufferSequence__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/MutableBufferSequence.html [*MutableBufferSequence]]]
+[def __SyncReadStream__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/SyncReadStream.html [*SyncReadStream]]]
+[def __SyncWriteStream__ [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/SyncWriteStream.html [*SyncWriteStream]]]
 
-Beast is a header-only, cross-platform C++ library built on Boost.Asio and
-Boost, containing two modules implementing widely used network protocols.
-Beast.HTTP offers a universal model for describing, sending, and receiving
-HTTP messages while Beast.WebSocket provides a complete implementation of
-the WebSocket protocol. Their design achieves these goals:
+[def __Body__             [link beast.ref.Body [*`Body`]]]
+[def __DynamicBuffer__    [link beast.ref.DynamicBuffer [*DynamicBuffer]]]
+[def __FieldSequence__    [link beast.ref.FieldSequence [*FieldSequence]]]
+[def __Parser__           [link beast.ref.Parser [*`Parser`]]]
 
-* [*Symmetry.] Interfaces are role-agnostic; the same interfaces can be
-used to build clients, servers, or both.
+[def __basic_fields__     [link beast.ref.http__basic_fields `basic_fields`]]
+[def __fields__           [link beast.ref.http__fields `fields`]]
+[def __header__           [link beast.ref.http__header `header`]]
+[def __message__          [link beast.ref.http__message `message`]]
+[def __streambuf__        [link beast.ref.streambuf `streambuf`]]
+[def __basic_streambuf__  [link beast.ref.basic_streambuf `basic_streambuf`]]
 
-* [*Ease of Use.] HTTP messages are modeled using simple, readily
-accessible objects. Functions and classes used to send and receive HTTP
-or WebSocket messages are designed to resemble Boost.Asio as closely as
-possible. Users familiar with Boost.Asio will be immediately comfortable
-using this library.
+Beast is a cross-platform, header-only C++ library built on Boost.Asio that
+provides implementations of the HTTP and WebSocket protocols.
 
-* [*Flexibility.] Interfaces do not mandate specific implementation
-strategies; important decisions such as buffer or thread management are
-left to users of the library.
+[variablelist
+  [[
+    [link beast.overview Overview]
+  ][
+    An introduction with features, requirements, and credits.
+  ]]
+  [[
+    [link beast.http Using HTTP]
+  ][
+    How to use Beast's HTTP interfaces in your applications.
+  ]]
+  [[
+    [link beast.websocket Using WebSocket]
+  ][
+    How to use Beast's WebSocket interfaces in your applications.
+  ]]
+  [[
+    [link beast.example Examples]
+  ][
+    Examples that illustrate the use of Beast in more complex applications.
+  ]]
+  [[
+    [link beast.design Design]
+  ][
+    Design rationale, answers to review questions, and
+    other library comparisons.
+  ]]
+  [[
+    [link beast.ref Reference]
+  ][
+    Detailed class and function reference.
+  ]]
+  [[
+    [link beast.index Index]
+  ][
+    Book-style text index of Beast documentation.
+  ]]
+]
 
-* [*Performance.] The implementation performs competitively, making it a
-realistic choice for building high performance network servers.
-
-* [*Scalability.] Development of network applications that scale to thousands
-of concurrent connections is possible with the implementation.
-
-* [*Basis for further abstraction.] The interfaces facilitate the
-development of other libraries that provide higher levels of abstraction.
-
-
-
-[section:requirements Requirements]
-
-Beast requires:
-
-* [*C++11.] A minimum of C++11 is needed.
-* [*Boost.] Beast is built on Boost, especially Boost.Asio.
-* [*OpenSSL.] If using TLS/Secure sockets (optional).
-
-[note Tested compilers: msvc-14+, gcc 5+, clang 3.6+]
-
-The library is [*header-only]. It is not necessary to add any .cpp files,
-or to edit your existing build script or project file except to provide
-that the include/ directory for beast is searched for include files.
-
-[endsect]
-
-
-
-[section:example Examples]
-
-These usage examples are intended to quickly impress upon readers the
-flavor of the library. They are complete programs which may be built
-and run. Source code and build scripts for these programs may be found
-in the examples directory.
-
-Use HTTP to request the root page from a website and print the response:
-```
-#include <beast/http.hpp>
-#include <boost/asio.hpp>
-#include <iostream>
-#include <string>
-
-int main()
-{
-    // Normal boost::asio setup
-    std::string const host = "boost.org";
-    boost::asio::io_service ios;
-    boost::asio::ip::tcp::resolver r{ios};
-    boost::asio::ip::tcp::socket sock{ios};
-    boost::asio::connect(sock,
-        r.resolve(boost::asio::ip::tcp::resolver::query{host, "http"}));
-
-    // Send HTTP request using beast
-    beast::http::request_v1<beast::http::empty_body> req;
-    req.method = "GET";
-    req.url = "/";
-    req.version = 11;
-    req.headers.replace("Host", host + ":" + std::to_string(sock.remote_endpoint().port()));
-    req.headers.replace("User-Agent", "Beast");
-    beast::http::prepare(req);
-    beast::http::write(sock, req);
-
-    // Receive and print HTTP response using beast
-    beast::streambuf sb;
-    beast::http::response_v1<beast::http::streambuf_body> resp;
-    beast::http::read(sock, sb, resp);
-    std::cout << resp;
-}
-```
-
-Establish a WebSocket connection, send a message and receive the reply:
-```
-#include <beast/core/to_string.hpp>
-#include <beast/websocket.hpp>
-#include <boost/asio.hpp>
-#include <iostream>
-#include <string>
-
-int main()
-{
-    // Normal boost::asio setup
-    std::string const host = "echo.websocket.org";
-    boost::asio::io_service ios;
-    boost::asio::ip::tcp::resolver r{ios};
-    boost::asio::ip::tcp::socket sock{ios};
-    boost::asio::connect(sock,
-        r.resolve(boost::asio::ip::tcp::resolver::query{host, "80"}));
-
-    // WebSocket connect and send message using beast
-    beast::websocket::stream<boost::asio::ip::tcp::socket&> ws{sock};
-    ws.handshake(host, "/");
-    ws.write(boost::asio::buffer("Hello, world!"));
-
-    // Receive WebSocket message, print and close using beast
-    beast::streambuf sb;
-    beast::websocket::opcode op;
-    ws.read(op, sb);
-    ws.close(beast::websocket::close_code::normal);
-    std::cout << to_string(sb.data()) << "\n";
-}
-```
-
-[endsect]
-
-
-
-[section:credits Credits]
-
-Boost.Asio is the inspiration behind which all of the interfaces and
-implementation strategies are built. Some parts of the documentation are
-written to closely resemble the wording and presentation of Boost.Asio
-documentation. Credit goes to Christopher Kohloff for the wonderful
-Asio library and the ideas upon which Beast is built.
-
-Beast would not be possible without the considerable time and patience
-contributed by David Schwartz, Edward Hennis, Howard Hinnant, Miguel Portilla,
-Nikolaos Bougalis, Scott Determan, Scott Schurr, and Ripple Labs for
-supporting its development.
-
-[endsect]
-
-
-
-[endsect]
-
-
-
+[include overview.qbk]
 [include http.qbk]
 [include websocket.qbk]
+[include examples.qbk]
+[include design.qbk]
 
-[section:types Type Requirements]
+[section:ref Reference]
+[xinclude quickref.xml]
 [include types/Body.qbk]
 [include types/BufferSequence.qbk]
 [include types/DynamicBuffer.qbk]
@@ -199,13 +110,7 @@ supporting its development.
 [include types/Reader.qbk]
 [include types/Streams.qbk]
 [include types/Writer.qbk]
+[include reference.qbk]
 [endsect]
 
-[include design.qbk]
-[section:quickref Quick Reference]
-[xinclude quickref.xml]
-[endsect]
-[include reference.qbk]
-[section:idx Index]
 [xinclude index.xml]
-[endsect]
