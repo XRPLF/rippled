@@ -327,8 +327,9 @@ do_read(yield_context do_yield)
     start_timer();
     beast::http::async_read(impl().stream_,
         read_buf_, message_, do_yield[ec]);
-    // VFALCO What if the connection was closed?
     cancel_timer();
+    if(ec)
+        return fail(ec, "http::read");
     do_request();
 }
 
