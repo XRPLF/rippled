@@ -13,13 +13,13 @@
 #include <type_traits>
 
 namespace beast {
-
 namespace websocket {
 
-/** Tag type used to find teardown and async_teardown overloads
+/** Tag type used to find @ref beast::websocket::teardown and @ref beast::websocket::async_teardown overloads
     
-    Overloads of @ref teardown and @async_teardown for user defined
-    types must take a value of type @ref teardown_tag in the first
+    Overloads of @ref beast::websocket::teardown and
+    @ref beast::websocket::async_teardown for user defined types
+    must take a value of type @ref teardown_tag in the first
     argument in order to be found by the implementation.
 */
 struct teardown_tag {};
@@ -178,7 +178,6 @@ async_teardown(teardown_tag,
     boost::asio::ip::tcp::socket& socket, TeardownHandler&& handler);
 
 } // websocket
-
 } // beast
 
 #include <beast/websocket/impl/teardown.ipp>

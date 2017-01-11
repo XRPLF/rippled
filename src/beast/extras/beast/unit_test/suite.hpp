@@ -10,12 +10,34 @@
 
 #include <beast/unit_test/runner.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 #include <ostream>
 #include <sstream>
 #include <string>
 
 namespace beast {
 namespace unit_test {
+
+namespace detail {
+
+template<class String>
+static
+std::string
+make_reason(String const& reason,
+    char const* file, int line)
+{
+    std::string s(reason);
+    if(! s.empty())
+        s.append(": ");
+    namespace fs = boost::filesystem;
+    s.append(fs::path{file}.filename().string());
+    s.append("(");
+    s.append(boost::lexical_cast<std::string>(line));
+    s.append(")");
+    return s;
+}
+
+} // detail
 
 class thread;
 
@@ -178,11 +200,21 @@ public:
 
     /** Record a failure.
 
-        @param reason 
+        @param reason Optional text added to the output on a failure.
+
+        @param file The source code file where the test failed.
+
+        @param line The source code line number where the test failed.
     */
+    /** @{ */
+    template<class String>
+    void
+    fail(String const& reason, char const* file, int line);
+
     template<class = void>
     void
     fail(std::string const& reason = "");
+    /** @} */
 
     /** Evaluate a test condition.
 
@@ -206,25 +238,25 @@ public:
     bool
     expect(Condition const& shouldBeTrue)
     {
-        return expect(shouldBeTrue, {});
+        return expect(shouldBeTrue, "");
     }
 
-    template<class Condition>
+    template<class Condition, class String>
     bool
-    expect(Condition const& shouldBeTrue, std::string const& reason);
+    expect(Condition const& shouldBeTrue, String const& reason);
 
     template<class Condition>
     bool
     expect(Condition const& shouldBeTrue,
         char const* file, int line)
     {
-        return expect(shouldBeTrue, {}, file, line);
+        return expect(shouldBeTrue, "", file, line);
     }
 
-    template<class Condition>
+    template<class Condition, class String>
     bool
     expect(Condition const& shouldBeTrue,
-        std::string const& reason, char const* file, int line);
+        String const& reason, char const* file, int line);
     /** @} */
 
     //
@@ -402,11 +434,11 @@ operator()(runner& r)
     }
 }
 
-template<class Condition>
+template<class Condition, class String>
 bool
 suite::
 expect(
-    Condition const& shouldBeTrue, std::string const& reason)
+    Condition const& shouldBeTrue, String const& reason)
 {
     if(shouldBeTrue)
     {
@@ -417,26 +449,18 @@ expect(
     return false;
 }
 
-template<class Condition>
+template<class Condition, class String>
 bool
 suite::
 expect(Condition const& shouldBeTrue,
-    std::string const& reason, char const* file, int line)
+    String const& reason, char const* file, int line)
 {
     if(shouldBeTrue)
     {
         pass();
         return true;
     }
-    std::string s;
-    if(! reason.empty())
-    {
-        s += reason;
-        s += " ";
-    }
-    s += boost::filesystem::path{file}.filename().string() +
-        "(" + std::to_string(line) + ")";
-    fail(s);
+    fail(detail::make_reason(reason, file, line));
     return false;
 }
 
@@ -535,6 +559,14 @@ fail(std::string const& reason)
     }
 }
 
+template<class String>
+void
+suite::
+fail(String const& reason, char const* file, int line)
+{
+    fail(detail::make_reason(reason, file, line));
+}
+
 inline
 void
 suite::
@@ -583,7 +615,8 @@ run(runner& r)
 
     If the condition is false, the file and line number are reported.
 */
-#define BEAST_EXPECTS(cond, reason) expect(cond, reason, __FILE__, __LINE__)
+#define BEAST_EXPECTS(cond, reason) ((cond) ? (pass(), true) : \
+        (fail((reason), __FILE__, __LINE__), false))
 #endif
 
 } // unit_test

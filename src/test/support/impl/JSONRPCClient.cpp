@@ -22,7 +22,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
-#include <beast/http/message_v1.hpp>
+#include <beast/http/message.hpp>
 #include <beast/http/streambuf_body.hpp>
 #include <beast/http/string_body.hpp>
 #include <beast/http/read.hpp>
@@ -108,12 +108,12 @@ public:
         using namespace boost::asio;
         using namespace std::string_literals;
 
-        request_v1<string_body> req;
+        request<string_body> req;
         req.method = "POST";
         req.url = "/";
         req.version = 11;
-        req.headers.insert("Content-Type", "application/json; charset=UTF-8");
-        req.headers.insert("Host",
+        req.fields.insert("Content-Type", "application/json; charset=UTF-8");
+        req.fields.insert("Host",
             ep_.address().to_string() + ":" + std::to_string(ep_.port()));
         {
             Json::Value jr;
@@ -134,7 +134,7 @@ public:
         prepare(req);
         write(stream_, req);
 
-        response_v1<streambuf_body> res;
+        response<streambuf_body> res;
         read(stream_, bin_, res);
 
         Json::Reader jr;

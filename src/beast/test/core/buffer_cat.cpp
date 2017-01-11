@@ -13,6 +13,7 @@
 #include <boost/asio/streambuf.hpp>
 #include <iterator>
 #include <list>
+#include <type_traits>
 #include <vector>
 
 namespace beast {
@@ -20,12 +21,63 @@ namespace beast {
 class buffer_cat_test : public unit_test::suite
 {
 public:
-    template< class Iterator >
+    template<class Iterator>
     static
     std::reverse_iterator<Iterator>
-    make_reverse_iterator( Iterator i )
+    make_reverse_iterator(Iterator i)
     {
         return std::reverse_iterator<Iterator>(i);
+    }
+
+    template<class ConstBufferSequence>
+    static
+    std::size_t
+    bsize1(ConstBufferSequence const& bs)
+    {
+        using boost::asio::buffer_size;
+        std::size_t n = 0;
+        for(auto it = bs.begin(); it != bs.end(); ++it)
+            n += buffer_size(*it);
+        return n;
+    }
+
+    template<class ConstBufferSequence>
+    static
+    std::size_t
+    bsize2(ConstBufferSequence const& bs)
+    {
+        using boost::asio::buffer_size;
+        std::size_t n = 0;
+        for(auto it = bs.begin(); it != bs.end(); it++)
+            n += buffer_size(*it);
+        return n;
+    }
+
+    template<class ConstBufferSequence>
+    static
+    std::size_t
+    bsize3(ConstBufferSequence const& bs)
+    {
+        using boost::asio::buffer_size;
+        std::size_t n = 0;
+        for(auto it = bs.end(); it != bs.begin();)
+            n += buffer_size(*--it);
+        return n;
+    }
+
+    template<class ConstBufferSequence>
+    static
+    std::size_t
+    bsize4(ConstBufferSequence const& bs)
+    {
+        using boost::asio::buffer_size;
+        std::size_t n = 0;
+        for(auto it = bs.end(); it != bs.begin();)
+        {
+            it--;
+            n += buffer_size(*it);
+        }
+        return n;
     }
 
     void testBufferCat()
@@ -48,6 +100,10 @@ public:
         auto bs = buffer_cat(
             b1, b2, b3, b4, b5, b6);
         BEAST_EXPECT(buffer_size(bs) == 10);
+        BEAST_EXPECT(bsize1(bs) == 10);
+        BEAST_EXPECT(bsize2(bs) == 10);
+        BEAST_EXPECT(bsize3(bs) == 10);
+        BEAST_EXPECT(bsize4(bs) == 10);
         std::vector<const_buffer> v;
         for(auto iter = make_reverse_iterator(bs.end());
                 iter != make_reverse_iterator(bs.begin()); ++iter)
@@ -55,8 +111,6 @@ public:
         BEAST_EXPECT(buffer_size(bs) == 10);
         decltype(bs) bs2(bs);
         auto bs3(std::move(bs));
-        bs = bs2;
-        bs3 = std::move(bs2);
         {
             boost::asio::streambuf sb1, sb2;
             BEAST_EXPECT(buffer_size(buffer_cat(
@@ -110,6 +164,18 @@ public:
             pass();
         }
 
+        // decrement iterator
+        {
+            auto const rbegin =
+                make_reverse_iterator(bs.end());
+            auto const rend =
+                make_reverse_iterator(bs.begin());
+            std::size_t n = 0;
+            for(auto it = rbegin; it != rend; ++it)
+                n += buffer_size(*it);
+            BEAST_EXPECT(n == 9);
+        }
+
         try
         {
             std::size_t n = 0;
@@ -141,6 +207,60 @@ public:
 
     void run() override
     {
+        using boost::asio::const_buffer;
+        using boost::asio::const_buffers_1;
+        using boost::asio::mutable_buffer;
+        using boost::asio::mutable_buffers_1;
+        struct user_defined : mutable_buffer
+        {
+        };
+
+        // Check is_all_ConstBufferSequence
+        static_assert(
+            detail::is_all_ConstBufferSequence<
+                const_buffers_1
+            >::value, "");
+        static_assert(
+            detail::is_all_ConstBufferSequence<
+                const_buffers_1, const_buffers_1
+            >::value, "");
+        static_assert(
+            detail::is_all_ConstBufferSequence<
+                mutable_buffers_1
+            >::value, "");
+        static_assert(
+            detail::is_all_ConstBufferSequence<
+                mutable_buffers_1, mutable_buffers_1
+            >::value, "");
+        static_assert(
+            detail::is_all_ConstBufferSequence<
+                const_buffers_1, mutable_buffers_1
+            >::value, "");
+        static_assert(
+            ! detail::is_all_ConstBufferSequence<
+                const_buffers_1, mutable_buffers_1, int
+            >::value, "");
+                    
+        // Ensure that concatenating mutable buffer
+        // sequences results in a mutable buffer sequence
+        static_assert(std::is_same<
+            mutable_buffer,
+            decltype(buffer_cat(
+                std::declval<mutable_buffer>(),
+                std::declval<user_defined>(),
+                std::declval<mutable_buffer>()
+                    ))::value_type>::value, "");
+
+        // Ensure that concatenating mixed buffer
+        // sequences results in a const buffer sequence.
+        static_assert(std::is_same<
+            const_buffer,
+            decltype(buffer_cat(
+                std::declval<mutable_buffer>(),
+                std::declval<user_defined>(),
+                std::declval<const_buffer>()
+                    ))::value_type>::value, "");
+
         testBufferCat();
         testIterators();
     }

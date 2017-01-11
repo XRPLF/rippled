@@ -154,7 +154,7 @@ private:
     beast::streambuf read_buffer_;
     http_request_type request_;
     http_response_type response_;
-    beast::http::headers const& headers_;
+    beast::http::fields const& headers_;
     beast::streambuf write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;
@@ -502,7 +502,7 @@ PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& s
     , fee_ (Resource::feeLightPeer)
     , slot_ (std::move(slot))
     , response_(std::move(response))
-    , headers_(response_.headers)
+    , headers_(response_.fields)
 {
     read_buffer_.commit (boost::asio::buffer_copy(read_buffer_.prepare(
         boost::asio::buffer_size(buffers)), buffers));

@@ -7,3 +7,10 @@
 
 // Test that header file is self-contained.
 #include <beast/core/streambuf.hpp>
+
+#include <beast/core/buffer_concepts.hpp>
+namespace beast {
+
+static_assert(is_DynamicBuffer<streambuf>::value, "");
+
+} // beast

@@ -20,7 +20,7 @@ class fail_parser
 {
     test::fail_counter& fc_;
     std::uint64_t content_length_ = no_content_length;
-    int body_rv_ = 0;
+    body_what body_rv_ = body_what::normal;
 
 public:
     std::string body;
@@ -33,7 +33,7 @@ public:
     }
 
     void
-    on_body_rv(int rv)
+    on_body_rv(body_what rv)
     {
         body_rv_ = rv;
     }
@@ -85,10 +85,18 @@ public:
         fc_.fail(ec);
     }
 
-    int on_headers(std::uint64_t content_length, error_code& ec)
+    void
+    on_header(std::uint64_t content_length, error_code& ec)
     {
         if(fc_.fail(ec))
-            return 0;
+            return;
+    }
+
+    body_what
+    on_body_what(std::uint64_t content_length, error_code& ec)
+    {
+        if(fc_.fail(ec))
+            return body_what::normal;
         content_length_ = content_length;
         return body_rv_;
     }

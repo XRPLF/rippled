@@ -5,44 +5,52 @@
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 ]
 
-[section:design Design choices]
+[section:design Design Choices]
+
+[block '''
+<informaltable frame="all"><tgroup cols="1"><colspec colname="a"/><tbody><row><entry valign="top"><simplelist>
+  <member><link linkend="beast.design.http">HTTP FAQ</link></member>
+  <member><link linkend="beast.design.websocket">WebSocket FAQ</link></member>
+  <member><link linkend="beast.design.websocketpp">Comparison to Zaphoyd Studios WebSocket++</link></member>
+</simplelist></entry></row></tbody></tgroup></informaltable>
+''']
 
 The implementations are driven by business needs of cryptocurrency server
 applications (e.g. [@https://ripple.com Ripple]) written in C++. These
 needs were not met by existing solutions so Beast was written from scratch
-as a solution. Beast's design philosophy avoid flaws exhibited by other
+as a solution. Beast's design philosophy avoids flaws exhibited by other
 libraries:
+
+* Don't try to do too much.
 
 * Don't sacrifice performance.
 
-* Don't do too much, otherwise interfaces become rigid.
+* Mimic Boost.Asio; familiarity breeds confidence.
 
-* Symmetric interfaces (client and server the same, or close to it).
+* Role-symmetric interfaces; client and server the same (or close to it).
 
-* Emulate Boost.Asio interfaces as much as possible, since Asio is
-  proven and it is familiar to users.
+* Leave important decisions to the user, such as allocating memory or
+  managing flow control.
 
-* Let library users make the important decisions such as how to
-  allocate memory or how to leverage flow control.
-
-Beast uses the [link beast.types.DynamicBuffer [*`DynamicBuffer`]] concept
-presented in the Netwoking TS, and relies heavily on the Boost.Asio
-[*`ConstBufferSequence`] and [*`MutableBufferSequence`] concepts for passing
-buffers to functions. The authors have found the dynamic buffer and buffer
-sequence interfaces to be optimal for interacting with Asio, and for other
-tasks such as incremental parsing of data in buffers (for example, parsing
-websocket frames stored in a [link beast.ref.static_streambuf `static_streambuf`]).
+Beast uses the __DynamicBuffer__ concept presented in the Networking TS
+(__N4588__), and relies heavily on the Boost.Asio __ConstBufferSequence__
+and __MutableBufferSequence__ concepts for passing buffers to functions.
+The authors have found the dynamic buffer and buffer sequence interfaces to
+be optimal for interacting with Asio, and for other tasks such as incremental
+parsing of data in buffers (for example, parsing websocket frames stored
+in a [link beast.ref.static_streambuf `static_streambuf`]).
 
 During the development of Beast the authors have studied other software
 packages and in particular the comments left during the Boost Review process
-of other packages offering similar functionality. In this section we attempt
-to address those issues.
+of other packages offering similar functionality. In this section and the
+FAQs that follow we attempt to answer those questions that are also applicable
+to Beast.
 
 [variablelist
 [[
     "I would also like to see instances of this library being used
     in production. That would give some evidence that the design
-    works in practice.""
+    works in practice."
 ][
     Beast.HTTP and Beast.WebSocket are production ready and currently
     running on public servers receiving traffic and handling millions of
@@ -56,25 +64,26 @@ to address those issues.
 ]
 
 
-[section:http HTTP]
 
-For HTTP we to model the message to maximize flexibility of implementation
+[section:http HTTP FAQ]
+
+For HTTP we model the message to maximize flexibility of implementation
 strategies while allowing familiar verbs such as [*`read`] and [*`write`].
 The HTTP interface is further driven by the needs of the WebSocket module,
 as a WebSocket session requires a HTTP Upgrade handshake exchange at the
 start. Other design goals:
 
-* Don't try to invent a complete web server or client
+* Keep it simple.
 
-* Have simple free functions to send and receive messages.
+* Stay low level; don't invent a whole web server or client.
 
-* Allow the message object to be customized,
+* Allow for customizations, if the user needs it.
 
 [variablelist
 
 [[
     "Some more advanced examples, e.g. including TLS with client/server
-    certificates would help.""
+    certificates would help."
 ][
     The HTTP interface doesn't try to reinvent the wheel, it just uses
     the `boost::asio::ip::tcp::socket` or `boost::asio::ssl::stream` that
@@ -94,7 +103,7 @@ start. Other design goals:
 ]]
 
 [[
-    "Cookies? Forms/File Uploads?""
+    "Cookies? Forms/File Uploads?"
 ][
     Cookies, or managing these types of HTTP headers in general, is the
     responsibility of higher levels. Beast.HTTP just tries to get complete
@@ -107,7 +116,7 @@ start. Other design goals:
 
 [[
     "...supporting TLS (is this a feature? If not this would be a show-stopper),
-    etc.
+    etc."
 ][
     Beast.HTTP does not provide direct facilities for implementing TLS
     connections; however, the interfaces already existing on the
@@ -126,17 +135,24 @@ start. Other design goals:
     over Asio. Such an implementation should serve as a building block upon
     which higher abstractions such as the aforementioned HTTP service or
     cgi-gateway can be built.
+
+    One of the example programs implements a simple HTTP server that
+    delivers files from the filesystem.
 ]]
 
 [[
     "You should send a 100-continue to ask for the rest of the body if required."
 ][
-    These behaviors are best left to the calling software. A future library
-    can build on Beast.HTTP to provide these behaviors.
+    The Beast interface needs to support this functionality (by allowing this
+    special case of partial message parsing and serialization). Specifically,
+    it should let callers read the request up to just before the body,
+    and let callers write the request up to just before the body. However,
+    making use of this behavior should be up to callers (since Beast is low
+    level).
 ]]
 
 [[
-    "What about HTTP/2?""
+    "What about HTTP/2?"
 ][
     Many reviewers feel that HTTP/2 support is an essential feature of
     a HTTP library. The authors agree that HTTP/2 is important but also
@@ -145,13 +161,13 @@ start. Other design goals:
     and 1.1.
 
     The Beast.HTTP message model is suitable for HTTP/2 and can be re-used.
-    The IEFT HTTP Working Group adopted message compatiblity with HTTP/1.x
+    The IETF HTTP Working Group adopted message compatiblity with HTTP/1.x
     as an explicit goal. A parser can simply emit full headers after
-    decoding the compressed HTTP/2 headers. The stream ID is not logicaly
+    decoding the compressed HTTP/2 headers. The stream ID is not logically
     part of the message but rather message metadata and should be
     communicated out-of-band (see below). HTTP/2 sessions begin with a
     traditional HTTP/1.1 Upgrade similar in fashion to the WebSocket
-    upgrade. A HTTP/2 implementation can use existing Beast.HTTP primitives
+    upgrade. An HTTP/2 implementation can use existing Beast.HTTP primitives
     to perform this handshake.
 
     Free functions for HTTP/2 sessions are not possible because of the
@@ -167,10 +183,50 @@ start. Other design goals:
 
 ]
 
+[endsect]
+
+
+
+[section:websocket WebSocket FAQ]
+
+[variablelist
+
+[[
+    What about message compression?
+][
+    Beast WebSocket supports the permessage-deflate extension described in
+    [@https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-00 draft-ietf-hybi-permessage-compression-00].
+    The library comes with a header-only, C++11 port of ZLib's "deflate" codec
+    used in the implementation of the permessage-deflate extension.
+]]
+
+[[
+    Where is the TLS/SSL interface?
+][
+    The `websocket::stream` wraps the socket or stream that you provide
+    (for example, a `boost::asio::ip::tcp::socket` or a
+    `boost::asio::ssl::stream`). You establish your TLS connection using the
+    interface on `ssl::stream` like shown in all of the Asio examples, then
+    construct your `websocket::stream` around it. It works perfectly fine;
+    Beast.WebSocket doesn't try to reinvent the wheel or put a fresh coat of
+    interface paint on the `ssl::stream`.
+
+    The WebSocket implementation [*does] provide support for shutting down
+    the TLS connection through the use of the ADL compile-time virtual functions
+    [link beast.ref.websocket__teardown `teardown`] and
+    [link beast.ref.websocket__async_teardown `async_teardown`]. These will
+    properly close the connection as per rfc6455 and overloads are available
+    for TLS streams. Callers may provide their own overloads of these functions
+    for user-defined next layer types.
+]]
+
+]
 
 [endsect]
 
-[section:websocket WebSocket]
+
+
+[section:websocketpp Comparison to Zaphoyd Studios WebSocket++]
 
 [variablelist
 
@@ -208,21 +264,19 @@ start. Other design goals:
     To get an idea of the complexity involved with implementing a transport,
     compare the asio transport to the
     [@https://github.com/zaphoyd/websocketpp/blob/378437aecdcb1dfe62096ffd5d944bf1f640ccc3/websocketpp/transport/iostream/connection.hpp#L59 `iostream` transport]
-    (a layer that allows websocket communication over a std iostream).
+    (a layer that allows websocket communication over a `std::iostream`).
 
     In contrast, Beast abstracts the transport by defining just one [*`NextLayer`]
     template argument The type requirements for [*`NextLayer`] are
     already familiar to users as they are documented in Asio:
-    [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/SyncReadStream.html SyncReadStream],
-    [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/SyncWriteStream.html SyncWriteStream],
-    [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/AsyncReadStream.html AsyncReadStream], and
-    [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/AsyncWriteStream.html AsyncWriteStream].
+    __AsyncReadStream__, __AsyncWriteStream__, __SyncReadStream__, __SyncWriteStream__.
+
     The type requirements for instantiating `beast::websocket::stream` versus
     `websocketpp::connection` with user defined types are vastly reduced
     (18 functions versus 2). Note that websocketpp connections are passed by
     `shared_ptr`. Beast does not use `shared_ptr` anywhere in its public interface.
     A `beast::websocket::stream` is constructible and movable in a manner identical
-    `to a boost::asio::ip::tcp::socket`. Callers can put such objects in a
+    to a `boost::asio::ip::tcp::socket`. Callers can put such objects in a
     `shared_ptr` if they want to, but there is no requirement to do so.
 
     [table
@@ -283,8 +337,7 @@ start. Other design goals:
     implementation. Instead, it follows the Asio pattern. Calls to
     asynchronous initiation functions use the same method to invoke
     intermediate handlers as the method used to invoke the final handler,
-    through the
-    [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/asio_handler_invoke.html asio_handler_invoke] mechanism.
+    through the __asio_handler_invoke__ mechanism.
 
     The only requirement in Beast is that calls to asynchronous initiation
     functions are made from the same implicit or explicit strand. For
@@ -314,7 +367,7 @@ start. Other design goals:
 
     websocketpp requires a one-time call to set the handler for each event
     in its interface (for example, upon message receipt). The handler is
-    represented by a `std::function equivalent`. Its important to recognize
+    represented by a `std::function` equivalent. Its important to recognize
     that the websocketpp interface performs type-erasure on this handler.
 
     In comparison, Beast handlers are specified in a manner identical to
@@ -378,29 +431,27 @@ start. Other design goals:
 
     websocketpp defines a message buffer, passed in arguments by
     `shared_ptr`, and an associated message manager which permits
-    aggregation and memory reuse of memory. The implementation of
+    aggregation and reuse of memory. The implementation of
     `websocketpp::message` uses a `std::string` to hold the payload. If an
     incoming message is broken up into multiple frames, the string may be
-    reallocated for each continuation frame. The std::string always uses
+    reallocated for each continuation frame. The `std::string` always uses
     the standard allocator, it is not possible to customize the choice of
     allocator.
 
     Beast allows callers to specify the object for receiving the message
     or frame data, which is of any type meeting the requirements of
-    [@http://vinniefalco.github.io/beast/beast/types/DynamicBuffer.html [*DynamicBuffer]]
-    (modeled after `boost::asio::streambuf`).
+    __DynamicBuffer__ (modeled after `boost::asio::streambuf`).
 
-    Beast comes with the class `beast::basic_streambuf`, an efficient
-    implementation of the [*DynamicBuffer] concept which makes use of multiple
+    Beast comes with the class __basic_streambuf__, an efficient
+    implementation of the __DynamicBuffer__ concept which makes use of multiple
     allocated octet arrays. If an incoming message is broken up into
     multiple pieces, no reallocation occurs. Instead, new allocations are
     appended to the sequence when existing allocations are filled. Beast
     does not impose any particular memory management model on callers. The
-    `basic_streambuf` provided by beast supports standard allocators through
-    a template argument. Use the [*DynamicBuffer] that comes with beast,
+    __basic_streambuf__ provided by beast supports standard allocators through
+    a template argument. Use the __DynamicBuffer__ that comes with beast,
     customize the allocator if you desire, or provide your own type that
-    meets the
-    [@https://github.com/vinniefalco/Beast/blob/6c8b4b2f8dde72b01507e4ac7fde4ffea57ebc99/include/beast/basic_streambuf.hpp#L21 concept requirements].
+    meets the requirements.
 
     [table
         [
@@ -596,44 +647,8 @@ start. Other design goals:
     ]
 ]]
 
-[[
-    What about message compression?
-][
-    The author is currently porting ZLib 1.2.8 to modern, header-only C++11
-    that does not use macros or try to support ancient architectures. This
-    deflate implementation will be available as its own individually
-    usable interface, and also will be used to power Beast WebSocket's
-    permessage-deflate implementation, due Q4 of 2016.
-
-    However, Beast currently has sufficient functionality that users can
-    begin taking advantage of the WebSocket protocol using this library
-    immediately.
-]]
-
-[[
-    Where is the TLS/SSL interface?
-][
-    The `websocket::stream` wraps the socket or stream that you provide
-    (for example, a `boost::asio::ip::tcp::socket` or a
-    `boost::asio::ssl::stream`). You establish your TLS connection using the
-    interface on `ssl::stream` like shown in all of the Asio examples, they
-    construct your `websocket::stream` around it. It works perfectly fine;
-    Beast.WebSocket doesn't try to reinvent the wheel or put a fresh coat of
-    interface paint on the `ssl::stream`.
-
-    The WebSocket implementation [*does] provides support for shutting down
-    the TLS connection through the use of the ADL compile-time virtual functions
-    [link beast.ref.websocket__teardown `teardown`] and
-    [link beast.ref.websocket__async_teardown `async_teardown`]. These will
-    properly close the connection as per rfc6455 and overloads are available
-    for TLS streams. Callers may provide their own overloads of these functions
-    for user-defined next layer types.
-]]
-
 ]
 
 [endsect]
-
-
 
 [endsect]

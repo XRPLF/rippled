@@ -8,8 +8,12 @@
 #ifndef BEAST_HTTP_EMPTY_BODY_HPP
 #define BEAST_HTTP_EMPTY_BODY_HPP
 
-#include <beast/http/body_type.hpp>
+#include <beast/core/error.hpp>
+#include <beast/http/message.hpp>
+#include <beast/http/resume_context.hpp>
+#include <beast/core/detail/type_traits.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/logic/tribool.hpp>
 #include <memory>
 #include <string>
 
@@ -35,31 +39,31 @@ private:
 
     struct writer
     {
-        writer(writer const&) = delete;
-        writer& operator=(writer const&) = delete;
-
-        template<bool isRequest, class Headers>
+        template<bool isRequest, class Fields>
         explicit
-        writer(message<isRequest, empty_body, Headers> const& m)
+        writer(message<isRequest, empty_body, Fields> const& m) noexcept
         {
+            beast::detail::ignore_unused(m);
         }
 
         void
-        init(error_code& ec)
+        init(error_code& ec) noexcept
         {
+            beast::detail::ignore_unused(ec);
         }
 
         std::uint64_t
-        content_length() const
+        content_length() const noexcept
         {
             return 0;
         }
 
-        template<class Write>
+        template<class WriteFunction>
         boost::tribool
-        operator()(resume_context&&, error_code&, Write&& write)
+        write(resume_context&&, error_code&,
+            WriteFunction&& wf) noexcept
         {
-            write(boost::asio::null_buffers{});
+            wf(boost::asio::null_buffers{});
             return true;
         }
     };

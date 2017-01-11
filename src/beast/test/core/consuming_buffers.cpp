@@ -19,6 +19,16 @@ namespace beast {
 class consuming_buffers_test : public beast::unit_test::suite
 {
 public:
+    template<class BufferSequence>
+    static
+    consuming_buffers<BufferSequence>
+    consumed_buffers(BufferSequence const& bs, std::size_t n)
+    {
+        consuming_buffers<BufferSequence> cb(bs);
+        cb.consume(n);
+        return cb;
+    }
+
     template<class Buffers1, class Buffers2>
     static
     bool

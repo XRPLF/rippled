@@ -37,19 +37,11 @@ namespace beast {
     consumable `ConstBufferSequence`. Violations of buffer const safety
     are not permitted, and will result in a compile error.
 */
-template<class BufferSequence,
-    class ValueType = typename BufferSequence::value_type>
+template<class BufferSequence>
 class consuming_buffers
 {
     using iter_type =
         typename BufferSequence::const_iterator;
-
-    static_assert(is_BufferSequence<BufferSequence, ValueType>::value,
-        "BufferSequence requirements not met");
-
-    static_assert(std::is_constructible<ValueType,
-        typename std::iterator_traits<iter_type>::value_type>::value,
-            "ValueType requirements not met");
 
     BufferSequence bs_;
     iter_type begin_;
@@ -65,7 +57,12 @@ class consuming_buffers
 
 public:
     /// The type for each element in the list of buffers.
-    using value_type = ValueType;
+    using value_type = typename std::conditional<
+        std::is_convertible<typename
+            std::iterator_traits<iter_type>::value_type,
+                boost::asio::mutable_buffer>::value,
+                    boost::asio::mutable_buffer,
+                        boost::asio::const_buffer>::type;
 
 #if GENERATING_DOCS
     /// A bidirectional iterator type that may be used to read elements.
@@ -100,7 +97,7 @@ public:
     const_iterator
     begin() const;
 
-    /// Get a bidirectional iterator for one past the last element.
+    /// Get a bidirectional iterator to one past the last element.
     const_iterator
     end() const;
 
@@ -113,25 +110,6 @@ public:
     void
     consume(std::size_t n);
 };
-
-/** Returns a new, consumed buffer sequence.
-
-    This function returns a new buffer sequence which when iterated,
-    efficiently represents the portion of the original buffer sequence
-    with `n` bytes removed from the beginning.
-
-    Copies will be made of the buffer sequence passed, but ownership
-    of the underlying memory is not transferred.
-
-    @param buffers The buffer sequence to consume.
-
-    @param n The number of bytes to remove from the front. If this is
-    larger than the size of the buffer sequence, an empty buffer sequence
-    is returned.
-*/
-template<class BufferSequence>
-consuming_buffers<BufferSequence, typename BufferSequence::value_type>
-consumed_buffers(BufferSequence const& buffers, std::size_t n);
 
 } // beast
 

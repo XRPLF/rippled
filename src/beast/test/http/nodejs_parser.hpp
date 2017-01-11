@@ -10,7 +10,7 @@
 
 #include "nodejs-parser/http_parser.h"
 
-#include <beast/http/message_v1.hpp>
+#include <beast/http/message.hpp>
 #include <beast/http/rfc7230.hpp>
 #include <beast/core/buffer_concepts.hpp>
 #include <beast/core/error.hpp>
@@ -174,7 +174,7 @@ public:
         error_code ec;
         auto const used = write(data, size, ec);
         if(ec)
-            throw boost::system::system_error{ec};
+            throw system_error{ec};
         return used;
     }
 
@@ -189,7 +189,7 @@ public:
         error_code ec;
         auto const used = write(buffers, ec);
         if(ec)
-            throw boost::system::system_error{ec};
+            throw system_error{ec};
         return used;
     }
 
@@ -204,7 +204,7 @@ public:
         error_code ec;
         write_eof(ec);
         if(ec)
-            throw boost::system::system_error{ec};
+            throw system_error{ec};
     }
 
     void
@@ -736,12 +736,12 @@ nodejs_basic_parser<Derived>::cb_chunk_complete(http_parser*)
 
     The parser may only be used once.
 */
-template<bool isRequest, class Body, class Headers>
+template<bool isRequest, class Body, class Fields>
 class nodejs_parser
-    : public nodejs_basic_parser<nodejs_parser<isRequest, Body, Headers>>
+    : public nodejs_basic_parser<nodejs_parser<isRequest, Body, Fields>>
 {
     using message_type =
-        message_v1<isRequest, Body, Headers>;
+        message<isRequest, Body, Fields>;
 
     message_type m_;
     typename message_type::body_type::reader r_;
@@ -781,7 +781,7 @@ private:
     void
     on_field(std::string const& field, std::string const& value)
     {
-        m_.headers.insert(field, value);
+        m_.fields.insert(field, value);
     }
 
     void
@@ -795,7 +795,7 @@ private:
 
     bool
     on_request(unsigned method, std::string const& url,
-        int major, int minor, bool keep_alive, bool upgrade,
+        int major, int minor, bool /*keep_alive*/, bool /*upgrade*/,
             std::true_type)
     {
         m_.method = detail::method_to_string(method);
@@ -818,7 +818,8 @@ private:
     {
         return on_request(method, url,
             major, minor, keep_alive, upgrade,
-                typename message_type::is_request{});
+                std::integral_constant<
+                    bool,  message_type::is_request>{});
     }
 
     bool
@@ -826,6 +827,7 @@ private:
         int major, int minor, bool keep_alive, bool upgrade,
             std::true_type)
     {
+        beast::detail::ignore_unused(keep_alive, upgrade);
         m_.status = status;
         m_.reason = reason;
         m_.version = major * 10 + minor;
@@ -846,7 +848,7 @@ private:
     {
         return on_response(
             status, reason, major, minor, keep_alive, upgrade,
-                std::integral_constant<bool, ! message_type::is_request::value>{});
+                std::integral_constant<bool, ! message_type::is_request>{});
     }
 
     void

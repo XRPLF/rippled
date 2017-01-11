@@ -34,11 +34,11 @@ namespace beast {
     ...
     template<class CompletionHandler>
     typename async_completion<CompletionHandler,
-        void(boost::system::error_code)>::result_type
+        void(error_code)>::result_type
     async_initfn(..., CompletionHandler&& handler)
     {
         async_completion<CompletionHandler,
-            void(boost::system::error_code)> completion(handler);
+            void(error_code)> completion(handler);
         ...
         return completion.result.get();
     }

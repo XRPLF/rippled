@@ -5,16 +5,17 @@
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 ]
 
-[section:FieldSequence FieldSequence]
+[section:FieldSequence FieldSequence requirements]
 
-A [*`FieldSequence`] is an iterable container whose value type meets
-the requirements of [link beast.types.Field [*`Field`]].
+A [*FieldSequence] is an iterable container whose value type meets
+the requirements of [link beast.ref.Field [*Field]]. Objects that meet
+these requirements become serializable by the implementation.
 
 In this table:
 
-* `X` denotes a type that meets the requirements of [*`FieldSequence`].
+* `X` denotes a type that meets the requirements of [*FieldSequence].
 
-* `a` is a value of type `X`.
+* `c` is a value of type `X const`.
 
 [table FieldSequence requirements
 [[operation][type][semantics, pre/post-conditions]]
@@ -22,25 +23,33 @@ In this table:
     [`X::value_type`]
     []
     [
-        A type that meets the requirements of `Field`.
+        A type that meets the requirements of [link beast.ref.Field [*Field]].
     ]
 ]
 [
     [`X::const_iterator`]
     []
     [
-        A type that meets the requirements of `ForwardIterator`.
+        An iterator type whose `reference` type meets the
+        requirements of [link beast.ref.Field [*Field]], and which
+        satisfies all the requirements of [*ForwardIterator],
+        except that:
+
+        [ordered_list
+            [there is no requirement that `operator->` is provided, and]
+            [there is no requirement that `reference` be a reference type.]
+        ]
     ]
 ]
 [
-    [`a.begin()`]
+    [`c.begin()`]
     [`X::const_iterator`]
     [
         Returns an iterator to the beginning of the field sequence.
     ]
 ]
 [
-    [`a.end()`]
+    [`c.end()`]
     [`X::const_iterator`]
     [
         Returns an iterator to the end of the field sequence.

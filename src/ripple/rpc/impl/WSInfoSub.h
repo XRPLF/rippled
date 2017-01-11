@@ -42,7 +42,7 @@ public:
         : InfoSub(source)
         , ws_(ws)
     {
-        auto const& h = ws->request().headers;
+        auto const& h = ws->request().fields;
         auto it = h.find("X-User");
         if (it != h.end() &&
             isIdentified(

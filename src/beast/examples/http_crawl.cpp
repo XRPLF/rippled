@@ -10,6 +10,7 @@
 #include <beast/core/streambuf.hpp>
 #include <beast/http.hpp>
 #include <boost/asio.hpp>
+#include <boost/lexical_cast.hpp>
 #include <iostream>
 
 using namespace beast::http;
@@ -35,21 +36,21 @@ int main(int, char const*[])
             ip::tcp::socket sock(ios);
             connect(sock, it);
             auto ep = sock.remote_endpoint();
-            request_v1<empty_body> req;
+            request<empty_body> req;
             req.method = "GET";
             req.url = "/";
             req.version = 11;
-            req.headers.insert("Host", host +
-                std::string(":") + std::to_string(ep.port()));
-            req.headers.insert("User-Agent", "beast/http");
+            req.fields.insert("Host", host + std::string(":") +
+                boost::lexical_cast<std::string>(ep.port()));
+            req.fields.insert("User-Agent", "beast/http");
             prepare(req);
             write(sock, req);
-            response_v1<string_body> res;
+            response<string_body> res;
             streambuf sb;
             beast::http::read(sock, sb, res);
             std::cout << res;
         }
-        catch(boost::system::system_error const& ec)
+        catch(beast::system_error const& ec)
         {
             std::cerr << host << ": " << ec.what();
         }

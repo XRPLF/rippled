@@ -5,13 +5,14 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include <beast/http/detail/chunk_encode.hpp>
+// Test that header file is self-contained.
+#include <beast/http/chunk_encode.hpp>
+
 #include <beast/core/to_string.hpp>
 #include <beast/unit_test/suite.hpp>
 
 namespace beast {
 namespace http {
-namespace detail {
 
 class chunk_encode_test : public beast::unit_test::suite
 {
@@ -35,8 +36,8 @@ public:
     {
         using boost::asio::buffer;
         if(! fc.s.empty())
-            s.append(to_string(
-                chunk_encode(buffer(fc.s.data(), fc.s.size()))));
+            s.append(to_string(chunk_encode(
+                false, buffer(fc.s.data(), fc.s.size()))));
         s.append(to_string(chunk_encode_final()));
     }
 
@@ -45,8 +46,8 @@ public:
     encode1(std::string& s, std::string const& piece)
     {
         using boost::asio::buffer;
-        s.append(to_string(
-            chunk_encode(buffer(piece.data(), piece.size()))));
+        s.append(to_string(chunk_encode(
+            false, buffer(piece.data(), piece.size()))));
     }
 
     static
@@ -122,11 +123,14 @@ public:
             "****\r\n"
             "0\r\n\r\n",
             "****", final_chunk{});
+
+        BEAST_EXPECT(to_string(chunk_encode(true,
+            boost::asio::buffer("****", 4))) ==
+                "4\r\n****\r\n0\r\n\r\n");
     }
 };
 
 BEAST_DEFINE_TESTSUITE(chunk_encode,http,beast);
 
-} // detail
 } // http
 } // beast

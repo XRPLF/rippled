@@ -14,8 +14,8 @@
 #include <beast/core/detail/ci_char_traits.hpp>
 #include <beast/http/rfc7230.hpp>
 #include <beast/unit_test/suite.hpp>
+#include <boost/assert.hpp>
 #include <boost/utility/string_ref.hpp>
-#include <cassert>
 #include <climits>
 #include <map>
 #include <new>
@@ -51,7 +51,8 @@ public:
         bool start = false;
         bool field = false;
         bool value = false;
-        bool headers = false;
+        bool fields = false;
+        bool _body_what = false;
         bool body = false;
         bool complete = false;
 
@@ -90,10 +91,16 @@ public:
         {
             value = true;
         }
-        int on_headers(std::uint64_t, error_code&)
+        void
+        on_header(std::uint64_t, error_code&)
         {
-            headers = true;
-            return 0;
+            fields = true;
+        }
+        body_what
+        on_body_what(std::uint64_t, error_code&)
+        {
+            _body_what = true;
+            return body_what::normal;
         }
         void on_body(boost::string_ref const&, error_code&)
         {
@@ -128,7 +135,8 @@ public:
                 BEAST_EXPECT(p.request);
                 BEAST_EXPECT(p.field);
                 BEAST_EXPECT(p.value);
-                BEAST_EXPECT(p.headers);
+                BEAST_EXPECT(p.fields);
+                BEAST_EXPECT(p._body_what);
                 BEAST_EXPECT(p.body);
                 BEAST_EXPECT(p.complete);
             }
@@ -150,7 +158,7 @@ public:
                 BEAST_EXPECT(p.response);
                 BEAST_EXPECT(p.field);
                 BEAST_EXPECT(p.value);
-                BEAST_EXPECT(p.headers);
+                BEAST_EXPECT(p.fields);
                 BEAST_EXPECT(p.body);
                 BEAST_EXPECT(p.complete);
             }
@@ -194,7 +202,7 @@ public:
 
     template<bool isRequest, class F>
     void
-    good(int onBodyRv, std::string const& s, F const& f)
+    good(body_what onBodyRv, std::string const& s, F const& f)
     {
         using boost::asio::buffer;
         for_split(s,
@@ -209,19 +217,19 @@ public:
                     p.on_body_rv(onBodyRv);
                     error_code ec;
                     p.write(buffer(s1.data(), s1.size()), ec);
-                    if(ec == test::fail_error)
+                    if(ec == test::error::fail_error)
                         continue;
                     if(! BEAST_EXPECT(! ec))
                         break;
                     if(! BEAST_EXPECT(s2.empty() || ! p.complete()))
                         break;
                     p.write(buffer(s2.data(), s2.size()), ec);
-                    if(ec == test::fail_error)
+                    if(ec == test::error::fail_error)
                         continue;
                     if(! BEAST_EXPECT(! ec))
                         break;
                     p.write_eof(ec);
-                    if(ec == test::fail_error)
+                    if(ec == test::error::fail_error)
                         continue;
                     if(! BEAST_EXPECT(! ec))
                         break;
@@ -237,12 +245,12 @@ public:
     void
     good(std::string const& s, F const& f = {})
     {
-        return good<isRequest>(0, s, f);
+        return good<isRequest>(body_what::normal, s, f);
     }
 
     template<bool isRequest>
     void
-    bad(int onBodyRv, std::string const& s, error_code ev)
+    bad(body_what onBodyRv, std::string const& s, error_code ev)
     {
         using boost::asio::buffer;
         for_split(s,
@@ -257,7 +265,7 @@ public:
                     p.on_body_rv(onBodyRv);
                     error_code ec;
                     p.write(buffer(s1.data(), s1.size()), ec);
-                    if(ec == test::fail_error)
+                    if(ec == test::error::fail_error)
                         continue;
                     if(ec)
                     {
@@ -269,7 +277,7 @@ public:
                     if(! s2.empty())
                     {
                         p.write(buffer(s2.data(), s2.size()), ec);
-                        if(ec == test::fail_error)
+                        if(ec == test::error::fail_error)
                             continue;
                         if(ec)
                         {
@@ -280,7 +288,7 @@ public:
                             break;
                     }
                     p.write_eof(ec);
-                    if(ec == test::fail_error)
+                    if(ec == test::error::fail_error)
                         continue;
                     BEAST_EXPECT(! p.complete());
                     BEAST_EXPECT((ec && ! ev) || ec == ev);
@@ -294,7 +302,7 @@ public:
     void
     bad(std::string const& s, error_code ev = {})
     {
-        return bad<isRequest>(0, s, ev);
+        return bad<isRequest>(body_what::normal, s, ev);
     }
 
     //--------------------------------------------------------------------------
@@ -658,7 +666,7 @@ public:
         auto const length =
             [&](std::string const& s, std::uint64_t v)
             {
-                good<true>(1, s,
+                good<true>(body_what::skip, s,
                     [&](fail_parser<true> const& p)
                     {
                         BEAST_EXPECT(p.content_length() == v);
@@ -757,7 +765,7 @@ public:
         good<true>(m("Transfer-Encodings: 2\r\n"),          flags{*this, 0});
         good<true>(m("Transfer-Encoded: false\r\n"),        flags{*this, 0});
 
-        bad<false>(1,
+        bad<false>(body_what::skip,
             "HTTP/1.1 200 OK\r\n"
             "Content-Length: 1\r\n"
             "Transfer-Encoding: chunked\r\n"
@@ -848,8 +856,8 @@ public:
         {
             error_code ec;
             test::fail_counter fc(1000);
-            fail_parser<true> p(fc);
-            p.on_body_rv(2);
+            fail_parser<true> p{fc};
+            p.on_body_rv(body_what::upgrade);
             p.write(buf(
                 "GET / HTTP/1.1\r\n"
                 "Content-Length: 1\r\n"
@@ -1007,12 +1015,7 @@ public:
             BEAST_EXPECT(p.complete());
         }
 
-        bad<false>(3,
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Length: 1\r\n"
-            "\r\n*", parse_error::bad_on_headers_rv);
-
-        bad<true>(0,
+        bad<true>(body_what::normal,
             "GET / HTTP/1.1\r\n"
             "Content-Length: 1\r\n"
             "\r\n",
@@ -1101,7 +1104,7 @@ public:
             {
                 test::fail_counter fc(1000);
                 fail_parser<true> p(fc);
-                p.set_option(headers_max_size{n});
+                p.set_option(header_max_size{n});
                 error_code ec;
                 p.write(buf(
                     "GET / HTTP/1.1\r\n"
@@ -1110,7 +1113,7 @@ public:
                     ), ec);
                 if(! ec)
                     break;
-                BEAST_EXPECT(ec == parse_error::headers_too_big);
+                BEAST_EXPECT(ec == parse_error::header_too_big);
             }
             BEAST_EXPECT(n < Limit);
         }
@@ -1119,7 +1122,7 @@ public:
             {
                 test::fail_counter fc(1000);
                 fail_parser<false> p(fc);
-                p.set_option(headers_max_size{n});
+                p.set_option(header_max_size{n});
                 error_code ec;
                 p.write(buf(
                     "HTTP/1.1 200 OK\r\n"
@@ -1130,7 +1133,7 @@ public:
                     ), ec);
                 if(! ec)
                     break;
-                BEAST_EXPECT(ec == parse_error::headers_too_big);
+                BEAST_EXPECT(ec == parse_error::header_too_big);
             }
             BEAST_EXPECT(n < Limit);
         }

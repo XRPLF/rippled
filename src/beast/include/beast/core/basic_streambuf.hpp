@@ -25,7 +25,7 @@ namespace beast {
     the sequence to accommodate changes in the size of the character
     sequence.
 
-    @note Meets the requirements of @b `DynamicBuffer`.
+    @note Meets the requirements of @b DynamicBuffer.
 
     @tparam Allocator The allocator to use for managing memory.
 */
@@ -209,6 +209,36 @@ public:
         return this->member();
     }
 
+    /** Returns the default allocation size.
+
+        This is the smallest size that the stream buffer will allocate.
+        The size of the allocation can influence capacity, which will
+        affect algorithms that use capacity to efficiently read from
+        streams.
+    */
+    std::size_t
+    alloc_size() const
+    {
+        return alloc_size_;
+    }
+
+    /** Set the default allocation size.
+
+        This is the smallest size that the stream buffer will allocate.
+        The size of the allocation can influence capacity, which will
+        affect algorithms that use capacity to efficiently read from
+        streams.
+
+        @note This will not affect any already-existing allocations.
+
+        @param n The number of bytes.
+    */
+    void
+    alloc_size(std::size_t n)
+    {
+        alloc_size_ = n;
+    }
+
     /// Returns the size of the input sequence.
     size_type
     size() const
@@ -220,7 +250,7 @@ public:
     size_type
     max_size() const
     {
-        return std::numeric_limits<std::size_t>::max();
+        return (std::numeric_limits<std::size_t>::max)();
     }
 
     /// Returns the maximum sum of the sizes of the input sequence and output sequence the buffer can hold without requiring reallocation.
