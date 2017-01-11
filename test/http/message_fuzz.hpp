@@ -10,6 +10,7 @@
 
 #include <beast/core/write_dynabuf.hpp>
 #include <beast/http/detail/basic_parser_v1.hpp>
+#include <beast/http/detail/rfc7230.hpp>
 #include <cstdint>
 #include <random>
 #include <string>
@@ -474,7 +475,7 @@ public:
 
     template<class DynamicBuffer>
     void
-    headers(DynamicBuffer& db)
+    fields(DynamicBuffer& db)
     {
         while(rand(6))
         {
@@ -513,7 +514,7 @@ public:
             write(db, "Transfer-Encoding: chunked\r\n\r\n");
             while(len > 0)
             {
-                auto n = std::min(1 + rand(300), len);
+                auto n = (std::min)(1 + rand(300), len);
                 len -= n;
                 write(db, to_hex(n), "\r\n");
                 for(auto const& b : db.prepare(n))
@@ -535,7 +536,7 @@ public:
     request(DynamicBuffer& db)
     {
         write(db, method(), " ", uri(), " HTTP/1.1\r\n");
-        headers(db);
+        fields(db);
         body(db);
     }
 
@@ -548,7 +549,7 @@ public:
         write(db, " ", 100 + rand(401), " ");
         write(db, token());
         write(db, "\r\n");
-        headers(db);
+        fields(db);
         body(db);
         write(db, "\r\n");
     }

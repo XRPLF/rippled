@@ -67,11 +67,13 @@ maskgen_t<_>::rekey()
     g_.seed(ss);
 }
 
-using maskgen = maskgen_t<std::mt19937>;
+// VFALCO NOTE This generator has 5KB of state!
+//using maskgen = maskgen_t<std::mt19937>;
+using maskgen = maskgen_t<std::minstd_rand>;
 
 //------------------------------------------------------------------------------
 
-using prepared_key_type =
+using prepared_key =
     std::conditional<sizeof(void*) == 8,
         std::uint64_t, std::uint32_t>::type;
 
@@ -103,73 +105,119 @@ ror(T t, unsigned n = 1)
         static_cast<typename std::make_unsigned<T>::type>(t) >> n));
 }
 
-// 32-bit Unoptimized
+// 32-bit optimized
 //
 template<class = void>
 void
-mask_inplace_general(
+mask_inplace_fast(
     boost::asio::mutable_buffer const& b,
         std::uint32_t& key)
 {
     using boost::asio::buffer_cast;
     using boost::asio::buffer_size;
-    auto const n = buffer_size(b);
+    auto n = buffer_size(b);
     auto p = buffer_cast<std::uint8_t*>(b);
+    if(n >= sizeof(key))
+    {
+        // Bring p to 4-byte alignment
+        auto const i = reinterpret_cast<
+            std::uintptr_t>(p) & (sizeof(key)-1);
+        switch(i)
+        {
+        case 1: p[2] ^= static_cast<std::uint8_t>(key >> 16);
+        case 2: p[1] ^= static_cast<std::uint8_t>(key >> 8);
+        case 3: p[0] ^= static_cast<std::uint8_t>(key);
+        {
+            auto const d = static_cast<
+                unsigned>(sizeof(key) - i);
+            key = ror(key, 8*d);
+            n -= d;
+            p += d;
+        }
+        default:
+            break;
+        }
+    }
+
+    // Mask 4 bytes at a time
     for(auto i = n / sizeof(key); i; --i)
     {
-        *p ^=  key      ; ++p;
-        *p ^= (key >> 8); ++p;
-        *p ^= (key >>16); ++p;
-        *p ^= (key >>24); ++p;
+        *reinterpret_cast<
+            std::uint32_t*>(p) ^= key;
+        p += sizeof(key);
     }
-    auto const m =
-        static_cast<std::uint8_t>(n % sizeof(key));
-    switch(m)
+
+    // Leftovers
+    n &= sizeof(key)-1;
+    switch(n)
     {
-    case 3: p[2] ^= (key >>16);
-    case 2: p[1] ^= (key >> 8);
-    case 1: p[0] ^=  key;
-        key = ror(key, m*8);
+    case 3: p[2] ^= static_cast<std::uint8_t>(key >> 16);
+    case 2: p[1] ^= static_cast<std::uint8_t>(key >> 8);
+    case 1: p[0] ^= static_cast<std::uint8_t>(key);
+        key = ror(key, static_cast<unsigned>(8*n));
     default:
         break;
     }
 }
 
-// 64-bit unoptimized
+// 64-bit optimized
 //
 template<class = void>
 void
-mask_inplace_general(
+mask_inplace_fast(
     boost::asio::mutable_buffer const& b,
         std::uint64_t& key)
 {
     using boost::asio::buffer_cast;
     using boost::asio::buffer_size;
-    auto const n = buffer_size(b);
+    auto n = buffer_size(b);
     auto p = buffer_cast<std::uint8_t*>(b);
+    if(n >= sizeof(key))
+    {
+        // Bring p to 8-byte alignment
+        auto const i = reinterpret_cast<
+            std::uintptr_t>(p) & (sizeof(key)-1);
+        switch(i)
+        {
+        case 1: p[6] ^= static_cast<std::uint8_t>(key >> 48);
+        case 2: p[5] ^= static_cast<std::uint8_t>(key >> 40);
+        case 3: p[4] ^= static_cast<std::uint8_t>(key >> 32);
+        case 4: p[3] ^= static_cast<std::uint8_t>(key >> 24);
+        case 5: p[2] ^= static_cast<std::uint8_t>(key >> 16);
+        case 6: p[1] ^= static_cast<std::uint8_t>(key >> 8);
+        case 7: p[0] ^= static_cast<std::uint8_t>(key);
+        {
+            auto const d = static_cast<
+                unsigned>(sizeof(key) - i);
+            key = ror(key, 8*d);
+            n -= d;
+            p += d;
+        }
+        default:
+            break;
+        }
+    }
+
+    // Mask 8 bytes at a time
     for(auto i = n / sizeof(key); i; --i)
     {
-        *p ^=  key      ; ++p;
-        *p ^= (key >> 8); ++p;
-        *p ^= (key >>16); ++p;
-        *p ^= (key >>24); ++p;
-        *p ^= (key >>32); ++p;
-        *p ^= (key >>40); ++p;
-        *p ^= (key >>48); ++p;
-        *p ^= (key >>56); ++p;
+        *reinterpret_cast<
+            std::uint64_t*>(p) ^= key;
+        p += sizeof(key);
     }
-    auto const m =
-        static_cast<std::uint8_t>(n % sizeof(key));
-    switch(m)
+
+    // Leftovers
+    n &= sizeof(key)-1;
+    switch(n)
     {
-    case 7: p[6] ^= (key >>16);
-    case 6: p[5] ^= (key >> 8);
-    case 5: p[4] ^=  key;
-    case 4: p[3] ^= (key >>24);
-    case 3: p[2] ^= (key >>16);
-    case 2: p[1] ^= (key >> 8);
-    case 1: p[0] ^=  key;
-        key = ror(key, m*8);
+    case 7: p[6] ^= static_cast<std::uint8_t>(key >> 48);
+    case 6: p[5] ^= static_cast<std::uint8_t>(key >> 40);
+    case 5: p[4] ^= static_cast<std::uint8_t>(key >> 32);
+    case 4: p[3] ^= static_cast<std::uint8_t>(key >> 24);
+    case 3: p[2] ^= static_cast<std::uint8_t>(key >> 16);
+    case 2: p[1] ^= static_cast<std::uint8_t>(key >> 8);
+    case 1: p[0] ^= static_cast<std::uint8_t>(key);
+        key = ror(key, static_cast<unsigned>(8*n));
     default:
         break;
     }
@@ -181,7 +229,7 @@ mask_inplace(
     boost::asio::mutable_buffer const& b,
         std::uint32_t& key)
 {
-    mask_inplace_general(b, key);
+    mask_inplace_fast(b, key);
 }
 
 inline
@@ -190,7 +238,7 @@ mask_inplace(
     boost::asio::mutable_buffer const& b,
         std::uint64_t& key)
 {
-    mask_inplace_general(b, key);
+    mask_inplace_fast(b, key);
 }
 
 // Apply mask in place

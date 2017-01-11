@@ -13,8 +13,8 @@
 #include <beast/http/rfc7230.hpp>
 #include <beast/http/detail/basic_parser_v1.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/assert.hpp>
 #include <array>
-#include <cassert>
 #include <climits>
 #include <cstdint>
 #include <type_traits>
@@ -22,8 +22,11 @@
 namespace beast {
 namespace http {
 
-namespace parse_flag {
-enum values
+/** Parse flags
+
+    The set of parser bit flags are returned by @ref basic_parser_v1::flags.
+*/
+enum parse_flag
 {
     chunked               =   1,
     connection_keep_alive =   2,
@@ -33,28 +36,6 @@ enum values
     upgrade               =  32,
     skipbody              =  64,
     contentlength         = 128
-};
-} // parse_flag
-
-/** Headers maximum size option.
-
-    Sets the maximum number of cumulative bytes allowed
-    including all header octets. A value of zero indicates
-    no limit on the number of header octets
-
-    The default headers maximum size is 16KB (16,384 bytes).
-
-    @note Objects of this type are passed to @ref set_option.
-*/
-struct headers_max_size
-{
-    std::size_t value;
-
-    explicit
-    headers_max_size(std::size_t v)
-        : value(v)
-    {
-    }
 };
 
 /** Body maximum size option.
@@ -67,7 +48,7 @@ struct headers_max_size
     The default body maximum size for requests is 4MB (four
     megabytes or 4,194,304 bytes) and unlimited for responses.
 
-    @note Objects of this type are passed to @ref set_option.
+    @note Objects of this type are used with @ref basic_parser_v1::set_option.
 */
 struct body_max_size
 {
@@ -80,9 +61,73 @@ struct body_max_size
     }
 };
 
+/** Header maximum size option.
+
+    Sets the maximum number of cumulative bytes allowed
+    including all header octets. A value of zero indicates
+    no limit on the number of header octets.
+
+    The default header maximum size is 16KB (16,384 bytes).
+
+    @note Objects of this type are used with @ref basic_parser_v1::set_option.
+*/
+struct header_max_size
+{
+    std::size_t value;
+
+    explicit
+    header_max_size(std::size_t v)
+        : value(v)
+    {
+    }
+};
+
+/** A value indicating how the parser should treat the body.
+
+    This value is returned from the `on_header` callback in
+    the derived class. It controls what the parser does next
+    in terms of the message body.
+*/
+enum class body_what
+{
+    /** The parser should expect a body, keep reading.
+    */
+    normal,
+
+    /** Skip parsing of the body.
+
+        When returned by `on_header` this causes parsing to
+        complete and control to return to the caller. This
+        could be used when sending a response to a HEAD
+        request, for example.
+    */
+    skip,
+
+    /** The message represents an UPGRADE request.
+
+        When returned by `on_body_prepare` this causes parsing
+        to complete and control to return to the caller.
+    */
+    upgrade,
+
+    /** Suspend parsing before reading the body.
+
+        When returned by `on_body_prepare` this causes parsing
+        to pause. Control is returned to the caller, and the
+        parser state is preserved such that a subsequent call
+        to the parser will begin reading the message body.
+
+        This could be used by callers to inspect the HTTP
+        header before committing to read the body. For example,
+        to choose the body type based on the fields. Or to
+        respond to an Expect: 100-continue request.
+    */
+    pause
+};
+
 /// The value returned when no content length is known or applicable.
 static std::uint64_t constexpr no_content_length =
-    std::numeric_limits<std::uint64_t>::max();
+    (std::numeric_limits<std::uint64_t>::max)();
 
 /** A parser for decoding HTTP/1 wire format messages.
 
@@ -97,86 +142,95 @@ static std::uint64_t constexpr no_content_length =
     more calls to derived class members functions (referred to as
     "callbacks" from here on) matching a specific signature.
 
-    Callbacks are detected through SFINAE. The derived class may
-    implement as few or as many of the members as needed.
-    These are the signatures of the callbacks:<br>
+    Every callback must be provided by the derived class, or else
+    a compilation error will be generated. This exemplar shows
+    the signature and description of the callbacks required in
+    the derived class.
 
-    @li `void on_start(error_code&)`
+    @code
+    template<bool isRequest>
+    struct exemplar : basic_parser_v1<isRequest, exemplar>
+    {
+        // Called when the first valid octet of a new message is received
+        //
+        void on_start(error_code&);
 
-        Called when the first valid octet of a new message is received
+        // Called for each piece of the Request-Method
+        //
+        void on_method(boost::string_ref const&, error_code&);
 
-    @li `void on_method(boost::string_ref const&, error_code&)`
+        // Called for each piece of the Request-URI
+        //
+        void on_uri(boost::string_ref const&, error_code&);
 
-        Called for each piece of the Request-Method
+        // Called for each piece of the reason-phrase
+        //
+        void on_reason(boost::string_ref const&, error_code&);
 
-    @li `void on_uri(boost::string_ref const&, error_code&)`
+        // Called after the entire Request-Line has been parsed successfully.
+        //
+        void on_request(error_code&);
 
-        Called for each piece of the Request-URI
+        // Called after the entire Response-Line has been parsed successfully.
+        //
+        void on_response(error_code&);
 
-    @li `void on_reason(boost::string_ref const&, error_code&)`
+        // Called for each piece of the current header field.
+        //
+        void on_field(boost::string_ref const&, error_code&);
 
-        Called for each piece of the reason-phrase
+        // Called for each piece of the current header value.
+        //
+        void on_value(boost::string_ref const&, error_code&)
 
-    @li `void on_request(error_code&)`
+        // Called when the entire header has been parsed successfully.
+        //
+        void
+        on_header(std::uint64_t content_length, error_code&);
 
-        Called after the entire Request-Line has been parsed successfully.
+        // Called after on_header, before the body is parsed
+        //
+        body_what
+        on_body_what(std::uint64_t content_length, error_code&);
 
-    @li `void on_response(error_code&)`
+        // Called for each piece of the body.
+        //
+        // If the header indicates chunk encoding, the chunk
+        // encoding is removed from the buffer before being
+        // passed to the callback.
+        //
+        void on_body(boost::string_ref const&, error_code&);
 
-        Called after the entire Response-Line has been parsed successfully.
+        // Called when the entire message has been parsed successfully.
+        // At this point, @ref complete returns `true`, and the parser
+        // is ready to parse another message if `keep_alive` would
+        // return `true`.
+        //
+        void on_complete(error_code&) {}
+    };
+    @endcode
 
-    @li `void on_field(boost::string_ref const&, error_code&)`
-
-        Called for each piece of the current header field.
-
-    @li `void on_value(boost::string_ref const&, error_code&)`
-
-        Called for each piece of the current header value.
-
-    @li `int on_headers(std::uint64_t content_length, error_code&)`
-
-        Called when all the headers have been parsed successfully.
-
-    @li `void on_body(boost::string_ref const&, error_code&)`
-
-        Called for each piece of the body. If the headers indicated
-        chunked encoding, the chunk encoding is removed from the
-        buffer before being passed to the callback.
-
-    @li `void on_complete(error_code&)`
-
-        Called when the entire message has been parsed successfully.
-        At this point, @ref basic_parser_v1::complete returns `true`, and
-        the parser is ready to parse another message if keep_alive
-        would return `true`.
-
-    The return value of `on_headers` is special, it controls whether
-    or not the parser should expect a body. These are the return values:
-
-    @li *0* The parser should expect a body
-
-    @li *1* The parser should skip the body. For example, this is
-        used when sending a response to a HEAD request.
-
-    @li *2* The parser should skip ths body, this is an
-        upgrade to a different protocol.
-
-    The parser uses traits to determine if the callback is possible.
-    If the Derived type omits one or more callbacks, they are simply
-    skipped with no compilation error. The default behavior of `on_body`
-    when the derived class does not provide the member, is to specify that
-    the body should not be skipped.
+    The return value of `on_body_what` is special, it controls
+    whether or not the parser should expect a body. See @ref body_what
+    for choices of the return value.
 
     If a callback sets an error, parsing stops at the current octet
-    and the error is returned to the caller.
+    and the error is returned to the caller. Callbacks must not throw
+    exceptions.
 
     @tparam isRequest A `bool` indicating whether the parser will be
     presented with request or response message.
+
+    @tparam Derived The derived class type. This is part of the
+    Curiously Recurring Template Pattern interface.
 */
 template<bool isRequest, class Derived>
 class basic_parser_v1 : public detail::parser_base
 {
 private:
+    template<bool, class>
+    friend class basic_parser_v1;
+
     using self = basic_parser_v1;
     typedef void(self::*pmf_t)(error_code&, boost::string_ref const&);
 
@@ -235,14 +289,18 @@ private:
     bool upgrade_         : 1; // true if parser exited for upgrade
 
 public:
-    /// Copy constructor.
-    basic_parser_v1(basic_parser_v1 const&) = default;
-
-    /// Copy assignment.
-    basic_parser_v1& operator=(basic_parser_v1 const&) = default;
-
     /// Default constructor
     basic_parser_v1();
+
+    /// Copy constructor.
+    template<class OtherDerived>
+    basic_parser_v1(basic_parser_v1<
+        isRequest, OtherDerived> const& other);
+
+    /// Copy assignment.
+    template<class OtherDerived>
+    basic_parser_v1& operator=(basic_parser_v1<
+        isRequest, OtherDerived> const& other);
 
     /** Set options on the parser.
 
@@ -263,9 +321,9 @@ public:
             std::forward<An>(an)...);
     }
 
-    /// Set the headers maximum size option
+    /// Set the header maximum size option
     void
-    set_option(headers_max_size const& o)
+    set_option(header_max_size const& o)
     {
         h_max_ = o.value;
         h_left_ = h_max_;
@@ -373,7 +431,10 @@ public:
     bool
     complete() const
     {
-        return s_ == s_restart || s_ == s_closed_complete;
+        return
+            s_ == s_restart ||
+            s_ == s_closed_complete ||
+            s_ == s_body_pause;
     }
 
     /** Write a sequence of buffers to the parser.
@@ -418,6 +479,15 @@ public:
     void
     write_eof(error_code& ec);
 
+protected:
+    /** Reset the parsing state.
+
+        The state of the parser is reset to expect the beginning of
+        a new request or response. The old state is discarded.
+    */
+    void
+    reset();
+
 private:
     Derived&
     impl()
@@ -438,17 +508,9 @@ private:
     }
 
     void
-    reset()
-    {
-        h_left_ = h_max_;
-        b_left_ = b_max_;
-        reset(std::integral_constant<bool, isRequest>{});
-    }
-
-    void
     init(std::true_type)
     {
-        // 16KB max headers, 4MB max body
+        // Request: 16KB max header, 4MB max body
         h_max_ = 16 * 1024;
         b_max_ = 4 * 1024 * 1024;
     }
@@ -456,7 +518,7 @@ private:
     void
     init(std::false_type)
     {
-        // 16KB max headers, unlimited body
+        // Response: 16KB max header, unlimited body
         h_max_ = 16 * 1024;
         b_max_ = 0;
     }
@@ -474,13 +536,102 @@ private:
     bool
     needs_eof(std::false_type) const;
 
+    template<class T, class = beast::detail::void_t<>>
+    struct check_on_start : std::false_type {};
+
+    template<class T>
+    struct check_on_start<T, beast::detail::void_t<decltype(
+        std::declval<T>().on_start(
+            std::declval<error_code&>())
+                )>> : std::true_type { };
+
+    template<class T, class = beast::detail::void_t<>>
+    struct check_on_method : std::false_type {};
+
+    template<class T>
+    struct check_on_method<T, beast::detail::void_t<decltype(
+        std::declval<T>().on_method(
+            std::declval<boost::string_ref>(),
+            std::declval<error_code&>())
+                )>> : std::true_type {};
+
+    template<class T, class = beast::detail::void_t<>>
+    struct check_on_uri : std::false_type {};
+
+    template<class T>
+    struct check_on_uri<T, beast::detail::void_t<decltype(
+        std::declval<T>().on_uri(
+            std::declval<boost::string_ref>(),
+            std::declval<error_code&>())
+                )>> : std::true_type {};
+
+    template<class T, class = beast::detail::void_t<>>
+    struct check_on_reason : std::false_type {};
+
+    template<class T>
+    struct check_on_reason<T, beast::detail::void_t<decltype(
+        std::declval<T>().on_reason(
+            std::declval<boost::string_ref>(),
+            std::declval<error_code&>())
+                )>> : std::true_type {};
+
+    template<class T, class = beast::detail::void_t<>>
+    struct check_on_request : std::false_type {};
+
+    template<class T>
+    struct check_on_request<T, beast::detail::void_t<decltype(
+        std::declval<T>().on_request(
+            std::declval<error_code&>())
+                )>> : std::true_type {};
+
+    template<class T, class = beast::detail::void_t<>>
+    struct check_on_response : std::false_type {};
+
+    template<class T>
+    struct check_on_response<T, beast::detail::void_t<decltype(
+        std::declval<T>().on_response(
+            std::declval<error_code&>())
+                )>> : std::true_type {};
+
+    template<class T, class = beast::detail::void_t<>>
+    struct check_on_field : std::false_type {};
+
+    template<class T>
+    struct check_on_field<T, beast::detail::void_t<decltype(
+        std::declval<T>().on_field(
+            std::declval<boost::string_ref>(),
+            std::declval<error_code&>())
+                )>> : std::true_type {};
+
+    template<class T, class = beast::detail::void_t<>>
+    struct check_on_value : std::false_type {};
+
+    template<class T>
+    struct check_on_value<T, beast::detail::void_t<decltype(
+        std::declval<T>().on_value(
+            std::declval<boost::string_ref>(),
+            std::declval<error_code&>())
+                )>> : std::true_type {};
+
+    template<class T, class = beast::detail::void_t<>>
+    struct check_on_headers : std::false_type {};
+
+    template<class T>
+    struct check_on_headers<T, beast::detail::void_t<decltype(
+        std::declval<T>().on_header(
+            std::declval<std::uint64_t>(),
+            std::declval<error_code&>())
+                )>> : std::true_type {};
+
+    // VFALCO Can we use std::is_detected? Is C++11 capable?
     template<class C>
-    class has_on_start_t
+    class check_on_body_what_t
     {
-        template<class T, class R =
-            decltype(std::declval<T>().on_start(
-                std::declval<error_code&>()),
-                    std::true_type{})>
+        template<class T, class R = std::is_convertible<decltype(
+            std::declval<T>().on_body_what(
+                std::declval<std::uint64_t>(),
+                std::declval<error_code&>())),
+                    body_what>>
         static R check(int);
         template<class>
         static std::false_type check(...);
@@ -489,211 +640,46 @@ private:
         static bool const value = type::value;
     };
     template<class C>
-    using has_on_start =
-        std::integral_constant<bool, has_on_start_t<C>::value>;
+    using check_on_body_what =
+        std::integral_constant<bool, check_on_body_what_t<C>::value>;
 
-    template<class C>
-    class has_on_method_t
-    {
-        template<class T, class R =
-            decltype(std::declval<T>().on_method(
-                std::declval<boost::string_ref const&>(),
-                std::declval<error_code&>()),
-                    std::true_type{})>
-        static R check(int);
-        template<class>
-        static std::false_type check(...);
-        using type = decltype(check<C>(0));
-    public:
-        static bool const value = type::value;
-    };
-    template<class C>
-    using has_on_method =
-        std::integral_constant<bool, has_on_method_t<C>::value>;
+    template<class T, class = beast::detail::void_t<>>
+    struct check_on_body : std::false_type {};
 
-    template<class C>
-    class has_on_uri_t
-    {
-        template<class T, class R =
-            decltype(std::declval<T>().on_uri(
-                std::declval<boost::string_ref const&>(),
-                std::declval<error_code&>()),
-                    std::true_type{})>
-        static R check(int);
-        template<class>
-        static std::false_type check(...);
-        using type = decltype(check<C>(0));
-    public:
-        static bool const value = type::value;
-    };
-    template<class C>
-    using has_on_uri =
-        std::integral_constant<bool, has_on_uri_t<C>::value>;
+    template<class T>
+    struct check_on_body<T, beast::detail::void_t<decltype(
+        std::declval<T>().on_body(
+            std::declval<boost::string_ref>(),
+            std::declval<error_code&>())
+                )>> : std::true_type {};
 
-    template<class C>
-    class has_on_reason_t
-    {
-        template<class T, class R =
-            decltype(std::declval<T>().on_reason(
-                std::declval<boost::string_ref const&>(),
-                std::declval<error_code&>()),
-                    std::true_type{})>
-        static R check(int);
-        template<class>
-        static std::false_type check(...);
-        using type = decltype(check<C>(0));
-    public:
-        static bool const value = type::value;
-    };
-    template<class C>
-    using has_on_reason =
-        std::integral_constant<bool, has_on_reason_t<C>::value>;
+    template<class T, class = beast::detail::void_t<>>
+    struct check_on_complete : std::false_type {};
 
-    template<class C>
-    class has_on_request_t
-    {
-        template<class T, class R =
-            decltype(std::declval<T>().on_request(
-                std::declval<error_code&>()),
-                    std::true_type{})>
-        static R check(int);
-        template<class>
-        static std::false_type check(...);
-        using type = decltype(check<C>(0));
-    public:
-        static bool const value = type::value;
-    };
-    template<class C>
-    using has_on_request =
-        std::integral_constant<bool, has_on_request_t<C>::value>;
-
-    template<class C>
-    class has_on_response_t
-    {
-        template<class T, class R =
-            decltype(std::declval<T>().on_response(
-                std::declval<error_code&>()),
-                    std::true_type{})>
-        static R check(int);
-        template<class>
-        static std::false_type check(...);
-        using type = decltype(check<C>(0));
-    public:
-        static bool const value = type::value;
-    };
-    template<class C>
-    using has_on_response =
-        std::integral_constant<bool, has_on_response_t<C>::value>;
-
-    template<class C>
-    class has_on_field_t
-    {
-        template<class T, class R =
-            decltype(std::declval<T>().on_uri(
-                std::declval<boost::string_ref const&>(),
-                std::declval<error_code&>()),
-                    std::true_type{})>
-        static R check(int);
-        template<class>
-        static std::false_type check(...);
-        using type = decltype(check<C>(0));
-    public:
-        static bool const value = type::value;
-    };
-    template<class C>
-    using has_on_field =
-        std::integral_constant<bool, has_on_field_t<C>::value>;
-
-    template<class C>
-    class has_on_value_t
-    {
-        template<class T, class R =
-            decltype(std::declval<T>().on_uri(
-                std::declval<boost::string_ref const&>(),
-                std::declval<error_code&>()),
-                    std::true_type{})>
-        static R check(int);
-        template<class>
-        static std::false_type check(...);
-        using type = decltype(check<C>(0));
-    public:
-        static bool const value = type::value;
-    };
-    template<class C>
-    using has_on_value =
-        std::integral_constant<bool, has_on_value_t<C>::value>;
-
-    template<class C>
-    class has_on_headers_t
-    {
-        template<class T, class R = std::is_same<int,
-            decltype(std::declval<T>().on_headers(
-                std::declval<std::uint64_t>(), std::declval<error_code&>()))>>
-        static R check(int);
-        template<class>
-        static std::false_type check(...);
-        using type = decltype(check<C>(0));
-    public:
-        static bool const value = type::value;
-    };
-    template<class C>
-    using has_on_headers =
-        std::integral_constant<bool, has_on_headers_t<C>::value>;
-
-    template<class C>
-    class has_on_body_t
-    {
-        template<class T, class R =
-            decltype(std::declval<T>().on_body(
-                std::declval<boost::string_ref const&>(),
-                std::declval<error_code&>()),
-                    std::true_type{})>
-        static R check(int);
-        template<class>
-        static std::false_type check(...);
-        using type = decltype(check<C>(0));
-    public:
-        static bool const value = type::value;
-    };
-    template<class C>
-    using has_on_body =
-        std::integral_constant<bool, has_on_body_t<C>::value>;
-
-    template<class C>
-    class has_on_complete_t
-    {
-        template<class T, class R =
-            decltype(std::declval<T>().on_complete(
-                std::declval<error_code&>()),
-                    std::true_type{})>
-        static R check(int);
-        template<class>
-        static std::false_type check(...);
-        using type = decltype(check<C>(0));
-    public:
-        static bool const value = type::value;
-    };
-    template<class C>
-    using has_on_complete =
-        std::integral_constant<bool, has_on_complete_t<C>::value>;
-
-    void call_on_start(error_code& ec, std::true_type)
-    {
-        impl().on_start(ec);
-    }
-
-    void call_on_start(error_code& ec, std::false_type)
-    {
-    }
+    template<class T>
+    struct check_on_complete<T, beast::detail::void_t<decltype(
+        std::declval<T>().on_complete(
+            std::declval<error_code&>())
+                )>> : std::true_type {};
 
     void call_on_start(error_code& ec)
     {
-        call_on_start(ec, has_on_start<Derived>{});
+        static_assert(check_on_start<Derived>::value,
+            "on_start requirements not met");
+        impl().on_start(ec);
     }
 
     void call_on_method(error_code& ec,
         boost::string_ref const& s, std::true_type)
     {
+        static_assert(check_on_method<Derived>::value,
+            "on_method requirements not met");
+        if(h_max_ && s.size() > h_left_)
+        {
+            ec = parse_error::header_too_big;
+            return;
+        }
+        h_left_ -= s.size();
         impl().on_method(s, ec);
     }
 
@@ -705,21 +691,21 @@ private:
     void call_on_method(error_code& ec,
         boost::string_ref const& s)
     {
-        if(! h_max_ || s.size() <= h_left_)
-        {
-            h_left_ -= s.size();
-            call_on_method(ec, s, std::integral_constant<bool,
-                isRequest && has_on_method<Derived>::value>{});
-        }
-        else
-        {
-            ec = parse_error::headers_too_big;
-        }
+        call_on_method(ec, s,
+            std::integral_constant<bool, isRequest>{});
     }
 
     void call_on_uri(error_code& ec,
         boost::string_ref const& s, std::true_type)
     {
+        static_assert(check_on_uri<Derived>::value,
+            "on_uri requirements not met");
+        if(h_max_ && s.size() > h_left_)
+        {
+            ec = parse_error::header_too_big;
+            return;
+        }
+        h_left_ -= s.size();
         impl().on_uri(s, ec);
     }
 
@@ -728,23 +714,24 @@ private:
     {
     }
 
-    void call_on_uri(error_code& ec, boost::string_ref const& s)
+    void call_on_uri(error_code& ec,
+        boost::string_ref const& s)
     {
-        if(! h_max_ || s.size() <= h_left_)
-        {
-            h_left_ -= s.size();
-            call_on_uri(ec, s, std::integral_constant<bool,
-                isRequest && has_on_uri<Derived>::value>{});
-        }
-        else
-        {
-            ec = parse_error::headers_too_big;
-        }
+        call_on_uri(ec, s,
+            std::integral_constant<bool, isRequest>{});
     }
 
     void call_on_reason(error_code& ec,
         boost::string_ref const& s, std::true_type)
     {
+        static_assert(check_on_reason<Derived>::value,
+            "on_reason requirements not met");
+        if(h_max_ && s.size() > h_left_)
+        {
+            ec = parse_error::header_too_big;
+            return;
+        }
+        h_left_ -= s.size();
         impl().on_reason(s, ec);
     }
 
@@ -755,20 +742,14 @@ private:
 
     void call_on_reason(error_code& ec, boost::string_ref const& s)
     {
-        if(! h_max_ || s.size() <= h_left_)
-        {
-            h_left_ -= s.size();
-            call_on_reason(ec, s, std::integral_constant<bool,
-                ! isRequest && has_on_reason<Derived>::value>{});
-        }
-        else
-        {
-            ec = parse_error::headers_too_big;
-        }
+        call_on_reason(ec, s,
+            std::integral_constant<bool, ! isRequest>{});
     }
 
     void call_on_request(error_code& ec, std::true_type)
     {
+        static_assert(check_on_request<Derived>::value,
+            "on_request requirements not met");
         impl().on_request(ec);
     }
 
@@ -778,12 +759,14 @@ private:
 
     void call_on_request(error_code& ec)
     {
-        call_on_request(ec, std::integral_constant<bool,
-            isRequest && has_on_request<Derived>::value>{});
+        call_on_request(ec,
+            std::integral_constant<bool, isRequest>{});
     }
 
     void call_on_response(error_code& ec, std::true_type)
     {
+        static_assert(check_on_response<Derived>::value,
+            "on_response requirements not met");
         impl().on_response(ec);
     }
 
@@ -793,111 +776,73 @@ private:
 
     void call_on_response(error_code& ec)
     {
-        call_on_response(ec, std::integral_constant<bool,
-            ! isRequest && has_on_response<Derived>::value>{});
+        call_on_response(ec,
+            std::integral_constant<bool, ! isRequest>{});
     }
 
     void call_on_field(error_code& ec,
-        boost::string_ref const& s, std::true_type)
+        boost::string_ref const& s)
     {
+        static_assert(check_on_field<Derived>::value,
+            "on_field requirements not met");
+        if(h_max_ && s.size() > h_left_)
+        {
+            ec = parse_error::header_too_big;
+            return;
+        }
+        h_left_ -= s.size();
         impl().on_field(s, ec);
     }
 
-    void call_on_field(error_code&,
-        boost::string_ref const&, std::false_type)
-    {
-    }
-
-    void call_on_field(error_code& ec, boost::string_ref const& s)
-    {
-        if(! h_max_ || s.size() <= h_left_)
-        {
-            h_left_ -= s.size();
-            call_on_field(ec, s, has_on_field<Derived>{});
-        }
-        else
-        {
-            ec = parse_error::headers_too_big;
-        }
-    }
-
     void call_on_value(error_code& ec,
-        boost::string_ref const& s, std::true_type)
+        boost::string_ref const& s)
     {
+        static_assert(check_on_value<Derived>::value,
+            "on_value requirements not met");
+        if(h_max_ && s.size() > h_left_)
+        {
+            ec = parse_error::header_too_big;
+            return;
+        }
+        h_left_ -= s.size();
         impl().on_value(s, ec);
     }
 
-    void call_on_value(error_code&,
-        boost::string_ref const&, std::false_type)
+    void
+    call_on_headers(error_code& ec)
     {
+        static_assert(check_on_headers<Derived>::value,
+            "on_header requirements not met");
+        impl().on_header(content_length_, ec);
     }
 
-    void call_on_value(error_code& ec, boost::string_ref const& s)
+    body_what
+    call_on_body_what(error_code& ec)
     {
-        if(! h_max_ || s.size() <= h_left_)
-        {
-            h_left_ -= s.size();
-            call_on_value(ec, s, has_on_value<Derived>{});
-        }
-        else
-        {
-            ec = parse_error::headers_too_big;
-        }
-    }
-
-    int call_on_headers(error_code& ec,
-        std::uint64_t content_length, std::true_type)
-    {
-        return impl().on_headers(content_length, ec);
-    }
-
-    int call_on_headers(error_code& ec, std::uint64_t, std::false_type)
-    {
-        return 0;
-    }
-
-    int call_on_headers(error_code& ec)
-    {
-        return call_on_headers(ec, content_length_,
-            has_on_headers<Derived>{});
+        static_assert(check_on_body_what<Derived>::value,
+            "on_body_what requirements not met");
+        return impl().on_body_what(content_length_, ec);
     }
 
     void call_on_body(error_code& ec,
-        boost::string_ref const& s, std::true_type)
+        boost::string_ref const& s)
     {
-        impl().on_body(s, ec);
-    }
-
-    void call_on_body(error_code&,
-        boost::string_ref const&, std::false_type)
-    {
-    }
-
-    void call_on_body(error_code& ec, boost::string_ref const& s)
-    {
-        if(! b_max_ || s.size() <= b_left_)
-        {
-            b_left_ -= s.size();
-            call_on_body(ec, s, has_on_body<Derived>{});
-        }
-        else
+        static_assert(check_on_body<Derived>::value,
+            "on_body requirements not met");
+        if(b_max_ && s.size() > b_left_)
         {
             ec = parse_error::body_too_big;
+            return;
         }
-    }
-
-    void call_on_complete(error_code& ec, std::true_type)
-    {
-        impl().on_complete(ec);
-    }
-
-    void call_on_complete(error_code&, std::false_type)
-    {
+        b_left_ -= s.size();
+        impl().on_body(s, ec);
     }
 
     void call_on_complete(error_code& ec)
     {
-        call_on_complete(ec, has_on_complete<Derived>{});
+        static_assert(check_on_complete<Derived>::value,
+            "on_complete requirements not met");
+        impl().on_complete(ec);
     }
 };
 

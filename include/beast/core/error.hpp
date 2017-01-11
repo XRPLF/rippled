@@ -19,6 +19,18 @@ using error_code = boost::system::error_code;
 /// The type of system error thrown by the library
 using system_error = boost::system::system_error;
 
+/// The type of error category used by the library
+using error_category = boost::system::error_category;
+
+/// The type of error condition used by the library
+using error_condition = boost::system::error_condition;
+
+/// The set of constants used for cross-platform error codes
+#if GENERATING_DOCS
+enum errc{};
+#else
+namespace errc = boost::system::errc;
+#endif
 } // beast
 
 #endif

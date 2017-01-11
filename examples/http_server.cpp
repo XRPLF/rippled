@@ -20,34 +20,26 @@ int main(int ac, char const* av[])
     po::options_description desc("Options");
 
     desc.add_options()
-        ("root,r",      po::value<std::string>()->implicit_value("."),
+        ("root,r",      po::value<std::string>()->default_value("."),
                         "Set the root directory for serving files")
-        ("port,p",      po::value<std::uint16_t>()->implicit_value(8080),
+        ("port,p",      po::value<std::uint16_t>()->default_value(8080),
                         "Set the port number for the server")
-        ("ip",          po::value<std::string>()->implicit_value("0.0.0.0"),
+        ("ip",          po::value<std::string>()->default_value("0.0.0.0"),
                         "Set the IP address to bind to, \"0.0.0.0\" for all")
-        ("threads,n",   po::value<std::size_t>()->implicit_value(4),
+        ("threads,n",   po::value<std::size_t>()->default_value(4),
                         "Set the number of threads to use")
         ("sync,s",      "Launch a synchronous server")
         ;
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
 
-    std::string root = ".";
-    if(vm.count("root"))
-        root = vm["root"].as<std::string>();
+    std::string root =  vm["root"].as<std::string>();
 
-    std::uint16_t port = 8080;
-    if(vm.count("port"))
-        port = vm["port"].as<std::uint16_t>();
+    std::uint16_t port = vm["port"].as<std::uint16_t>();
 
-    std::string ip = "0.0.0.0";
-    if(vm.count("ip"))
-        ip = vm["ip"].as<std::string>();
+    std::string ip = vm["ip"].as<std::string>();
 
-    std::size_t threads = 4;
-    if(vm.count("threads"))
-        threads = vm["threads"].as<std::size_t>();
+    std::size_t threads = vm["threads"].as<std::size_t>();
 
     bool sync = vm.count("sync") > 0;
 

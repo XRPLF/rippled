@@ -11,6 +11,7 @@
 #include <beast/core/detail/base64.hpp>
 #include <beast/core/detail/sha1.hpp>
 #include <boost/utility/string_ref.hpp>
+#include <array>
 #include <cstdint>
 #include <string>
 #include <type_traits>
@@ -23,15 +24,17 @@ template<class Gen>
 std::string
 make_sec_ws_key(Gen& g)
 {
-    union U
+    std::array<std::uint8_t, 16> a;
+    for(int i = 0; i < 16; i += 4)
     {
-        std::array<std::uint32_t, 4> a4;
-        std::array<std::uint8_t, 16> a16;
-    };
-    U u;
-    for(int i = 0; i < 4; ++i)
-        u.a4[i] = g();
-    return beast::detail::base64_encode(u.a16.data(), u.a16.size());
+        auto const v = g();
+        a[i  ] =  v        & 0xff;
+        a[i+1] = (v >>  8) & 0xff;
+        a[i+2] = (v >> 16) & 0xff;
+        a[i+3] = (v >> 24) & 0xff;
+    }
+    return beast::detail::base64_encode(
+        a.data(), a.size());
 }
 
 template<class = void>

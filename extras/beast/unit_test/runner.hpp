@@ -9,7 +9,7 @@
 #define BEAST_UNIT_TEST_RUNNER_H_INCLUDED
 
 #include <beast/unit_test/suite_info.hpp>
-#include <cassert>
+#include <boost/assert.hpp>
 #include <mutex>
 #include <ostream>
 #include <string>
@@ -185,7 +185,7 @@ runner::run(suite_info const& s)
     on_suite_begin(s);
     s.run(*this);
     // Forgot to call pass or fail.
-    assert(cond_);
+    BOOST_ASSERT(cond_);
     on_case_end();
     on_suite_end();
     return failed_;
@@ -239,9 +239,9 @@ runner::testcase(std::string const& name)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     // Name may not be empty
-    assert(default_ || ! name.empty());
+    BOOST_ASSERT(default_ || ! name.empty());
     // Forgot to call pass or fail
-    assert(default_ || cond_);
+    BOOST_ASSERT(default_ || cond_);
     if(! default_)
         on_case_end();
     default_ = false;

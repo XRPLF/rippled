@@ -5,7 +5,7 @@
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 ]
 
-[section:DynamicBuffer DynamicBuffer]
+[section:DynamicBuffer DynamicBuffer requirements]
 
 A dynamic buffer encapsulates memory storage that may be automatically resized
 as required, where the memory is divided into an input sequence followed by an
@@ -27,7 +27,7 @@ implementation strategies:
 
 * A sequence of one or more octet arrays of varying sizes. Additional octet
   array objects are appended to the sequence to accommodate changes in the
-  size of the character sequence. This is the implementation approached
+  size of the character sequence. This is the implementation approach
   currently offered by [link beast.ref.basic_streambuf `basic_streambuf`].
 
 In the table below:
@@ -88,7 +88,7 @@ In the table below:
 ]
 [
     [`a.prepare(n)`]
-    [`X:mutable_buffers_type`]
+    [`X::mutable_buffers_type`]
     [
         Returns a mutable buffer sequence u representing the output sequence,
         and where `buffer_size(u) == n`. The dynamic buffer reallocates memory

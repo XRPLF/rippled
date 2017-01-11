@@ -1,3 +1,4 @@
+sudo: false
 language: cpp
 
 env:
@@ -10,8 +11,8 @@ env:
     # to boost's .tar.gz.
     - LCOV_ROOT=$HOME/lcov
     - VALGRIND_ROOT=$HOME/valgrind-install
-    - BOOST_ROOT=$HOME/boost_1_60_0
-    - BOOST_URL='http://downloads.sourceforge.net/project/boost/boost/1.60.0/boost_1_60_0.tar.gz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fboost%2Ffiles%2Fboost%2F1.60.0%2Fboost_1_60_0.tar.gz&ts=1460417589&use_mirror=netix'
+    - BOOST_ROOT=$HOME/boost_1_61_0
+    - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.gz'
 packages: &gcc5_pkgs
   - gcc-5
   - g++-5
@@ -30,7 +31,7 @@ packages: &gcc5_pkgs
 
 matrix:
   include:
-    # GCC/Coverage/Autobahn
+    # GCC/Coverage/Autobahn (if master or develop branch)
     - compiler: gcc
       env:
         - GCC_VER=5
@@ -77,7 +78,7 @@ before_install:
   - scripts/install-dependencies.sh
 
 script:
-  - scripts/build-and-test.sh
+  - travis_retry scripts/build-and-test.sh
 
 after_script:
   - cat nohup.out || echo "nohup.out already deleted"

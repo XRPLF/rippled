@@ -37,7 +37,7 @@ else if [ os.name ] = HAIKU
 if [ os.name ] = NT
 {
   lib ssl : : <name>ssleay32 ;
-  lib crypto : : <name>libeay32  ;
+  lib crypto : : <name>libeay32 ;
 }
 else
 {
@@ -87,20 +87,20 @@ project beast
     <library>/boost/coroutine//boost_coroutine
     <library>/boost/filesystem//boost_filesystem
     <library>/boost/program_options//boost_program_options
-#     <library>ssl
-#     <library>crypto
     <define>BOOST_ALL_NO_LIB=1
-    <define>BOOST_SYSTEM_NO_DEPRECATED=1
     <threading>multi
-    <link>static
     <runtime-link>shared
     <debug-symbols>on
     <toolset>gcc:<cxxflags>-std=c++11
-    <toolset>gcc:<cxxflags>-Wno-unused-variable
+    <toolset>gcc:<cxxflags>-Wno-unused-parameter
     <toolset>clang:<cxxflags>-std=c++11
+    <toolset>clang:<cxxflags>-Wno-unused-parameter
+    <toolset>gcc:<cxxflags>-Wno-unused-variable   # Temporary until we can figure out -isystem
+    <toolset>clang:<cxxflags>-Wno-unused-variable # Temporary until we can figure out -isystem
     <toolset>msvc:<define>_SCL_SECURE_NO_WARNINGS=1
     <toolset>msvc:<define>_CRT_SECURE_NO_WARNINGS=1
-    <toolset>msvc:<cxxflags>-bigobj
+    <toolset>msvc:<cxxflags>"/wd4100 /bigobj"
+    <toolset>msvc,<variant>release:<cxxflags>"/Ob2 /Oi /Ot"
     <os>LINUX:<define>_XOPEN_SOURCE=600
     <os>LINUX:<define>_GNU_SOURCE=1
     <os>SOLARIS:<define>_XOPEN_SOURCE=500
@@ -113,12 +113,7 @@ project beast
     <os>NT,<toolset>gcc:<library>ws2_32
     <os>NT,<toolset>gcc:<library>mswsock
     <os>NT,<toolset>gcc-cygwin:<define>__USE_W32_SOCKETS
-    <os>HPUX,<toolset>gcc:<define>_XOPEN_SOURCE_EXTENDED
-    <os>HPUX:<library>ipv6
-    <os>QNXNTO:<library>socket
-    <os>HAIKU:<library>network
   : usage-requirements
-      <include>.
   :
     build-dir bin
   ;

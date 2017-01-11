@@ -233,6 +233,14 @@ skip_ows(FwdIt& it, FwdIt const& end)
     }
 }
 
+template<class FwdIt>
+void
+skip_token(FwdIt& it, FwdIt const& last)
+{
+    while(it != last && is_tchar(*it))
+        ++it;
+}
+
 inline
 boost::string_ref
 trim(boost::string_ref const& s)
@@ -258,14 +266,14 @@ struct param_iter
     using iter_type = boost::string_ref::const_iterator;
 
     iter_type it;
-    iter_type begin;
-    iter_type end;
+    iter_type first;
+    iter_type last;
     std::pair<boost::string_ref, boost::string_ref> v;
 
     bool
     empty() const
     {
-        return begin == it;
+        return first == it;
     }
 
     template<class = void>
@@ -279,59 +287,48 @@ param_iter::
 increment()
 {
 /*
-    ext-list    = *( "," OWS ) ext *( OWS "," [ OWS ext ] )
-    ext         = token param-list
-    param-list  = *( OWS ";" OWS param )
-    param       = token OWS "=" OWS ( token / quoted-string )
-            
-    quoted-string = DQUOTE *( qdtext / quoted-pair ) DQUOTE
-    qdtext = HTAB / SP / "!" / %x23-5B ; '#'-'[' / %x5D-7E ; ']'-'~' / obs-text
-    quoted-pair = "\" ( HTAB / SP / VCHAR / obs-text )
-    obs-text = %x80-FF
-
-    Example:
-        chunked;a=b;i=j,gzip;windowBits=12
-        x,y
+    param-list      = *( OWS ";" OWS param )
+    param           = token OWS [ "=" OWS ( token / quoted-string ) ]        
+    quoted-string   = DQUOTE *( qdtext / quoted-pair ) DQUOTE
+    qdtext          = HTAB / SP / "!" / %x23-5B ; '#'-'[' / %x5D-7E ; ']'-'~' / obs-text
+    quoted-pair     = "\" ( HTAB / SP / VCHAR / obs-text )
+    obs-text        = %x80-FF
 */
     auto const err =
         [&]
         {
-            it = begin;
+            it = first;
         };
     v.first.clear();
     v.second.clear();
-    detail::skip_ows(it, end);
-    begin = it;
-    if(it == end)
+    detail::skip_ows(it, last);
+    first = it;
+    if(it == last)
         return err();
     if(*it != ';')
         return err();
     ++it;
-    detail::skip_ows(it, end);
-    if(it == end)
+    detail::skip_ows(it, last);
+    if(it == last)
         return err();
     // param
     if(! detail::is_tchar(*it))
         return err();
     auto const p0 = it;
-    for(;;)
-    {
-        ++it;
-        if(it == end)
-            return err();
-        if(! detail::is_tchar(*it))
-            break;
-    }
+    skip_token(++it, last);
     auto const p1 = it;
-    detail::skip_ows(it, end);
-    if(it == end)
-        return err();
+    v.first = { &*p0, static_cast<std::size_t>(p1 - p0) };
+    detail::skip_ows(it, last);
+    if(it == last)
+        return;
+    if(*it == ';')
+        return;
     if(*it != '=')
         return err();
     ++it;
-    detail::skip_ows(it, end);
-    if(it == end)
-        return err();
+    detail::skip_ows(it, last);
+    if(it == last)
+        return;
     if(*it == '"')
     {
         // quoted-string
@@ -339,7 +336,7 @@ increment()
         ++it;
         for(;;)
         {
-            if(it == end)
+            if(it == last)
                 return err();
             auto c = *it++;
             if(c == '"')
@@ -348,13 +345,12 @@ increment()
                 continue;
             if(c != '\\')
                 return err();
-            if(it == end)
+            if(it == last)
                 return err();
             c = *it++;
             if(! detail::is_qpchar(c))
                 return err();
         }
-        v.first = { &*p0, static_cast<std::size_t>(p1 - p0) };
         v.second = { &*p2, static_cast<std::size_t>(it - p2) };
     }
     else
@@ -363,15 +359,7 @@ increment()
         if(! detail::is_tchar(*it))
             return err();
         auto const p2 = it;
-        for(;;)
-        {
-            it++;
-            if(it == end)
-                break;
-            if(! detail::is_tchar(*it))
-                break;
-        }
-        v.first = { &*p0, static_cast<std::size_t>(p1 - p0) };
+        skip_token(++it, last);
         v.second = { &*p2, static_cast<std::size_t>(it - p2) };
     }
 }

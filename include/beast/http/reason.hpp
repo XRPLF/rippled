@@ -11,7 +11,8 @@
 namespace beast {
 namespace http {
 
-/** Returns the text for a known status code integer. */
+namespace detail {
+
 template<class = void>
 char const*
 reason_string(int status)
@@ -64,6 +65,16 @@ reason_string(int status)
         break;
     }
     return "<unknown-status>";
+}
+
+} // detail
+
+/** Returns the text for a known status code integer. */
+inline
+char const*
+reason_string(int status)
+{
+    return detail::reason_string(status);
 }
 
 } // http

@@ -8,9 +8,10 @@
 #ifndef BEAST_IMPL_BASIC_STREAMBUF_IPP
 #define BEAST_IMPL_BASIC_STREAMBUF_IPP
 
+#include <beast/core/detail/type_traits.hpp>
 #include <beast/core/detail/write_dynabuf.hpp>
+#include <boost/assert.hpp>
 #include <algorithm>
-#include <cassert>
 #include <exception>
 #include <sstream>
 #include <string>
@@ -523,8 +524,8 @@ basic_streambuf<Allocator>::basic_streambuf(
     , alloc_size_(alloc_size)
 {
     if(alloc_size <= 0)
-        throw std::invalid_argument(
-            "basic_streambuf: invalid alloc_size");
+        throw detail::make_exception<std::invalid_argument>(
+            "invalid alloc_size", __FILE__, __LINE__);
 }
 
 template<class Allocator>
@@ -533,7 +534,7 @@ basic_streambuf<Allocator>::capacity() const
 {
     auto pos = out_;
     if(pos == list_.end())
-        return 0;
+        return in_size_;
     auto n = pos->size() - out_pos_;
     while(++pos != list_.end())
         n += pos->size();
@@ -656,7 +657,7 @@ basic_streambuf<Allocator>::commit(size_type n)
         debug_check();
     }
 
-    n = std::min(n, out_end_ - out_pos_);
+    n = (std::min)(n, out_end_ - out_pos_);
     out_pos_ += n;
     in_size_ += n;
     if(out_pos_ == out_->size())
@@ -786,6 +787,7 @@ void
 basic_streambuf<Allocator>::
 copy_assign(basic_streambuf const& other, std::false_type)
 {
+    beast::detail::ignore_unused(other);
 }
 
 template<class Allocator>
@@ -816,36 +818,36 @@ basic_streambuf<Allocator>::debug_check() const
 {
 #ifndef NDEBUG
     using boost::asio::buffer_size;
-    assert(buffer_size(data()) == in_size_);
+    BOOST_ASSERT(buffer_size(data()) == in_size_);
     if(list_.empty())
     {
-        assert(in_pos_ == 0);
-        assert(in_size_ == 0);
-        assert(out_pos_ == 0);
-        assert(out_end_ == 0);
-        assert(out_ == list_.end());
+        BOOST_ASSERT(in_pos_ == 0);
+        BOOST_ASSERT(in_size_ == 0);
+        BOOST_ASSERT(out_pos_ == 0);
+        BOOST_ASSERT(out_end_ == 0);
+        BOOST_ASSERT(out_ == list_.end());
         return;
     }
 
     auto const& front = list_.front();
 
-    assert(in_pos_ < front.size());
+    BOOST_ASSERT(in_pos_ < front.size());
 
     if(out_ == list_.end())
     {
-        assert(out_pos_ == 0);
-        assert(out_end_ == 0);
+        BOOST_ASSERT(out_pos_ == 0);
+        BOOST_ASSERT(out_end_ == 0);
     }
     else
     {
         auto const& out = *out_;
         auto const& back = list_.back();
 
-        assert(out_end_ <= back.size());
-        assert(out_pos_ <  out.size());
-        assert(&out != &front || out_pos_ >= in_pos_);
-        assert(&out != &front || out_pos_ - in_pos_ == in_size_);
-        assert(&out != &back  || out_pos_ <= out_end_);
+        BOOST_ASSERT(out_end_ <= back.size());
+        BOOST_ASSERT(out_pos_ <  out.size());
+        BOOST_ASSERT(&out != &front || out_pos_ >= in_pos_);
+        BOOST_ASSERT(&out != &front || out_pos_ - in_pos_ == in_size_);
+        BOOST_ASSERT(&out != &back  || out_pos_ <= out_end_);
     }
 #endif
 }
@@ -855,11 +857,18 @@ std::size_t
 read_size_helper(basic_streambuf<
     Allocator> const& streambuf, std::size_t max_size)
 {
+    BOOST_ASSERT(max_size >= 1);
+    // If we already have an allocated
+    // buffer, try to fill that up first
     auto const avail = streambuf.capacity() - streambuf.size();
-    if(avail == 0)
-        return std::min(max_size,
-            std::max<std::size_t>(512, streambuf.alloc_size_));
-    return std::min(max_size, avail);
+    if (avail > 0)
+        return (std::min)(avail, max_size);
+    // Try to have just one new block allocated
+    constexpr std::size_t low = 512;
+    if (streambuf.alloc_size_ > low)
+        return (std::min)(max_size, streambuf.alloc_size_);
+    // ...but enforce a 512 byte minimum.
+    return (std::min)(max_size, low);
 }
 
 template<class Alloc, class T>

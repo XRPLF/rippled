@@ -16,7 +16,6 @@
 #include <beast/core/detail/get_lowest_layer.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_service.hpp>
-#include <boost/system/error_code.hpp>
 #include <cstdint>
 #include <utility>
 
@@ -47,7 +46,7 @@ namespace beast {
 
     Example:
     @code
-    // Process the next HTTP headers on the stream,
+    // Process the next HTTP header on the stream,
     // leaving excess bytes behind for the next call.
     //
     template<class DynamicBuffer>
@@ -55,7 +54,7 @@ namespace beast {
         dynabuf_readstream<DynamicBuffer>& stream)
     {
         // Read up to and including the end of the HTTP
-        // headers, leaving the sequence in the stream's
+        // header, leaving the sequence in the stream's
         // buffer. read_until may read past the end of the
         // headers; the return value will include only the
         // part up to the end of the delimiter.

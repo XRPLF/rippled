@@ -36,8 +36,8 @@ public:
     {
         return
             other.pi_.it == pi_.it &&
-            other.pi_.end == pi_.end &&
-            other.pi_.begin == pi_.begin;
+            other.pi_.last == pi_.last &&
+            other.pi_.first == pi_.first;
     }
 
     bool
@@ -76,11 +76,11 @@ public:
 private:
     friend class param_list;
 
-    const_iterator(iter_type begin, iter_type end)
+    const_iterator(iter_type first, iter_type last)
     {
-        pi_.it = begin;
-        pi_.begin = begin;
-        pi_.end = end;
+        pi_.it = first;
+        pi_.first = first;
+        pi_.last = last;
         increment();
     }
 
@@ -158,10 +158,11 @@ increment()
     pi_.increment();
     if(pi_.empty())
     {
-        pi_.it = pi_.end;
-        pi_.begin = pi_.end;
+        pi_.it = pi_.last;
+        pi_.first = pi_.last;
     }
-    else if(pi_.v.second.front() == '"')
+    else if(! pi_.v.second.empty() &&
+        pi_.v.second.front() == '"')
     {
         s_ = unquote(pi_.v.second);
         pi_.v.second = boost::string_ref{
@@ -175,8 +176,8 @@ class ext_list::const_iterator
 {
     ext_list::value_type v_;
     iter_type it_;
-    iter_type begin_;
-    iter_type end_;
+    iter_type first_;
+    iter_type last_;
 
 public:
     using value_type = ext_list::value_type;
@@ -192,8 +193,8 @@ public:
     {
         return
             other.it_ == it_ &&
-            other.begin_ == begin_ &&
-            other.end_ == end_;
+            other.first_ == first_ &&
+            other.last_ == last_;
     }
 
     bool
@@ -235,8 +236,8 @@ private:
     const_iterator(iter_type begin, iter_type end)
     {
         it_ = begin;
-        begin_ = begin;
-        end_ = end;
+        first_ = begin;
+        last_ = end;
         increment();
     }
 
@@ -320,16 +321,16 @@ increment()
     auto const err =
         [&]
         {
-            it_ = end_;
-            begin_ = end_;
+            it_ = last_;
+            first_ = last_;
         };
-    auto need_comma = it_ != begin_;
+    auto need_comma = it_ != first_;
     v_.first = {};
-    begin_ = it_;
+    first_ = it_;
     for(;;)
     {
-        detail::skip_ows(it_, end_);
-        if(it_ == end_)
+        detail::skip_ows(it_, last_);
+        if(it_ == last_)
             return err();
         auto const c = *it_;
         if(detail::is_tchar(c))
@@ -340,7 +341,7 @@ increment()
             for(;;)
             {
                 ++it_;
-                if(it_ == end_)
+                if(it_ == last_)
                     break;
                 if(! detail::is_tchar(*it_))
                     break;
@@ -349,8 +350,8 @@ increment()
                 static_cast<std::size_t>(it_ - p0)};
             detail::param_iter pi;
             pi.it = it_;
-            pi.begin = it_;
-            pi.end = end_;
+            pi.first = it_;
+            pi.last = last_;
             for(;;)
             {
                 pi.increment();
@@ -375,8 +376,8 @@ class token_list::const_iterator
 {
     token_list::value_type v_;
     iter_type it_;
-    iter_type begin_;
-    iter_type end_;
+    iter_type first_;
+    iter_type last_;
 
 public:
     using value_type = token_list::value_type;
@@ -392,8 +393,8 @@ public:
     {
         return
             other.it_ == it_ &&
-            other.begin_ == begin_ &&
-            other.end_ == end_;
+            other.first_ == first_ &&
+            other.last_ == last_;
     }
 
     bool
@@ -435,8 +436,8 @@ private:
     const_iterator(iter_type begin, iter_type end)
     {
         it_ = begin;
-        begin_ = begin;
-        end_ = end;
+        first_ = begin;
+        last_ = end;
         increment();
     }
 
@@ -492,16 +493,16 @@ increment()
     auto const err =
         [&]
         {
-            it_ = end_;
-            begin_ = end_;
+            it_ = last_;
+            first_ = last_;
         };
-    auto need_comma = it_ != begin_;
+    auto need_comma = it_ != first_;
     v_ = {};
-    begin_ = it_;
+    first_ = it_;
     for(;;)
     {
-        detail::skip_ows(it_, end_);
-        if(it_ == end_)
+        detail::skip_ows(it_, last_);
+        if(it_ == last_)
             return err();
         auto const c = *it_;
         if(detail::is_tchar(c))
@@ -512,7 +513,7 @@ increment()
             for(;;)
             {
                 ++it_;
-                if(it_ == end_)
+                if(it_ == last_)
                     break;
                 if(! detail::is_tchar(*it_))
                     break;

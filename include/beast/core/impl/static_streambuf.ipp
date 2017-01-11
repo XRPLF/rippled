@@ -8,6 +8,7 @@
 #ifndef BEAST_IMPL_STATIC_STREAMBUF_IPP
 #define BEAST_IMPL_STATIC_STREAMBUF_IPP
 
+#include <beast/core/detail/type_traits.hpp>
 #include <boost/asio/buffer.hpp>
 #include <algorithm>
 #include <cstring>
@@ -279,16 +280,6 @@ static_streambuf::mutable_buffers_type::end() const ->
 
 //------------------------------------------------------------------------------
 
-inline
-auto
-static_streambuf::prepare(std::size_t n) ->
-    mutable_buffers_type
-{
-    if(n > static_cast<std::size_t>(end_ - out_))
-        throw std::length_error("no space in streambuf");
-    last_ = out_ + n;
-    return mutable_buffers_type{out_, n};
-}
 
 inline
 auto
@@ -297,6 +288,18 @@ static_streambuf::data() const ->
 {
     return const_buffers_type{in_,
         static_cast<std::size_t>(out_ - in_)};
+}
+
+inline
+auto
+static_streambuf::prepare(std::size_t n) ->
+    mutable_buffers_type
+{
+    if(n > static_cast<std::size_t>(end_ - out_))
+        throw detail::make_exception<std::length_error>(
+            "no space in streambuf", __FILE__, __LINE__);
+    last_ = out_ + n;
+    return mutable_buffers_type{out_, n};
 }
 
 } // beast
