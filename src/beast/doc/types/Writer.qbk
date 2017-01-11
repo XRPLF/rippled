@@ -5,7 +5,7 @@
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 ]
 
-[section:Writer Writer]
+[section:Writer Writer requirements]
 
 A `Writer` serializes the message body. The implementation creates an instance
 of this type when serializing a message, and calls into it zero or more times
@@ -28,13 +28,13 @@ In this table:
 * `m`  denotes a value of type `message const&` where
         `std::is_same<decltype(m.body), Body::value_type>:value == true`.
 
-* `rc` is an object of type [link beast.ref.http__resume_context resume_context].
+* `rc` is an object of type [link beast.ref.http__resume_context `resume_context`].
 
-* `ec` is a value of type `error_code&`.
+* `ec` is a value of type [link beast.ref.error_code `error_code&`]
 
 * `wf` is a [*write function]: a function object of unspecified type provided
        by the implementation which accepts any value meeting the requirements
-       of `ConstBufferSequence` as its single parameter.
+       of __ConstBufferSequence__ as its single parameter.
 
 [table Writer requirements
 [[operation] [type] [semantics, pre/post-conditions]]
@@ -42,17 +42,18 @@ In this table:
     [`X a(m);`]
     []
     [
-        `a` is constructible from `m`. The lifetime of `m` is
-        guaranteed to end no earlier than after `a` is destroyed.
+        `a` is constructible from `m`. The lifetime of `m` is guaranteed
+        to end no earlier than after `a` is destroyed. This function must
+        be `noexcept`.
     ]
 ]
 [
     [`a.init(ec)`]
     [`void`]
     [
-        Called immediately after construction.
-        If `ec` is set, the serialization is aborted and the error
-        is propagated to the caller.
+        Called immediately after construction. If the function sets an
+        error code in `ec`, the serialization is aborted and the error
+        is propagated to the caller. This function must be `noexcept`.
     ]
 ]
 [
@@ -67,31 +68,33 @@ In this table:
         the serialized message body will be sent unmodified, with the
         error `boost::asio::error::eof` returned to the caller, to notify
         they should close the connection to indicate the end of the message.
+        This function must be `noexcept`.
     ]
 ]
 [
-    [`a(rc, ec, wf)`]
+    [`a.write(rc, ec, wf)`]
     [`boost::tribool`]
     [
-        Called repeatedly after `init` succeeds.
-        `wf` is a function object which takes as its single parameter,
-        any value meeting the requirements of `ConstBufferSequence`.
-        Buffers provided by the `writer` to this [*write function] must
-        remain valid until the next member function of `writer` is
+        Called repeatedly after `init` succeeds. `wf` is a function object
+        which takes as its single parameter any value meeting the requirements
+        of __ConstBufferSequence__. Buffers provided to this write function
+        must remain valid until the next member function of `writer` is
         invoked (which may be the destructor). This function returns `true`
-        to indicate all message body data has been written, or `false`
-        if there is more body data. If the return value is
-        `boost::indeterminate`, the implementation will suspend the operation
-        until the writer invokes `rc`. It is the writers responsibility when
-        returning `boost::indeterminate`, to acquire ownership of the
-        `resume_context` via move construction and eventually call it or else
-        undefined behavior results.
+        to indicate all message body data has been written, or `false` if
+        there is more body data. If the return value is `boost::indeterminate`,
+        the implementation will suspend the operation until the writer invokes
+        `rc`. It is the writers responsibility when returning
+        `boost::indeterminate`, to acquire ownership of `rc` via move
+        construction and eventually call it or else undefined behavior
+        results. This function must be `noexcept`.
     ]
 ]
 ]
 
-[note Definitions for required `Writer` member functions should be declared
-inline so the generated code becomes part of the implementation. ]
+[note
+    Definitions for required `Writer` member functions should be declared
+    inline so the generated code can become part of the implementation.
+]
 
 Exemplar:
 ```
@@ -109,7 +112,7 @@ public:
     */
     template<bool isRequest, class Body, class Headers>
     explicit
-    writer(message<isRequest, Body, Headers> const& msg);
+    writer(message<isRequest, Body, Headers> const& msg) noexcept;
 
     /** Initialize the writer.
 
@@ -119,7 +122,7 @@ public:
         @param ec Contains the error code if any errors occur.
     */
     void
-    init(error_code& ec);
+    init(error_code& ec) noexcept;
 
     /** Returns the content length.
 
@@ -128,8 +131,8 @@ public:
         use chunk-encoding or terminate the connection to indicate the end
         of the message.
     */
-    std::size_t
-    content_length() const;
+    std::uint64_t
+    content_length() noexcept;
 
     /** Write zero or one buffer representing the message body.
 
@@ -172,7 +175,10 @@ public:
     */
     template<class WriteFunction>
     boost::tribool
-    operator()(resume_context&&, error_code&, WriteFunction&& write);
+    write(
+        resume_context&&,
+        error_code&,
+        WriteFunction&& wf) noexcept;
 };
 ```
 

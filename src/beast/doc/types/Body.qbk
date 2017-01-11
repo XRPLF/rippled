@@ -5,7 +5,11 @@
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 ]
 
-[section:Body Body]
+[section:Body Body requirements]
+
+A [*Body] type is supplied as a template argument to the __message__ class. It
+controls both the type of the data member of the resulting message object, and
+the algorithms used during parsing and serialization.
 
 In this table:
 
@@ -23,16 +27,11 @@ In this table:
     ]
 ]
 [
-    [`X:value_type{}`]
-    []
-    [`DefaultConstructible`]
-]
-[
     [`Body::reader`]
     []
     [
         If present, a type meeting the requirements of
-        [link beast.types.Reader [*`Reader`]].
+        [link beast.ref.Reader [*`Reader`]].
         Provides an implementation to parse the body.
     ]
 ]
@@ -41,7 +40,7 @@ In this table:
     []
     [
         If present, a type meeting the requirements of
-        [link beast.types.Writer [*`Writer`]].
+        [link beast.ref.Writer [*`Writer`]].
         Provides an implementation to serialize the body.
     ]
 ]

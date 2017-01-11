@@ -10,7 +10,7 @@
 
 #include <beast/unit_test/suite_info.hpp>
 #include <beast/unit_test/detail/const_container.hpp>
-#include <cassert>
+#include <boost/assert.hpp>
 #include <typeindex>
 #include <set>
 #include <unordered_set>
@@ -57,13 +57,13 @@ suite_list::insert(
         std::string s;
         s = std::string(library) + "." + module + "." + name;
         auto const result(names_.insert(s));
-        assert(result.second); // Duplicate name
+        BOOST_ASSERT(result.second); // Duplicate name
     }
 
     {
         auto const result(classes_.insert(
             std::type_index(typeid(Suite))));
-        assert(result.second); // Duplicate type
+        BOOST_ASSERT(result.second); // Duplicate type
     }
 #endif
     cont().emplace(make_suite_info<Suite>(

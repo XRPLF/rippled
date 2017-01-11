@@ -1,0 +1,114 @@
+[/
+    Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+
+    Distributed under the Boost Software License, Version 1.0. (See accompanying
+    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+]
+
+[section:overview Introduction]
+
+Beast is a header-only, cross-platform C++ library built on Boost.Asio and
+parts of Boost, containing two modules implementing widely used network
+protocols. Beast offers a universal HTTP message model, plus algorithms for
+parsing and serializing HTTP/1 messages. Beast.WebSocket provides a complete
+implementation of the WebSocket protocol. Their design achieves these goals:
+
+* [*Symmetry.] Interfaces are role-agnostic; the same interfaces can be
+used to build clients, servers, or both.
+
+* [*Ease of Use.] HTTP messages are modeled using simple, readily
+accessible objects. Functions and classes used to send and receive HTTP
+or WebSocket messages are designed to resemble Boost.Asio as closely as
+possible. Users familiar with Boost.Asio will be immediately comfortable
+using this library.
+
+* [*Flexibility.] Interfaces do not mandate specific implementation
+strategies; important decisions such as buffer or thread management are
+left to users of the library.
+
+* [*Performance.] The implementation performs competitively, making it a
+realistic choice for building high performance network servers.
+
+* [*Scalability.] Development of network applications that scale to thousands
+of concurrent connections is possible with the implementation.
+
+* [*Basis for further abstraction.] The interfaces facilitate the
+development of other libraries that provide higher levels of abstraction.
+
+The HTTP portion of Beast is designed to be a low-level building block for
+creating higher level libraries. It implements only the HTTP protocol, and
+does not handle domain specific features (for example: cookies, redirects, or
+deflate content encodings).
+
+[heading Requirements]
+
+Beast requires:
+
+* [*C++11.] A minimum of C++11 is needed.
+* [*Boost.] Beast is built on Boost, especially Boost.Asio.
+* [*OpenSSL.] If using TLS/Secure sockets (optional).
+
+[note Tested compilers: msvc-14+, gcc 5+, clang 3.6+]
+
+The library is [*header-only]. It is not necessary to add any .cpp files,
+or to add commands to your build script for building Beast. To link your
+program successfully, you'll need to add the Boost.System library to link
+with. If you use coroutines you'll also need the Boost.Coroutine library.
+Please visit the Boost documentation for instructions on how to do this for
+your particular build system.
+
+[heading Motivation]
+
+Beast is built on Boost.Asio A proposal to add networking functionality to the
+C++ standard library, based on Boost.Asio, is under consideration by the
+committee and on track for standardization. Since the final approved networking
+interface for the C++ standard library will likely closely resemble the current
+interface of Boost.Asio, the choice of Boost.Asio as the network transport
+layer is prudent.
+
+The HTTP protocol is pervasive in network applications. As C++ is a logical
+choice for high performance network servers, there is great utility in solid
+building blocks for manipulating, sending, and receiving HTTP messages
+compliant with the Hypertext Transfer Protocol and the supplements that
+follow. Unfortunately reliable implementations or industry standards do not
+exist in C++. The development of higher level libraries is stymied by the
+lack of a common set of low-level algorithms and types for interacting with
+the HTTP protocol.
+
+Today's web applications increasingly rely on alternatives to standard HTTP
+to achieve performance and/or responsiveness. While WebSocket implementations
+are widely available in common web development languages such as Javascript,
+good implementations in C++ are scarce. A survey of existing C++ WebSocket
+solutions reveals interfaces which lack symmetry, impose performance penalties,
+and needlessly restrict implementation strategies.
+
+Beast.WebSocket takes advantage of Boost.Asio's extensible asynchronous
+model, handler allocation, and handler invocation hooks. Calls to
+Beast.WebSocket asynchronous initiation functions allow callers the choice
+of using a completion handler, stackful or stackless coroutines, futures,
+or user defined customizations (for example, Boost.Fiber). The
+implementation uses handler invocation hooks (__asio_handler_invoke__),
+providing execution guarantees on composed operations in a manner identical
+to Boost.Asio. The implementation also uses handler allocation hooks
+(__asio_handler_allocate__) when allocating memory internally for composed
+operations.
+
+There is no need for inheritance or virtual members in a
+[link beast.ref.websocket__stream `websocket::stream`].
+All operations are templated and transparent to the compiler, allowing for
+maximum inlining and optimization.
+
+[heading Credits]
+
+Boost.Asio is the inspiration behind which all of the interfaces and
+implementation strategies are built. Some parts of the documentation are
+written to closely resemble the wording and presentation of Boost.Asio
+documentation. Credit goes to Christopher Kohlhoff for the wonderful
+Asio library and the ideas upon which Beast is built.
+
+Beast would not be possible without the considerable time and patience
+contributed by David Schwartz, Edward Hennis, Howard Hinnant, Miguel Portilla,
+Nikolaos Bougalis, Scott Determan, Scott Schurr, and Ripple Labs for
+supporting its development.
+
+[endsect]

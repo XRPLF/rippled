@@ -15,22 +15,26 @@ namespace http {
 
 /** A list of parameters in a HTTP extension field value.
 
-    This container allows iteration of the parameter list
-    in a HTTP extension. The parameter list is a series
-    of "name = value" pairs with each pair starting with
-    a semicolon.
-
-    BNF:
-    @code
-        param-list  = *( OWS ";" OWS param )
-        param       = token OWS "=" OWS ( token / quoted-string )
-    @endcode
+    This container allows iteration of the parameter list in a HTTP
+    extension. The parameter list is a series of name/value pairs
+    with each pair starting with a semicolon. The value is optional.
 
     If a parsing error is encountered while iterating the string,
     the behavior of the container will be as if a string containing
     only characters up to but excluding the first invalid character
     was used to construct the list.
 
+    @par BNF
+    @code
+        param-list  = *( OWS ";" OWS param )
+        param       = token OWS [ "=" OWS ( token / quoted-string ) ]
+    @endcode
+
+    To use this class, construct with the string to be parsed and
+    then use @ref begin and @ref end, or range-for to iterate each
+    item:
+
+    @par Example
     @code
     for(auto const& param : param_list{";level=9;no_context_takeover;bits=15"})
     {
@@ -48,8 +52,9 @@ class param_list
 public:
     /** The type of each element in the list.
 
-        The first string in the pair is the name of the
-        parameter, and the second string in the pair is its value.
+        The first string in the pair is the name of the parameter,
+        and the second string in the pair is its value (which may
+        be empty).
     */
     using value_type =
         std::pair<boost::string_ref, boost::string_ref>;
@@ -96,23 +101,24 @@ public:
     field value. The extension list is a comma separated list of
     token parameter list pairs.
 
-    BNF:
-    @code
-        ext-list    = *( "," OWS ) ext *( OWS "," [ OWS ext ] )
-        ext         = token param-list
-        param-list  = *( OWS ";" OWS param )
-        param       = token OWS "=" OWS ( token / quoted-string )
-    @endcode
-
     If a parsing error is encountered while iterating the string,
     the behavior of the container will be as if a string containing
     only characters up to but excluding the first invalid character
     was used to construct the list.
 
+    @par BNF
+    @code
+        ext-list    = *( "," OWS ) ext *( OWS "," [ OWS ext ] )
+        ext         = token param-list
+        param-list  = *( OWS ";" OWS param )
+        param       = token OWS [ "=" OWS ( token / quoted-string ) ]
+    @endcode
+
     To use this class, construct with the string to be parsed and
-    then use @ref begin and @end, or range-for to iterate each
+    then use @ref begin and @ref end, or range-for to iterate each
     item:
 
+    @par Example
     @code
     for(auto const& ext : ext_list{"none, 7z;level=9, zip;no_context_takeover;bits=15"})
     {
@@ -196,24 +202,25 @@ public:
 
 /** A list of tokens in a comma separated HTTP field value.
 
-    This container allows iteration of the extensions in a HTTP
-    field value. The extension list is a comma separated list of
-    token parameter list pairs.
-
-    BNF:
-    @code
-        token-list  = *( "," OWS ) token *( OWS "," [ OWS ext ] )
-    @endcode
+    This container allows iteration of a list of items in a
+    header field value. The input is a comma separated list of
+    tokens.
 
     If a parsing error is encountered while iterating the string,
     the behavior of the container will be as if a string containing
     only characters up to but excluding the first invalid character
     was used to construct the list.
 
+    @par BNF
+    @code
+        token-list  = *( "," OWS ) token *( OWS "," [ OWS token ] )
+    @endcode
+
     To use this class, construct with the string to be parsed and
-    then use @ref begin and @end, or range-for to iterate each
+    then use @ref begin and @ref end, or range-for to iterate each
     item:
 
+    @par Example
     @code
     for(auto const& token : token_list{"apple, pear, banana"})
         std::cout << token << "\n";
@@ -226,12 +233,7 @@ class token_list
     boost::string_ref s_;
 
 public:
-    /** The type of each element in the token list.
-
-        The first element of the pair is the extension token, and the
-        second element of the pair is an iterable container holding the
-        extension's name/value parameters.
-    */
+    /// The type of each element in the token list.
     using value_type = boost::string_ref;
 
     /// A constant iterator to the list
@@ -279,4 +281,3 @@ public:
 #include <beast/http/impl/rfc7230.ipp>
 
 #endif
-

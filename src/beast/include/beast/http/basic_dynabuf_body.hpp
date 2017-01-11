@@ -8,8 +8,12 @@
 #ifndef BEAST_HTTP_BASIC_DYNABUF_BODY_HPP
 #define BEAST_HTTP_BASIC_DYNABUF_BODY_HPP
 
-#include <beast/http/body_type.hpp>
+#include <beast/core/error.hpp>
+#include <beast/http/message.hpp>
+#include <beast/http/resume_context.hpp>
+#include <beast/core/detail/type_traits.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/logic/tribool.hpp>
 
 namespace beast {
 namespace http {
@@ -33,11 +37,16 @@ private:
         value_type& sb_;
 
     public:
-        template<bool isRequest, class Headers>
+        template<bool isRequest, class Fields>
         explicit
         reader(message<isRequest,
-                basic_dynabuf_body, Headers>& m) noexcept
+                basic_dynabuf_body, Fields>& m) noexcept
             : sb_(m.body)
+        {
+        }
+
+        void
+        init(error_code&) noexcept
         {
         }
 
@@ -57,33 +66,32 @@ private:
         DynamicBuffer const& body_;
 
     public:
-        writer(writer const&) = delete;
-        writer& operator=(writer const&) = delete;
-
-        template<bool isRequest, class Headers>
+        template<bool isRequest, class Fields>
         explicit
         writer(message<
-                isRequest, basic_dynabuf_body, Headers> const& m)
+                isRequest, basic_dynabuf_body, Fields> const& m) noexcept
             : body_(m.body)
         {
         }
 
         void
-        init(error_code& ec)
+        init(error_code& ec) noexcept
         {
+            beast::detail::ignore_unused(ec);
         }
 
         std::uint64_t
-        content_length() const
+        content_length() const noexcept
         {
             return body_.size();
         }
 
-        template<class Write>
+        template<class WriteFunction>
         boost::tribool
-        operator()(resume_context&&, error_code&, Write&& write)
+        write(resume_context&&, error_code&,
+            WriteFunction&& wf) noexcept
         {
-            write(body_.data());
+            wf(body_.data());
             return true;
         }
     };

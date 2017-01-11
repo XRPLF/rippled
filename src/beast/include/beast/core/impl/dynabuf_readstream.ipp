@@ -9,10 +9,10 @@
 #define BEAST_IMPL_DYNABUF_READSTREAM_HPP
 
 #include <beast/core/bind_handler.hpp>
+#include <beast/core/error.hpp>
 #include <beast/core/handler_concepts.hpp>
-#include <beast/core/handler_alloc.hpp>
-#include <boost/system/error_code.hpp>
-#include <boost/system/system_error.hpp>
+#include <beast/core/handler_helpers.hpp>
+#include <beast/core/handler_ptr.hpp>
 
 namespace beast {
 
@@ -21,28 +21,22 @@ template<class MutableBufferSequence, class Handler>
 class dynabuf_readstream<
     Stream, DynamicBuffer>::read_some_op
 {
-    using alloc_type =
-        handler_alloc<char, Handler>;
-
+    // VFALCO What about bool cont for is_continuation?
     struct data
     {
         dynabuf_readstream& srs;
         MutableBufferSequence bs;
-        Handler h;
         int state = 0;
 
-        template<class DeducedHandler>
-        data(DeducedHandler&& h_,
-            dynabuf_readstream& srs_,
+        data(Handler&, dynabuf_readstream& srs_,
                 MutableBufferSequence const& bs_)
             : srs(srs_)
             , bs(bs_)
-            , h(std::forward<DeducedHandler>(h_))
         {
         }
     };
 
-    std::shared_ptr<data> d_;
+    handler_ptr<data, Handler> d_;
 
 public:
     read_some_op(read_some_op&&) = default;
@@ -51,7 +45,7 @@ public:
     template<class DeducedHandler, class... Args>
     read_some_op(DeducedHandler&& h,
             dynabuf_readstream& srs, Args&&... args)
-        : d_(std::allocate_shared<data>(alloc_type{h},
+        : d_(make_handler_ptr<data, Handler>(
             std::forward<DeducedHandler>(h), srs,
                 std::forward<Args>(args)...))
     {
@@ -66,31 +60,31 @@ public:
     void* asio_handler_allocate(
         std::size_t size, read_some_op* op)
     {
-        return boost_asio_handler_alloc_helpers::
-            allocate(size, op->d_->h);
+        return beast_asio_helpers::
+            allocate(size, op->d_.handler());
     }
 
     friend
     void asio_handler_deallocate(
         void* p, std::size_t size, read_some_op* op)
     {
-        return boost_asio_handler_alloc_helpers::
-            deallocate(p, size, op->d_->h);
+        return beast_asio_helpers::
+            deallocate(p, size, op->d_.handler());
     }
 
     friend
     bool asio_handler_is_continuation(read_some_op* op)
     {
-        return boost_asio_handler_cont_helpers::
-            is_continuation(op->d_->h);
+        return beast_asio_helpers::
+            is_continuation(op->d_.handler());
     }
 
     template<class Function>
     friend
     void asio_handler_invoke(Function&& f, read_some_op* op)
     {
-        return boost_asio_handler_invoke_helpers::
-            invoke(f, op->d_->h);
+        return beast_asio_helpers::
+            invoke(f, op->d_.handler());
     }
 };
 
@@ -150,7 +144,7 @@ read_some_op<MutableBufferSequence, Handler>::operator()(
             break;
         }
     }
-    d.h(ec, bytes_transferred);
+    d_.invoke(ec, bytes_transferred);
 }
 
 //------------------------------------------------------------------------------

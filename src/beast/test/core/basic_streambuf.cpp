@@ -397,12 +397,12 @@ public:
         BEAST_EXPECT(to_string(sb.data()) == "x");
     }
 
-    void testReadSizeHelper()
+    void testCapacity()
     {
         using boost::asio::buffer_size;
         {
-            streambuf sb(10);
-            BEAST_EXPECT(read_size_helper(sb, 0) == 0);
+            streambuf sb{10};
+            BEAST_EXPECT(sb.alloc_size() == 10);
             BEAST_EXPECT(read_size_helper(sb, 1) == 1);
             BEAST_EXPECT(read_size_helper(sb, 10) == 10);
             BEAST_EXPECT(read_size_helper(sb, 20) == 20);
@@ -414,32 +414,50 @@ public:
         }
         {
             streambuf sb(1000);
-            BEAST_EXPECT(read_size_helper(sb, 0) == 0);
+            BEAST_EXPECT(sb.alloc_size() == 1000);
             BEAST_EXPECT(read_size_helper(sb, 1) == 1);
             BEAST_EXPECT(read_size_helper(sb, 1000) == 1000);
             BEAST_EXPECT(read_size_helper(sb, 2000) == 1000);
             sb.prepare(3);
-            BEAST_EXPECT(read_size_helper(sb, 0) == 0);
             BEAST_EXPECT(read_size_helper(sb, 1) == 1);
             BEAST_EXPECT(read_size_helper(sb, 1000) == 1000);
             BEAST_EXPECT(read_size_helper(sb, 2000) == 1000);
             sb.commit(3);
-            BEAST_EXPECT(read_size_helper(sb, 0) == 0);
             BEAST_EXPECT(read_size_helper(sb, 1) == 1);
             BEAST_EXPECT(read_size_helper(sb, 1000) == 997);
             BEAST_EXPECT(read_size_helper(sb, 2000) == 997);
             sb.consume(2);
-            BEAST_EXPECT(read_size_helper(sb, 0) == 0);
             BEAST_EXPECT(read_size_helper(sb, 1) == 1);
             BEAST_EXPECT(read_size_helper(sb, 1000) == 997);
             BEAST_EXPECT(read_size_helper(sb, 2000) == 997);
         }
         {
-            streambuf sb(2);
+            streambuf sb{2};
+            BEAST_EXPECT(sb.alloc_size() == 2);
             BEAST_EXPECT(test::buffer_count(sb.prepare(2)) == 1);
             BEAST_EXPECT(test::buffer_count(sb.prepare(3)) == 2);
             BEAST_EXPECT(buffer_size(sb.prepare(5)) == 5);
             BEAST_EXPECT(read_size_helper(sb, 10) == 6);
+        }
+        {
+            auto avail =
+                [](streambuf const& sb)
+                {
+                    return sb.capacity() - sb.size();
+                };
+            streambuf sb{100};
+            BEAST_EXPECT(sb.alloc_size() == 100);
+            BEAST_EXPECT(avail(sb) == 0);
+            sb.prepare(100);
+            BEAST_EXPECT(avail(sb) == 100);
+            sb.commit(100);
+            BEAST_EXPECT(avail(sb) == 0);
+            sb.consume(100);
+            BEAST_EXPECT(avail(sb) == 0);
+            sb.alloc_size(200);
+            BEAST_EXPECT(sb.alloc_size() == 200);
+            sb.prepare(1);
+            BEAST_EXPECT(avail(sb) == 200);
         }
     }
 
@@ -453,7 +471,7 @@ public:
         testMatrix();
         testIterators();
         testOutputStream();
-        testReadSizeHelper();
+        testCapacity();
     }
 };
 

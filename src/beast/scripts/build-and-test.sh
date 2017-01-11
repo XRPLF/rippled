@@ -70,7 +70,7 @@ function run_tests_with_valgrind {
     else
       # TODO --max-stackframe=8388608
       # see: https://travis-ci.org/vinniefalco/Beast/jobs/132486245
-      valgrind --error-exitcode=1 "$x"
+      valgrind --suppressions=./scripts/valgrind.supp --error-exitcode=1 "$x"
     fi
   done
 }

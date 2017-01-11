@@ -59,7 +59,7 @@ public:
                 decltype(fs)&, streambuf> srs(fs);
             srs.buffer().commit(buffer_copy(
                 srs.buffer().prepare(5), buffer("Hello", 5)));
-            boost::system::error_code ec;
+            error_code ec;
             boost::asio::read(srs, buffer(&s[0], s.size()), ec);
             if(! ec)
             {
@@ -78,7 +78,7 @@ public:
             srs.capacity(3);
             srs.buffer().commit(buffer_copy(
                 srs.buffer().prepare(5), buffer("Hello", 5)));
-            boost::system::error_code ec;
+            error_code ec;
             boost::asio::read(srs, buffer(&s[0], s.size()), ec);
             if(! ec)
             {
@@ -96,7 +96,7 @@ public:
                 decltype(fs)&, streambuf> srs(fs);
             srs.buffer().commit(buffer_copy(
                 srs.buffer().prepare(5), buffer("Hello", 5)));
-            boost::system::error_code ec;
+            error_code ec;
             boost::asio::async_read(
                 srs, buffer(&s[0], s.size()), do_yield[ec]);
             if(! ec)
@@ -116,7 +116,7 @@ public:
             srs.capacity(3);
             srs.buffer().commit(buffer_copy(
                 srs.buffer().prepare(5), buffer("Hello", 5)));
-            boost::system::error_code ec;
+            error_code ec;
             boost::asio::async_read(
                 srs, buffer(&s[0], s.size()), do_yield[ec]);
             if(! ec)

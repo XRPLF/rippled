@@ -279,6 +279,16 @@ static_streambuf::mutable_buffers_type::end() const ->
 
 //------------------------------------------------------------------------------
 
+
+inline
+auto
+static_streambuf::data() const ->
+    const_buffers_type
+{
+    return const_buffers_type{in_,
+        static_cast<std::size_t>(out_ - in_)};
+}
+
 inline
 auto
 static_streambuf::prepare(std::size_t n) ->
@@ -288,15 +298,6 @@ static_streambuf::prepare(std::size_t n) ->
         throw std::length_error("no space in streambuf");
     last_ = out_ + n;
     return mutable_buffers_type{out_, n};
-}
-
-inline
-auto
-static_streambuf::data() const ->
-    const_buffers_type
-{
-    return const_buffers_type{in_,
-        static_cast<std::size_t>(out_ - in_)};
 }
 
 } // beast

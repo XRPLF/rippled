@@ -8,6 +8,7 @@
 #ifndef BEAST_TEST_STRING_STREAM_HPP
 #define BEAST_TEST_STRING_STREAM_HPP
 
+#include <beast/core/async_completion.hpp>
 #include <beast/core/bind_handler.hpp>
 #include <beast/core/error.hpp>
 #include <boost/asio/buffer.hpp>

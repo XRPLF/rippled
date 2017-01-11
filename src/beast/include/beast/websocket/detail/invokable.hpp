@@ -8,8 +8,9 @@
 #ifndef BEAST_WEBSOCKET_DETAIL_INVOKABLE_HPP
 #define BEAST_WEBSOCKET_DETAIL_INVOKABLE_HPP
 
+#include <beast/core/handler_ptr.hpp>
+#include <boost/assert.hpp>
 #include <array>
-#include <cassert>
 #include <memory>
 #include <new>
 #include <utility>
@@ -64,8 +65,19 @@ class invokable
 
     struct exemplar
     {
-        std::shared_ptr<int> _;
-        void operator()(){}
+        struct H
+        {
+            void operator()();
+        };
+
+        struct T
+        {
+            using handler_type = H;
+        };
+
+        handler_ptr<T, H> hp;
+
+        void operator()();
     };
 
     using buf_type = char[sizeof(holder<exemplar>)];
@@ -74,15 +86,11 @@ class invokable
     alignas(holder<exemplar>) buf_type buf_;
 
 public:
-#ifndef NDEBUG
     ~invokable()
     {
-        // Engaged invokables must be invoked before
-        // destruction otherwise the io_service
-        // invariants are broken w.r.t completions.
-        assert(! base_);
+        if(base_)
+            base_->~base();
     }
-#endif
 
     invokable() = default;
 
@@ -102,7 +110,7 @@ public:
         // Engaged invokables must be invoked before
         // assignment otherwise the io_service
         // invariants are broken w.r.t completions.
-        assert(! base_);
+        BOOST_ASSERT(! base_);
 
         if(other.base_)
         {
@@ -135,7 +143,7 @@ invokable::emplace(F&& f)
 {
     static_assert(sizeof(buf_type) >= sizeof(holder<F>),
         "buffer too small");
-    assert(! base_);
+    BOOST_ASSERT(! base_);
     ::new(buf_) holder<F>(std::forward<F>(f));
     base_ = reinterpret_cast<base*>(&buf_[0]);
 }

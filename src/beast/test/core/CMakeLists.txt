@@ -7,6 +7,7 @@ GroupSources(test/core "/")
 add_executable (core-tests
     ${BEAST_INCLUDES}
     ${EXTRAS_INCLUDES}
+    ${ZLIB_SOURCES}
     ../../extras/beast/unit_test/main.cpp
     buffer_test.hpp
     async_completion.cpp
@@ -15,11 +16,13 @@ add_executable (core-tests
     buffer_cat.cpp
     buffer_concepts.cpp
     buffers_adapter.cpp
+    clamp.cpp
     consuming_buffers.cpp
     dynabuf_readstream.cpp
     error.cpp
     handler_alloc.cpp
     handler_concepts.cpp
+    handler_ptr.cpp
     placeholders.cpp
     prepare_buffers.cpp
     static_streambuf.cpp

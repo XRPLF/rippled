@@ -18,6 +18,8 @@
 #include <beast/core/error.hpp>
 #include <beast/core/handler_alloc.hpp>
 #include <beast/core/handler_concepts.hpp>
+#include <beast/core/handler_helpers.hpp>
+#include <beast/core/handler_ptr.hpp>
 #include <beast/core/placeholders.hpp>
 #include <beast/core/prepare_buffers.hpp>
 #include <beast/core/static_streambuf.hpp>
