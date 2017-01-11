@@ -570,6 +570,9 @@
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\ci_char_traits.hpp">
       <Filter>beast\core\detail</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\clamp.hpp">
+      <Filter>beast\core\detail</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\empty_base_optimization.hpp">
       <Filter>beast\core\detail</Filter>
     </ClInclude>
@@ -582,10 +585,19 @@
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\is_call_possible.hpp">
       <Filter>beast\core\detail</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\prepare_buffers.hpp">
+      <Filter>beast\core\detail</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\sha1.hpp">
       <Filter>beast\core\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\stream_concepts.hpp">
+      <Filter>beast\core\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\sync_ostream.hpp">
+      <Filter>beast\core\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\type_traits.hpp">
       <Filter>beast\core\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\write_dynabuf.hpp">
@@ -603,6 +615,12 @@
     <ClInclude Include="..\..\src\beast\include\beast\core\handler_concepts.hpp">
       <Filter>beast\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\handler_helpers.hpp">
+      <Filter>beast\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\handler_ptr.hpp">
+      <Filter>beast\core</Filter>
+    </ClInclude>
     <None Include="..\..\src\beast\include\beast\core\impl\basic_streambuf.ipp">
       <Filter>beast\core\impl</Filter>
     </None>
@@ -612,13 +630,16 @@
     <None Include="..\..\src\beast\include\beast\core\impl\dynabuf_readstream.ipp">
       <Filter>beast\core\impl</Filter>
     </None>
-    <None Include="..\..\src\beast\include\beast\core\impl\prepare_buffers.ipp">
+    <None Include="..\..\src\beast\include\beast\core\impl\handler_ptr.ipp">
       <Filter>beast\core\impl</Filter>
     </None>
     <None Include="..\..\src\beast\include\beast\core\impl\static_streambuf.ipp">
       <Filter>beast\core\impl</Filter>
     </None>
     <ClInclude Include="..\..\src\beast\include\beast\core\placeholders.hpp">
+      <Filter>beast\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\prepare_buffer.hpp">
       <Filter>beast\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\prepare_buffers.hpp">
@@ -648,25 +669,25 @@
     <ClInclude Include="..\..\src\beast\include\beast\http\basic_dynabuf_body.hpp">
       <Filter>beast\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\basic_headers.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\basic_fields.hpp">
       <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\basic_parser_v1.hpp">
       <Filter>beast\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\body_type.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\chunk_encode.hpp">
       <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\concepts.hpp">
       <Filter>beast\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\detail\basic_fields.hpp">
+      <Filter>beast\http\detail</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\detail\basic_parser_v1.hpp">
       <Filter>beast\http\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\detail\chunk_encode.hpp">
-      <Filter>beast\http\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\detail\has_content_length.hpp">
       <Filter>beast\http\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\detail\rfc7230.hpp">
@@ -675,16 +696,25 @@
     <ClInclude Include="..\..\src\beast\include\beast\http\empty_body.hpp">
       <Filter>beast\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\headers.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\fields.hpp">
       <Filter>beast\http</Filter>
     </ClInclude>
-    <None Include="..\..\src\beast\include\beast\http\impl\basic_headers.ipp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\header_parser_v1.hpp">
+      <Filter>beast\http</Filter>
+    </ClInclude>
+    <None Include="..\..\src\beast\include\beast\http\impl\basic_fields.ipp">
       <Filter>beast\http\impl</Filter>
     </None>
     <None Include="..\..\src\beast\include\beast\http\impl\basic_parser_v1.ipp">
       <Filter>beast\http\impl</Filter>
     </None>
-    <None Include="..\..\src\beast\include\beast\http\impl\message_v1.ipp">
+    <None Include="..\..\src\beast\include\beast\http\impl\message.ipp">
+      <Filter>beast\http\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\include\beast\http\impl\parse.ipp">
+      <Filter>beast\http\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\include\beast\http\impl\parse_error.ipp">
       <Filter>beast\http\impl</Filter>
     </None>
     <None Include="..\..\src\beast\include\beast\http\impl\read.ipp">
@@ -699,7 +729,7 @@
     <ClInclude Include="..\..\src\beast\include\beast\http\message.hpp">
       <Filter>beast\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\message_v1.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\parse.hpp">
       <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\parser_v1.hpp">
@@ -729,6 +759,9 @@
     <ClInclude Include="..\..\src\beast\include\beast\http\write.hpp">
       <Filter>beast\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\version.hpp">
+      <Filter>beast</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket.hpp">
       <Filter>beast</Filter>
     </ClInclude>
@@ -736,9 +769,6 @@
       <Filter>beast\websocket\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\endian.hpp">
-      <Filter>beast\websocket\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\error.hpp">
       <Filter>beast\websocket\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\frame.hpp">
@@ -762,28 +792,22 @@
     <ClInclude Include="..\..\src\beast\include\beast\websocket\error.hpp">
       <Filter>beast\websocket</Filter>
     </ClInclude>
-    <None Include="..\..\src\beast\include\beast\websocket\impl\accept_op.ipp">
+    <None Include="..\..\src\beast\include\beast\websocket\impl\accept.ipp">
       <Filter>beast\websocket\impl</Filter>
     </None>
-    <None Include="..\..\src\beast\include\beast\websocket\impl\close_op.ipp">
+    <None Include="..\..\src\beast\include\beast\websocket\impl\close.ipp">
       <Filter>beast\websocket\impl</Filter>
     </None>
     <None Include="..\..\src\beast\include\beast\websocket\impl\error.ipp">
       <Filter>beast\websocket\impl</Filter>
     </None>
-    <None Include="..\..\src\beast\include\beast\websocket\impl\handshake_op.ipp">
+    <None Include="..\..\src\beast\include\beast\websocket\impl\handshake.ipp">
       <Filter>beast\websocket\impl</Filter>
     </None>
-    <None Include="..\..\src\beast\include\beast\websocket\impl\ping_op.ipp">
+    <None Include="..\..\src\beast\include\beast\websocket\impl\ping.ipp">
       <Filter>beast\websocket\impl</Filter>
     </None>
-    <None Include="..\..\src\beast\include\beast\websocket\impl\read_frame_op.ipp">
-      <Filter>beast\websocket\impl</Filter>
-    </None>
-    <None Include="..\..\src\beast\include\beast\websocket\impl\read_op.ipp">
-      <Filter>beast\websocket\impl</Filter>
-    </None>
-    <None Include="..\..\src\beast\include\beast\websocket\impl\response_op.ipp">
+    <None Include="..\..\src\beast\include\beast\websocket\impl\read.ipp">
       <Filter>beast\websocket\impl</Filter>
     </None>
     <None Include="..\..\src\beast\include\beast\websocket\impl\ssl.ipp">
@@ -795,10 +819,7 @@
     <None Include="..\..\src\beast\include\beast\websocket\impl\teardown.ipp">
       <Filter>beast\websocket\impl</Filter>
     </None>
-    <None Include="..\..\src\beast\include\beast\websocket\impl\write_frame_op.ipp">
-      <Filter>beast\websocket\impl</Filter>
-    </None>
-    <None Include="..\..\src\beast\include\beast\websocket\impl\write_op.ipp">
+    <None Include="..\..\src\beast\include\beast\websocket\impl\write.ipp">
       <Filter>beast\websocket\impl</Filter>
     </None>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\option.hpp">
