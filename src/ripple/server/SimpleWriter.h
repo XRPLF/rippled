@@ -23,7 +23,7 @@
 #include <ripple/server/Writer.h>
 #include <beast/core/streambuf.hpp>
 #include <beast/core/write_dynabuf.hpp>
-#include <beast/http/message_v1.hpp>
+#include <beast/http/message.hpp>
 #include <beast/http/write.hpp>
 #include <utility>
 
@@ -37,7 +37,7 @@ class SimpleWriter : public Writer
 public:
     template<bool isRequest, class Body, class Headers>
     explicit
-    SimpleWriter(beast::http::message_v1<
+    SimpleWriter(beast::http::message<
         isRequest, Body, Headers> const& msg)
     {
         beast::write(sb_, msg);

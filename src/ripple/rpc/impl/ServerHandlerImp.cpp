@@ -41,7 +41,7 @@
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/server/SimpleWriter.h>
 #include <beast/core/detail/base64.hpp>
-#include <beast/http/headers.hpp>
+#include <beast/http/fields.hpp>
 #include <beast/http/string_body.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/type_traits.hpp>
@@ -61,7 +61,7 @@ isWebsocketUpgrade(
 {
     if (is_upgrade(request))
         return beast::detail::ci_equal(
-            request.headers["Upgrade"], "websocket");
+            request.fields["Upgrade"], "websocket");
     return false;
 }
 
@@ -81,19 +81,19 @@ unauthorizedResponse(
 {
     using namespace beast::http;
     Handoff handoff;
-    response_v1<string_body> msg;
+    response<string_body> msg;
     msg.version = request.version;
     msg.status = 401;
     msg.reason = "Unauthorized";
-    msg.headers.insert("Server", BuildInfo::getFullVersionString());
-    msg.headers.insert("Content-Type", "text/html");
+    msg.fields.insert("Server", BuildInfo::getFullVersionString());
+    msg.fields.insert("Content-Type", "text/html");
     msg.body = "Invalid protocol.";
     prepare(msg, beast::http::connection::close);
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return handoff;
 }
 
-// VFALCO TODO Rewrite to use beast::http::headers
+// VFALCO TODO Rewrite to use beast::http::fields
 static
 bool
 authorized (
@@ -269,7 +269,7 @@ Json::Output makeOutput (Session& session)
 // HACK!
 static
 std::map<std::string, std::string>
-build_map(beast::http::headers const& h)
+build_map(beast::http::fields const& h)
 {
     std::map <std::string, std::string> c;
     for (auto const& e : h)
@@ -311,7 +311,7 @@ ServerHandlerImp::onRequest (Session& session)
 
     // Check user/password authorization
     if (! authorized (
-            session.port(), build_map(session.request().headers)))
+            session.port(), build_map(session.request().fields)))
     {
         HTTPReply (403, "Forbidden", makeOutput (session), app_.journal ("RPC"));
         session.close (true);
@@ -507,18 +507,18 @@ ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
         [&]
         {
             auto const iter =
-                session->request().headers.find(
+                session->request().fields.find(
                     "X-Forwarded-For");
-            if(iter != session->request().headers.end())
+            if(iter != session->request().fields.end())
                 return iter->second;
             return std::string{};
         }(),
         [&]
         {
             auto const iter =
-                session->request().headers.find(
+                session->request().fields.find(
                     "X-User");
-            if(iter != session->request().headers.end())
+            if(iter != session->request().fields.end())
                 return iter->second;
             return std::string{};
         }());
@@ -728,7 +728,7 @@ ServerHandlerImp::statusResponse(
 {
     using namespace beast::http;
     Handoff handoff;
-    response_v1<string_body> msg;
+    response<string_body> msg;
     std::string reason;
     if (app_.serverOkay(reason))
     {
@@ -747,8 +747,8 @@ ServerHandlerImp::statusResponse(
             reason + "</BODY></HTML>";
     }
     msg.version = request.version;
-    msg.headers.insert("Server", BuildInfo::getFullVersionString());
-    msg.headers.insert("Content-Type", "text/html");
+    msg.fields.insert("Server", BuildInfo::getFullVersionString());
+    msg.fields.insert("Content-Type", "text/html");
     prepare(msg, beast::http::connection::close);
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return handoff;

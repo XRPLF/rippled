@@ -219,7 +219,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
 
     {
         auto const types = beast::rfc2616::split_commas(
-            request.headers["Connect-As"]);
+            request.fields["Connect-As"]);
         if (std::find_if(types.begin(), types.end(),
                 [](std::string const& s)
                 {
@@ -234,7 +234,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         }
     }
 
-    auto hello = parseHello (true, request.headers, journal);
+    auto hello = parseHello (true, request.fields, journal);
     if(! hello)
     {
         m_peerFinder->on_closed(slot);
@@ -319,7 +319,7 @@ OverlayImpl::isPeerUpgrade(http_request_type const& request)
     if (! is_upgrade(request))
         return false;
     auto const versions = parse_ProtocolVersions(
-        request.headers["Upgrade"]);
+        request.fields["Upgrade"]);
     if (versions.size() == 0)
         return false;
     return true;
@@ -333,7 +333,7 @@ OverlayImpl::isPeerUpgrade(http_response_type const& response)
     if(response.status != 101)
         return false;
     auto const versions = parse_ProtocolVersions(
-        response.headers["Upgrade"]);
+        response.fields["Upgrade"]);
     if (versions.size() == 0)
         return false;
     return true;
@@ -351,13 +351,13 @@ std::shared_ptr<Writer>
 OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
     http_request_type const& request, address_type remote_address)
 {
-    beast::http::response_v1<json_body> msg;
+    beast::http::response<json_body> msg;
     msg.version = request.version;
     msg.status = 503;
     msg.reason = "Service Unavailable";
-    msg.headers.insert("Server", BuildInfo::getFullVersionString());
-    msg.headers.insert("Remote-Address", remote_address.to_string());
-    msg.headers.insert("Content-Type", "application/json");
+    msg.fields.insert("Server", BuildInfo::getFullVersionString());
+    msg.fields.insert("Remote-Address", remote_address.to_string());
+    msg.fields.insert("Content-Type", "application/json");
     msg.body = Json::objectValue;
     {
         auto const result = m_peerFinder->redirect(slot);
@@ -375,12 +375,12 @@ OverlayImpl::makeErrorResponse (PeerFinder::Slot::ptr const& slot,
     address_type remote_address,
     std::string text)
 {
-    beast::http::response_v1<beast::http::string_body> msg;
+    beast::http::response<beast::http::string_body> msg;
     msg.version = request.version;
     msg.status = 400;
     msg.reason = "Bad Request";
-    msg.headers.insert("Server", BuildInfo::getFullVersionString());
-    msg.headers.insert("Remote-Address", remote_address.to_string());
+    msg.fields.insert("Server", BuildInfo::getFullVersionString());
+    msg.fields.insert("Remote-Address", remote_address.to_string());
     msg.body = text;
     prepare(msg, beast::http::connection::close);
     return std::make_shared<SimpleWriter>(msg);
@@ -873,12 +873,12 @@ OverlayImpl::processRequest (http_request_type const& req,
     if (req.url != "/crawl")
         return false;
 
-    beast::http::response_v1<json_body> msg;
+    beast::http::response<json_body> msg;
     msg.version = req.version;
     msg.status = 200;
     msg.reason = "OK";
-    msg.headers.insert("Server", BuildInfo::getFullVersionString());
-    msg.headers.insert("Content-Type", "application/json");
+    msg.fields.insert("Server", BuildInfo::getFullVersionString());
+    msg.fields.insert("Content-Type", "application/json");
     msg.body["overlay"] = crawl();
     prepare(msg, beast::http::connection::close);
     handoff.response = std::make_shared<SimpleWriter>(msg);

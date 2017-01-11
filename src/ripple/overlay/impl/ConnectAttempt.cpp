@@ -221,7 +221,7 @@ ConnectAttempt::onHandshake (error_code ec)
         overlay_.setup().public_ip,
         beast::IPAddressConversion::from_asio(remote_endpoint_),
         app_);
-    appendHello (req_.headers, hello);
+    appendHello (req_.fields, hello);
 
     setTimer();
     beast::http::async_write(stream_, req_,
@@ -293,12 +293,12 @@ ConnectAttempt::makeRequest (bool crawl,
     m.method = "GET";
     m.url = "/";
     m.version = 11;
-    m.headers.insert ("User-Agent", BuildInfo::getFullVersionString());
-    m.headers.insert ("Upgrade", "RTXP/1.2");
+    m.fields.insert ("User-Agent", BuildInfo::getFullVersionString());
+    m.fields.insert ("Upgrade", "RTXP/1.2");
         //std::string("RTXP/") + to_string (BuildInfo::getCurrentProtocol()));
-    m.headers.insert ("Connection", "Upgrade");
-    m.headers.insert ("Connect-As", "Peer");
-    m.headers.insert ("Crawl", crawl ? "public" : "private");
+    m.fields.insert ("Connection", "Upgrade");
+    m.fields.insert ("Connect-As", "Peer");
+    m.fields.insert ("Crawl", crawl ? "public" : "private");
     return m;
 }
 
@@ -343,7 +343,7 @@ ConnectAttempt::processResponse()
         return close();
     }
 
-    auto hello = parseHello (false, response_.headers, journal_);
+    auto hello = parseHello (false, response_.fields, journal_);
     if(! hello)
         return fail("processResponse: Bad TMHello");
 

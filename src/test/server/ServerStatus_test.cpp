@@ -84,18 +84,18 @@ class ServerStatus_test :
     {
         using namespace boost::asio;
         using namespace beast::http;
-        request_v1<string_body> req;
+        request<string_body> req;
 
         req.url = "/";
         req.version = 11;
-        req.headers.insert("Host", host + ":" + to_string(port));
-        req.headers.insert("User-Agent", "test");
+        req.fields.insert("Host", host + ":" + to_string(port));
+        req.fields.insert("User-Agent", "test");
         req.method = "GET";
-        req.headers.insert("Upgrade", "websocket");
+        req.fields.insert("Upgrade", "websocket");
         beast::websocket::detail::maskgen maskgen;
         std::string key = beast::websocket::detail::make_sec_ws_key(maskgen);
-        req.headers.insert("Sec-WebSocket-Key", key);
-        req.headers.insert("Sec-WebSocket-Version", "13");
+        req.fields.insert("Sec-WebSocket-Key", key);
+        req.fields.insert("Sec-WebSocket-Version", "13");
         prepare(req, connection::upgrade);
         return req;
     }
@@ -107,12 +107,12 @@ class ServerStatus_test :
     {
         using namespace boost::asio;
         using namespace beast::http;
-        request_v1<string_body> req;
+        request<string_body> req;
 
         req.url = "/";
         req.version = 11;
-        req.headers.insert("Host", host + ":" + to_string(port));
-        req.headers.insert("User-Agent", "test");
+        req.fields.insert("Host", host + ":" + to_string(port));
+        req.fields.insert("User-Agent", "test");
         if(body.empty())
         {
             req.method = "GET";
@@ -120,7 +120,7 @@ class ServerStatus_test :
         else
         {
             req.method = "POST";
-            req.headers.insert("Content-Type", "application/json; charset=UTF-8");
+            req.fields.insert("Content-Type", "application/json; charset=UTF-8");
             req.body = body;
         }
         prepare(req);
@@ -131,11 +131,11 @@ class ServerStatus_test :
     void
     doRequest(
         boost::asio::yield_context& yield,
-        beast::http::request_v1<beast::http::string_body> const& req,
+        beast::http::request<beast::http::string_body> const& req,
         std::string const& host,
         uint16_t port,
         bool secure,
-        beast::http::response_v1<beast::http::string_body>& resp,
+        beast::http::response<beast::http::string_body>& resp,
         boost::system::error_code& ec)
     {
         using namespace boost::asio;
@@ -190,7 +190,7 @@ class ServerStatus_test :
         test::jtx::Env& env,
         boost::asio::yield_context& yield,
         bool secure,
-        beast::http::response_v1<beast::http::string_body>& resp,
+        beast::http::response<beast::http::string_body>& resp,
         boost::system::error_code& ec)
     {
         auto const port = env.app().config()["port_ws"].
@@ -207,7 +207,7 @@ class ServerStatus_test :
         test::jtx::Env& env,
         boost::asio::yield_context& yield,
         bool secure,
-        beast::http::response_v1<beast::http::string_body>& resp,
+        beast::http::response<beast::http::string_body>& resp,
         boost::system::error_code& ec,
         std::string const& body = "")
     {
@@ -285,7 +285,7 @@ class ServerStatus_test :
         //non-secure request
         {
             boost::system::error_code ec;
-            beast::http::response_v1<beast::http::string_body> resp;
+            beast::http::response<beast::http::string_body> resp;
             doWSRequest(env, yield, false, resp, ec);
             if(! BEAST_EXPECTS(! ec, ec.message()))
                 return;
@@ -295,7 +295,7 @@ class ServerStatus_test :
         //secure request
         {
             boost::system::error_code ec;
-            beast::http::response_v1<beast::http::string_body> resp;
+            beast::http::response<beast::http::string_body> resp;
             doWSRequest(env, yield, true, resp, ec);
             if(! BEAST_EXPECTS(! ec, ec.message()))
                 return;
@@ -320,7 +320,7 @@ class ServerStatus_test :
         //non-secure request
         {
             boost::system::error_code ec;
-            beast::http::response_v1<beast::http::string_body> resp;
+            beast::http::response<beast::http::string_body> resp;
             doHTTPRequest(env, yield, false, resp, ec);
             if(! BEAST_EXPECTS(! ec, ec.message()))
                 return;
@@ -330,7 +330,7 @@ class ServerStatus_test :
         //secure request
         {
             boost::system::error_code ec;
-            beast::http::response_v1<beast::http::string_body> resp;
+            beast::http::response<beast::http::string_body> resp;
             doHTTPRequest(env, yield, true, resp, ec);
             if(! BEAST_EXPECTS(! ec, ec.message()))
                 return;
@@ -359,7 +359,7 @@ class ServerStatus_test :
             get<std::string>("ip");
 
         boost::system::error_code ec;
-        response_v1<string_body> resp;
+        response<string_body> resp;
         auto req = makeWSUpgrade(*ip, *port);
 
         //truncate the request message to near the value of the version header
@@ -400,7 +400,7 @@ class ServerStatus_test :
         using namespace jtx;
         Env env {*this, makeConfig(server_protocol)};
 
-        beast::http::response_v1<beast::http::string_body> resp;
+        beast::http::response<beast::http::string_body> resp;
         boost::system::error_code ec;
         // The essence of this test is to have a client and server configured
         // out-of-phase with respect to ssl (secure client and insecure server

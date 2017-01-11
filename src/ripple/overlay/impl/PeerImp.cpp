@@ -91,7 +91,7 @@ PeerImp::PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
     , fee_ (Resource::feeLightPeer)
     , slot_ (slot)
     , request_(std::move(request))
-    , headers_(request_.headers)
+    , headers_(request_.fields)
 {
 }
 
@@ -652,14 +652,14 @@ PeerImp::makeResponse (bool crawl,
     resp.status = 101;
     resp.reason = "Switching Protocols";
     resp.version = req.version;
-    resp.headers.insert("Connection", "Upgrade");
-    resp.headers.insert("Upgrade", "RTXP/1.2");
-    resp.headers.insert("Connect-AS", "Peer");
-    resp.headers.insert("Server", BuildInfo::getFullVersionString());
-    resp.headers.insert("Crawl", crawl ? "public" : "private");
+    resp.fields.insert("Connection", "Upgrade");
+    resp.fields.insert("Upgrade", "RTXP/1.2");
+    resp.fields.insert("Connect-AS", "Peer");
+    resp.fields.insert("Server", BuildInfo::getFullVersionString());
+    resp.fields.insert("Crawl", crawl ? "public" : "private");
     protocol::TMHello hello = buildHello(sharedValue,
         overlay_.setup().public_ip, remote, app_);
-    appendHello(resp.headers, hello);
+    appendHello(resp.fields, hello);
     return resp;
 }
 
