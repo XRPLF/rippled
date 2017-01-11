@@ -5,7 +5,7 @@
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 ]
 
-[section:streams Streams]
+[section:streams Streams requirements]
 
 Stream types represent objects capable of performing synchronous or
 asynchronous I/O. They are based on concepts from `boost::asio`.

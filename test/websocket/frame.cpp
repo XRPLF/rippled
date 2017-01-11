@@ -6,6 +6,7 @@
 //
 
 #include <beast/websocket/detail/frame.hpp>
+#include <beast/websocket/detail/stream_base.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <initializer_list>
 #include <climits>
@@ -67,7 +68,7 @@ public:
 
     void testFrameHeader()
     {
-        // good frame headers
+        // good frame fields
         {
             role_type role = role_type::client;
 
@@ -76,20 +77,20 @@ public:
                 {
                     fh_streambuf sb;
                     write(sb, fh);
-                    frame_header fh1;
                     close_code::value code;
-                    auto const n = read_fh1(
-                        fh1, sb, role, code);
+                    stream_base stream;
+                    stream.open(role);
+                    auto const n = stream.read_fh1(sb, code);
                     if(! BEAST_EXPECT(! code))
                         return;
                     if(! BEAST_EXPECT(sb.size() == n))
                         return;
-                    read_fh2(fh1, sb, role, code);
+                    stream.read_fh2(sb, code);
                     if(! BEAST_EXPECT(! code))
                         return;
                     if(! BEAST_EXPECT(sb.size() == 0))
                         return;
-                    BEAST_EXPECT(fh1 == fh);
+                    BEAST_EXPECT(stream.rd_fh_ == fh);
                 };
 
             test_fh fh;
@@ -113,11 +114,11 @@ public:
             fh.len = 65536;
             check(fh);
 
-            fh.len = std::numeric_limits<std::uint64_t>::max();
+            fh.len = 65537;
             check(fh);
         }
 
-        // bad frame headers
+        // bad frame fields
         {
             role_type role = role_type::client;
 
@@ -126,10 +127,10 @@ public:
                 {
                     fh_streambuf sb;
                     write(sb, fh);
-                    frame_header fh1;
                     close_code::value code;
-                    auto const n = read_fh1(
-                        fh1, sb, role, code);
+                    stream_base stream;
+                    stream.open(role);
+                    auto const n = stream.read_fh1(sb, code);
                     if(code)
                     {
                         pass();
@@ -137,7 +138,7 @@ public:
                     }
                     if(! BEAST_EXPECT(sb.size() == n))
                         return;
-                    read_fh2(fh1, sb, role, code);
+                    stream.read_fh2(sb, code);
                     if(! BEAST_EXPECT(code))
                         return;
                     if(! BEAST_EXPECT(sb.size() == 0))
@@ -186,15 +187,14 @@ public:
     {
         using boost::asio::buffer;
         using boost::asio::buffer_copy;
-        static role_type constexpr role =
-            role_type::client;
+        static role_type constexpr role = role_type::client;
         std::vector<std::uint8_t> v{bs};
         fh_streambuf sb;
-        sb.commit(buffer_copy(
-            sb.prepare(v.size()), buffer(v)));
-        frame_header fh;
+        sb.commit(buffer_copy(sb.prepare(v.size()), buffer(v)));
+        stream_base stream;
+        stream.open(role);
         close_code::value code;
-        auto const n = read_fh1(fh, sb, role, code);
+        auto const n = stream.read_fh1(sb, code);
         if(code)
         {
             pass();
@@ -202,7 +202,7 @@ public:
         }
         if(! BEAST_EXPECT(sb.size() == n))
             return;
-        read_fh2(fh, sb, role, code);
+        stream.read_fh2(sb, code);
         if(! BEAST_EXPECT(code))
             return;
         if(! BEAST_EXPECT(sb.size() == 0))
@@ -211,7 +211,7 @@ public:
 
     void testBadFrameHeaders()
     {
-        // bad frame headers
+        // bad frame fields
         //
         // can't be created by the library
         // so we produce them manually.
@@ -233,4 +233,3 @@ BEAST_DEFINE_TESTSUITE(frame,websocket,beast);
 } // detail
 } // websocket
 } // beast
-

@@ -10,8 +10,8 @@ env:
     # to boost's .tar.gz.
     - LCOV_ROOT=$HOME/lcov
     - VALGRIND_ROOT=$HOME/valgrind-install
-    - BOOST_ROOT=$HOME/boost_1_60_0
-    - BOOST_URL='http://downloads.sourceforge.net/project/boost/boost/1.60.0/boost_1_60_0.tar.gz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fboost%2Ffiles%2Fboost%2F1.60.0%2Fboost_1_60_0.tar.gz&ts=1460417589&use_mirror=netix'
+    - BOOST_ROOT=$HOME/boost_1_61_0
+    - BOOST_URL='http://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz?use_mirror=netix'
 packages: &gcc5_pkgs
   - gcc-5
   - g++-5

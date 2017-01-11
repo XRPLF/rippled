@@ -20,6 +20,57 @@ class prepare_buffers_test : public beast::unit_test::suite
 public:
     template<class ConstBufferSequence>
     static
+    std::size_t
+    bsize1(ConstBufferSequence const& bs)
+    {
+        using boost::asio::buffer_size;
+        std::size_t n = 0;
+        for(auto it = bs.begin(); it != bs.end(); ++it)
+            n += buffer_size(*it);
+        return n;
+    }
+
+    template<class ConstBufferSequence>
+    static
+    std::size_t
+    bsize2(ConstBufferSequence const& bs)
+    {
+        using boost::asio::buffer_size;
+        std::size_t n = 0;
+        for(auto it = bs.begin(); it != bs.end(); it++)
+            n += buffer_size(*it);
+        return n;
+    }
+
+    template<class ConstBufferSequence>
+    static
+    std::size_t
+    bsize3(ConstBufferSequence const& bs)
+    {
+        using boost::asio::buffer_size;
+        std::size_t n = 0;
+        for(auto it = bs.end(); it != bs.begin();)
+            n += buffer_size(*--it);
+        return n;
+    }
+
+    template<class ConstBufferSequence>
+    static
+    std::size_t
+    bsize4(ConstBufferSequence const& bs)
+    {
+        using boost::asio::buffer_size;
+        std::size_t n = 0;
+        for(auto it = bs.end(); it != bs.begin();)
+        {
+            it--;
+            n += buffer_size(*it);
+        }
+        return n;
+    }
+
+    template<class ConstBufferSequence>
+    static
     std::string
     to_string(ConstBufferSequence const& bs)
     {
@@ -97,6 +148,10 @@ public:
             const_buffer{&b[1], 1},
             const_buffer{&b[2], 1}}};
         auto pb = prepare_buffers(2, bs);
+        BEAST_EXPECT(bsize1(pb) == 2);
+        BEAST_EXPECT(bsize2(pb) == 2);
+        BEAST_EXPECT(bsize3(pb) == 2);
+        BEAST_EXPECT(bsize4(pb) == 2);
         std::size_t n = 0;
         for(auto it = pb.end(); it != pb.begin(); --it)
         {

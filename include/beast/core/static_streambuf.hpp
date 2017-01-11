@@ -32,6 +32,7 @@ private:
 #else
 protected:
 #endif
+    std::uint8_t* begin_;
     std::uint8_t* in_;
     std::uint8_t* out_;
     std::uint8_t* last_;
@@ -57,21 +58,35 @@ public:
 
 #endif
 
-    /// Returns the largest size output sequence possible.
-    std::size_t
-    max_size() const
-    {
-        return end_ - in_;
-    }
-
-    /// Get the size of the input sequence.
+    /// Return the size of the input sequence.
     std::size_t
     size() const
     {
         return out_ - in_;
     }
 
-    /** Get a list of buffers that represents the output sequence, with the given size.
+    /// Return the maximum sum of the input and output sequence sizes.
+    std::size_t
+    max_size() const
+    {
+        return end_ - begin_;
+    }
+
+    /// Return the maximum sum of input and output sizes that can be held without an allocation.
+    std::size_t
+    capacity() const
+    {
+        return end_ - in_;
+    }
+
+    /** Get a list of buffers that represent the input sequence.
+
+        @note These buffers remain valid across subsequent calls to `prepare`.
+    */
+    const_buffers_type
+    data() const;
+
+    /** Get a list of buffers that represent the output sequence, with the given size.
 
         @throws std::length_error if the size would exceed the limit
         imposed by the underlying mutable buffer sequence.
@@ -93,13 +108,6 @@ public:
         out_ += std::min<std::size_t>(n, last_ - out_);
     }
 
-    /** Get a list of buffers that represents the input sequence.
-
-        @note These buffers remain valid across subsequent calls to `prepare`.
-    */
-    const_buffers_type
-    data() const;
-
     /// Remove bytes from the input sequence.
     void
     consume(std::size_t n)
@@ -120,6 +128,7 @@ protected:
     void
     reset(std::uint8_t* p, std::size_t n)
     {
+        begin_ = p;
         in_ = p;
         out_ = p;
         last_ = p;

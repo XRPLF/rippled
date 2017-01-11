@@ -8,9 +8,6 @@
 #ifndef BEAST_HTTP_DETAIL_BASIC_PARSER_V1_HPP
 #define BEAST_HTTP_DETAIL_BASIC_PARSER_V1_HPP
 
-#include <boost/system/error_code.hpp>
-#include <boost/utility/string_ref.hpp>
-#include <array>
 #include <cstdint>
 
 namespace beast {
@@ -130,6 +127,7 @@ protected:
         s_chunk_data_cr,
         s_chunk_data_lf,
 
+        s_body_pause,
         s_body_identity0,
         s_body_identity,
         s_body_identity_eof0,

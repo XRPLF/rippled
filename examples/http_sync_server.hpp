@@ -11,6 +11,8 @@
 #include "file_body.hpp"
 #include "mime_type.hpp"
 
+#include <beast/http.hpp>
+#include <beast/core/placeholders.hpp>
 #include <beast/core/streambuf.hpp>
 #include <boost/asio.hpp>
 #include <cstdint>
@@ -19,6 +21,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include <utility>
 
 #include <iostream>
@@ -32,8 +35,8 @@ class http_sync_server
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;
 
-    using req_type = request_v1<string_body>;
-    using resp_type = response_v1<file_body>;
+    using req_type = request<string_body>;
+    using resp_type = response<file_body>;
 
     bool log_ = true;
     std::mutex m_;
@@ -161,44 +164,48 @@ private:
             path = root_ + path;
             if(! boost::filesystem::exists(path))
             {
-                response_v1<string_body> res;
+                response<string_body> res;
                 res.status = 404;
                 res.reason = "Not Found";
                 res.version = req.version;
-                res.headers.insert("Server", "http_sync_server");
-                res.headers.insert("Content-Type", "text/html");
+                res.fields.insert("Server", "http_sync_server");
+                res.fields.insert("Content-Type", "text/html");
                 res.body = "The file '" + path + "' was not found";
                 prepare(res);
                 write(sock, res, ec);
                 if(ec)
                     break;
+                return;
             }
-            resp_type res;
-            res.status = 200;
-            res.reason = "OK";
-            res.version = req.version;
-            res.headers.insert("Server", "http_sync_server");
-            res.headers.insert("Content-Type", mime_type(path));
-            res.body = path;
             try
             {
+                resp_type res;
+                res.status = 200;
+                res.reason = "OK";
+                res.version = req.version;
+                res.fields.insert("Server", "http_sync_server");
+                res.fields.insert("Content-Type", mime_type(path));
+                res.body = path;
                 prepare(res);
+                write(sock, res, ec);
+                if(ec)
+                    break;
             }
             catch(std::exception const& e)
             {
-                res = {};
+                response<string_body> res;
                 res.status = 500;
                 res.reason = "Internal Error";
                 res.version = req.version;
-                res.headers.insert("Server", "http_sync_server");
-                res.headers.insert("Content-Type", "text/html");
+                res.fields.insert("Server", "http_sync_server");
+                res.fields.insert("Content-Type", "text/html");
                 res.body =
-                    std::string{"An internal error occurred"} + e.what();
+                    std::string{"An internal error occurred: "} + e.what();
                 prepare(res);
+                write(sock, res, ec);
+                if(ec)
+                    break;
             }
-            write(sock, res, ec);
-            if(ec)
-                break;
         }
         fail(id, ec);
     }

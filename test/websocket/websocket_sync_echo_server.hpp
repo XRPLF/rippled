@@ -8,8 +8,10 @@
 #ifndef BEAST_WEBSOCKET_SYNC_ECHO_PEER_H_INCLUDED
 #define BEAST_WEBSOCKET_SYNC_ECHO_PEER_H_INCLUDED
 
+#include <beast/core/placeholders.hpp>
 #include <beast/core/streambuf.hpp>
 #include <beast/websocket.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 #include <functional>
 #include <iostream>
@@ -36,7 +38,7 @@ private:
     std::thread thread_;
 
 public:
-    sync_echo_server(bool server, endpoint_type ep)
+    sync_echo_server(bool /*server*/, endpoint_type ep)
         : sock_(ios_)
         , acceptor_(ios_)
     {
@@ -83,7 +85,7 @@ private:
     fail(int id, error_code ec, std::string what)
     {
         if(log_)
-            std::cerr << "#" << std::to_string(id) << " " <<
+            std::cerr << "#" << boost::lexical_cast<std::string>(id) << " " <<
                 what << ": " << ec.message() << std::endl;
     }
 
@@ -136,18 +138,18 @@ private:
 
     struct identity
     {
-        template<class Body, class Headers>
+        template<class Body, class Fields>
         void
-        operator()(http::message<true, Body, Headers>& req)
+        operator()(http::message<true, Body, Fields>& req)
         {
-            req.headers.replace("User-Agent", "sync_echo_client");
+            req.fields.replace("User-Agent", "sync_echo_client");
         }
 
-        template<class Body, class Headers>
+        template<class Body, class Fields>
         void
-        operator()(http::message<false, Body, Headers>& resp)
+        operator()(http::message<false, Body, Fields>& resp)
         {
-            resp.headers.replace("Server", "sync_echo_server");
+            resp.fields.replace("Server", "sync_echo_server");
         }
     };
 

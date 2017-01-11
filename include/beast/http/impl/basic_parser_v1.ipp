@@ -5,6 +5,16 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#ifndef BEAST_HTTP_IMPL_BASIC_PARSER_V1_IPP
+#define BEAST_HTTP_IMPL_BASIC_PARSER_V1_IPP
+
+#include <beast/http/detail/rfc7230.hpp>
+#include <beast/core/buffer_concepts.hpp>
+#include <boost/assert.hpp>
+
+namespace beast {
+namespace http {
+
 /* Based on src/http/ngx_http_parse.c from NGINX copyright Igor Sysoev
  *
  * Additional changes are licensed under the same terms as NGINX and
@@ -28,26 +38,64 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-/*
-   This code is a modified version of nodejs/http-parser, copyright above:
-    https://github.com/nodejs/http-parser
+/* This code is a modified version of nodejs/http-parser, copyright above:
+   https://github.com/nodejs/http-parser
 */
-
-#ifndef BEAST_HTTP_IMPL_BASIC_PARSER_V1_IPP
-#define BEAST_HTTP_IMPL_BASIC_PARSER_V1_IPP
-
-#include <beast/http/detail/rfc7230.hpp>
-#include <beast/core/buffer_concepts.hpp>
-#include <cassert>
-
-namespace beast {
-namespace http {
 
 template<bool isRequest, class Derived>
 basic_parser_v1<isRequest, Derived>::
 basic_parser_v1()
 {
     init();
+}
+
+template<bool isRequest, class Derived>
+template<class OtherDerived>
+basic_parser_v1<isRequest, Derived>::
+basic_parser_v1(basic_parser_v1<
+        isRequest, OtherDerived> const& other)
+    : h_max_(other.h_max_)
+    , h_left_(other.h_left_)
+    , b_max_(other.b_max_)
+    , b_left_(other.b_left_)
+    , content_length_(other.content_length_)
+    , cb_(nullptr)
+    , s_(other.s_)
+    , flags_(other.flags_)
+    , fs_(other.fs_)
+    , pos_(other.pos_)
+    , http_major_(other.http_major_)
+    , http_minor_(other.http_minor_)
+    , status_code_(other.status_code_)
+    , upgrade_(other.upgrade_)
+{
+    BOOST_ASSERT(! other.cb_);
+}
+
+template<bool isRequest, class Derived>
+template<class OtherDerived>
+auto
+basic_parser_v1<isRequest, Derived>::
+operator=(basic_parser_v1<
+    isRequest, OtherDerived> const& other) ->
+        basic_parser_v1&
+{
+    BOOST_ASSERT(! other.cb_);
+    h_max_ = other.h_max_;
+    h_left_ = other.h_left_;
+    b_max_ = other.b_max_;
+    b_left_ = other.b_left_;
+    content_length_ = other.content_length_;
+    cb_ = nullptr;
+    s_ = other.s_;
+    flags_ = other.flags_;
+    fs_ = other.fs_;
+    pos_ = other.pos_;
+    http_major_ = other.http_major_;
+    http_minor_ = other.http_minor_;
+    status_code_ = other.status_code_;
+    upgrade_ = other.upgrade_;
+    return *this;
 }
 
 template<bool isRequest, class Derived>
@@ -170,7 +218,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             call_on_start(ec);
             if(ec)
                 return errc();
-            assert(! cb_);
+            BOOST_ASSERT(! cb_);
             cb(&self::call_on_method);
             s_ = s_req_method;
             break;
@@ -194,7 +242,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             // VFALCO TODO Better checking for valid URL characters
             if(! is_text(ch))
                 return err(parse_error::bad_uri);
-            assert(! cb_);
+            BOOST_ASSERT(! cb_);
             cb(&self::call_on_uri);
             s_ = s_req_url;
             break;
@@ -377,7 +425,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             }
             if(! is_text(ch))
                 return err(parse_error::bad_reason);
-            assert(! cb_);
+            BOOST_ASSERT(! cb_);
             cb(&self::call_on_reason);
             s_ = s_res_reason;
             break;
@@ -429,7 +477,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 fs_ = h_general;
                 break;
             }
-            assert(! cb_);
+            BOOST_ASSERT(! cb_);
             cb(&self::call_on_field);
             s_ = s_header_name;
             break;
@@ -549,7 +597,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 content_length_ = 0;
                 flags_ |= parse_flag::contentlength;
             }
-            assert(! cb_);
+            BOOST_ASSERT(! cb_);
             cb(&self::call_on_value);
             s_ = s_header_value;
             // fall through
@@ -801,7 +849,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 return err(parse_error::bad_content_length);
             if(fs_ == h_upgrade)
                 flags_ |= parse_flag::upgrade;
-            assert(! cb_);
+            BOOST_ASSERT(! cb_);
             call_on_value(ec, boost::string_ref{"", 0});
             if(ec)
                 return errc();
@@ -880,7 +928,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             goto redo;
 
         case s_header_value_unfold:
-            assert(! cb_);
+            BOOST_ASSERT(! cb_);
             cb(&self::call_on_value);
             s_ = s_header_value;
             goto redo;
@@ -899,30 +947,57 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 return err(parse_error::illegal_content_length);
             upgrade_ = ((flags_ & (parse_flag::upgrade | parse_flag::connection_upgrade)) ==
                 (parse_flag::upgrade | parse_flag::connection_upgrade)) /*|| method == "connect"*/;
-            auto const maybe_skip = call_on_headers(ec);
+            call_on_headers(ec);
             if(ec)
                 return errc();
-            switch(maybe_skip)
+            auto const what = call_on_body_what(ec);
+            if(ec)
+                return errc();
+            switch(what)
             {
-            case 0:
+            case body_what::normal:
                 break;
-            case 2:
+            case body_what::upgrade:
                 upgrade_ = true;
                 // fall through
-            case 1:
+            case body_what::skip:
                 flags_ |= parse_flag::skipbody;
                 break;
-            default:
-                return err(parse_error::bad_on_headers_rv);
+            case body_what::pause:
+                ++p;
+                s_ = s_body_pause;
+                return used();
             }
             s_ = s_headers_done;
             goto redo;
         }
 
+        case s_body_pause:
+        {
+            auto const what = call_on_body_what(ec);
+            if(ec)
+                return errc();
+            switch(what)
+            {
+            case body_what::normal:
+                break;
+            case body_what::upgrade:
+                upgrade_ = true;
+                // fall through
+            case body_what::skip:
+                flags_ |= parse_flag::skipbody;
+                break;
+            case body_what::pause:
+                return used();
+            }
+            --p;
+            s_ = s_headers_done;
+            // fall through
+        }
+
         case s_headers_done:
         {
-            assert(! cb_);
-            call_on_headers(ec);
+            BOOST_ASSERT(! cb_);
             if(ec)
                 return errc();
             bool const hasBody =
@@ -959,7 +1034,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
         }
 
         case s_body_identity0:
-            assert(! cb_);
+            BOOST_ASSERT(! cb_);
             cb(&self::call_on_body);
             s_ = s_body_identity;
             // fall through
@@ -971,7 +1046,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 n = end - p;
             else
                 n = static_cast<std::size_t>(content_length_);
-            assert(content_length_ != 0 && content_length_ != no_content_length);
+            BOOST_ASSERT(content_length_ != 0 && content_length_ != no_content_length);
             content_length_ -= n;
             if(content_length_ == 0)
             {
@@ -984,7 +1059,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
         }
 
         case s_body_identity_eof0:
-            assert(! cb_);
+            BOOST_ASSERT(! cb_);
             cb(&self::call_on_body);
             s_ = s_body_identity_eof;
             // fall through
@@ -1073,7 +1148,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             break;
 
         case s_chunk_data0:
-            assert(! cb_);
+            BOOST_ASSERT(! cb_);
             cb(&self::call_on_body);
             s_ = s_chunk_data;
             goto redo; // VFALCO fall through?
@@ -1165,6 +1240,17 @@ write_eof(error_code& ec)
         ec = parse_error::short_read;
         break;
     }
+}
+
+template<bool isRequest, class Derived>
+void
+basic_parser_v1<isRequest, Derived>::
+reset()
+{
+    cb_ = nullptr;
+    h_left_ = h_max_;
+    b_left_ = b_max_;
+    reset(std::integral_constant<bool, isRequest>{});
 }
 
 template<bool isRequest, class Derived>

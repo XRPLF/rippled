@@ -8,10 +8,8 @@
 #ifndef BEAST_BIND_DETAIL_HANDLER_HPP
 #define BEAST_BIND_DETAIL_HANDLER_HPP
 
+#include <beast/core/handler_helpers.hpp>
 #include <beast/core/detail/integer_sequence.hpp>
-#include <boost/asio/detail/handler_alloc_helpers.hpp>
-#include <boost/asio/detail/handler_cont_helpers.hpp>
-#include <boost/asio/detail/handler_invoke_helpers.hpp>
 #include <utility>
 
 namespace beast {
@@ -69,7 +67,7 @@ public:
     asio_handler_allocate(
         std::size_t size, bound_handler* h)
     {
-        return boost_asio_handler_alloc_helpers::
+        return beast_asio_helpers::
             allocate(size, h->h_);
     }
 
@@ -78,7 +76,7 @@ public:
     asio_handler_deallocate(
         void* p, std::size_t size, bound_handler* h)
     {
-        boost_asio_handler_alloc_helpers::
+        beast_asio_helpers::
             deallocate(p, size, h->h_);
     }
 
@@ -86,7 +84,7 @@ public:
     bool
     asio_handler_is_continuation(bound_handler* h)
     {
-        return boost_asio_handler_cont_helpers::
+        return beast_asio_helpers::
             is_continuation (h->h_);
     }
 
@@ -95,7 +93,7 @@ public:
     void
     asio_handler_invoke(F&& f, bound_handler* h)
     {
-        boost_asio_handler_invoke_helpers::
+        beast_asio_helpers::
             invoke(f, h->h_);
     }
 };

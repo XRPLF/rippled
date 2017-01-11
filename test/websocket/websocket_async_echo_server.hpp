@@ -11,6 +11,7 @@
 #include <beast/core/placeholders.hpp>
 #include <beast/core/streambuf.hpp>
 #include <beast/websocket.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 #include <functional>
 #include <iostream>
@@ -134,18 +135,18 @@ private:
 
         struct identity
         {
-            template<class Body, class Headers>
+            template<class Body, class Fields>
             void
-            operator()(http::message<true, Body, Headers>& req)
+            operator()(http::message<true, Body, Fields>& req)
             {
-                req.headers.replace("User-Agent", "async_echo_client");
+                req.fields.replace("User-Agent", "async_echo_client");
             }
 
-            template<class Body, class Headers>
+            template<class Body, class Fields>
             void
-            operator()(http::message<false, Body, Headers>& resp)
+            operator()(http::message<false, Body, Fields>& resp)
             {
-                resp.headers.replace("Server", "async_echo_server");
+                resp.fields.replace("Server", "async_echo_server");
             }
         };
 
@@ -277,7 +278,7 @@ private:
                 d.state = 1;
                 d.ws.async_handshake(
                     d.ep->address().to_string() + ":" +
-                        std::to_string(d.ep->port()),
+                        boost::lexical_cast<std::string>(d.ep->port()),
                             "/", d.strand.wrap(std::move(*this)));
                 return;
             }

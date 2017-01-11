@@ -249,7 +249,7 @@ update(sha1_context& ctx,
         std::uint8_t const*>(message);
     for(;;)
     {
-        auto const n = std::min(
+        auto const n = (std::min)(
             size, sizeof(ctx.buf) - ctx.buflen);
         std::memcpy(ctx.buf + ctx.buflen, p, n);
         ctx.buflen += n;
