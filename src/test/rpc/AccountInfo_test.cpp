@@ -335,6 +335,31 @@ public:
             BEAST_EXPECT(p1[jss::result].isMember("info"));
             BEAST_EXPECT(p1[jss::result][jss::status] == "success");
         }
+        // Create error on first request
+        auto const has_error = std::string ("[{ ") +
+            "\"jsonrpc\": \"2.0\", "
+            "\"ripplerpc\": \"2.0\", "
+            "\"id\": 5, "
+            "\"method\": \"acount_info\", "
+            "\"params\": [{ "
+            "\"account\": \"" + alice.human() + "\"}]},"
+            "{"
+            "\"jsonrpc\": \"2.0\", "
+            "\"ripplerpc\": \"2.0\", "
+            "\"id\": 6, "
+            "\"method\": \"server_info\" "
+            "}]";
+        {
+            BEAST_EXPECT(reader.parse(has_error, jv));
+            // account_info without the "signer_lists" argument.
+            auto const info = env.rpc(jv);
+            BEAST_EXPECT(info.isArray());
+            BEAST_EXPECT(info.size() == 1);
+            auto const& p0 = info[0u];
+
+            BEAST_EXPECT(p0[jss::id] == 5);
+            BEAST_EXPECT(p0.isMember(jss::error));
+        }
     }
 
     void run()

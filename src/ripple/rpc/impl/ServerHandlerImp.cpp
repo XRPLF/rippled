@@ -585,12 +585,12 @@ ServerHandlerImp::processRequest (Port const& port,
 
         if (! method) {
             HTTPReply (400, "Null method", output, rpcJ);
-            continue;
+            break;
         }
 
         if (!method.isString ()) {
             HTTPReply (400, "method is not string", output, rpcJ);
-            continue;
+            break;
         }
 
         /* ---------------------------------------------------------------------- */
@@ -632,7 +632,7 @@ ServerHandlerImp::processRequest (Port const& port,
             if (usage.disconnect())
             {
                 HTTPReply(503, "Server is overloaded", output, rpcJ);
-                continue;
+                break;
             }
         }
 
@@ -640,7 +640,7 @@ ServerHandlerImp::processRequest (Port const& port,
         if (strMethod.empty())
         {
             HTTPReply (400, "method is empty", output, rpcJ);
-            continue;
+            break;
         }
 
         // Extract request parameters from the request Json as `params`.
@@ -657,7 +657,7 @@ ServerHandlerImp::processRequest (Port const& port,
         else if (!params.isArray () || params.size() != 1)
         {
             HTTPReply (400, "params unparseable", output, rpcJ);
-            continue;
+            break;
         }
         else
         {
@@ -665,7 +665,7 @@ ServerHandlerImp::processRequest (Port const& port,
             if (!params.isObject())
             {
                 HTTPReply (400, "params unparseable", output, rpcJ);
-                continue;
+                break;
             }
         }
 
@@ -677,7 +677,7 @@ ServerHandlerImp::processRequest (Port const& port,
             // FIXME Needs implementing
             // XXX This needs rate limiting to prevent brute forcing password.
             HTTPReply (403, "Forbidden", output, rpcJ);
-            continue;
+            break;
         }
 
         JLOG(m_journal.debug()) << "Query: " << strMethod << params;
@@ -697,6 +697,7 @@ ServerHandlerImp::processRequest (Port const& port,
         RPC::doCommand (context, result);
 
         // Always report "status".  On an error report the request as received.
+        bool on_error = false;
         if (result.isMember (jss::error))
         {
             result[jss::status] = jss::error;
@@ -704,6 +705,7 @@ ServerHandlerImp::processRequest (Port const& port,
             JLOG (m_journal.debug())  <<
                 "rpcError: " << result [jss::error] <<
                 ": " << result [jss::error_message];
+            on_error = true;
         }
         else
         {
@@ -740,6 +742,8 @@ ServerHandlerImp::processRequest (Port const& port,
         }
 
         HTTPReply (200, response, output, rpcJ);
+        if (on_error)
+            break;
     }
 }
 

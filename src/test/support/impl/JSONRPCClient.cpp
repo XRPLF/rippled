@@ -140,10 +140,10 @@ public:
         Json::Reader jr;
         Json::Value jv;
         jr.parse(buffer_string(res.body.data()), jv);
-        if(jv["result"].isMember("error"))
-            jv["error"] = jv["result"]["error"];
-        if(jv["result"].isMember("status"))
-            jv["status"] = jv["result"]["status"];
+        if(jv[jss::result].isMember(jss::error))
+            jv[jss::error] = jv[jss::result][jss::error];
+        if(jv[jss::result].isMember(jss::status))
+            jv[jss::status] = jv[jss::result][jss::status];
         return jv;
     }
 
@@ -174,6 +174,12 @@ public:
             {
                 read(stream_, bin_, res);
                 jr.parse(buffer_string(res.body.data()), jv[i]);
+                if(jv[i][jss::result].isMember(jss::error))
+                    jv[i][jss::error] = jv[i][jss::result][jss::error];
+                if(jv[i][jss::result].isMember(jss::status))
+                    jv[i][jss::status] = jv[i][jss::result][jss::status];
+                if (jv[i].isMember(jss::error))
+                    break;
             }
         }
         else
