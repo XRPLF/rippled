@@ -25,7 +25,7 @@ if [ ${ubuntu_release} == "12.04" ]; then
     add-apt-repository ppa:ubuntu-toolchain-r/test
     apt-get update
     apt-get -y upgrade
-    apt-get -y install curl git scons ctags pkg-config protobuf-compiler libprotobuf-dev libssl-dev python-software-properties boost1.57-all-dev nodejs g++-5 g++-4.9
+    apt-get -y install curl git scons ctags pkg-config protobuf-compiler libprotobuf-dev libssl-dev python-software-properties boost1.57-all-dev g++-5 g++-4.9
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 99 --slave /usr/bin/g++ g++ /usr/bin/g++-5
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 99 --slave /usr/bin/g++ g++ /usr/bin/g++-4.9
     exit 0
@@ -33,12 +33,12 @@ fi
 
 if [ ${ubuntu_release} == "14.04" ] || [ ${ubuntu_release} == "15.04" ]; then
     apt-get install python-software-properties
-    echo "deb [arch=amd64] https://mirrors.ripple.com/ubuntu/ trusty stable contrib" | sudo tee /etc/apt/sources.list.d/ripple.list 
+    echo "deb [arch=amd64] https://mirrors.ripple.com/ubuntu/ trusty stable contrib" | sudo tee /etc/apt/sources.list.d/ripple.list
     wget -O- -q https://mirrors.ripple.com/mirrors.ripple.com.gpg.key | sudo apt-key add -
     add-apt-repository ppa:ubuntu-toolchain-r/test
     apt-get update
     apt-get -y upgrade
-    apt-get -y install curl git scons ctags pkg-config protobuf-compiler libprotobuf-dev libssl-dev python-software-properties boost-all-dev nodejs g++-5 g++-4.9
+    apt-get -y install curl git scons ctags pkg-config protobuf-compiler libprotobuf-dev libssl-dev python-software-properties boost-all-dev g++-5 g++-4.9
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 99 --slave /usr/bin/g++ g++ /usr/bin/g++-5
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 99 --slave /usr/bin/g++ g++ /usr/bin/g++-4.9
     exit 0
@@ -47,7 +47,7 @@ fi
 if [ ${ubuntu_release} == "16.04" ] || [ ${ubuntu_release} == "15.10" ]; then
     apt-get update
     apt-get -y upgrade
-    apt-get -y install python-software-properties curl git scons ctags pkg-config protobuf-compiler libprotobuf-dev libssl-dev python-software-properties libboost-all-dev nodejs 
+    apt-get -y install python-software-properties curl git scons ctags pkg-config protobuf-compiler libprotobuf-dev libssl-dev python-software-properties libboost-all-dev
     exit 0
 fi
 

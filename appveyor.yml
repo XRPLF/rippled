@@ -113,7 +113,6 @@ build_script:
 after_build:
   - ps: |
         if ($env:build -eq "scons") {
-          # Put our executable in a place where npm test can find it.
           cp build/$($env:target)/rippled.exe build
           ls build
           $exe="build/rippled"
