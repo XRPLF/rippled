@@ -27,7 +27,7 @@ namespace ripple {
 namespace test {
 
 // a non-hashing Hasher that just copies the bytes.
-// used to test hash_append in base_uint
+// Used to test hash_append in base_uint
 template <std::size_t Bits>
 struct nonhash
 {
@@ -75,6 +75,9 @@ struct base_uint_test : beast::unit_test::suite
             BEAST_EXPECT(d == ++t);
         }
 
+        // Test hash_append by "hashing" with a no-op hasher (h)
+        // and then extracting the bytes that were written during hashing
+        // back into another base_uint (w) for comparison with the original
         nonhash<96> h;
         hash_append(h, u);
         test96 w {std::vector<std::uint8_t>(h.data_.begin(), h.data_.end())};
@@ -140,12 +143,13 @@ struct base_uint_test : beast::unit_test::suite
 
         // fails with extra char
         BEAST_EXPECT(! fromHex.SetHexExact("A" + to_string(u)));
-        BEAST_EXPECT(fromHex != u);
         fromHex = z;
 
-        // fails with extra char at end, but the value is still parsed (?)
+        // fails with extra char at end
         BEAST_EXPECT(! fromHex.SetHexExact(to_string(u) + "A"));
-        BEAST_EXPECT(fromHex == u);
+        // NOTE: the value fromHex is actually correctly parsed
+        // in this case, but that is an implementation detail and
+        // not guaranteed, thus we don't check the value here.
         fromHex = z;
 
         BEAST_EXPECT(fromHex.SetHex(to_string(u)));
@@ -165,7 +169,6 @@ struct base_uint_test : beast::unit_test::suite
         // invalid hex chars should fail (0 replaced with Z here)
         BEAST_EXPECT(! fromHex.SetHex(
             boost::algorithm::replace_all_copy(to_string(u), "0", "Z")));
-        BEAST_EXPECT(fromHex != u);
         fromHex = z;
 
         BEAST_EXPECT(fromHex.SetHex(to_string(u), true));
@@ -174,7 +177,16 @@ struct base_uint_test : beast::unit_test::suite
 
         // strict mode fails with leading chars
         BEAST_EXPECT(! fromHex.SetHex("  0x" + to_string(u), true));
-        BEAST_EXPECT(fromHex != u);
+        fromHex = z;
+
+        // SetHex ignores extra leading hexits, so the parsed value
+        // is still correct for the following case (strict or non-strict)
+        BEAST_EXPECT(fromHex.SetHex("DEAD" + to_string(u), true ));
+        BEAST_EXPECT(fromHex == u);
+        fromHex = z;
+
+        BEAST_EXPECT(fromHex.SetHex("DEAD" + to_string(u), false ));
+        BEAST_EXPECT(fromHex == u);
         fromHex = z;
     }
 };
