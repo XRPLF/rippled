@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <test/support/jtx.h>
+#include <test/jtx.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 

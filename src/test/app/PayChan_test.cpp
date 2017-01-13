@@ -24,7 +24,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/PayChan.h>
 #include <ripple/protocol/TxFlags.h>
-#include <test/support/jtx.h>
+#include <test/jtx.h>
 
 #include <chrono>
 

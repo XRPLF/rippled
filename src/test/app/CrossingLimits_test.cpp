@@ -16,7 +16,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <test/support/jtx.h>
+#include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
 
 namespace ripple {

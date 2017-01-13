@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/Slice.h>
-#include <test/support/TestSuite.h>
+#include <test/jtx/TestSuite.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/protocol/SecretKey.h>
 

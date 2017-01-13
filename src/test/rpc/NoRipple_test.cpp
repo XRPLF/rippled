@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/protocol/JsonFields.h>
-#include <test/support/jtx.h>
+#include <test/jtx.h>
 
 namespace ripple {
 

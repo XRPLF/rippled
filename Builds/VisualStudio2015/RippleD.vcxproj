@@ -4394,6 +4394,214 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\test\jtx.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\AbstractClient.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\Account.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\amount.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\balance.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\BasicNetwork.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\jtx\BasicNetwork_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\test\jtx\basic_prop.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\delivermin.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\Env.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\Env_ss.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\jtx\Env_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\test\jtx\fee.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\flags.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\jtx\impl\Account.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\amount.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\balance.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\delivermin.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\Env.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\fee.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\flags.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\JSONRPCClient.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\jtx_json.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\ManualTimeKeeper.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\memo.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\multisign.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\offer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\owners.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\paths.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\pay.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\quality2.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\rate.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\regkey.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\sendmax.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\seq.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\sig.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\tag.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\ticket.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\trust.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\txflags.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\utility.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\WSClient.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\test\jtx\JSONRPCClient.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\JTx.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\jtx_json.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\ManualTimeKeeper.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\memo.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\multisign.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\noop.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\offer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\owners.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\paths.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\PathSet.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\pay.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\prop.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\quality.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\rate.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\regkey.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\require.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\requires.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\sendmax.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\seq.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\sig.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\tag.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\tags.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\ter.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\TestSuite.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\ticket.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\trust.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\txflags.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\utility.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\WSClient.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\jtx\WSClient_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\ledger\BookDirs_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -4639,220 +4847,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\test\shamap\SHAMap_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\test\support\AbstractClient.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\BasicNetwork.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\test\support\BasicNetwork_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\Env_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\impl\JSONRPCClient.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\impl\ManualTimeKeeper.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\impl\WSClient.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\test\support\JSONRPCClient.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\Account.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\amount.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\balance.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\basic_prop.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\delivermin.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\Env.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\Env_ss.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\fee.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\flags.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\Account.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\amount.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\balance.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\delivermin.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\Env.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\fee.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\flags.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\jtx_json.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\memo.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\multisign.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\offer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\owners.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\paths.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\pay.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\quality2.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\rate.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\regkey.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\sendmax.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\seq.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\sig.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\tag.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\ticket.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\trust.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\txflags.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\utility.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\test\support\jtx\JTx.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\jtx_json.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\memo.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\multisign.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\noop.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\offer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\owners.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\paths.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\pay.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\prop.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\quality.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\rate.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\regkey.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\require.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\requires.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\sendmax.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\seq.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\sig.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\tag.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\tags.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\ter.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\ticket.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\trust.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\txflags.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\utility.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\ManualTimeKeeper.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\test\support\mao\impl\Net.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\test\support\mao\Net.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\PathSet.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\TestSuite.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\WSClient.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\test\support\WSClient_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>

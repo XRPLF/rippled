@@ -299,7 +299,7 @@ foreach(curdir
         rpc
         server
         shamap
-        support)
+        jtx)
     file(GLOB_RECURSE cursrcs src/test/${curdir}/*.cpp)
     list(APPEND test_srcs "${cursrcs}")
 endforeach()

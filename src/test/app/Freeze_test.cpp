@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <test/support/jtx.h>
+#include <test/jtx.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/SField.h>

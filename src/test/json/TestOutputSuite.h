@@ -22,7 +22,7 @@
 
 #include <ripple/json/Output.h>
 #include <ripple/json/Writer.h>
-#include <test/support/TestSuite.h>
+#include <test/jtx/TestSuite.h>
 
 namespace ripple {
 namespace test {

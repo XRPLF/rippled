@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
-#include <test/support/TestSuite.h>
+#include <test/jtx/TestSuite.h>
 #include <ripple/overlay/impl/Manifest.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/main/DBInit.h>

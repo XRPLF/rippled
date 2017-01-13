@@ -18,8 +18,8 @@
 #include <BeastConfig.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Indexes.h>
-#include <test/support/WSClient.h>
-#include <test/support/jtx.h>
+#include <test/jtx/WSClient.h>
+#include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/rpc/impl/Tuning.h>
 

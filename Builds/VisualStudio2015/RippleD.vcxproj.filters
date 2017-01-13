@@ -436,6 +436,12 @@
     <Filter Include="test\json">
       <UniqueIdentifier>{87249A3B-D8F5-1A8C-6C1D-F1CDCCF5242B}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test\jtx">
+      <UniqueIdentifier>{1B5596EA-E920-0BF3-81F5-D0D3A1786006}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\jtx\impl">
+      <UniqueIdentifier>{EE178E31-46DB-6ED5-D5F4-81BDC7A96765}</UniqueIdentifier>
+    </Filter>
     <Filter Include="test\ledger">
       <UniqueIdentifier>{272EB630-1801-CFB7-68ED-3FD2AF1FEF87}</UniqueIdentifier>
     </Filter>
@@ -462,24 +468,6 @@
     </Filter>
     <Filter Include="test\shamap">
       <UniqueIdentifier>{2E37F2EA-49FC-1F02-C3EA-D7EB608603A1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="test\support">
-      <UniqueIdentifier>{EAFC737C-277F-7D41-3A99-8B752EB7D534}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="test\support\impl">
-      <UniqueIdentifier>{3195322A-2CFC-904C-A6AA-1B60F8E5490D}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="test\support\jtx">
-      <UniqueIdentifier>{E6B36A4D-232C-FA63-7B5A-24ADE91F0F32}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="test\support\jtx\impl">
-      <UniqueIdentifier>{F9870E4C-E01C-B734-1475-92401F8766BF}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="test\support\mao">
-      <UniqueIdentifier>{52F836F7-261B-9EA5-8DC4-02E4B010F4D3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="test\support\mao\impl">
-      <UniqueIdentifier>{2AB83499-A4F2-EDED-BC79-6DC296EE9D8A}</UniqueIdentifier>
     </Filter>
     <Filter Include="test\unity">
       <UniqueIdentifier>{4FD99791-5191-0BFF-8D77-19500238E44E}</UniqueIdentifier>
@@ -5094,6 +5082,225 @@
     <ClCompile Include="..\..\src\test\json\Writer_test.cpp">
       <Filter>test\json</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\test\jtx.h">
+      <Filter>test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\AbstractClient.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\Account.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\amount.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\balance.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\BasicNetwork.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\jtx\BasicNetwork_test.cpp">
+      <Filter>test\jtx</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\test\jtx\basic_prop.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\delivermin.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\Env.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\Env_ss.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\jtx\Env_test.cpp">
+      <Filter>test\jtx</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\test\jtx\fee.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\flags.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\jtx\impl\Account.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\amount.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\balance.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\delivermin.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\Env.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\fee.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\flags.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\JSONRPCClient.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\jtx_json.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\ManualTimeKeeper.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\memo.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\multisign.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\offer.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\owners.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\paths.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\pay.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\quality2.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\rate.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\regkey.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\sendmax.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\seq.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\sig.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\tag.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\ticket.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\trust.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\txflags.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\utility.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\WSClient.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\test\jtx\JSONRPCClient.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\JTx.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\jtx_json.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\ManualTimeKeeper.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\memo.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\multisign.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\noop.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\offer.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\owners.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\paths.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\PathSet.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\pay.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\prop.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\quality.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\rate.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\regkey.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\require.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\requires.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\sendmax.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\seq.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\sig.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\tag.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\tags.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\ter.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\TestSuite.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\ticket.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\trust.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\txflags.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\utility.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\WSClient.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\jtx\WSClient_test.cpp">
+      <Filter>test\jtx</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\ledger\BookDirs_test.cpp">
       <Filter>test\ledger</Filter>
     </ClCompile>
@@ -5273,231 +5480,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\test\shamap\SHAMap_test.cpp">
       <Filter>test\shamap</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\test\support\AbstractClient.h">
-      <Filter>test\support</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\BasicNetwork.h">
-      <Filter>test\support</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\test\support\BasicNetwork_test.cpp">
-      <Filter>test\support</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\Env_test.cpp">
-      <Filter>test\support</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\impl\JSONRPCClient.cpp">
-      <Filter>test\support\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\impl\ManualTimeKeeper.cpp">
-      <Filter>test\support\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\impl\WSClient.cpp">
-      <Filter>test\support\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\test\support\JSONRPCClient.h">
-      <Filter>test\support</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx.h">
-      <Filter>test\support</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\Account.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\amount.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\balance.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\basic_prop.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\delivermin.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\Env.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\Env_ss.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\fee.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\flags.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\Account.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\amount.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\balance.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\delivermin.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\Env.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\fee.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\flags.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\jtx_json.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\memo.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\multisign.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\offer.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\owners.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\paths.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\pay.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\quality2.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\rate.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\regkey.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\sendmax.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\seq.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\sig.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\tag.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\ticket.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\trust.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\txflags.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\support\jtx\impl\utility.cpp">
-      <Filter>test\support\jtx\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\test\support\jtx\JTx.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\jtx_json.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\memo.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\multisign.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\noop.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\offer.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\owners.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\paths.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\pay.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\prop.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\quality.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\rate.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\regkey.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\require.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\requires.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\sendmax.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\seq.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\sig.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\tag.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\tags.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\ter.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\ticket.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\trust.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\txflags.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\jtx\utility.h">
-      <Filter>test\support\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\ManualTimeKeeper.h">
-      <Filter>test\support</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\test\support\mao\impl\Net.cpp">
-      <Filter>test\support\mao\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\test\support\mao\Net.h">
-      <Filter>test\support\mao</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\PathSet.h">
-      <Filter>test\support</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\TestSuite.h">
-      <Filter>test\support</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\test\support\WSClient.h">
-      <Filter>test\support</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\test\support\WSClient_test.cpp">
-      <Filter>test\support</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\unity\app_test_unity.cpp">
       <Filter>test\unity</Filter>

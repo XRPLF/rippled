@@ -963,7 +963,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/test/rpc', '.cpp'))
     append_sources(result, *list_sources('src/test/server', '.cpp'))
     append_sources(result, *list_sources('src/test/shamap', '.cpp'))
-    append_sources(result, *list_sources('src/test/support', '.cpp'))
+    append_sources(result, *list_sources('src/test/jtx', '.cpp'))
 
     
     if use_shp(toolchain):
