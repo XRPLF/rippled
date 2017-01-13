@@ -77,7 +77,6 @@ struct base_uint_test : beast::unit_test::suite
 
         nonhash<96> h;
         hash_append(h, u);
-        test96 y;
         test96 w {std::vector<std::uint8_t>(h.data_.begin(), h.data_.end())};
         BEAST_EXPECT(w == u);
 
