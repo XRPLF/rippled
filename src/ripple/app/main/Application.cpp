@@ -1104,12 +1104,8 @@ bool ApplicationImp::setup()
     m_overlay->setupValidatorKeyManifests (*config_, getWalletDB ());
 
     {
-        std::stringstream parseErr;
-        auto setup = setup_ServerHandler(*config_, parseErr);
-        if(parseErr.rdbuf()->in_avail())
-        {
-            JLOG(m_journal.error()) << parseErr.str();
-        }
+        beast::logstream errStream{ m_journal.error() };
+        auto setup = setup_ServerHandler(*config_, errStream);
         setup.makeContexts();
         serverHandler_->setup (setup, m_journal);
     }
