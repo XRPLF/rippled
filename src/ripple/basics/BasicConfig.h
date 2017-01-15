@@ -87,10 +87,7 @@ public:
         if (lines_.empty ())
             lines_.emplace_back (std::move (value));
         else
-        {
-            assert (lines_.size () == 1);
             lines_[0] = std::move (value);
-        }
     }
 
     /**
@@ -104,7 +101,7 @@ public:
     {
         if (lines_.empty ())
             return "";
-        else if (lines_.size () > 1)
+        if (lines_.size () > 1)
             Throw<std::runtime_error> (
                 "A legacy value must have exactly one line. Section: " + name_);
         return lines_[0];
