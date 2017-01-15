@@ -88,7 +88,6 @@ public:
             lines_.emplace_back (std::move (value));
         else
         {
-            assert (lines_.size () == 1);
             lines_[0] = std::move (value);
         }
     }
