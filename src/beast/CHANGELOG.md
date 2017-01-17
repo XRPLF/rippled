@@ -1,3 +1,14 @@
+1.0.0-b23
+
+* Tune websocket echo server for performance
+* Add file and line number to thrown exceptions
+* Better logging in async echo server
+* Add copy special members
+* Fix message constructor and special members
+* Travis CI improvements 
+
+--------------------------------------------------------------------------------
+
 1.0.0-b22
 
 * Fix broken Intellisense

@@ -40,6 +40,9 @@ elif [[ $(uname -s) == "Linux" ]]; then
   if ((${num_proc_units} < ${num_jobs})); then
       num_jobs=$num_proc_units
   fi
+  if [[ "${TRAVIS}" == "true" && ${NUM_PROCESSORS:=2} > ${num_jobs} ]]; then
+      num_jobs=$NUM_PROCESSORS
+  fi
 fi
 
 echo "using toolset: $CC"
@@ -99,10 +102,10 @@ function run_autobahn_test_suite {
 
   # We need to wait a while so wstest can connect!
   sleep 5
+  # Show the output (if any) as it is generated
+  tail -f nohup.out &
   cd scripts && wstest -m fuzzingclient
   cd ..
-  # Show the output
-  cat nohup.out
   rm nohup.out
   # Show what jobs are running
   jobs
@@ -110,6 +113,7 @@ function run_autobahn_test_suite {
   sleep 5
   # Kill it gracefully
   kill -INT %1
+  kill -INT %2
   # Wait for all the jobs to finish
   wait
   # Parse the test results, with python>=2.5<3 script
@@ -135,9 +139,10 @@ if [[ $VARIANT == "coverage" ]]; then
   # Perform test
   if [[ $MAIN_BRANCH == "1" ]]; then
     run_tests_with_valgrind
-    run_autobahn_test_suite
+    # skip slow autobahn tests
+    #run_autobahn_test_suite
   else
-    echo "skipping autobahn tests for feature branch build"
+    echo "skipping autobahn/valgrind tests for feature branch build"
     run_tests
   fi
 

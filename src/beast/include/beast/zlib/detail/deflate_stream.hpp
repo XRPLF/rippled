@@ -37,6 +37,7 @@
 
 #include <beast/zlib/zlib.hpp>
 #include <beast/zlib/detail/ranges.hpp>
+#include <beast/core/detail/type_traits.hpp>
 #include <boost/assert.hpp>
 #include <boost/optional.hpp>
 #include <cstdint>
@@ -893,14 +894,19 @@ doReset(
     if(windowBits == 8)
         windowBits = 9;
 
+    using beast::detail::make_exception;
+
     if(level < 0 || level > 9)
-        throw std::invalid_argument{"invalid level"};
+        throw make_exception<std::invalid_argument>(
+            "invalid level", __FILE__, __LINE__);
 
     if(windowBits < 8 || windowBits > 15)
-        throw std::invalid_argument{"invalid windowBits"};
+        throw make_exception<std::invalid_argument>(
+            "invalid windowBits", __FILE__, __LINE__);
 
     if(memLevel < 1 || memLevel > MAX_MEM_LEVEL)
-        throw std::invalid_argument{"invalid memLevel"};
+        throw make_exception<std::invalid_argument>(
+            "invalid memLevel", __FILE__, __LINE__);
 
     w_bits_ = windowBits;
 

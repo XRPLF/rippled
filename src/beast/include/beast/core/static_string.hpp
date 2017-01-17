@@ -8,6 +8,7 @@
 #ifndef BEAST_WEBSOCKET_STATIC_STRING_HPP
 #define BEAST_WEBSOCKET_STATIC_STRING_HPP
 
+#include <beast/core/detail/type_traits.hpp>
 #include <array>
 #include <cstdint>
 #include <iterator>
@@ -329,7 +330,8 @@ static_string<N, CharT, Traits>::
 static_string(static_string<M, CharT, Traits> const& s)
 {
     if(s.size() > N)
-        throw std::length_error("static_string overflow");
+        throw detail::make_exception<std::length_error>(
+            "static_string overflow", __FILE__, __LINE__);
     n_ = s.size();
     Traits::copy(&s_[0], &s.s_[0], n_ + 1);
 }
@@ -353,7 +355,8 @@ operator=(static_string<M, CharT, Traits> const& s) ->
     static_string&
 {
     if(s.size() > N)
-        throw std::length_error("static_string overflow");
+        throw detail::make_exception<std::length_error>(
+            "static_string overflow", __FILE__, __LINE__);
     n_ = s.size();
     Traits::copy(&s_[0], &s.s_[0], n_ + 1);
     return *this;
@@ -391,7 +394,8 @@ at(size_type pos) ->
     reference
 {
     if(pos >= n_)
-        throw std::out_of_range("static_string::at");
+        throw detail::make_exception<std::out_of_range>(
+            "invalid pos", __FILE__, __LINE__);
     return s_[pos];
 }
 
@@ -402,7 +406,8 @@ at(size_type pos) const ->
     const_reference
 {
     if(pos >= n_)
-        throw std::out_of_range("static_string::at");
+        throw detail::make_exception<std::out_of_range>(
+            "static_string::at", __FILE__, __LINE__);
     return s_[pos];
 }
 
@@ -412,7 +417,8 @@ static_string<N, CharT, Traits>::
 resize(std::size_t n)
 {
     if(n > N)
-        throw std::length_error("static_string overflow");
+        throw detail::make_exception<std::length_error>(
+            "static_string overflow", __FILE__, __LINE__);
     n_ = n;
     s_[n_] = 0;
 }
@@ -423,7 +429,8 @@ static_string<N, CharT, Traits>::
 resize(std::size_t n, CharT c)
 {
     if(n > N)
-        throw std::length_error("static_string overflow");
+        throw detail::make_exception<std::length_error>(
+            "static_string overflow", __FILE__, __LINE__);
     if(n > n_)
         Traits::assign(&s_[n_], n - n_, c);
     n_ = n;
@@ -462,7 +469,8 @@ assign(CharT const* s)
 {
     auto const n = Traits::length(s);
     if(n > N)
-        throw std::out_of_range("too large");
+        throw detail::make_exception<std::out_of_range>(
+            "too large", __FILE__, __LINE__);
     n_ = n;
     Traits::copy(&s_[0], s, n_ + 1);
 }

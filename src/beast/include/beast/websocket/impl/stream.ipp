@@ -20,6 +20,7 @@
 #include <beast/core/prepare_buffers.hpp>
 #include <beast/core/static_streambuf.hpp>
 #include <beast/core/stream_concepts.hpp>
+#include <beast/core/detail/type_traits.hpp>
 #include <boost/assert.hpp>
 #include <boost/endian/buffers.hpp>
 #include <algorithm>

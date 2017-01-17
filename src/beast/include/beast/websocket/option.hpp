@@ -10,6 +10,7 @@
 
 #include <beast/websocket/rfc6455.hpp>
 #include <beast/websocket/detail/decorator.hpp>
+#include <beast/core/detail/type_traits.hpp>
 #include <algorithm>
 #include <cstdint>
 #include <functional>
@@ -186,7 +187,8 @@ struct message_type
     message_type(opcode op)
     {
         if(op != opcode::binary && op != opcode::text)
-            throw std::domain_error("bad opcode");
+            throw beast::detail::make_exception<std::invalid_argument>(
+                "bad opcode", __FILE__, __LINE__);
         value = op;
     }
 };
@@ -277,6 +279,9 @@ struct read_buffer_size
     read_buffer_size(std::size_t n)
         : value(n)
     {
+        if(n < 8)
+            throw beast::detail::make_exception<std::invalid_argument>(
+                "read buffer size is too small", __FILE__, __LINE__);
     }
 };
 #endif
@@ -356,7 +361,8 @@ struct write_buffer_size
         : value(n)
     {
         if(n < 8)
-            throw std::domain_error("write buffer size is too small");
+            throw beast::detail::make_exception<std::invalid_argument>(
+                "write buffer size is too small", __FILE__, __LINE__);
     }
 };
 #endif
