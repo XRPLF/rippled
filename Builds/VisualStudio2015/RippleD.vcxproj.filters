@@ -2091,12 +2091,6 @@
     <ClInclude Include="..\..\src\ripple\beast\core\PlatformConfig.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\beast\core\RelativeTime.cpp">
-      <Filter>ripple\beast\core</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\beast\core\RelativeTime.h">
-      <Filter>ripple\beast\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\core\SemanticVersion.cpp">
       <Filter>ripple\beast\core</Filter>
     </ClCompile>

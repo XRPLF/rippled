@@ -37,10 +37,6 @@ public:
     explicit
     LoadMonitor (beast::Journal j);
 
-    void addCount ();
-
-    void addLatency (int latency);
-
     void addLoadSample (LoadEvent const& sample);
 
     void addSamples (int count, std::chrono::milliseconds latency);
@@ -65,13 +61,9 @@ public:
     bool isOver ();
 
 private:
-    static std::string printElapsed (double seconds);
-
     void update ();
 
-    using LockType = std::mutex;
-    using ScopedLockType = std::lock_guard <LockType>;
-    LockType mLock;
+    std::mutex mutex_;
 
     std::uint64_t mCounts;
     int           mLatencyEvents;

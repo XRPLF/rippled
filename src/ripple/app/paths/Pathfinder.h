@@ -181,7 +181,7 @@ private:
     bool convert_all_;
 
     std::shared_ptr <ReadView const> mLedger;
-    LoadEvent::pointer m_loadEvent;
+    std::shared_ptr<LoadEvent> m_loadEvent;
     std::shared_ptr<RippleLineCache> mRLCache;
 
     STPathElement mSource;

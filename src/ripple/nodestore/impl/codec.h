@@ -494,16 +494,7 @@ nodeobject_compress (void const* in,
     std::pair<void const*, std::size_t> result;
     switch(type)
     {
-    case 0: // uncompressed
-    {
-        result.second = vn + in_size;
-        std::uint8_t* p = reinterpret_cast<
-            std::uint8_t*>(bf(result.second));
-        result.first = p;
-        std::memcpy(p, vi.data(), vn);
-        std::memcpy(p + vn, in, in_size);
-        break;
-    }
+    // case 0 was uncompressed data; we always compress now.
     case 1: // lz4
     {
         std::uint8_t* p;

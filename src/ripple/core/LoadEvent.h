@@ -20,8 +20,9 @@
 #ifndef RIPPLE_CORE_LOADEVENT_H_INCLUDED
 #define RIPPLE_CORE_LOADEVENT_H_INCLUDED
 
-#include <ripple/beast/core/RelativeTime.h>
+#include <chrono>
 #include <memory>
+#include <string>
 
 namespace ripple {
 
@@ -35,51 +36,53 @@ class LoadMonitor;
 class LoadEvent
 {
 public:
-    // VFALCO NOTE Why are these shared pointers? Wouldn't there be a
-    //             piece of lifetime-managed calling code that can simply own
-    //             the object?
-    //
-    //             Why both kinds of containers?
-    //
-    using pointer = std::shared_ptr <LoadEvent>;
-    using autoptr = std::unique_ptr <LoadEvent>;
-
-public:
     // VFALCO TODO remove the dependency on LoadMonitor. Is that possible?
     LoadEvent (LoadMonitor& monitor,
                std::string const& name,
                bool shouldStart);
+    LoadEvent(LoadEvent const&) = delete;
 
     ~LoadEvent ();
 
-    std::string const& name () const;
-    double getSecondsWaiting() const;
-    double getSecondsRunning() const;
-    double getSecondsTotal() const;
+    std::string const&
+    name () const;
+
+    // The time spent waiting.
+    std::chrono::steady_clock::duration
+    waitTime() const;
+
+    // The time spent running.
+    std::chrono::steady_clock::duration
+    runTime() const;
 
     // VFALCO TODO rename this to setName () or setLabel ()
     void reName (std::string const& name);
 
-    // Start the measurement. The constructor calls this automatically if
-    // shouldStart is true. If the operation is aborted, start() can be
-    // called again later.
-    //
+    // Start the measurement. If already started, then
+    // restart, assigning the elapsed time to the "waiting"
+    // state.
     void start ();
 
-    // Stops the measurement and reports the results. The time reported is
-    // measured from the last call to start.
-    //
+    // Stop the measurement and report the results. The
+    // time reported is measured from the last call to
+    // start.
     void stop ();
 
 private:
-    LoadMonitor& m_loadMonitor;
-    bool m_isRunning;
-    std::string m_name;
-    // VFALCO TODO Replace these with chrono
-    beast::RelativeTime m_timeStopped;
-    beast::RelativeTime m_timeStarted;
-    double m_secondsWaiting;
-    double m_secondsRunning;
+    LoadMonitor& monitor_;
+
+    // Represents our current state
+    bool running_;
+
+    // The name associated with this event, if any.
+    std::string name_;
+
+    // Represents the time we last transitioned states
+    std::chrono::steady_clock::time_point mark_;
+
+    // The time we spent waiting and running respectively
+    std::chrono::steady_clock::duration timeWaiting_;
+    std::chrono::steady_clock::duration timeRunning_;
 };
 
 } // ripple

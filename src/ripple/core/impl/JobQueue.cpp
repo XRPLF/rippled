@@ -189,7 +189,7 @@ JobQueue::setThreadCount (int c, bool const standaloneMode)
     m_workers.setNumberOfThreads (c);
 }
 
-LoadEvent::pointer
+std::shared_ptr<LoadEvent>
 JobQueue::getLoadEvent (JobType t, std::string const& name)
 {
     JobDataMap::iterator iter (m_jobData.find (t));
@@ -202,7 +202,7 @@ JobQueue::getLoadEvent (JobType t, std::string const& name)
         std::ref (iter-> second.load ()), name, true);
 }
 
-LoadEvent::autoptr
+std::unique_ptr<LoadEvent>
 JobQueue::getLoadEventAP (JobType t, std::string const& name)
 {
     JobDataMap::iterator iter (m_jobData.find (t));

@@ -130,8 +130,8 @@ std::string DoSustain ()
             while (checkChild (pChild, 0))
                 sleep(sleepBetweenWaits);
 
-            auto pc = std::to_string (pChild);
-            rename ("core", ("core." + pc).c_str ());
+            (void)rename ("core",
+                ("core." + std::to_string(pChild)).c_str());
         }
     }
 }
