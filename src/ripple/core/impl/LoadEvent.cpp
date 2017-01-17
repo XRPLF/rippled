@@ -21,79 +21,74 @@
 #include <ripple/core/LoadEvent.h>
 #include <ripple/core/LoadMonitor.h>
 #include <cassert>
+#include <iomanip>
 
 namespace ripple {
 
-LoadEvent::LoadEvent (LoadMonitor& monitor, std::string const& name, bool shouldStart)
-    : m_loadMonitor (monitor)
-    , m_isRunning (false)
-    , m_name (name)
-    , m_timeStopped (beast::RelativeTime::fromStartup())
-    , m_secondsWaiting (0)
-    , m_secondsRunning (0)
+LoadEvent::LoadEvent (
+        LoadMonitor& monitor,
+        std::string const& name,
+        bool shouldStart)
+    : monitor_ (monitor)
+    , running_ (shouldStart)
+    , name_ (name)
+    , mark_ { std::chrono::steady_clock::now() }
+    , timeWaiting_ {}
+    , timeRunning_ {}
 {
-    if (shouldStart)
-        start ();
 }
 
 LoadEvent::~LoadEvent ()
 {
-    if (m_isRunning)
+    if (running_)
         stop ();
 }
 
 std::string const& LoadEvent::name () const
 {
-    return m_name;
+    return name_;
 }
 
-double LoadEvent::getSecondsWaiting() const
+std::chrono::steady_clock::duration
+LoadEvent::waitTime() const
 {
-    return m_secondsWaiting;
+    return timeWaiting_;
 }
 
-double LoadEvent::getSecondsRunning() const
+std::chrono::steady_clock::duration
+LoadEvent::runTime() const
 {
-    return m_secondsRunning;
-}
-
-double LoadEvent::getSecondsTotal() const
-{
-    return m_secondsWaiting + m_secondsRunning;
+    return timeRunning_;
 }
 
 void LoadEvent::reName (std::string const& name)
 {
-    m_name = name;
+    name_ = name;
 }
 
 void LoadEvent::start ()
 {
-    beast::RelativeTime const currentTime (beast::RelativeTime::fromStartup());
+    auto const now = std::chrono::steady_clock::now();
 
-    // If we already called start, this call will replace the previous one.
-    if (m_isRunning)
-    {
-        m_secondsWaiting += (currentTime - m_timeStarted).inSeconds();
-    }
-    else
-    {
-        m_secondsWaiting += (currentTime - m_timeStopped).inSeconds();
-        m_isRunning = true;
-    }
-
-    m_timeStarted = currentTime;
+    // If we had already called start, this call will
+    // replace the previous one. Any time accumulated will
+    // be counted as "waiting".
+    timeWaiting_ += now - mark_;
+    mark_ = now;
+    running_ = true;
 }
 
 void LoadEvent::stop ()
 {
-    assert (m_isRunning);
+    assert (running_);
 
-    m_timeStopped = beast::RelativeTime::fromStartup();
-    m_secondsRunning += (m_timeStopped - m_timeStarted).inSeconds();
+    auto const now = std::chrono::steady_clock::now();
 
-    m_isRunning = false;
-    m_loadMonitor.addLoadSample (*this);
+    timeRunning_ += now - mark_;
+    mark_ = now;
+    running_ = false;
+
+    monitor_.addLoadSample (*this);
 }
 
 } // ripple

@@ -151,12 +151,6 @@ public:
 
 //------------------------------------------------------------------------------
 
-Env::AppBundle::AppBundle(beast::unit_test::suite&,
-        Application* app_)
-    : app(app_)
-{
-}
-
 Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
     std::unique_ptr<Config> config)
 {

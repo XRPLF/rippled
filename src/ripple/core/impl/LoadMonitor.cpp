@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/UptimeTimer.h>
+#include <ripple/beast/clock/chrono_util.h>
 #include <ripple/core/LoadMonitor.h>
 
 namespace ripple {
@@ -66,9 +67,6 @@ LoadMonitor::LoadMonitor (beast::Journal j)
 void LoadMonitor::update ()
 {
     int now = UptimeTimer::getInstance ().getElapsedSeconds ();
-
-    // VFALCO TODO stop returning from the middle of functions.
-
     if (now == mLastUpdate) // current
         return;
 
@@ -104,73 +102,23 @@ void LoadMonitor::update ()
     while (mLastUpdate < now);
 }
 
-void LoadMonitor::addCount ()
+void LoadMonitor::addLoadSample (LoadEvent const& s)
 {
-    ScopedLockType sl (mLock);
+    using namespace std::chrono;
 
-    update ();
-    ++mCounts;
-}
+    auto const total = s.runTime() + s.waitTime();
+    // Don't include "jitter" as part of the latency
+    auto const latency = total < 2ms ? 0ms : round<milliseconds>(total);
 
-void LoadMonitor::addLatency (int latency)
-{
-    // VFALCO NOTE Why does 1 become 0?
-    if (latency == 1)
-        latency = 0;
-
-    ScopedLockType sl (mLock);
-
-    update ();
-
-    ++mLatencyEvents;
-    mLatencyMSAvg += latency;
-    mLatencyMSPeak += latency;
-
-    // Units are quarters of a millisecond
-    int const latencyPeak = mLatencyEvents * latency * 4;
-
-    if (mLatencyMSPeak < latencyPeak)
-        mLatencyMSPeak = latencyPeak;
-}
-
-std::string LoadMonitor::printElapsed (double seconds)
-{
-    std::stringstream ss;
-    ss << (std::size_t (seconds * 1000 + 0.5)) << " ms";
-    return ss.str();
-}
-
-void LoadMonitor::addLoadSample (LoadEvent const& sample)
-{
-    std::string const& name (sample.name());
-    beast::RelativeTime const latency (sample.getSecondsTotal());
-
-    if (latency.inSeconds() > 0.5)
+    if (latency > 500ms)
     {
-        auto mj = latency.inSeconds() > 1.0 ? j_.warn() : j_.info();
-        JLOG (mj)
-            << "Job: " << name << " ExecutionTime: " << printElapsed (sample.getSecondsRunning()) <<
-            " WaitingTime: " << printElapsed (sample.getSecondsWaiting());
+        auto mj = (latency > 1s) ? j_.warn() : j_.info();
+        JLOG (mj) << "Job: " << s.name() <<
+            " run: " << round<milliseconds>(s.runTime()).count() << "ms" <<
+            " wait: " << round<milliseconds>(s.waitTime()).count() << "ms";
     }
 
-    // VFALCO NOTE Why does 1 become 0?
-    std::size_t latencyMilliseconds (latency.inMilliseconds());
-    if (latencyMilliseconds == 1)
-        latencyMilliseconds = 0;
-
-    ScopedLockType sl (mLock);
-
-    update ();
-    ++mCounts;
-    ++mLatencyEvents;
-    mLatencyMSAvg += latencyMilliseconds;
-    mLatencyMSPeak += latencyMilliseconds;
-
-    // VFALCO NOTE Why are we multiplying by 4?
-    int const latencyPeak = mLatencyEvents * latencyMilliseconds * 4;
-
-    if (mLatencyMSPeak < latencyPeak)
-        mLatencyMSPeak = latencyPeak;
+    addSamples (1, latency);
 }
 
 /* Add multiple samples
@@ -179,7 +127,7 @@ void LoadMonitor::addLoadSample (LoadEvent const& sample)
 */
 void LoadMonitor::addSamples (int count, std::chrono::milliseconds latency)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard<std::mutex> sl (mutex_);
 
     update ();
     mCounts += count;
@@ -207,7 +155,7 @@ bool LoadMonitor::isOverTarget (std::uint64_t avg, std::uint64_t peak)
 
 bool LoadMonitor::isOver ()
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard<std::mutex> sl (mutex_);
 
     update ();
 
@@ -221,7 +169,7 @@ LoadMonitor::Stats LoadMonitor::getStats ()
 {
     Stats stats;
 
-    ScopedLockType sl (mLock);
+    std::lock_guard<std::mutex> sl (mutex_);
 
     update ();
 

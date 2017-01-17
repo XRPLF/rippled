@@ -142,7 +142,7 @@ private:
     JobType                     mType;
     std::uint64_t               mJobIndex;
     std::function <void (Job&)> mJob;
-    LoadEvent::pointer          m_loadEvent;
+    std::shared_ptr<LoadEvent>  m_loadEvent;
     std::string                 mName;
     clock_type::time_point m_queue_time;
 };

@@ -150,11 +150,13 @@ public:
 
     // VFALCO TODO Rename these to newLoadEventMeasurement or something similar
     //             since they create the object.
-    LoadEvent::pointer getLoadEvent (JobType t, std::string const& name);
+    std::shared_ptr<LoadEvent>
+    getLoadEvent (JobType t, std::string const& name);
 
     // VFALCO TODO Why do we need two versions, one which returns a shared
     //             pointer and the other which returns an autoptr?
-    LoadEvent::autoptr getLoadEventAP (JobType t, std::string const& name);
+    std::unique_ptr <LoadEvent>
+    getLoadEventAP (JobType t, std::string const& name);
 
     /** Add multiple load events.
     */

@@ -79,6 +79,7 @@ public:
             cacheTargetSize, cacheTargetSeconds)
         , m_readShut (false)
         , m_readGen (0)
+        , fdlimit_ (0)
         , m_storeCount (0)
         , m_fetchTotalCount (0)
         , m_fetchHitCount (0)

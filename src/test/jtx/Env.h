@@ -103,8 +103,6 @@ private:
 
         AppBundle (beast::unit_test::suite& suite,
             std::unique_ptr<Config> config);
-        AppBundle (beast::unit_test::suite& suite,
-            Application* app_);
         ~AppBundle();
     };
 

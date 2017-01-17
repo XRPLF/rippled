@@ -1558,11 +1558,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\core\PlatformConfig.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\beast\core\RelativeTime.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\beast\core\RelativeTime.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\core\SemanticVersion.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
