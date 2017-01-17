@@ -1104,8 +1104,9 @@ bool ApplicationImp::setup()
     m_overlay->setupValidatorKeyManifests (*config_, getWalletDB ());
 
     {
-        beast::logstream errStream{ m_journal.error() };
-        auto setup = setup_ServerHandler(*config_, errStream);
+        auto setup = setup_ServerHandler(
+            *config_,
+            beast::logstream { m_journal.error() });
         setup.makeContexts();
         serverHandler_->setup (setup, m_journal);
     }

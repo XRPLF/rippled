@@ -955,7 +955,7 @@ setup_Overlay (ServerHandler::Setup& setup)
 ServerHandler::Setup
 setup_ServerHandler(
     Config const& config,
-    std::ostream& log)
+    std::ostream&& log)
 {
     ServerHandler::Setup setup;
     setup.ports = parse_Ports(config, log);

@@ -1297,8 +1297,9 @@ rpcClient(std::vector<std::string> const& args,
             ServerHandler::Setup setup;
             try
             {
-                beast::logstream warnStream{ logs.journal ("HTTPClient").warn() };
-                setup = setup_ServerHandler(config, warnStream);
+                setup = setup_ServerHandler(
+                    config,
+                    beast::logstream { logs.journal ("HTTPClient").warn() });
             }
             catch (std::exception const&)
             {
