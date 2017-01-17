@@ -770,10 +770,11 @@ ServerHandler::Setup::makeContexts()
         {
             if (p.ssl_key.empty() && p.ssl_cert.empty() &&
                     p.ssl_chain.empty())
-                p.context = make_SSLContext();
+                p.context = make_SSLContext(p.ssl_ciphers);
             else
                 p.context = make_SSLContextAuthed (
-                    p.ssl_key, p.ssl_cert, p.ssl_chain);
+                    p.ssl_key, p.ssl_cert, p.ssl_chain,
+                    p.ssl_ciphers);
         }
         else
         {
@@ -828,6 +829,7 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
     p.ssl_key = parsed.ssl_key;
     p.ssl_cert = parsed.ssl_cert;
     p.ssl_chain = parsed.ssl_chain;
+    p.ssl_ciphers = parsed.ssl_ciphers;
 
     return p;
 }

@@ -27,12 +27,17 @@ namespace ripple {
 
 /** Create a self-signed SSL context that allows anonymous Diffie Hellman. */
 std::shared_ptr<boost::asio::ssl::context>
-make_SSLContext();
+make_SSLContext(
+    std::string cipherList);
 
 /** Create an authenticated SSL context using the specified files. */
 std::shared_ptr<boost::asio::ssl::context>
-make_SSLContextAuthed (std::string const& key_file,
-    std::string const& cert_file, std::string const& chain_file);
+make_SSLContextAuthed (
+    std::string keyFile,
+    std::string certFile,
+    std::string chainFile,
+    std::string cipherList);
+
 
 }
 

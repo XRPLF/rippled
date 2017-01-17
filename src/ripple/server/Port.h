@@ -49,6 +49,7 @@ struct Port
     std::string ssl_key;
     std::string ssl_cert;
     std::string ssl_chain;
+    std::string ssl_ciphers;
     std::shared_ptr<boost::asio::ssl::context> context;
 
     // How many incoming connections are allowed on this
@@ -81,6 +82,7 @@ struct ParsedPort
     std::string ssl_key;
     std::string ssl_cert;
     std::string ssl_chain;
+    std::string ssl_ciphers;
     int limit = 0;
 
     boost::optional<boost::asio::ip::address> ip;

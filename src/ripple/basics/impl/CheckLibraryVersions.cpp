@@ -29,12 +29,8 @@
 namespace ripple {
 namespace version {
 
-using VersionNumber = unsigned long long;
-
-const char boostMinimal[] = "1.57.0";
-const char openSSLMinimal[] = "1.0.1-g";
-
-std::string boostVersion(VersionNumber boostVersion)
+std::string
+boostVersion(VersionNumber boostVersion)
 {
     std::stringstream ss;
     ss << (boostVersion / 100000) << "."
@@ -43,7 +39,8 @@ std::string boostVersion(VersionNumber boostVersion)
     return ss.str();
 }
 
-std::string openSSLVersion(VersionNumber openSSLVersion)
+std::string
+openSSLVersion(VersionNumber openSSLVersion)
 {
     std::stringstream ss;
     ss << (openSSLVersion / 0x10000000L) << "."
@@ -80,18 +77,45 @@ void checkVersion(std::string name, std::string required, std::string actual)
 
 void checkBoost(std::string version)
 {
+    const char* boostMinimal = "1.57.0";
     checkVersion("Boost", boostMinimal, version);
 }
 
 void checkOpenSSL(std::string version)
 {
-    checkVersion("OpenSSL", openSSLMinimal, version);
+    // The minimal version depends on whether we're linking
+    // against 1.0.1 or later versions:
+    beast::SemanticVersion v;
+
+    char const* openSSLMinimal101 = "1.0.1-g";
+    char const* openSSLMinimal102 = "1.0.2-j";
+
+    if (v.parse (version) &&
+            v.majorVersion == 1 &&
+                v.minorVersion == 0 &&
+                    v.patchVersion == 1)
+    {
+        // Use of the 1.0.1 series should be dropped as soon
+        // as possible since as of January 2, 2017 it is no
+        // longer supported. Unfortunately, a number of
+        // platforms officially supported by Ripple still
+        // use the 1.0.1 branch.
+        //
+        // Additionally, requiring 1.0.1u (the latest) is
+        // similarly not possible, since those officially
+        // supported platforms use older releases and
+        // backport important fixes.
+        checkVersion ("OpenSSL", openSSLMinimal101, version);
+        return;
+    }
+
+    checkVersion ("OpenSSL", openSSLMinimal102, version);
 }
 
 void checkLibraryVersions()
 {
-    checkBoost();
-    checkOpenSSL();
+    checkBoost(boostVersion(BOOST_VERSION));
+    checkOpenSSL(openSSLVersion(OPENSSL_VERSION_NUMBER));
 }
 
 }  // namespace version
