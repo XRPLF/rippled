@@ -246,6 +246,18 @@ struct message : header<isRequest, Fields>
     /// Default constructor
     message() = default;
 
+    /// Move constructor
+    message(message&&) = default;
+
+    /// Copy constructor
+    message(message const&) = default;
+
+    /// Move assignment
+    message& operator=(message&&) = default;
+
+    /// Copy assignment
+    message& operator=(message const&) = default;
+
     /** Construct a message from a header.
 
         Additional arguments, if any, are forwarded to
@@ -281,8 +293,9 @@ struct message : header<isRequest, Fields>
     */
     template<class U
 #if ! GENERATING_DOCS
-        , class = typename std::enable_if<! std::is_convertible<
-            typename std::decay<U>::type, base_type>::value>
+        , class = typename std::enable_if<
+            ! std::is_convertible<typename
+                std::decay<U>::type, base_type>::value>::type
 #endif
     >
     explicit
@@ -303,7 +316,7 @@ struct message : header<isRequest, Fields>
     template<class U, class V
 #if ! GENERATING_DOCS
         ,class = typename std::enable_if<! std::is_convertible<
-            typename std::decay<U>::type, base_type>::value>
+            typename std::decay<U>::type, base_type>::value>::type
 #endif
     >
     message(U&& u, V&& v)

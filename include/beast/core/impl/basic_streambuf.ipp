@@ -524,8 +524,8 @@ basic_streambuf<Allocator>::basic_streambuf(
     , alloc_size_(alloc_size)
 {
     if(alloc_size <= 0)
-        throw std::invalid_argument(
-            "basic_streambuf: invalid alloc_size");
+        throw detail::make_exception<std::invalid_argument>(
+            "invalid alloc_size", __FILE__, __LINE__);
 }
 
 template<class Allocator>

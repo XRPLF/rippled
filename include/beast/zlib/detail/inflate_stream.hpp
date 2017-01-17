@@ -40,6 +40,7 @@
 #include <beast/zlib/detail/bitstream.hpp>
 #include <beast/zlib/detail/ranges.hpp>
 #include <beast/zlib/detail/window.hpp>
+#include <beast/core/detail/type_traits.hpp>
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -232,7 +233,8 @@ inflate_stream::
 doReset(int windowBits)
 {
     if(windowBits < 8 || windowBits > 15)
-        throw std::domain_error("windowBits out of range");
+        throw beast::detail::make_exception<std::domain_error>(
+            "windowBits out of range", __FILE__, __LINE__);
     w_.reset(windowBits);
 
     bi_.flush();
@@ -706,7 +708,8 @@ doWrite(z_params& zs, Flush flush, error_code& ec)
 
         case SYNC:
         default:
-            throw std::logic_error("stream error");
+            throw beast::detail::make_exception<std::logic_error>(
+                "stream error", __FILE__, __LINE__);
         }
     }
 }
@@ -932,8 +935,8 @@ inflate_table(
 
     auto const not_enough = []
     {
-        throw std::logic_error(
-            "insufficient output size when inflating tables");
+        throw beast::detail::make_exception<std::logic_error>(
+            "insufficient output size when inflating tables", __FILE__, __LINE__);
     };
 
     // check available table space

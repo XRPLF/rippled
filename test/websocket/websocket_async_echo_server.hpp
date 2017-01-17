@@ -18,6 +18,8 @@
 #include <memory>
 #include <thread>
 
+#include <ostream>
+
 namespace beast {
 namespace websocket {
 
@@ -31,38 +33,24 @@ public:
     using socket_type = boost::asio::ip::tcp::socket;
 
 private:
-    bool log_ = false;
+    std::ostream* log_;
     boost::asio::io_service ios_;
     socket_type sock_;
     boost::asio::ip::tcp::acceptor acceptor_;
     std::vector<std::thread> thread_;
+    boost::optional<boost::asio::io_service::work> work_;
 
 public:
-    async_echo_server(bool server,
-            endpoint_type const& ep, std::size_t threads)
-        : sock_(ios_)
+    async_echo_server(async_echo_server const&) = delete;
+    async_echo_server& operator=(async_echo_server const&) = delete;
+
+    async_echo_server(std::ostream* log,
+            std::size_t threads)
+        : log_(log)
+        , sock_(ios_)
         , acceptor_(ios_)
+        , work_(ios_)
     {
-        if(server)
-        {
-            error_code ec;
-            acceptor_.open(ep.protocol(), ec);
-            maybe_throw(ec, "open");
-            acceptor_.set_option(
-                boost::asio::socket_base::reuse_address{true});
-            acceptor_.bind(ep, ec);
-            maybe_throw(ec, "bind");
-            acceptor_.listen(
-                boost::asio::socket_base::max_connections, ec);
-            maybe_throw(ec, "listen");
-            acceptor_.async_accept(sock_,
-                std::bind(&async_echo_server::on_accept, this,
-                    beast::asio::placeholders::error));
-        }
-        else
-        {
-            Peer{log_, std::move(sock_), ep};
-        }
         thread_.reserve(threads);
         for(std::size_t i = 0; i < threads; ++i)
             thread_.emplace_back(
@@ -71,11 +59,52 @@ public:
 
     ~async_echo_server()
     {
+        work_ = boost::none;
         error_code ec;
         ios_.dispatch(
             [&]{ acceptor_.close(ec); });
         for(auto& t : thread_)
             t.join();
+    }
+
+    void
+    open(bool server,
+        endpoint_type const& ep, error_code& ec)
+    {
+        if(server)
+        {
+            acceptor_.open(ep.protocol(), ec);
+            if(ec)
+            {
+                if(log_)
+                    (*log_) << "open: " << ec.message() << std::endl;
+                return;
+            }
+            acceptor_.set_option(
+                boost::asio::socket_base::reuse_address{true});
+            acceptor_.bind(ep, ec);
+            if(ec)
+            {
+                if(log_)
+                    (*log_) << "bind: " << ec.message() << std::endl;
+                return;
+            }
+            acceptor_.listen(
+                boost::asio::socket_base::max_connections, ec);
+            if(ec)
+            {
+                if(log_)
+                    (*log_) << "listen: " << ec.message() << std::endl;
+                return;
+            }
+            acceptor_.async_accept(sock_,
+                std::bind(&async_echo_server::on_accept, this,
+                    beast::asio::placeholders::error));
+        }
+        else
+        {
+            Peer{*this, std::move(sock_), ep};
+        }
     }
 
     endpoint_type
@@ -89,7 +118,7 @@ private:
     {
         struct data
         {
-            bool log;
+            async_echo_server& server;
             int state = 0;
             boost::optional<endpoint_type> ep;
             stream<socket_type> ws;
@@ -98,8 +127,9 @@ private:
             beast::streambuf db;
             int id;
 
-            data(bool log_, socket_type&& sock_)
-                : log(log_)
+            data(async_echo_server& server_,
+                    socket_type&& sock_)
+                : server(server_)
                 , ws(std::move(sock_))
                 , strand(ws.get_io_service())
                 , id([]
@@ -110,9 +140,9 @@ private:
             {
             }
 
-            data(bool log_, socket_type&& sock_,
-                    endpoint_type const& ep_)
-                : log(log_)
+            data(async_echo_server& server_,
+                    socket_type&& sock_, endpoint_type const& ep_)
+                : server(server_)
                 , ep(ep_)
                 , ws(std::move(sock_))
                 , strand(ws.get_io_service())
@@ -152,14 +182,17 @@ private:
 
         template<class... Args>
         explicit
-        Peer(bool log, socket_type&& sock, Args&&... args)
-            : d_(std::make_shared<data>(log,
+        Peer(async_echo_server& server,
+                socket_type&& sock, Args&&... args)
+            : d_(std::make_shared<data>(server,
                 std::forward<socket_type>(sock),
                     std::forward<Args>(args)...))
         {
             auto& d = *d_;
             d.ws.set_option(decorate(identity{}));
             d.ws.set_option(read_message_max(64 * 1024 * 1024));
+            d.ws.set_option(auto_fragment{false});
+            //d.ws.set_option(write_buffer_size{64 * 1024});
             run();
         }
 
@@ -289,10 +322,10 @@ private:
         fail(error_code ec, std::string what)
         {
             auto& d = *d_;
-            if(d.log)
+            if(d.server.log_)
             {
                 if(ec != error::closed)
-                    std::cerr << "#" << d_->id << " " <<
+                    (*d.server.log_) << "#" << d.id << " " <<
                         what << ": " << ec.message() << std::endl;
             }
         }
@@ -302,7 +335,7 @@ private:
     fail(error_code ec, std::string what)
     {
         if(log_)
-            std::cerr << what << ": " <<
+            (*log_) << what << ": " <<
                 ec.message() << std::endl;
     }
 
@@ -328,7 +361,7 @@ private:
         acceptor_.async_accept(sock_,
             std::bind(&async_echo_server::on_accept, this,
                 beast::asio::placeholders::error));
-        Peer{false, std::move(sock)};
+        Peer{*this, std::move(sock)};
     }
 };
 

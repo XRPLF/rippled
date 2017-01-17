@@ -278,6 +278,19 @@ public:
         BEAST_EXPECT(m2.fields.exists("h"));
     }
 
+    void
+    testSpecialMembers()
+    {
+        response<string_body> r1;
+        response<string_body> r2{r1};
+        response<string_body> r3{std::move(r2)};
+        r2 = r3;
+        r1 = std::move(r2);
+        [r1]()
+        {
+        }();
+    }
+
     void run() override
     {
         testMessage();
@@ -285,6 +298,7 @@ public:
         testFreeFunctions();
         testPrepare();
         testSwap();
+        testSpecialMembers();
     }
 };
 

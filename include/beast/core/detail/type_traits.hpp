@@ -10,6 +10,8 @@
 
 #include <tuple>
 #include <type_traits>
+#include <stdexcept>
+#include <string>
 
 namespace beast {
 namespace detail {
@@ -77,6 +79,18 @@ struct repeat_tuple<0, T>
 {
     using type = std::tuple<>;
 };
+
+template<class Exception>
+Exception
+make_exception(char const* reason, char const* file, int line)
+{
+	char const* n = file;
+	for(auto p = file; *p; ++p)
+		if(*p == '\\' || *p == '/')
+			n = p + 1;
+	return Exception{std::string(reason) + " (" +
+		n + ":" + std::to_string(line) + ")"};
+}
 
 } // detail
 } // beast

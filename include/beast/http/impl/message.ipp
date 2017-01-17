@@ -159,6 +159,8 @@ void
 prepare(message<isRequest, Body, Fields>& msg,
     Options&&... options)
 {
+    using beast::detail::make_exception;
+
     // VFALCO TODO
     static_assert(is_Body<Body>::value,
         "Body requirements not met");
@@ -174,16 +176,16 @@ prepare(message<isRequest, Body, Fields>& msg,
         std::forward<Options>(options)...);
 
     if(msg.fields.exists("Connection"))
-        throw std::invalid_argument(
-            "prepare called with Connection field set");
+        throw make_exception<std::invalid_argument>(
+            "prepare called with Connection field set", __FILE__, __LINE__);
 
     if(msg.fields.exists("Content-Length"))
-        throw std::invalid_argument(
-            "prepare called with Content-Length field set");
+        throw make_exception<std::invalid_argument>(
+            "prepare called with Content-Length field set", __FILE__, __LINE__);
 
     if(token_list{msg.fields["Transfer-Encoding"]}.exists("chunked"))
-        throw std::invalid_argument(
-            "prepare called with Transfer-Encoding: chunked set");
+        throw make_exception<std::invalid_argument>(
+            "prepare called with Transfer-Encoding: chunked set", __FILE__, __LINE__);
 
     if(pi.connection_value != connection::upgrade)
     {
@@ -254,8 +256,8 @@ prepare(message<isRequest, Body, Fields>& msg,
     // rfc7230 6.7.
     if(msg.version < 11 && token_list{
             msg.fields["Connection"]}.exists("upgrade"))
-        throw std::invalid_argument(
-            "invalid version for Connection: upgrade");
+        throw make_exception<std::invalid_argument>(
+            "invalid version for Connection: upgrade", __FILE__, __LINE__);
 }
 
 } // http
