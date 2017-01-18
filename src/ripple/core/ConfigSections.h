@@ -66,7 +66,7 @@ struct ConfigSection
 #define SECTION_VALIDATOR_LIST_KEYS     "validator_list_keys"
 #define SECTION_VALIDATOR_LIST_SITES    "validator_list_sites"
 #define SECTION_VALIDATORS              "validators"
-#define SECTION_VALIDATION_MANIFEST     "validation_manifest"
+#define SECTION_VALIDATOR_TOKEN         "validator_token"
 #define SECTION_VETO_AMENDMENTS         "veto_amendments"
 
 } // ripple

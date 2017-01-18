@@ -365,6 +365,13 @@ ValidatorList::trustedPublisher (PublicKey const& identity) const
     return identity.size() && publisherLists_.count (identity);
 }
 
+PublicKey
+ValidatorList::localPublicKey () const
+{
+    boost::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    return localPubKey_;
+}
+
 bool
 ValidatorList::removePublisherList (PublicKey const& publisherKey)
 {

@@ -141,9 +141,13 @@ class test_Sign(TestCase):
         Sign.perform_sign(self.SEQUENCE, public, private, private, print=self.print)
         self.assertEquals(
             self.results,
-            [[['[validation_manifest]'], {}],
-             [['JAAAABdxIe2DIKUZd9jDjKikknxnDfWCHkSXYZReFenvsmoVCdIw6nMhAnZ2dnZ2dnZ2dnZ2\n'
-               'dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dkYwRAIgXyobHA8sDQxmDJNLE6HIaARlzvcd79/wT068\n'
-               'e113gUkCIHkI540JQT2LHwAD7/y3wFE5X3lEXMfgZRkpLZTxkpticBJAzo5VrUEr0U47sHvu\n'
-               'IjbrINLCTM6pAScA899G9kpMWexbXv1ceIbTP5JH1HyQmsZsROTeHR0irojvYgx7JLaiAA=='],
+            [[['[validator_token]'], {}],
+             [['eyJ2YWxpZGF0aW9uX3ByaXZhdGVfa2V5IjoiNmI2YjZiNmI2YjZiNmI2YjZiNmI2Yj\n'
+               'ZiNmI2YjZiNmI2YjZiNmI2YjZiNmI2YjZiNmI2YjZiNmI2YjZiNmI2YiIsIm1hbmlm\n'
+               'ZXN0IjoiSkFBQUFCZHhJZTJESUtVWmQ5akRqS2lra254bkRmV0NIa1NYWVpSZUZlbn\n'
+               'ZzbW9WQ2RJdzZuTWhBbloyZG5aMmRuWjJkbloyZG5aMmRuWjJkbloyZG5aMmRuWjJk\n'
+               'bloyZG5aMmRrWXdSQUlnWHlvYkhBOHNEUXhtREpOTEU2SElhQVJsenZjZDc5L3dUMD\n'
+               'Y4ZTExM2dVa0NJSGtJNTQwSlFUMkxId0FENy95M3dGRTVYM2xFWE1mZ1pSa3BMWlR4\n'
+               'a3B0aWNCSkF6bzVWclVFcjBVNDdzSHZ1SWpicklOTENUTTZwQVNjQTg5OUc5a3BNV2\n'
+               'V4Ylh2MWNlSWJUUDVKSDFIeVFtc1pzUk9UZUhSMGlyb2p2WWd4N0pMYWlBQT09In0='],
               {}]])

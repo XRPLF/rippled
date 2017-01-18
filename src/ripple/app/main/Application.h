@@ -57,6 +57,8 @@ class OrderBookDB;
 class Overlay;
 class PathRequests;
 class PendingSaves;
+class PublicKey;
+class SecretKey;
 class AccountIDCache;
 class STLedgerEntry;
 class TimeKeeper;

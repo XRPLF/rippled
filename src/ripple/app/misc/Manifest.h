@@ -22,6 +22,7 @@
 
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <string>
@@ -54,8 +55,8 @@ namespace ripple {
     There are two stores of information within rippled related to manifests.
     An instance of ManifestCache stores, for each trusted validator, (a) its
     master public key, and (b) the most senior of all valid manifests it has
-    seen for that validator, if any.  On startup, the [validation_manifest]
-    config entry (which is the manifest for this validator) is decoded and
+    seen for that validator, if any.  On startup, the [validator_token] config
+    entry (which contains the manifest for this validator) is decoded and
     added to the manifest cache.  Other manifests are added as "gossip" is
     received from rippled peers.
 
@@ -79,8 +80,6 @@ namespace ripple {
 
 struct Manifest
 {
-    static std::size_t constexpr textLength = 288;
-
     std::string serialized;
     PublicKey masterKey;
     PublicKey signingKey;
@@ -126,6 +125,22 @@ struct Manifest
 
     /// Returns manifest master key signature
     Blob getMasterSignature () const;
+};
+
+struct ValidatorToken
+{
+    std::string manifest;
+    SecretKey validationSecret;
+
+private:
+    ValidatorToken(std::string const& m, SecretKey const& valSecret);
+
+public:
+    ValidatorToken(ValidatorToken const&) = delete;
+    ValidatorToken(ValidatorToken&& other) = default;
+
+    static boost::optional<ValidatorToken>
+    make_ValidatorToken(std::vector<std::string> const& tokenBlob);
 };
 
 enum class ManifestDisposition
@@ -230,7 +245,7 @@ public:
     */
     bool load (
         DatabaseCon& dbCon, std::string const& dbTable,
-        std::vector<std::string> const& configManifest);
+        std::string const& configManifest);
 
     /** Populate manifest cache with manifests in database.
 
