@@ -23,8 +23,6 @@
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/protocol/SystemParameters.h> // VFALCO Breaks levelization
-#include <ripple/protocol/PublicKey.h> // NIKB Breaks levelization (TEMP)
-#include <ripple/protocol/SecretKey.h> // NIKB Breaks levelization (TEMP)
 #include <ripple/beast/net/IPEndpoint.h>
 #include <beast/core/detail/ci_char_traits.hpp>
 #include <ripple/beast/utility/Journal.h>
@@ -152,12 +150,7 @@ public:
     int                         PATH_SEARCH_MAX = 10;
 
     // Validation
-    PublicKey                   VALIDATION_PUB;
-    SecretKey                   VALIDATION_PRIV;
     boost::optional<std::size_t> VALIDATION_QUORUM;     // Minimum validations to consider ledger authoritative
-
-    // Node Identity
-    std::string                 NODE_SEED;
 
     std::uint64_t                      FEE_DEFAULT = 10;
     std::uint64_t                      FEE_ACCOUNT_RESERVE = 200*SYSTEM_CURRENCY_PARTS;

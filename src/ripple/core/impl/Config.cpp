@@ -358,22 +358,10 @@ void Config::loadFromString (std::string const& fileContents)
     if (getSingleSection (secConfig, SECTION_SSL_VERIFY, strTemp, j_))
         SSL_VERIFY          = beast::lexicalCastThrow <bool> (strTemp);
 
-    if (getSingleSection (secConfig, SECTION_VALIDATION_SEED, strTemp, j_))
-    {
-        auto const seed = parseBase58<Seed>(strTemp);
-        if (!seed)
-            Throw<std::runtime_error> (
-                "Invalid seed specified in [" SECTION_VALIDATION_SEED "]");
-        VALIDATION_PRIV = generateSecretKey (KeyType::secp256k1, *seed);
-        VALIDATION_PUB = derivePublicKey (KeyType::secp256k1, VALIDATION_PRIV);
-    }
-
-    if (getSingleSection (secConfig, SECTION_NODE_SEED, NODE_SEED, j_))
-    {
-        if (!parseBase58<Seed>(NODE_SEED))
-            Throw<std::runtime_error> (
-                "Invalid seed specified in [" SECTION_NODE_SEED "]");
-    }
+    if (exists(SECTION_VALIDATION_SEED) && exists(SECTION_VALIDATOR_TOKEN))
+        Throw<std::runtime_error> (
+            "Cannot have both [" SECTION_VALIDATION_SEED "] "
+            "and [" SECTION_VALIDATOR_TOKEN "] config sections");
 
     if (getSingleSection (secConfig, SECTION_NETWORK_QUORUM, strTemp, j_))
         NETWORK_QUORUM      = beast::lexicalCastThrow <std::size_t> (strTemp);

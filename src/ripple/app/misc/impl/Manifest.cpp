@@ -20,11 +20,15 @@
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/StringUtilities.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/json/json_reader.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Sign.h>
 #include <beast/core/detail/base64.hpp>
+#include <boost/regex.hpp>
+#include <numeric>
 #include <stdexcept>
 
 namespace ripple {
@@ -137,6 +141,58 @@ Blob Manifest::getMasterSignature () const
     SerialIter sit (serialized.data (), serialized.size ());
     st.set (sit);
     return st.getFieldVL (sfMasterSignature);
+}
+
+ValidatorToken::ValidatorToken(std::string const& m, SecretKey const& valSecret)
+    : manifest(m)
+    , validationSecret(valSecret)
+{
+}
+
+boost::optional<ValidatorToken>
+ValidatorToken::make_ValidatorToken(std::vector<std::string> const& tokenBlob)
+{
+    try
+    {
+        std::string tokenStr;
+        tokenStr.reserve (
+            std::accumulate (tokenBlob.cbegin(), tokenBlob.cend(), std::size_t(0),
+                [] (std::size_t init, std::string const& s)
+                {
+                    return init + s.size();
+                }));
+
+        for (auto const& line : tokenBlob)
+            tokenStr += beast::rfc2616::trim(line);
+
+        tokenStr = beast::detail::base64_decode(tokenStr);
+
+        Json::Reader r;
+        Json::Value token;
+        if (! r.parse (tokenStr, token))
+            return boost::none;
+
+        if (token.isMember("manifest") && token["manifest"].isString() &&
+            token.isMember("validation_secret_key") &&
+            token["validation_secret_key"].isString())
+        {
+            auto const ret = strUnHex (token["validation_secret_key"].asString());
+            if (! ret.second || ! ret.first.size ())
+                return boost::none;
+
+            return ValidatorToken(
+                token["manifest"].asString(),
+                SecretKey(Slice{ret.first.data(), ret.first.size()}));
+        }
+        else
+        {
+            return boost::none;
+        }
+    }
+    catch (std::exception const&)
+    {
+        return boost::none;
+    }
 }
 
 PublicKey
@@ -303,18 +359,14 @@ ManifestCache::load (
 bool
 ManifestCache::load (
     DatabaseCon& dbCon, std::string const& dbTable,
-    std::vector<std::string> const& configManifest)
+    std::string const& configManifest)
 {
     load (dbCon, dbTable);
 
     if (! configManifest.empty())
     {
-        std::string s;
-        s.reserve (Manifest::textLength);
-        for (auto const& line : configManifest)
-            s += beast::rfc2616::trim(line);
-
-        auto mo = Manifest::make_Manifest (beast::detail::base64_decode(s));
+        auto mo = Manifest::make_Manifest (
+            beast::detail::base64_decode(configManifest));
         if (! mo)
         {
             JLOG (j_.error()) << "Malformed manifest in config";

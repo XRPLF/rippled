@@ -227,7 +227,7 @@ public:
                 PublicKey emptyLocalKey;
                 std::vector<std::string> s1;
                 std::vector<std::string> keys;
-                std::vector<std::string> cfgManifest;
+                std::string cfgManifest;
                 for (auto const& man : inManifests)
                     s1.push_back (toBase58(
                         TokenType::TOKEN_NODE_PUBLIC, man->masterKey));
@@ -259,7 +259,7 @@ public:
             }
             {
                 // load config manifest
-                std::vector<std::string> const badManifest ({"bad manifest"});
+                std::string const badManifest = "bad manifest";
 
                 ManifestCache loaded;
                 BEAST_EXPECT(! loaded.load (
@@ -269,9 +269,8 @@ public:
                 auto const pk  = derivePublicKey(KeyType::ed25519, sk);
                 auto const kp = randomKeyPair(KeyType::secp256k1);
 
-                std::vector<std::string> const cfgManifest ({
-                    makeManifestString (pk, sk, kp.first, kp.second, 0)
-                });
+                std::string const cfgManifest =
+                    makeManifestString (pk, sk, kp.first, kp.second, 0);
 
                 BEAST_EXPECT(loaded.load (
                     dbCon, "ValidatorManifests", cfgManifest));
@@ -367,6 +366,45 @@ public:
         BEAST_EXPECT(cache.getMasterKey(kp1.first) == kp1.first);
     }
 
+    void testValidatorToken()
+    {
+        testcase ("validator token");
+
+        {
+            auto const valSecret = parseBase58<SecretKey>(
+                TokenType::TOKEN_NODE_PRIVATE,
+                "paQmjZ37pKKPMrgadBLsuf9ab7Y7EUNzh27LQrZqoexpAs31nJi");
+
+            // Format token string to test trim()
+            std::vector<std::string> const tokenBlob = {
+                "    eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT\n",
+                " \tQzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFuaWZl     \n",
+                "\tc3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZDeE\n",
+                "\t hYWExwbGMyR25NaEFrRTFhZ3FYeEJ3RHdEYklENk9NU1l1TTBGREFscEFnTms4U0tG\t  \t\n",
+                "bjdNTzJmZGtjd1JRSWhBT25ndTlzQUtxWFlvdUorbDJWMFcrc0FPa1ZCK1pSUzZQU2\n",
+                "hsSkFmVXNYZkFpQnNWSkdlc2FhZE9KYy9hQVpva1MxdnltR21WcmxIUEtXWDNZeXd1\n",
+                "NmluOEhBU1FLUHVnQkQ2N2tNYVJGR3ZtcEFUSGxHS0pkdkRGbFdQWXk1QXFEZWRGdj\n",
+                "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==\n"
+            };
+
+            auto const manifest =
+                "JAAAAAFxIe1FtwmimvGtH2iCcMJqC9gVFKilGfw1/vCxHXXLplc2GnMhAkE1agqXxBwD"
+                "wDbID6OMSYuM0FDAlpAgNk8SKFn7MO2fdkcwRQIhAOngu9sAKqXYouJ+l2V0W+sAOkVB"
+                "+ZRS6PShlJAfUsXfAiBsVJGesaadOJc/aAZokS1vymGmVrlHPKWX3Yywu6in8HASQKPu"
+                "gBD67kMaRFGvmpATHlGKJdvDFlWPYy5AqDedFv5TJa2w0i21eq3MYywLVJZnFOr7C0kw"
+                "2AiTzSCjIzditQ8=";
+
+            auto const token = ValidatorToken::make_ValidatorToken(tokenBlob);
+            BEAST_EXPECT(token);
+            BEAST_EXPECT(token->validationSecret == *valSecret);
+            BEAST_EXPECT(token->manifest == manifest);
+        }
+        {
+            std::vector<std::string> const badToken = { "bad token" };
+            BEAST_EXPECT(! ValidatorToken::make_ValidatorToken(badToken));
+        }
+    }
+
     void
     run() override
     {
@@ -428,6 +466,7 @@ public:
         testLoadStore (cache);
         testGetSignature ();
         testGetKeys ();
+        testValidatorToken ();
     }
 };
 

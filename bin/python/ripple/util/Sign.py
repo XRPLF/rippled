@@ -2,7 +2,7 @@
 
 from __future__ import print_function
 
-import base64, os, random, struct, sys
+import base64, binascii, json, os, random, struct, sys
 import ed25519
 import ecdsa
 import hashlib
@@ -188,9 +188,14 @@ def perform_check(s, print=print):
 
 def perform_sign(
         seq, validation_pk_human, validation_sk_human, master_sk_human, print=print):
-    print('[validation_manifest]')
-    print(wrap(get_signature(
-        int(seq), validation_pk_human, validation_sk_human, master_sk_human)))
+    manifest = get_signature(
+            int(seq), validation_pk_human, validation_sk_human, master_sk_human)
+
+    print('[validator_token]')
+    print(wrap(base64.b64encode(json.dumps({
+        "validation_secret_key": binascii.b2a_hex(Base58.decode_version(validation_sk_human)[1]),
+        "manifest": manifest},
+        separators=(',', ':')))))
 
 def perform_verify(
         seq, validation_pk_human, master_pk_human, signature, print=print):
