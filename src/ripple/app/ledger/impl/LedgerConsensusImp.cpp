@@ -73,8 +73,6 @@ LedgerConsensusImp<Traits>::LedgerConsensusImp (
     , ourID_ (calcNodeID (app.nodeIdentity().first))
     , state_ (State::open)
     , closeTime_ {}
-    , valPublic_ (app_.config().VALIDATION_PUB)
-    , valSecret_ (app_.config().VALIDATION_PRIV)
     , consensusFail_ (false)
     , roundTime_ (0)
     , closePercent_ (0)
@@ -1779,6 +1777,20 @@ void LedgerConsensusImp<Traits>::addLoad(STValidation::ref val)
 
     if (fee > feeTrack.getLoadBase())
         val->setFieldU32(sfLoadFee, fee);
+}
+
+template <class Traits>
+PublicKey const& LedgerConsensusImp<Traits>::getValidationPublicKey () const
+{
+    return valPublic_;
+}
+
+template <class Traits>
+void LedgerConsensusImp<Traits>::setValidationKeys (
+    SecretKey const& valSecret, PublicKey const& valPublic)
+{
+    valSecret_ = valSecret;
+    valPublic_ = valPublic;
 }
 
 //------------------------------------------------------------------------------

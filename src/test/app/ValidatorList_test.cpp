@@ -143,9 +143,9 @@ private:
         auto const localMasterPublic = derivePublicKey(
             KeyType::ed25519, localMasterSecret);
 
-        auto cfgManifest = makeManifestString (
-                localMasterPublic, localMasterSecret,
-                localSigningPublic, localSigningSecret, 1);
+        std::string const cfgManifest (makeManifestString (
+            localMasterPublic, localMasterSecret,
+            localSigningPublic, localSigningSecret, 1));
 
         auto format = [](
             PublicKey const &publicKey,
@@ -255,6 +255,7 @@ private:
             BEAST_EXPECT(trustedKeys->load (
                 *localSigningPublic, cfgKeys, emptyCfgPublishers));
 
+            BEAST_EXPECT(trustedKeys->localPublicKey() == localSigningPublic);
             BEAST_EXPECT(trustedKeys->listed (*localSigningPublic));
             for (auto const& n : configList)
                 BEAST_EXPECT(trustedKeys->listed (n));
@@ -269,6 +270,7 @@ private:
             BEAST_EXPECT(trustedKeys->load (
                 localSigningPublic, cfgKeys, emptyCfgPublishers));
 
+            BEAST_EXPECT(trustedKeys->localPublicKey() == localSigningPublic);
             BEAST_EXPECT(trustedKeys->listed (localSigningPublic));
             for (auto const& n : configList)
                 BEAST_EXPECT(trustedKeys->listed (n));
@@ -284,6 +286,7 @@ private:
             BEAST_EXPECT(trustedKeys->load (
                 localSigningPublic, cfgKeys, emptyCfgPublishers));
 
+            BEAST_EXPECT(trustedKeys->localPublicKey() == localMasterPublic);
             BEAST_EXPECT(trustedKeys->listed (localSigningPublic));
             BEAST_EXPECT(trustedKeys->listed (localMasterPublic));
             for (auto const& n : configList)

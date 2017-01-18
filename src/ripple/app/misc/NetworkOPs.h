@@ -177,6 +177,9 @@ public:
 
     // FIXME(NIKB): Remove the need for this function
     virtual void setLastCloseTime (NetClock::time_point t) = 0;
+    virtual PublicKey const& getValidationPublicKey () const = 0;
+    virtual void setValidationKeys (
+        SecretKey const& valSecret, PublicKey const& valPublic) = 0;
 
     virtual Json::Value getConsensusInfo () = 0;
     virtual Json::Value getServerInfo (bool human, bool admin) = 0;

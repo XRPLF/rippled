@@ -280,6 +280,15 @@ public:
     trustedPublisher (
         PublicKey const& identity) const;
 
+    /** Returns local validator public key
+
+        @par Thread Safety
+
+        May be called concurrently
+    */
+    PublicKey
+    localPublicKey () const;
+
     /** Invokes the callback once for every listed validation public key.
 
         @note Undefined behavior results when calling ValidatorList members from
