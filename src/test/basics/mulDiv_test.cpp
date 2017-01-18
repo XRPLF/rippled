@@ -47,24 +47,12 @@ struct mulDiv_test : beast::unit_test::suite
         BEAST_EXPECT(result.first && result.second == 1000000);
         result = mulDiv(max, 1000, max / 1001);
         BEAST_EXPECT(result.first && result.second == 1001000);
-        // 2^64 / 5 = 3689348814741910323, but we lose some precision
-        // starting in the 10th digit to avoid the overflow.
         result = mulDiv(max32 + 1, max32 + 1, 5);
-        BEAST_EXPECT(result.first && result.second == 3689348813882916864);
+        BEAST_EXPECT(result.first && result.second == 3689348814741910323);
 
         // Overflow
         result = mulDiv(max - 1, max - 2, 5);
         BEAST_EXPECT(!result.first && result.second == max);
-
-        try
-        {
-            mulDivThrow(max - 1, max - 2, 5);
-            fail();
-        }
-        catch (std::overflow_error const& e)
-        {
-            BEAST_EXPECT(e.what() == std::string("mulDiv"));
-        }
     }
 };
 
