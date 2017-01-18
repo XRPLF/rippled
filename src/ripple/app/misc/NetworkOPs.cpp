@@ -354,6 +354,15 @@ public:
     {
         mConsensus->setLastCloseTime(t);
     }
+    PublicKey const& getValidationPublicKey () const override
+    {
+        return mLedgerConsensus->getValidationPublicKey ();
+    }
+    void setValidationKeys (
+        SecretKey const& valSecret, PublicKey const& valPublic) override
+    {
+        mLedgerConsensus->setValidationKeys (valSecret, valPublic);
+    }
     Json::Value getConsensusInfo () override;
     Json::Value getServerInfo (bool human, bool admin) override;
     void clearLedgerFetch () override;
@@ -2043,35 +2052,11 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     if (admin)
     {
-        if (app_.config().VALIDATION_PUB.size ())
+        if (getValidationPublicKey().size ())
         {
-            auto const& validation_manifest =
-                app_.config().section (SECTION_VALIDATION_MANIFEST);
-
-            if (! validation_manifest.lines().empty())
-            {
-                std::string s;
-                s.reserve (Manifest::textLength);
-                for (auto const& line : validation_manifest.lines())
-                    s += beast::rfc2616::trim(line);
-                if (auto mo = Manifest::make_Manifest (beast::detail::base64_decode(s)))
-                {
-                    Json::Value valManifest = Json::objectValue;
-                    valManifest [jss::master_key] = toBase58 (
-                        TokenType::TOKEN_NODE_PUBLIC,
-                        mo->masterKey);
-                    valManifest [jss::signing_key] = toBase58 (
-                        TokenType::TOKEN_NODE_PUBLIC,
-                        mo->signingKey);
-                    valManifest [jss::seq] = Json::UInt (mo->sequence);
-
-                    info[jss::validation_manifest] = valManifest;
-                }
-            }
-
             info[jss::pubkey_validator] = toBase58 (
                 TokenType::TOKEN_NODE_PUBLIC,
-                app_.config().VALIDATION_PUB);
+                app_.validators().localPublicKey());
         }
         else
         {

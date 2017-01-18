@@ -23,6 +23,7 @@
 #include <ripple/app/main/NodeIdentity.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
+#include <ripple/core/ConfigSections.h>
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
 
@@ -32,14 +33,14 @@ std::pair<PublicKey, SecretKey>
 loadNodeIdentity (Application& app)
 {
     // If a seed is specified in the configuration file use that directly.
-    if (!app.config().NODE_SEED.empty ())
+    if (app.config().exists(SECTION_NODE_SEED))
     {
         auto const seed = parseBase58<Seed>(
-            app.config().NODE_SEED);
+            app.config().section(SECTION_NODE_SEED).lines().front());
 
         if (!seed)
             Throw<std::runtime_error>(
-                "NodeIdentity: Bad [node_seed] specified");
+                "NodeIdentity: Bad [" SECTION_NODE_SEED "] specified");
 
         auto secretKey =
             generateSecretKey (KeyType::secp256k1, *seed);

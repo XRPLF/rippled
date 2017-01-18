@@ -442,7 +442,6 @@ JSS ( validated );                  // out: NetworkOPs, RPCHelpers, AccountTx*
 JSS ( validated_ledger );           // out: NetworkOPs
 JSS ( validated_ledgers );          // out: NetworkOPs
 JSS ( validation_key );             // out: ValidationCreate, ValidationSeed
-JSS ( validation_manifest );        // out: NetworkOPs
 JSS ( validation_private_key );     // out: ValidationCreate
 JSS ( validation_public_key );      // out: ValidationCreate, ValidationSeed
 JSS ( validation_quorum );          // out: NetworkOPs

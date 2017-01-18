@@ -474,6 +474,45 @@ port_wss_admin
         }
     }
 
+    void testValidatorKeys ()
+    {
+        testcase ("validator keys");
+
+        std::string const validationSeed = "spA4sh1qTvwq92X715tYyGQKmAKfa";
+
+        auto const token =
+            "eyJ2YWxpZGF0aW9uX3ByaXZhdGVfa2V5IjoiOWVkNDVmODY2MjQxY2MxOGEyNzQ3Yj"
+            "U0Mzg3YzA2MjU5MDc5NzJmNGU3MTkwMjMxZmFhOTM3NDU3ZmE5ZGFmNiIsIm1hbmlm"
+            "ZXN0IjoiSkFBQUFBRnhJZTFGdHdtaW12R3RIMmlDY01KcUM5Z1ZGS2lsR2Z3MS92Q3"
+            "hIWFhMcGxjMkduTWhBa0UxYWdxWHhCd0R3RGJJRDZPTVNZdU0wRkRBbHBBZ05rOFNL"
+            "Rm43TU8yZmRrY3dSUUloQU9uZ3U5c0FLcVhZb3VKK2wyVjBXK3NBT2tWQitaUlM2UF"
+            "NobEpBZlVzWGZBaUJzVkpHZXNhYWRPSmMvYUFab2tTMXZ5bUdtVnJsSFBLV1gzWXl3"
+            "dTZpbjhIQVNRS1B1Z0JENjdrTWFSRkd2bXBBVEhsR0tKZHZERmxXUFl5NUFxRGVkRn"
+            "Y1VEphMncwaTIxZXEzTVl5d0xWSlpuRk9yN0Mwa3cyQWlUelNDakl6ZGl0UTg9In0=";
+
+        {
+            Config c;
+            static boost::format configTemplate (R"rippleConfig(
+[validation_seed]
+%1%
+
+[validator_token]
+%2%
+)rippleConfig");
+            std::string error;
+            auto const expectedError =
+                "Cannot have both [validation_seed] "
+                "and [validator_token] config sections";
+            try {
+                c.loadFromString (boost::str (
+                    configTemplate % validationSeed % token));
+            } catch (std::runtime_error& e) {
+                error = e.what();
+            }
+            BEAST_EXPECT(error == expectedError);
+        }
+    }
+
     void testValidatorsFile ()
     {
         testcase ("validators_file");
@@ -818,6 +857,7 @@ trustthesevalidators.gov
     {
         testLegacy ();
         testDbPath ();
+        testValidatorKeys ();
         testValidatorsFile ();
         testSetup (false);
         testSetup (true);
