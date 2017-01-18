@@ -662,11 +662,16 @@ Json::Value checkFee (
         if (request[jss::fee_mult_max].isInt())
         {
             mult = request[jss::fee_mult_max].asInt();
+            if (mult < 0)
+                return RPC::make_error(rpcINVALID_PARAMS,
+                    RPC::expected_field_message(jss::fee_mult_max,
+                        "a positive integer"));
         }
         else
         {
             return RPC::make_error (rpcHIGH_FEE,
-                RPC::expected_field_message (jss::fee_mult_max, "an integer"));
+                RPC::expected_field_message (jss::fee_mult_max,
+                    "a positive integer"));
         }
     }
     if (request.isMember(jss::fee_div_max))
@@ -674,14 +679,16 @@ Json::Value checkFee (
         if (request[jss::fee_div_max].isInt())
         {
             div = request[jss::fee_div_max].asInt();
-            if (div == 0)
+            if (div <= 0)
                 return RPC::make_error(rpcINVALID_PARAMS,
-                    RPC::expected_field_message(jss::fee_div_max, "non-zero"));
+                    RPC::expected_field_message(jss::fee_div_max,
+                        "a positive integer"));
         }
         else
         {
             return RPC::make_error(rpcHIGH_FEE,
-                RPC::expected_field_message(jss::fee_div_max, "an integer"));
+                RPC::expected_field_message(jss::fee_div_max,
+                    "a positive integer"));
         }
     }
 
@@ -711,8 +718,18 @@ Json::Value checkFee (
         }
     }
 
-    auto const limit = mulDivThrow(scaleFeeBase (
-        feeDefault, ledger->fees()), mult, div);
+    auto const limit = [&]()
+    {
+        // Scale fee units to drops:
+        auto const drops = mulDiv (feeDefault,
+            ledger->fees().base, ledger->fees().units);
+        if (!drops.first)
+            Throw<std::overflow_error>("mulDiv");
+        auto const result = mulDiv (drops.second, mult, div);
+        if (!result.first)
+            Throw<std::overflow_error>("mulDiv");
+        return result.second;
+    }();
 
     if (fee > limit && fee != loadFee &&
         request.isMember("x_queue_okay") &&

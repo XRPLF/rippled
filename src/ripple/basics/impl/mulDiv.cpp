@@ -20,46 +20,29 @@
 #include <BeastConfig.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/basics/contract.h>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <limits>
-#include <stdexcept>
 #include <utility>
 
 namespace ripple
 {
 
-// compute (value)*(mul)/(div) - avoid overflow but keep precision
 std::pair<bool, std::uint64_t>
 mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div)
 {
-    if ((value == 0 || mul == 0) && div != 0)
-        return{ true, 0 };
-    lowestTerms(value, div);
-    lowestTerms(mul, div);
+    using namespace boost::multiprecision;
 
-    if (value < mul)
-        std::swap(value, mul);
-    constexpr std::uint64_t max =
-        std::numeric_limits<std::uint64_t>::max();
-    const auto limit = max / mul;
-    if (value > limit)
-    {
-        value /= div;
-        if (value > limit)
-            return{ false, max };
-        return{ true, value * mul };
-    }
-    return{ true, value * mul / div };
+    uint128_t result;
+    result = multiply(result, value, mul);
+
+    result /= div;
+
+    auto const limit = std::numeric_limits<std::uint64_t>::max();
+
+    if (result > limit)
+        return { false, limit };
+
+    return { true, static_cast<std::uint64_t>(result) };
 }
-
-// compute (value)*(mul)/(div) - avoid overflow but keep precision
-std::uint64_t
-mulDivThrow(std::uint64_t value, std::uint64_t mul, std::uint64_t div)
-{
-    auto const result = mulDiv(value, mul, div);
-    if(!result.first)
-        Throw<std::overflow_error>("mulDiv");
-    return result.second;
-}
-
 
 } // ripple

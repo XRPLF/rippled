@@ -21,11 +21,12 @@
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/mulDiv.h>
 #include <ripple/core/Config.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/JsonFields.h>
+#include <cstdint>
+#include <type_traits>
 
 namespace ripple {
 
@@ -80,11 +81,47 @@ LoadFeeTrack::lowerLocalFee ()
 
 //------------------------------------------------------------------------------
 
-// Scale from fee units to millionths of a ripple
-std::uint64_t
-scaleFeeBase(std::uint64_t fee, Fees const& fees)
+// NIKB TODO: Once we get C++17, we can replace lowestTerms
+//            with this:
+//
+// template <class T1, class T2,
+//     class = std::enable_if_t<
+//         std::is_integral_v<T1> &&
+//         std::is_integral_v<T2>>
+// >
+// void lowestTerms(T1& a,  T2& b)
+// {
+//     if (auto const gcd = std::gcd(a, b))
+//     {
+//         a /= gcd;
+//         b /= gcd;
+//     }
+// }
+
+template <class T1, class T2,
+    class = std::enable_if_t <
+        std::is_integral<T1>::value &&
+        std::is_unsigned<T1>::value &&
+        sizeof(T1) <= sizeof(std::uint64_t) >,
+    class = std::enable_if_t <
+        std::is_integral<T2>::value &&
+        std::is_unsigned<T2>::value &&
+        sizeof(T2) <= sizeof(std::uint64_t) >
+>
+void lowestTerms(T1& a,  T2& b)
 {
-    return mulDivThrow (fee, fees.base, fees.units);
+    if (a == 0 && b == 0)
+        return;
+
+    std::uint64_t x = a, y = b;
+    while (y != 0)
+    {
+        auto t = x % y;
+        x = y;
+        y = t;
+    }
+    a /= x;
+    b /= x;
 }
 
 // Scale using load as well as base rate

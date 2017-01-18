@@ -138,9 +138,6 @@ private:
 
 //------------------------------------------------------------------------------
 
-// Scale from fee units to millionths of a ripple
-std::uint64_t scaleFeeBase(std::uint64_t fee, Fees const& fees);
-
 // Scale using load as well as base rate
 std::uint64_t scaleFeeLoad(std::uint64_t fee, LoadFeeTrack const& feeTrack,
     Fees const& fees, bool bUnlimited);

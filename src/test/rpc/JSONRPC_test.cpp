@@ -232,8 +232,8 @@ R"({
     }
 })",
 {
-"Invalid field 'fee_mult_max', not an integer.",
-"Invalid field 'fee_mult_max', not an integer.",
+"Invalid field 'fee_mult_max', not a positive integer.",
+"Invalid field 'fee_mult_max', not a positive integer.",
 "Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
@@ -253,8 +253,8 @@ R"({
     }
 })",
 {
-"Invalid field 'fee_div_max', not an integer.",
-"Invalid field 'fee_div_max', not an integer.",
+"Invalid field 'fee_div_max', not a positive integer.",
+"Invalid field 'fee_div_max', not a positive integer.",
 "Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
@@ -315,8 +315,8 @@ R"({
     }
 })",
 {
-"Invalid field 'fee_div_max', not non-zero.",
-"Invalid field 'fee_div_max', not non-zero.",
+"Invalid field 'fee_div_max', not a positive integer.",
+"Invalid field 'fee_div_max', not a positive integer.",
 "Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
@@ -2111,6 +2111,55 @@ public:
                 req[jss::tx_json][jss::Fee] == 3333);
         }
 
+        {
+            // 9: negative mult
+            Json::Value req;
+            Json::Reader().parse(R"({
+                "fee_mult_max" : -5,
+                "x_queue_okay" : true,
+                "tx_json" : { }
+            })", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack,
+                      env.app().getTxQ(), env.current());
+
+            BEAST_EXPECT(RPC::contains_error(result));
+        }
+
+        {
+            // 9: negative div
+            Json::Value req;
+            Json::Reader().parse(R"({
+                "fee_div_max" : -2,
+                "x_queue_okay" : true,
+                "tx_json" : { }
+            })", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack,
+                      env.app().getTxQ(), env.current());
+
+            BEAST_EXPECT(RPC::contains_error(result));
+        }
+
+        {
+            // 9: negative mult & div
+            Json::Value req;
+            Json::Reader().parse(R"({
+                "fee_mult_max" : -2,
+                "fee_div_max" : -3,
+                "x_queue_okay" : true,
+                "tx_json" : { }
+            })", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack,
+                      env.app().getTxQ(), env.current());
+
+            BEAST_EXPECT(RPC::contains_error(result));
+        }
+
     }
 
     // A function that can be called as though it would process a transaction.
@@ -2219,8 +2268,7 @@ public:
                     if (RPC::contains_error (result))
                         errStr = result["error_message"].asString ();
 
-                    std::string const expStr (txnTest.expMsg[get<3>(testFunc)]);
-                    BEAST_EXPECT(errStr == expStr);
+                    BEAST_EXPECT(errStr == txnTest.expMsg[get<3>(testFunc)]);
                 }
             }
         }

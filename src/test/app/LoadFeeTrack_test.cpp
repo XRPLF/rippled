@@ -42,16 +42,8 @@ public:
             return f;
         }();
 
-        BEAST_EXPECT (scaleFeeBase (10000, fees) == 10000);
         BEAST_EXPECT (scaleFeeLoad (10000, l, fees, false) == 10000);
-        BEAST_EXPECT (scaleFeeBase (1, fees) == 1);
         BEAST_EXPECT (scaleFeeLoad (1, l, fees, false) == 1);
-
-        // Check new default fee values give same fees as old defaults
-        BEAST_EXPECT (scaleFeeBase (d.FEE_DEFAULT, fees) == 10);
-        BEAST_EXPECT (scaleFeeBase (d.FEE_ACCOUNT_RESERVE, fees) == 200 * SYSTEM_CURRENCY_PARTS);
-        BEAST_EXPECT (scaleFeeBase (d.FEE_OWNER_RESERVE, fees) == 50 * SYSTEM_CURRENCY_PARTS);
-        BEAST_EXPECT (scaleFeeBase (d.FEE_OFFER, fees) == 10);
     }
 };
 
