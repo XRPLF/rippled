@@ -402,7 +402,7 @@ public:
         This calls postconditions.
     */
     void
-    sign_and_submit(JTx const& jt, Json::Value params = Json::nullValue);
+    sign_and_submit(JTx const& jt, Json::Value params = Json::Value{});
 
     /** Check expected postconditions
         of JTx submission.

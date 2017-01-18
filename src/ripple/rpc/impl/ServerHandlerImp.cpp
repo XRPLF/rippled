@@ -569,7 +569,7 @@ ServerHandlerImp::processRequest (Port const& port,
     }
     else
     {
-        role = requestRole(required, port, Json::objectValue,
+        role = requestRole(required, port, Json::Value{Json::objectValue},
             remoteIPAddress, user);
     }
 

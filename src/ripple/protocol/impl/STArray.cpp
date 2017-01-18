@@ -145,7 +145,7 @@ std::string STArray::getText () const
 
 Json::Value STArray::getJson (int p) const
 {
-    Json::Value v = Json::arrayValue;
+    Json::Value v{Json::arrayValue};
     int index = 1;
     for (auto const& object: v_)
     {

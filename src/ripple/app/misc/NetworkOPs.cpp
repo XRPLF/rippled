@@ -2019,7 +2019,7 @@ Json::Value NetworkOPsImp::getConsensusInfo ()
 
 Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 {
-    Json::Value info = Json::objectValue;
+    Json::Value info{Json::objectValue};
 
     // hostid: unique string describing the machine
     if (human)
@@ -2052,7 +2052,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
                     s += beast::rfc2616::trim(line);
                 if (auto mo = make_Manifest (beast::detail::base64_decode(s)))
                 {
-                    Json::Value valManifest = Json::objectValue;
+                    Json::Value valManifest{Json::objectValue};
                     valManifest [jss::master_key] = toBase58 (
                         TokenType::TOKEN_NODE_PUBLIC,
                         mo->masterKey);
@@ -2092,7 +2092,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     info[jss::peers] = Json::UInt (app_.overlay ().size ());
 
-    Json::Value lastClose = Json::objectValue;
+    Json::Value lastClose{Json::objectValue};
     lastClose[jss::proposers] = mConsensus->getLastCloseProposers();
 
     if (human)
@@ -3232,7 +3232,7 @@ Json::Value NetworkOPsImp::StateAccounting::json() const
     counters[mode].dur += std::chrono::duration_cast<
         std::chrono::microseconds>(std::chrono::system_clock::now() - start);
 
-    Json::Value ret = Json::objectValue;
+    Json::Value ret{Json::objectValue};
 
     for (std::underlying_type_t<OperatingMode> i = omDISCONNECTED;
         i <= omFULL; ++i)

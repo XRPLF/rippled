@@ -574,7 +574,7 @@ AmendmentTableImpl::getJson (int)
 Json::Value
 AmendmentTableImpl::getJson (uint256 const& amendmentID)
 {
-    Json::Value ret = Json::objectValue;
+    Json::Value ret{Json::objectValue};
     Json::Value& jAmendment = (ret[to_string (amendmentID)] = Json::objectValue);
 
     {
