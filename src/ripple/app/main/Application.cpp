@@ -66,6 +66,7 @@
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/make_Overlay.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/types.h>
@@ -1102,26 +1103,59 @@ bool ApplicationImp::setup()
         return false;
     }
 
-    if (!validatorManifests_->load (
-        getWalletDB (), "ValidatorManifests",
-        config().section (SECTION_VALIDATION_MANIFEST).lines()))
     {
-        JLOG(m_journal.fatal()) << "Invalid configured validator manifest.";
-        return false;
-    }
+        PublicKey valPublic;
+        SecretKey valSecret;
+        std::string manifest;
+        if (config().exists (SECTION_VALIDATOR_TOKEN))
+        {
+            if (auto const token = ValidatorToken::make_ValidatorToken (
+                config().section (SECTION_VALIDATOR_TOKEN).lines ()))
+            {
+                valSecret = token->validationSecret;
+                valPublic = derivePublicKey (KeyType::secp256k1, valSecret);
+                manifest = std::move(token->manifest);
+            }
+            else
+            {
+                JLOG(m_journal.fatal()) <<
+                    "Invalid entry in validator token configuration.";
+                return false;
+            }
+        }
+        else if (config().exists (SECTION_VALIDATION_SEED))
+        {
+            auto const seed = parseBase58<Seed>(
+                config().section (SECTION_VALIDATION_SEED).lines ().front());
+            if (!seed)
+                Throw<std::runtime_error> (
+                    "Invalid seed specified in [" SECTION_VALIDATION_SEED "]");
+            valSecret = generateSecretKey (KeyType::secp256k1, *seed);
+            valPublic = derivePublicKey (KeyType::secp256k1, valSecret);
+        }
 
-    publisherManifests_->load (
-        getWalletDB (), "PublisherManifests");
+        if (!validatorManifests_->load (
+            getWalletDB (), "ValidatorManifests", manifest))
+        {
+            JLOG(m_journal.fatal()) << "Invalid configured validator manifest.";
+            return false;
+        }
 
-    // Setup trusted validators
-    if (!validators_->load (
-            config_->VALIDATION_PUB,
-            config().section (SECTION_VALIDATORS).values (),
-            config().section (SECTION_VALIDATOR_LIST_KEYS).values ()))
-    {
-        JLOG(m_journal.fatal()) <<
-            "Invalid entry in validator configuration.";
-        return false;
+        publisherManifests_->load (
+            getWalletDB (), "PublisherManifests");
+
+        m_networkOPs->setValidationKeys (valSecret, valPublic);
+
+        // Setup trusted validators
+        if (!validators_->load (
+                valPublic,
+                config().section (SECTION_VALIDATORS).values (),
+                config().section (SECTION_VALIDATOR_LIST_KEYS).values ()))
+        {
+            JLOG(m_journal.fatal()) <<
+                "Invalid entry in validator configuration.";
+            return false;
+        }
     }
 
     if (!validatorSites_->load (

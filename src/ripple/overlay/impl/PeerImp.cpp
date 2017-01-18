@@ -1086,7 +1086,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
                 flags |= SF_TRUSTED;
             }
 
-            if (! app_.config().VALIDATION_PUB.size())
+            if (! app_.getOPs().getValidationPublicKey().size())
             {
                 // For now, be paranoid and have each validator
                 // check each transaction, regardless of source
@@ -1248,8 +1248,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
         return;
     }
 
-    if (app_.config().VALIDATION_PUB.size() &&
-        publicKey == app_.config().VALIDATION_PUB)
+    if (app_.getOPs().getValidationPublicKey().size() &&
+        publicKey == app_.getOPs().getValidationPublicKey())
     {
         JLOG(p_journal_.trace()) << "Proposal: self";
         return;
