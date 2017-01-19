@@ -183,10 +183,19 @@ public:
             std::function<void(std::shared_ptr<SHAMapItem const> const&)> const&) const;
 
     // comparison/sync functions
+
+    /** Check for nodes in the SHAMap not available
+
+        Traverse the SHAMap efficiently, maximizing I/O
+        concurrency, to discover nodes referenced in the
+        SHAMap but not available locally.
+
+        @param maxNodes The maximum number of found nodes to return
+        @param filter The filter to use when retrieving nodes
+        @param return The nodes known to be missing
+    */
     std::vector<std::pair<SHAMapNodeID, uint256>>
-    getMissingNodes (
-        std::size_t max,
-        SHAMapSyncFilter *filter);
+    getMissingNodes (int maxNodes, SHAMapSyncFilter *filter);
 
     bool getNodeFat (SHAMapNodeID node,
         std::vector<SHAMapNodeID>& nodeIDs,
@@ -199,6 +208,7 @@ public:
                                SHANodeFormat format, SHAMapSyncFilter * filter);
     SHAMapAddNode addKnownNode (SHAMapNodeID const& nodeID, Slice const& rawNode,
                                 SHAMapSyncFilter * filter);
+
 
     // status functions
     void setImmutable ();
@@ -316,6 +326,54 @@ private:
                      bool isFirstMap, Delta & differences, int & maxCount) const;
     int walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq);
     bool isInconsistentNode(std::shared_ptr<SHAMapAbstractNode> const& node) const;
+
+    // Structure to track information about call to
+    // getMissingNodes while it's in progress
+    struct MissingNodes
+    {
+        MissingNodes() = delete;
+        MissingNodes(const MissingNodes&) = delete;
+        MissingNodes& operator=(const MissingNodes&) = delete;
+
+        // basic parameters
+        int               max_;
+        SHAMapSyncFilter* filter_;
+        int const         maxDefer_;
+        std::uint32_t     generation_;
+
+        // nodes we have discovered to be missing
+        std::vector<std::pair<SHAMapNodeID, uint256>> missingNodes_;
+        std::set <SHAMapHash>                         missingHashes_;
+
+        // nodes we are in the process of traversing
+        using StackEntry = std::tuple<
+            SHAMapInnerNode*, // pointer to the node
+            SHAMapNodeID,     // the node's ID
+            int,              // while child we check first
+            int,              // which child we check next
+            bool>;            // whether we've found any missing children yet
+        std::stack <StackEntry> stack_;
+
+        // nodes we may acquire from deferred reads
+        std::vector <std::tuple <SHAMapInnerNode*, SHAMapNodeID, int>> deferredReads_;
+
+        // nodes we need to resume after we get their children from deferred reads
+        std::map<SHAMapInnerNode*, SHAMapNodeID> resumes_;
+
+        MissingNodes (
+            int max, SHAMapSyncFilter* filter,
+            int maxDefer, std::uint32_t generation) :
+                max_(max), filter_(filter),
+                maxDefer_(maxDefer), generation_(generation)
+        {
+            missingNodes_.reserve (max);
+            deferredReads_.reserve(maxDefer);
+        }
+    };
+
+    // getMissingNodes helper functions
+    void gmn_ProcessNodes (MissingNodes&, MissingNodes::StackEntry& node);
+    void gmn_ProcessDeferredReads (MissingNodes&);
 };
 
 inline
