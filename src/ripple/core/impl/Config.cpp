@@ -537,7 +537,7 @@ int Config::getSize (SizedItemName item) const
 
         { siSweepInterval,      {   10,     30,     60,     90,         120     } },
 
-        { siLedgerFetch,        {   2,      2,      3,      3,          3       } },
+        { siLedgerFetch,        {   2,      3,      5,      5,          8       } },
 
         { siNodeCacheSize,      {   16384,  32768,  131072, 262144,     524288  } },
         { siNodeCacheAge,       {   60,     90,     120,    900,        1800    } },
@@ -551,9 +551,9 @@ int Config::getSize (SizedItemName item) const
         { siLedgerSize,         {   32,     128,    256,    384,        768     } },
         { siLedgerAge,          {   30,     90,     180,    240,        900     } },
 
-        { siHashNodeDBCache,    {   4,      12,     24,     64,         128      } },
-        { siTxnDBCache,         {   4,      12,     24,     64,         128      } },
-        { siLgrDBCache,         {   4,      8,      16,     32,         128      } },
+        { siHashNodeDBCache,    {   4,      12,     24,     64,         128     } },
+        { siTxnDBCache,         {   4,      12,     24,     64,         128     } },
+        { siLgrDBCache,         {   4,      8,      16,     32,         128     } },
     };
 
     for (int i = 0; i < (sizeof (sizeTable) / sizeof (SizedItem)); ++i)
