@@ -1044,7 +1044,7 @@ LedgerMaster::findNewLedgersToPublish ()
             }
 
             // Can we try to acquire the ledger we need?
-            if (! ledger && (++acqCount < 4))
+            if (! ledger && (++acqCount < ledger_fetch_size_))
                 ledger = app_.getInboundLedgers ().acquire(
                     *hash, seq, InboundLedger::fcGENERIC);
 
