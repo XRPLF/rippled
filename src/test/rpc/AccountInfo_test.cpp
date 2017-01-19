@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/json/json_reader.h>
 #include <ripple/protocol/JsonFields.h>     // jss:: definitions
 #include <ripple/protocol/Feature.h>
 #include <test/jtx.h>
@@ -291,11 +292,82 @@ public:
         }
     }
 
+    void testBatch()
+    {
+        using namespace jtx;
+        Env env(*this, features(featureMultiSign));
+        Account const alice {"alice"};
+        env.fund(XRP(1000), alice);
+
+        auto const withoutSigners = std::string ("[{ ") +
+            "\"jsonrpc\": \"2.0\", "
+            "\"ripplerpc\": \"2.0\", "
+            "\"id\": 5, "
+            "\"method\": \"account_info\", "
+            "\"params\": [{ "
+            "\"account\": \"" + alice.human() + "\"}]},"
+            "{"
+            "\"jsonrpc\": \"2.0\", "
+            "\"ripplerpc\": \"2.0\", "
+            "\"id\": 6, "
+            "\"method\": \"server_info\" "
+            "}]";
+
+        Json::Reader reader;
+        Json::Value jv;
+        // Alice has no SignerList yet.
+        {
+            BEAST_EXPECT(reader.parse(withoutSigners, jv));
+            // account_info without the "signer_lists" argument.
+            auto const info = env.rpc(jv);
+            BEAST_EXPECT(info.isArray());
+            BEAST_EXPECT(info.size() == 2);
+            auto const& p0 = info[0u][jss::id] == 5 ? info[0u] : info[1u];
+            auto const& p1 = info[1u][jss::id] == 6 ? info[1u] : info[0u];
+
+            BEAST_EXPECT(p0[jss::id] == 5);
+            BEAST_EXPECT(p0.isMember(jss::result));
+            BEAST_EXPECT(p0[jss::result].isMember("account_data"));
+            BEAST_EXPECT(p0[jss::result][jss::status] == "success");
+
+            BEAST_EXPECT(p1[jss::id] == 6);
+            BEAST_EXPECT(p1.isMember(jss::result));
+            BEAST_EXPECT(p1[jss::result].isMember("info"));
+            BEAST_EXPECT(p1[jss::result][jss::status] == "success");
+        }
+        // Create error on first request
+        auto const has_error = std::string ("[{ ") +
+            "\"jsonrpc\": \"2.0\", "
+            "\"ripplerpc\": \"2.0\", "
+            "\"id\": 5, "
+            "\"method\": \"acount_info\", "
+            "\"params\": [{ "
+            "\"account\": \"" + alice.human() + "\"}]},"
+            "{"
+            "\"jsonrpc\": \"2.0\", "
+            "\"ripplerpc\": \"2.0\", "
+            "\"id\": 6, "
+            "\"method\": \"server_info\" "
+            "}]";
+        {
+            BEAST_EXPECT(reader.parse(has_error, jv));
+            // account_info without the "signer_lists" argument.
+            auto const info = env.rpc(jv);
+            BEAST_EXPECT(info.isArray());
+            BEAST_EXPECT(info.size() == 1);
+            auto const& p0 = info[0u];
+
+            BEAST_EXPECT(p0[jss::id] == 5);
+            BEAST_EXPECT(p0.isMember(jss::error));
+        }
+    }
+
     void run()
     {
         testErrors();
         testSignerLists();
         testSignerListsV2();
+        testBatch();
     }
 };
 

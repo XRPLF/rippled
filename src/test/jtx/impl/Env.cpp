@@ -549,6 +549,13 @@ Env::do_rpc(std::vector<std::string> const& args)
     return response;
 }
 
+Json::Value
+Env::rpc(Json::Value const& cmd)
+{
+    auto response = client().invoke(cmd);
+    return response;
+}
+
 } // jtx
 
 } // test

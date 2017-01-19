@@ -205,6 +205,12 @@ public:
         return {};
     }
 
+    Json::Value
+    invoke(Json::Value const& cmd) override
+    {
+        return {};
+    }
+
     boost::optional<Json::Value>
     getMsg(std::chrono::milliseconds const& timeout) override
     {

@@ -206,6 +206,9 @@ public:
     Json::Value
     rpc(std::string const& cmd, Args&&... args);
 
+    Json::Value
+    rpc(Json::Value const& cmd);
+
     /** Returns the current ledger.
 
         This is a non-modifiable snapshot of the
