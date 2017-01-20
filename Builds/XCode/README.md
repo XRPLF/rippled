@@ -18,6 +18,7 @@ these software components:
 * [Homebrew](http://brew.sh/)
 * [Git](http://git-scm.com/)
 * [Scons](http://www.scons.org/)
+* [Node.js](http://nodejs.org/download/)
 
 ## Install Software
 
@@ -174,4 +175,68 @@ rippled builds a set of unit tests into the server executable. To run these unit
 tests after building, pass the `--unittest` option to the compiled `rippled`
 executable. The executable will exit after running the unit tests.
 
+## System Tests (Recommended)
+
+The external rippled system tests are written in Javascript using Node.js, and
+utilize the buster system test framework. To run the system tests, it will be
+necessary to perform the following steps:
+
+### Install Node.js
+
+Install [Node.js](http://nodejs.org/download/). We recommend the macos
+installer (`.pkg` file) since it takes care of updating the `PATH`
+environment variable so that scripts can find the command. On macos systems,
+`Node.js` comes with `npm`. A separate installation of `npm` is not
+necessary.
+
+### Create node_modules
+
+From the root of your local rippled repository, invoke `npm` to
+bring in the necessary components:
+
+```
+npm install
+```
+
+### Run Tests
+
+```
+npm test
+```
+
+### Development ripple-lib
+
+If you want to use the latest branch of `ripple-lib` during the system tests:
+
+1. clone the repository in a new location outside of your rippled repository.
+2. update the submodules in that repo.
+3. run `npm install` to set up the `node_modules` directory.
+4. install the `grunt` command line tools required to run `grunt` and build `ripple-lib`.
+
+i.e.:
+
+```
+git clone https://github.com/ripple/rippled.git
+cd ripple-lib
+git submodule update --init
+npm install
+npm install -g grunt-cli
+grunt
+```
+
+Now link this version of `ripple-lib` into the global packages:
+
+```
+sudo npm link
+```
+
+To make rippled use the newly linked global `ripple-lib` package instead of
+the one installed under `node_modules`, change directories to the local
+rippled repository and delete the old `ripple-lib` then link to the new
+one:
+
+```
+rm -rf node_modules/ripple-lib
+npm link ripple-lib
+```
 

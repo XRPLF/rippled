@@ -67,6 +67,8 @@ ISC license. See the LICENSE file for more details.
 | ./Builds| Platform or IDE-specific project files.        |
 | ./doc   | Documentation and example configuration files. |
 | ./src   | Source code.                                   |
+| ./test  | Javascript / Mocha tests.                      |
+
 
 Some of the directories under `src` are external repositories inlined via
 git-subtree. See the corresponding README for more details.

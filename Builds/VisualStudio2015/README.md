@@ -18,6 +18,7 @@ software components:
 * (Optional) [Python and Scons](README.md#optional-install-python-and-scons)
 * [OpenSSL Library](README.md#install-openssl)
 * [Boost library](README.md#build-boost)
+* [Node.js](README.md#install-nodejs)
 
 ## Install Software
 
@@ -241,7 +242,9 @@ and then choose the **Build->Build Solution** menu item.
 
 # Unit Tests (Recommended)
 
-The rippled unit tests are written in C++ and are part
+## Internal
+
+The internal rippled unit tests are written in C++ and are part
 of the rippled executable.
 
 From a Windows console, run the unit tests:
@@ -252,4 +255,108 @@ From a Windows console, run the unit tests:
 
 Substitute the correct path to the executable to test different builds.
 
+## External
 
+The external rippled unit tests are written in Javascript using Node.js,
+and utilize the mocha unit test framework. To run the unit tests, it
+will be necessary to perform the following steps:
+
+### Install Node.js
+
+[Install Node.js](http://nodejs.org/download/). We recommend the Windows
+installer (**.msi** file) as it takes care of updating the *PATH* environment
+variable so that scripts can find the command. On Windows systems,
+**Node.js** comes with **npm**. A separate installation of **npm**
+is not necessary.
+
+### Create node_modules
+
+Open a windows console. From the root of your local rippled repository
+directory, invoke **npm** to bring in the necessary components:
+
+```
+npm install
+```
+
+If you get an error that looks like
+
+```
+Error: ENOENT, stat 'C:\Users\username\AppData\Roaming\npm'
+```
+
+simply create the indicated folder and try again.
+
+### Create a test config.js
+
+From a *bash* shell (installed with Git for Windows), copy the
+example configuration file into the appropriate location:
+
+```
+cp test/config-example.js test/config.js
+```
+
+Edit your version of test/config.js to reflect the correct path to the rippled executable:
+
+```
+exports.default_server_config = {
+  // Where to find the binary.
+  rippled_path: path.resolve(__dirname, "../build/msvc.debug/rippled.exe")
+};
+```
+
+Also in **test/config.js**, change any occurrences of the
+IP address *0.0.0.0* to *127.0.0.1*.
+
+### Run Tests
+
+From a windows console, run the unit tests:
+
+```
+npm test
+```
+
+Alternatively, run an individual test using mocha:
+
+```
+sh
+node_modules/mocha/bin/mocha test/account_tx-test.js
+```
+
+* NOTE: The version of ripple-lib provided by the npm install
+  facility is usually slightly behind the develop branch of the
+  authoritative ripple-lib repository. Therefore, some tests might fail.
+
+### Development ripple-lib
+
+To use the latest branch of **ripple-lib** during the unit tests,
+first clone the repository in a new location outside of your rippled
+repository. Then update the submodules. After, run **npm install**
+to set up the **node_modules** directory. Finally, install the
+**grunt** command line tools required to run **grunt** and
+build **ripple-lib**.
+
+```
+git clone git@github.com:ripple/ripple-lib.git
+cd ripple-lib
+git submodule update --init
+npm install
+npm install -g grunt-cli
+grunt
+```
+
+Now link this version of **ripple-lib** into the global packages:
+
+```
+sudo npm link
+```
+
+To make rippled use the newly linked global **ripple-lib** package
+instead of the one installed under **node_modules**, change
+directories to the local rippled repository and delete the old
+**ripple-lib** then link to the new one:
+
+```
+sh
+rm -rf node_modules/ripple-lib
+npm link ripple-lib
+```

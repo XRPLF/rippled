@@ -89,4 +89,8 @@ if [[ $TARGET == "coverage" ]]; then
   codecov -X gcov # don't even try and look for .gcov files ;)
 fi
 
-
+if [[ ${APP} == "rippled" ]]; then
+  # Run NPM tests
+  npm install --progress=false
+  npm test --rippled=$APP_PATH
+fi
