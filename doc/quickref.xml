@@ -128,6 +128,7 @@
             <member><link linkend="beast.ref.websocket__decorate">decorate</link></member>
             <member><link linkend="beast.ref.websocket__keep_alive">keep_alive</link></member>
             <member><link linkend="beast.ref.websocket__message_type">message_type</link></member>
+            <member><link linkend="beast.ref.websocket__permessage_deflate">permessage_deflate</link></member>
             <member><link linkend="beast.ref.websocket__pong_callback">pong_callback</link></member>
             <member><link linkend="beast.ref.websocket__read_buffer_size">read_buffer_size</link></member>
             <member><link linkend="beast.ref.websocket__read_message_max">read_message_max</link></member>

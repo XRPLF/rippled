@@ -23,76 +23,10 @@
 #include <algorithm>
 #include <memory>
 
+#include <beast/unit_test/dstream.hpp>
+
 namespace beast {
 namespace websocket {
-
-/*
-    template<class ConstBufferSequence>
-    void
-    write_frame(bool fin, ConstBufferSequence const& buffer)
-
-    Depending on the settings of autofragment role, and compression,
-    different algorithms are used.
-
-    1.  autofragment: false
-        compression:  false
-
-        In the server role, this will send a single frame in one
-        system call, by concatenating the frame header and the payload.
-
-        In the client role, this will send a single frame in one system
-        call, using the write buffer to calculate masked data.
-
-    2.  autofragment: true
-        compression:  false
-
-        In the server role, this will send one or more frames in one
-        system call per sent frame. Each frame is sent by concatenating
-        the frame header and payload. The size of each sent frame will
-        not exceed the write buffer size option.
-
-        In the client role, this will send one or more frames in one
-        system call per sent frame, using the write buffer to calculate
-        masked data. The size of each sent frame will not exceed the
-        write buffer size option.
-
-    3.  autofragment: false
-        compression:  true
-
-        In the server role, this will...
-
-*/
-/*
-    if(compress)
-        compress buffers into write_buffer
-        if(write_buffer_avail == write_buffer_size || fin`)
-            if(mask)
-                apply mask to write buffer
-            write frame header, write_buffer as one frame
-    else if(auto-fragment)
-        if(fin || write_buffer_avail + buffers size == write_buffer_size)
-            if(mask)
-                append buffers to write buffer
-                apply mask to write buffer
-                write frame header, write buffer as one frame
-
-            else:
-                write frame header, write buffer, and buffers as one frame
-        else:
-            append buffers to write buffer
-    else if(mask)
-        copy buffers to write_buffer
-        apply mask to write_buffer
-        write frame header and possibly full write_buffer in a single call
-        loop:
-            copy buffers to write_buffer
-            apply mask to write_buffer
-            write write_buffer in a single call
-    else
-            write frame header, buffers as one frame
-*/
-
-//------------------------------------------------------------------------------
 
 template<class NextLayer>
 template<class Buffers, class Handler>
@@ -104,53 +38,23 @@ class stream<NextLayer>::write_frame_op
         bool cont;
         stream<NextLayer>& ws;
         consuming_buffers<Buffers> cb;
+        bool fin;
         detail::frame_header fh;
         detail::fh_streambuf fh_buf;
-        detail::prepared_key_type key;
-        void* tmp;
-        std::size_t tmp_size;
+        detail::prepared_key key;
         std::uint64_t remain;
         int state = 0;
+        int entry;
 
         data(Handler& handler_, stream<NextLayer>& ws_,
-                bool fin, Buffers const& bs)
+                bool fin_, Buffers const& bs)
             : handler(handler_)
             , cont(beast_asio_helpers::
                 is_continuation(handler))
             , ws(ws_)
             , cb(bs)
+            , fin(fin_)
         {
-            using beast::detail::clamp;
-            fh.op = ws.wr_.cont ?
-                opcode::cont : ws.wr_opcode_;
-            ws.wr_.cont = ! fin;
-            fh.fin = fin;
-            fh.rsv1 = false;
-            fh.rsv2 = false;
-            fh.rsv3 = false;
-            fh.len = boost::asio::buffer_size(cb);
-            fh.mask = ws.role_ == detail::role_type::client;
-            if(fh.mask)
-            {
-                fh.key = ws.maskgen_();
-                detail::prepare_key(key, fh.key);
-                tmp_size = clamp(fh.len, ws.wr_buf_size_);
-                tmp = beast_asio_helpers::
-                    allocate(tmp_size, handler);
-                remain = fh.len;
-            }
-            else
-            {
-                tmp = nullptr;
-            }
-            detail::write<static_streambuf>(fh_buf, fh);
-        }
-
-        ~data()
-        {
-            if(tmp)
-                beast_asio_helpers::
-                    deallocate(tmp, tmp_size, handler);
         }
     };
 
@@ -167,17 +71,24 @@ public:
             std::forward<DeducedHandler>(h),
                 ws, std::forward<Args>(args)...))
     {
-        (*this)(error_code{}, false);
+        (*this)(error_code{}, 0, false);
     }
 
     void operator()()
     {
-        (*this)(error_code{});
+        (*this)(error_code{}, 0, true);
     }
 
-    void operator()(error_code ec, std::size_t);
+    void operator()(error_code const& ec)
+    {
+        (*this)(ec, 0, true);
+    }
 
-    void operator()(error_code ec, bool again = true);
+    void operator()(error_code ec,
+        std::size_t bytes_transferred);
+
+    void operator()(error_code ec,
+        std::size_t bytes_transferred, bool again);
 
     friend
     void* asio_handler_allocate(
@@ -215,12 +126,12 @@ template<class Buffers, class Handler>
 void
 stream<NextLayer>::
 write_frame_op<Buffers, Handler>::
-operator()(error_code ec, std::size_t)
+operator()(error_code ec, std::size_t bytes_transferred)
 {
     auto& d = *d_;
     if(ec)
         d.ws.failed_ = true;
-    (*this)(ec);
+    (*this)(ec, bytes_transferred, true);
 }
 
 template<class NextLayer>
@@ -228,11 +139,24 @@ template<class Buffers, class Handler>
 void
 stream<NextLayer>::
 write_frame_op<Buffers, Handler>::
-operator()(error_code ec, bool again)
+operator()(error_code ec,
+    std::size_t bytes_transferred, bool again)
 {
     using beast::detail::clamp;
+    using boost::asio::buffer;
     using boost::asio::buffer_copy;
-    using boost::asio::mutable_buffers_1;
+    using boost::asio::buffer_size;
+    enum
+    {
+        do_init = 0,
+        do_nomask_nofrag = 20,
+        do_nomask_frag = 30,
+        do_mask_nofrag = 40,
+        do_mask_frag = 50,
+        do_deflate = 60,
+        do_maybe_suspend = 80,
+        do_upcall = 99
+    };
     auto& d = *d_;
     d.cont = d.cont || again;
     if(ec)
@@ -241,11 +165,299 @@ operator()(error_code ec, bool again)
     {
         switch(d.state)
         {
-        case 0:
+        case do_init:
+            if(! d.ws.wr_.cont)
+            {
+                d.ws.wr_begin();
+                d.fh.rsv1 = d.ws.wr_.compress;
+            }
+            else
+            {
+                d.fh.rsv1 = false;
+            }
+            d.fh.rsv2 = false;
+            d.fh.rsv3 = false;
+            d.fh.op = d.ws.wr_.cont ?
+                opcode::cont : d.ws.wr_opcode_;
+            d.fh.mask =
+                d.ws.role_ == detail::role_type::client;
+
+            if(d.ws.wr_.compress)
+            {
+                d.entry = do_deflate;
+            }
+            else if(! d.fh.mask)
+            {
+                if(! d.ws.wr_.autofrag)
+                {
+                    d.entry = do_nomask_nofrag;
+                }
+                else
+                {
+                    BOOST_ASSERT(d.ws.wr_.buf_size != 0);
+                    d.remain = buffer_size(d.cb);
+                    if(d.remain > d.ws.wr_.buf_size)
+                        d.entry = do_nomask_frag;
+                    else
+                        d.entry = do_nomask_nofrag;
+                }
+            }
+            else
+            {
+                if(! d.ws.wr_.autofrag)
+                {
+                    d.entry = do_mask_nofrag;
+                }
+                else
+                {
+                    BOOST_ASSERT(d.ws.wr_.buf_size != 0);
+                    d.remain = buffer_size(d.cb);
+                    if(d.remain > d.ws.wr_.buf_size)
+                        d.entry = do_mask_frag;
+                    else
+                        d.entry = do_mask_nofrag;
+                }
+            }
+            d.state = do_maybe_suspend;
+            break;
+
+        //----------------------------------------------------------------------
+
+        case do_nomask_nofrag:
+        {
+            d.fh.fin = d.fin;
+            d.fh.len = buffer_size(d.cb);
+            detail::write<static_streambuf>(
+                d.fh_buf, d.fh);
+            d.ws.wr_.cont = ! d.fin;
+            // Send frame
+            d.state = do_upcall;
+            BOOST_ASSERT(! d.ws.wr_block_);
+            d.ws.wr_block_ = &d;
+            boost::asio::async_write(d.ws.stream_,
+                buffer_cat(d.fh_buf.data(), d.cb),
+                    std::move(*this));
+            return;
+        }
+
+        //----------------------------------------------------------------------
+
+        case do_nomask_frag:
+        {
+            auto const n = clamp(
+                d.remain, d.ws.wr_.buf_size);
+            d.remain -= n;
+            d.fh.len = n;
+            d.fh.fin = d.fin ? d.remain == 0 : false;
+            detail::write<static_streambuf>(
+                d.fh_buf, d.fh);
+            d.ws.wr_.cont = ! d.fin;
+            // Send frame
+            d.state = d.remain == 0 ?
+                do_upcall : do_nomask_frag + 1;
+            BOOST_ASSERT(! d.ws.wr_block_);
+            d.ws.wr_block_ = &d;
+            boost::asio::async_write(d.ws.stream_,
+                buffer_cat(d.fh_buf.data(),
+                    prepare_buffers(n, d.cb)),
+                        std::move(*this));
+            return;
+        }
+
+        case do_nomask_frag + 1:
+            d.cb.consume(
+                bytes_transferred - d.fh_buf.size());
+            d.fh_buf.reset();
+            d.fh.op = opcode::cont;
+            if(d.ws.wr_block_ == &d)
+                d.ws.wr_block_ = nullptr;
+            if(d.ws.rd_op_.maybe_invoke())
+            {
+                d.state = do_maybe_suspend;
+                d.ws.get_io_service().post(
+                    std::move(*this));
+                return;
+            }
+            d.state = d.entry;
+            break;
+
+        //----------------------------------------------------------------------
+
+        case do_mask_nofrag:
+        {
+            d.remain = buffer_size(d.cb);
+            d.fh.fin = d.fin;
+            d.fh.len = d.remain;
+            d.fh.key = d.ws.maskgen_();
+            detail::prepare_key(d.key, d.fh.key);
+            detail::write<static_streambuf>(
+                d.fh_buf, d.fh);
+            auto const n =
+                clamp(d.remain, d.ws.wr_.buf_size);
+            auto const b =
+                buffer(d.ws.wr_.buf.get(), n);
+            buffer_copy(b, d.cb);
+            detail::mask_inplace(b, d.key);
+            d.remain -= n;
+            d.ws.wr_.cont = ! d.fin;
+            // Send frame header and partial payload
+            d.state = d.remain == 0 ?
+                do_upcall : do_mask_nofrag + 1;
+            BOOST_ASSERT(! d.ws.wr_block_);
+            d.ws.wr_block_ = &d;
+            boost::asio::async_write(d.ws.stream_,
+                buffer_cat(d.fh_buf.data(), b),
+                    std::move(*this));
+            return;
+        }
+
+        case do_mask_nofrag + 1:
+        {
+            d.cb.consume(d.ws.wr_.buf_size);
+            auto const n =
+                clamp(d.remain, d.ws.wr_.buf_size);
+            auto const b =
+                buffer(d.ws.wr_.buf.get(), n);
+            buffer_copy(b, d.cb);
+            detail::mask_inplace(b, d.key);
+            d.remain -= n;
+            // Send parial payload
+            if(d.remain == 0)
+                d.state = do_upcall;
+            boost::asio::async_write(
+                d.ws.stream_, b, std::move(*this));
+            return;
+        }
+
+        //----------------------------------------------------------------------
+
+        case do_mask_frag:
+        {
+            auto const n = clamp(
+                d.remain, d.ws.wr_.buf_size);
+            d.remain -= n;
+            d.fh.len = n;
+            d.fh.key = d.ws.maskgen_();
+            d.fh.fin = d.fin ? d.remain == 0 : false;
+            detail::prepare_key(d.key, d.fh.key);
+            auto const b = buffer(
+                d.ws.wr_.buf.get(), n);
+            buffer_copy(b, d.cb);
+            detail::mask_inplace(b, d.key);
+            detail::write<static_streambuf>(
+                d.fh_buf, d.fh);
+            d.ws.wr_.cont = ! d.fin;
+            // Send frame
+            d.state = d.remain == 0 ?
+                do_upcall : do_mask_frag + 1;
+            BOOST_ASSERT(! d.ws.wr_block_);
+            d.ws.wr_block_ = &d;
+            boost::asio::async_write(d.ws.stream_,
+                buffer_cat(d.fh_buf.data(), b),
+                    std::move(*this));
+            return;
+        }
+
+        case do_mask_frag + 1:
+            d.cb.consume(
+                bytes_transferred - d.fh_buf.size());
+            d.fh_buf.reset();
+            d.fh.op = opcode::cont;
+            BOOST_ASSERT(d.ws.wr_block_ == &d);
+            d.ws.wr_block_ = nullptr;
+            if(d.ws.rd_op_.maybe_invoke())
+            {
+                d.state = do_maybe_suspend;
+                d.ws.get_io_service().post(
+                    std::move(*this));
+                return;
+            }
+            d.state = d.entry;
+            break;
+
+        //----------------------------------------------------------------------
+
+        case do_deflate:
+        {
+            auto b = buffer(d.ws.wr_.buf.get(),
+                d.ws.wr_.buf_size);
+            auto const more = detail::deflate(
+                d.ws.pmd_->zo, b, d.cb, d.fin, ec);
+            d.ws.failed_ = ec != 0;
+            if(d.ws.failed_)
+                goto upcall;
+            auto const n = buffer_size(b);
+            if(n == 0)
+            {
+                // The input was consumed, but there
+                // is no output due to compression
+                // latency.
+                BOOST_ASSERT(! d.fin);
+                BOOST_ASSERT(buffer_size(d.cb) == 0);
+
+                // We can skip the dispatch if the
+                // asynchronous initiation function is
+                // not on call stack but its hard to
+                // figure out so be safe and dispatch.
+                d.state = do_upcall;
+                d.ws.get_io_service().post(std::move(*this));
+                return;
+            }
+            if(d.fh.mask)
+            {
+                d.fh.key = d.ws.maskgen_();
+                detail::prepared_key key;
+                detail::prepare_key(key, d.fh.key);
+                detail::mask_inplace(b, key);
+            }
+            d.fh.fin = ! more;
+            d.fh.len = n;
+            detail::fh_streambuf fh_buf;
+            detail::write<static_streambuf>(fh_buf, d.fh);
+            d.ws.wr_.cont = ! d.fin;
+            // Send frame
+            d.state = more ?
+                do_deflate + 1 : do_deflate + 2;
+            BOOST_ASSERT(! d.ws.wr_block_);
+            d.ws.wr_block_ = &d;
+            boost::asio::async_write(d.ws.stream_,
+                buffer_cat(fh_buf.data(), b),
+                    std::move(*this));
+            return;
+        }
+
+        case do_deflate + 1:
+            d.fh.op = opcode::cont;
+            d.fh.rsv1 = false;
+            BOOST_ASSERT(d.ws.wr_block_ == &d);
+            d.ws.wr_block_ = nullptr;
+            if(d.ws.rd_op_.maybe_invoke())
+            {
+                d.state = do_maybe_suspend;
+                d.ws.get_io_service().post(
+                    std::move(*this));
+                return;
+            }
+            d.state = d.entry;
+            break;
+
+        case do_deflate + 2:
+            if(d.fh.fin && (
+                (d.ws.role_ == detail::role_type::client &&
+                    d.ws.pmd_config_.client_no_context_takeover) ||
+                (d.ws.role_ == detail::role_type::server &&
+                    d.ws.pmd_config_.server_no_context_takeover)))
+                d.ws.pmd_->zo.reset();
+            goto upcall;
+
+        //----------------------------------------------------------------------
+
+        case do_maybe_suspend:
+        {
             if(d.ws.wr_block_)
             {
                 // suspend
-                d.state = 3;
+                d.state = do_maybe_suspend + 1;
                 d.ws.wr_op_.template emplace<
                     write_frame_op>(std::move(*this));
                 return;
@@ -253,79 +465,35 @@ operator()(error_code ec, bool again)
             if(d.ws.failed_ || d.ws.wr_close_)
             {
                 // call handler
-                d.state = 99;
+                d.state = do_upcall;
                 d.ws.get_io_service().post(
                     bind_handler(std::move(*this),
                         boost::asio::error::operation_aborted));
                 return;
             }
-            // fall through
-
-        case 1:
-        {
-            if(! d.fh.mask)
-            {
-                // send header and entire payload
-                d.state = 99;
-                BOOST_ASSERT(! d.ws.wr_block_);
-                d.ws.wr_block_ = &d;
-                boost::asio::async_write(d.ws.stream_,
-                    buffer_cat(d.fh_buf.data(), d.cb),
-                        std::move(*this));
-                return;
-            }
-            auto const n = clamp(d.remain, d.tmp_size);
-            mutable_buffers_1 mb{d.tmp, n};
-            buffer_copy(mb, d.cb);
-            d.cb.consume(n);
-            d.remain -= n;
-            detail::mask_inplace(mb, d.key);
-            // send header and payload
-            d.state = d.remain > 0 ? 2 : 99;
-            BOOST_ASSERT(! d.ws.wr_block_);
-            d.ws.wr_block_ = &d;
-            boost::asio::async_write(d.ws.stream_,
-                buffer_cat(d.fh_buf.data(),
-                    mb), std::move(*this));
-            return;
+            d.state = d.entry;
+            break;
         }
 
-        // sent masked payload
-        case 2:
-        {
-            auto const n = clamp(d.remain, d.tmp_size);
-            mutable_buffers_1 mb{d.tmp,
-                static_cast<std::size_t>(n)};
-            buffer_copy(mb, d.cb);
-            d.cb.consume(n);
-            d.remain -= n;
-            detail::mask_inplace(mb, d.key);
-            // send payload
-            if(d.remain == 0)
-                d.state = 99;
-            BOOST_ASSERT(d.ws.wr_block_ == &d);
-            boost::asio::async_write(
-                d.ws.stream_, mb, std::move(*this));
-            return;
-        }
-
-        case 3:
-            d.state = 4;
+        case do_maybe_suspend + 1:
+            d.state = do_maybe_suspend + 2;
             d.ws.get_io_service().post(bind_handler(
                 std::move(*this), ec));
             return;
 
-        case 4:
+        case do_maybe_suspend + 2:
             if(d.ws.failed_ || d.ws.wr_close_)
             {
                 // call handler
                 ec = boost::asio::error::operation_aborted;
                 goto upcall;
             }
-            d.state = 1;
+            d.state = d.entry;
             break;
 
-        case 99:
+        //----------------------------------------------------------------------
+
+        case do_upcall:
             goto upcall;
         }
     }
@@ -391,120 +559,182 @@ write_frame(bool fin,
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
     using boost::asio::buffer_size;
-    bool const compress = false;
-    if(! wr_.cont)
-        wr_prepare(compress);
     detail::frame_header fh;
-    fh.op = wr_.cont ? opcode::cont : wr_opcode_;
-    fh.rsv1 = false;
+    if(! wr_.cont)
+    {
+        wr_begin();
+        fh.rsv1 = wr_.compress;
+    }
+    else
+    {
+        fh.rsv1 = false;
+    }
     fh.rsv2 = false;
     fh.rsv3 = false;
+    fh.op = wr_.cont ? opcode::cont : wr_opcode_;
     fh.mask = role_ == detail::role_type::client;
-    wr_.cont = ! fin;
     auto remain = buffer_size(buffers);
-    if(compress)
+    if(wr_.compress)
     {
-        // TODO
-    }
-    else if(! fh.mask && ! wr_.autofrag)
-    {
-        fh.fin = fin;
-        fh.len = remain;
-        detail::fh_streambuf fh_buf;
-        detail::write<static_streambuf>(fh_buf, fh);
-        boost::asio::write(stream_,
-            buffer_cat(fh_buf.data(), buffers), ec);
-        failed_ = ec != 0;
-        if(failed_)
-            return;
-        return;
-    }
-    else if(! fh.mask && wr_.autofrag)
-    {
-        BOOST_ASSERT(wr_.size != 0);
         consuming_buffers<
-            ConstBufferSequence> cb(buffers);
+            ConstBufferSequence> cb{buffers};
         for(;;)
         {
-            auto const n = clamp(remain, wr_.size);
-            fh.len = n;
-            remain -= n;
-            fh.fin = fin ? remain == 0 : false;
-            detail::fh_streambuf fh_buf;
-            detail::write<static_streambuf>(fh_buf, fh);
-            boost::asio::write(stream_,
-                buffer_cat(fh_buf.data(),
-                    prepare_buffers(n, cb)), ec);
+            auto b = buffer(
+                wr_.buf.get(), wr_.buf_size);
+            auto const more = detail::deflate(
+                pmd_->zo, b, cb, fin, ec);
             failed_ = ec != 0;
             if(failed_)
                 return;
-            if(remain == 0)
+            auto const n = buffer_size(b);
+            if(n == 0)
+            {
+                // The input was consumed, but there
+                // is no output due to compression
+                // latency.
+                BOOST_ASSERT(! fin);
+                BOOST_ASSERT(buffer_size(cb) == 0);
+                fh.fin = false;
+                break;
+            }
+            if(fh.mask)
+            {
+                fh.key = maskgen_();
+                detail::prepared_key key;
+                detail::prepare_key(key, fh.key);
+                detail::mask_inplace(b, key);
+            }
+            fh.fin = ! more;
+            fh.len = n;
+            detail::fh_streambuf fh_buf;
+            detail::write<static_streambuf>(fh_buf, fh);
+            wr_.cont = ! fin;
+            boost::asio::write(stream_,
+                buffer_cat(fh_buf.data(), b), ec);
+            failed_ = ec != 0;
+            if(failed_)
+                return;
+            if(! more)
                 break;
             fh.op = opcode::cont;
-            cb.consume(n);
+            fh.rsv1 = false;
+        }
+        if(fh.fin && (
+            (role_ == detail::role_type::client &&
+                pmd_config_.client_no_context_takeover) ||
+            (role_ == detail::role_type::server &&
+                pmd_config_.server_no_context_takeover)))
+            pmd_->zo.reset();
+        return;
+    }
+    if(! fh.mask)
+    {
+        if(! wr_.autofrag)
+        {
+            // no mask, no autofrag
+            fh.fin = fin;
+            fh.len = remain;
+            detail::fh_streambuf fh_buf;
+            detail::write<static_streambuf>(fh_buf, fh);
+            wr_.cont = ! fin;
+            boost::asio::write(stream_,
+                buffer_cat(fh_buf.data(), buffers), ec);
+            failed_ = ec != 0;
+            if(failed_)
+                return;
+        }
+        else
+        {
+            // no mask, autofrag
+            BOOST_ASSERT(wr_.buf_size != 0);
+            consuming_buffers<
+                ConstBufferSequence> cb{buffers};
+            for(;;)
+            {
+                auto const n = clamp(remain, wr_.buf_size);
+                remain -= n;
+                fh.len = n;
+                fh.fin = fin ? remain == 0 : false;
+                detail::fh_streambuf fh_buf;
+                detail::write<static_streambuf>(fh_buf, fh);
+                wr_.cont = ! fin;
+                boost::asio::write(stream_,
+                    buffer_cat(fh_buf.data(),
+                        prepare_buffers(n, cb)), ec);
+                failed_ = ec != 0;
+                if(failed_)
+                    return;
+                if(remain == 0)
+                    break;
+                fh.op = opcode::cont;
+                cb.consume(n);
+            }
         }
         return;
     }
-    else if(fh.mask && ! wr_.autofrag)
+    if(! wr_.autofrag)
     {
-        fh.key = maskgen_();
-        detail::prepared_key_type key;
-        detail::prepare_key(key, fh.key);
+        // mask, no autofrag
         fh.fin = fin;
         fh.len = remain;
+        fh.key = maskgen_();
+        detail::prepared_key key;
+        detail::prepare_key(key, fh.key);
         detail::fh_streambuf fh_buf;
         detail::write<static_streambuf>(fh_buf, fh);
         consuming_buffers<
-            ConstBufferSequence> cb(buffers);
+            ConstBufferSequence> cb{buffers};
         {
-            auto const n = clamp(remain, wr_.size);
-            auto const mb = buffer(wr_.buf.get(), n);
-            buffer_copy(mb, cb);
+            auto const n = clamp(remain, wr_.buf_size);
+            auto const b = buffer(wr_.buf.get(), n);
+            buffer_copy(b, cb);
             cb.consume(n);
             remain -= n;
-            detail::mask_inplace(mb, key);
+            detail::mask_inplace(b, key);
+            wr_.cont = ! fin;
             boost::asio::write(stream_,
-                buffer_cat(fh_buf.data(), mb), ec);
+                buffer_cat(fh_buf.data(), b), ec);
             failed_ = ec != 0;
             if(failed_)
                 return;
         }
         while(remain > 0)
         {
-            auto const n = clamp(remain, wr_.size);
-            auto const mb = buffer(wr_.buf.get(), n);
-            buffer_copy(mb, cb);
+            auto const n = clamp(remain, wr_.buf_size);
+            auto const b = buffer(wr_.buf.get(), n);
+            buffer_copy(b, cb);
             cb.consume(n);
             remain -= n;
-            detail::mask_inplace(mb, key);
-            boost::asio::write(stream_, mb, ec);
+            detail::mask_inplace(b, key);
+            boost::asio::write(stream_, b, ec);
             failed_ = ec != 0;
             if(failed_)
                 return;
         }
         return;
     }
-    else if(fh.mask && wr_.autofrag)
     {
-        BOOST_ASSERT(wr_.size != 0);
+        // mask, autofrag
+        BOOST_ASSERT(wr_.buf_size != 0);
         consuming_buffers<
-            ConstBufferSequence> cb(buffers);
+            ConstBufferSequence> cb{buffers};
         for(;;)
         {
             fh.key = maskgen_();
-            detail::prepared_key_type key;
+            detail::prepared_key key;
             detail::prepare_key(key, fh.key);
-            auto const n = clamp(remain, wr_.size);
-            auto const mb = buffer(wr_.buf.get(), n);
-            buffer_copy(mb, cb);
-            detail::mask_inplace(mb, key);
+            auto const n = clamp(remain, wr_.buf_size);
+            auto const b = buffer(wr_.buf.get(), n);
+            buffer_copy(b, cb);
+            detail::mask_inplace(b, key);
             fh.len = n;
             remain -= n;
             fh.fin = fin ? remain == 0 : false;
             detail::fh_streambuf fh_buf;
             detail::write<static_streambuf>(fh_buf, fh);
             boost::asio::write(stream_,
-                buffer_cat(fh_buf.data(), mb), ec);
+                buffer_cat(fh_buf.data(), b), ec);
             failed_ = ec != 0;
             if(failed_)
                 return;
@@ -674,8 +904,6 @@ write(ConstBufferSequence const& buffers, error_code& ec)
             "ConstBufferSequence requirements not met");
     write_frame(true, buffers, ec);
 }
-
-//------------------------------------------------------------------------------
 
 } // websocket
 } // beast

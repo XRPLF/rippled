@@ -15,10 +15,13 @@
 #include <beast/websocket/detail/frame.hpp>
 #include <beast/websocket/detail/invokable.hpp>
 #include <beast/websocket/detail/mask.hpp>
+#include <beast/websocket/detail/pmd_extension.hpp>
 #include <beast/websocket/detail/utf8_checker.hpp>
 #include <beast/http/empty_body.hpp>
 #include <beast/http/message.hpp>
 #include <beast/http/string_body.hpp>
+#include <beast/zlib/deflate_stream.hpp>
+#include <beast/zlib/inflate_stream.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/assert.hpp>
 #include <cstdint>
@@ -53,19 +56,12 @@ protected:
     std::size_t rd_msg_max_ =
         16 * 1024 * 1024;                   // max message size
     bool wr_autofrag_ = true;               // auto fragment
-    std::size_t wr_buf_size_ = 4096;        // mask buffer size
+    std::size_t wr_buf_size_ = 4096;        // write buffer size
+    std::size_t rd_buf_size_ = 4096;        // read buffer size
     opcode wr_opcode_ = opcode::text;       // outgoing message type
     pong_cb pong_cb_;                       // pong callback
     role_type role_;                        // server or client
     bool failed_;                           // the connection failed
-
-    detail::frame_header rd_fh_;            // current frame header
-    detail::prepared_key_type rd_key_;      // prepared masking key
-    detail::utf8_checker rd_utf8_check_;    // for current text msg
-    std::uint64_t rd_size_;                 // size of the current message so far
-    std::uint64_t rd_need_ = 0;             // bytes left in msg frame payload
-    opcode rd_opcode_;                      // opcode of current msg
-    bool rd_cont_;                          // expecting a continuation frame
 
     bool wr_close_;                         // sent close frame
     op* wr_block_;                          // op currenly writing
@@ -74,6 +70,34 @@ protected:
     invokable rd_op_;                       // invoked after write completes
     invokable wr_op_;                       // invoked after read completes
     close_reason cr_;                       // set from received close frame
+
+    // State information for the message being received
+    //
+    struct rd_t
+    {
+        // opcode of current message being read
+        opcode op;
+
+        // `true` if the next frame is a continuation.
+        bool cont;
+
+        // Checks that test messages are valid utf8
+        detail::utf8_checker utf8;
+
+        // Size of the current message so far.
+        std::uint64_t size;
+
+        // Size of the read buffer.
+        // This gets set to the read buffer size option at the
+        // beginning of sending a message, so that the option can be
+        // changed mid-send without affecting the current message.
+        std::size_t buf_size;
+
+        // The read buffer. Used for compression and masking.
+        std::unique_ptr<std::uint8_t[]> buf;
+    };
+
+    rd_t rd_;
 
     // State information for the message being sent
     //
@@ -99,28 +123,35 @@ protected:
         // This gets set to the write buffer size option at the
         // beginning of sending a message, so that the option can be
         // changed mid-send without affecting the current message.
-        std::size_t size;
+        std::size_t buf_size;
 
-        // The write buffer.
+        // The write buffer. Used for compression and masking.
         // The buffer is allocated or reallocated at the beginning of
         // sending a message.
         std::unique_ptr<std::uint8_t[]> buf;
-
-        void
-        open()
-        {
-            cont = false;
-            size = 0;
-        }
-
-        void
-        close()
-        {
-            buf.reset();
-        }
     };
 
     wr_t wr_;
+
+    // State information for the permessage-deflate extension
+    struct pmd_t
+    {
+        // `true` if current read message is compressed
+        bool rd_set;
+
+        zlib::deflate_stream zo;
+        zlib::inflate_stream zi;
+    };
+
+    // If not engaged, then permessage-deflate is not
+    // enabled for the currently active session.
+    std::unique_ptr<pmd_t> pmd_;
+
+    // Local options for permessage-deflate
+    permessage_deflate pmd_opts_;
+
+    // Offer for clients, negotiated result for servers
+    pmd_offer pmd_config_;
 
     stream_base(stream_base&&) = default;
     stream_base(stream_base const&) = delete;
@@ -142,15 +173,24 @@ protected:
 
     template<class DynamicBuffer>
     std::size_t
-    read_fh1(DynamicBuffer& db, close_code::value& code);
+    read_fh1(detail::frame_header& fh,
+        DynamicBuffer& db, close_code::value& code);
 
     template<class DynamicBuffer>
     void
-    read_fh2(DynamicBuffer& db, close_code::value& code);
+    read_fh2(detail::frame_header& fh,
+        DynamicBuffer& db, close_code::value& code);
 
+    // Called before receiving the first frame of each message
     template<class = void>
     void
-    wr_prepare(bool compress);
+    rd_begin();
+
+    // Called before sending the first frame of each message
+    //
+    template<class = void>
+    void
+    wr_begin();
 
     template<class DynamicBuffer>
     void
@@ -161,7 +201,7 @@ protected:
     write_ping(DynamicBuffer& db, opcode op, ping_data const& data);
 };
 
-template<class _>
+template<class>
 void
 stream_base::
 open(role_type role)
@@ -169,30 +209,61 @@ open(role_type role)
     // VFALCO TODO analyze and remove dupe code in reset()
     role_ = role;
     failed_ = false;
-    rd_need_ = 0;
-    rd_cont_ = false;
+    rd_.cont = false;
     wr_close_ = false;
     wr_block_ = nullptr;    // should be nullptr on close anyway
     pong_data_ = nullptr;   // should be nullptr on close anyway
 
-    wr_.open();
+    wr_.cont = false;
+    wr_.buf_size = 0;
+
+    if(((role_ == role_type::client && pmd_opts_.client_enable) ||
+        (role_ == role_type::server && pmd_opts_.server_enable)) &&
+            pmd_config_.accept)
+    {
+        pmd_normalize(pmd_config_);
+        pmd_.reset(new pmd_t);
+        if(role_ == role_type::client)
+        {
+            pmd_->zi.reset(
+                pmd_config_.server_max_window_bits);
+            pmd_->zo.reset(
+                pmd_opts_.compLevel,
+                pmd_config_.client_max_window_bits,
+                pmd_opts_.memLevel,
+                zlib::Strategy::normal);
+        }
+        else
+        {
+            pmd_->zi.reset(
+                pmd_config_.client_max_window_bits);
+            pmd_->zo.reset(
+                pmd_opts_.compLevel,
+                pmd_config_.server_max_window_bits,
+                pmd_opts_.memLevel,
+                zlib::Strategy::normal);
+        }
+    }
 }
 
-template<class _>
+template<class>
 void
 stream_base::
 close()
 {
-    wr_.close();
+    rd_.buf.reset();
+    wr_.buf.reset();
+    pmd_.reset();
 }
 
-// Read fixed frame header
+// Read fixed frame header from buffer
 // Requires at least 2 bytes
 //
 template<class DynamicBuffer>
 std::size_t
 stream_base::
-read_fh1(DynamicBuffer& db, close_code::value& code)
+read_fh1(detail::frame_header& fh,
+    DynamicBuffer& db, close_code::value& code)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
@@ -204,48 +275,51 @@ read_fh1(DynamicBuffer& db, close_code::value& code)
             return 0;
         };
     std::uint8_t b[2];
-    assert(buffer_size(db.data()) >= sizeof(b));
+    BOOST_ASSERT(buffer_size(db.data()) >= sizeof(b));
     db.consume(buffer_copy(buffer(b), db.data()));
     std::size_t need;
-    rd_fh_.len = b[1] & 0x7f;
-    switch(rd_fh_.len)
+    fh.len = b[1] & 0x7f;
+    switch(fh.len)
     {
         case 126: need = 2; break;
         case 127: need = 8; break;
         default:
             need = 0;
     }
-    rd_fh_.mask = (b[1] & 0x80) != 0;
-    if(rd_fh_.mask)
+    fh.mask = (b[1] & 0x80) != 0;
+    if(fh.mask)
         need += 4;
-    rd_fh_.op   = static_cast<opcode>(b[0] & 0x0f);
-    rd_fh_.fin  = (b[0] & 0x80) != 0;
-    rd_fh_.rsv1 = (b[0] & 0x40) != 0;
-    rd_fh_.rsv2 = (b[0] & 0x20) != 0;
-    rd_fh_.rsv3 = (b[0] & 0x10) != 0;
-    switch(rd_fh_.op)
+    fh.op   = static_cast<opcode>(b[0] & 0x0f);
+    fh.fin  = (b[0] & 0x80) != 0;
+    fh.rsv1 = (b[0] & 0x40) != 0;
+    fh.rsv2 = (b[0] & 0x20) != 0;
+    fh.rsv3 = (b[0] & 0x10) != 0;
+    switch(fh.op)
     {
     case opcode::binary:
     case opcode::text:
-        if(rd_cont_)
+        if(rd_.cont)
         {
             // new data frame when continuation expected
             return err(close_code::protocol_error);
         }
-        if(rd_fh_.rsv1 || rd_fh_.rsv2 || rd_fh_.rsv3)
+        if((fh.rsv1 && ! pmd_) ||
+            fh.rsv2 || fh.rsv3)
         {
             // reserved bits not cleared
             return err(close_code::protocol_error);
         }
+        if(pmd_)
+            pmd_->rd_set = fh.rsv1;
         break;
 
     case opcode::cont:
-        if(! rd_cont_)
+        if(! rd_.cont)
         {
             // continuation without an active message
             return err(close_code::protocol_error);
         }
-        if(rd_fh_.rsv1 || rd_fh_.rsv2 || rd_fh_.rsv3)
+        if(fh.rsv1 || fh.rsv2 || fh.rsv3)
         {
             // reserved bits not cleared
             return err(close_code::protocol_error);
@@ -253,22 +327,22 @@ read_fh1(DynamicBuffer& db, close_code::value& code)
         break;
 
     default:
-        if(is_reserved(rd_fh_.op))
+        if(is_reserved(fh.op))
         {
             // reserved opcode
             return err(close_code::protocol_error);
         }
-        if(! rd_fh_.fin)
+        if(! fh.fin)
         {
             // fragmented control message
             return err(close_code::protocol_error);
         }
-        if(rd_fh_.len > 125)
+        if(fh.len > 125)
         {
             // invalid length for control message
             return err(close_code::protocol_error);
         }
-        if(rd_fh_.rsv1 || rd_fh_.rsv2 || rd_fh_.rsv3)
+        if(fh.rsv1 || fh.rsv2 || fh.rsv3)
         {
             // reserved bits not cleared
             return err(close_code::protocol_error);
@@ -276,13 +350,13 @@ read_fh1(DynamicBuffer& db, close_code::value& code)
         break;
     }
     // unmasked frame from client
-    if(role_ == role_type::server && ! rd_fh_.mask)
+    if(role_ == role_type::server && ! fh.mask)
     {
         code = close_code::protocol_error;
         return 0;
     }
     // masked frame from server
-    if(role_ == role_type::client && rd_fh_.mask)
+    if(role_ == role_type::client && fh.mask)
     {
         code = close_code::protocol_error;
         return 0;
@@ -291,27 +365,28 @@ read_fh1(DynamicBuffer& db, close_code::value& code)
     return need;
 }
 
-// Decode variable frame header from stream
+// Decode variable frame header from buffer
 //
 template<class DynamicBuffer>
 void
 stream_base::
-read_fh2(DynamicBuffer& db, close_code::value& code)
+read_fh2(detail::frame_header& fh,
+    DynamicBuffer& db, close_code::value& code)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
     using boost::asio::buffer_size;
     using namespace boost::endian;
-    switch(rd_fh_.len)
+    switch(fh.len)
     {
     case 126:
     {
         std::uint8_t b[2];
-        assert(buffer_size(db.data()) >= sizeof(b));
+        BOOST_ASSERT(buffer_size(db.data()) >= sizeof(b));
         db.consume(buffer_copy(buffer(b), db.data()));
-        rd_fh_.len = big_uint16_to_native(&b[0]);
+        fh.len = big_uint16_to_native(&b[0]);
         // length not canonical
-        if(rd_fh_.len < 126)
+        if(fh.len < 126)
         {
             code = close_code::protocol_error;
             return;
@@ -321,11 +396,11 @@ read_fh2(DynamicBuffer& db, close_code::value& code)
     case 127:
     {
         std::uint8_t b[8];
-        assert(buffer_size(db.data()) >= sizeof(b));
+        BOOST_ASSERT(buffer_size(db.data()) >= sizeof(b));
         db.consume(buffer_copy(buffer(b), db.data()));
-        rd_fh_.len = big_uint64_to_native(&b[0]);
+        fh.len = big_uint64_to_native(&b[0]);
         // length not canonical
-        if(rd_fh_.len < 65536)
+        if(fh.len < 65536)
         {
             code = close_code::protocol_error;
             return;
@@ -333,67 +408,86 @@ read_fh2(DynamicBuffer& db, close_code::value& code)
         break;
     }
     }
-    if(rd_fh_.mask)
+    if(fh.mask)
     {
         std::uint8_t b[4];
-        assert(buffer_size(db.data()) >= sizeof(b));
+        BOOST_ASSERT(buffer_size(db.data()) >= sizeof(b));
         db.consume(buffer_copy(buffer(b), db.data()));
-        rd_fh_.key = little_uint32_to_native(&b[0]);
+        fh.key = little_uint32_to_native(&b[0]);
     }
     else
     {
         // initialize this otherwise operator== breaks
-        rd_fh_.key = 0;
+        fh.key = 0;
     }
-    if(rd_fh_.mask)
-        prepare_key(rd_key_, rd_fh_.key);
-    if(! is_control(rd_fh_.op))
+    if(! is_control(fh.op))
     {
-        if(rd_fh_.op != opcode::cont)
+        if(fh.op != opcode::cont)
         {
-            rd_size_ = rd_fh_.len;
-            rd_opcode_ = rd_fh_.op;
+            rd_.size = 0;
+            rd_.op = fh.op;
         }
         else
         {
-            if(rd_size_ > (std::numeric_limits<
-                std::uint64_t>::max)() - rd_fh_.len)
+            if(rd_.size > (std::numeric_limits<
+                std::uint64_t>::max)() - fh.len)
             {
                 code = close_code::too_big;
                 return;
             }
-            rd_size_ += rd_fh_.len;
+            //rd_.size += fh.len;
         }
-        if(rd_msg_max_ && rd_size_ > rd_msg_max_)
+    #if 0
+        if(rd_msg_max_ && rd_.size > rd_msg_max_)
         {
             code = close_code::too_big;
             return;
         }
-        rd_need_ = rd_fh_.len;
-        rd_cont_ = ! rd_fh_.fin;
+    #else
+        #pragma message("Disabled close_code::too_big for permessage-deflate!")
+    #endif
+        rd_.cont = ! fh.fin;
     }
     code = close_code::none;
 }
 
-template<class _>
+template<class>
 void
 stream_base::
-wr_prepare(bool compress)
+rd_begin()
+{
+    // Maintain the read buffer
+    if(pmd_)
+    {
+        if(! rd_.buf || rd_.buf_size != rd_buf_size_)
+        {
+            rd_.buf_size = rd_buf_size_;
+            rd_.buf.reset(new std::uint8_t[rd_.buf_size]);
+        }
+    }
+}
+
+template<class>
+void
+stream_base::
+wr_begin()
 {
     wr_.autofrag = wr_autofrag_;
-    wr_.compress = compress;
-    if(compress || wr_.autofrag ||
+    wr_.compress = static_cast<bool>(pmd_);
+
+    // Maintain the write buffer
+    if( wr_.compress ||
         role_ == detail::role_type::client)
     {
-        if(! wr_.buf || wr_.size != wr_buf_size_)
+        if(! wr_.buf || wr_.buf_size != wr_buf_size_)
         {
-            wr_.size = wr_buf_size_;
-            wr_.buf.reset(new std::uint8_t[wr_.size]);
+            wr_.buf_size = wr_buf_size_;
+            wr_.buf.reset(new std::uint8_t[wr_.buf_size]);
         }
     }
     else
     {
-        wr_.size = wr_buf_size_;
+        wr_.buf_size = wr_buf_size_;
         wr_.buf.reset();
     }
 }
@@ -418,7 +512,7 @@ write_close(DynamicBuffer& db, close_reason const& cr)
     detail::write(db, fh);
     if(cr.code != close_code::none)
     {
-        detail::prepared_key_type key;
+        detail::prepared_key key;
         if(fh.mask)
             detail::prepare_key(key, fh.key);
         {
@@ -464,7 +558,7 @@ write_ping(
     detail::write(db, fh);
     if(data.empty())
         return;
-    detail::prepared_key_type key;
+    detail::prepared_key key;
     if(fh.mask)
         detail::prepare_key(key, fh.key);
     auto d = db.prepare(data.size());

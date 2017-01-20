@@ -35,7 +35,7 @@ class stream<NextLayer>::response_op
     {
         bool cont;
         stream<NextLayer>& ws;
-        http::response<http::string_body> resp;
+        http::response<http::string_body> res;
         error_code final_ec;
         int state = 0;
 
@@ -45,12 +45,12 @@ class stream<NextLayer>::response_op
                 bool cont_)
             : cont(cont_)
             , ws(ws_)
-            , resp(ws_.build_response(req))
+            , res(ws_.build_response(req))
         {
             // can't call stream::reset() here
             // otherwise accept_op will malfunction
             //
-            if(resp.status != 101)
+            if(res.status != 101)
                 final_ec = error::handshake_failed;
         }
     };
@@ -121,7 +121,7 @@ operator()(error_code ec, bool again)
             // send response
             d.state = 1;
             http::async_write(d.ws.next_layer(),
-                d.resp, std::move(*this));
+                d.res, std::move(*this));
             return;
 
         // sent response
@@ -129,7 +129,11 @@ operator()(error_code ec, bool again)
             d.state = 99;
             ec = d.final_ec;
             if(! ec)
+            {
+                pmd_read(
+                    d.ws.pmd_config_, d.res.fields);
                 d.ws.open(detail::role_type::server);
+            }
             break;
         }
     }
@@ -412,6 +416,7 @@ accept(http::request<Body, Fields> const& req,
         //             teardown if Connection: close.
         return;
     }
+    pmd_read(pmd_config_, req.fields);
     open(detail::role_type::server);
 }
 

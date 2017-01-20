@@ -73,7 +73,7 @@ using maskgen = maskgen_t<std::minstd_rand>;
 
 //------------------------------------------------------------------------------
 
-using prepared_key_type =
+using prepared_key =
     std::conditional<sizeof(void*) == 8,
         std::uint64_t, std::uint32_t>::type;
 

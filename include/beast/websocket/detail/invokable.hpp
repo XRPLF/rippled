@@ -125,7 +125,7 @@ public:
     void
     emplace(F&& f);
 
-    void
+    bool
     maybe_invoke()
     {
         if(base_)
@@ -133,7 +133,9 @@ public:
             auto const basep = base_;
             base_ = nullptr;
             (*basep)();
+            return true;
         }
+        return false;
     }
 };
 

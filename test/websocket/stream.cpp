@@ -109,28 +109,6 @@ public:
         return false;
     }
 
-    template<class NextLayer, class DynamicBuffer>
-    static
-    void
-    read(stream<NextLayer>& ws, opcode& op, DynamicBuffer& db)
-    {
-        frame_info fi;
-        for(;;)
-        {
-            ws.read_frame(fi, db);
-            op = fi.op;
-            if(fi.fin)
-                break;
-        }
-    }
-
-    typedef void(self::*pmf_t)(endpoint_type const&, yield_context);
-
-    void yield_to_mf(endpoint_type const& ep, pmf_t mf)
-    {
-        yield_to(std::bind(mf, this, ep, std::placeholders::_1));
-    }
-
     struct identity
     {
         template<class Body, class Fields>
@@ -797,548 +775,8 @@ public:
     }
 #endif
 
-    void testSyncClient(endpoint_type const& ep)
-    {
-        using boost::asio::buffer;
-        static std::size_t constexpr limit = 200;
-        std::size_t n;
-        for(n = 0; n < limit; ++n)
-        {
-            stream<test::fail_stream<socket_type>> ws(n, ios_);
-            auto const restart =
-                [&](error_code ev)
-                {
-                    try
-                    {
-                        opcode op;
-                        streambuf db;
-                        ws.read(op, db);
-                        fail();
-                        return false;
-                    }
-                    catch(system_error const& se)
-                    {
-                        if(se.code() != ev)
-                            throw;
-                    }
-                    error_code ec;
-                    ws.lowest_layer().connect(ep, ec);
-                    if(! BEAST_EXPECTS(! ec, ec.message()))
-                        return false;
-                    ws.handshake("localhost", "/");
-                    return true;
-                };
-            try
-            {
-                {
-                    // connect
-                    error_code ec;
-                    ws.lowest_layer().connect(ep, ec);
-                    if(! BEAST_EXPECTS(! ec, ec.message()))
-                        return;
-                }
-                ws.handshake("localhost", "/");
-
-                // send message
-                ws.set_option(auto_fragment{false});
-                ws.set_option(message_type(opcode::text));
-                ws.write(sbuf("Hello"));
-                {
-                    // receive echoed message
-                    opcode op;
-                    streambuf db;
-                    read(ws, op, db);
-                    BEAST_EXPECT(op == opcode::text);
-                    BEAST_EXPECT(to_string(db.data()) == "Hello");
-                }
-
-                // close, no payload
-                ws.close({});
-                if(! restart(error::closed))
-                    return;
-
-                // close with code
-                ws.close(close_code::going_away);
-                if(! restart(error::closed))
-                    return;
-
-                // close with code and reason string
-                ws.close({close_code::going_away, "Going away"});
-                if(! restart(error::closed))
-                    return;
-
-                // send ping and message
-                bool pong = false;
-                ws.set_option(pong_callback{
-                    [&](ping_data const& payload)
-                    {
-                        BEAST_EXPECT(! pong);
-                        pong = true;
-                        BEAST_EXPECT(payload == "");
-                    }});
-                ws.ping("");
-                ws.set_option(message_type(opcode::binary));
-                ws.write(sbuf("Hello"));
-                {
-                    // receive echoed message
-                    opcode op;
-                    streambuf db;
-                    ws.read(op, db);
-                    BEAST_EXPECT(pong == 1);
-                    BEAST_EXPECT(op == opcode::binary);
-                    BEAST_EXPECT(to_string(db.data()) == "Hello");
-                }
-                ws.set_option(pong_callback{});
-
-                // send ping and fragmented message
-                ws.set_option(pong_callback{
-                    [&](ping_data const& payload)
-                    {
-                        BEAST_EXPECT(payload == "payload");
-                    }});
-                ws.ping("payload");
-                ws.write_frame(false, sbuf("Hello, "));
-                ws.write_frame(false, sbuf(""));
-                ws.write_frame(true, sbuf("World!"));
-                {
-                    // receive echoed message
-                    opcode op;
-                    streambuf db;
-                    ws.read(op, db);
-                    BEAST_EXPECT(pong == 1);
-                    BEAST_EXPECT(to_string(db.data()) == "Hello, World!");
-                }
-                ws.set_option(pong_callback{});
-
-                // send pong
-                ws.pong("");
-
-                // send auto fragmented message
-                ws.set_option(auto_fragment{true});
-                ws.set_option(write_buffer_size{8});
-                ws.write(sbuf("Now is the time for all good men"));
-                {
-                    // receive echoed message
-                    opcode op;
-                    streambuf sb;
-                    ws.read(op, sb);
-                    BEAST_EXPECT(to_string(sb.data()) == "Now is the time for all good men");
-                }
-                ws.set_option(auto_fragment{false});
-                ws.set_option(write_buffer_size{4096});
-
-                // send message with write buffer limit
-                {
-                    std::string s(2000, '*');
-                    ws.set_option(write_buffer_size(1200));
-                    ws.write(buffer(s.data(), s.size()));
-                    {
-                        // receive echoed message
-                        opcode op;
-                        streambuf db;
-                        ws.read(op, db);
-                        BEAST_EXPECT(to_string(db.data()) == s);
-                    }
-                }
-
-                // cause ping
-                ws.set_option(message_type(opcode::binary));
-                ws.write(sbuf("PING"));
-                ws.set_option(message_type(opcode::text));
-                ws.write(sbuf("Hello"));
-                {
-                    // receive echoed message
-                    opcode op;
-                    streambuf db;
-                    ws.read(op, db);
-                    BEAST_EXPECT(op == opcode::text);
-                    BEAST_EXPECT(to_string(db.data()) == "Hello");
-                }
-
-                // cause close
-                ws.set_option(message_type(opcode::binary));
-                ws.write(sbuf("CLOSE"));
-                if(! restart(error::closed))
-                    return;
-
-                // send bad utf8
-                ws.set_option(message_type(opcode::binary));
-                ws.write(buffer_cat(sbuf("TEXT"),
-                    cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)));
-                if(! restart(error::failed))
-                    return;
-
-                // cause bad utf8
-                ws.set_option(message_type(opcode::binary));
-                ws.write(buffer_cat(sbuf("TEXT"),
-                    cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)));
-                ws.write(sbuf("Hello"));
-                if(! restart(error::failed))
-                    return;
-
-                // cause bad close
-                ws.set_option(message_type(opcode::binary));
-                ws.write(buffer_cat(sbuf("RAW"),
-                    cbuf(0x88, 0x02, 0x03, 0xed)));
-                if(! restart(error::failed))
-                    return;
-
-                // unexpected cont
-                boost::asio::write(ws.next_layer(),
-                    cbuf(0x80, 0x80, 0xff, 0xff, 0xff, 0xff));
-                if(! restart(error::closed))
-                    return;
-
-                // expected cont
-                ws.write_frame(false, boost::asio::null_buffers{});
-                boost::asio::write(ws.next_layer(),
-                    cbuf(0x81, 0x80, 0xff, 0xff, 0xff, 0xff));
-                if(! restart(error::closed))
-                    return;
-
-                // message size above 2^64
-                ws.write_frame(false, cbuf(0x00));
-                boost::asio::write(ws.next_layer(),
-                    cbuf(0x80, 0xff, 0xff, 0xff, 0xff, 0xff,
-                        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff));
-                if(! restart(error::closed))
-                    return;
-
-                // message size exceeds max
-                ws.set_option(read_message_max{1});
-                ws.write(cbuf(0x00, 0x00));
-                if(! restart(error::failed))
-                    return;
-                ws.set_option(read_message_max{16*1024*1024});
-
-                // invalid fixed frame header
-                boost::asio::write(ws.next_layer(),
-                    cbuf(0x8f, 0x80, 0xff, 0xff, 0xff, 0xff));
-                if(! restart(error::closed))
-                    return;
-
-                // cause non-canonical extended size
-                ws.write(buffer_cat(sbuf("RAW"),
-                    cbuf(0x82, 0x7e, 0x00, 0x01, 0x00)));
-                if(! restart(error::failed))
-                    return;
-            }
-            catch(system_error const&)
-            {
-                continue;
-            }
-            break;
-        }
-        BEAST_EXPECT(n < limit);
-    }
-
-    void testAsyncClient(
-        endpoint_type const& ep, yield_context do_yield)
-    {
-        using boost::asio::buffer;
-        static std::size_t constexpr limit = 200;
-        std::size_t n;
-        for(n = 0; n < limit; ++n)
-        {
-            stream<test::fail_stream<socket_type>> ws(n, ios_);
-            auto const restart =
-                [&](error_code ev)
-                {
-                    opcode op;
-                    streambuf db;
-                    error_code ec;
-                    ws.async_read(op, db, do_yield[ec]);
-                    if(! ec)
-                    {
-                        fail();
-                        return false;
-                    }
-                    if(ec != ev)
-                    {
-                        auto const s = ec.message();
-                        throw system_error{ec};
-                    }
-                    ec = {};
-                    ws.lowest_layer().close(ec);
-                    ec = {};
-                    ws.lowest_layer().connect(ep, ec);
-                    if(! BEAST_EXPECTS(! ec, ec.message()))
-                        return false;
-                    ws.async_handshake("localhost", "/", do_yield[ec]);
-                    if(ec)
-                        throw system_error{ec};
-                    return true;
-                };
-            try
-            {
-                error_code ec;
-
-                // connect
-                ws.lowest_layer().connect(ep, ec);
-                if(! BEAST_EXPECTS(! ec, ec.message()))
-                    return;
-                ws.async_handshake("localhost", "/", do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-
-                // send message
-                ws.set_option(auto_fragment{false});
-                ws.set_option(message_type(opcode::text));
-                ws.async_write(sbuf("Hello"), do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                {
-                    // receive echoed message
-                    opcode op;
-                    streambuf db;
-                    ws.async_read(op, db, do_yield[ec]);
-                    if(ec)
-                        throw system_error{ec};
-                    BEAST_EXPECT(op == opcode::text);
-                    BEAST_EXPECT(to_string(db.data()) == "Hello");
-                }
-
-                // close, no payload
-                ws.async_close({}, do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                if(! restart(error::closed))
-                    return;
-
-                // close with code
-                ws.async_close(close_code::going_away, do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                if(! restart(error::closed))
-                    return;
-
-                // close with code and reason string
-                ws.async_close({close_code::going_away, "Going away"}, do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                if(! restart(error::closed))
-                    return;
-
-                // send ping and message
-                bool pong = false;
-                {
-                    ws.set_option(pong_callback{
-                        [&](ping_data const& payload)
-                        {
-                            BEAST_EXPECT(! pong);
-                            pong = true;
-                            BEAST_EXPECT(payload == "");
-                        }});
-                    ws.async_ping("", do_yield[ec]);
-                    if(ec)
-                        throw system_error{ec};
-                    ws.set_option(message_type(opcode::binary));
-                    ws.async_write(sbuf("Hello"), do_yield[ec]);
-                    if(ec)
-                        throw system_error{ec};
-                    // receive echoed message
-                    opcode op;
-                    streambuf db;
-                    ws.async_read(op, db, do_yield[ec]);
-                    if(ec)
-                        throw system_error{ec};
-                    BEAST_EXPECT(op == opcode::binary);
-                    BEAST_EXPECT(to_string(db.data()) == "Hello");
-                    ws.set_option(pong_callback{});
-                }
-
-                // send ping and fragmented message
-                {
-                    ws.set_option(pong_callback{
-                        [&](ping_data const& payload)
-                        {
-                            BEAST_EXPECT(payload == "payload");
-                        }});
-                    ws.async_ping("payload", do_yield[ec]);
-                    if(! ec)
-                        ws.async_write_frame(false, sbuf("Hello, "), do_yield[ec]);
-                    if(! ec)
-                        ws.async_write_frame(false, sbuf(""), do_yield[ec]);
-                    if(! ec)
-                        ws.async_write_frame(true, sbuf("World!"), do_yield[ec]);
-                    if(ec)
-                        throw system_error{ec};
-                    {
-                        // receive echoed message
-                        opcode op;
-                        streambuf db;
-                        ws.async_read(op, db, do_yield[ec]);
-                        if(ec)
-                            throw system_error{ec};
-                        BEAST_EXPECT(to_string(db.data()) == "Hello, World!");
-                    }
-                    ws.set_option(pong_callback{});
-                }
-
-                // send pong
-                ws.async_pong("", do_yield[ec]);
-
-                // send auto fragmented message
-                ws.set_option(auto_fragment{true});
-                ws.set_option(write_buffer_size{8});
-                ws.async_write(sbuf("Now is the time for all good men"), do_yield[ec]);
-                {
-                    // receive echoed message
-                    opcode op;
-                    streambuf db;
-                    ws.async_read(op, db, do_yield[ec]);
-                    if(ec)
-                        throw system_error{ec};
-                    BEAST_EXPECT(to_string(db.data()) == "Now is the time for all good men");
-                }
-                ws.set_option(auto_fragment{false});
-                ws.set_option(write_buffer_size{4096});
-
-                // send message with mask buffer limit
-                {
-                    std::string s(2000, '*');
-                    ws.set_option(write_buffer_size(1200));
-                    ws.async_write(buffer(s.data(), s.size()), do_yield[ec]);
-                    if(ec)
-                        throw system_error{ec};
-                    {
-                        // receive echoed message
-                        opcode op;
-                        streambuf db;
-                        ws.async_read(op, db, do_yield[ec]);
-                        if(ec)
-                            throw system_error{ec};
-                        BEAST_EXPECT(to_string(db.data()) == s);
-                    }
-                }
-
-                // cause ping
-                ws.set_option(message_type(opcode::binary));
-                ws.async_write(sbuf("PING"), do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                ws.set_option(message_type(opcode::text));
-                ws.async_write(sbuf("Hello"), do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                {
-                    // receive echoed message
-                    opcode op;
-                    streambuf db;
-                    ws.async_read(op, db, do_yield[ec]);
-                    if(ec)
-                        throw system_error{ec};
-                    BEAST_EXPECT(op == opcode::text);
-                    BEAST_EXPECT(to_string(db.data()) == "Hello");
-                }
-
-                // cause close
-                ws.set_option(message_type(opcode::binary));
-                ws.async_write(sbuf("CLOSE"), do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                if(! restart(error::closed))
-                    return;
-
-                // send bad utf8
-                ws.set_option(message_type(opcode::binary));
-                ws.async_write(buffer_cat(sbuf("TEXT"),
-                    cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)), do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                if(! restart(error::failed))
-                    return;
-
-                // cause bad utf8
-                ws.set_option(message_type(opcode::binary));
-                ws.async_write(buffer_cat(sbuf("TEXT"),
-                    cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)), do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                ws.async_write(sbuf("Hello"), do_yield[ec]);
-                if(! restart(error::failed))
-                    return;
-
-                // cause bad close
-                ws.set_option(message_type(opcode::binary));
-                ws.async_write(buffer_cat(sbuf("RAW"),
-                    cbuf(0x88, 0x02, 0x03, 0xed)), do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                if(! restart(error::failed))
-                    return;
-
-                // unexpected cont
-                boost::asio::async_write(ws.next_layer(),
-                    cbuf(0x80, 0x80, 0xff, 0xff, 0xff, 0xff),
-                        do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                if(! restart(error::closed))
-                    return;
-
-                // expected cont
-                ws.async_write_frame(false,
-                    boost::asio::null_buffers{}, do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                boost::asio::async_write(ws.next_layer(),
-                    cbuf(0x81, 0x80, 0xff, 0xff, 0xff, 0xff),
-                        do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                if(! restart(error::closed))
-                    return;
-
-                // message size above 2^64
-                ws.async_write_frame(false, cbuf(0x00), do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                boost::asio::async_write(ws.next_layer(),
-                    cbuf(0x80, 0xff, 0xff, 0xff, 0xff, 0xff,
-                        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff),
-                            do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                if(! restart(error::closed))
-                    return;
-
-                // message size exceeds max
-                ws.set_option(read_message_max{1});
-                ws.async_write(cbuf(0x00, 0x00), do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                if(! restart(error::failed))
-                    return;
-
-                // invalid fixed frame header
-                boost::asio::async_write(ws.next_layer(),
-                    cbuf(0x8f, 0x80, 0xff, 0xff, 0xff, 0xff),
-                        do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                if(! restart(error::closed))
-                    return;
-
-                // cause non-canonical extended size
-                ws.async_write(buffer_cat(sbuf("RAW"),
-                    cbuf(0x82, 0x7e, 0x00, 0x01, 0x00)),
-                        do_yield[ec]);
-                if(ec)
-                    throw system_error{ec};
-                if(! restart(error::failed))
-                    return;
-            }
-            catch(system_error const&)
-            {
-                continue;
-            }
-            break;
-        }
-        BEAST_EXPECT(n < limit);
-    }
-
-    void testAsyncWriteFrame(endpoint_type const& ep)
+    void
+    testAsyncWriteFrame(endpoint_type const& ep)
     {
         for(;;)
         {
@@ -1369,6 +807,417 @@ public:
         }
     }
 
+    struct SyncClient
+    {
+        template<class NextLayer>
+        void
+        handshake(stream<NextLayer>& ws,
+            boost::string_ref const& uri,
+                boost::string_ref const& path) const
+        {
+            ws.handshake(uri, path);
+        }
+
+        template<class NextLayer>
+        void
+        ping(stream<NextLayer>& ws,
+            ping_data const& payload) const
+        {
+            ws.ping(payload);
+        }
+
+        template<class NextLayer>
+        void
+        pong(stream<NextLayer>& ws,
+            ping_data const& payload) const
+        {
+            ws.pong(payload);
+        }
+
+        template<class NextLayer>
+        void
+        close(stream<NextLayer>& ws,
+            close_reason const& cr) const
+        {
+            ws.close(cr);
+        }
+
+        template<
+            class NextLayer, class DynamicBuffer>
+        void
+        read(stream<NextLayer>& ws,
+            opcode& op, DynamicBuffer& dynabuf) const
+        {
+            ws.read(op, dynabuf);
+        }
+
+        template<
+            class NextLayer, class ConstBufferSequence>
+        void
+        write(stream<NextLayer>& ws,
+            ConstBufferSequence const& buffers) const
+        {
+            ws.write(buffers);
+        }
+
+        template<
+            class NextLayer, class ConstBufferSequence>
+        void
+        write_frame(stream<NextLayer>& ws, bool fin,
+            ConstBufferSequence const& buffers) const
+        {
+            ws.write_frame(fin, buffers);
+        }
+
+        template<
+            class NextLayer, class ConstBufferSequence>
+        void
+        write_raw(stream<NextLayer>& ws,
+            ConstBufferSequence const& buffers) const
+        {
+            boost::asio::write(
+                ws.next_layer(), buffers);
+        }
+    };
+
+    class AsyncClient
+    {
+        yield_context& yield_;
+
+    public:
+        explicit
+        AsyncClient(yield_context& yield)
+            : yield_(yield)
+        {
+        }
+
+        template<class NextLayer>
+        void
+        handshake(stream<NextLayer>& ws,
+            boost::string_ref const& uri,
+                boost::string_ref const& path) const
+        {
+            error_code ec;
+            ws.async_handshake(uri, path, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer>
+        void
+        ping(stream<NextLayer>& ws,
+            ping_data const& payload) const
+        {
+            error_code ec;
+            ws.async_ping(payload, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer>
+        void
+        pong(stream<NextLayer>& ws,
+            ping_data const& payload) const
+        {
+            error_code ec;
+            ws.async_pong(payload, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer>
+        void
+        close(stream<NextLayer>& ws,
+            close_reason const& cr) const
+        {
+            error_code ec;
+            ws.async_close(cr, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<
+            class NextLayer, class DynamicBuffer>
+        void
+        read(stream<NextLayer>& ws,
+            opcode& op, DynamicBuffer& dynabuf) const
+        {
+            error_code ec;
+            ws.async_read(op, dynabuf, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<
+            class NextLayer, class ConstBufferSequence>
+        void
+        write(stream<NextLayer>& ws,
+            ConstBufferSequence const& buffers) const
+        {
+            error_code ec;
+            ws.async_write(buffers, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<
+            class NextLayer, class ConstBufferSequence>
+        void
+        write_frame(stream<NextLayer>& ws, bool fin,
+            ConstBufferSequence const& buffers) const
+        {
+            error_code ec;
+            ws.async_write_frame(fin, buffers, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<
+            class NextLayer, class ConstBufferSequence>
+        void
+        write_raw(stream<NextLayer>& ws,
+            ConstBufferSequence const& buffers) const
+        {
+            error_code ec;
+            boost::asio::async_write(
+                ws.next_layer(), buffers, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+    };
+
+    struct abort_test
+    {
+    };
+
+    template<class Client>
+    void
+    testEndpoint(Client const& c,
+        endpoint_type const& ep, permessage_deflate const& pmd)
+    {
+        using boost::asio::buffer;
+        static std::size_t constexpr limit = 200;
+        std::size_t n;
+        for(n = 0; n <= limit; ++n)
+        {
+            stream<test::fail_stream<socket_type>> ws{n, ios_};
+            ws.set_option(pmd);
+            auto const restart =
+                [&](error_code ev)
+                {
+                    try
+                    {
+                        opcode op;
+                        streambuf db;
+                        c.read(ws, op, db);
+                        fail();
+                        throw abort_test{};
+                    }
+                    catch(system_error const& se)
+                    {
+                        if(se.code() != ev)
+                            throw;
+                    }
+                    error_code ec;
+                    ws.lowest_layer().connect(ep, ec);
+                    if(! BEAST_EXPECTS(! ec, ec.message()))
+                        throw abort_test{};
+                    c.handshake(ws, "localhost", "/");
+                };
+            try
+            {
+                {
+                    // connect
+                    error_code ec;
+                    ws.lowest_layer().connect(ep, ec);
+                    if(! BEAST_EXPECTS(! ec, ec.message()))
+                        return;
+                }
+                c.handshake(ws, "localhost", "/");
+
+                // send message
+                ws.set_option(auto_fragment{false});
+                ws.set_option(message_type(opcode::text));
+                c.write(ws, sbuf("Hello"));
+                {
+                    // receive echoed message
+                    opcode op;
+                    streambuf db;
+                    c.read(ws, op, db);
+                    BEAST_EXPECT(op == opcode::text);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
+                }
+
+                // close, no payload
+                c.close(ws, {});
+                restart(error::closed);
+
+                // close with code
+                c.close(ws, close_code::going_away);
+                restart(error::closed);
+
+                // close with code and reason string
+                c.close(ws, {close_code::going_away, "Going away"});
+                restart(error::closed);
+
+                // send ping and message
+                bool pong = false;
+                ws.set_option(pong_callback{
+                    [&](ping_data const& payload)
+                    {
+                        BEAST_EXPECT(! pong);
+                        pong = true;
+                        BEAST_EXPECT(payload == "");
+                    }});
+                c.ping(ws, "");
+                ws.set_option(message_type(opcode::binary));
+                c.write(ws, sbuf("Hello"));
+                {
+                    // receive echoed message
+                    opcode op;
+                    streambuf db;
+                    c.read(ws, op, db);
+                    BEAST_EXPECT(pong == 1);
+                    BEAST_EXPECT(op == opcode::binary);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
+                }
+                ws.set_option(pong_callback{});
+
+                // send ping and fragmented message
+                ws.set_option(pong_callback{
+                    [&](ping_data const& payload)
+                    {
+                        BEAST_EXPECT(payload == "payload");
+                    }});
+                ws.ping("payload");
+                c.write_frame(ws, false, sbuf("Hello, "));
+                c.write_frame(ws, false, sbuf(""));
+                c.write_frame(ws, true, sbuf("World!"));
+                {
+                    // receive echoed message
+                    opcode op;
+                    streambuf db;
+                    c.read(ws, op, db);
+                    BEAST_EXPECT(pong == 1);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello, World!");
+                }
+                ws.set_option(pong_callback{});
+
+                // send pong
+                c.pong(ws, "");
+
+                // send auto fragmented message
+                ws.set_option(auto_fragment{true});
+                ws.set_option(write_buffer_size{8});
+                c.write(ws, sbuf("Now is the time for all good men"));
+                {
+                    // receive echoed message
+                    opcode op;
+                    streambuf sb;
+                    c.read(ws, op, sb);
+                    BEAST_EXPECT(to_string(sb.data()) == "Now is the time for all good men");
+                }
+                ws.set_option(auto_fragment{false});
+                ws.set_option(write_buffer_size{4096});
+
+                // send message with write buffer limit
+                {
+                    std::string s(2000, '*');
+                    ws.set_option(write_buffer_size(1200));
+                    c.write(ws, buffer(s.data(), s.size()));
+                    {
+                        // receive echoed message
+                        opcode op;
+                        streambuf db;
+                        c.read(ws, op, db);
+                        BEAST_EXPECT(to_string(db.data()) == s);
+                    }
+                }
+
+                // cause ping
+                ws.set_option(message_type(opcode::binary));
+                c.write(ws, sbuf("PING"));
+                ws.set_option(message_type(opcode::text));
+                c.write(ws, sbuf("Hello"));
+                {
+                    // receive echoed message
+                    opcode op;
+                    streambuf db;
+                    c.read(ws, op, db);
+                    BEAST_EXPECT(op == opcode::text);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
+                }
+
+                // cause close
+                ws.set_option(message_type(opcode::binary));
+                c.write(ws, sbuf("CLOSE"));
+                restart(error::closed);
+
+                // send bad utf8
+                ws.set_option(message_type(opcode::binary));
+                c.write(ws, buffer_cat(sbuf("TEXT"),
+                    cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)));
+                restart(error::failed);
+
+                // cause bad utf8
+                ws.set_option(message_type(opcode::binary));
+                c.write(ws, buffer_cat(sbuf("TEXT"),
+                    cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)));
+                c.write(ws, sbuf("Hello"));
+                restart(error::failed);
+
+                // cause bad close
+                ws.set_option(message_type(opcode::binary));
+                c.write(ws, buffer_cat(sbuf("RAW"),
+                    cbuf(0x88, 0x02, 0x03, 0xed)));
+                restart(error::failed);
+
+                // unexpected cont
+                c.write_raw(ws,
+                    cbuf(0x80, 0x80, 0xff, 0xff, 0xff, 0xff));
+                restart(error::closed);
+
+                // invalid fixed frame header
+                c.write_raw(ws,
+                    cbuf(0x8f, 0x80, 0xff, 0xff, 0xff, 0xff));
+                restart(error::closed);
+
+                // cause non-canonical extended size
+                c.write(ws, buffer_cat(sbuf("RAW"),
+                    cbuf(0x82, 0x7e, 0x00, 0x01, 0x00)));
+                restart(error::failed);
+
+                if(! pmd.client_enable)
+                {
+                    // expected cont
+                    c.write_frame(ws, false, boost::asio::null_buffers{});
+                    c.write_raw(ws,
+                        cbuf(0x81, 0x80, 0xff, 0xff, 0xff, 0xff));
+                    restart(error::closed);
+
+                    // message size above 2^64
+                    c.write_frame(ws, false, cbuf(0x00));
+                    c.write_raw(ws,
+                        cbuf(0x80, 0xff, 0xff, 0xff, 0xff, 0xff,
+                            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff));
+                    restart(error::closed);
+
+                    // message size exceeds max
+                    ws.set_option(read_message_max{1});
+                    c.write(ws, cbuf(0x00, 0x00));
+                    restart(error::failed);
+                    ws.set_option(read_message_max{16*1024*1024});
+                }
+            }
+            catch(system_error const&)
+            {
+                continue;
+            }
+            break;
+        }
+        BEAST_EXPECT(n < limit);
+    }
+
     void run() override
     {
         static_assert(std::is_constructible<
@@ -1395,37 +1244,75 @@ public:
         auto const any = endpoint_type{
             address_type::from_string("127.0.0.1"), 0};
 
-        for(std::size_t n = 0; n < 1; ++n)
+        testOptions();
+        testAccept();
+        testBadHandshakes();
+        testBadResponses();
+
         {
-            testOptions();
-            testAccept();
-            testBadHandshakes();
-            testBadResponses();
-            {
-                sync_echo_server server(true, any);
-                auto const ep = server.local_endpoint();
-
-                //testInvokable1(ep);
-                testInvokable2(ep);
-                testInvokable3(ep);
-                testInvokable4(ep);
-                //testInvokable5(ep);
-
-                testSyncClient(ep);
-                testAsyncWriteFrame(ep);
-                yield_to_mf(ep, &stream_test::testAsyncClient);
-            }
-            {
-                error_code ec;
-                async_echo_server server{nullptr, 4};
-                server.open(true, any, ec);
-                BEAST_EXPECTS(! ec, ec.message());
-                auto const ep = server.local_endpoint();
-                testSyncClient(ep);
-                testAsyncWriteFrame(ep);
-                yield_to_mf(ep, &stream_test::testAsyncClient);
-            }
+            sync_echo_server server{true, any};
+            auto const ep = server.local_endpoint();
+            //testInvokable1(ep);
+            testInvokable2(ep);
+            testInvokable3(ep);
+            testInvokable4(ep);
+            //testInvokable5(ep);
+            testAsyncWriteFrame(ep);
         }
+
+        {
+            error_code ec;
+            async_echo_server server{nullptr, 4};
+            server.open(true, any, ec);
+            BEAST_EXPECTS(! ec, ec.message());
+            auto const ep = server.local_endpoint();
+            testAsyncWriteFrame(ep);
+        }
+
+        auto const doClientTests =
+            [this, any](permessage_deflate const& pmd)
+            {
+                {
+                    sync_echo_server server{true, any};
+                    auto const ep = server.local_endpoint();
+                    testEndpoint(SyncClient{}, ep, pmd);
+                    yield_to(
+                        [&](yield_context yield)
+                        {
+                            testEndpoint(
+                                AsyncClient{yield}, ep, pmd);
+                        });
+                }
+                {
+                    error_code ec;
+                    async_echo_server server{nullptr, 4};
+                    server.open(true, any, ec);
+                    BEAST_EXPECTS(! ec, ec.message());
+                    auto const ep = server.local_endpoint();
+                    testEndpoint(SyncClient{}, ep, pmd);
+                    yield_to(
+                        [&](yield_context yield)
+                        {
+                            testEndpoint(
+                                AsyncClient{yield}, ep, pmd);
+                        });
+                }
+            };
+
+        permessage_deflate pmd;
+
+        pmd.client_enable = false;
+        doClientTests(pmd);
+
+        pmd.client_enable = true;
+        pmd.client_max_window_bits = 10;
+        pmd.client_no_context_takeover = false;
+        doClientTests(pmd);
+
+        pmd.client_enable = true;
+        pmd.client_max_window_bits = 10;
+        pmd.client_no_context_takeover = true;
+        doClientTests(pmd);
     }
 };
 
