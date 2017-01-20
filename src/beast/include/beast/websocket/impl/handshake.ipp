@@ -118,6 +118,8 @@ operator()(error_code ec, bool again)
             d.state = 1;
             // VFALCO Do we need the ability to move
             //        a message on the async_write?
+            pmd_read(
+                d.ws.pmd_config_, d.req.fields);
             http::async_write(d.ws.stream_,
                 d.req, std::move(*this));
             return;
@@ -187,8 +189,12 @@ handshake(boost::string_ref const& host,
         "SyncStream requirements not met");
     reset();
     std::string key;
-    http::write(stream_,
-        build_request(host, resource, key), ec);
+    {
+        auto const req =
+            build_request(host, resource, key);
+        pmd_read(pmd_config_, req.fields);
+        http::write(stream_, req, ec);
+    }
     if(ec)
         return;
     http::response<http::string_body> res;

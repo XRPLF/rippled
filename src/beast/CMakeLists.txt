@@ -7,6 +7,7 @@ project (Beast)
 set_property (GLOBAL PROPERTY USE_FOLDERS ON)
 
 if (MSVC)
+    # /wd4244 /wd4127
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244 /MP /W4 /wd4100 /bigobj /D _WIN32_WINNT=0x0601 /D _SCL_SECURE_NO_WARNINGS=1 /D _CRT_SECURE_NO_WARNINGS=1")
     set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
     set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Ob2 /Oi /Ot /GL /MT")
@@ -95,6 +96,29 @@ endfunction()
 
 include_directories (extras)
 include_directories (include)
+
+set(ZLIB_SOURCES
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/crc32.h
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/deflate.h
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/inffast.h
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/inffixed.h
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/inflate.h
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/inftrees.h
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/trees.h
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/zlib.h
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/zutil.h
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/adler32.c
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/compress.c
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/crc32.c
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/deflate.c
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/infback.c
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/inffast.c
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/inflate.c
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/inftrees.c
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/trees.c
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/uncompr.c
+    ${PROJECT_SOURCE_DIR}/test/zlib/zlib-1.2.8/zutil.c
+)
 
 file(GLOB_RECURSE BEAST_INCLUDES
     ${PROJECT_SOURCE_DIR}/include/beast/*.hpp

@@ -1,3 +1,9 @@
+1.0.0-b24
+
+* Add WebSocket permessage-deflate extension support
+
+--------------------------------------------------------------------------------
+
 1.0.0-b23
 
 * Tune websocket echo server for performance

@@ -194,15 +194,10 @@ start. Other design goals:
 [[
     What about message compression?
 ][
-    The author is currently porting ZLib 1.2.8 to modern, header-only C++11
-    that does not use macros or try to support ancient architectures. This
-    deflate implementation will be available as its own individually
-    usable interface, and also will be used to power Beast WebSocket's
-    permessage-deflate implementation, due Q1 of 2017.
-
-    However, Beast currently has sufficient functionality that users can
-    begin taking advantage of the WebSocket protocol using this library
-    immediately.
+    Beast WebSocket supports the permessage-deflate extension described in
+    [@https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-00 draft-ietf-hybi-permessage-compression-00].
+    The library comes with a header-only, C++11 port of ZLib's "deflate" codec
+    used in the implementation of the permessage-deflate extension.
 ]]
 
 [[
