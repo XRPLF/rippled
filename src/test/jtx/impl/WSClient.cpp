@@ -208,7 +208,116 @@ public:
     Json::Value
     invoke(Json::Value const& cmd) override
     {
-        return {};
+        using boost::asio::buffer;
+        using namespace std::chrono_literals;
+        Json::Value request;
+        if (cmd.isArray())
+        {
+            auto const num_requests = cmd.size();
+            for (unsigned i = 0; i < num_requests; ++i)
+            {
+                Json::Value const& cmdi = cmd[i];
+
+                if (cmdi.isMember(jss::params))
+                {
+                    auto const& params = cmdi[jss::params][0u];
+                    for (auto j = params.begin(); j != params.end(); ++j)
+                        request[i][j.key().asString()] = *j;
+                }
+                for (auto j = cmdi.begin(); j != cmdi.end(); ++j)
+                {
+                    if (j.key().asString() != "params")
+                        request[i][j.key().asString()] = *j;
+                }
+            }
+        }
+        else
+        {
+            if (cmd.isMember(jss::params))
+            {
+                auto const& params = cmd[jss::params][0u];
+                for (auto i = params.begin(); i != params.end(); ++i)
+                    request[i.key().asString()] = *i;
+            }
+            for (auto i = cmd.begin(); i != cmd.end(); ++i)
+            {
+                if (i.key().asString() != "params")
+                    request[i.key().asString()] = *i;
+            }
+        }
+
+        {
+            auto const s = to_string(request);
+            ws_.write_frame(true, buffer(s));
+        }
+
+        Json::Value response;
+        if (cmd.isArray())
+        {
+            for (unsigned i = 0; i < cmd.size(); ++i)
+            {
+                auto jv = findMsg(5s,
+                    [&](Json::Value const& jv)
+                    {
+                        return jv[jss::type] == Json::Value{jss::response};
+                    });
+                if (jv)
+                {
+                    // Normalize JSON output
+                    jv->removeMember(jss::type);
+                    if ((*jv).isMember(jss::status) &&
+                        (*jv)[jss::status] == Json::Value{jss::error})
+                    {
+                        response[i][jss::result] = *jv;
+                        if ((*jv).isMember(jss::error))
+                            response[i][jss::error] = (*jv)[jss::error];
+                        response[i][jss::status] = jss::error;
+                    }
+                    else if ((*jv).isMember(jss::status) &&
+                        (*jv).isMember(jss::result))
+                    {
+                            (*jv)[jss::result][jss::status] =
+                                (*jv)[jss::status];
+                    }
+                    response[i] = *jv;
+                    if (response[i].isMember(jss::error))
+                        break;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        else
+        {
+            auto jv = findMsg(5s,
+                [&](Json::Value const& jv)
+                {
+                    return jv[jss::type] == Json::Value{jss::response};
+                });
+            if (jv)
+            {
+                // Normalize JSON output
+                jv->removeMember(jss::type);
+                if ((*jv).isMember(jss::status) &&
+                    (*jv)[jss::status] == Json::Value{jss::error})
+                {
+                    response[jss::result] = *jv;
+                    if ((*jv).isMember(jss::error))
+                        response[jss::error] = (*jv)[jss::error];
+                    response[jss::status] = jss::error;
+                }
+                else if ((*jv).isMember(jss::status) &&
+                    (*jv).isMember(jss::result))
+                {
+                        (*jv)[jss::result][jss::status] =
+                            (*jv)[jss::status];
+                }
+                response = *jv;
+            }
+        }
+        return response;
     }
 
     boost::optional<Json::Value>

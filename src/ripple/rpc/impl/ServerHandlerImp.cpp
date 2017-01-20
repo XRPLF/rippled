@@ -332,10 +332,10 @@ ServerHandlerImp::onWSMessage(
 {
     Json::Value jv;
     auto const size = boost::asio::buffer_size(buffers);
-    if (size > RPC::Tuning::maxRequestSize ||
-        ! Json::Reader{}.parse(jv, buffers) ||
-        ! jv ||
-        ! jv.isObject())
+    bool parse_error = true;
+    if (size <= RPC::Tuning::maxRequestSize)
+        parse_error = !Json::Reader{}.parse(jv, buffers);
+    if (parse_error || !jv || !(jv.isObject() || jv.isArray()))
     {
         Json::Value jvResult(Json::objectValue);
         jvResult[jss::type] = jss::error;
@@ -359,21 +359,26 @@ ServerHandlerImp::onWSMessage(
     JLOG(m_journal.trace())
         << "Websocket received '" << jv << "'";
 
-    m_jobQueue.postCoro(jtCLIENT, "WS-Client",
-        [this, session = std::move(session),
-            jv = std::move(jv)](auto const& c)
-        {
-            auto const jr =
-                this->processSession(session, c, jv);
-            auto const s = to_string(jr);
-            auto const n = s.length();
-            beast::streambuf sb(n);
-            sb.commit(boost::asio::buffer_copy(
-                sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
-            session->send(std::make_shared<
-                StreambufWSMsg<decltype(sb)>>(std::move(sb)));
-            session->complete();
-        });
+    auto const num_requests = jv.isArray() ? jv.size() : 1;
+    for (unsigned i = 0; i < num_requests; ++i)
+    {
+        Json::Value& jvi = jv.isArray() ? jv[i] : jv;
+        m_jobQueue.postCoro(jtCLIENT, "WS-Client",
+            [this, session = session,
+                jv = std::move(jvi)](auto const& c)
+            {
+                auto const jr =
+                    this->processSession(session, c, jv);
+                auto const s = to_string(jr);
+                auto const n = s.length();
+                beast::streambuf sb(n);
+                sb.commit(boost::asio::buffer_copy(
+                    sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
+                session->send(std::make_shared<
+                    StreambufWSMsg<decltype(sb)>>(std::move(sb)));
+                session->complete();
+            });
+    }
 }
 
 void
