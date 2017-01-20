@@ -43,6 +43,15 @@
     <Filter Include="beast\websocket\impl">
       <UniqueIdentifier>{A7FC9CC0-AB8D-4252-CCB2-B67F7BE99CF5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\zlib">
+      <UniqueIdentifier>{9455431B-BD48-F8C8-B53B-D9BCAF355341}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\zlib\detail">
+      <UniqueIdentifier>{508136FB-F124-7376-5A6F-F28EDEB18389}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\zlib\impl">
+      <UniqueIdentifier>{F85F4A52-7A2A-700C-4804-97FFC11E99FD}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ed25519-donna">
       <UniqueIdentifier>{9DEED977-2072-A182-5BD9-CEBF206E8C91}</UniqueIdentifier>
     </Filter>
@@ -768,6 +777,9 @@
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\mask.hpp">
       <Filter>beast\websocket\detail</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\pmd_extension.hpp">
+      <Filter>beast\websocket\detail</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\stream_base.hpp">
       <Filter>beast\websocket\detail</Filter>
     </ClInclude>
@@ -821,6 +833,36 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\teardown.hpp">
       <Filter>beast\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\deflate_stream.hpp">
+      <Filter>beast\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\detail\bitstream.hpp">
+      <Filter>beast\zlib\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\detail\deflate_stream.hpp">
+      <Filter>beast\zlib\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\detail\inflate_stream.hpp">
+      <Filter>beast\zlib\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\detail\ranges.hpp">
+      <Filter>beast\zlib\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\detail\window.hpp">
+      <Filter>beast\zlib\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\error.hpp">
+      <Filter>beast\zlib</Filter>
+    </ClInclude>
+    <None Include="..\..\src\beast\include\beast\zlib\impl\error.ipp">
+      <Filter>beast\zlib\impl</Filter>
+    </None>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\inflate_stream.hpp">
+      <Filter>beast\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\zlib.hpp">
+      <Filter>beast\zlib</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
       <Filter>ed25519-donna</Filter>

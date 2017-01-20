@@ -428,6 +428,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\mask.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\pmd_extension.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\stream_base.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\utf8_checker.hpp">
@@ -463,6 +465,26 @@
     <ClInclude Include="..\..\src\beast\include\beast\websocket\stream.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\teardown.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\deflate_stream.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\detail\bitstream.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\detail\deflate_stream.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\detail\inflate_stream.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\detail\ranges.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\detail\window.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\error.hpp">
+    </ClInclude>
+    <None Include="..\..\src\beast\include\beast\zlib\impl\error.ipp">
+    </None>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\inflate_stream.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\zlib\zlib.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
     </ClInclude>
