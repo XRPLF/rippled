@@ -624,10 +624,49 @@ private:
         return parseAccountRaw1 (jvParams);
     }
 
-    // account_lines <account> <account>|"" [<ledger>]
+    // account_lines <account> <account>|"" [<ledger> [<limit>] [<marker>]]
     Json::Value parseAccountLines (Json::Value const& jvParams)
     {
-        return parseAccountRaw2 (jvParams, jss::peer);
+        std::array<char const* const, 2> accFields{{jss::account, jss::peer}};
+        auto const nParams = jvParams.size ();
+        Json::Value jvRequest (Json::objectValue);
+        for (auto i = 0; i < nParams; ++i)
+        {
+            std::string strParam = jvParams[i].asString ();
+
+            if (i==1 && strParam.empty())
+                continue;
+
+            // Parameters 0 and 1 are accounts
+            if (i < 2)
+            {
+                if (parseBase58<PublicKey> (
+                        TokenType::TOKEN_ACCOUNT_PUBLIC, strParam) ||
+                    parseBase58<AccountID> (strParam) ||
+                    parseGenericSeed (strParam))
+                {
+                    jvRequest[accFields[i]] = std::move (strParam);
+                }
+                else
+                {
+                    return rpcError (rpcACT_MALFORMED);
+                }
+            }
+            else
+            {
+                if(i==2){
+                    if (!jvParseLedger (jvRequest, strParam))
+                        return rpcError (rpcLGR_IDX_MALFORMED);
+                }else{
+                    if(strParam.size()==64){
+                        jvRequest[jss::marker]=std::move (strParam);
+                    }else{
+                        jvRequest[jss::limit]=jvParams[i].asInt ();
+                    }
+                }
+            }
+        }
+        return jvRequest;
     }
 
     // account_channels <account> <account>|"" [<ledger>]

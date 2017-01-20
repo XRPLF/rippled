@@ -123,7 +123,7 @@ void printHelp (const po::options_description& desc)
         << "Commands: \n"
            "     account_currencies <account> [<ledger>] [strict]\n"
            "     account_info <account>|<seed>|<pass_phrase>|<key> [<ledger>] [strict]\n"
-           "     account_lines <account> <account>|\"\" [<ledger>]\n"
+           "     account_lines <account> <account>|\"\" [<ledger> [<limit>] [<marker>]]\n"
            "     account_channels <account> <account>|\"\" [<ledger>]\n"
            "     account_objects <account> [<ledger>] [strict]\n"
            "     account_offers <account>|<account_public_key> [<ledger>]\n"
