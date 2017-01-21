@@ -129,9 +129,13 @@ struct base_uint_test : beast::unit_test::suite
         n = beast::zero;
         BEAST_EXPECT(n == z);
 
-        test96 x { (--test96 { z }) ^ (++test96 { z }) };
+        test96 zp1 { z };
+        zp1++;
+        test96 zm1 { z };
+        zm1--;
+        test96 x { zm1 ^ zp1 };
         uset.insert(x);
-        BEAST_EXPECT(to_string(x) == "FFFFFFFFFFFFFFFFFFFFFFFE");
+        BEAST_EXPECTS(to_string(x) == "FFFFFFFFFFFFFFFFFFFFFFFE", to_string(x));
 
         BEAST_EXPECT(uset.size() == 4);
 
