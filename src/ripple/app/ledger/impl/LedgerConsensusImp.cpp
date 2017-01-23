@@ -1161,7 +1161,8 @@ void LedgerConsensusImp<Traits>::leaveConsensus ()
     if (ourPosition_ && ! ourPosition_->isBowOut ())
     {
         ourPosition_->bowOut(app_.timeKeeper().closeTime());
-        propose();
+        if (proposing_)
+            propose();
     }
     proposing_ = false;
 }
