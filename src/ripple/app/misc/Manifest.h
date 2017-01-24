@@ -52,17 +52,12 @@ namespace ripple {
     dynamically generates the signatureless form when it needs to verify
     the signature.
 
-    There are two stores of information within rippled related to manifests.
     An instance of ManifestCache stores, for each trusted validator, (a) its
     master public key, and (b) the most senior of all valid manifests it has
     seen for that validator, if any.  On startup, the [validator_token] config
     entry (which contains the manifest for this validator) is decoded and
-    added to the manifest cache.  Other manifests are added as "gossip" is
+    added to the manifest cache.  Other manifests are added as "gossip"
     received from rippled peers.
-
-    The other data store (which does not involve manifests per se) contains
-    the set of active ephemeral validator keys.  Keys are added to the set
-    when a manifest is accepted, and removed when that manifest is obsoleted.
 
     When an ephemeral key is compromised, a new signing key pair is created,
     along with a new manifest vouching for it (with a higher sequence number),
@@ -71,7 +66,9 @@ namespace ripple {
     old ephemeral key and stores the new one.  If the master key itself gets
     compromised, a manifest with sequence number 0xFFFFFFFF will supersede a
     prior manifest and discard any existing ephemeral key without storing a
-    new one.  Since no further manifests for this master key will be accepted
+    new one.  These revocation manifests are loaded from the
+    [validator_key_revocation] config entry as well as received as gossip from
+    peers.  Since no further manifests for this master key will be accepted
     (since no higher sequence number is possible), and no signing key is on
     record, no validations will be accepted from the compromised validator.
 */
@@ -239,13 +236,17 @@ public:
         @param configManifest Base64 encoded manifest for local node's
             validator keys
 
+        @param configRevocation Base64 encoded validator key revocation
+            from the config
+
         @par Thread Safety
 
         May be called concurrently
     */
     bool load (
         DatabaseCon& dbCon, std::string const& dbTable,
-        std::string const& configManifest);
+        std::string const& configManifest,
+        std::vector<std::string> const& configRevocation);
 
     /** Populate manifest cache with manifests in database.
 

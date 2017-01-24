@@ -1135,7 +1135,8 @@ bool ApplicationImp::setup()
         }
 
         if (!validatorManifests_->load (
-            getWalletDB (), "ValidatorManifests", manifest))
+            getWalletDB (), "ValidatorManifests", manifest,
+            config().section (SECTION_VALIDATOR_KEY_REVOCATION).values ()))
         {
             JLOG(m_journal.fatal()) << "Invalid configured validator manifest.";
             return false;
