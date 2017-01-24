@@ -176,7 +176,7 @@ auto constexpr LEDGER_MIN_CONSENSUS = 2s;
 auto constexpr LEDGER_MIN_CLOSE = 2s;
 
 // How often we check state or change positions (in milliseconds)
-auto constexpr LEDGER_GRANULARITY = 1s;
+auto constexpr LedgerStateCheckInterval = 1s;
 
 // How long we consider a proposal fresh
 auto constexpr PROPOSE_FRESHNESS = 20s;

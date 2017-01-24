@@ -55,7 +55,6 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/core/DeadlineTimer.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/ledger/CachedSLEs.h>
 #include <ripple/nodestore/Database.h>
@@ -78,6 +77,7 @@
 #include <ripple/beast/core/LexicalCast.h>
 #include <beast/core/detail/ci_char_traits.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/optional.hpp>
 #include <atomic>
 #include <chrono>
@@ -243,7 +243,6 @@ supportedAmendments ();
 class ApplicationImp
     : public Application
     , public RootStoppable
-    , public DeadlineTimer::Listener
     , public BasicApp
 {
 private:
@@ -355,8 +354,10 @@ public:
     std::unique_ptr <Validations> mValidations;
     std::unique_ptr <LoadManager> m_loadManager;
     std::unique_ptr <TxQ> txQ_;
-    DeadlineTimer m_sweepTimer;
-    DeadlineTimer m_entropyTimer;
+
+    // Asio timers for timing services.
+    boost::asio::steady_timer sweepTimer_;
+    boost::asio::steady_timer entropyTimer_;
 
     std::unique_ptr <DatabaseCon> mTxnDB;
     std::unique_ptr <DatabaseCon> mLedgerDB;
@@ -490,9 +491,9 @@ public:
 
         , txQ_(make_TxQ(setup_TxQ(*config_), logs_->journal("TxQ")))
 
-        , m_sweepTimer (this)
+        , sweepTimer_ (get_io_service ())
 
-        , m_entropyTimer (this)
+        , entropyTimer_ (get_io_service ())
 
         , m_signals (get_io_service())
 
@@ -809,9 +810,8 @@ public:
         JLOG(m_journal.info())
             << "Application starting. Version is " << BuildInfo::getVersionString();
 
-        using namespace std::chrono_literals;
-        m_sweepTimer.setExpiration (10s);
-        m_entropyTimer.setRecurringExpiration (5min);
+        setSweepTimer();
+        setEntropyTimer();
 
         m_io_latency_sampler.start();
 
@@ -840,9 +840,8 @@ public:
         //      things will happen.
         m_resolver->stop ();
 
-        m_sweepTimer.cancel ();
-
-        m_entropyTimer.cancel ();
+        sweepTimer_.cancel();
+        entropyTimer_.cancel();
 
         mValidations->flush ();
 
@@ -862,39 +861,52 @@ public:
 
     //------------------------------------------------------------------------------
 
-    void onDeadlineTimer (DeadlineTimer& timer) override
+    void setSweepTimer ()
     {
-        if (timer == m_entropyTimer)
-        {
-            crypto_prng().mix_entropy ();
-            return;
-        }
-
-        if (timer == m_sweepTimer)
-        {
-            // VFALCO TODO Move all this into doSweep
-
-            if (! config_->standalone())
+        sweepTimer_.expires_from_now (
+            std::chrono::seconds {config_->getSize (siSweepInterval)});
+        sweepTimer_.async_wait ([this] (boost::system::error_code const& e)
             {
-                boost::filesystem::space_info space =
-                        boost::filesystem::space (config_->legacy ("database_path"));
-
-                // VFALCO TODO Give this magic constant a name and move it into a well documented header
-                //
-                if (space.available < (512 * 1024 * 1024))
+            if ((e.value() == boost::system::errc::success) &&
+                (! m_jobQueue->isStopped()))
                 {
-                    JLOG(m_journal.fatal())
-                        << "Remaining free disk space is less than 512MB";
-                    signalStop ();
+                    m_jobQueue->addJob(
+                        jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
                 }
-            }
+            });
+    }
 
-            m_jobQueue->addJob(jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
-        }
+    void setEntropyTimer ()
+    {
+        using namespace std::chrono_literals;
+        entropyTimer_.expires_from_now (5min);
+        entropyTimer_.async_wait ([this] (boost::system::error_code const& e)
+            {
+                if (e.value() == boost::system::errc::success)
+                {
+                    crypto_prng().mix_entropy();
+                    setEntropyTimer();
+                }
+            });
     }
 
     void doSweep ()
     {
+        if (! config_->standalone())
+        {
+            boost::filesystem::space_info space =
+                boost::filesystem::space (config_->legacy ("database_path"));
+
+            // VFALCO TODO Give this magic constant a name and move it into
+            // a well documented header.
+            if (space.available < (512 * 1024 * 1024))
+            {
+                JLOG(m_journal.fatal())
+                    << "Remaining free disk space is less than 512MB";
+                signalStop ();
+            }
+        }
+
         // VFALCO NOTE Does the order of calls matter?
         // VFALCO TODO fix the dependency inversion using an observer,
         //         have listeners register for "onSweep ()" notification.
@@ -910,9 +922,8 @@ public:
         family().treecache().sweep();
         cachedSLEs_.expire();
 
-        // VFALCO NOTE does the call to sweep() happen on another thread?
-        m_sweepTimer.setExpiration (
-            std::chrono::seconds {config_->getSize (siSweepInterval)});
+        // Sweep again later.
+        setSweepTimer();
     }
 
 
