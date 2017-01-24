@@ -99,6 +99,8 @@ public:
     std::string
     legacy () const
     {
+        if (lines_.empty ())
+            return "";
         if (lines_.size () > 1)
             Throw<std::runtime_error> (
                 "A legacy value must have exactly one line. Section: " + name_);
