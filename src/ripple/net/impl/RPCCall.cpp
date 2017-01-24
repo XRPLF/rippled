@@ -1468,7 +1468,7 @@ void fromNetwork (
         std::bind (&RPCCallImp::onResponse, callbackFuncP,
                    std::placeholders::_1, std::placeholders::_2,
                    std::placeholders::_3, j),
-        logs);
+        j);
 }
 
 } // RPCCall
