@@ -42,15 +42,26 @@ Manifest::make_Manifest (std::string s)
         SerialIter sit (s.data (), s.size ());
         st.set (sit);
         auto const opt_pk = get<PublicKey>(st, sfPublicKey);
-        auto const opt_spk = get<PublicKey>(st, sfSigningPubKey);
         auto const opt_seq = get (st, sfSequence);
-        auto const opt_sig = get (st, sfSignature);
         auto const opt_msig = get (st, sfMasterSignature);
-        if (!opt_pk || !opt_spk || !opt_seq || !opt_sig || !opt_msig)
-        {
+        if (!opt_pk || !opt_seq || !opt_msig)
             return boost::none;
+
+        // Signing key and signature are not required for
+        // master key revocations
+        if (*opt_seq != std::numeric_limits<std::uint32_t>::max ())
+        {
+            auto const opt_spk = get<PublicKey>(st, sfSigningPubKey);
+            auto const opt_sig = get (st, sfSignature);
+            if (!opt_spk || !opt_sig)
+            {
+                return boost::none;
+            }
+
+            return Manifest (std::move (s), *opt_pk, *opt_spk, *opt_seq);
         }
-        return Manifest (std::move (s), *opt_pk, *opt_spk, *opt_seq);
+
+        return Manifest (std::move (s), *opt_pk, PublicKey(), *opt_seq);
     }
     catch (std::exception const&)
     {
@@ -103,7 +114,10 @@ bool Manifest::verify () const
     STObject st (sfGeneric);
     SerialIter sit (serialized.data (), serialized.size ());
     st.set (sit);
-    if (! ripple::verify (st, HashPrefix::manifest, signingKey))
+
+    // Signing key and signature are not required for
+    // master key revocations
+    if (! revoked () && ! ripple::verify (st, HashPrefix::manifest, signingKey))
         return false;
 
     return ripple::verify (
@@ -359,7 +373,8 @@ ManifestCache::load (
 bool
 ManifestCache::load (
     DatabaseCon& dbCon, std::string const& dbTable,
-    std::string const& configManifest)
+    std::string const& configManifest,
+    std::vector<std::string> const& configRevocation)
 {
     load (dbCon, dbTable);
 
@@ -369,7 +384,7 @@ ManifestCache::load (
             beast::detail::base64_decode(configManifest));
         if (! mo)
         {
-            JLOG (j_.error()) << "Malformed manifest in config";
+            JLOG (j_.error()) << "Malformed validator_token in config";
             return false;
         }
 
@@ -383,6 +398,30 @@ ManifestCache::load (
             ManifestDisposition::invalid)
         {
             JLOG (j_.error()) << "Manifest in config was rejected";
+            return false;
+        }
+    }
+
+    if (! configRevocation.empty())
+    {
+        std::string revocationStr;
+        revocationStr.reserve (
+            std::accumulate (configRevocation.cbegin(), configRevocation.cend(), std::size_t(0),
+                [] (std::size_t init, std::string const& s)
+                {
+                    return init + s.size();
+                }));
+
+        for (auto const& line : configRevocation)
+            revocationStr += beast::rfc2616::trim(line);
+
+        auto mo = Manifest::make_Manifest (
+            beast::detail::base64_decode(revocationStr));
+
+        if (! mo || ! mo->revoked() ||
+            applyManifest (std::move(*mo)) == ManifestDisposition::invalid)
+        {
+            JLOG (j_.error()) << "Invalid validator key revocation in config";
             return false;
         }
     }
@@ -404,7 +443,9 @@ void ManifestCache::save (
         "INSERT INTO " + dbTable + " (RawData) VALUES (:rawData);";
     for (auto const& v : map_)
     {
-        if (! isTrusted (v.second.masterKey))
+        // Save all revocation manifests,
+        // but only save trusted non-revocation manifests.
+        if (! v.second.revoked() && ! isTrusted (v.second.masterKey))
         {
 
             JLOG(j_.info())
