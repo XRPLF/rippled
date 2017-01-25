@@ -35,6 +35,14 @@
 namespace ripple {
 namespace test {
 
+static
+void
+extract_params(Json::Value& jv, Json::Value const& params)
+{
+    for (auto i = params.begin(); i != params.end(); ++i)
+        jv[i.key().asString()] = *i;
+}
+
 class WSClientImpl : public WSClient
 {
     using error_code = boost::system::error_code;
@@ -173,8 +181,7 @@ public:
             }
             else
                 jp[jss::command] = cmd;
-            auto const s = to_string(jp);
-            ws_.write_frame(true, buffer(s));
+            ws_.write_frame(true, buffer(to_string(jp)));
         }
 
         auto jv = findMsg(5s,
@@ -219,11 +226,7 @@ public:
                 Json::Value const& cmdi = cmd[i];
 
                 if (cmdi.isMember(jss::params))
-                {
-                    auto const& params = cmdi[jss::params][0u];
-                    for (auto j = params.begin(); j != params.end(); ++j)
-                        request[i][j.key().asString()] = *j;
-                }
+                    extract_params(request[i], cmdi[jss::params][0u]);
                 for (auto j = cmdi.begin(); j != cmdi.end(); ++j)
                 {
                     if (j.key().asString() != "params")
@@ -234,11 +237,7 @@ public:
         else
         {
             if (cmd.isMember(jss::params))
-            {
-                auto const& params = cmd[jss::params][0u];
-                for (auto i = params.begin(); i != params.end(); ++i)
-                    request[i.key().asString()] = *i;
-            }
+                extract_params(request, cmd[jss::params][0u]);
             for (auto i = cmd.begin(); i != cmd.end(); ++i)
             {
                 if (i.key().asString() != "params")
@@ -247,8 +246,7 @@ public:
         }
 
         {
-            auto const s = to_string(request);
-            ws_.write_frame(true, buffer(s));
+            ws_.write_frame(true, buffer(to_string(request)));
         }
 
         Json::Value response;
@@ -266,7 +264,7 @@ public:
                     // Normalize JSON output
                     jv->removeMember(jss::type);
                     if ((*jv).isMember(jss::status) &&
-                        (*jv)[jss::status] == Json::Value{jss::error})
+                        (*jv)[jss::status] == jss::error)
                     {
                         response[i][jss::result] = *jv;
                         if ((*jv).isMember(jss::error))

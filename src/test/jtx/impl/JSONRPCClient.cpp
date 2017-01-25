@@ -106,7 +106,6 @@ public:
     {
         using namespace beast::http;
         using namespace boost::asio;
-        using namespace std::string_literals;
 
         request<string_body> req;
         req.method = "POST";
@@ -152,7 +151,6 @@ public:
     {
         using namespace beast::http;
         using namespace boost::asio;
-        using namespace std::string_literals;
 
         request<string_body> req;
         req.method = "POST";

@@ -395,14 +395,6 @@ ServerHandlerImp::onStopped (Server&)
     stopped();
 }
 
-static
-void
-extract_params(Json::Value& jv, Json::Value const& params)
-{
-    for (auto i = params.begin(); i != params.end(); ++i)
-        jv[i.key().asString()] = *i;
-}
-
 //------------------------------------------------------------------------------
 
 Json::Value
