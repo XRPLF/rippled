@@ -21,7 +21,6 @@
 
 #include <ripple/core/impl/Config.cpp>
 #include <ripple/core/impl/DatabaseCon.cpp>
-#include <ripple/core/impl/DeadlineTimer.cpp>
 #include <ripple/core/impl/LoadEvent.cpp>
 #include <ripple/core/impl/LoadMonitor.cpp>
 #include <ripple/core/impl/Job.cpp>
