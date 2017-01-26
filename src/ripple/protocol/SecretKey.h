@@ -27,6 +27,7 @@
 #include <ripple/protocol/Seed.h>
 #include <ripple/protocol/tokens.h>
 #include <array>
+#include <string>
 
 namespace ripple {
 
@@ -57,6 +58,14 @@ public:
     {
         return sizeof(buf_);
     }
+
+    /** Convert the secret key to a hexadecimal string.
+
+        @note The operator<< function is deliberately omitted
+        to avoid accidental exposure of secret key material.
+    */
+    std::string
+    to_string() const;
 };
 
 //------------------------------------------------------------------------------

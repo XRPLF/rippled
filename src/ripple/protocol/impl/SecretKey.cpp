@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/strHex.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/impl/secp256k1.h>
@@ -46,6 +47,12 @@ SecretKey::SecretKey (Slice const& slice)
     if (slice.size() != sizeof(buf_))
         LogicError("SecretKey::SecretKey: invalid size");
     std::memcpy(buf_, slice.data(), sizeof(buf_));
+}
+
+std::string
+SecretKey::to_string() const
+{
+    return strHex(data(), size());
 }
 
 //------------------------------------------------------------------------------
@@ -88,16 +95,29 @@ signDigest (PublicKey const& pk, SecretKey const& sk,
     if (publicKeyType(pk.slice()) != KeyType::secp256k1)
         LogicError("sign: secp256k1 required for digest signing");
 
-    int siglen = 72;
-    unsigned char sig[72];
-    auto const result = secp256k1_ecdsa_sign(
-        secp256k1Context(),
-            digest.data(), sig, &siglen,
-                sk.data(), secp256k1_nonce_function_rfc6979,
-                    nullptr);
-    if (result != 1)
+    BOOST_ASSERT(sk.size() == 32);
+    secp256k1_ecdsa_signature sig_imp;
+    if(secp256k1_ecdsa_sign(
+            secp256k1Context(),
+            &sig_imp,
+            reinterpret_cast<unsigned char const*>(
+                digest.data()),
+            reinterpret_cast<unsigned char const*>(
+                sk.data()),
+            secp256k1_nonce_function_rfc6979,
+            nullptr) != 1)
         LogicError("sign: secp256k1_ecdsa_sign failed");
-    return Buffer(sig, siglen);
+
+    unsigned char sig[72];
+    size_t len = sizeof(sig);
+    if(secp256k1_ecdsa_signature_serialize_der(
+            secp256k1Context(),
+            sig,
+            &len,
+            &sig_imp) != 1)
+        LogicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
+
+    return Buffer{sig, len};
 }
 
 Buffer
@@ -123,16 +143,29 @@ sign (PublicKey const& pk,
         h(m.data(), m.size());
         auto const digest =
             sha512_half_hasher::result_type(h);
-        int siglen = 72;
-        unsigned char sig[72];
-        auto const result = secp256k1_ecdsa_sign(
-            secp256k1Context(),
-                digest.data(), sig, &siglen,
-                    sk.data(), secp256k1_nonce_function_rfc6979,
-                        nullptr);
-        if (result != 1)
+
+        secp256k1_ecdsa_signature sig_imp;
+        if(secp256k1_ecdsa_sign(
+                secp256k1Context(),
+                &sig_imp,
+                reinterpret_cast<unsigned char const*>(
+                    digest.data()),
+                reinterpret_cast<unsigned char const*>(
+                    sk.data()),
+                secp256k1_nonce_function_rfc6979,
+                nullptr) != 1)
             LogicError("sign: secp256k1_ecdsa_sign failed");
-        return Buffer(sig, siglen);
+
+        unsigned char sig[72];
+        size_t len = sizeof(sig);
+        if(secp256k1_ecdsa_signature_serialize_der(
+                secp256k1Context(),
+                sig,
+                &len,
+                &sig_imp) != 1)
+            LogicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
+
+        return Buffer{sig, len};
     }
     default:
         LogicError("sign: invalid type");
@@ -184,16 +217,26 @@ derivePublicKey (KeyType type, SecretKey const& sk)
     {
     case KeyType::secp256k1:
     {
-        int len;
-        unsigned char buf[33];
-        auto const result =
-            secp256k1_ec_pubkey_create(
+        secp256k1_pubkey pubkey_imp;
+        if(secp256k1_ec_pubkey_create(
                 secp256k1Context(),
-                    buf, &len, sk.data(), 1);
-        if (result != 1)
-            LogicError("derivePublicKey: failure");
-        return PublicKey(Slice{ buf,
-            static_cast<std::size_t>(len) });
+                &pubkey_imp,
+                reinterpret_cast<unsigned char const*>(
+                    sk.data())) != 1)
+            LogicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
+
+        unsigned char pubkey[33];
+        size_t len = sizeof(pubkey);
+        if(secp256k1_ec_pubkey_serialize(
+                secp256k1Context(),
+                pubkey,
+                &len,
+                &pubkey_imp,
+                SECP256K1_EC_COMPRESSED) != 1)
+            LogicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
+
+        return PublicKey{Slice{pubkey,
+            static_cast<std::size_t>(len)}};
     }
     case KeyType::ed25519:
     {

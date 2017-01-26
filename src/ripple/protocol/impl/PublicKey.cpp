@@ -22,12 +22,20 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/impl/secp256k1.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/strHex.h>
 #include <ripple/beast/core/ByteOrder.h>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <ed25519-donna/ed25519.h>
 #include <type_traits>
 
 namespace ripple {
+
+std::ostream&
+operator<<(std::ostream& os, PublicKey const& pk)
+{
+    os << strHex(pk.data(), pk.size());
+    return os;
+}
 
 using uint264 = boost::multiprecision::number<
     boost::multiprecision::cpp_int_backend<
@@ -219,17 +227,51 @@ verifyDigest (PublicKey const& publicKey,
 {
     if (publicKeyType(publicKey) != KeyType::secp256k1)
         LogicError("sign: secp256k1 required for digest signing");
-
     auto const canonicality = ecdsaCanonicality(sig);
     if (! canonicality)
         return false;
     if (mustBeFullyCanonical &&
         (*canonicality != ECDSACanonicality::fullyCanonical))
         return false;
+
+    secp256k1_pubkey pubkey_imp;
+    if(secp256k1_ec_pubkey_parse(
+            secp256k1Context(),
+            &pubkey_imp,
+            reinterpret_cast<unsigned char const*>(
+                publicKey.data()),
+            publicKey.size()) != 1)
+        return false;
+
+    secp256k1_ecdsa_signature sig_imp;
+    if(secp256k1_ecdsa_signature_parse_der(
+            secp256k1Context(),
+            &sig_imp,
+            reinterpret_cast<unsigned char const*>(
+                sig.data()),
+            sig.size()) != 1)
+        return false;
+    if (*canonicality != ECDSACanonicality::fullyCanonical)
+    {
+        secp256k1_ecdsa_signature sig_norm;
+        if(secp256k1_ecdsa_signature_normalize(
+                secp256k1Context(),
+                &sig_norm,
+                &sig_imp) != 1)
+            return false;
+        return secp256k1_ecdsa_verify(
+            secp256k1Context(),
+            &sig_norm,
+            reinterpret_cast<unsigned char const*>(
+                digest.data()),
+            &pubkey_imp) == 1;
+    }
     return secp256k1_ecdsa_verify(
-        secp256k1Context(), secpp(digest.data()),
-            secpp(sig.data()), sig.size(),
-                secpp(publicKey.data()), publicKey.size()) == 1;
+        secp256k1Context(),
+        &sig_imp,
+        reinterpret_cast<unsigned char const*>(
+            digest.data()),
+        &pubkey_imp) == 1;
 }
 
 bool

@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <ostream>
 #include <utility>
 
 namespace ripple {
@@ -97,6 +98,11 @@ public:
         return slice();
     }
 };
+
+/** Print the public key to a stream.
+*/
+std::ostream&
+operator<<(std::ostream& os, PublicKey const& pk);
 
 inline
 bool

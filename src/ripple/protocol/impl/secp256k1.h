@@ -25,15 +25,15 @@
 namespace ripple {
 
 template <class = void>
-secp256k1_context_t const*
+secp256k1_context const*
 secp256k1Context()
 {
     struct holder
     {
-        secp256k1_context_t* impl;
+        secp256k1_context* impl;
         holder()
             : impl (secp256k1_context_create(
-                SECP256K1_CONTEXT_VERIFY +
+                SECP256K1_CONTEXT_VERIFY |
                 SECP256K1_CONTEXT_SIGN))
         {
         }
@@ -45,13 +45,6 @@ secp256k1Context()
     };
     static holder const h;
     return h.impl;
-}
-
-inline
-unsigned char const*
-secpp(void const* p)
-{
-    return static_cast<unsigned char const*>(p);
 }
 
 } // ripple

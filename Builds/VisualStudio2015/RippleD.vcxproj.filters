@@ -370,6 +370,15 @@
     <Filter Include="secp256k1\src">
       <UniqueIdentifier>{E25BE380-48B7-7EA9-DFD6-F38F1E8A22FF}</UniqueIdentifier>
     </Filter>
+    <Filter Include="secp256k1\src\modules">
+      <UniqueIdentifier>{6BE34C70-DCAB-96D1-487C-ADC692DA720B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="secp256k1\src\modules\ecdh">
+      <UniqueIdentifier>{46FCBB68-FE6A-0EB7-98C9-C695B05E6503}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="secp256k1\src\modules\recovery">
+      <UniqueIdentifier>{0B56B4A9-D9BC-B7FB-DD09-ADAF9DDE4895}</UniqueIdentifier>
+    </Filter>
     <Filter Include="snappy">
       <UniqueIdentifier>{26306562-F81D-B6CD-B192-22BA51E1A96B}</UniqueIdentifier>
     </Filter>
@@ -4521,6 +4530,12 @@
     <ClInclude Include="..\..\src\secp256k1\include\secp256k1.h">
       <Filter>secp256k1\include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\include\secp256k1_ecdh.h">
+      <Filter>secp256k1\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\include\secp256k1_recovery.h">
+      <Filter>secp256k1\include</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\src\ecdsa.h">
       <Filter>secp256k1\src</Filter>
     </ClInclude>
@@ -4534,6 +4549,12 @@
       <Filter>secp256k1\src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\src\ecmult.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\ecmult_const.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\ecmult_const_impl.h">
       <Filter>secp256k1\src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\src\ecmult_gen.h">
@@ -4581,6 +4602,12 @@
     <ClInclude Include="..\..\src\secp256k1\src\hash_impl.h">
       <Filter>secp256k1\src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\modules\ecdh\main_impl.h">
+      <Filter>secp256k1\src\modules\ecdh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\modules\recovery\main_impl.h">
+      <Filter>secp256k1\src\modules\recovery</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\src\num.h">
       <Filter>secp256k1\src</Filter>
     </ClInclude>
@@ -4609,6 +4636,12 @@
       <Filter>secp256k1\src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\src\scalar_impl.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\scalar_low.h">
+      <Filter>secp256k1\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\scalar_low_impl.h">
       <Filter>secp256k1\src</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\secp256k1\src\secp256k1.c">

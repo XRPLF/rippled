@@ -3854,6 +3854,10 @@
     </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\include\secp256k1.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\include\secp256k1_ecdh.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\include\secp256k1_recovery.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\src\ecdsa.h">
     </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\src\ecdsa_impl.h">
@@ -3863,6 +3867,10 @@
     <ClInclude Include="..\..\src\secp256k1\src\eckey_impl.h">
     </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\src\ecmult.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\ecmult_const.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\ecmult_const_impl.h">
     </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\src\ecmult_gen.h">
     </ClInclude>
@@ -3894,6 +3902,10 @@
     </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\src\hash_impl.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\modules\ecdh\main_impl.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\modules\recovery\main_impl.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\src\num.h">
     </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\src\num_gmp.h">
@@ -3913,6 +3925,10 @@
     <ClInclude Include="..\..\src\secp256k1\src\scalar_8x32_impl.h">
     </ClInclude>
     <ClInclude Include="..\..\src\secp256k1\src\scalar_impl.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\scalar_low.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\secp256k1\src\scalar_low_impl.h">
     </ClInclude>
     <ClCompile Include="..\..\src\secp256k1\src\secp256k1.c">
       <ExcludedFromBuild>True</ExcludedFromBuild>

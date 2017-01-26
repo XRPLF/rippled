@@ -28,6 +28,8 @@
 #include <string>
 #include <vector>
 
+#include <ripple/protocol/impl/secp256k1.h>
+
 namespace ripple {
 
 class SecretKey_test : public beast::unit_test::suite
@@ -41,6 +43,183 @@ class SecretKey_test : public beast::unit_test::suite
     }
 
 public:
+    using blob = std::vector<std::uint8_t>;
+
+    template <class FwdIter, class Container>
+    static
+    void
+    hex_to_binary (FwdIter first, FwdIter last, Container& out)
+    {
+        struct Table
+        {
+            int val[256];
+            Table ()
+            {
+                std::fill (val, val+256, 0);
+                for (int i = 0; i < 10; ++i)
+                    val ['0'+i] = i;
+                for (int i = 0; i < 6; ++i)
+                {
+                    val ['A'+i] = 10 + i;
+                    val ['a'+i] = 10 + i;
+                }
+            }
+            int operator[] (int i)
+            {
+               return val[i];
+            }
+        };
+
+        static Table lut;
+        out.reserve (std::distance (first, last) / 2);
+        while (first != last)
+        {
+            auto const hi (lut[(*first++)]);
+            auto const lo (lut[(*first++)]);
+            out.push_back ((hi*16)+lo);
+        }
+    }
+
+    static
+    uint256
+    hex_to_digest(std::string const& s)
+    {
+        blob b;
+        hex_to_binary (s.begin (), s.end (), b);
+        return uint256::fromVoid(b.data());
+    }
+
+    static
+    PublicKey
+    hex_to_pk(std::string const& s)
+    {
+        blob b;
+        hex_to_binary (s.begin (), s.end (), b);
+        return PublicKey{Slice{b.data(), b.size()}};
+    }
+
+    static
+    SecretKey
+    hex_to_sk(std::string const& s)
+    {
+        blob b;
+        hex_to_binary (s.begin (), s.end (), b);
+        return SecretKey{Slice{b.data(), b.size()}};
+    }
+
+    static
+    Buffer
+    hex_to_sig(std::string const& s)
+    {
+        blob b;
+        hex_to_binary (s.begin (), s.end (), b);
+        return Buffer{Slice{b.data(), b.size()}};
+    }
+
+    // VFALCO We can remove this commented out code
+    //        later, when we have confidence in the vectors.
+
+    /*
+    Buffer
+    makeNonCanonical(Buffer const& sig)
+    {
+        secp256k1_ecdsa_signature sigin;
+        BEAST_EXPECT(secp256k1_ecdsa_signature_parse_der(
+            secp256k1Context(),
+            &sigin,
+            reinterpret_cast<unsigned char const*>(
+                sig.data()),
+            sig.size()) == 1);
+        secp256k1_ecdsa_signature sigout;
+        BEAST_EXPECT(secp256k1_ecdsa_signature_denormalize(
+            secp256k1Context(),
+            &sigout,
+            &sigin) == 1);
+        unsigned char buf[72];
+        size_t len = sizeof(buf);
+        BEAST_EXPECT(secp256k1_ecdsa_signature_serialize_der(
+            secp256k1Context(),
+            buf,
+            &len,
+            &sigout) == 1);
+        return Buffer{buf, len};
+    }
+
+    void
+    makeCanonicalityTestVectors()
+    {
+        uint256 digest;
+        beast::rngfill (
+            digest.data(),
+            digest.size(),
+            crypto_prng());
+        log << "digest " << strHex(digest.data(), digest.size()) << std::endl;
+
+        auto const sk = randomSecretKey();
+        auto const pk = derivePublicKey(KeyType::secp256k1, sk);
+        log << "public " << pk << std::endl;
+        log << "secret " << sk.to_string() << std::endl;
+
+        auto sig = signDigest(pk, sk, digest);
+        log << "canonical sig " << strHex(sig) << std::endl;
+
+        auto const non = makeNonCanonical(sig);
+        log << "non-canon sig " << strHex(non) << std::endl;
+
+        {
+            auto const canonicality = ecdsaCanonicality(sig);
+            BEAST_EXPECT(canonicality);
+            BEAST_EXPECT(*canonicality == ECDSACanonicality::fullyCanonical);
+        }
+
+        {
+            auto const canonicality = ecdsaCanonicality(non);
+            BEAST_EXPECT(canonicality);
+            BEAST_EXPECT(*canonicality != ECDSACanonicality::fullyCanonical);
+        }
+
+        BEAST_EXPECT(verifyDigest(pk, digest, sig, false));
+        BEAST_EXPECT(verifyDigest(pk, digest, sig, true));
+        BEAST_EXPECT(verifyDigest(pk, digest, non, false));
+        BEAST_EXPECT(! verifyDigest(pk, digest, non, true));
+    }
+    */
+
+    // Ensure that verification does the right thing with
+    // respect to the matrix of canonicality variables.
+    void
+    testCanonicality()
+    {
+        testcase ("secp256k1 canonicality");
+
+#if 0
+        makeCanonicalityTestVectors();
+#else
+        auto const digest = hex_to_digest("34C19028C80D21F3F48C9354895F8D5BF0D5EE7FF457647CF655F5530A3022A7");
+        auto const pk = hex_to_pk("025096EB12D3E924234E7162369C11D8BF877EDA238778E7A31FF0AAC5D0DBCF37");
+        auto const sk = hex_to_sk("AA921417E7E5C299DA4EEC16D1CAA92F19B19F2A68511F68EC73BBB2F5236F3D");
+        auto const sig = hex_to_sig("3045022100B49D07F0E934BA468C0EFC78117791408D1FB8B63A6492AD395AC2F360F246600220508739DB0A2EF81676E39F459C8BBB07A09C3E9F9BEB696294D524D479D62740");
+        auto const non = hex_to_sig("3046022100B49D07F0E934BA468C0EFC78117791408D1FB8B63A6492AD395AC2F360F24660022100AF78C624F5D107E9891C60BA637444F71A129E47135D36D92AFD39B856601A01");
+
+        {
+            auto const canonicality = ecdsaCanonicality(sig);
+            BEAST_EXPECT(canonicality);
+            BEAST_EXPECT(*canonicality == ECDSACanonicality::fullyCanonical);
+        }
+
+        {
+            auto const canonicality = ecdsaCanonicality(non);
+            BEAST_EXPECT(canonicality);
+            BEAST_EXPECT(*canonicality != ECDSACanonicality::fullyCanonical);
+        }
+
+        BEAST_EXPECT(verifyDigest(pk, digest, sig, false));
+        BEAST_EXPECT(verifyDigest(pk, digest, sig, true));
+        BEAST_EXPECT(verifyDigest(pk, digest, non, false));
+        BEAST_EXPECT(! verifyDigest(pk, digest, non, true));
+#endif
+    }
+
     void testDigestSigning()
     {
         testcase ("secp256k1 digest");
@@ -279,6 +458,7 @@ public:
         testBase58();
         testDigestSigning();
         testMiscOperations();
+        testCanonicality();
 
         testcase ("secp256k1");
         testSigning(KeyType::secp256k1);
