@@ -553,7 +553,7 @@ operator== (const Value& x, const char* y)
 {
     if (x.type_ != stringValue)
         return false;
-    return std::string(x.value_.string_) == std::string(y);
+    return std::string(x.value_.string_) == y;
 }
 
 bool
