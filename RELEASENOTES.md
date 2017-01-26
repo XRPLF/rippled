@@ -6,6 +6,140 @@ run a `rippled` server, visit https://ripple.com/build/rippled-setup/
 
 # Releases
 
+## Version 0.50.0
+
+The `rippled` 0.50.0 release includes TickSize, which allows gateways to set a "tick size" for assets they issue to to help promote faster price discovery and deeper liquidity, as well as reduce transaction spam and ledger churn on RCL. Ripple expects TickSize to be enabled via an Amendment called TickSize on Tuesday, 2017-02-21.
+
+You can [update to the new version](https://ripple.com/build/rippled-setup/#updating-rippled) on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please [compile the new version from source](https://wiki.ripple.com/Rippled_build_instructions).
+
+**New and Updated Features**
+
+**Tick Size**
+
+Currently, offers on RCL can differ by as little as one part in a quadrillion. This means that there is essentially no value to placing an offer early, as an offer placed later at a microscopically better price gets priority over it. The [TickSize](https://ripple.com/build/amendments/#ticksize) Amendment solves this problem by introducing a minimum tick size that a price must move for an offer to be considered to be at a better price. The tick size is controlled by the issuers of the assets involved.
+
+The effect of this change is to permit issuers to specify the number of significant digits to be kept in the price when an offer is placed on the books. Gateways must enable a TickSize on their account for this feature to benefit them. A single AccountSet transaction may set a `TickSize` parameter. Legal values are 0 and 3-15 inclusive. Zero removes the setting. 3-15 allow that many decimal digits of precision in the pricing of offers for assets issued by this account. It will still be possible to place an offer to buy or sell any amount of an asset and the offer will still keep that amount as exactly as it does now. If an offer involves two assets that each have a tick size, the smaller number of significant figures (larger ticks) controls.
+
+For asset pairs with XRP, the tick size imposed, if any, is the tick size of the issuer of the non-XRP asset. For asset pairs without XRP, the tick size imposed, if any, is the smaller of the two issuer's configured tick sizes.
+
+The tick size is imposed by rounding the offer quality down to the nearest tick and recomputing the non-critical side of the offer. For a buy, the amount offered is rounded down. For a sell, the amount charged is rounded up.
+
+The primary expected benefit of the TickSize amendment is the reduction of bots fighting over the tip of the order book, which means:
+- Quicker price discovery as outpricing someone by a microscopic amount is made impossible (currently bots can spend hours outbidding each other with no significant price movement)
+- A reduction in offer creation and cancellation spam
+- Traders can't outbid by a microscopic amount
+- More offers left on the books as priority
+
+We also expect larger tick sizes to benefit market makers in the following ways:
+- They increase the delta between the fair market value and the trade price, ultimately reducing spreads
+- They prevent market makers from consuming each other's offers due to slight changes in perceived fair market value, which promotes liquidity
+- They promote faster price discovery by reducing the back and forths required to move the price by traders who don't want to move the price more than they need to
+- They reduce transaction spam by reducing fighting over the tip of the order book and reducing the need to change offers due to slight price changes
+- They reduce ledger churn and metadata sizes by reducing the number of indexes each order book must have
+- They allow the order book as presented to traders to better reflect the actual book since these presentations are inevitably aggregated into ticks
+
+**Hardened TLS configuration**
+
+This release updates the default TLS configuration for rippled. The new release supports only 2048-bit DH parameters and defines a new default set of modern ciphers to use, removing support for ciphers and hash functions that are no longer considered secure.
+
+Server administrators who wish to have different settings can configure custom global and per-port cipher suites in the configuration file using the `ssl_ciphers` directive.
+
+**0.50.0 Change Log**
+
+Remove websocketpp support (#1910)
+
+Increase OpenSSL requirements & harden default TLS cipher suites (#1913)
+
+Move test support sources out of ripple directory (#1916)
+
+Enhance ledger header RPC commands (#1918)
+
+Add support for tick sizes (#1922)
+
+Port discrepancy-test.coffee to c++ (#1930)
+
+Remove redundant call to `clearNeedNetworkLedger` (#1931)
+
+Port freeze-test.coffee to C++ unit test. (#1934)
+
+Fix CMake docs target to work if `BOOST_ROOT` is not set (#1937)
+
+Improve setup for account_tx paging test (#1942)
+
+Eliminate npm tests (#1943)
+
+Port uniport js test to cpp (#1944)
+
+Enable amendments in genesis ledger (#1944)
+
+Trim ledger data in Discrepancy_test (#1948)
+
+Add `current_ledger` field to `fee` result (#1949)
+
+Cleanup unit test support code (#1953)
+
+Add ledger save / load tests (#1955)
+
+Remove unused websocket files (#1957)
+
+Update RPC handler role/usage (#1966)
+
+**Bug Fixes**
+
+Validator's manifest not forwarded beyond directly connected peers (#1919)
+
+**Upcoming Features**
+
+We expect the previously announced Suspended Payments feature, which introduces new transaction types to the Ripple protocol that will permit users to cryptographically escrow XRP on RCL, to be enabled via the [SusPay](https://ripple.com/build/amendments/#suspay) Amendment on Tuesday, 2017-02-21.
+
+Also, we expect support for crypto-conditions, which are signature-like structures that can be used with suspended payments to support ILP integration, to be included in the next rippled release scheduled for March.
+
+Lastly, we do not have an update on the previously announced changes to the hash tree structure that rippled uses to represent a ledger, called [SHAMapV2](https://ripple.com/build/amendments/#shamapv2). At the time of activation, this amendment will require brief scheduled allowable unavailability while the changes to the hash tree structure are computed by the network. We will keep the community updated as we progress towards this date (TBA).
+
+
+## Version 0.40.1
+
+The `rippled` 0.40.1 release  increases SQLite database limits in all rippled servers. Ripple recommends upgrading to 0.40.1 only if server operators are running rippled servers with full-history of the ledger. There are no new or updated features in the 0.40.1 release.
+
+You can update to the new version on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please compile the new version from source.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+Increase SQLite database limits to prevent full-history servers from crashing when restarting. (#1961)
+
+## Version 0.40.0
+
+The `rippled` 0.40.0 release includes Suspended Payments, a new transaction type on the Ripple network that functions similar to an escrow service, which permits users cryptographically escrow XRP on RCL with an expiration date. Ripple expects Suspended Payments to be enabled via an Amendment named [SusPay](https://ripple.com/build/amendments/#suspay) on Tuesday, 2017-01-17.
+
+You can update to the new version on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please compile the new version from source.
+
+**New and Updated Features**
+
+Previously, Ripple announced the introduction of Payment Channels during the release of rippled version 0.33.0, which permit scalable, off-ledger checkpoints of high volume, low value payments flowing in a single direction. This was the first step in a multi-phase effort to make RCL more scalable and to support Interledger Protocol (ILP). Ripple expects Payment Channels to be enabled via an Amendment called [PayChan](https://ripple.com/build/amendments/#paychan) on a future date to be determined.
+
+In the second phase towards making RCL more scalable and compatible with ILP, Ripple is introducing Suspended Payments, a new transaction type on the Ripple network that functions similar to an escrow service, which permits users to cryptographically escrow XRP on RCL with an expiration date. Ripple expects Suspended Payments to be enabled via an Amendment named [SusPay](https://ripple.com/build/amendments/#suspay) on Tuesday, 2017-01-17.
+
+A Suspended Payment can be created, which deducts the funds from the sending account. It can then be either fulfilled or canceled. It can only be fulfilled if the fulfillment transaction makes it into a ledger with a CloseTime lower than the expiry date of the transaction. It can be canceled with a transaction that makes it into a ledger with a CloseTime greater than the expiry date of the transaction.
+
+In the third phase towards making RCL more scalable and compatible with ILP, Ripple plans to introduce additional library support for crypto-conditions, which are distributable event descriptions written in a standard format that describe how to recognize a fulfillment message without saying exactly what the fulfillment is. Fulfillments are cryptographically verifiable messages that prove an event occurred. If you transmit a fulfillment, then everyone who has the condition can agree that the condition has been met. Fulfillment requires the submission of a signature that matches the condition (message hash and public key). This format supports multiple algorithms, including different hash functions and cryptographic signing schemes. Crypto-conditions can be nested in multiple levels, with each level possibly having multiple signatures.
+
+Lastly, we do not have an update on the previously announced changes to the hash tree structure that rippled uses to represent a ledger, called [SHAMapV2](https://ripple.com/build/amendments/#shamapv2). This will require brief scheduled allowable downtime while the changes to the hash tree structure are propagated by the network. We will keep the community updated as we progress towards this date (TBA).
+
+Consensus refactor (#1874)
+
+Bug Fixes
+
+Correct an issue in payment flow code that did not remove an unfunded offer (#1860)
+
+Sign validator manifests with both ephemeral and master keys (#1865)
+
+Correctly parse multi-buffer JSON messages (#1862)
+
+
 ## Version 0.33.0
 
 The `rippled` 0.33.0 release includes an improved version of the payment code, which we expect to be activated via Amendment on Wednesday, 2016-10-20 with the name [Flow](https://ripple.com/build/amendments/#flow). We are also introducing XRP Payment Channels, a new structure in the ledger designed to support [Interledger Protocol](https://interledger.org/) trust lines as balances get substantial, which we expect to be activated via Amendment on a future date (TBA) with the name [PayChan](https://ripple.com/build/amendments/#paychan). Lastly, we will be introducing changes to the hash tree structure that rippled uses to represent a ledger, which we expect to be available via Amendment on a future date (TBA) with the name [SHAMapV2](https://ripple.com/build/amendments/#shamapv2).
