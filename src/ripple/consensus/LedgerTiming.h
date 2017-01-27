@@ -255,9 +255,9 @@ time_point effectiveCloseTime(time_point closeTime,
 bool
 shouldCloseLedger (
     bool anyTransactions,
-    int previousProposers,
-    int proposersClosed,
-    int proposersValidated,
+    std::size_t previousProposers,
+    std::size_t proposersClosed,
+    std::size_t proposersValidated,
     std::chrono::milliseconds previousTime,
     std::chrono::milliseconds currentTime, // Time since last ledger's close time
     std::chrono::milliseconds openTime,    // Time waiting to close this ledger
@@ -275,7 +275,10 @@ shouldCloseLedger (
     @return True if a consensus has been reached
 */
 bool
-checkConsensusReached (int agreeing, int total, bool count_self);
+checkConsensusReached (
+    std::size_t agreeing,
+    std::size_t total,
+    bool count_self);
 
 /** Whether we have or don't have a consensus */
 enum class ConsensusState
@@ -300,10 +303,10 @@ enum class ConsensusState
 */
 ConsensusState
 checkConsensus (
-    int previousProposers,
-    int currentProposers,
-    int currentAgree,
-    int currentFinished,
+    std::size_t previousProposers,
+    std::size_t currentProposers,
+    std::size_t currentAgree,
+    std::size_t currentFinished,
     std::chrono::milliseconds previousAgreeTime,
     std::chrono::milliseconds currentAgreeTime,
     bool proposing,

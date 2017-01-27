@@ -257,14 +257,14 @@ RCLConsensus::hasOpenTransactions() const
     return ! app_.openLedger().empty();
 }
 
-int
-RCLConsensus::numProposersValidated(LedgerHash const & h) const
+std::size_t
+RCLConsensus::proposersValidated(LedgerHash const & h) const
 {
     return app_.getValidations().getTrustedValidationCount(h);
 }
 
-int
-RCLConsensus::numProposersFinished(LedgerHash const & h) const
+std::size_t
+RCLConsensus::proposersFinished(LedgerHash const & h) const
 {
     return app_.getValidations().getNodesAfter(h);
 }
@@ -429,10 +429,8 @@ RCLConsensus::accept(
     else
     {
         // We agreed on a close time
-
         consensusCloseTime = effectiveCloseTime(consensusCloseTime,
             closeResolution_, previousLedger_.closeTime());
-
         closeTimeCorrect = true;
     }
 
@@ -449,10 +447,8 @@ RCLConsensus::accept(
     // Put transactions into a deterministic, but unpredictable, order
     CanonicalTXSet retriableTxs{ set.id() };
 
-    auto sharedLCL
-            = buildLCL(previousLedger_, set,
-                     consensusCloseTime, closeTimeCorrect,
-                     closeResolution_, now_, roundTime_, retriableTxs);
+    auto sharedLCL = buildLCL(previousLedger_, set, consensusCloseTime,
+         closeTimeCorrect, closeResolution_, now_, roundTime_, retriableTxs);
 
 
     auto const newLCLHash = sharedLCL.id();
@@ -465,8 +461,7 @@ RCLConsensus::accept(
 
     if (validating_)
         validating_ = ledgerMaster_.isCompatible(*sharedLCL.ledger_,
-        app_.journal("LedgerConsensus").warn(),
-        "Not validating");
+            app_.journal("LedgerConsensus").warn(), "Not validating");
 
     if (validating_ && ! consensusFail_)
     {
@@ -569,10 +564,9 @@ RCLConsensus::accept(
         {
             // FIXME: Use median, not average
             JLOG (j_.info())
-                << beast::lexicalCastThrow <std::string> (p.second)
+                << std::to_string(p.second)
                 << " time votes for "
-                << beast::lexicalCastThrow <std::string>
-                       (p.first.time_since_epoch().count());
+                << std::to_string(p.first.time_since_epoch().count());
             closeCount += p.second;
             closeTotal += std::chrono::duration_cast<usec64_t>(p.first.time_since_epoch()) * p.second;
         }
@@ -630,9 +624,7 @@ RCLConsensus::notify(
     else
     {
         // Don't advertise ledgers we're not willing to serve
-        std::uint32_t early = ledgerMaster_.getEarliestFetch ();
-        if (uMin < early)
-           uMin = early;
+        uMin = std::max(uMin, ledgerMaster_.getEarliestFetch ());
     }
     s.set_firstseq (uMin);
     s.set_lastseq (uMax);

@@ -162,8 +162,8 @@ private:
         @param h The hash of the ledger of interest
         @return the number of proposers that validated a ledger
     */
-    int
-    numProposersValidated(LedgerHash const & h) const;
+    std::size_t
+    proposersValidated(LedgerHash const & h) const;
 
     /** Number of proposers that have validated a ledger descended from requested ledger.
 
@@ -171,8 +171,8 @@ private:
         @return The number of validating peers that have validated a ledger
                 succeeding the one provided.
     */
-    int
-    numProposersFinished(LedgerHash const & h) const;
+    std::size_t
+    proposersFinished(LedgerHash const & h) const;
 
     /** Propose the given position to my peers.
 

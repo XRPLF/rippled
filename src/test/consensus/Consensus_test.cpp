@@ -422,8 +422,8 @@ public:
             return !openTxs.empty();
         }
 
-        int
-        numProposersValidated(Ledger::ID const & prevLedger)
+        std::size_t
+        proposersValidated(Ledger::ID const & prevLedger)
         {
             // everything auto-validates, so just count the number of peers
             // who have this as the last closed ledger
@@ -437,8 +437,8 @@ public:
             return res;
         }
 
-        int
-        numProposersFinished(Ledger::ID const & prevLedger)
+        std::size_t
+        proposersFinished(Ledger::ID const & prevLedger)
         {
             // everything auto-validates, so just count the number of peers
             // who have this as a PRIOR ledger

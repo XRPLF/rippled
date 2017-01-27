@@ -149,10 +149,10 @@ namespace ripple {
       bool hasOpenTransactions() const;
 
       // Number of proposers that have vallidated the given ledger
-      int numProposersValidated(Ledger::ID const & prevLedger) const;
+      std::size_t proposersValidated(Ledger::ID const & prevLedger) const;
 
       // Number of proposers that have validated a ledger descended from requested ledger.
-      int numProposersFinished(LedgerHash const & h) const;re
+      std::size_t proposersFinished(LedgerHash const & h) const;re
 
       // Called when a new round of consensus has started
       void onStartRound(Ledger const &);
@@ -604,7 +604,7 @@ private:
     hash_map<NodeID_t, Proposal_t>  peerProposals_;
 
     // The number of proposers who participated in the last consensus round
-    int previousProposers_ = 0;
+    std::size_t previousProposers_ = 0;
 
     // Disputed transactions
     hash_map<typename Tx_t::ID, Dispute_t> disputes_;
@@ -973,7 +973,7 @@ Consensus<Derived, Traits>::getJson (bool full) const
         ret["converge_percent"] = convergePercent_;
         ret["close_resolution"] = static_cast<Int>(closeResolution_.count());
         ret["have_time_consensus"] = haveCloseTimeConsensus_;
-        ret["previous_proposers"] = previousProposers_;
+        ret["previous_proposers"] = static_cast<Int>(previousProposers_);
         ret["previous_mseconds"] =
             static_cast<Int>(previousRoundTime_.count());
 
@@ -1147,8 +1147,8 @@ Consensus<Derived, Traits>::statePreClose ()
 
     // it is shortly before ledger close time
     bool anyTransactions = impl().hasOpenTransactions();
-    int proposersClosed = peerProposals_.size ();
-    int proposersValidated = impl().numProposersValidated(prevLedgerID_);
+    auto proposersClosed = peerProposals_.size ();
+    auto proposersValidated = impl().proposersValidated(prevLedgerID_);
 
     openTime_ = duration_cast<milliseconds>(clock_.now() - openStartTime_);
 
@@ -1655,7 +1655,7 @@ Consensus<Derived, Traits>::haveConsensus ()
             }
         }
     }
-    int currentFinished = impl().numProposersFinished(prevLedgerID_);
+    auto currentFinished = impl().proposersFinished(prevLedgerID_);
 
     JLOG (j_.debug())
         << "Checking for TX consensus: agree=" << agree
