@@ -5565,6 +5565,9 @@
     <ClCompile Include="..\..\src\test\rpc\Book_test.cpp">
       <Filter>test\rpc</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\rpc\Feature_test.cpp">
+      <Filter>test\rpc</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\rpc\GatewayBalances_test.cpp">
       <Filter>test\rpc</Filter>
     </ClCompile>
