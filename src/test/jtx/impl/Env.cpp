@@ -517,13 +517,23 @@ Env::do_rpc(std::vector<std::string> const& args)
         jv[jss::ripplerpc] = "2.0";
         jv[jss::id] = 5;
     }
-    auto response = client().invoke(jv[jss::method].asString(), jv[jss::params][0U]);
+    auto response = client().invoke(
+        jv[jss::method].asString(),
+        jv[jss::params][0U]);
+
     if (jv.isMember(jss::jsonrpc))
     {
         response[jss::jsonrpc] = jv[jss::jsonrpc];
         response[jss::ripplerpc] = jv[jss::ripplerpc];
         response[jss::id] = jv[jss::id];
     }
+
+    if (jv[jss::params][0u].isMember(jss::error) &&
+        (! response.isMember(jss::error)))
+    {
+        response["client_error"] = jv[jss::params][0u];
+    }
+
     return response;
 }
 
