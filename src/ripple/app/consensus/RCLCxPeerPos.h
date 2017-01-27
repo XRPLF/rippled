@@ -47,8 +47,7 @@ public:
     using ref = const pointer&;
 
     //< The type of the proposed position
-    using Proposal =
-        ConsensusProposal<NodeID, uint256, uint256, NetClock::time_point>;
+    using Proposal = ConsensusProposal<NodeID, uint256, uint256>;
 
 
     /** Constructor

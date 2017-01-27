@@ -36,7 +36,6 @@ namespace bc = boost::container;
 class Consensus_test : public beast::unit_test::suite
 {
 public:
-    using Time = std::chrono::steady_clock::time_point;
     using NodeID = std::int32_t;
 
     /** Consensus unit test types
@@ -261,8 +260,8 @@ public:
         //! Apply the given transactions to this ledger
         Ledger
         close(TxSetType const & txs,
-            typename Time::duration closeTimeResolution,
-            Time const & consensusCloseTime,
+            NetClock::duration const & closeTimeResolution,
+            NetClock::time_point const & consensusCloseTime,
             bool closeTimeAgree) const
         {
             Ledger res{ *this };
@@ -283,10 +282,10 @@ public:
         ID id_;
 
         //! Bucket resolution used to determine close time
-        typename Time::duration closeTimeResolution_ = ledgerDefaultTimeResolution;
+        NetClock::duration closeTimeResolution_ = ledgerDefaultTimeResolution;
 
         //! When the ledger closed
-        Time closeTime_;
+        NetClock::time_point closeTime_;
 
         //! Whether consenssus agreed on the close time
         bool closeTimeAgree_ = true;
@@ -295,14 +294,14 @@ public:
         ID parentID_;
 
         //! Parent ledger close time
-        Time parentCloseTime_;
+        NetClock::time_point parentCloseTime_;
 
     };
 
     /** Proposal is a position taken in the consensus process and is represented
         directly from the generic types.
     */
-    using Proposal = ConsensusProposal<NodeID, Ledger::ID, TxSetType, Time>;
+    using Proposal = ConsensusProposal<NodeID, Ledger::ID, TxSetType>;
 
     /** The RCL consensus process catches missing node SHAMap error
         in several points. This exception is meant to represent a similar
@@ -325,9 +324,6 @@ public:
 
     struct Traits
     {
-        // For testing, network and internal time of the consensus process
-        // are the same.  In the RCL, the internal time and network time differ.
-        using NetTime_t = Time;
         using Ledger_t = Ledger;
         using NodeID_t = NodeID;
         using TxSet_t = TxSet;
@@ -345,7 +341,7 @@ public:
         NodeID id;
 
         //! last time a ledger closed
-        Time lastCloseTime;
+        NetClock::time_point lastCloseTime;
 
         //! openTxs that haven't been closed in a ledger yet
         TxSetType openTxs;
@@ -504,13 +500,14 @@ public:
                 Ledger const & prevLedger,
                 bool isProposing,
                 bool isCorrectLCL,
-                Time closeTime,
-                Time now)
+                NetClock::time_point const & closeTime,
+                NetClock::time_point const & now)
         {
             TxSet res{ openTxs };
 
             return { res,
-                Proposal{prevLedger.id(), Proposal::seqJoin, res.id(), closeTime, now, id} };
+                Proposal{prevLedger.id(), Proposal::seqJoin, res.id(),
+                NetClock::time_point{closeTime}, NetClock::time_point{now}, id} };
         }
 
         // Process the accepted transaction set, generating the newly closed ledger
@@ -518,23 +515,23 @@ public:
         // TODO: Kinda nasty it takes so many arguments . . . sign of bad coupling
         bool
         accept(TxSet const& set,
-            Time consensusCloseTime,
+            NetClock::time_point const & consensusCloseTime,
             bool proposing_,
             bool validating_,
             bool haveCorrectLCL_,
             bool consensusFail_,
             Ledger::ID const & prevLedgerHash_,
             Ledger const & previousLedger_,
-            Time::duration closeResolution_,
-            Time const & now,
+            NetClock::duration const & closeResolution_,
+            NetClock::time_point const &  now,
             std::chrono::milliseconds const & roundTime_,
             hash_map<Txn::ID, DisputedTx <Txn, NodeID>> const & disputes_,
-            std::map <Time, int> closeTimes_,
-            Time const & closeTime,
+            std::map <NetClock::time_point, int> closeTimes_,
+            NetClock::time_point const & closeTime,
             Json::Value && json)
         {
             auto newLedger = previousLedger_.close(set.txs_, closeResolution_,
-                closeTime, consensusCloseTime != Time{});
+                closeTime, consensusCloseTime != NetClock::time_point{});
             ledgers[newLedger.id()] = newLedger;
 
             lastClosedLedger = newLedger;
@@ -559,7 +556,7 @@ public:
            // the last requested round completes
            if(completedRounds <= targetRounds)
            {
-             startRound(net.now(), lastClosedLedger.id(),
+             startRound(now(), lastClosedLedger.id(),
                     lastClosedLedger);
            }
         }
@@ -571,7 +568,7 @@ public:
         {
             // filter proposals already seen?
             peerPositions_[p.prevLedger()].push_back(p);
-            peerProposal(net.now(), p);
+            peerProposal(now(), p);
 
         }
 
@@ -581,7 +578,7 @@ public:
             // save and map complete?
             auto it = txSets.insert(std::make_pair(txs.id(), txs));
             if(it.second)
-                gotTxSet(net.now(), txs);
+                gotTxSet(now(), txs);
         }
 
         void
@@ -616,7 +613,7 @@ public:
         void
         timerEntry()
         {
-            Base::timerEntry(net.now());
+            Base::timerEntry(now());
             // only reschedule if not completed
             if(completedRounds < targetRounds)
                 net.timer(timerFreq, [&]() { timerEntry(); });
@@ -625,8 +622,20 @@ public:
         start()
         {
             net.timer(timerFreq, [&]() { timerEntry(); });
-            startRound(net.now(), lastClosedLedger.id(),
+            startRound(now(), lastClosedLedger.id(),
                 lastClosedLedger);
+        }
+
+        NetClock::time_point
+        now() const
+        {
+            using namespace std::chrono;
+            // For the purposes of this test, the manual clock is only
+            // used to measure durations, so its epoch relative to the
+            // NetClock epoch doesn't matter. We just take the NetClock time
+            // to be the duration elapsed on the manual clock.
+            return NetClock::time_point{duration_cast<NetClock::duration>(
+                       net.now().time_since_epoch())};
         }
     };
 
@@ -676,7 +685,7 @@ public:
             for (int j = 0; j < peers.size(); ++j)
             {
                 if (i != j)
-                    n.connect(peers[i].get(), peers[j].get(), 20ms * (i + 1));
+                    n.connect(peers[i].get(), peers[j].get(), 200ms * (i + 1));
             }
 
         // everyone submits their own ID as a TX
@@ -697,6 +706,7 @@ public:
         }
 
         run_consensus(n, peers, 1);
+
         // Tx should now be shared, so verify all peers have
         // same LCL and it has all the TXs
         for (auto & p : peers)

@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/basics/chrono.h>
 
 namespace ripple
 {
@@ -47,13 +48,11 @@ namespace ripple
     @tparam LedgerID_t Type used to uniquely identify ledgers
     @tparam Position_t Type used to represent the position taken on transactions
                        under consideration during this round of consensus
-    @tparam Time_t Type used to represent times related to consensus
  */
 template <
     class NodeID_t,
     class LedgerID_t,
-    class Position_t,
-    class Time_t>
+    class Position_t>
 class ConsensusProposal
 {
 public:
@@ -79,8 +78,8 @@ public:
         LedgerID_t const& prevLedger,
         std::uint32_t seq,
         Position_t const& position,
-        Time_t closeTime,
-        Time_t now,
+        NetClock::time_point closeTime,
+        NetClock::time_point now,
         NodeID_t const& nodeID)
     : previousLedger_(prevLedger)
     , position_(position)
@@ -127,14 +126,14 @@ public:
     }
 
     //! The current position on the consensus close time.
-    Time_t
+    NetClock::time_point const &
     closeTime () const
     {
         return closeTime_;
     }
 
     //! Get when this position was taken.
-    Time_t
+    NetClock::time_point const &
     seenTime () const
     {
         return time_;
@@ -158,7 +157,7 @@ public:
 
     //! Get whether this position is stale relative to the provided cutoff
     bool
-    isStale (Time_t cutoff) const
+    isStale (NetClock::time_point cutoff) const
     {
         return time_ <= cutoff;
     }
@@ -176,8 +175,8 @@ public:
     bool
     changePosition(
         Position_t const& newPosition,
-        Time_t newCloseTime,
-        Time_t now)
+        NetClock::time_point newCloseTime,
+        NetClock::time_point now)
     {
          if (proposeSeq_ == seqLeave)
             return false;
@@ -196,7 +195,7 @@ public:
         @param now Time when this node left consensus.
      */
     void
-    bowOut(Time_t now)
+    bowOut(NetClock::time_point now)
     {
         time_           = now;
         proposeSeq_     = seqLeave;
@@ -231,10 +230,10 @@ private:
     Position_t position_;
 
     //! The ledger close time this position is taking
-    Time_t closeTime_;
+    NetClock::time_point closeTime_;
 
     // !The time this position was last updated
-    Time_t time_;
+    NetClock::time_point time_;
 
     //! The sequence number of these positions taken by this node
     std::uint32_t proposeSeq_;

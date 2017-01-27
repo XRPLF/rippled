@@ -44,8 +44,6 @@ class LedgerMaster;
 //! Types used to adapt consensus for RCL
 struct RCLCxTraits
 {
-    //! Ripple Network Time
-    using NetTime_t = NetClock::time_point;
     //! Ledger type presented to Consensus
     using Ledger_t = RCLCxLedger;
     //! Peer identifier type used in Consensus

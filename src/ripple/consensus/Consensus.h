@@ -24,7 +24,9 @@
 #include <ripple/consensus/ConsensusProposal.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/json/json_writer.h>
+
 namespace ripple {
 
 /** Generic implementation of consensus algorithm.
@@ -121,8 +123,6 @@ namespace ripple {
 
   struct Traits
   {
-    // Times with epoch/measurements approprate for sharing with peers
-    using NetTime_t = Time;
     using Ledger_t = Ledger;
     using NodeID_t = std::uint32_t;
     using TxSet_t = TxSet;
@@ -189,8 +189,8 @@ namespace ripple {
             Ledger const & prevLedger,
             bool isProposing,
             bool isCorrectLCL,
-            Time closeTime,
-            Time now)
+            NetClock::time_point closeTime,
+            NetClock::time_point now)
 
 
       // Process the accepted transaction set, generating the newly closed ledger
@@ -225,13 +225,12 @@ class Consensus
         accepted,
     };
 
-    using NetTime_t = typename Traits::NetTime_t;
     using Ledger_t = typename Traits::Ledger_t;
     using TxSet_t = typename Traits::TxSet_t;
     using NodeID_t = typename Traits::NodeID_t;
     using Tx_t = typename TxSet_t::Tx;
     using Proposal_t = ConsensusProposal<NodeID_t, typename Ledger_t::ID,
-        typename TxSet_t::ID, NetTime_t>;
+        typename TxSet_t::ID>;
     using Dispute_t = DisputedTx<Tx_t, NodeID_t>;
 
 public:
@@ -265,7 +264,7 @@ public:
     */
     void
     startRound (
-        NetTime_t const& now,
+        NetClock::time_point const& now,
         typename Ledger_t::ID const& prevLgrId,
         Ledger_t const& prevLgr);
 
@@ -278,7 +277,7 @@ public:
     */
     bool
     peerProposal (
-        NetTime_t const& now,
+        NetClock::time_point const& now,
         Proposal_t const& newProposal);
 
     /** Call periodically to drive consensus forward
@@ -286,7 +285,7 @@ public:
         @param now The network adjusted time
     */
     void
-    timerEntry (NetTime_t const& now);
+    timerEntry (NetClock::time_point const& now);
 
     /**
         Process a transaction set, typically acquired from the network
@@ -296,7 +295,7 @@ public:
     */
     void
     gotTxSet (
-        NetTime_t const& now,
+        NetClock::time_point const& now,
         TxSet_t const& txSet);
 
     /** Simulate the consensus process without any network traffic.
@@ -314,7 +313,7 @@ public:
     */
     void
     simulate(
-        NetTime_t const& now,
+        NetClock::time_point const& now,
         boost::optional<std::chrono::milliseconds> consensusDelay);
 
     /** Get the last closed ledger ID.
@@ -565,7 +564,7 @@ private:
     // How long the consensus convergence has taken, expressed as
     // a percentage of the time that we expected it to take.
     int convergePercent_{0};
-    typename NetTime_t::duration closeResolution_ = ledgerDefaultTimeResolution;
+    NetClock::duration closeResolution_ = ledgerDefaultTimeResolution;
     // When startRound was last called
     clock_type::time_point openStartTime_;
     // When consensus started
@@ -576,13 +575,16 @@ private:
 
     //-------------------------------------------------------------------------
     // Network time measurements of consensus progress
-    NetTime_t now_;
+
+    // The current network adjusted time.  This is the network time the
+    // ledger would close if it closed now
+    NetClock::time_point now_;
 
     // The network time this ledger closed
-    NetTime_t closeTime_;
+    NetClock::time_point closeTime_;
 
     // Close time estimates, keep ordered for predictable traverse
-    std::map <NetTime_t, int> closeTimes_;
+    std::map <NetClock::time_point, int> closeTimes_;
 
     //-------------------------------------------------------------------------
     // Non-peer (self) consensus data
@@ -633,7 +635,7 @@ Consensus<Derived, Traits>::Consensus (
 template <class Derived, class Traits>
 void
 Consensus<Derived, Traits>::startRound (
-    NetTime_t const& now,
+    NetClock::time_point const& now,
     typename Ledger_t::ID const& prevLCLHash,
     Ledger_t const & prevLedger)
 {
@@ -726,7 +728,7 @@ Consensus<Derived, Traits>::startRound (
 template <class Derived, class Traits>
 bool
 Consensus<Derived, Traits>::peerProposal (
-    NetTime_t const& now,
+    NetClock::time_point const& now,
     Proposal_t const& newProposal)
 {
     auto const peerID = newProposal.nodeID ();
@@ -829,7 +831,7 @@ Consensus<Derived, Traits>::peerProposal (
 
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::timerEntry (NetTime_t const& now)
+Consensus<Derived, Traits>::timerEntry (NetClock::time_point const& now)
 {
     std::lock_guard<std::recursive_mutex> _(lock_);
 
@@ -880,7 +882,7 @@ Consensus<Derived, Traits>::timerEntry (NetTime_t const& now)
 template <class Derived, class Traits>
 void
 Consensus<Derived, Traits>::gotTxSet (
-    NetTime_t const& now,
+    NetClock::time_point const& now,
     TxSet_t const& txSet)
 {
     std::lock_guard<std::recursive_mutex> _(lock_);
@@ -904,7 +906,7 @@ Consensus<Derived, Traits>::gotTxSet (
 template <class Derived, class Traits>
 void
 Consensus<Derived, Traits>::simulate (
-    NetTime_t const& now,
+    NetClock::time_point const& now,
     boost::optional<std::chrono::milliseconds> consensusDelay)
 {
     std::lock_guard<std::recursive_mutex> _(lock_);
@@ -1447,7 +1449,7 @@ void Consensus<Derived, Traits>::updateOurPositions ()
     auto const ourCutoff = now_ - PROPOSE_INTERVAL;
 
     // Verify freshness of peer positions and compute close times
-    std::map<NetTime_t, int> closeTimes;
+    std::map<NetClock::time_point, int> closeTimes;
     {
         auto it = peerProposals_.begin ();
         while (it != peerProposals_.end ())
@@ -1516,7 +1518,7 @@ void Consensus<Derived, Traits>::updateOurPositions ()
     else
         neededWeight = AV_STUCK_CONSENSUS_PCT;
 
-    NetTime_t closeTime = {};
+    NetClock::time_point closeTime = {};
     haveCloseTimeConsensus_ = false;
 
     if (peerProposals_.empty ())
