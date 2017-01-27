@@ -24,6 +24,7 @@
 #include <ripple/json/json_reader.h>             // Json::Reader
 #include <ripple/protocol/STParsedJSON.h>        // STParsedJSONObject
 #include <ripple/beast/unit_test.h>
+#include <test/jtx.h>
 
 namespace ripple {
 
@@ -174,6 +175,9 @@ public:
     void run()
     {
         using namespace InnerObjectFormatsUnitTestDetail;
+
+        // Instantiate a jtx::Env so debugLog writes are exercised.
+        test::jtx::Env env (*this);
 
         for (auto const& test : testArray)
         {
