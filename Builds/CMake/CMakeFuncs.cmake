@@ -147,11 +147,6 @@ macro(setup_build_cache)
     set(CMAKE_CONFIGURATION_TYPES
       DebugClassic
       ReleaseClassic)
-    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-      set(CMAKE_BUILD_TYPE DebugClassic)
-    elseif(${CMAKE_BUILD_TYPE} STREQUAL "Release")
-      set(CMAKE_BUILD_TYPE ReleaseClassic)
-    endif()
   endif()
 
   set(CMAKE_CONFIGURATION_TYPES
@@ -502,6 +497,15 @@ macro(setup_build_boilerplate)
       APPEND
       PROPERTY COMPILE_DEFINITIONS
       $<$<OR:$<BOOL:${profile}>,$<CONFIG:Release>,$<CONFIG:ReleaseClassic>>:NDEBUG>)
+  else()
+    # CMAKE_CXX_FLAGS_RELEASE is created by CMake for most / all generators
+    #  with defaults including /DNDEBUG or -DNDEBUG, and that value is stored
+    #  in the cache. Override that locally so that the cache value will be
+    #  avaiable if "assert" is ever changed.
+    STRING(REGEX REPLACE "[-/]DNDEBUG" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+    STRING(REGEX REPLACE "[-/]DNDEBUG" "" CMAKE_CXX_FLAGS_RELEASECLASSIC "${CMAKE_CXX_FLAGS_RELEASECLASSIC}")
+    STRING(REGEX REPLACE "[-/]DNDEBUG" "" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
+    STRING(REGEX REPLACE "[-/]DNDEBUG" "" CMAKE_C_FLAGS_RELEASECLASSIC "${CMAKE_C_FLAGS_RELEASECLASSIC}")
   endif()
 
   if (NOT WIN32)

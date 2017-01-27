@@ -54,6 +54,10 @@
 
 cmake_minimum_required(VERSION 3.1.0)
 
+# The project command can override some computed values.
+# Don't put any code above this line.
+project(rippled)
+
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
   set(dir "build")
   set(cmd "cmake")
@@ -95,8 +99,6 @@ if (NOT DEFINED unity)
 endif()
 
 setup_build_cache()
-
-project(rippled)
 
 if(nonunity)
     get_cmake_property(allvars VARIABLES)
