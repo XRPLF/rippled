@@ -36,7 +36,7 @@ namespace detail {
 // detection/prevention, we also have websocket and rpc scenarios
 // and want to ensure weak ciphers can't be used.
 char const defaultCipherList[] =
-    "HIGH:!aNULL:!MD5:!DSS:!SHA1:!3DES:!RC4:!EXPORT:!DSS";
+    "HIGH:MEDIUM:!aNULL:!MD5:!DSS:!3DES:!RC4:!EXPORT";
 
 template <class>
 struct custom_delete;
