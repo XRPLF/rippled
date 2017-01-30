@@ -4,7 +4,24 @@ This document contains the release notes for `rippled`, the reference server
 implementation of the Ripple protocol. To learn more about how to build and
 run a `rippled` server, visit https://ripple.com/build/rippled-setup/
 
+If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `yum`](https://ripple.com/build/rippled-setup/#updating-rippled). For other platforms, please [compile from source](https://wiki.ripple.com/Rippled_build_instructions).
+
+
 # Releases
+
+## Version 0.50.1
+
+The `rippled` 0.50.1 release adjusts the default TLS cipher list and corrects a flaw that would not allow an SSL handshake to properly complete if the port was configured using the `wss` keyword. Ripple recommends upgrading to 0.50.1 only if server operators are running rippled servers that accept client connections over TLS. There are no new or updated features in the 0.50.1 release.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+Adjust the default cipher list and correct a flaw that would not allow an SSL handshake to properly complete if the port was configured using the `wss` keyword (#1985)
+
+
 
 ## Version 0.50.0
 

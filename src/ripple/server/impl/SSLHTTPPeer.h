@@ -132,7 +132,7 @@ do_handshake(yield_context do_yield)
         return this->fail(ec, "handshake");
     bool const http =
         this->port().protocol.count("peer") > 0 ||
-        //port().protocol.count("wss") > 0 ||
+        this->port().protocol.count("wss") > 0 ||
         this->port().protocol.count("wss2") > 0 ||
         this->port().protocol.count("https") > 0;
     if(http)
