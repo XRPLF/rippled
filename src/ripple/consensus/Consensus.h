@@ -34,10 +34,12 @@ namespace ripple {
   Achieves consensus on the next ledger.
 
   Two things need consensus:
+
     1.  The set of transactions included in the ledger.
     2.  The close time for the ledger.
 
   The general consensus stages:
+
      1. Consensus finishes, we build a new last closed ledger and a new open
         ledger based on it.
      2. The open ledger interval starts. This gives servers time to finish
