@@ -1934,15 +1934,13 @@ public:
 
     void testAutoFillEscalatedFees ()
     {
-        test::jtx::Env env(*this, []()
+        using namespace test::jtx;
+        Env env {*this, std::make_unique<Config>( [](Config* cf)
             {
-                auto p = std::make_unique<Config>();
-                test::setupConfigForUnitTests(*p);
-                auto& section = p->section("transaction_queue");
-                section.set("minimum_txn_in_ledger_standalone", "3");
-                return p;
-            }(),
-            test::jtx::features(featureFeeEscalation));
+                cf->section("transaction_queue")
+                    .set("minimum_txn_in_ledger_standalone", "3");
+            }, defaultConf),
+            test::jtx::features(featureFeeEscalation)};
         LoadFeeTrack const& feeTrack = env.app().getFeeTrack();
 
         {

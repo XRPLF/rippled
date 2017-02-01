@@ -274,13 +274,11 @@ class ServerStatus_test :
     {
         testcase("WS client to http server fails");
         using namespace jtx;
-        Env env(*this, []()
+        Env env {*this, std::make_unique<Config>([](Config* cf)
             {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                p->section("port_ws").set("protocol", "http,https");
-                return p;
-            }());
+                cf->section("port_ws").set("protocol", "http,https");
+            },
+            defaultConf)};
 
         //non-secure request
         {
@@ -308,14 +306,12 @@ class ServerStatus_test :
     {
         testcase("Status request");
         using namespace jtx;
-        Env env(*this, []()
+        Env env {*this, std::make_unique<Config>([](Config* cf)
             {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                p->section("port_rpc").set("protocol", "ws2,wss2");
-                p->section("port_ws").set("protocol", "http");
-                return p;
-            }());
+                cf->section("port_rpc").set("protocol", "ws2,wss2");
+                cf->section("port_ws").set("protocol", "http");
+            },
+            defaultConf)};
 
         //non-secure request
         {
@@ -345,13 +341,11 @@ class ServerStatus_test :
         using namespace jtx;
         using namespace boost::asio;
         using namespace beast::http;
-        Env env(*this, []()
+        Env env {*this, std::make_unique<Config>([](Config* cf)
             {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                p->section("port_ws").set("protocol", "ws2");
-                return p;
-            }());
+                cf->section("port_ws").set("protocol", "ws2");
+            },
+            defaultConf)};
 
         auto const port = env.app().config()["port_ws"].
             get<std::uint16_t>("port");

@@ -1411,16 +1411,8 @@ public:
     {
         testcase("BookOffer Limits");
         using namespace jtx;
-        Env env(*this, [asAdmin]() {
-            auto p = std::make_unique<Config>();
-            setupConfigForUnitTests(*p);
-            if(! asAdmin)
-            {
-                (*p)["port_rpc"].set("admin","");
-                (*p)["port_ws"].set("admin","");
-            }
-            return p;
-        }());
+        Env env {*this, std::make_unique<Config>(
+            asAdmin ? defaultConf : nonAdminConf)};
         Account gw {"gw"};
         env.fund(XRP(200000), gw);
         env.close();

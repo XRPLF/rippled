@@ -83,6 +83,30 @@ setupConfigForUnitTests (Config& cfg)
 
 namespace jtx {
 
+std::function<void(Config*)> defaultConf = [] (Config * cf)
+{
+    setupConfigForUnitTests(*cf);
+};
+
+std::function<void(Config*)> nonAdminConf = [] (Config * cf)
+{
+    setupConfigForUnitTests(*cf);
+    (*cf)["port_rpc"].set("admin","");
+    (*cf)["port_ws"].set("admin","");
+};
+
+std::function<void(Config*)> validatorConf = [] (Config * cf)
+{
+    setupConfigForUnitTests(*cf);
+    // If the config has valid validation keys then we run as a validator.
+    auto const seed = parseBase58<Seed>("shUwVw52ofnCUX5m7kPTKzJdr4HEH");
+    if (!seed)
+        Throw<std::runtime_error> ("Invalid seed specified");
+    cf->VALIDATION_PRIV = generateSecretKey (KeyType::secp256k1, *seed);
+    cf->VALIDATION_PUB =
+        derivePublicKey (KeyType::secp256k1, cf->VALIDATION_PRIV);
+};
+
 class SuiteSink : public beast::Journal::Sink
 {
     std::string partition_;

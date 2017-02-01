@@ -164,15 +164,11 @@ struct Regression_test : public beast::unit_test::suite
     {
         testcase("Autofilled fee should use the escalated fee");
         using namespace jtx;
-        Env env(*this, []()
+        Env env(*this, std::make_unique<Config>([](Config * cf)
             {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                auto& section = p->section("transaction_queue");
-                section.set("minimum_txn_in_ledger_standalone", "3");
-                return p;
-            }(),
-            features(featureFeeEscalation));
+                cf->section("transaction_queue")
+                    .set("minimum_txn_in_ledger_standalone", "3");
+            }, defaultConf), features(featureFeeEscalation));
         Env_ss envs(env);
 
         auto const alice = Account("alice");

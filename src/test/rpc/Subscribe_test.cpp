@@ -311,42 +311,11 @@ public:
         BEAST_EXPECT(jv[jss::status] == "success");
     }
 
-    static
-    std::unique_ptr<Config>
-    makeValidatorConfig(
-        std::string const& valPrivateKey, std::string const& valPublicKey)
-    {
-        auto p = std::make_unique<Config>();
-        setupConfigForUnitTests(*p);
-
-        // If the config has valid validation keys then we run as a validator.
-        auto const sk = parseBase58<SecretKey>(
-            TOKEN_NODE_PRIVATE,
-            valPrivateKey);
-        if (!sk)
-            Throw<std::runtime_error> ("Invalid validation private key");
-        p->VALIDATION_PRIV = *sk;
-
-        auto const pk = parseBase58<PublicKey>(
-            TOKEN_NODE_PUBLIC,
-            valPublicKey);
-        if (!pk)
-            Throw<std::runtime_error> ("Invalid validation public key");
-        p->VALIDATION_PUB = *pk;
-
-        return p;
-    }
-
     void testValidations()
     {
         using namespace jtx;
 
-        // Public key must be derived from the private key
-        const std::string valPrivateKey =
-            "paEdUCVVCNnv4aYBepid9Xh3NaAr9xWRw2vh351piFJrxQwvExd";
-        const std::string valPublicKey =
-            "n9MvFGjgv1kYkm7bLbb2QUwSqgzrQkYMYHXtrzN8W28Jfp2mVihq";
-        Env env(*this, makeValidatorConfig(valPrivateKey, valPublicKey));
+        Env env {*this, std::make_unique<Config>(validatorConf)};
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -373,7 +342,9 @@ public:
                 [&](auto const& jv)
                 {
                     return jv[jss::type] == "validationReceived" &&
-                        jv[jss::validation_public_key] == valPublicKey &&
+                        jv[jss::validation_public_key].asString() ==
+                            toBase58 (TokenType::TOKEN_NODE_PUBLIC,
+                                env.app().config().VALIDATION_PUB) &&
                         jv[jss::ledger_hash] ==
                             to_string(env.closed()->info().hash) &&
                         jv[jss::ledger_index] ==

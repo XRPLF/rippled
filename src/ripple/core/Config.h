@@ -183,6 +183,13 @@ public:
 public:
     Config() = default;
 
+    template <class... Args>
+    Config(std::function< void(Config *) > init, Args&&... args)
+        : Config(std::forward<Args>(args)...)
+    {
+        init(this);
+    }
+
     int getSize (SizedItemName) const;
     /* Be very careful to make sure these bool params
         are in the right order. */
