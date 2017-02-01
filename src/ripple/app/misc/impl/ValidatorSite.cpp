@@ -32,11 +32,13 @@ namespace ripple {
 auto constexpr DEFAULT_REFRESH_INTERVAL = std::chrono::minutes{5};
 
 ValidatorSite::ValidatorSite (
-    Application& app,
+    boost::asio::io_service& ios,
+    ValidatorList& validators,
     beast::Journal j)
-    : app_ (app)
+    : ios_ (ios)
+    , validators_ (validators)
     , j_ (j)
-    , timer_ (app_.getIOService())
+    , timer_ (ios_)
     , fetching_ (false)
     , pending_ (false)
     , stopping_ (false)
@@ -174,7 +176,7 @@ ValidatorSite::onTimer (
             sites_[siteIdx].pUrl.domain,
             sites_[siteIdx].pUrl.path,
             std::to_string(*sites_[siteIdx].pUrl.port),
-            app_.getIOService(),
+            ios_,
             [this, siteIdx](error_code const& err, detail::response_type&& resp)
             {
                 onSiteFetch (err, std::move(resp), siteIdx);
@@ -186,7 +188,7 @@ ValidatorSite::onTimer (
             sites_[siteIdx].pUrl.domain,
             sites_[siteIdx].pUrl.path,
             std::to_string(*sites_[siteIdx].pUrl.port),
-            app_.getIOService(),
+            ios_,
             [this, siteIdx](error_code const& err, detail::response_type&& resp)
             {
                 onSiteFetch (err, std::move(resp), siteIdx);
@@ -223,7 +225,7 @@ ValidatorSite::onSiteFetch(
             body.isMember("version") && body["version"].isInt())
         {
 
-            auto const disp = app_.validators().applyList (
+            auto const disp = validators_.applyList (
                 body["manifest"].asString (),
                 body["blob"].asString (),
                 body["signature"].asString(),

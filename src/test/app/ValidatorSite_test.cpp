@@ -20,7 +20,6 @@
 #include <beast/core/placeholders.hpp>
 #include <beast/core/detail/base64.hpp>
 #include <beast/http.hpp>
-#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/misc/ValidatorSite.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/strHex.h>
@@ -240,7 +239,7 @@ private:
 
         Env env (*this);
         auto trustedSites = std::make_unique<ValidatorSite> (
-            env.app(), beast::Journal());
+            env.app().getIOService(), env.app().validators(), beast::Journal());
 
         // load should accept empty sites list
         std::vector<std::string> emptyCfgSites;
@@ -349,7 +348,7 @@ private:
             {"http://127.0.0.1:" + std::to_string(port1) + "/validators"});
 
             auto sites = std::make_unique<ValidatorSite> (
-                env.app (), journal);
+                env.app().getIOService(), env.app().validators(), journal);
 
             sites->load (cfgSites);
             sites->start();
@@ -365,7 +364,7 @@ private:
             "http://127.0.0.1:" + std::to_string(port2) + "/validators"});
 
             auto sites = std::make_unique<ValidatorSite> (
-                env.app (), journal);
+                env.app().getIOService(), env.app().validators(), journal);
 
             sites->load (cfgSites);
             sites->start();

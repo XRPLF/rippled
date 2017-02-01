@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_MISC_VALIDATORSITE_H_INCLUDED
 #define RIPPLE_APP_MISC_VALIDATORSITE_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/misc/detail/Work.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
@@ -73,7 +73,8 @@ private:
         clock_type::time_point nextRefresh;
     };
 
-    Application& app_;
+    boost::asio::io_service& ios_;
+    ValidatorList& validators_;
     beast::Journal j_;
     std::mutex mutable sites_mutex_;
     std::mutex mutable state_mutex_;
@@ -94,7 +95,8 @@ private:
 
 public:
     ValidatorSite (
-        Application& app,
+        boost::asio::io_service& ios,
+        ValidatorList& validators,
         beast::Journal j);
     ~ValidatorSite ();
 
