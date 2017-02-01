@@ -414,8 +414,7 @@ RCLConsensus::accept(
     std::chrono::milliseconds const & roundTime_,
     hash_map<RCLCxTx::ID, DisputedTx <RCLCxTx, NodeID>> const & disputes_,
     std::map <NetClock::time_point, int> closeTimes_,
-    NetClock::time_point const & closeTime_,
-    Json::Value && json
+    NetClock::time_point const & closeTime_
     )
 {
     bool closeTimeCorrect;
@@ -474,7 +473,7 @@ RCLConsensus::accept(
             << "CNF buildLCL " << newLCLHash;
 
     // See if we can accept a ledger as fully-validated
-    ledgerMaster_.consensusBuilt (sharedLCL.ledger_, std::move(json));
+    ledgerMaster_.consensusBuilt (sharedLCL.ledger_, getJson(true));
 
     //-------------------------------------------------------------------------
     {

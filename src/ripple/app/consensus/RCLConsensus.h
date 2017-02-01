@@ -261,7 +261,6 @@ private:
         @param disputes_ Disputed trarnsactions from this round
         @param closeTimes_ Histogram of peers close times
         @param closeTime Our close time
-        @param json Json representation of consensus
         @return Whether we should continue validating
      */
     bool
@@ -279,8 +278,7 @@ private:
         std::chrono::milliseconds const & roundTime_,
         hash_map<RCLCxTx::ID, DisputedTx <RCLCxTx, NodeID>> const & disputes_,
         std::map <NetClock::time_point, int> closeTimes_,
-        NetClock::time_point const & closeTime,
-        Json::Value && json
+        NetClock::time_point const & closeTime
     );
 
     /** Signal the end of consensus to the application, which will start the

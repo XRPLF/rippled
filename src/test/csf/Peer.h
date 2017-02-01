@@ -270,8 +270,7 @@ struct Peer : public Consensus<Peer, Traits>
         std::chrono::milliseconds const & roundTime_,
         hash_map<Tx::ID, DisputedTx <Tx, PeerID>> const & disputes_,
         std::map <NetClock::time_point, int> closeTimes_,
-        NetClock::time_point const & closeTime,
-        Json::Value && json)
+        NetClock::time_point const & closeTime)
     {
         auto newLedger = previousLedger_.close(set.txs_, closeResolution_,
             closeTime, consensusCloseTime != NetClock::time_point{});
