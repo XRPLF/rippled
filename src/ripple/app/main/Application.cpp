@@ -39,11 +39,13 @@
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
+#include <ripple/app/misc/Manifest.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/app/misc/ValidatorSite.h>
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/tx/apply.h>
@@ -64,6 +66,7 @@
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/make_Overlay.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/types.h>
@@ -347,7 +350,10 @@ public:
     TaggedCache <uint256, AcceptedLedger> m_acceptedLedgerCache;
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <Cluster> cluster_;
+    std::unique_ptr <ManifestCache> validatorManifests_;
+    std::unique_ptr <ManifestCache> publisherManifests_;
     std::unique_ptr <ValidatorList> validators_;
+    std::unique_ptr <ValidatorSite> validatorSites_;
     std::unique_ptr <ServerHandler> serverHandler_;
     std::unique_ptr <AmendmentTable> m_amendmentTable;
     std::unique_ptr <LoadFeeTrack> mFeeTrack;
@@ -473,8 +479,18 @@ public:
         , cluster_ (std::make_unique<Cluster> (
             logs_->journal("Overlay")))
 
+        , validatorManifests_ (std::make_unique<ManifestCache> (
+            logs_->journal("ManifestCache")))
+
+        , publisherManifests_ (std::make_unique<ManifestCache> (
+            logs_->journal("ManifestCache")))
+
         , validators_ (std::make_unique<ValidatorList> (
-            logs_->journal("UniqueNodeList")))
+            *validatorManifests_, *publisherManifests_, *timeKeeper_,
+            logs_->journal("ValidatorList"), config_->VALIDATION_QUORUM))
+
+        , validatorSites_ (std::make_unique<ValidatorSite> (
+            get_io_service (), *validators_, logs_->journal("ValidatorSite")))
 
         , serverHandler_ (make_ServerHandler (*this, *m_networkOPs, get_io_service (),
             *m_jobQueue, *m_networkOPs, *m_resourceManager, *m_collectorManager))
@@ -691,6 +707,21 @@ public:
         return *validators_;
     }
 
+    ValidatorSite& validatorSites () override
+    {
+        return *validatorSites_;
+    }
+
+    ManifestCache& validatorManifests() override
+    {
+        return *validatorManifests_;
+    }
+
+    ManifestCache& publisherManifests() override
+    {
+        return *publisherManifests_;
+    }
+
     Cluster& cluster () override
     {
         return *cluster_;
@@ -846,7 +877,20 @@ public:
 
         mValidations->flush ();
 
-        m_overlay->saveValidatorKeyManifests (getWalletDB ());
+        validatorSites_->stop ();
+
+        // TODO Store manifests in manifests.sqlite instead of wallet.db
+        validatorManifests_->save (getWalletDB (), "ValidatorManifests",
+            [this](PublicKey const& pubKey)
+            {
+                return validators().listed (pubKey);
+            });
+
+        publisherManifests_->save (getWalletDB (), "PublisherManifests",
+            [this](PublicKey const& pubKey)
+            {
+                return validators().trustedPublisher (pubKey);
+            });
 
         stopped ();
     }
@@ -1013,9 +1057,6 @@ bool ApplicationImp::setup()
 
     Pathfinder::initPathTable();
 
-    m_ledgerMaster->setMinValidations (
-        config_->VALIDATION_QUORUM, config_->LOCK_QUORUM);
-
     auto const startUp = config_->START_UP;
     if (startUp == Config::FRESH)
     {
@@ -1062,15 +1103,67 @@ bool ApplicationImp::setup()
         return false;
     }
 
-    if (!validators_->load (config().section (SECTION_VALIDATORS)))
     {
-        JLOG(m_journal.fatal()) << "Invalid entry in validator configuration.";
-        return false;
+        PublicKey valPublic;
+        SecretKey valSecret;
+        std::string manifest;
+        if (config().exists (SECTION_VALIDATOR_TOKEN))
+        {
+            if (auto const token = ValidatorToken::make_ValidatorToken (
+                config().section (SECTION_VALIDATOR_TOKEN).lines ()))
+            {
+                valSecret = token->validationSecret;
+                valPublic = derivePublicKey (KeyType::secp256k1, valSecret);
+                manifest = std::move(token->manifest);
+            }
+            else
+            {
+                JLOG(m_journal.fatal()) <<
+                    "Invalid entry in validator token configuration.";
+                return false;
+            }
+        }
+        else if (config().exists (SECTION_VALIDATION_SEED))
+        {
+            auto const seed = parseBase58<Seed>(
+                config().section (SECTION_VALIDATION_SEED).lines ().front());
+            if (!seed)
+                Throw<std::runtime_error> (
+                    "Invalid seed specified in [" SECTION_VALIDATION_SEED "]");
+            valSecret = generateSecretKey (KeyType::secp256k1, *seed);
+            valPublic = derivePublicKey (KeyType::secp256k1, valSecret);
+        }
+
+        if (!validatorManifests_->load (
+            getWalletDB (), "ValidatorManifests", manifest))
+        {
+            JLOG(m_journal.fatal()) << "Invalid configured validator manifest.";
+            return false;
+        }
+
+        publisherManifests_->load (
+            getWalletDB (), "PublisherManifests");
+
+        m_networkOPs->setValidationKeys (valSecret, valPublic);
+
+        // Setup trusted validators
+        if (!validators_->load (
+                valPublic,
+                config().section (SECTION_VALIDATORS).values (),
+                config().section (SECTION_VALIDATOR_LIST_KEYS).values ()))
+        {
+            JLOG(m_journal.fatal()) <<
+                "Invalid entry in validator configuration.";
+            return false;
+        }
     }
 
-    if (validators_->size () == 0 && !config_->standalone())
+    if (!validatorSites_->load (
+        config().section (SECTION_VALIDATOR_LIST_SITES).values ()))
     {
-        JLOG(m_journal.warn()) << "No validators are configured.";
+        JLOG(m_journal.fatal()) <<
+            "Invalid entry in [" << SECTION_VALIDATOR_LIST_SITES << "]";
+        return false;
     }
 
     m_nodeStore->tune (config_->getSize (siNodeCacheSize), config_->getSize (siNodeCacheAge));
@@ -1094,14 +1187,14 @@ bool ApplicationImp::setup()
         *config_);
     add (*m_overlay); // add to PropertyStream
 
+    validatorSites_->start ();
+
     // start first consensus round
     if (! m_networkOPs->beginConsensus(m_ledgerMaster->getClosedLedger()->info().hash))
     {
         JLOG(m_journal.fatal()) << "Unable to start consensus";
         return false;
     }
-
-    m_overlay->setupValidatorKeyManifests (*config_, getWalletDB ());
 
     {
         auto setup = setup_ServerHandler(*config_, std::cerr);

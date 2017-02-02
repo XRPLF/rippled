@@ -28,6 +28,7 @@
 #include <test/app/HashRouter_test.cpp>
 #include <test/app/LedgerLoad_test.cpp>
 #include <test/app/LoadFeeTrack_test.cpp>
+#include <test/app/Manifest_test.cpp>
 #include <test/app/MultiSign_test.cpp>
 #include <test/app/OfferStream_test.cpp>
 #include <test/app/Offer_test.cpp>
@@ -44,5 +45,6 @@
 #include <test/app/TrustAndBalance_test.cpp>
 #include <test/app/TxQ_test.cpp>
 #include <test/app/ValidatorList_test.cpp>
+#include <test/app/ValidatorSite_test.cpp>
 #include <test/app/SetTrust_test.cpp>
 #include <test/app/Ticket_test.cpp>

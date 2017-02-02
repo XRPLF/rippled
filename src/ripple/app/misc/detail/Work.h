@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
+    Copyright (c) 2016 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,35 +17,31 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/ValidatorList.h>
-#include <ripple/protocol/JsonFields.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/basics/make_lock.h>
+#ifndef RIPPLE_APP_MISC_DETAIL_WORK_H_INCLUDED
+#define RIPPLE_APP_MISC_DETAIL_WORK_H_INCLUDED
+
+#include <beast/http/message.hpp>
+#include <beast/http/string_body.hpp>
 
 namespace ripple {
 
-Json::Value doUnlList (RPC::Context& context)
+namespace detail {
+
+using response_type =
+    beast::http::response<beast::http::string_body>;
+
+class Work
 {
-    auto lock = make_lock(context.app.getMasterMutex());
-    Json::Value obj (Json::objectValue);
+public:
+    virtual ~Work() = default;
 
-    context.app.validators().for_each_listed (
-        [&unl = obj[jss::unl]](
-            PublicKey const& publicKey,
-            bool trusted)
-        {
-            Json::Value node (Json::objectValue);
+    virtual void run() = 0;
 
-            node[jss::pubkey_validator] = toBase58(
-                TokenType::TOKEN_NODE_PUBLIC, publicKey);
-            node[jss::trusted] = trusted;
+    virtual void cancel() = 0;
+};
 
-            unl.append (node);
-        });
-
-    return obj;
-}
+} // detail
 
 } // ripple
+
+#endif
