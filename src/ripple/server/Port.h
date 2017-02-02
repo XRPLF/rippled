@@ -23,6 +23,7 @@
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/beast/net/IPEndpoint.h>
 #include <beast/core/detail/ci_char_traits.hpp>
+#include <beast/websocket/option.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <cstdint>
 #include <memory>
@@ -50,6 +51,7 @@ struct Port
     std::string ssl_cert;
     std::string ssl_chain;
     std::string ssl_ciphers;
+    beast::websocket::permessage_deflate pmd_options;
     std::shared_ptr<boost::asio::ssl::context> context;
 
     // How many incoming connections are allowed on this
@@ -83,6 +85,7 @@ struct ParsedPort
     std::string ssl_cert;
     std::string ssl_chain;
     std::string ssl_ciphers;
+    beast::websocket::permessage_deflate pmd_options;
     int limit = 0;
 
     boost::optional<boost::asio::ip::address> ip;
