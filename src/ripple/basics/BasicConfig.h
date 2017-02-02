@@ -148,6 +148,17 @@ public:
         return boost::lexical_cast<T>(iter->second);
     }
 
+    /// Returns a value if present, else another value.
+    template<class T>
+    T
+    value_or(std::string const& name, T const& other) const
+    {
+        auto const iter = cont().find(name);
+        if (iter == cont().end())
+            return other;
+        return boost::lexical_cast<T>(iter->second);
+    }
+
     friend
     std::ostream&
     operator<< (std::ostream&, Section const& section);
