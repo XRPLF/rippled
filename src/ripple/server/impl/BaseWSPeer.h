@@ -110,7 +110,7 @@ protected:
     {
         template<class Body, class Headers>
         void
-        operator()(beast::http::message<true, Body, Headers>& req)
+        operator()(beast::http::message<true, Body, Headers>& req) const
         {
             req.fields.replace("User-Agent",
                 BuildInfo::getFullVersionString());
@@ -118,7 +118,7 @@ protected:
 
         template<class Body, class Headers>
         void
-        operator()(beast::http::message<false, Body, Headers>& resp)
+        operator()(beast::http::message<false, Body, Headers>& resp) const
         {
             resp.fields.replace("Server",
                 BuildInfo::getFullVersionString());
@@ -194,6 +194,7 @@ run()
         return strand_.post(std::bind(
             &BaseWSPeer::run, impl().shared_from_this()));
     impl().ws_.set_option(beast::websocket::decorate(identity{}));
+    impl().ws_.set_option(port().pmd_options);
     using namespace beast::asio;
     impl().ws_.async_accept(request_, strand_.wrap(std::bind(
         &BaseWSPeer::on_ws_handshake, impl().shared_from_this(),
