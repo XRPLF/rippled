@@ -132,8 +132,7 @@ public:
     {
         testSpecialMembers();
 
-        yield_to(std::bind(&self::testRead,
-            this, std::placeholders::_1));
+        yield_to(&self::testRead, this);
     }
 };
 

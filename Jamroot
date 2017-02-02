@@ -45,6 +45,11 @@ else
   lib crypto ;
 }
 
+if [ os.name ] = MACOSX
+{
+  using clang : : ;
+}
+
 variant coverage
   :
     debug

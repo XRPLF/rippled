@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_WEBSOCKET_SYNC_ECHO_SERVER_HPP
-#define BEAST_WEBSOCKET_SYNC_ECHO_SERVER_HPP
+#ifndef WEBSOCKET_SYNC_ECHO_SERVER_HPP
+#define WEBSOCKET_SYNC_ECHO_SERVER_HPP
 
 #include <beast/core/placeholders.hpp>
 #include <beast/core/streambuf.hpp>
@@ -283,25 +283,6 @@ private:
                 beast::asio::placeholders::error));
     }
 
-    template<class DynamicBuffer, std::size_t N>
-    static
-    bool
-    match(DynamicBuffer& db, char const(&s)[N])
-    {
-        using boost::asio::buffer;
-        using boost::asio::buffer_copy;
-        if(db.size() < N-1)
-            return false;
-        beast::static_string<N-1> t;
-        t.resize(N-1);
-        buffer_copy(buffer(t.data(), t.size()),
-            db.data());
-        if(t != s)
-            return false;
-        db.consume(N-1);
-        return true;
-    }
-
     void
     do_peer(std::size_t id,
         endpoint_type const& ep, socket_type&& sock)
@@ -329,34 +310,7 @@ private:
                 break;
             }
             ws.set_option(beast::websocket::message_type{op});
-            if(match(sb, "RAW"))
-            {
-                boost::asio::write(
-                    ws.next_layer(), sb.data(), ec);
-            }
-            else if(match(sb, "TEXT"))
-            {
-                ws.set_option(
-                    beast::websocket::message_type{
-                        beast::websocket::opcode::text});
-                ws.write(sb.data(), ec);
-            }
-            else if(match(sb, "PING"))
-            {
-                beast::websocket::ping_data payload;
-                sb.consume(buffer_copy(
-                    buffer(payload.data(), payload.size()),
-                        sb.data()));
-                ws.ping(payload, ec);
-            }
-            else if(match(sb, "CLOSE"))
-            {
-                ws.close({}, ec);
-            }
-            else
-            {
-                ws.write(sb.data(), ec);
-            }
+            ws.write(sb.data(), ec);
             if(ec)
                 break;
         }

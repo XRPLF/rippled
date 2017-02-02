@@ -40,15 +40,6 @@ P(DeducedHandler&& h, Args&&... args)
 }
 
 template<class T, class Handler>
-template<class DeducedHandler, class... Args>
-handler_ptr<T, Handler>::
-handler_ptr(int, DeducedHandler&& handler, Args&&... args)
-    : p_(new P(std::forward<DeducedHandler>(handler),
-        std::forward<Args>(args)...))
-{
-}
-
-template<class T, class Handler>
 handler_ptr<T, Handler>::
 ~handler_ptr()
 {
@@ -83,6 +74,27 @@ handler_ptr(handler_ptr const& other)
 }
 
 template<class T, class Handler>
+template<class... Args>
+handler_ptr<T, Handler>::
+handler_ptr(Handler&& handler, Args&&... args)
+    : p_(new P{std::move(handler),
+        std::forward<Args>(args)...})
+{
+    static_assert(! std::is_array<T>::value,
+        "T must not be an array type");
+}
+
+template<class T, class Handler>
+template<class... Args>
+handler_ptr<T, Handler>::
+handler_ptr(Handler const& handler, Args&&... args)
+    : p_(new P{handler, std::forward<Args>(args)...})
+{
+    static_assert(! std::is_array<T>::value,
+        "T must not be an array type");
+}
+
+template<class T, class Handler>
 auto
 handler_ptr<T, Handler>::
 release_handler() ->
@@ -110,27 +122,6 @@ invoke(Args&&... args)
         deallocate(p_->t, sizeof(T), p_->handler);
     p_->t = nullptr;
     p_->handler(std::forward<Args>(args)...);
-}
-
-template<
-    class T, class CompletionHandler, class... Args>
-handler_ptr<T, CompletionHandler>
-make_handler_ptr(
-    CompletionHandler&& handler, Args&&... args)
-{
-    return handler_ptr<T, CompletionHandler>{0,
-        std::move(handler),
-            std::forward<Args>(args)...};
-}
-
-template<
-    class T, class CompletionHandler, class... Args>
-handler_ptr<T, CompletionHandler>
-make_handler_ptr(
-    CompletionHandler const& handler, Args&&... args)
-{
-    return handler_ptr<T, CompletionHandler>{0,
-        handler, std::forward<Args>(args)...};
 }
 
 } // beast

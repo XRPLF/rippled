@@ -56,9 +56,8 @@ public:
     template<class DeducedHandler, class... Args>
     close_op(DeducedHandler&& h,
             stream<NextLayer>& ws, Args&&... args)
-        : d_(make_handler_ptr<data, Handler>(
-            std::forward<DeducedHandler>(h), ws,
-                std::forward<Args>(args)...))
+        : d_(std::forward<DeducedHandler>(h),
+            ws, std::forward<Args>(args)...)
     {
         (*this)(error_code{}, false);
     }

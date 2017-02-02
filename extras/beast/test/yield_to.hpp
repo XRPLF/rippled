@@ -21,9 +21,9 @@ namespace test {
 
 /** Mix-in to support tests using asio coroutines.
 
-    Derive from this class and use yield_to to launch test functions
-    inside coroutines. This is handy for testing asynchronous asio
-    code.
+    Derive from this class and use yield_to to launch test
+    functions inside coroutines. This is handy for testing
+    asynchronous asio code.
 */
 class enable_yield_to
 {
@@ -72,12 +72,32 @@ public:
         Function will be called with this signature:
 
         @code
-            void f(yield_context);
+            void f(args..., yield_context);
         @endcode
+
+        @param f The Callable object to invoke.
+
+        @param args Optional arguments forwarded to the callable object.
     */
-    template<class Function>
+#if GENERATING_DOCS
+    template<class F, class... Args>
     void
-    yield_to(Function&& f);
+    yield_to(F&& f, Args&&... args);
+#else
+    template<class F>
+    void
+    yield_to(F&& f);
+
+    template<class Function, class Arg, class... Args>
+    void
+    yield_to(Function&& f, Arg&& arg, Args&&... args)
+    {
+        yield_to(std::bind(f,
+            std::forward<Arg>(arg),
+                std::forward<Args>(args)...,
+                    std::placeholders::_1));
+    }
+#endif
 };
 
 template<class Function>

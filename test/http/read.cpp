@@ -378,17 +378,10 @@ public:
     {
         testThrow();
 
-        yield_to(std::bind(&read_test::testFailures,
-            this, std::placeholders::_1));
-
-        yield_to(std::bind(&read_test::testReadHeaders,
-            this, std::placeholders::_1));
-
-        yield_to(std::bind(&read_test::testRead,
-            this, std::placeholders::_1));
-
-        yield_to(std::bind(&read_test::testEof,
-            this, std::placeholders::_1));
+        yield_to(&read_test::testFailures, this);
+        yield_to(&read_test::testReadHeaders, this);
+        yield_to(&read_test::testRead, this);
+        yield_to(&read_test::testEof, this);
     }
 };
 

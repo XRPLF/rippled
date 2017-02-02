@@ -41,6 +41,17 @@ if (NOT WIN32)
     target_link_libraries(http-example ${Boost_LIBRARIES} Threads::Threads)
 endif()
 
+add_executable (websocket-echo
+    ${BEAST_INCLUDES}
+    websocket_async_echo_server.hpp
+    websocket_sync_echo_server.hpp
+    websocket_echo.cpp
+)
+
+if (NOT WIN32)
+    target_link_libraries(websocket-echo ${Boost_LIBRARIES} Threads::Threads)
+endif()
+
 add_executable (websocket-example
     ${BEAST_INCLUDES}
     ${EXTRAS_INCLUDES}

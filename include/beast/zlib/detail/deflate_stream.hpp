@@ -807,7 +807,7 @@ deflate_stream::get_lut() ->
             //std::uint16_t bl_count[maxBits+1];
 
             // Initialize the mapping length (0..255) -> length code (0..28)
-            std::uint8_t length = 0;
+            int length = 0;
             for(std::uint8_t code = 0; code < lengthCodes-1; ++code)
             {
                 tables.base_length[code] = length;
@@ -815,11 +815,11 @@ deflate_stream::get_lut() ->
                 for(unsigned n = 0; n < run; ++n)
                     tables.length_code[length++] = code;
             }
-            BOOST_ASSERT(length == 0);
+            BOOST_ASSERT(length == 256);
             // Note that the length 255 (match length 258) can be represented
             // in two different ways: code 284 + 5 bits or code 285, so we
             // overwrite length_code[255] to use the best encoding:
-            tables.length_code[length-1] = lengthCodes-1;
+            tables.length_code[255] = lengthCodes-1;
 
             // Initialize the mapping dist (0..32K) -> dist code (0..29)
             {

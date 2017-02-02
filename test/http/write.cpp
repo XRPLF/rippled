@@ -702,12 +702,9 @@ public:
 
     void run() override
     {
-        yield_to(std::bind(&write_test::testAsyncWriteHeaders,
-            this, std::placeholders::_1));
-        yield_to(std::bind(&write_test::testAsyncWrite,
-            this, std::placeholders::_1));
-        yield_to(std::bind(&write_test::testFailures,
-            this, std::placeholders::_1));
+        yield_to(&write_test::testAsyncWriteHeaders, this);
+        yield_to(&write_test::testAsyncWrite, this);
+        yield_to(&write_test::testFailures, this);
         testOutput();
         test_std_ostream();
         testOstream();

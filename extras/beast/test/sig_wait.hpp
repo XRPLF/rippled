@@ -9,8 +9,6 @@
 #define BEAST_TEST_SIG_WAIT_HPP
 
 #include <boost/asio.hpp>
-#include <condition_variable>
-#include <mutex>
 
 namespace beast {
 namespace test {

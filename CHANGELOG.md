@@ -1,3 +1,33 @@
+1.0.0-b26
+
+* Tidy up warnings and tests
+
+--------------------------------------------------------------------------------
+
+1.0.0-b25
+
+* Fixes for WebSocket echo server
+* Fix 32-bit arm7 warnings
+* Remove unnecessary include
+* WebSocket server examples and test tidying
+* Fix deflate setup bug
+
+API Changes:
+
+* Better handler_ptr
+
+--------------------------------------------------------------------------------
+
+1.0.0-b24
+
+* bjam use clang on MACOSX
+* Simplify Travis package install specification
+* Add optional yield_to arguments
+* Make decorator copyable
+* Add WebSocket permessage-deflate extension support
+
+--------------------------------------------------------------------------------
+
 1.0.0-b23
 
 * Tune websocket echo server for performance
@@ -5,7 +35,7 @@
 * Better logging in async echo server
 * Add copy special members
 * Fix message constructor and special members
-* Travis CI improvements 
+* Travis CI improvements
 
 --------------------------------------------------------------------------------
 

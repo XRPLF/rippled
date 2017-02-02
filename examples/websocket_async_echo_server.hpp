@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_WEBSOCKET_ASYNC_ECHO_SERVER_HPP
-#define BEAST_WEBSOCKET_ASYNC_ECHO_SERVER_HPP
+#ifndef WEBSOCKET_ASYNC_ECHO_SERVER_HPP
+#define WEBSOCKET_ASYNC_ECHO_SERVER_HPP
 
 #include <beast/core/placeholders.hpp>
 #include <beast/core/streambuf.hpp>
@@ -285,25 +285,6 @@ private:
             d.ws.async_accept(std::move(*this));
         }
 
-        template<class DynamicBuffer, std::size_t N>
-        static
-        bool
-        match(DynamicBuffer& db, char const(&s)[N])
-        {
-            using boost::asio::buffer;
-            using boost::asio::buffer_copy;
-            if(db.size() < N-1)
-                return false;
-            beast::static_string<N-1> t;
-            t.resize(N-1);
-            buffer_copy(buffer(t.data(), t.size()),
-                db.data());
-            if(t != s)
-                return false;
-            db.consume(N-1);
-            return true;
-        }
-
         void operator()(error_code ec, std::size_t)
         {
             (*this)(ec);
@@ -338,41 +319,6 @@ private:
                     return;
                 if(ec)
                     return fail("async_read", ec);
-                if(match(d.db, "RAW"))
-                {
-                    d.state = 1;
-                    boost::asio::async_write(d.ws.next_layer(),
-                        d.db.data(), d.strand.wrap(std::move(*this)));
-                    return;
-                }
-                else if(match(d.db, "TEXT"))
-                {
-                    d.state = 1;
-                    d.ws.set_option(
-                        beast::websocket::message_type{
-                            beast::websocket::opcode::text});
-                    d.ws.async_write(
-                        d.db.data(), d.strand.wrap(std::move(*this)));
-                    return;
-                }
-                else if(match(d.db, "PING"))
-                {
-                    beast::websocket::ping_data payload;
-                    d.db.consume(buffer_copy(
-                        buffer(payload.data(), payload.size()),
-                            d.db.data()));
-                    d.state = 1;
-                    d.ws.async_ping(payload,
-                        d.strand.wrap(std::move(*this)));
-                    return;
-                }
-                else if(match(d.db, "CLOSE"))
-                {
-                    d.state = 1;
-                    d.ws.async_close({},
-                        d.strand.wrap(std::move(*this)));
-                    return;
-                }
                 // write message
                 d.state = 1;
                 d.ws.set_option(

@@ -45,9 +45,8 @@ public:
     template<class DeducedHandler, class... Args>
     read_some_op(DeducedHandler&& h,
             dynabuf_readstream& srs, Args&&... args)
-        : d_(make_handler_ptr<data, Handler>(
-            std::forward<DeducedHandler>(h), srs,
-                std::forward<Args>(args)...))
+        : d_(std::forward<DeducedHandler>(h),
+            srs, std::forward<Args>(args)...)
     {
         (*this)(error_code{}, 0);
     }

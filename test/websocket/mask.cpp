@@ -28,6 +28,11 @@ public:
         {
         }
 
+        void
+        seed(result_type const&)
+        {
+        }
+
         std::uint32_t
         operator()()
         {

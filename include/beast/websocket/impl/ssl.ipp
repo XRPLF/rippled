@@ -59,9 +59,7 @@ public:
     explicit
     teardown_ssl_op(
             DeducedHandler&& h, stream_type& stream)
-        : d_(make_handler_ptr<data, Handler>(
-            std::forward<DeducedHandler>(
-                h), stream))
+        : d_(std::forward<DeducedHandler>(h), stream)
     {
         (*this)(error_code{}, false);
     }

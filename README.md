@@ -8,19 +8,15 @@
 (https://img.shields.io/badge/documentation-master-brightgreen.svg)](http://vinniefalco.github.io/beast/) [![License]
 (https://img.shields.io/badge/license-boost-brightgreen.svg)](LICENSE_1_0.txt)
 
-# HTTP and WebSocket implementations built on Boost.Asio
+# HTTP and WebSocket built on Boost.Asio in C++11
 
 ---
 
-## Beast at CppCon 2016
+## Appearances
 
-Presentation
-(slides: <a href="https://raw.githubusercontent.com/vinniefalco/Beast/master/doc/images/CppCon2016.pdf">CppCon2016.pdf</a>)
-
-<a href="https://www.youtube.com/watch?v=uJZgRcvPFwI">
-<img width="320" height = "180" alt = "Beast"
-    src="https://raw.githubusercontent.com/vinniefalco/Beast/master/doc/images/CppCon2016.png">
-</a>
+| <a href="http://cppcast.com/2017/01/vinnie-falco/">CppCast 2017</a> | <a href="https://raw.githubusercontent.com/vinniefalco/Beast/master/doc/images/CppCon2016.pdf">CppCon 2016</a> |
+| ------------ | ----------- |
+| <a href="http://cppcast.com/2017/01/vinnie-falco/"><img width="180" height="180" alt="Vinnie Falco" src="https://avatars1.githubusercontent.com/u/1503976?v=3&u=76c56d989ef4c09625256662eca2775df78a16ad&s=180"></a> | <a href="https://www.youtube.com/watch?v=uJZgRcvPFwI"><img width="320" height = "180" alt="Beast" src="https://raw.githubusercontent.com/vinniefalco/Beast/master/doc/images/CppCon2016.png"></a> |
 
 ---
 
