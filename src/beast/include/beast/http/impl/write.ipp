@@ -126,9 +126,8 @@ public:
     template<class DeducedHandler, class... Args>
     write_streambuf_op(DeducedHandler&& h, Stream& s,
             Args&&... args)
-        : d_(make_handler_ptr<data, Handler>(
-            std::forward<DeducedHandler>(h),
-                s, std::forward<Args>(args)...))
+        : d_(std::forward<DeducedHandler>(h),
+            s, std::forward<Args>(args)...)
     {
         (*this)(error_code{}, 0, false);
     }
@@ -373,9 +372,8 @@ public:
 
     template<class DeducedHandler, class... Args>
     write_op(DeducedHandler&& h, Stream& s, Args&&... args)
-        : d_(make_handler_ptr<data, Handler>(
-            std::forward<DeducedHandler>(h), s,
-                std::forward<Args>(args)...))
+        : d_(std::forward<DeducedHandler>(h),
+            s, std::forward<Args>(args)...)
     {
         auto& d = *d_;
         auto sp = d_;

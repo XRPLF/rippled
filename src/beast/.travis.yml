@@ -13,21 +13,25 @@ env:
     - VALGRIND_ROOT=$HOME/valgrind-install
     - BOOST_ROOT=$HOME/boost_1_61_0
     - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.gz'
-packages: &gcc5_pkgs
-  - gcc-5
-  - g++-5
-  - python-software-properties
-  - libssl-dev
-  - libffi-dev
-  - libstdc++6
-  - binutils-gold
-  # Provides a backtrace if the unittests crash
-  - gdb
-  # Needed for installing valgrind
-  - subversion
-  - automake
-  - autotools-dev
-  - libc6-dbg
+
+addons:
+  apt:
+    sources: ['ubuntu-toolchain-r-test']
+    packages:
+      - gcc-5
+      - g++-5
+      - python-software-properties
+      - libssl-dev
+      - libffi-dev
+      - libstdc++6
+      - binutils-gold
+      # Provides a backtrace if the unittests crash
+      - gdb
+      # Needed for installing valgrind
+      - subversion
+      - automake
+      - autotools-dev
+      - libc6-dbg
 
 matrix:
   include:
@@ -39,10 +43,6 @@ matrix:
         - ADDRESS_MODEL=64
         - BUILD_SYSTEM=cmake
         - PATH=$PWD/cmake/bin:$PATH
-      addons: &ao_gcc5
-        apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: *gcc5_pkgs
 
     # Clang/UndefinedBehaviourSanitizer
     - compiler: clang
@@ -55,7 +55,6 @@ matrix:
         - BUILD_SYSTEM=cmake
         - PATH=$PWD/cmake/bin:$PATH
         - PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
-      addons: *ao_gcc5
 
     # Clang/AddressSanitizer
     - compiler: clang
@@ -65,7 +64,6 @@ matrix:
         - CLANG_VER=3.8
         - ADDRESS_MODEL=64
         - PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
-      addons: *ao_gcc5
 
 cache:
   directories:

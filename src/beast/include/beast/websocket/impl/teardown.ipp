@@ -47,9 +47,7 @@ public:
     teardown_tcp_op(
         DeducedHandler&& h,
             socket_type& socket)
-        : d_(make_handler_ptr<data, Handler>(
-            std::forward<DeducedHandler>(
-                h), socket))
+        : d_(std::forward<DeducedHandler>(h), socket)
     {
         (*this)(error_code{}, 0, false);
     }

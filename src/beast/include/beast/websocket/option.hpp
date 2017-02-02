@@ -105,15 +105,7 @@ struct auto_fragment
 #if GENERATING_DOCS
 using decorate = implementation_defined;
 #else
-template<class Decorator>
-inline
-detail::decorator_type
-decorate(Decorator&& d)
-{
-    return detail::decorator_type{new
-        detail::decorator<typename std::decay<Decorator>::type>{
-            std::forward<Decorator>(d)}};
-}
+using decorate = detail::decorator_type;
 #endif
 
 /** Keep-alive option.
@@ -200,6 +192,47 @@ using pong_cb = std::function<void(ping_data const&)>;
 
 } // detail
 
+/** permessage-deflate extension options.
+
+    These settings control the permessage-deflate extension,
+    which allows messages to be compressed.
+
+    @note Objects of this type are used with
+          @ref beast::websocket::stream::set_option.
+*/
+struct permessage_deflate
+{
+    /// `true` to offer the extension in the server role
+    bool server_enable = false;
+
+    /// `true` to offer the extension in the client role
+    bool client_enable = false;
+
+    /** Maximum server window bits to offer
+        
+        @note Due to a bug in ZLib, this value must be greater than 8.
+    */
+    int server_max_window_bits = 15;
+
+    /** Maximum client window bits to offer
+        
+        @note Due to a bug in ZLib, this value must be greater than 8.
+    */
+    int client_max_window_bits = 15;
+
+    /// `true` if server_no_context_takeover desired
+    bool server_no_context_takeover = false;
+
+    /// `true` if client_no_context_takeover desired
+    bool client_no_context_takeover = false;
+
+    /// Deflate compression level 0..9
+    int compLevel = 8;
+
+    /// Deflate memory level, 1..9
+    int memLevel = 4;
+};
+
 /** Pong callback option.
 
     Sets the callback to be invoked whenever a pong is received
@@ -250,12 +283,15 @@ struct pong_callback
 
 /** Read buffer size option.
 
-    Sets the number of bytes allocated to the socket's read buffer.
-    If this is zero, then reads are not buffered. Setting this
-    higher can improve performance when expecting to receive
-    many small frames.
+    Sets the size of the read buffer used by the implementation to
+    receive frames. The read buffer is needed when permessage-deflate
+    is used.
 
-    The default is no buffering.
+    Lowering the size of the buffer can decrease the memory requirements
+    for each connection, while increasing the size of the buffer can reduce
+    the number of calls made to the next layer to read data.
+
+    The default setting is 4096. The minimum value is 8.
 
     @note Objects of this type are used with
           @ref beast::websocket::stream::set_option.

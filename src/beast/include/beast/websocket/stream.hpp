@@ -194,10 +194,10 @@ public:
 #if GENERATING_DOCS
     set_option(implementation_defined o)
 #else
-    set_option(detail::decorator_type o)
+    set_option(detail::decorator_type const& o)
 #endif
     {
-        d_ = std::move(o);
+        d_ = o;
     }
 
     /// Set the keep-alive option
@@ -214,6 +214,17 @@ public:
         wr_opcode_ = o.value;
     }
 
+    /// Set the permessage-deflate extension options
+    void
+    set_option(permessage_deflate const& o);
+
+    /// Get the permessage-deflate extension options
+    void
+    get_option(permessage_deflate& o)
+    {
+        o = pmd_opts_;
+    }
+
     /// Set the pong callback
     void
     set_option(pong_callback o)
@@ -225,7 +236,9 @@ public:
     void
     set_option(read_buffer_size const& o)
     {
-        stream_.capacity(o.value);
+        rd_buf_size_ = o.value;
+        // VFALCO What was the thinking here?
+        //stream_.capacity(o.value);
     }
 
     /// Set the maximum incoming message size allowed
@@ -1635,10 +1648,6 @@ private:
     void
     do_response(http::response<Body, Fields> const& resp,
         boost::string_ref const& key, error_code& ec);
-
-    void
-    do_read_fh(detail::frame_streambuf& fb,
-        close_code::value& code, error_code& ec);
 };
 
 } // websocket

@@ -598,9 +598,9 @@ basic_streambuf<Allocator>::prepare(size_type n) ->
     while(n > 0)
     {
         auto const size = std::max(alloc_size_, n);
-        auto& e = *reinterpret_cast<element*>(
-            alloc_traits::allocate(this->member(),
-                sizeof(element) + size));
+        auto& e = *reinterpret_cast<element*>(static_cast<
+            void*>(alloc_traits::allocate(this->member(),
+                sizeof(element) + size)));
         alloc_traits::construct(this->member(), &e, size);
         list_.push_back(e);
         if(out_ == list_.end())

@@ -59,7 +59,7 @@ your particular build system.
 
 [heading Motivation]
 
-Beast is built on Boost.Asio A proposal to add networking functionality to the
+Beast is built on Boost.Asio. A proposal to add networking functionality to the
 C++ standard library, based on Boost.Asio, is under consideration by the
 committee and on track for standardization. Since the final approved networking
 interface for the C++ standard library will likely closely resemble the current

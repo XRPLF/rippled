@@ -85,6 +85,15 @@ int main()
 }
 ```
 
+[heading WebSocket Echo Server]
+
+This example demonstrates both synchronous and asynchronous
+WebSocket server implementations.
+
+* [@examples/websocket_async_echo_server.hpp]
+* [@examples/websocket_ssync_echo_server.hpp]
+* [@examples/websocket_echo.cpp]
+
 [heading Secure WebSocket]
 
 Establish a WebSocket connection over an encrypted TLS connection,

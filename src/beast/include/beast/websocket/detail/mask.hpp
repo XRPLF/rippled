@@ -60,11 +60,17 @@ void
 maskgen_t<_>::rekey()
 {
     std::random_device rng;
+#if 0
     std::array<std::uint32_t, 32> e;
     for(auto& i : e)
         i = rng();
+    // VFALCO This constructor causes
+    //        address sanitizer to fail, no idea why.
     std::seed_seq ss(e.begin(), e.end());
     g_.seed(ss);
+#else
+    g_.seed(rng());
+#endif
 }
 
 // VFALCO NOTE This generator has 5KB of state!
@@ -73,7 +79,7 @@ using maskgen = maskgen_t<std::minstd_rand>;
 
 //------------------------------------------------------------------------------
 
-using prepared_key_type =
+using prepared_key =
     std::conditional<sizeof(void*) == 8,
         std::uint64_t, std::uint32_t>::type;
 

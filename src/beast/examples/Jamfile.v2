@@ -18,6 +18,10 @@ exe http-example :
     http_example.cpp
     ;
 
+exe websocket-echo :
+    websocket_echo.cpp
+    ;
+
 exe websocket-example :
     websocket_example.cpp
     ;

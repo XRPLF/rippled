@@ -83,10 +83,6 @@ unit-test websocket-tests :
     websocket/utf8_checker.cpp
     ;
 
-exe websocket-echo :
-    websocket/websocket_echo.cpp
-    ;
-
 unit-test zlib-tests :
     ../extras/beast/unit_test/main.cpp
     zlib/zlib-1.2.8/adler32.c

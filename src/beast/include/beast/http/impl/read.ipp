@@ -64,9 +64,8 @@ public:
     template<class DeducedHandler, class... Args>
     read_header_op(
             DeducedHandler&& h, Stream& s, Args&&... args)
-        : d_(make_handler_ptr<data, Handler>(
-            std::forward<DeducedHandler>(h), s,
-                std::forward<Args>(args)...))
+        : d_(std::forward<DeducedHandler>(h),
+                s, std::forward<Args>(args)...)
     {
         (*this)(error_code{}, false);
     }
@@ -236,9 +235,8 @@ public:
 
     template<class DeducedHandler, class... Args>
     read_op(DeducedHandler&& h, Stream& s, Args&&... args)
-        : d_(make_handler_ptr<data, Handler>(
-            std::forward<DeducedHandler>(h), s,
-                std::forward<Args>(args)...))
+        : d_(std::forward<DeducedHandler>(h),
+            s, std::forward<Args>(args)...)
     {
         (*this)(error_code{}, false);
     }

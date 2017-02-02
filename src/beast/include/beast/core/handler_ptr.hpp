@@ -11,23 +11,25 @@
 #include <beast/core/detail/type_traits.hpp>
 #include <atomic>
 #include <cstdint>
+#include <type_traits>
 #include <utility>
 
 namespace beast {
 
-/** A smart pointer container.
+/** A smart pointer container with associated completion handler.
 
     This is a smart pointer that retains shared ownership of an
     object through a pointer. Memory is managed using the allocation
     and deallocation functions associated with a completion handler,
-    which is also stored in the object. The object is destroyed and
-    its memory deallocated when one of the following happens:
+    which is also stored in the object. The managed object is
+    destroyed and its memory deallocated when one of the following
+    happens:
 
     @li The function @ref invoke is called.
-    
-    @li The function @ref release_handler is called
-    
-    @li The last remaining container owning the object is destroyed
+
+    @li The function @ref release_handler is called.
+
+    @li The last remaining container owning the object is destroyed.
 
     Objects of this type are used in the implementation of
     composed operations. Typically the composed operation's shared
@@ -38,6 +40,10 @@ namespace beast {
     @note The reference count is stored using a 16 bit unsigned
     integer. Making more than 2^16 copies of one object results
     in undefined behavior.
+
+    @tparam T The type of the owned object.
+
+    @tparam Handler The type of the completion handler.
 */
 template<class T, class Handler>
 class handler_ptr
@@ -60,10 +66,10 @@ class handler_ptr
 
     P* p_;
 
-    template<class DeducedHandler, class... Args>
-    handler_ptr(int, DeducedHandler&& handler, Args&&... args);
-
 public:
+    /// The type of element this object stores
+    using element_type = T;
+
     /// The type of handler this object stores
     using handler_type = Handler;
 
@@ -88,6 +94,46 @@ public:
     /// Copy constructor
     handler_ptr(handler_ptr const& other);
 
+    /** Construct a new @ref handler_ptr
+
+        This creates a new @ref handler_ptr with an owned object
+        of type `T`. The allocator associated with the handler will
+        be used to allocate memory for the owned object. The constructor
+        for the owned object will be called thusly:
+
+        @code
+            T(handler, std::forward<Args>(args)...)
+        @endcode
+
+        @param handler The handler to associate with the owned
+        object. The argument will be moved.
+
+        @param args Optional arguments forwarded to
+        the owned object's constructor.
+    */
+    template<class... Args>
+    handler_ptr(Handler&& handler, Args&&... args);
+
+    /** Construct a new @ref handler_ptr
+
+        This creates a new @ref handler_ptr with an owned object
+        of type `T`. The allocator associated with the handler will
+        be used to allocate memory for the owned object. The constructor
+        for the owned object will be called thusly:
+
+        @code
+            T(handler, std::forward<Args>(args)...)
+        @endcode
+
+        @param handler The handler to associate with the owned
+        object. The argument will be copied.
+
+        @param args Optional arguments forwarded to
+        the owned object's constructor.
+    */
+    template<class... Args>
+    handler_ptr(Handler const& handler, Args&&... args);
+
     /// Returns a reference to the handler
     handler_type&
     handler() const
@@ -95,25 +141,36 @@ public:
         return p_->handler;
     }
 
-    /// Returns a pointer to the owned object
+    /// Returns `true` if `*this` owns an object.
+    explicit
+    operator bool() const
+    {
+        return p_ && p_->t;
+    }
+
+    /** Returns a pointer to the owned object.
+
+        If `*this` owns an object, a pointer to the
+        object is returned, else `nullptr` is returned.
+    */
     T*
     get() const
     {
-        return p_->t;
+        return p_ ? p_->t : nullptr;
     }
 
     /// Return a reference to the owned object.
     T&
     operator*() const
     {
-        return *get();
+        return *p_->t;
     }
 
     /// Return a pointer to the owned object.
     T*
     operator->() const
     {
-        return get();
+        return p_->t;
     }
 
     /** Release ownership of the handler
@@ -137,33 +194,6 @@ public:
     template<class... Args>
     void
     invoke(Args&&... args);
-
-    // VFALCO The free function interface works around
-    //        a horrible Visual Studio 15 Update 3 bug
-
-    /** Construct a new `handler_ptr`.
-
-        @param handler The handler. The allocator associated with
-        the handler will be used to allocate memory for the owned
-        object. This argument will be forwarded to the owned object's
-        constructor.
-
-        @param args Optional arguments forwarded to
-        the owned object's constructor.
-    */
-    /** @{ */
-    template<class U, class CompletionHandler, class... Args>
-    friend
-    handler_ptr<U, CompletionHandler>
-    make_handler_ptr(
-        CompletionHandler&& handler, Args&&... args);
-
-    template<class U, class CompletionHandler, class... Args>
-    friend
-    handler_ptr<U, CompletionHandler>
-    make_handler_ptr(
-        CompletionHandler const& handler, Args&&... args);
-    /** @} */
 };
 
 } // beast
