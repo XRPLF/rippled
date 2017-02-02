@@ -79,6 +79,18 @@ features (uint256 const& key, Args const&... args)
     return {{key, args...}};
 }
 
+// two tag types used to invoke specializations
+// of construct_arg that will modify the configuration
+struct admin_t {
+    admin_t(bool is_admin) : is_admin(is_admin) {};
+    bool is_admin;
+};
+extern admin_t const no_admin_cfg;
+extern admin_t const admin_cfg;
+
+struct validator_t { validator_t() = default; };
+extern validator_t const validator_cfg;
+
 //------------------------------------------------------------------------------
 
 /** A transaction testing environment. */
@@ -106,7 +118,24 @@ private:
         ~AppBundle();
     };
 
-    AppBundle bundle_;
+    mutable std::unique_ptr<Config> config_;
+    mutable std::unique_ptr<AppBundle> bundle_;
+
+    AppBundle&
+    bundle()
+    {
+        if(! bundle_)
+            bundle_.reset(new AppBundle(test, std::move(config_)));
+        return *bundle_;
+    }
+
+    AppBundle const&
+    bundle() const
+    {
+        if(! bundle_)
+            bundle_.reset(new AppBundle(test, std::move(config_)));
+        return *bundle_;
+    }
 
     inline
     void
@@ -128,8 +157,14 @@ private:
         std::array<uint256, N> const& list)
     {
         for(auto const& key : list)
-            app().config().features.insert(key);
+            config().features.insert(key);
     }
+
+    void
+    construct_arg (validator_t const&);
+
+    void
+    construct_arg (admin_t const&);
 
 public:
     Env() = delete;
@@ -142,8 +177,9 @@ public:
         std::unique_ptr<Config> config,
             Args&&... args)
         : test (suite_)
-        , bundle_ (suite_, std::move(config))
+        , config_(std::move(config))
     {
+        setupConfigForUnitTests(*config_);
         memoize(Account::master);
         Pathfinder::initPathTable();
         construct(std::forward<Args>(args)...);
@@ -152,31 +188,34 @@ public:
     template <class... Args>
     Env (beast::unit_test::suite& suite_,
             Args&&... args)
-        : Env(suite_, []()
-            {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                return p;
-            }(), std::forward<Args>(args)...)
+        : Env(suite_,
+              std::make_unique<Config>(),
+              std::forward<Args>(args)...)
     {
     }
 
     Application&
     app()
     {
-        return *bundle_.app;
+        return *bundle().app;
     }
 
     Application const&
     app() const
     {
-        return *bundle_.app;
+        return *bundle().app;
+    }
+
+    Config&
+    config()
+    {
+        return config_ ? *config_ : app().config();
     }
 
     ManualTimeKeeper&
     timeKeeper()
     {
-        return *bundle_.timeKeeper;
+        return *bundle().timeKeeper;
     }
 
     /** Returns the current Ripple Network Time
@@ -194,7 +233,7 @@ public:
     AbstractClient&
     client()
     {
-        return *bundle_.client;
+        return *bundle().client;
     }
 
     /** Execute an RPC command.
