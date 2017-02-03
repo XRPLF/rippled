@@ -125,26 +125,27 @@ public:
     Rules (Rules const&) = default;
     Rules& operator= (Rules const&) = default;
 
+    Rules() = delete;
+
     /** Construct an empty rule set.
 
         These are the rules reflected by
         the genesis ledger.
     */
-    Rules() = default;
+    explicit Rules(std::unordered_set<uint256, beast::uhash<>> const& presets);
 
     /** Construct rules from a ledger.
 
         The ledger contents are analyzed for rules
         and amendments and extracted to the object.
     */
-    explicit
-    Rules (DigestAwareReadView const& ledger);
+    explicit Rules(
+        DigestAwareReadView const& ledger,
+            std::unordered_set<uint256, beast::uhash<>> const& presets);
 
     /** Returns `true` if a feature is enabled. */
     bool
-    enabled (uint256 const& id,
-        std::unordered_set<uint256,
-            beast::uhash<>> const& presets) const;
+    enabled (uint256 const& id) const;
 
     /** Returns `true` if these rules don't match the ledger. */
     bool
