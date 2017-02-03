@@ -406,7 +406,6 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr.isMember(jss::ledger));
             BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
             BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
-            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
             BEAST_EXPECT(jrr.isMember(jss::ledger_index));
 
             jvParams[jss::ledger_index] = "validated";

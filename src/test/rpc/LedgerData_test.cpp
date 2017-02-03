@@ -19,7 +19,6 @@
 
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/app/ledger/LedgerMaster.h>
 #include <test/jtx.h>
 
 namespace ripple {
