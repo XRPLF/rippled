@@ -431,7 +431,7 @@ transactionPreProcessImpl (
 
             auto seq = (*sle)[sfSequence];
             auto const queued = app.getTxQ().getAccountTxs(srcAddressID,
-                app.config(), *ledger);
+                *ledger);
             // If the account has any txs in the TxQ, skip those sequence
             // numbers (accounting for possible gaps).
             if(queued)
@@ -704,7 +704,7 @@ Json::Value checkFee (
         auto const assumeTx = request.isMember("x_assume_tx") &&
             request["x_assume_tx"].isConvertibleTo(Json::uintValue) ?
                 request["x_assume_tx"].asUInt() : 0;
-        auto const metrics = txQ.getMetrics(config, *ledger, assumeTx);
+        auto const metrics = txQ.getMetrics(*ledger, assumeTx);
         if(metrics)
         {
             auto const baseFee = ledger->fees().base;

@@ -158,7 +158,7 @@ closeChannel (
 TER
 PayChanCreate::preflight (PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled (featurePayChan, ctx.app.config ().features))
+    if (!ctx.rules.enabled (featurePayChan))
         return temDISABLED;
 
     auto const ret = preflight1 (ctx);
@@ -258,7 +258,7 @@ PayChanCreate::doApply()
 TER
 PayChanFund::preflight (PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled (featurePayChan, ctx.app.config ().features))
+    if (!ctx.rules.enabled (featurePayChan))
         return temDISABLED;
 
     auto const ret = preflight1 (ctx);
@@ -340,8 +340,7 @@ PayChanFund::doApply()
 TER
 PayChanClaim::preflight (PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featurePayChan,
-            ctx.app.config().features))
+    if (! ctx.rules.enabled(featurePayChan))
         return temDISABLED;
 
     auto const ret = preflight1 (ctx);

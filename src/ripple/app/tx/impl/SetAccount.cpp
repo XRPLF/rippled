@@ -127,8 +127,7 @@ SetAccount::preflight (PreflightContext const& ctx)
     // TickSize
     if (tx.isFieldPresent (sfTickSize))
     {
-        if (!ctx.rules.enabled(featureTickSize,
-            ctx.app.config().features))
+        if (!ctx.rules.enabled(featureTickSize))
             return temDISABLED;
 
         auto uTickSize = tx[sfTickSize];
@@ -291,8 +290,7 @@ SetAccount::doApply ()
             // Account has no regular key or multi-signer signer list.
 
             // Prevent transaction changes until we're ready.
-            if (view().rules().enabled(featureMultiSign,
-                    ctx_.app.config().features))
+            if (view().rules().enabled(featureMultiSign))
                 return tecNO_ALTERNATIVE_KEY;
 
             return tecNO_REGULAR_KEY;

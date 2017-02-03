@@ -105,6 +105,7 @@ public:
 
     Ledger (
         LedgerInfo const& info,
+        Config const& config,
         Family& family);
 
     // Used for ledgers loaded from JSON files

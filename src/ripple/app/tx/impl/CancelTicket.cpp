@@ -29,8 +29,7 @@ namespace ripple {
 TER
 CancelTicket::preflight (PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featureTickets,
-            ctx.app.config().features))
+    if (! ctx.rules.enabled(featureTickets))
         return temDISABLED;
 
     auto const ret = preflight1 (ctx);

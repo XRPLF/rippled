@@ -116,7 +116,7 @@ Json::Value doAccountInfo (RPC::Context& context)
             Json::Value jvQueueData = Json::objectValue;
 
             auto const txs = context.app.getTxQ().getAccountTxs(
-                accountID, context.app.config(), *ledger);
+                accountID, *ledger);
             if (txs && !txs->empty())
             {
                 jvQueueData[jss::txn_count] = static_cast<Json::UInt>(txs->size());

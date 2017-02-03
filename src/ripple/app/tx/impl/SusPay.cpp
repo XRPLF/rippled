@@ -143,8 +143,7 @@ SusPayCreate::calculateMaxSpend(STTx const& tx)
 TER
 SusPayCreate::preflight (PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featureSusPay,
-            ctx.app.config().features))
+    if (! ctx.rules.enabled(featureSusPay))
         return temDISABLED;
 
     auto const ret = preflight1 (ctx);
@@ -167,8 +166,7 @@ SusPayCreate::preflight (PreflightContext const& ctx)
 
     if (auto const cb = ctx.tx[~sfCondition])
     {
-        if (! ctx.rules.enabled(featureCryptoConditions,
-                ctx.app.config().features))
+        if (! ctx.rules.enabled(featureCryptoConditions))
             return temDISABLED;
 
         using namespace ripple::cryptoconditions;
@@ -336,8 +334,7 @@ checkCondition (Slice f, Slice c)
 TER
 SusPayFinish::preflight (PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featureSusPay,
-            ctx.app.config().features))
+    if (! ctx.rules.enabled(featureSusPay))
         return temDISABLED;
 
     {
@@ -351,8 +348,7 @@ SusPayFinish::preflight (PreflightContext const& ctx)
 
     if (cb || fb)
     {
-        if (! ctx.rules.enabled(featureCryptoConditions,
-                ctx.app.config().features))
+        if (! ctx.rules.enabled(featureCryptoConditions))
             return temDISABLED;
     }
 
@@ -516,8 +512,7 @@ SusPayFinish::doApply()
 TER
 SusPayCancel::preflight (PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featureSusPay,
-            ctx.app.config().features))
+    if (! ctx.rules.enabled(featureSusPay))
         return temDISABLED;
 
     auto const ret = preflight1 (ctx);
