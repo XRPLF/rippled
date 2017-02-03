@@ -44,7 +44,11 @@ if [ ${ubuntu_release} == "14.04" ] || [ ${ubuntu_release} == "15.04" ]; then
     exit 0
 fi
 
-if [ ${ubuntu_release} == "16.04" ] || [ ${ubuntu_release} == "15.10" ]; then
+# Test if 0th parameter has a version number greater than or equal to the 1st param
+function version_check() { test "$(printf '%s\n' "$@" | sort -V | tail -n 1)" == "$1"; }
+
+# this should work for versions greater than 15.10
+if version_check ${ubuntu_release} 15.10; then
     apt-get update
     apt-get -y upgrade
     apt-get -y install python-software-properties curl git scons ctags pkg-config protobuf-compiler libprotobuf-dev libssl-dev python-software-properties libboost-all-dev
