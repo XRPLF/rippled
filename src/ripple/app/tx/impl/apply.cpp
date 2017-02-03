@@ -40,8 +40,7 @@ checkValidity(HashRouter& router,
         Config const& config)
 {
     auto const allowMultiSign =
-        rules.enabled(featureMultiSign,
-            config.features);
+        rules.enabled(featureMultiSign);
 
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);

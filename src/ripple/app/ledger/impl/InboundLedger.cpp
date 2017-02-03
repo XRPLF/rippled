@@ -255,6 +255,7 @@ bool InboundLedger::tryLocal ()
 
             mLedger = std::make_shared<Ledger> (
                 deserializeHeader (makeSlice(*data), true),
+                app_.config(),
                 app_.family());
 
             app_.getNodeStore ().store (
@@ -264,6 +265,7 @@ bool InboundLedger::tryLocal ()
         {
             mLedger = std::make_shared<Ledger>(
                 deserializeHeader (makeSlice (node->getData()), true),
+                app_.config(),
                 app_.family());
         }
 
@@ -799,6 +801,7 @@ bool InboundLedger::takeHeader (std::string const& data)
 
     mLedger = std::make_shared<Ledger>(
         deserializeHeader (makeSlice(data), false),
+        app_.config(),
         app_.family());
 
     if (mLedger->info().hash != mHash)

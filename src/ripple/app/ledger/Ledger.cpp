@@ -195,6 +195,7 @@ Ledger::Ledger (
         family, SHAMap::version{1}))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
         family, SHAMap::version{1}))
+    , rules_{config.features}
 {
     info_.seq = 1;
     info_.drops = SYSTEM_CURRENCY_START;
@@ -233,6 +234,7 @@ Ledger::Ledger (
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
         info.accountHash, family,
         SHAMap::version{getSHAMapV2(info) ? 2 : 1}))
+    , rules_ (config.features)
     , info_ (info)
 {
     loaded = true;
@@ -305,12 +307,14 @@ Ledger::Ledger (Ledger const& prevLedger,
 
 Ledger::Ledger (
         LedgerInfo const& info,
+        Config const& config,
         Family& family)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         info.txHash, family, SHAMap::version{1}))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
         info.accountHash, family, SHAMap::version{1}))
+    , rules_{config.features}
     , info_ (info)
 {
     info_.hash = calculateLedgerHash (info_);
@@ -324,6 +328,7 @@ Ledger::Ledger (std::uint32_t ledgerSeq,
           SHAMapType::TRANSACTION, family, SHAMap::version{1}))
     , stateMap_ (std::make_shared <SHAMap> (
           SHAMapType::STATE, family, SHAMap::version{1}))
+    , rules_{config.features}
 {
     info_.seq = ledgerSeq;
     info_.closeTime = closeTime;
@@ -624,7 +629,7 @@ Ledger::setup (Config const& config)
 
     try
     {
-        rules_ = Rules(*this);
+        rules_ = Rules(*this, config.features);
     }
     catch (SHAMapMissingNode &)
     {

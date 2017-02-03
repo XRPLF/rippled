@@ -24,7 +24,6 @@
 #include <ripple/app/paths/cursor/PathCursor.h>
 #include <ripple/app/paths/impl/FlowDebugInfo.h>
 #include <ripple/basics/Log.h>
-#include <ripple/core/Config.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 
@@ -68,15 +67,14 @@ RippleCalc::Output RippleCalc::rippleCalculate (
     // explore for liquidity.
     STPathSet const& spsPaths,
     Logs& l,
-    Config const& config,
     Input const* const pInputs)
 {
     // call flow v1 and v2 so results may be compared
     bool const compareFlowV1V2 =
-        view.rules ().enabled (featureCompareFlowV1V2, config.features);
+        view.rules ().enabled (featureCompareFlowV1V2);
 
     bool const useFlowV1Output =
-        !view.rules().enabled(featureFlow, config.features);
+        !view.rules().enabled(featureFlow);
     bool const callFlowV1 = useFlowV1Output || compareFlowV1V2;
     bool const callFlowV2 = !useFlowV1Output || compareFlowV1V2;
 
@@ -140,7 +138,7 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         try
         {
             bool const ownerPaysTransferFee =
-                    view.rules ().enabled (featureOwnerPaysFee, config.features);
+                    view.rules ().enabled (featureOwnerPaysFee);
             auto const timeIt = flowV2FlowDebugInfo.timeBlock ("main");
             flowV2Out = flow (flowV2SB, saDstAmountReq, uSrcAccountID,
                 uDstAccountID, spsPaths, defaultPaths, partialPayment,
