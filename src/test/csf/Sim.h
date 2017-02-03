@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_CSF_SIM_H_INCLUDED
 #define RIPPLE_TEST_CSF_SIM_H_INCLUDED
 
-#include <test/csf/UNL.h>
 #include <test/csf/BasicNetwork.h>
+#include <test/csf/UNL.h>
 
 namespace ripple {
 namespace test {
@@ -50,19 +50,19 @@ public:
 
     */
     template <class Topology>
-    Sim(TrustGraph const & g, Topology const & top)
+    Sim(TrustGraph const& g, Topology const& top)
     {
         peers.reserve(g.numPeers());
-        for(int i = 0; i < g.numPeers(); ++i)
+        for (int i = 0; i < g.numPeers(); ++i)
             peers.emplace_back(i, net, g.unl(i));
 
-        for(int i = 0; i < peers.size(); ++i)
+        for (int i = 0; i < peers.size(); ++i)
         {
-            for(int j = 0; j < peers.size(); ++j)
+            for (int j = 0; j < peers.size(); ++j)
             {
-                if( i != j)
+                if (i != j)
                 {
-                    auto d = top(i,j);
+                    auto d = top(i, j);
                     if (d)
                     {
                         net.connect(&peers[i], &peers[j], *d);
@@ -81,10 +81,10 @@ public:
     void
     run(int ledgers)
     {
-        for (auto & p : peers)
+        for (auto& p : peers)
         {
-            if(p.completedLedgers == 0)
-                p.relay(Validation{p.id, p.LCL(), p.LCL()});
+            if (p.completedLedgers == 0)
+                p.relay(Validation{p.id, p.prevLedgerID(), p.prevLedgerID()});
             p.targetLedgers = p.completedLedgers + ledgers;
             p.start();
         }
@@ -93,12 +93,10 @@ public:
 
     std::vector<Peer> peers;
     BasicNetwork<Peer*> net;
-
 };
 
-
-} // csf
-} // test
-} // ripple
+}  // csf
+}  // test
+}  // ripple
 
 #endif

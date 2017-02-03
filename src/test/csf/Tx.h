@@ -21,9 +21,9 @@
 
 #include <ripple/beast/hash/hash_append.h>
 #include <boost/container/flat_set.hpp>
+#include <map>
 #include <ostream>
 #include <string>
-#include <map>
 
 namespace ripple {
 namespace test {
@@ -35,7 +35,9 @@ class Tx
 public:
     using ID = std::uint32_t;
 
-    Tx(ID i) : id_{ i } {}
+    Tx(ID i) : id_{i}
+    {
+    }
 
     ID
     id() const
@@ -44,21 +46,19 @@ public:
     }
 
     bool
-    operator<(Tx const & o) const
+    operator<(Tx const& o) const
     {
         return id_ < o.id_;
     }
 
     bool
-    operator==(Tx const & o) const
+    operator==(Tx const& o) const
     {
         return id_ == o.id_;
     }
 
-
 private:
     ID id_;
-
 };
 
 //!-------------------------------------------------------------------------
@@ -74,37 +74,39 @@ public:
     using MutableTxSet = TxSet;
 
     TxSet() = default;
-    TxSet(TxSetType const & s) : txs_{ s } {}
+    TxSet(TxSetType const& s) : txs_{s}
+    {
+    }
 
     bool
-    insert(Tx const & t)
+    insert(Tx const& t)
     {
         return txs_.insert(t).second;
     }
 
     bool
-    erase(Tx::ID const & txId)
+    erase(Tx::ID const& txId)
     {
-        return txs_.erase(Tx{ txId }) > 0;
+        return txs_.erase(Tx{txId}) > 0;
     }
 
     bool
     exists(Tx::ID const txId) const
     {
-        auto it = txs_.find(Tx{ txId });
+        auto it = txs_.find(Tx{txId});
         return it != txs_.end();
     }
 
-    Tx const *
+    Tx const*
     find(Tx::ID const& txId) const
     {
-        auto it = txs_.find(Tx{ txId });
+        auto it = txs_.find(Tx{txId});
         if (it != txs_.end())
             return &(*it);
         return nullptr;
     }
 
-    auto const &
+    auto const&
     id() const
     {
         return txs_;
@@ -119,19 +121,14 @@ public:
     {
         std::map<Tx::ID, bool> res;
 
-        auto populate_diffs = [&res](auto const & a, auto const & b, bool s)
-        {
-            auto populator = [&](auto const & tx)
-            {
-                        res[tx.id()] = s;
-            };
+        auto populate_diffs = [&res](auto const& a, auto const& b, bool s) {
+            auto populator = [&](auto const& tx) { res[tx.id()] = s; };
             std::set_difference(
-                a.begin(), a.end(),
-                b.begin(), b.end(),
-                boost::make_function_output_iterator(
-                    std::ref(populator)
-                )
-            );
+                a.begin(),
+                a.end(),
+                b.begin(),
+                b.end(),
+                boost::make_function_output_iterator(std::ref(populator)));
         };
 
         populate_diffs(txs_, other.txs_, true);
@@ -143,55 +140,35 @@ public:
     TxSetType txs_;
 };
 
-
-/** The RCL consensus process catches missing node SHAMap error
-    in several points. This exception is meant to represent a similar
-    case for the unit test.
-*/
-class MissingTx : public std::runtime_error
-{
-public:
-    MissingTx()
-        : std::runtime_error("MissingTx")
-    {}
-};
-
-
 //------------------------------------------------------------------------------
 // Helper functions for debug printing
 
-inline
-std::ostream&
-operator<<(std::ostream & o, const Tx & t)
+inline std::ostream&
+operator<<(std::ostream& o, const Tx& t)
 {
     return o << t.id();
 }
 
 template <class T>
-inline
-std::ostream&
-operator<<(std::ostream & o, boost::container::flat_set<T> const & ts)
+inline std::ostream&
+operator<<(std::ostream& o, boost::container::flat_set<T> const& ts)
 {
     o << "{ ";
     bool do_comma = false;
-    for (auto const & t : ts)
+    for (auto const& t : ts)
     {
         if (do_comma)
             o << ", ";
         else
             do_comma = true;
         o << t;
-
-
     }
     o << " }";
     return o;
-
 }
 
-inline
-std::string
-to_string(TxSetType const & txs)
+inline std::string
+to_string(TxSetType const& txs)
 {
     std::stringstream ss;
     ss << txs;
@@ -199,23 +176,15 @@ to_string(TxSetType const & txs)
 }
 
 template <class Hasher>
-inline
-void
-hash_append(Hasher& h, Tx const & tx)
+inline void
+hash_append(Hasher& h, Tx const& tx)
 {
     using beast::hash_append;
     hash_append(h, tx.id());
 }
 
-std::ostream&
-operator<<(std::ostream & o, MissingTx const &m)
-{
-    return o << m.what();
-}
-
-
-} // csf
-} // test
-} // ripple
+}  // csf
+}  // test
+}  // ripple
 
 #endif

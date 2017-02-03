@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_CONSENSUS_RCLCXTX_H_INCLUDED
 #define RIPPLE_APP_CONSENSUS_RCLCXTX_H_INCLUDED
 
+#include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/shamap/SHAMap.h>
-#include <ripple/app/misc/CanonicalTXSet.h>
 
 namespace ripple {
 
@@ -42,14 +42,15 @@ public:
 
         @param txn The transaction to wrap
     */
-    RCLCxTx(SHAMapItem const& txn) : tx_{ txn }
-    { }
+    RCLCxTx(SHAMapItem const& txn) : tx_{txn}
+    {
+    }
 
     //! The unique identifier/hash of the transaction
     ID const&
     id() const
     {
-        return tx_.key ();
+        return tx_.key();
     }
 
     //! The SHAMapItem that represents the transaction.
@@ -74,13 +75,11 @@ public:
     {
         friend class RCLTxSet;
         //! The SHAMap representing the transactions.
-        std::shared_ptr <SHAMap> map_;
+        std::shared_ptr<SHAMap> map_;
 
     public:
-        MutableTxSet(RCLTxSet const & src)
-            : map_{ src.map_->snapShot(true) }
+        MutableTxSet(RCLTxSet const& src) : map_{src.map_->snapShot(true)}
         {
-
         }
 
         /** Insert a new transaction into the set.
@@ -92,8 +91,7 @@ public:
         insert(Tx const& t)
         {
             return map_->addItem(
-                SHAMapItem{ t.id(), t.tx_.peekData() },
-                true, false);
+                SHAMapItem{t.id(), t.tx_.peekData()}, true, false);
         }
 
         /** Remove a transaction from the set.
@@ -112,8 +110,7 @@ public:
 
         @param m SHAMap to wrap
     */
-    RCLTxSet (std::shared_ptr<SHAMap> m)
-        : map_{ std::move(m) }
+    RCLTxSet(std::shared_ptr<SHAMap> m) : map_{std::move(m)}
     {
         assert(map_);
     }
@@ -122,10 +119,8 @@ public:
 
         @param m MutableTxSet that will become fixed
      */
-    RCLTxSet(MutableTxSet const & m)
-        : map_{m.map_->snapShot(false)}
+    RCLTxSet(MutableTxSet const& m) : map_{m.map_->snapShot(false)}
     {
-
     }
 
     /** Test if a transaction is in the set.
@@ -136,7 +131,7 @@ public:
     bool
     exists(Tx::ID const& entry) const
     {
-        return map_->hasItem (entry);
+        return map_->hasItem(entry);
     }
 
     /** Lookup a transaction.
@@ -150,10 +145,10 @@ public:
               code use the shared_ptr semantics to know whether the find
               was succesfully and properly creates a Tx as needed.
     */
-    std::shared_ptr<const SHAMapItem> const &
+    std::shared_ptr<const SHAMapItem> const&
     find(Tx::ID const& entry) const
     {
-        return map_->peekItem (entry);
+        return map_->peekItem(entry);
     }
 
     //! The unique ID/hash of the transaction set
@@ -163,7 +158,8 @@ public:
         return map_->getHash().as_uint256();
     }
 
-    /** Find transactions not in common between this and another transaction set.
+    /** Find transactions not in common between this and another transaction
+       set.
 
         @param j The set to compare with
         @return Map of transactions in this set and `j` but not both. The key
@@ -171,28 +167,28 @@ public:
                 exists in this set.
     */
     std::map<Tx::ID, bool>
-    compare (RCLTxSet const& j) const
+    compare(RCLTxSet const& j) const
     {
         SHAMap::Delta delta;
 
         // Bound the work we do in case of a malicious
         // map_ from a trusted validator
-        map_->compare (*(j.map_), delta, 65536);
+        map_->compare(*(j.map_), delta, 65536);
 
-        std::map <uint256, bool> ret;
+        std::map<uint256, bool> ret;
         for (auto const& item : delta)
         {
-            assert ( (item.second.first && ! item.second.second) ||
-                     (item.second.second && ! item.second.first) );
+            assert(
+                (item.second.first && !item.second.second) ||
+                (item.second.second && !item.second.first));
 
-            ret[item.first] = static_cast<bool> (item.second.first);
+            ret[item.first] = static_cast<bool>(item.second.first);
         }
         return ret;
     }
 
     //! The SHAMap representing the transactions.
-    std::shared_ptr <SHAMap> map_;
+    std::shared_ptr<SHAMap> map_;
 };
-
 }
 #endif
