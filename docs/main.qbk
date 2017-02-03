@@ -1,5 +1,5 @@
 [/
-    Copyright (c) Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) Copyright (c) 2012-2017 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -16,7 +16,7 @@
 
 [library rippled
     [quickbook 1.6]
-    [copyright 2012 - 2016 Ripple Labs Inc.]
+    [copyright 2012 - 2017 Ripple Labs Inc.]
     [purpose C++ Library]
     [license
         Distributed under the ISC License
@@ -29,6 +29,8 @@
 [template mdash[] '''&mdash; ''']
 [template indexterm1[term1] '''<indexterm><primary>'''[term1]'''</primary></indexterm>''']
 [template indexterm2[term1 term2] '''<indexterm><primary>'''[term1]'''</primary><secondary>'''[term2]'''</secondary></indexterm>''']
+
+[include consensus.qbk]
 
 [section:ref Reference]
 [include temp/reference.qbk]

@@ -46,32 +46,32 @@ namespace csf {
 
 class Ledger
 {
-
 public:
-
     struct ID
     {
         std::uint32_t seq = 0;
         TxSetType txs = TxSetType{};
 
-        bool operator==(ID const & o) const
+        bool
+        operator==(ID const& o) const
         {
             return seq == o.seq && txs == o.txs;
         }
 
-        bool operator!=(ID const & o) const
+        bool
+        operator!=(ID const& o) const
         {
             return !(*this == o);
         }
 
-        bool operator<(ID const & o) const
+        bool
+        operator<(ID const& o) const
         {
             return std::tie(seq, txs) < std::tie(o.seq, o.txs);
         }
     };
 
-
-    auto const &
+    auto const&
     id() const
     {
         return id_;
@@ -113,7 +113,7 @@ public:
         return parentCloseTime_;
     }
 
-    auto const &
+    auto const&
     parentID() const
     {
         return parentID_;
@@ -127,30 +127,28 @@ public:
         return res;
     }
 
-
     //! Apply the given transactions to this ledger
     Ledger
-    close(TxSetType const & txs,
+    close(
+        TxSetType const& txs,
         NetClock::duration closeTimeResolution,
-        NetClock::time_point const & consensusCloseTime,
+        NetClock::time_point const& consensusCloseTime,
         bool closeTimeAgree) const
     {
-        Ledger res{ *this };
+        Ledger res{*this};
         res.id_.txs.insert(txs.begin(), txs.end());
-        res.id_ .seq= seq() + 1;
+        res.id_.seq = seq() + 1;
         res.closeTimeResolution_ = closeTimeResolution;
         res.actualCloseTime_ = consensusCloseTime;
-        res.closeTime_ = effectiveCloseTime(consensusCloseTime,
-            closeTimeResolution, parentCloseTime_);
+        res.closeTime_ = effCloseTime(
+            consensusCloseTime, closeTimeResolution, parentCloseTime_);
         res.closeTimeAgree_ = closeTimeAgree;
         res.parentCloseTime_ = closeTime();
         res.parentID_ = id();
         return res;
     }
 
-
 private:
-
     //! Unique identifier of ledger is combination of sequence number and id
     ID id_;
 
@@ -171,27 +169,24 @@ private:
 
     //! Close time unadjusted by closeTimeResolution
     NetClock::time_point actualCloseTime_;
-
 };
 
-inline
-std::ostream &
-operator<<(std::ostream & o, Ledger::ID const & id)
+inline std::ostream&
+operator<<(std::ostream& o, Ledger::ID const& id)
 {
     return o << id.seq << "," << id.txs;
 }
 
-inline
-std::string
-to_string(Ledger::ID const & id)
+inline std::string
+to_string(Ledger::ID const& id)
 {
     std::stringstream ss;
     ss << id;
     return ss.str();
 }
 
-} // csf
-} // test
-} // ripple
+}  // csf
+}  // test
+}  // ripple
 
 #endif

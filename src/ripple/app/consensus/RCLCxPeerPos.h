@@ -22,12 +22,12 @@
 
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/base_uint.h>
+#include <ripple/beast/hash/hash_append.h>
+#include <ripple/consensus/ConsensusProposal.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
-#include <ripple/beast/hash/hash_append.h>
-#include <ripple/consensus/ConsensusProposal.h>
 #include <chrono>
 #include <cstdint>
 #include <string>
@@ -38,17 +38,19 @@ namespace ripple {
 
     Carries a ConsensusProposal signed by a peer.
 */
-class RCLCxPeerPos
-    : public CountedObject <RCLCxPeerPos>
+class RCLCxPeerPos : public CountedObject<RCLCxPeerPos>
 {
 public:
-    static char const* getCountedObjectName () { return "RCLCxPeerPos"; }
+    static char const*
+    getCountedObjectName()
+    {
+        return "RCLCxPeerPos";
+    }
     using pointer = std::shared_ptr<RCLCxPeerPos>;
     using ref = const pointer&;
 
     //< The type of the proposed position
     using Proposal = ConsensusProposal<NodeID, uint256, uint256>;
-
 
     /** Constructor
 
@@ -60,57 +62,64 @@ public:
         @param proposal The consensus proposal
     */
 
-    RCLCxPeerPos (
+    RCLCxPeerPos(
         PublicKey const& publicKey,
         Slice const& signature,
         uint256 const& suppress,
-        Proposal && proposal);
+        Proposal&& proposal);
 
     //! Create the signing hash for the proposal
-    uint256 getSigningHash () const;
+    uint256
+    getSigningHash() const;
 
     //! Verify the signing hash of the proposal
-    bool checkSign () const;
+    bool
+    checkSign() const;
 
     //! Signature of the proposal (not necessarily verified)
-    Slice getSignature () const
+    Slice
+    getSignature() const
     {
         return signature_;
     }
 
     //! Public key of peer that sent the proposal
-    PublicKey const& getPublicKey () const
+    PublicKey const&
+    getPublicKey() const
     {
         return publicKey_;
     }
 
     //! ?????
-    uint256 const& getSuppressionID () const
+    uint256 const&
+    getSuppressionID() const
     {
         return mSuppression;
     }
 
     //! The consensus proposal
-    Proposal const & proposal() const
+    Proposal const&
+    proposal() const
     {
         return proposal_;
     }
 
     /// @cond Ignore
     //! Add a conversion operator to conform to the Consensus interface
-    operator Proposal const &() const
+    operator Proposal const&() const
     {
         return proposal_;
     }
     /// @endcond
 
     //! JSON representation of proposal
-    Json::Value getJson () const;
+    Json::Value
+    getJson() const;
 
 private:
     template <class Hasher>
     void
-    hash_append (Hasher& h) const
+    hash_append(Hasher& h) const
     {
         using beast::hash_append;
         hash_append(h, HashPrefix::proposal);
@@ -142,14 +151,15 @@ private:
     @param publicKey Signer's public key
     @param signature Proposal signature
 */
-uint256 proposalUniqueId (
-        uint256 const& proposeHash,
-        uint256 const& previousLedger,
-        std::uint32_t proposeSeq,
-        NetClock::time_point closeTime,
-        Slice const& publicKey,
-        Slice const& signature);
+uint256
+proposalUniqueId(
+    uint256 const& proposeHash,
+    uint256 const& previousLedger,
+    std::uint32_t proposeSeq,
+    NetClock::time_point closeTime,
+    Slice const& publicKey,
+    Slice const& signature);
 
-} // ripple
+}  // ripple
 
 #endif

@@ -30,11 +30,11 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <deque>
-#include <memory>
 #include <cassert>
 #include <cstdint>
+#include <deque>
 #include <iomanip>
+#include <memory>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
@@ -98,58 +98,54 @@ class BasicNetwork
 public:
     using peer_type = Peer;
 
-    using clock_type =
-        beast::manual_clock<
-            std::chrono::steady_clock>;
+    using clock_type = beast::manual_clock<std::chrono::steady_clock>;
 
-    using duration =
-        typename clock_type::duration;
+    using duration = typename clock_type::duration;
 
-    using time_point =
-        typename clock_type::time_point;
+    using time_point = typename clock_type::time_point;
 
 private:
-    struct by_to_tag {};
-    struct by_from_tag {};
-    struct by_when_tag {};
+    struct by_to_tag
+    {
+    };
+    struct by_from_tag
+    {
+    };
+    struct by_when_tag
+    {
+    };
 
-    using by_to_hook =
-        boost::intrusive::list_base_hook<
-            boost::intrusive::link_mode<
-                boost::intrusive::normal_link>,
-            boost::intrusive::tag<by_to_tag>>;
+    using by_to_hook = boost::intrusive::list_base_hook<
+        boost::intrusive::link_mode<boost::intrusive::normal_link>,
+        boost::intrusive::tag<by_to_tag>>;
 
-    using by_from_hook =
-        boost::intrusive::list_base_hook<
-            boost::intrusive::link_mode<
-                boost::intrusive::normal_link>,
-            boost::intrusive::tag<by_from_tag>>;
+    using by_from_hook = boost::intrusive::list_base_hook<
+        boost::intrusive::link_mode<boost::intrusive::normal_link>,
+        boost::intrusive::tag<by_from_tag>>;
 
-    using by_when_hook =
-        boost::intrusive::set_base_hook<
-            boost::intrusive::link_mode<
-                boost::intrusive::normal_link>>;
+    using by_when_hook = boost::intrusive::set_base_hook<
+        boost::intrusive::link_mode<boost::intrusive::normal_link>>;
 
-    struct msg
-        : by_to_hook, by_from_hook, by_when_hook
+    struct msg : by_to_hook, by_from_hook, by_when_hook
     {
         Peer to;
         Peer from;
         time_point when;
 
-        msg (msg const&) = delete;
-        msg& operator= (msg const&) = delete;
+        msg(msg const&) = delete;
+        msg&
+        operator=(msg const&) = delete;
         virtual ~msg() = default;
-        virtual void operator()() const = 0;
+        virtual void
+        operator()() const = 0;
 
-        msg (Peer const& from_, Peer const& to_,
-                time_point when_)
+        msg(Peer const& from_, Peer const& to_, time_point when_)
             : to(to_), from(from_), when(when_)
         {
         }
 
         bool
-        operator< (msg const& other) const
+        operator<(msg const& other) const
         {
             return when < other.when;
         }
@@ -162,24 +158,30 @@ private:
         Handler const h_;
 
     public:
-        msg_impl (msg_impl const&) = delete;
-        msg_impl& operator= (msg_impl const&) = delete;
+        msg_impl(msg_impl const&) = delete;
+        msg_impl&
+        operator=(msg_impl const&) = delete;
 
-        msg_impl (Peer const& from_, Peer const& to_,
-                time_point when_, Handler&& h)
-            : msg (from_, to_, when_)
-            , h_ (std::move(h))
+        msg_impl(
+            Peer const& from_,
+            Peer const& to_,
+            time_point when_,
+            Handler&& h)
+            : msg(from_, to_, when_), h_(std::move(h))
         {
         }
 
-        msg_impl (Peer const& from_, Peer const& to_,
-                time_point when_, Handler const& h)
-            : msg (from_, to_, when_)
-            , h_ (h)
+        msg_impl(
+            Peer const& from_,
+            Peer const& to_,
+            time_point when_,
+            Handler const& h)
+            : msg(from_, to_, when_), h_(h)
         {
         }
 
-        void operator()() const override
+        void
+        operator()() const override
         {
             h_();
         }
@@ -188,19 +190,19 @@ private:
     class queue_type
     {
     private:
-        using by_to_list = typename
-            boost::intrusive::make_list<msg,
-                boost::intrusive::base_hook<by_to_hook>,
-                    boost::intrusive::constant_time_size<false>>::type;
+        using by_to_list = typename boost::intrusive::make_list<
+            msg,
+            boost::intrusive::base_hook<by_to_hook>,
+            boost::intrusive::constant_time_size<false>>::type;
 
-        using by_from_list = typename
-            boost::intrusive::make_list<msg,
-                boost::intrusive::base_hook<by_from_hook>,
-                    boost::intrusive::constant_time_size<false>>::type;
+        using by_from_list = typename boost::intrusive::make_list<
+            msg,
+            boost::intrusive::base_hook<by_from_hook>,
+            boost::intrusive::constant_time_size<false>>::type;
 
-        using by_when_set = typename
-            boost::intrusive::make_multiset<msg,
-                boost::intrusive::constant_time_size<false>>::type;
+        using by_when_set = typename boost::intrusive::make_multiset<
+            msg,
+            boost::intrusive::constant_time_size<false>>::type;
 
         qalloc alloc_;
         by_when_set by_when_;
@@ -208,14 +210,13 @@ private:
         std::unordered_map<Peer, by_from_list> by_from_;
 
     public:
-        using iterator =
-            typename by_when_set::iterator;
+        using iterator = typename by_when_set::iterator;
 
-        queue_type (queue_type const&) = delete;
-        queue_type& operator= (queue_type const&) = delete;
+        queue_type(queue_type const&) = delete;
+        queue_type&
+        operator=(queue_type const&) = delete;
 
-        explicit
-        queue_type (qalloc const& alloc);
+        explicit queue_type(qalloc const& alloc);
 
         ~queue_type();
 
@@ -230,14 +231,13 @@ private:
 
         template <class Handler>
         typename by_when_set::iterator
-        emplace (Peer const& from, Peer const& to,
-            time_point when, Handler&& h);
+        emplace(Peer const& from, Peer const& to, time_point when, Handler&& h);
 
         void
-        erase (iterator iter);
+        erase(iterator iter);
 
         void
-        remove (Peer const& from, Peer const& to);
+        remove(Peer const& from, Peer const& to);
     };
 
     struct link_type
@@ -245,15 +245,13 @@ private:
         bool inbound;
         duration delay;
 
-        link_type (bool inbound_, duration delay_)
-            : inbound (inbound_)
-            , delay (delay_)
+        link_type(bool inbound_, duration delay_)
+            : inbound(inbound_), delay(delay_)
         {
         }
     };
 
-    using links_type =
-        boost::container::flat_map<Peer, link_type>;
+    using links_type = boost::container::flat_map<Peer, link_type>;
 
     class link_transform;
 
@@ -265,8 +263,9 @@ private:
     std::unordered_map<Peer, links_type> links_;
 
 public:
-    BasicNetwork (BasicNetwork const&) = delete;
-    BasicNetwork& operator= (BasicNetwork const&) = delete;
+    BasicNetwork(BasicNetwork const&) = delete;
+    BasicNetwork&
+    operator=(BasicNetwork const&) = delete;
 
     BasicNetwork();
 
@@ -308,7 +307,9 @@ public:
         @return `true` if a new connection was established
     */
     bool
-    connect (Peer const& from, Peer const& to,
+    connect(
+        Peer const& from,
+        Peer const& to,
         duration const& delay = std::chrono::seconds{0});
 
     /** Break a link.
@@ -324,15 +325,14 @@ public:
         @return `true` if a connection was broken.
     */
     bool
-    disconnect (Peer const& peer1, Peer const& peer2);
+    disconnect(Peer const& peer1, Peer const& peer2);
 
     /** Return the range of active links.
 
         @return A random access range.
     */
-    boost::transformed_range<
-        link_transform, links_type>
-    links (Peer const& from);
+    boost::transformed_range<link_transform, links_type>
+    links(Peer const& from);
 
     /** Send a message to a peer.
 
@@ -354,8 +354,7 @@ public:
     */
     template <class Function>
     void
-    send (Peer const& from, Peer const& to,
-        Function&& f);
+    send(Peer const& from, Peer const& to, Function&& f);
 
     // Used to cancel timers
     struct cancel_token;
@@ -370,8 +369,7 @@ public:
     */
     template <class Function>
     cancel_token
-    timer (time_point const& when,
-        Function&& f);
+    timer(time_point const& when, Function&& f);
 
     /** Deliver a timer notification.
 
@@ -383,8 +381,7 @@ public:
     */
     template <class Function>
     cancel_token
-    timer (duration const& delay,
-        Function&& f);
+    timer(duration const& delay, Function&& f);
 
     /** Cancel a timer.
 
@@ -394,7 +391,7 @@ public:
             timer() which has not yet been invoked.
     */
     void
-    cancel (cancel_token const& token);
+    cancel(cancel_token const& token);
 
     /** Perform breadth-first search.
 
@@ -407,7 +404,7 @@ public:
     */
     template <class Function>
     void
-    bfs (Peer const& start, Function&& f);
+    bfs(Peer const& start, Function&& f);
 
     /** Run the network for up to one message.
 
@@ -448,7 +445,7 @@ public:
     */
     template <class Function>
     bool
-    step_while(Function && func);
+    step_while(Function&& func);
 
     /** Run the network until the specified time.
 
@@ -460,7 +457,7 @@ public:
         @return `true` if any messages remain.
     */
     bool
-    step_until (time_point const& until);
+    step_until(time_point const& until);
 
     /** Run the network until time has elapsed.
 
@@ -473,24 +470,21 @@ public:
     */
     template <class Period, class Rep>
     bool
-    step_for (std::chrono::duration<
-        Period, Rep> const& amount);
+    step_for(std::chrono::duration<Period, Rep> const& amount);
 };
 
 //------------------------------------------------------------------------------
 
 template <class Peer>
-BasicNetwork<Peer>::queue_type::queue_type(
-        qalloc const& alloc)
-    : alloc_ (alloc)
+BasicNetwork<Peer>::queue_type::queue_type(qalloc const& alloc)
+    : alloc_(alloc)
 {
 }
 
 template <class Peer>
 BasicNetwork<Peer>::queue_type::~queue_type()
 {
-    for(auto iter = by_when_.begin();
-        iter != by_when_.end();)
+    for (auto iter = by_when_.begin(); iter != by_when_.end();)
     {
         auto m = &*iter;
         ++iter;
@@ -500,27 +494,22 @@ BasicNetwork<Peer>::queue_type::~queue_type()
 }
 
 template <class Peer>
-inline
-bool
+inline bool
 BasicNetwork<Peer>::queue_type::empty() const
 {
     return by_when_.empty();
 }
 
 template <class Peer>
-inline
-auto
-BasicNetwork<Peer>::queue_type::begin() ->
-    iterator
+inline auto
+BasicNetwork<Peer>::queue_type::begin() -> iterator
 {
     return by_when_.begin();
 }
 
 template <class Peer>
-inline
-auto
-BasicNetwork<Peer>::queue_type::end() ->
-    iterator
+inline auto
+BasicNetwork<Peer>::queue_type::end() -> iterator
 {
     return by_when_.end();
 }
@@ -529,15 +518,14 @@ template <class Peer>
 template <class Handler>
 auto
 BasicNetwork<Peer>::queue_type::emplace(
-    Peer const& from, Peer const& to, time_point when,
-        Handler&& h) ->
-            typename by_when_set::iterator
+    Peer const& from,
+    Peer const& to,
+    time_point when,
+    Handler&& h) -> typename by_when_set::iterator
 {
-    using msg_type = msg_impl<
-        std::decay_t<Handler>>;
+    using msg_type = msg_impl<std::decay_t<Handler>>;
     auto const p = alloc_.alloc<msg_type>(1);
-    auto& m = *new(p) msg_type(from, to,
-        when, std::forward<Handler>(h));
+    auto& m = *new (p) msg_type(from, to, when, std::forward<Handler>(h));
     if (to)
         by_to_[to].push_back(m);
     if (from)
@@ -547,8 +535,7 @@ BasicNetwork<Peer>::queue_type::emplace(
 
 template <class Peer>
 void
-BasicNetwork<Peer>::queue_type::erase(
-    iterator iter)
+BasicNetwork<Peer>::queue_type::erase(iterator iter)
 {
     auto& m = *iter;
     if (iter->to)
@@ -568,13 +555,11 @@ BasicNetwork<Peer>::queue_type::erase(
 
 template <class Peer>
 void
-BasicNetwork<Peer>::queue_type::remove(
-    Peer const& from, Peer const& to)
+BasicNetwork<Peer>::queue_type::remove(Peer const& from, Peer const& to)
 {
     {
         auto& list = by_to_[to];
-        for(auto iter = list.begin();
-            iter != list.end();)
+        for (auto iter = list.begin(); iter != list.end();)
         {
             auto& m = *iter++;
             if (m.from == from)
@@ -583,8 +568,7 @@ BasicNetwork<Peer>::queue_type::remove(
     }
     {
         auto& list = by_to_[from];
-        for(auto iter = list.begin();
-            iter != list.end();)
+        for (auto iter = list.begin(); iter != list.end();)
         {
             auto& m = *iter++;
             if (m.from == to)
@@ -603,8 +587,7 @@ private:
     Peer from_;
 
 public:
-    using argument_type =
-        typename links_type::value_type;
+    using argument_type = typename links_type::value_type;
 
     class result_type
     {
@@ -612,15 +595,14 @@ public:
         Peer to;
         bool inbound;
 
-        result_type (result_type const&) = default;
+        result_type(result_type const&) = default;
 
-        result_type (BasicNetwork& net,
-            Peer const& from, Peer const& to_,
-                bool inbound_)
-            : to(to_)
-            , inbound(inbound_)
-            , net_(net)
-            , from_(from)
+        result_type(
+            BasicNetwork& net,
+            Peer const& from,
+            Peer const& to_,
+            bool inbound_)
+            : to(to_), inbound(inbound_), net_(net), from_(from)
         {
         }
 
@@ -641,18 +623,14 @@ public:
         Peer from_;
     };
 
-    link_transform (BasicNetwork& net,
-            Peer const& from)
-        : net_(net)
-        , from_(from)
+    link_transform(BasicNetwork& net, Peer const& from) : net_(net), from_(from)
     {
     }
 
     result_type const
     operator()(argument_type const& v) const
     {
-        return result_type(net_, from_,
-            v.first, v.second.inbound);
+        return result_type(net_, from_, v.first, v.second.inbound);
     }
 };
 
@@ -666,14 +644,13 @@ private:
 
 public:
     cancel_token() = delete;
-    cancel_token (cancel_token const&) = default;
-    cancel_token& operator= (cancel_token const&) = default;
+    cancel_token(cancel_token const&) = default;
+    cancel_token&
+    operator=(cancel_token const&) = default;
 
 private:
     friend class BasicNetwork;
-    cancel_token(typename
-            queue_type::iterator iter)
-        : iter_ (iter)
+    cancel_token(typename queue_type::iterator iter) : iter_(iter)
     {
     }
 };
@@ -681,33 +658,27 @@ private:
 //------------------------------------------------------------------------------
 
 template <class Peer>
-BasicNetwork<Peer>::BasicNetwork()
-    : queue_ (alloc_)
+BasicNetwork<Peer>::BasicNetwork() : queue_(alloc_)
 {
 }
 
 template <class Peer>
-inline
-qalloc const&
+inline qalloc const&
 BasicNetwork<Peer>::alloc() const
 {
     return alloc_;
 }
 
 template <class Peer>
-inline
-auto
-BasicNetwork<Peer>::clock() const ->
-    clock_type&
+inline auto
+BasicNetwork<Peer>::clock() const -> clock_type&
 {
     return clock_;
 }
 
 template <class Peer>
-inline
-auto
-BasicNetwork<Peer>::now() const ->
-    time_point
+inline auto
+BasicNetwork<Peer>::now() const -> time_point
 {
     return clock_.now();
 }
@@ -715,17 +686,16 @@ BasicNetwork<Peer>::now() const ->
 template <class Peer>
 bool
 BasicNetwork<Peer>::connect(
-    Peer const& from, Peer const& to,
-        duration const& delay)
+    Peer const& from,
+    Peer const& to,
+    duration const& delay)
 {
     if (to == from)
         return false;
     using namespace std;
-    if (! links_[from].emplace(to,
-            link_type{ false, delay }).second)
+    if (!links_[from].emplace(to, link_type{false, delay}).second)
         return false;
-    auto const result = links_[to].emplace(
-        from, link_type{ true, delay });
+    auto const result = links_[to].emplace(from, link_type{true, delay});
     (void)result;
     assert(result.second);
     return true;
@@ -733,13 +703,11 @@ BasicNetwork<Peer>::connect(
 
 template <class Peer>
 bool
-BasicNetwork<Peer>::disconnect(
-    Peer const& peer1, Peer const& peer2)
+BasicNetwork<Peer>::disconnect(Peer const& peer1, Peer const& peer2)
 {
     if (links_[peer1].erase(peer2) == 0)
         return false;
-    auto const n =
-        links_[peer2].erase(peer1);
+    auto const n = links_[peer2].erase(peer1);
     (void)n;
     assert(n);
     queue_.remove(peer1, peer2);
@@ -747,64 +715,45 @@ BasicNetwork<Peer>::disconnect(
 }
 
 template <class Peer>
-inline
-auto
-BasicNetwork<Peer>::links(Peer const& from) ->
-    boost::transformed_range<
-        link_transform, links_type>
+inline auto
+BasicNetwork<Peer>::links(Peer const& from)
+    -> boost::transformed_range<link_transform, links_type>
 {
     return boost::adaptors::transform(
-        links_[from],
-            link_transform{ *this, from });
+        links_[from], link_transform{*this, from});
 }
 
 template <class Peer>
 template <class Function>
-inline
-void
-BasicNetwork<Peer>::send(
-    Peer const& from, Peer const& to,
-        Function&& f)
+inline void
+BasicNetwork<Peer>::send(Peer const& from, Peer const& to, Function&& f)
 {
     using namespace std;
-    auto const iter =
-        links_[from].find(to);
-    queue_.emplace(from, to,
-        clock_.now() + iter->second.delay,
-            forward<Function>(f));
+    auto const iter = links_[from].find(to);
+    queue_.emplace(
+        from, to, clock_.now() + iter->second.delay, forward<Function>(f));
 }
 
 template <class Peer>
 template <class Function>
-inline
-auto
-BasicNetwork<Peer>::timer(
-    time_point const& when, Function&& f) ->
-        cancel_token
+inline auto
+BasicNetwork<Peer>::timer(time_point const& when, Function&& f) -> cancel_token
 {
     using namespace std;
-    return queue_.emplace(
-        nullptr, nullptr, when,
-            forward<Function>(f));
+    return queue_.emplace(nullptr, nullptr, when, forward<Function>(f));
 }
 
 template <class Peer>
 template <class Function>
-inline
-auto
-BasicNetwork<Peer>::timer(
-    duration const& delay, Function&& f) ->
-        cancel_token
+inline auto
+BasicNetwork<Peer>::timer(duration const& delay, Function&& f) -> cancel_token
 {
-    return timer(clock_.now() + delay,
-        std::forward<Function>(f));
+    return timer(clock_.now() + delay, std::forward<Function>(f));
 }
 
 template <class Peer>
-inline
-void
-BasicNetwork<Peer>::cancel(
-    cancel_token const& token)
+inline void
+BasicNetwork<Peer>::cancel(cancel_token const& token)
 {
     queue_.erase(token.iter_);
 }
@@ -826,10 +775,10 @@ template <class Peer>
 bool
 BasicNetwork<Peer>::step()
 {
-    if (! step_one())
+    if (!step_one())
         return false;
-    for(;;)
-        if (! step_one())
+    for (;;)
+        if (!step_one())
             break;
     return true;
 }
@@ -837,7 +786,7 @@ BasicNetwork<Peer>::step()
 template <class Peer>
 template <class Function>
 bool
-BasicNetwork<Peer>::step_while(Function && f)
+BasicNetwork<Peer>::step_while(Function&& f)
 {
     bool ran = false;
     while (f() && step_one())
@@ -847,17 +796,16 @@ BasicNetwork<Peer>::step_while(Function && f)
 
 template <class Peer>
 bool
-BasicNetwork<Peer>::step_until(
-    time_point const& until)
+BasicNetwork<Peer>::step_until(time_point const& until)
 {
     // VFALCO This routine needs optimizing
-    if(queue_.empty())
+    if (queue_.empty())
     {
         clock_.set(until);
         return false;
     }
     auto iter = queue_.begin();
-    if(iter->when > until)
+    if (iter->when > until)
     {
         clock_.set(until);
         return true;
@@ -866,19 +814,15 @@ BasicNetwork<Peer>::step_until(
     {
         step_one();
         iter = queue_.begin();
-    }
-    while(iter != queue_.end() &&
-        iter->when <= until);
+    } while (iter != queue_.end() && iter->when <= until);
     clock_.set(until);
     return iter != queue_.end();
 }
 
 template <class Peer>
 template <class Period, class Rep>
-inline
-bool
-BasicNetwork<Peer>::step_for(
-    std::chrono::duration<Period, Rep> const& amount)
+inline bool
+BasicNetwork<Peer>::step_for(std::chrono::duration<Period, Rep> const& amount)
 {
     return step_until(now() + amount);
 }
@@ -886,19 +830,18 @@ BasicNetwork<Peer>::step_for(
 template <class Peer>
 template <class Function>
 void
-BasicNetwork<Peer>::bfs(
-    Peer const& start, Function&& f)
+BasicNetwork<Peer>::bfs(Peer const& start, Function&& f)
 {
     std::deque<std::pair<Peer, std::size_t>> q;
     std::unordered_set<Peer> seen;
     q.emplace_back(start, 0);
     seen.insert(start);
-    while(! q.empty())
+    while (!q.empty())
     {
         auto v = q.front();
         q.pop_front();
         f(v.second, v.first);
-        for(auto const& link : links_[v.first])
+        for (auto const& link : links_[v.first])
         {
             auto const& w = link.first;
             if (seen.count(w) == 0)
@@ -910,8 +853,8 @@ BasicNetwork<Peer>::bfs(
     }
 }
 
-} // csf
-} // test
-} // ripple
+}  // csf
+}  // test
+}  // ripple
 
 #endif

@@ -322,7 +322,7 @@ private:
 
 public:
     bool beginConsensus (uint256 const& networkClosed) override;
-    void endConsensus (bool correctLCL) override;
+    void endConsensus () override;
     void setStandAlone () override
     {
         setMode (omFULL);
@@ -1525,7 +1525,7 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
 
 uint256 NetworkOPsImp::getConsensusLCL ()
 {
-    return mConsensus->LCL ();
+    return mConsensus->prevLedgerID ();
 }
 
 void NetworkOPsImp::processTrustedProposal (
@@ -1565,7 +1565,7 @@ NetworkOPsImp::mapComplete (
             RCLTxSet{map});
 }
 
-void NetworkOPsImp::endConsensus (bool correctLCL)
+void NetworkOPsImp::endConsensus ()
 {
     uint256 deadLedger = m_ledgerMaster.getClosedLedger ()->info().parentHash;
 
@@ -2164,18 +2164,18 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     info[jss::peers] = Json::UInt (app_.overlay ().size ());
 
     Json::Value lastClose = Json::objectValue;
-    lastClose[jss::proposers] = mConsensus->getLastCloseProposers();
+    lastClose[jss::proposers] = Json::UInt(mConsensus->prevProposers());
 
     if (human)
     {
         lastClose[jss::converge_time_s] =
             std::chrono::duration<double>{
-                mConsensus->getLastConvergeDuration()}.count();
+                mConsensus->prevRoundTime()}.count();
     }
     else
     {
         lastClose[jss::converge_time] =
-                Json::Int (mConsensus->getLastConvergeDuration().count());
+                Json::Int (mConsensus->prevRoundTime().count());
     }
 
     info[jss::last_close] = lastClose;
@@ -2754,9 +2754,7 @@ std::uint32_t NetworkOPsImp::acceptLedger (
     // FIXME Could we improve on this and remove the need for a specialized
     // API in Consensus?
     beginConsensus (m_ledgerMaster.getClosedLedger()->info().hash);
-    mConsensus->simulate (
-        app_.timeKeeper().closeTime(),
-        consensusDelay);
+    mConsensus->simulate (app_.timeKeeper().closeTime(), consensusDelay);
     return m_ledgerMaster.getCurrentLedger ()->info().seq;
 }
 

@@ -19,28 +19,28 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/consensus/RCLCxPeerPos.h>
-#include <ripple/protocol/digest.h>
 #include <ripple/core/Config.h>
-#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Serializer.h>
+#include <ripple/protocol/digest.h>
 
 namespace ripple {
 
 // Used to construct received proposals
-RCLCxPeerPos::RCLCxPeerPos (
-        PublicKey const& publicKey,
-        Slice const& signature,
-        uint256 const& suppression,
-        Proposal && proposal)
-    : proposal_{ std::move(proposal)}
-    , mSuppression {suppression}
+RCLCxPeerPos::RCLCxPeerPos(
+    PublicKey const& publicKey,
+    Slice const& signature,
+    uint256 const& suppression,
+    Proposal&& proposal)
+    : proposal_{std::move(proposal)}
+    , mSuppression{suppression}
     , publicKey_{publicKey}
     , signature_{signature}
 {
-
 }
-uint256 RCLCxPeerPos::getSigningHash () const
+uint256
+RCLCxPeerPos::getSigningHash() const
 {
     return sha512Half(
         HashPrefix::proposal,
@@ -50,28 +50,25 @@ uint256 RCLCxPeerPos::getSigningHash () const
         proposal().position());
 }
 
-bool RCLCxPeerPos::checkSign () const
+bool
+RCLCxPeerPos::checkSign() const
 {
-    return verifyDigest (
-        publicKey_,
-        getSigningHash(),
-        signature_,
-        false);
+    return verifyDigest(publicKey_, getSigningHash(), signature_, false);
 }
 
-Json::Value RCLCxPeerPos::getJson () const
+Json::Value
+RCLCxPeerPos::getJson() const
 {
     auto ret = proposal().getJson();
 
     if (publicKey_.size())
-        ret[jss::peer_id] =  toBase58 (
-            TokenType::TOKEN_NODE_PUBLIC,
-            publicKey_);
+        ret[jss::peer_id] = toBase58(TokenType::TOKEN_NODE_PUBLIC, publicKey_);
 
     return ret;
 }
 
-uint256 proposalUniqueId (
+uint256
+proposalUniqueId(
     uint256 const& proposeHash,
     uint256 const& previousLedger,
     std::uint32_t proposeSeq,
@@ -79,15 +76,15 @@ uint256 proposalUniqueId (
     Slice const& publicKey,
     Slice const& signature)
 {
-    Serializer s (512);
-    s.add256 (proposeHash);
-    s.add256 (previousLedger);
-    s.add32 (proposeSeq);
-    s.add32 (closeTime.time_since_epoch().count());
-    s.addVL (publicKey);
-    s.addVL (signature);
+    Serializer s(512);
+    s.add256(proposeHash);
+    s.add256(previousLedger);
+    s.add32(proposeSeq);
+    s.add32(closeTime.time_since_epoch().count());
+    s.addVL(publicKey);
+    s.addVL(signature);
 
-    return s.getSHA512Half ();
+    return s.getSHA512Half();
 }
 
-} // ripple
+}  // ripple

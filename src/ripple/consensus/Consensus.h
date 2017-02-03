@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2017 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -20,11 +20,11 @@
 #ifndef RIPPLE_CONSENSUS_CONSENSUS_H_INCLUDED
 #define RIPPLE_CONSENSUS_CONSENSUS_H_INCLUDED
 
-#include <ripple/consensus/DisputedTx.h>
-#include <ripple/consensus/ConsensusProposal.h>
-#include <ripple/beast/utility/Journal.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/beast/utility/Journal.h>
+#include <ripple/consensus/ConsensusProposal.h>
+#include <ripple/consensus/DisputedTx.h>
 #include <ripple/json/json_writer.h>
 
 namespace ripple {
@@ -38,30 +38,29 @@ namespace ripple {
     1.  The set of transactions included in the ledger.
     2.  The close time for the ledger.
 
-  The general consensus stages:
+  The basic flow:
 
-     1. Consensus finishes, we build a new last closed ledger and a new open
-        ledger based on it.
-     2. The open ledger interval starts. This gives servers time to finish
-         building the new last closed ledger and fill the new ledger
-         with transactions.
-     3. The ledger closes. Servers send their initial proposal.
-     4. We do not change our position or declare a consensus for at least
-        LEDGER_MIN_CONSENSUS to ensure servers have a chance to make an initial
-        proposal.
-     5. On a frequent timer event, we change our position if needed based on
-        received peer positions.
-     6. When we have a consensus, go to step 1.
+    1. A call to `startRound` places the node in the `Open` phase.  In this
+       phase, the node is waiting for transactions to include in its open ledger.
+    2. Successive calls to `timerEntry` check if the node can close the ledger.
+       Once the node `Close`s the open ledger, it transitions to the
+       `Establish` phase.  In this phase, the node shares/receives peer
+       proposals on which transactions should be accepted in the closed ledger.
+    3. During a subsequent call to `timerEntry`, the node determines it has
+       reached consensus with its peers on which transactions to include. It
+       transitions to the `Accept` phase. In this phase, the node works on
+       applying the transactions to the prior ledger to generate a new closed
+       ledger. Once the new ledger is completed, the node shares the validated
+       ledger with the network, does some book-keeping, then makes a call to
+       `startRound` to start the cycle again.
 
   This class uses CRTP to allow adapting Consensus for specific applications.
 
   The Derived template argument is used to embed consensus within the
   larger application framework. The Traits template identifies types that
   play important roles in Consensus (transactions, ledgers, etc.) and which must
-  conform to the generic interface outlined below. The Traits typesmust be copy
+  conform to the generic interface outlined below. The Traits types must be copy
   constructible and assignable.
-
-  @note The interface below is in flux as this code is refactored.
 
   @code
   // A single transaction
@@ -113,13 +112,12 @@ namespace ripple {
     using ID = ...;
 
     // Unique identifier of ledgerr
-    ID const & id() const;
+    ID const id() const;
     auto seq() const;
     auto closeTimeResolution() const;
     auto closeAgree() const;
     auto closeTime() const;
     auto parentCloseTime() const;
-    auto const & parentID() const;
     Json::Value getJson() const;
   };
 
@@ -128,51 +126,54 @@ namespace ripple {
     using Ledger_t = Ledger;
     using NodeID_t = std::uint32_t;
     using TxSet_t = TxSet;
-    // To be removed; currently needed to handle missing SHAMap node exception
-    using MissingTxException_t = MissingTx;
   }
 
   class ConsensusImp : public Consensus<ConsensusImp, Traits>
   {
-      // Whether consensus should (proposing,validating).
-      std::pair<bool, bool> getMode();
-
       // Attempt to acquire a specific ledger.
-      Ledger const * acquireLedger(Ledger::ID const & ledgerID);
+      boost::optional<Ledger> acquireLedger(Ledger::ID const & ledgerID);
+
+      // Acquire the transaction set associated with a proposed position.
+      boost::optional<TxSet> acquireTxSet(TxSet::ID const & setID);
 
       // Get peers' proposed positions. Returns an iterable
       // with value_type convertable to ConsensusPosition<...>
       auto const & proposals(Ledger::ID const & ledgerID);
 
-      // Acquire the transaction set associated with a proposed position.
-      TxSet const * acquireTxSet(TxSet::ID const & setID);
-
-      // Whether the open ledger has any transactions
+      // Whether any transactions are in the open ledger
       bool hasOpenTransactions() const;
 
-      // Number of proposers that have vallidated the given ledger
+      // Number of proposers that have validated the given ledger
       std::size_t proposersValidated(Ledger::ID const & prevLedger) const;
 
-      // Number of proposers that have validated a ledger descended from requested ledger.
-      std::size_t proposersFinished(LedgerHash const & h) const;re
+      // Number of proposers that have validated a ledger descended from the
+      // given ledger
+      std::size_t proposersFinished(Ledger::ID const & prevLedger) const;
 
-      // Called when a new round of consensus has started
-      void onStartRound(Ledger const &);
+      // Return the ID of the last closed (and validated) ledger that the
+      // application thinks consensus should use as the prior ledger.
+      Ledger::ID getPrevLedger(Ledger::ID const & prevLedgerID,
+                      Ledger const & prevLedger,
+                      Mode mode);
 
-      // Called when ledger is closes
-      void onClose(Ledger const &, bool haveCorrectLCL);
 
-      // Setup later call to Consensus::accept which will call Derived::accept
-      // Can call Consensus::accept immediately if no interest in offloading
-      void dispatchAccept(TxSet const & );
+      // Called when ledger closes
+      Result onClose(Ledger const &, Ledger const & prev, Mode mode);
 
-      // Share given transaction set with peers
-      void share(TxSet const &s);
+      // Called when ledger is accepted by consensus
+      void onAccept(Result const & result,
+        RCLCxLedger const & prevLedger,
+        NetClock::duration closeResolution,
+        CloseTimes const & rawCloseTimes,
+        Mode const & mode);
 
-      // Return the ID of the last closed (and validated) ledger
-      Ledger::ID getLCL(Ledger::ID const & currLedger,
-                      Ledger::ID const & priorLedger,
-                      bool haveCorrectLCL);
+      // Called when ledger was forcibly accepted by consensus via the simulate
+      // function.
+      void onForceAccept(Result const & result,
+        RCLCxLedger const & prevLedger,
+        NetClock::duration closeResolution,
+        CloseTimes const & rawCloseTimes,
+        Mode const & mode);
 
       // Propose the position to peers.
       void propose(ConsensusProposal<...> const & pos);
@@ -182,26 +183,12 @@ namespace ripple {
       // but may be a different type.
       void relay(implementation_defined const & pos);
 
-      // Relay disputed transaction to peers
-      void relay(DisputedTx<Txn, NodeID> const & dispute);
+      // Relay a disputed transaction to peers
+      void relay(Txn const & tx);
 
-      // Create initial position for current consensus round
-      std::pair <TxSet, Proposal>
-      makeInitialPosition(
-            Ledger const & prevLedger,
-            bool isProposing,
-            bool isCorrectLCL,
-            NetClock::time_point closeTime,
-            NetClock::time_point now)
+      // Share given transaction set with peers
+      void relay(TxSet const &s);
 
-
-      // Process the accepted transaction set, generating the newly closed ledger
-      // and clearing out the openTxs that were included.
-      bool accept(TxSet const& set, ... )
-
-      // Called when time to end current round of consensus.  Client code
-      // determines when to call startRound again.
-      void endConsensus(bool correct);
   };
   @endcode
 
@@ -211,19 +198,29 @@ namespace ripple {
 template <class Derived, class Traits>
 class Consensus
 {
-    //! Current stage of consensus
-    enum class State
-    {
+    //! Phases of consensensus:
+    //!        "close"             "accept"
+    //!   open ------- > establish ---------> accepted
+    //!     ^               |                    |
+    //!     |---------------|                    |
+    //!     ^                     "startRound"   |
+    //!     |------------------------------------|
+    //!
+    //! The typical transition goes from open to establish to accepted and
+    //! then a call to startRound begins the process anew.
+    //! However, if a wrong prior ledger is detected and recovered
+    //! during the establish or accept phase, consensus will internally go back
+    //! to open (see handleWrongLedger).
+    enum class Phase {
         //! We haven't closed our ledger yet, but others might have
         open,
 
-        //! Establishing consensus
+        //! Establishing consensus by exchanging proposals with our peers
         establish,
 
-        //! We have closed on a transaction set and are processing the new ledger
-        processing,
-
-        //! We have accepted a new last closed ledger and need to start a new round
+        //! We have accepted a new last closed ledger and are waiting on a call
+        //! to startRound to begin the next consensus round.  No changes
+        //! to consensus phase occur while in this phase.
         accepted,
     };
 
@@ -231,147 +228,240 @@ class Consensus
     using TxSet_t = typename Traits::TxSet_t;
     using NodeID_t = typename Traits::NodeID_t;
     using Tx_t = typename TxSet_t::Tx;
-    using Proposal_t = ConsensusProposal<NodeID_t, typename Ledger_t::ID,
+    using Proposal_t = ConsensusProposal<
+        NodeID_t,
+        typename Ledger_t::ID,
         typename TxSet_t::ID>;
-    using Dispute_t = DisputedTx<Tx_t, NodeID_t>;
+
+protected:
+    //! How we participating in Consensus
+    //!    proposing               observing
+    //!       \                       /
+    //|        \---> wrongLedger <---/
+    //!                   ^
+    //!                   |
+    //!                   |
+    //!                   v
+    //!              switchedLedger
+    //! We enter the round proposing or observing. If we detect we
+    //! are working on the wrong prior ledger, we go to
+    //! wrongLedger and attempt to acquire the right one (ref
+    //! handleWrongLedger). Once we acquire the right one, we go to
+    //! switchedLedger.  If we again detect the wrongLedger before this round
+    //! ends, we go back to wrongLedger until we acquire the right one.
+    enum class Mode {
+        //! We a normal participant in consensus and propose our position
+        proposing,
+        //! We are observing peer positions, but not proposing our position
+        observing,
+        //! We have the wrong ledger and are attempting to acquire it
+        wrongLedger,
+        //! We switched ledger since we started this consensus round but are now
+        //! running on what we believe is the correct ledger.  This mode is as
+        //! if we entered the round observing, but is used to indicate we did
+        //! have the wrongLedger at some point.
+        switchedLedger
+    };
+
+    //! Measure duration of phases of consensus
+    class Stopwatch
+    {
+        using time_point = std::chrono::steady_clock::time_point;
+        time_point start_;
+        std::chrono::milliseconds dur_;
+
+    public:
+        std::chrono::milliseconds
+        read() const
+        {
+            return dur_;
+        }
+
+        void
+        tick(std::chrono::milliseconds fixed)
+        {
+            dur_ += fixed;
+        }
+
+        void
+        reset(time_point tp)
+        {
+            start_ = tp;
+            dur_ = std::chrono::milliseconds{0};
+        }
+
+        void
+        tick(time_point tp)
+        {
+            using namespace std::chrono;
+            dur_ = duration_cast<milliseconds>(tp - start_);
+        }
+    };
+
+    //! Initial ledger close times, not rounded by closeTimeResolution
+    struct CloseTimes
+    {
+        // Close time estimates, keep ordered for predictable traverse
+        std::map<NetClock::time_point, int> peers;
+        NetClock::time_point self;
+    };
+
+    /** Enacpsulates the result of consensus.
+
+        While in the establish phase, represents our work in progress consensus
+        result.  In the accept phase, represents our final consensus result
+        for this round.
+    */
+    struct Result
+    {
+        using Dispute_t = DisputedTx<Tx_t, NodeID_t>;
+
+        Result(TxSet_t&& s, Proposal_t&& p)
+            : set{std::move(s)}, position{std::move(p)}
+        {
+            assert(set.id() == position.position());
+        }
+
+        //! The set of transactions consensus agrees go in the ledger
+        TxSet_t set;
+
+        //! Our proposed position on transactions/close time
+        Proposal_t position;
+
+        //! Transactions which are under dispute with our peers
+        hash_map<typename Tx_t::ID, Dispute_t> disputes;
+
+        // Set of TxSet ids we have already compared/created disputes
+        hash_set<typename TxSet_t::ID> compares;
+
+        // Measures the duration of the establish phase for this consensus round
+        Stopwatch roundTime;
+
+        // Indicates state in which consensus ended.  Once in the accept phase
+        // will be either Yes or MovedOn
+        ConsensusState state = ConsensusState::No;
+    };
 
 public:
-
     //! Clock type for measuring time within the consensus code
-    using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
+    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
-    Consensus(Consensus &&) = default;
+    Consensus(Consensus&&) = default;
 
     /** Constructor.
 
         @param clock The clock used to internally sample consensus progress
         @param j The journal to log debug output
     */
-    Consensus(clock_type const & clock, beast::Journal j);
-
+    Consensus(clock_type const& clock, beast::Journal j);
 
     /** Kick-off the next round of consensus.
 
         Called by the client code to start each round of consensus.
 
         @param now The network adjusted time
-        @param prevLgrId the ID/hash of the last ledger
-        @param prevLgr Best guess of what the last closed ledger was.
+        @param prevLedgerID the ID of the last ledger
+        @param prevLedger The last ledger
+        @param proposing Whether we want to send proposals to peers this round.
 
-        @note @b prevLgrId is not required to the ID of @b prevLgr since
-        the ID is shared independent of the full ledger.
+        @note @b prevLedgerID is not required to the ID of @b prevLedger since
+        the ID may be known locally before the contents of the ledger arrive
     */
     void
-    startRound (
+    startRound(
         NetClock::time_point const& now,
-        typename Ledger_t::ID const& prevLgrId,
-        Ledger_t const& prevLgr);
+        typename Ledger_t::ID const& prevLedgerID,
+        Ledger_t const& prevLedger,
+        bool proposing);
 
-
-    /** A peer has proposed a new position, adjust our tracking
+    /** A peer has proposed a new position, adjust our tracking.
 
         @param now The network adjusted time
         @param newProposal The new proposal from a peer
         @return Whether we should do delayed relay of this proposal.
     */
     bool
-    peerProposal (
+    peerProposal(
         NetClock::time_point const& now,
         Proposal_t const& newProposal);
 
-    /** Call periodically to drive consensus forward
+    /** Call periodically to drive consensus forward.
 
         @param now The network adjusted time
     */
     void
-    timerEntry (NetClock::time_point const& now);
+    timerEntry(NetClock::time_point const& now);
 
-    /**
-        Process a transaction set, typically acquired from the network
+    /** Process a transaction set acquired from the network
 
         @param now The network adjusted time
         @param txSet the transaction set
     */
     void
-    gotTxSet (
-        NetClock::time_point const& now,
-        TxSet_t const& txSet);
+    gotTxSet(NetClock::time_point const& now, TxSet_t const& txSet);
 
     /** Simulate the consensus process without any network traffic.
 
-         The end result, is that consensus begins and completes as if everyone
-         had agreed with whatever we propose.
+       The end result, is that consensus begins and completes as if everyone
+       had agreed with whatever we propose.
 
-         This function is only called from the rpc "ledger_accept" path with the
-         server in standalone mode and SHOULD NOT be used during the normal
-         consensus process.
+       This function is only called from the rpc "ledger_accept" path with the
+       server in standalone mode and SHOULD NOT be used during the normal
+       consensus process.
 
-         @param now The current network adjusted time.
-         @param consensusDelay (Optional) duration to delay between closing and
-                                accepting the ledger. Uses 100ms if unspecified.
+       Simulate will call onForceAccept since clients are manually driving
+       consensus to the accept phase.
+
+       @param now The current network adjusted time.
+       @param consensusDelay Duration to delay between closing and accepting the
+                             ledger. Uses 100ms if unspecified.
     */
     void
     simulate(
         NetClock::time_point const& now,
         boost::optional<std::chrono::milliseconds> consensusDelay);
 
-    /** Get the last closed ledger ID.
+    /** Get the previous ledger ID.
 
-        The last closed ledger is the last validated ledger seen by the consensus
-        code.
+        The previous ledger is the last ledger seen by the consensus code and
+        should correspond to the most recent validated ledger seen by this peer.
 
-        @return ID of last closed ledger.
+        @return ID of previous ledger
     */
     typename Ledger_t::ID
-    LCL()
+    prevLedgerID() const
     {
-       std::lock_guard<std::recursive_mutex> _(*lock_);
-       return prevLedgerID_;
+        std::lock_guard<std::recursive_mutex> _(*lock_);
+        return prevLedgerID_;
     }
 
-    //! Get the number of proposing peers that participated in the previous round.
-    int
-    getLastCloseProposers() const
+    //! Get the number of proposing peers that participated in the previous
+    //! round.
+    std::size_t
+    prevProposers() const
     {
-        return previousProposers_;
+        return prevProposers_;
     }
 
     /** Get duration of the previous round.
 
-        The duration of the round is measured from closing the open ledger to
-        starting acceptance of the consensus transaction set.
+        The duration of the round is the establish phase, measured from closing
+        the open ledger to accepting the consensus result.
 
         @return Last round duration in milliseconds
     */
     std::chrono::milliseconds
-    getLastConvergeDuration() const
+    prevRoundTime() const
     {
-        return previousRoundTime_;
+        return prevRoundTime_;
     }
 
-    //! Whether we are sending proposals during consensus.
-    bool
-    proposing() const
+    /** Get the current consensus mode.
+     */
+    Mode
+    mode() const
     {
-        return proposing_;
-    }
-
-    //! Whether we are validating consensus ledgers.
-    bool
-    validating() const
-    {
-        return validating_;
-    }
-
-    /** Whether we have the correct last closed ledger.
-
-        This is typically a case where we have seen the ID/hash of a newer
-        ledger, but do not have the ledger itself.
-    */
-    bool
-    haveCorrectLCL() const
-    {
-        return haveCorrectLCL_;
+        return mode_;
     }
 
     /** Get the Json state of the consensus process.
@@ -382,204 +472,119 @@ public:
         @return     The Json state.
     */
     Json::Value
-    getJson (bool full) const;
+    getJson(bool full) const;
 
 protected:
-    /** Accept a new last closed ledger.
 
-        We believe the network reached Consensus on a set of transactions. This
-        function accepts those new transactions, creating a new last closed
-        ledger.  The bulk of the work is dispatched to the deriving class' accept
-        method.
+    // Prevent deleting derived instance through base pointer
+    ~Consensus() = default;
 
-        @param set Our consensus transaction set
-
-        @note This is protected so the Derived class can call it from dispatchAccept.
+    /** Revoke our outstanding proposal, if any, and cease proposing
+        until this round ends.
     */
     void
-    accept(TxSet_t const& set);
+    leaveConsensus();
 
 private:
-
-    /** Internal version of @ref startRound to allow restarting state when
-        wrong LCL acquired.
-    */
     void
-    startRoundInternal (
+    startRoundInternal(
         NetClock::time_point const& now,
-        typename Ledger_t::ID const& prevLgrId,
-        Ledger_t const& prevLgr);
+        typename Ledger_t::ID const& prevLedgerID,
+        Ledger_t const& prevLedger,
+        Mode mode);
 
-    /** Change our view of the last closed ledger
+    // Change our view of the previous ledger
+    void
+    handleWrongLedger(typename Ledger_t::ID const& lgrId);
 
-        @param lgrId The ID of the last closed ledger to switch to.
+    /** Check if our previous ledger matches the network's.
+
+        If the previous ledger differs, we are no longer in sync with
+        the network and need to bow out/switch modes.
     */
     void
-    handleLCL (typename Ledger_t::ID const& lgrId);
-
-    /** Check if our last closed ledger matches the network's.
-
-        If the last closed ledger differs,  we are no longer in sync with
-        the network. If we enter the consensus round with
-        the wrong ledger, we can leave it with the correct ledger so
-        that we can participate in the next round.
-    */
-    void
-    checkLCL ();
+    checkLedger();
 
     /** If we radically changed our consensus context for some reason,
         we need to replay recent proposals so that they're not lost.
     */
     void
-    playbackProposals ();
+    playbackProposals();
 
+    /** Handle pre-close phase.
 
-    /** Handle pre-close state.
-
-        In the pre-close state, the ledger is open as we wait for new
-        transactions.  After enough time has elapsed, we will close the ledger
-        and start the consensus process.
+        In the pre-close phase, the ledger is open as we wait for new
+        transactions.  After enough time has elapsed, we will close the ledger,
+        switch to the establish phase and start the consensus process.
     */
     void
-    statePreClose ();
+    phaseOpen();
 
-    /** Handle establish state.
+    /** Handle establish phase.
 
-        In the establish state, the ledger has closed and we work with peers
+        In the establish phase, the ledger has closed and we work with peers
         to reach consensus. Update our position only on the timer, and in this
-        state.
+        phase.
 
-        If we have consensus, move to the processing state.
+        If we have consensus, move to the accepted phase.
     */
     void
-    stateEstablish ();
+    phaseEstablish();
 
-    /** Close the open ledger and establish initial position.
-    */
+    // Close the open ledger and establish initial position.
     void
-    closeLedger ();
+    closeLedger();
 
-    /** Take an initial position on the consensus set.
-    */
+    // Adjust our positions to try to agree with other validators.
     void
-    takeInitialPosition ();
+    updateOurPositions();
 
-    /** Compare two proposed transaction sets and create disputed
-        transctions structures for any mismatches
-
-        @param m1 One transaction set
-        @param m2 The other transaction set
-    */
-    void
-    createDisputes (TxSet_t const& m1, TxSet_t const& m2);
-
-    /** Add a disputed transaction (one that at least one node wants
-        in the consensus set and at least one node does not) to our tracking
-
-        @param tx The disputed transaction
-    */
-    void
-    addDisputedTransaction (Tx_t const& tx);
-
-    /** Adjust the votes on all disputed transactions based
-        on the set of peers taking this position
-
-        @param txSet A disputed position
-        @param peers Peers which are taking the position txSet
-    */
-    void adjustCount (TxSet_t const& txSet, std::vector<NodeID_t> const& peers);
-
-    /** Adjust our positions to try to agree with other validators.
-
-    */
-    void
-    updateOurPositions ();
-
-    /** @return Whether we've reached consensus
-    */
     bool
-    haveConsensus ();
+    haveConsensus();
 
-    /** Revoke our outstanding proposal, if any, and cease proposing at least
-        until this round ends.
-    */
+    // Create disputes between our position and the provided one.
     void
-    leaveConsensus ();
+    createDisputes(TxSet_t const& o);
 
-    /** Process complete transaction set.
-
-        Called when:
-          * We take our initial position
-          * We take a new position
-          * We acquire a position a validator took
-
-       We store it, notify peers that we have it, and update our tracking if
-       any validators currently propose it.
-
-      @param txSet      the transaction set.
-      @param acquired true if we have acquired the transaction set.
-    */
+    // Update our disputes given that this node has adopted a new position.
+    // Will call createDisputes as needed.
     void
-    gotTxSetInternal ( TxSet_t const& txSet, bool acquired);
+    updateDisputes(NodeID_t const& node, TxSet_t const& other);
 
-
-    /** Initiate acceptance of a the next closed ledger.
-
-        After consensus is complete, beginAccept is called to start
-        accepting the consensus transaction set.  In synchronous mode, this will
-        directly call the accept member function. However, since accepting and
-        generating a new ledger is likely computationally intensive, the
-        asynchronous mode defer to the Derived class dispatchAccept call to
-        schedule the call to accept.
-
-        @param synchronous Do not dispatch to Derived and instead call accept
-                           directly.
-    */
-    void
-    beginAccept (bool synchronous);
-
-
-    /** @return The Derived class that implements the CRTP requirements.
-    */
-    Derived &
+    Derived&
     impl()
     {
         return *static_cast<Derived*>(this);
     }
 
+    static std::string
+    to_string(Phase p);
+
+    static std::string
+    to_string(Mode m);
+
+private:
     // TODO: Move this to clients
     std::unique_ptr<std::recursive_mutex> lock_;
 
-    //-------------------------------------------------------------------------
-    // Consensus state variables
-    State state_ = State::accepted;
-    bool proposing_ = false;
-    bool validating_ = false;
-    bool haveCorrectLCL_ = false;
-    bool consensusFail_ = false;
-    bool haveCloseTimeConsensus_ = false;
+    Phase phase_ = Phase::accepted;
+    Mode mode_ = Mode::observing;
     bool firstRound_ = true;
+    bool haveCloseTimeConsensus_ = false;
 
-    //-------------------------------------------------------------------------
-    //! Clock for measuring consensus progress
-    clock_type const & clock_;
-
-    // How much time has elapsed since the round started
-    std::chrono::milliseconds roundTime_ = std::chrono::milliseconds{0};
-    // How long has this round been open
-    std::chrono::milliseconds openTime_ = std::chrono::milliseconds{0};
+    clock_type const& clock_;
 
     // How long the consensus convergence has taken, expressed as
     // a percentage of the time that we expected it to take.
     int convergePercent_{0};
+
+    // How long has this round been open
+    Stopwatch openTime_;
+
     NetClock::duration closeResolution_ = ledgerDefaultTimeResolution;
-    // When startRound was last called
-    clock_type::time_point openStartTime_;
-    // When consensus started
-    clock_type::time_point consensusStartTime_;
 
     // Time it took for the last consensus round to converge
-    std::chrono::milliseconds previousRoundTime_ = LEDGER_IDLE_INTERVAL;
+    std::chrono::milliseconds prevRoundTime_ = LEDGER_IDLE_INTERVAL;
 
     //-------------------------------------------------------------------------
     // Network time measurements of consensus progress
@@ -587,12 +592,7 @@ private:
     // The current network adjusted time.  This is the network time the
     // ledger would close if it closed now
     NetClock::time_point now_;
-
-    // The network time this ledger closed
-    NetClock::time_point closeTime_;
-
-    // Close time estimates, keep ordered for predictable traverse
-    std::map <NetClock::time_point, int> closeTimes_;
+    NetClock::time_point prevCloseTime_;
 
     //-------------------------------------------------------------------------
     // Non-peer (self) consensus data
@@ -605,177 +605,137 @@ private:
     // Transaction Sets, indexed by hash of transaction tree
     hash_map<typename TxSet_t::ID, const TxSet_t> acquired_;
 
-    boost::optional<Proposal_t> ourPosition_;
-    boost::optional<TxSet_t> ourSet_;
-
+    boost::optional<Result> result_;
+    CloseTimes rawCloseTimes_;
     //-------------------------------------------------------------------------
     // Peer related consensus data
     // Convergence tracking, trusted peers indexed by hash of public key
-    hash_map<NodeID_t, Proposal_t>  peerProposals_;
+    hash_map<NodeID_t, Proposal_t> peerProposals_;
 
     // The number of proposers who participated in the last consensus round
-    std::size_t previousProposers_ = 0;
-
-    // Disputed transactions
-    hash_map<typename Tx_t::ID, Dispute_t> disputes_;
-
-    // Set of TxSet ids we have already compared/created disputes
-    hash_set<typename TxSet_t::ID> compares_;
+    std::size_t prevProposers_ = 0;
 
     // nodes that have bowed out of this consensus process
     hash_set<NodeID_t> deadNodes_;
 
     // Journal for debugging
     beast::Journal j_;
-
 };
 
 template <class Derived, class Traits>
-Consensus<Derived, Traits>::Consensus (
-        clock_type const & clock,
-        beast::Journal journal)
+Consensus<Derived, Traits>::Consensus(
+    clock_type const& clock,
+    beast::Journal journal)
     : lock_(std::make_unique<std::recursive_mutex>())
     , clock_(clock)
-    , j_(journal)
+    , j_{journal}
 {
-    JLOG (j_.debug()) << "Creating consensus object";
+    JLOG(j_.debug()) << "Creating consensus object";
 }
 
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::startRound (
+Consensus<Derived, Traits>::startRound(
     NetClock::time_point const& now,
-    typename Ledger_t::ID const& prevLCLHash,
-    Ledger_t const & prevLedger)
+    typename Ledger_t::ID const& prevLedgerID,
+    Ledger_t const& prevLedger,
+    bool proposing)
 {
     std::lock_guard<std::recursive_mutex> _(*lock_);
-
-    if (state_ == State::processing)
-    {
-        // We can't start a new round while we're processing
-        return;
-    }
 
     if (firstRound_)
     {
         // take our initial view of closeTime_ from the seed ledger
-        closeTime_ = prevLedger.closeTime();
+        prevCloseTime_ = prevLedger.closeTime();
         firstRound_ = false;
-    }
-
-
-    // Can only change proposing/validating state on non-internal startRound
-    // calls
-
-    // We should not be proposing but not validating
-    // Okay to validate but not propose
-    std::tie(proposing_, validating_) = impl().getMode();
-    assert (! proposing_ || validating_);
-
-    if (validating_)
-    {
-        JLOG (j_.info())
-            << "Entering consensus process, validating";
     }
     else
     {
-        // Otherwise we just want to monitor the validation process.
-        JLOG (j_.info())
-            << "Entering consensus process, watching";
+        prevCloseTime_ = rawCloseTimes_.self;
     }
-
-    startRoundInternal(now, prevLCLHash, prevLedger);
+    startRoundInternal(
+        now,
+        prevLedgerID,
+        prevLedger,
+        proposing ? Mode::proposing : Mode::observing);
 }
-
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::startRoundInternal (
+Consensus<Derived, Traits>::startRoundInternal(
     NetClock::time_point const& now,
-    typename Ledger_t::ID const& prevLCLHash,
-    Ledger_t const & prevLedger)
+    typename Ledger_t::ID const& prevLedgerID,
+    Ledger_t const& prevLedger,
+    Mode mode)
 {
-    state_ = State::open;
+    phase_ = Phase::open;
+    mode_ = mode;
     now_ = now;
-    prevLedgerID_ = prevLCLHash;
+    prevLedgerID_ = prevLedgerID;
     previousLedger_ = prevLedger;
-    ourPosition_.reset();
-    ourSet_.reset();
-    consensusFail_ = false;
-    roundTime_ = 0ms;
+    result_.reset();
     convergePercent_ = 0;
     haveCloseTimeConsensus_ = false;
-    openStartTime_ = clock_.now();
-    haveCorrectLCL_ = (previousLedger_.id() == prevLedgerID_);
-
-    impl().onStartRound(previousLedger_);
-
+    openTime_.reset(clock_.now());
     peerProposals_.clear();
     acquired_.clear();
-    disputes_.clear();
-    compares_.clear();
-    closeTimes_.clear();
+    rawCloseTimes_.peers.clear();
+    rawCloseTimes_.self = {};
     deadNodes_.clear();
 
-    closeResolution_ = getNextLedgerTimeResolution (
+    closeResolution_ = getNextLedgerTimeResolution(
         previousLedger_.closeTimeResolution(),
         previousLedger_.closeAgree(),
         previousLedger_.seq() + 1);
 
-
-    if (! haveCorrectLCL_)
+    if (previousLedger_.id() != prevLedgerID_)
     {
-        // If we were not handed the correct LCL, then set our state
-        // to not proposing.
-        handleLCL (prevLedgerID_);
+        handleWrongLedger(prevLedgerID_);
 
-        if (! haveCorrectLCL_)
+        // Unable to acquire the correct ledger
+        if (mode_ == Mode::wrongLedger)
         {
-            JLOG (j_.info())
-                << "Entering consensus with: "
-                << previousLedger_.id();
-            JLOG (j_.info())
-                << "Correct LCL is: " << prevLCLHash;
+            JLOG(j_.info())
+                << "Entering consensus with: " << previousLedger_.id();
+            JLOG(j_.info()) << "Correct LCL is: " << prevLedgerID;
         }
     }
 
-    playbackProposals ();
-    if (peerProposals_.size() > (previousProposers_ / 2))
+    playbackProposals();
+    if (peerProposals_.size() > (prevProposers_ / 2))
     {
         // We may be falling behind, don't wait for the timer
         // consider closing the ledger immediately
-        timerEntry (now_);
+        timerEntry(now_);
     }
 }
 
 template <class Derived, class Traits>
 bool
-Consensus<Derived, Traits>::peerProposal (
+Consensus<Derived, Traits>::peerProposal(
     NetClock::time_point const& now,
     Proposal_t const& newProposal)
 {
-    auto const peerID = newProposal.nodeID ();
+    auto const peerID = newProposal.nodeID();
 
     std::lock_guard<std::recursive_mutex> _(*lock_);
 
     // Nothing to do if we are currently working on a ledger
-    if ((state_ == State::processing) || (state_ == State::accepted))
+    if (phase_ == Phase::accepted)
         return false;
 
     now_ = now;
 
     if (newProposal.prevLedger() != prevLedgerID_)
     {
-        JLOG (j_.debug()) << "Got proposal for "
-            << newProposal.prevLedger()
-            << " but we are on " << prevLedgerID_;
+        JLOG(j_.debug()) << "Got proposal for " << newProposal.prevLedger()
+                         << " but we are on " << prevLedgerID_;
         return false;
     }
 
-    if (deadNodes_.find (peerID) != deadNodes_.end ())
+    if (deadNodes_.find(peerID) != deadNodes_.end())
     {
         using std::to_string;
-        JLOG (j_.info())
-            << "Position from dead node: " << to_string (peerID);
+        JLOG(j_.info()) << "Position from dead node: " << to_string(peerID);
         return false;
     }
 
@@ -785,25 +745,26 @@ Consensus<Derived, Traits>::peerProposal (
 
         if (currentPosition != peerProposals_.end())
         {
-            if (newProposal.proposeSeq ()
-                <= currentPosition->second.proposeSeq())
+            if (newProposal.proposeSeq() <=
+                currentPosition->second.proposeSeq())
             {
                 return false;
             }
         }
 
-        if (newProposal.isBowOut ())
+        if (newProposal.isBowOut())
         {
             using std::to_string;
 
-            JLOG (j_.info())
-                << "Peer bows out: " << to_string (peerID);
-
-            for (auto& it : disputes_)
-                it.second.unVote (peerID);
+            JLOG(j_.info()) << "Peer bows out: " << to_string(peerID);
+            if (result_)
+            {
+                for (auto& it : result_->disputes)
+                    it.second.unVote(peerID);
+            }
             if (currentPosition != peerProposals_.end())
-                peerProposals_.erase (peerID);
-            deadNodes_.insert (peerID);
+                peerProposals_.erase(peerID);
+            deadNodes_.insert(peerID);
 
             return true;
         }
@@ -811,44 +772,35 @@ Consensus<Derived, Traits>::peerProposal (
         if (currentPosition != peerProposals_.end())
             currentPosition->second = newProposal;
         else
-            peerProposals_.emplace (peerID, newProposal);
+            peerProposals_.emplace(peerID, newProposal);
     }
 
-    if (newProposal.isInitial ())
+    if (newProposal.isInitial())
     {
         // Record the close time estimate
-        JLOG (j_.trace())
-            << "Peer reports close time as "
-            << newProposal.closeTime().time_since_epoch().count();
-        ++closeTimes_[newProposal.closeTime()];
+        JLOG(j_.trace()) << "Peer reports close time as "
+                         << newProposal.closeTime().time_since_epoch().count();
+        ++rawCloseTimes_.peers[newProposal.closeTime()];
     }
 
-    JLOG (j_.trace()) << "Processing peer proposal "
-        << newProposal.proposeSeq () << "/"
-        << newProposal.position ();
+    JLOG(j_.trace()) << "Processing peer proposal " << newProposal.proposeSeq()
+                     << "/" << newProposal.position();
 
     {
-        auto ait = acquired_.find (newProposal.position());
+        auto ait = acquired_.find(newProposal.position());
         if (ait == acquired_.end())
         {
+            // acquireTxSet will return the set if it is available, or
+            // spawn a request for it and return none/nullptr.  It will call
+            // gotTxSet once it arrives
             if (auto set = impl().acquireTxSet(newProposal.position()))
-            {
-                ait = acquired_.emplace (newProposal.position(),
-                    std::move(*set)).first;
-            }
+                gotTxSet(now_, *set);
+            else
+                JLOG(j_.debug()) << "Don't have tx set for peer";
         }
-
-
-        if (ait != acquired_.end())
+        else if (result_)
         {
-            for (auto& it : disputes_)
-                it.second.setVote (peerID,
-                    ait->second.exists (it.first));
-        }
-        else
-        {
-            JLOG (j_.debug())
-                << "Don't have tx set for peer";
+            updateDisputes(newProposal.nodeID(), ait->second);
         }
     }
 
@@ -857,115 +809,111 @@ Consensus<Derived, Traits>::peerProposal (
 
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::timerEntry (NetClock::time_point const& now)
+Consensus<Derived, Traits>::timerEntry(NetClock::time_point const& now)
 {
     std::lock_guard<std::recursive_mutex> _(*lock_);
 
+    // Nothing to do if we are currently working on a ledger
+    if (phase_ == Phase::accepted)
+        return;
+
     now_ = now;
 
-    try
+    // Check we are on the proper ledger (this may change phase_)
+    checkLedger();
+
+    if(phase_ == Phase::open)
     {
-        using namespace std::chrono;
-
-        // checkLCL may change state_, so it needs to run prior to the
-        // switch (state_) below
-        if(state_ == State::open || state_ == State::establish)
-            checkLCL ();
-
-        switch (state_)
-        {
-        case State::open:
-            statePreClose ();
-            break;
-
-        case State::establish:
-            stateEstablish ();
-            break;
-
-        case State::processing:
-            // We are processing the finished ledger
-            // logic of calculating next ledger advances us out of this state
-            // nothing to do
-            break;
-
-        case State::accepted:
-            // NetworkOPs needs to setup the next round
-            // nothing to do
-            break;
-
-        default:
-            assert (false);
-        }
+        phaseOpen();
     }
-    catch (typename Traits::MissingTxException_t const& mn)
+    else if (phase_ == Phase::establish)
     {
-        // This should never happen
-        leaveConsensus ();
-        JLOG (j_.error()) <<
-           "Missing node during consensus process " << mn;
-        Rethrow();
+        phaseEstablish();
     }
 }
 
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::gotTxSet (
+Consensus<Derived, Traits>::gotTxSet(
     NetClock::time_point const& now,
     TxSet_t const& txSet)
 {
     std::lock_guard<std::recursive_mutex> _(*lock_);
 
-    // Nothing to do if we are currently working on a ledger
-    if ((state_ == State::processing) || (state_ == State::accepted))
+    // Nothing to do if we've finished work on a ledger
+    if (phase_ == Phase::accepted)
         return;
 
     now_ = now;
 
-    try
+    auto id = txSet.id();
+
+    // If we've already processed this transaction set since requesting
+    // it from the network, there is nothing to do now
+    if (!acquired_.emplace(id, txSet).second)
+        return;
+
+    if (!result_)
     {
-        gotTxSetInternal (txSet, true);
+        JLOG(j_.debug()) << "Not creating disputes: no position yet.";
     }
-    catch (typename Traits::MissingTxException_t const& mn)
+    else
     {
-        // This should never happen
-        leaveConsensus();
-        JLOG (j_.error()) <<
-            "Missing node processing complete map " << mn;
-        Rethrow();
+        // Our position is added to acquired_ as soon as we create it,
+        // so this txSet must differ
+        assert(id != result_->position.position());
+        bool any = false;
+        for (auto const& p : peerProposals_)
+        {
+            if (p.second.position() == id)
+            {
+                updateDisputes(p.first, txSet);
+                any = true;
+            }
+        }
+
+        if (!any)
+        {
+            JLOG(j_.warn())
+                << "By the time we got " << id << " no peers were proposing it";
+        }
     }
 }
 
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::simulate (
+Consensus<Derived, Traits>::simulate(
     NetClock::time_point const& now,
     boost::optional<std::chrono::milliseconds> consensusDelay)
 {
     std::lock_guard<std::recursive_mutex> _(*lock_);
 
-    JLOG (j_.info()) << "Simulating consensus";
+    JLOG(j_.info()) << "Simulating consensus";
     now_ = now;
-    closeLedger ();
-    roundTime_ = consensusDelay.value_or(100ms);
-    beginAccept (true);
-    JLOG (j_.info()) << "Simulation complete";
+    closeLedger();
+    result_->roundTime.tick(consensusDelay.value_or(100ms));
+    prevProposers_ = peerProposals_.size();
+    prevRoundTime_ = result_->roundTime.read();
+    phase_ = Phase::accepted;
+    impl().onForceAccept(
+        *result_, previousLedger_, closeResolution_, rawCloseTimes_, mode_);
+    JLOG(j_.info()) << "Simulation complete";
 }
 
 template <class Derived, class Traits>
 Json::Value
-Consensus<Derived, Traits>::getJson (bool full) const
+Consensus<Derived, Traits>::getJson(bool full) const
 {
     using std::to_string;
     using Int = Json::Value::Int;
 
-    Json::Value ret (Json::objectValue);
+    Json::Value ret(Json::objectValue);
     std::lock_guard<std::recursive_mutex> _(*lock_);
 
-    ret["proposing"] = proposing_;
-    ret["validating"] = validating_;
-    ret["proposers"] = static_cast<int> (peerProposals_.size ());
+    ret["proposing"] = (mode_ == Mode::proposing);
+    ret["proposers"] = static_cast<int>(peerProposals_.size());
 
-    if (haveCorrectLCL_)
+    if (mode_ != Mode::wrongLedger)
     {
         ret["synched"] = true;
         ret["ledger_seq"] = previousLedger_.seq() + 1;
@@ -974,90 +922,73 @@ Consensus<Derived, Traits>::getJson (bool full) const
     else
         ret["synched"] = false;
 
-    switch (state_)
-    {
-    case State::open:
-        ret["state"] = "open";
-        break;
+    ret["phase"] = Consensus::to_string(phase_);
 
-    case State::establish:
-        ret["state"] = "consensus";
-        break;
+    if (result_ && !result_->disputes.empty() && !full)
+        ret["disputes"] = static_cast<Int>(result_->disputes.size());
 
-    case State::processing:
-        ret["state"] = "processing";
-        break;
-
-    case State::accepted:
-        ret["state"] = "accepted";
-        break;
-    }
-
-    int v = disputes_.size ();
-
-    if ((v != 0) && !full)
-        ret["disputes"] = v;
-
-    if (ourPosition_)
-        ret["our_position"] = ourPosition_->getJson ();
+    if (result_)
+        ret["our_position"] = result_->position.getJson();
 
     if (full)
     {
-        ret["current_ms"] = static_cast<Int>(roundTime_.count());
+        if (result_)
+            ret["current_ms"] =
+                static_cast<Int>(result_->roundTime.read().count());
         ret["converge_percent"] = convergePercent_;
         ret["close_resolution"] = static_cast<Int>(closeResolution_.count());
         ret["have_time_consensus"] = haveCloseTimeConsensus_;
-        ret["previous_proposers"] = static_cast<Int>(previousProposers_);
-        ret["previous_mseconds"] =
-            static_cast<Int>(previousRoundTime_.count());
+        ret["previous_proposers"] = static_cast<Int>(prevProposers_);
+        ret["previous_mseconds"] = static_cast<Int>(prevRoundTime_.count());
 
-        if (! peerProposals_.empty ())
+        if (!peerProposals_.empty())
         {
-            Json::Value ppj (Json::objectValue);
+            Json::Value ppj(Json::objectValue);
 
             for (auto& pp : peerProposals_)
             {
-                ppj[to_string (pp.first)] = pp.second.getJson ();
+                ppj[to_string(pp.first)] = pp.second.getJson();
             }
             ret["peer_positions"] = std::move(ppj);
         }
 
-        if (! acquired_.empty ())
+        if (!acquired_.empty())
         {
-            Json::Value acq (Json::arrayValue);
+            Json::Value acq(Json::arrayValue);
             for (auto& at : acquired_)
             {
-                acq.append (to_string (at.first));
+                acq.append(to_string(at.first));
             }
             ret["acquired"] = std::move(acq);
         }
 
-        if (! disputes_.empty ())
+        if (result_ && !result_->disputes.empty())
         {
-            Json::Value dsj (Json::objectValue);
-            for (auto& dt : disputes_)
+            Json::Value dsj(Json::objectValue);
+            for (auto& dt : result_->disputes)
             {
-                dsj[to_string (dt.first)] = dt.second.getJson ();
+                dsj[to_string(dt.first)] = dt.second.getJson();
             }
             ret["disputes"] = std::move(dsj);
         }
 
-        if (! closeTimes_.empty ())
+        if (!rawCloseTimes_.peers.empty())
         {
-            Json::Value ctj (Json::objectValue);
-            for (auto& ct : closeTimes_)
+            Json::Value ctj(Json::objectValue);
+            for (auto& ct : rawCloseTimes_.peers)
             {
-                ctj[std::to_string(ct.first.time_since_epoch().count())] = ct.second;
+                ctj[std::to_string(ct.first.time_since_epoch().count())] =
+                    ct.second;
             }
             ret["close_times"] = std::move(ctj);
         }
 
-        if (! deadNodes_.empty ())
+        if (!deadNodes_.empty())
         {
-            Json::Value dnj (Json::arrayValue);
+            Json::Value dnj(Json::arrayValue);
             for (auto const& dn : deadNodes_)
             {
-                dnj.append (to_string (dn));
+                dnj.append(to_string(dn));
             }
             ret["dead_nodes"] = std::move(dnj);
         }
@@ -1066,409 +997,217 @@ Consensus<Derived, Traits>::getJson (bool full) const
     return ret;
 }
 
-// Handle a change in the LCL during a consensus round
+// Handle a change in the prior ledger during a consensus round
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::handleLCL (typename Ledger_t::ID const& lgrId)
+Consensus<Derived, Traits>::handleWrongLedger(
+    typename Ledger_t::ID const& lgrId)
 {
-    assert (lgrId != prevLedgerID_ ||
-            previousLedger_.id() != lgrId);
+    assert(lgrId != prevLedgerID_ || previousLedger_.id() != lgrId);
 
     if (prevLedgerID_ != lgrId)
     {
         // first time switching to this ledger
         prevLedgerID_ = lgrId;
 
-        if (haveCorrectLCL_ && proposing_ && ourPosition_)
+        // Stop proposing because we are out of sync
+        leaveConsensus();
+
+        if (result_)
         {
-            JLOG (j_.info()) << "Bowing out of consensus";
-            leaveConsensus();
+            result_->disputes.clear();
+            result_->compares.clear();
         }
 
-        // Stop proposing because we are out of sync
-        proposing_ = false;
-        peerProposals_.clear ();
-        disputes_.clear ();
-        compares_.clear ();
-        closeTimes_.clear ();
-        deadNodes_.clear ();
-        // To get back in sync:
-        playbackProposals ();
+        peerProposals_.clear();
+        rawCloseTimes_.peers.clear();
+        deadNodes_.clear();
+
+        // Get back in sync, this will also recreate disputes
+        playbackProposals();
     }
 
     if (previousLedger_.id() == prevLedgerID_)
         return;
 
     // we need to switch the ledger we're working from
-    if (auto buildLCL = impl().acquireLedger(prevLedgerID_))
+    if (auto newLedger = impl().acquireLedger(prevLedgerID_))
     {
-        JLOG (j_.info()) << "Have the consensus ledger " << prevLedgerID_;
-        startRoundInternal (now_, lgrId, *buildLCL);
+        JLOG(j_.info()) << "Have the consensus ledger " << prevLedgerID_;
+        startRoundInternal(now_, lgrId, *newLedger, Mode::switchedLedger);
     }
     else
     {
-            haveCorrectLCL_ = false;
+        mode_ = Mode::wrongLedger;
     }
 }
 
-
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::checkLCL ()
+Consensus<Derived, Traits>::checkLedger()
 {
-    auto netLgr = impl().getLCL (
-        prevLedgerID_,
-        haveCorrectLCL_ ? previousLedger_.parentID() : typename Ledger_t::ID{},
-        haveCorrectLCL_);
+    auto netLgr = impl().getPrevLedger(prevLedgerID_, previousLedger_, mode_);
 
     if (netLgr != prevLedgerID_)
     {
-        // LCL change
-        const char* status;
-
-        switch (state_)
-        {
-        case State::open:
-            status = "open";
-            break;
-
-        case State::establish:
-            status = "establish";
-            break;
-
-        case State::processing:
-            status = "processing";
-            break;
-
-        case State::accepted:
-            status = "accepted";
-            break;
-
-        default:
-            status = "unknown";
-        }
-
-        JLOG (j_.warn())
-            << "View of consensus changed during " << status
-            << " status=" << status << ", "
-            << (haveCorrectLCL_ ? "CorrectLCL" : "IncorrectLCL");
-        JLOG (j_.warn()) << prevLedgerID_
-            << " to " << netLgr;
-        JLOG (j_.warn())
-            << previousLedger_.getJson();
-        handleLCL (netLgr);
+        JLOG(j_.warn()) << "View of consensus changed during "
+                        << to_string(phase_) << " status=" << to_string(phase_)
+                        << ", "
+                        << " mode=" << to_string(mode_);
+        JLOG(j_.warn()) << prevLedgerID_ << " to " << netLgr;
+        JLOG(j_.warn()) << previousLedger_.getJson();
+        handleWrongLedger(netLgr);
     }
-    else if(previousLedger_.id() != prevLedgerID_)
-        handleLCL(netLgr);
+    else if (previousLedger_.id() != prevLedgerID_)
+        handleWrongLedger(netLgr);
 }
 
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::playbackProposals ()
+Consensus<Derived, Traits>::playbackProposals()
 {
-    for (auto const & p : impl().proposals(prevLedgerID_))
+    for (auto const& p : impl().proposals(prevLedgerID_))
     {
-        if(peerProposal(now_, p))
+        if (peerProposal(now_, p))
             impl().relay(p);
     }
 }
 
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::statePreClose ()
+Consensus<Derived, Traits>::phaseOpen()
 {
     using namespace std::chrono;
 
     // it is shortly before ledger close time
     bool anyTransactions = impl().hasOpenTransactions();
-    auto proposersClosed = peerProposals_.size ();
+    auto proposersClosed = peerProposals_.size();
     auto proposersValidated = impl().proposersValidated(prevLedgerID_);
 
-    openTime_ = duration_cast<milliseconds>(clock_.now() - openStartTime_);
+    openTime_.tick(clock_.now());
 
     // This computes how long since last ledger's close time
     milliseconds sinceClose;
     {
-        bool previousCloseCorrect = haveCorrectLCL_
-            && previousLedger_.closeAgree ()
-            && (previousLedger_.closeTime() !=
-                (previousLedger_.parentCloseTime() + 1s));
+        bool previousCloseCorrect = (mode_ != Mode::wrongLedger) &&
+            previousLedger_.closeAgree() &&
+            (previousLedger_.closeTime() !=
+             (previousLedger_.parentCloseTime() + 1s));
 
         auto lastCloseTime = previousCloseCorrect
-            ? previousLedger_.closeTime() // use consensus timing
-            : closeTime_; // use the time we saw internally
+            ? previousLedger_.closeTime()  // use consensus timing
+            : prevCloseTime_;              // use the time we saw internally
 
-        if (now_ >= lastCloseTime )
+        if (now_ >= lastCloseTime)
             sinceClose = duration_cast<milliseconds>(now_ - lastCloseTime);
         else
-            sinceClose = -duration_cast<milliseconds>(lastCloseTime  - now_);
+            sinceClose = -duration_cast<milliseconds>(lastCloseTime - now_);
     }
 
-    auto const idleInterval = std::max<seconds>(LEDGER_IDLE_INTERVAL,
+    auto const idleInterval = std::max<seconds>(
+        LEDGER_IDLE_INTERVAL,
         duration_cast<seconds>(2 * previousLedger_.closeTimeResolution()));
 
     // Decide if we should close the ledger
-    if (shouldCloseLedger (anyTransactions
-        , previousProposers_, proposersClosed, proposersValidated
-        , previousRoundTime_, sinceClose, openTime_
-        , idleInterval, j_))
+    if (shouldCloseLedger(
+            anyTransactions,
+            prevProposers_,
+            proposersClosed,
+            proposersValidated,
+            prevRoundTime_,
+            sinceClose,
+            openTime_.read(),
+            idleInterval,
+            j_))
     {
-        closeLedger ();
+        closeLedger();
     }
 }
 
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::stateEstablish ()
+Consensus<Derived, Traits>::phaseEstablish()
 {
-    using namespace std::chrono;
-    roundTime_ = duration_cast<milliseconds>
-                           (clock_.now() - consensusStartTime_);
+    // can only establish consensus if we already took a stance
+    assert(result_);
 
-    convergePercent_ = roundTime_ * 100 /
-        std::max<milliseconds> (
-            previousRoundTime_, AV_MIN_CONSENSUS_TIME);
+    using namespace std::chrono;
+    result_->roundTime.tick(clock_.now());
+
+    convergePercent_ = result_->roundTime.read() * 100 /
+        std::max<milliseconds>(prevRoundTime_, AV_MIN_CONSENSUS_TIME);
 
     // Give everyone a chance to take an initial position
-    if (roundTime_ < LEDGER_MIN_CONSENSUS)
+    if (result_->roundTime.read() < LEDGER_MIN_CONSENSUS)
         return;
 
-    updateOurPositions ();
+    updateOurPositions();
 
     // Nothing to do if we don't have consensus.
-    if (!haveConsensus ())
+    if (!haveConsensus())
         return;
 
     if (!haveCloseTimeConsensus_)
     {
-        JLOG (j_.info()) <<
-            "We have TX consensus but not CT consensus";
+        JLOG(j_.info()) << "We have TX consensus but not CT consensus";
         return;
     }
 
-    JLOG (j_.info()) <<
-        "Converge cutoff (" << peerProposals_.size () << " participants)";
-    state_ = State::processing;
-    beginAccept (false);
-}
-
-
-template <class Derived, class Traits>
-void
-Consensus<Derived, Traits>::closeLedger ()
-{
-    state_ = State::establish;
-    consensusStartTime_ = clock_.now ();
-    closeTime_ = now_;
-
-    impl().onClose (previousLedger_, haveCorrectLCL_);
-
-    takeInitialPosition ();
+    JLOG(j_.info()) << "Converge cutoff (" << peerProposals_.size()
+                    << " participants)";
+    prevProposers_ = peerProposals_.size();
+    prevRoundTime_ = result_->roundTime.read();
+    phase_ = Phase::accepted;
+    impl().onAccept(
+        *result_, previousLedger_, closeResolution_, rawCloseTimes_, mode_);
 }
 
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::takeInitialPosition()
+Consensus<Derived, Traits>::closeLedger()
 {
-    auto pair = impl().makeInitialPosition(previousLedger_, proposing_,
-       haveCorrectLCL_,  closeTime_, now_ );
-    auto const& initialSet = pair.first;
-    auto const& initialPos = pair.second;
-    assert (initialSet.id() == initialPos.position());
+    // We should not be closing if we already have a position
+    assert(!result_);
 
-    ourPosition_ = initialPos;
-    ourSet_ = initialSet;
+    phase_ = Phase::establish;
+    rawCloseTimes_.self = now_;
 
+    result_.emplace(impl().onClose(previousLedger_, now_, mode_));
+    result_->roundTime.reset(clock_.now());
+    // Share the newly created transaction set if we haven't already
+    // received it from a peer
+    if (acquired_.emplace(result_->set.id(), result_->set).second)
+        impl().relay(result_->set);
 
-    // FIXME:  Is it possible to have any disputes before a position is taken?
-    for (auto& it : disputes_)
+    if (mode_ == Mode::proposing)
+        impl().propose(result_->position);
+
+    // Create disputes with any peer positions we have transactions for
+    for (auto const& p : peerProposals_)
     {
-        it.second.setOurVote (initialSet.exists (it.first));
-    }
-
-    // When we take our initial position,
-    // we need to create any disputes required by our position
-    // and any peers who have already taken positions
-    compares_.emplace (initialSet.id());
-    for (auto& it : peerProposals_)
-    {
-        auto pos = it.second.position();
-        auto iit (acquired_.find (pos));
-        if (iit != acquired_.end ())
+        auto pos = p.second.position();
+        auto it = acquired_.find(pos);
+        if (it != acquired_.end())
         {
-            if (compares_.emplace (pos).second)
-                createDisputes (initialSet, iit->second);
+            createDisputes(it->second);
         }
-    }
-
-    gotTxSetInternal (initialSet, false);
-
-    if (proposing_)
-        impl().propose (*ourPosition_);
-}
-
-template <class Derived, class Traits>
-void
-Consensus<Derived, Traits>::gotTxSetInternal (
-    TxSet_t const& txSet,
-    bool acquired)
-{
-    auto const hash = txSet.id();
-
-    if (acquired_.find (hash) != acquired_.end())
-        return;
-
-    if (acquired)
-    {
-        JLOG (j_.trace()) << "We have acquired txs " << hash;
-    }
-
-    // We now have a txSet that we did not have before
-
-    if (! acquired)
-    {
-        // If we generated this locally,
-        // put the txSet where others can get it
-        // If we acquired it, it's already shared
-        impl().share (txSet);
-    }
-
-    if (! ourPosition_)
-    {
-        JLOG (j_.debug())
-            << "Not creating disputes: no position yet.";
-    }
-    else if (ourPosition_->isBowOut ())
-    {
-        JLOG (j_.warn())
-            << "Not creating disputes: not participating.";
-    }
-    else if (hash == ourPosition_->position ())
-    {
-        JLOG (j_.debug())
-            << "Not creating disputes: identical position.";
-    }
-    else
-    {
-        // Our position is not the same as the acquired position
-        // create disputed txs if needed
-        createDisputes (*ourSet_, txSet);
-        compares_.insert(hash);
-    }
-
-    // Adjust tracking for each peer that takes this position
-    std::vector<NodeID_t> peers;
-    for (auto& it : peerProposals_)
-    {
-        if (it.second.position () == hash)
-            peers.push_back (it.second.nodeID ());
-    }
-
-    if (!peers.empty ())
-    {
-        adjustCount (txSet, peers);
-    }
-    else if (acquired)
-    {
-        JLOG (j_.warn())
-            << "By the time we got the map " << hash
-            << " no peers were proposing it";
-    }
-
-    acquired_.emplace (hash, txSet);
-}
-
-template <class Derived, class Traits>
-void Consensus<Derived, Traits>::createDisputes (
-    TxSet_t const& m1,
-    TxSet_t const& m2)
-{
-    if (m1.id() == m2.id())
-        return;
-
-    JLOG (j_.debug()) << "createDisputes "
-        << m1.id() << " to " << m2.id();
-    auto differences = m1.compare (m2);
-
-    int dc = 0;
-    // for each difference between the transactions
-    for (auto& id : differences)
-    {
-        ++dc;
-        // create disputed transactions (from the ledger that has them)
-        assert (
-            (id.second && m1.find(id.first) && !m2.find(id.first)) ||
-            (!id.second && !m1.find(id.first) && m2.find(id.first))
-        );
-        if (id.second)
-            addDisputedTransaction (*m1.find (id.first));
-        else
-            addDisputedTransaction (*m2.find (id.first));
-    }
-    JLOG (j_.debug()) << dc << " differences found";
-}
-
-template <class Derived, class Traits>
-void Consensus<Derived, Traits>::addDisputedTransaction (
-    Tx_t const& tx)
-{
-    auto txID = tx.id();
-
-    if (disputes_.find (txID) != disputes_.end ())
-        return;
-
-    JLOG (j_.debug()) << "Transaction "
-        << txID << " is disputed";
-
-    bool ourVote = false;
-
-    // Update our vote on the disputed transaction
-    if (ourSet_)
-        ourVote = ourSet_->exists (txID);
-
-    Dispute_t dtx {tx, ourVote, j_};
-
-    // Update all of the peer's votes on the disputed transaction
-    for (auto& pit : peerProposals_)
-    {
-        auto cit (acquired_.find (pit.second.position ()));
-
-        if (cit != acquired_.end ())
-            dtx.setVote (pit.first,
-                cit->second.exists (txID));
-    }
-
-    impl().relay(dtx);
-
-    disputes_.emplace (txID, std::move (dtx));
-}
-
-template <class Derived, class Traits>
-void Consensus<Derived, Traits>::adjustCount (TxSet_t const& txSet,
-    std::vector<NodeID_t> const& peers)
-{
-    for (auto& it : disputes_)
-    {
-        bool setHas = txSet.exists (it.first);
-        for (auto const& pit : peers)
-            it.second.setVote (pit, setHas);
     }
 }
 
 /** How many of the participants must agree to reach a given threshold?
 
-    Note that the number may not precisely yield the requested percentage.
-    For example, with with size = 5 and percent = 70, we return 3, but
-    3 out of 5 works out to 60%. There are no security implications to
-    this.
+Note that the number may not precisely yield the requested percentage.
+For example, with with size = 5 and percent = 70, we return 3, but
+3 out of 5 works out to 60%. There are no security implications to
+this.
 
-    @param participants The number of participants (i.e. validators)
-    @param percent The percent that we want to reach
+@param participants The number of participants (i.e. validators)
+@param percent The percent that we want to reach
 
-    @return the number of participants which must agree
+@return the number of participants which must agree
 */
 inline int
-participantsNeeded (int participants, int percent)
+participantsNeeded(int participants, int percent)
 {
     int result = ((participants * percent) + (percent / 2)) / 100;
 
@@ -1476,126 +1215,133 @@ participantsNeeded (int participants, int percent)
 }
 
 template <class Derived, class Traits>
-void Consensus<Derived, Traits>::updateOurPositions ()
+void
+Consensus<Derived, Traits>::updateOurPositions()
 {
+    // We must have a position if we are updating it
+    assert(result_);
+
     // Compute a cutoff time
     auto const peerCutoff = now_ - PROPOSE_FRESHNESS;
     auto const ourCutoff = now_ - PROPOSE_INTERVAL;
 
     // Verify freshness of peer positions and compute close times
-    std::map<NetClock::time_point, int> closeTimes;
+    std::map<NetClock::time_point, int> effCloseTimes;
     {
-        auto it = peerProposals_.begin ();
-        while (it != peerProposals_.end ())
+        auto it = peerProposals_.begin();
+        while (it != peerProposals_.end())
         {
-            if (it->second.isStale (peerCutoff))
+            if (it->second.isStale(peerCutoff))
             {
                 // peer's proposal is stale, so remove it
-                auto const& peerID = it->second.nodeID ();
-                JLOG (j_.warn())
-                    << "Removing stale proposal from " << peerID;
-                for (auto& dt : disputes_)
-                    dt.second.unVote (peerID);
-                it = peerProposals_.erase (it);
+                auto const& peerID = it->second.nodeID();
+                JLOG(j_.warn()) << "Removing stale proposal from " << peerID;
+                for (auto& dt : result_->disputes)
+                    dt.second.unVote(peerID);
+                it = peerProposals_.erase(it);
             }
             else
             {
                 // proposal is still fresh
-                ++closeTimes[effectiveCloseTime(it->second.closeTime(),
-                    closeResolution_, previousLedger_.closeTime())];
+                ++effCloseTimes[effCloseTime(
+                    it->second.closeTime(),
+                    closeResolution_,
+                    previousLedger_.closeTime())];
                 ++it;
             }
         }
     }
 
     // This will stay unseated unless there are any changes
-    boost::optional <TxSet_t> ourNewSet;
+    boost::optional<TxSet_t> ourNewSet;
 
     // Update votes on disputed transactions
     {
         boost::optional<typename TxSet_t::MutableTxSet> mutableSet;
-        for (auto& it : disputes_)
+        for (auto& it : result_->disputes)
         {
-
             // Because the threshold for inclusion increases,
             //  time can change our position on a dispute
-            if (it.second.updateVote (convergePercent_, proposing_))
+            if (it.second.updateVote(
+                    convergePercent_, (mode_ == Mode::proposing)))
             {
                 if (!mutableSet)
-                    mutableSet.emplace(*ourSet_);
+                    mutableSet.emplace(result_->set);
 
-                if (it.second.getOurVote ())
+                if (it.second.getOurVote())
                 {
                     // now a yes
-                    mutableSet->insert (it.second.tx());
+                    mutableSet->insert(it.second.tx());
                 }
                 else
                 {
                     // now a no
-                    mutableSet->erase (it.first);
+                    mutableSet->erase(it.first);
                 }
             }
         }
 
-        if(mutableSet)
+        if (mutableSet)
             ourNewSet.emplace(*mutableSet);
     }
 
-    int neededWeight;
-
-    if (convergePercent_ < AV_MID_CONSENSUS_TIME)
-        neededWeight = AV_INIT_CONSENSUS_PCT;
-    else if (convergePercent_ < AV_LATE_CONSENSUS_TIME)
-        neededWeight = AV_MID_CONSENSUS_PCT;
-    else if (convergePercent_ < AV_STUCK_CONSENSUS_TIME)
-        neededWeight = AV_LATE_CONSENSUS_PCT;
-    else
-        neededWeight = AV_STUCK_CONSENSUS_PCT;
-
-    NetClock::time_point closeTime = {};
+    NetClock::time_point consensusCloseTime = {};
     haveCloseTimeConsensus_ = false;
 
-    if (peerProposals_.empty ())
+    if (peerProposals_.empty())
     {
         // no other times
         haveCloseTimeConsensus_ = true;
-        closeTime = effectiveCloseTime(ourPosition_->closeTime(),
-            closeResolution_, previousLedger_.closeTime());
+        consensusCloseTime = effCloseTime(
+            result_->position.closeTime(),
+            closeResolution_,
+            previousLedger_.closeTime());
     }
     else
     {
-        int participants = peerProposals_.size ();
-        if (proposing_)
+        int neededWeight;
+
+        if (convergePercent_ < AV_MID_CONSENSUS_TIME)
+            neededWeight = AV_INIT_CONSENSUS_PCT;
+        else if (convergePercent_ < AV_LATE_CONSENSUS_TIME)
+            neededWeight = AV_MID_CONSENSUS_PCT;
+        else if (convergePercent_ < AV_STUCK_CONSENSUS_TIME)
+            neededWeight = AV_LATE_CONSENSUS_PCT;
+        else
+            neededWeight = AV_STUCK_CONSENSUS_PCT;
+
+        int participants = peerProposals_.size();
+        if (mode_ == Mode::proposing)
         {
-            ++closeTimes[effectiveCloseTime(ourPosition_->closeTime(),
-                closeResolution_, previousLedger_.closeTime())];
+            ++effCloseTimes[effCloseTime(
+                result_->position.closeTime(),
+                closeResolution_,
+                previousLedger_.closeTime())];
             ++participants;
         }
 
         // Threshold for non-zero vote
-        int threshVote = participantsNeeded (participants,
-            neededWeight);
+        int threshVote = participantsNeeded(participants, neededWeight);
 
         // Threshold to declare consensus
-        int const threshConsensus = participantsNeeded (
-            participants, AV_CT_CONSENSUS_PCT);
+        int const threshConsensus =
+            participantsNeeded(participants, AV_CT_CONSENSUS_PCT);
 
-        JLOG (j_.info()) << "Proposers:"
-            << peerProposals_.size () << " nw:" << neededWeight
-            << " thrV:" << threshVote << " thrC:" << threshConsensus;
+        JLOG(j_.info()) << "Proposers:" << peerProposals_.size()
+                        << " nw:" << neededWeight << " thrV:" << threshVote
+                        << " thrC:" << threshConsensus;
 
-        for (auto const& it : closeTimes)
+        for (auto const& it : effCloseTimes)
         {
-            JLOG (j_.debug()) << "CCTime: seq "
-                << previousLedger_.seq() + 1 << ": "
-                << it.first.time_since_epoch().count()
-                << " has " << it.second << ", "
-                << threshVote << " required";
+            JLOG(j_.debug())
+                << "CCTime: seq " << previousLedger_.seq() + 1 << ": "
+                << it.first.time_since_epoch().count() << " has " << it.second
+                << ", " << threshVote << " required";
 
             if (it.second >= threshVote)
             {
                 // A close time has enough votes for us to try to agree
-                closeTime = it.first;
+                consensusCloseTime = it.first;
                 threshVote = it.second;
 
                 if (threshVote >= threshConsensus)
@@ -1605,114 +1351,103 @@ void Consensus<Derived, Traits>::updateOurPositions ()
 
         if (!haveCloseTimeConsensus_)
         {
-            JLOG (j_.debug()) << "No CT consensus:"
-                << " Proposers:" << peerProposals_.size ()
-                << " Proposing:" << (proposing_ ? "yes" : "no")
-                << " Thresh:" << threshConsensus
-                << " Pos:" << closeTime.time_since_epoch().count();
+            JLOG(j_.debug())
+                << "No CT consensus:"
+                << " Proposers:" << peerProposals_.size()
+                << " Mode:" << to_string(mode_) << " Thresh:" << threshConsensus
+                << " Pos:" << consensusCloseTime.time_since_epoch().count();
         }
     }
 
-    // Temporarily send a new proposal if there's any change to our
-    // claimed close time. Once the new close time code is deployed
-    // to the full network, this can be relaxed to force a change
-    // only if the rounded close time has changed.
-    if (! ourNewSet &&
-            ((closeTime != ourPosition_->closeTime())
-            || ourPosition_->isStale (ourCutoff)))
+    if (!ourNewSet &&
+        ((consensusCloseTime !=
+          effCloseTime(
+              result_->position.closeTime(),
+              closeResolution_,
+              previousLedger_.closeTime())) ||
+         result_->position.isStale(ourCutoff)))
     {
         // close time changed or our position is stale
-        ourNewSet.emplace (*ourSet_);
+        ourNewSet.emplace(result_->set);
     }
 
     if (ourNewSet)
     {
-        auto newHash = ourNewSet->id();
+        auto newID = ourNewSet->id();
 
-        // Setting ourSet_ here prevents gotTxSetInternal
-        // from checking for new disputes. But we only changed
-        // positions on existing disputes, so no need to.
-        ourSet_ = ourNewSet;
+        result_->set = std::move(*ourNewSet);
 
-        JLOG (j_.info())
-            << "Position change: CTime "
-            << closeTime.time_since_epoch().count()
-            << ", tx " << newHash;
+        JLOG(j_.info()) << "Position change: CTime "
+                        << consensusCloseTime.time_since_epoch().count()
+                        << ", tx " << newID;
 
-        if (ourPosition_->changePosition (
-            newHash, closeTime, now_))
+        result_->position.changePosition(newID, consensusCloseTime, now_);
+        if (!result_->position.isBowOut())
         {
-            if (proposing_)
-                impl().propose (*ourPosition_);
+            // Share our new transaction set if we haven't already received
+            // it from a peer
+            if (acquired_.emplace(newID, result_->set).second)
+                impl().relay(result_->set);
 
-            gotTxSetInternal (*ourNewSet, false);
+            if (mode_ == Mode::proposing)
+                impl().propose(result_->position);
         }
     }
 }
 
 template <class Derived, class Traits>
 bool
-Consensus<Derived, Traits>::haveConsensus ()
+Consensus<Derived, Traits>::haveConsensus()
 {
+    // Must have a stance if we are checking for consensus
+    assert(result_);
+
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
-    auto  ourPosition = ourPosition_->position ();
+
+    auto ourPosition = result_->position.position();
 
     // Count number of agreements/disagreements with our position
     for (auto& it : peerProposals_)
     {
-        if (it.second.isBowOut ())
-            continue;
-
-        if (it.second.position () == ourPosition)
+        if (it.second.position() == ourPosition)
         {
             ++agree;
         }
         else
         {
-
             using std::to_string;
 
-            JLOG (j_.debug()) << to_string (it.first)
-                << " has " << to_string (it.second.position ());
+            JLOG(j_.debug()) << to_string(it.first) << " has "
+                             << to_string(it.second.position());
             ++disagree;
-            if (compares_.count(it.second.position()) == 0)
-            { // Make sure we have generated disputes
-                auto hash = it.second.position();
-                JLOG (j_.debug())
-                    << "We have not compared to " << hash;
-                auto it1 = acquired_.find (hash);
-                auto it2 = acquired_.find(ourPosition_->position ());
-                if ((it1 != acquired_.end()) && (it2 != acquired_.end()))
-                {
-                    compares_.insert(hash);
-                    createDisputes(it2->second, it1->second);
-                }
-            }
         }
     }
     auto currentFinished = impl().proposersFinished(prevLedgerID_);
 
-    JLOG (j_.debug())
-        << "Checking for TX consensus: agree=" << agree
-        << ", disagree=" << disagree;
+    JLOG(j_.debug()) << "Checking for TX consensus: agree=" << agree
+                     << ", disagree=" << disagree;
 
     // Determine if we actually have consensus or not
-    auto ret = checkConsensus (previousProposers_, agree + disagree, agree,
-        currentFinished, previousRoundTime_, roundTime_, proposing_,
+    result_->state = checkConsensus(
+        prevProposers_,
+        agree + disagree,
+        agree,
+        currentFinished,
+        prevRoundTime_,
+        result_->roundTime.read(),
+        mode_ == Mode::proposing,
         j_);
 
-    if (ret == ConsensusState::No)
+    if (result_->state == ConsensusState::No)
         return false;
 
     // There is consensus, but we need to track if the network moved on
     // without us.
-    consensusFail_ = (ret == ConsensusState::MovedOn);
-
-    if (consensusFail_)
+    if (result_->state == ConsensusState::MovedOn)
     {
-        JLOG (j_.error()) << "Unable to reach consensus";
-        JLOG (j_.error()) << getJson(true);
+        JLOG(j_.error()) << "Unable to reach consensus";
+        JLOG(j_.error()) << getJson(true);
     }
 
     return true;
@@ -1720,75 +1455,132 @@ Consensus<Derived, Traits>::haveConsensus ()
 
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::beginAccept (bool synchronous)
+Consensus<Derived, Traits>::leaveConsensus()
 {
-    if (! ourPosition_ || ! ourSet_)
+    if (mode_ == Mode::proposing)
     {
-        JLOG (j_.fatal())
-            << "We don't have a consensus set";
-        abort ();
-    }
+        if (result_ && !result_->position.isBowOut())
+        {
+            result_->position.bowOut(now_);
+            impl().propose(result_->position);
+        }
 
-    previousProposers_ = peerProposals_.size();
-    previousRoundTime_ = roundTime_;
-
-    if (synchronous)
-        accept (*ourSet_);
-    else
-    {
-        impl().dispatchAccept(*ourSet_);
+        mode_ = Mode::observing;
+        JLOG(j_.info()) << "Bowing out of consensus";
     }
 }
-
 
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::accept (TxSet_t const& set)
+Consensus<Derived, Traits>::createDisputes(TxSet_t const& o)
 {
+    // Cannot create disputes without our stance
+    assert(result_);
 
-    bool validatingOut = impl().accept(set,
-        ourPosition_->closeTime(),
-        proposing_,
-        validating_,
-        haveCorrectLCL_,
-        consensusFail_,
-        prevLedgerID_,
-        previousLedger_,
-        closeResolution_,
-        now_,
-        roundTime_,
-        disputes_,
-        closeTimes_,
-        closeTime_
-        );
+    // Only create disputes if this is a new set
+    if (!result_->compares.emplace(o.id()).second)
+        return;
 
-    // we have accepted a new ledger
-    bool correct;
+    // Nothing to dispute if we agree
+    if (result_->set.id() == o.id())
+        return;
+
+    JLOG(j_.debug()) << "createDisputes " << result_->set.id() << " to "
+                     << o.id();
+
+    auto differences = result_->set.compare(o);
+
+    int dc = 0;
+
+    for (auto& id : differences)
     {
-        std::lock_guard<std::recursive_mutex> _(*lock_);
-        validating_ = validatingOut;
-        state_ = State::accepted;
-        correct = haveCorrectLCL_;
+        ++dc;
+        // create disputed transactions (from the ledger that has them)
+        assert(
+            (id.second && result_->set.find(id.first) && !o.find(id.first)) ||
+            (!id.second && !result_->set.find(id.first) && o.find(id.first)));
+
+        Tx_t tx = id.second ? *result_->set.find(id.first) : *o.find(id.first);
+        auto txID = tx.id();
+
+        if (result_->disputes.find(txID) != result_->disputes.end())
+            continue;
+
+        JLOG(j_.debug()) << "Transaction " << txID << " is disputed";
+
+        typename Result::Dispute_t dtx{tx, result_->set.exists(txID), j_};
+
+        // Update all of the available peer's votes on the disputed transaction
+        for (auto& pit : peerProposals_)
+        {
+            auto cit(acquired_.find(pit.second.position()));
+
+            if (cit != acquired_.end())
+                dtx.setVote(pit.first, cit->second.exists(txID));
+        }
+        impl().relay(dtx.tx());
+
+        result_->disputes.emplace(txID, std::move(dtx));
     }
-
-    impl().endConsensus (correct);
+    JLOG(j_.debug()) << dc << " differences found";
 }
-
-
 
 template <class Derived, class Traits>
 void
-Consensus<Derived, Traits>::leaveConsensus ()
+Consensus<Derived, Traits>::updateDisputes(
+    NodeID_t const& node,
+    TxSet_t const& other)
 {
-    if (ourPosition_ && ! ourPosition_->isBowOut ())
+    // Cannot updateDisputes without our stance
+    assert(result_);
+
+    // Ensure we have created disputes against this set if we haven't seen
+    // it before
+    if (result_->compares.find(other.id()) == result_->compares.end())
+        createDisputes(other);
+
+    for (auto& it : result_->disputes)
     {
-        ourPosition_->bowOut(now_);
-        if(proposing_)
-            impl().propose(*ourPosition_);
+        auto& d = it.second;
+        d.setVote(node, other.exists(d.tx().id()));
     }
-    proposing_ = false;
 }
 
-} // ripple
+template <class Derived, class Traits>
+std::string
+Consensus<Derived, Traits>::to_string(Phase p)
+{
+    switch (p)
+    {
+        case Phase::open:
+            return "open";
+        case Phase::establish:
+            return "establish";
+        case Phase::accepted:
+            return "accepted";
+        default:
+            return "unknown";
+    }
+}
+
+template <class Derived, class Traits>
+std::string
+Consensus<Derived, Traits>::to_string(Mode m)
+{
+    switch (m)
+    {
+        case Mode::proposing:
+            return "proposing";
+        case Mode::observing:
+            return "observing";
+        case Mode::wrongLedger:
+            return "wrongLedger";
+        case Mode::switchedLedger:
+            return "switchedLedger";
+        default:
+            return "unknown";
+    }
+}
+}  // ripple
 
 #endif

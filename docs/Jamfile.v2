@@ -44,6 +44,15 @@ install callouts
 
 explicit callout ;
 
+install consensus_images
+    :
+        [ glob images/consensus/*.png ]
+    :
+        <location>$(out)/html/images/consensus
+    ;
+
+explicit consensus_images ;
+
 xml doc
     :
         main.qbk
@@ -60,7 +69,7 @@ boostbook boostdoc
         <xsl:param>boost.root=$(broot)
         <xsl:param>chunk.first.sections=1               # Chunk the first top-level section?
         <xsl:param>chunk.section.depth=8                # Depth to which sections should be chunked
-        <xsl:param>generate.section.toc.level=1         # Control depth of TOC generation in sections
+        <xsl:param>generate.section.toc.level=2         # Control depth of TOC generation in sections
         <xsl:param>toc.max.depth=2                      # How many levels should be created for each TOC?
         <xsl:param>toc.section.depth=2                  # How deep should recursive sections appear in the TOC?
         <xsl:param>generate.toc="chapter toc section toc"
@@ -68,4 +77,5 @@ boostbook boostdoc
         <location>temp
         <dependency>stylesheets
         <dependency>images
+        <dependency>consensus_images
     ;

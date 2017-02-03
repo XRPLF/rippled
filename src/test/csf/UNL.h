@@ -22,10 +22,10 @@
 
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
-#include <vector>
-#include <random>
-#include <numeric>
 #include <chrono>
+#include <numeric>
+#include <random>
+#include <vector>
 
 namespace ripple {
 namespace test {
@@ -42,7 +42,7 @@ namespace csf {
 */
 template <class T, class G>
 std::vector<T>
-random_weighted_shuffle(std::vector<T> v, std::vector<double> w, G & g)
+random_weighted_shuffle(std::vector<T> v, std::vector<double> w, G& g)
 {
     using std::swap;
 
@@ -57,7 +57,6 @@ random_weighted_shuffle(std::vector<T> v, std::vector<double> w, G & g)
     return v;
 }
 
-
 /** Power-law distribution with PDF
 
         P(x) = (x/xmin)^-a
@@ -69,25 +68,22 @@ class PowerLawDistribution
     double xmin_;
     double a_;
     double inv_;
-    std::uniform_real_distribution<double> uf_{0,1};
+    std::uniform_real_distribution<double> uf_{0, 1};
 
 public:
-    PowerLawDistribution(double xmin, double a)
-        : xmin_{xmin}, a_{a}
-        {
-            inv_ = 1.0/(1.0 - a_);
-        }
+    PowerLawDistribution(double xmin, double a) : xmin_{xmin}, a_{a}
+    {
+        inv_ = 1.0 / (1.0 - a_);
+    }
 
     template <class Generator>
-    inline
-    double
-    operator()(Generator & g)
+    inline double
+    operator()(Generator& g)
     {
         // use inverse transform of CDF to sample
         // CDF is P(X <= x): 1 - (x/xmin)^(1-a)
         return xmin_ * std::pow(1 - uf_(g), inv_);
     }
-
 };
 
 //< Unique identifier for each node in the network
@@ -110,25 +106,23 @@ class TrustGraph
     std::vector<UNL> UNLs_;
 
     std::vector<int> assignment_;
-public:
 
+public:
     //< Constructor
     TrustGraph(std::vector<UNL> UNLs, std::vector<int> assignment)
-        : UNLs_{UNLs}
-        , assignment_{assignment}
-        {}
+        : UNLs_{UNLs}, assignment_{assignment}
+    {
+    }
 
     //< Whether node `i` trusts node `j`
-    inline
-    bool
+    inline bool
     trusts(PeerID i, PeerID j) const
     {
         return unl(i).find(j) != unl(i).end();
     }
 
     //< Get the UNL for node `i`
-    inline
-    UNL const &
+    inline UNL const&
     unl(PeerID i) const
     {
         return UNLs_[assignment_[i]];
@@ -138,7 +132,6 @@ public:
     bool
     canFork(double quorum) const;
 
-
     auto
     numPeers() const
     {
@@ -147,7 +140,7 @@ public:
 
     //< Save grapviz dot file reprentation of the trust graph
     void
-    save_dot(std::string const & fileName);
+    save_dot(std::string const& fileName);
 
     /** Generate a random trust graph based on random ranking of peers
 
@@ -176,28 +169,23 @@ public:
 
     */
     template <class RankPDF, class SizePDF, class Generator>
-    static
-    TrustGraph
-    makeRandomRanked(int size,
-                 int numUNLs,
-                 RankPDF rankPDF,
-                 SizePDF unlSizePDF,
-                 Generator & g)
+    static TrustGraph
+    makeRandomRanked(
+        int size,
+        int numUNLs,
+        RankPDF rankPDF,
+        SizePDF unlSizePDF,
+        Generator& g)
     {
-
-
         // 1. Generate ranks
         std::vector<double> weights(size);
-        std::generate(weights.begin(), weights.end(), [&]()
-        {
-            return rankPDF(g);
-        });
+        std::generate(
+            weights.begin(), weights.end(), [&]() { return rankPDF(g); });
 
         // 2. Generate UNLs based on sampling without replacement according
         //    to weights
         std::vector<UNL> unls(numUNLs);
-        std::generate(unls.begin(), unls.end(), [&]()
-        {
+        std::generate(unls.begin(), unls.end(), [&]() {
             std::vector<PeerID> ids(size);
             std::iota(ids.begin(), ids.end(), 0);
             auto res = random_weighted_shuffle(ids, weights, g);
@@ -206,12 +194,9 @@ public:
 
         // 3. Assign membership
         std::vector<int> assignment(size);
-        std::uniform_int_distribution<int> u(0, numUNLs-1);
-        std::generate(assignment.begin(), assignment.end(),
-        [&]()
-        {
-            return u(g);
-        });
+        std::uniform_int_distribution<int> u(0, numUNLs - 1);
+        std::generate(
+            assignment.begin(), assignment.end(), [&]() { return u(g); });
 
         return TrustGraph(unls, assignment);
     }
@@ -226,8 +211,7 @@ public:
         @param size The number of nodes in the trust graph
         @param overlap The number of nodes trusting both cliques
     */
-    static
-    TrustGraph
+    static TrustGraph
     makeClique(int size, int overlap);
 
     /** Generate a complete (fully-connect) trust graph
@@ -237,21 +221,17 @@ public:
 
         @param size The number of nodes in the trust graph
     */
-    static
-    TrustGraph
+    static TrustGraph
     makeComplete(int size);
 };
-
-
 
 //< Make the TrustGraph into a topology with delays given by DelayModel
 template <class DelayModel>
 auto
-topology(TrustGraph const & tg, DelayModel const & d)
+topology(TrustGraph const& tg, DelayModel const& d)
 {
-    return [&](PeerID i, PeerID j)
-    {
-        return tg.trusts(i,j) ? boost::make_optional(d(i,j)) : boost::none;
+    return [&](PeerID i, PeerID j) {
+        return tg.trusts(i, j) ? boost::make_optional(d(i, j)) : boost::none;
     };
 }
 
@@ -260,18 +240,19 @@ class fixed
     std::chrono::nanoseconds d_;
 
 public:
-    fixed(std::chrono::nanoseconds const & d) : d_{d} {}
+    fixed(std::chrono::nanoseconds const& d) : d_{d}
+    {
+    }
 
-    inline
-    std::chrono::nanoseconds
-    operator()(PeerID const & i, PeerID const & j) const
+    inline std::chrono::nanoseconds
+    operator()(PeerID const& i, PeerID const& j) const
     {
         return d_;
     }
 };
 
-} // csf
-} // test
-} // ripple
+}  // csf
+}  // test
+}  // ripple
 
 #endif

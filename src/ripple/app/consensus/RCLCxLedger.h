@@ -21,8 +21,8 @@
 #define RIPPLE_APP_CONSENSUS_RCLCXLEDGER_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/ledger/ReadView.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <memory>
 
@@ -50,24 +50,26 @@ public:
 
         @param l The ledger to wrap.
     */
-    RCLCxLedger(std::shared_ptr<Ledger const> const & l) : ledger_{ l } {}
+    RCLCxLedger(std::shared_ptr<Ledger const> const& l) : ledger_{l}
+    {
+    }
 
     //! Sequence number of the ledger.
-    auto const &
+    auto const&
     seq() const
     {
         return ledger_->info().seq;
     }
 
     //! Unique identifier (hash) of this ledger.
-    auto const &
+    auto const&
     id() const
     {
         return ledger_->info().hash;
     }
 
     //! Unique identifier (hash) of this ledger's parent.
-    auto const &
+    auto const&
     parentID() const
     {
         return ledger_->info().parentHash;
@@ -114,8 +116,6 @@ public:
         a new ledger from a readView?
     */
     std::shared_ptr<Ledger const> ledger_;
-
 };
-
 }
 #endif

@@ -17,14 +17,13 @@
 */
 //==============================================================================
 #include <BeastConfig.h>
+#include <ripple/beast/clock/manual_clock.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/consensus/Consensus.h>
 #include <ripple/consensus/ConsensusProposal.h>
-#include <ripple/beast/clock/manual_clock.h>
 #include <boost/function_output_iterator.hpp>
 #include <test/csf.h>
 #include <utility>
-
 
 namespace ripple {
 namespace test {
@@ -32,7 +31,6 @@ namespace test {
 class Consensus_test : public beast::unit_test::suite
 {
 public:
-
     void
     testStandalone()
     {
@@ -41,21 +39,22 @@ public:
         auto tg = TrustGraph::makeComplete(1);
         Sim s(tg, topology(tg, fixed{LEDGER_GRANULARITY}));
 
-        auto & p = s.peers[0];
+        auto& p = s.peers[0];
 
         p.targetLedgers = 1;
         p.start();
-        p.submit(Tx{ 1 });
+        p.submit(Tx{1});
 
         s.net.step();
 
         // Inspect that the proper ledger was created
-        BEAST_EXPECT(p.LCL().seq == 1);
-        BEAST_EXPECT(p.LCL() == p.lastClosedLedger.id());
+        BEAST_EXPECT(p.prevLedgerID().seq == 1);
+        BEAST_EXPECT(p.prevLedgerID() == p.lastClosedLedger.id());
         BEAST_EXPECT(p.lastClosedLedger.id().txs.size() == 1);
-        BEAST_EXPECT(p.lastClosedLedger.id().txs.find(Tx{ 1 })
-            != p.lastClosedLedger.id().txs.end());
-        BEAST_EXPECT(p.getLastCloseProposers() == 0);
+        BEAST_EXPECT(
+            p.lastClosedLedger.id().txs.find(Tx{1}) !=
+            p.lastClosedLedger.id().txs.end());
+        BEAST_EXPECT(p.prevProposers() == 0);
     }
 
     void
@@ -65,24 +64,25 @@ public:
         using namespace std::chrono;
 
         auto tg = TrustGraph::makeComplete(5);
-        Sim sim(tg,
+        Sim sim(
+            tg,
             topology(tg, fixed{round<milliseconds>(0.2 * LEDGER_GRANULARITY)}));
 
         // everyone submits their own ID as a TX and relay it to peers
-        for (auto & p : sim.peers)
+        for (auto& p : sim.peers)
             p.submit(Tx(p.id));
 
         // Verify all peers have the same LCL and it has all the Txs
         sim.run(1);
-        for (auto & p : sim.peers)
+        for (auto& p : sim.peers)
         {
-            auto const &lgrID = p.LCL();
+            auto const& lgrID = p.prevLedgerID();
             BEAST_EXPECT(lgrID.seq == 1);
-            BEAST_EXPECT(p.getLastCloseProposers() == sim.peers.size() - 1);
-            for(std::uint32_t i = 0; i < sim.peers.size(); ++i)
-                BEAST_EXPECT(lgrID.txs.find(Tx{ i }) != lgrID.txs.end());
+            BEAST_EXPECT(p.prevProposers() == sim.peers.size() - 1);
+            for (std::uint32_t i = 0; i < sim.peers.size(); ++i)
+                BEAST_EXPECT(lgrID.txs.find(Tx{i}) != lgrID.txs.end());
             // Matches peer 0 ledger
-            BEAST_EXPECT(lgrID.txs == sim.peers[0].LCL().txs);
+            BEAST_EXPECT(lgrID.txs == sim.peers[0].prevLedgerID().txs);
         }
     }
 
@@ -96,70 +96,69 @@ public:
         //  1. The slow peer is participating in consensus
         //  2. The slow peer is just observing
 
-        for(auto isParticipant : {true, false})
+        for (auto isParticipant : {true, false})
         {
             auto tg = TrustGraph::makeComplete(5);
 
-            Sim sim(tg, topology(tg,[](PeerID i, PeerID j)
-            {
-                auto delayFactor = (i == 0 || j == 0) ? 1.1 : 0.2;
-                return round<milliseconds>(delayFactor* LEDGER_GRANULARITY);
-            }));
+            Sim sim(tg, topology(tg, [](PeerID i, PeerID j) {
+                        auto delayFactor = (i == 0 || j == 0) ? 1.1 : 0.2;
+                        return round<milliseconds>(
+                            delayFactor * LEDGER_GRANULARITY);
+                    }));
 
-            sim.peers[0].proposing = sim.peers[0].validating = isParticipant;
+            sim.peers[0].proposing_ = sim.peers[0].validating_ = isParticipant;
 
-            // All peers submit their own ID as a transaction and relay it to peers
-            for (auto & p : sim.peers)
+            // All peers submit their own ID as a transaction and relay it to
+            // peers
+            for (auto& p : sim.peers)
             {
-                p.submit(Tx{ p.id });
+                p.submit(Tx{p.id});
             }
 
             sim.run(1);
 
-            // Verify all peers have same LCL but are missing transaction 0 which
-            // was not received by all peers before the ledger closed
-            for (auto & p : sim.peers)
+            // Verify all peers have same LCL but are missing transaction 0
+            // which was not received by all peers before the ledger closed
+            for (auto& p : sim.peers)
             {
-                auto const &lgrID = p.LCL();
+                auto const& lgrID = p.prevLedgerID();
                 BEAST_EXPECT(lgrID.seq == 1);
 
-
                 // If peer 0 is participating
-                if(isParticipant)
+                if (isParticipant)
                 {
-                    BEAST_EXPECT(p.getLastCloseProposers()
-                        == sim.peers.size() - 1);
-                    // Peer 0 closes first because it sees a quorum of agreeing positions
-                    // from all other peers in one hop (1->0, 2->0, ..)
-                    // The other peers take an extra timer period before they find that
-                    // Peer 0 agrees with them ( 1->0->1,  2->0->2, ...)
-                    if(p.id != 0)
-                        BEAST_EXPECT(p.getLastConvergeDuration()
-                            > sim.peers[0].getLastConvergeDuration());
+                    BEAST_EXPECT(p.prevProposers() == sim.peers.size() - 1);
+                    // Peer 0 closes first because it sees a quorum of agreeing
+                    // positions from all other peers in one hop (1->0, 2->0,
+                    // ..) The other peers take an extra timer period before
+                    // they find that Peer 0 agrees with them ( 1->0->1,
+                    // 2->0->2, ...)
+                    if (p.id != 0)
+                        BEAST_EXPECT(
+                            p.prevRoundTime() > sim.peers[0].prevRoundTime());
                 }
-                else // peer 0 is not participating
+                else  // peer 0 is not participating
                 {
-                    auto const proposers = p.getLastCloseProposers();
-                    if(p.id == 0)
+                    auto const proposers = p.prevProposers();
+                    if (p.id == 0)
                         BEAST_EXPECT(proposers == sim.peers.size() - 1);
                     else
                         BEAST_EXPECT(proposers == sim.peers.size() - 2);
 
                     // so all peers should have closed together
-                        BEAST_EXPECT(p.getLastConvergeDuration()
-                            == sim.peers[0].getLastConvergeDuration());
+                    BEAST_EXPECT(
+                        p.prevRoundTime() == sim.peers[0].prevRoundTime());
                 }
 
-
-                BEAST_EXPECT(lgrID.txs.find(Tx{ 0 }) == lgrID.txs.end());
-                for(std::uint32_t i = 1; i < sim.peers.size(); ++i)
-                    BEAST_EXPECT(lgrID.txs.find(Tx{ i }) != lgrID.txs.end());
+                BEAST_EXPECT(lgrID.txs.find(Tx{0}) == lgrID.txs.end());
+                for (std::uint32_t i = 1; i < sim.peers.size(); ++i)
+                    BEAST_EXPECT(lgrID.txs.find(Tx{i}) != lgrID.txs.end());
                 // Matches peer 0 ledger
-                BEAST_EXPECT(lgrID.txs == sim.peers[0].LCL().txs);
+                BEAST_EXPECT(lgrID.txs == sim.peers[0].prevLedgerID().txs);
             }
-            BEAST_EXPECT(sim.peers[0].openTxs.find(Tx{ 0 })
-                               != sim.peers[0].openTxs.end());
-         }
+            BEAST_EXPECT(
+                sim.peers[0].openTxs.find(Tx{0}) != sim.peers[0].openTxs.end());
+        }
     }
 
     void
@@ -185,32 +184,35 @@ public:
 
         // Complicating this matter is that nodes will ignore proposals
         // with times more than PROPOSE_FRESHNESS =20s in the past. So at
-        // the minimum granularity, we have at most 3 types of skews (0s,10s,20s).
+        // the minimum granularity, we have at most 3 types of skews
+        // (0s,10s,20s).
 
         // This test therefore has 6 nodes, with 2 nodes having each type of
         // skew.  Then no majority (1/3 < 1/2) of nodes will agree on an
         // actual close time.
 
         auto tg = TrustGraph::makeComplete(6);
-        Sim sim(tg,
+        Sim sim(
+            tg,
             topology(tg, fixed{round<milliseconds>(0.2 * LEDGER_GRANULARITY)}));
 
-        // Run consensus without skew until we have a short close time resolution
-        while(sim.peers.front().lastClosedLedger.closeTimeResolution() >=
-            PROPOSE_FRESHNESS)
+        // Run consensus without skew until we have a short close time
+        // resolution
+        while (sim.peers.front().lastClosedLedger.closeTimeResolution() >=
+               PROPOSE_FRESHNESS)
             sim.run(1);
 
         // Introduce a shift on the time of half the peers
-        sim.peers[0].clockSkew = PROPOSE_FRESHNESS/2;
-        sim.peers[1].clockSkew = PROPOSE_FRESHNESS/2;
+        sim.peers[0].clockSkew = PROPOSE_FRESHNESS / 2;
+        sim.peers[1].clockSkew = PROPOSE_FRESHNESS / 2;
         sim.peers[2].clockSkew = PROPOSE_FRESHNESS;
         sim.peers[3].clockSkew = PROPOSE_FRESHNESS;
 
         // Verify all peers have the same LCL and it has all the Txs
         sim.run(1);
-        for (auto & p : sim.peers)
+        for (auto& p : sim.peers)
         {
-            BEAST_EXPECT(! p.lastClosedLedger.closeAgree());
+            BEAST_EXPECT(!p.lastClosedLedger.closeAgree());
         }
     }
 
@@ -224,9 +226,8 @@ public:
 
         // Vary the time it takes to process validations to exercise detecting
         // the wrong LCL at different phases of consensus
-        for(auto validationDelay : {0s, LEDGER_MIN_CLOSE})
+        for (auto validationDelay : {0s, LEDGER_MIN_CLOSE})
         {
-
             // Consider 10 peers:
             // 0 1    2 3 4    5 6 7 8 9
             //
@@ -241,19 +242,21 @@ public:
             // since nodes 2-4 will validate a different ledger.
 
             // Nodes 0-1 will acquire the proper ledger from the network and
-            // resume consensus and eventually generate the dominant network ledger
+            // resume consensus and eventually generate the dominant network
+            // ledger
 
             std::vector<UNL> unls;
-            unls.push_back({2,3,4,5,6,7,8,9});
-            unls.push_back({0,1,2,3,4});
-            std::vector<int> membership(10,0);
+            unls.push_back({2, 3, 4, 5, 6, 7, 8, 9});
+            unls.push_back({0, 1, 2, 3, 4});
+            std::vector<int> membership(10, 0);
             membership[0] = 1;
             membership[1] = 1;
 
             TrustGraph tg{unls, membership};
 
-            // This topology can fork, which is why we are using it for this test.
-            BEAST_EXPECT(tg.canFork(minimumConsensusPercentage/100.));
+            // This topology can fork, which is why we are using it for this
+            // test.
+            BEAST_EXPECT(tg.canFork(minimumConsensusPercentage / 100.));
 
             auto netDelay = round<milliseconds>(0.2 * LEDGER_GRANULARITY);
             Sim sim(tg, topology(tg, fixed{netDelay}));
@@ -261,8 +264,9 @@ public:
             // initial round to set prior state
             sim.run(1);
 
-            // Nodes in smaller UNL have seen tx 0, nodes in other unl have seen tx 1
-            for (auto & p : sim.peers)
+            // Nodes in smaller UNL have seen tx 0, nodes in other unl have seen
+            // tx 1
+            for (auto& p : sim.peers)
             {
                 p.validationDelay = validationDelay;
                 p.missingLedgerDelay = netDelay;
@@ -272,16 +276,29 @@ public:
                     p.openTxs.insert(Tx{1});
             }
 
-            // Run for 2 additional rounds
-            //  - One round to generate different ledgers
-            //  - One round to detect different prior ledgers (but still generate
-            //    wrong ones) and recover
-            sim.run(2);
+            // Run for additional rounds
+            // With no validation delay, only 2 more rounds are needed.
+            //  1. Round to generate different ledgers
+            //  2. Round to detect different prior ledgers (but still generate
+            //    wrong ones) and recover within that round since wrong LCL
+            //    is detected before we close
+            //
+            // With a validation delay of LEDGER_MIN_CLOSE, we need 3 more
+            // rounds.
+            //  1. Round to generate different ledgers
+            //  2. Round to detect different prior ledgers (but still generate
+            //     wrong ones) but end up declaring consensus on wrong LCL (but
+            //     with the right transaction set!).  This is because we detect
+            //     the wrong LCL after we have closed the ledger, so we declare
+            //     consensus based solely on our peer proposals. But we haven't
+            //     had time to acquire the right LCL
+            //  3. Round to correct
+            sim.run(3);
 
             bc::flat_map<int, bc::flat_set<Ledger::ID>> ledgers;
-            for (auto & p : sim.peers)
+            for (auto& p : sim.peers)
             {
-                for (auto const & l : p.ledgers)
+                for (auto const& l : p.ledgers)
                 {
                     ledgers[l.first.seq].insert(l.first);
                 }
@@ -289,12 +306,19 @@ public:
 
             BEAST_EXPECT(ledgers[0].size() == 1);
             BEAST_EXPECT(ledgers[1].size() == 1);
-            BEAST_EXPECT(ledgers[2].size() == 2);
-            BEAST_EXPECT(ledgers[3].size() == 1);
-
-
+            if (validationDelay == 0s)
+            {
+                BEAST_EXPECT(ledgers[2].size() == 2);
+                BEAST_EXPECT(ledgers[3].size() == 1);
+                BEAST_EXPECT(ledgers[4].size() == 1);
+            }
+            else
+            {
+                BEAST_EXPECT(ledgers[2].size() == 2);
+                BEAST_EXPECT(ledgers[3].size() == 2);
+                BEAST_EXPECT(ledgers[4].size() == 1);
+            }
         }
-
         // Additional test engineered to switch LCL during the establish phase.
         // This was added to trigger a scenario that previously crashed, in which
         // switchLCL switched from establish to open phase, but still processed
@@ -330,7 +354,7 @@ public:
 
           // Check all peers recovered
           for (auto &p : sim.peers)
-            BEAST_EXPECT(p.LCL() == sim.peers[0].LCL());
+            BEAST_EXPECT(p.prevLedgerID() == sim.peers[0].prevLedgerID());
         }
     }
 
@@ -341,42 +365,42 @@ public:
         using namespace std::chrono;
 
         int numPeers = 10;
-        for(int overlap = 0;  overlap <= numPeers; ++overlap)
+        for (int overlap = 0; overlap <= numPeers; ++overlap)
         {
             auto tg = TrustGraph::makeClique(numPeers, overlap);
-            Sim sim(tg, topology(tg,
-                        fixed{round<milliseconds>(0.2 * LEDGER_GRANULARITY)}));
+            Sim sim(
+                tg,
+                topology(
+                    tg, fixed{round<milliseconds>(0.2 * LEDGER_GRANULARITY)}));
 
             // Initial round to set prior state
             sim.run(1);
-            for (auto & p : sim.peers)
+            for (auto& p : sim.peers)
             {
                 // Nodes have only seen transactions from their neighbors
                 p.openTxs.insert(Tx{p.id});
-                for(auto const link : sim.net.links(&p))
+                for (auto const link : sim.net.links(&p))
                     p.openTxs.insert(Tx{link.to->id});
             }
             sim.run(1);
 
-
             // See if the network forked
             bc::flat_set<Ledger::ID> ledgers;
-            for (auto & p : sim.peers)
+            for (auto& p : sim.peers)
             {
-                ledgers.insert(p.LCL());
+                ledgers.insert(p.prevLedgerID());
             }
 
             // Fork should not happen for 40% or greater overlap
             // Since the overlapped nodes have a UNL that is the union of the
             // two cliques, the maximum sized UNL list is the number of peers
-            if(overlap > 0.4 * numPeers)
+            if (overlap > 0.4 * numPeers)
                 BEAST_EXPECT(ledgers.size() == 1);
-            else // Even if we do fork, there shouldn't be more than 3 ledgers
-                 // One for cliqueA, one for cliqueB and one for nodes in both
-                 BEAST_EXPECT(ledgers.size() <= 3);
+            else  // Even if we do fork, there shouldn't be more than 3 ledgers
+                // One for cliqueA, one for cliqueB and one for nodes in both
+                BEAST_EXPECT(ledgers.size() <= 3);
         }
     }
-
 
     void
     simClockSkew()
@@ -396,51 +420,43 @@ public:
 
         // Disabled while continuing to understand testt.
 
-
-        for(auto stagger : {800ms, 1600ms, 3200ms, 30000ms, 45000ms, 300000ms})
+        for (auto stagger : {800ms, 1600ms, 3200ms, 30000ms, 45000ms, 300000ms})
         {
-
             auto tg = TrustGraph::makeComplete(5);
-            Sim sim(tg, topology(tg, [](PeerID i, PeerID)
-            {
-                return 200ms * (i + 1);
-            }));
-
+            Sim sim(tg, topology(tg, [](PeerID i, PeerID) {
+                        return 200ms * (i + 1);
+                    }));
 
             // all transactions submitted before starting
             // Initial round to set prior state
             sim.run(1);
 
-            for (auto & p : sim.peers)
+            for (auto& p : sim.peers)
             {
-                p.openTxs.insert(Tx{ 0 });
+                p.openTxs.insert(Tx{0});
                 p.targetLedgers = p.completedLedgers + 1;
-
             }
 
             // stagger start of consensus
-            for (auto & p : sim.peers)
+            for (auto& p : sim.peers)
             {
                 p.start();
                 sim.net.step_for(stagger);
             }
 
             // run until all peers have accepted all transactions
-            sim.net.step_while([&]()
-            {
-                  for(auto & p : sim.peers)
-                  {
-                    if(p.LCL().txs.size() != 1)
+            sim.net.step_while([&]() {
+                for (auto& p : sim.peers)
+                {
+                    if (p.prevLedgerID().txs.size() != 1)
                     {
                         return true;
                     }
-                  }
-                  return false;
+                }
+                return false;
             });
         }
     }
-
-
 
     void
     simScaleFree()
@@ -450,45 +466,46 @@ public:
         // Generate a quasi-random scale free network and simulate consensus
         // for a single transaction
 
-        int N = 100; // Peers
+        int N = 100;  // Peers
 
         int numUNLs = 15;  //  UNL lists
-        int minUNLSize = N/4, maxUNLSize = N / 2;
+        int minUNLSize = N / 4, maxUNLSize = N / 2;
 
         double transProb = 0.5;
 
         std::mt19937_64 rng;
 
-        auto tg = TrustGraph::makeRandomRanked(N, numUNLs,
-          PowerLawDistribution{1,3},
-          std::uniform_int_distribution<>{minUNLSize, maxUNLSize},
-          rng);
+        auto tg = TrustGraph::makeRandomRanked(
+            N,
+            numUNLs,
+            PowerLawDistribution{1, 3},
+            std::uniform_int_distribution<>{minUNLSize, maxUNLSize},
+            rng);
 
-        Sim sim{tg, topology(tg, fixed{round<milliseconds>(0.2 * LEDGER_GRANULARITY)})};
+        Sim sim{
+            tg,
+            topology(tg, fixed{round<milliseconds>(0.2 * LEDGER_GRANULARITY)})};
 
         // Initial round to set prior state
         sim.run(1);
 
         std::uniform_real_distribution<> u{};
-        for (auto & p : sim.peers)
+        for (auto& p : sim.peers)
         {
             // 50-50 chance to have seen a transaction
-            if(u(rng) >= transProb)
+            if (u(rng) >= transProb)
                 p.openTxs.insert(Tx{0});
-
         }
         sim.run(1);
 
-
         // See if the network forked
         bc::flat_set<Ledger::ID> ledgers;
-        for (auto & p : sim.peers)
+        for (auto& p : sim.peers)
         {
-            ledgers.insert(p.LCL());
+            ledgers.insert(p.prevLedgerID());
         }
 
         BEAST_EXPECT(ledgers.size() == 1);
-
     }
 
     void
@@ -507,5 +524,5 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(Consensus, consensus, ripple);
-} // test
-} // ripple
+}  // test
+}  // ripple

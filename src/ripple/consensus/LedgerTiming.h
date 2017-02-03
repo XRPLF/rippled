@@ -20,13 +20,12 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERTIMING_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERTIMING_H_INCLUDED
 
-#include <chrono>
-#include <cstdint>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/utility/Journal.h>
+#include <chrono>
+#include <cstdint>
 
 namespace ripple {
-
 
 //------------------------------------------------------------------------------
 // These are protocol parameters used to control the behavior of the system and
@@ -42,16 +41,10 @@ using namespace std::chrono_literals;
     @see getNextLedgerTimeResolution
 */
 std::chrono::seconds constexpr ledgerPossibleTimeResolutions[] =
-    { 10s, 20s, 30s, 60s, 90s, 120s };
+    {10s, 20s, 30s, 60s, 90s, 120s};
 
-#ifndef _MSC_VER
 //! Initial resolution of ledger close time.
 auto constexpr ledgerDefaultTimeResolution = ledgerPossibleTimeResolutions[2];
-#else
-// HH Remove this workaround of a VS bug when possible
-//! Initial resolution of ledger close time.
-auto constexpr ledgerDefaultTimeResolution = 30s;
-#endif
 
 //! How often we increase the close time resolution (in numbers of ledgers)
 auto constexpr increaseLedgerTimeResolutionEvery = 8;
@@ -161,23 +154,25 @@ getNextLedgerTimeResolution(
     bool previousAgree,
     std::uint32_t ledgerSeq)
 {
-    assert (ledgerSeq);
+    assert(ledgerSeq);
 
     using namespace std::chrono;
     // Find the current resolution:
-    auto iter = std::find (std::begin (ledgerPossibleTimeResolutions),
-        std::end (ledgerPossibleTimeResolutions), previousResolution);
-    assert (iter != std::end (ledgerPossibleTimeResolutions));
+    auto iter = std::find(
+        std::begin(ledgerPossibleTimeResolutions),
+        std::end(ledgerPossibleTimeResolutions),
+        previousResolution);
+    assert(iter != std::end(ledgerPossibleTimeResolutions));
 
     // This should never happen, but just as a precaution
-    if (iter == std::end (ledgerPossibleTimeResolutions))
+    if (iter == std::end(ledgerPossibleTimeResolutions))
         return previousResolution;
 
     // If we did not previously agree, we try to decrease the resolution to
     // improve the chance that we will agree now.
     if (!previousAgree && ledgerSeq % decreaseLedgerTimeResolutionEvery == 0)
     {
-        if (++iter != std::end (ledgerPossibleTimeResolutions))
+        if (++iter != std::end(ledgerPossibleTimeResolutions))
             return *iter;
     }
 
@@ -185,7 +180,7 @@ getNextLedgerTimeResolution(
     // if we can continue to agree.
     if (previousAgree && ledgerSeq % increaseLedgerTimeResolutionEvery == 0)
     {
-        if (iter-- != std::begin (ledgerPossibleTimeResolutions))
+        if (iter-- != std::begin(ledgerPossibleTimeResolutions))
             return *iter;
     }
 
@@ -212,7 +207,6 @@ roundCloseTime(
     return closeTime - (closeTime.time_since_epoch() % closeResolution);
 }
 
-
 /** Calculate the effective ledger close time
 
     After adjusting the ledger close time based on the current resolution, also
@@ -223,16 +217,17 @@ roundCloseTime(
     @param priorCloseTime The close time of the prior ledger
 */
 template <class time_point>
-time_point effectiveCloseTime(time_point closeTime,
-   typename time_point::duration const resolution,
+time_point
+effCloseTime(
+    time_point closeTime,
+    typename time_point::duration const resolution,
     time_point priorCloseTime)
 {
     if (closeTime == time_point{})
         return closeTime;
 
     return std::max<time_point>(
-        roundCloseTime (closeTime, resolution),
-        (priorCloseTime + 1s));
+        roundCloseTime(closeTime, resolution), (priorCloseTime + 1s));
 }
 
 /** Determines whether the current ledger should close at this time.
@@ -241,29 +236,28 @@ time_point effectiveCloseTime(time_point closeTime,
     in progress, or when a transaction is received and no close is in progress.
 
     @param anyTransactions indicates whether any transactions have been received
-    @param previousProposers proposers in the last closing
+    @param prevProposers proposers in the last closing
     @param proposersClosed proposers who have currently closed this ledger
     @param proposersValidated proposers who have validated the last closed
                               ledger
-    @param previousTime time for the previous ledger to reach consensus
-    @param currentTime  time since the previous ledger's
-                           (possibly rounded) close time
-    @param openTime     time waiting to close this ledger
+    @param prevRoundTime time for the previous ledger to reach consensus
+    @param timeSincePrevClose  time since the previous ledger's (possibly rounded)
+                        close time
+    @param openTime     duration this ledger has been open
     @param idleInterval the network's desired idle interval
     @param j            journal for logging
 */
 bool
-shouldCloseLedger (
+shouldCloseLedger(
     bool anyTransactions,
-    std::size_t previousProposers,
+    std::size_t prevProposers,
     std::size_t proposersClosed,
     std::size_t proposersValidated,
-    std::chrono::milliseconds previousTime,
-    std::chrono::milliseconds currentTime, // Time since last ledger's close time
-    std::chrono::milliseconds openTime,    // Time waiting to close this ledger
+    std::chrono::milliseconds prevRoundTime,
+    std::chrono::milliseconds timeSincePrevClose,
+    std::chrono::milliseconds openTime,
     std::chrono::seconds idleInterval,
     beast::Journal j);
-
 
 /** Determine if a consensus has been reached
 
@@ -275,22 +269,18 @@ shouldCloseLedger (
     @return True if a consensus has been reached
 */
 bool
-checkConsensusReached (
-    std::size_t agreeing,
-    std::size_t total,
-    bool count_self);
+checkConsensusReached(std::size_t agreeing, std::size_t total, bool count_self);
 
 /** Whether we have or don't have a consensus */
-enum class ConsensusState
-{
-    No,           //!< We do not have consensus
-    MovedOn,      //!< The network has consensus without us
-    Yes           //!< We have consensus along with the network
+enum class ConsensusState {
+    No,       //!< We do not have consensus
+    MovedOn,  //!< The network has consensus without us
+    Yes       //!< We have consensus along with the network
 };
 
 /** Determine whether the network reached consensus and whether we joined.
 
-    @param previousProposers proposers in the last closing (not including us)
+    @param prevProposers proposers in the last closing (not including us)
     @param currentProposers proposers in this closing so far (not including us)
     @param currentAgree proposers who agree with us
     @param currentFinished proposers who have validated a ledger after this one
@@ -302,8 +292,8 @@ enum class ConsensusState
     @param j                journal for logging
 */
 ConsensusState
-checkConsensus (
-    std::size_t previousProposers,
+checkConsensus(
+    std::size_t prevProposers,
     std::size_t currentProposers,
     std::size_t currentAgree,
     std::size_t currentFinished,
@@ -312,6 +302,6 @@ checkConsensus (
     bool proposing,
     beast::Journal j);
 
-} // ripple
+}  // ripple
 
 #endif

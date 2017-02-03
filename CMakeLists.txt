@@ -353,6 +353,7 @@ if (WIN32 OR is_xcode)
     docs/
     Jamfile.v2
     boostbook.dtd
+    consensus.qbk
     index.xml
     main.qbk
     quickref.xml

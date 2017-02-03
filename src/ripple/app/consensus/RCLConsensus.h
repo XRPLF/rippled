@@ -1,4 +1,4 @@
-
+//------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.
@@ -21,19 +21,19 @@
 #define RIPPLE_APP_CONSENSUS_RCLCONSENSUS_H_INCLUDED
 
 #include <BeastConfig.h>
+#include <ripple/app/consensus/RCLCxLedger.h>
+#include <ripple/app/consensus/RCLCxPeerPos.h>
+#include <ripple/app/consensus/RCLCxTx.h>
+#include <ripple/app/misc/FeeVote.h>
+#include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
+#include <ripple/beast/utility/Journal.h>
+#include <ripple/consensus/Consensus.h>
+#include <ripple/core/JobQueue.h>
+#include <ripple/overlay/Message.h>
+#include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/shamap/SHAMap.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/app/misc/FeeVote.h>
-#include <ripple/protocol/RippleLedgerHash.h>
-#include <ripple/app/consensus/RCLCxLedger.h>
-#include <ripple/app/consensus/RCLCxTx.h>
-#include <ripple/app/consensus/RCLCxPeerPos.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/consensus/Consensus.h>
-#include <ripple/basics/CountedObject.h>
-#include <ripple/overlay/Message.h>
 
 namespace ripple {
 
@@ -50,37 +50,40 @@ struct RCLCxTraits
     using NodeID_t = NodeID;
     //! TxSet type presented to Consensus
     using TxSet_t = RCLTxSet;
-    //! MissingTxException type neede by Consensus
-    using MissingTxException_t = SHAMapMissingNode;
 };
-
 
 /** Adapts the generic Consensus algorithm for use by RCL.
 
     @note The enabled_shared_from_this base allows the application to properly
     create a shared instance of RCLConsensus for use in the accept logic..
 */
-class RCLConsensus : public Consensus<RCLConsensus, RCLCxTraits>
-                   , public std::enable_shared_from_this <RCLConsensus>
-                   , public CountedObject <RCLConsensus>
+class RCLConsensus final : public Consensus<RCLConsensus, RCLCxTraits>,
+                           public std::enable_shared_from_this<RCLConsensus>,
+                           public CountedObject<RCLConsensus>
 {
     using Base = Consensus<RCLConsensus, RCLCxTraits>;
-    using Base::accept;
-public:
 
+public:
     //! Constructor
     RCLConsensus(
         Application& app,
-        std::unique_ptr<FeeVote> && feeVote,
+        std::unique_ptr<FeeVote>&& feeVote,
         LedgerMaster& ledgerMaster,
         LocalTxs& localTxs,
         InboundTransactions& inboundTransactions,
-        typename Base::clock_type const & clock,
+        typename Base::clock_type const& clock,
         beast::Journal journal);
-    RCLConsensus(RCLConsensus const&) = delete;
-    RCLConsensus& operator=(RCLConsensus const&) = delete;
 
-    static char const* getCountedObjectName() { return "Consensus"; }
+    RCLConsensus(RCLConsensus const&) = delete;
+
+    RCLConsensus&
+    operator=(RCLConsensus const&) = delete;
+
+    static char const*
+    getCountedObjectName()
+    {
+        return "Consensus";
+    }
 
     /** Save the given consensus proposed by a peer with nodeID for later
         use in consensus.
@@ -89,32 +92,65 @@ public:
         @param nodeID ID of peer
     */
     void
-    storeProposal( RCLCxPeerPos::ref peerPos, NodeID const& nodeID);
+    storeProposal(RCLCxPeerPos::ref peerPos, NodeID const& nodeID);
+
+    //! Whether we are validating consensus ledgers.
+    bool
+    validating() const
+    {
+        return validating_;
+    }
+
+    bool
+    haveCorrectLCL() const
+    {
+        return mode() != Mode::wrongLedger;
+    }
+
+    bool
+    proposing() const
+    {
+        return mode() == Mode::proposing;
+    }
+
+    /** Get the Json state of the consensus process.
+
+        Called by the consensus_info RPC.
+
+        @param full True if verbose response desired.
+        @return     The Json state.
+    */
+    Json::Value
+    getJson(bool full) const;
+
+    //! See Consensus::startRound
+    void
+    startRound(
+        NetClock::time_point const& now,
+        RCLCxLedger::ID const& prevLgrId,
+        RCLCxLedger const& prevLgr);
+
+    //! See Consensus::timerEntry
+    void
+    timerEntry(NetClock::time_point const& now);
+
+    //! See Consensus::gotTxSet
+    void
+    gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet);
 
     /** Returns validation public key */
     PublicKey const&
-    getValidationPublicKey () const;
+    getValidationPublicKey() const;
 
     /** Set validation private and public key pair. */
     void
-    setValidationKeys (SecretKey const& valSecret, PublicKey const& valPublic);
+    setValidationKeys(SecretKey const& valSecret, PublicKey const& valPublic);
 
 private:
     friend class Consensus<RCLConsensus, RCLCxTraits>;
 
     //-------------------------------------------------------------------------
     // Consensus type requirements.
-
-    /** Notification that a new consensus round has begun.
-
-        @param ledger The ledger we are building consensus on
-    */
-    void
-    onStartRound(RCLCxLedger const & ledger);
-
-    //! @return Whether consensus should be (proposing, validating)
-    std::pair <bool, bool>
-    getMode ();
 
     /** Attempt to acquire a specific ledger.
 
@@ -124,44 +160,44 @@ private:
         @return Optional ledger, will be seated if we locally had the ledger
      */
     boost::optional<RCLCxLedger>
-    acquireLedger(LedgerHash const & ledger);
+    acquireLedger(LedgerHash const& ledger);
 
     /** Get peers' proposed positions.
         @param prevLedger The base ledger which proposals are based on
         @return The set of proposals
     */
     std::vector<RCLCxPeerPos>
-    proposals (LedgerHash const& prevLedger);
+    proposals(LedgerHash const& prevLedger);
 
     /** Relay the given proposal to all peers
 
         @param peerPos The peer position to relay.
      */
     void
-    relay(RCLCxPeerPos const & peerPos);
+    relay(RCLCxPeerPos const& peerPos);
 
     /** Relay disputed transacction to peers.
 
         Only relay if the provided transaction hasn't been shared recently.
 
-        @param dispute The disputed transaction to relay.
+        @param tx The disputed transaction to relay.
     */
     void
-    relay(DisputedTx <RCLCxTx, NodeID> const & dispute);
+    relay(RCLCxTx const& tx);
 
-     /** Acquire the transaction set associated with a proposal.
+    /** Acquire the transaction set associated with a proposal.
 
-         If the transaction set is not available locally, will attempt acquire it
-         from the network.
+        If the transaction set is not available locally, will attempt acquire it
+        from the network.
 
-         @param setId The transaction set ID associated with the proposal
-         @return Optional set of transactions, seated if available.
-    */
+        @param setId The transaction set ID associated with the proposal
+        @return Optional set of transactions, seated if available.
+   */
     boost::optional<RCLTxSet>
-    acquireTxSet(RCLTxSet::ID const & setId);
+    acquireTxSet(RCLTxSet::ID const& setId);
 
     /** Whether the open ledger has any transactions
-    */
+     */
     bool
     hasOpenTransactions() const;
 
@@ -171,133 +207,93 @@ private:
         @return the number of proposers that validated a ledger
     */
     std::size_t
-    proposersValidated(LedgerHash const & h) const;
+    proposersValidated(LedgerHash const& h) const;
 
-    /** Number of proposers that have validated a ledger descended from requested ledger.
+    /** Number of proposers that have validated a ledger descended from
+       requested ledger.
 
         @param h The hash of the ledger of interest.
         @return The number of validating peers that have validated a ledger
                 succeeding the one provided.
     */
     std::size_t
-    proposersFinished(LedgerHash const & h) const;
+    proposersFinished(LedgerHash const& h) const;
 
     /** Propose the given position to my peers.
 
         @param proposal Our proposed position
     */
     void
-    propose (RCLCxPeerPos::Proposal const& proposal);
+    propose(RCLCxPeerPos::Proposal const& proposal);
 
-    /** Share the given tx set with peers.
+    /** Relay the given tx set to peers.
 
         @param set The TxSet to share.
     */
     void
-    share (RCLTxSet const& set);
+    relay(RCLTxSet const& set);
 
-    /** Get the last closed ledger (LCL) seen on the network
+    /** Get the ID of the previous ledger/last closed ledger(LCL) on the network
 
-        @param currentLedger Current ledger used in consensus
-        @param priorLedger Prior ledger used in consensus
-        @param believedCorrect Whether consensus believes currentLedger is LCL
+        @param ledgerID ID of previous ledger used by consensus
+        @param ledger Previous ledger consensus has available
+        @param mode Current consensus mode
+        @return The id of the last closed network
 
-        @return The hash of the last closed network
+        @note ledgerID may not match ledger.id() if we haven't acquired
+              the ledger matching ledgerID from the network
      */
     uint256
-    getLCL (
-        uint256 const& currentLedger,
-        uint256 const& priorLedger,
-        bool believedCorrect);
+    getPrevLedger(
+        uint256 ledgerID,
+        RCLCxLedger const& ledger,
+        Mode mode);
 
-
-    /** Notification that the ledger has closed.
+    /** Close the open ledger and return initial consensus position.
 
        @param ledger the ledger we are changing to
-       @param haveCorrectLCL whether we believe this is the correct LCL
+       @param closeTime When consensus closed the ledger
+       @param mode Current consensus mode
+       @return Tentative consensus result
     */
-    void
-    onClose(RCLCxLedger const & ledger, bool haveCorrectLCL);
+    Result
+    onClose(
+        RCLCxLedger const& ledger,
+        NetClock::time_point const& closeTime,
+        Mode mode);
 
-     /** Create our initial position of transactions to accept in this round
-         of consensus.
-
-          @param prevLedger The ledger the transactions apply to
-          @param isProposing Whether we are currently proposing
-          @param isCorrectLCL Whether we have the correct LCL
-          @param closeTime When we believe the ledger closed
-          @param now The current network adjusted time
-
-          @return Pair of (i)  transactions we believe are in the ledger
-                          (ii) the corresponding proposal of those transactions
-                               to send to peers
-     */
-    std::pair <RCLTxSet, typename RCLCxPeerPos::Proposal>
-    makeInitialPosition (
-        RCLCxLedger const & prevLedger,
-        bool isProposing,
-        bool isCorrectLCL,
-        NetClock::time_point closeTime,
-        NetClock::time_point now);
-
-
-    /** Dispatch a call to Consensus::accept
+    /** Process the accepted ledger.
 
         Accepting a ledger may be expensive, so this function can dispatch
-        that call to another thread if desired and must call the accept
-        method of the generic consensus algorithm.
+        that call to another thread if desired.
 
-        @param txSet The transactions to accept.
+        @param result The result of consensus
+        @param prevLedger The closed ledger consensus worked from
+        @param closeResolution The resolution used in agreeing on an effective
+                               closeTiem
+        @param rawCloseTimes The unrounded closetimes of ourself and our peers
+        @param mode Our participating mode at the time consensus was declared
     */
     void
-    dispatchAccept(RCLTxSet const & txSet);
+    onAccept(
+        Result const& result,
+        RCLCxLedger const& prevLedger,
+        NetClock::duration const & closeResolution,
+        CloseTimes const& rawCloseTimes,
+        Mode const& mode);
 
+    /** Process the accepted ledger that was a result of simulation/force
+       accept.
 
-    /** Accept a new ledger based on the given transactions.
-
-        TODO: Too many arguments, need to group related types.
-
-        @param set The set of accepted transactions
-        @param consensusCloseTime Consensus agreed upon close time
-        @param proposing_ Whether we are proposing
-        @param validating_ Whether we are validating
-        @param haveCorrectLCL_ Whether we had the correct last closed ledger
-        @param consensusFail_ Whether consensus failed
-        @param prevLedgerHash_ The hash/id of the previous ledger
-        @param previousLedger_ The previous ledger
-        @param closeResolution_ The close time resolution used this round
-        @param now Current network adjsuted time
-        @param roundTime_ Duration of this consensus round
-        @param disputes_ Disputed trarnsactions from this round
-        @param closeTimes_ Histogram of peers close times
-        @param closeTime Our close time
-        @return Whether we should continue validating
-     */
-    bool
-    accept(
-        RCLTxSet const& set,
-        NetClock::time_point consensusCloseTime,
-        bool proposing_,
-        bool validating_,
-        bool haveCorrectLCL_,
-        bool consensusFail_,
-        LedgerHash const &prevLedgerHash_,
-        RCLCxLedger const & previousLedger_,
-        NetClock::duration closeResolution_,
-        NetClock::time_point const & now,
-        std::chrono::milliseconds const & roundTime_,
-        hash_map<RCLCxTx::ID, DisputedTx <RCLCxTx, NodeID>> const & disputes_,
-        std::map <NetClock::time_point, int> closeTimes_,
-        NetClock::time_point const & closeTime
-    );
-
-    /** Signal the end of consensus to the application, which will start the
-        next round.
-
-        @param correctLCL Whether we believe we have the correct LCL
+        @ref onAccept
     */
     void
-    endConsensus(bool correctLCL);
+    onForceAccept(
+        Result const& result,
+        RCLCxLedger const& prevLedger,
+        NetClock::duration const &closeResolution,
+        CloseTimes const& rawCloseTimes,
+        Mode const& mode);
 
     //!-------------------------------------------------------------------------
     // Additional members (not directly required by Consensus interface)
@@ -308,42 +304,53 @@ private:
         @param haveCorrectLCL Whether we believ we have the correct LCL.
     */
     void
-    notify(protocol::NodeEvent ne, RCLCxLedger const & ledger, bool haveCorrectLCL);
+    notify(
+        protocol::NodeEvent ne,
+        RCLCxLedger const& ledger,
+        bool haveCorrectLCL);
 
-      /** Build the new last closed ledger.
+    /** Accept a new ledger based on the given transactions.
 
-          Accept the given the provided set of consensus transactions and build
-          the last closed ledger. Since consensus just agrees on which
-          transactions to apply, but not whether they make it into the closed
-          ledger, this function also populates retriableTxs with those that can
-          be retried in the next round.
+        @ref onAccept
+     */
+    void
+    doAccept(
+        Result const& result,
+        RCLCxLedger const& prevLedger,
+        NetClock::duration closeResolution,
+        CloseTimes const& rawCloseTimes,
+        Mode const& mode);
 
-          @param previousLedger Prior ledger building upon
-          @param set The set of transactions to apply to the ledger
-          @param closeTime The the ledger closed
-          @param closeTimeCorrect Whether consensus agreed on close time
-          @param closeResolution Resolution used to determine consensus close time
-          @param now Current network adjusted time
-          @param roundTime Duration of this consensus rorund
-          @param retriableTxs Populate with transactions to retry in next round
-          @return The newly built ledger
-    */
+    /** Build the new last closed ledger.
+
+        Accept the given the provided set of consensus transactions and build
+        the last closed ledger. Since consensus just agrees on which
+        transactions to apply, but not whether they make it into the closed
+        ledger, this function also populates retriableTxs with those that can
+        be retried in the next round.
+
+        @param previousLedger Prior ledger building upon
+        @param set The set of transactions to apply to the ledger
+        @param closeTime The the ledger closed
+        @param closeTimeCorrect Whether consensus agreed on close time
+        @param closeResolution Resolution used to determine consensus close time
+        @param roundTime Duration of this consensus rorund
+        @param retriableTxs Populate with transactions to retry in next round
+        @return The newly built ledger
+  */
     RCLCxLedger
     buildLCL(
-        RCLCxLedger const & previousLedger,
-        RCLTxSet const & set,
+        RCLCxLedger const& previousLedger,
+        RCLTxSet const& set,
         NetClock::time_point closeTime,
         bool closeTimeCorrect,
         NetClock::duration closeResolution,
-        NetClock::time_point now,
         std::chrono::milliseconds roundTime,
-        CanonicalTXSet & retriableTxs
-    );
+        CanonicalTXSet& retriableTxs);
 
     /** Validate the given ledger and share with peers as necessary
 
         @param ledger The ledger to validate
-        @param now Current network adjusted time
         @param proposing Whether we were proposing transactions while generating
                          this ledger.  If we are not proposing, a validation
                          can still be sent to inform peers that we know we
@@ -351,16 +358,13 @@ private:
                          around and trying to catch up.
     */
     void
-    validate(
-        RCLCxLedger const & ledger,
-        NetClock::time_point now,
-        bool proposing);
+    validate(RCLCxLedger const& ledger, bool proposing);
 
     //!-------------------------------------------------------------------------
     Application& app_;
-    std::unique_ptr <FeeVote> feeVote_;
-    LedgerMaster & ledgerMaster_;
-    LocalTxs & localTxs_;
+    std::unique_ptr<FeeVote> feeVote_;
+    LedgerMaster& ledgerMaster_;
+    LocalTxs& localTxs_;
     InboundTransactions& inboundTransactions_;
     beast::Journal j_;
 
@@ -373,11 +377,13 @@ private:
     // only used for our own validations.
     NetClock::time_point lastValidationTime_;
 
-    using PeerPositions = hash_map <NodeID, std::deque<RCLCxPeerPos::pointer>>;
+    using PeerPositions = hash_map<NodeID, std::deque<RCLCxPeerPos::pointer>>;
     PeerPositions peerPositions_;
     std::mutex peerPositionsLock_;
-};
 
+    bool validating_ = false;
+    bool simulating_ = false;
+};
 }
 
 #endif
