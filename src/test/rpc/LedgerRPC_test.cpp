@@ -279,6 +279,179 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
     }
 
+    /// @brief ledger RPC requests as a way to drive
+    /// input options to lookupLedger. The point of this test is
+    /// coverage for lookupLedger, not so much the ledger
+    /// RPC request.
+    void testLookupLedger()
+    {
+        using namespace test::jtx;
+        Env env { *this };
+        env.fund(XRP(10000), "alice");
+        env.close();
+        env.fund(XRP(10000), "bob");
+        env.close();
+        env.fund(XRP(10000), "jim");
+        env.close();
+        env.fund(XRP(10000), "jill");
+
+        // closed ledger hashes are:
+        //1 - AB868A6CFEEC779C2FF845C0AF00A642259986AF40C01976A7F842B6918936C7
+        //2 - 8AEDBB96643962F1D40F01E25632ABB3C56C9F04B0231EE4B18248B90173D189
+        //3 - 7C3EEDB3124D92E49E75D81A8826A2E65A75FD71FC3FD6F36FEB803C5F1D812D
+        //4 - 9F9E6A4ECAA84A08FF94713FA41C3151177D6222EA47DD2F0020CA49913EE2E6
+        //5 - C516522DE274EB52CE69A3D22F66DD73A53E16597E06F7A86F66DF7DD4309173
+        //
+        {
+            //access via the legacy ledger field, keyword index values
+            Json::Value jvParams;
+            jvParams[jss::ledger] = "closed";
+            auto jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
+
+            jvParams[jss::ledger] = "validated";
+            jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
+
+            jvParams[jss::ledger] = "current";
+            jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "6");
+
+            // ask for a bad ledger keyword
+            jvParams[jss::ledger] = "invalid";
+            jrr = env.rpc ( "json", "ledger",
+                boost::lexical_cast<std::string>(jvParams)) [jss::result];
+            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "ledgerIndexMalformed");
+
+            // numeric index
+            jvParams[jss::ledger] = 4;
+            jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "4");
+
+            // numeric index - out of range
+            jvParams[jss::ledger] = 20;
+            jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error]         == "lgrNotFound");
+            BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
+        }
+
+        {
+            //access via the ledger_hash field
+            Json::Value jvParams;
+            jvParams[jss::ledger_hash] =
+                "7C3EEDB3124D92E49E75D81A8826A2E6"
+                "5A75FD71FC3FD6F36FEB803C5F1D812D";
+            auto jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "3");
+
+            // extra leading hex chars in hash will be ignored
+            jvParams[jss::ledger_hash] =
+                "DEADBEEF"
+                "7C3EEDB3124D92E49E75D81A8826A2E6"
+                "5A75FD71FC3FD6F36FEB803C5F1D812D";
+            jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "3");
+
+            // request with non-string ledger_hash
+            jvParams[jss::ledger_hash] = 2;
+            jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "ledgerHashNotString");
+
+            // malformed (non hex) hash
+            jvParams[jss::ledger_hash] =
+                "ZZZZZZZZZZZD92E49E75D81A8826A2E6"
+                "5A75FD71FC3FD6F36FEB803C5F1D812D";
+            jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "ledgerHashMalformed");
+
+            // properly formed, but just doesn't exist
+            jvParams[jss::ledger_hash] =
+                "8C3EEDB3124D92E49E75D81A8826A2E6"
+                "5A75FD71FC3FD6F36FEB803C5F1D812D";
+            jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error]         == "lgrNotFound");
+            BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
+        }
+
+        {
+            //access via the ledger_index field, keyword index values
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "closed";
+            auto jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_index));
+
+            jvParams[jss::ledger_index] = "validated";
+            jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
+
+            jvParams[jss::ledger_index] = "current";
+            jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "6");
+            BEAST_EXPECT(jrr.isMember(jss::ledger_current_index));
+
+            // ask for a bad ledger keyword
+            jvParams[jss::ledger_index] = "invalid";
+            jrr = env.rpc ( "json", "ledger",
+                boost::lexical_cast<std::string>(jvParams)) [jss::result];
+            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "ledgerIndexMalformed");
+
+            // numeric index
+            for (auto i : {1, 2, 3, 4 ,5, 6})
+            {
+                jvParams[jss::ledger_index] = i;
+                jrr = env.rpc("json", "ledger",
+                    boost::lexical_cast<std::string>(jvParams))[jss::result];
+                BEAST_EXPECT(jrr.isMember(jss::ledger));
+                if(i < 6)
+                    BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
+                BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == std::to_string(i));
+            }
+
+            // numeric index - out of range
+            jvParams[jss::ledger_index] = 7;
+            jrr = env.rpc("json", "ledger",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error]         == "lgrNotFound");
+            BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
+        }
+
+    }
+
 public:
     void run ()
     {
@@ -292,6 +465,7 @@ public:
         testMalformedAccountRoot();
         testNotFoundAccountRoot();
         testAccountRootFromIndex();
+        testLookupLedger();
     }
 };
 
