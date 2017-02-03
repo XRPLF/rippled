@@ -1435,9 +1435,9 @@ void NetworkOPsImp::switchLastClosedLedger (
             app_.getLedgerMaster().getValidatedLedger();
         boost::optional<Rules> rules;
         if (lastVal)
-            rules.emplace(*lastVal);
+            rules.emplace(*lastVal, app_.config().features);
         else
-            rules.emplace();
+            rules.emplace(app_.config().features);
         app_.openLedger().accept(app_, *rules,
             newLCL, OrderedTxs({}), false, retries,
                 tapNONE, "jump",
@@ -2104,7 +2104,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         info[jss::load] = m_job_queue.getJson ();
 
     auto const escalationMetrics = app_.getTxQ().getMetrics(
-        app_.config(), *app_.openLedger().current());
+        *app_.openLedger().current());
 
     constexpr std::uint64_t max32 =
         std::numeric_limits<std::uint32_t>::max();

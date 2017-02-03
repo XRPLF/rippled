@@ -816,8 +816,7 @@ void LedgerConsensusImp<Traits>::accept (TxSet_t const& set)
         auto buildLCL = std::make_shared<Ledger>(
             *previousLedger_,
             app_.timeKeeper().closeTime());
-        auto const v2_enabled = buildLCL->rules().enabled(featureSHAMapV2,
-                                                       app_.config().features);
+        auto const v2_enabled = buildLCL->rules().enabled(featureSHAMapV2);
         auto v2_transition = false;
         if (v2_enabled && !buildLCL->stateMap().is_v2())
         {
@@ -999,9 +998,9 @@ void LedgerConsensusImp<Traits>::accept (TxSet_t const& set)
         auto const lastVal = ledgerMaster_.getValidatedLedger();
         boost::optional<Rules> rules;
         if (lastVal)
-            rules.emplace(*lastVal);
+            rules.emplace(*lastVal, app_.config().features);
         else
-            rules.emplace();
+            rules.emplace(app_.config().features);
         app_.openLedger().accept(app_, *rules,
             sharedLCL, localTx, anyDisputes, retriableTxs, tapNONE,
                 "consensus",

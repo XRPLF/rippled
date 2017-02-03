@@ -48,8 +48,7 @@ class TxQ_test : public beast::unit_test::suite
         std::uint64_t expectedMinFeeLevel,
         std::uint64_t expectedMedFeeLevel = 256 * 500)
     {
-        auto optMetrics = env.app().getTxQ().getMetrics(
-            env.app().config(), *env.current());
+        auto optMetrics = env.app().getTxQ().getMetrics(*env.current());
         if (!BEAST_EXPECT(optMetrics))
             return;
         auto& metrics = *optMetrics;
@@ -72,8 +71,7 @@ class TxQ_test : public beast::unit_test::suite
         jtx::Env& env,
         jtx::Account const& account)
     {
-        auto metrics = env.app().getTxQ().getMetrics(env.app().config(),
-            *env.current());
+        auto metrics = env.app().getTxQ().getMetrics(*env.current());
         if (!BEAST_EXPECT(metrics))
             return;
         for (int i = metrics->txInLedger; i <= metrics->txPerLedger; ++i)
@@ -86,8 +84,7 @@ class TxQ_test : public beast::unit_test::suite
         using namespace jtx;
 
         auto const& view = *env.current();
-        auto metrics = env.app().getTxQ().getMetrics(env.app().config(),
-            view);
+        auto metrics = env.app().getTxQ().getMetrics(view);
         if (!BEAST_EXPECT(metrics))
             return fee(none);
 
@@ -324,7 +321,7 @@ public:
         // we can be sure that there's one in the queue when the
         // test ends and the TxQ is destructed.
 
-        auto metrics = txq.getMetrics(env.app().config(), *env.current());
+        auto metrics = txq.getMetrics(*env.current());
         BEAST_EXPECT(metrics->txCount == 0);
 
         // Stuff the ledger.
@@ -448,8 +445,7 @@ public:
         checkMetrics(env, 5, boost::none, 3, 2, 256);
         {
             auto& txQ = env.app().getTxQ();
-            auto aliceStat = txQ.getAccountTxs(alice.id(),
-                env.app().config(), *env.current());
+            auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
             if (BEAST_EXPECT(aliceStat))
             {
                 BEAST_EXPECT(aliceStat->size() == 1);
@@ -459,8 +455,7 @@ public:
                 BEAST_EXPECT(!aliceStat->begin()->second.consequences);
             }
 
-            auto bobStat = txQ.getAccountTxs(bob.id(),
-                env.app().config(), *env.current());
+            auto bobStat = txQ.getAccountTxs(bob.id(), *env.current());
             if (BEAST_EXPECT(bobStat))
             {
                 BEAST_EXPECT(bobStat->size() == 1);
@@ -470,7 +465,7 @@ public:
             }
 
             auto noStat = txQ.getAccountTxs(Account::master.id(),
-                env.app().config(), *env.current());
+                *env.current());
             BEAST_EXPECT(!noStat);
         }
 
@@ -793,8 +788,7 @@ public:
         checkMetrics(env, 8, 8, 5, 4, 513);
         {
             auto& txQ = env.app().getTxQ();
-            auto aliceStat = txQ.getAccountTxs(alice.id(),
-                env.app().config(), *env.current());
+            auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
             std::int64_t fee = 20;
             auto seq = env.seq(alice);
             if (BEAST_EXPECT(aliceStat))
@@ -1076,8 +1070,7 @@ public:
 
         auto alice = Account("alice");
 
-        BEAST_EXPECT(!env.app().getTxQ().getMetrics(env.app().config(),
-            *env.current()));
+        BEAST_EXPECT(!env.app().getTxQ().getMetrics(*env.current()));
 
         env.fund(XRP(50000), noripple(alice));
 
@@ -1088,8 +1081,7 @@ public:
             env(noop(alice), fee(30));
 
         env.close();
-        BEAST_EXPECT(!env.app().getTxQ().getMetrics(env.app().config(),
-            *env.current()));
+        BEAST_EXPECT(!env.app().getTxQ().getMetrics(*env.current()));
     }
 
     void testAcctTxnID()
@@ -1829,8 +1821,7 @@ public:
         }
         checkMetrics(env, 5, boost::none, 7, 6, 256);
         {
-            auto aliceStat = txQ.getAccountTxs(alice.id(),
-                env.app().config(), *env.current());
+            auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
             if (BEAST_EXPECT(aliceStat))
             {
                 auto seq = aliceSeq;
@@ -1877,15 +1868,13 @@ public:
         checkMetrics(env, 4, 18, 10, 9, 256);
         {
             // Bob has nothing left in the queue.
-            auto bobStat = txQ.getAccountTxs(bob.id(),
-                env.app().config(), *env.current());
+            auto bobStat = txQ.getAccountTxs(bob.id(), *env.current());
             BEAST_EXPECT(!bobStat);
         }
         // Verify alice's tx got dropped as we BEAST_EXPECT, and that there's
         // a gap in her queued txs.
         {
-            auto aliceStat = txQ.getAccountTxs(alice.id(),
-                env.app().config(), *env.current());
+            auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
             if (BEAST_EXPECT(aliceStat))
             {
                 auto seq = aliceSeq;
@@ -1907,8 +1896,7 @@ public:
         envs(noop(alice), fee(none), seq(none), ter(terQUEUED))(params);
         checkMetrics(env, 5, 18, 10, 9, 256);
         {
-            auto aliceStat = txQ.getAccountTxs(alice.id(),
-                env.app().config(), *env.current());
+            auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
             if (BEAST_EXPECT(aliceStat))
             {
                 auto seq = aliceSeq;
@@ -1927,13 +1915,11 @@ public:
         checkMetrics(env, 0, 20, 5, 10, 256);
         {
             // Bob's data has been cleaned up.
-            auto bobStat = txQ.getAccountTxs(bob.id(),
-                env.app().config(), *env.current());
+            auto bobStat = txQ.getAccountTxs(bob.id(), *env.current());
             BEAST_EXPECT(!bobStat);
         }
         {
-            auto aliceStat = txQ.getAccountTxs(alice.id(),
-                env.app().config(), *env.current());
+            auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
             BEAST_EXPECT(!aliceStat);
         }
     }
@@ -2450,7 +2436,7 @@ public:
                 -> std::uint64_t {
             auto totalFactor = 0;
             auto const metrics = env.app ().getTxQ ().getMetrics (
-                env.app ().config (), *env.current ());
+                *env.current ());
             if (!numToClear)
                 numToClear.emplace(metrics->txCount + 1);
             for (int i = 0; i < *numToClear; ++i)
@@ -2531,7 +2517,7 @@ public:
             // Figure out how much it would cost to cover all the
             // queued txs + itself
             auto const metrics = env.app ().getTxQ ().getMetrics (
-                env.app ().config (), *env.current ());
+                *env.current ());
             std::uint64_t const totalFee =
                 calcTotalFee (100 * 2, metrics->txCount);
             BEAST_EXPECT(totalFee == 167578);
@@ -2567,7 +2553,7 @@ public:
 
             checkMetrics(env, 2, 24, 16, 12, 256);
             auto const aliceQueue = env.app().getTxQ().getAccountTxs(
-                alice.id(), env.app().config(), *env.current());
+                alice.id(), *env.current());
             if (BEAST_EXPECT(aliceQueue))
             {
                 BEAST_EXPECT(aliceQueue->size() == 2);

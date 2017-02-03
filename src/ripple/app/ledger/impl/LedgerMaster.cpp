@@ -1267,7 +1267,7 @@ LedgerMaster::getValidatedRules ()
     if (auto const ledger = getValidatedLedger())
         return ledger->rules();
 
-    return Rules();
+    return Rules(app_.config().features);
 }
 
 // This is the last ledger we published to clients and can lag the validated
