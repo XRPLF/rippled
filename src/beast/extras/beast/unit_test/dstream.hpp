@@ -111,7 +111,7 @@ public:
         : std::basic_ostream<CharT, Traits>(&buf_)
         , buf_(os)
     {
-        if(os.flags() && std::ios::unitbuf)
+        if(os.flags() & std::ios::unitbuf)
             std::unitbuf(*this);
     }
 };
