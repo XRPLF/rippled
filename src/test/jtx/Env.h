@@ -113,29 +113,14 @@ private:
         std::thread thread;
         std::unique_ptr<AbstractClient> client;
 
-        AppBundle (beast::unit_test::suite& suite,
-            std::unique_ptr<Config> config);
+        AppBundle (beast::unit_test::suite& suite);
         ~AppBundle();
+
+        void init(std::unique_ptr<Config> config);
     };
 
     mutable std::unique_ptr<Config> config_;
-    mutable std::unique_ptr<AppBundle> bundle_;
-
-    AppBundle&
-    bundle()
-    {
-        if(! bundle_)
-            bundle_.reset(new AppBundle(test, std::move(config_)));
-        return *bundle_;
-    }
-
-    AppBundle const&
-    bundle() const
-    {
-        if(! bundle_)
-            bundle_.reset(new AppBundle(test, std::move(config_)));
-        return *bundle_;
-    }
+    mutable AppBundle bundle_;
 
     inline
     void
@@ -178,6 +163,7 @@ public:
             Args&&... args)
         : test (suite_)
         , config_(std::move(config))
+        , bundle_(suite_)
     {
         setupConfigForUnitTests(*config_);
         memoize(Account::master);
@@ -197,13 +183,17 @@ public:
     Application&
     app()
     {
-        return *bundle().app;
+        if(! bundle_.app)
+            bundle_.init(std::move(config_));
+        return *bundle_.app;
     }
 
     Application const&
     app() const
     {
-        return *bundle().app;
+        if(! bundle_.app)
+            bundle_.init(std::move(config_));
+        return *bundle_.app;
     }
 
     Config&
@@ -215,7 +205,9 @@ public:
     ManualTimeKeeper&
     timeKeeper()
     {
-        return *bundle().timeKeeper;
+        if(! bundle_.timeKeeper)
+            bundle_.init(std::move(config_));
+        return *bundle_.timeKeeper;
     }
 
     /** Returns the current Ripple Network Time
@@ -233,7 +225,9 @@ public:
     AbstractClient&
     client()
     {
-        return *bundle().client;
+        if(! bundle_.client)
+            bundle_.init(std::move(config_));
+        return *bundle_.client;
     }
 
     /** Execute an RPC command.

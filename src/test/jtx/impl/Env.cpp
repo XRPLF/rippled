@@ -151,10 +151,17 @@ public:
 
 //------------------------------------------------------------------------------
 
-Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
-    std::unique_ptr<Config> config)
+Env::AppBundle::AppBundle(beast::unit_test::suite& suite) :
+    app(nullptr),
+    logs(std::make_unique<SuiteLogs>(suite)),
+    timeKeeper(nullptr)
 {
-    auto logs = std::make_unique<SuiteLogs>(suite);
+}
+
+void
+Env::AppBundle::init(std::unique_ptr<Config> config)
+{
+    assert(!app);
     auto timeKeeper_ =
         std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();
@@ -180,9 +187,13 @@ Env::AppBundle::~AppBundle()
     client.reset();
     // Make sure all jobs finish, otherwise tests
     // might not get the coverage they expect.
-    app->getJobQueue().rendezvous();
-    app->signalStop();
-    thread.join();
+    if(app)
+    {
+        app->getJobQueue().rendezvous();
+        app->signalStop();
+    }
+    if(thread.joinable())
+        thread.join();
 }
 
 //------------------------------------------------------------------------------
