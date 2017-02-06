@@ -151,10 +151,17 @@ public:
 
 //------------------------------------------------------------------------------
 
-Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
-    std::unique_ptr<Config> config)
+Env::AppBundle::AppBundle(beast::unit_test::suite& suite) :
+    app(nullptr),
+    logs(std::make_unique<SuiteLogs>(suite)),
+    timeKeeper(nullptr)
 {
-    auto logs = std::make_unique<SuiteLogs>(suite);
+}
+
+void
+Env::AppBundle::init(std::unique_ptr<Config> config)
+{
+    assert(!app);
     auto timeKeeper_ =
         std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();
@@ -180,12 +187,44 @@ Env::AppBundle::~AppBundle()
     client.reset();
     // Make sure all jobs finish, otherwise tests
     // might not get the coverage they expect.
-    app->getJobQueue().rendezvous();
-    app->signalStop();
-    thread.join();
+    if(app)
+    {
+        app->getJobQueue().rendezvous();
+        app->signalStop();
+    }
+    if(thread.joinable())
+        thread.join();
 }
 
 //------------------------------------------------------------------------------
+
+admin_t const no_admin_cfg {false};
+admin_t const admin_cfg {true};
+validator_t const validator_cfg {};
+
+
+/// @brief modify the configuration to be a validator by adding
+/// PUB/PRIV validator keys
+///
+/// @param const <unused> tag type for dispatching
+void
+Env::construct_arg (validator_t const&)
+{
+    // If the config has valid validation keys then we run as a validator.
+    auto const seed = parseBase58<Seed>("shUwVw52ofnCUX5m7kPTKzJdr4HEH");
+    if (!seed)
+        Throw<std::runtime_error> ("Invalid seed specified");
+    config().VALIDATION_PRIV = generateSecretKey (KeyType::secp256k1, *seed);
+    config().VALIDATION_PUB =
+        derivePublicKey (KeyType::secp256k1, config().VALIDATION_PRIV);
+}
+
+void
+Env::construct_arg (admin_t const& a)
+{
+    config()["port_rpc"].set("admin", a.is_admin ? "127.0.0.1" : "");
+    config()["port_ws"].set("admin", a.is_admin ? "127.0.0.1" : "");
+}
 
 std::shared_ptr<ReadView const>
 Env::closed()

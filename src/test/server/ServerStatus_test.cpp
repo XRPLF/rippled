@@ -38,27 +38,27 @@ namespace test {
 class ServerStatus_test :
     public beast::unit_test::suite, public beast::test::enable_yield_to
 {
-    auto makeConfig(
+    void
+    modConfig(
+        Config& cfg,
         std::string const& proto,
         bool admin = true,
         bool credentials = false)
     {
         auto const section_name =
             boost::starts_with(proto, "h") ?  "port_rpc" : "port_ws";
-        auto p = std::make_unique<Config>();
-        setupConfigForUnitTests(*p);
 
-        p->overwrite(section_name, "protocol", proto);
+        cfg.overwrite(section_name, "protocol", proto);
         if(! admin)
-            p->overwrite(section_name, "admin", "");
+            cfg.overwrite(section_name, "admin", "");
 
         if(credentials)
         {
-            (*p)[section_name].set("admin_password", "p");
-            (*p)[section_name].set("admin_user", "u");
+            cfg[section_name].set("admin_password", "p");
+            cfg[section_name].set("admin_user", "u");
         }
 
-        p->overwrite(
+        cfg.overwrite(
             boost::starts_with(proto, "h") ?  "port_ws" : "port_rpc",
             "protocol",
             boost::starts_with(proto, "h") ?  "ws" : "http");
@@ -68,14 +68,12 @@ class ServerStatus_test :
             // this port is here to allow the env to create its internal client,
             // which requires an http endpoint to talk to. In the connection
             // failure test, this endpoint should never be used
-            (*p)["server"].append("port_alt");
-            (*p)["port_alt"].set("ip", "127.0.0.1");
-            (*p)["port_alt"].set("port", "8099");
-            (*p)["port_alt"].set("protocol", "http");
-            (*p)["port_alt"].set("admin", "127.0.0.1");
+            cfg["server"].append("port_alt");
+            cfg["port_alt"].set("ip", "127.0.0.1");
+            cfg["port_alt"].set("port", "8099");
+            cfg["port_alt"].set("protocol", "http");
+            cfg["port_alt"].set("admin", "127.0.0.1");
         }
-
-        return p;
     }
 
     auto makeWSUpgrade(
@@ -274,13 +272,8 @@ class ServerStatus_test :
     {
         testcase("WS client to http server fails");
         using namespace jtx;
-        Env env(*this, []()
-            {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                p->section("port_ws").set("protocol", "http,https");
-                return p;
-            }());
+        Env env {*this};
+        env.config().section("port_ws").set("protocol", "http,https");
 
         //non-secure request
         {
@@ -308,14 +301,9 @@ class ServerStatus_test :
     {
         testcase("Status request");
         using namespace jtx;
-        Env env(*this, []()
-            {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                p->section("port_rpc").set("protocol", "ws2,wss2");
-                p->section("port_ws").set("protocol", "http");
-                return p;
-            }());
+        Env env {*this};
+        env.config().section("port_rpc").set("protocol", "ws2,wss2");
+        env.config().section("port_ws").set("protocol", "http");
 
         //non-secure request
         {
@@ -345,13 +333,8 @@ class ServerStatus_test :
         using namespace jtx;
         using namespace boost::asio;
         using namespace beast::http;
-        Env env(*this, []()
-            {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                p->section("port_ws").set("protocol", "ws2");
-                return p;
-            }());
+        Env env {*this};
+        env.config().section("port_ws").set("protocol", "ws2");
 
         auto const port = env.app().config()["port_ws"].
             get<std::uint16_t>("port");
@@ -395,19 +378,17 @@ class ServerStatus_test :
         std::string const& server_protocol,
         boost::asio::yield_context& yield)
     {
+        // The essence of this test is to have a client and server configured
+        // out-of-phase with respect to ssl (secure client and insecure server
+        // or vice-versa)
         testcase << "Connect fails: " << client_protocol << " client to " <<
             server_protocol << " server";
         using namespace jtx;
-        Env env {*this, makeConfig(server_protocol)};
+        Env env {*this};
+        modConfig(env.config(), server_protocol);
 
         beast::http::response<beast::http::string_body> resp;
         boost::system::error_code ec;
-        // The essence of this test is to have a client and server configured
-        // out-of-phase with respect to ssl (secure client and insecure server
-        // or vice-versa) - as such, here is a config to pass to
-        // WSClient/JSONRPCClient that configures it for a protocol that
-        // doesn't match the actual server
-        auto cfg = makeConfig(client_protocol);
         if(boost::starts_with(client_protocol, "h"))
         {
                 doHTTPRequest(
@@ -437,7 +418,8 @@ class ServerStatus_test :
             ", config " << (admin ? "enabled" : "disabled") <<
             ", credentials " << (credentials ? "" : "not ") << "set";
         using namespace jtx;
-        Env env {*this, makeConfig(proto, admin, credentials)};
+        Env env {*this};
+        modConfig(env.config(),proto, admin, credentials);
 
         auto const user = env.app().config()
             [boost::starts_with(proto, "h") ? "port_rpc" : "port_ws"].

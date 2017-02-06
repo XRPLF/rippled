@@ -21,8 +21,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
-
-#include <boost/format.hpp>
+#include <ripple/core/ConfigSections.h>
 
 namespace ripple {
 
@@ -34,39 +33,17 @@ static auto const master_key =
     "nHUYwQk8AyQ8pW9p4SvrWC2hosvaoii9X54uGLDYGBtEFwWFHsJK";
 static auto const signing_key =
     "n9LHPLA36SBky1YjbaVEApQQ3s9XcpazCgfAG7jsqBb1ugDAosbm";
-// Format manifest string to test trim()
 static auto const manifest =
-    "    JAAAAAFxIe2cDLvm5IqpeGFlMTD98HCqv7+GE54anRD/zbvGNYtOsXMhAuUTyasIhvj2KPfN\n"
-    " \tRbmmIBnqNUzidgkKb244eP794ZpMdkYwRAIgNVq8SYP7js0C/GAGMKVYXiCGUTIL7OKPSBLS     \n"
-    "\t7LTyrL4CIE+s4Tsn/FrrYj0nMEV1Mvf7PMRYCxtEERD3PG/etTJ3cBJAbwWWofHqg9IACoYV\n"
-    "\t +n9ulZHSVRajo55EkZYw0XUXDw8zcI4gD58suOSLZTG/dXtZp17huIyHgxHbR2YeYjQpCw==\t  \t";
+    "JAAAAAFxIe2cDLvm5IqpeGFlMTD98HCqv7+GE54anRD/zbvGNYtOsXMhAuUTyasIhvj2KPfN"
+    "RbmmIBnqNUzidgkKb244eP794ZpMdkYwRAIgNVq8SYP7js0C/GAGMKVYXiCGUTIL7OKPSBLS"
+    "7LTyrL4CIE+s4Tsn/FrrYj0nMEV1Mvf7PMRYCxtEERD3PG/etTJ3cBJAbwWWofHqg9IACoYV"
+    "+n9ulZHSVRajo55EkZYw0XUXDw8zcI4gD58suOSLZTG/dXtZp17huIyHgxHbR2YeYjQpCw==";
 static auto sequence = 1;
 }
 
 class ServerInfo_test : public beast::unit_test::suite
 {
 public:
-    static
-    std::unique_ptr<Config>
-    makeValidatorConfig()
-    {
-        auto p = std::make_unique<Config>();
-        boost::format toLoad(R"rippleConfig(
-[validation_manifest]
-%1%
-
-[validation_seed]
-%2%
-)rippleConfig");
-
-        p->loadFromString (boost::str (
-            toLoad % validator::manifest % validator::seed));
-
-        setupConfigForUnitTests(*p);
-
-        return p;
-    }
-
     void testServerInfo()
     {
         using namespace test::jtx;
@@ -79,7 +56,18 @@ public:
             BEAST_EXPECT(result[jss::result].isMember(jss::info));
         }
         {
-            Env env(*this, makeValidatorConfig());
+            // validator configuration using a seed (a different seed than
+            // the one used in jtx::validatorConf)
+            Env env {*this};
+            auto const seed = parseBase58<Seed>(validator::seed);
+            if(! BEAST_EXPECT(seed))
+                return;
+            env.config().VALIDATION_PRIV = generateSecretKey (
+                KeyType::secp256k1, *seed);
+            env.config().VALIDATION_PUB = derivePublicKey (
+                    KeyType::secp256k1, env.config().VALIDATION_PRIV);
+            env.config().legacy(SECTION_VALIDATION_MANIFEST, validator::manifest);
+
             auto const result = env.rpc("server_info", "1");
             BEAST_EXPECT(!result[jss::result].isMember (jss::error));
             BEAST_EXPECT(result[jss::status] == "success");
