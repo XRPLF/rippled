@@ -180,6 +180,30 @@ class NetworkOPsImp final
         Json::Value json() const;
     };
 
+    //! Server fees published on `server` subscription
+    struct ServerFeeSummary
+    {
+        ServerFeeSummary() = default;
+
+        ServerFeeSummary(std::uint64_t fee,
+                         boost::optional<TxQ::Metrics>&& escalationMetrics,
+                         LoadFeeTrack const & loadFeeTrack);
+        bool
+        operator !=(ServerFeeSummary const & b) const;
+
+        bool
+        operator ==(ServerFeeSummary const & b) const
+        {
+            return !(*this != b);
+        }
+
+        std::uint32_t loadFactorServer = 256;
+        std::uint32_t loadBaseServer = 256;
+        std::uint64_t baseFee = 10;
+        boost::optional<TxQ::Metrics> em = boost::none;
+    };
+
+
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
@@ -202,8 +226,6 @@ public:
         , mLedgerConsensus (mConsensus->makeLedgerConsensus (
             app, app.getInboundTransactions(), ledgerMaster, *m_localTX))
         , m_ledgerMaster (ledgerMaster)
-        , mLastLoadBase (256)
-        , mLastLoadFactor (256)
         , m_job_queue (job_queue)
         , m_standalone (standalone)
         , m_network_quorum (start_valid ? 0 : network_quorum)
@@ -548,8 +570,8 @@ private:
     SubMapType mSubValidations;       // Received validations.
     SubMapType mSubPeerStatus;        // peer status changes
 
-    std::uint32_t mLastLoadBase;
-    std::uint32_t mLastLoadFactor;
+    ServerFeeSummary mLastFeeSummary;
+
 
     JobQueue& m_job_queue;
 
@@ -943,6 +965,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 
     {
         auto lock = make_lock(app_.getMasterMutex());
+        bool changed = false;
         {
             std::lock_guard <std::recursive_mutex> lock (
                 m_ledgerMaster.peekMutex());
@@ -950,7 +973,6 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             app_.openLedger().modify(
                 [&](OpenView& view, beast::Journal j)
             {
-                bool changed = false;
                 for (TransactionStatus& e : transactions)
                 {
                     // we check before addingto the batch
@@ -968,6 +990,8 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 return changed;
             });
         }
+        if (changed)
+            reportFeeChange();
 
         auto newOL = app_.openLedger().current();
         for (TransactionStatus& e : transactions)
@@ -1589,6 +1613,38 @@ void NetworkOPsImp::pubManifest (Manifest const& mo)
     }
 }
 
+NetworkOPsImp::ServerFeeSummary::ServerFeeSummary(
+        std::uint64_t fee,
+        boost::optional<TxQ::Metrics>&& escalationMetrics,
+        LoadFeeTrack const & loadFeeTrack)
+    : loadFactorServer{loadFeeTrack.getLoadFactor()}
+    , loadBaseServer{loadFeeTrack.getLoadBase()}
+    , baseFee{fee}
+    , em{std::move(escalationMetrics)}
+{
+
+}
+
+
+bool
+NetworkOPsImp::ServerFeeSummary::operator !=(NetworkOPsImp::ServerFeeSummary const & b) const
+{
+    if(loadFactorServer != b.loadFactorServer ||
+       loadBaseServer != b.loadBaseServer ||
+       baseFee != b.baseFee ||
+       em.is_initialized() != b.em.is_initialized())
+            return true;
+
+    if(em)
+    {
+        return (em->minFeeLevel != b.em->minFeeLevel ||
+                em->expFeeLevel != b.em->expFeeLevel ||
+                em->referenceFeeLevel != b.em->referenceFeeLevel);
+    }
+
+    return false;
+}
+
 void NetworkOPsImp::pubServer ()
 {
     // VFALCO TODO Don't hold the lock across calls to send...make a copy of the
@@ -1600,14 +1656,45 @@ void NetworkOPsImp::pubServer ()
     if (!mSubServer.empty ())
     {
         Json::Value jvObj (Json::objectValue);
-        auto const& feeTrack = app_.getFeeTrack();
 
-        jvObj [jss::type]          = "serverStatus";
+        ServerFeeSummary f{app_.openLedger().current()->fees().base,
+            app_.getTxQ().getMetrics(*app_.openLedger().current()),
+            app_.getFeeTrack()};
+
+        // Need to cap to uint64 to uint32 due to JSON limitations
+        auto clamp = [](std::uint64_t v)
+        {
+            constexpr std::uint64_t max32 =
+                std::numeric_limits<std::uint32_t>::max();
+
+            return static_cast<std::uint32_t>(std::min(max32, v));
+        };
+
+
+        jvObj [jss::type] = "serverStatus";
         jvObj [jss::server_status] = strOperatingMode ();
-        jvObj [jss::load_base]     =
-                (mLastLoadBase = feeTrack.getLoadBase ());
-        jvObj [jss::load_factor]   =
-                (mLastLoadFactor = feeTrack.getLoadFactor ());
+        jvObj [jss::load_base] = f.loadBaseServer;
+        jvObj [jss::load_factor_server] = f.loadFactorServer;
+        jvObj [jss::base_fee] = clamp(f.baseFee);
+
+        if(f.em)
+        {
+            auto const loadFactor =
+                std::max(static_cast<std::uint64_t>(f.loadFactorServer),
+                    mulDiv(f.em->expFeeLevel, f.loadBaseServer,
+                        f.em->referenceFeeLevel).second);
+
+            jvObj [jss::load_factor]   = clamp(loadFactor);
+            jvObj [jss::load_factor_fee_escalation] = clamp(f.em->expFeeLevel);
+            jvObj [jss::load_factor_fee_queue] = clamp(f.em->minFeeLevel);
+            jvObj [jss::load_factor_fee_reference]
+                = clamp(f.em->referenceFeeLevel);
+
+        }
+        else
+            jvObj [jss::load_factor] = f.loadFactorServer;
+
+        mLastFeeSummary = f;
 
         for (auto i = mSubServer.begin (); i != mSubServer.end (); )
         {
@@ -2119,6 +2206,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     constexpr std::uint64_t max32 =
         std::numeric_limits<std::uint32_t>::max();
+
     auto const loadFactorServer = app_.getFeeTrack().getLoadFactor();
     auto const loadBaseServer = app_.getFeeTrack().getLoadBase();
     auto const loadFactorFeeEscalation = escalationMetrics ?
@@ -2378,14 +2466,17 @@ void NetworkOPsImp::pubLedger (
 
 void NetworkOPsImp::reportFeeChange ()
 {
-    auto const& feeTrack = app_.getFeeTrack();
-    if ((feeTrack.getLoadBase () == mLastLoadBase) &&
-            (feeTrack.getLoadFactor () == mLastLoadFactor))
-        return;
+    ServerFeeSummary f{app_.openLedger().current()->fees().base,
+        app_.getTxQ().getMetrics(*app_.openLedger().current()),
+        app_.getFeeTrack()};
 
-    m_job_queue.addJob (
-        jtCLIENT, "reportFeeChange->pubServer",
-        [this] (Job&) { pubServer(); });
+
+    // only schedule the job if something has changed
+    if (f != mLastFeeSummary)
+    {
+         m_job_queue.addJob ( jtCLIENT, "reportFeeChange->pubServer",
+                [this] (Job&) { pubServer(); });
+    }
 }
 
 // This routine should only be used to publish accepted or validated

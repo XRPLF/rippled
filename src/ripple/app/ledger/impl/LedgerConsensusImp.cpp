@@ -1010,6 +1010,9 @@ void LedgerConsensusImp<Traits>::accept (TxSet_t const& set)
                         // Stuff the ledger with transactions from the queue.
                         return app_.getTxQ().accept(app_, view);
                     });
+        // Signal a potential fee change to subscribers after the open ledger
+        // is created
+        app_.getOPs().reportFeeChange();
     }
 
     ledgerMaster_.switchLCL (sharedLCL);
