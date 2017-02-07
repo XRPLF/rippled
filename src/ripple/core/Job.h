@@ -48,7 +48,6 @@ enum JobType
     jtUPDATE_PF,     // Update pathfinding requests
     jtTRANSACTION,   // A transaction received from the network
     jtBATCH,         // Apply batched transactions
-    jtUNL,           // A Score or Fetch of the UNL (DEPRECATED)
     jtADVANCE,       // Advance validated/acquired ledgers
     jtPUBLEDGER,     // Publish a fully-accepted ledger
     jtTXN_DATA,      // Fetch a proposed set

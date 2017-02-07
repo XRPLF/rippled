@@ -8,7 +8,7 @@ Validators use two types of key pairs: *master keys* and *ephemeral
 keys*. Ephemeral keys are used to sign and verify validations. Master keys are
 used to sign and verify manifests that change ephemeral keys. The master secret
 key should be tightly controlled. The ephemeral secret key needs to be present
-in the config file.
+in the config file in the form of a token.
 
 ## Validator Keys
 
@@ -28,10 +28,9 @@ Sample output:
   paamfhAn5m1NM4UUu5mmvVaHQy8Fb65bkpbaNrvKwX3YMKdjzi2
 ```
 
-The first value is the master public key. Add the public key to the config
-for this validator. A one-word comment must be added after the key (for example
-*ThisServersName*). Any other rippled trusting the validator needs to add the
-master public key to its config. Only add keys received from trusted sources.
+The first value is the master public key. Any other rippled trusting the
+validator needs to add the master public key to its config. Only add keys
+received from trusted sources.
 
 The second value is the corresponding master secret key. **DO NOT INSTALL THIS
 IN THE CONFIG**. The master secret key will be used to sign manifests that
@@ -63,17 +62,6 @@ Sample output:
   }
 ```
 
-Add the `validation_seed` value (the ephemeral secret key) to this validator's
-config. It is recommended to add the ephemeral public key and the sequence
-number as a comment as well (sequence numbers are be explained below):
-
-```
-  [validation_seed]
-  sh8bLqqkGBknGcsgRTrFMxcciwytm
-  # validation_public_key: n9LtZ9haqYMbzJ92cDd3pu3Lko6uEznrXuYea3ehuhVcwDHF5coX
-  # sequence number: 1
-```
-
 A manifest is a signed message used to inform other servers of this validator's
 ephemeral public key. A manifest contains a sequence number, the new ephemeral
 public key, and it is signed with both the ephemeral and master secret keys.
@@ -95,15 +83,18 @@ For example:
 Sample output:
 
 ```
-  [validation_manifest]
-  JAAAAAFxIe3t8rIb4Ba8JHI97CbwpxmTq0LhN/7ZAbsNaSwrbHaypHMhAzTuu07YGOvVvB3+
-  aS0jhP+q0TVgTjGJKhx+yTY1Da3ddkYwRAIgDkmIt3dPNsfeCH3ApMZgpwqG4JwtIlKEymqK
-  S7v+VqkCIFQXg20ZMpXXT86vmLdlmPspgeUN1scWsuFoPYUUJywycBJAl93+/bZbfZ4quTeM
-  5y80/OSIcVoWPcHajwrAl68eiAW4MVFeJXvShXNfnT+XsxMjDh0VpOkhvyp971i1MgjBAA==
-```  
+  [validator_token]
+  eyJ2YWxpZGF0aW9uX3ByaXZhdGVfa2V5IjoiN2VkMWM2ZDVmMTBhOGUyYWNmZWE0OW
+  NkNzE5ZjhiZjZhMWI1Yjg2M2Q3N2QxMDE1MjVkNGQxOWU4ZWYwNjU1OSIsIm1hbmlm
+  ZXN0IjoiSkFBQUFBRnhJZTNVZ3lXb3QwdFpSTFBNbDQ1dit5YkdPanJYNkE5c1JIcU
+  lJWUlZSTZjREhuTWhBNlNqWWZnWnJsTHFXU2UrNzlWUkZnOWJEeVZKNDMvYmV6Zkxu
+  dWkxVzhQdWRrWXdSQUlnY09KWmVpdmFaOW1abmM4Y1N4bUlOVGVYSUlKOE5oTXprRD
+  lrWThseGRkc0NJRk1OU3k5Qmo4VHNQWlV4NzNwYUJ0RmxpaDZWOTlSRXNnU3V6Wlhr
+  BXMHNWTVZXR09QUnY0Ylg2dDVmYi9haUtoNkZyRVdtYk5YeXpRNmI5TGhDQT09In0=
+```
 
-Copy this to the config for this validator. Don't forget to update the comment
-noting the sequence number.
+Copy this to the config for this validator. It is recommended to add the
+sequence number as a comment as well.
 
 ## Revoking a key
 

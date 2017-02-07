@@ -24,6 +24,7 @@
 #include <ripple/ledger/OpenView.h>
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/ledger/Sandbox.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/Feature.h>
 #include <type_traits>
 
@@ -809,12 +810,9 @@ class GetAmendments_test
         setupConfigForUnitTests(*p);
 
         // If the config has valid validation keys then we run as a validator.
-        auto const seed = parseBase58<Seed>("shUwVw52ofnCUX5m7kPTKzJdr4HEH");
-        if (!seed)
-            Throw<std::runtime_error> ("Invalid seed specified");
-        p->VALIDATION_PRIV = generateSecretKey (KeyType::secp256k1, *seed);
-        p->VALIDATION_PUB =
-            derivePublicKey (KeyType::secp256k1, p->VALIDATION_PRIV);
+        p->section(SECTION_VALIDATION_SEED).append(
+            std::vector<std::string>{"shUwVw52ofnCUX5m7kPTKzJdr4HEH"});
+
         return p;
     }
 

@@ -363,6 +363,78 @@ Journal::Stream::operator<< (T const& t) const
     return ScopedStream (*this, t);
 }
 
+namespace detail {
+
+template<class CharT, class Traits = std::char_traits<CharT>>
+class logstream_buf
+    : public std::basic_stringbuf<CharT, Traits>
+{
+    beast::Journal::Stream strm_;
+
+    template<class T>
+    void write(T const*) = delete;
+
+    void write(char const* s)
+    {
+        if(strm_)
+            strm_ << s;
+    }
+
+    void write(wchar_t const* s)
+    {
+        if(strm_)
+            strm_ << s;
+    }
+
+public:
+    explicit
+    logstream_buf(beast::Journal::Stream const& strm)
+        : strm_(strm)
+    {
+    }
+
+    ~logstream_buf()
+    {
+        sync();
+    }
+
+    int
+    sync() override
+    {
+        write(this->str().c_str());
+        this->str("");
+        return 0;
+    }
+};
+
+} // detail
+
+template<
+    class CharT,
+    class Traits = std::char_traits<CharT>
+>
+class basic_logstream
+    : public std::basic_ostream<CharT, Traits>
+{
+    typedef CharT                          char_type;
+    typedef Traits                         traits_type;
+    typedef typename traits_type::int_type int_type;
+    typedef typename traits_type::pos_type pos_type;
+    typedef typename traits_type::off_type off_type;
+
+    detail::logstream_buf<CharT, Traits> buf_;
+public:
+    explicit
+    basic_logstream(beast::Journal::Stream const& strm)
+        : std::basic_ostream<CharT, Traits>(&buf_)
+        , buf_(strm)
+    {
+    }
+};
+
+using logstream = basic_logstream<char>;
+using logwstream = basic_logstream<wchar_t>;
+
 } // beast
 
 #endif

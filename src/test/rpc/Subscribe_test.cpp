@@ -18,6 +18,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/JsonFields.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx.h>
@@ -313,26 +314,14 @@ public:
 
     static
     std::unique_ptr<Config>
-    makeValidatorConfig(
-        std::string const& valPrivateKey, std::string const& valPublicKey)
+    makeValidatorConfig(std::string const& seed)
     {
         auto p = std::make_unique<Config>();
         setupConfigForUnitTests(*p);
 
         // If the config has valid validation keys then we run as a validator.
-        auto const sk = parseBase58<SecretKey>(
-            TOKEN_NODE_PRIVATE,
-            valPrivateKey);
-        if (!sk)
-            Throw<std::runtime_error> ("Invalid validation private key");
-        p->VALIDATION_PRIV = *sk;
-
-        auto const pk = parseBase58<PublicKey>(
-            TOKEN_NODE_PUBLIC,
-            valPublicKey);
-        if (!pk)
-            Throw<std::runtime_error> ("Invalid validation public key");
-        p->VALIDATION_PUB = *pk;
+        p->section(SECTION_VALIDATION_SEED).append(
+            std::vector<std::string>{seed});
 
         return p;
     }
@@ -342,11 +331,10 @@ public:
         using namespace jtx;
 
         // Public key must be derived from the private key
-        const std::string valPrivateKey =
-            "paEdUCVVCNnv4aYBepid9Xh3NaAr9xWRw2vh351piFJrxQwvExd";
-        const std::string valPublicKey =
-            "n9MvFGjgv1kYkm7bLbb2QUwSqgzrQkYMYHXtrzN8W28Jfp2mVihq";
-        Env env(*this, makeValidatorConfig(valPrivateKey, valPublicKey));
+        std::string const seed = "snpTg5uPtiRG2hE8HHCAF4NzdorKT";
+        std::string const valPublicKey =
+            "n9KCD2WU48u1WG3neBH6vRSinAxoTwrjLbjUAn6Xq6mCe5YrJv2V";
+        Env env(*this, makeValidatorConfig(seed));
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 

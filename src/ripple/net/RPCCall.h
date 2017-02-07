@@ -46,7 +46,7 @@ int fromCommandLine (
 
 void fromNetwork (
     boost::asio::io_service& io_service,
-    std::string const& strIp, const int iPort,
+    std::string const& strIp, const std::uint16_t iPort,
     std::string const& strUsername, std::string const& strPassword,
     std::string const& strPath, std::string const& strMethod,
     Json::Value const& jvParams, const bool bSSL, bool quiet,

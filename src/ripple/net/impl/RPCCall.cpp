@@ -874,37 +874,6 @@ private:
         return jvRequest;
     }
 
-    // unl_add <domain>|<node_public> [<comment>]
-    Json::Value parseUnlAdd (Json::Value const& jvParams)
-    {
-        std::string strNode     = jvParams[0u].asString ();
-        std::string strComment  = (jvParams.size () == 2) ? jvParams[1u].asString () : "";
-
-        if (strNode.length ())
-        {
-            Json::Value jvRequest;
-
-            jvRequest[jss::node]       = strNode;
-
-            if (strComment.length ())
-                jvRequest[jss::comment]    = strComment;
-
-            return jvRequest;
-        }
-
-        return rpcError (rpcINVALID_PARAMS);
-    }
-
-    // unl_delete <domain>|<public_key>
-    Json::Value parseUnlDelete (Json::Value const& jvParams)
-    {
-        Json::Value jvRequest;
-
-        jvRequest[jss::node]       = jvParams[0u].asString ();
-
-        return jvRequest;
-    }
-
     // validation_create [<pass_phrase>|<seed>|<seed_key>]
     //
     // NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
@@ -1078,8 +1047,6 @@ public:
             {   "tx",                   &RPCParser::parseTx,                    1,  2   },
             {   "tx_account",           &RPCParser::parseTxAccount,             1,  7   },
             {   "tx_history",           &RPCParser::parseTxHistory,             1,  1   },
-            {   "unl_add",              &RPCParser::parseUnlAdd,                1,  2   },
-            {   "unl_delete",           &RPCParser::parseUnlDelete,             1,  1   },
             {   "unl_list",             &RPCParser::parseAsIs,                  0,  0   },
             {   "validation_create",    &RPCParser::parseValidationCreate,      0,  1   },
             {   "validation_seed",      &RPCParser::parseValidationSeed,        0,  1   },
@@ -1297,8 +1264,9 @@ rpcClient(std::vector<std::string> const& args,
             ServerHandler::Setup setup;
             try
             {
-                std::stringstream ss;
-                setup = setup_ServerHandler(config, ss);
+                setup = setup_ServerHandler(
+                    config,
+                    beast::logstream { logs.journal ("HTTPClient").warn() });
             }
             catch (std::exception const&)
             {
@@ -1422,17 +1390,19 @@ int fromCommandLine (
 
 void fromNetwork (
     boost::asio::io_service& io_service,
-    std::string const& strIp, const int iPort,
+    std::string const& strIp, const std::uint16_t iPort,
     std::string const& strUsername, std::string const& strPassword,
     std::string const& strPath, std::string const& strMethod,
     Json::Value const& jvParams, const bool bSSL, const bool quiet,
     Logs& logs,
     std::function<void (Json::Value const& jvInput)> callbackFuncP)
 {
+    auto j = logs.journal ("HTTPClient");
+
     // Connect to localhost
     if (!quiet)
     {
-        std::cerr << (bSSL ? "Securely connecting to " : "Connecting to ") <<
+        JLOG(j.info()) << (bSSL ? "Securely connecting to " : "Connecting to ") <<
             strIp << ":" << iPort << std::endl;
     }
 
@@ -1448,8 +1418,6 @@ void fromNetwork (
     const int RPC_REPLY_MAX_BYTES (256*1024*1024);
     using namespace std::chrono_literals;
     auto constexpr RPC_NOTIFY = 10min;
-
-    auto j = logs.journal ("HTTPClient");
 
     HTTPClient::request (
         bSSL,
@@ -1467,7 +1435,7 @@ void fromNetwork (
         std::bind (&RPCCallImp::onResponse, callbackFuncP,
                    std::placeholders::_1, std::placeholders::_2,
                    std::placeholders::_3, j),
-        logs);
+        j);
 }
 
 } // RPCCall

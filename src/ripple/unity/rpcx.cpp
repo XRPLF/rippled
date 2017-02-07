@@ -80,8 +80,6 @@
 #include <ripple/rpc/handlers/TransactionEntry.cpp>
 #include <ripple/rpc/handlers/Tx.cpp>
 #include <ripple/rpc/handlers/TxHistory.cpp>
-#include <ripple/rpc/handlers/UnlAdd.cpp>
-#include <ripple/rpc/handlers/UnlDelete.cpp>
 #include <ripple/rpc/handlers/UnlList.cpp>
 #include <ripple/rpc/handlers/Unsubscribe.cpp>
 #include <ripple/rpc/handlers/ValidationCreate.cpp>

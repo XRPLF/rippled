@@ -47,19 +47,20 @@ public:
         , j_ (logs.journal ("RPCSub"))
         , logs_ (logs)
     {
-        std::string strScheme;
+        parsedURL pUrl;
 
-        if (!parseUrl (strUrl, strScheme, mIp, mPort, mPath))
+        if (!parseUrl (pUrl, strUrl))
             Throw<std::runtime_error> ("Failed to parse url.");
-        else if (strScheme == "https")
+        else if (pUrl.scheme == "https")
             mSSL = true;
-        else if (strScheme != "http")
+        else if (pUrl.scheme != "http")
             Throw<std::runtime_error> ("Only http and https is supported.");
 
         mSeq = 1;
 
-        if (mPort < 0)
-            mPort   = mSSL ? 443 : 80;
+        mIp = pUrl.domain;
+        mPort = (! pUrl.port) ? (mSSL ? 443 : 80) : *pUrl.port;
+        mPath = pUrl.path;
 
         JLOG (j_.info()) <<
             "RPCCall::fromNetwork sub: ip=" << mIp <<
@@ -186,7 +187,7 @@ private:
 
     std::string             mUrl;
     std::string             mIp;
-    int                     mPort;
+    std::uint16_t           mPort;
     bool                    mSSL;
     std::string             mUsername;
     std::string             mPassword;

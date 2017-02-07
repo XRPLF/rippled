@@ -24,6 +24,8 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <ripple/beast/unit_test.h>
+#include <test/jtx.h>
+
 #include <memory>
 #include <type_traits>
 
@@ -501,6 +503,9 @@ public:
     void
     run()
     {
+        // Instantiate a jtx::Env so debugLog writes are exercised.
+        test::jtx::Env env (*this);
+
         testFields();
         testSerialization();
         testParseJSONArray();

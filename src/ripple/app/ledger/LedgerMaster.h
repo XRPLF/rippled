@@ -113,10 +113,6 @@ public:
     std::chrono::seconds getValidatedLedgerAge ();
     bool isCaughtUp(std::string& reason);
 
-    int getMinValidations ();
-
-    void setMinValidations (int v, bool strict);
-
     std::uint32_t getEarliestFetch ();
 
     bool storeLedger (std::shared_ptr<Ledger const> ledger);
@@ -313,8 +309,6 @@ private:
 
     std::unique_ptr <detail::LedgerCleaner> mLedgerCleaner;
 
-    int mMinValidations;    // The minimum validations to publish a ledger.
-    bool mStrictValCount;   // Don't raise the minimum
     uint256 mLastValidateHash;
     std::uint32_t mLastValidateSeq;
 

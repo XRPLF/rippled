@@ -29,10 +29,19 @@ private:
     std::unordered_set<uint256,
         hardened_hash<>> set_;
     boost::optional<uint256> digest_;
+    std::unordered_set<uint256, beast::uhash<>> const& presets_;
 
 public:
-    explicit
-    Impl (DigestAwareReadView const& ledger)
+    explicit Impl(
+            std::unordered_set<uint256, beast::uhash<>> const& presets)
+        : presets_(presets)
+    {
+    }
+
+    explicit Impl(
+        DigestAwareReadView const& ledger,
+            std::unordered_set<uint256, beast::uhash<>> const& presets)
+        : presets_(presets)
     {
         auto const k = keylet::amendments();
         digest_ = ledger.digest(k.key);
@@ -53,6 +62,8 @@ public:
     bool
     enabled (uint256 const& feature) const
     {
+        if (presets_.count(feature) > 0)
+            return true;
         return set_.count(feature) > 0;
     }
 
@@ -81,44 +92,39 @@ public:
 
 //------------------------------------------------------------------------------
 
-Rules::Rules (DigestAwareReadView const& ledger)
-    : impl_(std::make_shared<Impl>(ledger))
+Rules::Rules(
+    DigestAwareReadView const& ledger,
+        std::unordered_set<uint256, beast::uhash<>> const& presets)
+    : impl_(std::make_shared<Impl>(ledger, presets))
+{
+}
+
+Rules::Rules(std::unordered_set<uint256, beast::uhash<>> const& presets)
+    : impl_(std::make_shared<Impl>(presets))
 {
 }
 
 bool
-Rules::enabled (uint256 const& id,
-    std::unordered_set<uint256,
-        beast::uhash<>> const& presets) const
+Rules::enabled (uint256 const& id) const
 {
-    if (presets.count(id) > 0)
-        return true;
-    if (! impl_)
-        return false;
+    assert (impl_);
     return impl_->enabled(id);
 }
 
 bool
 Rules::changed (DigestAwareReadView const& ledger) const
 {
-    if (! impl_)
-        return static_cast<bool>(
-            ledger.digest(keylet::amendments().key));
+    assert (impl_);
     return impl_->changed(ledger);
 }
 
 bool
 Rules::operator== (Rules const& other) const
 {
-#if 1
+    assert(impl_ && other.impl_);
     if (impl_.get() == other.impl_.get())
         return true;
-    if (! impl_ || ! other.impl_)
-        return false;
     return *impl_ == *other.impl_;
-#else
-    return impl_.get() == other.impl_.get();
-#endif
 }
 
 //------------------------------------------------------------------------------

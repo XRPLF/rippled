@@ -354,6 +354,15 @@ public:
     {
         mConsensus->setLastCloseTime(t);
     }
+    PublicKey const& getValidationPublicKey () const override
+    {
+        return mLedgerConsensus->getValidationPublicKey ();
+    }
+    void setValidationKeys (
+        SecretKey const& valSecret, PublicKey const& valPublic) override
+    {
+        mLedgerConsensus->setValidationKeys (valSecret, valPublic);
+    }
     Json::Value getConsensusInfo () override;
     Json::Value getServerInfo (bool human, bool admin) override;
     void clearLedgerFetch () override;
@@ -1202,8 +1211,8 @@ public:
             if (nodesUsing > v.nodesUsing)
                 return true;
 
-            if (nodesUsing < v.nodesUsing) return
-                false;
+            if (nodesUsing < v.nodesUsing)
+                return false;
 
             return highNodeUsing > v.highNodeUsing;
         }
@@ -1426,9 +1435,9 @@ void NetworkOPsImp::switchLastClosedLedger (
             app_.getLedgerMaster().getValidatedLedger();
         boost::optional<Rules> rules;
         if (lastVal)
-            rules.emplace(*lastVal);
+            rules.emplace(*lastVal, app_.config().features);
         else
-            rules.emplace();
+            rules.emplace(app_.config().features);
         app_.openLedger().accept(app_, *rules,
             newLCL, OrderedTxs({}), false, retries,
                 tapNONE, "jump",
@@ -1484,6 +1493,9 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
     assert (prevLedger->info().hash == closingInfo.parentHash);
     assert (closingInfo.parentHash ==
             m_ledgerMaster.getClosedLedger()->info().hash);
+
+    app_.validators().onConsensusStart (
+        app_.getValidations().getCurrentPublicKeys ());
 
     mConsensus->startRound (
         *mLedgerConsensus,
@@ -2032,42 +2044,19 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     if (mNeedNetworkLedger)
         info[jss::network_ledger] = "waiting";
 
-    info[jss::validation_quorum] = m_ledgerMaster.getMinValidations ();
+    info[jss::validation_quorum] = static_cast<Json::UInt>(
+        app_.validators ().quorum ());
 
     info[jss::io_latency_ms] = static_cast<Json::UInt> (
         app_.getIOLatency().count());
 
     if (admin)
     {
-        if (app_.config().VALIDATION_PUB.size ())
+        if (getValidationPublicKey().size ())
         {
-            auto const& validation_manifest =
-                app_.config().section (SECTION_VALIDATION_MANIFEST);
-
-            if (! validation_manifest.lines().empty())
-            {
-                std::string s;
-                s.reserve (Manifest::textLength);
-                for (auto const& line : validation_manifest.lines())
-                    s += beast::rfc2616::trim(line);
-                if (auto mo = make_Manifest (beast::detail::base64_decode(s)))
-                {
-                    Json::Value valManifest = Json::objectValue;
-                    valManifest [jss::master_key] = toBase58 (
-                        TokenType::TOKEN_NODE_PUBLIC,
-                        mo->masterKey);
-                    valManifest [jss::signing_key] = toBase58 (
-                        TokenType::TOKEN_NODE_PUBLIC,
-                        mo->signingKey);
-                    valManifest [jss::seq] = Json::UInt (mo->sequence);
-
-                    info[jss::validation_manifest] = valManifest;
-                }
-            }
-
             info[jss::pubkey_validator] = toBase58 (
                 TokenType::TOKEN_NODE_PUBLIC,
-                app_.config().VALIDATION_PUB);
+                app_.validators().localPublicKey());
         }
         else
         {
@@ -2115,7 +2104,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         info[jss::load] = m_job_queue.getJson ();
 
     auto const escalationMetrics = app_.getTxQ().getMetrics(
-        app_.config(), *app_.openLedger().current());
+        *app_.openLedger().current());
 
     constexpr std::uint64_t max32 =
         std::numeric_limits<std::uint32_t>::max();

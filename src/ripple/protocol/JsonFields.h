@@ -116,10 +116,9 @@ JSS ( close_time_resolution );      // in: Application; out: LedgerToJson
 JSS ( closed );                     // out: NetworkOPs, LedgerToJson,
                                     //      handlers/Ledger
 JSS ( closed_ledger );              // out: NetworkOPs
-JSS ( cluster );                    // out: UniqueNodeList, PeerImp
+JSS ( cluster );                    // out: PeerImp
 JSS ( code );                       // out: errors
 JSS ( command );                    // in: RPCHandler
-JSS ( comment );                    // in: UnlAdd
 JSS ( complete );                   // out: NetworkOPs, InboundLedger
 JSS ( complete_ledgers );           // out: NetworkOPs, PeerImp
 JSS ( consensus );                  // out: NetworkOPs, LedgerConsensus
@@ -156,7 +155,6 @@ JSS ( enabled );                    // out: AmendmentTable
 JSS ( engine_result );              // out: NetworkOPs, TransactionSign, Submit
 JSS ( engine_result_code );         // out: NetworkOPs, TransactionSign, Submit
 JSS ( engine_result_message );      // out: NetworkOPs, TransactionSign, Submit
-JSS ( ephemeral );                  // out: UnlList
 JSS ( error );                      // out: error
 JSS ( error_code );                 // out: error
 JSS ( error_exception );            // out: Submit
@@ -288,7 +286,7 @@ JSS ( needed_transaction_hashes );  // out: InboundLedger
 JSS ( network_ledger );             // out: NetworkOPs
 JSS ( no_ripple );                  // out: AccountLines
 JSS ( no_ripple_peer );             // out: AccountLines
-JSS ( node );                       // in: UnlAdd, UnlDelete
+JSS ( node );                       // out: LedgerEntry
 JSS ( node_binary );                // out: LedgerEntry
 JSS ( node_hit_rate );              // out: GetCounts
 JSS ( node_read_bytes );            // out: GetCounts
@@ -416,6 +414,7 @@ JSS ( transactions );               // out: LedgerToJson,
 JSS ( transitions );                // out: NetworkOPs
 JSS ( treenode_cache_size );        // out: GetCounts
 JSS ( treenode_track_size );        // out: GetCounts
+JSS ( trusted );                    // out: UnlList
 JSS ( tx );                         // out: STTx, AccountTx*
 JSS ( tx_blob );                    // in/out: Submit,
                                     // in: TransactionSign, AccountTx*
@@ -443,7 +442,6 @@ JSS ( validated );                  // out: NetworkOPs, RPCHelpers, AccountTx*
 JSS ( validated_ledger );           // out: NetworkOPs
 JSS ( validated_ledgers );          // out: NetworkOPs
 JSS ( validation_key );             // out: ValidationCreate, ValidationSeed
-JSS ( validation_manifest );        // out: NetworkOPs
 JSS ( validation_private_key );     // out: ValidationCreate
 JSS ( validation_public_key );      // out: ValidationCreate, ValidationSeed
 JSS ( validation_quorum );          // out: NetworkOPs
