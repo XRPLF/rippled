@@ -22,6 +22,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
 #include <test/jtx/JTx.h>
 #include <test/jtx/require.h>
 #include <test/jtx/tags.h>
@@ -54,13 +55,6 @@
 
 namespace ripple {
 namespace test {
-
-extern
-void
-setupConfigForUnitTests (Config& config);
-
-//------------------------------------------------------------------------------
-
 namespace jtx {
 
 /** Designate accounts as no-ripple in Env::fund */
@@ -152,12 +146,7 @@ public:
     template <class... Args>
     Env (beast::unit_test::suite& suite_,
             Args&&... args)
-        : Env(suite_, []()
-            {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                return p;
-            }(), std::forward<Args>(args)...)
+        : Env(suite_, envconfig(), std::forward<Args>(args)...)
     {
     }
 

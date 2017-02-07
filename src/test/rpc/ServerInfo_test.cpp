@@ -28,7 +28,7 @@ namespace ripple {
 
 namespace test {
 
-namespace validator {
+namespace validator_data {
 static auto const public_key =
     "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
 
@@ -60,7 +60,7 @@ public:
 )rippleConfig");
 
         p->loadFromString (boost::str (
-            toLoad % validator::token % validator::public_key));
+            toLoad % validator_data::token % validator_data::public_key));
 
         setupConfigForUnitTests(*p);
 
@@ -85,7 +85,7 @@ public:
             BEAST_EXPECT(result[jss::status] == "success");
             BEAST_EXPECT(result[jss::result].isMember(jss::info));
             BEAST_EXPECT(result[jss::result][jss::info]
-                [jss::pubkey_validator] == validator::public_key);
+                [jss::pubkey_validator] == validator_data::public_key);
         }
     }
 

@@ -21,6 +21,7 @@
 #include <ripple/rpc/ServerHandler.h>
 #include <ripple/json/json_reader.h>
 #include <test/jtx.h>
+#include <test/jtx/envconfig.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/JSONRPCClient.h>
 #include <ripple/core/DeadlineTimer.h>
@@ -45,8 +46,7 @@ class ServerStatus_test :
     {
         auto const section_name =
             boost::starts_with(proto, "h") ?  "port_rpc" : "port_ws";
-        auto p = std::make_unique<Config>();
-        setupConfigForUnitTests(*p);
+        auto p = jtx::envconfig();
 
         p->overwrite(section_name, "protocol", proto);
         if(! admin)
@@ -274,13 +274,11 @@ class ServerStatus_test :
     {
         testcase("WS client to http server fails");
         using namespace jtx;
-        Env env(*this, []()
+        Env env {*this, envconfig([](std::unique_ptr<Config> cfg)
             {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                p->section("port_ws").set("protocol", "http,https");
-                return p;
-            }());
+                cfg->section("port_ws").set("protocol", "http,https");
+                return cfg;
+            })};
 
         //non-secure request
         {
@@ -308,14 +306,12 @@ class ServerStatus_test :
     {
         testcase("Status request");
         using namespace jtx;
-        Env env(*this, []()
+        Env env {*this, envconfig([](std::unique_ptr<Config> cfg)
             {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                p->section("port_rpc").set("protocol", "ws2,wss2");
-                p->section("port_ws").set("protocol", "http");
-                return p;
-            }());
+                cfg->section("port_rpc").set("protocol", "ws2,wss2");
+                cfg->section("port_ws").set("protocol", "http");
+                return cfg;
+            })};
 
         //non-secure request
         {
@@ -345,13 +341,11 @@ class ServerStatus_test :
         using namespace jtx;
         using namespace boost::asio;
         using namespace beast::http;
-        Env env(*this, []()
+        Env env {*this, envconfig([](std::unique_ptr<Config> cfg)
             {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                p->section("port_ws").set("protocol", "ws2");
-                return p;
-            }());
+                cfg->section("port_ws").set("protocol", "ws2");
+                return cfg;
+            })};
 
         auto const port = env.app().config()["port_ws"].
             get<std::uint16_t>("port");
@@ -395,6 +389,9 @@ class ServerStatus_test :
         std::string const& server_protocol,
         boost::asio::yield_context& yield)
     {
+        // The essence of this test is to have a client and server configured
+        // out-of-phase with respect to ssl (secure client and insecure server
+        // or vice-versa)
         testcase << "Connect fails: " << client_protocol << " client to " <<
             server_protocol << " server";
         using namespace jtx;
@@ -402,12 +399,6 @@ class ServerStatus_test :
 
         beast::http::response<beast::http::string_body> resp;
         boost::system::error_code ec;
-        // The essence of this test is to have a client and server configured
-        // out-of-phase with respect to ssl (secure client and insecure server
-        // or vice-versa) - as such, here is a config to pass to
-        // WSClient/JSONRPCClient that configures it for a protocol that
-        // doesn't match the actual server
-        auto cfg = makeConfig(client_protocol);
         if(boost::starts_with(client_protocol, "h"))
         {
                 doHTTPRequest(

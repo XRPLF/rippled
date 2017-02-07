@@ -687,27 +687,9 @@ class View_test
         eA.close();
         auto const rdViewA4 = eA.closed();
 
-        // The two Env's can't share the same ports, so edit the config
-        // of the second Env.
-        auto getConfigWithNewPorts = [this] ()
-        {
-            auto cfg = std::make_unique<Config>();
-            setupConfigForUnitTests(*cfg);
-
-            for (auto const sectionName : {"port_peer", "port_rpc", "port_ws"})
-            {
-                Section& s = (*cfg)[sectionName];
-                auto const port = s.get<std::int32_t>("port");
-                BEAST_EXPECT(port);
-                if (port)
-                {
-                    constexpr int portIncr = 5;
-                    s.set ("port", std::to_string(*port + portIncr));
-                }
-            }
-            return cfg;
-        };
-        Env eB(*this, getConfigWithNewPorts());
+        // The two Env's can't share the same ports, so modifiy the config
+        // of the second Env to use higher port numbers
+        Env eB {*this, envconfig(port_increment, 5)};
 
         // Make ledgers that are incompatible with the first ledgers.  Note
         // that bob is funded before alice.
@@ -802,25 +784,11 @@ class View_test
 class GetAmendments_test
     : public beast::unit_test::suite
 {
-    static
-    std::unique_ptr<Config>
-    makeValidatorConfig()
-    {
-        auto p = std::make_unique<Config>();
-        setupConfigForUnitTests(*p);
-
-        // If the config has valid validation keys then we run as a validator.
-        p->section(SECTION_VALIDATION_SEED).append(
-            std::vector<std::string>{"shUwVw52ofnCUX5m7kPTKzJdr4HEH"});
-
-        return p;
-    }
-
     void
     testGetAmendments()
     {
         using namespace jtx;
-        Env env(*this, makeValidatorConfig());
+        Env env {*this, envconfig(validator, "")};
 
         // Start out with no amendments.
         auto majorities = getMajorityAmendments (*env.closed());

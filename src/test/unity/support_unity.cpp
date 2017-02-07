@@ -24,6 +24,7 @@
 #include <test/jtx/impl/balance.cpp>
 #include <test/jtx/impl/delivermin.cpp>
 #include <test/jtx/impl/Env.cpp>
+#include <test/jtx/impl/envconfig.cpp>
 #include <test/jtx/impl/fee.cpp>
 #include <test/jtx/impl/flags.cpp>
 #include <test/jtx/impl/jtx_json.cpp>
