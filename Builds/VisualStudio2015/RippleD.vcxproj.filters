@@ -5199,6 +5199,9 @@
     <ClInclude Include="..\..\src\test\jtx\Env.h">
       <Filter>test\jtx</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\envconfig.h">
+      <Filter>test\jtx</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\test\jtx\Env_ss.h">
       <Filter>test\jtx</Filter>
     </ClInclude>
@@ -5224,6 +5227,9 @@
       <Filter>test\jtx\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\jtx\impl\Env.cpp">
+      <Filter>test\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\envconfig.cpp">
       <Filter>test\jtx\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\jtx\impl\fee.cpp">

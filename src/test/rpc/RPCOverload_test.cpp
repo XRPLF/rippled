@@ -32,14 +32,7 @@ public:
     {
         testcase << "Overload " << (useWS ? "WS" : "HTTP") << " RPC client";
         using namespace jtx;
-        Env env(*this, []()
-            {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                (*p)["port_rpc"].set("admin","");
-                (*p)["port_ws"].set("admin","");
-                return p;
-            }());
+        Env env {*this, envconfig(no_admin)};
 
         Account const alice {"alice"};
         Account const bob {"bob"};

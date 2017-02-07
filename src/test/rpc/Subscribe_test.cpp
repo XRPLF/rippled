@@ -312,29 +312,24 @@ public:
         BEAST_EXPECT(jv[jss::status] == "success");
     }
 
-    static
-    std::unique_ptr<Config>
-    makeValidatorConfig(std::string const& seed)
-    {
-        auto p = std::make_unique<Config>();
-        setupConfigForUnitTests(*p);
-
-        // If the config has valid validation keys then we run as a validator.
-        p->section(SECTION_VALIDATION_SEED).append(
-            std::vector<std::string>{seed});
-
-        return p;
-    }
-
     void testValidations()
     {
         using namespace jtx;
 
-        // Public key must be derived from the private key
-        std::string const seed = "snpTg5uPtiRG2hE8HHCAF4NzdorKT";
+        Env env {*this, envconfig(validator, "")};
+        auto& cfg = env.app().config();
+        if(! BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
+            return;
+        auto const parsedseed = parseBase58<Seed>(
+            cfg.section(SECTION_VALIDATION_SEED).values()[0]);
+        if(! BEAST_EXPECT(parsedseed))
+            return;
+
         std::string const valPublicKey =
-            "n9KCD2WU48u1WG3neBH6vRSinAxoTwrjLbjUAn6Xq6mCe5YrJv2V";
-        Env env(*this, makeValidatorConfig(seed));
+            toBase58 (TokenType::TOKEN_NODE_PUBLIC,
+                derivePublicKey (KeyType::secp256k1,
+                    generateSecretKey (KeyType::secp256k1, *parsedseed)));
+
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -361,7 +356,8 @@ public:
                 [&](auto const& jv)
                 {
                     return jv[jss::type] == "validationReceived" &&
-                        jv[jss::validation_public_key] == valPublicKey &&
+                        jv[jss::validation_public_key].asString() ==
+                            valPublicKey &&
                         jv[jss::ledger_hash] ==
                             to_string(env.closed()->info().hash) &&
                         jv[jss::ledger_index] ==

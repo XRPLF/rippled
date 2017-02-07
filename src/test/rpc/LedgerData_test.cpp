@@ -26,23 +26,6 @@ namespace ripple {
 class LedgerData_test : public beast::unit_test::suite
 {
 public:
-
-    static
-    std::unique_ptr<Config>
-    makeConfig(bool setup_admin)
-    {
-        auto p = std::make_unique<Config>();
-        test::setupConfigForUnitTests(*p);
-        // the default config has admin active
-        // ...we remove them if setup_admin is false
-        if (! setup_admin)
-        {
-            (*p)["port_rpc"].set("admin","");
-            (*p)["port_ws"].set("admin","");
-        }
-        return p;
-    }
-
     // test helper
     static bool checkArraySize(Json::Value const& val, unsigned int size)
     {
@@ -58,10 +41,10 @@ public:
                val[jss::marker].asString().size() > 0;
     }
 
-    void testCurrentLedgerToLimits(bool as_admin)
+    void testCurrentLedgerToLimits(bool asAdmin)
     {
         using namespace test::jtx;
-        Env env {*this, makeConfig(as_admin)};
+        Env env {*this, asAdmin ? envconfig() : envconfig(no_admin)};
         Account const gw {"gateway"};
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
@@ -97,14 +80,14 @@ public:
                 boost::lexical_cast<std::string>(jvParams)) [jss::result];
             BEAST_EXPECT(
                 checkArraySize( jrr[jss::state],
-                    (delta > 0 && !as_admin) ? max_limit : max_limit + delta ));
+                    (delta > 0 && !asAdmin) ? max_limit : max_limit + delta ));
         }
     }
 
     void testCurrentLedgerBinary()
     {
         using namespace test::jtx;
-        Env env { *this, makeConfig(false) };
+        Env env { *this, envconfig(no_admin) };
         Account const gw { "gateway" };
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
@@ -192,7 +175,7 @@ public:
     void testMarkerFollow()
     {
         using namespace test::jtx;
-        Env env { *this, makeConfig(false) };
+        Env env { *this, envconfig(no_admin) };
         Account const gw { "gateway" };
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);

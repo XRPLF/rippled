@@ -40,8 +40,7 @@ class LedgerLoad_test : public beast::unit_test::suite
     auto ledgerConfig(std::string const& ledger, Config::StartUpType type)
     {
         assert(! dbPath_.empty());
-        auto p = std::make_unique<Config>();
-        test::setupConfigForUnitTests(*p);
+        auto p = test::jtx::envconfig();
         p->START_LEDGER = ledger;
         p->START_UP = type;
         p->legacy("database_path", dbPath_.string());

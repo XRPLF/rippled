@@ -25,6 +25,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
 #include <test/jtx/TestSuite.h>
+#include <test/jtx/envconfig.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
@@ -98,8 +99,7 @@ class TxQ_test : public beast::unit_test::suite
     std::unique_ptr<Config>
     makeConfig(std::map<std::string, std::string> extra = {})
     {
-        auto p = std::make_unique<Config>();
-        setupConfigForUnitTests(*p);
+        auto p = test::jtx::envconfig();
         auto& section = p->section("transaction_queue");
         section.set("ledgers_in_queue", "2");
         section.set("min_ledgers_to_compute_size_limit", "3");

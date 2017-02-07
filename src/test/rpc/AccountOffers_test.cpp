@@ -26,22 +26,6 @@ namespace test {
 class AccountOffers_test : public beast::unit_test::suite
 {
 public:
-    static
-    std::unique_ptr<Config>
-    makeConfig(bool setup_admin)
-    {
-        auto p = std::make_unique<Config>();
-        setupConfigForUnitTests(*p);
-        // the default config has admin active
-        // ...we remove them if setup_admin is false
-        if (! setup_admin)
-        {
-            (*p)["port_rpc"].set("admin","");
-            (*p)["port_ws"].set("admin","");
-        }
-        return p;
-    }
-
     // test helper
     static bool checkArraySize(Json::Value const& val, unsigned int size)
     {
@@ -60,7 +44,7 @@ public:
     void testNonAdminMinLimit()
     {
         using namespace jtx;
-        Env env(*this, makeConfig(false));
+        Env env {*this, envconfig(no_admin)};
         Account const gw ("G1");
         auto const USD_gw  = gw["USD"];
         Account const bob ("bob");
@@ -97,10 +81,10 @@ public:
         BEAST_EXPECT(checkArraySize(jro_l, 10u));
     }
 
-    void testSequential(bool as_admin)
+    void testSequential(bool asAdmin)
     {
         using namespace jtx;
-        Env env(*this, makeConfig(as_admin));
+        Env env {*this, asAdmin ? envconfig() : envconfig(no_admin)};
         Account const gw ("G1");
         auto const USD_gw  = gw["USD"];
         Account const bob ("bob");
@@ -153,9 +137,9 @@ public:
             // limit parameter is NOT subject to sane defaults, but with a
             // non-admin there are pre-configured limit ranges applied. That's
             // why we have different BEAST_EXPECT()s here for the two scenarios
-            BEAST_EXPECT(checkArraySize(jro_l_1, as_admin ? 1u : 3u));
-            BEAST_EXPECT(as_admin ? checkMarker(jrr_l_1) : (! jrr_l_1.isMember(jss::marker)));
-            if (as_admin)
+            BEAST_EXPECT(checkArraySize(jro_l_1, asAdmin ? 1u : 3u));
+            BEAST_EXPECT(asAdmin ? checkMarker(jrr_l_1) : (! jrr_l_1.isMember(jss::marker)));
+            if (asAdmin)
             {
                 BEAST_EXPECT(jro[0u] == jro_l_1[0u]);
 
@@ -193,8 +177,8 @@ public:
             jvParams[jss::limit]   = 0u;
             auto const  jrr = env.rpc ("json", "account_offers", jvParams.toStyledString())[jss::result];
             auto const& jro = jrr[jss::offers];
-            BEAST_EXPECT(checkArraySize(jro, as_admin ? 0u : 3u));
-            BEAST_EXPECT(as_admin ? checkMarker(jrr) : (! jrr.isMember(jss::marker)));
+            BEAST_EXPECT(checkArraySize(jro, asAdmin ? 0u : 3u));
+            BEAST_EXPECT(asAdmin ? checkMarker(jrr) : (! jrr.isMember(jss::marker)));
         }
 
     }

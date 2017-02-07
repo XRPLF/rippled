@@ -27,17 +27,6 @@ namespace ripple {
 
 class LedgerRPC_test : public beast::unit_test::suite
 {
-    static
-    std::unique_ptr<Config>
-    makeNonAdminConfig()
-    {
-        auto p = std::make_unique<Config>();
-        test::setupConfigForUnitTests(*p);
-        (*p)["port_rpc"].set("admin","");
-        (*p)["port_ws"].set("admin","");
-        return p;
-    }
-
     void
     checkErrorValue(
         Json::Value const& jv,
@@ -184,7 +173,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         testcase("Ledger Request, Full Option Without Admin");
         using namespace test::jtx;
 
-        Env env { *this, makeNonAdminConfig() };
+        Env env { *this, envconfig(no_admin) };
 
         env.close();
 

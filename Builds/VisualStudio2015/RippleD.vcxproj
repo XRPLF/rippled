@@ -4461,6 +4461,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\test\jtx\Env.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\test\jtx\envconfig.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\test\jtx\Env_ss.h">
     </ClInclude>
     <ClCompile Include="..\..\src\test\jtx\Env_test.cpp">
@@ -4488,6 +4490,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\test\jtx\impl\Env.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\jtx\impl\envconfig.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>

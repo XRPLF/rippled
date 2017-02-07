@@ -26,6 +26,7 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <test/jtx.h>
+#include <test/jtx/envconfig.h>
 #include <ripple/beast/unit_test.h>
 
 namespace ripple {
@@ -1934,15 +1935,14 @@ public:
 
     void testAutoFillEscalatedFees ()
     {
-        test::jtx::Env env(*this, []()
+        using namespace test::jtx;
+        Env env {*this, envconfig([](std::unique_ptr<Config> cfg)
             {
-                auto p = std::make_unique<Config>();
-                test::setupConfigForUnitTests(*p);
-                auto& section = p->section("transaction_queue");
-                section.set("minimum_txn_in_ledger_standalone", "3");
-                return p;
-            }(),
-            test::jtx::features(featureFeeEscalation));
+                cfg->section("transaction_queue")
+                    .set("minimum_txn_in_ledger_standalone", "3");
+                return cfg;
+            }),
+            test::jtx::features(featureFeeEscalation)};
         LoadFeeTrack const& feeTrack = env.app().getFeeTrack();
 
         {
