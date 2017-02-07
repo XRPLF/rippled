@@ -47,11 +47,14 @@ void NodeStoreScheduler::onChildrenStopped ()
 
 void NodeStoreScheduler::scheduleTask (NodeStore::Task& task)
 {
-    ++m_taskCount;
-    m_jobQueue->addJob (
-        jtWRITE,
-        "NodeObject::store",
-        [this, &task] (Job&) { doTask(task); });
+    if (! isStopping())
+    {
+        ++m_taskCount;
+        m_jobQueue->addJob (
+            jtWRITE,
+            "NodeObject::store",
+            [this, &task] (Job&) { doTask(task); });
+    }
 }
 
 void NodeStoreScheduler::doTask (NodeStore::Task& task)
@@ -63,16 +66,22 @@ void NodeStoreScheduler::doTask (NodeStore::Task& task)
 
 void NodeStoreScheduler::onFetch (NodeStore::FetchReport const& report)
 {
-    if (report.wentToDisk)
-        m_jobQueue->addLoadEvents (
-            report.isAsync ? jtNS_ASYNC_READ : jtNS_SYNC_READ,
-                1, report.elapsed);
+    if (! isStopping())
+    {
+        if (report.wentToDisk)
+            m_jobQueue->addLoadEvents (
+                report.isAsync ? jtNS_ASYNC_READ : jtNS_SYNC_READ,
+                    1, report.elapsed);
+    }
 }
 
 void NodeStoreScheduler::onBatchWrite (NodeStore::BatchWriteReport const& report)
 {
-    m_jobQueue->addLoadEvents (jtNS_WRITE,
-        report.writeCount, report.elapsed);
+    if (! isStopping())
+    {
+        m_jobQueue->addLoadEvents (jtNS_WRITE,
+            report.writeCount, report.elapsed);
+    }
 }
 
 } // ripple
