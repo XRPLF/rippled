@@ -23,7 +23,6 @@
 #include <ripple/app/tx/applySteps.h>
 #include <ripple/ledger/OpenView.h>
 #include <ripple/ledger/ApplyView.h>
-#include <ripple/core/Config.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/STTx.h>
 #include <boost/intrusive/set.hpp>
@@ -31,6 +30,7 @@
 namespace ripple {
 
 class Application;
+class Config;
 
 /**
     Transaction Queue. Used to manage transactions in conjunction with
@@ -139,7 +139,7 @@ public:
         amendment is not enabled.
     */
     boost::optional<Metrics>
-    getMetrics(Config const& config, OpenView const& view,
+    getMetrics(OpenView const& view,
         std::uint32_t txCountPadding = 0) const;
 
     /** Returns information about the transactions currently
@@ -150,8 +150,7 @@ public:
         in the queue.
     */
     boost::optional<std::map<TxSeq, AccountTxDetails>>
-    getAccountTxs(AccountID const& account, Config const& config,
-        ReadView const& view) const;
+    getAccountTxs(AccountID const& account, ReadView const& view) const;
 
     /** Packages up fee metrics for the `fee` RPC command.
     */

@@ -62,6 +62,11 @@ public:
 
     virtual bool peerPosition (Pos_t const& position) = 0;
 
+    virtual PublicKey const& getValidationPublicKey () const = 0;
+
+    virtual void setValidationKeys (
+        SecretKey const& valSecret, PublicKey const& valPublic) = 0;
+
     virtual void startRound (
         LgrID_t const& prevLCLHash,
         std::shared_ptr<Ledger const> const& prevLedger,

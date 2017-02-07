@@ -354,6 +354,16 @@ private:
     // nodes that have bowed out of this consensus process
     hash_set<NodeID_t> deadNodes_;
     beast::Journal j_;
+
+public:
+    /** Returns validation public key */
+    PublicKey const&
+    getValidationPublicKey () const override;
+
+    /** Set validation private and public key pair. */
+    void
+    setValidationKeys (
+        SecretKey const& valSecret, PublicKey const& valPublic) override;
 };
 
 //------------------------------------------------------------------------------

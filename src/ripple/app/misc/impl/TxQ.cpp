@@ -589,8 +589,7 @@ TxQ::apply(Application& app, OpenView& view,
         ApplyFlags flags, beast::Journal j)
 {
     auto const allowEscalation =
-        (view.rules().enabled(featureFeeEscalation,
-            app.config().features));
+        (view.rules().enabled(featureFeeEscalation));
     if (!allowEscalation)
     {
         return ripple::apply(app, view, *tx, flags, j);
@@ -1110,8 +1109,7 @@ TxQ::processClosedLedger(Application& app,
     OpenView const& view, bool timeLeap)
 {
     auto const allowEscalation =
-        (view.rules().enabled(featureFeeEscalation,
-            app.config().features));
+        (view.rules().enabled(featureFeeEscalation));
     if (!allowEscalation)
     {
         return;
@@ -1190,8 +1188,7 @@ TxQ::accept(Application& app,
     OpenView& view)
 {
     auto const allowEscalation =
-        (view.rules().enabled(featureFeeEscalation,
-            app.config().features));
+        (view.rules().enabled(featureFeeEscalation));
     if (!allowEscalation)
     {
         return false;
@@ -1307,13 +1304,11 @@ TxQ::accept(Application& app,
 }
 
 auto
-TxQ::getMetrics(Config const& config, OpenView const& view,
-    std::uint32_t txCountPadding) const
-        -> boost::optional<Metrics>
+TxQ::getMetrics(OpenView const& view, std::uint32_t txCountPadding) const
+    -> boost::optional<Metrics>
 {
     auto const allowEscalation =
-        (view.rules().enabled(featureFeeEscalation,
-            config.features));
+        (view.rules().enabled(featureFeeEscalation));
     if (!allowEscalation)
         return boost::none;
 
@@ -1335,13 +1330,11 @@ TxQ::getMetrics(Config const& config, OpenView const& view,
 }
 
 auto
-TxQ::getAccountTxs(AccountID const& account, Config const& config,
-    ReadView const& view) const
-        -> boost::optional<std::map<TxSeq, AccountTxDetails>>
+TxQ::getAccountTxs(AccountID const& account, ReadView const& view) const
+    -> boost::optional<std::map<TxSeq, AccountTxDetails>>
 {
     auto const allowEscalation =
-        (view.rules().enabled(featureFeeEscalation,
-            config.features));
+        (view.rules().enabled(featureFeeEscalation));
     if (!allowEscalation)
         return boost::none;
 
@@ -1372,7 +1365,7 @@ TxQ::doRPC(Application& app) const
     using std::to_string;
 
     auto const view = app.openLedger().current();
-    auto const metrics = getMetrics(app.config(), *view);
+    auto const metrics = getMetrics(*view);
 
     if (!metrics)
         return{};

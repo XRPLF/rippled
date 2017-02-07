@@ -154,6 +154,9 @@ public:
 Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
     std::unique_ptr<Config> config)
 {
+    using namespace beast::severities;
+    // Use kFatal threshold to reduce noise from STObject.
+    setDebugLogSink (std::make_unique<SuiteSink>("Debug", kFatal, suite));
     auto logs = std::make_unique<SuiteLogs>(suite);
     auto timeKeeper_ =
         std::make_unique<ManualTimeKeeper>();
@@ -163,7 +166,7 @@ Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
     owned = make_Application(std::move(config),
         std::move(logs), std::move(timeKeeper_));
     app = owned.get();
-    app->logs().threshold(beast::severities::kError);
+    app->logs().threshold(kError);
     if(! app->setup())
         Throw<std::runtime_error> ("Env::AppBundle: setup failed");
     timeKeeper->set(
@@ -183,6 +186,9 @@ Env::AppBundle::~AppBundle()
     app->getJobQueue().rendezvous();
     app->signalStop();
     thread.join();
+
+    // Remove the debugLogSink before the suite goes out of scope.
+    setDebugLogSink (nullptr);
 }
 
 //------------------------------------------------------------------------------

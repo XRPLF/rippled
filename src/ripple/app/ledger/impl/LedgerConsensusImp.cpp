@@ -35,6 +35,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/CountedObject.h>
@@ -72,8 +73,6 @@ LedgerConsensusImp<Traits>::LedgerConsensusImp (
     , ourID_ (calcNodeID (app.nodeIdentity().first))
     , state_ (State::open)
     , closeTime_ {}
-    , valPublic_ (app_.config().VALIDATION_PUB)
-    , valSecret_ (app_.config().VALIDATION_PRIV)
     , consensusFail_ (false)
     , roundTime_ (0)
     , closePercent_ (0)
@@ -817,8 +816,7 @@ void LedgerConsensusImp<Traits>::accept (TxSet_t const& set)
         auto buildLCL = std::make_shared<Ledger>(
             *previousLedger_,
             app_.timeKeeper().closeTime());
-        auto const v2_enabled = buildLCL->rules().enabled(featureSHAMapV2,
-                                                       app_.config().features);
+        auto const v2_enabled = buildLCL->rules().enabled(featureSHAMapV2);
         auto v2_transition = false;
         if (v2_enabled && !buildLCL->stateMap().is_v2())
         {
@@ -1000,9 +998,9 @@ void LedgerConsensusImp<Traits>::accept (TxSet_t const& set)
         auto const lastVal = ledgerMaster_.getValidatedLedger();
         boost::optional<Rules> rules;
         if (lastVal)
-            rules.emplace(*lastVal);
+            rules.emplace(*lastVal, app_.config().features);
         else
-            rules.emplace();
+            rules.emplace(app_.config().features);
         app_.openLedger().accept(app_, *rules,
             sharedLCL, localTx, anyDisputes, retriableTxs, tapNONE,
                 "consensus",
@@ -1275,7 +1273,7 @@ LedgerConsensusImp<Traits>::makeInitialPosition () ->
                 return v.second->isTrusted();
             });
 
-        if (count >= ledgerMaster_.getMinValidations())
+        if (count >= app_.validators ().quorum ())
         {
             feeVote_.doVoting (
                 previousLedger_,
@@ -1778,6 +1776,20 @@ void LedgerConsensusImp<Traits>::addLoad(STValidation::ref val)
 
     if (fee > feeTrack.getLoadBase())
         val->setFieldU32(sfLoadFee, fee);
+}
+
+template <class Traits>
+PublicKey const& LedgerConsensusImp<Traits>::getValidationPublicKey () const
+{
+    return valPublic_;
+}
+
+template <class Traits>
+void LedgerConsensusImp<Traits>::setValidationKeys (
+    SecretKey const& valSecret, PublicKey const& valPublic)
+{
+    valSecret_ = valSecret;
+    valPublic_ = valPublic;
 }
 
 //------------------------------------------------------------------------------

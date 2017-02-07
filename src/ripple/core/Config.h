@@ -23,8 +23,6 @@
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/protocol/SystemParameters.h> // VFALCO Breaks levelization
-#include <ripple/protocol/PublicKey.h> // NIKB Breaks levelization (TEMP)
-#include <ripple/protocol/SecretKey.h> // NIKB Breaks levelization (TEMP)
 #include <ripple/beast/net/IPEndpoint.h>
 #include <beast/core/detail/ci_char_traits.hpp>
 #include <ripple/beast/utility/Journal.h>
@@ -138,8 +136,6 @@ public:
 
     // Note: The following parameters do not relate to the UNL or trust at all
     std::size_t                 NETWORK_QUORUM = 0;         // Minimum number of nodes to consider the network present
-    int                         VALIDATION_QUORUM = 1;      // Minimum validations to consider ledger authoritative
-    bool                        LOCK_QUORUM = false;        // Do not raise the quorum
 
     // Peer networking parameters
     bool                        PEER_PRIVATE = false;           // True to ask peers not to relay current IP.
@@ -154,11 +150,7 @@ public:
     int                         PATH_SEARCH_MAX = 10;
 
     // Validation
-    PublicKey                   VALIDATION_PUB;
-    SecretKey                   VALIDATION_PRIV;
-
-    // Node Identity
-    std::string                 NODE_SEED;
+    boost::optional<std::size_t> VALIDATION_QUORUM;     // Minimum validations to consider ledger authoritative
 
     std::uint64_t                      FEE_DEFAULT = 10;
     std::uint64_t                      FEE_ACCOUNT_RESERVE = 200*SYSTEM_CURRENCY_PARTS;

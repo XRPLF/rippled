@@ -104,12 +104,7 @@ n9L81uNCaPgtUJfaHh89gmdvXKAmSt5Gdsw2g1iPWaPkAHW5Nm4C    RL3
 n9KiYM9CgngLvtRCQHZwgC2gjpdaZcCcbt3VboxiNFcKuwFVujzS    RL4
 n9LdgEtkmGB9E2h3K4Vp7iGUaKuq23Zr32ehxiU8FWY7xoxbWTSA    RL5
 
-[validation_quorum]
-3
-
-[validation_seed]
-{validation_seed}
-#vaidation_public_key: {validation_public_key}
+#validation_public_key: {validation_public_key}
 
 # Other rippled's trusting this validator need this key
 [validator_keys]
@@ -122,8 +117,8 @@ n9LdgEtkmGB9E2h3K4Vp7iGUaKuq23Zr32ehxiU8FWY7xoxbWTSA    RL5
 expire = 1
 auto_connect = 1
 
-[validation_manifest]
-{validation_manifest}
+[validator_token]
+{validator_token}
 
 [rpc_startup]
 {{ "command": "log_level", "severity": "debug" }}
@@ -204,7 +199,7 @@ def sign_manifest(seq, validation_pk, master_secret):
     result = []
     for l in r.splitlines():
         l.strip()
-        if not l or l == '[validation_manifest]':
+        if not l or l == '[validator_token]':
             continue
         result.append(l)
     return '\n'.join(result)
@@ -433,7 +428,7 @@ def new_config_ephemeral_key(
         if rm_dbs and os.path.exists(db_dir):
             shutil.rmtree(db_dir)
             os.makedirs(db_dir)
-        # replace the validation_manifest section with `signed`
+        # replace the validator_token section with `signed`
         bak = config_file + '.bak'
         if is_windows() and os.path.isfile(bak):
             os.remove(bak)
@@ -443,7 +438,7 @@ def new_config_ephemeral_key(
             with open(config_file, 'w') as out:
                 for l in src:
                     sl = l.strip()
-                    if not in_manifest and sl == '[validation_manifest]':
+                    if not in_manifest and sl == '[validator_token]':
                         in_manifest = True
                     elif in_manifest:
                         if sl.startswith('[') or sl.startswith('#'):
@@ -542,7 +537,7 @@ def get_configs(manifest_seq):
         sibling_ip = '127.0.0.1'
         sibling_port = port_nums[sibling_index][1]
         d = {
-            'validation_manifest': s,
+            'validator_token': s,
             'all_validator_keys': all_validator_keys,
             'node_db_type': node_db_type,
             'node_db_path': node_db_path,
