@@ -2160,6 +2160,76 @@ public:
             BEAST_EXPECT(RPC::contains_error(result));
         }
 
+        {
+            // 10: Call "sign" with nothing in the open ledger
+            Json::Value toSign;
+            toSign[jss::tx_json] = noop(env.master);
+            toSign[jss::secret] = "masterpassphrase";
+            auto rpcResult = env.rpc("json", "sign", to_string(toSign));
+            auto result = rpcResult[jss::result];
+
+            BEAST_EXPECT(! RPC::contains_error(result));
+            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Fee) &&
+                result[jss::tx_json][jss::Fee] == "10");
+            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Sequence) &&
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(
+                    Json::ValueType::uintValue));
+        }
+
+        {
+            // 11: Call "sign" with enough transactions in the open ledger
+            // to escalate the fee.
+            for (;;)
+            {
+                auto metrics = env.app().getTxQ().getMetrics(*env.current());
+                if (!BEAST_EXPECT(metrics))
+                    break;
+                if (metrics->expFeeLevel > metrics->minFeeLevel)
+                    break;
+                env(noop(env.master));
+            }
+
+            Json::Value toSign;
+            toSign[jss::tx_json] = noop(env.master);
+            toSign[jss::secret] = "masterpassphrase";
+            toSign[jss::fee_mult_max] = 900;
+            auto rpcResult = env.rpc("json", "sign", to_string(toSign));
+            auto result = rpcResult[jss::result];
+
+            BEAST_EXPECT(! RPC::contains_error(result));
+            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Fee) &&
+                result[jss::tx_json][jss::Fee] == "8889");
+            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Sequence) &&
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(
+                    Json::ValueType::uintValue));
+
+            env.close();
+        }
+
+        {
+            // 12: Call "sign" with higher server load
+            {
+                auto& feeTrack = env.app().getFeeTrack();
+                BEAST_EXPECT(feeTrack.getLoadFactor() == 256);
+                for (int i = 0; i < 8; ++i)
+                    feeTrack.raiseLocalFee();
+                BEAST_EXPECT(feeTrack.getLoadFactor() == 1220);
+            }
+
+            Json::Value toSign;
+            toSign[jss::tx_json] = noop(env.master);
+            toSign[jss::secret] = "masterpassphrase";
+            auto rpcResult = env.rpc("json", "sign", to_string(toSign));
+            auto result = rpcResult[jss::result];
+
+            BEAST_EXPECT(! RPC::contains_error(result));
+            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Fee) &&
+                result[jss::tx_json][jss::Fee] == "47");
+            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Sequence) &&
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(
+                    Json::ValueType::uintValue));
+        }
+
     }
 
     // A function that can be called as though it would process a transaction.
