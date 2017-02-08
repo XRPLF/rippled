@@ -571,7 +571,6 @@ def config_env(toolchain, variant, env):
             env.Append(CCFLAGS=[
                 '-Wno-deprecated',
                 '-Wno-deprecated-declarations',
-                '-Wno-unused-variable',
                 '-Wno-unused-function',
                 ])
         else:
