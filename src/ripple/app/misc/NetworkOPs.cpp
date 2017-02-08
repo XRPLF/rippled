@@ -668,7 +668,8 @@ void NetworkOPsImp::processHeartbeatTimer ()
                     << "Node count (" << numPeers << ") "
                     << "has fallen below quorum (" << m_network_quorum << ").";
             }
-
+            // We do not call mConsensus->timerEntry until there
+            // are enough peers providing meaningful inputs to consensus
             setHeartbeatTimer ();
 
             return;
@@ -1248,8 +1249,7 @@ void NetworkOPsImp::tryStartConsensus ()
         }
     }
 
-    if (mMode != omDISCONNECTED)
-        beginConsensus (networkClosed);
+    beginConsensus (networkClosed);
 }
 
 bool NetworkOPsImp::checkLastClosedLedger (

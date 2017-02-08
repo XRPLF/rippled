@@ -739,6 +739,10 @@ Consensus<Derived, Traits>::peerProposal (
 
     std::lock_guard<std::recursive_mutex> _(*lock_);
 
+    // Nothing to do if we are currently working on a ledger
+    if ((state_ == State::processing) || (state_ == State::accepted))
+        return false;
+
     now_ = now;
 
     if (newProposal.prevLedger() != prevLedgerID_)
@@ -843,18 +847,17 @@ Consensus<Derived, Traits>::timerEntry (NetClock::time_point const& now)
 
     try
     {
-       if ((state_ != State::processing) && (state_ != State::accepted))
-           checkLCL ();
-
         using namespace std::chrono;
 
         switch (state_)
         {
         case State::open:
+            checkLCL ();
             statePreClose ();
             break;
 
         case State::establish:
+            checkLCL ();
             stateEstablish ();
             break;
 
@@ -890,6 +893,10 @@ Consensus<Derived, Traits>::gotTxSet (
     TxSet_t const& txSet)
 {
     std::lock_guard<std::recursive_mutex> _(*lock_);
+
+    // Nothing to do if we are currently working on a ledger
+    if ((state_ == State::processing) || (state_ == State::accepted))
+        return;
 
     now_ = now;
 
