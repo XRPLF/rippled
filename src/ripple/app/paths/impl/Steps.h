@@ -121,6 +121,14 @@ public:
         return boost::none;
     }
 
+    // for debugging. Return the src and dst accounts for a direct step
+    // For XRP endpoints, one of src or dst will be the root account
+    virtual boost::optional<std::pair<AccountID,AccountID>>
+    directStepAccts () const
+    {
+        return boost::none;
+    }
+
     /**
        If this step is a DirectStepI and the src redeems to the dst, return true,
        otherwise return false.
@@ -224,6 +232,26 @@ bool operator==(Strand const& lhs, Strand const& rhs)
 }
 
 /*
+   Normalize a path by inserting implied accounts and offers
+
+   @param src Account that is sending assets
+   @param dst Account that is receiving assets
+   @param deliver Asset the dst account will receive
+   (if issuer of deliver == dst, then accept any issuer)
+   @param sendMax Optional asset to send.
+   @param path Liquidity sources to use for this strand of the payment. The path
+               contains an ordered collection of the offer books to use and
+               accounts to ripple through.
+   @return error code and normalized path
+*/
+std::pair<TER, STPath>
+normalizePath(AccountID const& src,
+    AccountID const& dst,
+    Issue const& deliver,
+    boost::optional<Issue> const& sendMaxIssue,
+    STPath const& path);
+
+/*
    Create a strand for the specified path
 
    @param sb view for trust lines, balances, and attributes like auth and freeze
@@ -235,7 +263,6 @@ bool operator==(Strand const& lhs, Strand const& rhs)
    @param path Liquidity sources to use for this strand of the payment. The path
                contains an ordered collection of the offer books to use and
                accounts to ripple through.
-   @param addDefaultPath Determines if the default path should be considered
    @param l logs to write journal messages to
    @return error code and collection of strands
 */

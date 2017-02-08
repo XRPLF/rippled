@@ -45,9 +45,14 @@ extern uint256 const featurePayChan;
 extern uint256 const featureFlow;
 extern uint256 const featureCryptoConditions;
 extern uint256 const featureTickSize;
+<<<<<<< 0df1b09a731ba0feaa5d60046e1c7dd415f5f7ed
 extern uint256 const fix1368;
 extern uint256 const featureEscrow;
 extern uint256 const featureCryptoConditionsSuite;
+=======
+extern uint256 const featureRIPD1368;
+extern uint256 const featureToStrandV2;
+>>>>>>> New rules for payment paths:
 
 } // ripple
 

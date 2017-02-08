@@ -124,6 +124,12 @@ class DirectStepI : public StepImp<IOUAmount, IOUAmount, DirectStepI>
         return src_;
     }
 
+    boost::optional<std::pair<AccountID,AccountID>>
+    directStepAccts () const override
+    {
+        return std::make_pair(src_, dst_);
+    }
+
     bool
     redeems (ReadView const& sb, bool fwd) const override;
 

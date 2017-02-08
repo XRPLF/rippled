@@ -117,6 +117,8 @@ public:
         hash_value_ = get_hash (*this);
     }
 
+    STPathElement(STPathElement const&) = default;
+
     int
     getNodeType () const
     {
@@ -203,8 +205,8 @@ class STPath
 public:
     STPath () = default;
 
-    STPath (std::vector<STPathElement> const& p)
-        : mPath (p)
+    STPath (std::vector<STPathElement> p)
+        : mPath (std::move(p))
     { }
 
     std::vector<STPathElement>::size_type
@@ -279,6 +281,10 @@ public:
         return mPath[i];
     }
 
+    void reserve(size_t s)
+    {
+        mPath.reserve(s);
+    }
 private:
     std::vector<STPathElement> mPath;
 };

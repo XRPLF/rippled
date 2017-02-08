@@ -68,6 +68,14 @@ class XRPEndpointStep : public StepImp<XRPAmount, XRPAmount, XRPEndpointStep>
         return acc_;
     };
 
+    boost::optional<std::pair<AccountID,AccountID>>
+    directStepAccts () const override
+    {
+        if (isLast_)
+            return std::make_pair(xrpAccount(), acc_);
+        return std::make_pair(acc_, xrpAccount());
+    }
+
     boost::optional<EitherAmount>
     cachedIn () const override
     {

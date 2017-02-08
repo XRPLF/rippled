@@ -27,6 +27,7 @@
 #include <ripple/ledger/Directory.h>
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/protocol/Book.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/XRPAmount.h>
@@ -681,6 +682,13 @@ BookStep<TIn, TOut>::check(StrandContext const& ctx) const
         ctx.seenDirectIssues[0].count (book_.out))
     {
         JLOG (j_.debug()) << "BookStep: loop detected: " << *this;
+        return temBAD_PATH_LOOP;
+    }
+
+    if (ctx.view.rules().enabled(featureToStrandV2) &&
+        ctx.seenDirectIssues[1].count(book_.out))
+    {
+        JLOG(j_.debug()) << "BookStep: loop detected: " << *this;
         return temBAD_PATH_LOOP;
     }
 
