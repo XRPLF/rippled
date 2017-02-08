@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/SField.h>
 #include <test/jtx/WSClient.h>
@@ -45,12 +46,12 @@ class TrustAndBalance_test : public beast::unit_test::suite
     };
 
     void
-    testPayNonexistent ()
+    testPayNonexistent (std::initializer_list<uint256> fs)
     {
         testcase ("Payment to Nonexistent Account");
         using namespace test::jtx;
 
-        Env env {*this};
+        Env env {*this, features(fs)};
         env (pay (env.master, "alice", XRP(1)), ter(tecNO_DST_INSUF_XRP));
         env.close();
     }
@@ -161,12 +162,12 @@ class TrustAndBalance_test : public beast::unit_test::suite
     }
 
     void
-    testDirectRipple ()
+    testDirectRipple (std::initializer_list<uint256> fs)
     {
         testcase ("Direct Payment, Ripple");
         using namespace test::jtx;
 
-        Env env {*this};
+        Env env {*this, features(fs)};
         Account alice {"alice"};
         Account bob {"bob"};
 
@@ -202,14 +203,14 @@ class TrustAndBalance_test : public beast::unit_test::suite
     }
 
     void
-    testWithTransferFee (bool subscribe, bool with_rate)
+    testWithTransferFee (bool subscribe, bool with_rate, std::initializer_list<uint256> fs)
     {
         testcase(std::string("Direct Payment: ") +
                 (with_rate ? "With " : "Without ") + " Xfer Fee, " +
                 (subscribe ? "With " : "Without ") + " Subscribe");
         using namespace test::jtx;
 
-        Env env {*this};
+        Env env {*this, features(fs)};
         auto wsc = test::makeWSClient(env.app().config());
         Account gw {"gateway"};
         Account alice {"alice"};
@@ -282,12 +283,12 @@ class TrustAndBalance_test : public beast::unit_test::suite
     }
 
     void
-    testWithPath ()
+    testWithPath (std::initializer_list<uint256> fs)
     {
         testcase ("Payments With Paths and Fees");
         using namespace test::jtx;
 
-        Env env {*this};
+        Env env {*this, features(fs)};
         Account gw {"gateway"};
         Account alice {"alice"};
         Account bob {"bob"};
@@ -330,12 +331,12 @@ class TrustAndBalance_test : public beast::unit_test::suite
     }
 
     void
-    testIndirect ()
+    testIndirect (std::initializer_list<uint256> fs)
     {
         testcase ("Indirect Payment");
         using namespace test::jtx;
 
-        Env env {*this};
+        Env env {*this, features(fs)};
         Account gw {"gateway"};
         Account alice {"alice"};
         Account bob {"bob"};
@@ -371,13 +372,13 @@ class TrustAndBalance_test : public beast::unit_test::suite
     }
 
     void
-    testIndirectMultiPath (bool with_rate)
+    testIndirectMultiPath (bool with_rate, std::initializer_list<uint256> fs)
     {
         testcase (std::string("Indirect Payment, Multi Path, ") +
                 (with_rate ? "With " : "Without ") + " Xfer Fee, ");
         using namespace test::jtx;
 
-        Env env {*this};
+        Env env {*this, features(fs)};
         Account gw {"gateway"};
         Account amazon {"amazon"};
         Account alice {"alice"};
@@ -437,12 +438,12 @@ class TrustAndBalance_test : public beast::unit_test::suite
     }
 
     void
-    testInvoiceID ()
+    testInvoiceID (std::initializer_list<uint256> fs)
     {
         testcase ("Set Invoice ID on Payment");
         using namespace test::jtx;
 
-        Env env {*this};
+        Env env {*this, features(fs)};
         Account alice {"alice"};
         auto wsc = test::makeWSClient(env.app().config());
 
@@ -489,19 +490,25 @@ class TrustAndBalance_test : public beast::unit_test::suite
 public:
     void run ()
     {
-        testPayNonexistent ();
         testTrustNonexistent ();
         testCreditLimit ();
-        testDirectRipple ();
-        testWithTransferFee (false, false);
-        testWithTransferFee (false, true);
-        testWithTransferFee (true, false);
-        testWithTransferFee (true, true);
-        testWithPath ();
-        testIndirect ();
-        testIndirectMultiPath (true);
-        testIndirectMultiPath (false);
-        testInvoiceID ();
+
+        auto testWithFeatures = [this](std::initializer_list<uint256> fs) {
+            testPayNonexistent(fs);
+            testDirectRipple(fs);
+            testWithTransferFee(false, false, fs);
+            testWithTransferFee(false, true, fs);
+            testWithTransferFee(true, false, fs);
+            testWithTransferFee(true, true, fs);
+            testWithPath(fs);
+            testIndirect(fs);
+            testIndirectMultiPath(true, fs);
+            testIndirectMultiPath(false, fs);
+            testInvoiceID(fs);
+        };
+        testWithFeatures({});
+        testWithFeatures({featureFlow});
+        testWithFeatures({featureFlow, featureToStrandV2});
     }
 };
 

@@ -73,6 +73,14 @@ features (uint256 const& key, Args const&... args)
     return {{key, args...}};
 }
 
+/** Activate features in the Env ctor */
+inline
+auto
+features (std::initializer_list<uint256> keys)
+{
+    return keys;
+}
+
 //------------------------------------------------------------------------------
 
 /** A transaction testing environment. */
@@ -120,6 +128,14 @@ private:
     void
     construct_arg (
         std::array<uint256, N> const& list)
+    {
+        for(auto const& key : list)
+            app().config().features.insert(key);
+    }
+
+    void
+    construct_arg (
+        std::initializer_list<uint256> list)
     {
         for(auto const& key : list)
             app().config().features.insert(key);

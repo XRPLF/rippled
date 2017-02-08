@@ -5010,6 +5010,9 @@
     <ClCompile Include="..\..\src\test\app\PayChan_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\app\PayStrand_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\app\Regression_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>

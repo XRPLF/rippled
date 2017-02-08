@@ -66,12 +66,19 @@ public:
     }
     Path& push_back (Issue const& iss);
     Path& push_back (jtx::Account const& acc);
+    Path& push_back (STPathElement const& pe);
     Json::Value json () const;
  private:
     Path& addHelper (){return *this;};
     template <class First, class... Rest>
     Path& addHelper (First&& first, Rest&&... rest);
 };
+
+inline Path& Path::push_back (STPathElement const& pe)
+{
+    path.emplace_back (pe);
+    return *this;
+}
 
 inline Path& Path::push_back (Issue const& iss)
 {

@@ -18,16 +18,17 @@
 #include <BeastConfig.h>
 #include <test/jtx.h>
 #include <ripple/ledger/BookDirs.h>
+#include <ripple/protocol/Feature.h>
 
 namespace ripple {
 namespace test {
 
 struct BookDirs_test : public beast::unit_test::suite
 {
-    void test_bookdir()
+    void test_bookdir(std::initializer_list<uint256> fs)
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(fs));
         auto gw = Account("gw");
         auto USD = gw["USD"];
         env.fund(XRP(1000000), "alice", "bob", "gw");
@@ -93,7 +94,8 @@ struct BookDirs_test : public beast::unit_test::suite
 
     void run() override
     {
-        test_bookdir();
+        test_bookdir({});
+        test_bookdir({featureFlow, featureToStrandV2});
     }
 };
 

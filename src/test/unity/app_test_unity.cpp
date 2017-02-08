@@ -35,6 +35,7 @@
 #include <test/app/OversizeMeta_test.cpp>
 #include <test/app/Path_test.cpp>
 #include <test/app/PayChan_test.cpp>
+#include <test/app/PayStrand_test.cpp>
 #include <test/app/Regression_test.cpp>
 #include <test/app/SetAuth_test.cpp>
 #include <test/app/SetRegularKey_test.cpp>
