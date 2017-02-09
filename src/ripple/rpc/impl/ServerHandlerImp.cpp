@@ -421,7 +421,7 @@ ServerHandlerImp::processSession(
             jr[jss::id]  = jv[jss::id];
         if (jv.isMember(jss::jsonrpc))
             jr[jss::jsonrpc] = jv[jss::jsonrpc];
-        if (jv.isMember(jss::jsonrpc))
+        if (jv.isMember(jss::ripplerpc))
             jr[jss::ripplerpc] = jv[jss::ripplerpc];
 
         is->getConsumer().charge(Resource::feeInvalidRPC);
@@ -491,7 +491,7 @@ ServerHandlerImp::processSession(
         jr[jss::id] = jv[jss::id];
     if (jv.isMember(jss::jsonrpc))
         jr[jss::jsonrpc] = jv[jss::jsonrpc];
-    if (jv.isMember(jss::jsonrpc))
+    if (jv.isMember(jss::ripplerpc))
         jr[jss::ripplerpc] = jv[jss::ripplerpc];
     jr[jss::type] = jss::response;
     return jr;
