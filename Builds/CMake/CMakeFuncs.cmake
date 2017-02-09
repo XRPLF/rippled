@@ -33,16 +33,16 @@ macro(parse_target)
       if (${cur_component} STREQUAL gcc)
         if (DEFINED ENV{GNU_CC})
           set(CMAKE_C_COMPILER $ENV{GNU_CC})
-        elseif ($ENV{CXX} MATCHES .*gcc.*)
-          set(CMAKE_CXX_COMPILER $ENV{CC})
+        elseif ($ENV{CC} MATCHES .*gcc.*)
+          set(CMAKE_C_COMPILER $ENV{CC})
         else()
           find_program(CMAKE_C_COMPILER gcc)
         endif()
 
         if (DEFINED ENV{GNU_CXX})
-          set(CMAKE_C_COMPILER $ENV{GNU_CXX})
+          set(CMAKE_CXX_COMPILER $ENV{GNU_CXX})
         elseif ($ENV{CXX} MATCHES .*g\\+\\+.*)
-          set(CMAKE_C_COMPILER $ENV{CC})
+          set(CMAKE_CXX_COMPILER $ENV{CXX})
         else()
           find_program(CMAKE_CXX_COMPILER g++)
         endif()
@@ -51,16 +51,16 @@ macro(parse_target)
       if (${cur_component} STREQUAL clang)
         if (DEFINED ENV{CLANG_CC})
           set(CMAKE_C_COMPILER $ENV{CLANG_CC})
-        elseif ($ENV{CXX} MATCHES .*clang.*)
-          set(CMAKE_CXX_COMPILER $ENV{CC})
+        elseif ($ENV{CC} MATCHES .*clang.*)
+          set(CMAKE_C_COMPILER $ENV{CC})
         else()
           find_program(CMAKE_C_COMPILER clang)
         endif()
 
         if (DEFINED ENV{CLANG_CXX})
-          set(CMAKE_C_COMPILER $ENV{CLANG_CXX})
+          set(CMAKE_CXX_COMPILER $ENV{CLANG_CXX})
         elseif ($ENV{CXX} MATCHES .*clang.*)
-          set(CMAKE_C_COMPILER $ENV{CC})
+          set(CMAKE_CXX_COMPILER $ENV{CXX})
         else()
           find_program(CMAKE_CXX_COMPILER clang++)
         endif()
@@ -105,6 +105,14 @@ macro(parse_target)
       endif()
 
     endwhile()
+    # Promote these values to the CACHE, then unset the locals
+    # to prevent shadowing.
+    set(CMAKE_C_COMPILER ${CMAKE_C_COMPILER} CACHE FILEPATH
+      "Path to a program" FORCE)
+    unset(CMAKE_C_COMPILER)
+    set(CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE FILEPATH
+      "Path to a program" FORCE)
+    unset(CMAKE_CXX_COMPILER)
 
     if (release)
       set(CMAKE_BUILD_TYPE Release)
@@ -112,9 +120,25 @@ macro(parse_target)
       set(CMAKE_BUILD_TYPE Debug)
     endif()
 
+    # ensure that the unity flags are set and exclusive
+    if (NOT DEFINED unity OR unity)
+      # Default to unity builds
+      set(unity true)
+      set(nonunity false)
+    else()
+      set(unity false)
+      set(nonunity true)
+    endif()
+
     if (NOT unity)
       set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}Classic)
     endif()
+    # Promote this value to the CACHE, then unset the local
+    # to prevent shadowing.
+    set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE INTERNAL
+      "Choose the type of build, options are in CMAKE_CONFIGURATION_TYPES"
+      FORCE)
+    unset(CMAKE_BUILD_TYPE)
   endif()
 
 endmacro()
@@ -149,8 +173,11 @@ macro(setup_build_cache)
       ReleaseClassic)
   endif()
 
+  # Promote this value to the CACHE, then unset the local
+  # to prevent shadowing.
   set(CMAKE_CONFIGURATION_TYPES
     ${CMAKE_CONFIGURATION_TYPES} CACHE STRING "" FORCE)
+  unset(CMAKE_CONFIGURATION_TYPES)
 endmacro()
 
 ############################################################
