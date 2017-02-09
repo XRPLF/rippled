@@ -52,11 +52,22 @@
 
 ############################################################
 
+#########################################################
+# CMAKE_C_COMPILER and CMAKE_CXX_COMPILER must be defined
+# before the project statement; However, the project
+# statement will clear CMAKE_BUILD_TYPE. CACHE variables,
+# along with the order of this code, are used to work
+# around these constraints.
+#
+# Don't put any code above or in this block, unless it
+# has similar constraints.
 cmake_minimum_required(VERSION 3.1.0)
-
-# The project command can override some computed values.
-# Don't put any code above this line.
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/Builds/CMake")
+include(CMakeFuncs)
+set(openssl_min 1.0.2)
+parse_target()
 project(rippled)
+#########################################################
 
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
   set(dir "build")
@@ -84,18 +95,6 @@ if("${CMAKE_GENERATOR}" MATCHES "Visual Studio" AND
     NOT ("${CMAKE_GENERATOR}" MATCHES .*Win64.*))
   message(FATAL_ERROR "Visual Studio 32-bit build is unsupported. Use
     -G\"${CMAKE_GENERATOR} Win64\"")
-endif()
-
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/Builds/CMake")
-include(CMakeFuncs)
-
-set(openssl_min 1.0.2)
-
-parse_target()
-
-if (NOT DEFINED unity)
-  set(unity true)
-  set(nonunity false)
 endif()
 
 setup_build_cache()
