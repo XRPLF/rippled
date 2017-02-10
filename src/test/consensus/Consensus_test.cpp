@@ -33,10 +33,10 @@ class Consensus_test : public beast::unit_test::suite
 {
 public:
 
-
     void
     testStandalone()
     {
+        testcase("single peer");
         using namespace csf;
 
         auto tg = TrustGraph::makeComplete(1);
@@ -65,6 +65,7 @@ public:
         using namespace csf;
         using namespace std::chrono;
 
+        testcase("5 connected peers");
         auto tg = TrustGraph::makeComplete(5);
         Sim sim(tg,
             topology(tg, fixed{round<milliseconds>(0.2 * LEDGER_GRANULARITY)}));
@@ -93,6 +94,7 @@ public:
         using namespace csf;
         using namespace std::chrono;
 
+        testcase("slow peer");
         auto tg = TrustGraph::makeComplete(5);
 
         Sim sim(tg, topology(tg,[](PeerID i, PeerID j)
@@ -135,11 +137,67 @@ public:
     }
 
     void
+    testCloseTimeDisagree()
+    {
+
+        using namespace csf;
+        using namespace std::chrono;
+
+        testcase("close time disagree");
+
+        // This is a very specialized test to get ledgers to disagree on
+        // the close time.  It unfortunately assumes knowledge about current
+        // timing constants.  This is a necessary evil to get coverage up
+        // pending more extensive refactorings of timing constants.
+
+        // In order to agree-to-disagree on the close time, there must be no
+        // clear majority of nodes agreeing on a close time.  This test
+        // sets a relative offset to the peers internal clocks so that they
+        // send proposals with differing times.
+
+        // However, they have to agree on the effective close time, not the
+        // exact close time.  The minimum closeTimeResolution is given by
+        // ledgerPossibleTimeResolutions[0], which is currently 10s. This means
+        // the skews need to be at least 10 seconds.
+
+        // Complicating this matter is that nodes will ignore proposals
+        // with times more than PROPOSE_FRESHNESS =20s in the past. So at
+        // the minimum granularity, we have at most 3 types of skews (0s,10s,20s).
+
+        // This test therefore has 6 nodes, with 2 nodes having each type of
+        // skew.  Then no majority (1/3 < 1/2) of nodes will agree on an
+        // actual close time.
+
+        auto tg = TrustGraph::makeComplete(6);
+        Sim sim(tg,
+            topology(tg, fixed{round<milliseconds>(0.2 * LEDGER_GRANULARITY)}));
+
+        // Run consensus without skew until we have a short close time resolution
+        while(sim.peers.front().lastClosedLedger.closeTimeResolution() >=
+            PROPOSE_FRESHNESS)
+            sim.run(1);
+
+        // Introduce a shift on the time of half the peers
+        sim.peers[0].clockSkew = PROPOSE_FRESHNESS/2;
+        sim.peers[1].clockSkew = PROPOSE_FRESHNESS/2;
+        sim.peers[2].clockSkew = PROPOSE_FRESHNESS;
+        sim.peers[3].clockSkew = PROPOSE_FRESHNESS;
+
+        // Verify all peers have the same LCL and it has all the Txs
+        sim.run(1);
+        for (auto & p : sim.peers)
+        {
+            BEAST_EXPECT(! p.lastClosedLedger.closeAgree());
+        }
+    }
+
+    void
     testFork()
     {
         using namespace csf;
-
         using namespace std::chrono;
+
+        testcase("test clique fork");
 
         int numPeers = 10;
         for(int overlap = 0;  overlap <= numPeers; ++overlap)
@@ -294,6 +352,7 @@ public:
         testStandalone();
         testPeersAgree();
         testSlowPeer();
+        testCloseTimeDisagree();
         testFork();
         simClockSkew();
         simScaleFree();

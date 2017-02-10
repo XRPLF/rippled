@@ -133,6 +133,10 @@ struct Peer : public Consensus<Peer, Traits>
     int completedLedgers = 0;
     int targetLedgers = std::numeric_limits<int>::max();
 
+    //! Skew samples from the network clock; to be refactored into a
+    //! clock time once it is provided separately from the network.
+    std::chrono::seconds clockSkew{0};
+
     //! All peers start from the default constructed ledger
     Peer(PeerID i, BasicNetwork<Peer*> & n, UNL const & u)
         : Consensus<Peer, Traits>( n.clock(), beast::Journal{})
@@ -396,7 +400,7 @@ struct Peer : public Consensus<Peer, Traits>
         // code are positive. (e.g. PROPOSE_FRESHNESS)
         using namespace std::chrono;
         return NetClock::time_point(duration_cast<NetClock::duration>
-                (net.now().time_since_epoch()+ 86400s));
+                (net.now().time_since_epoch()+ 86400s + clockSkew));
     }
 };
 
