@@ -20,6 +20,7 @@
 
 #include <test/core/Config_test.cpp>
 #include <test/core/Coroutine_test.cpp>
+#include <test/core/CryptoPRNG_test.cpp>
 #include <test/core/DeadlineTimer_test.cpp>
 #include <test/core/JobCounter_test.cpp>
 #include <test/core/SociDB_test.cpp>
