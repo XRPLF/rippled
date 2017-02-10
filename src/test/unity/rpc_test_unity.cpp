@@ -25,6 +25,7 @@
 #include <test/rpc/AccountSet_test.cpp>
 #include <test/rpc/Book_test.cpp>
 #include <test/rpc/GatewayBalances_test.cpp>
+#include <test/rpc/GetCounts_test.cpp>
 #include <test/rpc/JSONRPC_test.cpp>
 #include <test/rpc/KeyGeneration_test.cpp>
 #include <test/rpc/LedgerClosed_test.cpp>

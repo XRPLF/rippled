@@ -5535,6 +5535,9 @@
     <ClCompile Include="..\..\src\test\rpc\GatewayBalances_test.cpp">
       <Filter>test\rpc</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\rpc\GetCounts_test.cpp">
+      <Filter>test\rpc</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\rpc\JSONRPC_test.cpp">
       <Filter>test\rpc</Filter>
     </ClCompile>
