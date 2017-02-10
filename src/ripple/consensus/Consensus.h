@@ -1258,6 +1258,8 @@ Consensus<Derived, Traits>::takeInitialPosition()
     ourPosition_ = initialPos;
     ourSet_ = initialSet;
 
+
+    // FIXME:  Is it possible to have any disputes before a position is taken?
     for (auto& it : disputes_)
     {
         it.second.setOurVote (initialSet.exists (it.first));

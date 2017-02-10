@@ -137,6 +137,9 @@ struct Peer : public Consensus<Peer, Traits>
     //! clock time once it is provided separately from the network.
     std::chrono::seconds clockSkew{0};
 
+    bool validating = true;
+    bool proposing = true;
+
     //! All peers start from the default constructed ledger
     Peer(PeerID i, BasicNetwork<Peer*> & n, UNL const & u)
         : Consensus<Peer, Traits>( n.clock(), beast::Journal{})
@@ -148,14 +151,14 @@ struct Peer : public Consensus<Peer, Traits>
     }
 
 
-    // @return whether we are validating,proposing
+    // @return whether we are proposing,validating
     // TODO: Bit akward that this is in callbacks, would be nice to extract
     std::pair<bool, bool>
     getMode()
     {
         // in RCL this hits NetworkOps to decide whether we are proposing
         // validating
-        return{ true, true };
+        return{ proposing, validating };
     }
 
     Ledger const *
@@ -234,7 +237,8 @@ struct Peer : public Consensus<Peer, Traits>
     void
     propose(Proposal const & pos)
     {
-        relay(pos);
+        if(proposing)
+            relay(pos);
     }
 
     void
@@ -289,7 +293,8 @@ struct Peer : public Consensus<Peer, Traits>
             });
         openTxs.erase(it, openTxs.end());
 
-        relay(Validation{id, newLedger.id(), newLedger.parentID()});
+        if(validating)
+            relay(Validation{id, newLedger.id(), newLedger.parentID()});
         return validating_;
     }
 

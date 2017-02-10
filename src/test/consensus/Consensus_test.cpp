@@ -36,7 +36,6 @@ public:
     void
     testStandalone()
     {
-        testcase("single peer");
         using namespace csf;
 
         auto tg = TrustGraph::makeComplete(1);
@@ -65,7 +64,6 @@ public:
         using namespace csf;
         using namespace std::chrono;
 
-        testcase("5 connected peers");
         auto tg = TrustGraph::makeComplete(5);
         Sim sim(tg,
             topology(tg, fixed{round<milliseconds>(0.2 * LEDGER_GRANULARITY)}));
@@ -94,56 +92,81 @@ public:
         using namespace csf;
         using namespace std::chrono;
 
-        testcase("slow peer");
-        auto tg = TrustGraph::makeComplete(5);
+        // Run two tests
+        //  1. The slow peer is participating inconsensus
+        //  2. The slow peer is just observing
 
-        Sim sim(tg, topology(tg,[](PeerID i, PeerID j)
+        for(auto isParticipant : {true, false})
         {
-            auto delayFactor = (i == 0 || j == 0) ? 1.1 : 0.2;
-            return round<milliseconds>(delayFactor* LEDGER_GRANULARITY);
-        }));
+            auto tg = TrustGraph::makeComplete(5);
 
-        // All peers submit their own ID as a transaction and relay it to peers
-        for (auto & p : sim.peers)
-        {
-            p.submit(Tx{ p.id });
-        }
+            Sim sim(tg, topology(tg,[](PeerID i, PeerID j)
+            {
+                auto delayFactor = (i == 0 || j == 0) ? 1.1 : 0.2;
+                return round<milliseconds>(delayFactor* LEDGER_GRANULARITY);
+            }));
 
-        sim.run(1);
+            sim.peers[0].proposing = sim.peers[0].validating = isParticipant;
 
-        // Verify all peers have same LCL but are missing transaction 0 which
-        // was not received by all peers before the ledger closed
-        for (auto & p : sim.peers)
-        {
-            auto const &lgrID = p.LCL();
-            BEAST_EXPECT(lgrID.seq == 1);
-            BEAST_EXPECT(p.getLastCloseProposers() == sim.peers.size() - 1);
-            // Peer 0 closes first because it sees a quorum of agreeing positions
-            // from all other peers in one hop (1->0, 2->0, ..)
-            // The other peers take an extra timer period before they find that
-            // Peer 0 agrees with them ( 1->0->1,  2->0->2, ...)
-            if(p.id != 0)
-                BEAST_EXPECT(p.getLastConvergeDuration()
-                    > sim.peers[0].getLastConvergeDuration());
+            // All peers submit their own ID as a transaction and relay it to peers
+            for (auto & p : sim.peers)
+            {
+                p.submit(Tx{ p.id });
+            }
 
-            BEAST_EXPECT(lgrID.txs.find(Tx{ 0 }) == lgrID.txs.end());
-            for(std::uint32_t i = 1; i < sim.peers.size(); ++i)
-                BEAST_EXPECT(lgrID.txs.find(Tx{ i }) != lgrID.txs.end());
-            // Matches peer 0 ledger
-            BEAST_EXPECT(lgrID.txs == sim.peers[0].LCL().txs);
-        }
-        BEAST_EXPECT(sim.peers[0].openTxs.find(Tx{ 0 })
-                           != sim.peers[0].openTxs.end());
+            sim.run(1);
+
+            // Verify all peers have same LCL but are missing transaction 0 which
+            // was not received by all peers before the ledger closed
+            for (auto & p : sim.peers)
+            {
+                auto const &lgrID = p.LCL();
+                BEAST_EXPECT(lgrID.seq == 1);
+
+
+                // If peer 0 is participating
+                if(isParticipant)
+                {
+                    BEAST_EXPECT(p.getLastCloseProposers()
+                        == sim.peers.size() - 1);
+                    // Peer 0 closes first because it sees a quorum of agreeing positions
+                    // from all other peers in one hop (1->0, 2->0, ..)
+                    // The other peers take an extra timer period before they find that
+                    // Peer 0 agrees with them ( 1->0->1,  2->0->2, ...)
+                    if(p.id != 0)
+                        BEAST_EXPECT(p.getLastConvergeDuration()
+                            > sim.peers[0].getLastConvergeDuration());
+                }
+                else // peer 0 is not participating
+                {
+                    auto const proposers = p.getLastCloseProposers();
+                    if(p.id == 0)
+                        BEAST_EXPECT(proposers == sim.peers.size() - 1);
+                    else
+                        BEAST_EXPECT(proposers == sim.peers.size() - 2);
+
+                    // so all peers should have closed together
+                        BEAST_EXPECT(p.getLastConvergeDuration()
+                            == sim.peers[0].getLastConvergeDuration());
+                }
+
+
+                BEAST_EXPECT(lgrID.txs.find(Tx{ 0 }) == lgrID.txs.end());
+                for(std::uint32_t i = 1; i < sim.peers.size(); ++i)
+                    BEAST_EXPECT(lgrID.txs.find(Tx{ i }) != lgrID.txs.end());
+                // Matches peer 0 ledger
+                BEAST_EXPECT(lgrID.txs == sim.peers[0].LCL().txs);
+            }
+            BEAST_EXPECT(sim.peers[0].openTxs.find(Tx{ 0 })
+                               != sim.peers[0].openTxs.end());
+         }
     }
 
     void
     testCloseTimeDisagree()
     {
-
         using namespace csf;
         using namespace std::chrono;
-
-        testcase("close time disagree");
 
         // This is a very specialized test to get ledgers to disagree on
         // the close time.  It unfortunately assumes knowledge about current
@@ -196,8 +219,6 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
-
-        testcase("test clique fork");
 
         int numPeers = 10;
         for(int overlap = 0;  overlap <= numPeers; ++overlap)
@@ -353,6 +374,10 @@ public:
         testPeersAgree();
         testSlowPeer();
         testCloseTimeDisagree();
+        //testStartRoundMissingLCL();
+        //testHandleLCLmidround();
+        //testCreateDisputesDuringInitialPosition();
+
         testFork();
         simClockSkew();
         simScaleFree();
