@@ -50,7 +50,7 @@ class GetCounts_test : public beast::unit_test::suite
         Account bob {"bob"};
         env.fund (XRP(10000), alice, bob);
         env.trust (alice["USD"](1000), bob);
-        for(auto i=0; i<10; ++i)
+        for(auto i=0; i<20; ++i)
         {
             env (pay (alice, bob, alice["USD"](5)));
             env.close();
@@ -61,16 +61,46 @@ class GetCounts_test : public beast::unit_test::suite
         BEAST_EXPECT(
             jrr.isMember("Transaction") &&
             jrr["Transaction"].asInt() > 0);
-        BEAST_EXPECT(jrr.isMember("STTx") && jrr["STTx"].asInt() > 0);
-        BEAST_EXPECT(jrr.isMember("STObject") && jrr["STObject"].asInt() > 0);
+        BEAST_EXPECT(jrr.isMember(
+            "STTx") &&
+            jrr["STTx"].asInt() > 0);
+        BEAST_EXPECT(
+            jrr.isMember("STObject") &&
+            jrr["STObject"].asInt() > 0);
+        BEAST_EXPECT(
+            jrr.isMember("NodeObject") &&
+            jrr["NodeObject"].asInt() > 0);
+        BEAST_EXPECT(
+            jrr.isMember("STArray") &&
+            jrr["STArray"].asInt() > 0);
         BEAST_EXPECT(
             jrr.isMember("HashRouterEntry") &&
             jrr["HashRouterEntry"].asInt() > 0);
+        BEAST_EXPECT(
+            jrr.isMember("STLedgerEntry") &&
+            jrr["STLedgerEntry"].asInt() > 0);
         BEAST_EXPECT(! jrr.isMember(jss::local_txs));
 
-        //local_txs field will exist when there are open TXs
+        // make request with min threshold 100 and verify
+        // that only STObject and NodeObject are reported
+        jrr = env.rpc("get_counts", "100")[jss::result];
+        BEAST_EXPECT(jrr[jss::status] == "success");
+        BEAST_EXPECT(! jrr.isMember("Transaction"));
+        BEAST_EXPECT(! jrr.isMember("STTx"));
+        BEAST_EXPECT(
+            jrr.isMember("STObject") &&
+            jrr["STObject"].asInt() > 0);
+        BEAST_EXPECT(
+            jrr.isMember("NodeObject") &&
+            jrr["NodeObject"].asInt() > 0);
+        BEAST_EXPECT(! jrr.isMember("STArray"));
+        BEAST_EXPECT(! jrr.isMember("HashRouterEntry"));
+        BEAST_EXPECT(! jrr.isMember("STLedgerEntry"));
+
+        // local_txs field will exist when there are open Txs
         env (pay (alice, bob, alice["USD"](5)));
         jrr = env.rpc("get_counts")[jss::result];
+        // deliberately don't call close so we have open Tx
         BEAST_EXPECT(
             jrr.isMember(jss::local_txs) &&
             jrr[jss::local_txs].asInt() > 0);
