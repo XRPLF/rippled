@@ -33,17 +33,16 @@ class GetCounts_test : public beast::unit_test::suite
         Env env(*this);
         // check counts with no transactions posted
         auto jrr = env.rpc("get_counts")[jss::result];
-        BEAST_EXPECTS(jrr[jss::status] == "success", "status success");
-        BEAST_EXPECTS(! jrr.isMember("Transaction"), "Transaction");
-        BEAST_EXPECTS(! jrr.isMember("STObject"), "STObject");
-        BEAST_EXPECTS(! jrr.isMember("HashRouterEntry"),
-            "HashRouterEntry field");
-        BEAST_EXPECTS(jrr.isMember(jss::uptime) &&
-            ! jrr[jss::uptime].asString().empty(),
-            "uptime");
-        BEAST_EXPECTS(jrr.isMember(jss::dbKBTotal) &&
-            jrr[jss::dbKBTotal].asInt() > 0,
-            "dbKBTotal");
+        BEAST_EXPECT(jrr[jss::status] == "success");
+        BEAST_EXPECT(! jrr.isMember("Transaction"));
+        BEAST_EXPECT(! jrr.isMember("STObject"));
+        BEAST_EXPECT(! jrr.isMember("HashRouterEntry"));
+        BEAST_EXPECT(
+            jrr.isMember(jss::uptime) &&
+            ! jrr[jss::uptime].asString().empty());
+        BEAST_EXPECT(
+            jrr.isMember(jss::dbKBTotal) &&
+            jrr[jss::dbKBTotal].asInt() > 0);
 
         // create some transactions
         env.close();
@@ -58,25 +57,23 @@ class GetCounts_test : public beast::unit_test::suite
         }
 
         jrr = env.rpc("get_counts")[jss::result];
-        BEAST_EXPECTS(jrr[jss::status] == "success", "status success");
-        BEAST_EXPECTS(jrr.isMember("Transaction") &&
-            jrr["Transaction"].asInt() > 0,
-            "Transaction field");
-        BEAST_EXPECTS(jrr.isMember("STTx") && jrr["STTx"].asInt() > 0,
-            "STTx field");
-        BEAST_EXPECTS(jrr.isMember("STObject") && jrr["STObject"].asInt() > 0,
-            "STObject field");
-        BEAST_EXPECTS(jrr.isMember("HashRouterEntry") &&
-            jrr["HashRouterEntry"].asInt() > 0,
-            "HashRouterEntry field");
-        BEAST_EXPECTS(! jrr.isMember(jss::local_txs), "local_txs");
+        BEAST_EXPECT(jrr[jss::status] == "success");
+        BEAST_EXPECT(
+            jrr.isMember("Transaction") &&
+            jrr["Transaction"].asInt() > 0);
+        BEAST_EXPECT(jrr.isMember("STTx") && jrr["STTx"].asInt() > 0);
+        BEAST_EXPECT(jrr.isMember("STObject") && jrr["STObject"].asInt() > 0);
+        BEAST_EXPECT(
+            jrr.isMember("HashRouterEntry") &&
+            jrr["HashRouterEntry"].asInt() > 0);
+        BEAST_EXPECT(! jrr.isMember(jss::local_txs));
 
         //local_txs field will exist when there are open TXs
         env (pay (alice, bob, alice["USD"](5)));
         jrr = env.rpc("get_counts")[jss::result];
-        BEAST_EXPECTS(jrr.isMember(jss::local_txs) &&
-            jrr[jss::local_txs].asInt() > 0,
-            "local_txs field");
+        BEAST_EXPECT(
+            jrr.isMember(jss::local_txs) &&
+            jrr[jss::local_txs].asInt() > 0);
     }
 
 public:
