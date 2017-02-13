@@ -215,6 +215,89 @@ public:
     }
 
     void
+    testWrongLCL()
+    {
+        using namespace csf;
+        using namespace std::chrono;
+        // Specialized test to exercise a temporary fork in which some peers
+        // are working on an incorrect prior ledger.
+
+        // Vary the time it takes to process validations to exercise detecting
+        // the wrong LCL at different phases of consensus
+        for(auto validationDelay : {0s, LEDGER_MIN_CLOSE})
+        {
+
+            // Consider 10 peers:
+            // 0 1    2 3 4    5 6 7 8 9
+            //
+            // Nodes 0-1 trust nodes 0-4
+            // Nodes 2-9 trust nodes 2-9
+            //
+            // By submitting tx 0 to nodes 0-4 and tx 1 to nodes 5-9,
+            // nodes 0-1 will generate the wrong LCL (with tx 0).  The remaining
+            // nodes will instead accept the ledger with tx 1.
+
+            // Nodes 0-1 will detect this mismatch during a subsequent round
+            // since nodes 2-4 will validate a different ledger.
+
+            // Nodes 0-1 will acquire the proper ledger from the network and
+            // resume consensus and eventually generate the dominant network ledger
+
+            std::vector<UNL> unls;
+            unls.push_back({2,3,4,5,6,7,8,9});
+            unls.push_back({0,1,2,3,4});
+            std::vector<int> membership(10,0);
+            membership[0] = 1;
+            membership[1] = 1;
+
+            TrustGraph tg{unls, membership};
+
+            // This topology can fork, which is why we are using it for this test.
+            BEAST_EXPECT(tg.canFork(minimumConsensusPercentage/100.));
+
+            auto netDelay = round<milliseconds>(0.2 * LEDGER_GRANULARITY);
+            Sim sim(tg, topology(tg, fixed{netDelay}));
+
+            // initial round to set prior state
+            sim.run(1);
+
+            // Nodes in smaller UNL have seen tx 0, nodes in other unl have seen tx 1
+            for (auto & p : sim.peers)
+            {
+                p.validationDelay = validationDelay;
+                p.missingLedgerDelay = netDelay;
+                if (unls[1].find(p.id) != unls[1].end())
+                    p.openTxs.insert(Tx{0});
+                else
+                    p.openTxs.insert(Tx{1});
+            }
+
+            // Run for 2 additional rounds
+            //  - One round to generate different ledgers
+            //  - One round to detect different prior ledgers (but still generate
+            //    wrong ones) and recover
+            sim.run(2);
+
+            bc::flat_map<int, bc::flat_set<Ledger::ID>> ledgers;
+            for (auto & p : sim.peers)
+            {
+                for (auto const & l : p.ledgers)
+                {
+                    ledgers[l.first.seq].insert(l.first);
+                }
+            }
+
+            BEAST_EXPECT(ledgers[0].size() == 1);
+            BEAST_EXPECT(ledgers[1].size() == 1);
+            BEAST_EXPECT(ledgers[2].size() == 2);
+            BEAST_EXPECT(ledgers[3].size() == 1);
+
+
+        }
+
+    }
+
+    void
     testFork()
     {
         using namespace csf;
@@ -374,11 +457,9 @@ public:
         testPeersAgree();
         testSlowPeer();
         testCloseTimeDisagree();
-        //testStartRoundMissingLCL();
-        //testHandleLCLmidround();
-        //testCreateDisputesDuringInitialPosition();
-
+        testWrongLCL();
         testFork();
+
         simClockSkew();
         simScaleFree();
     }

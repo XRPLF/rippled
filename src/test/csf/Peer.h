@@ -47,14 +47,17 @@ class Validations
     //<  created)
     bc::flat_map<Ledger::ID, bc::flat_set<PeerID>>  nodesFromLedger;
     bc::flat_map<Ledger::ID, bc::flat_set<PeerID>>  nodesFromPrevLedger;
-
+    bc::flat_map<Ledger::ID, bc::flat_map<Ledger::ID, std::size_t>> childLedgers;
 public:
     void
     update(Validation const & v)
     {
         nodesFromLedger[v.ledger].insert(v.id);
         if(v.ledger.seq > 0)
+        {
             nodesFromPrevLedger[v.prevLedger].insert(v.id);
+            childLedgers[v.prevLedger][v.ledger]++;
+        }
     }
 
     //< The number of peers who have validated this ledger
@@ -78,6 +81,34 @@ public:
         if(it != nodesFromPrevLedger.end())
             return it->second.size();
         return 0;
+    }
+
+    /** Returns the ledger starting from prevLedger with the most validations.
+    */
+    Ledger::ID
+    getBestLCL(Ledger::ID const & currLedger,
+        Ledger::ID const & prevLedger) const
+    {
+        auto it = childLedgers.find(prevLedger);
+        if (it != childLedgers.end() &&
+            ! it->second.empty())
+        {
+            std::size_t bestCount = 0;
+            Ledger::ID bestLedger;
+
+            for (auto const & b : it->second)
+            {
+                auto currCount = b.second;
+                if(currLedger == b.first)
+                    currCount++;
+                if(currCount > bestCount)
+                    bestLedger = b.first;
+                if(currCount == bestCount && currLedger == b.first)
+                    bestLedger = b.first;
+            }
+            return bestLedger;
+        }
+        return currLedger;
     }
 };
 
@@ -128,7 +159,6 @@ struct Peer : public Consensus<Peer, Traits>
     //! as the prior ledger
     bc::flat_map<Ledger::ID, std::vector<Proposal>> peerPositions_;
     bc::flat_map<TxSet::ID, TxSet> txSets;
-    bc::flat_set<Tx::ID> seenTxs;
 
     int completedLedgers = 0;
     int targetLedgers = std::numeric_limits<int>::max();
@@ -136,6 +166,12 @@ struct Peer : public Consensus<Peer, Traits>
     //! Skew samples from the network clock; to be refactored into a
     //! clock time once it is provided separately from the network.
     std::chrono::seconds clockSkew{0};
+
+    //! Delay in processing validations from remote peers
+    std::chrono::milliseconds validationDelay{0};
+
+    //! Delay in acquiring missing ledger from the network
+    std::chrono::milliseconds missingLedgerDelay{0};
 
     bool validating = true;
     bool proposing = true;
@@ -167,7 +203,25 @@ struct Peer : public Consensus<Peer, Traits>
         auto it = ledgers.find(ledgerHash);
         if (it != ledgers.end())
             return &(it->second);
-        // TODO: acquire from network?
+
+        // TODO Get from network/oracle properly!
+
+        for (auto const& link : net.links(this))
+        {
+            auto const & p = *link.to;
+            auto it = p.ledgers.find(ledgerHash);
+            if (it != p.ledgers.end())
+            {
+                schedule(missingLedgerDelay,
+                    [this, ledgerHash, ledger = it->second]()
+                    {
+                        ledgers.emplace(ledgerHash, ledger);
+                    });
+                if(missingLedgerDelay == 0ms)
+                    return &ledgers[ledgerHash];
+                break;
+            }
+        }
         return nullptr;
     }
 
@@ -183,7 +237,7 @@ struct Peer : public Consensus<Peer, Traits>
         auto it = txSets.find(setId);
         if(it != txSets.end())
             return &(it->second);
-        // TODO Ask network for it?
+        // TODO Get from network/oracle instead!
         return nullptr;
     }
 
@@ -230,8 +284,10 @@ struct Peer : public Consensus<Peer, Traits>
         Ledger::ID const & priorLedger,
         bool haveCorrectLCL)
     {
-        // TODO: use validations
-        return lastClosedLedger.id();
+        // TODO: Use generic validation code
+        if(currLedger.seq > 0 && priorLedger.seq > 0)
+            return peerValidations.getBestLCL(currLedger, priorLedger);
+        return currLedger;
     }
 
     void
@@ -344,10 +400,9 @@ struct Peer : public Consensus<Peer, Traits>
     void
     receive(Tx const & tx)
     {
-        if (seenTxs.find(tx.id()) == seenTxs.end())
+        if (openTxs.find(tx.id()) == openTxs.end())
         {
             openTxs.insert(tx);
-            seenTxs.insert(tx.id());
             // relay to peers???
             relay(tx);
         }
@@ -357,7 +412,13 @@ struct Peer : public Consensus<Peer, Traits>
     receive(Validation const & v)
     {
         if(unl.find(v.id) != unl.end())
-            peerValidations.update(v);
+        {
+            schedule(validationDelay,
+                [&, v]()
+                {
+                    peerValidations.update(v);
+                });
+        }
     }
 
     template <class T>
@@ -392,7 +453,12 @@ struct Peer : public Consensus<Peer, Traits>
     start()
     {
         net.timer(LEDGER_GRANULARITY, [&]() { timerEntry(); });
-        startRound(now(), lastClosedLedger.id(),
+        // The ID is the one we have seen the most validations for
+        // In practice, we might not actually have that ledger itself yet,
+        // so there is no gaurantee that bestLCL == lastClosedLedger.id()
+        auto bestLCL = peerValidations.getBestLCL(lastClosedLedger.id(),
+            lastClosedLedger.parentID());
+        startRound(now(), bestLCL,
             lastClosedLedger);
     }
 
@@ -406,6 +472,17 @@ struct Peer : public Consensus<Peer, Traits>
         using namespace std::chrono;
         return NetClock::time_point(duration_cast<NetClock::duration>
                 (net.now().time_since_epoch()+ 86400s + clockSkew));
+    }
+
+    // Schedule the provided callback in `when` duration, but if
+    // `when` is 0, call immediately
+    template <class T>
+    void schedule(std::chrono::nanoseconds when, T && what)
+    {
+        if(when == 0ns)
+            what();
+        else
+            net.timer(when, std::forward<T>(what));
     }
 };
 

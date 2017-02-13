@@ -86,7 +86,7 @@ auto constexpr VALIDATION_VALID_LOCAL = 3min;
 auto constexpr VALIDATION_VALID_EARLY = 3min;
 
 //! The number of seconds we wait minimum to ensure participation
-auto constexpr LEDGER_MIN_CONSENSUS = 2s;
+auto constexpr LEDGER_MIN_CONSENSUS = 1950ms;
 
 //! Minimum number of seconds to wait to ensure others have computed the LCL
 auto constexpr LEDGER_MIN_CLOSE = 2s;

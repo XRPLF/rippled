@@ -1137,7 +1137,7 @@ Consensus<Derived, Traits>::checkLCL ()
             << previousLedger_.getJson();
         handleLCL (netLgr);
     }
-    else if(previousLedger_.id() != prevLedgerHash_)
+    else if(previousLedger_.id() != prevLedgerID_)
         handleLCL(netLgr);
 }
 
