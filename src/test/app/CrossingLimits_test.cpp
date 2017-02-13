@@ -18,6 +18,7 @@
 #include <BeastConfig.h>
 #include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/protocol/Feature.h>
 
 namespace ripple {
 namespace test {
@@ -41,11 +42,12 @@ private:
     }
 
 public:
+    template<class... Features>
     void
-    testStepLimit()
+    testStepLimit(Features&&... fs)
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(fs)...);
         auto const xrpMax = XRP(100000000000);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -75,11 +77,12 @@ public:
                 balance("dan", USD(1)), owners("dan", 2)));
     }
 
+    template<class... Features>
     void
-    testCrossingLimit()
+    testCrossingLimit(Features&&... fs)
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(fs)...);
         auto const xrpMax = XRP(100000000000);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -104,11 +107,12 @@ public:
                 balance("bob", USD(0)), owners ("bob", 1)));
     }
 
+    template<class... Features>
     void
-    testStepAndCrossingLimit()
+    testStepAndCrossingLimit(Features&&... fs)
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(fs)...);
         auto const xrpMax = XRP(100000000000);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -150,9 +154,14 @@ public:
     void
     run()
     {
-        testStepLimit();
-        testCrossingLimit();
-        testStepAndCrossingLimit();
+        auto testAll = [this](auto&&... fs) {
+            testStepLimit(fs...);
+            testCrossingLimit(fs...);
+            testStepAndCrossingLimit(fs...);
+        };
+        testAll();
+        testAll(featureFlow);
+        testAll(featureFlow, featureToStrandV2);
     }
 };
 

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <test/jtx.h>
 
@@ -66,13 +67,13 @@ public:
         }
     }
 
-    void
-    testNegativeBalance()
+    template<class... Features>
+    void testNegativeBalance(Features&&... fs)
     {
         testcase("Set noripple on a line with negative balance");
 
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(fs)...);
 
         auto const gw = Account("gateway");
         auto const alice = Account("alice");
@@ -113,13 +114,13 @@ public:
         BEAST_EXPECT(!lines[0u].isMember(jss::no_ripple));
     }
 
-    void
-    testPairwise()
+    template<class... Features>
+    void testPairwise(Features&&... fs)
     {
         testcase("pairwise NoRipple");
 
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(fs)...);
 
         auto const alice = Account("alice");
         auto const bob = Account("bob");
@@ -151,13 +152,13 @@ public:
         env(pay(alice, carol, bob["USD"](50)), ter(tecPATH_DRY));
     }
 
-    void
-    testDefaultRipple()
+    template<class... Features>
+    void testDefaultRipple(Features&&... fs)
     {
         testcase("Set default ripple on an account and check new trustlines");
 
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(fs)...);
 
         auto const gw = Account("gateway");
         auto const alice = Account("alice");
@@ -213,9 +214,15 @@ public:
     void run ()
     {
         testSetAndClear();
-        testNegativeBalance();
-        testPairwise();
-        testDefaultRipple();
+
+        auto withFeatsTests = [this](auto&&... fs) {
+            testNegativeBalance();
+            testPairwise();
+            testDefaultRipple();
+        };
+        withFeatsTests();
+        withFeatsTests(featureFlow);
+        withFeatsTests(featureFlow, featureToStrandV2);
     }
 };
 

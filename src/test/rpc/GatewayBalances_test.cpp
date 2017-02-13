@@ -16,6 +16,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx.h>
@@ -28,12 +29,13 @@ class GatewayBalances_test : public beast::unit_test::suite
 {
 public:
 
+    template<class... Features>
     void
-    testGWB()
+    testGWB(Features&&... fs)
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(fs)...);
 
         // Gateway account and assets
         Account const alice {"alice"};
@@ -153,6 +155,7 @@ public:
     run() override
     {
         testGWB();
+        testGWB(featureFlow, featureToStrandV2);
     }
 };
 

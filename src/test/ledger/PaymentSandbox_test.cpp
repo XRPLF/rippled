@@ -23,6 +23,7 @@
 #include <test/jtx/PathSet.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/AmountConversions.h>
+#include <ripple/protocol/Feature.h>
 
 namespace ripple {
 namespace test {
@@ -54,12 +55,13 @@ class PaymentSandbox_test : public beast::unit_test::suite
       2) New code: Path is dry because sender does not have any
          GW1 to spend until the end of the transaction.
     */
-    void testSelfFunding ()
+    template<class... Features>
+    void testSelfFunding (Features&&... fs)
     {
         testcase ("selfFunding");
 
         using namespace jtx;
-        Env env (*this);
+        Env env (*this, features(fs)...);
         Account const gw1 ("gw1");
         Account const gw2 ("gw2");
         Account const snd ("snd");
@@ -95,12 +97,13 @@ class PaymentSandbox_test : public beast::unit_test::suite
         env.require (balance ("rcv", USD_gw2 (2)));
     }
 
-    void testSubtractCredits ()
+    template<class... Features>
+    void testSubtractCredits (Features&&... fs)
     {
         testcase ("subtractCredits");
 
         using namespace jtx;
-        Env env (*this);
+        Env env (*this, features(fs)...);
         Account const gw1 ("gw1");
         Account const gw2 ("gw2");
         Account const alice ("alice");
@@ -255,7 +258,8 @@ class PaymentSandbox_test : public beast::unit_test::suite
         }
     }
 
-    void testTinyBalance ()
+    template<class... Features>
+    void testTinyBalance (Features&&... fs)
     {
         testcase ("Tiny balance");
 
@@ -265,7 +269,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         using namespace jtx;
 
-        Env env (*this);
+        Env env (*this, features(fs)...);
 
         Account const gw ("gw");
         Account const alice ("alice");
@@ -291,7 +295,9 @@ class PaymentSandbox_test : public beast::unit_test::suite
                 BEAST_EXPECT(pv.balanceHook (alice, gw, hugeAmt) != tinyAmt);
         }
     }
-    void testReserve()
+
+    template<class... Features>
+    void testReserve(Features&&... fs)
     {
         testcase ("Reserve");
         using namespace jtx;
@@ -310,7 +316,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             return env.current ()->fees ().accountReserve (count);
         };
 
-        Env env (*this);
+        Env env (*this, features(fs)...);
 
         Account const alice ("alice");
         env.fund (reserve(env, 1), alice);
@@ -335,10 +341,14 @@ class PaymentSandbox_test : public beast::unit_test::suite
 public:
     void run ()
     {
-        testSelfFunding ();
-        testSubtractCredits ();
-        testTinyBalance ();
-        testReserve();
+        auto testAll = [this](auto&&... fs) {
+            testSelfFunding(fs...);
+            testSubtractCredits(fs...);
+            testTinyBalance(fs...);
+            testReserve(fs...);
+        };
+        testAll();
+        testAll(featureFlow, featureToStrandV2);
     }
 };
 

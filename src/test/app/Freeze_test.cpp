@@ -17,6 +17,7 @@
 */
 //==============================================================================
 #include <test/jtx.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/SField.h>
@@ -52,12 +53,13 @@ class Freeze_test : public beast::unit_test::suite
         return val.isArray() && val.size() == size;
     }
 
-    void testRippleState()
+    template<class... Features>
+    void testRippleState(Features&&... fs)
     {
         testcase("RippleState Freeze");
 
         using namespace test::jtx;
-        Env env(*this);
+        Env env(*this, features(fs)...);
 
         Account G1 {"G1"};
         Account alice {"alice"};
@@ -205,13 +207,14 @@ class Freeze_test : public beast::unit_test::suite
         }
     }
 
+    template<class... Features>
     void
-    testGlobalFreeze()
+    testGlobalFreeze(Features&&... fs)
     {
         testcase("Global Freeze");
 
         using namespace test::jtx;
-        Env env(*this);
+        Env env(*this, features(fs)...);
 
         Account G1 {"G1"};
         Account A1 {"A1"};
@@ -363,13 +366,14 @@ class Freeze_test : public beast::unit_test::suite
         }
     }
 
+    template<class... Features>
     void
-    testNoFreeze()
+    testNoFreeze(Features&&... fs)
     {
         testcase("No Freeze");
 
         using namespace test::jtx;
-        Env env(*this);
+        Env env(*this, features(fs)...);
 
         Account G1 {"G1"};
         Account A1 {"A1"};
@@ -417,13 +421,14 @@ class Freeze_test : public beast::unit_test::suite
         BEAST_EXPECT(let == "AccountRoot");
     }
 
+    template<class... Features>
     void
-    testOffersWhenFrozen()
+    testOffersWhenFrozen(Features&&... fs)
     {
         testcase("Offers for Frozen Trust Lines");
 
         using namespace test::jtx;
-        Env env(*this);
+        Env env(*this, features(fs)...);
 
         Account G1 {"G1"};
         Account A2 {"A2"};
@@ -522,10 +527,15 @@ public:
 
     void run()
     {
-        testRippleState();
-        testGlobalFreeze();
-        testNoFreeze();
-        testOffersWhenFrozen();
+        auto testAll = [this](auto&&... fs) {
+            testRippleState(fs...);
+            testGlobalFreeze(fs...);
+            testNoFreeze(fs...);
+            testOffersWhenFrozen(fs...);
+        };
+        testAll();
+        testAll(featureFlow);
+        testAll(featureFlow, featureToStrandV2);
     }
 };
 

@@ -46,13 +46,14 @@ struct SetAuth_test : public beast::unit_test::suite
         return jv;
     }
 
-    void testAuth()
+    template<class... Features>
+    void testAuth(Features&&... fs)
     {
         using namespace jtx;
         auto const gw = Account("gw");
         auto const USD = gw["USD"];
         {
-            Env env(*this);
+            Env env(*this, features(fs)...);
             env.fund(XRP(100000), "alice", gw);
             env(fset(gw, asfRequireAuth));
             env(auth(gw, "alice", "USD"),       ter(tecNO_LINE_REDUNDANT));
@@ -76,6 +77,8 @@ struct SetAuth_test : public beast::unit_test::suite
     void run() override
     {
         testAuth();
+        testAuth(featureFlow);
+        testAuth(featureFlow, featureToStrandV2);
     }
 };
 

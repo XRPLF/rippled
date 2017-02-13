@@ -24,6 +24,7 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/SField.h>
 
 namespace ripple {
@@ -35,12 +36,13 @@ class Discrepancy_test : public beast::unit_test::suite
     // entries have since been converted to the equivalent jtx/Env setup.
     // A payment with path and sendmax is made and the transaction is queried
     // to verify that the net of balance changes match the fee charged.
+    template<class... Features>
     void
-    testXRPDiscrepancy ()
+    testXRPDiscrepancy (Features&&... fs)
     {
         testcase ("Discrepancy test : XRP Discrepancy");
         using namespace test::jtx;
-        Env env {*this};
+        Env env {*this, features(fs)...};
 
         Account A1 {"A1"};
         Account A2 {"A2"};
@@ -144,6 +146,8 @@ public:
     void run ()
     {
         testXRPDiscrepancy ();
+        testXRPDiscrepancy (featureFlow);
+        testXRPDiscrepancy (featureFlow, featureToStrandV2);
     }
 };
 
