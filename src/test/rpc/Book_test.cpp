@@ -1058,8 +1058,7 @@ public:
         BEAST_EXPECT(jrNextOffer[sfOwnerNode.fieldName] == "0000000000000000");
         BEAST_EXPECT(jrNextOffer[sfSequence.fieldName] == 3);
         BEAST_EXPECT(jrNextOffer[jss::TakerGets] == USD(5).value().getJson(0));
-        BEAST_EXPECT(jrNextOffer[jss::TakerPays] ==
-			XRP(2000).value().getJson(0));
+        BEAST_EXPECT(jrNextOffer[jss::TakerPays] == XRP(2000).value().getJson(0));
         BEAST_EXPECT(jrNextOffer[jss::owner_funds] == "50");
         BEAST_EXPECT(jrNextOffer[jss::quality] == "400000000");
 

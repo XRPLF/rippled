@@ -114,10 +114,12 @@ class WSClientImpl : public WSClient
 
     void cleanup()
     {
-        error_code ec;
-		if(!peerClosed_)
-        	ws_.close({}, ec);
-        stream_.close(ec);
+        ios_.post(strand_.wrap([this] {
+            error_code ec;
+            if (!peerClosed_)
+                ws_.close({}, ec);
+            stream_.close(ec);
+        }));
         work_ = boost::none;
         thread_.join();
     }
