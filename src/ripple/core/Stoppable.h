@@ -44,7 +44,7 @@ class RootStoppable;
     provides a set of behaviors for ensuring that the start and stop of a
     composite application-style object is well defined.
 
-    Upon the initialization of the composite object these steps are peformed:
+    Upon the initialization of the composite object these steps are performed:
 
     1.  Construct sub-components.
 
@@ -339,14 +339,15 @@ private:
     /*  Notify a root stoppable and children to stop, without waiting.
         Has no effect if the stoppable was already notified.
 
+        Returns true on the first call to stopAsync(), false otherwise.
+
         Thread safety:
             Safe to call from any thread at any time.
     */
-    void stopAsync(beast::Journal j);
+    bool stopAsync(beast::Journal j);
 
     std::atomic<bool> m_prepared;
-    bool m_calledStop;
-    std::atomic<bool> m_calledStopAsync;
+    std::atomic<bool> m_calledStop;
     std::mutex m_;
     std::condition_variable c_;
 };
@@ -362,7 +363,7 @@ RootStoppable::alertable_sleep_for(
     std::unique_lock<std::mutex> lock(m_);
     if (m_calledStop)
         return true;
-    return c_.wait_for(lock, d, [this]{return m_calledStop;});
+    return c_.wait_for(lock, d, [this]{return m_calledStop.load();});
 }
 
 template <class Rep, class Period>
