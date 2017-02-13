@@ -436,6 +436,13 @@ class Stoppable_test
             Stoppable::stopped();
             test_.expect(--test_.count == 0, "Root::onChildrenStopped called out of order");
         }
+
+        void secondStop()
+        {
+            // Calling stop() a second time should have no negative
+            // consequences.
+            stop({});
+        }
     };
 
 public:
@@ -444,6 +451,7 @@ public:
         {
             Root rt(*this);
             rt.run();
+            rt.secondStop();
         }
         pass();
     }
