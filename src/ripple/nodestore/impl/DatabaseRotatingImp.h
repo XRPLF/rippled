@@ -63,6 +63,12 @@ public:
             , archiveBackend_ (archiveBackend)
     {}
 
+    ~DatabaseRotatingImp () override
+    {
+        // Stop threads before data members are destroyed.
+        DatabaseImp::stopThreads ();
+    }
+
     std::shared_ptr <Backend> const& getWritableBackend() const override
     {
         std::lock_guard <std::mutex> lock (rotateMutex_);
