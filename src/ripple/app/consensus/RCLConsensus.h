@@ -61,8 +61,8 @@ struct RCLCxTraits
     create a shared instance of RCLConsensus for use in the accept logic..
 */
 class RCLConsensus : public Consensus<RCLConsensus, RCLCxTraits>
-                     , public std::enable_shared_from_this <RCLConsensus>
-                     , public CountedObject <RCLConsensus>
+                   , public std::enable_shared_from_this <RCLConsensus>
+                   , public CountedObject <RCLConsensus>
 {
     using Base = Consensus<RCLConsensus, RCLCxTraits>;
     using Base::accept;
@@ -77,6 +77,8 @@ public:
         InboundTransactions& inboundTransactions,
         typename Base::clock_type const & clock,
         beast::Journal journal);
+    RCLConsensus(RCLConsensus const&) = delete;
+    RCLConsensus& operator=(RCLConsensus const&) = delete;
 
     static char const* getCountedObjectName() { return "Consensus"; }
 
