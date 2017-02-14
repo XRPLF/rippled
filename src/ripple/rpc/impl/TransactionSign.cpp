@@ -434,14 +434,13 @@ transactionPreProcessImpl (
                 *ledger);
             // If the account has any txs in the TxQ, skip those sequence
             // numbers (accounting for possible gaps).
-            if(queued)
-                for(auto const& tx : *queued)
-                {
-                    if (tx.first == seq)
-                        ++seq;
-                    else if (tx.first > seq)
-                        break;
-                }
+            for(auto const& tx : queued)
+            {
+                if (tx.first == seq)
+                    ++seq;
+                else if (tx.first > seq)
+                    break;
+            }
             tx_json[jss::Sequence] = seq;
         }
 

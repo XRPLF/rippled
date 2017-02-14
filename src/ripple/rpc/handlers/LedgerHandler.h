@@ -73,6 +73,7 @@ public:
 private:
     Context& context_;
     std::shared_ptr<ReadView const> ledger_;
+    std::vector<TxQ::TxDetails> queueTxs_;
     Json::Value result_;
     int options_ = 0;
 };
@@ -88,7 +89,7 @@ void LedgerHandler::writeResult (Object& value)
     if (ledger_)
     {
         Json::copyFrom (value, result_);
-        addJson (value, {*ledger_, options_});
+        addJson (value, {*ledger_, options_, queueTxs_});
     }
     else
     {

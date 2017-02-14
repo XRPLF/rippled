@@ -48,7 +48,6 @@ struct Handler
     Method<Json::Value> valueMethod_;
     Role role_;
     RPC::Condition condition_;
-    Method<Json::Object> objectMethod_;
 };
 
 const Handler* getHandler (std::string const&);
