@@ -124,6 +124,12 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '--quiet', '-q',
+    action='store_true',
+    help='Reduce output where possible (unit tests)',
+)
+
+parser.add_argument(
     'scons_args',
     default=(),
     nargs='*'
@@ -186,9 +192,12 @@ def run_tests(args):
 
             print('Unit tests for', target)
             testflag = '--unittest'
+            quiet = ''
             if ARGS.test:
                 testflag += ('=' + ARGS.test)
-            resultcode, lines = shell(executable, (testflag,))
+            if ARGS.quiet:
+                quiet = '-q'
+            resultcode, lines = shell(executable, (testflag, quiet,))
 
             if resultcode:
                 if not ARGS.verbose:

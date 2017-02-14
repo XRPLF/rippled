@@ -5493,6 +5493,9 @@
     <ClCompile Include="..\..\src\test\protocol\XRPAmount_test.cpp">
       <Filter>test\protocol</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\test\quiet_reporter.h">
+      <Filter>test</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\test\resource\Logic_test.cpp">
       <Filter>test\resource</Filter>
     </ClCompile>

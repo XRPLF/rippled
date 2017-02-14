@@ -21,4 +21,4 @@ test:
     - scons clang.debug
   override:
     # Execute unit tests under gdb
-    - gdb -return-child-result -quiet -batch -ex "set env MALLOC_CHECK_=3" -ex "set print thread-events off" -ex run -ex "thread apply all backtrace full" -ex "quit" --args build/clang.debug/rippled --unittest
+    - gdb -return-child-result -quiet -batch -ex "set env MALLOC_CHECK_=3" -ex "set print thread-events off" -ex run -ex "thread apply all backtrace full" -ex "quit" --args build/clang.debug/rippled --unittest --quiet --unittest-log
