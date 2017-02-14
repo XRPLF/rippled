@@ -43,7 +43,7 @@ rm -f build/${APP}
 ldd $APP_PATH
 
 if [[ ${APP} == "rippled" ]]; then
-  export APP_ARGS="--unittest"
+  export APP_ARGS="--unittest --quiet --unittest-log"
   # Only report on src/ripple files
   export LCOV_FILES="*/src/ripple/*"
   # Nothing to explicitly exclude
@@ -70,7 +70,7 @@ gdb -return-child-result -quiet -batch \
     -ex run \
     -ex "thread apply all backtrace full" \
     -ex "quit" \
-    --args $APP_PATH --unittest
+    --args $APP_PATH --unittest --quiet --unittest-log
 
 if [[ $TARGET == "coverage" ]]; then
   # Create test coverage data file

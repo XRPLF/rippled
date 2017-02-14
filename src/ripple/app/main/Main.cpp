@@ -43,6 +43,7 @@
 #include <beast/unit_test/global_suites.hpp>
 #include <beast/unit_test/match.hpp>
 #include <beast/unit_test/reporter.hpp>
+#include <test/quiet_reporter.h>
 #include <google/protobuf/stubs/common.h>
 #include <boost/program_options.hpp>
 #include <cstdlib>
@@ -168,13 +169,21 @@ void printHelp (const po::options_description& desc)
 
 static int runUnitTests(
     std::string const& pattern,
-    std::string const& argument)
+    std::string const& argument,
+    bool quiet,
+    bool log)
 {
     using namespace beast::unit_test;
+    using namespace ripple::test;
     beast::unit_test::dstream dout{std::cout};
-    reporter r{dout};
-    r.arg(argument);
-    bool const anyFailed = r.run_each_if(
+
+    std::unique_ptr<runner> r;
+    if(quiet)
+        r = std::make_unique<quiet_reporter>(dout, log);
+    else
+        r = std::make_unique<reporter>(dout);
+    r->arg(argument);
+    bool const anyFailed = r->run_each_if(
         global_suites(), match_auto(pattern));
     if(anyFailed)
         return EXIT_FAILURE;
@@ -216,6 +225,7 @@ int run (int argc, char** argv)
     ("standalone,a", "Run with no peers.")
     ("unittest,u", po::value <std::string> ()->implicit_value (""), "Perform unit tests.")
     ("unittest-arg", po::value <std::string> ()->implicit_value (""), "Supplies argument to unit tests.")
+    ("unittest-log", po::value <std::string> ()->implicit_value (""), "Force unit test log output, even in quiet mode.")
     ("parameters", po::value< vector<string> > (), "Specify comma separated parameters.")
     ("quiet,q", "Reduce diagnotics.")
     ("quorum", po::value <std::size_t> (), "Override the minimum validation quorum.")
@@ -277,9 +287,10 @@ int run (int argc, char** argv)
 
         if (vm.count("unittest-arg"))
             argument = vm["unittest-arg"].as<std::string>();
-
         return runUnitTests(
-            vm["unittest"].as<std::string>(), argument);
+            vm["unittest"].as<std::string>(), argument,
+            bool (vm.count ("quiet")),
+            bool (vm.count ("unittest-log")));
     }
 
     auto config = std::make_unique<Config>();

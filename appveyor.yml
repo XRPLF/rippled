@@ -127,7 +127,7 @@ test_script:
   - ps: |
         & {
           # Run the rippled unit tests
-          & $exe --unittest
+          & $exe --unittest --quiet --unittest-log
           # https://connect.microsoft.com/PowerShell/feedback/details/751703/option-to-stop-script-if-command-line-exe-fails
           if ($LastExitCode -ne 0) { throw "Unit tests failed" }
         }
