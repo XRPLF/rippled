@@ -92,7 +92,6 @@ class HandlerTable {
         h.valueMethod_ = &handle<Json::Value, HandlerImpl>;
         h.role_ = HandlerImpl::role();
         h.condition_ = HandlerImpl::condition();
-        h.objectMethod_ = &handle<Json::Object, HandlerImpl>;
 
         table_[HandlerImpl::name()] = h;
     };

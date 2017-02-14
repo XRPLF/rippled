@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
@@ -108,6 +110,15 @@ class LedgerRPC_test : public beast::unit_test::suite
             // unrecognized string arg -- error
             auto const jrr = env.rpc("ledger", "arbitrary_text") [jss::result];
             checkErrorValue(jrr, "lgrNotFound", "ledgerNotFound");
+        }
+
+        {
+            // Request queue for closed ledger
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::queue] = true;
+            auto const jrr = env.rpc ( "json", "ledger", to_string(jvParams) ) [jss::result];
+            checkErrorValue(jrr, "invalidParams", "Invalid parameters.");
         }
 
     }
@@ -440,6 +451,207 @@ class LedgerRPC_test : public beast::unit_test::suite
 
     }
 
+    void testNoQueue()
+    {
+        testcase("Ledger with queueing disabled");
+        using namespace test::jtx;
+        Env env{ *this };
+
+        Json::Value jv;
+        jv[jss::ledger_index] = "current";
+        jv[jss::queue] = true;
+        jv[jss::expand] = true;
+
+        auto jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        BEAST_EXPECT(! jrr.isMember(jss::queue_data));
+    }
+
+    void testQueue()
+    {
+        testcase("Ledger with Queued Transactions");
+        using namespace test::jtx;
+        Env env{ *this, []()
+            {
+                auto p = std::make_unique<Config>();
+                test::setupConfigForUnitTests(*p);
+                auto& section = p->section("transaction_queue");
+                section.set("minimum_txn_in_ledger_standalone", "3");
+                return p;
+            }(),
+            features(featureFeeEscalation) };
+
+        Json::Value jv;
+        jv[jss::ledger_index] = "current";
+        jv[jss::queue] = true;
+        jv[jss::expand] = true;
+
+        Account const alice{ "alice" };
+        Account const bob{ "bob" };
+        Account const charlie{ "charlie" };
+        Account const daria{ "daria" };
+        env.fund(XRP(10000), alice);
+        env.fund(XRP(10000), bob);
+        env.close();
+        env.fund(XRP(10000), charlie);
+        env.fund(XRP(10000), daria);
+        env.close();
+
+        auto jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        BEAST_EXPECT(! jrr.isMember(jss::queue_data));
+
+        // Fill the open ledger
+        for (;;)
+        {
+            auto metrics = env.app().getTxQ().getMetrics(*env.current());
+            if (! BEAST_EXPECT(metrics))
+                break;
+            if (metrics->expFeeLevel > metrics->minFeeLevel)
+                break;
+            env(noop(alice));
+        }
+
+        BEAST_EXPECT(env.current()->info().seq == 5);
+        // Put some txs in the queue
+        // Alice
+        auto aliceSeq = env.seq(alice);
+        env(pay(alice, "george", XRP(1000)), json(R"({"LastLedgerSequence":7})"),
+            ter(terQUEUED));
+        env(offer(alice, XRP(50000), alice["USD"](5000)), seq(aliceSeq + 1),
+            ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 2), ter(terQUEUED));
+        // Bob
+        auto batch = [&env](Account a)
+        {
+            auto aSeq = env.seq(a);
+            // Enough fee to get in front of alice in the queue
+            for (int i = 0; i < 10; ++i)
+            {
+                env(noop(a), fee(1000 + i), seq(aSeq + i), ter(terQUEUED));
+            }
+        };
+        batch(bob);
+        // Charlie
+        batch(charlie);
+        // Daria
+        batch(daria);
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        BEAST_EXPECT(jrr[jss::queue_data].size() == 33);
+
+        // Close enough ledgers so that alice's first tx expires.
+        env.close();
+        env.close();
+        env.close();
+        BEAST_EXPECT(env.current()->info().seq == 8);
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        BEAST_EXPECT(jrr[jss::queue_data].size() == 11);
+
+        env.close();
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        std::string txid1;
+        std::string txid2;
+        if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
+        {
+            auto const& txj = jrr[jss::queue_data][0u];
+            BEAST_EXPECT(txj[jss::account] == alice.human());
+            BEAST_EXPECT(txj[jss::fee_level] == "256");
+            BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
+            BEAST_EXPECT(txj["retries_remaining"] == 10);
+            BEAST_EXPECT(txj.isMember(jss::tx));
+            auto const& tx = txj[jss::tx];
+            BEAST_EXPECT(tx[jss::Account] == alice.human());
+            BEAST_EXPECT(tx[jss::TransactionType] == "OfferCreate");
+            txid1 = tx[jss::hash].asString();
+        }
+
+        env.close();
+
+        jv[jss::expand] = false;
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
+        {
+            auto const& txj = jrr[jss::queue_data][0u];
+            BEAST_EXPECT(txj[jss::account] == alice.human());
+            BEAST_EXPECT(txj[jss::fee_level] == "256");
+            BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
+            BEAST_EXPECT(txj["retries_remaining"] == 9);
+            BEAST_EXPECT(txj["last_result"] == "terPRE_SEQ");
+            BEAST_EXPECT(txj.isMember(jss::tx));
+            BEAST_EXPECT(txj[jss::tx] == txid1);
+        }
+
+        env.close();
+
+        jv[jss::expand] = true;
+        jv[jss::binary] = true;
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
+        {
+            auto const& txj = jrr[jss::queue_data][0u];
+            BEAST_EXPECT(txj[jss::account] == alice.human());
+            BEAST_EXPECT(txj[jss::fee_level] == "256");
+            BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
+            BEAST_EXPECT(txj["retries_remaining"] == 8);
+            BEAST_EXPECT(txj["last_result"] == "terPRE_SEQ");
+            BEAST_EXPECT(txj.isMember(jss::tx));
+            BEAST_EXPECT(txj[jss::tx].isMember(jss::tx_blob));
+
+            auto const& txj2 = jrr[jss::queue_data][1u];
+            BEAST_EXPECT(txj2[jss::account] == alice.human());
+            BEAST_EXPECT(txj2[jss::fee_level] == "256");
+            BEAST_EXPECT(txj2["preflight_result"] == "tesSUCCESS");
+            BEAST_EXPECT(txj2["retries_remaining"] == 10);
+            BEAST_EXPECT(! txj2.isMember("last_result"));
+            BEAST_EXPECT(txj2.isMember(jss::tx));
+            BEAST_EXPECT(txj2[jss::tx].isMember(jss::tx_blob));
+        }
+
+        for (int i = 0; i != 9; ++i)
+        {
+            env.close();
+        }
+
+        jv[jss::expand] = false;
+        jv[jss::binary] = false;
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        if (BEAST_EXPECT(jrr[jss::queue_data].size() == 1))
+        {
+            auto const& txj = jrr[jss::queue_data][0u];
+            BEAST_EXPECT(txj[jss::account] == alice.human());
+            BEAST_EXPECT(txj[jss::fee_level] == "256");
+            BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
+            BEAST_EXPECT(txj["retries_remaining"] == 1);
+            BEAST_EXPECT(txj["last_result"] == "terPRE_SEQ");
+            BEAST_EXPECT(txj.isMember(jss::tx));
+            BEAST_EXPECT(txj[jss::tx] != txid1);
+            txid2 = txj[jss::tx].asString();
+        }
+
+        jv[jss::full] = true;
+
+        jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        if (BEAST_EXPECT(jrr[jss::queue_data].size() == 1))
+        {
+            auto const& txj = jrr[jss::queue_data][0u];
+            BEAST_EXPECT(txj[jss::account] == alice.human());
+            BEAST_EXPECT(txj[jss::fee_level] == "256");
+            BEAST_EXPECT(txj["preflight_result"] == "tesSUCCESS");
+            BEAST_EXPECT(txj["retries_remaining"] == 1);
+            BEAST_EXPECT(txj["last_result"] == "terPRE_SEQ");
+            BEAST_EXPECT(txj.isMember(jss::tx));
+            auto const& tx = txj[jss::tx];
+            BEAST_EXPECT(tx[jss::Account] == alice.human());
+            BEAST_EXPECT(tx[jss::TransactionType] == "AccountSet");
+            BEAST_EXPECT(tx[jss::hash] == txid2);
+        }
+
+    }
+
 public:
     void run ()
     {
@@ -454,6 +666,8 @@ public:
         testNotFoundAccountRoot();
         testAccountRootFromIndex();
         testLookupLedger();
+        testNoQueue();
+        testQueue();
     }
 };
 

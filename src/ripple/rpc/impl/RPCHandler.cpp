@@ -265,36 +265,6 @@ Status doCommand (
     return rpcUNKNOWN_COMMAND;
 }
 
-/** Execute an RPC command and store the results in a string. */
-void executeRPC (
-    RPC::Context& context, std::string& output)
-{
-    boost::optional <Handler const&> handler;
-    if (auto error = fillHandler (context, handler))
-    {
-        auto wo = Json::stringWriterObject (output);
-        auto&& sub = Json::addObject (*wo, jss::result);
-        inject_error (error, sub);
-    }
-    else if (auto method = handler->objectMethod_)
-    {
-        auto wo = Json::stringWriterObject (output);
-        getResult (context, method, *wo, handler->name_);
-    }
-    else if (auto method = handler->valueMethod_)
-    {
-        auto object = Json::Value (Json::objectValue);
-        getResult (context, method, object, handler->name_);
-        output = to_string (object);
-    }
-    else
-    {
-        // Can't ever get here.
-        assert (false);
-        Throw<std::logic_error> ("RPC handler with no method");
-    }
-}
-
 Role roleRequired (std::string const& method)
 {
     auto handler = RPC::getHandler(method);

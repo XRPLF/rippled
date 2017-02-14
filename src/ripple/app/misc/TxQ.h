@@ -96,6 +96,15 @@ public:
         boost::optional<TxConsequences const> consequences;
     };
 
+    struct TxDetails : AccountTxDetails
+    {
+        AccountID account;
+        std::shared_ptr<STTx const> txn;
+        int retriesRemaining;
+        TER preflightResult;
+        boost::optional<TER> lastResult;
+    };
+
     TxQ(Setup const& setup,
         beast::Journal j);
 
@@ -149,8 +158,18 @@ public:
         amendment is not enabled, OR if the account has no transactions
         in the queue.
     */
-    boost::optional<std::map<TxSeq, AccountTxDetails>>
+    std::map<TxSeq, AccountTxDetails const>
     getAccountTxs(AccountID const& account, ReadView const& view) const;
+
+    /** Returns information about all transactions currently
+        in the queue.
+
+        @returns Uninitialized @ref optional if the FeeEscalation
+        amendment is not enabled, OR if there are no transactions
+        in the queue.
+    */
+    std::vector<TxDetails>
+    getTxs(ReadView const& view) const;
 
     /** Packages up fee metrics for the `fee` RPC command.
     */
@@ -267,6 +286,7 @@ private:
         int retriesRemaining;
         TxSeq const sequence;
         ApplyFlags const flags;
+        boost::optional<TER> lastResult;
         // Invariant: pfresult is never allowed to be empty. The
         // boost::optional is leveraged to allow `emplace`d
         // construction and replacement without a copy
