@@ -394,7 +394,7 @@ toStrandV2 (
     {
         auto const t = pe.getNodeType();
 
-        if (t & ~STPathElement::Type::typeAll)
+        if ((t & ~STPathElement::Type::typeAll) || !t)
             return {temBAD_PATH, Strand{}};
 
         bool const hasAccount = t & STPathElement::Type::typeAccount;
