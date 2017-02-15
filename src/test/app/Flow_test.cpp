@@ -42,22 +42,15 @@ xrpMinusFee (jtx::Env const& env, std::int64_t xrpAmount)
 
 struct Flow_test : public beast::unit_test::suite
 {
-    static bool hasFeature(uint256 const& feat)
+    static bool hasFeature(uint256 const& feat, std::initializer_list<uint256> args)
     {
-        return false;
-    }
-
-    template<class... Ts>
-    static bool hasFeature(uint256 const& feat, Ts const&... args)
-    {
-        for(auto const& f : {args...})
+        for(auto const& f : args)
             if (f == feat)
                 return true;
         return false;
     }
 
-    template<class... Features>
-    void testDirectStep (Features&&... fs)
+    void testDirectStep (std::initializer_list<uint256> fs)
     {
         testcase ("Direct Step");
 
@@ -75,7 +68,7 @@ struct Flow_test : public beast::unit_test::suite
         auto const USD = gw["USD"];
         {
             // Pay USD, trivial path
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, gw);
             env.trust (USD (1000), alice, bob);
@@ -85,7 +78,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // XRP transfer
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob);
             env (pay (alice, bob, XRP (100)));
@@ -94,7 +87,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // Partial payments
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, gw);
             env.trust (USD (1000), alice, bob);
@@ -108,7 +101,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // Pay by rippling through accounts, use path finder
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, dan);
             env.trust (USDA (10), bob);
@@ -123,7 +116,7 @@ struct Flow_test : public beast::unit_test::suite
         {
             // Pay by rippling through accounts, specify path
             // and charge a transfer fee
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, dan);
             env.trust (USDA (10), bob);
@@ -141,7 +134,7 @@ struct Flow_test : public beast::unit_test::suite
         {
             // Pay by rippling through accounts, specify path and transfer fee
             // Test that the transfer fee is not charged when alice issues
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, dan);
             env.trust (USDA (10), bob);
@@ -157,7 +150,7 @@ struct Flow_test : public beast::unit_test::suite
         {
             // test best quality path is taken
             // Paths: A->B->D->E ; A->C->D->E
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, dan, erin);
             env.trust (USDA (10), bob, carol);
@@ -178,7 +171,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // Limit quality
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol);
             env.trust (USDA (10), bob);
@@ -194,8 +187,7 @@ struct Flow_test : public beast::unit_test::suite
         }
     }
 
-    template<class... Features>
-    void testLineQuality (Features&&... fs)
+    void testLineQuality (std::initializer_list<uint256> fs)
     {
         testcase ("Line Quality");
 
@@ -213,10 +205,10 @@ struct Flow_test : public beast::unit_test::suite
         for (auto bobDanQIn : {80, 100, 120})
             for (auto bobAliceQOut : {80, 100, 120})
             {
-                if (!hasFeature(featureFlow, fs...) && bobDanQIn < 100 &&
+                if (!hasFeature(featureFlow, fs) && bobDanQIn < 100 &&
                     bobAliceQOut < 100)
                     continue;  // Bug in flow v1
-                Env env(*this, features(fs)...);
+                Env env(*this, features(fs));
                 env.fund(XRP(10000), alice, bob, carol, dan);
                 env(trust(bob, USDD(100)), qualityInPercent(bobDanQIn));
                 env(trust(bob, USDA(100)), qualityOutPercent(bobAliceQOut));
@@ -239,7 +231,7 @@ struct Flow_test : public beast::unit_test::suite
         // bob -> alice -> carol; vary carolAliceQIn
         for (auto carolAliceQIn : {80, 100, 120})
         {
-            Env env(*this, features(fs)...);
+            Env env(*this, features(fs));
             env.fund(XRP(10000), alice, bob, carol);
             env(trust(bob, USDA(10)));
             env(trust(carol, USDA(10)), qualityInPercent(carolAliceQIn));
@@ -255,7 +247,7 @@ struct Flow_test : public beast::unit_test::suite
         // bob -> alice -> carol; bobAliceQOut varies.
         for (auto bobAliceQOut : {80, 100, 120})
         {
-            Env env(*this, features(fs)...);
+            Env env(*this, features(fs));
             env.fund(XRP(10000), alice, bob, carol);
             env(trust(bob, USDA(10)), qualityOutPercent(bobAliceQOut));
             env(trust(carol, USDA(10)));
@@ -268,8 +260,7 @@ struct Flow_test : public beast::unit_test::suite
         }
     }
 
-    template<class... Features>
-    void testBookStep (Features&&... fs)
+    void testBookStep (std::initializer_list<uint256> fs)
     {
         testcase ("Book Step");
 
@@ -285,7 +276,7 @@ struct Flow_test : public beast::unit_test::suite
 
         {
             // simple IOU/IOU offer
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env.trust (USD (1000), alice, bob, carol);
@@ -306,7 +297,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // simple IOU/XRP XRP/IOU offer
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env.trust (USD (1000), alice, bob, carol);
@@ -330,7 +321,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // simple XRP -> USD through offer and sendmax
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env.trust (USD (1000), alice, bob, carol);
@@ -351,7 +342,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // simple USD -> XRP through offer and sendmax
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env.trust (USD (1000), alice, bob, carol);
@@ -372,7 +363,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // test unfunded offers are removed when payment succeeds
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env.trust (USD (1000), alice, bob, carol);
@@ -418,7 +409,7 @@ struct Flow_test : public beast::unit_test::suite
             // offer. When the payment fails `flow` should return the unfunded
             // offer. This test is intentionally similar to the one that removes
             // unfunded offers when the payment succeeds.
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env.trust (USD (1000), alice, bob, carol);
@@ -493,7 +484,7 @@ struct Flow_test : public beast::unit_test::suite
             // Without limits, the 0.4 USD would produce 1000 EUR in the forward
             // pass. This test checks that the payment produces 1 EUR, as expected.
 
-            Env env (*this, features (fs)...);
+            Env env (*this, features (fs));
 
             auto const closeTime = STAmountSO::soTime2 +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -518,8 +509,7 @@ struct Flow_test : public beast::unit_test::suite
         }
     }
 
-    template<class... Features>
-    void testTransferRate (Features&&... fs)
+    void testTransferRate (std::initializer_list<uint256> fs)
     {
         testcase ("Transfer Rate");
 
@@ -537,7 +527,7 @@ struct Flow_test : public beast::unit_test::suite
         {
             // Simple payment through a gateway with a
             // transfer rate
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env(rate(gw, 1.25));
@@ -549,7 +539,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // transfer rate is not charged when issuer is src or dst
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env(rate(gw, 1.25));
@@ -561,7 +551,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // transfer fee on an offer
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env(rate(gw, 1.25));
@@ -579,7 +569,7 @@ struct Flow_test : public beast::unit_test::suite
 
         {
             // Transfer fee two consecutive offers
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env(rate(gw, 1.25));
@@ -602,7 +592,7 @@ struct Flow_test : public beast::unit_test::suite
         {
             // First pass through a strand redeems, second pass issues, no offers
             // limiting step is not an endpoint
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
             auto const USDA = alice["USD"];
             auto const USDB = bob["USD"];
 
@@ -622,7 +612,7 @@ struct Flow_test : public beast::unit_test::suite
         {
             // First pass through a strand redeems, second pass issues, through an offer
             // limiting step is not an endpoint
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
             auto const USDA = alice["USD"];
             auto const USDB = bob["USD"];
             Account const dan ("dan");
@@ -649,7 +639,7 @@ struct Flow_test : public beast::unit_test::suite
 
         {
             // Offer where the owner is also the issuer, owner pays fee
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, gw);
             env(rate(gw, 1.25));
@@ -661,10 +651,10 @@ struct Flow_test : public beast::unit_test::suite
                 balance (alice, xrpMinusFee(env, 10000-100)),
                 balance (bob, USD (100)));
         }
-        if (!hasFeature(featureOwnerPaysFee, fs...))
+        if (!hasFeature(featureOwnerPaysFee, fs))
         {
             // Offer where the owner is also the issuer, sender pays fee
-            Env env (*this, features(fs)...);
+            Env env (*this, features(fs));
 
             env.fund (XRP (10000), alice, bob, gw);
             env(rate(gw, 1.25));
@@ -678,9 +668,8 @@ struct Flow_test : public beast::unit_test::suite
         }
     }
 
-    template<class... Features>
     void
-    testFalseDry(Features&&... fs)
+    testFalseDry(std::initializer_list<uint256> fs)
     {
         testcase ("falseDryChanges");
 
@@ -693,7 +682,7 @@ struct Flow_test : public beast::unit_test::suite
         Account const bob ("bob");
         Account const carol ("carol");
 
-        Env env (*this, features (fs)...);
+        Env env (*this, features (fs));
 
         auto const closeTime = amendmentRIPD1141SoTime() +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -788,9 +777,8 @@ struct Flow_test : public beast::unit_test::suite
         return result;
     }
 
-    template<class... Features>
     void
-    testSelfPayment1(Features&&... fs)
+    testSelfPayment1(std::initializer_list<uint256> fs)
     {
         testcase ("Self-payment 1");
 
@@ -807,7 +795,7 @@ struct Flow_test : public beast::unit_test::suite
         auto const USD = gw1["USD"];
         auto const EUR = gw2["EUR"];
 
-        Env env (*this, features (fs)...);
+        Env env (*this, features (fs));
 
         auto const closeTime =
             amendmentRIPD1141SoTime () + 100 * env.closed ()->info ().closeTimeResolution;
@@ -865,9 +853,8 @@ struct Flow_test : public beast::unit_test::suite
         }
     }
 
-    template<class... Features>
     void
-    testSelfPayment2(Features&&... fs)
+    testSelfPayment2(std::initializer_list<uint256> fs)
     {
         testcase ("Self-payment 2");
 
@@ -882,7 +869,7 @@ struct Flow_test : public beast::unit_test::suite
         auto const USD = gw1["USD"];
         auto const EUR = gw2["EUR"];
 
-        Env env (*this, features (fs)...);
+        Env env (*this, features (fs));
 
         auto const closeTime =
             amendmentRIPD1141SoTime () + 100 * env.closed ()->info ().closeTimeResolution;
@@ -939,8 +926,7 @@ struct Flow_test : public beast::unit_test::suite
             BEAST_EXPECT(offer[sfTakerPays] == USD (495));
         }
     }
-    template<class... Features>
-    void testSelfFundedXRPEndpoint (bool consumeOffer, Features&&... fs)
+    void testSelfFundedXRPEndpoint (bool consumeOffer, std::initializer_list<uint256> fs)
     {
         // Test that the deferred credit table is not bypassed for
         // XRPEndpointSteps. If the account in the first step is sending XRP and
@@ -951,7 +937,7 @@ struct Flow_test : public beast::unit_test::suite
 
         using namespace jtx;
 
-        Env env(*this, features(fs)...);
+        Env env(*this, features(fs));
 
         // Need new behavior from `accountHolds`
         auto const closeTime = amendmentRIPD1141SoTime() +
@@ -974,8 +960,7 @@ struct Flow_test : public beast::unit_test::suite
             txflags(tfPartialPayment | tfNoRippleDirect));
     }
 
-    template<class... Features>
-    void testUnfundedOffer (bool withFix, Features&&... fs)
+    void testUnfundedOffer (bool withFix, std::initializer_list<uint256> fs)
     {
         testcase(std::string("Unfunded Offer ") +
             (withFix ? "with fix" : "without fix"));
@@ -983,7 +968,7 @@ struct Flow_test : public beast::unit_test::suite
         using namespace jtx;
         {
             // Test reverse
-            Env env(*this, features(fs)...);
+            Env env(*this, features(fs));
             auto closeTime = amendmentRIPD1298SoTime();
             if (withFix)
                 closeTime += env.closed()->info().closeTimeResolution;
@@ -1015,7 +1000,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // Test forward
-            Env env(*this, features(fs)...);
+            Env env(*this, features(fs));
             auto closeTime = amendmentRIPD1298SoTime();
             if (withFix)
                 closeTime += env.closed()->info().closeTimeResolution;
@@ -1049,14 +1034,13 @@ struct Flow_test : public beast::unit_test::suite
         }
     }
 
-    template<class... Features>
     void
-    testReexecuteDirectStep(Features&&... fs)
+    testReexecuteDirectStep(std::initializer_list<uint256> fs)
     {
         testcase("ReexecuteDirectStep");
 
         using namespace jtx;
-        Env env(*this, features(fs)...);
+        Env env(*this, features(fs));
 
         auto const alice = Account("alice");
         auto const bob = Account("bob");
@@ -1164,22 +1148,22 @@ struct Flow_test : public beast::unit_test::suite
 
         auto testWithFeats = [this](auto&&... fs)
         {
-            testLineQuality(fs...);
-            testFalseDry(fs...);
+            testLineQuality({fs...});
+            testFalseDry({fs...});
             if (!sizeof...(fs))
                 return;
-            testDirectStep(fs...);
-            testBookStep(fs...);
-            testDirectStep(featureOwnerPaysFee, fs...);
-            testBookStep(featureOwnerPaysFee, fs...);
-            testTransferRate(featureOwnerPaysFee, fs...);
-            testSelfPayment1(fs...);
-            testSelfPayment2(fs...);
-            testSelfFundedXRPEndpoint(false, fs...);
-            testSelfFundedXRPEndpoint(true, fs...);
-            testUnfundedOffer(true, fs...);
-            testUnfundedOffer(false,  fs...);
-            testReexecuteDirectStep(fix1368, fs...);
+            testDirectStep({fs...});
+            testBookStep({fs...});
+            testDirectStep({featureOwnerPaysFee, fs...});
+            testBookStep({featureOwnerPaysFee, fs...});
+            testTransferRate({featureOwnerPaysFee, fs...});
+            testSelfPayment1({fs...});
+            testSelfPayment2({fs...});
+            testSelfFundedXRPEndpoint(false, {fs...});
+            testSelfFundedXRPEndpoint(true, {fs...});
+            testUnfundedOffer(true, {fs...});
+            testUnfundedOffer(false,  {fs...});
+            testReexecuteDirectStep({fix1368, fs...});
         };
         testWithFeats();
         testWithFeats(featureFlow);

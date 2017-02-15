@@ -45,14 +45,13 @@ class TrustAndBalance_test : public beast::unit_test::suite
         return env.rpc ("json", "ledger_entry", to_string(jvParams))[jss::result];
     };
 
-    template<class... Features>
     void
-    testPayNonexistent (Features&&... fs)
+    testPayNonexistent (std::initializer_list<uint256> fs)
     {
         testcase ("Payment to Nonexistent Account");
         using namespace test::jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         env (pay (env.master, "alice", XRP(1)), ter(tecNO_DST_INSUF_XRP));
         env.close();
     }
@@ -162,14 +161,13 @@ class TrustAndBalance_test : public beast::unit_test::suite
             jrr[jss::node][sfLowLimit.fieldName][jss::currency] == "USD");
     }
 
-    template<class... Features>
     void
-    testDirectRipple (Features&&... fs)
+    testDirectRipple (std::initializer_list<uint256> fs)
     {
         testcase ("Direct Payment, Ripple");
         using namespace test::jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         Account alice {"alice"};
         Account bob {"bob"};
 
@@ -204,16 +202,15 @@ class TrustAndBalance_test : public beast::unit_test::suite
         env.require (balance (bob, alice["USD"](-600)));
     }
 
-    template<class... Features>
     void
-    testWithTransferFee (bool subscribe, bool with_rate, Features&&... fs)
+    testWithTransferFee (bool subscribe, bool with_rate, std::initializer_list<uint256> fs)
     {
         testcase(std::string("Direct Payment: ") +
                 (with_rate ? "With " : "Without ") + " Xfer Fee, " +
                 (subscribe ? "With " : "Without ") + " Subscribe");
         using namespace test::jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto wsc = test::makeWSClient(env.app().config());
         Account gw {"gateway"};
         Account alice {"alice"};
@@ -285,14 +282,13 @@ class TrustAndBalance_test : public beast::unit_test::suite
         }
     }
 
-    template<class... Features>
     void
-    testWithPath (Features&&... fs)
+    testWithPath (std::initializer_list<uint256> fs)
     {
         testcase ("Payments With Paths and Fees");
         using namespace test::jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         Account gw {"gateway"};
         Account alice {"alice"};
         Account bob {"bob"};
@@ -334,14 +330,13 @@ class TrustAndBalance_test : public beast::unit_test::suite
         env.require (balance (bob, gw["AUD"](3)));
     }
 
-    template<class... Features>
     void
-    testIndirect (Features&&... fs)
+    testIndirect (std::initializer_list<uint256> fs)
     {
         testcase ("Indirect Payment");
         using namespace test::jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         Account gw {"gateway"};
         Account alice {"alice"};
         Account bob {"bob"};
@@ -376,15 +371,14 @@ class TrustAndBalance_test : public beast::unit_test::suite
         env.require (balance (bob, gw["USD"](55)));
     }
 
-    template<class... Features>
     void
-    testIndirectMultiPath (bool with_rate, Features&&... fs)
+    testIndirectMultiPath (bool with_rate, std::initializer_list<uint256> fs)
     {
         testcase (std::string("Indirect Payment, Multi Path, ") +
                 (with_rate ? "With " : "Without ") + " Xfer Fee, ");
         using namespace test::jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         Account gw {"gateway"};
         Account amazon {"amazon"};
         Account alice {"alice"};
@@ -443,14 +437,13 @@ class TrustAndBalance_test : public beast::unit_test::suite
         env.require (balance (bob, gw["USD"](0)));
     }
 
-    template<class... Features>
     void
-    testInvoiceID (Features&&... fs)
+    testInvoiceID (std::initializer_list<uint256> fs)
     {
         testcase ("Set Invoice ID on Payment");
         using namespace test::jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         Account alice {"alice"};
         auto wsc = test::makeWSClient(env.app().config());
 
@@ -500,22 +493,22 @@ public:
         testTrustNonexistent ();
         testCreditLimit ();
 
-        auto testWithFeatures = [this](auto... fs) {
-            testPayNonexistent(fs...);
-            testDirectRipple(fs...);
-            testWithTransferFee(false, false, fs...);
-            testWithTransferFee(false, true, fs...);
-            testWithTransferFee(true, false, fs...);
-            testWithTransferFee(true, true, fs...);
-            testWithPath(fs...);
-            testIndirect(fs...);
-            testIndirectMultiPath(true, fs...);
-            testIndirectMultiPath(false, fs...);
-            testInvoiceID(fs...);
+        auto testWithFeatures = [this](std::initializer_list<uint256> fs) {
+            testPayNonexistent(fs);
+            testDirectRipple(fs);
+            testWithTransferFee(false, false, fs);
+            testWithTransferFee(false, true, fs);
+            testWithTransferFee(true, false, fs);
+            testWithTransferFee(true, true, fs);
+            testWithPath(fs);
+            testIndirect(fs);
+            testIndirectMultiPath(true, fs);
+            testIndirectMultiPath(false, fs);
+            testInvoiceID(fs);
         };
-        testWithFeatures();
-        testWithFeatures(featureFlow);
-        testWithFeatures(featureFlow, featureToStrandV2);
+        testWithFeatures({});
+        testWithFeatures({featureFlow});
+        testWithFeatures({featureFlow, featureToStrandV2});
     }
 };
 

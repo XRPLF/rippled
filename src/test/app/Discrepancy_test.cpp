@@ -36,13 +36,12 @@ class Discrepancy_test : public beast::unit_test::suite
     // entries have since been converted to the equivalent jtx/Env setup.
     // A payment with path and sendmax is made and the transaction is queried
     // to verify that the net of balance changes match the fee charged.
-    template<class... Features>
     void
-    testXRPDiscrepancy (Features&&... fs)
+    testXRPDiscrepancy (std::initializer_list<uint256> fs)
     {
         testcase ("Discrepancy test : XRP Discrepancy");
         using namespace test::jtx;
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
 
         Account A1 {"A1"};
         Account A2 {"A2"};
@@ -145,9 +144,9 @@ class Discrepancy_test : public beast::unit_test::suite
 public:
     void run ()
     {
-        testXRPDiscrepancy ();
-        testXRPDiscrepancy (featureFlow);
-        testXRPDiscrepancy (featureFlow, featureToStrandV2);
+        testXRPDiscrepancy ({});
+        testXRPDiscrepancy ({featureFlow});
+        testXRPDiscrepancy ({featureFlow, featureToStrandV2});
     }
 };
 

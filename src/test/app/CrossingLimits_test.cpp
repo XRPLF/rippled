@@ -42,12 +42,12 @@ private:
     }
 
 public:
-    template<class... Features>
+    
     void
-    testStepLimit(Features&&... fs)
+    testStepLimit(std::initializer_list<uint256> fs)
     {
         using namespace jtx;
-        Env env(*this, features(fs)...);
+        Env env(*this, features(fs));
         auto const xrpMax = XRP(100000000000);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -76,13 +76,12 @@ public:
                 balance("bob", USD(0)), owners("bob", 1),
                 balance("dan", USD(1)), owners("dan", 2)));
     }
-
-    template<class... Features>
+    
     void
-    testCrossingLimit(Features&&... fs)
+    testCrossingLimit(std::initializer_list<uint256> fs)
     {
         using namespace jtx;
-        Env env(*this, features(fs)...);
+        Env env(*this, features(fs));
         auto const xrpMax = XRP(100000000000);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -106,13 +105,12 @@ public:
                 balance("carol", USD(150)),
                 balance("bob", USD(0)), owners ("bob", 1)));
     }
-
-    template<class... Features>
+    
     void
-    testStepAndCrossingLimit(Features&&... fs)
+    testStepAndCrossingLimit(std::initializer_list<uint256> fs)
     {
         using namespace jtx;
-        Env env(*this, features(fs)...);
+        Env env(*this, features(fs));
         auto const xrpMax = XRP(100000000000);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -154,14 +152,14 @@ public:
     void
     run()
     {
-        auto testAll = [this](auto&&... fs) {
-            testStepLimit(fs...);
-            testCrossingLimit(fs...);
-            testStepAndCrossingLimit(fs...);
+        auto testAll = [this](std::initializer_list<uint256> fs) {
+            testStepLimit(fs);
+            testCrossingLimit(fs);
+            testStepAndCrossingLimit(fs);
         };
-        testAll();
-        testAll(featureFlow);
-        testAll(featureFlow, featureToStrandV2);
+        testAll({});
+        testAll({featureFlow});
+        testAll({featureFlow, featureToStrandV2});
     }
 };
 

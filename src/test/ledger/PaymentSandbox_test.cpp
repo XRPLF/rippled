@@ -55,13 +55,12 @@ class PaymentSandbox_test : public beast::unit_test::suite
       2) New code: Path is dry because sender does not have any
          GW1 to spend until the end of the transaction.
     */
-    template<class... Features>
-    void testSelfFunding (Features&&... fs)
+    void testSelfFunding (std::initializer_list<uint256> fs)
     {
         testcase ("selfFunding");
 
         using namespace jtx;
-        Env env (*this, features(fs)...);
+        Env env (*this, features(fs));
         Account const gw1 ("gw1");
         Account const gw2 ("gw2");
         Account const snd ("snd");
@@ -97,13 +96,12 @@ class PaymentSandbox_test : public beast::unit_test::suite
         env.require (balance ("rcv", USD_gw2 (2)));
     }
 
-    template<class... Features>
-    void testSubtractCredits (Features&&... fs)
+    void testSubtractCredits (std::initializer_list<uint256> fs)
     {
         testcase ("subtractCredits");
 
         using namespace jtx;
-        Env env (*this, features(fs)...);
+        Env env (*this, features(fs));
         Account const gw1 ("gw1");
         Account const gw2 ("gw2");
         Account const alice ("alice");
@@ -258,8 +256,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         }
     }
 
-    template<class... Features>
-    void testTinyBalance (Features&&... fs)
+    void testTinyBalance (std::initializer_list<uint256> fs)
     {
         testcase ("Tiny balance");
 
@@ -269,7 +266,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         using namespace jtx;
 
-        Env env (*this, features(fs)...);
+        Env env (*this, features(fs));
 
         Account const gw ("gw");
         Account const alice ("alice");
@@ -296,8 +293,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         }
     }
 
-    template<class... Features>
-    void testReserve(Features&&... fs)
+    void testReserve(std::initializer_list<uint256> fs)
     {
         testcase ("Reserve");
         using namespace jtx;
@@ -316,7 +312,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             return env.current ()->fees ().accountReserve (count);
         };
 
-        Env env (*this, features(fs)...);
+        Env env (*this, features(fs));
 
         Account const alice ("alice");
         env.fund (reserve(env, 1), alice);
@@ -341,14 +337,14 @@ class PaymentSandbox_test : public beast::unit_test::suite
 public:
     void run ()
     {
-        auto testAll = [this](auto&&... fs) {
-            testSelfFunding(fs...);
-            testSubtractCredits(fs...);
-            testTinyBalance(fs...);
-            testReserve(fs...);
+        auto testAll = [this](std::initializer_list<uint256> fs) {
+            testSelfFunding(fs);
+            testSubtractCredits(fs);
+            testTinyBalance(fs);
+            testReserve(fs);
         };
-        testAll();
-        testAll(featureFlow, featureToStrandV2);
+        testAll({});
+        testAll({featureFlow, featureToStrandV2});
     }
 };
 

@@ -29,13 +29,12 @@ class GatewayBalances_test : public beast::unit_test::suite
 {
 public:
 
-    template<class... Features>
     void
-    testGWB(Features&&... fs)
+    testGWB(std::initializer_list<uint256> fs)
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this, features(fs)...);
+        Env env(*this, features(fs));
 
         // Gateway account and assets
         Account const alice {"alice"};
@@ -154,8 +153,8 @@ public:
     void
     run() override
     {
-        testGWB();
-        testGWB(featureFlow, featureToStrandV2);
+        testGWB({});
+        testGWB({featureFlow, featureToStrandV2});
     }
 };
 

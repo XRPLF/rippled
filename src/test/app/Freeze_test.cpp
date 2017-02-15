@@ -53,13 +53,12 @@ class Freeze_test : public beast::unit_test::suite
         return val.isArray() && val.size() == size;
     }
 
-    template<class... Features>
-    void testRippleState(Features&&... fs)
+    void testRippleState(std::initializer_list<uint256> fs)
     {
         testcase("RippleState Freeze");
 
         using namespace test::jtx;
-        Env env(*this, features(fs)...);
+        Env env(*this, features(fs));
 
         Account G1 {"G1"};
         Account alice {"alice"};
@@ -207,14 +206,13 @@ class Freeze_test : public beast::unit_test::suite
         }
     }
 
-    template<class... Features>
     void
-    testGlobalFreeze(Features&&... fs)
+    testGlobalFreeze(std::initializer_list<uint256> fs)
     {
         testcase("Global Freeze");
 
         using namespace test::jtx;
-        Env env(*this, features(fs)...);
+        Env env(*this, features(fs));
 
         Account G1 {"G1"};
         Account A1 {"A1"};
@@ -366,14 +364,13 @@ class Freeze_test : public beast::unit_test::suite
         }
     }
 
-    template<class... Features>
     void
-    testNoFreeze(Features&&... fs)
+    testNoFreeze(std::initializer_list<uint256> fs)
     {
         testcase("No Freeze");
 
         using namespace test::jtx;
-        Env env(*this, features(fs)...);
+        Env env(*this, features(fs));
 
         Account G1 {"G1"};
         Account A1 {"A1"};
@@ -421,14 +418,13 @@ class Freeze_test : public beast::unit_test::suite
         BEAST_EXPECT(let == "AccountRoot");
     }
 
-    template<class... Features>
     void
-    testOffersWhenFrozen(Features&&... fs)
+    testOffersWhenFrozen(std::initializer_list<uint256> fs)
     {
         testcase("Offers for Frozen Trust Lines");
 
         using namespace test::jtx;
-        Env env(*this, features(fs)...);
+        Env env(*this, features(fs));
 
         Account G1 {"G1"};
         Account A2 {"A2"};
@@ -527,15 +523,16 @@ public:
 
     void run()
     {
-        auto testAll = [this](auto&&... fs) {
-            testRippleState(fs...);
-            testGlobalFreeze(fs...);
-            testNoFreeze(fs...);
-            testOffersWhenFrozen(fs...);
+        auto testAll = [this](std::initializer_list<uint256> fs)
+        {
+            testRippleState(fs);
+            testGlobalFreeze(fs);
+            testNoFreeze(fs);
+            testOffersWhenFrozen(fs);
         };
-        testAll();
-        testAll(featureFlow);
-        testAll(featureFlow, featureToStrandV2);
+        testAll({});
+        testAll({featureFlow});
+        testAll({featureFlow, featureToStrandV2});
     }
 };
 

@@ -92,8 +92,7 @@ class Offer_test : public beast::unit_test::suite
     }
 
 public:
-    template<class... Features>
-    void testRmFundedOffer (Features&&... fs)
+    void testRmFundedOffer (std::initializer_list<uint256> fs)
     {
         testcase ("Incorrect Removal of Funded Offers");
 
@@ -106,7 +105,7 @@ public:
         // still funded and not used for the payment.
 
         using namespace jtx;
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
 
         // ledger close times have a dynamic resolution depending on network
         // conditions it appears the resolution in test is 10 seconds
@@ -152,13 +151,12 @@ public:
             isOffer (env, carol, BTC (49), XRP (49)));
     }
 
-    template<class... Features>
-    void testCanceledOffer (Features&&... fs)
+    void testCanceledOffer (std::initializer_list<uint256> fs)
     {
         testcase ("Removing Canceled Offers");
 
         using namespace jtx;
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const USD = gw["USD"];
@@ -208,8 +206,7 @@ public:
         BEAST_EXPECT(!isOffer (env, alice, XRP (222), USD (111)));
     }
 
-    template<class... Features>
-    void testTinyPayment (Features&&... fs)
+    void testTinyPayment (std::initializer_list<uint256> fs)
     {
         testcase ("Tiny payments");
 
@@ -224,7 +221,7 @@ public:
         auto const USD = gw["USD"];
         auto const EUR = gw["EUR"];
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
 
         env.fund (XRP (10000), alice, bob, carol, gw);
         env.trust (USD (1000), alice, bob, carol);
@@ -251,8 +248,7 @@ public:
         }
     }
 
-    template<class... Features>
-    void testXRPTinyPayment (Features&&... fs)
+    void testXRPTinyPayment (std::initializer_list<uint256> fs)
     {
         testcase ("XRP Tiny payments");
 
@@ -283,10 +279,10 @@ public:
 
         for (auto withFix : {false, true})
         {
-            if (!withFix && sizeof...(fs))
+            if (!withFix && fs.size())
                 continue;
 
-            Env env {*this, features(fs)...};
+            Env env {*this, features(fs)};
 
             auto closeTime = [&]
             {
@@ -359,8 +355,7 @@ public:
         }
     }
 
-    template<class... Features>
-    void testEnforceNoRipple (Features&&... fs)
+    void testEnforceNoRipple (std::initializer_list<uint256> fs)
     {
         testcase ("Enforce No Ripple");
 
@@ -377,7 +372,7 @@ public:
 
         {
             // No ripple with an implied account step after an offer
-            Env env {*this, features(fs)...};
+            Env env {*this, features(fs)};
             auto const gw1 = Account {"gw1"};
             auto const USD1 = gw1["USD"];
             auto const gw2 = Account {"gw2"};
@@ -426,9 +421,8 @@ public:
         }
     }
 
-    template<class... Features>
     void
-    testInsufficientReserve (Features&&... fs)
+    testInsufficientReserve (std::initializer_list<uint256> fs)
     {
         testcase ("Insufficient Reserve");
 
@@ -451,7 +445,7 @@ public:
 
         // No crossing:
         {
-            Env env {*this, features(fs)...};
+            Env env {*this, features(fs)};
             env.fund (XRP (1000000), gw);
 
             auto const f = env.current ()->fees ().base;
@@ -499,7 +493,7 @@ public:
         // if an offer were added. Attempt to sell IOUs to
         // buy XRP. If it fully crosses, we succeed.
         {
-            Env env {*this, features(fs)...};
+            Env env {*this, features(fs)};
             env.fund (XRP (1000000), gw);
 
             auto const f = env.current ()->fees ().base;
@@ -530,9 +524,8 @@ public:
         }
     }
 
-    template<class... Features>
     void
-    testFillModes (Features&&... fs)
+    testFillModes (std::initializer_list<uint256> fs)
     {
         testcase ("Fill Modes");
 
@@ -547,7 +540,7 @@ public:
         // Fill or Kill - unless we fully cross, just charge
         // a fee and not place the offer on the books:
         {
-            Env env {*this, features(fs)...};
+            Env env {*this, features(fs)};
             env.fund (startBalance, gw);
 
             auto const f = env.current ()->fees ().base;
@@ -589,7 +582,7 @@ public:
         // Immediate or Cancel - cross as much as possible
         // and add nothing on the books:
         {
-            Env env {*this, features(fs)...};
+            Env env {*this, features(fs)};
             env.fund (startBalance, gw);
 
             auto const f = env.current ()->fees ().base;
@@ -641,9 +634,8 @@ public:
         }
     }
 
-    template<class... Features>
     void
-    testMalformed(Features&&... fs)
+    testMalformed(std::initializer_list<uint256> fs)
     {
         testcase ("Malformed Detection");
 
@@ -654,7 +646,7 @@ public:
         auto const alice = Account {"alice"};
         auto const USD = gw["USD"];
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         env.fund (startBalance, gw);
 
         env.fund (startBalance, alice);
@@ -736,9 +728,8 @@ public:
         }
     }
 
-    template<class... Features>
     void
-    testExpiration(Features&&... fs)
+    testExpiration(std::initializer_list<uint256> fs)
     {
         testcase ("Offer Expiration");
 
@@ -810,9 +801,8 @@ public:
             owners (bob, 1));
     }
 
-    template<class... Features>
     void
-    testUnfundedCross(Features&&... fs)
+    testUnfundedCross(std::initializer_list<uint256> fs)
     {
         testcase ("Unfunded Crossing");
 
@@ -872,9 +862,8 @@ public:
             owners ("eve", 1));
     }
 
-    template<class... Features>
     void
-    testSelfCross(bool use_partner, Features&&... fs)
+    testSelfCross(bool use_partner, std::initializer_list<uint256> fs)
     {
         testcase (std::string("Self-crossing") +
             (use_partner ? ", with partner account" : ""));
@@ -886,7 +875,7 @@ public:
         auto const USD = gw["USD"];
         auto const BTC = gw["BTC"];
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         env.fund (XRP (10000), gw);
         if (use_partner)
         {
@@ -977,9 +966,8 @@ public:
         BEAST_EXPECT(isOffer(env, account_to_test, USD(50), BTC(250)));
     }
 
-    template<class... Features>
     void
-    testNegativeBalance(Features&&... fs)
+    testNegativeBalance(std::initializer_list<uint256> fs)
     {
         // This test creates an offer test for negative balance
         // with transfer fees and miniscule funds.
@@ -987,7 +975,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const bob = Account {"bob"};
@@ -1055,9 +1043,8 @@ public:
         );
     }
 
-    template<class... Features>
     void
-    testOfferCrossWithXRP(bool reverse_order, Features&&... fs)
+    testOfferCrossWithXRP(bool reverse_order, std::initializer_list<uint256> fs)
     {
         testcase (std::string("Offer Crossing with XRP, ") +
                 (reverse_order ? "Reverse" : "Normal") +
@@ -1065,7 +1052,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const bob = Account {"bob"};
@@ -1113,15 +1100,14 @@ public:
         );
     }
 
-    template<class... Features>
     void
-    testOfferCrossWithLimitOverride(Features&&... fs)
+    testOfferCrossWithLimitOverride(std::initializer_list<uint256> fs)
     {
         testcase ("Offer Crossing with Limit Override");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const bob = Account {"bob"};
@@ -1159,15 +1145,14 @@ public:
         );
     }
 
-    template<class... Features>
     void
-    testOfferAcceptThenCancel(Features&&... fs)
+    testOfferAcceptThenCancel(std::initializer_list<uint256> fs)
     {
         testcase ("Offer Accept then Cancel.");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const USD = env.master["USD"];
 
         auto const nextOfferSeq = env.seq (env.master);
@@ -1187,16 +1172,15 @@ public:
         BEAST_EXPECT(env.seq (env.master) == nextOfferSeq + 2);
     }
 
-    template<class... Features>
     void
-    testOfferCancelPastAndFuture(Features&&... fs)
+    testOfferCancelPastAndFuture(std::initializer_list<uint256> fs)
     {
 
         testcase ("Offer Cancel Past and Future Sequence.");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const alice = Account {"alice"};
 
         auto const nextOfferSeq = env.seq (env.master);
@@ -1218,15 +1202,14 @@ public:
         env.close();
     }
 
-    template<class... Features>
     void
-    testCurrencyConversionEntire(Features&&... fs)
+    testCurrencyConversionEntire(std::initializer_list<uint256> fs)
     {
         testcase ("Currency Conversion: Entire Offer");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const bob = Account {"bob"};
@@ -1279,15 +1262,14 @@ public:
             owners (bob, 1));
     }
 
-    template<class... Features>
     void
-    testCurrencyConversionIntoDebt(Features&&... fs)
+    testCurrencyConversionIntoDebt(std::initializer_list<uint256> fs)
     {
         testcase ("Currency Conversion: Offerer Into Debt");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const alice = Account {"alice"};
         auto const bob = Account {"bob"};
         auto const carol = Account {"carol"};
@@ -1308,15 +1290,14 @@ public:
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
     }
 
-    template<class... Features>
     void
-    testCurrencyConversionInParts(Features&&... fs)
+    testCurrencyConversionInParts(std::initializer_list<uint256> fs)
     {
         testcase ("Currency Conversion: In Parts");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const bob = Account {"bob"};
@@ -1396,15 +1377,14 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-100");
     }
 
-    template<class... Features>
     void
-    testCrossCurrencyStartXRP(Features&&... fs)
+    testCrossCurrencyStartXRP(std::initializer_list<uint256> fs)
     {
         testcase ("Cross Currency Payment: Start with XRP");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const bob = Account {"bob"};
@@ -1436,15 +1416,14 @@ public:
             jro[jss::node][jss::TakerPays] == XRP (250).value ().getText ());
     }
 
-    template<class... Features>
     void
-    testCrossCurrencyEndXRP(Features&&... fs)
+    testCrossCurrencyEndXRP(std::initializer_list<uint256> fs)
     {
         testcase ("Cross Currency Payment: End with XRP");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const bob = Account {"bob"};
@@ -1484,15 +1463,14 @@ public:
             jro[jss::node][jss::TakerPays] == USD (25).value ().getJson (0));
     }
 
-    template<class... Features>
     void
-    testCrossCurrencyBridged(Features&&... fs)
+    testCrossCurrencyBridged(std::initializer_list<uint256> fs)
     {
         testcase ("Cross Currency Payment: Bridged");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw1 = Account {"gateway_1"};
         auto const gw2 = Account {"gateway_2"};
         auto const alice = Account {"alice"};
@@ -1549,15 +1527,14 @@ public:
             jro[jss::node][jss::TakerPays] == XRP (200).value ().getText ());
     }
 
-    template<class... Features>
     void
-    testOfferFeesConsumeFunds(Features&&... fs)
+    testOfferFeesConsumeFunds(std::initializer_list<uint256> fs)
     {
         testcase ("Offer Fees Consume Funds");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw1 = Account {"gateway_1"};
         auto const gw2 = Account {"gateway_2"};
         auto const gw3 = Account {"gateway_3"};
@@ -1603,15 +1580,14 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-400");
     }
 
-    template<class... Features>
     void
-    testOfferCreateThenCross(Features&&... fs)
+    testOfferCreateThenCross(std::initializer_list<uint256> fs)
     {
         testcase ("Offer Create, then Cross");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const bob = Account {"bob"};
@@ -1639,15 +1615,14 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-0.966500000033334");
     }
 
-    template<class... Features>
     void
-    testSellFlagBasic(Features&&... fs)
+    testSellFlagBasic(std::initializer_list<uint256> fs)
     {
         testcase ("Offer tfSell: Basic Sell");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const bob = Account {"bob"};
@@ -1681,15 +1656,14 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-400");
     }
 
-    template<class... Features>
     void
-    testSellFlagExceedLimit(Features&&... fs)
+    testSellFlagExceedLimit(std::initializer_list<uint256> fs)
     {
         testcase ("Offer tfSell: 2x Sell Exceed Limit");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const bob = Account {"bob"};
@@ -1725,15 +1699,14 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-300");
     }
 
-    template<class... Features>
     void
-    testGatewayCrossCurrency(Features&&... fs)
+    testGatewayCrossCurrency(std::initializer_list<uint256> fs)
     {
         testcase ("Client Issue #535: Gateway Cross Currency");
 
         using namespace jtx;
 
-        Env env {*this, features(fs)...};
+        Env env {*this, features(fs)};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const bob = Account {"bob"};
@@ -1794,8 +1767,7 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-101");
     }
 
-    template<class... Features>
-    void testTickSize (Features&&... fs)
+    void testTickSize (std::initializer_list<uint256> fs)
     {
         testcase ("Tick Size");
 
@@ -1803,7 +1775,7 @@ public:
 
         // Try to set tick size without enabling feature
         {
-            Env env {*this, features(fs)...};
+            Env env {*this, features(fs)};
             auto const gw = Account {"gateway"};
             env.fund (XRP(10000), gw);
 
@@ -1814,7 +1786,7 @@ public:
 
         // Try to set tick size out of range
         {
-            Env env {*this, features(fs)..., features (featureTickSize)};
+            Env env {*this, features(fs), features (featureTickSize)};
             auto const gw = Account {"gateway"};
             env.fund (XRP(10000), gw);
 
@@ -1847,7 +1819,7 @@ public:
             BEAST_EXPECT (! env.le(gw)->isFieldPresent (sfTickSize));
         }
 
-        Env env {*this, features(fs)..., features (featureTickSize)};
+        Env env {*this, features(fs), features (featureTickSize)};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const XTS = gw["XTS"];
@@ -1917,41 +1889,41 @@ public:
 
     void run ()
     {
-        auto testAll = [this](auto&&... fs) {
-            testCanceledOffer(fs...);
-            testRmFundedOffer(fs...);
-            testTinyPayment(fs...);
-            testXRPTinyPayment(fs...);
-            testEnforceNoRipple(fs...);
-            testInsufficientReserve(fs...);
-            testFillModes(fs...);
-            testMalformed(fs...);
-            testExpiration(fs...);
-            testUnfundedCross(fs...);
-            testSelfCross(false);
-            testSelfCross(true);
-            testNegativeBalance(fs...);
-            testOfferCrossWithXRP(true);
-            testOfferCrossWithXRP(false);
-            testOfferCrossWithLimitOverride(fs...);
-            testOfferAcceptThenCancel(fs...);
-            testOfferCancelPastAndFuture(fs...);
-            testCurrencyConversionEntire(fs...);
-            testCurrencyConversionIntoDebt(fs...);
-            testCurrencyConversionInParts(fs...);
-            testCrossCurrencyStartXRP(fs...);
-            testCrossCurrencyEndXRP(fs...);
-            testCrossCurrencyBridged(fs...);
-            testOfferFeesConsumeFunds(fs...);
-            testOfferCreateThenCross(fs...);
-            testSellFlagBasic(fs...);
-            testSellFlagExceedLimit(fs...);
-            testGatewayCrossCurrency(fs...);
-            testTickSize(fs...);
+        auto testAll = [this](std::initializer_list<uint256> fs) {
+            testCanceledOffer(fs);
+            testRmFundedOffer(fs);
+            testTinyPayment(fs);
+            testXRPTinyPayment(fs);
+            testEnforceNoRipple(fs);
+            testInsufficientReserve(fs);
+            testFillModes(fs);
+            testMalformed(fs);
+            testExpiration(fs);
+            testUnfundedCross(fs);
+            testSelfCross(false, fs);
+            testSelfCross(true, fs);
+            testNegativeBalance(fs);
+            testOfferCrossWithXRP(true, fs);
+            testOfferCrossWithXRP(false, fs);
+            testOfferCrossWithLimitOverride(fs);
+            testOfferAcceptThenCancel(fs);
+            testOfferCancelPastAndFuture(fs);
+            testCurrencyConversionEntire(fs);
+            testCurrencyConversionIntoDebt(fs);
+            testCurrencyConversionInParts(fs);
+            testCrossCurrencyStartXRP(fs);
+            testCrossCurrencyEndXRP(fs);
+            testCrossCurrencyBridged(fs);
+            testOfferFeesConsumeFunds(fs);
+            testOfferCreateThenCross(fs);
+            testSellFlagBasic(fs);
+            testSellFlagExceedLimit(fs);
+            testGatewayCrossCurrency(fs);
+            testTickSize(fs);
         };
-        testAll();
-        testAll(featureFlow);
-        testAll(featureFlow, featureToStrandV2);
+        testAll({});
+        testAll({featureFlow});
+        testAll({featureFlow, featureToStrandV2});
     }
 };
 

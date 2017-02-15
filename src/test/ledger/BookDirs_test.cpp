@@ -25,11 +25,10 @@ namespace test {
 
 struct BookDirs_test : public beast::unit_test::suite
 {
-    template<class... Features>
-    void test_bookdir(Features&&... fs)
+    void test_bookdir(std::initializer_list<uint256> fs)
     {
         using namespace jtx;
-        Env env(*this, features(fs)...);
+        Env env(*this, features(fs));
         auto gw = Account("gw");
         auto USD = gw["USD"];
         env.fund(XRP(1000000), "alice", "bob", "gw");
@@ -95,8 +94,8 @@ struct BookDirs_test : public beast::unit_test::suite
 
     void run() override
     {
-        test_bookdir();
-        test_bookdir(featureFlow, featureToStrandV2);
+        test_bookdir({});
+        test_bookdir({featureFlow, featureToStrandV2});
     }
 };
 
