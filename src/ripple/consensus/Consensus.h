@@ -241,10 +241,6 @@ public:
     using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
 
     Consensus(Consensus &&) = default;
-    Consensus& operator=(Consensus &&) = default;
-
-    Consensus(Consensus const&) = delete;
-    Consensus& operator=(Consensus const&) = delete;
 
     /** Constructor.
 
@@ -543,7 +539,7 @@ private:
     }
 
     // TODO: Move this to clients
-    mutable std::unique_ptr<std::recursive_mutex> lock_;
+    std::unique_ptr<std::recursive_mutex> lock_;
 
     //-------------------------------------------------------------------------
     // Consensus state variables
