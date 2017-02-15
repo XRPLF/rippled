@@ -390,11 +390,11 @@ toStrandV2 (
         !isConsistent(deliver) || (sendMaxIssue && !isConsistent(*sendMaxIssue)))
         return {temBAD_PATH, Strand{}};
 
-    for (auto const& p : path)
+    for (auto const& pe : path)
     {
-        auto const t = p.getNodeType();
+        auto const t = pe.getNodeType();
 
-        if (t > STPathElement::Type::typeAll || !t)
+        if (t & ~STPathElement::Type::typeAll)
             return {temBAD_PATH, Strand{}};
 
         bool const hasAccount = t & STPathElement::Type::typeAccount;
@@ -404,20 +404,20 @@ toStrandV2 (
         if (hasAccount && (hasIssuer || hasCurrency))
             return {temBAD_PATH, Strand{}};
 
-        if (hasIssuer && isXRP(p.getIssuerID()))
+        if (hasIssuer && isXRP(pe.getIssuerID()))
             return {temBAD_PATH, Strand{}};
 
-        if (hasAccount && isXRP(p.getAccountID()))
+        if (hasAccount && isXRP(pe.getAccountID()))
             return {temBAD_PATH, Strand{}};
 
         if (hasCurrency && hasIssuer &&
-            isXRP(p.getCurrency()) != isXRP(p.getIssuerID()))
+            isXRP(pe.getCurrency()) != isXRP(pe.getIssuerID()))
             return {temBAD_PATH, Strand{}};
     }
 
     Issue curIssue = [&]
     {
-        auto& currency =
+        auto const& currency =
             sendMaxIssue ? sendMaxIssue->currency : deliver.currency;
         if (isXRP (currency))
             return xrpIssue ();
@@ -444,7 +444,7 @@ toStrandV2 (
             normPath.emplace_back(sendMaxIssue->account, boost::none, boost::none);
         }
 
-        for (auto& i : path)
+        for (auto const& i : path)
             normPath.push_back(i);
 
         auto const lastCurrency =
@@ -502,7 +502,7 @@ toStrandV2 (
         */
         boost::optional<STPathElement> impliedPE;
         auto cur = &normPath[i];
-        auto next = &normPath[i + 1];
+        auto const next = &normPath[i + 1];
 
         if (cur->isAccount())
             curIssue.account = cur->getAccountID ();
@@ -602,7 +602,7 @@ toStrandV2 (
         auto stepAccts = [](Step const& s) -> std::pair<AccountID, AccountID> {
             if (auto r = s.directStepAccts())
                 return *r;
-            if (auto r = s.bookStepBook())
+            if (auto const r = s.bookStepBook())
                 return std::make_pair(r->in.account, r->out.account);
             Throw<FlowException>(
                 tefEXCEPTION, "Step should be either a direct or book step");
@@ -620,11 +620,11 @@ toStrandV2 (
 
         for (auto const& s : result)
         {
-            auto accts = stepAccts(*s);
+            auto const accts = stepAccts(*s);
             if (accts.first != curAccount)
                 return false;
 
-            if (auto b = s->bookStepBook())
+            if (auto const b = s->bookStepBook())
             {
                 if (curIssue != b->in)
                     return false;

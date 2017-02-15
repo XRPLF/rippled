@@ -216,9 +216,9 @@ public:
         testSetAndClear();
 
         auto withFeatsTests = [this](auto&&... fs) {
-            testNegativeBalance();
-            testPairwise();
-            testDefaultRipple();
+            testNegativeBalance(fs...);
+            testPairwise(fs...);
+            testDefaultRipple(fs...);
         };
         withFeatsTests();
         withFeatsTests(featureFlow);
