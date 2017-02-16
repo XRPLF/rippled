@@ -21,6 +21,7 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/SField.h>
+#include <ripple/basics/CountedObject.h>
 
 namespace ripple {
 
@@ -29,20 +30,23 @@ class GetCounts_test : public beast::unit_test::suite
     void testGetCounts()
     {
         using namespace test::jtx;
-
         Env env(*this);
-        // check counts with no transactions posted
-        auto jrr = env.rpc("get_counts")[jss::result];
-        BEAST_EXPECT(jrr[jss::status] == "success");
-        BEAST_EXPECT(! jrr.isMember("Transaction"));
-        BEAST_EXPECT(! jrr.isMember("STObject"));
-        BEAST_EXPECT(! jrr.isMember("HashRouterEntry"));
-        BEAST_EXPECT(
-            jrr.isMember(jss::uptime) &&
-            ! jrr[jss::uptime].asString().empty());
-        BEAST_EXPECT(
-            jrr.isMember(jss::dbKBTotal) &&
-            jrr[jss::dbKBTotal].asInt() > 0);
+
+        Json::Value result;
+        {
+            // check counts with no transactions posted
+            result = env.rpc("get_counts")[jss::result];
+            BEAST_EXPECT(result[jss::status] == "success");
+            BEAST_EXPECT(! result.isMember("Transaction"));
+            BEAST_EXPECT(! result.isMember("STObject"));
+            BEAST_EXPECT(! result.isMember("HashRouterEntry"));
+            BEAST_EXPECT(
+                result.isMember(jss::uptime) &&
+                ! result[jss::uptime].asString().empty());
+            BEAST_EXPECT(
+                result.isMember(jss::dbKBTotal) &&
+                result[jss::dbKBTotal].asInt() > 0);
+        }
 
         // create some transactions
         env.close();
@@ -56,54 +60,49 @@ class GetCounts_test : public beast::unit_test::suite
             env.close();
         }
 
-        jrr = env.rpc("get_counts")[jss::result];
-        BEAST_EXPECT(jrr[jss::status] == "success");
-        BEAST_EXPECT(
-            jrr.isMember("Transaction") &&
-            jrr["Transaction"].asInt() > 0);
-        BEAST_EXPECT(jrr.isMember(
-            "STTx") &&
-            jrr["STTx"].asInt() > 0);
-        BEAST_EXPECT(
-            jrr.isMember("STObject") &&
-            jrr["STObject"].asInt() > 0);
-        BEAST_EXPECT(
-            jrr.isMember("NodeObject") &&
-            jrr["NodeObject"].asInt() > 0);
-        BEAST_EXPECT(
-            jrr.isMember("STArray") &&
-            jrr["STArray"].asInt() > 0);
-        BEAST_EXPECT(
-            jrr.isMember("HashRouterEntry") &&
-            jrr["HashRouterEntry"].asInt() > 0);
-        BEAST_EXPECT(
-            jrr.isMember("STLedgerEntry") &&
-            jrr["STLedgerEntry"].asInt() > 0);
-        BEAST_EXPECT(! jrr.isMember(jss::local_txs));
+        {
+            // check counts, default params
+            result = env.rpc("get_counts")[jss::result];
+            BEAST_EXPECT(result[jss::status] == "success");
+            // compare with values reported by CountedObjects
+            auto const& objectCounts = CountedObjects::getInstance ().getCounts (10);
+            for (auto const& it : objectCounts)
+            {
+                BEAST_EXPECTS(result.isMember(it.first), it.first);
+                BEAST_EXPECTS(result[it.first].asInt() == it.second, it.first);
+            }
+            BEAST_EXPECT(! result.isMember(jss::local_txs));
+        }
 
-        // make request with min threshold 100 and verify
-        // that only STObject and NodeObject are reported
-        jrr = env.rpc("get_counts", "100")[jss::result];
-        BEAST_EXPECT(jrr[jss::status] == "success");
-        BEAST_EXPECT(! jrr.isMember("Transaction"));
-        BEAST_EXPECT(! jrr.isMember("STTx"));
-        BEAST_EXPECT(
-            jrr.isMember("STObject") &&
-            jrr["STObject"].asInt() > 0);
-        BEAST_EXPECT(
-            jrr.isMember("NodeObject") &&
-            jrr["NodeObject"].asInt() > 0);
-        BEAST_EXPECT(! jrr.isMember("STArray"));
-        BEAST_EXPECT(! jrr.isMember("HashRouterEntry"));
-        BEAST_EXPECT(! jrr.isMember("STLedgerEntry"));
+        {
+            // make request with min threshold 100 and verify
+            // that only STObject and NodeObject are reported
+            result = env.rpc("get_counts", "100")[jss::result];
+            BEAST_EXPECT(result[jss::status] == "success");
 
-        // local_txs field will exist when there are open Txs
-        env (pay (alice, bob, alice["USD"](5)));
-        jrr = env.rpc("get_counts")[jss::result];
-        // deliberately don't call close so we have open Tx
-        BEAST_EXPECT(
-            jrr.isMember(jss::local_txs) &&
-            jrr[jss::local_txs].asInt() > 0);
+            // compare with values reported by CountedObjects
+            auto const& objectCounts = CountedObjects::getInstance ().getCounts (100);
+            for (auto const& it : objectCounts)
+            {
+                BEAST_EXPECTS(result.isMember(it.first), it.first);
+                BEAST_EXPECTS(result[it.first].asInt() == it.second, it.first);
+            }
+            BEAST_EXPECT(! result.isMember("Transaction"));
+            BEAST_EXPECT(! result.isMember("STTx"));
+            BEAST_EXPECT(! result.isMember("STArray"));
+            BEAST_EXPECT(! result.isMember("HashRouterEntry"));
+            BEAST_EXPECT(! result.isMember("STLedgerEntry"));
+        }
+
+        {
+            // local_txs field will exist when there are open Txs
+            env (pay (alice, bob, alice["USD"](5)));
+            result = env.rpc("get_counts")[jss::result];
+            // deliberately don't call close so we have open Tx
+            BEAST_EXPECT(
+                result.isMember(jss::local_txs) &&
+                result[jss::local_txs].asInt() > 0);
+        }
     }
 
 public:
