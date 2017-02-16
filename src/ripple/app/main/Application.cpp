@@ -363,6 +363,7 @@ public:
     std::unique_ptr <TxQ> txQ_;
     DeadlineTimer m_sweepTimer;
     DeadlineTimer m_entropyTimer;
+    bool startTimers_;
 
     std::unique_ptr <DatabaseCon> mTxnDB;
     std::unique_ptr <DatabaseCon> mLedgerDB;
@@ -510,6 +511,8 @@ public:
 
         , m_entropyTimer (this)
 
+        , startTimers_ (false)
+
         , m_signals (get_io_service())
 
         , checkSigs_(true)
@@ -545,7 +548,7 @@ public:
     //--------------------------------------------------------------------------
 
     bool setup() override;
-    void doStart() override;
+    void doStart(bool withTimers) override;
     void run() override;
     bool isShutdown() override;
     void signalStop() override;
@@ -841,8 +844,11 @@ public:
             << "Application starting. Version is " << BuildInfo::getVersionString();
 
         using namespace std::chrono_literals;
-        m_sweepTimer.setExpiration (10s);
-        m_entropyTimer.setRecurringExpiration (5min);
+        if(startTimers_)
+        {
+            m_sweepTimer.setExpiration (10s);
+            m_entropyTimer.setRecurringExpiration (5min);
+        }
 
         m_io_latency_sampler.start();
 
@@ -871,9 +877,11 @@ public:
         //      things will happen.
         m_resolver->stop ();
 
-        m_sweepTimer.cancel ();
-
-        m_entropyTimer.cancel ();
+        if(startTimers_)
+        {
+            m_sweepTimer.cancel ();
+            m_entropyTimer.cancel ();
+        }
 
         mValidations->flush ();
 
@@ -1265,8 +1273,9 @@ bool ApplicationImp::setup()
 }
 
 void
-ApplicationImp::doStart()
+ApplicationImp::doStart(bool withTimers)
 {
+    startTimers_ = withTimers;
     prepare ();
     start ();
 }

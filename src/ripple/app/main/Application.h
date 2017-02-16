@@ -97,7 +97,7 @@ public:
     virtual ~Application () = default;
 
     virtual bool setup() = 0;
-    virtual void doStart() = 0;
+    virtual void doStart(bool withTimers) = 0;
     virtual void run() = 0;
     virtual bool isShutdown () = 0;
     virtual void signalStop () = 0;
