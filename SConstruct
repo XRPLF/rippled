@@ -1234,7 +1234,8 @@ for tu_style in ['classic', 'unity']:
             if should_build_ninja(tu_style, toolchain, variant):
                 print('Generating ninja: {}:{}:{}'.format(tu_style, toolchain, variant))
                 scons_to_ninja.GenerateNinjaFile(
-                    [object_builder.env] + object_builder.child_envs,
+                     # add base env last to ensure protoc targets are added
+                    [object_builder.env] + object_builder.child_envs + [base],
                     dest_file='build.ninja')
 
 for key, value in aliases.iteritems():
