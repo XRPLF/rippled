@@ -37,13 +37,12 @@ def GenerateNinjaFile(envs, dest_file):
   node_list = []
   node_map = {}
   def CustomCommandPrinter(cmd, targets, source, env):
-    assert len(targets) == 1, len(targets)
-    node = targets[0]
-    # There can sometimes be multiple commands per target (e.g. ar+ranlib).
-    # We must collect these together to output a single Ninja rule.
-    if node not in node_map:
-      node_list.append(node)
-    node_map.setdefault(node, []).append(cmd)
+    for node in targets:
+      # There can sometimes be multiple commands per target (e.g. ar+ranlib).
+      # We must collect these together to output a single Ninja rule.
+      if node not in node_map:
+        node_list.append(node)
+      node_map.setdefault(node, []).append(cmd)
   for e in envs:
     e.Append(PRINT_CMD_LINE_FUNC=CustomCommandPrinter)
   def WriteFile():
