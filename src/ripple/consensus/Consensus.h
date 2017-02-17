@@ -94,11 +94,11 @@ namespace ripple {
     // A mutable view of transactions
     struct MutableTxSet
     {
-    bool insert(Tx const &);
-    bool erase(Tx::ID const &);
+        MutableTxSet(TxSet const &);
+        bool insert(Tx const &);
+        bool erase(Tx::ID const &);
     };
-    // get a mutable view of the transactions
-    MutablTxSet mutableSet() const;
+
     // Construct from a mutable view.
     TxSet(MutableTxSet const &);
 
@@ -1497,7 +1497,7 @@ void Consensus<Derived, Traits>::updateOurPositions ()
             if (it.second.updateVote (convergePercent_, proposing_))
             {
                 if (!mutableSet)
-                    mutableSet = ourSet_->mutableSet();
+                    mutableSet.emplace(*ourSet_);
 
                 if (it.second.getOurVote ())
                 {

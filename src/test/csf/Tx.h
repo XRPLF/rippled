@@ -76,12 +76,6 @@ public:
     TxSet() = default;
     TxSet(TxSetType const & s) : txs_{ s } {}
 
-    auto
-    mutableSet() const
-    {
-        return *this;
-    }
-
     bool
     insert(Tx const & t)
     {

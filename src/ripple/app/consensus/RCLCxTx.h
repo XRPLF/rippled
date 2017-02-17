@@ -76,37 +76,36 @@ public:
         //! The SHAMap representing the transactions.
         std::shared_ptr <SHAMap> map_;
 
+    public:
         MutableTxSet(RCLTxSet const & src)
             : map_{ src.map_->snapShot(true) }
         {
 
         }
 
-        public:
+        /** Insert a new transaction into the set.
 
-            /** Insert a new transaction into the set.
+        @param t The transaction to insert.
+        @return Whether the transaction took place.
+        */
+        bool
+        insert(Tx const& t)
+        {
+            return map_->addItem(
+                SHAMapItem{ t.id(), t.tx_.peekData() },
+                true, false);
+        }
 
-            @param t The transaction to insert.
-            @return Whether the transaction took place.
-            */
-            bool
-            insert(Tx const& t)
-            {
-                return map_->addItem(
-                    SHAMapItem{ t.id(), t.tx_.peekData() },
-                    true, false);
-            }
+        /** Remove a transaction from the set.
 
-            /** Remove a transaction from the set.
-
-            @param entry The ID of the transaction to remove.
-            @return Whether the transaction was removed.
-            */
-            bool
-            erase(Tx::ID const& entry)
-            {
-                return map_->delItem(entry);
-            }
+        @param entry The ID of the transaction to remove.
+        @return Whether the transaction was removed.
+        */
+        bool
+        erase(Tx::ID const& entry)
+        {
+            return map_->delItem(entry);
+        }
     };
 
     /** Constructor
@@ -127,19 +126,6 @@ public:
         : map_{m.map_->snapShot(false)}
     {
 
-    }
-
-    /** Get a mutable view of the tx set
-
-        When updating our position on disputed transactions
-        during consensus, we need a mutable version of the set.
-
-        @return A mutable view of this tx set
-    */
-    MutableTxSet
-    mutableSet() const
-    {
-        return MutableTxSet(*this);
     }
 
     /** Test if a transaction is in the set.
