@@ -1013,17 +1013,32 @@ OverlayImpl::remove (Child& child)
 void
 OverlayImpl::stop()
 {
-    std::lock_guard<decltype(mutex_)> lock(mutex_);
-    if (work_)
+    // Calling list_[].second->stop() may cause list_ to be modified
+    // (OverlayImpl::remove() may be called on this same thread).  So
+    // iterating directly over list_ to call child->stop() could lead to
+    // undefined behavior.
+    //
+    // Therefore we copy all of the weak/shared ptrs out of list_ before we
+    // start calling stop() on them.  That guarantees OverlayImpl::remove()
+    // won't be called until vector<> children leaves scope.
+    std::vector<std::shared_ptr<Child>> children;
     {
+        std::lock_guard<decltype(mutex_)> lock(mutex_);
+        if (!work_)
+            return;
         work_ = boost::none;
-        for (auto& _ : list_)
+
+        children.reserve (list_.size());
+        for (auto const& element : list_)
         {
-            auto const child = _.second.lock();
-            // Happens when the child is about to be destroyed
-            if (child != nullptr)
-                child->stop();
+            children.emplace_back (element.second.lock());
         }
+    } // lock released
+
+    for (auto const& child : children)
+    {
+        if (child != nullptr)
+            child->stop();
     }
 }
 
