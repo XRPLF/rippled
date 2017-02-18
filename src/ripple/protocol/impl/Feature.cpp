@@ -57,5 +57,6 @@ uint256 const featurePayChan = feature("PayChan");
 uint256 const featureFlow = feature("Flow");
 uint256 const featureCryptoConditions = feature("CryptoConditions");
 uint256 const featureTickSize = feature("TickSize");
+uint256 const featureConditionalSusPay = feature("ConditionalSusPay");
 
 } // ripple

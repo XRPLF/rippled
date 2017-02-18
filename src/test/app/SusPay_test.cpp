@@ -266,7 +266,7 @@ struct SusPay_test : public beast::unit_test::suite
         { // SusPay enabled, CryptoConditions enabled
             Env env(*this,
                 features(featureSusPay),
-                features(featureCryptoConditions));
+                features(featureConditionalSusPay));
 
             env.fund(XRP(5000), "alice", "bob");
 
@@ -290,7 +290,7 @@ struct SusPay_test : public beast::unit_test::suite
         {
             Env env(*this,
                 features(featureSusPay),
-                features(featureCryptoConditions));
+                features(featureConditionalSusPay));
 
             auto const alice = Account("alice");
             env.fund(XRP(5000), alice, "bob");
@@ -316,7 +316,7 @@ struct SusPay_test : public beast::unit_test::suite
 
         Env env(*this,
             features(featureSusPay),
-            features(featureCryptoConditions));
+            features(featureConditionalSusPay));
         env.fund(XRP(5000), "alice", "bob");
         env.close();
 
@@ -436,7 +436,7 @@ struct SusPay_test : public beast::unit_test::suite
         { // Conditional
             Env env(*this,
                 features(featureSusPay),
-                features(featureCryptoConditions));
+                features(featureConditionalSusPay));
             env.fund(XRP(5000), "alice", "bob");
             auto const seq = env.seq("alice");
             env(lockup("alice", "alice", XRP(1000), makeSlice(cb2), env.now() + 1s));
@@ -470,7 +470,7 @@ struct SusPay_test : public beast::unit_test::suite
         { // Test cryptoconditions
             Env env(*this,
                 features(featureSusPay),
-                features(featureCryptoConditions));
+                features(featureConditionalSusPay));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -519,7 +519,7 @@ struct SusPay_test : public beast::unit_test::suite
         { // Test cancel when condition is present
             Env env(*this,
                 features(featureSusPay),
-                features(featureCryptoConditions));
+                features(featureConditionalSusPay));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -538,7 +538,7 @@ struct SusPay_test : public beast::unit_test::suite
         {
             Env env(*this,
                 features(featureSusPay),
-                features(featureCryptoConditions));
+                features(featureConditionalSusPay));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -560,7 +560,7 @@ struct SusPay_test : public beast::unit_test::suite
         { // Test long & short conditions during creation
             Env env(*this,
                 features(featureSusPay),
-                features(featureCryptoConditions));
+                features(featureConditionalSusPay));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -602,7 +602,7 @@ struct SusPay_test : public beast::unit_test::suite
         { // Test long and short conditions & fulfillments during finish
             Env env(*this,
                 features(featureSusPay),
-                features(featureCryptoConditions));
+                features(featureConditionalSusPay));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -689,7 +689,7 @@ struct SusPay_test : public beast::unit_test::suite
           // empty condition & fulfillment during finish
             Env env(*this,
                 features(featureSusPay),
-                features(featureCryptoConditions));
+                features(featureConditionalSusPay));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -737,7 +737,7 @@ struct SusPay_test : public beast::unit_test::suite
         using namespace std::chrono;
         Env env(*this,
             features(featureSusPay),
-            features(featureCryptoConditions));
+            features(featureConditionalSusPay));
 
         env.fund(XRP(5000), "alice", "bob", "carol");
         env(condpay("alice", "carol", XRP(1000), makeSlice(cb1), env.now() + 1s));
@@ -753,7 +753,7 @@ struct SusPay_test : public beast::unit_test::suite
         using namespace std::chrono;
         Env env(*this,
             features(featureSusPay),
-            features(featureCryptoConditions));
+            features(featureConditionalSusPay));
 
         env.memoize("alice");
         env.memoize("bob");
