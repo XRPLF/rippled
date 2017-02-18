@@ -80,18 +80,34 @@ class TransactionEntry_test : public beast::unit_test::suite
         auto check_tx = [this, &env]
             (int index, std::string txhash, std::string type = "")
             {
-                Json::Value params {Json::objectValue};
-                params[jss::ledger_index] = index;
-                params[jss::tx_hash] = txhash;
-                auto const res = env.client()
-                    .invoke("transaction_entry", params)[jss::result];
-                if(! BEAST_EXPECTS(res.isMember(jss::tx_json), txhash))
-                    return;
-                if(! type.empty())
-                    BEAST_EXPECTS(
-                        res[jss::tx_json][jss::TransactionType] == type,
-                        txhash + " is " +
-                            res[jss::tx_json][jss::TransactionType].asString());
+                Json::Value resIndex, resHash;
+                // first request using ledger_index to lookup
+                {
+                    Json::Value params {Json::objectValue};
+                    params[jss::ledger_index] = index;
+                    params[jss::tx_hash] = txhash;
+                    resIndex = env.client()
+                        .invoke("transaction_entry", params)[jss::result];
+                    if(! BEAST_EXPECTS(resIndex.isMember(jss::tx_json), txhash))
+                        return;
+                    BEAST_EXPECT(resIndex[jss::tx_json][jss::hash] == txhash);
+                    if(! type.empty())
+                        BEAST_EXPECTS(
+                            resIndex[jss::tx_json][jss::TransactionType] == type,
+                            txhash + " is " +
+                                resIndex[jss::tx_json][jss::TransactionType].asString());
+                }
+
+                // second request using ledger_hash to lookup and verify
+                // both responses match
+                {
+                    Json::Value params {Json::objectValue};
+                    params[jss::ledger_hash] = resIndex[jss::ledger_hash];
+                    params[jss::tx_hash] = txhash;
+                    resHash = env.client()
+                        .invoke("transaction_entry", params)[jss::result];
+                    BEAST_EXPECT(resHash == resIndex);
+                }
             };
 
         Account A1 {"A1"};
