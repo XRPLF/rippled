@@ -401,6 +401,15 @@ protected:
 
 private:
 
+    /** Internal version of @ref startRound to allow restarting state when
+        wrong LCL acquired.
+    */
+    void
+    startRoundInternal (
+        NetClock::time_point const& now,
+        typename Ledger_t::ID const& prevLgrId,
+        Ledger_t const& prevLgr);
+
     /** Change our view of the last closed ledger
 
         @param lgrId The ID of the last closed ledger to switch to.
@@ -654,6 +663,37 @@ Consensus<Derived, Traits>::startRound (
         firstRound_ = false;
     }
 
+
+    // Can only change proposing/validating state on non-internal startRound
+    // calls
+
+    // We should not be proposing but not validating
+    // Okay to validate but not propose
+    std::tie(proposing_, validating_) = impl().getMode();
+    assert (! proposing_ || validating_);
+
+    if (validating_)
+    {
+        JLOG (j_.info())
+            << "Entering consensus process, validating";
+    }
+    else
+    {
+        // Otherwise we just want to monitor the validation process.
+        JLOG (j_.info())
+            << "Entering consensus process, watching";
+    }
+
+    startRoundInternal(now, prevLCLHash, prevLedger);
+}
+
+template <class Derived, class Traits>
+void
+Consensus<Derived, Traits>::startRoundInternal (
+    NetClock::time_point const& now,
+    typename Ledger_t::ID const& prevLCLHash,
+    Ledger_t const & prevLedger)
+{
     state_ = State::open;
     now_ = now;
     prevLedgerID_ = prevLCLHash;
@@ -680,24 +720,6 @@ Consensus<Derived, Traits>::startRound (
         previousLedger_.closeTimeResolution(),
         previousLedger_.closeAgree(),
         previousLedger_.seq() + 1);
-
-
-    // We should not be proposing but not validating
-    // Okay to validate but not propose
-    std::tie(proposing_, validating_) = impl().getMode();
-    assert (! proposing_ || validating_);
-
-    if (validating_)
-    {
-        JLOG (j_.info())
-            << "Entering consensus process, validating";
-    }
-    else
-    {
-        // Otherwise we just want to monitor the validation process.
-        JLOG (j_.info())
-            << "Entering consensus process, watching";
-    }
 
 
     if (! haveCorrectLCL_)
@@ -1078,7 +1100,7 @@ Consensus<Derived, Traits>::handleLCL (typename Ledger_t::ID const& lgrId)
     if (auto buildLCL = impl().acquireLedger(prevLedgerID_))
     {
         JLOG (j_.info()) << "Have the consensus ledger " << prevLedgerID_;
-        startRound (now_, lgrId, *buildLCL);
+        startRoundInternal (now_, lgrId, *buildLCL);
     }
     else
     {
