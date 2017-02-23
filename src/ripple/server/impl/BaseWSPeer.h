@@ -61,6 +61,7 @@ private:
     beast::websocket::close_reason cr_;
     waitable_timer timer_;
     int timer_action_ = 0; // 0 = normal, 1 = ping sent, 2 = send ping
+    bool write_pending_ = false; // async write operation in progress
 
 public:
     template<class Body, class Headers>
@@ -145,6 +146,9 @@ protected:
     on_write_fin(error_code const& ec);
 
     void
+    on_write_ping(error_code const& ec);
+
+    void
     do_read();
 
     void
@@ -152,6 +156,9 @@ protected:
 
     void
     on_close(error_code const& ec);
+
+    void
+    on_ping_pong(bool is_pong, beast::websocket::ping_data const& payload);
 
     virtual
     void
@@ -196,6 +203,10 @@ run()
             &BaseWSPeer::run, impl().shared_from_this()));
     impl().ws_.set_option(beast::websocket::decorate(identity{}));
     impl().ws_.set_option(port().pmd_options);
+    impl().ws_.set_option(beast::websocket::ping_callback{
+        std:bind(&BaseWSPeer::on_ping_pong, this,
+            std::placeholders::_1, std::placeholders::_2)});
+
     using namespace beast::asio;
     timer_action_ = 1; // close connection if the timer expires
     start_timer();
@@ -224,7 +235,7 @@ send(std::shared_ptr<WSMsg> w)
         return;
     }
     wq_.emplace_back(std::move(w));
-    if(wq_.size() == 1 && timer_action_ != 1)
+    if (! write_pending_)
         on_write({});
 }
 
@@ -233,6 +244,8 @@ void
 BaseWSPeer<Handler, Impl>::
 close()
 {
+    using namespace beast::asio;
+
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind(
             &BaseWSPeer::close, impl().shared_from_this()));
@@ -282,17 +295,34 @@ void
 BaseWSPeer<Handler, Impl>::
 on_write(error_code const& ec)
 {
-    cancel_timer();
+    using namespace beast::asio;
+
     if(ec)
         return fail(ec, "write");
+
+    if (timer_action_ == 2)
+    {
+        timer_action_ = 1;
+        write_pending_ = true;
+        impl().ws_.async_ping({},
+            strand_.wrap(std::bind(
+                &BaseWSPeer::on_write_ping, impl().shared_from_this(),
+                    placeholders::error)));
+        return;
+    }
+
     auto& w = *wq_.front();
     using namespace beast::asio;
     auto const result = w.prepare(65536,
         std::bind(&BaseWSPeer::do_write,
             impl().shared_from_this()));
     if(boost::indeterminate(result.first))
+    {
+        write_pending_ = false;
         return;
-    start_timer();
+    }
+
+    write_pending_ = true;
     if(! result.first)
         impl().ws_.async_write_frame(
             result.first, result.second, strand_.wrap(std::bind(
@@ -313,11 +343,40 @@ on_write_fin(error_code const& ec)
     if(ec)
         return fail(ec, "write_fin");
     wq_.pop_front();
+
     if(do_close_)
+    {
         impl().ws_.async_close(cr_, strand_.wrap(std::bind(
             &BaseWSPeer::on_close, impl().shared_from_this(),
                 beast::asio::placeholders::error)));
-    else if(! wq_.empty())
+        return;
+    }
+
+    write_pending_ = false;
+
+    if(! wq_.empty() || (timer_action_ == 2))
+        on_write({});
+}
+
+template<class Handler, class Impl>
+void
+BaseWSPeer<Handler, Impl>::
+on_write_ping(error_code const& ec)
+{
+    if(ec)
+        return fail(ec, "ping_sent");
+
+    if(do_close_)
+    {
+        impl().ws_.async_close(cr_, strand_.wrap(std::bind(
+            &BaseWSPeer::on_close, impl().shared_from_this(),
+                beast::asio::placeholders::error)));
+        return;
+    }
+
+    write_pending_ = false;
+
+    if(! wq_.empty())
         on_write({});
 }
 
@@ -333,7 +392,6 @@ do_read()
     impl().ws_.async_read(op_, rb_, strand_.wrap(
         std::bind(&BaseWSPeer::on_read,
             impl().shared_from_this(), placeholders::error)));
-    cancel_timer();
 }
 
 template<class Handler, class Impl>
@@ -359,8 +417,19 @@ void
 BaseWSPeer<Handler, Impl>::
 on_close(error_code const& ec)
 {
+    cancel_timer();
     // great
 }
+
+template<class Handler, class Impl>
+void
+BaseWSPeer<Handler, Impl>::
+on_ping_pong(bool is_pong, beast::websocket::ping_data const& payload)
+{
+    if (is_pong)
+        timer_action_ = 0;
+}
+
 
 template<class Handler, class Impl>
 void
@@ -399,10 +468,21 @@ on_timer(error_code ec)
 {
     if(ec == boost::asio::error::operation_aborted)
         return;
-    if(! ec)
+
+    if (! ec && (timer_action_ == 1))
         ec = boost::system::errc::make_error_code(
             boost::system::errc::timed_out);
-    fail(ec, "timer");
+
+    if (ec)
+        return fail(ec, "timer");
+
+    if (timer_action_ != 2)
+    {
+        timer_action_ = 2;
+
+        if (! write_pending_)
+            on_write({});
+    }
 }
 } // ripple
 
