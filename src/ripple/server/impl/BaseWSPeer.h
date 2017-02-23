@@ -45,7 +45,7 @@ protected:
 
     enum
     {
-        // Max seconds without completing a message
+        // Max seconds without signs of line
         timeoutSeconds = 30
     };
 
@@ -60,6 +60,7 @@ private:
     bool do_close_ = false;
     beast::websocket::close_reason cr_;
     waitable_timer timer_;
+    int timer_action_ = 0; // 0 = normal, 1 = ping sent, 2 = send ping
 
 public:
     template<class Body, class Headers>
@@ -196,6 +197,8 @@ run()
     impl().ws_.set_option(beast::websocket::decorate(identity{}));
     impl().ws_.set_option(port().pmd_options);
     using namespace beast::asio;
+    timer_action_ = 1; // close connection if the timer expires
+    start_timer();
     impl().ws_.async_accept(request_, strand_.wrap(std::bind(
         &BaseWSPeer::on_ws_handshake, impl().shared_from_this(),
             placeholders::error)));
@@ -221,7 +224,7 @@ send(std::shared_ptr<WSMsg> w)
         return;
     }
     wq_.emplace_back(std::move(w));
-    if(wq_.size() == 1)
+    if(wq_.size() == 1 && timer_action_ != 1)
         on_write({});
 }
 
@@ -259,6 +262,7 @@ on_ws_handshake(error_code const& ec)
 {
     if(ec)
         return fail(ec, "on_ws_handshake");
+    timer_action_ = 0;
     do_read();
 }
 
