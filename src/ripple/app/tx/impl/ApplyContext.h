@@ -101,7 +101,13 @@ public:
         view_->rawDestroyXRP(fee);
     }
 
+    TER
+    checkInvariants(TER);
+
 private:
+    template<std::size_t... Is>
+    TER checkInvariantsHelper(TER terResult, std::index_sequence<Is...>);
+
     OpenView& base_;
     ApplyFlags flags_;
     boost::optional<ApplyViewImpl> view_;

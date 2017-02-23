@@ -168,6 +168,7 @@ protected:
 private:
     void setSeq ();
     TER payFee ();
+    void claimFee (XRPAmount& fee, TER terResult, std::vector<uint256> const& removedOffers);
     static TER checkSingleSign (PreclaimContext const& ctx);
     static TER checkMultiSign (PreclaimContext const& ctx);
 };

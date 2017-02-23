@@ -1833,6 +1833,12 @@
     <ClInclude Include="..\..\src\ripple\app\tx\impl\Escrow.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\InvariantCheck.cpp">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\InvariantCheck.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\tx\impl\Offer.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
@@ -5446,6 +5452,9 @@
       <Filter>test\ledger</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\ledger\Directory_test.cpp">
+      <Filter>test\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\ledger\Invariants_test.cpp">
       <Filter>test\ledger</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\ledger\PaymentSandbox_test.cpp">

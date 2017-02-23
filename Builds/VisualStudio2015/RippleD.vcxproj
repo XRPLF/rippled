@@ -1311,6 +1311,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\impl\Escrow.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\InvariantCheck.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\InvariantCheck.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\tx\impl\Offer.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\OfferStream.cpp">
@@ -4696,6 +4702,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\test\ledger\Directory_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\ledger\Invariants_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>

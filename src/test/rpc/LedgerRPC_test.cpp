@@ -470,15 +470,13 @@ class LedgerRPC_test : public beast::unit_test::suite
     {
         testcase("Ledger with Queued Transactions");
         using namespace test::jtx;
-        Env env{ *this, []()
-            {
-                auto p = std::make_unique<Config>();
-                test::setupConfigForUnitTests(*p);
-                auto& section = p->section("transaction_queue");
-                section.set("minimum_txn_in_ledger_standalone", "3");
-                return p;
-            }(),
-            features(featureFeeEscalation) };
+        Env env { *this,
+            envconfig([](std::unique_ptr<Config> cfg) {
+                cfg->section("transaction_queue")
+                    .set("minimum_txn_in_ledger_standalone", "3");
+                return cfg;
+            }),
+            features(featureFeeEscalation)};
 
         Json::Value jv;
         jv[jss::ledger_index] = "current";

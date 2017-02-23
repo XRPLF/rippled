@@ -64,6 +64,7 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { tecDST_TAG_NEEDED,         { "tecDST_TAG_NEEDED",        "A destination tag is required."                                                } },
         { tecINTERNAL,               { "tecINTERNAL",              "An internal error has occurred during processing."                             } },
         { tecCRYPTOCONDITION_ERROR,  { "tecCRYPTOCONDITION_ERROR", "Malformed, invalid, or mismatched conditional or fulfillment."                 } },
+        { tecINVARIANT_FAILED,       { "tecINVARIANT_FAILED",      "One or more invariants for the transaction were not satisfied."                } },
 
         { tefALREADY,                { "tefALREADY",               "The exact transaction was already in this ledger."                             } },
         { tefBAD_ADD_AUTH,           { "tefBAD_ADD_AUTH",          "Not authorized to add account."                                                } },
@@ -79,9 +80,10 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { tefMAX_LEDGER,             { "tefMAX_LEDGER",            "Ledger sequence too high."                                                     } },
         { tefNO_AUTH_REQUIRED,       { "tefNO_AUTH_REQUIRED",      "Auth is not required."                                                         } },
         { tefNOT_MULTI_SIGNING,      { "tefNOT_MULTI_SIGNING",     "Account has no appropriate list of multi-signers."                             } },
-        { tefPAST_SEQ,               { "tefPAST_SEQ",              "This sequence number has already past."                                        } },
+        { tefPAST_SEQ,               { "tefPAST_SEQ",              "This sequence number has already passed."                                      } },
         { tefWRONG_PRIOR,            { "tefWRONG_PRIOR",           "This previous transaction does not match."                                     } },
         { tefBAD_AUTH_MASTER,        { "tefBAD_AUTH_MASTER",       "Auth for unclaimed account needs correct master key."                          } },
+        { tefINVARIANT_FAILED,       { "tefINVARIANT_FAILED",      "Fee claim violated invariants for the transaction."                            } },
 
         { telLOCAL_ERROR,            { "telLOCAL_ERROR",           "Local failure."                                                                } },
         { telBAD_DOMAIN,             { "telBAD_DOMAIN",            "Domain too long."                                                              } },
