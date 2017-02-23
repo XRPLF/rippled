@@ -117,6 +117,7 @@ INPUT                  = \
     ../src/ripple/app/consensus/RCLCxLedger.h \
     ../src/ripple/app/consensus/RCLConsensus.h \
     ../src/ripple/app/consensus/RCLCxPeerPos.h \
+    ../src/ripple/app/tx/impl/InvariantCheck.h \
 
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          =

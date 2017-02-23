@@ -38,6 +38,7 @@
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
 #include <ripple/ledger/CachedSLEs.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/STAmount.h>
@@ -52,6 +53,7 @@
 #include <utility>
 #include <unordered_map>
 #include <vector>
+
 
 namespace ripple {
 namespace test {
@@ -156,7 +158,10 @@ public:
     {
         memoize(Account::master);
         Pathfinder::initPathTable();
-        construct(std::forward<Args>(args)...);
+        // enable the the invariant enforcement amendment by default.
+        construct(
+            features(featureEnforceInvariants),
+            std::forward<Args>(args)...);
     }
 
     template <class... Args>
