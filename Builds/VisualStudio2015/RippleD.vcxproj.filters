@@ -543,9 +543,6 @@
     <ClInclude Include="..\..\src\beast\include\beast\core\async_completion.hpp">
       <Filter>beast\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\basic_streambuf.hpp">
-      <Filter>beast\core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\bind_handler.hpp">
       <Filter>beast\core</Filter>
     </ClInclude>
@@ -624,9 +621,6 @@
     <ClInclude Include="..\..\src\beast\include\beast\core\handler_ptr.hpp">
       <Filter>beast\core</Filter>
     </ClInclude>
-    <None Include="..\..\src\beast\include\beast\core\impl\basic_streambuf.ipp">
-      <Filter>beast\core\impl</Filter>
-    </None>
     <None Include="..\..\src\beast\include\beast\core\impl\consuming_buffers.ipp">
       <Filter>beast\core\impl</Filter>
     </None>
@@ -637,6 +631,9 @@
       <Filter>beast\core\impl</Filter>
     </None>
     <None Include="..\..\src\beast\include\beast\core\impl\static_streambuf.ipp">
+      <Filter>beast\core\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\include\beast\core\impl\streambuf.ipp">
       <Filter>beast\core\impl</Filter>
     </None>
     <ClInclude Include="..\..\src\beast\include\beast\core\placeholders.hpp">
