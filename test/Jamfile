@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+# Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 #
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -16,7 +16,6 @@ compile zlib.cpp : : ;
 unit-test core-tests :
     ../extras/beast/unit_test/main.cpp
     core/async_completion.cpp
-    core/basic_streambuf.cpp
     core/bind_handler.cpp
     core/buffer_cat.cpp
     core/buffer_concepts.cpp
@@ -29,6 +28,7 @@ unit-test core-tests :
     core/handler_concepts.cpp
     core/handler_ptr.cpp
     core/placeholders.cpp
+    core/prepare_buffer.cpp
     core/prepare_buffers.cpp
     core/static_streambuf.cpp
     core/static_string.cpp
@@ -39,6 +39,7 @@ unit-test core-tests :
     core/base64.cpp
     core/empty_base_optimization.cpp
     core/get_lowest_layer.cpp
+    core/is_call_possible.cpp
     core/sha1.cpp
     ;
 

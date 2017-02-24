@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -188,7 +188,7 @@ struct message_type
 
 namespace detail {
 
-using pong_cb = std::function<void(ping_data const&)>;
+using ping_cb = std::function<void(bool, ping_data const&)>;
 
 } // detail
 
@@ -209,13 +209,13 @@ struct permessage_deflate
     bool client_enable = false;
 
     /** Maximum server window bits to offer
-        
+
         @note Due to a bug in ZLib, this value must be greater than 8.
     */
     int server_max_window_bits = 15;
 
     /** Maximum client window bits to offer
-        
+
         @note Due to a bug in ZLib, this value must be greater than 8.
     */
     int client_max_window_bits = 15;
@@ -233,48 +233,55 @@ struct permessage_deflate
     int memLevel = 4;
 };
 
-/** Pong callback option.
+/** Ping callback option.
 
-    Sets the callback to be invoked whenever a pong is received
-    during a call to @ref beast::websocket::stream::read,
-    @ref beast::websocket::stream::read_frame,
-    @ref beast::websocket::stream::async_read, or
-    @ref beast::websocket::stream::async_read_frame.
+    Sets the callback to be invoked whenever a ping or pong is
+    received during a call to one of the following functions:
 
-    Unlike completion handlers, the callback will be invoked for
-    each received pong during a call to any synchronous or
-    asynchronous read function. The operation is passive, with
-    no associated error code, and triggered by reads.
+    @li @ref beast::websocket::stream::read
+    @li @ref beast::websocket::stream::read_frame
+    @li @ref beast::websocket::stream::async_read
+    @li @ref beast::websocket::stream::async_read_frame
+
+    Unlike completion handlers, the callback will be invoked
+    for each received ping and pong during a call to any
+    synchronous or asynchronous read function. The operation is
+    passive, with no associated error code, and triggered by reads.
 
     The signature of the callback must be:
     @code
-    void callback(
+    void
+    callback(
+        bool is_pong,               // `true` if this is a pong
         ping_data const& payload    // Payload of the pong frame
     );
     @endcode
 
-    If the read operation receiving a pong frame is an asynchronous
-    operation, the callback will be invoked using the same method as
-    that used to invoke the final handler.
+    The value of `is_pong` will be `true` if a pong control frame
+    is received, and `false` if a ping control frame is received.
+
+    If the read operation receiving a ping or pong frame is an
+    asynchronous operation, the callback will be invoked using
+    the same method as that used to invoke the final handler.
 
     @note Objects of this type are used with
           @ref beast::websocket::stream::set_option.
-          To remove the pong callback, construct the option with
-          no parameters: `set_option(pong_callback{})`
+          To remove the ping callback, construct the option with
+          no parameters: `set_option(ping_callback{})`
 */
 #if GENERATING_DOCS
-using pong_callback = implementation_defined;
+using ping_callback = implementation_defined;
 #else
-struct pong_callback
+struct ping_callback
 {
-    detail::pong_cb value;
+    detail::ping_cb value;
 
-    pong_callback() = default;
-    pong_callback(pong_callback&&) = default;
-    pong_callback(pong_callback const&) = default;
+    ping_callback() = default;
+    ping_callback(ping_callback&&) = default;
+    ping_callback(ping_callback const&) = default;
 
     explicit
-    pong_callback(detail::pong_cb f)
+    ping_callback(detail::ping_cb f)
         : value(std::move(f))
     {
     }

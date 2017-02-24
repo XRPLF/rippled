@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -112,7 +112,7 @@ protected:
 
     // Number of literal bytes 0..255
     static std::uint16_t constexpr literals = 256;
-    
+
     // Number of Literal or Length codes, including the END_BLOCK code
     static std::uint16_t constexpr lCodes = literals + 1 + lengthCodes;
 
@@ -184,7 +184,7 @@ protected:
     // Describes a single value and its code string.
     struct ct_data
     {
-        std::uint16_t fc; // frequency count or bit string    
+        std::uint16_t fc; // frequency count or bit string
         std::uint16_t dl; // parent node in tree or length of bit string
 
         bool
@@ -648,7 +648,7 @@ protected:
     static
     unsigned
     bi_reverse(unsigned code, int len);
-    
+
     template<class = void>
     static
     void

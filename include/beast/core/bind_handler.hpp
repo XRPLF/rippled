@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -15,21 +15,23 @@
 
 namespace beast {
 
-/** Bind parameters to a completion handler, creating a wrapped handler.
+/** Bind parameters to a completion handler, creating a new handler.
 
     This function creates a new handler which, when invoked with no
-    parameters, calls the original handler with the list of bound arguments.
-    The passed handler and arguments are forwarded into the returned handler,
-    which provides the same `io_service` execution guarantees as the original
-    handler.
+    parameters, calls the original handler with the list of bound
+    arguments. The passed handler and arguments are forwarded into
+    the returned handler, which provides the same `io_service`
+    execution guarantees as the original handler.
 
-    Unlike `io_service::wrap`, the returned handler can be used in a
-    subsequent call to `io_service::post` instead of `io_service::dispatch`,
-    to ensure that the handler will not be invoked immediately by the
-    calling function.
+    Unlike `io_service::wrap`, the returned handler can be used in
+    a subsequent call to `io_service::post` instead of
+    `io_service::dispatch`, to ensure that the handler will not be
+    invoked immediately by the calling function.
 
     Example:
+
     @code
+
     template<class AsyncReadStream, class ReadHandler>
     void
     do_cancel(AsyncReadStream& stream, ReadHandler&& handler)
@@ -38,6 +40,7 @@ namespace beast {
             bind_handler(std::forward<ReadHandler>(handler),
                 boost::asio::error::operation_aborted, 0));
     }
+
     @endcode
 
     @param handler The handler to wrap.
@@ -45,22 +48,21 @@ namespace beast {
     @param args A list of arguments to bind to the handler. The
     arguments are forwarded into the returned object.
 */
-template<class CompletionHandler, class... Args>
+template<class Handler, class... Args>
 #if GENERATING_DOCS
 implementation_defined
 #else
 detail::bound_handler<
-    typename std::decay<CompletionHandler>::type, Args...>
+    typename std::decay<Handler>::type, Args...>
 #endif
-bind_handler(CompletionHandler&& handler, Args&&... args)
+bind_handler(Handler&& handler, Args&&... args)
 {
     static_assert(is_CompletionHandler<
-        CompletionHandler, void(Args...)>::value,
-            "CompletionHandler requirements not met");
+        Handler, void(Args...)>::value,
+            "Handler requirements not met");
     return detail::bound_handler<typename std::decay<
-        CompletionHandler>::type, Args...>(std::forward<
-            CompletionHandler>(handler),
-                std::forward<Args>(args)...);
+        Handler>::type, Args...>(std::forward<
+            Handler>(handler), std::forward<Args>(args)...);
 }
 
 } // beast

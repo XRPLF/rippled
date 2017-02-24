@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -30,12 +30,6 @@ namespace beast {
     is still responsible for managing its lifetime.
 
     @tparam BufferSequence The buffer sequence to wrap.
-
-    @tparam ValueType The type of buffer of the final buffer sequence. This
-    can be different from the buffer type of the wrapped sequence. For
-    example, a `MutableBufferSequence` can be transformed into a
-    consumable `ConstBufferSequence`. Violations of buffer const safety
-    are not permitted, and will result in a compile error.
 */
 template<class BufferSequence>
 class consuming_buffers
@@ -45,6 +39,7 @@ class consuming_buffers
 
     BufferSequence bs_;
     iter_type begin_;
+    iter_type end_;
     std::size_t skip_ = 0;
 
     template<class Deduced>
@@ -56,13 +51,23 @@ class consuming_buffers
     }
 
 public:
-    /// The type for each element in the list of buffers.
+    /** The type for each element in the list of buffers.
+
+        If the buffers in the underlying sequence are convertible to
+        `boost::asio::mutable_buffer`, then this type will be
+        `boost::asio::mutable_buffer`, else this type will be
+        `boost::asio::const_buffer`.
+    */
+#if GENERATING_DOCS
+    using value_type = ...;
+#else
     using value_type = typename std::conditional<
         std::is_convertible<typename
             std::iterator_traits<iter_type>::value_type,
                 boost::asio::mutable_buffer>::value,
                     boost::asio::mutable_buffer,
                         boost::asio::const_buffer>::type;
+#endif
 
 #if GENERATING_DOCS
     /// A bidirectional iterator type that may be used to read elements.

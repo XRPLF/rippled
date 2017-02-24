@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -128,7 +128,7 @@ public:
     {
         doClear();
     }
-    
+
     /** Returns the upper limit on the size of a compressed block.
 
         This function makes a conservative estimate of the maximum number
@@ -171,7 +171,7 @@ public:
         the input buffer becomes empty or the output buffer becomes full.
         It may introduce some output latency (reading input without
         producing any output) except when forced to flush.
-        
+
         In each call, one or both of these actions are performed:
 
         @li Compress more input starting at `zs.next_in` and update
@@ -371,12 +371,12 @@ deflate_upper_bound(std::size_t bytes);
     They are coded as constants here for a reason--if the #define's are
     changed, then this function needs to be changed as well.  The return
     value for 15 and 8 only works for those exact settings.
-    
+
     For any setting other than those defaults for windowBits and memLevel,
     the value returned is a conservative worst case for the maximum expansion
     resulting from using fixed blocks instead of stored blocks, which deflate
     can emit on compressed data for some combinations of the parameters.
-    
+
     This function could be more sophisticated to provide closer upper bounds for
     every combination of windowBits and memLevel.  But even the conservative
     upper bound of about 14% expansion does not seem onerous for output buffer

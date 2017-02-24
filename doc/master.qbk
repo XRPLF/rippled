@@ -1,5 +1,5 @@
 [/
-    Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+    Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 
     Distributed under the Boost Software License, Version 1.0. (See accompanying
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -7,7 +7,7 @@
 
 [library Beast
     [quickbook 1.6]
-    [copyright 2013 - 2016 Vinnie Falco]
+    [copyright 2013 - 2017 Vinnie Falco]
     [purpose Networking Protocol Library]
     [license
         Distributed under the Boost Software License, Version 1.0.
@@ -29,15 +29,16 @@
 
 [def __asio_handler_invoke__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/asio_handler_invoke.html `asio_handler_invoke`]]
 [def __asio_handler_allocate__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/asio_handler_allocate.html `asio_handler_allocate`]]
-[def __void_or_deduced__ [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/asynchronous_operations.html#boost_asio.reference.asynchronous_operations.return_type_of_an_initiating_function ['void-or-deduced]]]
+[def __void_or_deduced__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/asynchronous_operations.html#boost_asio.reference.asynchronous_operations.return_type_of_an_initiating_function ['void-or-deduced]]]
 
 [def __AsyncReadStream__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/AsyncReadStream.html [*AsyncReadStream]]]
 [def __AsyncWriteStream__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/AsyncWriteStream.html [*AsyncWriteStream]]]
-[def __CompletionHandler__ [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/CompletionHandler.html [*CompletionHandler]]]
+[def __CompletionHandler__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/CompletionHandler.html [*CompletionHandler]]]
 [def __ConstBufferSequence__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/ConstBufferSequence.html [*ConstBufferSequence]]]
+[def __Handler__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/Handler.html [*Handler]]]
 [def __MutableBufferSequence__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/MutableBufferSequence.html [*MutableBufferSequence]]]
 [def __SyncReadStream__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/SyncReadStream.html [*SyncReadStream]]]
-[def __SyncWriteStream__ [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/SyncWriteStream.html [*SyncWriteStream]]]
+[def __SyncWriteStream__ [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/SyncWriteStream.html [*SyncWriteStream]]]
 
 [def __Body__             [link beast.ref.Body [*`Body`]]]
 [def __DynamicBuffer__    [link beast.ref.DynamicBuffer [*DynamicBuffer]]]

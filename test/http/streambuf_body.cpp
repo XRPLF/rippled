@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -13,7 +13,7 @@
 #include <beast/http/parser_v1.hpp>
 #include <beast/http/read.hpp>
 #include <beast/http/write.hpp>
-#include <beast/test/string_stream.hpp>
+#include <beast/test/string_istream.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -33,7 +33,7 @@ public:
             "Content-Length: 3\r\n"
             "\r\n"
             "xyz";
-        test::string_stream ss(ios_, s);
+        test::string_istream ss(ios_, s);
         parser_v1<false, streambuf_body, fields> p;
         streambuf sb;
         parse(ss, sb, p);

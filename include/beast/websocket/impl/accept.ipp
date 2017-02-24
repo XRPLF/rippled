@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -106,7 +106,7 @@ public:
 
 template<class NextLayer>
 template<class Handler>
-void 
+void
 stream<NextLayer>::response_op<Handler>::
 operator()(error_code ec, bool again)
 {
@@ -288,7 +288,7 @@ async_accept(ConstBufferSequence const& bs, AcceptHandler&& handler)
             "ConstBufferSequence requirements not met");
     beast::async_completion<
         AcceptHandler, void(error_code)
-            > completion(handler);
+            > completion{handler};
     accept_op<decltype(completion.handler)>{
         completion.handler, *this, bs};
     return completion.result.get();
@@ -306,7 +306,7 @@ async_accept(http::request<Body, Fields> const& req,
         "AsyncStream requirements requirements not met");
     beast::async_completion<
         AcceptHandler, void(error_code)
-            > completion(handler);
+            > completion{handler};
     reset();
     response_op<decltype(completion.handler)>{
         completion.handler, *this, req,

@@ -1,12 +1,12 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_TEST_STRING_STREAM_HPP
-#define BEAST_TEST_STRING_STREAM_HPP
+#ifndef BEAST_TEST_STRING_OSTREAM_HPP
+#define BEAST_TEST_STRING_OSTREAM_HPP
 
 #include <beast/core/async_completion.hpp>
 #include <beast/core/bind_handler.hpp>
@@ -18,22 +18,16 @@
 namespace beast {
 namespace test {
 
-/** A SyncStream and AsyncStream that reads from a string.
-
-    This class behaves like a socket, except that written data is simply
-    discarded, and when data is read it comes from a string provided
-    at construction.
-*/
-class string_stream
+class string_ostream
 {
-    std::string s_;
     boost::asio::io_service& ios_;
 
 public:
-    string_stream(boost::asio::io_service& ios,
-            std::string s)
-        : s_(std::move(s))
-        , ios_(ios)
+    std::string str;
+
+    explicit
+    string_ostream(boost::asio::io_service& ios)
+        : ios_(ios)
     {
     }
 
@@ -59,13 +53,7 @@ public:
     read_some(MutableBufferSequence const& buffers,
         error_code& ec)
     {
-        auto const n = boost::asio::buffer_copy(
-            buffers, boost::asio::buffer(s_));
-        if(n > 0)
-            s_.erase(0, n);
-        else
-            ec = boost::asio::error::eof;
-        return n;
+        return 0;
     }
 
     template<class MutableBufferSequence, class ReadHandler>
@@ -74,17 +62,10 @@ public:
     async_read_some(MutableBufferSequence const& buffers,
         ReadHandler&& handler)
     {
-        auto const n = boost::asio::buffer_copy(
-            buffers, boost::asio::buffer(s_));
-        error_code ec;
-        if(n > 0)
-            s_.erase(0, n);
-        else
-            ec = boost::asio::error::eof;
         async_completion<ReadHandler,
-            void(error_code, std::size_t)> completion(handler);
-        ios_.post(bind_handler(
-            completion.handler, ec, n));
+            void(error_code, std::size_t)> completion{handler};
+        ios_.post(bind_handler(completion.handler,
+            error_code{}, 0));
         return completion.result.get();
     }
 
@@ -101,22 +82,32 @@ public:
 
     template<class ConstBufferSequence>
     std::size_t
-    write_some(ConstBufferSequence const& buffers,
-        error_code&)
+    write_some(
+        ConstBufferSequence const& buffers, error_code&)
     {
-        return boost::asio::buffer_size(buffers);
+        auto const n = buffer_size(buffers);
+        using boost::asio::buffer_size;
+        using boost::asio::buffer_cast;
+        str.reserve(str.size() + n);
+        for(auto const& buffer : buffers)
+            str.append(buffer_cast<char const*>(buffer),
+                buffer_size(buffer));
+        return n;
     }
 
-    template<class ConstBuffeSequence, class WriteHandler>
-    typename async_completion<WriteHandler,
-        void(error_code, std::size_t)>::result_type
-    async_write_some(ConstBuffeSequence const& buffers,
+    template<class ConstBufferSequence, class WriteHandler>
+    typename async_completion<
+        WriteHandler, void(error_code)>::result_type
+    async_write_some(ConstBufferSequence const& buffers,
         WriteHandler&& handler)
     {
-        async_completion<WriteHandler,
-            void(error_code, std::size_t)> completion(handler);
-        ios_.post(bind_handler(completion.handler,
-            error_code{}, boost::asio::buffer_size(buffers)));
+        error_code ec;
+        auto const bytes_transferred = write_some(buffers, ec);
+        async_completion<
+            WriteHandler, void(error_code, std::size_t)
+                > completion{handler};
+        get_io_service().post(
+            bind_handler(completion.handler, ec, bytes_transferred));
         return completion.result.get();
     }
 };

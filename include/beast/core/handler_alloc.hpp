@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -28,28 +28,29 @@ namespace beast {
 
     @tparam T The type of objects allocated by the allocator.
 
-    @tparam CompletionHandler The type of handler.
+    @tparam Handler The type of handler.
 
     @note Memory allocated by this allocator must be freed before
-          the handler is invoked or undefined behavior results.
+    the handler is invoked or undefined behavior results. This behavior
+    is described as the "deallocate before invocation" Asio guarantee.
 */
 #if GENERATING_DOCS
-template<class T, class CompletionHandler>
+template<class T, class Handler>
 class handler_alloc;
 #else
-template<class T, class CompletionHandler>
+template<class T, class Handler>
 class handler_alloc
 {
 private:
     // We want a partial template specialization as a friend
     // but that isn't allowed so we friend all versions. This
-    // should produce a compile error if CompletionHandler is not
+    // should produce a compile error if Handler is not
     // constructible from H.
     //
     template<class U, class H>
     friend class handler_alloc;
 
-    CompletionHandler& h_;
+    Handler& h_;
 
 public:
     using value_type = T;
@@ -58,7 +59,7 @@ public:
     template<class U>
     struct rebind
     {
-        using other = handler_alloc<U, CompletionHandler>;
+        using other = handler_alloc<U, Handler>;
     };
 
     handler_alloc() = delete;
@@ -73,7 +74,7 @@ public:
         remain valid for at least the lifetime of the allocator.
     */
     explicit
-    handler_alloc(CompletionHandler& h)
+    handler_alloc(Handler& h)
         : h_(h)
     {
     }
@@ -81,7 +82,7 @@ public:
     /// Copy constructor
     template<class U>
     handler_alloc(
-            handler_alloc<U, CompletionHandler> const& other)
+            handler_alloc<U, Handler> const& other)
         : h_(other.h_)
     {
     }
@@ -118,7 +119,7 @@ public:
     friend
     bool
     operator==(handler_alloc const& lhs,
-        handler_alloc<U, CompletionHandler> const& rhs)
+        handler_alloc<U, Handler> const& rhs)
     {
         return true;
     }
@@ -127,9 +128,9 @@ public:
     friend
     bool
     operator!=(handler_alloc const& lhs,
-        handler_alloc<U, CompletionHandler> const& rhs)
+        handler_alloc<U, Handler> const& rhs)
     {
-        return !(lhs == rhs);
+        return ! (lhs == rhs);
     }
 };
 #endif
