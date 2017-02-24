@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -9,7 +9,6 @@
 #define BEAST_CORE_HPP
 
 #include <beast/core/async_completion.hpp>
-#include <beast/core/basic_streambuf.hpp>
 #include <beast/core/bind_handler.hpp>
 #include <beast/core/buffer_cat.hpp>
 #include <beast/core/buffer_concepts.hpp>

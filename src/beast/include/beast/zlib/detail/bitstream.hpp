@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -144,7 +144,7 @@ fill_8(FwdIt& it)
 {
     v_ += static_cast<value_type>(*it++) << n_;
     n_ += 8;
-}    
+}
 
 template<class FwdIt>
 inline
@@ -156,7 +156,7 @@ fill_16(FwdIt& it)
     n_ += 8;
     v_ += static_cast<value_type>(*it++) << n_;
     n_ += 8;
-}    
+}
 
 template<class Unsigned>
 inline
@@ -193,7 +193,7 @@ rewind(BidirIt& it)
     auto len = n_ >> 3;
     it = std::prev(it, len);
     n_ &= 7;
-    v_ &= (1U << n_) - 1;   
+    v_ &= (1U << n_) - 1;
 }
 
 } // detail

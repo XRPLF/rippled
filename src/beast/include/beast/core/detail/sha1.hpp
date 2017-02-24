@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -48,7 +48,7 @@ blk(std::uint32_t block[BLOCK_INTS], std::size_t i)
 }
 
 inline
-void 
+void
 R0(std::uint32_t block[BLOCK_INTS], std::uint32_t v,
     std::uint32_t &w, std::uint32_t x, std::uint32_t y,
         std::uint32_t &z, std::size_t i)

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -134,7 +134,7 @@ private:
         }
 
         /** Open a new testcase.
-        
+
             A testcase is a series of evaluated test conditions. A test
             suite may have multiple test cases. A test is associated with
             the last opened testcase. When the test first runs, a default

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -13,7 +13,7 @@
 #include <beast/http/fields.hpp>
 #include <beast/http/streambuf_body.hpp>
 #include <beast/test/fail_stream.hpp>
-#include <beast/test/string_stream.hpp>
+#include <beast/test/string_istream.hpp>
 #include <beast/test/yield_to.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <boost/asio/spawn.hpp>
@@ -95,7 +95,7 @@ public:
                 sb.prepare(len), buffer(s, len)));
             test::fail_counter fc(n);
             test::fail_stream<
-                test::string_stream> fs{fc, ios_, ""};
+                test::string_istream> fs{fc, ios_, ""};
             fail_parser<isRequest> p(fc);
             error_code ec;
             parse(fs, sb, p, ec);
@@ -110,7 +110,7 @@ public:
             sb.commit(buffer_copy(
                 sb.prepare(pre), buffer(s, pre)));
             test::fail_counter fc(n);
-            test::fail_stream<test::string_stream> fs{
+            test::fail_stream<test::string_istream> fs{
                 fc, ios_, std::string{s + pre, len - pre}};
             fail_parser<isRequest> p(fc);
             error_code ec;
@@ -126,7 +126,7 @@ public:
                 sb.prepare(len), buffer(s, len)));
             test::fail_counter fc(n);
             test::fail_stream<
-                test::string_stream> fs{fc, ios_, ""};
+                test::string_istream> fs{fc, ios_, ""};
             fail_parser<isRequest> p(fc);
             error_code ec;
             async_parse(fs, sb, p, do_yield[ec]);
@@ -141,7 +141,7 @@ public:
             sb.commit(buffer_copy(
                 sb.prepare(pre), buffer(s, pre)));
             test::fail_counter fc(n);
-            test::fail_stream<test::string_stream> fs{
+            test::fail_stream<test::string_istream> fs{
                 fc, ios_, std::string{s + pre, len - pre}};
             fail_parser<isRequest> p(fc);
             error_code ec;
@@ -156,7 +156,7 @@ public:
             sb.commit(buffer_copy(
                 sb.prepare(len), buffer(s, len)));
             test::fail_counter fc{n};
-            test::string_stream ss{ios_, s};
+            test::string_istream ss{ios_, s};
             parser_v1<isRequest, fail_body, fields> p{fc};
             error_code ec;
             parse(ss, sb, p, ec);
@@ -171,7 +171,7 @@ public:
         try
         {
             streambuf sb;
-            test::string_stream ss(ios_, "GET / X");
+            test::string_istream ss(ios_, "GET / X");
             parser_v1<true, streambuf_body, fields> p;
             parse(ss, sb, p);
             fail();
@@ -251,7 +251,7 @@ public:
 
         for(n = 0; n < limit; ++n)
         {
-            test::fail_stream<test::string_stream> fs{n, ios_,
+            test::fail_stream<test::string_istream> fs{n, ios_,
                 "GET / HTTP/1.1\r\n"
                 "Host: localhost\r\n"
                 "User-Agent: test\r\n"
@@ -273,7 +273,7 @@ public:
 
         for(n = 0; n < limit; ++n)
         {
-            test::fail_stream<test::string_stream> fs(n, ios_,
+            test::fail_stream<test::string_istream> fs(n, ios_,
                 "GET / HTTP/1.1\r\n"
                 "Host: localhost\r\n"
                 "User-Agent: test\r\n"
@@ -297,7 +297,7 @@ public:
 
         for(n = 0; n < limit; ++n)
         {
-            test::fail_stream<test::string_stream> fs(n, ios_,
+            test::fail_stream<test::string_istream> fs(n, ios_,
                 "GET / HTTP/1.1\r\n"
                 "Host: localhost\r\n"
                 "User-Agent: test\r\n"
@@ -319,7 +319,7 @@ public:
 
         for(n = 0; n < limit; ++n)
         {
-            test::fail_stream<test::string_stream> fs(n, ios_,
+            test::fail_stream<test::string_istream> fs(n, ios_,
                 "GET / HTTP/1.1\r\n"
                 "Host: localhost\r\n"
                 "User-Agent: test\r\n"
@@ -337,7 +337,7 @@ public:
 
         for(n = 0; n < limit; ++n)
         {
-            test::fail_stream<test::string_stream> fs(n, ios_,
+            test::fail_stream<test::string_istream> fs(n, ios_,
                 "GET / HTTP/1.1\r\n"
                 "Host: localhost\r\n"
                 "User-Agent: test\r\n"
@@ -358,7 +358,7 @@ public:
     {
         {
             streambuf sb;
-            test::string_stream ss(ios_, "");
+            test::string_istream ss(ios_, "");
             parser_v1<true, streambuf_body, fields> p;
             error_code ec;
             parse(ss, sb, p, ec);
@@ -366,7 +366,7 @@ public:
         }
         {
             streambuf sb;
-            test::string_stream ss(ios_, "");
+            test::string_istream ss(ios_, "");
             parser_v1<true, streambuf_body, fields> p;
             error_code ec;
             async_parse(ss, sb, p, do_yield[ec]);

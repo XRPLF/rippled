@@ -1,5 +1,5 @@
 [/
-    Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+    Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 
     Distributed under the Boost Software License, Version 1.0. (See accompanying
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -309,9 +309,9 @@ and received a close frame.
 
 During read operations, Beast automatically reads and processes control
 frames. Pings are replied to as soon as possible with a pong, received
-pongs are delivered to the pong callback. The receipt of a close frame
-initiates the WebSocket close procedure, eventually resulting in the error
-code [link beast.ref.websocket__error `error::closed`] being delivered
+ping and pongs are delivered to the ping callback. The receipt of a close
+frame initiates the WebSocket close procedure, eventually resulting in the
+error code [link beast.ref.websocket__error `error::closed`] being delivered
 to the caller in a subsequent read operation, assuming no other error
 takes place.
 
@@ -331,29 +331,33 @@ using the functions
     [link beast.ref.websocket__stream.ping `ping`] and
     [link beast.ref.websocket__stream.pong `pong`].
 
-To receive pong control frames, callers may register a "pong callback" using
-[link beast.ref.websocket__stream.set_option `set_option`]. The object provided
-with this option should be callable with the following signature:
+To be notified of ping and pong control frames, callers may register a
+"ping callback" using [link beast.ref.websocket__stream.set_option `set_option`].
+The object provided with this option should be callable with the following
+signature:
 ```
-    void on_pong(ping_data const& payload);
+    void on_ping(bool is_pong, ping_data const& payload);
     ...
-    ws.set_option(pong_callback{&on_pong});
+    ws.set_option(ping_callback{&on_ping});
 ```
 
-When a pong callback is registered, any pongs received through either
-synchronous read functions or asynchronous read functions will invoke the
-pong callback, passing the payload in the pong message as the argument.
+When a ping callback is registered, all pings and pongs received through
+either synchronous read functions or asynchronous read functions will
+invoke the ping callback, with the value of `is_pong` set to `true` if a
+pong was received else `false` if a ping was received. The payload of
+the ping or pong control frame is passed in the payload argument.
 
 Unlike regular completion handlers used in calls to asynchronous initiation
-functions, the pong callback only needs to be set once. The callback is not
-reset when a pong is received. The same callback is used for both synchronous
-and asynchronous reads. The pong callback is passive; in order to receive
-pongs, a synchronous or asynchronous stream read function must be active.
+functions, the ping callback only needs to be set once. The callback is not
+reset when a ping or pong is received. The same callback is used for both
+synchronous and asynchronous reads. The ping callback is passive; in order
+to receive pings and pongs, a synchronous or asynchronous stream read
+function must be active.
 
 [note
-    When an asynchronous read function receives a pong, the the pong
-    callback is invoked in the same manner as that used to invoke the
-    final completion handler of the corresponding read function.
+    When an asynchronous read function receives a ping or pong, the
+    ping callback is invoked in the same manner as that used to invoke
+    the final completion handler of the corresponding read function.
 ]
 
 [heading Close Frames]

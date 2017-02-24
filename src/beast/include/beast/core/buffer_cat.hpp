@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -24,8 +24,9 @@ namespace beast {
     This function returns a constant or mutable buffer sequence which,
     when iterated, efficiently concatenates the input buffer sequences.
     Copies of the arguments passed will be made; however, the returned
-    object does not take ownership of the underlying memory. The application
-    is still responsible for managing the lifetime of the referenced memory.
+    object does not take ownership of the underlying memory. The
+    application is still responsible for managing the lifetime of the
+    referenced memory.
 
     @param buffers The list of buffer sequences to concatenate.
 

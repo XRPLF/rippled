@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -17,6 +17,7 @@
 #include <beast/core/streambuf.hpp>
 #include <beast/core/to_string.hpp>
 #include <beast/test/fail_stream.hpp>
+#include <beast/test/string_ostream.hpp>
 #include <beast/test/yield_to.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <boost/asio/error.hpp>
@@ -31,68 +32,6 @@ class write_test
     , public test::enable_yield_to
 {
 public:
-    class string_write_stream
-    {
-        boost::asio::io_service& ios_;
-
-    public:
-        std::string str;
-
-        explicit
-        string_write_stream(boost::asio::io_service& ios)
-            : ios_(ios)
-        {
-        }
-
-        boost::asio::io_service&
-        get_io_service()
-        {
-            return ios_;
-        }
-
-        template<class ConstBufferSequence>
-        std::size_t
-        write_some(ConstBufferSequence const& buffers)
-        {
-            error_code ec;
-            auto const n = write_some(buffers, ec);
-            if(ec)
-                throw system_error{ec};
-            return n;
-        }
-
-        template<class ConstBufferSequence>
-        std::size_t
-        write_some(
-            ConstBufferSequence const& buffers, error_code&)
-        {
-            auto const n = buffer_size(buffers);
-            using boost::asio::buffer_size;
-            using boost::asio::buffer_cast;
-            str.reserve(str.size() + n);
-            for(auto const& buffer : buffers)
-                str.append(buffer_cast<char const*>(buffer),
-                    buffer_size(buffer));
-            return n;
-        }
-
-        template<class ConstBufferSequence, class WriteHandler>
-        typename async_completion<
-            WriteHandler, void(error_code)>::result_type
-        async_write_some(ConstBufferSequence const& buffers,
-            WriteHandler&& handler)
-        {
-            error_code ec;
-            auto const bytes_transferred = write_some(buffers, ec);
-            async_completion<
-                WriteHandler, void(error_code, std::size_t)
-                    > completion(handler);
-            get_io_service().post(
-                bind_handler(completion.handler, ec, bytes_transferred));
-            return completion.result.get();
-        }
-    };
-
     struct unsized_body
     {
         using value_type = std::string;
@@ -225,7 +164,7 @@ public:
     std::string
     str(message<isRequest, Body, Fields> const& m)
     {
-        string_write_stream ss(ios_);
+        test::string_ostream ss(ios_);
         write(ss, m);
         return ss.str;
     }
@@ -240,7 +179,7 @@ public:
             m.url = "/";
             m.fields.insert("User-Agent", "test");
             error_code ec;
-            string_write_stream ss{ios_};
+            test::string_ostream ss{ios_};
             async_write(ss, m, do_yield[ec]);
             if(BEAST_EXPECTS(! ec, ec.message()))
                 BEAST_EXPECT(ss.str ==
@@ -256,7 +195,7 @@ public:
             m.fields.insert("Server", "test");
             m.fields.insert("Content-Length", "5");
             error_code ec;
-            string_write_stream ss{ios_};
+            test::string_ostream ss{ios_};
             async_write(ss, m, do_yield[ec]);
             if(BEAST_EXPECTS(! ec, ec.message()))
                 BEAST_EXPECT(ss.str ==
@@ -279,7 +218,7 @@ public:
             m.fields.insert("Content-Length", "5");
             m.body = "*****";
             error_code ec;
-            string_write_stream ss{ios_};
+            test::string_ostream ss{ios_};
             async_write(ss, m, do_yield[ec]);
             if(BEAST_EXPECTS(! ec, ec.message()))
                 BEAST_EXPECT(ss.str ==
@@ -298,7 +237,7 @@ public:
             m.fields.insert("Transfer-Encoding", "chunked");
             m.body = "*****";
             error_code ec;
-            string_write_stream ss(ios_);
+            test::string_ostream ss(ios_);
             async_write(ss, m, do_yield[ec]);
             if(BEAST_EXPECTS(! ec, ec.message()))
                 BEAST_EXPECT(ss.str ==
@@ -322,7 +261,7 @@ public:
         {
             test::fail_counter fc(n);
             test::fail_stream<
-                string_write_stream> fs(fc, ios_);
+                test::string_ostream> fs(fc, ios_);
             message<true, fail_body, fields> m(
                 std::piecewise_construct,
                     std::forward_as_tuple(fc, ios_));
@@ -355,7 +294,7 @@ public:
         {
             test::fail_counter fc(n);
             test::fail_stream<
-                string_write_stream> fs(fc, ios_);
+                test::string_ostream> fs(fc, ios_);
             message<true, fail_body, fields> m(
                 std::piecewise_construct,
                     std::forward_as_tuple(fc, ios_));
@@ -390,7 +329,7 @@ public:
         {
             test::fail_counter fc(n);
             test::fail_stream<
-                string_write_stream> fs(fc, ios_);
+                test::string_ostream> fs(fc, ios_);
             message<true, fail_body, fields> m(
                 std::piecewise_construct,
                     std::forward_as_tuple(fc, ios_));
@@ -425,7 +364,7 @@ public:
         {
             test::fail_counter fc(n);
             test::fail_stream<
-                string_write_stream> fs(fc, ios_);
+                test::string_ostream> fs(fc, ios_);
             message<true, fail_body, fields> m(
                 std::piecewise_construct,
                     std::forward_as_tuple(fc, ios_));
@@ -455,7 +394,7 @@ public:
         {
             test::fail_counter fc(n);
             test::fail_stream<
-                string_write_stream> fs(fc, ios_);
+                test::string_ostream> fs(fc, ios_);
             message<true, fail_body, fields> m(
                 std::piecewise_construct,
                     std::forward_as_tuple(fc, ios_));
@@ -547,7 +486,7 @@ public:
             m.fields.insert("User-Agent", "test");
             m.body = "*";
             prepare(m);
-            string_write_stream ss(ios_);
+            test::string_ostream ss(ios_);
             error_code ec;
             write(ss, m, ec);
             BEAST_EXPECT(ec == boost::asio::error::eof);
@@ -584,7 +523,7 @@ public:
             m.fields.insert("User-Agent", "test");
             m.body = "*";
             prepare(m, connection::close);
-            string_write_stream ss(ios_);
+            test::string_ostream ss(ios_);
             error_code ec;
             write(ss, m, ec);
             BEAST_EXPECT(ec == boost::asio::error::eof);
@@ -621,7 +560,7 @@ public:
             m.fields.insert("User-Agent", "test");
             m.body = "*";
             prepare(m);
-            string_write_stream ss(ios_);
+            test::string_ostream ss(ios_);
             error_code ec;
             write(ss, m, ec);
             BEAST_EXPECT(ss.str ==

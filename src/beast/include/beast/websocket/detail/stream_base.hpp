@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -59,14 +59,14 @@ protected:
     std::size_t wr_buf_size_ = 4096;        // write buffer size
     std::size_t rd_buf_size_ = 4096;        // read buffer size
     opcode wr_opcode_ = opcode::text;       // outgoing message type
-    pong_cb pong_cb_;                       // pong callback
+    ping_cb ping_cb_;                       // ping callback
     role_type role_;                        // server or client
     bool failed_;                           // the connection failed
 
     bool wr_close_;                         // sent close frame
     op* wr_block_;                          // op currenly writing
 
-    ping_data* pong_data_;                  // where to put pong payload
+    ping_data* ping_data_;                  // where to put the payload
     invokable rd_op_;                       // invoked after write completes
     invokable wr_op_;                       // invoked after read completes
     close_reason cr_;                       // set from received close frame
@@ -212,7 +212,7 @@ open(role_type role)
     rd_.cont = false;
     wr_close_ = false;
     wr_block_ = nullptr;    // should be nullptr on close anyway
-    pong_data_ = nullptr;   // should be nullptr on close anyway
+    ping_data_ = nullptr;   // should be nullptr on close anyway
 
     wr_.cont = false;
     wr_.buf_size = 0;

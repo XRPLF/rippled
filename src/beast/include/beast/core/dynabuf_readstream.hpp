@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -179,13 +179,7 @@ public:
         return sb_;
     }
 
-    /** Access the internal buffer.
-
-        The internal buffer is returned. It is possible for the
-        caller to break invariants with this function. For example,
-        by causing the internal buffer size to increase beyond
-        the caller defined maximum.
-    */
+    /// Access the internal buffer
     DynamicBuffer const&
     buffer() const
     {
@@ -213,8 +207,83 @@ public:
         capacity_ = size;
     }
 
-    /// Write the given data to the stream. Returns the number of bytes written.
-    /// Throws an exception on failure.
+    /** Read some data from the stream.
+
+        This function is used to read data from the stream.
+        The function call will block until one or more bytes of
+        data has been read successfully, or until an error occurs.
+
+        @param buffers One or more buffers into which the data will be read.
+
+        @return The number of bytes read.
+
+        @throws system_error Thrown on failure.
+    */
+    template<class MutableBufferSequence>
+    std::size_t
+    read_some(MutableBufferSequence const& buffers);
+
+    /** Read some data from the stream.
+
+        This function is used to read data from the stream.
+        The function call will block until one or more bytes of
+        data has been read successfully, or until an error occurs.
+
+        @param buffers One or more buffers into which the data will be read.
+
+        @param ec Set to the error, if any occurred.
+
+        @return The number of bytes read, or 0 on error.
+    */
+    template<class MutableBufferSequence>
+    std::size_t
+    read_some(MutableBufferSequence const& buffers,
+        error_code& ec);
+
+    /** Start an asynchronous read.
+
+        This function is used to asynchronously read data from
+        the stream. The function call always returns immediately.
+
+        @param buffers One or more buffers into which the data
+        will be read. Although the buffers object may be copied
+        as necessary, ownership of the underlying memory blocks
+        is retained by the caller, which must guarantee that they
+        remain valid until the handler is called.
+
+        @param handler The handler to be called when the operation
+        completes. Copies will be made of the handler as required.
+        The equivalent function signature of the handler must be:
+        @code void handler(
+            error_code const& error,      // result of operation
+            std::size_t bytes_transferred // number of bytes transferred
+        ); @endcode
+        Regardless of whether the asynchronous operation completes
+        immediately or not, the handler will not be invoked from within
+        this function. Invocation of the handler will be performed in a
+        manner equivalent to using `boost::asio::io_service::post`.
+    */
+    template<class MutableBufferSequence, class ReadHandler>
+#if GENERATING_DOCS
+    void_or_deduced
+#else
+    typename async_completion<ReadHandler, void(error_code)>::result_type
+#endif
+    async_read_some(MutableBufferSequence const& buffers,
+        ReadHandler&& handler);
+
+    /** Write some data to the stream.
+
+        This function is used to write data to the stream.
+        The function call will block until one or more bytes of the
+        data has been written successfully, or until an error occurs.
+
+        @param buffers One or more data buffers to be written to the stream.
+
+        @return The number of bytes written.
+
+        @throws system_error Thrown on failure.
+    */
     template<class ConstBufferSequence>
     std::size_t
     write_some(ConstBufferSequence const& buffers)
@@ -224,8 +293,18 @@ public:
         return next_layer_.write_some(buffers);
     }
 
-    /// Write the given data to the stream. Returns the number of bytes written,
-    /// or 0 if an error occurred.
+    /** Write some data to the stream.
+
+        This function is used to write data to the stream.
+        The function call will block until one or more bytes of the
+        data has been written successfully, or until an error occurs.
+
+        @param buffers One or more data buffers to be written to the stream.
+
+        @param ec Set to the error, if any occurred.
+
+        @return The number of bytes written.
+    */
     template<class ConstBufferSequence>
     std::size_t
     write_some(ConstBufferSequence const& buffers,
@@ -236,8 +315,29 @@ public:
         return next_layer_.write_some(buffers, ec);
     }
 
-    /// Start an asynchronous write. The data being written must be valid for the
-    /// lifetime of the asynchronous operation.
+    /** Start an asynchronous write.
+
+        This function is used to asynchronously write data from
+        the stream. The function call always returns immediately.
+
+        @param buffers One or more data buffers to be written to
+        the stream. Although the buffers object may be copied as
+        necessary, ownership of the underlying memory blocks is
+        retained by the caller, which must guarantee that they
+        remain valid until the handler is called.
+
+        @param handler The handler to be called when the operation
+        completes. Copies will be made of the handler as required.
+        The equivalent function signature of the handler must be:
+        @code void handler(
+            error_code const& error,      // result of operation
+            std::size_t bytes_transferred // number of bytes transferred
+        ); @endcode
+        Regardless of whether the asynchronous operation completes
+        immediately or not, the handler will not be invoked from within
+        this function. Invocation of the handler will be performed in a
+        manner equivalent to using `boost::asio::io_service::post`.
+    */
     template<class ConstBufferSequence, class WriteHandler>
 #if GENERATING_DOCS
     void_or_deduced
@@ -246,30 +346,6 @@ public:
 #endif
     async_write_some(ConstBufferSequence const& buffers,
         WriteHandler&& handler);
-
-    /// Read some data from the stream. Returns the number of bytes read.
-    /// Throws an exception on failure.
-    template<class MutableBufferSequence>
-    std::size_t
-    read_some(MutableBufferSequence const& buffers);
-
-    /// Read some data from the stream. Returns the number of bytes read
-    /// or 0 if an error occurred.
-    template<class MutableBufferSequence>
-    std::size_t
-    read_some(MutableBufferSequence const& buffers,
-        error_code& ec);
-
-    /// Start an asynchronous read. The buffer into which the data will be read
-    /// must be valid for the lifetime of the asynchronous operation.
-    template<class MutableBufferSequence, class ReadHandler>
-#if GENERATING_DOCS
-    void_or_deduced
-#else
-    typename async_completion<ReadHandler, void(error_code)>::result_type
-#endif
-    async_read_some(MutableBufferSequence const& buffers,
-        ReadHandler&& handler);
 };
 
 } // beast

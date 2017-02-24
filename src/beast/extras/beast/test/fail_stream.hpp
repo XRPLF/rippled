@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -113,7 +113,7 @@ public:
         {
             async_completion<
                 ReadHandler, void(error_code, std::size_t)
-                    > completion(handler);
+                    > completion{handler};
             next_layer_.get_io_service().post(
                 bind_handler(completion.handler, ec, 0));
             return completion.result.get();
@@ -150,7 +150,7 @@ public:
         {
             async_completion<
                 WriteHandler, void(error_code, std::size_t)
-                    > completion(handler);
+                    > completion{handler};
             next_layer_.get_io_service().post(
                 bind_handler(completion.handler, ec, 0));
             return completion.result.get();

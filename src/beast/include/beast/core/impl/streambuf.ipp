@@ -1,12 +1,12 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_IMPL_BASIC_STREAMBUF_IPP
-#define BEAST_IMPL_BASIC_STREAMBUF_IPP
+#ifndef BEAST_IMPL_STREAMBUF_IPP
+#define BEAST_IMPL_STREAMBUF_IPP
 
 #include <beast/core/detail/type_traits.hpp>
 #include <beast/core/detail/write_dynabuf.hpp>
@@ -624,7 +624,7 @@ basic_streambuf<Allocator>::prepare(size_type n) ->
         auto const len = e.size() + sizeof(e);
         alloc_traits::destroy(this->member(), &e);
         alloc_traits::deallocate(this->member(),
-            reinterpret_cast<std::uint8_t*>(&e), len);
+            reinterpret_cast<char*>(&e), len);
     }
     return mutable_buffers_type(*this);
 }
@@ -696,7 +696,7 @@ basic_streambuf<Allocator>::consume(size_type n)
             auto const len = e.size() + sizeof(e);
             alloc_traits::destroy(this->member(), &e);
             alloc_traits::deallocate(this->member(),
-                reinterpret_cast<std::uint8_t*>(&e), len);
+                reinterpret_cast<char*>(&e), len);
             debug_check();
         }
         else
@@ -808,7 +808,7 @@ basic_streambuf<Allocator>::delete_list()
         auto const n = e.size() + sizeof(e);
         alloc_traits::destroy(this->member(), &e);
         alloc_traits::deallocate(this->member(),
-            reinterpret_cast<std::uint8_t*>(&e), n);
+            reinterpret_cast<char*>(&e), n);
     }
 }
 

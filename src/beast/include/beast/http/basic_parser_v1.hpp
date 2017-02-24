@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -35,7 +35,8 @@ enum parse_flag
     trailing              =  16,
     upgrade               =  32,
     skipbody              =  64,
-    contentlength         = 128
+    contentlength         = 128,
+    paused                = 256
 };
 
 /** Body maximum size option.
@@ -280,12 +281,12 @@ private:
     std::uint64_t content_length_;
     pmf_t cb_;
     state s_              : 8;
-    unsigned flags_       : 8;
     unsigned fs_          : 8;
     unsigned pos_         : 8; // position in field state
     unsigned http_major_  : 16;
     unsigned http_minor_  : 16;
     unsigned status_code_ : 16;
+    unsigned flags_       : 9;
     bool upgrade_         : 1; // true if parser exited for upgrade
 
 public:
@@ -434,7 +435,7 @@ public:
         return
             s_ == s_restart ||
             s_ == s_closed_complete ||
-            s_ == s_body_pause;
+            (flags_ & parse_flag::paused);
     }
 
     /** Write a sequence of buffers to the parser.

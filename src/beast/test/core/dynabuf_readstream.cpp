@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -10,7 +10,7 @@
 
 #include <beast/core/streambuf.hpp>
 #include <beast/test/fail_stream.hpp>
-#include <beast/test/string_stream.hpp>
+#include <beast/test/string_istream.hpp>
 #include <beast/test/yield_to.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <boost/asio.hpp>
@@ -54,7 +54,7 @@ public:
         for(n = 0; n < limit; ++n)
         {
             test::fail_stream<
-                test::string_stream> fs(n, ios_, ", world!");
+                test::string_istream> fs(n, ios_, ", world!");
             dynabuf_readstream<
                 decltype(fs)&, streambuf> srs(fs);
             srs.buffer().commit(buffer_copy(
@@ -72,7 +72,7 @@ public:
         for(n = 0; n < limit; ++n)
         {
             test::fail_stream<
-                test::string_stream> fs(n, ios_, ", world!");
+                test::string_istream> fs(n, ios_, ", world!");
             dynabuf_readstream<
                 decltype(fs)&, streambuf> srs(fs);
             srs.capacity(3);
@@ -91,7 +91,7 @@ public:
         for(n = 0; n < limit; ++n)
         {
             test::fail_stream<
-                test::string_stream> fs(n, ios_, ", world!");
+                test::string_istream> fs(n, ios_, ", world!");
             dynabuf_readstream<
                 decltype(fs)&, streambuf> srs(fs);
             srs.buffer().commit(buffer_copy(
@@ -110,7 +110,7 @@ public:
         for(n = 0; n < limit; ++n)
         {
             test::fail_stream<
-                test::string_stream> fs(n, ios_, ", world!");
+                test::string_istream> fs(n, ios_, ", world!");
             dynabuf_readstream<
                 decltype(fs)&, streambuf> srs(fs);
             srs.capacity(3);

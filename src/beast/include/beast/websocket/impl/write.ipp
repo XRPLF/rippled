@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -516,7 +516,7 @@ async_write_frame(bool fin,
             "ConstBufferSequence requirements not met");
     beast::async_completion<
         WriteHandler, void(error_code)
-            > completion(handler);
+            > completion{handler};
     write_frame_op<ConstBufferSequence, decltype(
         completion.handler)>{completion.handler,
             *this, fin, bs};
@@ -864,7 +864,7 @@ async_write(ConstBufferSequence const& bs, WriteHandler&& handler)
         ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
     beast::async_completion<
-        WriteHandler, void(error_code)> completion(handler);
+        WriteHandler, void(error_code)> completion{handler};
     write_op<ConstBufferSequence, decltype(completion.handler)>{
         completion.handler, *this, bs};
     return completion.result.get();

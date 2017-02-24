@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -76,7 +76,7 @@ reset()
     wr_close_ = false;
     wr_.cont = false;
     wr_block_ = nullptr;    // should be nullptr on close anyway
-    pong_data_ = nullptr;   // should be nullptr on close anyway
+    ping_data_ = nullptr;   // should be nullptr on close anyway
 
     stream_.buffer().consume(
         stream_.buffer().size());

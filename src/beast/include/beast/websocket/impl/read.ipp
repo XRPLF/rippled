@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -427,9 +427,11 @@ operator()(error_code ec,
             case do_control:
                 if(d.fh.op == opcode::ping)
                 {
-                    ping_data data;
-                    detail::read(data, d.fb.data());
+                    ping_data payload;
+                    detail::read(payload, d.fb.data());
                     d.fb.reset();
+                    if(d.ws.ping_cb_)
+                        d.ws.ping_cb_(false, payload);
                     if(d.ws.wr_close_)
                     {
                         // ignore ping when closing
@@ -437,7 +439,7 @@ operator()(error_code ec,
                         break;
                     }
                     d.ws.template write_ping<static_streambuf>(
-                        d.fb, opcode::pong, data);
+                        d.fb, opcode::pong, payload);
                     if(d.ws.wr_block_)
                     {
                         // suspend
@@ -455,8 +457,8 @@ operator()(error_code ec,
                     code = close_code::none;
                     ping_data payload;
                     detail::read(payload, d.fb.data());
-                    if(d.ws.pong_cb_)
-                        d.ws.pong_cb_(payload);
+                    if(d.ws.ping_cb_)
+                        d.ws.ping_cb_(true, payload);
                     d.fb.reset();
                     d.state = do_read_fh;
                     break;
@@ -671,7 +673,7 @@ async_read_frame(frame_info& fi,
     static_assert(beast::is_DynamicBuffer<DynamicBuffer>::value,
         "DynamicBuffer requirements not met");
     beast::async_completion<
-        ReadHandler, void(error_code)> completion(handler);
+        ReadHandler, void(error_code)> completion{handler};
     read_frame_op<DynamicBuffer, decltype(completion.handler)>{
         completion.handler, *this, fi, dynabuf};
     return completion.result.get();
@@ -762,11 +764,13 @@ read_frame(frame_info& fi, DynamicBuffer& dynabuf, error_code& ec)
             // Process control frame
             if(fh.op == opcode::ping)
             {
-                ping_data data;
-                detail::read(data, fb.data());
+                ping_data payload;
+                detail::read(payload, fb.data());
                 fb.reset();
+                if(ping_cb_)
+                    ping_cb_(false, payload);
                 write_ping<static_streambuf>(
-                    fb, opcode::pong, data);
+                    fb, opcode::pong, payload);
                 boost::asio::write(stream_, fb.data(), ec);
                 failed_ = ec != 0;
                 if(failed_)
@@ -777,8 +781,8 @@ read_frame(frame_info& fi, DynamicBuffer& dynabuf, error_code& ec)
             {
                 ping_data payload;
                 detail::read(payload, fb.data());
-                if(pong_cb_)
-                    pong_cb_(payload);
+                if(ping_cb_)
+                    ping_cb_(true, payload);
                 continue;
             }
             BOOST_ASSERT(fh.op == opcode::close);
@@ -1075,7 +1079,7 @@ async_read(opcode& op,
         "DynamicBuffer requirements not met");
     beast::async_completion<
         ReadHandler, void(error_code)
-            > completion(handler);
+            > completion{handler};
     read_op<DynamicBuffer, decltype(completion.handler)>{
         completion.handler, *this, op, dynabuf};
     return completion.result.get();

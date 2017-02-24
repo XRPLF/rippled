@@ -1,3 +1,23 @@
+1.0.0-b28
+
+* Split out and rename test stream classes
+* Restyle async result constructions
+* Fix HTTP split parse edge case
+
+--------------------------------------------------------------------------------
+
+1.0.0-b27
+
+* Tidy up tests and docs
+* Add documentation building instructions
+
+API Changes:
+
+* Invoke callback on pings and pongs
+* Move basic_streambuf to streambuf.hpp
+
+--------------------------------------------------------------------------------
+
 1.0.0-b26
 
 * Tidy up warnings and tests

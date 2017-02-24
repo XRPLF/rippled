@@ -2,7 +2,7 @@
 <!DOCTYPE library PUBLIC "-//Boost//DTD BoostBook XML V1.0//EN" "boostbook.dtd">
 
 <!--
-  Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+  Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 
   Distributed under the Boost Software License, Version 1.0. (See accompanying
   file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -129,7 +129,7 @@
             <member><link linkend="beast.ref.websocket__keep_alive">keep_alive</link></member>
             <member><link linkend="beast.ref.websocket__message_type">message_type</link></member>
             <member><link linkend="beast.ref.websocket__permessage_deflate">permessage_deflate</link></member>
-            <member><link linkend="beast.ref.websocket__pong_callback">pong_callback</link></member>
+            <member><link linkend="beast.ref.websocket__ping_callback">ping_callback</link></member>
             <member><link linkend="beast.ref.websocket__read_buffer_size">read_buffer_size</link></member>
             <member><link linkend="beast.ref.websocket__read_message_max">read_message_max</link></member>
             <member><link linkend="beast.ref.websocket__write_buffer_size">write_buffer_size</link></member>
