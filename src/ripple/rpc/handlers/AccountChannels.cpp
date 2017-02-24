@@ -40,9 +40,12 @@ void addChannel (Json::Value& jsonLines, SLE const& line)
     jDst[jss::destination_account] = to_string (line[sfDestination]);
     jDst[jss::amount] = line[sfAmount].getText ();
     jDst[jss::balance] = line[sfBalance].getText ();
-    PublicKey const pk (line[sfPublicKey]);
-    jDst[jss::public_key] = toBase58 (TokenType::TOKEN_ACCOUNT_PUBLIC, pk);
-    jDst[jss::public_key_hex] = strHex (pk);
+    if (publicKeyType(line[sfPublicKey]))
+    {
+        PublicKey const pk (line[sfPublicKey]);
+        jDst[jss::public_key] = toBase58 (TokenType::TOKEN_ACCOUNT_PUBLIC, pk);
+        jDst[jss::public_key_hex] = strHex (pk);
+    }
     jDst[jss::settle_delay] = line[sfSettleDelay];
     if (auto const& v = line[~sfExpiration])
         jDst[jss::expiration] = *v;

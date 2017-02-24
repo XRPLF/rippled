@@ -741,6 +741,13 @@ struct PayChan_test : public beast::unit_test::suite
         }
         {
             auto const r =
+                env.rpc ("account_channels", alice.human ());
+            BEAST_EXPECT (r[jss::result][jss::channels].size () == 1);
+            BEAST_EXPECT (r[jss::result][jss::channels][0u][jss::channel_id] == chan1Str);
+            chan1PkStr = r[jss::result][jss::channels][0u][jss::public_key].asString();
+        }
+        {
+            auto const r =
                 env.rpc ("account_channels", bob.human (), alice.human ());
             BEAST_EXPECT (r[jss::result][jss::channels].size () == 0);
         }
@@ -819,6 +826,57 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
+    testMalformedPK ()
+    {
+        testcase ("malformed pk");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env (*this, features (featurePayChan));
+        auto const alice = Account ("alice");
+        auto const bob = Account ("bob");
+        auto USDA = alice["USD"];
+        env.fund (XRP (10000), alice, bob);
+        auto const pk = alice.pk ();
+        auto const settleDelay = 100s;
+
+        auto jv = create (alice, bob, XRP (1000), settleDelay, pk);
+        auto const pkHex = strHex (pk.slice ());
+        jv["PublicKey"] = pkHex.substr(2, pkHex.size()-2);
+        env (jv, ter(temMALFORMED));
+        jv["PublicKey"] = pkHex.substr(0, pkHex.size()-2);
+        env (jv, ter(temMALFORMED));
+        auto badPrefix = pkHex;
+        badPrefix[0]='f';
+        badPrefix[1]='f';
+        jv["PublicKey"] = badPrefix;
+        env (jv, ter(temMALFORMED));
+
+        jv["PublicKey"] = pkHex;
+        env (jv);
+        auto const chan = channel (*env.current (), alice, bob);
+
+        auto const authAmt = XRP (100);
+        auto const sig = signClaimAuth (alice.pk (), alice.sk (), chan, authAmt);
+        jv = claim(bob, chan, authAmt.value(), authAmt.value(), Slice(sig), alice.pk());
+        jv["PublicKey"] = pkHex.substr(2, pkHex.size()-2);
+        env (jv, ter(temMALFORMED));
+        jv["PublicKey"] = pkHex.substr(0, pkHex.size()-2);
+        env (jv, ter(temMALFORMED));
+        badPrefix = pkHex;
+        badPrefix[0]='f';
+        badPrefix[1]='f';
+        jv["PublicKey"] = badPrefix;
+        env (jv, ter(temMALFORMED));
+
+        // missing public key
+        jv.removeMember("PublicKey");
+        env (jv, ter(temMALFORMED));
+
+        jv["PublicKey"] = pkHex;
+        env (jv);
+    }
+
+    void
     run () override
     {
         testSimple ();
@@ -832,6 +890,7 @@ struct PayChan_test : public beast::unit_test::suite
         testMultiple ();
         testRPC ();
         testOptionalFields ();
+        testMalformedPK ();
     }
 };
 
