@@ -45,8 +45,9 @@ protected:
 
     enum
     {
-        // Max seconds without signs of line
-        timeoutSeconds = 30
+        // Max seconds without signs of life
+        timeoutSeconds = 30,
+        timeoutSecondsLocal = 3 // Used for localhost clients
     };
 
 private:
@@ -204,7 +205,7 @@ run()
     impl().ws_.set_option(beast::websocket::decorate(identity{}));
     impl().ws_.set_option(port().pmd_options);
     impl().ws_.set_option(beast::websocket::ping_callback{
-        std:bind(&BaseWSPeer::on_ping_pong, this,
+        std::bind(&BaseWSPeer::on_ping_pong, this,
             std::placeholders::_1, std::placeholders::_2)});
 
     using namespace beast::asio;
@@ -245,7 +246,6 @@ BaseWSPeer<Handler, Impl>::
 close()
 {
     using namespace beast::asio;
-
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind(
             &BaseWSPeer::close, impl().shared_from_this()));
@@ -296,7 +296,6 @@ BaseWSPeer<Handler, Impl>::
 on_write(error_code const& ec)
 {
     using namespace beast::asio;
-
     if(ec)
         return fail(ec, "write");
 
@@ -353,7 +352,6 @@ on_write_fin(error_code const& ec)
     }
 
     write_pending_ = false;
-
     if(! wq_.empty() || (timer_action_ == 2))
         on_write({});
 }
@@ -375,7 +373,6 @@ on_write_ping(error_code const& ec)
     }
 
     write_pending_ = false;
-
     if(! wq_.empty())
         on_write({});
 }
@@ -418,7 +415,6 @@ BaseWSPeer<Handler, Impl>::
 on_close(error_code const& ec)
 {
     cancel_timer();
-    // great
 }
 
 template<class Handler, class Impl>
@@ -426,22 +422,21 @@ void
 BaseWSPeer<Handler, Impl>::
 on_ping_pong(bool is_pong, beast::websocket::ping_data const& payload)
 {
-    if (is_pong)
+    if (is_pong)// TODO MPORTILLA use payload to validate pong
         timer_action_ = 0;
 }
-
 
 template<class Handler, class Impl>
 void
 BaseWSPeer<Handler, Impl>::
 start_timer()
 {
-    // Max seconds without completing a message
-    static constexpr std::chrono::seconds timeout{30};
-    static constexpr std::chrono::seconds timeoutLocal{3};
     error_code ec;
     timer_.expires_from_now(
-        remote_endpoint().address().is_loopback() ? timeoutLocal : timeout,
+        std::chrono::seconds(
+            remote_address_.address().is_loopback() ?
+                timeoutSecondsLocal :
+                timeoutSeconds),
         ec);
     if(ec)
         return fail(ec, "start_timer");
@@ -469,20 +464,17 @@ on_timer(error_code ec)
     if(ec == boost::asio::error::operation_aborted)
         return;
 
-    if (! ec && (timer_action_ == 1))
+    if (! ec && timer_action_ != 0)
         ec = boost::system::errc::make_error_code(
             boost::system::errc::timed_out);
 
     if (ec)
         return fail(ec, "timer");
 
-    if (timer_action_ != 2)
-    {
-        timer_action_ = 2;
-
-        if (! write_pending_)
-            on_write({});
-    }
+    timer_action_ = 2;
+    start_timer();
+    if (! write_pending_)
+        on_write({});
 }
 } // ripple
 
