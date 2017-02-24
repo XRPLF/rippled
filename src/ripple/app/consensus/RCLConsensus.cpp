@@ -572,9 +572,11 @@ RCLConsensus::accept(
 
         closeTotal += usec64_t(closeCount / 2);  // for round to nearest
         closeTotal /= closeCount;
-        using duration = typename NetClock::duration;
 
-        auto offset = NetClock::time_point{closeTotal} -
+        // Use signed times since we are subtracting
+        using duration = std::chrono::duration<std::int32_t>;
+        using time_point = std::chrono::time_point<NetClock, duration>;
+        auto offset = time_point{closeTotal} -
                       std::chrono::time_point_cast<duration>(closeTime_);
         JLOG (j_.info())
             << "Our close offset is estimated at "
