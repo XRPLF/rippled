@@ -30,7 +30,6 @@ class PlainWSPeer
     : public BaseWSPeer<Handler, PlainWSPeer<Handler>>
     , public std::enable_shared_from_this<PlainWSPeer<Handler>>
 {
-private:
     friend class BasePeer<Handler, PlainWSPeer>;
     friend class BaseWSPeer<Handler, PlainWSPeer>;
 
@@ -51,10 +50,6 @@ public:
         beast::http::request<Body, Headers>&& request,
         socket_type&& socket,
         beast::Journal journal);
-
-private:
-    void
-    do_close() override;
 };
 
 //------------------------------------------------------------------------------
@@ -73,18 +68,6 @@ PlainWSPeer(
         std::move(request), socket.get_io_service(), journal)
     , ws_(std::move(socket))
 {
-}
-
-template<class Handler>
-void
-PlainWSPeer<Handler>::
-do_close()
-{
-    error_code ec;
-    auto& sock = ws_.next_layer();
-    sock.shutdown(socket_type::shutdown_both, ec);
-    if(ec)
-        return this->fail(ec, "do_close");
 }
 
 } // ripple
