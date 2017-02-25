@@ -24,6 +24,7 @@
 #include <ripple/server/impl/io_list.h>
 #include <ripple/beast/utility/WrappedSink.h>
 #include <boost/asio.hpp>
+#include <atomic>
 #include <cassert>
 #include <functional>
 #include <string>
@@ -87,7 +88,7 @@ BasePeer(Port const& port, Handler& handler,
     , sink_(journal.sink(),
         []
         { 
-            static int id = 0;
+            static std::atomic<unsigned> id{0};
             return "##" + std::to_string(++id) + " ";
         }())
     , j_(sink_)
