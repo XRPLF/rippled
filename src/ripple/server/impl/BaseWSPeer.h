@@ -60,6 +60,9 @@ private:
     bool do_close_ = false;
     beast::websocket::close_reason cr_;
     waitable_timer timer_;
+    bool close_on_timer_ = false;
+    bool ping_active_ = false;
+    beast::websocket::ping_data payload_;
 
 public:
     template<class Body, class Headers>
@@ -152,15 +155,18 @@ protected:
     void
     on_close(error_code const& ec);
 
-    virtual
-    void
-    do_close() = 0;
-
     void
     start_timer();
 
     void
     cancel_timer();
+
+    void
+    on_ping(error_code const& ec);
+
+    void
+    on_ping_pong(bool is_pong,
+        beast::websocket::ping_data const& payload);
 
     void
     on_timer(error_code ec);
@@ -195,7 +201,12 @@ run()
             &BaseWSPeer::run, impl().shared_from_this()));
     impl().ws_.set_option(beast::websocket::decorate(identity{}));
     impl().ws_.set_option(port().pmd_options);
+    impl().ws_.set_option(beast::websocket::ping_callback{
+        std::bind(&BaseWSPeer::on_ping_pong, this,
+            std::placeholders::_1, std::placeholders::_2)});
     using namespace beast::asio;
+    start_timer();
+    close_on_timer_ = true;
     impl().ws_.async_accept(request_, strand_.wrap(std::bind(
         &BaseWSPeer::on_ws_handshake, impl().shared_from_this(),
             placeholders::error)));
@@ -212,12 +223,17 @@ send(std::shared_ptr<WSMsg> w)
         return strand_.post(std::bind(
             &BaseWSPeer::send, impl().shared_from_this(),
                 std::move(w)));
+    if(do_close_)
+        return;
     if(wq_.size() >= limit)
     {
+        JLOG(this->j_.info()) <<
+            "closing slow client";
         cr_.code = static_cast<beast::websocket::close_code::value>(4000);
         cr_.reason = "Client is too slow.";
-        do_close_ = true;
+        static_assert(limit >= 1, "");
         wq_.erase(std::next(wq_.begin()), wq_.end());
+        close();
         return;
     }
     wq_.emplace_back(std::move(w));
@@ -233,9 +249,8 @@ close()
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind(
             &BaseWSPeer::close, impl().shared_from_this()));
-    if(wq_.size() > 0)
-        do_close_ = true;
-    else
+    do_close_ = true;
+    if(wq_.empty())
         impl().ws_.async_close({}, strand_.wrap(std::bind(
             &BaseWSPeer::on_close, impl().shared_from_this(),
                 beast::asio::placeholders::error)));
@@ -259,6 +274,7 @@ on_ws_handshake(error_code const& ec)
 {
     if(ec)
         return fail(ec, "on_ws_handshake");
+    close_on_timer_ = false;
     do_read();
 }
 
@@ -278,7 +294,6 @@ void
 BaseWSPeer<Handler, Impl>::
 on_write(error_code const& ec)
 {
-    cancel_timer();
     if(ec)
         return fail(ec, "write");
     auto& w = *wq_.front();
@@ -329,7 +344,6 @@ do_read()
     impl().ws_.async_read(op_, rb_, strand_.wrap(
         std::bind(&BaseWSPeer::on_read,
             impl().shared_from_this(), placeholders::error)));
-    cancel_timer();
 }
 
 template<class Handler, class Impl>
@@ -338,7 +352,7 @@ BaseWSPeer<Handler, Impl>::
 on_read(error_code const& ec)
 {
     if(ec == beast::websocket::error::closed)
-        return do_close();
+        return on_close({});
     if(ec)
         return fail(ec, "read");
     auto const& data = rb_.data();
@@ -355,7 +369,7 @@ void
 BaseWSPeer<Handler, Impl>::
 on_close(error_code const& ec)
 {
-    // great
+    cancel_timer();
 }
 
 template<class Handler, class Impl>
@@ -387,7 +401,41 @@ cancel_timer()
     timer_.cancel(ec);
 }
 
-// Called when session times out
+template<class Handler, class Impl>
+void
+BaseWSPeer<Handler, Impl>::
+on_ping(error_code const& ec)
+{
+    if(ec == boost::asio::error::operation_aborted)
+        return;
+    ping_active_ = false;
+    if(! ec)
+        return;
+    fail(ec, "on_ping");
+}
+
+template<class Handler, class Impl>
+void
+BaseWSPeer<Handler, Impl>::
+on_ping_pong(bool is_pong,
+    beast::websocket::ping_data const& payload)
+{
+    if(is_pong)
+    {
+        if(payload == payload_)
+        {
+            close_on_timer_ = false;
+            JLOG(this->j_.trace()) <<
+                "got matching pong";
+        }
+        else
+        {
+            JLOG(this->j_.trace()) <<
+                "got pong";
+        }
+    }
+}
+
 template<class Handler, class Impl>
 void
 BaseWSPeer<Handler, Impl>::
@@ -396,10 +444,28 @@ on_timer(error_code ec)
     if(ec == boost::asio::error::operation_aborted)
         return;
     if(! ec)
+    {
+        if(! close_on_timer_ || !ping_active_)
+        {
+            start_timer();
+            ping_active_ = true;
+            // TODO store nonce in payload
+            payload_ = {};
+            impl().ws_.async_ping(payload_,
+                strand_.wrap(std::bind(
+                    &BaseWSPeer::on_ping,
+                        impl().shared_from_this(),
+                            std::placeholders::_1)));
+            JLOG(this->j_.trace()) <<
+                "sent pong";
+            return;
+        }
         ec = boost::system::errc::make_error_code(
             boost::system::errc::timed_out);
+    }
     fail(ec, "timer");
 }
+
 } // ripple
 
 #endif

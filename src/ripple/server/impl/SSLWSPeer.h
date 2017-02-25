@@ -34,7 +34,6 @@ class SSLWSPeer
     : public BaseWSPeer<Handler, SSLWSPeer<Handler>>
     , public std::enable_shared_from_this<SSLWSPeer<Handler>>
 {
-private:
     friend class BasePeer<Handler, SSLWSPeer>;
     friend class BaseWSPeer<Handler, SSLWSPeer>;
 
@@ -58,13 +57,6 @@ public:
         std::unique_ptr<
             beast::asio::ssl_bundle>&& ssl_bundle,
         beast::Journal journal);
-
-private:
-    void
-    do_close() override;
-
-    void
-    on_shutdown(error_code ec);
 };
 
 //------------------------------------------------------------------------------
@@ -86,27 +78,6 @@ SSLWSPeer(
     , ssl_bundle_(std::move(ssl_bundle))
     , ws_(ssl_bundle_->stream)
 {
-}
-
-template<class Handler>
-void
-SSLWSPeer<Handler>::
-do_close()
-{
-    //start_timer();
-    using namespace beast::asio;
-    ws_.next_layer().async_shutdown(
-        this->strand_.wrap(std::bind(&SSLWSPeer::on_shutdown,
-            this->shared_from_this(), placeholders::error)));
-}
-
-template<class Handler>
-void
-SSLWSPeer<Handler>::
-on_shutdown(error_code ec)
-{
-    //cancel_timer();
-    ws_.lowest_layer().close(ec);
 }
 
 } // ripple
