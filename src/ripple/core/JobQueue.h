@@ -22,6 +22,7 @@
 
 #include <ripple/basics/LocalValue.h>
 #include <ripple/basics/win32_workaround.h>
+#include <ripple/core/JobCounter.h>
 #include <ripple/core/JobTypes.h>
 #include <ripple/core/JobTypeData.h>
 #include <ripple/core/Stoppable.h>
@@ -110,7 +111,34 @@ public:
         Stoppable& parent, beast::Journal journal, Logs& logs);
     ~JobQueue ();
 
+    /** Adds a job to the JobQueue.
+
+        @param t The type of job.
+        @param name Name of the job.
+        @param func std::function with signature void (Job&).  Called when the job is executed.
+    */
     void addJob (JobType type, std::string const& name, JobFunction const& func);
+
+    /** Adds a counted job to the JobQueue.
+
+        @param t The type of job.
+        @param name Name of the job.
+        @param counter JobCounter for counting the Job.
+        @param jobHandler Lambda with signature void (Job&).  Called when the job is executed.
+
+        @return true if JobHandler added, false if JobCounter is already joined.
+    */
+    template <typename JobHandler>
+    bool addCountedJob (JobType type,
+        std::string const& name, JobCounter& counter, JobHandler&& jobHandler)
+    {
+        if (auto optionalCountedJob = counter.wrap (std::move (jobHandler)))
+        {
+            addJob (type, name, std::move (*optionalCountedJob));
+            return true;
+        }
+        return false;
+    }
 
     /** Creates a coroutine and adds a job to the queue which will run it.
 
