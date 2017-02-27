@@ -167,7 +167,8 @@ public:
         the writer must guarantee that the buffers remain valid until the
         next member function is invoked, which may be the destructor.
 
-        @return `true` if there is data, `false` when done,
+        @return `true` if there is no more data to send, 
+                `false` when there may be more data,
                 boost::indeterminate to suspend.
 
         @note Undefined behavior if the callee takes ownership

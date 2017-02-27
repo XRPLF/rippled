@@ -985,6 +985,10 @@ public:
         <em>composed operation</em>. The program must ensure that the
         stream performs no other writes until this operation completes.
 
+        If a close frame is sent or received before the ping frame is
+        sent, the completion handler will be called with the error
+        set to `boost::asio::error::operation_aborted`.
+
         @param payload The payload of the ping message, which may be empty.
 
         @param handler The handler to be called when the read operation
@@ -1077,6 +1081,10 @@ public:
         end at any time. It is not necessary to first receive a ping in
         order to send a pong. The remote peer may use the receipt of a
         pong frame as an indication that the connection is not dead.
+
+        If a close frame is sent or received before the pong frame is
+        sent, the completion handler will be called with the error
+        set to `boost::asio::error::operation_aborted`.
 
         @param payload The payload of the pong message, which may be empty.
 

@@ -82,6 +82,7 @@ class buffer_cat_helper<Bn...>::const_iterator
     iter_t<I>&
     iter()
     {
+        // type-pun
         return *reinterpret_cast<
             iter_t<I>*>(static_cast<void*>(
                 buf_.data()));
@@ -91,6 +92,7 @@ class buffer_cat_helper<Bn...>::const_iterator
     iter_t<I> const&
     iter() const
     {
+        // type-pun
         return *reinterpret_cast<
             iter_t<I> const*>(static_cast<
                 void const*>(buf_.data()));
