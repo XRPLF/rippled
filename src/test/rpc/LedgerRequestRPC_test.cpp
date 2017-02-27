@@ -31,18 +31,6 @@ namespace RPC {
 class LedgerRequestRPC_test : public beast::unit_test::suite
 {
 public:
-
-    static
-    std::unique_ptr<Config>
-    makeNonAdminConfig()
-    {
-        auto p = std::make_unique<Config>();
-        test::setupConfigForUnitTests(*p);
-        (*p)["port_rpc"].set("admin","");
-        (*p)["port_ws"].set("admin","");
-        return p;
-    }
-
     void testLedgerRequest()
     {
         using namespace test::jtx;
@@ -288,7 +276,7 @@ public:
     void testNonAdmin()
     {
         using namespace test::jtx;
-        Env env { *this, makeNonAdminConfig() };
+        Env env { *this, std::make_unique<Config>(nonAdminConf) };
         Account const gw { "gateway" };
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);

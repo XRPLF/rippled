@@ -688,25 +688,20 @@ class View_test
 
         // The two Env's can't share the same ports, so edit the config
         // of the second Env.
-        auto getConfigWithNewPorts = [this] ()
-        {
-            auto cfg = std::make_unique<Config>();
-            setupConfigForUnitTests(*cfg);
-
-            for (auto const sectionName : {"port_peer", "port_rpc", "port_ws"})
+        Env eB {*this, std::make_unique<Config>( [] (Config* cf)
             {
-                Section& s = (*cfg)[sectionName];
-                auto const port = s.get<std::int32_t>("port");
-                BEAST_EXPECT(port);
-                if (port)
+                for (auto const sectionName : {"port_peer", "port_rpc", "port_ws"})
                 {
-                    constexpr int portIncr = 5;
-                    s.set ("port", std::to_string(*port + portIncr));
+                    Section& s = (*cf)[sectionName];
+                    auto const port = s.get<std::int32_t>("port");
+                    if(port)
+                    {
+                        constexpr int portIncr = 5;
+                        s.set ("port", std::to_string(*port + portIncr));
+                    }
                 }
-            }
-            return cfg;
-        };
-        Env eB(*this, getConfigWithNewPorts());
+            }, defaultConf
+        )};
 
         // Make ledgers that are incompatible with the first ledgers.  Note
         // that bob is funded before alice.
@@ -801,28 +796,11 @@ class View_test
 class GetAmendments_test
     : public beast::unit_test::suite
 {
-    static
-    std::unique_ptr<Config>
-    makeValidatorConfig()
-    {
-        auto p = std::make_unique<Config>();
-        setupConfigForUnitTests(*p);
-
-        // If the config has valid validation keys then we run as a validator.
-        auto const seed = parseBase58<Seed>("shUwVw52ofnCUX5m7kPTKzJdr4HEH");
-        if (!seed)
-            Throw<std::runtime_error> ("Invalid seed specified");
-        p->VALIDATION_PRIV = generateSecretKey (KeyType::secp256k1, *seed);
-        p->VALIDATION_PUB =
-            derivePublicKey (KeyType::secp256k1, p->VALIDATION_PRIV);
-        return p;
-    }
-
     void
     testGetAmendments()
     {
         using namespace jtx;
-        Env env(*this, makeValidatorConfig());
+        Env env {*this, std::make_unique<Config>(validatorConf)};
 
         // Start out with no amendments.
         auto majorities = getMajorityAmendments (*env.closed());

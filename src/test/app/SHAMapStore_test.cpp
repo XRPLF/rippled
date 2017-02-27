@@ -33,28 +33,19 @@ class SHAMapStore_test : public beast::unit_test::suite
 {
     static auto const deleteInterval = 8;
 
-    static
-    std::unique_ptr<Config>
-    makeConfig()
+    std::function<void(Config *)> onlineDeleteConf = [&](Config * cf)
     {
-        auto p = std::make_unique<Config>();
-        setupConfigForUnitTests(*p);
-        p->LEDGER_HISTORY = deleteInterval;
-        auto& section = p->section(ConfigSection::nodeDatabase());
+        cf->LEDGER_HISTORY = deleteInterval;
+        auto& section = cf->section(ConfigSection::nodeDatabase());
         section.set("online_delete", to_string(deleteInterval));
         //section.set("age_threshold", "60");
-        return p;
-    }
+    };
 
-    static
-    std::unique_ptr<Config>
-    makeConfigAdvisory()
+    std::function<void(Config *)> advisoryDeleteConf = [](Config * cf)
     {
-        auto p = makeConfig();
-        auto& section = p->section(ConfigSection::nodeDatabase());
-        section.set("advisory_delete", "1");
-        return p;
-    }
+        cf->section(ConfigSection::nodeDatabase())
+            .set("advisory_delete", "1");
+    };
 
     bool goodLedger(jtx::Env& env, Json::Value const& json,
         std::string ledgerID, bool checkDB = false)
@@ -211,7 +202,7 @@ public:
         testcase("clearPrior");
         using namespace jtx;
 
-        Env env(*this, makeConfig());
+        Env env{*this, std::make_unique<Config>(onlineDeleteConf, defaultConf)};
 
         auto& store = env.app().getSHAMapStore();
         env.fund(XRP(10000), noripple("alice"));
@@ -397,7 +388,7 @@ public:
         using namespace jtx;
         using namespace std::chrono_literals;
 
-        Env env(*this, makeConfig());
+        Env env{ *this, std::make_unique<Config>(onlineDeleteConf, defaultConf) };
         auto& store = env.app().getSHAMapStore();
 
         auto ledgerSeq = waitForReady(env);
@@ -466,7 +457,8 @@ public:
         using namespace std::chrono_literals;
 
         // Same config with advisory_delete enabled
-        Env env(*this, makeConfigAdvisory());
+        Env env {*this, std::make_unique<Config>(
+            onlineDeleteConf, advisoryDeleteConf, defaultConf)};
         auto& store = env.app().getSHAMapStore();
 
         auto ledgerSeq = waitForReady(env);

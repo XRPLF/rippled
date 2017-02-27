@@ -79,6 +79,10 @@ features (uint256 const& key, Args const&... args)
     return {{key, args...}};
 }
 
+extern std::function<void(Config*)> defaultConf;
+extern std::function<void(Config*)> nonAdminConf;
+extern std::function<void(Config*)> validatorConf;
+
 //------------------------------------------------------------------------------
 
 /** A transaction testing environment. */
@@ -152,12 +156,9 @@ public:
     template <class... Args>
     Env (beast::unit_test::suite& suite_,
             Args&&... args)
-        : Env(suite_, []()
-            {
-                auto p = std::make_unique<Config>();
-                setupConfigForUnitTests(*p);
-                return p;
-            }(), std::forward<Args>(args)...)
+        : Env(suite_,
+            std::make_unique<Config>(defaultConf),
+            std::forward<Args>(args)...)
     {
     }
 

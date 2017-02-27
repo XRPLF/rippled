@@ -26,22 +26,6 @@ namespace test {
 class AccountOffers_test : public beast::unit_test::suite
 {
 public:
-    static
-    std::unique_ptr<Config>
-    makeConfig(bool setup_admin)
-    {
-        auto p = std::make_unique<Config>();
-        setupConfigForUnitTests(*p);
-        // the default config has admin active
-        // ...we remove them if setup_admin is false
-        if (! setup_admin)
-        {
-            (*p)["port_rpc"].set("admin","");
-            (*p)["port_ws"].set("admin","");
-        }
-        return p;
-    }
-
     // test helper
     static bool checkArraySize(Json::Value const& val, unsigned int size)
     {
@@ -60,7 +44,7 @@ public:
     void testNonAdminMinLimit()
     {
         using namespace jtx;
-        Env env(*this, makeConfig(false));
+        Env env {*this, std::make_unique<Config>(nonAdminConf)};
         Account const gw ("G1");
         auto const USD_gw  = gw["USD"];
         Account const bob ("bob");
@@ -100,7 +84,8 @@ public:
     void testSequential(bool as_admin)
     {
         using namespace jtx;
-        Env env(*this, makeConfig(as_admin));
+        Env env {*this, std::make_unique<Config>(
+            as_admin ? defaultConf : nonAdminConf)};
         Account const gw ("G1");
         auto const USD_gw  = gw["USD"];
         Account const bob ("bob");
