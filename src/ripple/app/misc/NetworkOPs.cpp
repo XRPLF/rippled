@@ -54,7 +54,6 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/core/DeadlineTimer.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/crypto/RFC1751.h>
@@ -77,6 +76,7 @@
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/basics/make_lock.h>
 #include <beast/core/detail/base64.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/optional.hpp>
 #include <condition_variable>
 #include <memory>
@@ -87,7 +87,6 @@ namespace ripple {
 
 class NetworkOPsImp final
     : public NetworkOPs
-    , public DeadlineTimer::Listener
 {
     /**
      * Transaction with input flags and results to be applied in batches.
@@ -196,8 +195,6 @@ public:
         , mMode (start_valid ? omFULL : omDISCONNECTED)
         , mNeedNetworkLedger (false)
         , m_amendmentBlocked (false)
-        , m_heartbeatTimer (this)
-        , m_clusterTimer (this)
         , mConsensus (make_Consensus (app_.config(), app_.logs()))
         , mLedgerConsensus (mConsensus->makeLedgerConsensus (
             app, app.getInboundTransactions(), ledgerMaster, *m_localTX))
@@ -474,8 +471,11 @@ public:
     void onStop () override
     {
         mAcquiringLedger.reset();
-        m_heartbeatTimer.cancel();
-        m_clusterTimer.cancel();
+
+        if (heartbeatTimer_)
+            heartbeatTimer_->cancel();
+        if (clusterTimer_)
+            clusterTimer_->cancel();
 
         stopped ();
     }
@@ -483,7 +483,6 @@ public:
 private:
     void setHeartbeatTimer ();
     void setClusterTimer ();
-    void onDeadlineTimer (DeadlineTimer& timer) override;
     void processHeartbeatTimer ();
     void processClusterTimer ();
 
@@ -526,8 +525,8 @@ private:
     std::atomic <bool> mNeedNetworkLedger;
     bool m_amendmentBlocked;
 
-    DeadlineTimer m_heartbeatTimer;
-    DeadlineTimer m_clusterTimer;
+    boost::optional<boost::asio::steady_timer> heartbeatTimer_;
+    boost::optional<boost::asio::steady_timer> clusterTimer_;
 
     std::unique_ptr<Consensus> mConsensus;
     std::shared_ptr<LedgerConsensus<RCLCxTraits>> mLedgerConsensus;
@@ -619,33 +618,52 @@ NetworkOPsImp::getHostId (bool forAdmin)
 
 void NetworkOPsImp::setStateTimer ()
 {
+    // Note that we expect setStateTimer() to be called at most once
+    // in the lifetime of the NetworkOPsImp.
+    //
+    // We cannot initialize our asio::steady_timers in the constructor
+    // since that would require a call through a virtual method of an
+    // incompletely constructed Application.  So we initialize them here,
+    // just before their first use.
+    assert (!heartbeatTimer_);
+    heartbeatTimer_.emplace (app_.getIOService());
+
+    assert (!clusterTimer_);
+    clusterTimer_.emplace (app_.getIOService());
+
     setHeartbeatTimer ();
     setClusterTimer ();
 }
 
 void NetworkOPsImp::setHeartbeatTimer ()
 {
-    m_heartbeatTimer.setExpiration (LEDGER_GRANULARITY);
+    assert (heartbeatTimer_);
+    heartbeatTimer_->expires_from_now (LedgerStateCheckInterval);
+    heartbeatTimer_->async_wait ([this] (boost::system::error_code const& e)
+        {
+            if ((e.value() == boost::system::errc::success) &&
+                (! m_job_queue.isStopped()))
+            {
+                m_job_queue.addJob (jtNETOP_TIMER, "NetOPs.heartbeat",
+                    [this] (Job&) { processHeartbeatTimer(); });
+            }
+        });
 }
 
 void NetworkOPsImp::setClusterTimer ()
 {
+    assert (clusterTimer_);
     using namespace std::chrono_literals;
-    m_clusterTimer.setExpiration (10s);
-}
-
-void NetworkOPsImp::onDeadlineTimer (DeadlineTimer& timer)
-{
-    if (timer == m_heartbeatTimer)
-    {
-        m_job_queue.addJob (jtNETOP_TIMER, "NetOPs.heartbeat",
-                            [this] (Job&) { processHeartbeatTimer(); });
-    }
-    else if (timer == m_clusterTimer)
-    {
-        m_job_queue.addJob (jtNETOP_CLUSTER, "NetOPs.cluster",
-                            [this] (Job&) { processClusterTimer(); });
-    }
+    clusterTimer_->expires_from_now (10s);
+    clusterTimer_->async_wait ([this] (boost::system::error_code const& e)
+        {
+            if ((e.value() == boost::system::errc::success) &&
+                (! m_job_queue.isStopped()))
+            {
+                m_job_queue.addJob (jtNETOP_CLUSTER, "NetOPs.cluster",
+                    [this] (Job&) { processClusterTimer(); });
+            }
+        });
 }
 
 void NetworkOPsImp::processHeartbeatTimer ()
@@ -709,6 +727,7 @@ void NetworkOPsImp::processClusterTimer ()
     if (!update)
     {
         JLOG(m_journal.debug()) << "Too soon to send cluster update";
+        setClusterTimer ();
         return;
     }
 

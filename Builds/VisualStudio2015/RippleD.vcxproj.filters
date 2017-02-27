@@ -2463,16 +2463,10 @@
     <ClInclude Include="..\..\src\ripple\core\DatabaseCon.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\core\DeadlineTimer.h">
-      <Filter>ripple\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\impl\Config.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\impl\DatabaseCon.cpp">
-      <Filter>ripple\core\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\core\impl\DeadlineTimer.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\impl\DummySociDynamicBackend.cpp">
@@ -5140,9 +5134,6 @@
       <Filter>test\core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\core\Coroutine_test.cpp">
-      <Filter>test\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\core\DeadlineTimer_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\core\SociDB_test.cpp">

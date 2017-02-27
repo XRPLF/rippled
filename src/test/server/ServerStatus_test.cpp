@@ -19,17 +19,10 @@
 
 #include <BeastConfig.h>
 #include <ripple/rpc/ServerHandler.h>
-#include <ripple/json/json_reader.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/JSONRPCClient.h>
-#include <ripple/core/DeadlineTimer.h>
-#include <beast/core/to_string.hpp>
-#include <beast/http.hpp>
 #include <beast/test/yield_to.hpp>
-#include <beast/websocket/detail/mask.hpp>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {
