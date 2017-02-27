@@ -1032,6 +1032,9 @@ public:
             // Request-response methods
             // - Returns an error, or the request.
             // - To modify the method, provide a new method in the request.
+            // - From the Json 2.0 spec:  http://www.jsonrpc.org/specification
+            //      Method names that begin with rpc are reserved for system extensions,
+            //      and MUST NOT be used for anything else.
             {   "account_currencies",   &RPCParser::parseAccountCurrencies,     1,  2   },
             {   "account_info",         &RPCParser::parseAccountItems,          1,  2   },
             {   "account_lines",        &RPCParser::parseAccountLines,          1,  5   },

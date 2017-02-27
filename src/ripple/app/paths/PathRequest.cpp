@@ -630,7 +630,7 @@ Json::Value PathRequest::doUpdate(
             return jvStatus;
     }
 
-    Json::Value newStatus = Json::objectValue;
+    Json::Value newStatus{Json::objectValue};
 
     if (hasCompletion ())
     {
@@ -685,7 +685,7 @@ Json::Value PathRequest::doUpdate(
     JLOG(m_journal.debug()) << iIdentifier
         << " processing at level " << iLevel;
 
-    Json::Value jvArray = Json::arrayValue;
+    Json::Value jvArray{Json::arrayValue};
     if (findPaths(cache, iLevel, jvArray))
     {
         bLastSuccess = jvArray.size() != 0;

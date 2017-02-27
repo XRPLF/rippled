@@ -109,7 +109,7 @@ void LedgerProposal::bowOut (NetClock::time_point now)
 
 Json::Value LedgerProposal::getJson () const
 {
-    Json::Value ret = Json::objectValue;
+    Json::Value ret{Json::objectValue};
     ret[jss::previous_ledger] = to_string (mPreviousLedger);
 
     if (mProposeSeq != seqLeave)

@@ -49,7 +49,7 @@ private:
         {
         }
 
-        void operator()(Json::Value const& params = Json::nullValue)
+        void operator()(Json::Value const& params = Json::Value{})
         {
             env_.sign_and_submit(jt_, params);
         }

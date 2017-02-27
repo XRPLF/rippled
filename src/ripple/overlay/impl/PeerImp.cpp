@@ -1363,7 +1363,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
     app_.getOPs().pubPeerStatus (
         [=]() -> Json::Value
         {
-            Json::Value j = Json::objectValue;
+            Json::Value j{Json::objectValue};
 
             if (m->has_newstatus ())
             {

@@ -54,7 +54,7 @@ accountFromString(
     if (auto accountID = accountFromStringStrict (strIdent))
     {
         result = *accountID;
-        return Json::objectValue;
+        return Json::Value{Json::objectValue};
     }
 
     if (bStrict)
@@ -75,7 +75,7 @@ accountFromString(
         *seed);
 
     result = calcAccountID (keypair.first);
-    return Json::objectValue;
+    return Json::Value{Json::objectValue};
 }
 
 bool

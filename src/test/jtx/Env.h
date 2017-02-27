@@ -206,6 +206,9 @@ public:
     Json::Value
     rpc(std::string const& cmd, Args&&... args);
 
+    Json::Value
+    rpc(Json::Value const& cmd);
+
     /** Returns the current ledger.
 
         This is a non-modifiable snapshot of the
@@ -402,7 +405,7 @@ public:
         This calls postconditions.
     */
     void
-    sign_and_submit(JTx const& jt, Json::Value params = Json::nullValue);
+    sign_and_submit(JTx const& jt, Json::Value params = Json::Value{});
 
     /** Check expected postconditions
         of JTx submission.

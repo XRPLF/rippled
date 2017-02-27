@@ -49,7 +49,7 @@ public:
               makeWSClient(env.app().config())
             : makeJSONRPCClient(env.app().config());
 
-        Json::Value tx = Json::objectValue;
+        Json::Value tx{Json::objectValue};
         tx[jss::tx_json] = pay(alice, bob, XRP(1));
         tx[jss::secret] = toBase58(generateSeed("alice"));
 

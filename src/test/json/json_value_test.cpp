@@ -217,6 +217,17 @@ struct json_value_test : beast::unit_test::suite
         testGreaterThan ("big");
     }
 
+    void
+    test_dearray()
+    {
+        Json::Value a{Json::arrayValue};
+        Json::Value b;
+        b["key"] = "value";
+        a[0u] = b;
+        a = std::move(a[0u]);
+        BEAST_EXPECT(a == b);
+    }
+
     void run ()
     {
         test_bool ();
@@ -225,6 +236,7 @@ struct json_value_test : beast::unit_test::suite
         test_copy ();
         test_move ();
         test_comparisons ();
+        test_dearray();
     }
 };
 

@@ -244,7 +244,7 @@ JobQueue::getJson (int c)
 
     ret["threads"] = m_workers.getNumberOfThreads ();
 
-    Json::Value priorities = Json::arrayValue;
+    Json::Value priorities{Json::arrayValue};
 
     std::lock_guard <std::mutex> lock (m_mutex);
 

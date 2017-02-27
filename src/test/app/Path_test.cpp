@@ -152,14 +152,14 @@ equal(STAmount const& sa1, STAmount const& sa2)
 Json::Value
 rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t num_src)
 {
-    Json::Value jv = Json::objectValue;
+    Json::Value jv{Json::objectValue};
     jv[jss::command] = "ripple_path_find";
     jv[jss::source_account] = toBase58(src);
 
     if (num_src > 0)
     {
         auto& sc = (jv[jss::source_currencies] = Json::arrayValue);
-        Json::Value j = Json::objectValue;
+        Json::Value j{Json::objectValue};
         while (num_src--)
         {
             j[jss::currency] = std::to_string(num_src + 100);
@@ -234,7 +234,7 @@ public:
         RPC::Context context {beast::Journal(), {}, app, loadType,
             app.getOPs(), app.getLedgerMaster(), c, Role::USER, {}};
 
-        Json::Value params = Json::objectValue;
+        Json::Value params{Json::objectValue};
         params[jss::command] = "ripple_path_find";
         params[jss::source_account] = toBase58 (src);
         params[jss::destination_account] = toBase58 (dst);
@@ -244,7 +244,7 @@ public:
         if(saSrcCurrency)
         {
             auto& sc = params[jss::source_currencies] = Json::arrayValue;
-            Json::Value j = Json::objectValue;
+            Json::Value j{Json::objectValue};
             j[jss::currency] = to_string(saSrcCurrency.value());
             sc.append(j);
         }

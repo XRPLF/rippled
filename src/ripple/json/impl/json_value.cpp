@@ -193,6 +193,12 @@ Value::CZString::isStaticString () const
  * memset( this, 0, sizeof(Value) )
  * This optimization is used in ValueInternalMap fast allocator.
  */
+Value::Value ()
+    : type_ ( nullValue )
+    , allocated_ ( 0 )
+{
+}
+
 Value::Value ( ValueType type )
     : type_ ( type )
     , allocated_ ( 0 )
@@ -502,6 +508,76 @@ bool operator== (const Value& x, const Value& y)
     }
 
     return 0;  // unreachable
+}
+
+bool
+operator== (const Value& x, ValueType y)
+{
+    return x == Value{y};
+}
+
+bool
+operator== (const Value& x, Int y)
+{
+    if (x.type_ != intValue)
+    {
+        if (x.type_ == uintValue)
+            return !integerCmp(y, x.value_.uint_);
+        return false;
+    }
+    return x.value_.int_ == y;
+}
+
+bool
+operator== (const Value& x, UInt y)
+{
+    if (x.type_ != uintValue)
+    {
+        if (x.type_ == intValue)
+            return !integerCmp(x.value_.int_, y);
+        return false;
+    }
+   return x.value_.uint_ == y;
+ }
+
+bool
+operator== (const Value& x, double y)
+{
+    if (x.type_ != realValue)
+        return false;
+    return x.value_.real_ == y;
+}
+
+bool
+operator== (const Value& x, const char* y)
+{
+    if (x.type_ != stringValue)
+        return false;
+    return std::string(x.value_.string_) == y;
+}
+
+bool
+operator== (const Value& x, StaticString const& y)
+{
+    if (x.type_ != stringValue)
+        return false;
+    return std::string(x.value_.string_) == y;
+}
+
+bool
+operator== (const Value& x, std::string const& y)
+{
+    if (x.type_ != stringValue)
+        return false;
+    return x.value_.string_ == y;
+}
+
+bool
+operator== (const Value& x, bool y)
+{
+    if (x.type_ != booleanValue)
+        return false;
+    return x.value_.bool_ == y;
 }
 
 const char*

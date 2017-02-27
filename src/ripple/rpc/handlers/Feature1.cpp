@@ -55,7 +55,7 @@ Json::Value doFeature (RPC::Context& context)
                 m.second.time_since_epoch().count();
         }
 
-        Json::Value jvReply = Json::objectValue;
+        Json::Value jvReply{Json::objectValue};
         jvReply[jss::features] = features;
         return jvReply;
     }

@@ -235,14 +235,14 @@ class ServerStatus_test :
     {
         Json::Value jrr;
 
-        Json::Value jp = Json::objectValue;
+        Json::Value jp{Json::objectValue};
         if(! user.empty())
         {
             jp["admin_user"] = user;
             if(subobject)
             {
                 //special case of bad password..passed as object
-                Json::Value jpi = Json::objectValue;
+                Json::Value jpi{Json::objectValue};
                 jpi["admin_password"] = password;
                 jp["admin_password"] = jpi;
             }

@@ -92,6 +92,63 @@ public:
             expect(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             expect(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
+        {
+            Json::Value request;
+            request[0u][jss::jsonrpc] = "2.0";
+            request[0u][jss::ripplerpc] = "2.0";
+            request[0u][jss::id] = 5;
+            request[0u][jss::method] = "gateway_balances";
+            request[0u][jss::params][0u][jss::account] = alice.human();
+            request[0u][jss::params][0u][jss::hotwallet] = hw.human();
+
+            request[1u][jss::jsonrpc] = "2.0";
+            request[1u][jss::ripplerpc] = "2.0";
+            request[1u][jss::id] = 6;
+            request[1u][jss::method] = "gateway_balances";
+            request[1u][jss::params][0u][jss::account] = alice.human();
+            request[1u][jss::params][0u][jss::hotwallet] = hw.human();
+
+            auto response = wsc->invoke(request);
+            expect(response.isArray());
+            expect(response.size() == 2);
+            auto const& r0 = response[0u][jss::id] == 5 ? response[0u] : response[1u];
+            auto const& r1 = response[1u][jss::id] == 6 ? response[1u] : response[0u];
+
+            expect(r0[jss::id] == 5);
+            expect(r0.isMember(jss::result));
+            expect(r0[jss::result].isMember("account"));
+            expect(r0[jss::result][jss::status] == "success");
+
+            expect(r1[jss::id] == 6);
+            expect(r1.isMember(jss::result));
+            expect(r1[jss::result].isMember("account"));
+            expect(r1[jss::result][jss::status] == "success");
+        }
+        {
+            wsc = makeWSClient(env.app().config());
+            Json::Value request;
+            request[0u][jss::jsonrpc] = "2.0";
+            request[0u][jss::ripplerpc] = "2.0";
+            request[0u][jss::id] = 5;
+            request[0u][jss::method] = "gateway_blances";
+            request[0u][jss::params][0u][jss::account] = alice.human();
+            request[0u][jss::params][0u][jss::hotwallet] = hw.human();
+
+            request[1u][jss::jsonrpc] = "2.0";
+            request[1u][jss::ripplerpc] = "2.0";
+            request[1u][jss::id] = 6;
+            request[1u][jss::method] = "gateway_balances";
+            request[1u][jss::params][0u][jss::account] = alice.human();
+            request[1u][jss::params][0u][jss::hotwallet] = hw.human();
+
+            auto response = wsc->invoke(request);
+            expect(response.isArray());
+            expect(response.size() == 1);
+            auto const& r0 = response[0u];
+
+            expect(r0[jss::id] == 5);
+            expect(r0.isMember(jss::error));
+        }
 
         auto const& result = jv[jss::result];
         expect(result[jss::account] == alice.human());

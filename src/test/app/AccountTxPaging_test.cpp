@@ -41,7 +41,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
         int ledger_max,
         int limit,
         bool forward,
-        Json::Value const& marker = Json::nullValue)
+        Json::Value const& marker = Json::Value{})
     {
         Json::Value jvc;
         jvc[jss::account] = account.human();

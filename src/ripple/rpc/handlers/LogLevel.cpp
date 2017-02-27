@@ -62,7 +62,7 @@ Json::Value doLogLevel (RPC::Context& context)
     {
         // set base log threshold
         context.app.logs().threshold(severity);
-        return Json::objectValue;
+        return Json::Value{Json::objectValue};
     }
 
     // log_level partition severity base?
@@ -76,7 +76,7 @@ Json::Value doLogLevel (RPC::Context& context)
         else
             context.app.logs().get(partition).threshold(severity);
 
-        return Json::objectValue;
+        return Json::Value{Json::objectValue};
     }
 
     return rpcError (rpcINVALID_PARAMS);

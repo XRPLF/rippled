@@ -814,9 +814,9 @@ amountFromJson (SField const& name, Json::Value const& v)
     }
     else if (v.isArray ())
     {
-        value = v.get (Json::UInt (0), 0);
-        currency = v.get (Json::UInt (1), Json::nullValue);
-        issuer = v.get (Json::UInt (2), Json::nullValue);
+        value = v.get (Json::UInt (0), Json::Value{0});
+        currency = v.get (Json::UInt (1), Json::Value{});
+        issuer = v.get (Json::UInt (2), Json::Value{});
     }
     else if (v.isString ())
     {

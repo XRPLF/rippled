@@ -52,7 +52,21 @@ public:
     virtual
     Json::Value
     invoke(std::string const& cmd,
-        Json::Value const& params = {}) = 0;
+        Json::Value const& params) = 0;
+
+    /** Submit a command synchronously.
+
+        The arguments to the function and the returned JSON
+        are in a normalized format, the same whether the client
+        is using the JSON-RPC over HTTP/S or WebSocket transport.
+
+        @param cmd The command to execute as a 2.0 Json 
+                   request object.
+        @return The server response in normalized format.
+    */
+    virtual
+    Json::Value
+    invoke(Json::Value const& cmd) = 0;
 
     /// Get RPC 1.0 or RPC 2.0
     virtual unsigned version() const = 0;

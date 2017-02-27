@@ -99,7 +99,7 @@ Json::Value doAccountInfo (RPC::Context& context)
         {
             // We put the SignerList in an array because of an anticipated
             // future when we support multiple signer lists on one account.
-            Json::Value jvSignerList = Json::arrayValue;
+            Json::Value jvSignerList{Json::arrayValue};
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
@@ -113,7 +113,7 @@ Json::Value doAccountInfo (RPC::Context& context)
         // Return queue info if that is requested
         if (queue)
         {
-            Json::Value jvQueueData = Json::objectValue;
+            Json::Value jvQueueData{Json::objectValue};
 
             auto const txs = context.app.getTxQ().getAccountTxs(
                 accountID, *ledger);
@@ -131,7 +131,7 @@ Json::Value doAccountInfo (RPC::Context& context)
 
                 for (auto const& tx : *txs)
                 {
-                    Json::Value jvTx = Json::objectValue;
+                    Json::Value jvTx{Json::objectValue};
 
                     jvTx[jss::seq] = tx.first;
                     jvTx[jss::fee_level] = to_string(tx.second.feeLevel);

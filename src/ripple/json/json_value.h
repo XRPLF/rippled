@@ -211,11 +211,12 @@ public:
     Json::Value obj_value(Json::objectValue); // {}
     \endcode
          */
-    Value ( ValueType type = nullValue );
-    Value ( Int value );
-    Value ( UInt value );
-    Value ( double value );
-    Value ( const char* value );
+    Value ();
+    explicit Value ( ValueType type );
+    explicit Value ( Int value );
+    explicit Value ( UInt value );
+    explicit Value ( double value );
+    explicit Value ( const char* value );
     Value ( const char* beginValue, const char* endValue );
     /** \brief Constructs a value from a static string.
 
@@ -227,9 +228,9 @@ public:
      * Json::Value aValue( StaticString("some text") );
      * \endcode
      */
-    Value ( const StaticString& value );
-    Value ( std::string const& value );
-    Value ( bool value );
+    explicit Value ( const StaticString& value );
+    explicit Value ( std::string const& value );
+    explicit Value ( bool value );
     Value ( const Value& other );
     ~Value ();
 
@@ -237,6 +238,15 @@ public:
 
     Value ( Value&& other ) noexcept;
     Value& operator= ( Value&& other ) noexcept;
+
+    Value& operator=(ValueType type) {return *this = Value{type};}
+    Value& operator=(Int value) {return *this = Value{value};}
+    Value& operator=(UInt value) {return *this = Value{value};}
+    Value& operator=(double value) {return *this = Value{value};}
+    Value& operator=(const char* value) {return *this = Value{value};}
+    Value& operator=(const StaticString& value) {return *this = Value{value};}
+    Value& operator=(std::string const& value) {return *this = Value{value};}
+    Value& operator=(bool value) {return *this = Value{value};}
 
     /// Swap values.
     /// \note Currently, comments are intentionally not swapped, for
@@ -308,6 +318,15 @@ public:
     /// Equivalent to jsonvalue[jsonvalue.size()] = value;
     Value& append ( const Value& value );
 
+    Value& append(ValueType type) {return append(Value{type});}
+    Value& append(Int value) {return append(Value{value});}
+    Value& append(UInt value) {return append(Value{value});}
+    Value& append(double value) {return append(Value{value});}
+    Value& append(const char* value) {return append(Value{value});}
+    Value& append(const StaticString& value) {return append(Value{value});}
+    Value& append(std::string const& value) {return append(Value{value});}
+    Value& append(bool value) {return append(Value{value});}
+
     /// Access an object value by name, create a null member if it does not exist.
     Value& operator[] ( const char* key );
     /// Access an object value by name, returns null if there is no member with that name.
@@ -373,6 +392,15 @@ public:
     friend bool operator== (const Value&, const Value&);
     friend bool operator< (const Value&, const Value&);
 
+    friend bool operator== (const Value&, ValueType);
+    friend bool operator== (const Value&, Int);
+    friend bool operator== (const Value&, UInt);
+    friend bool operator== (const Value&, double);
+    friend bool operator== (const Value&, const char*);
+    friend bool operator== (const Value&, StaticString const&);
+    friend bool operator== (const Value&, std::string const&);
+    friend bool operator== (const Value&, bool);
+
 private:
     Value& resolveReference ( const char* key,
                               bool isStatic );
@@ -393,10 +421,74 @@ private:
 
 bool operator== (const Value&, const Value&);
 
+inline bool operator==(ValueType x, const Value& y) {return y == x;}
+inline bool operator==(Int x, const Value& y) {return y == x;}
+inline bool operator==(UInt x, const Value& y) {return y == x;}
+inline bool operator==(double x, const Value& y) {return y == x;}
+inline bool operator==(StaticString const& x, const Value& y) {return y == x;}
+inline bool operator==(std::string x, const Value& y) {return y == x;}
+inline bool operator==(bool x, const Value& y) {return y == x;}
+
 inline
 bool operator!= (const Value& x, const Value& y)
 {
     return ! (x == y);
+}
+
+inline
+bool
+operator!= (const Value& x, ValueType y)
+{
+    return !(x == y);
+}
+
+inline
+bool
+operator!= (const Value& x, Int y)
+{
+    return !(x == y);
+}
+
+inline
+bool
+operator!= (const Value& x, UInt y)
+{
+    return !(x == y);
+}
+
+inline
+bool
+operator!= (const Value& x, double y)
+{
+    return !(x == y);
+}
+
+inline
+bool
+operator!= (const Value& x, const char* y)
+{
+    return !(x == y);
+}
+
+inline
+bool
+operator!= (const Value& x, const StaticString& y)
+{
+    return !(x == y);
+}
+
+inline
+bool
+operator!= (const Value& x, const std::string& y)
+{
+    return !(x == y);
+}
+
+inline
+bool
+operator!= (const Value& x, bool y)
+{
+    return !(x == y);
 }
 
 bool operator< (const Value&, const Value&);
@@ -406,6 +498,14 @@ bool operator<= (const Value& x, const Value& y)
 {
     return ! (y < x);
 }
+
+inline bool operator!=(ValueType x, const Value& y) {return y != x;}
+inline bool operator!=(Int x, const Value& y) {return y != x;}
+inline bool operator!=(UInt x, const Value& y) {return y != x;}
+inline bool operator!=(double x, const Value& y) {return y != x;}
+inline bool operator!=(StaticString const& x, const Value& y) {return y != x;}
+inline bool operator!=(std::string x, const Value& y) {return y != x;}
+inline bool operator!=(bool x, const Value& y) {return y != x;}
 
 inline
 bool operator> (const Value& x, const Value& y)
@@ -418,6 +518,35 @@ bool operator>= (const Value& x, const Value& y)
 {
     return ! (x < y);
 }
+
+inline
+bool
+operator< (const Value& x, double y)
+{
+    return x < Json::Value{y};
+}
+
+inline
+bool
+operator> (const Value& x, double y)
+{
+    return x > Json::Value{y};
+}
+
+inline
+bool
+operator<= (const Value& x, Int y)
+{
+    return x <= Json::Value{y};
+}
+
+inline
+bool
+operator>= (const Value& x, Int y)
+{
+    return x >= Json::Value{y};
+}
+
 
 /** \brief Experimental do not use: Allocator to customize member name and string value memory management done by Value.
  *
