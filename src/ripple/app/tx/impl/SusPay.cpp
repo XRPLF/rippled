@@ -166,7 +166,7 @@ SusPayCreate::preflight (PreflightContext const& ctx)
 
     if (auto const cb = ctx.tx[~sfCondition])
     {
-        if (! ctx.rules.enabled(featureCryptoConditions))
+        if (! ctx.rules.enabled(featureConditionalSusPay))
             return temDISABLED;
 
         using namespace ripple::cryptoconditions;
@@ -348,7 +348,7 @@ SusPayFinish::preflight (PreflightContext const& ctx)
 
     if (cb || fb)
     {
-        if (! ctx.rules.enabled(featureCryptoConditions))
+        if (! ctx.rules.enabled(featureConditionalSusPay))
             return temDISABLED;
     }
 
