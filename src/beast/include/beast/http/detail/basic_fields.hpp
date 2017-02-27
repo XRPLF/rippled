@@ -94,11 +94,11 @@ protected:
         }
     };
 
-    using list_t = typename boost::intrusive::make_list<
-        element, boost::intrusive::constant_time_size<false>>::type;
+    using list_t = boost::intrusive::make_list<element,
+        boost::intrusive::constant_time_size<false>>::type;
 
-    using set_t = typename boost::intrusive::make_multiset<
-        element, boost::intrusive::constant_time_size<true>,
+    using set_t = boost::intrusive::make_multiset<element,
+        boost::intrusive::constant_time_size<true>,
             boost::intrusive::compare<less>>::type;
 
     // data

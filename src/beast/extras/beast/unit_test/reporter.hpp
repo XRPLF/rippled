@@ -283,7 +283,6 @@ reporter<_>::
 on_log(std::string const& s)
 {
     os_ << s;
-    os_.flush();
 }
 
 } // detail

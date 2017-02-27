@@ -67,8 +67,9 @@ protected:
     op* wr_block_;                          // op currenly writing
 
     ping_data* ping_data_;                  // where to put the payload
-    invokable rd_op_;                       // invoked after write completes
-    invokable wr_op_;                       // invoked after read completes
+    invokable rd_op_;                       // read parking
+    invokable wr_op_;                       // write parking
+    invokable ping_op_;                     // ping parking
     close_reason cr_;                       // set from received close frame
 
     // State information for the message being received
