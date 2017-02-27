@@ -98,6 +98,7 @@ public:
     {
         if(other.base_)
         {
+            // type-pun
             base_ = reinterpret_cast<base*>(&buf_[0]);
             other.base_->move(buf_);
             other.base_ = nullptr;
@@ -109,11 +110,12 @@ public:
     {
         // Engaged invokables must be invoked before
         // assignment otherwise the io_service
-        // invariants are broken w.r.t completions.
+        // completion invariants are broken.
         BOOST_ASSERT(! base_);
 
         if(other.base_)
         {
+            // type-pun
             base_ = reinterpret_cast<base*>(&buf_[0]);
             other.base_->move(buf_);
             other.base_ = nullptr;
@@ -147,6 +149,7 @@ invokable::emplace(F&& f)
         "buffer too small");
     BOOST_ASSERT(! base_);
     ::new(buf_) holder<F>(std::forward<F>(f));
+    // type-pun
     base_ = reinterpret_cast<base*>(&buf_[0]);
 }
 

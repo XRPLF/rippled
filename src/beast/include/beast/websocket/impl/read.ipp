@@ -499,6 +499,8 @@ operator()(error_code ec,
             //------------------------------------------------------------------
 
             case do_pong_resume:
+                BOOST_ASSERT(! d.ws.wr_block_);
+                d.ws.wr_block_ = &d;
                 d.state = do_pong_resume + 1;
                 d.ws.get_io_service().post(bind_handler(
                     std::move(*this), ec, bytes_transferred));
@@ -511,8 +513,7 @@ operator()(error_code ec,
                     ec = boost::asio::error::operation_aborted;
                     goto upcall;
                 }
-                d.state = do_pong;
-                break; // VFALCO fall through?
+                // [[fallthrough]]
 
             //------------------------------------------------------------------
 
@@ -520,14 +521,21 @@ operator()(error_code ec,
                 if(d.ws.wr_close_)
                 {
                     // ignore ping when closing
+                    if(d.ws.wr_block_)
+                    {
+                        BOOST_ASSERT(d.ws.wr_block_ == &d);
+                        d.ws.wr_block_ = nullptr;
+                    }
                     d.fb.reset();
                     d.state = do_read_fh;
                     break;
                 }
                 // send pong
+                if(! d.ws.wr_block_)
+                    d.ws.wr_block_ = &d;
+                else
+                    BOOST_ASSERT(d.ws.wr_block_ == &d);
                 d.state = do_pong + 1;
-                BOOST_ASSERT(! d.ws.wr_block_);
-                d.ws.wr_block_ = &d;
                 boost::asio::async_write(d.ws.stream_,
                     d.fb.data(), std::move(*this));
                 return;
@@ -541,18 +549,25 @@ operator()(error_code ec,
             //------------------------------------------------------------------
 
             case do_close_resume:
+                BOOST_ASSERT(! d.ws.wr_block_);
+                d.ws.wr_block_ = &d;
                 d.state = do_close_resume + 1;
+                // The current context is safe but might not be
+                // the same as the one for this operation (since
+                // we are being called from a write operation).
+                // Call post to make sure we are invoked the same
+                // way as the final handler for this operation.
                 d.ws.get_io_service().post(bind_handler(
                     std::move(*this), ec, bytes_transferred));
                 return;
 
             case do_close_resume + 1:
+                BOOST_ASSERT(d.ws.wr_block_ == &d);
                 if(d.ws.failed_)
                 {
                     // call handler
-                    d.state = do_call_handler;
                     ec = boost::asio::error::operation_aborted;
-                    break;
+                    goto upcall;
                 }
                 if(d.ws.wr_close_)
                 {
@@ -566,10 +581,12 @@ operator()(error_code ec,
             //------------------------------------------------------------------
 
             case do_close:
+                if(! d.ws.wr_block_)
+                    d.ws.wr_block_ = &d;
+                else
+                    BOOST_ASSERT(d.ws.wr_block_ == &d);
                 d.state = do_teardown;
                 d.ws.wr_close_ = true;
-                BOOST_ASSERT(! d.ws.wr_block_);
-                d.ws.wr_block_ = &d;
                 boost::asio::async_write(d.ws.stream_,
                     d.fb.data(), std::move(*this));
                 return;
@@ -656,7 +673,8 @@ operator()(error_code ec,
 upcall:
     if(d.ws.wr_block_ == &d)
         d.ws.wr_block_ = nullptr;
-    d.ws.wr_op_.maybe_invoke();
+    d.ws.ping_op_.maybe_invoke() ||
+        d.ws.wr_op_.maybe_invoke();
     d_.invoke(ec);
 }
 

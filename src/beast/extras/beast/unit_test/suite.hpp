@@ -352,10 +352,7 @@ public:
     {
         auto const& name = ss_.str();
         if(! name.empty())
-        {
-            suite_.log.flush();
             suite_.runner_->testcase(name);
-        }
     }
 
     scoped_testcase(suite& self, std::stringstream& ss)
@@ -394,7 +391,6 @@ suite::testcase_t::operator()(
     std::string const& name, abort_t abort)
 {
     suite_.abort_ = abort == abort_on_fail;
-    suite_.log.flush();
     suite_.runner_->testcase(name);
 }
 

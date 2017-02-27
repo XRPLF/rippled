@@ -133,7 +133,7 @@ operator()(error_code ec, bool again)
             {
                 // suspend
                 d.state = 2;
-                d.ws.wr_op_.template emplace<
+                d.ws.ping_op_.template emplace<
                     ping_op>(std::move(*this));
                 return;
             }
@@ -146,24 +146,32 @@ operator()(error_code ec, bool again)
                         boost::asio::error::operation_aborted));
                 return;
             }
-            // fall through
+            d.ws.wr_block_ = &d;
+            // [[fallthrough]]
 
         case 1:
             // send ping frame
+            BOOST_ASSERT(d.ws.wr_block_ == &d);
             d.state = 99;
-            BOOST_ASSERT(! d.ws.wr_block_);
-            d.ws.wr_block_ = &d;
             boost::asio::async_write(d.ws.stream_,
                 d.fb.data(), std::move(*this));
             return;
 
         case 2:
+            BOOST_ASSERT(! d.ws.wr_block_);
+            d.ws.wr_block_ = &d;
             d.state = 3;
+            // The current context is safe but might not be
+            // the same as the one for this operation (since
+            // we are being called from a write operation).
+            // Call post to make sure we are invoked the same
+            // way as the final handler for this operation.
             d.ws.get_io_service().post(
                 bind_handler(std::move(*this), ec));
             return;
 
         case 3:
+            BOOST_ASSERT(d.ws.wr_block_ == &d);
             if(d.ws.failed_ || d.ws.wr_close_)
             {
                 // call handler
@@ -180,7 +188,8 @@ operator()(error_code ec, bool again)
 upcall:
     if(d.ws.wr_block_ == &d)
         d.ws.wr_block_ = nullptr;
-    d.ws.rd_op_.maybe_invoke();
+    d.ws.rd_op_.maybe_invoke() ||
+        d.ws.wr_op_.maybe_invoke();
     d_.invoke(ec);
 }
 

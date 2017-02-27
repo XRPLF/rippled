@@ -1,3 +1,33 @@
+1.0.0-b30
+
+WebSocket
+
+* Fix race in pings during reads
+* Fix race in close frames during reads
+* Fix race when write suspends
+* Allow concurrent websocket async ping and writes
+
+--------------------------------------------------------------------------------
+
+1.0.0-b29
+
+* Fix compilation error in non-template class
+* Document type-pun in buffer_cat
+* Correctly check ostream modifier (/extras)
+
+HTTP
+
+* Fix Body requirements doc
+* Fix illegal HTTP characters accepted as hex zero
+* Fix Writer return value documentation
+
+WebSocket
+
+* Fix race in writes during reads
+* Fix doc link typo
+
+--------------------------------------------------------------------------------
+
 1.0.0-b28
 
 * Split out and rename test stream classes

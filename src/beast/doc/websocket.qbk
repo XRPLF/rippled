@@ -320,8 +320,8 @@ operations can cause socket writes. However, these writes will not
 compete with caller-initiated write operations. For the purposes of
 correctness with respect to the stream invariants, caller-initiated
 read operations still only count as a read. This means that callers can
-have a simultaneous active read and write operation in progress, while
-the implementation also automatically handles control frames.
+have a simultaneously active read, write, and ping operation in progress,
+while the implementation also automatically handles control frames.
 
 [heading Ping and Pong Frames]
 
