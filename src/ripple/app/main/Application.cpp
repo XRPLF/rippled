@@ -877,19 +877,21 @@ public:
             if (! config_->standalone())
             {
                 boost::filesystem::space_info space =
-                        boost::filesystem::space (config_->legacy ("database_path"));
+                    boost::filesystem::space (
+                        config_->legacy ("database_path"));
 
-                // VFALCO TODO Give this magic constant a name and move it into a well documented header
-                //
+                // VFALCO TODO Give this magic constant a name and
+                // move it into a well documented header
                 if (space.available < (512 * 1024 * 1024))
                 {
                     JLOG(m_journal.fatal())
                         << "Remaining free disk space is less than 512MB";
                     signalStop ();
                 }
-            }
 
-            m_jobQueue->addJob(jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
+                m_jobQueue->addJob(
+                    jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
+            }
         }
     }
 
