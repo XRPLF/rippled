@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+ //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.
@@ -28,67 +28,48 @@
 namespace ripple {
 namespace test {
 
-struct SusPay_test : public beast::unit_test::suite
+struct Escrow_test : public beast::unit_test::suite
 {
-    // An Ed25519 conditional trigger fulfillment and its
-    // condition
-    std::array<std::uint8_t, 99> const fb1 =
+    // A PreimageSha256 fulfillments and its associated condition.
+    std::array<std::uint8_t, 4> const fb1 =
     {{
-        0x00, 0x04, 0x60, 0x3B, 0x6A, 0x27, 0xBC, 0xCE, 0xB6, 0xA4, 0x2D, 0x62,
-        0xA3, 0xA8, 0xD0, 0x2A, 0x6F, 0x0D, 0x73, 0x65, 0x32, 0x15, 0x77, 0x1D,
-        0xE2, 0x43, 0xA6, 0x3A, 0xC0, 0x48, 0xA1, 0x8B, 0x59, 0xDA, 0x29, 0x8F,
-        0x89, 0x5B, 0x3C, 0xAF, 0xE2, 0xC9, 0x50, 0x60, 0x39, 0xD0, 0xE2, 0xA6,
-        0x63, 0x82, 0x56, 0x80, 0x04, 0x67, 0x4F, 0xE8, 0xD2, 0x37, 0x78, 0x50,
-        0x92, 0xE4, 0x0D, 0x6A, 0xAF, 0x48, 0x3E, 0x4F, 0xC6, 0x01, 0x68, 0x70,
-        0x5F, 0x31, 0xF1, 0x01, 0x59, 0x61, 0x38, 0xCE, 0x21, 0xAA, 0x35, 0x7C,
-        0x0D, 0x32, 0xA0, 0x64, 0xF4, 0x23, 0xDC, 0x3E, 0xE4, 0xAA, 0x3A, 0xBF,
-        0x53, 0xF8, 0x03,
+        0xA0, 0x02, 0x80, 0x00
     }};
 
     std::array<std::uint8_t, 39> const cb1 =
     {{
-        0x00, 0x04, 0x01, 0x20, 0x20, 0x3B, 0x6A, 0x27, 0xBC, 0xCE, 0xB6, 0xA4,
-        0x2D, 0x62, 0xA3, 0xA8, 0xD0, 0x2A, 0x6F, 0x0D, 0x73, 0x65, 0x32, 0x15,
-        0x77, 0x1D, 0xE2, 0x43, 0xA6, 0x3A, 0xC0, 0x48, 0xA1, 0x8B, 0x59, 0xDA,
-        0x29, 0x01, 0x60
+        0xA0, 0x25, 0x80, 0x20, 0xE3, 0xB0, 0xC4, 0x42, 0x98, 0xFC, 0x1C, 0x14,
+        0x9A, 0xFB, 0xF4, 0xC8, 0x99, 0x6F, 0xB9, 0x24, 0x27, 0xAE, 0x41, 0xE4,
+        0x64, 0x9B, 0x93, 0x4C, 0xA4, 0x95, 0x99, 0x1B, 0x78, 0x52, 0xB8, 0x55,
+        0x81, 0x01, 0x00
     }};
 
-    // A prefix.prefix.ed25519 conditional trigger fulfillment:
-    std::array<std::uint8_t, 106> const fb2 =
+    // Another PreimageSha256 fulfillments and its associated condition.
+    std::array<std::uint8_t, 7> const fb2 =
     {{
-        0x00, 0x01, 0x67, 0x03, 0x61, 0x62, 0x63, 0x00, 0x04, 0x60, 0x76, 0xA1,
-        0x59, 0x20, 0x44, 0xA6, 0xE4, 0xF5, 0x11, 0x26, 0x5B, 0xCA, 0x73, 0xA6,
-        0x04, 0xD9, 0x0B, 0x05, 0x29, 0xD1, 0xDF, 0x60, 0x2B, 0xE3, 0x0A, 0x19,
-        0xA9, 0x25, 0x76, 0x60, 0xD1, 0xF5, 0xAE, 0xC6, 0xAB, 0x6A, 0x91, 0x22,
-        0xAF, 0xF0, 0xF7, 0xDC, 0xB9, 0x66, 0x7F, 0xF6, 0x13, 0x13, 0x68, 0x94,
-        0x73, 0x2B, 0x6E, 0x78, 0xC2, 0x6F, 0x5B, 0x67, 0x31, 0x01, 0xE2, 0x67,
-        0xFE, 0x2E, 0x2B, 0x65, 0xFA, 0x4D, 0x53, 0xDA, 0xD4, 0x78, 0xA1, 0xAD,
-        0xA6, 0x4D, 0x50, 0xFD, 0x1D, 0xFD, 0xB7, 0xD9, 0x49, 0x20, 0xDC, 0x3E,
-        0x1A, 0x56, 0x4A, 0x64, 0x7B, 0x1C, 0xBA, 0x35, 0x60, 0x01,
+        0xA0, 0x05, 0x80, 0x03, 0x61, 0x61, 0x61
     }};
 
     std::array<std::uint8_t, 39> const cb2 =
     {{
-
-        0x00, 0x01, 0x01, 0x25, 0x20, 0x28, 0x7A, 0x8B, 0xD8, 0xAD, 0xAE, 0x8A,
-        0xCA, 0x0C, 0x87, 0x1C, 0xE7, 0xC2, 0x5F, 0xBA, 0xA5, 0xA8, 0xBE, 0x10,
-        0xD0, 0xE4, 0xDB, 0x1F, 0x56, 0xAE, 0xEE, 0x8B, 0xB3, 0xAD, 0xCE, 0xE5,
-        0x5B, 0x01, 0x64
+        0xA0, 0x25, 0x80, 0x20, 0x98, 0x34, 0x87, 0x6D, 0xCF, 0xB0, 0x5C, 0xB1,
+        0x67, 0xA5, 0xC2, 0x49, 0x53, 0xEB, 0xA5, 0x8C, 0x4A, 0xC8, 0x9B, 0x1A,
+        0xDF, 0x57, 0xF2, 0x8F, 0x2F, 0x9D, 0x09, 0xAF, 0x10, 0x7E, 0xE8, 0xF0,
+        0x81, 0x01, 0x03
     }};
 
-    // A prefix+preimage conditional trigger fulfillment
-    std::array<std::uint8_t, 7> const fb3 =
+    // Another PreimageSha256 fulfillment and its associated condition.
+    std::array<std::uint8_t, 8> const fb3 =
     {{
-        0x00, 0x01, 0x04, 0x00, 0x00, 0x00, 0x00,
+        0xA0, 0x06, 0x80, 0x04, 0x6E, 0x69, 0x6B, 0x62
     }};
 
     std::array<std::uint8_t, 39> const cb3 =
     {{
-
-        0x00, 0x01, 0x01, 0x07, 0x20, 0x62, 0x36, 0xB7, 0xA8, 0x58, 0xFB, 0x35,
-        0x2F, 0xD5, 0xC3, 0x01, 0x3B, 0x68, 0x98, 0xCF, 0x26, 0x8B, 0x3E, 0xB8,
-        0x50, 0xB3, 0x4A, 0xD2, 0x65, 0x24, 0xB0, 0xF8, 0x56, 0xC3, 0x72, 0xD9,
-        0x73, 0x01, 0x01
+        0xA0, 0x25, 0x80, 0x20, 0x6E, 0x4C, 0x71, 0x45, 0x30, 0xC0, 0xA4, 0x26,
+        0x8B, 0x3F, 0xA6, 0x3B, 0x1B, 0x60, 0x6F, 0x2D, 0x26, 0x4A, 0x2D, 0x85,
+        0x7B, 0xE8, 0xA0, 0x9C, 0x1D, 0xFD, 0x57, 0x0D, 0x15, 0x85, 0x8B, 0xD4,
+        0x81, 0x01, 0x04
     }};
 
     static
@@ -99,7 +80,7 @@ struct SusPay_test : public beast::unit_test::suite
     {
         using namespace jtx;
         Json::Value jv;
-        jv[jss::TransactionType] = "SuspendedPaymentCreate";
+        jv[jss::TransactionType] = "EscrowCreate";
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human();
         jv[jss::Destination] = to.human();
@@ -129,7 +110,7 @@ struct SusPay_test : public beast::unit_test::suite
     {
         using namespace jtx;
         Json::Value jv;
-        jv[jss::TransactionType] = "SuspendedPaymentCreate";
+        jv[jss::TransactionType] = "EscrowCreate";
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human();
         jv[jss::Destination] = to.human();
@@ -147,7 +128,7 @@ struct SusPay_test : public beast::unit_test::suite
     {
         using namespace jtx;
         Json::Value jv;
-        jv[jss::TransactionType] = "SuspendedPaymentCreate";
+        jv[jss::TransactionType] = "EscrowCreate";
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human();
         jv[jss::Destination] = to.human();
@@ -164,7 +145,7 @@ struct SusPay_test : public beast::unit_test::suite
         jtx::Account const& from, std::uint32_t seq)
     {
         Json::Value jv;
-        jv[jss::TransactionType] = "SuspendedPaymentFinish";
+        jv[jss::TransactionType] = "EscrowFinish";
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human();
         jv["Owner"] = from.human();
@@ -179,7 +160,7 @@ struct SusPay_test : public beast::unit_test::suite
             Slice condition, Slice fulfillment)
     {
         Json::Value jv;
-        jv[jss::TransactionType] = "SuspendedPaymentFinish";
+        jv[jss::TransactionType] = "EscrowFinish";
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human();
         jv["Owner"] = from.human();
@@ -195,7 +176,7 @@ struct SusPay_test : public beast::unit_test::suite
         jtx::Account const& from, std::uint32_t seq)
     {
         Json::Value jv;
-        jv[jss::TransactionType] = "SuspendedPaymentCancel";
+        jv[jss::TransactionType] = "EscrowCancel";
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human();
         jv["Owner"] = from.human();
@@ -211,13 +192,7 @@ struct SusPay_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
 
-        { // SusPay enabled
-            Env env(*this, features(featureSusPay));
-            env.fund(XRP(5000), "alice", "bob");
-            env(lockup("alice", "bob", XRP(1000), env.now() + 1s));
-        }
-
-        { // SusPay not enabled
+        { // Escrow not enabled
             Env env(*this);
             env.fund(XRP(5000), "alice", "bob");
             env(lockup("alice", "bob", XRP(1000), env.now() + 1s), ter(temDISABLED));
@@ -225,50 +200,11 @@ struct SusPay_test : public beast::unit_test::suite
             env(cancel("bob", "alice", 1),                         ter(temDISABLED));
         }
 
-        { // SusPay enabled, CryptoConditions disabled
-            Env env(*this,
-                features(featureSusPay));
-
+        { // Escrow enabled
+            Env env(*this, features(featureEscrow));
             env.fund(XRP(5000), "alice", "bob");
-
-            auto const seq = env.seq("alice");
-
-            // Fail: no cryptoconditions allowed
-            env(condpay("alice", "bob", XRP(1000),
-                makeSlice (cb1), env.now() + 1s),           ter(temDISABLED));
-
-            // Succeed: doesn't have a cryptocondition
-            env(lockup("alice", "bob", XRP(1000),
-                env.now() + 1s));
-
-            // Fail: can't specify conditional finishes if
-            // cryptoconditions aren't allowed.
-            {
-                auto f = finish("bob", "alice", seq,
-                    makeSlice(cb1), makeSlice(fb1));
-                env (f,   ter(temDISABLED));
-
-                auto fnc = f;
-                fnc.removeMember ("Condition");
-                env (fnc, ter(temDISABLED));
-
-                auto fnf = f;
-                fnf.removeMember ("Fulfillment");
-                env (fnf, ter(temDISABLED));
-
-            }
-
-            // Succeeds
+            env(lockup("alice", "bob", XRP(1000), env.now() + 1s));
             env.close();
-            env(finish("bob", "alice", seq));
-        }
-
-        { // SusPay enabled, CryptoConditions enabled
-            Env env(*this,
-                features(featureSusPay),
-                features(featureCryptoConditions));
-
-            env.fund(XRP(5000), "alice", "bob");
 
             auto const seq = env.seq("alice");
 
@@ -287,23 +223,20 @@ struct SusPay_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
 
-        {
-            Env env(*this,
-                features(featureSusPay),
-                features(featureCryptoConditions));
+        Env env(*this, features(featureEscrow));
 
-            auto const alice = Account("alice");
-            env.fund(XRP(5000), alice, "bob");
+        auto const alice = Account("alice");
+        env.fund(XRP(5000), alice, "bob");
 
-            auto const seq = env.seq(alice);
-            // set source and dest tags
-            env(condpay(alice, "bob", XRP(1000),
-                    makeSlice (cb1), env.now() + 1s),
-                stag(1), dtag(2));
-            auto const sle = env.le(keylet::susPay(alice.id(), seq));
-            BEAST_EXPECT((*sle)[sfSourceTag] == 1);
-            BEAST_EXPECT((*sle)[sfDestinationTag] == 2);
-        }
+        auto const seq = env.seq(alice);
+        // set source and dest tags
+        env(condpay(alice, "bob", XRP(1000),
+                makeSlice (cb1), env.now() + 1s),
+            stag(1), dtag(2));
+        auto const sle = env.le(keylet::escrow(alice.id(), seq));
+        BEAST_EXPECT(sle);
+        BEAST_EXPECT((*sle)[sfSourceTag] == 1);
+        BEAST_EXPECT((*sle)[sfDestinationTag] == 2);
     }
 
     void
@@ -314,9 +247,7 @@ struct SusPay_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this,
-            features(featureSusPay),
-            features(featureCryptoConditions));
+        Env env(*this, features(featureEscrow));
         env.fund(XRP(5000), "alice", "bob");
         env.close();
 
@@ -419,7 +350,7 @@ struct SusPay_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         { // Unconditional
-            Env env(*this, features(featureSusPay));
+            Env env(*this, features(featureEscrow));
             env.fund(XRP(5000), "alice", "bob");
             auto const seq = env.seq("alice");
             env(lockup("alice", "alice", XRP(1000), env.now() + 1s));
@@ -434,9 +365,7 @@ struct SusPay_test : public beast::unit_test::suite
         }
 
         { // Conditional
-            Env env(*this,
-                features(featureSusPay),
-                features(featureCryptoConditions));
+            Env env(*this, features(featureEscrow));
             env.fund(XRP(5000), "alice", "bob");
             auto const seq = env.seq("alice");
             env(lockup("alice", "alice", XRP(1000), makeSlice(cb2), env.now() + 1s));
@@ -459,9 +388,9 @@ struct SusPay_test : public beast::unit_test::suite
     }
 
     void
-    testCondPay()
+    testEscrowConditions()
     {
-        testcase ("Conditional Payments");
+        testcase ("Escrow Conditions");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -469,8 +398,7 @@ struct SusPay_test : public beast::unit_test::suite
 
         { // Test cryptoconditions
             Env env(*this,
-                features(featureSusPay),
-                features(featureCryptoConditions));
+                features(featureEscrow));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -507,7 +435,7 @@ struct SusPay_test : public beast::unit_test::suite
             // Attempt to finish with the correct condition & fulfillment
             env(finish("bob", "alice", seq, makeSlice(cb1), makeSlice(fb1)), fee(1500));
             // SLE removed on finish
-            BEAST_EXPECT(! env.le(keylet::susPay(Account("alice").id(), seq)));
+            BEAST_EXPECT(! env.le(keylet::escrow(Account("alice").id(), seq)));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
             env.require(balance("carol", XRP(6000)));
             env(cancel("bob", "alice", seq),                                ter(tecNO_TARGET));
@@ -518,8 +446,7 @@ struct SusPay_test : public beast::unit_test::suite
 
         { // Test cancel when condition is present
             Env env(*this,
-                features(featureSusPay),
-                features(featureCryptoConditions));
+                features(featureEscrow));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -532,13 +459,11 @@ struct SusPay_test : public beast::unit_test::suite
             env(cancel("bob", "alice", seq));
             env.require(balance("alice", XRP(5000) - drops(10)));
             // SLE removed on cancel
-            BEAST_EXPECT(! env.le(keylet::susPay(Account("alice").id(), seq)));
+            BEAST_EXPECT(! env.le(keylet::escrow(Account("alice").id(), seq)));
         }
 
         {
-            Env env(*this,
-                features(featureSusPay),
-                features(featureCryptoConditions));
+            Env env(*this, features(featureEscrow));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -558,9 +483,7 @@ struct SusPay_test : public beast::unit_test::suite
         }
 
         { // Test long & short conditions during creation
-            Env env(*this,
-                features(featureSusPay),
-                features(featureCryptoConditions));
+            Env env(*this, features(featureEscrow));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -601,8 +524,7 @@ struct SusPay_test : public beast::unit_test::suite
 
         { // Test long and short conditions & fulfillments during finish
             Env env(*this,
-                features(featureSusPay),
-                features(featureCryptoConditions));
+                features(featureEscrow));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -687,9 +609,7 @@ struct SusPay_test : public beast::unit_test::suite
 
         { // Test empty condition during creation and
           // empty condition & fulfillment during finish
-            Env env(*this,
-                features(featureSusPay),
-                features(featureCryptoConditions));
+            Env env(*this, features(featureEscrow));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -726,6 +646,30 @@ struct SusPay_test : public beast::unit_test::suite
             env.require(balance ("carol", XRP(6000)));
             env.require(balance ("alice", XRP(4000) - drops(10)));
         }
+
+        { // Test a condition other than PreimageSha256, which
+          // would require a separate amendment
+            Env env(*this, features(featureEscrow));
+            auto T = [&env](NetClock::duration const& d)
+                { return env.now() + d; };
+            env.fund(XRP(5000), "alice", "bob", "carol");
+
+            std::array<std::uint8_t, 45> cb = 
+            {{
+                0xA2, 0x2B, 0x80, 0x20, 0x42, 0x4A, 0x70, 0x49, 0x49, 0x52,
+                0x92, 0x67, 0xB6, 0x21, 0xB3, 0xD7, 0x91, 0x19, 0xD7, 0x29,
+                0xB2, 0x38, 0x2C, 0xED, 0x8B, 0x29, 0x6C, 0x3C, 0x02, 0x8F,
+                0xA9, 0x7D, 0x35, 0x0F, 0x6D, 0x07, 0x81, 0x03, 0x06, 0x34,
+                0xD2, 0x82, 0x02, 0x03, 0xC8
+            }};
+
+            auto const seq = env.seq("alice");
+
+            // FIXME: this transaction should, eventually, return temDISABLED
+            //        instead of temMALFORMED.
+            env(condpay("alice", "carol", XRP(1000), makeSlice(cb), T(S{1})),
+                ter(temMALFORMED));
+        }
     }
 
     void
@@ -735,9 +679,7 @@ struct SusPay_test : public beast::unit_test::suite
 
         using namespace jtx;
         using namespace std::chrono;
-        Env env(*this,
-            features(featureSusPay),
-            features(featureCryptoConditions));
+        Env env(*this, features(featureEscrow));
 
         env.fund(XRP(5000), "alice", "bob", "carol");
         env(condpay("alice", "carol", XRP(1000), makeSlice(cb1), env.now() + 1s));
@@ -751,9 +693,7 @@ struct SusPay_test : public beast::unit_test::suite
 
         using namespace jtx;
         using namespace std::chrono;
-        Env env(*this,
-            features(featureSusPay),
-            features(featureCryptoConditions));
+        Env env(*this, features(featureEscrow));
 
         env.memoize("alice");
         env.memoize("bob");
@@ -806,13 +746,13 @@ struct SusPay_test : public beast::unit_test::suite
         testTags();
         testFails();
         testLockup();
-        testCondPay();
+        testEscrowConditions();
         testMeta();
         testConsequences();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SusPay,app,ripple);
+BEAST_DEFINE_TESTSUITE(Escrow,app,ripple);
 
 } // test
 } // ripple

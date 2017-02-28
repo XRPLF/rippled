@@ -36,7 +36,6 @@ feature (const char* name);
 
 extern uint256 const featureMultiSign;
 extern uint256 const featureTickets;
-extern uint256 const featureSusPay;
 extern uint256 const featureTrustSetAuth;
 extern uint256 const featureFeeEscalation;
 extern uint256 const featureOwnerPaysFee;
@@ -47,6 +46,8 @@ extern uint256 const featureFlow;
 extern uint256 const featureCryptoConditions;
 extern uint256 const featureTickSize;
 extern uint256 const featureRIPD1368;
+extern uint256 const featureEscrow;
+extern uint256 const featureCryptoConditionsSuite;
 
 } // ripple
 

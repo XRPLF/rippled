@@ -67,7 +67,7 @@ TxFormats::TxFormats ()
         << SOElement (sfDeliverMin,          SOE_OPTIONAL)
         ;
 
-    add ("SuspendedPaymentCreate", ttSUSPAY_CREATE) <<
+    add ("EscrowCreate", ttESCROW_CREATE) <<
         SOElement (sfDestination,       SOE_REQUIRED) <<
         SOElement (sfAmount,            SOE_REQUIRED) <<
         SOElement (sfCondition,         SOE_OPTIONAL) <<
@@ -75,13 +75,13 @@ TxFormats::TxFormats ()
         SOElement (sfFinishAfter,       SOE_OPTIONAL) <<
         SOElement (sfDestinationTag,    SOE_OPTIONAL);
 
-    add ("SuspendedPaymentFinish", ttSUSPAY_FINISH) <<
+    add ("EscrowFinish", ttESCROW_FINISH) <<
         SOElement (sfOwner,               SOE_REQUIRED) <<
         SOElement (sfOfferSequence,       SOE_REQUIRED) <<
         SOElement (sfFulfillment,         SOE_OPTIONAL) <<
         SOElement (sfCondition,           SOE_OPTIONAL);
 
-    add ("SuspendedPaymentCancel", ttSUSPAY_CANCEL) <<
+    add ("EscrowCancel", ttESCROW_CANCEL) <<
         SOElement (sfOwner,               SOE_REQUIRED) <<
         SOElement (sfOfferSequence,       SOE_REQUIRED);
 

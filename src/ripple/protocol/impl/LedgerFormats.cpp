@@ -82,7 +82,7 @@ LedgerFormats::LedgerFormats ()
             << SOElement (sfHighQualityOut,      SOE_OPTIONAL)
             ;
 
-    add ("SuspendedPayment", ltSUSPAY) <<
+    add ("Escrow", ltESCROW) <<
         SOElement (sfAccount,           SOE_REQUIRED) <<
         SOElement (sfDestination,       SOE_REQUIRED) <<
         SOElement (sfAmount,            SOE_REQUIRED) <<

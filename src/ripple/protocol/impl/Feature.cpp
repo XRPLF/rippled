@@ -47,7 +47,6 @@ feature (const char* name)
 
 uint256 const featureMultiSign = feature("MultiSign");
 uint256 const featureTickets = feature("Tickets");
-uint256 const featureSusPay = feature("SusPay");
 uint256 const featureTrustSetAuth = feature("TrustSetAuth");
 uint256 const featureFeeEscalation = feature("FeeEscalation");
 uint256 const featureOwnerPaysFee = feature("OwnerPaysFee");
@@ -58,5 +57,7 @@ uint256 const featureFlow = feature("Flow");
 uint256 const featureCryptoConditions = feature("CryptoConditions");
 uint256 const featureTickSize = feature("TickSize");
 uint256 const featureRIPD1368 = feature("RIPD1368");
+uint256 const featureEscrow = feature("Escrow");
+uint256 const featureCryptoConditionsSuite = feature("CryptoConditionsSuite");
 
 } // ripple

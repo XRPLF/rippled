@@ -25,12 +25,12 @@
 #include <ripple/app/tx/impl/Change.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/tx/impl/CreateTicket.h>
+#include <ripple/app/tx/impl/Escrow.h>
 #include <ripple/app/tx/impl/Payment.h>
 #include <ripple/app/tx/impl/SetAccount.h>
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
 #include <ripple/app/tx/impl/SetTrust.h>
-#include <ripple/app/tx/impl/SusPay.h>
 #include <ripple/app/tx/impl/PayChan.h>
 
 namespace ripple {
@@ -45,9 +45,9 @@ invoke_preflight (PreflightContext const& ctx)
     case ttOFFER_CANCEL:    return CancelOffer      ::preflight(ctx);
     case ttOFFER_CREATE:    return CreateOffer      ::preflight(ctx);
     case ttPAYMENT:         return Payment          ::preflight(ctx);
-    case ttSUSPAY_CREATE:   return SusPayCreate     ::preflight(ctx);
-    case ttSUSPAY_FINISH:   return SusPayFinish     ::preflight(ctx);
-    case ttSUSPAY_CANCEL:   return SusPayCancel     ::preflight(ctx);
+    case ttESCROW_CREATE:   return EscrowCreate     ::preflight(ctx);
+    case ttESCROW_FINISH:   return EscrowFinish     ::preflight(ctx);
+    case ttESCROW_CANCEL:   return EscrowCancel     ::preflight(ctx);
     case ttREGULAR_KEY_SET: return SetRegularKey    ::preflight(ctx);
     case ttSIGNER_LIST_SET: return SetSignerList    ::preflight(ctx);
     case ttTICKET_CANCEL:   return CancelTicket     ::preflight(ctx);
@@ -118,9 +118,9 @@ invoke_preclaim (PreclaimContext const& ctx)
     case ttOFFER_CANCEL:    return invoke_preclaim<CancelOffer>(ctx);
     case ttOFFER_CREATE:    return invoke_preclaim<CreateOffer>(ctx);
     case ttPAYMENT:         return invoke_preclaim<Payment>(ctx);
-    case ttSUSPAY_CREATE:   return invoke_preclaim<SusPayCreate>(ctx);
-    case ttSUSPAY_FINISH:   return invoke_preclaim<SusPayFinish>(ctx);
-    case ttSUSPAY_CANCEL:   return invoke_preclaim<SusPayCancel>(ctx);
+    case ttESCROW_CREATE:   return invoke_preclaim<EscrowCreate>(ctx);
+    case ttESCROW_FINISH:   return invoke_preclaim<EscrowFinish>(ctx);
+    case ttESCROW_CANCEL:   return invoke_preclaim<EscrowCancel>(ctx);
     case ttREGULAR_KEY_SET: return invoke_preclaim<SetRegularKey>(ctx);
     case ttSIGNER_LIST_SET: return invoke_preclaim<SetSignerList>(ctx);
     case ttTICKET_CANCEL:   return invoke_preclaim<CancelTicket>(ctx);
@@ -147,9 +147,9 @@ invoke_calculateBaseFee(PreclaimContext const& ctx)
     case ttOFFER_CANCEL:    return CancelOffer::calculateBaseFee(ctx);
     case ttOFFER_CREATE:    return CreateOffer::calculateBaseFee(ctx);
     case ttPAYMENT:         return Payment::calculateBaseFee(ctx);
-    case ttSUSPAY_CREATE:   return SusPayCreate::calculateBaseFee(ctx);
-    case ttSUSPAY_FINISH:   return SusPayFinish::calculateBaseFee(ctx);
-    case ttSUSPAY_CANCEL:   return SusPayCancel::calculateBaseFee(ctx);
+    case ttESCROW_CREATE:   return EscrowCreate::calculateBaseFee(ctx);
+    case ttESCROW_FINISH:   return EscrowFinish::calculateBaseFee(ctx);
+    case ttESCROW_CANCEL:   return EscrowCancel::calculateBaseFee(ctx);
     case ttREGULAR_KEY_SET: return SetRegularKey::calculateBaseFee(ctx);
     case ttSIGNER_LIST_SET: return SetSignerList::calculateBaseFee(ctx);
     case ttTICKET_CANCEL:   return CancelTicket::calculateBaseFee(ctx);
@@ -189,9 +189,9 @@ invoke_calculateConsequences(STTx const& tx)
     case ttOFFER_CANCEL:    return invoke_calculateConsequences<CancelOffer>(tx);
     case ttOFFER_CREATE:    return invoke_calculateConsequences<CreateOffer>(tx);
     case ttPAYMENT:         return invoke_calculateConsequences<Payment>(tx);
-    case ttSUSPAY_CREATE:   return invoke_calculateConsequences<SusPayCreate>(tx);
-    case ttSUSPAY_FINISH:   return invoke_calculateConsequences<SusPayFinish>(tx);
-    case ttSUSPAY_CANCEL:   return invoke_calculateConsequences<SusPayCancel>(tx);
+    case ttESCROW_CREATE:   return invoke_calculateConsequences<EscrowCreate>(tx);
+    case ttESCROW_FINISH:   return invoke_calculateConsequences<EscrowFinish>(tx);
+    case ttESCROW_CANCEL:   return invoke_calculateConsequences<EscrowCancel>(tx);
     case ttREGULAR_KEY_SET: return invoke_calculateConsequences<SetRegularKey>(tx);
     case ttSIGNER_LIST_SET: return invoke_calculateConsequences<SetSignerList>(tx);
     case ttTICKET_CANCEL:   return invoke_calculateConsequences<CancelTicket>(tx);
@@ -220,9 +220,9 @@ invoke_apply (ApplyContext& ctx)
     case ttOFFER_CANCEL:    { CancelOffer   p(ctx); return p(); }
     case ttOFFER_CREATE:    { CreateOffer   p(ctx); return p(); }
     case ttPAYMENT:         { Payment       p(ctx); return p(); }
-    case ttSUSPAY_CREATE:   { SusPayCreate  p(ctx); return p(); }
-    case ttSUSPAY_FINISH:   { SusPayFinish  p(ctx); return p(); }
-    case ttSUSPAY_CANCEL:   { SusPayCancel  p(ctx); return p(); }
+    case ttESCROW_CREATE:   { EscrowCreate  p(ctx); return p(); }
+    case ttESCROW_FINISH:   { EscrowFinish  p(ctx); return p(); }
+    case ttESCROW_CANCEL:   { EscrowCancel  p(ctx); return p(); }
     case ttREGULAR_KEY_SET: { SetRegularKey p(ctx); return p(); }
     case ttSIGNER_LIST_SET: { SetSignerList p(ctx); return p(); }
     case ttTICKET_CANCEL:   { CancelTicket  p(ctx); return p(); }

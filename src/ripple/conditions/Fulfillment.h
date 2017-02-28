@@ -32,68 +32,76 @@ namespace cryptoconditions {
 struct Fulfillment
 {
 public:
+    /** Load a fulfillment from its binary form
+
+        @param s The buffer containing the fulfillment to load.
+        @param ec Set to the error, if any occurred.
+
+        The binary format for a fulfillment is specified in the
+        cryptoconditions RFC. See:
+
+        https://tools.ietf.org/html/draft-thomas-crypto-conditions-02#section-7.3
+    */
+    static
+    std::unique_ptr<Fulfillment>
+    deserialize(
+        Slice s,
+        std::error_code& ec);
+
+public:
     virtual ~Fulfillment() = default;
 
-    Fulfillment () = default;
-
-    /** Returns the size of the fulfillment's payload. */
-    virtual
-    std::size_t
-    payloadSize() const = 0;
-
-    /** Returns the fulfillment's payload */
+    /** Returns the fulfillment's fingerprint:
+    
+        The fingerprint is an octet string uniquely
+        representing this fulfillment's condition
+        with respect to other conditions of the
+        same type.
+   */
     virtual
     Buffer
-    payload() const = 0;
+    fingerprint() const = 0;
 
-    /** Generates the condition */
+    /** Returns the type of this condition. */
     virtual
-    Condition
-    condition() const = 0;
-
-    /** Returns the type */
-    virtual
-    std::uint16_t
+    Type
     type () const = 0;
-
-    /** Returns the features suites required.
-
-        For any given fulfillment, the result includes all
-        the feature suites that an implementation must
-        support in order to be able to successfully parse
-        the fulfillment.
-
-        @note fulfillments of the same type may require
-              different features.
-    */
-    virtual
-    std::uint32_t
-    features () const = 0;
-
-    /** Determines if this fulfillment is well-formed */
-    virtual
-    bool
-    ok () const = 0;
 
     /** Validates a fulfillment. */
     virtual
     bool
     validate (Slice data) const = 0;
 
-    /** Parses the fulfillment's payload. */
+    /** Calculates the cost associated with this fulfillment. *
+
+        The cost function is deterministic and depends on the
+        type and properties of the condition and the fulfillment
+        that the condition is generated from.
+    */
     virtual
-    bool
-    parsePayload (Slice s) = 0;
+    std::uint32_t
+    cost() const = 0;
+
+    /** Returns the condition associated with the given fulfillment.
+
+        This process is completely deterministic. All implementations
+        will, if compliant, produce the identical condition for the
+        same fulfillment.
+    */
+    virtual
+    Condition
+    condition() const = 0;
 };
 
 inline
 bool
 operator== (Fulfillment const& lhs, Fulfillment const& rhs)
 {
+    // FIXME: for compound conditions, need to also check subtypes
     return
         lhs.type() == rhs.type() &&
-        lhs.ok() == rhs.ok() &&
-        lhs.payload() == rhs.payload();
+            lhs.cost() == rhs.cost() &&
+                lhs.fingerprint() == rhs.fingerprint();
 }
 
 inline
@@ -103,37 +111,9 @@ operator!= (Fulfillment const& lhs, Fulfillment const& rhs)
     return !(lhs == rhs);
 }
 
-/** Load a fulfillment from its string serialization.
-
-    The format is specified in Section 2.5.1 of the
-    cryptoconditions RFC:
-
-        https://tools.ietf.org/html/draft-thomas-crypto-conditions-00#section-2.5.1
- */
-std::unique_ptr<Fulfillment>
-loadFulfillment (std::string const& s);
-
-/** Load a fulfillment from its binary serialization.
-
-    The format is specified in Section 2.5.2 of the
-    cryptoconditions RFC:
-
-        https://tools.ietf.org/html/draft-thomas-crypto-conditions-00#section-2.5.2
-*/
-std::unique_ptr<Fulfillment>
-loadFulfillment (Slice s);
-
-// Convert a fulfillment to its string form
-std::string
-to_string (Fulfillment const& f);
-
-// Convert a fulfillment to its binary form
-std::vector<std::uint8_t>
-to_blob (Fulfillment const& f);
-
-/** Determine whether a fulfillment fulfills a given condition */
+/** Determine whether the given fulfillment and condition match */
 bool
-fulfills (
+match (
     Fulfillment const& f,
     Condition const& c);
 
@@ -141,10 +121,11 @@ fulfills (
 
     @param f The fulfillment
     @param c The condition
-    @param m The message; note that the message is not
-             relevant for some conditions (e.g. hashlocks)
-             and a fulfillment will successfully satisfy its
-             condition for any given message.
+    @param m The message
+    
+    @note the message is not relevant for some conditions
+          and a fulfillment will successfully satisfy its
+          condition for any given message.
 */
 bool
 validate (
@@ -166,7 +147,7 @@ validate (
     @param c The condition
 */
 bool
-validateTrigger (
+validate (
     Fulfillment const& f,
     Condition const& c);
 

@@ -623,7 +623,7 @@ ApplyStateTable::threadOwners (ReadView const& base,
         // Nothing to do
         break;
     }
-    case ltSUSPAY:
+    case ltESCROW:
     {
         threadTx (base, meta, (*sle)[sfAccount], mods, j);
         threadTx (base, meta, (*sle)[sfDestination], mods, j);

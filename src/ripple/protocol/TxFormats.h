@@ -35,10 +35,10 @@ enum TxType
     ttINVALID           = -1,
 
     ttPAYMENT           = 0,
-    ttSUSPAY_CREATE     = 1,
-    ttSUSPAY_FINISH     = 2,
+    ttESCROW_CREATE     = 1,
+    ttESCROW_FINISH     = 2,
     ttACCOUNT_SET       = 3,
-    ttSUSPAY_CANCEL     = 4,
+    ttESCROW_CANCEL     = 4,
     ttREGULAR_KEY_SET   = 5,
     ttNICKNAME_SET      = 6, // open
     ttOFFER_CREATE      = 7,

@@ -1,19 +1,19 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2016 Ripple Labs Inc.
+This file is part of rippled: https://github.com/ripple/rippled
+Copyright (c) 2016 Ripple Labs Inc.
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+Permission to use, copy, modify, and/or distribute this software for any
+purpose  with  or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
@@ -21,6 +21,8 @@
 #define RIPPLE_CONDITIONS_UTILS_H
 
 #include <ripple/basics/strHex.h>
+#include <ripple/conditions/impl/error.h>
+#include <boost/dynamic_bitset.hpp>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -31,338 +33,195 @@
 namespace ripple {
 namespace cryptoconditions {
 
+// A collection of functions to decode binary blobs
+// encoded with X.690 Distinguished Encoding Rules.
+//
+// This is a very trivial decoder and only implements
+// the bare minimum needed to support PreimageSha256.
+namespace der {
+
+// The preamble encapsulates the DER identifier and
+// length octets:
+struct Preamble
+{
+    std::uint8_t type = 0;
+    std::size_t tag = 0;
+    std::size_t length = 0;
+};
+
 inline
-std::string
-hexstr (std::vector<std::uint8_t> const& data)
+bool
+isPrimitive(Preamble const& p)
 {
-    std::string s;
-    s.reserve (data.size() * 2);
-
-    for (auto d : data)
-    {
-        s.push_back (charHex (d >> 4));
-        s.push_back (charHex (d & 15));
-    }
-
-    return s;
+    return (p.type & 0x20) == 0;
 }
 
 inline
-std::vector<std::uint8_t>
-hexblob (std::string const& s)
+bool
+isConstructed(Preamble const& p)
 {
-    std::vector<std::uint8_t> result;
-    result.reserve (1 + (s.size () / 2));
-
-    auto iter = s.cbegin ();
-
-    if (s.size () & 1)
-    {
-        int c = charUnHex (*iter++);
-
-        if (c < 0)
-            Throw<std::runtime_error>("Invalid hex in blob");
-
-        result.push_back(c);
-    }
-
-    while (iter != s.cend ())
-    {
-        int cHigh = charUnHex (*iter++);
-
-        if (cHigh < 0)
-            Throw<std::runtime_error>("Invalid hex in blob");
-
-        int cLow = charUnHex (*iter);
-
-        if (cLow < 0)
-            Throw<std::runtime_error>("Invalid hex in blob");
-
-        iter++;
-
-        result.push_back (
-            static_cast<std::uint8_t>(cHigh << 4) |
-            static_cast<std::uint8_t>(cLow));
-    }
-
-    return result;
+    return !isPrimitive(p);
 }
 
-template <class T>
-T parse_decimal(std::string const& s)
-{
-    T t = 0;
-
-    for (auto const c : s)
-    {
-        if (c < '0' || c > '9')
-            throw std::domain_error ("invalid decimal digit");
-
-        t = (t * 10) + (c - '0');
-    }
-
-    return t;
-}
-
-template <class T>
-T parse_hexadecimal(std::string const& s)
-{
-    T t = 0;
-
-    for (auto const c : s)
-    {
-        if (c >= '0' && c <= '9')
-            t = (t * 16) + (c - '0');
-        else if (c >= 'a' && c <= 'f')
-            t = (t * 16) + 10 + (c - 'a');
-        else if (c >= 'A' && c <= 'F')
-            t = (t * 16) + 10 + (c - 'A');
-        else
-            throw std::domain_error ("invalid hexadecimal digit");
-    }
-
-    return t;
-}
-
-template <class Integer>
-std::string
-to_hex (Integer value)
-{
-    std::stringstream ss;
-    ss << std::hex << value;
-    return ss.str();
-}
-
-template <class Integer>
-std::string
-to_dec (Integer value)
-{
-    std::stringstream ss;
-    ss << std::dec << value;
-    return ss.str();
-}
-
-// ISO/IEC 8825/7 or ITU-T X.696: Octet Encoding Rules
-// FIXME: This assumes a little-endian architecture!
-namespace oer
-{
-
-// Simple conversion: write integer as big-endian byte stream
-// This needs to be improved and optimized:
-template <class Integer, class OutputIt>
-void
-encode_integer(Integer value, OutputIt out)
-{
-    static_assert (
-            std::is_same<Integer, std::uint8_t>::value ||
-            std::is_same<Integer, std::uint16_t>::value ||
-            std::is_same<Integer, std::uint32_t>::value ||
-            std::is_same<Integer, std::uint64_t>::value,
-        "encode_integer accepts only std::uint{8,16,32,64}_t");
-
-    std::size_t n = sizeof(Integer);
-
-    while(n--)
-    {
-        *out++ = static_cast<std::uint8_t>(
-            (value >> (n * 8)) & 0xFF);
-    }
-}
-
-// Simple conversion: big-endian byte stream to integer
-template <class Integer, class InputIt>
-std::pair<InputIt, Integer>
-decode_integer(InputIt begin, InputIt end)
-{
-    static_assert (
-            std::is_same<Integer, std::uint8_t>::value ||
-            std::is_same<Integer, std::uint16_t>::value ||
-            std::is_same<Integer, std::uint32_t>::value ||
-            std::is_same<Integer, std::uint64_t>::value,
-        "decode_integer accepts only std::uint{8,16,32,64}_t");
-
-    std::size_t size = std::distance (begin, end);
-
-    if (size < sizeof(Integer))
-        Throw<std::length_error>("short integer: " + std::to_string(size));
-
-    Integer res = 0;
-
-    for (std::size_t i = 0; i < sizeof(Integer); ++i)
-        res = (res << 8) | *begin++;
-
-    return { begin, res };
-}
-
-template <class OutputIt>
 inline
-OutputIt
-encode_length (std::size_t len, OutputIt out)
+bool
+isUniversal(Preamble const& p)
 {
-    if (len <= 0x7F)
-    {
-        *out++ = static_cast<std::uint8_t>(len & 0x7F);
-        return out;
-    }
-
-    // Decide how many bytes we need:
-    if (len <= 0xFFFF)
-    {
-        *out++ = 0x82;
-        *out++ = static_cast<std::uint8_t>((len >> 8) & 0xFF);
-        *out++ = static_cast<std::uint8_t>(len & 0xFF);
-        return out;
-    }
-
-    if (len <= 0xFFFFFF)
-    {
-        *out++ = 0x83;
-        *out++ = static_cast<std::uint8_t>((len >> 16) & 0xFF);
-        *out++ = static_cast<std::uint8_t>((len >> 8) & 0xFF);
-        *out++ = static_cast<std::uint8_t>(len & 0xFF);
-        return out;
-    }
-
-    if (len <= 0xFFFFFFFF)
-    {
-        *out++ = 0x84;
-        *out++ = static_cast<std::uint8_t>((len >> 24) & 0xFF);
-        *out++ = static_cast<std::uint8_t>((len >> 16) & 0xFF);
-        *out++ = static_cast<std::uint8_t>((len >> 8) & 0xFF);
-        *out++ = static_cast<std::uint8_t>(len & 0xFF);
-        return out;
-    }
-
-    // Note: OER can represent lengths up to (2^1016) - 1,
-    // which is, truly, enough for everyone. We never
-    // exceed 2^32.
-    Throw<std::length_error>("overlong encoding length: " + std::to_string(len));
+    return (p.type & 0xC0) == 0;
 }
 
-// A "streambuf" would serve us better here - instead of the
-// crazy paired return, we consume data from it and things
-// just magically work.
-template <class InputIt>
-std::pair<InputIt, std::size_t>
-decode_length (InputIt begin, InputIt end)
-{
-    if (begin == end)
-        Throw<std::length_error>("empty buffer");
-
-    std::size_t bytes = *begin++;
-
-    if (bytes < 128)
-        return { begin, bytes };
-
-    bytes &= 0x7F;
-
-    if (bytes > 4)
-        Throw<std::length_error>("overlong encoded length: " + std::to_string(bytes));
-
-    std::size_t len = 0;
-
-    if (std::distance (begin, end) < bytes)
-        Throw<std::length_error>("short encoded length: " + std::to_string(bytes));
-
-    while (bytes--)
-        len = (len << 8) | *begin++;
-
-    return { begin, len };
-}
-
-/** Encode a fixed-size octet string: OER 2.6 (2) */
-template <class InputIt, class OutputIt>
-OutputIt
-encode_octetstring(InputIt begin, InputIt end, OutputIt out)
-{
-    while (begin != end)
-        *out++ = *begin++;
-
-    return out;
-}
-
-/** Encode a dynamic size octet string: OER 2.6 (1) */
 inline
-std::size_t
-predict_octetstring_size(std::size_t size)
+bool
+isApplication(Preamble const& p)
 {
-    // Alternatively, always guess 4 + size and call it a day?
-    if (size <= 0x7F)
-        return size + 1;
-
-    // Decide how many bytes we need:
-    if (size <= 0xFFFF)
-        return size + 3;
-
-    if (size <= 0xFFFFFF)
-        return size + 4;
-
-    if (size <= 0xFFFFFFFF)
-        return size + 5;
-
-    Throw<std::length_error>("overlong encoding length: " + std::to_string(size));
+    return (p.type & 0xC0) == 0x40;
 }
 
-/** Encode an dynamic size octet string: OER 2.6 (1) */
-template <class InputIt, class OutputIt>
-OutputIt
-encode_octetstring(std::size_t size, InputIt begin, InputIt end, OutputIt out)
+inline
+bool
+isContextSpecific(Preamble const& p)
 {
-    // This will encode the length first, followed by the
-    // payload octets:
-    return encode_octetstring (
-        begin,
-        end,
-        oer::encode_length (size, out));
+    return (p.type & 0xC0) == 0x80;
 }
 
-template <class Integer, class OutputIt>
-std::enable_if_t<std::is_unsigned<Integer>::value>
-encode_varuint (Integer value, OutputIt out)
+inline
+bool
+isPrivate(Preamble const& p)
 {
-    auto count = [](Integer n)
+    return (p.type & 0xC0) == 0xC0;
+}
+
+inline
+Preamble
+parsePreamble(Slice& s, std::error_code& ec)
+{
+    Preamble p;
+
+    if (s.size() < 2)
     {
-        std::size_t c = 0;
+        ec = error::generic;
+        return p;
+    }
 
-        do
+    p.type = s[0] & 0xE0;
+    p.tag = s[0] & 0x1F;
+
+    s += 1;
+
+    if (p.tag == 0x1F)
+    { // Long tag form:
+        p.tag = 0;
+
+        if (s[0] == 0x80)
         {
-            n >>= 8;
-            ++c;
-        } while (n);
+            ec = error::generic;
+            return p;
+        }
 
-        return c;
-    };
+        while (!s.empty() && (s[0] & 0x80))
+        {
+            p.tag = p.tag * 128 + (s[0] & 0x7F);
+            s += 1;
+        }
 
-    std::size_t c = count (value);
+        if (s.empty())
+        {
+            ec = error::generic;
+            return p;
+        }
 
-    out = encode_length (c, out);
-
-    while(c--)
-    {
-        *out++ = static_cast<std::uint8_t>(
-            (value >> (c * 8)) & 0xFF);
+        p.tag = p.tag * 128 + s[0];
+        s += 1;
     }
+
+    if (s.empty())
+    {
+        ec = error::generic;
+        return p;
+    }
+
+    p.length = s[0];
+    s += 1;
+
+    if (p.length & 0x80)
+    { // Long form length:
+        std::size_t const cnt = p.length & 0x7F;
+
+        if (cnt == 0)
+        {
+            ec = error::generic;
+            return p;
+        }
+
+        if (cnt > sizeof(std::size_t))
+        {
+            ec = error::generic;
+            return p;
+        }
+
+        // Account for the first two bytes in the preamble:
+        if (cnt >= s.size())
+        {
+            ec = error::generic;
+            return p;
+        }
+
+        p.length = 0;
+
+        for (std::size_t i = 0; i != cnt; ++i)
+            p.length = (p.length << 8) + s[i];
+
+        s += cnt;
+
+        if (p.length == 0)
+        {
+            ec = error::generic;
+            return p;
+        }
+    }
+
+    ec = {};
+    return p;
 }
 
-template <class Integer, class InputIt>
-std::enable_if_t<std::is_unsigned<Integer>::value, std::pair<InputIt, Integer>>
-decode_varuint (InputIt begin, InputIt end)
+inline
+Buffer
+parseOctetString(Slice& s, std::uint32_t count, std::error_code& ec)
 {
-    auto y = decode_length (begin, end);
+    if (count > s.size())
+    {
+        ec = error::buffer_underfull;
+        return {};
+    }
 
-    if (y.second > sizeof(Integer))
-        Throw<std::length_error>("Encoded integer exceeds allowable range: " + std::to_string(y.second));
-
-    Integer x = 0;
-
-    for (std::size_t i = 0; i != y.second; ++i)
-        x = (x << 8) + *y.first++;
-
-    return { y.first, x };
+    Buffer b(s.data(), count);
+    s += count;
+    ec = {};
+    return b;
 }
 
+template <class Integer>
+Integer
+parseInteger(Slice& s, std::size_t count, std::error_code& ec)
+{
+    if (count > s.size())
+    {
+        ec = error::buffer_underfull;
+        return {};
+    }
+
+    Integer num = 0;
+
+    for (std::size_t i = 0; i != count; ++i)
+        num = (num << 8) | s[i];
+
+    s += count;
+    ec = {};
+    return num;
 }
-}
-}
+
+} // der
+} // cryptoconditions
+} // ripple
 
 #endif
