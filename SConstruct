@@ -552,6 +552,13 @@ def config_env(toolchain, variant, env):
         if toolchain == 'clang':
             env.Append(CCFLAGS=['-Wno-redeclared-class-member'])
             env.Append(CPPDEFINES=['BOOST_ASIO_HAS_STD_ARRAY'])
+            try:
+                ldd_ver = subprocess.check_output([env['CLANG_CXX'], '-fuse-ld=lld', '-Wl,--version'],
+                                            stderr=subprocess.STDOUT).strip()
+                # have lld
+                env.Append(LINKFLAGS=['-fuse-ld=lld'])
+            except:
+                pass
 
         env.Append(CXXFLAGS=[
             '-frtti',
@@ -583,11 +590,17 @@ def config_env(toolchain, variant, env):
                     '-D_GLIBCXX_USE_CXX11_ABI' : 0
                 })
             if toolchain == 'gcc':
-
                 env.Append(CCFLAGS=[
                     '-Wno-unused-but-set-variable',
                     '-Wno-deprecated',
                     ])
+                try:
+                    ldd_ver = subprocess.check_output([env['GNU_CXX'], '-fuse-ld=gold', '-Wl,--version'],
+                                                      stderr=subprocess.STDOUT).strip()
+                    # have ld.gold
+                    env.Append(LINKFLAGS=['-fuse-ld=gold'])
+                except:
+                    pass
 
         boost_libs = [
             # resist the temptation to alphabetize these. coroutine
