@@ -17,67 +17,51 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CONDITIONS_RSA_SHA256_H
-#define RIPPLE_CONDITIONS_RSA_SHA256_H
+#ifndef RIPPLE_CONDITIONS_ERROR_H
+#define RIPPLE_CONDITIONS_ERROR_H
 
-#include <ripple/conditions/Condition.h>
-#include <ripple/conditions/Fulfillment.h>
-#include <ripple/basics/Buffer.h>
-#include <cstdint>
+#include <system_error>
+#include <string>
 
 namespace ripple {
 namespace cryptoconditions {
 
-class RsaSha256 final
-    : public Fulfillment
+enum class error
 {
-    Buffer modulus_;
-    Buffer signature_;
-
-public:
-    RsaSha256 () = default;
-
-    Condition
-    condition() const override;
-
-    std::uint16_t
-    type () const override
-    {
-        return condition_rsa_sha256;
-    }
-
-    std::uint32_t
-    features () const override
-    {
-        return feature_rsa_pss | feature_sha256;
-    }
-
-    bool
-    ok () const override
-    {
-        return !modulus_.empty() && !signature_.empty();
-    }
-
-    std::size_t
-    payloadSize () const override;
-
-    Buffer
-    payload() const override;
-
-    bool
-    validate (Slice data) const override;
-
-    /** Sign the given message with an RSA key */
-    bool sign (
-        std::string const& key,
-        Slice message);
-
-    bool
-    parsePayload (Slice s) override;
+    generic = 1,
+    unsupported_type,
+    unsupported_subtype,
+    unknown_type,
+    unknown_subtype,
+    fingerprint_size,
+    incorrect_encoding,
+    trailing_garbage,
+    buffer_empty,
+    buffer_overfull,
+    buffer_underfull,
+    malformed_encoding,
+    short_preamble,
+    unexpected_tag,
+    long_tag,
+    large_size,
+    preimage_too_long
 };
 
-}
+std::error_code
+make_error_code(error ev);
 
-}
+} // cryptoconditions
+} // ripple
+
+namespace std
+{
+
+template<>
+struct is_error_code_enum<ripple::cryptoconditions::error>
+{
+    static bool const value = true;
+};
+
+} // std
 
 #endif

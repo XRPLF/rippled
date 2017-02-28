@@ -234,9 +234,9 @@ Keylet page (uint256 const& key)
     return { ltDIR_NODE, key };
 }
 
-/** A SuspendedPayment */
+/** An escrow entry */
 Keylet
-susPay (AccountID const& source, std::uint32_t seq);
+escrow (AccountID const& source, std::uint32_t seq);
 
 /** A PaymentChannel */
 Keylet

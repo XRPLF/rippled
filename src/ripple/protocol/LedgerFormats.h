@@ -78,7 +78,7 @@ enum LedgerEntryType
 
     ltFEE_SETTINGS      = 's',
 
-    ltSUSPAY            = 'u',
+    ltESCROW            = 'u',
 
     // Simple unidirection xrp channel
     ltPAYCHAN           = 'x',
@@ -105,7 +105,7 @@ enum LedgerNameSpace
     spaceBookDir        = 'B',  // Directory of order books.
     spaceContract       = 'c',
     spaceSkipList       = 's',
-    spaceSusPay         = 'u',
+    spaceEscrow         = 'u',
     spaceAmendment      = 'f',
     spaceFee            = 'e',
     spaceTicket         = 'T',

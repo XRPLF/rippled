@@ -20,6 +20,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/conditions/Condition.h>
 #include <ripple/conditions/Fulfillment.h>
+#include <ripple/conditions/impl/PreimageSha256.h>
 #include <ripple/conditions/impl/utils.h>
 #include <boost/regex.hpp>
 #include <boost/optional.hpp>
@@ -29,160 +30,212 @@
 namespace ripple {
 namespace cryptoconditions {
 
-boost::optional<Condition>
-loadCondition(std::string const& s)
+namespace detail {
+// The binary encoding of conditions differs based on their
+// type.  All types define at least a fingerprint and cost
+// sub-field.  Some types, such as the compound condition
+// types, define additional sub-fields that are required to
+// convey essential properties of the cryptocondition (such
+// as the sub-types used by sub-conditions in the case of
+// the compound types).
+//
+// Conditions are encoded as follows:
+//
+//    Condition ::= CHOICE {
+//      preimageSha256   [0] SimpleSha256Condition,
+//      prefixSha256     [1] CompoundSha256Condition,
+//      thresholdSha256  [2] CompoundSha256Condition,
+//      rsaSha256        [3] SimpleSha256Condition,
+//      ed25519Sha256    [4] SimpleSha256Condition
+//    }
+//
+//    SimpleSha256Condition ::= SEQUENCE {
+//      fingerprint          OCTET STRING (SIZE(32)),
+//      cost                 INTEGER (0..4294967295)
+//    }
+//
+//    CompoundSha256Condition ::= SEQUENCE {
+//      fingerprint          OCTET STRING (SIZE(32)),
+//      cost                 INTEGER (0..4294967295),
+//      subtypes             ConditionTypes
+//    }
+//
+//    ConditionTypes ::= BIT STRING {
+//      preImageSha256   (0),
+//      prefixSha256     (1),
+//      thresholdSha256  (2),
+//      rsaSha256        (3),
+//      ed25519Sha256    (4)
+//    }
+
+constexpr std::size_t fingerprintSize = 32;
+
+std::unique_ptr<Condition>
+loadSimpleSha256(Type type, Slice s, std::error_code& ec)
 {
-    static boost::regex const re_current (
-            "^"                            // start of line
-            "cc:"                          // 'cc' for cryptocondition
-            "([1-9a-f][0-9a-f]{0,3}|0):"   // type (hexadecimal)
-            "([1-9a-f][0-9a-f]{0,15}):"    // feature bitmask (hexadecimal)
-            "([a-zA-Z0-9_-]{0,86}):"       // fingerprint (base64url)
-            "([1-9][0-9]{0,17}|0)"         // fulfillment length (decimal)
-            "$"                            // end of line
-        , boost::regex_constants::optimize
-    );
+    using namespace der;
 
-    boost::smatch match;
+    auto p = parsePreamble(s, ec);
 
-    if (!boost::regex_match (s, match, re_current))
-        return boost::none;
+    if (ec)
+        return {};
 
-    try
+    if (!isPrimitive(p) || !isContextSpecific(p))
     {
-        Condition c;
-
-        c.type = parse_hexadecimal<std::uint16_t> (match[1]);
-
-        if (!isCondition (c.type))
-            return boost::none;
-
-        c.featureBitmask = parse_hexadecimal<std::uint32_t>(match[2]);
-        c.maxFulfillmentLength = parse_decimal<std::uint16_t>(match[4]);
-
-        if (c.maxFulfillmentLength > maxSupportedFulfillmentLength)
-            return boost::none;
-
-        // TODO: Avoid copying by decoding directly
-        // into the condition's buffer
-        auto fingerprint = base64url_decode(match[3]);
-
-        if (fingerprint.size() != c.fingerprint.size())
-            return boost::none;
-
-        std::memcpy(
-            c.fingerprint.data(),
-            fingerprint.data(),
-            fingerprint.size());
-
-        return c;
+        ec = error::incorrect_encoding;
+        return {};
     }
-    catch (std::exception const&)
+
+    if (p.tag != 0)
     {
-        return boost::none;
+        ec = error::unexpected_tag;
+        return {};
     }
-}
 
-boost::optional<Condition>
-loadCondition(Slice s)
-{
-    if (s.empty())
-        return boost::none;
-
-    try
+    if (p.length != fingerprintSize)
     {
-        auto start = s.data();
-        auto finish = s.data() + s.size();
+        ec = error::fingerprint_size;
+        return {};
+    }
 
-        Condition c;
+    Buffer b = parseOctetString(s, p.length, ec);
 
-        std::tie (start, c.type) =
-            oer::decode_integer<std::uint16_t> (
-                start, finish);
+    if (ec)
+        return {};
 
-        if (!isCondition (c.type))
-            return boost::none;
+    p = parsePreamble(s, ec);
 
-        std::tie (start, c.featureBitmask) =
-            oer::decode_varuint<std::uint32_t> (
-                start, finish);
+    if (ec)
+        return {};
 
+    if (!isPrimitive(p) || !isContextSpecific(p))
+    {
+        ec = error::malformed_encoding;
+        return{};
+    }
+
+    if (p.tag != 1)
+    {
+        ec = error::unexpected_tag;
+        return {};
+    }
+
+    auto cost = parseInteger<std::uint32_t>(s, p.length, ec);
+
+    if (ec)
+        return {};
+
+    if (!s.empty())
+    {
+        ec = error::trailing_garbage;
+        return {};
+    }
+
+    switch (type)
+    {
+    case Type::preimageSha256:
+        if (cost > PreimageSha256::maxPreimageLength)
         {
-            std::size_t len;
-
-            std::tie (start, len) =
-                oer::decode_length (start, finish);
-
-            // Incorrect signature length
-            if (len != c.fingerprint.size())
-                return boost::none;
-
-            // Short buffer
-            if (std::distance (start, finish) < len)
-                return boost::none;
-
-            auto p = c.fingerprint.data();
-
-            while (len--)
-                *p++ = *start++;
+            ec = error::preimage_too_long;
+            return {};
         }
+        break;
 
-        if (start == finish)
-            return boost::none;
-
-        std::tie (start, c.maxFulfillmentLength) =
-            oer::decode_varuint<std::uint16_t> (
-                start, finish);
-
-        // The maximum supported length of a fulfillment is
-        // the largest allowable value, so checking here is
-        // not helpful.
-        return c;
+    default:
+        break;
     }
-    catch (std::exception const&)
+
+    return std::make_unique<Condition>(type, cost, std::move(b));
+}
+
+}
+
+std::unique_ptr<Condition>
+Condition::deserialize(Slice s, std::error_code& ec)
+{
+    // Per the RFC, in a condition we choose a type based
+    // on the tag of the item we contain:
+    //
+    // Condition ::= CHOICE {
+    //     preimageSha256   [0] SimpleSha256Condition,
+    //     prefixSha256     [1] CompoundSha256Condition,
+    //     thresholdSha256  [2] CompoundSha256Condition,
+    //     rsaSha256        [3] SimpleSha256Condition,
+    //     ed25519Sha256    [4] SimpleSha256Condition
+    // }
+    if (s.empty())
     {
-        return boost::none;
+        ec = error::buffer_empty;
+        return {};
     }
+
+    using namespace der;
+
+    auto const p = parsePreamble(s, ec);
+    if (ec)
+        return {};
+
+    // All fulfillments are context-specific, constructed
+    // types
+    if (!isConstructed(p) || !isContextSpecific(p))
+    {
+        ec = error::malformed_encoding;
+        return {};
+    }
+
+    if (p.length > s.size())
+    {
+        ec = error::buffer_underfull;
+        return {};
+    }
+
+    if (s.size() > maxSerializedCondition)
+    {
+        ec = error::large_size;
+        return {};
+    }
+
+    std::unique_ptr<Condition> c;
+
+    switch (p.tag)
+    {
+    case 0: // PreimageSha256
+        c = detail::loadSimpleSha256(
+            Type::preimageSha256,
+            Slice(s.data(), p.length), ec);
+        if (!ec)
+            s += p.length;
+        break;
+
+    case 1: // PrefixSha256
+        ec = error::unsupported_type;
+        return {};
+
+    case 2: // ThresholdSha256
+        ec = error::unsupported_type;
+        return {};
+
+    case 3: // RsaSha256
+        ec = error::unsupported_type;
+        return {};
+
+    case 4: // Ed25519Sha256
+        ec = error::unsupported_type;
+        return {};
+
+    default:
+        ec = error::unknown_type;
+        return {};
+    }
+
+    if (!s.empty())
+    {
+        ec = error::trailing_garbage;
+        return {};
+    }
+
+    return c;
 }
 
-std::string
-to_string (Condition const& c)
-{
-    return std::string("cc:") +
-        to_hex (c.type) + ":" +
-        to_hex (c.featureBitmask) + ":" +
-        base64url_encode(c.fingerprint) + ":" +
-        to_dec (c.maxFulfillmentLength);
 }
-
-std::vector<std::uint8_t>
-to_blob (Condition const& c)
-{
-    // TODO: optimize this
-    std::vector<std::uint8_t> v;
-    v.reserve (48);
-
-    oer::encode_integer (
-        c.type,
-        std::back_inserter(v));
-
-    oer::encode_varuint (
-        c.featureBitmask,
-        std::back_inserter(v));
-
-    oer::encode_octetstring (
-        c.fingerprint.size(),
-        c.fingerprint.begin(),
-        c.fingerprint.end(),
-        std::back_inserter(v));
-
-    oer::encode_varuint (
-        c.maxFulfillmentLength,
-        std::back_inserter(v));
-
-    return v;
-}
-
-}
-
 }

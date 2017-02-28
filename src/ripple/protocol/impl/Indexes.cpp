@@ -313,14 +313,14 @@ Keylet page(Keylet const& root,
 }
 
 Keylet
-susPay (AccountID const& source, std::uint32_t seq)
+escrow (AccountID const& source, std::uint32_t seq)
 {
     sha512_half_hasher h;
     using beast::hash_append;
-    hash_append(h, spaceSusPay);
+    hash_append(h, spaceEscrow);
     hash_append(h, source);
     hash_append(h, seq);
-    return { ltSUSPAY, static_cast<uint256>(h) };
+    return { ltESCROW, static_cast<uint256>(h) };
 }
 
 Keylet

@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_SUSPAY_H_INCLUDED
-#define RIPPLE_TX_SUSPAY_H_INCLUDED
+#ifndef RIPPLE_TX_ESCROW_H_INCLUDED
+#define RIPPLE_TX_ESCROW_H_INCLUDED
 
 #include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
 
-class SusPayCreate
+class EscrowCreate
     : public Transactor
 {
 public:
     explicit
-    SusPayCreate (ApplyContext& ctx)
+    EscrowCreate (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }
@@ -48,12 +48,12 @@ public:
 
 //------------------------------------------------------------------------------
 
-class SusPayFinish
+class EscrowFinish
     : public Transactor
 {
 public:
     explicit
-    SusPayFinish (ApplyContext& ctx)
+    EscrowFinish (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }
@@ -72,12 +72,12 @@ public:
 
 //------------------------------------------------------------------------------
 
-class SusPayCancel
+class EscrowCancel
     : public Transactor
 {
 public:
     explicit
-    SusPayCancel (ApplyContext& ctx)
+    EscrowCancel (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }

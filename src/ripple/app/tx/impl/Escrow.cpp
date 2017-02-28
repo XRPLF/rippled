@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/tx/impl/SusPay.h>
+#include <ripple/app/tx/impl/Escrow.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
@@ -32,7 +32,7 @@
 #include <ripple/protocol/XRPAmount.h>
 #include <ripple/ledger/View.h>
 
-// During a SusPayFinish, the transaction must specify both
+// During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
 // fulfillment matches and validates the condition.
 #define SF_CF_INVALID  SF_PRIVATE5
@@ -41,88 +41,88 @@
 namespace ripple {
 
 /*
-    SuspendedPayment
+    Escrow allows an account holder to sequester any amount
+    of XRP in its own ledger entry, until the escrow process
+    either finishes or is canceled.
 
-        A suspended payment ("SusPay") sequesters XRP in its
-        own ledger entry until a SusPayFinish or a SusPayCancel
-        transaction mentioning the ledger entry is successfully
-        applied to the ledger. If the SusPayFinish succeeds,
-        the destination account (which must exist) receives the
-        XRP. If the SusPayCancel succeeds, the account which
-        created the SusPay is credited the XRP.
+    If the escrow process finishes successfully, then the
+    destination account (which must exist) will receives the
+    sequestered XRP. If the escrow is, instead, canceled,
+    the account which created the escrow will receive the
+    sequestered XRP back instead.
 
-    SusPayCreate
+    EscrowCreate
 
-        When the SusPay is created, an optional condition may
-        be attached. The condition is specified by providing
-        the cryptographic digest of the condition to be met.
+        When an escrow is created, an optional condition may
+        be attached. If present, that condition must be
+        fulfilled for the escrow to successfully finish.
 
         At the time of creation, one or both of the fields
         sfCancelAfter and sfFinishAfter may be provided. If
         neither field is specified, the transaction is
         malformed.
 
-        Since the SusPay eventually becomes a payment, an
+        Since the escrow eventually becomes a payment, an
         optional DestinationTag and an optional SourceTag
-        is supported in the SusPayCreate transaction.
+        are supported in the EscrowCreate transaction.
 
         Validation rules:
 
             sfCondition
-                If present, specifies a condition, and the
+                If present, specifies a condition; the same
                 condition along with its matching fulfillment
-                is required on a SusPayFinish.
+                are required during EscrowFinish.
 
             sfCancelAfter
-                If present, SusPay may be canceled after the
+                If present, escrow may be canceled after the
                 specified time (seconds after the Ripple epoch).
 
             sfFinishAfter
                 If present, must be prior to sfCancelAfter.
-                A SusPayFinish succeeds only in ledgers after
+                A EscrowFinish succeeds only in ledgers after
                 sfFinishAfter but before sfCancelAfter.
 
                 If absent, same as parentCloseTime
 
             Malformed if both sfCancelAfter, sfFinishAfter
-                are absent.
+            are absent.
 
             Malformed if both sfFinishAfter, sfCancelAfter
-                specified and sfCancelAfter <= sfFinishAfter
+            specified and sfCancelAfter <= sfFinishAfter
 
-    SusPayFinish
+    EscrowFinish
 
-        Any account may submit a SusPayFinish. If the SusPay
-        ledger entry specifies a condition, the SusPayFinish
+        Any account may submit a EscrowFinish. If the escrow
+        ledger entry specifies a condition, the EscrowFinish
         must provide the same condition and its associated
-        fulfillment in the sfFulfillment field, or else the
-        SusPayFinish will fail.
+        fulfillment in the sfCondition and sfFulfillment
+        fields, or else the EscrowFinish will fail.
 
-        If the SusPay ledger entry specifies sfFinishAfter, the
+        If the escrow ledger entry specifies sfFinishAfter, the
         transaction will fail if parentCloseTime <= sfFinishAfter.
 
-        SusPayFinish transactions must be submitted before a
-        SusPay's sfCancelAfter if present.
+        EscrowFinish transactions must be submitted before
+        the escrow's sfCancelAfter if present.
 
-        If the SusPay ledger entry specifies sfCancelAfter, the
+        If the escrow ledger entry specifies sfCancelAfter, the
         transaction will fail if sfCancelAfter <= parentCloseTime.
 
         NOTE: The reason the condition must be specified again
               is because it must always be possible to verify
-              the condition without retrieving the SusPay
+              the condition without retrieving the escrow
               ledger entry.
 
-    SusPayCancel
+    EscrowCancel
 
-        Any account may submit a SusPayCancel transaction.
+        Any account may submit a EscrowCancel transaction.
 
-        If the SusPay ledger entry does not specify a
+        If the escrow ledger entry does not specify a
         sfCancelAfter, the cancel transaction will fail.
 
         If parentCloseTime <= sfCancelAfter, the transaction
         will fail.
 
-        When a SusPay is canceled, the funds are returned to
+        When a escrow is canceled, the funds are returned to
         the source account.
 
     By careful selection of fields in each transaction,
@@ -135,15 +135,15 @@ namespace ripple {
 //------------------------------------------------------------------------------
 
 XRPAmount
-SusPayCreate::calculateMaxSpend(STTx const& tx)
+EscrowCreate::calculateMaxSpend(STTx const& tx)
 {
     return tx[sfAmount].xrp();
 }
 
 TER
-SusPayCreate::preflight (PreflightContext const& ctx)
+EscrowCreate::preflight (PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featureSusPay))
+    if (! ctx.rules.enabled(featureEscrow))
         return temDISABLED;
 
     auto const ret = preflight1 (ctx);
@@ -166,43 +166,30 @@ SusPayCreate::preflight (PreflightContext const& ctx)
 
     if (auto const cb = ctx.tx[~sfCondition])
     {
-        if (! ctx.rules.enabled(featureCryptoConditions))
-            return temDISABLED;
-
         using namespace ripple::cryptoconditions;
 
-        // TODO: Remove this try/catch once cryptoconditions
-        //       no longer use exceptions.
-        try
+        std::error_code ec;
+
+        auto condition = Condition::deserialize(*cb, ec);
+        if (!condition)
         {
-            auto condition = loadCondition(*cb);
-
-            if (!condition)
-                return temMALFORMED;
-
-            {
-                // TODO: This is here temporarily to ensure
-                //       that the condition given doesn't
-                //       contain unnecessary trailing junk.
-                //       The new parsing API will simplify
-                //       the checking here.
-
-                auto b = to_blob(*condition);
-                if (*cb != makeSlice(b))
-                    return temMALFORMED;
-            }
-        }
-        catch (...)
-        {
+            JLOG(ctx.j.debug()) <<
+                "Malformed condition during escrow creation: " << ec.message();
             return temMALFORMED;
         }
+
+        // Conditions other than PrefixSha256 require the
+        // "CryptoConditionsSuite" amendment:
+        if (condition->type != Type::preimageSha256 &&
+                !ctx.rules.enabled(featureCryptoConditionsSuite))
+            return temDISABLED;
     }
 
     return preflight2 (ctx);
 }
 
 TER
-SusPayCreate::doApply()
+EscrowCreate::doApply()
 {
     auto const closeTime = ctx_.view ().info ().parentCloseTime;
 
@@ -252,9 +239,9 @@ SusPayCreate::doApply()
             return tecNO_TARGET;
     }
 
-    // Create SusPay in ledger
+    // Create escrow in ledger
     auto const slep = std::make_shared<SLE>(
-        keylet::susPay(account, (*sle)[sfSequence] - 1));
+        keylet::escrow(account, (*sle)[sfSequence] - 1));
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
     (*slep)[sfAccount] = account;
     (*slep)[~sfCondition] = ctx_.tx[~sfCondition];
@@ -266,7 +253,7 @@ SusPayCreate::doApply()
 
     ctx_.view().insert(slep);
 
-    // Add SusPay to owner directory
+    // Add escrow to owner directory
     {
         uint64_t page;
         auto result = dirAdd(ctx_.view(), page,
@@ -293,48 +280,23 @@ checkCondition (Slice f, Slice c)
 {
     using namespace ripple::cryptoconditions;
 
-    // TODO: Remove this try/catch once cryptoconditions
-    //       no longer use exceptions.
-    try
-    {
-        auto condition = loadCondition(c);
+    std::error_code ec;
 
-        if (!condition)
-            return false;
-
-        auto fulfillment = loadFulfillment(f);
-
-        if (!fulfillment)
-            return false;
-
-        {
-            // TODO: This is here temporarily to ensure
-            //       that the condition & fulfillment
-            //       given don't contain unnecessary
-            //       trailing junk. The new parsing API
-            //       will simplify the checking here.
-
-            auto cb = to_blob(*condition);
-            if (c != makeSlice(cb))
-                return false;
-
-            auto fb = to_blob(*fulfillment);
-            if (f != makeSlice(fb))
-                return false;
-        }
-
-        return validateTrigger (*fulfillment, *condition);
-    }
-    catch (...)
-    {
+    auto condition = Condition::deserialize(c, ec);
+    if (!condition)
         return false;
-    }
+
+    auto fulfillment = Fulfillment::deserialize(f, ec);
+    if (!fulfillment)
+        return false;
+
+    return validate (*fulfillment, *condition);
 }
 
 TER
-SusPayFinish::preflight (PreflightContext const& ctx)
+EscrowFinish::preflight (PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featureSusPay))
+    if (! ctx.rules.enabled(featureEscrow))
         return temDISABLED;
 
     {
@@ -345,12 +307,6 @@ SusPayFinish::preflight (PreflightContext const& ctx)
 
     auto const cb = ctx.tx[~sfCondition];
     auto const fb = ctx.tx[~sfFulfillment];
-
-    if (cb || fb)
-    {
-        if (! ctx.rules.enabled(featureCryptoConditions))
-            return temDISABLED;
-    }
 
     // If you specify a condition, then you must also specify
     // a fulfillment.
@@ -388,7 +344,7 @@ SusPayFinish::preflight (PreflightContext const& ctx)
 }
 
 std::uint64_t
-SusPayFinish::calculateBaseFee (PreclaimContext const& ctx)
+EscrowFinish::calculateBaseFee (PreclaimContext const& ctx)
 {
     std::uint64_t extraFee = 0;
 
@@ -401,12 +357,10 @@ SusPayFinish::calculateBaseFee (PreclaimContext const& ctx)
     return Transactor::calculateBaseFee (ctx) + extraFee;
 }
 
-
 TER
-SusPayFinish::doApply()
+EscrowFinish::doApply()
 {
-    // peek SusPay SLE
-    auto const k = keylet::susPay(
+    auto const k = keylet::escrow(
         ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
     auto const slep = ctx_.view().peek(k);
     if (! slep)
@@ -473,7 +427,7 @@ SusPayFinish::doApply()
 
     AccountID const account = (*slep)[sfAccount];
 
-    // Remove SusPay from owner directory
+    // Remove escrow from owner directory
     {
         auto const page = (*slep)[sfOwnerNode];
         TER const ter = dirDelete(ctx_.view(), true,
@@ -501,7 +455,7 @@ SusPayFinish::doApply()
     (*sle)[sfOwnerCount] = (*sle)[sfOwnerCount] - 1;
     ctx_.view().update(sle);
 
-    // Remove SusPay from ledger
+    // Remove escrow from ledger
     ctx_.view().erase(slep);
 
     return tesSUCCESS;
@@ -510,9 +464,9 @@ SusPayFinish::doApply()
 //------------------------------------------------------------------------------
 
 TER
-SusPayCancel::preflight (PreflightContext const& ctx)
+EscrowCancel::preflight (PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featureSusPay))
+    if (! ctx.rules.enabled(featureEscrow))
         return temDISABLED;
 
     auto const ret = preflight1 (ctx);
@@ -523,10 +477,9 @@ SusPayCancel::preflight (PreflightContext const& ctx)
 }
 
 TER
-SusPayCancel::doApply()
+EscrowCancel::doApply()
 {
-    // peek SusPay SLE
-    auto const k = keylet::susPay(
+    auto const k = keylet::escrow(
         ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
     auto const slep = ctx_.view().peek(k);
     if (! slep)
@@ -540,7 +493,7 @@ SusPayCancel::doApply()
 
     AccountID const account = (*slep)[sfAccount];
 
-    // Remove SusPay from owner directory
+    // Remove escrow from owner directory
     {
         auto const page = (*slep)[sfOwnerNode];
         TER const ter = dirDelete(ctx_.view(), true,
@@ -557,7 +510,7 @@ SusPayCancel::doApply()
     (*sle)[sfOwnerCount] = (*sle)[sfOwnerCount] - 1;
     ctx_.view().update(sle);
 
-    // Remove SusPay from ledger
+    // Remove escrow from ledger
     ctx_.view().erase(slep);
 
     return tesSUCCESS;

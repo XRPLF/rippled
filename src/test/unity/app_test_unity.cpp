@@ -39,7 +39,7 @@
 #include <test/app/SetAuth_test.cpp>
 #include <test/app/SetRegularKey_test.cpp>
 #include <test/app/SHAMapStore_test.cpp>
-#include <test/app/SusPay_test.cpp>
+#include <test/app/Escrow_test.cpp>
 #include <test/app/Taker_test.cpp>
 #include <test/app/Transaction_ordering_test.cpp>
 #include <test/app/TrustAndBalance_test.cpp>
