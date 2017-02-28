@@ -500,9 +500,6 @@ isDirectXrpToXrp<XRPAmount, XRPAmount> (Strand const& strand)
 
 template
 bool
-isDirectXrpToXrp<XRPAmount, XRPAmount> (Strand const& strand);
-template
-bool
 isDirectXrpToXrp<XRPAmount, IOUAmount> (Strand const& strand);
 template
 bool

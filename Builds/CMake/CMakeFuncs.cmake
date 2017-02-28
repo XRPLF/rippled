@@ -482,6 +482,15 @@ macro(setup_build_boilerplate)
 
   if (is_gcc)
     add_compile_options(-Wno-unused-but-set-variable -Wno-deprecated)
+
+    # use gold linker if available
+    execute_process(
+      COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=gold -Wl,--version
+      ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
+    if ("${LD_VERSION}" MATCHES "GNU gold")
+      append_flags(CMAKE_EXE_LINKER_FLAGS -fuse-ld=gold)
+    endif ()
+    unset(LD_VERSION)
   endif()
 
   # Generator expressions are not supported in add_definitions, use set_property instead
@@ -524,6 +533,15 @@ macro(setup_build_boilerplate)
       add_compile_options(
         -Wno-redeclared-class-member -Wno-mismatched-tags -Wno-deprecated-register)
       add_definitions(-DBOOST_ASIO_HAS_STD_ARRAY)
+
+      # use ldd linker if available
+      execute_process(
+        COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=lld -Wl,--version
+        ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
+      if ("${LD_VERSION}" MATCHES "LLD")
+        append_flags(CMAKE_EXE_LINKER_FLAGS -fuse-ld=lld)
+      endif ()
+      unset(LD_VERSION)
     endif()
 
     if (APPLE)
