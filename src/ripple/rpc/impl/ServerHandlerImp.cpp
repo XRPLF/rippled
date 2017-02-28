@@ -185,9 +185,13 @@ ServerHandlerImp::onHandoff (Session& session,
             boost::asio::ip::tcp::endpoint remote_address) ->
     Handoff
 {
+    const bool is_ws =
+        (session.port().protocol.count("wss") > 0) ||
+        (session.port().protocol.count("wss2") > 0);
+
     if(isWebsocketUpgrade(request))
     {
-        if(session.port().protocol.count("wss2") > 0)
+        if(is_ws)
         {
             Handoff handoff;
             auto const ws = session.websocketUpgrade();
@@ -202,9 +206,6 @@ ServerHandlerImp::onHandoff (Session& session,
             return handoff;
         }
 
-        if(session.port().protocol.count("wss") > 0)
-            return {}; // Pass to websocket
-
         return unauthorizedResponse(request);
     }
 
@@ -214,7 +215,7 @@ ServerHandlerImp::onHandoff (Session& session,
             std::move(request), remote_address);
     }
 
-    if (session.port().protocol.count("wss2") > 0 && isStatusRequest(request))
+    if (is_ws && isStatusRequest(request))
         return statusResponse(request);
 
     // Pass to legacy onRequest
