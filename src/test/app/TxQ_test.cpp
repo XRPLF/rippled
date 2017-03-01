@@ -32,6 +32,7 @@
 #include <test/jtx.h>
 #include <test/jtx/ticket.h>
 #include <boost/optional.hpp>
+#include <test/jtx/WSClient.h>
 
 namespace ripple {
 namespace test {
@@ -2416,6 +2417,174 @@ public:
         }
     }
 
+    void testServerSubscribe()
+    {
+        using namespace jtx;
+
+        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
+            features(featureFeeEscalation));
+
+        Json::Value stream;
+        stream[jss::streams] = Json::arrayValue;
+        stream[jss::streams].append("server");
+        auto wsc = makeWSClient(env.app().config());
+        {
+            auto jv = wsc->invoke("subscribe", stream);
+            BEAST_EXPECT(jv[jss::status] == "success");
+        }
+
+        Account a{"a"}, b{"b"}, c{"c"}, d{"d"}, e{"e"}, f{"f"},
+            g{"g"}, h{"h"}, i{"i"};
+
+
+        // Fund the first few accounts at non escalated fee
+        env.fund(XRP(50000), noripple(a,b,c,d));
+        checkMetrics(env, 0, boost::none, 4, 3, 256);
+
+        // First transaction establishes the messaging
+        BEAST_EXPECT(wsc->findMsg(5s,
+            [&](auto const& jv)
+        {
+            return jv[jss::type] == "serverStatus" &&
+                jv.isMember(jss::load_factor) &&
+                jv[jss::load_factor] == 256 &&
+                jv.isMember(jss::load_base) &&
+                jv[jss::load_base] == 256 &&
+                jv.isMember(jss::load_factor_server) &&
+                jv[jss::load_factor_server] == 256 &&
+                jv.isMember(jss::load_factor_fee_escalation) &&
+                jv[jss::load_factor_fee_escalation] == 256 &&
+                jv.isMember(jss::load_factor_fee_queue) &&
+                jv[jss::load_factor_fee_queue] == 256 &&
+                jv.isMember(jss::load_factor_fee_reference) &&
+                jv[jss::load_factor_fee_reference] == 256;
+        }));
+        // Last transaction escalates the fee
+        BEAST_EXPECT(wsc->findMsg(5s,
+            [&](auto const& jv)
+        {
+            return jv[jss::type] == "serverStatus" &&
+                jv.isMember(jss::load_factor) &&
+                jv[jss::load_factor] == 227555 &&
+                jv.isMember(jss::load_base) &&
+                jv[jss::load_base] == 256 &&
+                jv.isMember(jss::load_factor_server) &&
+                jv[jss::load_factor_server] == 256 &&
+                jv.isMember(jss::load_factor_fee_escalation) &&
+                jv[jss::load_factor_fee_escalation] == 227555 &&
+                jv.isMember(jss::load_factor_fee_queue) &&
+                jv[jss::load_factor_fee_queue] == 256 &&
+                jv.isMember(jss::load_factor_fee_reference) &&
+                jv[jss::load_factor_fee_reference] == 256;
+        }));
+
+        env.close();
+
+        // Closing ledger should publish a status update
+        BEAST_EXPECT(wsc->findMsg(5s,
+            [&](auto const& jv)
+            {
+                return jv[jss::type] == "serverStatus" &&
+                    jv.isMember(jss::load_factor) &&
+                        jv[jss::load_factor] == 256 &&
+                    jv.isMember(jss::load_base) &&
+                        jv[jss::load_base] == 256 &&
+                    jv.isMember(jss::load_factor_server) &&
+                        jv[jss::load_factor_server] == 256 &&
+                    jv.isMember(jss::load_factor_fee_escalation) &&
+                        jv[jss::load_factor_fee_escalation] == 256 &&
+                    jv.isMember(jss::load_factor_fee_queue) &&
+                        jv[jss::load_factor_fee_queue] == 256 &&
+                    jv.isMember(jss::load_factor_fee_reference) &&
+                        jv[jss::load_factor_fee_reference] == 256;
+            }));
+
+        checkMetrics(env, 0, 8, 0, 4, 256);
+
+        // Fund then next few accounts at non escalated fee
+        env.fund(XRP(50000), noripple(e,f,g,h,i));
+
+        // Extra transactions with low fee are queued
+        auto queued = ter(terQUEUED);
+        env(noop(a), fee(10), queued);
+        env(noop(b), fee(10), queued);
+        env(noop(c), fee(10), queued);
+        env(noop(d), fee(10), queued);
+        env(noop(e), fee(10), queued);
+        env(noop(f), fee(10), queued);
+        env(noop(g), fee(10), queued);
+        checkMetrics(env, 7, 8, 5, 4, 256);
+
+        // Last transaction escalates the fee
+        BEAST_EXPECT(wsc->findMsg(5s,
+            [&](auto const& jv)
+        {
+            return jv[jss::type] == "serverStatus" &&
+                jv.isMember(jss::load_factor) &&
+                jv[jss::load_factor] == 200000 &&
+                jv.isMember(jss::load_base) &&
+                jv[jss::load_base] == 256 &&
+                jv.isMember(jss::load_factor_server) &&
+                jv[jss::load_factor_server] == 256 &&
+                jv.isMember(jss::load_factor_fee_escalation) &&
+                jv[jss::load_factor_fee_escalation] == 200000 &&
+                jv.isMember(jss::load_factor_fee_queue) &&
+                jv[jss::load_factor_fee_queue] == 256 &&
+                jv.isMember(jss::load_factor_fee_reference) &&
+                jv[jss::load_factor_fee_reference] == 256;
+        }));
+
+        env.close();
+        //  Ledger close publishes with escalated fees for queued transactions
+        BEAST_EXPECT(wsc->findMsg(5s,
+            [&](auto const& jv)
+            {
+                return jv[jss::type] == "serverStatus" &&
+                    jv.isMember(jss::load_factor) &&
+                        jv[jss::load_factor] == 184320 &&
+                    jv.isMember(jss::load_base) &&
+                        jv[jss::load_base] == 256 &&
+                    jv.isMember(jss::load_factor_server) &&
+                        jv[jss::load_factor_server] == 256 &&
+                    jv.isMember(jss::load_factor_fee_escalation) &&
+                        jv[jss::load_factor_fee_escalation] == 184320 &&
+                    jv.isMember(jss::load_factor_fee_queue) &&
+                        jv[jss::load_factor_fee_queue] == 256 &&
+                    jv.isMember(jss::load_factor_fee_reference) &&
+                        jv[jss::load_factor_fee_reference] == 256;
+            }));
+
+        env.close();
+        // ledger close clears queue so fee is back to normal
+        BEAST_EXPECT(wsc->findMsg(5s,
+            [&](auto const& jv)
+            {
+                return jv[jss::type] == "serverStatus" &&
+                    jv.isMember(jss::load_factor) &&
+                        jv[jss::load_factor] == 256 &&
+                    jv.isMember(jss::load_base) &&
+                        jv[jss::load_base] == 256 &&
+                    jv.isMember(jss::load_factor_server) &&
+                        jv[jss::load_factor_server] == 256 &&
+                    jv.isMember(jss::load_factor_fee_escalation) &&
+                        jv[jss::load_factor_fee_escalation] == 256 &&
+                    jv.isMember(jss::load_factor_fee_queue) &&
+                        jv[jss::load_factor_fee_queue] == 256 &&
+                    jv.isMember(jss::load_factor_fee_reference) &&
+                        jv[jss::load_factor_fee_reference] == 256;
+            }));
+
+        BEAST_EXPECT(!wsc->findMsg(1s,
+            [&](auto const& jv)
+            {
+                return jv[jss::type] == "serverStatus";
+            }));
+
+        auto jv = wsc->invoke("unsubscribe", stream);
+        BEAST_EXPECT(jv[jss::status] == "success");
+
+    }
+
     void testClearQueuedAccountTxs()
     {
         using namespace jtx;
@@ -2645,6 +2814,7 @@ public:
         testSignAndSubmitSequence();
         testAccountInfo();
         testServerInfo();
+        testServerSubscribe();
         testClearQueuedAccountTxs();
     }
 };
