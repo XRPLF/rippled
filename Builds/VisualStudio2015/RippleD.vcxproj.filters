@@ -211,6 +211,9 @@
     <Filter Include="ripple\conditions\impl">
       <UniqueIdentifier>{155DC1A3-8A60-BC74-A7E4-1AC1A679FFF9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\consensus">
+      <UniqueIdentifier>{75481992-909B-CAA9-859B-91F15AFD2AD0}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\core">
       <UniqueIdentifier>{235DCF23-2CF8-4F03-1A54-C159823A7E8D}</UniqueIdentifier>
     </Filter>
@@ -445,8 +448,17 @@
     <Filter Include="test\conditions">
       <UniqueIdentifier>{F421E9A0-BB69-E638-F7AC-A3BD9B7D4827}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test\consensus">
+      <UniqueIdentifier>{330C919A-D367-9106-B0FF-BCE5B46A76B2}</UniqueIdentifier>
+    </Filter>
     <Filter Include="test\core">
       <UniqueIdentifier>{26D7F11B-5BF1-54BC-8BF5-D45F68A6A408}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\csf">
+      <UniqueIdentifier>{8E0BEDEF-0473-BB6D-7AD3-877644873E62}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\csf\impl">
+      <UniqueIdentifier>{2B6B8B80-5419-52D9-8CB9-758C3FB7FD0A}</UniqueIdentifier>
     </Filter>
     <Filter Include="test\json">
       <UniqueIdentifier>{87249A3B-D8F5-1A8C-6C1D-F1CDCCF5242B}</UniqueIdentifier>
@@ -1320,10 +1332,19 @@
     <ClInclude Include="..\..\src\protobuf\vsprojects\config.h">
       <Filter>protobuf\vsprojects</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxPos.h">
+    <ClCompile Include="..\..\src\ripple\app\consensus\RCLConsensus.cpp">
+      <Filter>ripple\app\consensus</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLConsensus.h">
       <Filter>ripple\app\consensus</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTraits.h">
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxLedger.h">
+      <Filter>ripple\app\consensus</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\consensus\RCLCxPeerPos.cpp">
+      <Filter>ripple\app\consensus</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxPeerPos.h">
       <Filter>ripple\app\consensus</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTx.h">
@@ -1356,23 +1377,11 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\BookListeners.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\Consensus.h">
-      <Filter>ripple\app\ledger</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\ConsensusTransSetSF.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\ConsensusTransSetSF.h">
       <Filter>ripple\app\ledger</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\ConsensusImp.cpp">
-      <Filter>ripple\app\ledger\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\impl\ConsensusImp.h">
-      <Filter>ripple\app\ledger\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\impl\DisputedTx.h">
-      <Filter>ripple\app\ledger\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\InboundLedger.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
@@ -1386,16 +1395,7 @@
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerCleaner.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerConsensusImp.cpp">
-      <Filter>ripple\app\ledger\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\impl\LedgerConsensusImp.h">
-      <Filter>ripple\app\ledger\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerMaster.cpp">
-      <Filter>ripple\app\ledger\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerTiming.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerToJson.cpp">
@@ -1434,9 +1434,6 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerCleaner.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerConsensus.h">
-      <Filter>ripple\app\ledger</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\LedgerHistory.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
@@ -1447,15 +1444,6 @@
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerMaster.h">
-      <Filter>ripple\app\ledger</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerProposal.cpp">
-      <Filter>ripple\app\ledger</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerProposal.h">
-      <Filter>ripple\app\ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerTiming.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerToJson.h">
@@ -2450,6 +2438,21 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\conditions\RsaSha256.h">
       <Filter>ripple\conditions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\Consensus.h">
+      <Filter>ripple\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\ConsensusProposal.h">
+      <Filter>ripple\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\DisputedTx.h">
+      <Filter>ripple\consensus</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\consensus\LedgerTiming.cpp">
+      <Filter>ripple\consensus</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\consensus\LedgerTiming.h">
+      <Filter>ripple\consensus</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Config.h">
       <Filter>ripple\core</Filter>
@@ -3741,6 +3744,9 @@
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
       <Filter>ripple\shamap</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\unity\app_consensus.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\app_ledger.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
@@ -3763,6 +3769,9 @@
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\conditions.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\consensus.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\core.cpp">
@@ -5136,6 +5145,12 @@
     <ClCompile Include="..\..\src\test\conditions\RsaSha256_test.cpp">
       <Filter>test\conditions</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\consensus\Consensus_test.cpp">
+      <Filter>test\consensus</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\consensus\LedgerTiming_test.cpp">
+      <Filter>test\consensus</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\core\Config_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>
@@ -5154,6 +5169,33 @@
     <ClCompile Include="..\..\src\test\core\Workers_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\test\csf.h">
+      <Filter>test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\BasicNetwork.h">
+      <Filter>test\csf</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\csf\BasicNetwork_test.cpp">
+      <Filter>test\csf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\csf\impl\UNL.cpp">
+      <Filter>test\csf\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\test\csf\Ledger.h">
+      <Filter>test\csf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Peer.h">
+      <Filter>test\csf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Sim.h">
+      <Filter>test\csf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Tx.h">
+      <Filter>test\csf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\UNL.h">
+      <Filter>test\csf</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\test\json\json_value_test.cpp">
       <Filter>test\json</Filter>
     </ClCompile>
@@ -5184,12 +5226,6 @@
     <ClInclude Include="..\..\src\test\jtx\balance.h">
       <Filter>test\jtx</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\test\jtx\BasicNetwork.h">
-      <Filter>test\jtx</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\test\jtx\BasicNetwork_test.cpp">
-      <Filter>test\jtx</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\test\jtx\basic_prop.h">
       <Filter>test\jtx</Filter>
     </ClInclude>
@@ -5583,10 +5619,19 @@
     <ClCompile Include="..\..\src\test\unity\conditions_test_unity.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\consensus_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\unity\core_test_unity.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\csf_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\unity\json_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\jtx_unity.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\unity\ledger_test_unity.cpp">
@@ -5614,9 +5659,6 @@
       <Filter>test\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\unity\shamap_test_unity.cpp">
-      <Filter>test\unity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\unity\support_unity.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
   </ItemGroup>

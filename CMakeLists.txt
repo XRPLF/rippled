@@ -180,12 +180,14 @@ beast_utility_unity.cpp)
 
 prepend(ripple_unity_srcs
 src/ripple/unity/
+app_consensus.cpp
 app_ledger.cpp
 app_main.cpp
 app_misc.cpp
 app_paths.cpp
 app_tx.cpp
 conditions.cpp
+consensus.cpp
 core.cpp
 basics.cpp
 crypto.cpp
@@ -205,6 +207,7 @@ app_test_unity.cpp
 basics_test_unity.cpp
 beast_test_unity.cpp
 conditions_test_unity.cpp
+consensus_test_unity.cpp
 core_test_unity.cpp
 json_test_unity.cpp
 ledger_test_unity.cpp
@@ -215,7 +218,8 @@ resource_test_unity.cpp
 rpc_test_unity.cpp
 server_test_unity.cpp
 shamap_test_unity.cpp
-support_unity.cpp)
+jtx_unity.cpp
+csf_unity.cpp)
 
 list(APPEND rippled_src_unity ${beast_unity_srcs} ${ripple_unity_srcs} ${test_unity_srcs})
 
@@ -258,6 +262,7 @@ foreach(curdir
         basics
         conditions
         crypto
+        consensus
         json
         ledger
         legacy
@@ -301,7 +306,8 @@ foreach(curdir
         rpc
         server
         shamap
-        jtx)
+        jtx
+        csf)
     file(GLOB_RECURSE cursrcs src/test/${curdir}/*.cpp)
     list(APPEND test_srcs "${cursrcs}")
 endforeach()

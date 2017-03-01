@@ -48,7 +48,5 @@
 #include <test/jtx/impl/JSONRPCClient.cpp>
 #include <test/jtx/impl/ManualTimeKeeper.cpp>
 #include <test/jtx/impl/WSClient.cpp>
-
-#include <test/jtx/BasicNetwork_test.cpp>
 #include <test/jtx/Env_test.cpp>
 #include <test/jtx/WSClient_test.cpp>

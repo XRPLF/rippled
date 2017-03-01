@@ -109,7 +109,14 @@ INPUT                  = \
     ../src/test/support/AbstractClient.h \
     ../src/test/support/JSONRPCClient.h \
     ../src/test/support/WSClient.h \
-
+    ../src/ripple/consensus/Consensus.h \
+    ../src/ripple/consensus/ConsensusProposal.h \
+    ../src/ripple/consensus/DisputedTx.h \
+    ../src/ripple/consensus/LedgerTiming.h \
+    ../src/ripple/app/consensus/RCLCxTx.h \
+    ../src/ripple/app/consensus/RCLCxLedger.h \
+    ../src/ripple/app/consensus/RCLConsensus.h \
+    ../src/ripple/app/consensus/RCLCxPeerPos.h \
 
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          =

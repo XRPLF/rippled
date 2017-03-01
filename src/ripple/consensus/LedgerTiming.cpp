@@ -18,68 +18,19 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/LedgerTiming.h>
+#include <ripple/consensus/LedgerTiming.h>
 #include <ripple/basics/Log.h>
 #include <algorithm>
 #include <iterator>
 
 namespace ripple {
 
-NetClock::duration
-getNextLedgerTimeResolution (
-    NetClock::duration previousResolution,
-    bool previousAgree,
-    std::uint32_t ledgerSeq)
-{
-    assert (ledgerSeq);
-
-    using namespace std::chrono;
-    // Find the current resolution:
-    auto iter = std::find (std::begin (ledgerPossibleTimeResolutions),
-        std::end (ledgerPossibleTimeResolutions), previousResolution);
-    assert (iter != std::end (ledgerPossibleTimeResolutions));
-
-    // This should never happen, but just as a precaution
-    if (iter == std::end (ledgerPossibleTimeResolutions))
-        return previousResolution;
-
-    // If we did not previously agree, we try to decrease the resolution to
-    // improve the chance that we will agree now.
-    if (!previousAgree && ledgerSeq % decreaseLedgerTimeResolutionEvery == 0)
-    {
-        if (++iter != std::end (ledgerPossibleTimeResolutions))
-            return *iter;
-    }
-
-    // If we previously agreed, we try to increase the resolution to determine
-    // if we can continue to agree.
-    if (previousAgree && ledgerSeq % increaseLedgerTimeResolutionEvery == 0)
-    {
-        if (iter-- != std::begin (ledgerPossibleTimeResolutions))
-            return *iter;
-    }
-
-    return previousResolution;
-}
-
-NetClock::time_point
-roundCloseTime (
-    NetClock::time_point closeTime,
-    NetClock::duration closeResolution)
-{
-    if (closeTime == NetClock::time_point{})
-        return closeTime;
-
-    closeTime += (closeResolution / 2);
-    return closeTime - (closeTime.time_since_epoch() % closeResolution);
-}
-
 bool
 shouldCloseLedger (
     bool anyTransactions,
-    int previousProposers,
-    int proposersClosed,
-    int proposersValidated,
+    std::size_t previousProposers,
+    std::size_t proposersClosed,
+    std::size_t proposersValidated,
     std::chrono::milliseconds previousTime,
     std::chrono::milliseconds currentTime, // Time since last ledger's close time
     std::chrono::milliseconds openTime,    // Time waiting to close this ledger
@@ -135,7 +86,10 @@ shouldCloseLedger (
 }
 
 bool
-checkConsensusReached (int agreeing, int total, bool count_self)
+checkConsensusReached (
+    std::size_t agreeing,
+    std::size_t total,
+    bool count_self)
 {
     // If we are alone, we have a consensus
     if (total == 0)
@@ -154,10 +108,10 @@ checkConsensusReached (int agreeing, int total, bool count_self)
 
 ConsensusState
 checkConsensus (
-    int previousProposers,
-    int currentProposers,
-    int currentAgree,
-    int currentFinished,
+    std::size_t previousProposers,
+    std::size_t currentProposers,
+    std::size_t currentAgree,
+    std::size_t currentFinished,
     std::chrono::milliseconds previousAgreeTime,
     std::chrono::milliseconds currentAgreeTime,
     bool proposing,
