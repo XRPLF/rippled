@@ -22,6 +22,8 @@
 
 #include <ripple/server/impl/BasePeer.h>
 #include <ripple/protocol/BuildInfo.h>
+#include <ripple/beast/utility/rngfill.h>
+#include <ripple/crypto/csprng.h>
 #include <beast/websocket.hpp>
 #include <beast/core/streambuf.hpp>
 #include <beast/http/message.hpp>
@@ -449,8 +451,9 @@ on_timer(error_code ec)
         {
             start_timer();
             ping_active_ = true;
-            // TODO store nonce in payload
-            payload_ = {};
+            // cryptographic is probably overkill..
+            beast::rngfill(payload_.begin(),
+                payload_.size(), crypto_prng());
             impl().ws_.async_ping(payload_,
                 strand_.wrap(std::bind(
                     &BaseWSPeer::on_ping,
