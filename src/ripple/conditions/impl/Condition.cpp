@@ -67,6 +67,8 @@ namespace detail {
 //      ed25519Sha256    (4)
 //    }
 
+constexpr std::size_t fingerprintSize = 32;
+
 std::unique_ptr<Condition>
 loadSimpleSha256(Type type, Slice s, std::error_code& ec)
 {
@@ -77,9 +79,21 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
     if (ec)
         return {};
 
+    if (!isPrimitive(p) || !isContextSpecific(p))
+    {
+        ec = error::incorrect_encoding;
+        return {};
+    }
+
     if (p.tag != 0)
     {
         ec = error::unexpected_tag;
+        return {};
+    }
+
+    if (p.length != fingerprintSize)
+    {
+        ec = error::fingerprint_size;
         return {};
     }
 
@@ -92,6 +106,12 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
 
     if (ec)
         return {};
+
+    if (!isPrimitive(p) || !isContextSpecific(p))
+    {
+        ec = error::malformed_encoding;
+        return{};
+    }
 
     if (p.tag != 1)
     {

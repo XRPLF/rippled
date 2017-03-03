@@ -71,9 +71,9 @@ public:
         if (ec)
             return nullptr;
 
-        if (!isPrimitive(p))
+        if (!isPrimitive(p) || !isContextSpecific(p))
         {
-            ec = error::generic;
+            ec = error::incorrect_encoding;
             return {};
         }
 

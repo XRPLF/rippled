@@ -23,6 +23,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <ripple/basics/strHex.h>
 #include <ripple/conditions/impl/error.h>
 #include <boost/dynamic_bitset.hpp>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -92,6 +93,23 @@ isPrivate(Preamble const& p)
 }
 
 inline
+std::size_t
+calculateTagLength(Slice s)
+{
+    std::size_t const maxTagLength = std::min(s.size(),
+        sizeof(std::size_t) + (sizeof(std::size_t) / 8));
+    std::size_t tagLength = 0;
+
+    do
+    {
+        if ((s[tagLength++] & 0x80) == 0)
+            return tagLength;
+    } while (tagLength < maxTagLength);
+
+    return 0;
+}
+
+inline
 Preamble
 parsePreamble(Slice& s, std::error_code& ec)
 {
@@ -99,7 +117,7 @@ parsePreamble(Slice& s, std::error_code& ec)
 
     if (s.size() < 2)
     {
-        ec = error::generic;
+        ec = error::short_preamble;
         return p;
     }
 
@@ -109,34 +127,14 @@ parsePreamble(Slice& s, std::error_code& ec)
     s += 1;
 
     if (p.tag == 0x1F)
-    { // Long tag form:
-        p.tag = 0;
-
-        if (s[0] == 0x80)
-        {
-            ec = error::generic;
-            return p;
-        }
-
-        while (!s.empty() && (s[0] & 0x80))
-        {
-            p.tag = p.tag * 128 + (s[0] & 0x7F);
-            s += 1;
-        }
-
-        if (s.empty())
-        {
-            ec = error::generic;
-            return p;
-        }
-
-        p.tag = p.tag * 128 + s[0];
-        s += 1;
+    { // Long tag form, which we do not support:
+        ec = error::long_tag;
+        return p;
     }
 
     if (s.empty())
     {
-        ec = error::generic;
+        ec = error::short_preamble;
         return p;
     }
 
@@ -149,20 +147,19 @@ parsePreamble(Slice& s, std::error_code& ec)
 
         if (cnt == 0)
         {
-            ec = error::generic;
+            ec = error::malformed_encoding;
             return p;
         }
 
         if (cnt > sizeof(std::size_t))
         {
-            ec = error::generic;
+            ec = error::large_size;
             return p;
         }
 
-        // Account for the first two bytes in the preamble:
-        if (cnt >= s.size())
+        if (cnt > s.size())
         {
-            ec = error::generic;
+            ec = error::short_preamble;
             return p;
         }
 
@@ -175,12 +172,12 @@ parsePreamble(Slice& s, std::error_code& ec)
 
         if (p.length == 0)
         {
-            ec = error::generic;
+            ec = error::malformed_encoding;
             return p;
         }
     }
 
-    ec = {};
+
     return p;
 }
 
@@ -188,6 +185,7 @@ inline
 Buffer
 parseOctetString(Slice& s, std::uint32_t count, std::error_code& ec)
 {
+    // We may want to set a max content size. Do we really want to allow 4 gig messages?
     if (count > s.size())
     {
         ec = error::buffer_underfull;
@@ -196,7 +194,6 @@ parseOctetString(Slice& s, std::uint32_t count, std::error_code& ec)
 
     Buffer b(s.data(), count);
     s += count;
-    ec = {};
     return b;
 }
 
@@ -204,20 +201,56 @@ template <class Integer>
 Integer
 parseInteger(Slice& s, std::size_t count, std::error_code& ec)
 {
-    if (count > s.size())
+    Integer v{0};
+
+    if (s.empty())
     {
-        ec = error::buffer_underfull;
-        return {};
+        // can never have zero sized integers
+        ec = error::generic;
+        return v;
     }
 
-    Integer num = 0;
+    if (count > s.size())
+    {
+        ec = error::generic;
+        return v;
+    }
 
-    for (std::size_t i = 0; i != count; ++i)
-        num = (num << 8) | s[i];
+    const bool isSigned = std::numeric_limits<Integer>::is_signed;
+    // unsigned types may have a leading zero octet
+    const size_t maxLength = isSigned ? sizeof(Integer) : sizeof(Integer) + 1;
+    if (count > maxLength)
+    {
+        ec = error::generic;
+        return v;
+    }
 
+    if (!isSigned && (s[0] & (1 << 7)))
+    {
+        // trying to decode a negative number into a positive value
+        ec = error::generic;
+        return v;
+    }
+
+    if (!isSigned && count == sizeof(Integer) + 1 && s[0])
+    {
+        // since integers are coded as two's complement, the first byte may
+        // be zero for unsigned reps
+        ec = error::generic;
+        return v;
+    }
+
+    v = 0;
+    for (size_t i = 0; i < count; ++i)
+        v = (v << 8) | (s[i] & 0xff);
+
+    if (isSigned && (s[0] & (1 << 7)))
+    {
+        for (int i = count; i < sizeof(Integer); ++i)
+            v |= (Integer(0xff) << (8 * i));
+    }
     s += count;
-    ec = {};
-    return num;
+    return v;
 }
 
 } // der

@@ -42,19 +42,25 @@ public:
         switch (static_cast<error>(ev))
         {
         case error::unsupported_type:
-            return "The specified type is not supported by this implementation.";
+            return "Specification: Requested type not supported.";
 
         case error::unsupported_subtype:
-            return "One or more subtypes is not supported by this implementation.";
+            return "Specification: Requested subtype not supported.";
 
         case error::unknown_type:
-            return "The specified type is not recognized by this implemenation.";
+            return "Specification: Requested type not recognized.";
 
         case error::unknown_subtype:
-            return "One or more subtypes are not recognized by this implementation.";
+            return "Specification: Requested subtypes not recognized.";
 
         case error::max_length_exceeded:
-            return "The fulfillment exceeds the maximum allowed length.";
+            return "Specification: Item exceeds the maximum allowed length.";
+
+        case error::fingerprint_size:
+            return "Specification: Incorrect fingerprint size.";
+
+        case error::incorrect_encoding:
+            return "Specification: Incorrect encoding.";
 
         case error::trailing_garbage:
             return "Bad buffer: contains trailing garbage.";
@@ -69,10 +75,19 @@ public:
             return "Bad buffer: underfull.";
 
         case error::malformed_encoding:
-            return "Malformed DER encoding";
+            return "Malformed DER encoding.";
 
         case error::unexpected_tag:
-            return "Malformed DER encoding: unexpected tag";
+            return "Malformed DER encoding: Unexpected tag.";
+
+        case error::short_preamble:
+            return "Malformed DER encoding: Short preamble.";
+
+        case error::long_tag:
+            return "Implementation limit: Overlong tag.";
+
+        case error::large_size:
+            return "Implementation limit: Large payload.";
 
         case error::generic:
         default:

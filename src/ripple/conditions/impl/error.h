@@ -34,12 +34,17 @@ enum class error
     unknown_type,
     unknown_subtype,
     max_length_exceeded,
+    fingerprint_size,
+    incorrect_encoding,
     trailing_garbage,
     buffer_empty,
     buffer_overfull,
     buffer_underfull,
     malformed_encoding,
-    unexpected_tag
+    short_preamble,
+    unexpected_tag,
+    long_tag,
+    large_size
 };
 
 std::error_code
