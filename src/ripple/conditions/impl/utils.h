@@ -93,23 +93,6 @@ isPrivate(Preamble const& p)
 }
 
 inline
-std::size_t
-calculateTagLength(Slice s)
-{
-    std::size_t const maxTagLength = std::min(s.size(),
-        sizeof(std::size_t) + (sizeof(std::size_t) / 8));
-    std::size_t tagLength = 0;
-
-    do
-    {
-        if ((s[tagLength++] & 0x80) == 0)
-            return tagLength;
-    } while (tagLength < maxTagLength);
-
-    return 0;
-}
-
-inline
 Preamble
 parsePreamble(Slice& s, std::error_code& ec)
 {
