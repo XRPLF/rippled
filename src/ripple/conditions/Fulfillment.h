@@ -32,6 +32,15 @@ namespace cryptoconditions {
 struct Fulfillment
 {
 public:
+    /** The largest binary fulfillment we support.
+
+        @note This value will be increased in the future, but it
+              must never decrease, as that could cause fulfillments
+              that were previously considered valid to no longer
+              be allowed.
+    */
+    static constexpr std::size_t maxSerializedFulfillment = 256;
+
     /** Load a fulfillment from its binary form
 
         @param s The buffer containing the fulfillment to load.

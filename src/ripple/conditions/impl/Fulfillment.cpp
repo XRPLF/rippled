@@ -108,6 +108,12 @@ Fulfillment::deserialize(
         return {};
     }
 
+    if (p.length > maxSerializedFulfillment)
+    {
+        ec = error::large_size;
+        return {};
+    }
+
     std::unique_ptr<Fulfillment> f;
 
     switch (static_cast<Type>(p.tag))

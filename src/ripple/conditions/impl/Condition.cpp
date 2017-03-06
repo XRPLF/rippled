@@ -20,6 +20,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/conditions/Condition.h>
 #include <ripple/conditions/Fulfillment.h>
+#include <ripple/conditions/impl/PreimageSha256.h>
 #include <ripple/conditions/impl/utils.h>
 #include <boost/regex.hpp>
 #include <boost/optional.hpp>
@@ -130,7 +131,20 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
         return {};
     }
 
-    ec = {};
+    switch (type)
+    {
+    case Type::preimageSha256:
+        if (cost > PreimageSha256::maxPreimageLength)
+        {
+            ec = error::preimage_too_long;
+            return {};
+        }
+        break;
+
+    default:
+        break;
+    }
+
     return std::make_unique<Condition>(type, cost, std::move(b));
 }
 
@@ -151,7 +165,7 @@ Condition::deserialize(Slice s, std::error_code& ec)
     // }
     if (s.empty())
     {
-        ec = error::generic;
+        ec = error::buffer_empty;
         return {};
     }
 
@@ -165,13 +179,19 @@ Condition::deserialize(Slice s, std::error_code& ec)
     // types
     if (!isConstructed(p) || !isContextSpecific(p))
     {
-        ec = error::generic;
+        ec = error::malformed_encoding;
         return {};
     }
 
     if (p.length > s.size())
     {
-        ec = error::generic;
+        ec = error::buffer_underfull;
+        return {};
+    }
+
+    if (s.size() > maxSerializedCondition)
+    {
+        ec = error::large_size;
         return {};
     }
 

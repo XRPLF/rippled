@@ -1,19 +1,19 @@
 //------------------------------------------------------------------------------
 /*
-This file is part of rippled: https://github.com/ripple/rippled
-Copyright (c) 2016 Ripple Labs Inc.
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2016 Ripple Labs Inc.
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose  with  or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose  with  or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
 
-THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
@@ -168,10 +168,15 @@ inline
 Buffer
 parseOctetString(Slice& s, std::uint32_t count, std::error_code& ec)
 {
-    // We may want to set a max content size. Do we really want to allow 4 gig messages?
     if (count > s.size())
     {
         ec = error::buffer_underfull;
+        return {};
+    }
+
+    if (count > 65535)
+    {
+        ec = error::large_size;
         return {};
     }
 
@@ -189,13 +194,13 @@ parseInteger(Slice& s, std::size_t count, std::error_code& ec)
     if (s.empty())
     {
         // can never have zero sized integers
-        ec = error::generic;
+        ec = error::malformed_encoding;
         return v;
     }
 
     if (count > s.size())
     {
-        ec = error::generic;
+        ec = error::buffer_underfull;
         return v;
     }
 
@@ -204,14 +209,14 @@ parseInteger(Slice& s, std::size_t count, std::error_code& ec)
     const size_t maxLength = isSigned ? sizeof(Integer) : sizeof(Integer) + 1;
     if (count > maxLength)
     {
-        ec = error::generic;
+        ec = error::large_size;
         return v;
     }
 
     if (!isSigned && (s[0] & (1 << 7)))
     {
         // trying to decode a negative number into a positive value
-        ec = error::generic;
+        ec = error::malformed_encoding;
         return v;
     }
 
@@ -219,7 +224,7 @@ parseInteger(Slice& s, std::size_t count, std::error_code& ec)
     {
         // since integers are coded as two's complement, the first byte may
         // be zero for unsigned reps
-        ec = error::generic;
+        ec = error::malformed_encoding;
         return v;
     }
 
