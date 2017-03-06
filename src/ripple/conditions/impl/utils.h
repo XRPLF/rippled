@@ -115,12 +115,6 @@ parsePreamble(Slice& s, std::error_code& ec)
         return p;
     }
 
-    if (s.empty())
-    {
-        ec = error::short_preamble;
-        return p;
-    }
-
     p.length = s[0];
     s += 1;
 
@@ -159,7 +153,6 @@ parsePreamble(Slice& s, std::error_code& ec)
             return p;
         }
     }
-
 
     return p;
 }

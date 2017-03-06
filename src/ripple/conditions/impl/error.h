@@ -44,7 +44,7 @@ enum class error
     unexpected_tag,
     long_tag,
     large_size,
-    preimage_too_long,
+    preimage_too_long
 };
 
 std::error_code

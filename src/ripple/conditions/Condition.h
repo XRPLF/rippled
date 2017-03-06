@@ -47,7 +47,7 @@ class Condition
 {
 public:
     /** The largest binary condition we support.
-        
+
         @note This value will be increased in the future, but it
               must never decrease, as that could cause conditions
               that were previously considered valid to no longer

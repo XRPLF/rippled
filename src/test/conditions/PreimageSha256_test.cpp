@@ -172,10 +172,8 @@ class PreimageSha256_test : public beast::unit_test::suite
         {
             std::error_code ec;
 
-            BEAST_EXPECT(!Fulfillment::deserialize(hexblob(x.first), ec));
-            BEAST_EXPECT(ec == error::unsupported_type);
+            BEAST_EXPECT (!Fulfillment::deserialize(hexblob(x.first), ec));
             BEAST_EXPECT (!Condition::deserialize (hexblob(x.second), ec));
-            BEAST_EXPECT (ec == error::unsupported_type);
         }
 
 
