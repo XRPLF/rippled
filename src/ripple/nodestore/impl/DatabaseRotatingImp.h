@@ -50,6 +50,7 @@ public:
     DatabaseRotatingImp (std::string const& name,
                  Scheduler& scheduler,
                  int readThreads,
+                 Stoppable& parent,
                  std::shared_ptr <Backend> writableBackend,
                  std::shared_ptr <Backend> archiveBackend,
                  beast::Journal journal)
@@ -57,6 +58,7 @@ public:
                 name,
                 scheduler,
                 readThreads,
+                parent,
                 std::unique_ptr <Backend>(),
                 journal)
             , writableBackend_ (writableBackend)
@@ -91,13 +93,6 @@ public:
     std::string getName() const override
     {
         return getWritableBackend()->getName();
-    }
-
-    void
-    close() override
-    {
-        // VFALCO TODO How do we close everything?
-        assert(false);
     }
 
     std::int32_t getWriteLoad() const override

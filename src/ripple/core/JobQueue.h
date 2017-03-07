@@ -22,19 +22,12 @@
 
 #include <ripple/basics/LocalValue.h>
 #include <ripple/basics/win32_workaround.h>
-#include <ripple/core/Job.h>
 #include <ripple/core/JobTypes.h>
 #include <ripple/core/JobTypeData.h>
+#include <ripple/core/Stoppable.h>
 #include <ripple/core/impl/Workers.h>
 #include <ripple/json/json_value.h>
-#include <ripple/beast/insight/Collector.h>
-#include <ripple/core/Stoppable.h>
 #include <boost/coroutine/all.hpp>
-#include <boost/function.hpp>
-#include <condition_variable>
-#include <mutex>
-#include <set>
-#include <thread>
 
 namespace ripple {
 

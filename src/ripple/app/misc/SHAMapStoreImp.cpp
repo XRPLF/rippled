@@ -20,17 +20,10 @@
 #include <BeastConfig.h>
 
 #include <ripple/app/misc/SHAMapStoreImp.h>
-#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/TransactionMaster.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/basics/contract.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/beast/core/CurrentThreadName.h>
-#include <boost/format.hpp>
-#include <boost/format.hpp>
-#include <boost/optional.hpp>
-#include <memory>
-#include <chrono>
 
 namespace ripple {
 void SHAMapStoreImp::SavedStateDB::init (BasicConfig const& config,
@@ -210,7 +203,7 @@ SHAMapStoreImp::SHAMapStoreImp (
 
 std::unique_ptr <NodeStore::Database>
 SHAMapStoreImp::makeDatabase (std::string const& name,
-        std::int32_t readThreads)
+        std::int32_t readThreads, Stoppable& parent)
 {
     std::unique_ptr <NodeStore::Database> db;
 
@@ -226,8 +219,8 @@ SHAMapStoreImp::makeDatabase (std::string const& name,
         fdlimit_ = writableBackend->fdlimit() + archiveBackend->fdlimit();
 
         std::unique_ptr <NodeStore::DatabaseRotating> dbr =
-                makeDatabaseRotating (name, readThreads, writableBackend,
-                archiveBackend);
+            makeDatabaseRotating (name, readThreads, parent,
+                writableBackend, archiveBackend);
 
         if (!state.writableDb.size())
         {
@@ -242,7 +235,7 @@ SHAMapStoreImp::makeDatabase (std::string const& name,
     else
     {
         db = NodeStore::Manager::instance().make_Database (name, scheduler_,
-            nodeStoreJournal_, readThreads, setup_.nodeDatabase);
+            readThreads, parent, setup_.nodeDatabase, nodeStoreJournal_);
         fdlimit_ = db->fdlimit();
     }
 
@@ -530,12 +523,13 @@ SHAMapStoreImp::makeBackendRotating (std::string path)
 
 std::unique_ptr <NodeStore::DatabaseRotating>
 SHAMapStoreImp::makeDatabaseRotating (std::string const& name,
-        std::int32_t readThreads,
+        std::int32_t readThreads,  Stoppable& parent,
         std::shared_ptr <NodeStore::Backend> writableBackend,
         std::shared_ptr <NodeStore::Backend> archiveBackend) const
 {
-    return NodeStore::Manager::instance().make_DatabaseRotating ("NodeStore.main", scheduler_,
-            readThreads, writableBackend, archiveBackend, nodeStoreJournal_);
+    return NodeStore::Manager::instance().make_DatabaseRotating (
+        name, scheduler_, readThreads, parent,
+        writableBackend, archiveBackend, nodeStoreJournal_);
 }
 
 bool

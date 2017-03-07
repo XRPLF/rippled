@@ -21,17 +21,10 @@
 #define RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
 
 #include <BeastConfig.h>
-#include <ripple/basics/contract.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/shamap/Family.h>
-#include <ripple/shamap/FullBelowCache.h>
-#include <ripple/shamap/TreeNodeCache.h>
-#include <ripple/shamap/SHAMap.h>
-#include <ripple/basics/StringUtilities.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/beast/clock/manual_clock.h>
+#include <ripple/shamap/Family.h>
 
 namespace ripple {
 namespace tests {
@@ -43,6 +36,7 @@ private:
     NodeStore::DummyScheduler scheduler_;
     TreeNodeCache treecache_;
     FullBelowCache fullbelow_;
+    RootStoppable parent_;
     std::unique_ptr<NodeStore::Database> db_;
     beast::Journal j_;
 
@@ -50,13 +44,14 @@ public:
     TestFamily (beast::Journal j)
         : treecache_ ("TreeNodeCache", 65536, 60, clock_, j)
         , fullbelow_ ("full_below", clock_)
+        , parent_ ("TestRootStoppable")
         , j_ (j)
     {
         Section testSection;
         testSection.set("type", "memory");
         testSection.set("Path", "SHAMap_test");
         db_ = NodeStore::Manager::instance ().make_Database (
-            "test", scheduler_, j, 1, testSection);
+            "test", scheduler_, 1, parent_, testSection, j);
     }
 
     beast::manual_clock <std::chrono::steady_clock>
