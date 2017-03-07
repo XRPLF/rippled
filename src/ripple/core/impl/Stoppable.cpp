@@ -22,8 +22,8 @@
 
 namespace ripple {
 
-Stoppable::Stoppable (char const* name, RootStoppable& root)
-    : m_name (name)
+Stoppable::Stoppable (std::string name, RootStoppable& root)
+    : m_name (std::move (name))
     , m_root (root)
     , m_child (this)
     , m_started (false)
@@ -32,8 +32,8 @@ Stoppable::Stoppable (char const* name, RootStoppable& root)
 {
 }
 
-Stoppable::Stoppable (char const* name, Stoppable& parent)
-    : m_name (name)
+Stoppable::Stoppable (std::string name, Stoppable& parent)
+    : m_name (std::move (name))
     , m_root (parent.m_root)
     , m_child (this)
     , m_started (false)
@@ -157,8 +157,8 @@ void Stoppable::stopRecursive (beast::Journal j)
 
 //------------------------------------------------------------------------------
 
-RootStoppable::RootStoppable (char const* name)
-    : Stoppable (name, *this)
+RootStoppable::RootStoppable (std::string name)
+    : Stoppable (std::move (name), *this)
     , m_prepared (false)
     , m_calledStop (false)
 {

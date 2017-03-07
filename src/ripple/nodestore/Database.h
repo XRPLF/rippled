@@ -20,9 +20,10 @@
 #ifndef RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 
+#include <ripple/basics/TaggedCache.h>
+#include <ripple/core/Stoppable.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/nodestore/Backend.h>
-#include <ripple/basics/TaggedCache.h>
 
 namespace ripple {
 namespace NodeStore {
@@ -40,9 +41,20 @@ namespace NodeStore {
 
     @see NodeObject
 */
-class Database
+class Database : public Stoppable
 {
 public:
+    Database() = delete;
+
+    /** Construct the node store.
+
+        @param name The Stoppable name for this Database.
+        @param parent The parent Stoppable.
+    */
+    Database (std::string name, Stoppable& parent)
+        : Stoppable (std::move (name), parent)
+    { }
+
     /** Destroy the node store.
         All pending operations are completed, pending writes flushed,
         and files closed before this returns.
@@ -54,11 +66,6 @@ public:
         or paths used by the underlying backend.
     */
     virtual std::string getName () const = 0;
-
-    /** Close the database.
-        This allows the caller to catch exceptions.
-    */
-    virtual void close() = 0;
 
     /** Fetch an object.
         If the object is known to be not in the database, isn't found in the

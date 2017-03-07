@@ -19,15 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/core/JobQueue.h>
-#include <ripple/core/JobTypes.h>
-#include <ripple/core/JobTypeInfo.h>
-#include <ripple/core/JobTypeData.h>
-#include <ripple/beast/clock/chrono_util.h>
-#include <chrono>
-#include <memory>
-#include <mutex>
-#include <set>
-#include <thread>
+#include <ripple/basics/contract.h>
 
 namespace ripple {
 
@@ -93,6 +85,8 @@ JobQueue::addJob (JobType type, std::string const& name,
     assert (type == jtCLIENT || m_workers.getNumberOfThreads () > 0);
 
     {
+        std::lock_guard <std::mutex> lock (m_mutex);
+
         // If this goes off it means that a child didn't follow
         // the Stoppable API rules. A job may only be added if:
         //
@@ -104,15 +98,10 @@ JobQueue::addJob (JobType type, std::string const& name,
         //          OR
         //      * Not all children are stopped
         //
-        std::lock_guard <std::mutex> lock (m_mutex);
         assert (! isStopped() && (
             m_processCount>0 ||
             ! m_jobSet.empty () ||
             ! areChildrenStopped()));
-    }
-
-    {
-        std::lock_guard <std::mutex> lock (m_mutex);
 
         std::pair <std::set <Job>::iterator, bool> result (
             m_jobSet.insert (Job (type, name, ++m_lastJob,
@@ -218,6 +207,9 @@ void
 JobQueue::addLoadEvents (JobType t, int count,
     std::chrono::milliseconds elapsed)
 {
+    if (isStopped())
+        LogicError ("JobQueue::addLoadEvents() called after JobQueue stopped");
+
     JobDataMap::iterator iter (m_jobData.find (t));
     assert (iter != m_jobData.end ());
     iter->second.load().addSamples (count, elapsed);

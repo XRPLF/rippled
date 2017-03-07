@@ -172,11 +172,11 @@ class RootStoppable;
 class Stoppable
 {
 protected:
-    Stoppable (char const* name, RootStoppable& root);
+    Stoppable (std::string name, RootStoppable& root);
 
 public:
     /** Create the Stoppable. */
-    Stoppable (char const* name, Stoppable& parent);
+    Stoppable (std::string name, Stoppable& parent);
 
     /** Destroy the Stoppable. */
     virtual ~Stoppable ();
@@ -294,7 +294,7 @@ private:
 class RootStoppable : public Stoppable
 {
 public:
-    explicit RootStoppable (char const* name);
+    explicit RootStoppable (std::string name);
 
     ~RootStoppable () = default;
 
@@ -339,7 +339,7 @@ private:
     /*  Notify a root stoppable and children to stop, without waiting.
         Has no effect if the stoppable was already notified.
 
-        Returns true on the first call to stopAsync(), false otherwise.
+        Returns true on the first call to this method, false otherwise.
 
         Thread safety:
             Safe to call from any thread at any time.

@@ -22,9 +22,6 @@
 
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/DatabaseRotating.h>
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/basics/Log.h>
-#include <ripple/beast/utility/Journal.h>
 
 namespace ripple {
 namespace NodeStore {
@@ -87,16 +84,18 @@ public:
     virtual
     std::unique_ptr <Database>
     make_Database (std::string const& name, Scheduler& scheduler,
-        beast::Journal journal, int readThreads,
-            Section const& backendParameters) = 0;
+        int readThreads, Stoppable& parent,
+            Section const& backendParameters,
+                beast::Journal journal) = 0;
 
     virtual
     std::unique_ptr <DatabaseRotating>
     make_DatabaseRotating (std::string const& name,
         Scheduler& scheduler, std::int32_t readThreads,
-            std::shared_ptr <Backend> writableBackend,
-                std::shared_ptr <Backend> archiveBackend,
-                    beast::Journal journal) = 0;
+            Stoppable& parent,
+                std::shared_ptr <Backend> writableBackend,
+                    std::shared_ptr <Backend> archiveBackend,
+                        beast::Journal journal) = 0;
 };
 
 //------------------------------------------------------------------------------

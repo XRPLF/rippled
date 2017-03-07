@@ -21,17 +21,16 @@
 #define RIPPLE_APP_MISC_SHAMAPSTOREIMP_H_INCLUDED
 
 #include <ripple/app/misc/SHAMapStore.h>
-#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/core/DatabaseCon.h>
-#include <ripple/core/SociDB.h>
-#include <ripple/nodestore/impl/Tuning.h>
 #include <ripple/nodestore/DatabaseRotating.h>
-#include <iostream>
 #include <condition_variable>
 #include <thread>
 
 
 namespace ripple {
+
+class NetworkOPs;
 
 class SHAMapStoreImp : public SHAMapStore
 {
@@ -134,7 +133,8 @@ public:
     }
 
     std::unique_ptr <NodeStore::Database> makeDatabase (
-            std::string const&name, std::int32_t readThreads) override;
+            std::string const&name,
+            std::int32_t readThreads, Stoppable& parent) override;
 
     LedgerIndex
     setCanDelete (LedgerIndex seq) override
@@ -191,7 +191,7 @@ private:
      */
     std::unique_ptr <NodeStore::DatabaseRotating>
     makeDatabaseRotating (std::string const&name,
-            std::int32_t readThreads,
+            std::int32_t readThreads, Stoppable& parent,
             std::shared_ptr <NodeStore::Backend> writableBackend,
             std::shared_ptr <NodeStore::Backend> archiveBackend) const;
 

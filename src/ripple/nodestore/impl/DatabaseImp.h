@@ -24,16 +24,8 @@
 #include <ripple/nodestore/Scheduler.h>
 #include <ripple/nodestore/impl/Tuning.h>
 #include <ripple/basics/KeyCache.h>
-#include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/TaggedCache.h>
 #include <ripple/beast/core/CurrentThreadName.h>
-#include <chrono>
-#include <condition_variable>
-#include <set>
-#include <thread>
 
 namespace ripple {
 namespace NodeStore {
@@ -62,14 +54,21 @@ private:
     bool                      m_readShut;
     uint64_t                  m_readGen;        // current read generation
     int                       fdlimit_;
+    std::atomic <std::uint32_t> m_storeCount;
+    std::atomic <std::uint32_t> m_fetchTotalCount;
+    std::atomic <std::uint32_t> m_fetchHitCount;
+    std::atomic <std::uint32_t> m_storeSize;
+    std::atomic <std::uint32_t> m_fetchSize;
 
 public:
     DatabaseImp (std::string const& name,
                  Scheduler& scheduler,
                  int readThreads,
+                 Stoppable& parent,
                  std::unique_ptr <Backend> backend,
                  beast::Journal journal)
-        : m_journal (journal)
+        : Database (name, parent)
+        , m_journal (journal)
         , m_scheduler (scheduler)
         , m_backend (std::move (backend))
         , m_cache ("NodeStore", cacheTargetSize, cacheTargetSeconds,
@@ -107,16 +106,6 @@ public:
     getName () const override
     {
         return m_backend->getName ();
-    }
-
-    void
-    close() override
-    {
-        if (m_backend)
-        {
-            m_backend->close();
-            m_backend = nullptr;
-        }
     }
 
     //------------------------------------------------------------------------------
@@ -440,6 +429,18 @@ public:
         return fdlimit_;
     }
 
+    //--------------------------------------------------------------------------
+    //
+    // Stoppable.
+
+    void onStop () override
+    {
+        // After stop time we can no longer use the JobQueue for background
+        // reads.  Join the background read threads.
+        DatabaseImp::stopThreads();
+        stopped();
+    }
+
 protected:
     void stopThreads ()
     {
@@ -456,13 +457,6 @@ protected:
         for (auto& e : m_readThreads)
             e.join();
     }
-
-private:
-    std::atomic <std::uint32_t> m_storeCount;
-    std::atomic <std::uint32_t> m_fetchTotalCount;
-    std::atomic <std::uint32_t> m_fetchHitCount;
-    std::atomic <std::uint32_t> m_storeSize;
-    std::atomic <std::uint32_t> m_fetchSize;
 };
 
 }

@@ -22,7 +22,6 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/beast/utility/temp_dir.h>
-#include <algorithm>
 
 namespace ripple {
 namespace NodeStore {
@@ -34,6 +33,7 @@ public:
         std::string const& srcBackendType, std::int64_t seedValue)
     {
         DummyScheduler scheduler;
+        RootStoppable parent ("TestRootStoppable");
 
         beast::temp_dir node_db;
         Section srcParams;
@@ -49,7 +49,7 @@ public:
         // Write to source db
         {
             std::unique_ptr <Database> src = Manager::instance().make_Database (
-                "test", scheduler, j, 2, srcParams);
+                "test", scheduler, 2, parent, srcParams, j);
             storeBatch (*src, batch);
         }
 
@@ -58,7 +58,7 @@ public:
         {
             // Re-open the db
             std::unique_ptr <Database> src = Manager::instance().make_Database (
-                "test", scheduler, j, 2, srcParams);
+                "test", scheduler, 2, parent, srcParams, j);
 
             // Set up the destination database
             beast::temp_dir dest_db;
@@ -67,7 +67,7 @@ public:
             destParams.set ("path", dest_db.path());
 
             std::unique_ptr <Database> dest = Manager::instance().make_Database (
-                "test", scheduler, j, 2, destParams);
+                "test", scheduler, 2, parent, destParams, j);
 
             testcase ("import into '" + destBackendType +
                 "' from '" + srcBackendType + "'");
@@ -93,6 +93,7 @@ public:
                         int numObjectsToTest = 2000)
     {
         DummyScheduler scheduler;
+        RootStoppable parent ("TestRootStoppable");
 
         std::string s = "NodeStore backend '" + type + "'";
 
@@ -114,7 +115,7 @@ public:
         {
             // Open the database
             std::unique_ptr <Database> db = Manager::instance().make_Database (
-                "test", scheduler, j, 2, nodeParams);
+                "test", scheduler, 2, parent, nodeParams, j);
 
             // Write the batch
             storeBatch (*db, batch);
@@ -143,7 +144,7 @@ public:
             {
                 // Re-open the database without the ephemeral DB
                 std::unique_ptr <Database> db = Manager::instance().make_Database (
-                    "test", scheduler, j, 2, nodeParams);
+                    "test", scheduler, 2, parent, nodeParams, j);
 
                 // Read it back in
                 Batch copy;
