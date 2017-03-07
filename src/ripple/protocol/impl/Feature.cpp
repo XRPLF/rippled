@@ -56,7 +56,7 @@ uint256 const featurePayChan = feature("PayChan");
 uint256 const featureFlow = feature("Flow");
 uint256 const featureCryptoConditions = feature("CryptoConditions");
 uint256 const featureTickSize = feature("TickSize");
-uint256 const featureRIPD1368 = feature("RIPD1368");
+uint256 const fix1368 = feature("fix1368");
 uint256 const featureEscrow = feature("Escrow");
 uint256 const featureCryptoConditionsSuite = feature("CryptoConditionsSuite");
 

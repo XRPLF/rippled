@@ -1449,7 +1449,7 @@ struct Flow_test : public beast::unit_test::suite
         testSelfFundedXRPEndpoint(true);
         testUnfundedOffer(true);
         testUnfundedOffer(false);
-        testReexecuteDirectStep(featureFlow, featureRIPD1368);
+        testReexecuteDirectStep(featureFlow, fix1368);
     }
 };
 

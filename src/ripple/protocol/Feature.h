@@ -45,7 +45,7 @@ extern uint256 const featurePayChan;
 extern uint256 const featureFlow;
 extern uint256 const featureCryptoConditions;
 extern uint256 const featureTickSize;
-extern uint256 const featureRIPD1368;
+extern uint256 const fix1368;
 extern uint256 const featureEscrow;
 extern uint256 const featureCryptoConditionsSuite;
 

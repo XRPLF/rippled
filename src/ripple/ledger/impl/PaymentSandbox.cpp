@@ -199,7 +199,7 @@ PaymentSandbox::balanceHook (AccountID const& account,
             }
         }
         adjustedAmt = std::min(amount, lastBal - delta);
-        if (rules().enabled(featureRIPD1368))
+        if (rules().enabled(fix1368))
         {
             // The adjusted amount should never be larger than the balance. In
             // some circumstances, it is possible for the deferred credits table
