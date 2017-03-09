@@ -442,7 +442,7 @@ PeerImp::fail(std::string const& reason)
                 shared_from_this(), reason));
     if (socket_.is_open())
     {
-        JLOG (journal_.debug()) << reason;
+        JLOG (journal_.warn()) << reason;
     }
     close();
 }
@@ -453,7 +453,7 @@ PeerImp::fail(std::string const& name, error_code ec)
     assert(strand_.running_in_this_thread());
     if (socket_.is_open())
     {
-        JLOG(journal_.debug()) << name << ": " << ec.message();
+        JLOG(journal_.warn()) << name << ": " << ec.message();
     }
     close();
 }
