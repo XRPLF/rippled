@@ -408,4 +408,16 @@ ValidatorList::for_each_listed (
         func (v.first, trusted(v.first));
 }
 
+std::size_t
+ValidatorList::calculateQuorum (std::size_t nTrustedKeys)
+{
+    // Use 80% for large values of n, but have special cases for small numbers.
+    constexpr std::array<std::size_t, 10> quorum = { 0, 1, 2, 2, 3, 3, 4, 5, 6, 7 };
+
+    if (nTrustedKeys < quorum.size())
+        return quorum[nTrustedKeys];
+
+    return nTrustedKeys - nTrustedKeys / 5;
+}
+
 } // ripple

@@ -125,6 +125,21 @@ private:
     }
 
     void
+    testCalculateQuorum ()
+    {
+        testcase ("Calculate Quorum");
+
+        for(std::size_t i = 1; i < 20; ++i)
+        {
+            auto const quorum = ValidatorList::calculateQuorum(i);
+            if (i < 10)
+                BEAST_EXPECT(quorum >= (i/2 + 1));
+            else
+                BEAST_EXPECT(quorum == std::ceil (i * 0.8));
+        }
+    }
+
+    void
     testConfigLoad ()
     {
         testcase ("Config Load");
@@ -733,6 +748,67 @@ private:
             trustedKeys->onConsensusStart (activeValidators);
             BEAST_EXPECT(! trustedKeys->trusted (list[0]));
         }
+        {
+            // Test 1-9 configured validators
+            auto trustedKeys = std::make_unique <ValidatorList> (
+                manifests, manifests, env.timeKeeper(), beast::Journal ());
+
+            std::vector<std::string> cfgPublishers;
+            hash_set<PublicKey> activeValidators;
+
+            std::vector<std::string> cfgKeys;
+            cfgKeys.reserve(9);
+
+            while (cfgKeys.size() < cfgKeys.capacity())
+            {
+                auto const valKey = randomNode();
+                cfgKeys.push_back (toBase58(
+                    TokenType::TOKEN_NODE_PUBLIC, valKey));
+                activeValidators.emplace (valKey);
+
+                BEAST_EXPECT(trustedKeys->load (
+                    emptyLocalKey, cfgKeys, cfgPublishers));
+                trustedKeys->onConsensusStart (activeValidators);
+                BEAST_EXPECT(trustedKeys->quorum () ==
+                    ValidatorList::calculateQuorum(cfgKeys.size()));
+                for (auto const& key : activeValidators)
+                    BEAST_EXPECT(trustedKeys->trusted (key));
+            }
+        }
+        {
+            // Test 2-9 configured validators as validator
+            auto trustedKeys = std::make_unique <ValidatorList> (
+                manifests, manifests, env.timeKeeper(), beast::Journal ());
+
+            auto const localKey = randomNode();
+            std::vector<std::string> cfgPublishers;
+            hash_set<PublicKey> activeValidators;
+
+            std::vector<std::string> cfgKeys {
+                toBase58(TokenType::TOKEN_NODE_PUBLIC, localKey)};
+            cfgKeys.reserve(9);
+
+            while (cfgKeys.size() < cfgKeys.capacity())
+            {
+                auto const valKey = randomNode();
+                cfgKeys.push_back (toBase58(
+                    TokenType::TOKEN_NODE_PUBLIC, valKey));
+                activeValidators.emplace (valKey);
+
+                BEAST_EXPECT(trustedKeys->load (
+                    localKey, cfgKeys, cfgPublishers));
+                trustedKeys->onConsensusStart (activeValidators);
+
+                // When running as an unlisted validator,
+                // the quorum is incremented by 1 for 3 or 5 trusted validators.
+                auto expectedQuorum = ValidatorList::calculateQuorum(cfgKeys.size());
+                if (cfgKeys.size() == 3 || cfgKeys.size() == 5)
+                    ++expectedQuorum;
+                BEAST_EXPECT(trustedKeys->quorum () == expectedQuorum);
+                for (auto const& key : activeValidators)
+                    BEAST_EXPECT(trustedKeys->trusted (key));
+            }
+        }
     }
 
 public:
@@ -740,6 +816,7 @@ public:
     run() override
     {
         testGenesisQuorum ();
+        testCalculateQuorum ();
         testConfigLoad ();
         testApplyList ();
         testUpdate ();
