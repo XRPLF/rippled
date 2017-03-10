@@ -419,7 +419,7 @@ ValidatorList::onConsensusStart (
     // only one trusted list
     if (size < 10 || publisherLists_.size() == 1)
     {
-        // Raise the quorum to 80% of the trusted set
+        // Try to raise the quorum toward or above 80% of the trusted set
         std::size_t const targetQuorum = ValidatorList::calculateQuorum (size);
         if (targetQuorum > quorum)
             quorum = targetQuorum;

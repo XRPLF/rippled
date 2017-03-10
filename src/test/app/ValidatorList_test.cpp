@@ -788,8 +788,6 @@ private:
                 toBase58(TokenType::TOKEN_NODE_PUBLIC, localKey)};
             cfgKeys.reserve(9);
 
-            constexpr std::array<std::size_t, 10> quorums = { 0, 1, 2, 3, 3, 4, 4, 5, 6, 7 };
-
             while (cfgKeys.size() < cfgKeys.capacity())
             {
                 auto const valKey = randomNode();
@@ -800,8 +798,13 @@ private:
                 BEAST_EXPECT(trustedKeys->load (
                     localKey, cfgKeys, cfgPublishers));
                 trustedKeys->onConsensusStart (activeValidators);
-                BEAST_EXPECT(trustedKeys->quorum () ==
-                    quorums[cfgKeys.size()]);
+
+                // When running as an unlisted validator,
+                // the quorum is incremented by 1 for 3 or 5 trusted validators.
+                auto expectedQuorum = ValidatorList::calculateQuorum(cfgKeys.size());
+                if (cfgKeys.size() == 3 || cfgKeys.size() == 5)
+                    ++expectedQuorum;
+                BEAST_EXPECT(trustedKeys->quorum () == expectedQuorum);
                 for (auto const& key : activeValidators)
                     BEAST_EXPECT(trustedKeys->trusted (key));
             }
