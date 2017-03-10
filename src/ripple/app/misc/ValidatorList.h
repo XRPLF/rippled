@@ -308,6 +308,9 @@ public:
     for_each_listed (
         std::function<void(PublicKey const&, bool)> func) const;
 
+    static std::size_t
+    calculateQuorum (std::size_t nTrustedKeys);
+
 private:
     /** Check response for trusted valid published list
 
@@ -412,11 +415,12 @@ ValidatorList::onConsensusStart (
 
     auto size = rankedKeys.size();
 
-    // Use all eligible keys if there is only one trusted list.
-    if (publisherLists_.size() == 1)
+    // Use all eligible keys if there is less than 10 listed validators or
+    // only one trusted list
+    if (size < 10 || publisherLists_.size() == 1)
     {
-        // Raise the quorum to 80% of the trusted set
-        std::size_t const targetQuorum = std::ceil (size * 0.8);
+        // Try to raise the quorum toward or above 80% of the trusted set
+        std::size_t const targetQuorum = ValidatorList::calculateQuorum (size);
         if (targetQuorum > quorum)
             quorum = targetQuorum;
     }
