@@ -129,13 +129,11 @@ private:
     {
         testcase ("Calculate Quorum");
 
-        constexpr std::array<std::size_t, 10> quorums = { 0, 1, 2, 2, 3, 3, 4, 5, 6, 7 };
-
-        for(std::size_t i = 0; i < 20; ++i)
+        for(std::size_t i = 1; i < 20; ++i)
         {
             auto const quorum = ValidatorList::calculateQuorum(i);
-            if (i < quorums.size())
-                BEAST_EXPECT(quorum == quorums[i]);
+            if (i < 10)
+                BEAST_EXPECT(quorum >= (i/2 + 1));
             else
                 BEAST_EXPECT(quorum == std::ceil (i * 0.8));
         }
