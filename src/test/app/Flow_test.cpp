@@ -1379,6 +1379,59 @@ struct Flow_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testRIPD1443(bool withFix)
+    {
+        testcase("ripd1443");
+
+        using namespace jtx;
+        Env env(*this, features(featureFlow));
+        auto const timeDelta = env.closed ()->info ().closeTimeResolution;
+        auto const d = withFix ? timeDelta*100 : -timeDelta*100;
+        auto closeTime = amendmentRIPD1443SoTime() + d;
+        env.close(closeTime);
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const gw = Account("gw");
+
+        env.fund(XRP(100000000), alice, noripple(bob), carol, gw);
+        env.trust(gw["USD"](10000), alice, carol);
+        env(trust(bob, gw["USD"](10000), tfSetNoRipple));
+        env.trust(gw["USD"](10000), bob);
+        env.close();
+
+        // set no ripple between bob and the gateway
+
+        env(pay(gw, alice, gw["USD"](1000)));
+        env.close();
+
+        env(offer(alice, bob["USD"](1000), XRP(1)));
+        env.close();
+
+        env(pay(alice, alice, XRP(1)), path(gw, bob, ~XRP),
+            sendmax(gw["USD"](1000)), txflags(tfNoRippleDirect),
+            ter(withFix ? tecPATH_DRY : tesSUCCESS));
+        env.close();
+
+        if (withFix)
+        {
+            env.trust(bob["USD"](10000), alice);
+            env(pay(bob, alice, bob["USD"](1000)));
+        }
+
+        env(offer(alice, XRP(1000), bob["USD"](1000)));
+        env.close();
+
+        env(pay (carol, carol, gw["USD"](1000)), path(~bob["USD"], gw),
+            sendmax(XRP(100000)), txflags(tfNoRippleDirect),
+            ter(withFix ? tecPATH_DRY : tesSUCCESS));
+        env.close();
+
+        pass();
+    }
+
     void run() override
     {
         testDirectStep ();
@@ -1394,6 +1447,8 @@ struct Flow_test : public beast::unit_test::suite
         testSelfFundedXRPEndpoint(true);
         testUnfundedOffer(true);
         testUnfundedOffer(false);
+        testRIPD1443(true);
+        testRIPD1443(false);
     }
 };
 
