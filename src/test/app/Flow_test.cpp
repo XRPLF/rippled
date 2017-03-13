@@ -1440,17 +1440,10 @@ struct Flow_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this, features(featureFlow));
-        {
-            auto closeTime = amendmentRIPD1298SoTime();
-            closeTime += env.closed()->info().closeTimeResolution;
-            env.close(closeTime);
-        }
-
-        if (withFix){
-            auto closeTime = amendmentRIPD1443SoTime();
-            closeTime += env.closed()->info().closeTimeResolution;
-            env.close(closeTime);
-        }
+        auto const timeDelta = env.closed ()->info ().closeTimeResolution;
+        auto const d = withFix ? timeDelta*100 : -timeDelta*100;
+        auto closeTime = amendmentRIPD1443SoTime() + d;
+        env.close(closeTime);
 
         auto const alice = Account("alice");
         auto const bob = Account("bob");
