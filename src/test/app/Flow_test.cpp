@@ -31,6 +31,20 @@
 namespace ripple {
 namespace test {
 
+bool getNoRippleFlag (jtx::Env const& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    Currency const& cur)
+{
+    if (auto sle = env.le (keylet::line (src, dst, cur)))
+    {
+        auto const flag = (src.id() > dst.id()) ? lsfHighNoRipple : lsfLowNoRipple;
+        return sle->isFlag (flag);
+    }
+    Throw<std::runtime_error> ("No line in getTrustFlag");
+    return false; // silence warning
+}
+
 jtx::PrettyAmount
 xrpMinusFee (jtx::Env const& env, std::int64_t xrpAmount)
 {
@@ -1046,9 +1060,16 @@ struct Flow_test : public beast::unit_test::suite
         auto const bob = Account("bob");
         auto const gw = Account("gw");
         auto const USD = gw["USD"];
+        auto const usdC = USD.currency;
 
         env.fund(XRP(10000), alice, bob, gw);
+        // Need to be past this time to see the bug
+        env.close(amendmentRIPD1274SoTime() +
+            100 * env.closed()->info().closeTimeResolution);
         env(trust(alice, USD(100)));
+        env.close();
+
+        BEAST_EXPECT(!getNoRippleFlag(env, gw, alice, usdC));
 
         env(pay(
             gw, alice,
@@ -1078,10 +1099,6 @@ struct Flow_test : public beast::unit_test::suite
             STAmount{
                 USD.issue(), std::uint64_t(1700000000000000ull), -14, false},
             XRP(.001)));
-
-        // Need to be past this time to see the bug
-        env.close(amendmentRIPD1274SoTime() +
-            100 * env.closed()->info().closeTimeResolution);
 
         env(pay(alice, bob, XRP(10000)), path(~XRP), sendmax(USD(100)),
             txflags(tfPartialPayment | tfNoRippleDirect));

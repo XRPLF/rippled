@@ -44,12 +44,11 @@ struct XRPEndpointStepInfo
     AccountID acc;
 };
 
-enum class TrustFlag { freeze, auth };
+enum class TrustFlag {freeze, auth, noripple};
 
-std::uint32_t
-trustFlag(TrustFlag f, bool useHigh)
+/*constexpr*/ std::uint32_t trustFlag (TrustFlag f, bool useHigh)
 {
-    switch (f)
+    switch(f)
     {
         case TrustFlag::freeze:
             if (useHigh)
@@ -59,8 +58,12 @@ trustFlag(TrustFlag f, bool useHigh)
             if (useHigh)
                 return lsfHighAuth;
             return lsfLowAuth;
+        case TrustFlag::noripple:
+            if (useHigh)
+                return lsfHighNoRipple;
+            return lsfLowNoRipple;
     }
-    return 0;  // Silence warning about end of non-void function
+    return 0; // Silence warning about end of non-void function
 }
 
 bool
