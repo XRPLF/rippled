@@ -9,11 +9,55 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 0.60.0
+
+The `rippled` 0.60.0 release introduces several enhancements that improve the reliability and scalability of the Ripple Consensus Ledger (RCL), including features that add ledger interoperability by improving Interledger Protocol compatibility. Ripple recommends that all server operators upgrade to version 0.60.0 by Thursday, 2017-03-30, for service continuity.
+
+Highlights of this release include:
+
+- `Escrow` (previously called `SusPay`) which permits users to cryptographically escrow XRP on RCL with an expiration date, and optionally a hashlock crypto-condition. Ripple expects Escrow to be enabled via an Amendment named [`Escrow`](https://ripple.com/build/amendments/#escrow) on Thursday, 2017-03-30. See below for details.
+- Dynamic UNL Lite, which allows `rippled` to automatically adjust which validators it trusts based on recommended lists from trusted publishers.
+
+**New and Updated Features**
+
+- Add `Escrow` support (#2039)
+- Dynamize trusted validator list and quorum (#1842)
+- Simplify fee handling during transaction submission (#1992)
+- Publish server stream when fee changes (#2016)
+- Replace manifest with validator token (#1975)
+- Add validator key revocations (#2019)
+- Add `SecretKey` comparison operator (#2004)
+- Reduce `LEDGER_MIN_CONSENSUS` (#2013)
+- Update libsecp256k1 and Beast B30 (#1983)
+- Make `Config` extensible via lambda (#1993)
+- WebSocket permessage-deflate integration (#1995)
+- Do not close socket on a foreign thread (#2014)
+- Update build scripts to support latest boost and ubuntu distros (#1997)
+- Handle protoc targets in scons ninja build (#2022)
+- Specify syntax version for ripple.proto file (#2007)
+- Eliminate protocol header dependency (#1962)
+- Use gnu gold or clang lld linkers if available (#2031)
+- Add tests for `lookupLedger` (#1989)
+- Add unit test for `get_counts` RPC method (#2011)
+- Add test for `transaction_entry` request (#2017)
+- Unit tests of RPC "sign" (#2010)
+- Add failure only unit test reporter (#2018)
+
+**Bug Fixes**
+
+- Enforce rippling constraints during payments (#2049)
+- Fix limiting step re-execute bug (#1936)
+- Make "wss" work the same as "wss2" (#2033)
+- Config test uses unique directories for each test (#1984)
+- Check for malformed public key on payment channel (#2027)
+- Send a websocket ping before timing out in server (#2035)
+
+
 ## Version 0.50.3
 
 The `rippled` 0.50.3 release corrects a reported exploit that would allow a combination of trust lines and order books in a payment path to bypass the blocking effect of the [`NoRipple`](https://ripple.com/build/understanding-the-noripple-flag/) flag. Ripple recommends that all server operators immediately upgrade to version 0.50.3.
 
-**New and Updated Feature**
+**New and Updated Features**
 
 This release has no new features.
 
