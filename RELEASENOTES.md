@@ -9,6 +9,19 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 0.50.3
+
+The `rippled` 0.50.3 release corrects a reported exploit that would allow a combination of trust lines and order books in a payment path to bypass the blocking effect of the [`NoRipple`](https://ripple.com/build/understanding-the-noripple-flag/) flag. Ripple recommends that all server operators immediately upgrade to version 0.50.3.
+
+**New and Updated Feature**
+
+This release has no new features.
+
+**Bug Fixes**
+
+Correct a reported exploit that would allow a combination of trust lines and order books in a payment path to bypass the blocking effect of the “NoRipple” flag.
+
+
 ## Version 0.50.2
 
 The `rippled` 0.50.2 release adjusts the default TLS cipher list and corrects a flaw that would not allow an SSL handshake to properly complete if the port was configured using the `wss` keyword. Ripple recommends upgrading to 0.50.2 only if server operators are running rippled servers that accept client connections over TLS.
