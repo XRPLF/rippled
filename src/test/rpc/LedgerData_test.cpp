@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <test/jtx.h>
 
@@ -58,7 +59,6 @@ public:
         }
         env.close();
 
-        // no limit specified
         // with no limit specified, we get the max_limit if the total number of
         // accounts is greater than max, which it is here
         Json::Value jvParams;
@@ -101,7 +101,6 @@ public:
         }
         env.close();
 
-        // no limit specified
         // with no limit specified, we should get all of our fund entries
         // plus three more related to the gateway setup
         Json::Value jvParams;
@@ -189,7 +188,6 @@ public:
         }
         env.close();
 
-        // no limit specified
         // with no limit specified, we should get all of our fund entries
         // plus three more related to the gateway setup
         Json::Value jvParams;
@@ -264,6 +262,151 @@ public:
         }
     }
 
+    void testLedgerType()
+    {
+        // Put a bunch of different LedgerEntryTypes into a ledger
+        using namespace test::jtx;
+        Env env { *this, envconfig(validator, ""),
+                   features(featureMultiSign, featureTickets) };
+        Account const gw { "gateway" };
+        auto const USD = gw["USD"];
+        env.fund(XRP(100000), gw);
+
+        int const num_accounts = 10;
+
+        for (auto i = 0; i < num_accounts; i++)
+        {
+            Account const bob { std::string("bob") + std::to_string(i) };
+            env.fund(XRP(1000), bob);
+        }
+        env(offer(Account{"bob0"}, USD(100), XRP(100)));
+        env.trust(Account{"bob2"}["USD"](100), Account{"bob3"});
+
+        auto majorities = getMajorityAmendments(*env.closed());
+        for (int i = 0; i <= 256; ++i)
+        {
+            env.close();
+            majorities = getMajorityAmendments(*env.closed());
+            if (!majorities.empty())
+                break;
+        }
+        env(signers(Account{"bob0"}, 1, {{Account{"bob1"}, 1}, {Account{"bob2"}, 1}}));
+        env(ticket::create(env.master));
+        env.close();
+
+        // Now fetch each type
+
+        {  // jvParams[jss::type] = "account";
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::type] = "account";
+        auto const jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 12) );
+        for (auto const& j : jrr[jss::state])
+            BEAST_EXPECT( j["LedgerEntryType"] == "AccountRoot" );
+        }
+
+        {  // jvParams[jss::type] = "amendments";
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::type] = "amendments";
+        auto const jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
+        for (auto const& j : jrr[jss::state])
+            BEAST_EXPECT( j["LedgerEntryType"] == "Amendments" );
+        }
+
+        {  // jvParams[jss::type] = "directory";
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::type] = "directory";
+        auto const jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 5) );
+        for (auto const& j : jrr[jss::state])
+            BEAST_EXPECT( j["LedgerEntryType"] == "DirectoryNode" );
+        }
+
+        {  // jvParams[jss::type] = "fee";
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::type] = "fee";
+        auto const jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
+        for (auto const& j : jrr[jss::state])
+            BEAST_EXPECT( j["LedgerEntryType"] == "FeeSettings" );
+        }
+
+        {  // jvParams[jss::type] = "hashes";
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::type] = "hashes";
+        auto const jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 2) );
+        for (auto const& j : jrr[jss::state])
+            BEAST_EXPECT( j["LedgerEntryType"] == "LedgerHashes" );
+        }
+
+        {  // jvParams[jss::type] = "offer";
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::type] = "offer";
+        auto const jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
+        for (auto const& j : jrr[jss::state])
+            BEAST_EXPECT( j["LedgerEntryType"] == "Offer" );
+        }
+
+        {  // jvParams[jss::type] = "signer_list";
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::type] = "signer_list";
+        auto const jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
+        for (auto const& j : jrr[jss::state])
+            BEAST_EXPECT( j["LedgerEntryType"] == "SignerList" );
+        }
+
+        {  // jvParams[jss::type] = "state";
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::type] = "state";
+        auto const jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
+        for (auto const& j : jrr[jss::state])
+            BEAST_EXPECT( j["LedgerEntryType"] == "RippleState" );
+        }
+
+        {  // jvParams[jss::type] = "ticket";
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::type] = "ticket";
+        auto const jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
+        for (auto const& j : jrr[jss::state])
+            BEAST_EXPECT( j["LedgerEntryType"] == "Ticket" );
+        }
+
+        {  // jvParams[jss::type] = "misspelling";
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::type] = "misspelling";
+        auto const jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        BEAST_EXPECT( jrr.isMember("error") );
+        BEAST_EXPECT( jrr["error"] == "invalidParams" );
+        BEAST_EXPECT( jrr["error_message"] == "Invalid field 'type'." );
+        }
+    }
+
     void run()
     {
         testCurrentLedgerToLimits(true);
@@ -272,6 +415,7 @@ public:
         testBadInput();
         testMarkerFollow();
         testLedgerHeader();
+        testLedgerType();
     }
 };
 

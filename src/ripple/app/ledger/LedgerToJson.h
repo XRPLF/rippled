@@ -31,17 +31,12 @@ namespace ripple {
 
 struct LedgerFill
 {
-    LedgerFill (ReadView const& l, int o = 0)
+    LedgerFill (ReadView const& l, int o = 0, std::vector<TxQ::TxDetails> q = {},
+                LedgerEntryType t = ltINVALID)
         : ledger (l)
         , options (o)
-    {
-    }
-
-    LedgerFill(ReadView const& l, int o,
-        std::vector<TxQ::TxDetails> q)
-        : ledger(l)
-        , options(o)
-        , txQueue(q)
+        , txQueue(std::move(q))
+        , type (t)
     {
     }
 
@@ -58,6 +53,7 @@ struct LedgerFill
     ReadView const& ledger;
     int options;
     std::vector<TxQ::TxDetails> txQueue;
+    LedgerEntryType type;
 };
 
 /** Given a Ledger and options, fill a Json::Object or Json::Value with a

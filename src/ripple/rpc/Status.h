@@ -43,7 +43,7 @@ public:
     using Code = int;
     using Strings = std::vector <std::string>;
 
-    static const Code OK = 0;
+    static constexpr Code OK = 0;
 
     Status () = default;
 
