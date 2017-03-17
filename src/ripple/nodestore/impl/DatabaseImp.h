@@ -92,17 +92,15 @@ public:
             fdlimit_ = m_backend->fdlimit();
     }
 
-    ~DatabaseImp ()
+    ~DatabaseImp () override
     {
-        {
-            std::lock_guard <std::mutex> lock (m_readLock);
-            m_readShut = true;
-            m_readCondVar.notify_all ();
-            m_readGenCondVar.notify_all ();
-        }
-
-        for (auto& e : m_readThreads)
-            e.join();
+        // NOTE!
+        // Any derived class should call the stopThreads() method in its
+        // destructor.  Otherwise, occasionally, the derived class may
+        // crash during shutdown when its members are accessed by one of
+        // these threads after the derived class is destroyed but before
+        // this base class is destroyed.
+        stopThreads();
     }
 
     std::string
@@ -440,6 +438,23 @@ public:
     int fdlimit() const override
     {
         return fdlimit_;
+    }
+
+protected:
+    void stopThreads ()
+    {
+        {
+            std::lock_guard <std::mutex> lock (m_readLock);
+            if (m_readShut) // Only stop threads once.
+                return;
+
+            m_readShut = true;
+            m_readCondVar.notify_all ();
+            m_readGenCondVar.notify_all ();
+        }
+
+        for (auto& e : m_readThreads)
+            e.join();
     }
 
 private:
