@@ -25,6 +25,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/LedgerFormats.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -72,36 +73,12 @@ Json::Value doAccountObjects (RPC::Context& context)
     if (! ledger->exists(keylet::account (accountID)))
         return rpcError (rpcACT_NOT_FOUND);
 
-    auto type = ltINVALID;
-    if (params.isMember (jss::type))
+    auto type = chooseLedgerEntryType(params);
+    if (type.first)
     {
-        static
-        std::array<std::pair<char const *, LedgerEntryType>, 9> const
-        types
-        {{
-            { jss::account, ltACCOUNT_ROOT },
-            { jss::amendments, ltAMENDMENTS },
-            { jss::directory, ltDIR_NODE },
-            { jss::fee, ltFEE_SETTINGS },
-            { jss::hashes, ltLEDGER_HASHES },
-            { jss::offer, ltOFFER },
-            { jss::signer_list, ltSIGNER_LIST },
-            { jss::state, ltRIPPLE_STATE },
-            { jss::ticket, ltTICKET }
-        }};
-
-        auto const& p = params[jss::type];
-        if (! p.isString ())
-            return RPC::expected_field_error (jss::type, "string");
-
-        auto const filter = p.asString ();
-        auto iter = std::find_if (types.begin (), types.end (),
-            [&filter](decltype (types.front ())& t)
-                { return t.first == filter; });
-        if (iter == types.end ())
-            return RPC::invalid_field_error (jss::type);
-
-        type = iter->second;
+        result.clear();
+        type.first.inject(result);
+        return result;
     }
 
     unsigned int limit;
@@ -131,7 +108,7 @@ Json::Value doAccountObjects (RPC::Context& context)
             return RPC::invalid_field_error (jss::marker);
     }
 
-    if (! RPC::getAccountObjects (*ledger, accountID, type,
+    if (! RPC::getAccountObjects (*ledger, accountID, type.second,
         dirIndex, entryIndex, limit, result))
     {
         result[jss::account_objects] = Json::arrayValue;

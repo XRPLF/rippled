@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_LEDGERFORMATS_H_INCLUDED
 
 #include <ripple/protocol/KnownFormats.h>
+#include <ripple/rpc/Status.h>
 
 namespace ripple {
 
@@ -162,6 +163,9 @@ public:
 private:
     void addCommonFields (Item& item);
 };
+
+std::pair<RPC::Status, LedgerEntryType>
+    chooseLedgerEntryType(Json::Value const& params);
 
 } // ripple
 

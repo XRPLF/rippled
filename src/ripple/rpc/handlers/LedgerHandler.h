@@ -76,6 +76,7 @@ private:
     std::vector<TxQ::TxDetails> queueTxs_;
     Json::Value result_;
     int options_ = 0;
+    LedgerEntryType type_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,7 +90,7 @@ void LedgerHandler::writeResult (Object& value)
     if (ledger_)
     {
         Json::copyFrom (value, result_);
-        addJson (value, {*ledger_, options_, queueTxs_});
+        addJson (value, {*ledger_, options_, queueTxs_, type_});
     }
     else
     {

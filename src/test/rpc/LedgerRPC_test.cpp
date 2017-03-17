@@ -652,6 +652,28 @@ class LedgerRPC_test : public beast::unit_test::suite
 
     }
 
+    void testLedgerAccountsType()
+    {
+        testcase("Ledger Request, Accounts Option");
+        using namespace test::jtx;
+
+        Env env {*this};
+
+        env.close();
+
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = 3u;
+        jvParams[jss::accounts] = true;
+        jvParams[jss::expand] = true;
+        jvParams[jss::type] = "hashes";
+        auto const jrr = env.rpc ( "json", "ledger", to_string(jvParams) ) [jss::result];
+        BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
+        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
+        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 1u);
+        BEAST_EXPECT(jrr[jss::ledger][jss::accountState][0u]["LedgerEntryType"]
+                                                          == "LedgerHashes");
+    }
+
 public:
     void run ()
     {
@@ -668,6 +690,7 @@ public:
         testLookupLedger();
         testNoQueue();
         testQueue();
+        testLedgerAccountsType();
     }
 };
 

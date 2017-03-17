@@ -264,6 +264,38 @@ public:
         }
     }
 
+    void testLedgerType()
+    {
+        using namespace test::jtx;
+        Env env { *this, envconfig(no_admin) };
+        Account const gw { "gateway" };
+        auto const USD = gw["USD"];
+        env.fund(XRP(100000), gw);
+
+        int const num_accounts = 10;
+
+        for (auto i = 0; i < num_accounts; i++)
+        {
+            Account const bob { std::string("bob") + std::to_string(i) };
+            env.fund(XRP(1000), bob);
+        }
+        env.close();
+
+        // no limit specified
+        // with no limit specified, we should get all of our fund entries
+        // plus three more related to the gateway setup
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::type] = "hashes";
+        auto const jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        BEAST_EXPECT(
+            jrr[jss::ledger_current_index].isIntegral() &&
+            jrr[jss::ledger_current_index].asInt() > 0);
+        BEAST_EXPECT( ! jrr.isMember(jss::marker) );
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
+    }
+
     void run()
     {
         testCurrentLedgerToLimits(true);
@@ -272,6 +304,7 @@ public:
         testBadInput();
         testMarkerFollow();
         testLedgerHeader();
+        testLedgerType();
     }
 };
 

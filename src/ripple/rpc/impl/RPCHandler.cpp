@@ -139,7 +139,6 @@ error_code_i fillHandler (Context& context,
 
     JLOG (context.j.trace()) << "COMMAND:" << strCommand;
     JLOG (context.j.trace()) << "REQUEST:" << context.params;
-
     auto handler = getHandler(strCommand);
 
     if (!handler)
