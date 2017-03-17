@@ -105,7 +105,7 @@ public:
                 balance("carol", USD(150)),
                 balance("bob", USD(0)), owners ("bob", 1)));
     }
-    
+
     void
     testStepAndCrossingLimit(std::initializer_list<uint256> fs)
     {

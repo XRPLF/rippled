@@ -46,7 +46,7 @@ struct XRPEndpointStepInfo
 
 enum class TrustFlag { freeze, auth };
 
-constexpr std::uint32_t
+std::uint32_t
 trustFlag(TrustFlag f, bool useHigh)
 {
     switch (f)

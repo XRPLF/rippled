@@ -394,12 +394,12 @@ toStrandV2 (
     {
         auto const t = pe.getNodeType();
 
-        if ((t & ~STPathElement::Type::typeAll) || !t)
+        if ((t & ~STPathElement::typeAll) || !t)
             return {temBAD_PATH, Strand{}};
 
-        bool const hasAccount = t & STPathElement::Type::typeAccount;
-        bool const hasIssuer = t & STPathElement::Type::typeIssuer;
-        bool const hasCurrency = t & STPathElement::Type::typeCurrency;
+        bool const hasAccount = t & STPathElement::typeAccount;
+        bool const hasIssuer = t & STPathElement::typeIssuer;
+        bool const hasCurrency = t & STPathElement::typeCurrency;
 
         if (hasAccount && (hasIssuer || hasCurrency))
             return {temBAD_PATH, Strand{}};
@@ -491,7 +491,7 @@ toStrandV2 (
             ownerPaysTransferFee, seenDirectIssues, seenBookOuts, j};
     };
 
-    for (int i = 0; i < normPath.size () - 1; ++i)
+    for (std::size_t i = 0; i < normPath.size () - 1; ++i)
     {
         /* Iterate through the path elements considering them in pairs.
            The first element of the pair is `cur` and the second element is
