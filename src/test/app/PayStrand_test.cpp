@@ -198,7 +198,7 @@ class ElementComboIter
       last };
 
     std::uint16_t state_ = 0;
-    static_assert(static_cast<size_t>(SB::last) <= sizeof(state_) * 8, "");
+    static_assert(static_cast<size_t>(SB::last) <= sizeof(decltype(state_)) * 8, "");
     STPathElement const* prev_ = nullptr;
     // disallow iss and cur to be specified with acc is specified (simplifies some tests)
     bool const allowCompound_ = false;
