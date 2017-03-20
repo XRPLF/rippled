@@ -42,27 +42,29 @@ Status LedgerHandler::check()
     bool needsLedger = params.isMember (jss::ledger) ||
             params.isMember (jss::ledger_hash) ||
             params.isMember (jss::ledger_index);
-    if (!needsLedger)
+    if (! needsLedger)
         return Status::OK;
 
     if (auto s = lookupLedger (ledger_, context_, result_))
         return s;
 
-    bool bFull = params[jss::full].asBool();
-    bool bTransactions = params[jss::transactions].asBool();
-    bool bAccounts = params[jss::accounts].asBool();
-    bool bExpand = params[jss::expand].asBool();
-    bool bBinary = params[jss::binary].asBool();
+    bool const full = params[jss::full].asBool();
+    bool const transactions = params[jss::transactions].asBool();
+    bool const accounts = params[jss::accounts].asBool();
+    bool const expand = params[jss::expand].asBool();
+    bool const binary = params[jss::binary].asBool();
     bool const owner_funds = params[jss::owner_funds].asBool();
+    bool const queue = params[jss::queue].asBool();
 
-    options_ = (bFull ? LedgerFill::full : 0)
-            | (bExpand ? LedgerFill::expand : 0)
-            | (bTransactions ? LedgerFill::dumpTxrp : 0)
-            | (bAccounts ? LedgerFill::dumpState : 0)
-            | (bBinary ? LedgerFill::binary : 0)
-            | (owner_funds ? LedgerFill::ownerFunds : 0);
+    options_ = (full ? LedgerFill::full : 0)
+            | (expand ? LedgerFill::expand : 0)
+            | (transactions ? LedgerFill::dumpTxrp : 0)
+            | (accounts ? LedgerFill::dumpState : 0)
+            | (binary ? LedgerFill::binary : 0)
+            | (owner_funds ? LedgerFill::ownerFunds : 0)
+            | (queue ? LedgerFill::dumpQueue : 0);
 
-    if (bFull || bAccounts)
+    if (full || accounts)
     {
         // Until some sane way to get full ledgers has been implemented,
         // disallow retrieving all state nodes.
@@ -70,12 +72,23 @@ Status LedgerHandler::check()
             return rpcNO_PERMISSION;
 
         if (context_.app.getFeeTrack().isLoadedLocal() &&
-            !isUnlimited (context_.role))
+            ! isUnlimited (context_.role))
         {
             return rpcTOO_BUSY;
         }
-        context_.loadType = bBinary ? Resource::feeMediumBurdenRPC :
+        context_.loadType = binary ? Resource::feeMediumBurdenRPC :
             Resource::feeHighBurdenRPC;
+    }
+    if (queue)
+    {
+        if (! ledger_ || ! ledger_->open())
+        {
+            // It doesn't make sense to request the queue
+            // with a non-existant or closed/validated ledger.
+            return rpcINVALID_PARAMS;
+        }
+
+        queueTxs_ = context_.app.getTxQ().getTxs(*ledger_);
     }
 
     return Status::OK;

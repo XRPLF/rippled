@@ -492,6 +492,7 @@ TxQ::tryClearAccountQueue(Application& app, OpenView& view,
         // succeeds, the MaybeTx will be destructed, so it'll be
         // moot.
         --it->second.retriesRemaining;
+        it->second.lastResult = txResult.first;
         if (!txResult.second)
         {
             // Transaction failed to apply. Fall back to the normal process.
@@ -1268,6 +1269,7 @@ TxQ::accept(Application& app,
                     candidateIter->retriesRemaining = 1;
                 else
                     --candidateIter->retriesRemaining;
+                candidateIter->lastResult = txnResult;
                 if (account.dropPenalty &&
                     account.transactions.size() > 1 && isFull<95>())
                 {
@@ -1331,33 +1333,78 @@ TxQ::getMetrics(OpenView const& view, std::uint32_t txCountPadding) const
 
 auto
 TxQ::getAccountTxs(AccountID const& account, ReadView const& view) const
-    -> boost::optional<std::map<TxSeq, AccountTxDetails>>
+    -> std::map<TxSeq, AccountTxDetails const>
 {
     auto const allowEscalation =
         (view.rules().enabled(featureFeeEscalation));
     if (!allowEscalation)
-        return boost::none;
+        return {};
 
     std::lock_guard<std::mutex> lock(mutex_);
 
     auto accountIter = byAccount_.find(account);
     if (accountIter == byAccount_.end() ||
         accountIter->second.transactions.empty())
-        return boost::none;
+        return {};
 
-    std::map<TxSeq, AccountTxDetails> result;
+    std::map<TxSeq, AccountTxDetails const> result;
 
     for (auto const& tx : accountIter->second.transactions)
     {
-        auto& resultTx = result[tx.first];
-        resultTx.feeLevel = tx.second.feeLevel;
-        if(tx.second.lastValid)
-            resultTx.lastValid.emplace(*tx.second.lastValid);
-        if(tx.second.consequences)
-            resultTx.consequences.emplace(*tx.second.consequences);
+        result.emplace(tx.first, [&]
+        {
+            AccountTxDetails resultTx;
+            resultTx.feeLevel = tx.second.feeLevel;
+            if (tx.second.lastValid)
+                resultTx.lastValid.emplace(*tx.second.lastValid);
+            if (tx.second.consequences)
+                resultTx.consequences.emplace(*tx.second.consequences);
+            return resultTx;
+        }());
     }
     return result;
 }
+
+auto
+TxQ::getTxs(ReadView const& view) const
+-> std::vector<TxDetails>
+{
+    auto const allowEscalation =
+        (view.rules().enabled(featureFeeEscalation));
+    if (!allowEscalation)
+        return {};
+
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (byFee_.empty())
+        return {};
+
+    std::vector<TxDetails> result;
+    result.reserve(byFee_.size());
+
+    for (auto const& tx : byFee_)
+    {
+        result.emplace_back([&]
+        {
+            TxDetails resultTx;
+            resultTx.feeLevel = tx.feeLevel;
+            if (tx.lastValid)
+                resultTx.lastValid.emplace(*tx.lastValid);
+            if (tx.consequences)
+                resultTx.consequences.emplace(*tx.consequences);
+            resultTx.account = tx.account;
+            resultTx.txn = tx.txn;
+            resultTx.retriesRemaining = tx.retriesRemaining;
+            BOOST_ASSERT(tx.pfresult);
+            resultTx.preflightResult = tx.pfresult->ter;
+            if (tx.lastResult)
+                resultTx.lastResult.emplace(*tx.lastResult);
+            return resultTx;
+        }());
+    }
+    return result;
+}
+
 
 Json::Value
 TxQ::doRPC(Application& app) const

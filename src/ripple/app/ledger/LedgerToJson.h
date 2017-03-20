@@ -21,6 +21,7 @@
 #define RIPPLE_APP_LEDGER_LEDGERTOJSON_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/STTx.h>
@@ -36,12 +37,27 @@ struct LedgerFill
     {
     }
 
+    LedgerFill(ReadView const& l, int o,
+        std::vector<TxQ::TxDetails> q)
+        : ledger(l)
+        , options(o)
+        , txQueue(q)
+    {
+    }
+
     enum Options {
-        dumpTxrp = 1, dumpState = 2, expand = 4, full = 8, binary = 16,
-        ownerFunds = 32};
+        dumpTxrp = 1,
+        dumpState = 2,
+        expand = 4,
+        full = 8,
+        binary = 16,
+        ownerFunds = 32,
+        dumpQueue = 64
+    };
 
     ReadView const& ledger;
     int options;
+    std::vector<TxQ::TxDetails> txQueue;
 };
 
 /** Given a Ledger and options, fill a Json::Object or Json::Value with a
@@ -49,7 +65,6 @@ struct LedgerFill
  */
 
 void addJson(Json::Value&, LedgerFill const&);
-void addJson(Json::Object&, LedgerFill const&);
 
 /** Return a new Json::Value representing the ledger with given options.*/
 Json::Value getJson (LedgerFill const&);

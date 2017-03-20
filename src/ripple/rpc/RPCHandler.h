@@ -33,9 +33,6 @@ struct Context;
 /** Execute an RPC command and store the results in a Json::Value. */
 Status doCommand (RPC::Context&, Json::Value&);
 
-/** Execute an RPC command and store the results in an std::string. */
-void executeRPC (RPC::Context&, std::string&);
-
 Role roleRequired (std::string const& method );
 
 } // RPC

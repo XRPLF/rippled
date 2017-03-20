@@ -447,27 +447,21 @@ public:
         {
             auto& txQ = env.app().getTxQ();
             auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
-            if (BEAST_EXPECT(aliceStat))
-            {
-                BEAST_EXPECT(aliceStat->size() == 1);
-                BEAST_EXPECT(aliceStat->begin()->second.feeLevel == 256);
-                BEAST_EXPECT(aliceStat->begin()->second.lastValid &&
-                    *aliceStat->begin()->second.lastValid == 8);
-                BEAST_EXPECT(!aliceStat->begin()->second.consequences);
-            }
+            BEAST_EXPECT(aliceStat.size() == 1);
+            BEAST_EXPECT(aliceStat.begin()->second.feeLevel == 256);
+            BEAST_EXPECT(aliceStat.begin()->second.lastValid &&
+                *aliceStat.begin()->second.lastValid == 8);
+            BEAST_EXPECT(!aliceStat.begin()->second.consequences);
 
             auto bobStat = txQ.getAccountTxs(bob.id(), *env.current());
-            if (BEAST_EXPECT(bobStat))
-            {
-                BEAST_EXPECT(bobStat->size() == 1);
-                BEAST_EXPECT(bobStat->begin()->second.feeLevel = 7000 * 256 / 10);
-                BEAST_EXPECT(!bobStat->begin()->second.lastValid);
-                BEAST_EXPECT(!bobStat->begin()->second.consequences);
-            }
+            BEAST_EXPECT(bobStat.size() == 1);
+            BEAST_EXPECT(bobStat.begin()->second.feeLevel == 7000 * 256 / 10);
+            BEAST_EXPECT(!bobStat.begin()->second.lastValid);
+            BEAST_EXPECT(!bobStat.begin()->second.consequences);
 
             auto noStat = txQ.getAccountTxs(Account::master.id(),
                 *env.current());
-            BEAST_EXPECT(!noStat);
+            BEAST_EXPECT(noStat.empty());
         }
 
         env.close();
@@ -792,21 +786,18 @@ public:
             auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
             std::int64_t fee = 20;
             auto seq = env.seq(alice);
-            if (BEAST_EXPECT(aliceStat))
+            BEAST_EXPECT(aliceStat.size() == 7);
+            for (auto const& tx : aliceStat)
             {
-                BEAST_EXPECT(aliceStat->size() == 7);
-                for (auto const& tx : *aliceStat)
-                {
-                    BEAST_EXPECT(tx.first == seq);
-                    BEAST_EXPECT(tx.second.feeLevel == mulDiv(fee, 256, 10).second);
-                    BEAST_EXPECT(tx.second.lastValid);
-                    BEAST_EXPECT((tx.second.consequences &&
-                        tx.second.consequences->fee == drops(fee) &&
-                        tx.second.consequences->potentialSpend == drops(0) &&
-                        tx.second.consequences->category == TxConsequences::normal) ||
-                        tx.first == env.seq(alice) + 6);
-                    ++seq;
-                }
+                BEAST_EXPECT(tx.first == seq);
+                BEAST_EXPECT(tx.second.feeLevel == mulDiv(fee, 256, 10).second);
+                BEAST_EXPECT(tx.second.lastValid);
+                BEAST_EXPECT((tx.second.consequences &&
+                    tx.second.consequences->fee == drops(fee) &&
+                    tx.second.consequences->potentialSpend == drops(0) &&
+                    tx.second.consequences->category == TxConsequences::normal) ||
+                    tx.first == env.seq(alice) + 6);
+                ++seq;
             }
         }
 
@@ -1823,25 +1814,22 @@ public:
         checkMetrics(env, 5, boost::none, 7, 6, 256);
         {
             auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
-            if (BEAST_EXPECT(aliceStat))
+            auto seq = aliceSeq;
+            BEAST_EXPECT(aliceStat.size() == 5);
+            for (auto const& tx : aliceStat)
             {
-                auto seq = aliceSeq;
-                BEAST_EXPECT(aliceStat->size() == 5);
-                for (auto const& tx : *aliceStat)
+                BEAST_EXPECT(tx.first == seq);
+                BEAST_EXPECT(tx.second.feeLevel == 25600);
+                if(seq == aliceSeq + 2)
                 {
-                    BEAST_EXPECT(tx.first == seq);
-                    BEAST_EXPECT(tx.second.feeLevel == 25600);
-                    if(seq == aliceSeq + 2)
-                    {
-                        BEAST_EXPECT(tx.second.lastValid &&
-                            *tx.second.lastValid == lastLedgerSeq);
-                    }
-                    else
-                    {
-                        BEAST_EXPECT(!tx.second.lastValid);
-                    }
-                    ++seq;
+                    BEAST_EXPECT(tx.second.lastValid &&
+                        *tx.second.lastValid == lastLedgerSeq);
                 }
+                else
+                {
+                    BEAST_EXPECT(!tx.second.lastValid);
+                }
+                ++seq;
             }
         }
         // Put some txs in the queue for bob.
@@ -1870,27 +1858,24 @@ public:
         {
             // Bob has nothing left in the queue.
             auto bobStat = txQ.getAccountTxs(bob.id(), *env.current());
-            BEAST_EXPECT(!bobStat);
+            BEAST_EXPECT(bobStat.empty());
         }
         // Verify alice's tx got dropped as we BEAST_EXPECT, and that there's
         // a gap in her queued txs.
         {
             auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
-            if (BEAST_EXPECT(aliceStat))
+            auto seq = aliceSeq;
+            BEAST_EXPECT(aliceStat.size() == 4);
+            for (auto const& tx : aliceStat)
             {
-                auto seq = aliceSeq;
-                BEAST_EXPECT(aliceStat->size() == 4);
-                for (auto const& tx : *aliceStat)
-                {
-                    // Skip over the missing one.
-                    if (seq == aliceSeq + 2)
-                        ++seq;
-
-                    BEAST_EXPECT(tx.first == seq);
-                    BEAST_EXPECT(tx.second.feeLevel == 25600);
-                    BEAST_EXPECT(!tx.second.lastValid);
+                // Skip over the missing one.
+                if (seq == aliceSeq + 2)
                     ++seq;
-                }
+
+                BEAST_EXPECT(tx.first == seq);
+                BEAST_EXPECT(tx.second.feeLevel == 25600);
+                BEAST_EXPECT(!tx.second.lastValid);
+                ++seq;
             }
         }
         // Now, fill the gap.
@@ -1898,17 +1883,14 @@ public:
         checkMetrics(env, 5, 18, 10, 9, 256);
         {
             auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
-            if (BEAST_EXPECT(aliceStat))
+            auto seq = aliceSeq;
+            BEAST_EXPECT(aliceStat.size() == 5);
+            for (auto const& tx : aliceStat)
             {
-                auto seq = aliceSeq;
-                BEAST_EXPECT(aliceStat->size() == 5);
-                for (auto const& tx : *aliceStat)
-                {
-                    BEAST_EXPECT(tx.first == seq);
-                    BEAST_EXPECT(tx.second.feeLevel == 25600);
-                    BEAST_EXPECT(!tx.second.lastValid);
-                    ++seq;
-                }
+                BEAST_EXPECT(tx.first == seq);
+                BEAST_EXPECT(tx.second.feeLevel == 25600);
+                BEAST_EXPECT(!tx.second.lastValid);
+                ++seq;
             }
         }
 
@@ -1917,11 +1899,11 @@ public:
         {
             // Bob's data has been cleaned up.
             auto bobStat = txQ.getAccountTxs(bob.id(), *env.current());
-            BEAST_EXPECT(!bobStat);
+            BEAST_EXPECT(bobStat.empty());
         }
         {
             auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
-            BEAST_EXPECT(!aliceStat);
+            BEAST_EXPECT(aliceStat.empty());
         }
     }
 
@@ -2723,16 +2705,13 @@ public:
             checkMetrics(env, 2, 24, 16, 12, 256);
             auto const aliceQueue = env.app().getTxQ().getAccountTxs(
                 alice.id(), *env.current());
-            if (BEAST_EXPECT(aliceQueue))
+            BEAST_EXPECT(aliceQueue.size() == 2);
+            auto seq = aliceSeq;
+            for (auto const& tx : aliceQueue)
             {
-                BEAST_EXPECT(aliceQueue->size() == 2);
-                auto seq = aliceSeq;
-                for (auto const& tx : *aliceQueue)
-                {
-                    BEAST_EXPECT(tx.first == seq);
-                    BEAST_EXPECT(tx.second.feeLevel == 2560);
-                    ++seq;
-                }
+                BEAST_EXPECT(tx.first == seq);
+                BEAST_EXPECT(tx.second.feeLevel == 2560);
+                ++seq;
             }
 
             // Close the ledger to clear the queue
