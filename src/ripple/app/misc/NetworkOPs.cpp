@@ -19,16 +19,9 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/consensus/RCLCxTraits.h>
 #include <ripple/app/ledger/Consensus.h>
-#include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
-#include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
-#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/LocalTxs.h>
@@ -40,36 +33,21 @@
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
-#include <ripple/app/misc/Validations.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/app/tx/apply.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
-#include <ripple/basics/random.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
-#include <ripple/protocol/JsonFields.h>
-#include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/DeadlineTimer.h>
-#include <ripple/core/TimeKeeper.h>
+#include <ripple/core/JobCounter.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/json/to_string.h>
-#include <ripple/overlay/ClusterNode.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/BuildInfo.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Rate.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/resource/Gossip.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
@@ -77,11 +55,6 @@
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/basics/make_lock.h>
 #include <beast/core/detail/base64.hpp>
-#include <boost/optional.hpp>
-#include <condition_variable>
-#include <memory>
-#include <mutex>
-#include <tuple>
 
 namespace ripple {
 
@@ -233,7 +206,10 @@ public:
     {
     }
 
-    ~NetworkOPsImp() override = default;
+    ~NetworkOPsImp() override
+    {
+        jobCounter_.join();
+    }
 
 public:
     OperatingMode getOperatingMode () const override
@@ -508,6 +484,9 @@ public:
         m_heartbeatTimer.cancel();
         m_clusterTimer.cancel();
 
+        // Wait until all our in-flight Jobs are completed.
+        jobCounter_.join();
+
         stopped ();
     }
 
@@ -559,6 +538,7 @@ private:
 
     DeadlineTimer m_heartbeatTimer;
     DeadlineTimer m_clusterTimer;
+    JobCounter jobCounter_;
 
     std::unique_ptr<Consensus> mConsensus;
     std::shared_ptr<LedgerConsensus<RCLCxTraits>> mLedgerConsensus;
@@ -669,13 +649,15 @@ void NetworkOPsImp::onDeadlineTimer (DeadlineTimer& timer)
 {
     if (timer == m_heartbeatTimer)
     {
-        m_job_queue.addJob (jtNETOP_TIMER, "NetOPs.heartbeat",
-                            [this] (Job&) { processHeartbeatTimer(); });
+        m_job_queue.addCountedJob (
+            jtNETOP_TIMER, "NetOPs.heartbeat", jobCounter_,
+            [this] (Job&) { processHeartbeatTimer(); });
     }
     else if (timer == m_clusterTimer)
     {
-        m_job_queue.addJob (jtNETOP_CLUSTER, "NetOPs.cluster",
-                            [this] (Job&) { processClusterTimer(); });
+        m_job_queue.addCountedJob (
+            jtNETOP_CLUSTER, "NetOPs.cluster", jobCounter_,
+            [this] (Job&) { processClusterTimer(); });
     }
 }
 
@@ -740,6 +722,7 @@ void NetworkOPsImp::processClusterTimer ()
     if (!update)
     {
         JLOG(m_journal.debug()) << "Too soon to send cluster update";
+        setClusterTimer ();
         return;
     }
 
@@ -841,10 +824,12 @@ void NetworkOPsImp::submitTransaction (std::shared_ptr<STTx const> const& iTrans
     auto tx = std::make_shared<Transaction> (
         trans, reason, app_);
 
-    m_job_queue.addJob (jtTRANSACTION, "submitTxn", [this, tx] (Job&) {
-        auto t = tx;
-        processTransaction(t, false, false, FailHard::no);
-    });
+    m_job_queue.addCountedJob (
+        jtTRANSACTION, "submitTxn", jobCounter_,
+        [this, tx] (Job&) {
+            auto t = tx;
+            processTransaction(t, false, false, FailHard::no);
+        });
 }
 
 void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transaction,
@@ -906,9 +891,12 @@ void NetworkOPsImp::doTransactionAsync (std::shared_ptr<Transaction> transaction
 
     if (mDispatchState == DispatchState::none)
     {
-        m_job_queue.addJob (jtBATCH, "transactionBatch",
-                            [this] (Job&) { transactionBatch(); });
-        mDispatchState = DispatchState::scheduled;
+        if (m_job_queue.addCountedJob (
+            jtBATCH, "transactionBatch", jobCounter_,
+            [this] (Job&) { transactionBatch(); }))
+        {
+            mDispatchState = DispatchState::scheduled;
+        }
     }
 }
 
@@ -938,9 +926,12 @@ void NetworkOPsImp::doTransactionSync (std::shared_ptr<Transaction> transaction,
             if (mTransactions.size())
             {
                 // More transactions need to be applied, but by another job.
-                m_job_queue.addJob (jtBATCH, "transactionBatch",
-                                    [this] (Job&) { transactionBatch(); });
-                mDispatchState = DispatchState::scheduled;
+                if (m_job_queue.addCountedJob (
+                    jtBATCH, "transactionBatch", jobCounter_,
+                    [this] (Job&) { transactionBatch(); }))
+                {
+                    mDispatchState = DispatchState::scheduled;
+                }
             }
         }
     }
@@ -2459,12 +2450,12 @@ void NetworkOPsImp::reportFeeChange ()
         app_.getTxQ().getMetrics(*app_.openLedger().current()),
         app_.getFeeTrack()};
 
-
     // only schedule the job if something has changed
     if (f != mLastFeeSummary)
     {
-         m_job_queue.addJob ( jtCLIENT, "reportFeeChange->pubServer",
-                [this] (Job&) { pubServer(); });
+        m_job_queue.addCountedJob (
+            jtCLIENT, "reportFeeChange->pubServer", jobCounter_,
+            [this] (Job&) { pubServer(); });
     }
 }
 
