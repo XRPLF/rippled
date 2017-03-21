@@ -94,7 +94,7 @@ public:
     {
         mSeen = s;
     }
-    Blob    getSigned ()                 const;
+    Blob    getSerialized ()             const;
     Blob    getSignature ()              const;
 
     // Signs the validation and returns the signing hash

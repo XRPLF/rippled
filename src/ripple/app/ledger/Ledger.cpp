@@ -22,7 +22,7 @@
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/LedgerTiming.h>
+#include <ripple/consensus/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>

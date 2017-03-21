@@ -24,6 +24,8 @@
 #include <ripple/protocol/Serializer.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/consensus/LedgerTiming.h>
+#include <ripple/basics/Log.h>
 #include <memory>
 
 namespace ripple {
@@ -35,70 +37,110 @@ namespace ripple {
     the dispute.
 
     Undisputed transactions have no corresponding @ref DisputedTx object.
+
+    Refer to @ref Consensus for details on the template type requirements.
+
+    @tparam Tx_t The type for a transaction
+    @tparam NodeID_t The type for a node identifier
 */
 
-template <class Traits>
+template <class Tx_t, class NodeID_t>
 class DisputedTx
 {
+    using TxID_t   = typename Tx_t::ID;
 public:
+    /** Constructor
 
-    using Tx_t     = typename Traits::Tx_t;
-    using TxID_t   = typename Traits::TxID_t;
-    using NodeID_t = typename Traits::NodeID_t;
-
+        @param tx The transaction under dispute
+        @param ourVote Our vote on whether tx should be included
+        @param j Journal for debugging
+    */
     DisputedTx (Tx_t const& tx,
-            bool ourVote, beast::Journal j)
-        : mTransactionID (tx.getID())
-        , mYays (0)
-        , mNays (0)
-        , mOurVote (ourVote)
-        , transaction (tx)
+            bool ourVote,
+            beast::Journal j)
+        : yays_ (0)
+        , nays_ (0)
+        , ourVote_ (ourVote)
+        , tx_ (tx)
         , j_ (j)
     {
     }
 
-    TxID_t const& getID () const
+    //! The unique id/hash of the disputed transaction.
+    TxID_t
+    const& ID () const
     {
-        return mTransactionID;
+        return tx_.id();
     }
 
-    bool getOurVote () const
+    //! Our vote on whether the transaction should be included.
+    bool
+    getOurVote () const
     {
-        return mOurVote;
+        return ourVote_;
     }
 
-    Tx_t const& tx () const
+    //! The disputed transaction.
+    Tx_t
+    const& tx () const
     {
-        return transaction;
+        return tx_;
     }
 
-    void setOurVote (bool o)
+    //! Change our vote
+    void
+    setOurVote (bool o)
     {
-        mOurVote = o;
+        ourVote_ = o;
     }
 
-    void setVote (NodeID_t const& peer, bool votesYes);
-    void unVote (NodeID_t const& peer);
+    /** Change a peer's vote
 
-    bool updateVote (int percentTime, bool proposing);
-    Json::Value getJson ();
+        @param peer Identifier of peer.
+        @param votesYes Whether peer votes to include the disputed transaction.
+    */
+    void
+    setVote (NodeID_t const& peer, bool votesYes);
+
+    /** Remove a peer's vote
+
+        @param peer Identifier of peer.
+    */
+    void
+    unVote (NodeID_t const& peer);
+
+    /** Update our vote given progression of consensus.
+
+        Updates our vote on this disputed transaction based on our peers' votes
+        and how far along consensus has proceeded.
+
+        @param percentTime Percentage progress through consensus, e.g. 50%
+               through or 90%.
+        @param proposing Whether we are proposing to our peers in this round.
+        @return Whether our vote changed
+    */
+    bool
+    updateVote (int percentTime, bool proposing);
+
+    //! JSON representation of dispute, used for debugging
+    Json::Value
+    getJson () const;
 
 private:
-    TxID_t mTransactionID;
-    int mYays;
-    int mNays;
-    bool mOurVote;
-    Tx_t transaction;
+    int yays_; //< Number of yes votes
+    int nays_; //< Number of no votes
+    bool ourVote_;  //< Our vote (true is yes)
+    Tx_t tx_;  //< Transaction under dispute
 
-    hash_map <NodeID_t, bool> mVotes;
-    beast::Journal j_;
+    hash_map <NodeID_t, bool> votes_;  //< Votes of our peers
+    beast::Journal j_; //< Debug journal
 };
 
-// Track a peer's yes/no vote on a particular disputed transaction
-template <class Traits>
-void DisputedTx<Traits>::setVote (NodeID_t const& peer, bool votesYes)
+// Track a peer's yes/no vote on a particular disputed tx_
+template <class Tx_t, class NodeID_t>
+void DisputedTx<Tx_t, NodeID_t>::setVote (NodeID_t const& peer, bool votesYes)
 {
-    auto res = mVotes.insert (std::make_pair (peer, votesYes));
+    auto res = votes_.insert (std::make_pair (peer, votesYes));
 
     // new vote
     if (res.second)
@@ -106,60 +148,60 @@ void DisputedTx<Traits>::setVote (NodeID_t const& peer, bool votesYes)
         if (votesYes)
         {
             JLOG (j_.debug())
-                    << "Peer " << peer << " votes YES on " << mTransactionID;
-            ++mYays;
+                    << "Peer " << peer << " votes YES on " << tx_.id();
+            ++yays_;
         }
         else
         {
             JLOG (j_.debug())
-                    << "Peer " << peer << " votes NO on " << mTransactionID;
-            ++mNays;
+                    << "Peer " << peer << " votes NO on " << tx_.id();
+            ++nays_;
         }
     }
     // changes vote to yes
     else if (votesYes && !res.first->second)
     {
         JLOG (j_.debug())
-                << "Peer " << peer << " now votes YES on " << mTransactionID;
-        --mNays;
-        ++mYays;
+                << "Peer " << peer << " now votes YES on " << tx_.id();
+        --nays_;
+        ++yays_;
         res.first->second = true;
     }
     // changes vote to no
     else if (!votesYes && res.first->second)
     {
         JLOG (j_.debug())
-                << "Peer " << peer << " now votes NO on " << mTransactionID;
-        ++mNays;
-        --mYays;
+                << "Peer " << peer << " now votes NO on " << tx_.id();
+        ++nays_;
+        --yays_;
         res.first->second = false;
     }
 }
 
 // Remove a peer's vote on this disputed transasction
-template <class Traits>
-void DisputedTx<Traits>::unVote (NodeID_t const& peer)
+template <class Tx_t, class NodeID_t>
+void DisputedTx<Tx_t, NodeID_t>::unVote (NodeID_t const& peer)
 {
-    auto it = mVotes.find (peer);
+    auto it = votes_.find (peer);
 
-    if (it != mVotes.end ())
+    if (it != votes_.end ())
     {
         if (it->second)
-            --mYays;
+            --yays_;
         else
-            --mNays;
+            --nays_;
 
-        mVotes.erase (it);
+        votes_.erase (it);
     }
 }
 
-template <class Traits>
-bool DisputedTx<Traits>::updateVote (int percentTime, bool proposing)
+template <class Tx_t, class NodeID_t>
+bool DisputedTx<Tx_t, NodeID_t>::updateVote (int percentTime, bool proposing)
 {
-    if (mOurVote && (mNays == 0))
+    if (ourVote_ && (nays_ == 0))
         return false;
 
-    if (!mOurVote && (mYays == 0))
+    if (!ourVote_ && (yays_ == 0))
         return false;
 
     bool newPosition;
@@ -168,7 +210,7 @@ bool DisputedTx<Traits>::updateVote (int percentTime, bool proposing)
     if (proposing) // give ourselves full weight
     {
         // This is basically the percentage of nodes voting 'yes' (including us)
-        weight = (mYays * 100 + (mOurVote ? 100 : 0)) / (mNays + mYays + 1);
+        weight = (yays_ * 100 + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
 
         // VFALCO TODO Rename these macros and turn them into language
         //             constructs.  consolidate them into a class that collects
@@ -189,39 +231,41 @@ bool DisputedTx<Traits>::updateVote (int percentTime, bool proposing)
     {
         // don't let us outweigh a proposing node, just recognize consensus
         weight = -1;
-        newPosition = mYays > mNays;
+        newPosition = yays_ > nays_;
     }
 
-    if (newPosition == mOurVote)
+    if (newPosition == ourVote_)
     {
         JLOG (j_.info())
-                << "No change (" << (mOurVote ? "YES" : "NO") << ") : weight "
+                << "No change (" << (ourVote_ ? "YES" : "NO") << ") : weight "
                 << weight << ", percent " << percentTime;
         JLOG (j_.debug()) << getJson ();
         return false;
     }
 
-    mOurVote = newPosition;
+    ourVote_ = newPosition;
     JLOG (j_.debug())
-            << "We now vote " << (mOurVote ? "YES" : "NO")
-            << " on " << mTransactionID;
+            << "We now vote " << (ourVote_ ? "YES" : "NO")
+            << " on " << tx_.id();
     JLOG (j_.debug()) << getJson ();
     return true;
 }
 
-template <class Traits>
-Json::Value DisputedTx<Traits>::getJson ()
+template <class Tx_t, class NodeID_t>
+Json::Value DisputedTx<Tx_t, NodeID_t>::getJson () const
 {
+    using std::to_string;
+
     Json::Value ret (Json::objectValue);
 
-    ret["yays"] = mYays;
-    ret["nays"] = mNays;
-    ret["our_vote"] = mOurVote;
+    ret["yays"] = yays_;
+    ret["nays"] = nays_;
+    ret["our_vote"] = ourVote_;
 
-    if (!mVotes.empty ())
+    if (!votes_.empty ())
     {
         Json::Value votesj (Json::objectValue);
-        for (auto& vote : mVotes)
+        for (auto& vote : votes_)
             votesj[to_string (vote.first)] = vote.second;
         ret["votes"] = std::move (votesj);
     }
