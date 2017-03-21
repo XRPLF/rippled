@@ -110,7 +110,7 @@ namespace {
  */
 
 error_code_i fillHandler (Context& context,
-                          boost::optional<Handler const&>& result)
+                          Handler const * & result)
 {
     if (! isUnlimited (context.role))
     {
@@ -184,7 +184,7 @@ error_code_i fillHandler (Context& context,
         return rpcNO_CLOSED;
     }
 
-    result = *handler;
+    result = handler;
     return rpcSUCCESS;
 }
 
@@ -232,7 +232,7 @@ void getResult (
 Status doCommand (
     RPC::Context& context, Json::Value& result)
 {
-    boost::optional <Handler const&> handler;
+    Handler const * handler = nullptr;
     if (auto error = fillHandler (context, handler))
     {
         inject_error (error, result);

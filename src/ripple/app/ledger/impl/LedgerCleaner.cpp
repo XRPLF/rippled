@@ -151,8 +151,8 @@ public:
 
     void doClean (Json::Value const& params) override
     {
-        LedgerIndex minRange;
-        LedgerIndex maxRange;
+        LedgerIndex minRange = 0;
+        LedgerIndex maxRange = 0;
         app_.getLedgerMaster().getFullValidatedRange (minRange, maxRange);
 
         {
