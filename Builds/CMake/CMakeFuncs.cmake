@@ -12,13 +12,17 @@ endif()
 
 macro(parse_target)
 
-  if (NOT target AND NOT CMAKE_BUILD_TYPE)
+  if (NOT target)
+    if (NOT CMAKE_BUILD_TYPE)
+      set(CMAKE_BUILD_TYPE Debug)
+    endif()
+    string(TOLOWER ${CMAKE_BUILD_TYPE} target)
     if (APPLE)
-      set(target clang.debug)
+      set(target clang.${target})
     elseif(WIN32)
       set(target msvc)
     else()
-      set(target gcc.debug)
+      set(target gcc.${target})
     endif()
   endif()
 
@@ -105,41 +109,41 @@ macro(parse_target)
       endif()
 
     endwhile()
-    # Promote these values to the CACHE, then unset the locals
-    # to prevent shadowing.
-    set(CMAKE_C_COMPILER ${CMAKE_C_COMPILER} CACHE FILEPATH
-      "Path to a program" FORCE)
-    unset(CMAKE_C_COMPILER)
-    set(CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE FILEPATH
-      "Path to a program" FORCE)
-    unset(CMAKE_CXX_COMPILER)
-
-    if (release)
-      set(CMAKE_BUILD_TYPE Release)
-    else()
-      set(CMAKE_BUILD_TYPE Debug)
-    endif()
-
-    # ensure that the unity flags are set and exclusive
-    if (NOT DEFINED unity OR unity)
-      # Default to unity builds
-      set(unity true)
-      set(nonunity false)
-    else()
-      set(unity false)
-      set(nonunity true)
-    endif()
-
-    if (NOT unity)
-      set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}Classic)
-    endif()
-    # Promote this value to the CACHE, then unset the local
-    # to prevent shadowing.
-    set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE INTERNAL
-      "Choose the type of build, options are in CMAKE_CONFIGURATION_TYPES"
-      FORCE)
-    unset(CMAKE_BUILD_TYPE)
   endif()
+  # Promote these values to the CACHE, then unset the locals
+  # to prevent shadowing.
+  set(CMAKE_C_COMPILER ${CMAKE_C_COMPILER} CACHE FILEPATH
+    "Path to a program" FORCE)
+  unset(CMAKE_C_COMPILER)
+  set(CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE FILEPATH
+    "Path to a program" FORCE)
+  unset(CMAKE_CXX_COMPILER)
+
+  if (release)
+    set(CMAKE_BUILD_TYPE Release)
+  else()
+    set(CMAKE_BUILD_TYPE Debug)
+  endif()
+
+  # ensure that the unity flags are set and exclusive
+  if (NOT DEFINED unity OR unity)
+    # Default to unity builds
+    set(unity true)
+    set(nonunity false)
+  else()
+    set(unity false)
+    set(nonunity true)
+  endif()
+
+  if (NOT unity)
+    set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}Classic)
+  endif()
+  # Promote this value to the CACHE, then unset the local
+  # to prevent shadowing.
+  set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE INTERNAL
+    "Choose the type of build, options are in CMAKE_CONFIGURATION_TYPES"
+    FORCE)
+  unset(CMAKE_BUILD_TYPE)
 
 endmacro()
 
