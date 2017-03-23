@@ -118,9 +118,6 @@ macro(parse_target)
   set(CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE FILEPATH
     "Path to a program" FORCE)
   unset(CMAKE_CXX_COMPILER)
-  set(target ${target} CACHE STRING
-    "Build target" FORCE)
-  unset(target)
 
   if (release)
     set(CMAKE_BUILD_TYPE Release)
