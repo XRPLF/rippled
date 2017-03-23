@@ -21,6 +21,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 #include <ripple/protocol/JsonFields.h>
+#include <boost/container/static_vector.hpp>
 #include <algorithm>
 
 namespace ripple {
@@ -43,8 +44,9 @@ class TransactionHistory_test : public beast::unit_test::suite
         }
 
         {
+            // test at 1 greater than the allowed non-admin limit
             Json::Value params {Json::objectValue};
-            params[jss::start] = 20000; //limited to < 10000 for non admin
+            params[jss::start] = 10001; //limited to <= 10000 for non admin
             auto const result = env.client()
                 .invoke("tx_history", params)[jss::result];
             BEAST_EXPECT(result[jss::error] == "noPermission");
@@ -57,23 +59,25 @@ class TransactionHistory_test : public beast::unit_test::suite
         testcase("Basic request");
         using namespace test::jtx;
         Env env {*this};
-        Account prev;
 
         // create enough transactions to provide some
         // history...
-        for(auto i = 0; i < 20; ++i)
+        size_t const numAccounts = 20;
+        boost::container::static_vector<Account, numAccounts> accounts;
+        for(size_t i = 0; i<numAccounts; ++i)
         {
-            Account acct {"A" + std::to_string(i)};
+            accounts.emplace_back("A" + std::to_string(i));
+            auto const& acct=accounts.back();
             env.fund(XRP(10000), acct);
             env.close();
             if(i > 0)
             {
+                auto const& prev=accounts[i-1];
                 env.trust(acct["USD"](1000), prev);
                 env(pay(acct, prev, acct["USD"](5)));
             }
             env(offer(acct, XRP(100), acct["USD"](1)));
             env.close();
-            prev = std::move(acct);
 
             // verify the latest transaction in env (offer)
             // is available in tx_history.
@@ -86,19 +90,24 @@ class TransactionHistory_test : public beast::unit_test::suite
                 return;
 
             // search for a tx in history matching the last offer
-            bool txFound;
-            for (auto tx : result[jss::txs])
-            {
-                tx.removeMember(jss::inLedger);
-                tx.removeMember(jss::ledger_index);
-                if ((txFound = (env.tx()->getJson(0) == tx)))
-                    break;
-            }
+            bool const txFound = [&] {
+                auto const toFind = env.tx()->getJson(0);
+                for (auto tx : result[jss::txs])
+                {
+                    tx.removeMember(jss::inLedger);
+                    tx.removeMember(jss::ledger_index);
+                    if (toFind == tx)
+                        return true;
+                }
+                return false;
+            }();
             BEAST_EXPECT(txFound);
         }
 
         unsigned int start = 0;
         unsigned int total = 0;
+        // also summarize the transaction types in this map
+        std::unordered_map<std::string, unsigned> typeCounts;
         while(start < 120)
         {
             Json::Value params {Json::objectValue};
@@ -110,9 +119,26 @@ class TransactionHistory_test : public beast::unit_test::suite
                 break;
             total += result[jss::txs].size();
             start += 20;
+            for (auto const& t : result[jss::txs])
+            {
+                typeCounts[t[sfTransactionType.fieldName].asString()]++;
+            }
         }
         BEAST_EXPECT(total == 117);
+        BEAST_EXPECT(typeCounts["AccountSet"] == 20);
+        BEAST_EXPECT(typeCounts["TrustSet"] == 19);
+        BEAST_EXPECT(typeCounts["Payment"] == 58);
+        BEAST_EXPECT(typeCounts["OfferCreate"] == 20);
 
+        // also, try a request with max non-admin start value
+        {
+            Json::Value params {Json::objectValue};
+            params[jss::start] = 10000; //limited to <= 10000 for non admin
+            auto const result = env.client()
+                .invoke("tx_history", params)[jss::result];
+            BEAST_EXPECT(result[jss::status] == "success");
+            BEAST_EXPECT(result[jss::index] == 10000);
+        }
     }
 
 public:
