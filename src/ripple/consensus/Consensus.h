@@ -867,15 +867,18 @@ Consensus<Derived, Traits>::timerEntry (NetClock::time_point const& now)
     {
         using namespace std::chrono;
 
+        // checkLCL may change state_, so it needs to run prior to the
+        // switch (state_) below
+        if(state_ == State::open || state_ == State::establish)
+            checkLCL ();
+
         switch (state_)
         {
         case State::open:
-            checkLCL ();
             statePreClose ();
             break;
 
         case State::establish:
-            checkLCL ();
             stateEstablish ();
             break;
 
