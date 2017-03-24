@@ -42,14 +42,7 @@ protected:
     using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
-    using BasePeer<Handler, Impl>::fail;
     using BasePeer<Handler, Impl>::strand_;
-
-    enum
-    {
-        // Max seconds without completing a message
-        timeoutSeconds = 30
-    };
 
 private:
     friend class BasePeer<Handler, Impl>;
@@ -65,6 +58,7 @@ private:
     bool close_on_timer_ = false;
     bool ping_active_ = false;
     beast::websocket::ping_data payload_;
+    error_code ec_;
 
 public:
     template<class Body, class Headers>
@@ -172,6 +166,10 @@ protected:
 
     void
     on_timer(error_code ec);
+
+    template<class String>
+    void
+    fail(error_code ec, String const& what);
 };
 
 //------------------------------------------------------------------------------
@@ -447,9 +445,10 @@ on_timer(error_code ec)
         return;
     if(! ec)
     {
-        if(! close_on_timer_ || !ping_active_)
+        if(! close_on_timer_ || ! ping_active_)
         {
             start_timer();
+            close_on_timer_ = true;
             ping_active_ = true;
             // cryptographic is probably overkill..
             beast::rngfill(payload_.begin(),
@@ -460,13 +459,32 @@ on_timer(error_code ec)
                         impl().shared_from_this(),
                             std::placeholders::_1)));
             JLOG(this->j_.trace()) <<
-                "sent pong";
+                "sent ping";
             return;
         }
         ec = boost::system::errc::make_error_code(
             boost::system::errc::timed_out);
     }
     fail(ec, "timer");
+}
+
+template<class Handler, class Impl>
+template<class String>
+void
+BaseWSPeer<Handler, Impl>::
+fail(error_code ec, String const& what)
+{
+    assert(strand_.running_in_this_thread());
+
+    cancel_timer();
+    if(! ec_ &&
+        ec != boost::asio::error::operation_aborted)
+    {
+        ec_ = ec;
+        JLOG(this->j_.trace()) <<
+            what << ": " << ec.message();
+        impl().ws_.lowest_layer().close(ec);
+    }
 }
 
 } // ripple
