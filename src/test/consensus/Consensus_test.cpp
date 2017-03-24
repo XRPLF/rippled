@@ -93,7 +93,7 @@ public:
         using namespace std::chrono;
 
         // Run two tests
-        //  1. The slow peer is participating inconsensus
+        //  1. The slow peer is participating in consensus
         //  2. The slow peer is just observing
 
         for(auto isParticipant : {true, false})
@@ -295,6 +295,43 @@ public:
 
         }
 
+        // Additional test engineered to switch LCL during the establish phase.
+        // This was added to trigger a scenario that previously crashed, in which
+        // switchLCL switched from establish to open phase, but still processed
+        // the establish phase logic.
+        {
+          using namespace csf;
+          using namespace std::chrono;
+
+          // A mostly disjoint topology
+          std::vector<UNL> unls;
+          unls.push_back({0, 1});
+          unls.push_back({2});
+          unls.push_back({3});
+          unls.push_back({0, 1, 2, 3, 4});
+          std::vector<int> membership = {0, 0, 1, 2, 3};
+
+          TrustGraph tg{unls, membership};
+
+          Sim sim(tg, topology(tg, fixed{round<milliseconds>(
+                                       0.2 * LEDGER_GRANULARITY)}));
+
+          // initial ground to set prior state
+          sim.run(1);
+          for (auto &p : sim.peers) {
+            // A long delay to acquire a missing ledger from the network
+            p.missingLedgerDelay = 2 * LEDGER_MIN_CLOSE;
+
+            // Everyone sees only their own LCL
+            p.openTxs.insert(Tx(p.id));
+          }
+          // additional rounds to generate wrongLCL and recover
+          sim.run(2);
+
+          // Check all peers recovered
+          for (auto &p : sim.peers)
+            BEAST_EXPECT(p.LCL() == sim.peers[0].LCL());
+        }
     }
 
     void
