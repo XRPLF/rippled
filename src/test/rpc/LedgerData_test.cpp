@@ -58,7 +58,6 @@ public:
         }
         env.close();
 
-        // no limit specified
         // with no limit specified, we get the max_limit if the total number of
         // accounts is greater than max, which it is here
         Json::Value jvParams;
@@ -101,7 +100,6 @@ public:
         }
         env.close();
 
-        // no limit specified
         // with no limit specified, we should get all of our fund entries
         // plus three more related to the gateway setup
         Json::Value jvParams;
@@ -189,7 +187,6 @@ public:
         }
         env.close();
 
-        // no limit specified
         // with no limit specified, we should get all of our fund entries
         // plus three more related to the gateway setup
         Json::Value jvParams;
@@ -281,7 +278,6 @@ public:
         }
         env.close();
 
-        // no limit specified
         // with no limit specified, we should get all of our fund entries
         // plus three more related to the gateway setup
         Json::Value jvParams;
