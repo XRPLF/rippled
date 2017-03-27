@@ -57,7 +57,10 @@ public:
     /// Destroy a temporary directory.
     ~temp_dir()
     {
-        boost::filesystem::remove_all (path_);
+        // use non-throwing calls in the destructor
+        boost::system::error_code ec;
+        boost::filesystem::remove_all(path_, ec);
+        // TODO: warn/notify if ec set ?
     }
 
     /// Get the native path for the temporary directory
