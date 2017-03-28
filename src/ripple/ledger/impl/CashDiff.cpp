@@ -330,6 +330,8 @@ public:
             || rhsDiffs_.hasDiff();
     }
 
+    int xrpRoundToZero () const;
+
     // Filter out differences that are small enough to be in the floating
     // point noise.
     bool rmDust ();
@@ -422,6 +424,46 @@ countKeys (detail::CashSummary const& lhs, detail::CashSummary const& rhs)
     addIn (countKeys(lhs.offerChanges,   rhs.offerChanges));
     addIn (countKeys(lhs.offerDeletions, rhs.offerDeletions));
     return ret;
+}
+
+int CashDiff::Impl::xrpRoundToZero () const
+{
+    // The case has one OfferChange that is present on both lhs_ and rhs_.
+    // That OfferChange should have XRP for TakerGets.  There should be a 1
+    // drop difference between the TakerGets of lhsDiffs_ and rhsDiffs_.
+    if (lhsDiffs_.offerChanges.size() != 1 ||
+        rhsDiffs_.offerChanges.size() != 1)
+            return 0;
+
+    if (! lhsDiffs_.offerChanges[0].second.takerGets().native() ||
+        ! rhsDiffs_.offerChanges[0].second.takerGets().native())
+            return 0;
+
+    bool const lhsBigger =
+        lhsDiffs_.offerChanges[0].second.takerGets().mantissa() >
+        rhsDiffs_.offerChanges[0].second.takerGets().mantissa();
+
+    detail::CashSummary const& bigger = lhsBigger ? lhsDiffs_ : rhsDiffs_;
+    detail::CashSummary const& smaller = lhsBigger ? rhsDiffs_ : lhsDiffs_;
+    if (bigger.offerChanges[0].second.takerGets().mantissa() -
+        smaller.offerChanges[0].second.takerGets().mantissa() != 1)
+           return 0;
+
+    // The side with the smaller XRP balance in the OfferChange should have
+    // two XRP differences.  The other side should have no XRP differences.
+    if (smaller.xrpChanges.size() != 2)
+        return 0;
+    if (! bigger.xrpChanges.empty())
+        return 0;
+
+    // There should be no other differences.
+    if (!smaller.trustChanges.empty()   || !bigger.trustChanges.empty()   ||
+        !smaller.trustDeletions.empty() || !bigger.trustDeletions.empty() ||
+        !smaller.offerDeletions.empty() || !bigger.offerDeletions.empty())
+            return 0;
+
+    // Return which side exhibited the problem.
+    return lhsBigger ? -1 : 1;
 }
 
 // Function that compares two CashDiff::OfferAmounts and returns true if
@@ -627,6 +669,11 @@ bool CashDiff::hasDiff() const
     return impl_->hasDiff();
 }
 
+int CashDiff::xrpRoundToZero() const
+{
+    return impl_->xrpRoundToZero();
+}
+
 bool CashDiff::rmDust()
 {
     return impl_->rmDust();
@@ -678,7 +725,7 @@ bool diffIsDust (STAmount const& v1, STAmount const& v2, std::uint8_t e10)
             return true;
 
         static_assert (sizeof (1ULL) == sizeof (std::uint64_t), "");
-        std::uint64_t ratio = s / (l - s);
+        std::uint64_t const ratio = s / (l - s);
         static constexpr std::uint64_t e10Lookup[]
         {
                                      1ULL,
