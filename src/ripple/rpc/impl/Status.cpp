@@ -23,6 +23,8 @@
 namespace ripple {
 namespace RPC {
 
+constexpr Status::Code Status::OK;
+
 std::string Status::codeString () const
 {
     if (!*this)

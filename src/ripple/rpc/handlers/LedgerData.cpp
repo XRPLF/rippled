@@ -22,6 +22,7 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/LedgerFormats.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/Context.h>
@@ -34,6 +35,7 @@ namespace ripple {
 //     limit:        integer, maximum number of entries
 //     marker:       opaque, resume point
 //     binary:       boolean, format
+//     type:         string // optional, defaults to all ledger node types
 //   Outputs:
 //     ledger_hash:  chosen ledger's hash
 //     ledger_index: chosen ledger's index
@@ -84,6 +86,13 @@ Json::Value doLedgerData (RPC::Context& context)
                 LedgerFill::Options::binary : 0));
     }
 
+    auto type = chooseLedgerEntryType(params);
+    if (type.first)
+    {
+        jvResult.clear();
+        type.first.inject(jvResult);
+        return jvResult;
+    }
     Json::Value& nodes = jvResult[jss::state];
 
     auto e = lpLedger->sles.end();
@@ -98,16 +107,19 @@ Json::Value doLedgerData (RPC::Context& context)
             break;
         }
 
-        if (isBinary)
+        if (type.second == ltINVALID || sle->getType () == type.second)
         {
-            Json::Value& entry = nodes.append (Json::objectValue);
-            entry[jss::data] = serializeHex(*sle);
-            entry[jss::index] = to_string(sle->key());
-        }
-        else
-        {
-            Json::Value& entry = nodes.append (sle->getJson (0));
-            entry[jss::index] = to_string(sle->key());
+            if (isBinary)
+            {
+                Json::Value& entry = nodes.append (Json::objectValue);
+                entry[jss::data] = serializeHex(*sle);
+                entry[jss::index] = to_string(sle->key());
+            }
+            else
+            {
+                Json::Value& entry = nodes.append (sle->getJson (0));
+                entry[jss::index] = to_string(sle->key());
+            }
         }
     }
 

@@ -55,6 +55,10 @@ Status LedgerHandler::check()
     bool const binary = params[jss::binary].asBool();
     bool const owner_funds = params[jss::owner_funds].asBool();
     bool const queue = params[jss::queue].asBool();
+    auto type = chooseLedgerEntryType(params);
+    if (type.first)
+        return type.first;
+    type_ = type.second;
 
     options_ = (full ? LedgerFill::full : 0)
             | (expand ? LedgerFill::expand : 0)
