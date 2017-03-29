@@ -317,7 +317,7 @@ escrow (AccountID const& source, std::uint32_t seq)
 {
     sha512_half_hasher h;
     using beast::hash_append;
-    hash_append(h, spaceEscrow);
+    hash_append(h, std::uint16_t(spaceEscrow));
     hash_append(h, source);
     hash_append(h, seq);
     return { ltESCROW, static_cast<uint256>(h) };
@@ -328,7 +328,7 @@ payChan (AccountID const& source, AccountID const& dst, std::uint32_t seq)
 {
     sha512_half_hasher h;
     using beast::hash_append;
-    hash_append(h, spaceXRPUChannel);
+    hash_append(h, std::uint16_t(spaceXRPUChannel));
     hash_append(h, source);
     hash_append(h, dst);
     hash_append(h, seq);
