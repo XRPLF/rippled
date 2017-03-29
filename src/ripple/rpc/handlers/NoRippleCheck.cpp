@@ -70,7 +70,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
         if (role == "gateway")
             roleGateway = true;
         else if (role != "user")
-        return RPC::invalid_field_message ("role");
+        return RPC::invalid_field_error ("role");
     }
 
     unsigned int limit;
@@ -96,7 +96,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
     if (auto jv = RPC::accountFromString (accountID, strIdent))
     {
         for (auto it (jv.begin ()); it != jv.end (); ++it)
-            result[it.memberName ()] = it.key ();
+            result[it.memberName ()] = *it;
 
         return result;
     }
