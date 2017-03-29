@@ -159,6 +159,7 @@ JSS ( error );                      // out: error
 JSS ( error_code );                 // out: error
 JSS ( error_exception );            // out: Submit
 JSS ( error_message );              // out: error
+JSS ( escrow );                     // in: LedgerEntry
 JSS ( expand );                     // in: handler/Ledger
 JSS ( expected_ledger_size );       // out: TxQ
 JSS ( expiration );                 // out: AccountOffers, AccountChannels
@@ -314,6 +315,7 @@ JSS ( password );                   // in: Subscribe
 JSS ( paths );                      // in: RipplePathFind
 JSS ( paths_canonical );            // out: RipplePathFind
 JSS ( paths_computed );             // out: PathRequest, RipplePathFind
+JSS ( payment_channel );            // in: LedgerEntry
 JSS ( peer );                       // in: AccountLines
 JSS ( peer_authorized );            // out: AccountLines
 JSS ( peer_id );                    // out: RCLCxPeerPos
