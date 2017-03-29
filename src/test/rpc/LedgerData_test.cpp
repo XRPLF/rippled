@@ -266,8 +266,10 @@ public:
     {
         // Put a bunch of different LedgerEntryTypes into a ledger
         using namespace test::jtx;
+        using namespace std::chrono;
         Env env { *this, envconfig(validator, ""),
-                   features(featureMultiSign, featureTickets) };
+                   features(featureMultiSign, featureTickets,
+                           featureEscrow, featurePayChan) };
         Account const gw { "gateway" };
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
@@ -290,109 +292,126 @@ public:
             if (!majorities.empty())
                 break;
         }
-        env(signers(Account{"bob0"}, 1, {{Account{"bob1"}, 1}, {Account{"bob2"}, 1}}));
+        env(signers(Account{"bob0"}, 1,
+                {{Account{"bob1"}, 1}, {Account{"bob2"}, 1}}));
         env(ticket::create(env.master));
+
+        {
+            Json::Value jv;
+            jv[jss::TransactionType] = "EscrowCreate";
+            jv[jss::Flags] = tfUniversal;
+            jv[jss::Account] = Account{"bob5"}.human();
+            jv[jss::Destination] = Account{"bob6"}.human();
+            jv[jss::Amount] = XRP(50).value().getJson(0);
+            jv[sfFinishAfter.fieldName] =
+                NetClock::time_point{env.now() + 10s}
+                    .time_since_epoch().count();
+            env(jv);
+        }
+
+        {
+            Json::Value jv;
+            jv[jss::TransactionType] = "PaymentChannelCreate";
+            jv[jss::Flags] = tfUniversal;
+            jv[jss::Account] = Account{"bob6"}.human ();
+            jv[jss::Destination] = Account{"bob7"}.human ();
+            jv[jss::Amount] = XRP(100).value().getJson (0);
+            jv[jss::SettleDelay] = NetClock::duration{10s}.count();
+            jv[sfPublicKey.fieldName] = strHex (Account{"bob6"}.pk().slice ());
+            jv[sfCancelAfter.fieldName] =
+                NetClock::time_point{env.now() + 300s}
+                    .time_since_epoch().count();
+            env(jv);
+        }
+
         env.close();
 
+
         // Now fetch each type
+        auto makeRequest = [&env](Json::StaticString t)
+        {
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::type] = t;
+            return env.rpc ( "json", "ledger_data",
+                boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        };
 
         {  // jvParams[jss::type] = "account";
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::type] = "account";
-        auto const jrr = env.rpc ( "json", "ledger_data",
-            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        auto const jrr = makeRequest(jss::account);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 12) );
         for (auto const& j : jrr[jss::state])
             BEAST_EXPECT( j["LedgerEntryType"] == "AccountRoot" );
         }
 
         {  // jvParams[jss::type] = "amendments";
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::type] = "amendments";
-        auto const jrr = env.rpc ( "json", "ledger_data",
-            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        auto const jrr = makeRequest(jss::amendments);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
             BEAST_EXPECT( j["LedgerEntryType"] == "Amendments" );
         }
 
         {  // jvParams[jss::type] = "directory";
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::type] = "directory";
-        auto const jrr = env.rpc ( "json", "ledger_data",
-            boost::lexical_cast<std::string>(jvParams)) [jss::result];
-        BEAST_EXPECT( checkArraySize(jrr[jss::state], 5) );
+        auto const jrr = makeRequest(jss::directory);
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 7) );
         for (auto const& j : jrr[jss::state])
             BEAST_EXPECT( j["LedgerEntryType"] == "DirectoryNode" );
         }
 
         {  // jvParams[jss::type] = "fee";
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::type] = "fee";
-        auto const jrr = env.rpc ( "json", "ledger_data",
-            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        auto const jrr = makeRequest(jss::fee);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
             BEAST_EXPECT( j["LedgerEntryType"] == "FeeSettings" );
         }
 
         {  // jvParams[jss::type] = "hashes";
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::type] = "hashes";
-        auto const jrr = env.rpc ( "json", "ledger_data",
-            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        auto const jrr = makeRequest(jss::hashes);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 2) );
         for (auto const& j : jrr[jss::state])
             BEAST_EXPECT( j["LedgerEntryType"] == "LedgerHashes" );
         }
 
         {  // jvParams[jss::type] = "offer";
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::type] = "offer";
-        auto const jrr = env.rpc ( "json", "ledger_data",
-            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        auto const jrr = makeRequest(jss::offer);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
             BEAST_EXPECT( j["LedgerEntryType"] == "Offer" );
         }
 
         {  // jvParams[jss::type] = "signer_list";
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::type] = "signer_list";
-        auto const jrr = env.rpc ( "json", "ledger_data",
-            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        auto const jrr = makeRequest(jss::signer_list);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
             BEAST_EXPECT( j["LedgerEntryType"] == "SignerList" );
         }
 
         {  // jvParams[jss::type] = "state";
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::type] = "state";
-        auto const jrr = env.rpc ( "json", "ledger_data",
-            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        auto const jrr = makeRequest(jss::state);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
             BEAST_EXPECT( j["LedgerEntryType"] == "RippleState" );
         }
 
         {  // jvParams[jss::type] = "ticket";
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::type] = "ticket";
-        auto const jrr = env.rpc ( "json", "ledger_data",
-            boost::lexical_cast<std::string>(jvParams)) [jss::result];
+        auto const jrr = makeRequest(jss::ticket);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
             BEAST_EXPECT( j["LedgerEntryType"] == "Ticket" );
+        }
+
+        {  // jvParams[jss::type] = "escrow";
+        auto const jrr = makeRequest(jss::escrow);
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
+        for (auto const& j : jrr[jss::state])
+            BEAST_EXPECT( j["LedgerEntryType"] == "Escrow" );
+        }
+
+        {  // jvParams[jss::type] = "payment_channel";
+        auto const jrr = makeRequest(jss::payment_channel);
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
+        for (auto const& j : jrr[jss::state])
+            BEAST_EXPECT( j["LedgerEntryType"] == "PayChannel" );
         }
 
         {  // jvParams[jss::type] = "misspelling";
