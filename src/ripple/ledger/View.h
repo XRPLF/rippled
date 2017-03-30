@@ -335,19 +335,19 @@ transferXRP (ApplyView& view,
             STAmount const& amount,
                 beast::Journal j);
 
-NetClock::time_point const& amendmentRIPD1141SoTime ();
-bool amendmentRIPD1141 (NetClock::time_point const closeTime);
+NetClock::time_point const& fix1141Time ();
+bool fix1141 (NetClock::time_point const closeTime);
 
-NetClock::time_point const& amendmentRIPD1274SoTime ();
-bool amendmentRIPD1274 (NetClock::time_point const closeTime);
+NetClock::time_point const& fix1274Time ();
+bool fix1274 (NetClock::time_point const closeTime);
 
-NetClock::time_point const& amendmentRIPD1298SoTime ();
-bool amendmentRIPD1298 (NetClock::time_point const closeTime);
+NetClock::time_point const& fix1298Time ();
+bool fix1298 (NetClock::time_point const closeTime);
 
-NetClock::time_point const& amendmentRIPD1443SoTime ();
-bool amendmentRIPD1443 (NetClock::time_point const closeTime);
+NetClock::time_point const& fix1443Time ();
+bool fix1443 (NetClock::time_point const closeTime);
 
-NetClock::time_point const& fix1449SoTime ();
+NetClock::time_point const& fix1449Time ();
 bool fix1449 (NetClock::time_point const closeTime);
 
 } // ripple

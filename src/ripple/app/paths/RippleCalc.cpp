@@ -328,7 +328,7 @@ TER RippleCalc::rippleCalculate (detail::FlowDebugInfo* flowDebugInfo)
     boost::container::flat_set<uint256> unfundedOffersFromBestPaths;
 
     int iPass = 0;
-    auto const dcSwitch = amendmentRIPD1141(view.info().parentCloseTime);
+    auto const dcSwitch = fix1141(view.info().parentCloseTime);
 
     while (resultCode == temUNCERTAIN)
     {

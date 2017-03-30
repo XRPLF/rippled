@@ -418,7 +418,7 @@ BookStep<TIn, TOut>::revImp (
             // subtracting them leaves a result of zero. This can cause the check for
             // (stpAmt.out > remainingOut) to incorrectly think an offer will be funded
             // after subtracting remainingIn.
-            if (amendmentRIPD1298(sb.parentCloseTime()))
+            if (fix1298(sb.parentCloseTime()))
                 return offer.fully_consumed();
             else
                 return false;
@@ -575,7 +575,7 @@ BookStep<TIn, TOut>::fwdImp (
         // subtracting them leaves a result of zero. This can cause the check for
         // (stpAmt.in > remainingIn) to incorrectly think an offer will be funded
         // after subtracting remainingIn.
-        if (amendmentRIPD1298(sb.parentCloseTime()))
+        if (fix1298(sb.parentCloseTime()))
             processMore = processMore || offer.fully_consumed();
 
         return processMore;
@@ -692,7 +692,7 @@ BookStep<TIn, TOut>::check(StrandContext const& ctx) const
         return temBAD_PATH_LOOP;
     }
 
-    if (amendmentRIPD1443(ctx.view.info().parentCloseTime))
+    if (fix1443(ctx.view.info().parentCloseTime))
     {
         if (ctx.prevStep)
         {

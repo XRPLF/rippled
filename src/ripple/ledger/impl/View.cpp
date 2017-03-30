@@ -31,7 +31,7 @@
 
 namespace ripple {
 
-NetClock::time_point const& amendmentRIPD1141SoTime ()
+NetClock::time_point const& fix1141Time ()
 {
     using namespace std::chrono_literals;
     // Fri July 1, 2016 10:00:00am PDT
@@ -39,12 +39,12 @@ NetClock::time_point const& amendmentRIPD1141SoTime ()
     return soTime;
 }
 
-bool amendmentRIPD1141 (NetClock::time_point const closeTime)
+bool fix1141 (NetClock::time_point const closeTime)
 {
-    return closeTime > amendmentRIPD1141SoTime();
+    return closeTime > fix1141Time();
 }
 
-NetClock::time_point const& amendmentRIPD1274SoTime ()
+NetClock::time_point const& fix1274Time ()
 {
     using namespace std::chrono_literals;
     // Fri Sep 30, 2016 10:00:00am PDT
@@ -53,12 +53,12 @@ NetClock::time_point const& amendmentRIPD1274SoTime ()
     return soTime;
 }
 
-bool amendmentRIPD1274 (NetClock::time_point const closeTime)
+bool fix1274 (NetClock::time_point const closeTime)
 {
-    return closeTime > amendmentRIPD1274SoTime();
+    return closeTime > fix1274Time();
 }
 
-NetClock::time_point const& amendmentRIPD1298SoTime ()
+NetClock::time_point const& fix1298Time ()
 {
     using namespace std::chrono_literals;
     // Wed Dec 21, 2016 10:00:00am PST
@@ -67,12 +67,12 @@ NetClock::time_point const& amendmentRIPD1298SoTime ()
     return soTime;
 }
 
-bool amendmentRIPD1298 (NetClock::time_point const closeTime)
+bool fix1298 (NetClock::time_point const closeTime)
 {
-    return closeTime > amendmentRIPD1298SoTime();
+    return closeTime > fix1298Time();
 }
 
-NetClock::time_point const& amendmentRIPD1443SoTime ()
+NetClock::time_point const& fix1443Time ()
 {
     using namespace std::chrono_literals;
     // Sat Mar 11, 2017 05:00:00pm PST
@@ -81,12 +81,12 @@ NetClock::time_point const& amendmentRIPD1443SoTime ()
     return soTime;
 }
 
-bool amendmentRIPD1443 (NetClock::time_point const closeTime)
+bool fix1443 (NetClock::time_point const closeTime)
 {
-    return closeTime > amendmentRIPD1443SoTime();
+    return closeTime > fix1443Time();
 }
 
-NetClock::time_point const& fix1449SoTime ()
+NetClock::time_point const& fix1449Time ()
 {
     using namespace std::chrono_literals;
     // Thurs, Mar 30, 2017 01:00:00pm PDT
@@ -97,7 +97,7 @@ NetClock::time_point const& fix1449SoTime ()
 
 bool fix1449 (NetClock::time_point const closeTime)
 {
-    return closeTime > fix1449SoTime();
+    return closeTime > fix1449Time();
 }
 
 // VFALCO NOTE A copy of the other one for now
@@ -177,7 +177,7 @@ accountHolds (ReadView const& view,
     if (isXRP(currency))
     {
         // XRP: return balance minus reserve
-        if (amendmentRIPD1141 (view.info ().parentCloseTime))
+        if (fix1141 (view.info ().parentCloseTime))
         {
             auto const sle = view.read(
                 keylet::account(account));
@@ -1456,7 +1456,7 @@ rippleSend (ApplyView& view,
 
     // Calculate the amount to transfer accounting
     // for any transfer fees:
-    if (!amendmentRIPD1141 (view.info ().parentCloseTime))
+    if (!fix1141 (view.info ().parentCloseTime))
     {
         STAmount const saTransitFee = rippleTransferFee (
             view, uSenderID, uReceiverID, issuer, saAmount, j);
@@ -1508,7 +1508,7 @@ accountSend (ApplyView& view,
         return rippleSend (view, uSenderID, uReceiverID, saAmount, saActual, j);
     }
 
-    auto const fv2Switch = amendmentRIPD1141 (view.info ().parentCloseTime);
+    auto const fv2Switch = fix1141 (view.info ().parentCloseTime);
     if (!fv2Switch)
     {
         auto const dummyBalance = saAmount.zeroed();

@@ -180,7 +180,7 @@ PaymentSandbox::balanceHook (AccountID const& account,
     */
 
     auto const currency = amount.getCurrency ();
-    auto const switchover = amendmentRIPD1141 (info ().parentCloseTime);
+    auto const switchover = fix1141 (info ().parentCloseTime);
 
     auto adjustedAmt = amount;
     if (switchover)
@@ -207,7 +207,7 @@ PaymentSandbox::balanceHook (AccountID const& account,
             // calculates (but always less than the actual balance).
             adjustedAmt = std::min(adjustedAmt, minBal);
         }
-        if (amendmentRIPD1274 (info ().parentCloseTime))
+        if (fix1274 (info ().parentCloseTime))
             adjustedAmt.setIssuer(amount.getIssuer());
     }
     else

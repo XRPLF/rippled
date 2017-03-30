@@ -27,7 +27,7 @@ namespace path {
 
 TER PathCursor::advanceNode (STAmount const& amount, bool reverse, bool callerHasLiquidity) const
 {
-    bool const multi = amendmentRIPD1141 (view ().info ().parentCloseTime)
+    bool const multi = fix1141 (view ().info ().parentCloseTime)
         ? (multiQuality_ || (!callerHasLiquidity && amount == zero))
         : (multiQuality_ || amount == zero);
 
