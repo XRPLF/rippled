@@ -347,6 +347,9 @@ bool amendmentRIPD1298 (NetClock::time_point const closeTime);
 NetClock::time_point const& amendmentRIPD1443SoTime ();
 bool amendmentRIPD1443 (NetClock::time_point const closeTime);
 
+NetClock::time_point const& fix1449SoTime ();
+bool fix1449 (NetClock::time_point const closeTime);
+
 } // ripple
 
 #endif
