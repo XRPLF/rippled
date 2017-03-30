@@ -647,7 +647,7 @@ struct PayStrand_test : public beast::unit_test::suite
         ExistingElementPool eep;
         Env env(*this, features(featureToStrandV2));
 
-        auto const closeTime = amendmentRIPD1298SoTime() +
+        auto const closeTime = fix1298Time() +
             100 * env.closed()->info().closeTimeResolution;
         env.close(closeTime);
         eep.setupEnv(env, /*numAcc*/ 9, /*numCur*/ 6, boost::none);

@@ -698,7 +698,7 @@ struct Flow_test : public beast::unit_test::suite
 
         Env env (*this, features (fs));
 
-        auto const closeTime = amendmentRIPD1141SoTime() +
+        auto const closeTime = fix1141Time() +
                 100 * env.closed ()->info ().closeTimeResolution;
         env.close (closeTime);
 
@@ -748,7 +748,7 @@ struct Flow_test : public beast::unit_test::suite
         auto const timeDelta = Env{*this}.closed ()->info ().closeTimeResolution;
 
         for(auto const& d: {-timeDelta*100, +timeDelta*100}){
-            auto const closeTime = amendmentRIPD1141SoTime () + d;
+            auto const closeTime = fix1141Time () + d;
             Env env (*this);
             env.close (closeTime);
 
@@ -760,7 +760,7 @@ struct Flow_test : public beast::unit_test::suite
             env (offer (bob, XRP (100), USD (50)));
 
             auto expectedResult =
-                closeTime < amendmentRIPD1141SoTime () ? tecPATH_DRY : tesSUCCESS;
+                closeTime < fix1141Time () ? tecPATH_DRY : tesSUCCESS;
             env (pay (alice, carol, USD (100)), path (~USD), sendmax (XRP (100)),
                 txflags (tfNoRippleDirect | tfPartialPayment | tfLimitQuality),
                 ter (expectedResult));
@@ -812,7 +812,7 @@ struct Flow_test : public beast::unit_test::suite
         Env env (*this, features (fs));
 
         auto const closeTime =
-            amendmentRIPD1141SoTime () + 100 * env.closed ()->info ().closeTimeResolution;
+            fix1141Time () + 100 * env.closed ()->info ().closeTimeResolution;
         env.close (closeTime);
 
         env.fund (XRP (1000000), gw1, gw2);
@@ -886,7 +886,7 @@ struct Flow_test : public beast::unit_test::suite
         Env env (*this, features (fs));
 
         auto const closeTime =
-            amendmentRIPD1141SoTime () + 100 * env.closed ()->info ().closeTimeResolution;
+            fix1141Time () + 100 * env.closed ()->info ().closeTimeResolution;
         env.close (closeTime);
 
         env.fund (XRP (1000000), gw1, gw2);
@@ -954,7 +954,7 @@ struct Flow_test : public beast::unit_test::suite
         Env env(*this, features(fs));
 
         // Need new behavior from `accountHolds`
-        auto const closeTime = amendmentRIPD1141SoTime() +
+        auto const closeTime = fix1141Time() +
             env.closed()->info().closeTimeResolution;
         env.close(closeTime);
 
@@ -983,7 +983,7 @@ struct Flow_test : public beast::unit_test::suite
         {
             // Test reverse
             Env env(*this, features(fs));
-            auto closeTime = amendmentRIPD1298SoTime();
+            auto closeTime = fix1298Time();
             if (withFix)
                 closeTime += env.closed()->info().closeTimeResolution;
             else
@@ -1015,7 +1015,7 @@ struct Flow_test : public beast::unit_test::suite
         {
             // Test forward
             Env env(*this, features(fs));
-            auto closeTime = amendmentRIPD1298SoTime();
+            auto closeTime = fix1298Time();
             if (withFix)
                 closeTime += env.closed()->info().closeTimeResolution;
             else
@@ -1064,7 +1064,7 @@ struct Flow_test : public beast::unit_test::suite
 
         env.fund(XRP(10000), alice, bob, gw);
         // Need to be past this time to see the bug
-        env.close(amendmentRIPD1274SoTime() +
+        env.close(fix1274Time() +
             100 * env.closed()->info().closeTimeResolution);
         env(trust(alice, USD(100)));
         env.close();
@@ -1113,7 +1113,7 @@ struct Flow_test : public beast::unit_test::suite
         Env env(*this, features(featureFlow));
         auto const timeDelta = env.closed ()->info ().closeTimeResolution;
         auto const d = withFix ? timeDelta*100 : -timeDelta*100;
-        auto closeTime = amendmentRIPD1443SoTime() + d;
+        auto closeTime = fix1443Time() + d;
         env.close(closeTime);
 
         auto const alice = Account("alice");

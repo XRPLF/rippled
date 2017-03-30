@@ -281,12 +281,12 @@ class PaymentSandbox_test : public beast::unit_test::suite
         for (auto timeDelta : {-env.closed ()->info ().closeTimeResolution,
                  env.closed ()->info ().closeTimeResolution})
         {
-            auto const closeTime = amendmentRIPD1141SoTime () + timeDelta;
+            auto const closeTime = fix1141Time () + timeDelta;
             env.close (closeTime);
             ApplyViewImpl av (&*env.current (), tapNONE);
             PaymentSandbox pv (&av);
             pv.creditHook (gw, alice, hugeAmt, -tinyAmt);
-            if (closeTime > amendmentRIPD1141SoTime ())
+            if (closeTime > fix1141Time ())
                 BEAST_EXPECT(pv.balanceHook (alice, gw, hugeAmt) == tinyAmt);
             else
                 BEAST_EXPECT(pv.balanceHook (alice, gw, hugeAmt) != tinyAmt);
@@ -317,7 +317,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         Account const alice ("alice");
         env.fund (reserve(env, 1), alice);
 
-        auto const closeTime = amendmentRIPD1141SoTime () +
+        auto const closeTime = fix1141Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
         env.close (closeTime);
         ApplyViewImpl av (&*env.current (), tapNONE);
