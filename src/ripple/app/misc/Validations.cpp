@@ -21,7 +21,7 @@
 #include <ripple/app/misc/Validations.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/consensus/LedgerTiming.h>
+#include <ripple/consensus/ConsensusParms.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/ValidatorList.h>
@@ -206,12 +206,12 @@ private:
 
         auto const now = app_.timeKeeper().closeTime();
         auto const signTime = val->getSignTime();
-
+        auto const p = ConsensusParms{};
         return
-            (signTime > (now - VALIDATION_VALID_EARLY)) &&
-            (signTime < (now + VALIDATION_VALID_WALL)) &&
+            (signTime > (now - p.validationVALID_EARLY)) &&
+            (signTime < (now + p.validationVALID_WALL)) &&
             ((val->getSeenTime() == NetClock::time_point{}) ||
-                (val->getSeenTime() < (now + VALIDATION_VALID_LOCAL)));
+                (val->getSeenTime() < (now + p.validationVALID_LOCAL)));
     }
 
     std::size_t

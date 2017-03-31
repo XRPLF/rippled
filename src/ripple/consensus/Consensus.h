@@ -24,10 +24,78 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/consensus/ConsensusProposal.h>
+#include <ripple/consensus/ConsensusParms.h>
+#include <ripple/consensus/LedgerTiming.h>
 #include <ripple/consensus/DisputedTx.h>
 #include <ripple/json/json_writer.h>
 
 namespace ripple {
+
+
+/** Determines whether the current ledger should close at this time.
+
+    This function should be called when a ledger is open and there is no close
+    in progress, or when a transaction is received and no close is in progress.
+
+    @param anyTransactions indicates whether any transactions have been received
+    @param prevProposers proposers in the last closing
+    @param proposersClosed proposers who have currently closed this ledger
+    @param proposersValidated proposers who have validated the last closed
+                              ledger
+    @param prevRoundTime time for the previous ledger to reach consensus
+    @param timeSincePrevClose  time since the previous ledger's (possibly rounded)
+                        close time
+    @param openTime     duration this ledger has been open
+    @param idleInterval the network's desired idle interval
+    @param parms        Consensus constant parameters
+    @param j            journal for logging
+*/
+bool
+shouldCloseLedger(
+    bool anyTransactions,
+    std::size_t prevProposers,
+    std::size_t proposersClosed,
+    std::size_t proposersValidated,
+    std::chrono::milliseconds prevRoundTime,
+    std::chrono::milliseconds timeSincePrevClose,
+    std::chrono::milliseconds openTime,
+    std::chrono::milliseconds idleInterval,
+    ConsensusParms const & parms,
+    beast::Journal j);
+
+
+/** Whether we have or don't have a consensus */
+enum class ConsensusState {
+    No,       //!< We do not have consensus
+    MovedOn,  //!< The network has consensus without us
+    Yes       //!< We have consensus along with the network
+};
+
+/** Determine whether the network reached consensus and whether we joined.
+
+    @param prevProposers proposers in the last closing (not including us)
+    @param currentProposers proposers in this closing so far (not including us)
+    @param currentAgree proposers who agree with us
+    @param currentFinished proposers who have validated a ledger after this one
+    @param previousAgreeTime how long, in milliseconds, it took to agree on the
+                             last ledger
+    @param currentAgreeTime how long, in milliseconds, we've been trying to
+                            agree
+    @param parms            Consensus constant parameters
+    @param proposing        whether we should count ourselves
+    @param j                journal for logging
+*/
+ConsensusState
+checkConsensus(
+    std::size_t prevProposers,
+    std::size_t currentProposers,
+    std::size_t currentAgree,
+    std::size_t currentFinished,
+    std::chrono::milliseconds previousAgreeTime,
+    std::chrono::milliseconds currentAgreeTime,
+    ConsensusParms const & parms,
+    bool proposing,
+    beast::Journal j);
 
 /** Generic implementation of consensus algorithm.
 
@@ -351,9 +419,10 @@ public:
     /** Constructor.
 
         @param clock The clock used to internally sample consensus progress
+        @param p Consensus parameters to use
         @param j The journal to log debug output
     */
-    Consensus(clock_type const& clock, beast::Journal j);
+    Consensus(clock_type const& clock, ConsensusParms const & p, beast::Journal j);
 
     /** Kick-off the next round of consensus.
 
@@ -474,6 +543,13 @@ public:
     Json::Value
     getJson(bool full) const;
 
+    /** Get the consensus parameters
+    */
+    ConsensusParms const &
+    parms() const
+    {
+        return parms_;
+    }
 protected:
 
     // Prevent deleting derived instance through base pointer
@@ -584,7 +660,7 @@ private:
     NetClock::duration closeResolution_ = ledgerDefaultTimeResolution;
 
     // Time it took for the last consensus round to converge
-    std::chrono::milliseconds prevRoundTime_ = LEDGER_IDLE_INTERVAL;
+    std::chrono::milliseconds prevRoundTime_;
 
     //-------------------------------------------------------------------------
     // Network time measurements of consensus progress
@@ -618,6 +694,9 @@ private:
     // nodes that have bowed out of this consensus process
     hash_set<NodeID_t> deadNodes_;
 
+    // Parameters that control consensus algorithm
+    ConsensusParms const parms_;
+
     // Journal for debugging
     beast::Journal j_;
 };
@@ -625,9 +704,12 @@ private:
 template <class Derived, class Traits>
 Consensus<Derived, Traits>::Consensus(
     clock_type const& clock,
+    ConsensusParms const & p,
     beast::Journal journal)
-    : lock_(std::make_unique<std::recursive_mutex>())
-    , clock_(clock)
+    : lock_{std::make_unique<std::recursive_mutex>()}
+    , clock_{clock}
+    , prevRoundTime_{p.ledgerIDLE_INTERVAL}
+    , parms_(p)
     , j_{journal}
 {
     JLOG(j_.debug()) << "Creating consensus object";
@@ -1104,9 +1186,9 @@ Consensus<Derived, Traits>::phaseOpen()
             sinceClose = -duration_cast<milliseconds>(lastCloseTime - now_);
     }
 
-    auto const idleInterval = std::max<seconds>(
-        LEDGER_IDLE_INTERVAL,
-        duration_cast<seconds>(2 * previousLedger_.closeTimeResolution()));
+    auto const idleInterval = std::max<milliseconds>(
+        parms_.ledgerIDLE_INTERVAL,
+        2 * previousLedger_.closeTimeResolution());
 
     // Decide if we should close the ledger
     if (shouldCloseLedger(
@@ -1118,6 +1200,7 @@ Consensus<Derived, Traits>::phaseOpen()
             sinceClose,
             openTime_.read(),
             idleInterval,
+            parms_,
             j_))
     {
         closeLedger();
@@ -1135,10 +1218,10 @@ Consensus<Derived, Traits>::phaseEstablish()
     result_->roundTime.tick(clock_.now());
 
     convergePercent_ = result_->roundTime.read() * 100 /
-        std::max<milliseconds>(prevRoundTime_, AV_MIN_CONSENSUS_TIME);
+        std::max<milliseconds>(prevRoundTime_, parms_.avMIN_CONSENSUS_TIME);
 
     // Give everyone a chance to take an initial position
-    if (result_->roundTime.read() < LEDGER_MIN_CONSENSUS)
+    if (result_->roundTime.read() < parms_.ledgerMIN_CONSENSUS)
         return;
 
     updateOurPositions();
@@ -1222,8 +1305,8 @@ Consensus<Derived, Traits>::updateOurPositions()
     assert(result_);
 
     // Compute a cutoff time
-    auto const peerCutoff = now_ - PROPOSE_FRESHNESS;
-    auto const ourCutoff = now_ - PROPOSE_INTERVAL;
+    auto const peerCutoff = now_ - parms_.proposeFRESHNESS;
+    auto const ourCutoff = now_ - parms_.proposeINTERVAL;
 
     // Verify freshness of peer positions and compute close times
     std::map<NetClock::time_point, int> effCloseTimes;
@@ -1263,7 +1346,7 @@ Consensus<Derived, Traits>::updateOurPositions()
             // Because the threshold for inclusion increases,
             //  time can change our position on a dispute
             if (it.second.updateVote(
-                    convergePercent_, (mode_ == Mode::proposing)))
+                    convergePercent_, (mode_ == Mode::proposing), parms_))
             {
                 if (!mutableSet)
                     mutableSet.emplace(result_->set);
@@ -1301,14 +1384,14 @@ Consensus<Derived, Traits>::updateOurPositions()
     {
         int neededWeight;
 
-        if (convergePercent_ < AV_MID_CONSENSUS_TIME)
-            neededWeight = AV_INIT_CONSENSUS_PCT;
-        else if (convergePercent_ < AV_LATE_CONSENSUS_TIME)
-            neededWeight = AV_MID_CONSENSUS_PCT;
-        else if (convergePercent_ < AV_STUCK_CONSENSUS_TIME)
-            neededWeight = AV_LATE_CONSENSUS_PCT;
+        if (convergePercent_ < parms_.avMID_CONSENSUS_TIME)
+            neededWeight = parms_.avINIT_CONSENSUS_PCT;
+        else if (convergePercent_ < parms_.avLATE_CONSENSUS_TIME)
+            neededWeight = parms_.avMID_CONSENSUS_PCT;
+        else if (convergePercent_ < parms_.avSTUCK_CONSENSUS_TIME)
+            neededWeight = parms_.avLATE_CONSENSUS_PCT;
         else
-            neededWeight = AV_STUCK_CONSENSUS_PCT;
+            neededWeight = parms_.avSTUCK_CONSENSUS_PCT;
 
         int participants = peerProposals_.size();
         if (mode_ == Mode::proposing)
@@ -1325,7 +1408,7 @@ Consensus<Derived, Traits>::updateOurPositions()
 
         // Threshold to declare consensus
         int const threshConsensus =
-            participantsNeeded(participants, AV_CT_CONSENSUS_PCT);
+            participantsNeeded(participants, parms_.avCT_CONSENSUS_PCT);
 
         JLOG(j_.info()) << "Proposers:" << peerProposals_.size()
                         << " nw:" << neededWeight << " thrV:" << threshVote
@@ -1436,6 +1519,7 @@ Consensus<Derived, Traits>::haveConsensus()
         currentFinished,
         prevRoundTime_,
         result_->roundTime.read(),
+        parms_,
         mode_ == Mode::proposing,
         j_);
 

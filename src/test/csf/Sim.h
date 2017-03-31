@@ -47,14 +47,15 @@ public:
 
         @param g The trust graph between peers.
         @param top The network topology between peers.
+        @param parms Consensus parameters to use in the simulation
 
     */
     template <class Topology>
-    Sim(TrustGraph const& g, Topology const& top)
+    Sim(ConsensusParms parms, TrustGraph const& g, Topology const& top)
     {
         peers.reserve(g.numPeers());
         for (int i = 0; i < g.numPeers(); ++i)
-            peers.emplace_back(i, net, g.unl(i));
+            peers.emplace_back(i, net, g.unl(i), parms);
 
         for (int i = 0; i < peers.size(); ++i)
         {
