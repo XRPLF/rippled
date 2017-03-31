@@ -1827,16 +1827,18 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\conditions\impl\utils.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\consensus\Consensus.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\consensus\Consensus.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\ConsensusParms.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\consensus\ConsensusProposal.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\consensus\DisputedTx.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\consensus\LedgerTiming.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\consensus\LedgerTiming.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\consensus\Validations.h">

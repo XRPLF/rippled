@@ -20,6 +20,7 @@
 #define RIPPLE_TEST_CSF_LEDGER_H_INCLUDED
 
 #include <ripple/basics/chrono.h>
+#include <ripple/consensus/LedgerTiming.h>
 #include <test/csf/Tx.h>
 
 namespace ripple {
