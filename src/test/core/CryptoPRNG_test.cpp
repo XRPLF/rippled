@@ -62,7 +62,7 @@ class CryptoPRNG_test : public beast::unit_test::suite
             auto& engine = crypto_prng();
             engine.save_state(stateFile.string());
 
-            size_t size_before_load, size_after_load;
+            size_t size_before_load;
             std::string data_before_load, data_after_load;
 
             {
@@ -88,7 +88,7 @@ class CryptoPRNG_test : public beast::unit_test::suite
 
             {
                 boost::system::error_code ec;
-                auto size_after_load = file_size(stateFile, ec);
+                size_t size_after_load = file_size(stateFile, ec);
                 if(! BEAST_EXPECTS(!ec, ec.message()))
                     return;
                 BEAST_EXPECT(size_after_load == size_before_load);
@@ -103,7 +103,7 @@ class CryptoPRNG_test : public beast::unit_test::suite
             }
 
             // verify the loaded engine works
-            auto rand_val = engine();
+            engine();
             pass();
         }
         catch(std::exception&)
