@@ -1157,11 +1157,55 @@ struct Flow_test : public beast::unit_test::suite
         pass();
     }
 
+    void
+    testRIPD1449(bool withFix)
+    {
+        testcase("ripd1449");
+
+        using namespace jtx;
+        Env env(*this, features(featureFlow));
+        auto const timeDelta = env.closed ()->info ().closeTimeResolution;
+        auto const d = withFix ? timeDelta*100 : -timeDelta*100;
+        auto closeTime = fix1449Time() + d;
+        env.close(closeTime);
+
+        // pay alice -> xrp -> USD/bob -> bob -> gw -> alice
+        // set no ripple on bob's side of the bob/gw trust line
+        // carol has the bob/USD and makes an offer, bob has USD/gw
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+
+        env.fund(XRP(100000000), alice, bob, carol, gw);
+        env.trust(USD(10000), alice, carol);
+        env(trust(bob, USD(10000), tfSetNoRipple));
+        env.trust(USD(10000), bob);
+        env.trust(bob["USD"](10000), carol);
+        env.close();
+
+        env(pay(bob, carol, bob["USD"](1000)));
+        env(pay(gw, bob, USD(1000)));
+        env.close();
+
+        env(offer(carol, XRP(1), bob["USD"](1000)));
+        env.close();
+
+        env(pay(alice, alice, USD(1000)), path(~bob["USD"], bob, gw),
+            sendmax(XRP(1)), txflags(tfNoRippleDirect),
+            ter(withFix ? tecPATH_DRY : tesSUCCESS));
+        env.close();
+    }
+
     void run() override
     {
         testLimitQuality();
         testRIPD1443(true);
         testRIPD1443(false);
+        testRIPD1449(true);
+        testRIPD1449(false);
 
         auto testWithFeats = [this](auto&&... fs)
         {
