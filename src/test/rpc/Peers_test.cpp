@@ -75,16 +75,15 @@ class Peers_test : public beast::unit_test::suite
                  ++it)
         {
             auto key = it.key().asString();
-            auto search = nodes.find(it.key().asString());
-            if(! BEAST_EXPECTS(search != nodes.end(), it.key().asString()))
+            auto search = nodes.find(key);
+            if(! BEAST_EXPECTS(search != nodes.end(), key))
+                continue;
+            if(! BEAST_EXPECT((*it).isMember(jss::tag)))
                 continue;
             auto tag = (*it)[jss::tag].asString();
-            BEAST_EXPECTS(
-                (*it)[jss::tag].asString() == nodes[it.key().asString()],
-                it.key().asString());
+            BEAST_EXPECTS((*it)[jss::tag].asString() == nodes[key], key);
         }
-        BEAST_EXPECT(peers.isMember(jss::peers) &&
-            peers[jss::peers].isNull());
+        BEAST_EXPECT(peers.isMember(jss::peers) && peers[jss::peers].isNull());
     }
 
 public:
