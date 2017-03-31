@@ -2502,7 +2502,13 @@
     <ClInclude Include="..\..\src\ripple\conditions\impl\utils.h">
       <Filter>ripple\conditions\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\consensus\Consensus.cpp">
+      <Filter>ripple\consensus</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\consensus\Consensus.h">
+      <Filter>ripple\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\ConsensusParms.h">
       <Filter>ripple\consensus</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\consensus\ConsensusProposal.h">
@@ -2511,9 +2517,6 @@
     <ClInclude Include="..\..\src\ripple\consensus\DisputedTx.h">
       <Filter>ripple\consensus</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\consensus\LedgerTiming.cpp">
-      <Filter>ripple\consensus</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\consensus\LedgerTiming.h">
       <Filter>ripple\consensus</Filter>
     </ClInclude>

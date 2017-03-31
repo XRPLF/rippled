@@ -173,8 +173,8 @@ struct Peer : public Consensus<Peer, Traits>
     bool proposing_ = true;
 
     //! All peers start from the default constructed ledger
-    Peer(PeerID i, BasicNetwork<Peer*>& n, UNL const& u)
-        : Consensus<Peer, Traits>(n.clock(), beast::Journal{})
+    Peer(PeerID i, BasicNetwork<Peer*>& n, UNL const& u, ConsensusParms p)
+        : Consensus<Peer, Traits>(n.clock(), p, beast::Journal{})
         , id{i}
         , net{n}
         , unl(u)
@@ -395,12 +395,12 @@ struct Peer : public Consensus<Peer, Traits>
         Base::timerEntry(now());
         // only reschedule if not completed
         if (completedLedgers < targetLedgers)
-            net.timer(LEDGER_GRANULARITY, [&]() { timerEntry(); });
+            net.timer(parms().ledgerGRANULARITY, [&]() { timerEntry(); });
     }
     void
     start()
     {
-        net.timer(LEDGER_GRANULARITY, [&]() { timerEntry(); });
+        net.timer(parms().ledgerGRANULARITY, [&]() { timerEntry(); });
         // The ID is the one we have seen the most validations for
         // In practice, we might not actually have that ledger itself yet,
         // so there is no gaurantee that bestLCL == lastClosedLedger.id()
@@ -415,8 +415,9 @@ struct Peer : public Consensus<Peer, Traits>
         // We don't care about the actual epochs, but do want the
         // generated NetClock time to be well past its epoch to ensure
         // any subtractions of two NetClock::time_point in the consensu
-        // code are positive. (e.g. PROPOSE_FRESHNESS)
+        // code are positive. (e.g. proposeFRESHNESS)
         using namespace std::chrono;
+        using namespace std::chrono_literals;
         return NetClock::time_point(duration_cast<NetClock::duration>(
             net.now().time_since_epoch() + 86400s + clockSkew));
     }
@@ -427,6 +428,8 @@ struct Peer : public Consensus<Peer, Traits>
     void
     schedule(std::chrono::nanoseconds when, T&& what)
     {
+        using namespace std::chrono_literals;
+
         if (when == 0ns)
             what();
         else
