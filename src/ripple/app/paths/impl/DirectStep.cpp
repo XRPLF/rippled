@@ -595,6 +595,7 @@ TER DirectStepI::check (StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
+    auto sleLine = ctx.view.read (keylet::line (src_, dst_, currency_));
     {
         auto sleSrc = ctx.view.read (keylet::account (src_));
         if (!sleSrc)
@@ -604,8 +605,6 @@ TER DirectStepI::check (StrandContext const& ctx) const
                     << src_;
             return terNO_ACCOUNT;
         }
-
-        auto sleLine = ctx.view.read (keylet::line (src_, dst_, currency_));
 
         if (!sleLine)
         {
@@ -642,6 +641,18 @@ TER DirectStepI::check (StrandContext const& ctx) const
                 checkNoRipple (ctx.view, *prevSrc, src_, dst_, currency_, j_);
             if (ter != tesSUCCESS)
                 return ter;
+        }
+
+        if (fix1449(ctx.view.info().parentCloseTime))
+        {
+            if (ctx.prevStep->bookStepBook())
+            {
+                auto const noRippleSrcToDst =
+                    ((*sleLine)[sfFlags] &
+                     ((src_ > dst_) ? lsfHighNoRipple : lsfLowNoRipple));
+                if (noRippleSrcToDst)
+                    return terNO_RIPPLE;
+            }
         }
     }
 
