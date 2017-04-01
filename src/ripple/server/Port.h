@@ -58,6 +58,9 @@ struct Port
     // port in the range [0, 65535] where 0 means unlimited.
     int limit = 0;
 
+    // Websocket disconnects if send queue exceeds this limit
+    std::uint16_t ws_queue_limit = 0;
+
     // Returns `true` if any websocket protocols are specified
     bool websockets() const;
 
@@ -87,6 +90,7 @@ struct ParsedPort
     std::string ssl_ciphers;
     beast::websocket::permessage_deflate pmd_options;
     int limit = 0;
+    std::uint16_t ws_queue_limit = 100;
 
     boost::optional<boost::asio::ip::address> ip;
     boost::optional<std::uint16_t> port;

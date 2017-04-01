@@ -205,6 +205,29 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
         }
     }
 
+    {
+        auto const result = section.find("send_queue_limit");
+        if (result.second)
+        {
+            try
+            {
+                port.ws_queue_limit =
+                    beast::lexicalCastThrow<std::uint16_t>(result.first);
+
+                // Queue must be greater than 0
+                if (port.ws_queue_limit == 0)
+                    Throw<std::exception>();
+            }
+            catch (std::exception const&)
+            {
+                log <<
+                    "Invalid value '" << result.first << "' for key " <<
+                    "'send_queue_limit' in [" << section.name() << "]\n";
+                Rethrow();
+            }
+        }
+    }
+
     populate (section, "admin", log, port.admin_ip, true, {});
     populate (section, "secure_gateway", log, port.secure_gateway_ip, false,
         port.admin_ip.get_value_or({}));

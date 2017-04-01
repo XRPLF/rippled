@@ -217,21 +217,18 @@ void
 BaseWSPeer<Handler, Impl>::
 send(std::shared_ptr<WSMsg> w)
 {
-    // Maximum send queue size
-    static std::size_t constexpr limit = 100;
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind(
             &BaseWSPeer::send, impl().shared_from_this(),
                 std::move(w)));
     if(do_close_)
         return;
-    if(wq_.size() >= limit)
+    if(wq_.size() > port().ws_queue_limit)
     {
         JLOG(this->j_.info()) <<
             "closing slow client";
         cr_.code = static_cast<beast::websocket::close_code::value>(4000);
         cr_.reason = "Client is too slow.";
-        static_assert(limit >= 1, "");
         wq_.erase(std::next(wq_.begin()), wq_.end());
         close();
         return;

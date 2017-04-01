@@ -832,6 +832,7 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
     p.ssl_chain = parsed.ssl_chain;
     p.ssl_ciphers = parsed.ssl_ciphers;
     p.pmd_options = parsed.pmd_options;
+    p.ws_queue_limit = parsed.ws_queue_limit;
 
     return p;
 }
