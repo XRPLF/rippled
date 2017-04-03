@@ -226,6 +226,11 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
                 Rethrow();
             }
         }
+        else
+        {
+            // Default Websocket send queue size limit
+            port.ws_queue_limit = 100;
+        }
     }
 
     populate (section, "admin", log, port.admin_ip, true, {});
