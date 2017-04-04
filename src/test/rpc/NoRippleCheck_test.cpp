@@ -22,6 +22,10 @@
 #include <test/jtx.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <ripple/beast/utility/temp_dir.h>
+#include <ripple/resource/ResourceManager.h>
+#include <ripple/resource/impl/Entry.h>
+#include <ripple/resource/impl/Tuning.h>
+#include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
 
@@ -107,7 +111,8 @@ class NoRippleCheck_test : public beast::unit_test::suite
         { // passing an account private key will cause
           // parsing as a seed to fail
             Json::Value params;
-            params[jss::account] = toBase58 (TokenType::TOKEN_NODE_PRIVATE, alice.sk());
+            params[jss::account] =
+                toBase58 (TokenType::TOKEN_NODE_PRIVATE, alice.sk());
             params[jss::role] = "user";
             params[jss::ledger] = "current";
             auto const result = env.rpc ("json", "noripple_check",
@@ -146,7 +151,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
 
         Json::Value params;
         params[jss::account] = alice.human();
-        params[jss::role] = user ? "user" : "gateway";
+        params[jss::role] = (user ? "user" : "gateway");
         params[jss::ledger] = "current";
         auto result = env.rpc ("json", "noripple_check",
             boost::lexical_cast<std::string>(params)) [jss::result];
@@ -195,7 +200,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
         auto const txs = result[jss::transactions];
         if (problems)
         {
-            if (! BEAST_EXPECT (txs.size () == user ? 1 : 2))
+            if (! BEAST_EXPECT (txs.size () == (user ? 1 : 2)))
                 return;
 
             if (! user)
@@ -220,53 +225,58 @@ class NoRippleCheck_test : public beast::unit_test::suite
         }
     }
 
+public:
+    void run ()
+    {
+        testBadInput ();
+        for (auto user : {true, false})
+            for (auto problem : {true, false})
+                testBasic (user, problem);
+    }
+};
+
+class NoRippleCheckLimits_test : public beast::unit_test::suite
+{
     void
-    testLimits(bool admin, beast::temp_dir const& td)
+    testLimits(bool admin)
     {
         testcase << "Check limits in returned data, " <<
             (admin ? "admin" : "non-admin");
 
         using namespace test::jtx;
 
-        //admin : we create and save a ledger
-        //non-admin : we load the ledger
-        auto ledger = td.file ("ledger");
-        if (! admin)
-            assert (
-                boost::filesystem::exists (
-                    boost::filesystem::path{ledger}));
-
-        Env env {*this,
-            admin ?
-                envconfig () :
-                envconfig ([&](std::unique_ptr<Config> cfg)
-                {
-                    cfg = no_admin (std::move(cfg));
-                    cfg->START_LEDGER = ledger;
-                    cfg->START_UP = Config::LOAD_FILE;
-                    cfg->legacy ("database_path", td.path());
-                    return cfg;
-                })};
+        Env env {*this, admin ? envconfig () : envconfig(no_admin)};
 
         auto const alice = Account {"alice"};
-        if (admin)
-        {
-            env.fund (XRP (1000000), alice);
-            env (fset (alice, asfDefaultRipple));
-            env.close ();
+        env.fund (XRP (100000), alice);
+        env (fset (alice, asfDefaultRipple));
+        env.close ();
 
-            for (auto i = 0; i < 500; ++i)
+        for (auto i = 0; i < ripple::RPC::Tuning::noRippleCheck.rmax + 5; ++i)
+        {
+            if (! admin)
             {
-                auto const gw = Account {"gw" + std::to_string(i)};
-                env.fund (XRP (1000), gw);
-                env (trust (alice, gw["USD"](10)));
-                env.close();
+                // endpoint drop prevention. Non admin ports will drop requests
+                // if they are coming too fast, so we manipulate the resource
+                // manager here to reset the enpoint balance (for localhost) if
+                // we get too close to the drop limit.
+                using namespace ripple::Resource;
+                using namespace std::chrono;
+                using namespace beast::IP;
+                auto c = env.app().getResourceManager()
+                    .newInboundEndpoint (Endpoint::from_string ("127.0.0.1"));
+                if (dropThreshold - c.balance() <= 20)
+                {
+                    using clock_type = beast::abstract_clock <steady_clock>;
+                    c.entry().local_balance =
+                        DecayingSample <decayWindowSeconds, clock_type>
+                            {steady_clock::now()};
+                }
             }
-            // write ledger
-            std::ofstream o (ledger, std::ios::out | std::ios::trunc);
-            o << to_string(
-                env.rpc ("ledger", "current", "full") [jss::result]);
-            o.close();
+            auto const gw = Account {"gw" + std::to_string(i)};
+            env.fund (XRP (1000), gw);
+            env (trust (alice, gw["USD"](10)));
+            env.close();
         }
 
         // default limit value
@@ -283,7 +293,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
         params[jss::limit] = 9;
         result = env.rpc ("json", "noripple_check",
             boost::lexical_cast<std::string>(params)) [jss::result];
-        BEAST_EXPECT (result["problems"].size() == admin ? 10 : 11);
+        BEAST_EXPECT (result["problems"].size() == (admin ? 10 : 11));
 
         // at minimum
         params[jss::limit] = 10;
@@ -301,28 +311,24 @@ class NoRippleCheck_test : public beast::unit_test::suite
         params[jss::limit] = 401;
         result = env.rpc ("json", "noripple_check",
             boost::lexical_cast<std::string>(params)) [jss::result];
-        BEAST_EXPECT (result["problems"].size() == admin ? 402 : 401);
+        BEAST_EXPECT (result["problems"].size() == (admin ? 402 : 401));
     }
 
 public:
     void run ()
     {
-        testBadInput ();
-        for (auto user : {true, false})
-            for (auto problem : {true, false})
-                testBasic (user, problem);
-
-        {
-            beast::temp_dir td;
-            // NOTE: must invoke the admin=true version of this test
-            // first because it creates the ledger loaded when admin=false
-            testLimits (true, td);
-            testLimits (false, td);
-        }
+        for (auto admin : {true, false})
+            testLimits (admin);
     }
 };
 
 BEAST_DEFINE_TESTSUITE(NoRippleCheck, app, ripple);
+
+// These tests that deal with limit amounts are slow because of the
+// offer/account setup, so making them manual -- the additional coverage provided
+// by them is minimal
+
+BEAST_DEFINE_TESTSUITE_MANUAL(NoRippleCheckLimits, app, ripple);
 
 } // ripple
 
