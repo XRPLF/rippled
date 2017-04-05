@@ -31,6 +31,7 @@
 #include <ripple/protocol/STInteger.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/STPathSet.h>
+#include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFormats.h>
 #include <ripple/protocol/types.h>
 #include <ripple/protocol/impl/STVar.h>
@@ -189,31 +190,61 @@ static boost::optional<detail::STVar> parseLeaf (
     case STI_UINT8:
         try
         {
+            constexpr auto minValue = std::numeric_limits<std::uint8_t>::min();
+            constexpr auto maxValue = std::numeric_limits<std::uint8_t>::max();
             if (value.isString ())
             {
-                // VFALCO TODO wtf?
+                std::string const strValue = value.asString();
+
+                if (!strValue.empty() &&
+                    ((strValue[0] < '0') || (strValue[0] > '9')))
+                {
+                    if (field == sfTransactionResult)
+                    {
+                        auto ter = transCode(strValue);
+
+                        if (!ter || *ter < minValue || *ter > maxValue)
+                        {
+                            error = out_of_range(json_name, fieldName);
+                            return ret;
+                        }
+
+                        ret = detail::make_stvar<STUInt8>(field,
+                            static_cast<std::uint8_t>(*ter));
+                    }
+                    else
+                    {
+                        error = bad_type(json_name, fieldName);
+                        return ret;
+                    }
+                }
+                else
+                {
+                    ret = detail::make_stvar <STUInt8>(field,
+                        beast::lexicalCastThrow <std::uint8_t>(strValue));
+                }
             }
             else if (value.isInt ())
             {
-                if (value.asInt () < 0 || value.asInt () > 255)
+                if (value.asInt () < minValue || value.asInt () > maxValue)
                 {
                     error = out_of_range (json_name, fieldName);
                     return ret;
                 }
 
                 ret = detail::make_stvar <STUInt8> (field,
-                    static_cast <unsigned char> (value.asInt ()));
+                    static_cast <std::uint8_t> (value.asInt ()));
             }
             else if (value.isUInt ())
             {
-                if (value.asUInt () > 255)
+                if (value.asUInt () > maxValue)
                 {
                     error = out_of_range (json_name, fieldName);
                     return ret;
                 }
 
                 ret = detail::make_stvar <STUInt8> (field,
-                    static_cast <unsigned char> (value.asUInt ()));
+                    static_cast <std::uint8_t> (value.asUInt ()));
             }
             else
             {

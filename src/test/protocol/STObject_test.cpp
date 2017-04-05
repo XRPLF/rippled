@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/st.h>
 #include <ripple/json/json_reader.h>
@@ -88,6 +89,7 @@ public:
         if (parsedOK)
         {
             STParsedJSONObject parsed ("test", jsonObject);
+            BEAST_EXPECT(parsed.object);
             std::string const& serialized (
                 to_string (parsed.object->getJson(0)));
             BEAST_EXPECT(serialized == json);
@@ -95,6 +97,138 @@ public:
         else
         {
             fail ("Couldn't parse json: " + json);
+        }
+    }
+
+    void testParseJSONEdgeCases()
+    {
+        testcase("parse json object");
+
+        {
+            std::string const goodJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransactionResult":"tecFROZEN"})");
+
+            Json::Value jv;
+            if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
+            {
+                STParsedJSONObject parsed("test", jv);
+                if (BEAST_EXPECT(parsed.object))
+                {
+                    std::string const& serialized(
+                        to_string(parsed.object->getJson(0)));
+                    BEAST_EXPECT(serialized == goodJson);
+                }
+            }
+        }
+
+        {
+            std::string const goodJson(
+                R"({"CloseResolution":19,"Method":"250",)"
+                R"("TransactionResult":"tecFROZEN"})");
+            std::string const expectedJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransactionResult":"tecFROZEN"})");
+
+            Json::Value jv;
+            if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
+            {
+                // Integer values are always parsed as int,
+                // unless they're too big. We want a small uint.
+                jv["CloseResolution"] = Json::UInt(19);
+                STParsedJSONObject parsed("test", jv);
+                if (BEAST_EXPECT(parsed.object))
+                {
+                    std::string const& serialized(
+                        to_string(parsed.object->getJson(0)));
+                    BEAST_EXPECT(serialized == expectedJson);
+                }
+            }
+        }
+
+        {
+            std::string const json(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransactionResult":"terQUEUED"})");
+
+            Json::Value jv;
+            if (BEAST_EXPECT(parseJSONString(json, jv)))
+            {
+                STParsedJSONObject parsed("test", jv);
+                BEAST_EXPECT(!parsed.object);
+                BEAST_EXPECT(parsed.error);
+                BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+                BEAST_EXPECT(parsed.error[jss::error_message] ==
+                    "Field 'test.TransactionResult' is out of range.");
+            }
+        }
+
+        {
+            std::string const json(
+                R"({"CloseResolution":19,"Method":"pony",)"
+                R"("TransactionResult":"tesSUCCESS"})");
+
+            Json::Value jv;
+            if (BEAST_EXPECT(parseJSONString(json, jv)))
+            {
+                STParsedJSONObject parsed("test", jv);
+                BEAST_EXPECT(!parsed.object);
+                BEAST_EXPECT(parsed.error);
+                BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+                BEAST_EXPECT(parsed.error[jss::error_message] ==
+                    "Field 'test.Method' has bad type.");
+            }
+        }
+
+        {
+            std::string const json(
+                R"({"CloseResolution":19,"Method":3294967296,)"
+                R"("TransactionResult":"tesSUCCESS"})");
+
+            Json::Value jv;
+            if (BEAST_EXPECT(parseJSONString(json, jv)))
+            {
+                STParsedJSONObject parsed("test", jv);
+                BEAST_EXPECT(!parsed.object);
+                BEAST_EXPECT(parsed.error);
+                BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+                BEAST_EXPECT(parsed.error[jss::error_message] ==
+                    "Field 'test.Method' is out of range.");
+            }
+        }
+
+        {
+            std::string const json(
+                R"({"CloseResolution":-10,"Method":42,)"
+                R"("TransactionResult":"tesSUCCESS"})");
+
+            Json::Value jv;
+            if (BEAST_EXPECT(parseJSONString(json, jv)))
+            {
+                STParsedJSONObject parsed("test", jv);
+                BEAST_EXPECT(!parsed.object);
+                BEAST_EXPECT(parsed.error);
+                BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+                BEAST_EXPECT(parsed.error[jss::error_message] ==
+                    "Field 'test.CloseResolution' is out of range.");
+            }
+        }
+
+        {
+            std::string const json(
+                R"({"CloseResolution":19,"Method":3.141592653,)"
+                R"("TransactionResult":"tesSUCCESS"})");
+
+            Json::Value jv;
+            if (BEAST_EXPECT(parseJSONString(json, jv)))
+            {
+                STParsedJSONObject parsed("test", jv);
+                BEAST_EXPECT(!parsed.object);
+                BEAST_EXPECT(parsed.error);
+                BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+                BEAST_EXPECT(parsed.error[jss::error_message] ==
+                    "Field 'test.Method' has bad type.");
+            }
         }
     }
 
@@ -510,6 +644,7 @@ public:
         testSerialization();
         testParseJSONArray();
         testParseJSONArrayWithInvalidChildrenObjects();
+        testParseJSONEdgeCases();
     }
 };
 

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_TER_H_INCLUDED
 #define RIPPLE_PROTOCOL_TER_H_INCLUDED
 
+#include <boost/optional.hpp>
 #include <string>
 
 namespace ripple {
@@ -253,6 +254,10 @@ transToken (TER code);
 extern
 std::string
 transHuman (TER code);
+
+extern
+boost::optional<TER>
+transCode(std::string const& token);
 
 } // ripple
 
