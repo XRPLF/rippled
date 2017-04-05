@@ -91,8 +91,13 @@ struct json_value_test : beast::unit_test::suite
         BEAST_EXPECT(j1["max_int"].asInt() == max_int);
         BEAST_EXPECT(j1["min_int"].asInt() == min_int);
         BEAST_EXPECT(j1["a_uint"].asUInt() == a_uint);
+        BEAST_EXPECT(j1["a_uint"] > a_large_int);
+        BEAST_EXPECT(j1["a_uint"] > a_small_int);
         BEAST_EXPECT(j1["a_large_int"].asInt() == a_large_int);
+        BEAST_EXPECT(j1["a_large_int"].asUInt() == a_large_int);
+        BEAST_EXPECT(j1["a_large_int"] < a_uint);
         BEAST_EXPECT(j1["a_small_int"].asInt() == a_small_int);
+        BEAST_EXPECT(j1["a_small_int"] < a_uint);
 
         json  = "{\"overflow\":";
         json += std::to_string(std::uint64_t(max_uint) + 1);
