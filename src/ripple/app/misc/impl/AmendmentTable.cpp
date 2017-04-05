@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
-#include <ripple/app/misc/Validations.h>
+#include <ripple/protocol/STValidation.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/JsonFields.h>
@@ -207,7 +207,7 @@ public:
         NetClock::time_point closeTime,
         std::set<uint256> const& enabledAmendments,
         majorityAmendments_t const& majorityAmendments,
-        ValidationSet const& validations) override;
+        std::vector<STValidation::pointer> const& validations) override;
 };
 
 //------------------------------------------------------------------------------
@@ -411,7 +411,7 @@ AmendmentTableImpl::doVoting (
     NetClock::time_point closeTime,
     std::set<uint256> const& enabledAmendments,
     majorityAmendments_t const& majorityAmendments,
-    ValidationSet const& valSet)
+    std::vector<STValidation::pointer> const& valSet)
 {
     JLOG (j_.trace()) <<
         "voting at " << closeTime.time_since_epoch().count() <<
@@ -422,16 +422,16 @@ AmendmentTableImpl::doVoting (
     auto vote = std::make_unique <AmendmentSet> ();
 
     // process validations for ledger before flag ledger
-    for (auto const& entry : valSet)
+    for (auto const& val : valSet)
     {
-        if (entry.second->isTrusted ())
+        if (val->isTrusted ())
         {
             std::set<uint256> ballot;
 
-            if (entry.second->isFieldPresent (sfAmendments))
+            if (val->isFieldPresent (sfAmendments))
             {
                 auto const choices =
-                    entry.second->getFieldV256 (sfAmendments);
+                    val->getFieldV256 (sfAmendments);
                 ballot.insert (choices.begin (), choices.end ());
             }
 

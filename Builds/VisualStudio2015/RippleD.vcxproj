@@ -835,6 +835,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTx.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\consensus\RCLValidations.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLValidations.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\AbstractFetchPackContainer.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\AcceptedLedger.cpp">
@@ -1092,12 +1098,6 @@
     <ClInclude Include="..\..\src\ripple\app\misc\Transaction.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\TxQ.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\Validations.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\Validations.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\ValidatorList.h">
     </ClInclude>
@@ -1838,6 +1838,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\consensus\LedgerTiming.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\Validations.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Config.h">
     </ClInclude>
@@ -4420,6 +4422,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\test\consensus\LedgerTiming_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\consensus\Validations_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>

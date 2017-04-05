@@ -24,7 +24,6 @@
 #include <ripple/app/misc/HashRouter.cpp>
 #include <ripple/app/misc/NetworkOPs.cpp>
 #include <ripple/app/misc/SHAMapStoreImp.cpp>
-#include <ripple/app/misc/Validations.cpp>
 
 #include <ripple/app/misc/impl/AccountTxPaging.cpp>
 #include <ripple/app/misc/impl/AmendmentTable.cpp>
