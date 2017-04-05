@@ -504,6 +504,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer (
     FlowOfferStream<TIn, TOut> offers (
         sb, afView, book_, sb.parentCloseTime (), counter, j_);
 
+    bool const flowCross = afView.rules().enabled(featureFlowCross);
     bool offerAttempted = false;
     boost::optional<Quality> ofrQ;
     while (offers.step ())
@@ -520,6 +521,36 @@ BookStep<TIn, TOut, TDerived>::forEachOffer (
         if (static_cast<TDerived const*>(this)->limitSelfCrossQuality (
             strandSrc_, strandDst_, offer, ofrQ, offers, offerAttempted))
                 continue;
+
+        // Make sure offer owner has authorization to own IOUs from issuer.
+        // An account can always own their own IOUs.
+        if (flowCross && (offer.owner() != offer.issueIn().account))
+        {
+            auto const& issuerID = offer.issueIn().account;
+            auto const issuer = afView.read (keylet::account (issuerID));
+            if (issuer && ((*issuer)[sfFlags] & lsfRequireAuth))
+            {
+                // Issuer requires authorization.  See if offer owner has that.
+                auto const& ownerID = offer.owner();
+                auto const authFlag =
+                    ownerID > issuerID ? lsfHighAuth : lsfLowAuth;
+
+                auto const line = afView.read (keylet::line (
+                    ownerID, issuerID, offer.issueOut().currency));
+
+                if (!line || (((*line)[sfFlags] & authFlag) == 0))
+                {
+                    // Offer owner not authorized to hold IOU from issuer.
+                    // Remove this offer even if no crossing occurs.
+                    offers.permRmOffer (offer.key());
+                    if (!offerAttempted)
+                        // Change quality only if no previous offers were tried.
+                        ofrQ = boost::none;
+                    // This continue causes offers.step() to delete the offer.
+                    continue;
+                }
+            }
+        }
 
         if (! static_cast<TDerived const*>(this)->checkQualityThreshold(offer))
             break;

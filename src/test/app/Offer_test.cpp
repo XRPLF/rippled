@@ -4033,6 +4033,102 @@ public:
         }
     }
 
+    void testRequireAuth (std::initializer_list<uint256> fs)
+    {
+        // Only test FlowCross.  Results are different with Taker.
+        if (std::find (fs.begin(), fs.end(), featureFlowCross) == fs.end())
+            return;
+
+        testcase ("lsfRequireAuth");
+        // 1. alice creates an offer to acquire USD/gw, an asset for which
+        //    she does not have a trust line.  At some point in the future,
+        //    gw adds lsfRequireAuth.  Then, later, alice's offer is crossed.
+        //    alice's offer is deleted, not consumed, since alice is not
+        //    authorized to hold USD/gw.
+        //
+        // 2. alice tries to create an offer for USD/gw, now that gw has
+        //    lsfRequireAuth set.  This time the offer create fails because
+        //    alice is not authorized to hold USD/gw.
+        //
+        // 3. Now gw creates a trust line authorizing alice to own USD/gw.
+        //    At this point alice successfully creates and crosses an offer
+        //    for USD/gw.
+
+        using namespace jtx;
+
+        Env env {*this, fs};
+        auto const closeTime =
+            fix1449Time() +
+                100 * env.closed()->info().closeTimeResolution;
+        env.close (closeTime);
+
+        auto const gw = Account("gw");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gwUSD = gw["USD"];
+        auto const aliceUSD = alice["USD"];
+        auto const bobUSD = bob["USD"];
+
+        env.fund (XRP(400000), gw, alice, bob);
+        env.close();
+
+        env (offer (alice, gwUSD(40), XRP(4000)));
+        env.close();
+
+        env.require (offers (alice, 1));
+        env.require (balance (alice, gwUSD(none)));
+        env(fset (gw, asfRequireAuth));
+        env.close();
+
+        env (trust (gw, bobUSD(100)), txflags (tfSetfAuth));
+        env.close();
+        env (trust (bob, gwUSD(100)));
+        env.close();
+
+        env (pay(gw, bob, gwUSD(50)));
+        env.close();
+        env.require (balance (bob, gwUSD(50)));
+
+        // gw now requires authorization and bob has gwUSD(50).  Let's see if
+        // bob can cross alice's offer.  bob's offer shouldn't cross and
+        // alice's unauthorized offer should be deleted.
+        env (offer (bob, XRP(4000), gwUSD(40)));
+        env.close();
+
+        env.require (offers (alice, 0));
+        env.require (balance (alice, gwUSD(none)));
+
+        env.require (offers (bob, 1));
+        env.require (balance (bob, gwUSD(50)));
+
+        // See if alice can create an offer without authorization.  alice
+        // should not be able to create the offer and bob's offer should be
+        // untouched.
+        env (offer (alice, gwUSD(40), XRP(4000)), ter(tecNO_LINE));
+        env.close();
+
+        env.require (offers (alice, 0));
+        env.require (balance (alice, gwUSD(none)));
+
+        env.require (offers (bob, 1));
+        env.require (balance (bob, gwUSD(50)));
+
+        // Finally, set up an authorized trust line for alice.  Now alice's
+        // offer should succeed.  Note that, since this is an offer rather
+        // than a payment, alice does not need to set a trust line limit.
+        env (trust (gw, aliceUSD(100)), txflags (tfSetfAuth));
+        env.close();
+
+        env (offer (alice, gwUSD(40), XRP(4000)));
+        env.close();
+
+        env.require (offers (alice, 0));
+        env.require (balance (alice, gwUSD(40)));
+
+        env.require (offers (bob, 0));
+        env.require (balance (bob, gwUSD(10)));
+    }
+
     void testTickSize (std::initializer_list<uint256> fs)
     {
         testcase ("Tick Size");
@@ -4203,7 +4299,8 @@ public:
             testTinyOffer (fs);
             testSelfPayXferFeeOffer (fs);
             testSelfPayUnlimitedFunds (fs);
-            testTickSize(fs);
+            testRequireAuth (fs);
+            testTickSize (fs);
         };
 // The following test variants passed at one time in the past (and should
 // still pass) but are commented out to conserve test time.
