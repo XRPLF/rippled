@@ -19,12 +19,19 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/TER.h>
+#include <boost/range/adaptor/transformed.hpp>
 #include <unordered_map>
 #include <type_traits>
 
 namespace ripple {
 
-bool transResultInfo (TER code, std::string& token, std::string& text)
+namespace detail {
+
+static
+std::unordered_map<
+    std::underlying_type_t<TER>,
+    std::pair<char const* const, char const* const>> const&
+transResults()
 {
     static
     std::unordered_map<
@@ -141,6 +148,14 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
 
         { tesSUCCESS,                { "tesSUCCESS",               "The transaction was applied. Only final in a validated ledger."                } },
     };
+    return results;
+}
+
+}
+
+bool transResultInfo (TER code, std::string& token, std::string& text)
+{
+    auto& results = detail::transResults();
 
     auto const r = results.find (
         static_cast<std::underlying_type_t<TER>> (code));
@@ -167,6 +182,37 @@ std::string transHuman (TER code)
     std::string text;
 
     return transResultInfo (code, token, text) ? text : "-";
+}
+
+boost::optional<TER>
+transCode(std::string const& token)
+{
+    static
+    auto const results = []
+    {
+        auto& byTer = detail::transResults();
+        auto range = boost::make_iterator_range(byTer.begin(),
+            byTer.end());
+        auto tRange = boost::adaptors::transform(
+            range,
+            [](auto const& r)
+            {
+            return std::make_pair(r.second.first, r.first);
+            }
+        );
+        std::unordered_map<
+            std::string,
+            std::underlying_type_t<TER>> const
+        byToken(tRange.begin(), tRange.end());
+        return byToken;
+    }();
+
+    auto const r = results.find(token);
+
+    if (r == results.end())
+        return boost::none;
+
+    return static_cast<TER>(r->second);
 }
 
 } // ripple

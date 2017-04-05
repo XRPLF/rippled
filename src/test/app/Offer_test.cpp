@@ -1931,7 +1931,3 @@ BEAST_DEFINE_TESTSUITE (Offer, tx, ripple);
 
 }  // test
 }  // ripple
-
-
-
-
