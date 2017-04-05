@@ -134,7 +134,8 @@ public:
                     return b.second < a.second;
                 });
 
-            top.resize(10);
+            if(top.size() > 10)
+                top.resize(10);
 
             os_ << "Longest suite times:\n";
             for(auto const& i : top)

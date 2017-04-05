@@ -32,7 +32,7 @@
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
-#include <ripple/app/misc/Validations.h>
+#include <ripple/app/consensus/RCLValidations.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/basics/contract.h>
@@ -200,7 +200,7 @@ LedgerMaster::setValidLedger(
 
     if (! standalone_)
     {
-        times = app_.getValidations().getValidationTimes(
+        times = app_.getValidations().getTrustedValidationTimes(
             l->info().hash);
     }
 
@@ -700,7 +700,7 @@ LedgerMaster::checkAccept (uint256 const& hash, std::uint32_t seq)
             return;
 
         valCount =
-            app_.getValidations().getTrustedValidationCount (hash);
+            app_.getValidations().numTrustedForLedger (hash);
 
         if (valCount >= app_.validators ().quorum ())
         {
@@ -764,8 +764,7 @@ LedgerMaster::checkAccept (
         return;
 
     auto const minVal = getNeededValidations();
-    auto const tvc = app_.getValidations().getTrustedValidationCount(
-        ledger->info().hash);
+    auto const tvc = app_.getValidations().numTrustedForLedger(ledger->info().hash);
     if (tvc < minVal) // nothing we can do
     {
         JLOG (m_journal.trace()) <<
@@ -791,7 +790,7 @@ LedgerMaster::checkAccept (
         app_.getOrderBookDB().setup(ledger);
     }
 
-    std::uint64_t const base = app_.getFeeTrack().getLoadBase();
+    std::uint32_t const base = app_.getFeeTrack().getLoadBase();
     auto fees = app_.getValidations().fees (ledger->info().hash, base);
     {
         auto fees2 = app_.getValidations().fees (
@@ -799,7 +798,7 @@ LedgerMaster::checkAccept (
         fees.reserve (fees.size() + fees2.size());
         std::copy (fees2.begin(), fees2.end(), std::back_inserter(fees));
     }
-    std::uint64_t fee;
+    std::uint32_t fee;
     if (! fees.empty())
     {
         std::sort (fees.begin(), fees.end());
@@ -854,7 +853,7 @@ LedgerMaster::consensusBuilt(
     // maybe we saved up validations for some other ledger that can be
 
     auto const val =
-        app_.getValidations().getCurrentTrustedValidations();
+        app_.getValidations().currentTrusted();
 
     // Track validation counts with sequence numbers
     class valSeq

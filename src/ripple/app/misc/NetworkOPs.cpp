@@ -21,6 +21,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/consensus/Consensus.h>
 #include <ripple/app/consensus/RCLConsensus.h>
+#include <ripple/app/consensus/RCLValidations.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
@@ -1301,17 +1302,17 @@ bool NetworkOPsImp::checkLastClosedLedger (
 
     hash_map<uint256, ValidationCount> ledgers;
     {
-        auto current = app_.getValidations ().getCurrentValidations (
+        auto current = app_.getValidations ().currentTrustedDistribution (
             closedLedger, prevClosedLedger,
             m_ledgerMaster.getValidLedgerIndex());
 
         for (auto& it: current)
         {
             auto& vc = ledgers[it.first];
-            vc.trustedValidations += it.second.first;
+            vc.trustedValidations += it.second.count;
 
-            if (it.second.second > vc.highValidation)
-                vc.highValidation = it.second.second;
+            if (it.second.highNode > vc.highValidation)
+                vc.highValidation = it.second.highNode;
         }
     }
 
@@ -2103,7 +2104,7 @@ bool NetworkOPsImp::recvValidation (
     JLOG(m_journal.debug()) << "recvValidation " << val->getLedgerHash ()
                           << " from " << source;
     pubValidation (val);
-    return app_.getValidations ().addValidation (val, source);
+    return handleNewValidation(app_, val, source);
 }
 
 Json::Value NetworkOPsImp::getConsensusInfo ()

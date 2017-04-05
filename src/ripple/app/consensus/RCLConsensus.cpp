@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/consensus/RCLConsensus.h>
+#include <ripple/app/consensus/RCLValidations.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/ledger/LedgerMaster.h>
@@ -222,7 +223,7 @@ RCLConsensus::hasOpenTransactions() const
 std::size_t
 RCLConsensus::proposersValidated(LedgerHash const& h) const
 {
-    return app_.getValidations().getTrustedValidationCount(h);
+    return app_.getValidations().numTrustedForLedger(h);
 }
 
 std::size_t
@@ -244,8 +245,9 @@ RCLConsensus::getPrevLedger(
 
     // Get validators that are on our ledger, or "close" to being on
     // our ledger.
-    auto vals = app_.getValidations().getCurrentValidations(
-        ledgerID, parentID, ledgerMaster_.getValidLedgerIndex());
+    auto vals =
+        app_.getValidations().currentTrustedDistribution(
+            ledgerID, parentID, ledgerMaster_.getValidLedgerIndex());
 
     uint256 netLgr = ledgerID;
     int netLgrCount = 0;
@@ -253,11 +255,11 @@ RCLConsensus::getPrevLedger(
     {
         // Switch to ledger supported by more peers
         // Or stick with ours on a tie
-        if ((it.second.first > netLgrCount) ||
-            ((it.second.first == netLgrCount) && (it.first == ledgerID)))
+        if ((it.second.count > netLgrCount) ||
+            ((it.second.count== netLgrCount) && (it.first == ledgerID)))
         {
             netLgr = it.first;
-            netLgrCount = it.second.first;
+            netLgrCount = it.second.count;
         }
     }
 
@@ -269,7 +271,7 @@ RCLConsensus::getPrevLedger(
         if (auto stream = j_.debug())
         {
             for (auto& it : vals)
-                stream << "V: " << it.first << ", " << it.second.first;
+                stream << "V: " << it.first << ", " << it.second.count;
             stream << getJson(true);
         }
     }
@@ -317,14 +319,10 @@ RCLConsensus::onClose(
     {
         // previous ledger was flag ledger, add pseudo-transactions
         auto const validations =
-            app_.getValidations().getValidations(prevLedger->info().parentHash);
+            app_.getValidations().getTrustedForLedger (
+                prevLedger->info().parentHash);
 
-        std::size_t const count = std::count_if(
-            validations.begin(), validations.end(), [](auto const& v) {
-                return v.second->isTrusted();
-            });
-
-        if (count >= app_.validators().quorum())
+        if (validations.size() >= app_.validators ().quorum ())
         {
             feeVote_->doVoting(prevLedger, validations, initialSet);
             app_.getAmendmentTable().doVoting(
@@ -843,7 +841,7 @@ RCLConsensus::validate(RCLCxLedger const& ledger, bool proposing)
     v->setTrusted();
     // suppress it if we receive it - FIXME: wrong suppression
     app_.getHashRouter().addSuppression(signingHash);
-    app_.getValidations().addValidation(v, "local");
+    handleNewValidation(app_, v, "local");
     Blob validation = v->getSerialized();
     protocol::TMValidation val;
     val.set_validation(&validation[0], validation.size());

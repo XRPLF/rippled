@@ -29,7 +29,7 @@
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
-#include <ripple/app/misc/Validations.h>
+#include <ripple/app/consensus/RCLValidations.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/protocol/digest.h>
@@ -1576,7 +1576,10 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
             val->setSeen (closeTime);
         }
 
-        if (! app_.getValidations().current (val))
+        if (! isCurrent(app_.getValidations().parms(),
+            app_.timeKeeper().closeTime(),
+            val->getSignTime(),
+            val->getSeenTime()))
         {
             JLOG(p_journal_.trace()) << "Validation: Not current";
             fee_ = Resource::feeUnwantedData;

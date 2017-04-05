@@ -378,7 +378,7 @@ public:
         auto const roundTime = weekTime (week);
 
         // Build validations
-        ValidationSet validations;
+        std::vector<STValidation::pointer> validations;
         validations.reserve (validators.size ());
 
         int i = 0;
@@ -402,7 +402,7 @@ public:
                 v->setFieldV256 (sfAmendments, field);
 
             v->setTrusted();
-            validations [val] = v;
+            validations.emplace_back(v);
         }
 
         ourVotes = table.doValidation (enabled);

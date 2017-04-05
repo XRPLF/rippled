@@ -1401,6 +1401,12 @@
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTx.h">
       <Filter>ripple\app\consensus</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\consensus\RCLValidations.cpp">
+      <Filter>ripple\app\consensus</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLValidations.h">
+      <Filter>ripple\app\consensus</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\AbstractFetchPackContainer.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
@@ -1663,12 +1669,6 @@
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\TxQ.h">
-      <Filter>ripple\app\misc</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\Validations.cpp">
-      <Filter>ripple\app\misc</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\Validations.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\ValidatorList.h">
@@ -2515,6 +2515,9 @@
       <Filter>ripple\consensus</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\consensus\LedgerTiming.h">
+      <Filter>ripple\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\Validations.h">
       <Filter>ripple\consensus</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Config.h">
@@ -5215,6 +5218,9 @@
       <Filter>test\consensus</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\consensus\LedgerTiming_test.cpp">
+      <Filter>test\consensus</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\consensus\Validations_test.cpp">
       <Filter>test\consensus</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\core\Config_test.cpp">
