@@ -402,10 +402,6 @@ int integerCmp (Int i, UInt ui)
     if (i < 0)
         return -1;
 
-    // All unsigned numbers with bit 0 set are too big for signed integers.
-    if (ui & 0x8000)
-        return 1;
-
     // Now we can safely compare.
     return (i < ui) ? -1 : (i == ui) ? 0 : 1;
 }
