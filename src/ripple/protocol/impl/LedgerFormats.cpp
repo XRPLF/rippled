@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/LedgerFormats.h>
 #include <algorithm>
 #include <array>
 #include <utility>
@@ -168,53 +168,6 @@ LedgerFormats::getInstance ()
 {
     static LedgerFormats instance;
     return instance;
-}
-
-std::pair<RPC::Status, LedgerEntryType>
-chooseLedgerEntryType(Json::Value const& params)
-{
-    std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltINVALID};
-    if (params.isMember(jss::type))
-    {
-        static
-        std::array<std::pair<char const *, LedgerEntryType>, 11> const types
-            {{
-                { jss::account,         ltACCOUNT_ROOT  },
-                { jss::amendments,      ltAMENDMENTS    },
-                { jss::directory,       ltDIR_NODE      },
-                { jss::fee,             ltFEE_SETTINGS  },
-                { jss::hashes,          ltLEDGER_HASHES },
-                { jss::offer,           ltOFFER         },
-                { jss::signer_list,     ltSIGNER_LIST   },
-                { jss::state,           ltRIPPLE_STATE  },
-                { jss::ticket,          ltTICKET        },
-                { jss::escrow,          ltESCROW        },
-                { jss::payment_channel, ltPAYCHAN       }
-            }};
-
-        auto const& p = params[jss::type];
-        if (!p.isString())
-        {
-            result.first = RPC::Status{rpcINVALID_PARAMS,
-                                       "Invalid field 'type', not string."};
-            assert(result.first.type() == RPC::Status::Type::error_code_i);
-            return result;
-        }
-
-        auto const filter = p.asString ();
-        auto iter = std::find_if (types.begin (), types.end (),
-            [&filter](decltype (types.front ())& t)
-                { return t.first == filter; });
-        if (iter == types.end ())
-        {
-            result.first = RPC::Status{rpcINVALID_PARAMS,
-                                       "Invalid field 'type'."};
-            assert(result.first.type() == RPC::Status::Type::error_code_i);
-            return result;
-        }
-        result.second = iter->second;
-    }
-    return result;
 }
 
 } // ripple

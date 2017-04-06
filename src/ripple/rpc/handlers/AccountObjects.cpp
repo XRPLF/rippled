@@ -73,7 +73,7 @@ Json::Value doAccountObjects (RPC::Context& context)
     if (! ledger->exists(keylet::account (accountID)))
         return rpcError (rpcACT_NOT_FOUND);
 
-    auto type = chooseLedgerEntryType(params);
+    auto type = RPC::chooseLedgerEntryType(params);
     if (type.first)
     {
         result.clear();
