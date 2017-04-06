@@ -129,6 +129,9 @@ setVersion(Object& parent)
     object[jss::last] = lastVersion.print();
 }
 
+std::pair<RPC::Status, LedgerEntryType>
+    chooseLedgerEntryType(Json::Value const& params);
+
 } // RPC
 } // ripple
 

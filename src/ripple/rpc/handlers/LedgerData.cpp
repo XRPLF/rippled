@@ -86,7 +86,7 @@ Json::Value doLedgerData (RPC::Context& context)
                 LedgerFill::Options::binary : 0));
     }
 
-    auto type = chooseLedgerEntryType(params);
+    auto type = RPC::chooseLedgerEntryType(params);
     if (type.first)
     {
         jvResult.clear();
