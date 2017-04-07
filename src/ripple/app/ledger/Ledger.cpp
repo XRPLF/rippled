@@ -1048,25 +1048,22 @@ bool pendSaveValidated (
         return true;
     }
 
-    if (isSynchronous)
-        return saveValidatedLedger(app, ledger, isCurrent);
+    JobType const jobType {isCurrent ? jtPUBLEDGER : jtPUBOLDLEDGER};
+    char const* const jobName {
+        isCurrent ? "Ledger::pendSave" : "Ledger::pendOldSave"};
 
-    auto job = [ledger, &app, isCurrent] (Job&) {
-        saveValidatedLedger(app, ledger, isCurrent);
-    };
-
-    if (isCurrent)
+    // See if we can use the JobQueue.
+    if (!isSynchronous &&
+        app.getJobQueue().addJob (jobType, jobName,
+        [&app, ledger, isCurrent] (Job&) {
+            saveValidatedLedger(app, ledger, isCurrent);
+        }))
     {
-        app.getJobQueue().addJob(
-            jtPUBLEDGER, "Ledger::pendSave", job);
-    }
-    else
-    {
-        app.getJobQueue ().addJob(
-            jtPUBOLDLEDGER, "Ledger::pendOldSave", job);
+        return true;
     }
 
-    return true;
+    // The JobQueue won't do the Job.  Do the save synchronously.
+    return saveValidatedLedger(app, ledger, isCurrent);
 }
 
 void

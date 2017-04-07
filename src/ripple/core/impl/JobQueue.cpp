@@ -67,8 +67,8 @@ JobQueue::collect ()
     job_count = m_jobSet.size ();
 }
 
-void
-JobQueue::addJob (JobType type, std::string const& name,
+bool
+JobQueue::addRefCountedJob (JobType type, std::string const& name,
     JobFunction const& func)
 {
     assert (type != jtINVALID);
@@ -76,7 +76,7 @@ JobQueue::addJob (JobType type, std::string const& name,
     auto iter (m_jobData.find (type));
     assert (iter != m_jobData.end ());
     if (iter == m_jobData.end ())
-        return;
+        return false;
 
     JobTypeData& data (iter->second);
 
@@ -108,6 +108,7 @@ JobQueue::addJob (JobType type, std::string const& name,
                 data.load (), func, m_cancelCallback)));
         queueJob (*result.first, lock);
     }
+    return true;
 }
 
 int
