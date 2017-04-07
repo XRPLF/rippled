@@ -20,16 +20,22 @@
 #include <BeastConfig.h>
 #include <ripple/core/JobCounter.h>
 #include <ripple/beast/unit_test.h>
+#include <test/jtx/Env.h>
 #include <atomic>
 #include <chrono>
 #include <thread>
 
 namespace ripple {
+namespace test {
 
 //------------------------------------------------------------------------------
 
 class JobCounter_test : public beast::unit_test::suite
 {
+    // We're only using Env for its Journal.
+    jtx::Env env {*this};
+    beast::Journal j {env.app().journal ("JobCounter_test")};
+
     void testWrap()
     {
         // Verify reference counting.
@@ -41,8 +47,8 @@ class JobCounter_test : public beast::unit_test::suite
 
             // wrapped1 should be callable with a Job.
             {
-                Job j;
-                (*wrapped1)(j);
+                Job job;
+                (*wrapped1)(job);
             }
             {
                 // Copy should increase reference count.
@@ -66,7 +72,8 @@ class JobCounter_test : public beast::unit_test::suite
         BEAST_EXPECT (jobCounter.count() == 0);
 
         // Join with 0 count should not stall.
-        jobCounter.join();
+        using namespace std::chrono_literals;
+        jobCounter.join("testWrap", 1ms, j);
 
         // Wrapping a Job after join() should return boost::none.
         BEAST_EXPECT (jobCounter.wrap ([] (Job&) {}) == boost::none);
@@ -83,21 +90,22 @@ class JobCounter_test : public beast::unit_test::suite
 
         // Calling join() now should stall, so do it on a different thread.
         std::atomic<bool> threadExited {false};
-        std::thread localThread ([&jobCounter, &threadExited] ()
+        std::thread localThread ([&jobCounter, &threadExited, this] ()
         {
             // Should stall after calling join.
-            jobCounter.join();
+            using namespace std::chrono_literals;
+            jobCounter.join("testWaitOnJoin", 1ms, j);
             threadExited.store (true);
         });
 
         // Wait for the thread to call jobCounter.join().
         while (! jobCounter.joined());
 
-        // The thread should still be active after waiting a millisecond.
+        // The thread should still be active after waiting 5 milliseconds.
         // This is not a guarantee that join() stalled the thread, but it
         // improves confidence.
         using namespace std::chrono_literals;
-        std::this_thread::sleep_for (1ms);
+        std::this_thread::sleep_for (5ms);
         BEAST_EXPECT (threadExited == false);
 
         // Destroy the Job and expect the thread to exit (asynchronously).
@@ -119,4 +127,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(JobCounter, core, ripple);
 
-}
+} // test
+} // ripple

@@ -23,6 +23,8 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
 #include <algorithm>
@@ -246,7 +248,12 @@ PathRequests::makeLegacyPathRequest(
     else
     {
         insertPathRequest (req);
-        app_.getLedgerMaster().newPathRequest();
+        if (! app_.getLedgerMaster().newPathRequest())
+        {
+            // The newPathRequest failed.  Tell the caller.
+            result.second = rpcError (rpcTOO_BUSY);
+            req.reset();
+        }
     }
 
     return std::move (result.second);

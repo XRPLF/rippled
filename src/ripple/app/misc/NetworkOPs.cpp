@@ -44,7 +44,6 @@
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/DeadlineTimer.h>
-#include <ripple/core/JobCounter.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/json/to_string.h>
@@ -218,8 +217,7 @@ public:
 
     ~NetworkOPsImp() override
     {
-        jobCounter_.join();
-        // this clear() is necessary to ensure the shared_ptrs in this map get
+        // This clear() is necessary to ensure the shared_ptrs in this map get
         // destroyed NOW because the objects in this map invoke methods on this
         // class when they are destroyed
         mRpcSubMap.clear();
@@ -486,9 +484,6 @@ public:
         m_heartbeatTimer.cancel();
         m_clusterTimer.cancel();
 
-        // Wait until all our in-flight Jobs are completed.
-        jobCounter_.join();
-
         stopped ();
     }
 
@@ -540,7 +535,6 @@ private:
 
     DeadlineTimer m_heartbeatTimer;
     DeadlineTimer m_clusterTimer;
-    JobCounter jobCounter_;
 
     RCLConsensus mConsensus;
 
@@ -657,14 +651,14 @@ void NetworkOPsImp::onDeadlineTimer (DeadlineTimer& timer)
 {
     if (timer == m_heartbeatTimer)
     {
-        m_job_queue.addCountedJob (
-            jtNETOP_TIMER, "NetOPs.heartbeat", jobCounter_,
+        m_job_queue.addJob (
+            jtNETOP_TIMER, "NetOPs.heartbeat",
             [this] (Job&) { processHeartbeatTimer(); });
     }
     else if (timer == m_clusterTimer)
     {
-        m_job_queue.addCountedJob (
-            jtNETOP_CLUSTER, "NetOPs.cluster", jobCounter_,
+        m_job_queue.addJob (
+            jtNETOP_CLUSTER, "NetOPs.cluster",
             [this] (Job&) { processClusterTimer(); });
     }
 }
@@ -837,8 +831,8 @@ void NetworkOPsImp::submitTransaction (std::shared_ptr<STTx const> const& iTrans
     auto tx = std::make_shared<Transaction> (
         trans, reason, app_);
 
-    m_job_queue.addCountedJob (
-        jtTRANSACTION, "submitTxn", jobCounter_,
+    m_job_queue.addJob (
+        jtTRANSACTION, "submitTxn",
         [this, tx] (Job&) {
             auto t = tx;
             processTransaction(t, false, false, FailHard::no);
@@ -904,8 +898,8 @@ void NetworkOPsImp::doTransactionAsync (std::shared_ptr<Transaction> transaction
 
     if (mDispatchState == DispatchState::none)
     {
-        if (m_job_queue.addCountedJob (
-            jtBATCH, "transactionBatch", jobCounter_,
+        if (m_job_queue.addJob (
+            jtBATCH, "transactionBatch",
             [this] (Job&) { transactionBatch(); }))
         {
             mDispatchState = DispatchState::scheduled;
@@ -939,8 +933,8 @@ void NetworkOPsImp::doTransactionSync (std::shared_ptr<Transaction> transaction,
             if (mTransactions.size())
             {
                 // More transactions need to be applied, but by another job.
-                if (m_job_queue.addCountedJob (
-                    jtBATCH, "transactionBatch", jobCounter_,
+                if (m_job_queue.addJob (
+                    jtBATCH, "transactionBatch",
                     [this] (Job&) { transactionBatch(); }))
                 {
                     mDispatchState = DispatchState::scheduled;
@@ -2466,8 +2460,8 @@ void NetworkOPsImp::reportFeeChange ()
     // only schedule the job if something has changed
     if (f != mLastFeeSummary)
     {
-        m_job_queue.addCountedJob (
-            jtCLIENT, "reportFeeChange->pubServer", jobCounter_,
+        m_job_queue.addJob (
+            jtCLIENT, "reportFeeChange->pubServer",
             [this] (Job&) { pubServer(); });
     }
 }
@@ -3304,10 +3298,6 @@ void NetworkOPsImp::getBookPage (
 
 NetworkOPs::NetworkOPs (Stoppable& parent)
     : InfoSub::Source ("NetworkOPs", parent)
-{
-}
-
-NetworkOPs::~NetworkOPs ()
 {
 }
 

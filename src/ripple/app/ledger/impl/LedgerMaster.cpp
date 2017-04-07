@@ -919,7 +919,7 @@ LedgerMaster::advanceThread()
 
     try
     {
-        doAdvance();
+        doAdvance(sl);
     }
     catch (std::exception const&)
     {
@@ -1159,6 +1159,7 @@ LedgerMaster::updatePaths (Job& job)
             {
                 JLOG (m_journal.debug())
                     << "Published ledger too old for updating paths";
+                ScopedLockType ml (m_mutex);
                 --mPathFindThread;
                 return;
             }
@@ -1193,48 +1194,51 @@ LedgerMaster::updatePaths (Job& job)
     }
 }
 
-void
+bool
 LedgerMaster::newPathRequest ()
 {
     ScopedLockType ml (m_mutex);
-    mPathFindNewRequest = true;
-
-    newPFWork("pf:newRequest");
+    mPathFindNewRequest = newPFWork("pf:newRequest", ml);
+    return mPathFindNewRequest;
 }
 
 bool
 LedgerMaster::isNewPathRequest ()
 {
     ScopedLockType ml (m_mutex);
-    if (!mPathFindNewRequest)
-        return false;
+    bool const ret = mPathFindNewRequest;
     mPathFindNewRequest = false;
-    return true;
+    return ret;
 }
 
 // If the order book is radically updated, we need to reprocess all
 // pathfinding requests.
-void
+bool
 LedgerMaster::newOrderBookDB ()
 {
     ScopedLockType ml (m_mutex);
     mPathLedger.reset();
 
-    newPFWork("pf:newOBDB");
+    return newPFWork("pf:newOBDB", ml);
 }
 
 /** A thread needs to be dispatched to handle pathfinding work of some kind.
 */
-void
-LedgerMaster::newPFWork (const char *name)
+bool
+LedgerMaster::newPFWork (const char *name, ScopedLockType&)
 {
     if (mPathFindThread < 2)
     {
-        ++mPathFindThread;
-        app_.getJobQueue().addJob (
+        if (app_.getJobQueue().addJob (
             jtUPDATE_PF, name,
-            [this] (Job& j) { updatePaths(j); });
+            [this] (Job& j) { updatePaths(j); }))
+        {
+            ++mPathFindThread;
+        }
     }
+    // If we're stopping don't give callers the expectation that their
+    // request will be fulfilled, even if it may be serviced.
+    return mPathFindThread > 0 && !isStopping();
 }
 
 std::recursive_mutex&
@@ -1520,7 +1524,7 @@ LedgerMaster::shouldAcquire (
 }
 
 // Try to publish ledgers, acquire missing ledgers
-void LedgerMaster::doAdvance ()
+void LedgerMaster::doAdvance (ScopedLockType& sl)
 {
     // TODO NIKB: simplify and unindent this a bit!
 
@@ -1707,9 +1711,8 @@ void LedgerMaster::doAdvance ()
                 }
             }
 
-            progress = true;
             app_.getOPs().clearNeedNetworkLedger();
-            newPFWork ("pf:newLedger");
+            progress = newPFWork ("pf:newLedger", sl);
         }
         if (progress)
             mAdvanceWork = true;

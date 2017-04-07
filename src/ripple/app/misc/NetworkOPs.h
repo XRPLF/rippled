@@ -20,14 +20,14 @@
 #ifndef RIPPLE_APP_MISC_NETWORKOPS_H_INCLUDED
 #define RIPPLE_APP_MISC_NETWORKOPS_H_INCLUDED
 
-#include <ripple/core/JobQueue.h>
-#include <ripple/protocol/STValidation.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/consensus/RCLCxPeerPos.h>
+#include <ripple/core/JobQueue.h>
+#include <ripple/core/Stoppable.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/InfoSub.h>
+#include <ripple/protocol/STValidation.h>
 #include <memory>
-#include <ripple/core/Stoppable.h>
 #include <deque>
 #include <tuple>
 
@@ -96,7 +96,7 @@ public:
     }
 
 public:
-    virtual ~NetworkOPs () = 0;
+    ~NetworkOPs () override = default;
 
     //--------------------------------------------------------------------------
     //

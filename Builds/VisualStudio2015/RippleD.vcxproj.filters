@@ -5250,6 +5250,9 @@
     <ClCompile Include="..\..\src\test\core\JobCounter_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\core\JobQueue_test.cpp">
+      <Filter>test\core</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\core\SociDB_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>
