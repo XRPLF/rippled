@@ -309,11 +309,20 @@ ServerHandlerImp::onRequest (Session& session)
         return;
     }
 
-    m_jobQueue.postCoro(jtCLIENT, "RPC-Client",
-        [this, detach = session.detach()](std::shared_ptr<JobQueue::Coro> c)
+    std::shared_ptr<Session> detachedSession = session.detach();
+    auto const postResult = m_jobQueue.postCoro(jtCLIENT, "RPC-Client",
+        [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro)
         {
-            processSession(detach, c);
+            processSession(detachedSession, coro);
         });
+    if (postResult == nullptr)
+    {
+        // The coroutine was rejected, probably because we're shutting down.
+        HTTPReply(503, "Service Unavailable",
+            makeOutput(*detachedSession), app_.journal("RPC"));
+        detachedSession->close(true);
+        return;
+    }
 }
 
 void
@@ -350,12 +359,12 @@ ServerHandlerImp::onWSMessage(
     JLOG(m_journal.trace())
         << "Websocket received '" << jv << "'";
 
-    m_jobQueue.postCoro(jtCLIENT, "WS-Client",
-        [this, session = std::move(session),
-            jv = std::move(jv)](auto const& c)
+    auto const postResult = m_jobQueue.postCoro(jtCLIENT, "WS-Client",
+        [this, session, jv = std::move(jv)]
+        (std::shared_ptr<JobQueue::Coro> const& coro)
         {
             auto const jr =
-                this->processSession(session, c, jv);
+                this->processSession(session, coro, jv);
             auto const s = to_string(jr);
             auto const n = s.length();
             beast::multi_buffer sb(n);
@@ -365,6 +374,11 @@ ServerHandlerImp::onWSMessage(
                 StreambufWSMsg<decltype(sb)>>(std::move(sb)));
             session->complete();
         });
+    if (postResult == nullptr)
+    {
+        // The coroutine was rejected, probably because we're shutting down.
+        session->close();
+    }
 }
 
 void

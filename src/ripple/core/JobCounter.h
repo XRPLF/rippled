@@ -20,6 +20,7 @@
 #ifndef RIPPLE_CORE_JOB_COUNTER_H_INCLUDED
 #define RIPPLE_CORE_JOB_COUNTER_H_INCLUDED
 
+#include <ripple/basics/Log.h>
 #include <ripple/core/Job.h>
 #include <boost/optional.hpp>
 #include <atomic>
@@ -126,18 +127,31 @@ public:
     /** Destructor verifies all in-flight jobs are complete. */
     ~JobCounter()
     {
-        join();
+        using namespace std::chrono_literals;
+        join ("JobCounter", 1s, debugLog());
     }
 
-    /** Returns once all counted in-flight Jobs are destroyed. */
-    void join()
+    /** Returns once all counted in-flight Jobs are destroyed.
+
+        @param name Name reported if join time exceeds wait.
+        @param wait If join() exceeds this duration report to Journal.
+        @param j Journal written to if wait is exceeded.
+     */
+    void join (char const* name,
+        std::chrono::milliseconds wait, beast::Journal j)
     {
         std::unique_lock<std::mutex> lock {mutex_};
         waitForJobs_ = true;
         if (jobCount_ > 0)
         {
-            allJobsDoneCond_.wait (
-                lock, [this] { return jobCount_ == 0; });
+            if (! allJobsDoneCond_.wait_for (
+                lock, wait, [this] { return jobCount_ == 0; }))
+            {
+                if (auto stream = j.error())
+                    stream << name << " waiting for JobCounter::join().";
+                allJobsDoneCond_.wait (lock, [this] { return jobCount_ == 0; });
+            }
+
         }
     }
 
