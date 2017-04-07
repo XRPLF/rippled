@@ -37,12 +37,12 @@ matrix:
 
     - compiler: gcc
       env: GCC_VER=5 TARGET=coverage
-    
+
     - compiler: gcc
-      env: GCC_VER=5 TARGET="debug --sanitize=address"
-      
+      env: GCC_VER=5 TARGET=debug BUILD_OPTIONS=--sanitize=address
+
     - compiler: gcc
-      env: GCC_VER=5 TARGET="debug --sanitize=thread"
+      env: GCC_VER=5 TARGET=debug BUILD_OPTIONS=--sanitize=thread
 
     - compiler: clang
       env: GCC_VER=5 TARGET=debug CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH

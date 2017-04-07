@@ -7,6 +7,7 @@ set -ex
 __dirname=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 echo "using CC: $CC"
 echo "using TARGET: $TARGET"
+echo "using BUILD_OPTIONS: $BUILD_OPTIONS"
 
 # Ensure APP defaults to rippled if it's not set.
 : ${APP:=rippled}
@@ -33,7 +34,7 @@ else
   # $CC will be either `clang` or `gcc`
   # http://docs.travis-ci.com/user/migrating-from-legacy/?utm_source=legacy-notice&utm_medium=banner&utm_campaign=legacy-upgrade
   #   indicates that 2 cores are available to containers.
-  scons -j${NUM_PROCESSORS:-2} $CC.$TARGET
+  scons -j${NUM_PROCESSORS:-2} $BUILD_OPTIONS $CC.$TARGET
 fi
 # We can be sure we're using the build/$CC.$TARGET variant
 # (-f so never err)
