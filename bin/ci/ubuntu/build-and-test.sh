@@ -4,6 +4,8 @@
 # We use set -x to print commands before running them to help with
 # debugging.
 set -ex
+# Ensure BUILD_OPTIONS defaults to "" if it's not set.
+: ${BUILD_OPTIONS:=""}
 __dirname=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 echo "using CC: $CC"
 echo "using TARGET: $TARGET"
