@@ -70,7 +70,7 @@ gdb -return-child-result -quiet -batch \
     -ex run \
     -ex "thread apply all backtrace full" \
     -ex "quit" \
-    --args $APP_PATH --unittest --quiet --unittest-log
+    --args $APP_PATH $APP_ARGS
 
 if [[ $TARGET == "coverage" ]]; then
   # Create test coverage data file
