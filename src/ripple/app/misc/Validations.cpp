@@ -429,25 +429,34 @@ private:
         bool anyNew = false;
 
         JLOG (j_.info()) << "Flushing validations";
-        ScopedLockType sl (mLock);
-        for (auto& it: mCurrentValidations)
         {
-            if (it.second)
-                mStaleValidations.push_back (it.second);
+            ScopedLockType sl (mLock);
+            for (auto& it: mCurrentValidations)
+            {
+                if (it.second)
+                {
+                    mStaleValidations.push_back (it.second);
+                    anyNew = true;
+                }
+            }
+            mCurrentValidations.clear ();
 
-            anyNew = true;
+            // If there isn't a write in progress already, then write to the
+            // database synchronously.
+            if (anyNew && !mWriting)
+            {
+                mWriting = true;
+                doWrite (sl);
+            }
+
+            // Handle the case where flush() is called while a queuedWrite
+            // is already in progress.
+            while (mWriting)
+            {
+                ScopedUnlockType sul (mLock);
+                std::this_thread::sleep_for (std::chrono::milliseconds (100));
+            }
         }
-        mCurrentValidations.clear ();
-
-        if (anyNew)
-            condWrite ();
-
-        while (mWriting)
-        {
-            ScopedUnlockType sul (mLock);
-            std::this_thread::sleep_for (std::chrono::milliseconds (100));
-        }
-
         JLOG (j_.debug()) << "Validations flushed";
     }
 
@@ -458,20 +467,25 @@ private:
 
         mWriting = true;
         app_.getJobQueue ().addJob (
-            jtWRITE, "Validations::doWrite",
-            [this] (Job&) { doWrite(); });
+            jtWRITE, "Validations::queuedWrite",
+            [this] (Job&) { queuedWrite(); });
     }
 
-    void doWrite ()
+    void queuedWrite ()
     {
         auto event = app_.getJobQueue ().getLoadEventAP (jtDISK, "ValidationWrite");
 
-        std::string insVal ("INSERT INTO Validations "
+        ScopedLockType sl (mLock);
+        doWrite (sl);
+    }
+
+    void doWrite (ScopedLockType& sl)
+    {
+        std::string const insVal ("INSERT INTO Validations "
             "(InitialSeq, LedgerSeq, LedgerHash,NodePubKey,SignTime,RawData) "
             "VALUES (:initialSeq, :ledgerSeq, :ledgerHash,:nodePubKey,:signTime,:rawData);");
-        std::string findSeq("SELECT LedgerSeq FROM Ledgers WHERE Ledgerhash=:ledgerHash;");
+        std::string const findSeq("SELECT LedgerSeq FROM Ledgers WHERE Ledgerhash=:ledgerHash;");
 
-        ScopedLockType sl (mLock);
         assert (mWriting);
 
         while (!mStaleValidations.empty ())
