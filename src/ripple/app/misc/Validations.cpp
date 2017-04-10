@@ -479,6 +479,8 @@ private:
         doWrite (sl);
     }
 
+    // NOTE: doWrite() must be called with mLock *locked*.  The passed
+    // ScopedLockType& acts as a reminder to future maintainers.
     void doWrite (ScopedLockType& sl)
     {
         std::string const insVal ("INSERT INTO Validations "
