@@ -159,7 +159,7 @@ private:
                     val->setPreviousHash (it->second->getLedgerHash ());
                     mStaleValidations.push_back (it->second);
                     it->second = val;
-                    condWrite ();
+                    condWrite (sl);
                 }
                 else
                 {
@@ -306,7 +306,7 @@ private:
                 // contains a stale record
                 mStaleValidations.push_back (it->second);
                 it->second.reset ();
-                condWrite ();
+                condWrite (sl);
                 it = mCurrentValidations.erase (it);
             }
             else
@@ -338,7 +338,7 @@ private:
                 // contains a stale record
                 mStaleValidations.push_back (it->second);
                 it->second.reset ();
-                condWrite ();
+                condWrite (sl);
                 it = mCurrentValidations.erase (it);
             }
             else
@@ -375,7 +375,7 @@ private:
                 // contains a stale record
                 mStaleValidations.push_back (it->second);
                 it->second.reset ();
-                condWrite ();
+                condWrite (sl);
                 it = mCurrentValidations.erase (it);
             }
             else if (! it->second->isTrusted())
@@ -460,23 +460,22 @@ private:
         JLOG (j_.debug()) << "Validations flushed";
     }
 
-    void condWrite ()
+    // NOTE: condWrite() must be called with mLock *locked*.  The passed
+    // ScopedLockType& acts as a reminder to future maintainers.
+    void condWrite (ScopedLockType& sl)
     {
         if (mWriting)
             return;
 
         mWriting = true;
-        app_.getJobQueue ().addJob (
-            jtWRITE, "Validations::queuedWrite",
-            [this] (Job&) { queuedWrite(); });
-    }
-
-    void queuedWrite ()
-    {
-        auto event = app_.getJobQueue ().getLoadEventAP (jtDISK, "ValidationWrite");
-
-        ScopedLockType sl (mLock);
-        doWrite (sl);
+        app_.getJobQueue ().addJob (jtWRITE, "Validations::queuedWrite",
+            [this] (Job&) {
+                auto event = app_.getJobQueue().getLoadEventAP (
+                    jtDISK, "ValidationWrite");
+                // Since the lambda runs in another thread, reacquire mLock.
+                ScopedLockType sl (mLock);
+                doWrite (sl);
+            });
     }
 
     // NOTE: doWrite() must be called with mLock *locked*.  The passed
