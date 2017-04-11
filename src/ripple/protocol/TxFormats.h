@@ -57,6 +57,11 @@ enum TxType
     ttFEE               = 101,
 };
 
+inline bool isPseudoTx(TxType t)
+{
+    return t == ttAMENDMENT || t == ttFEE;
+}
+
 /** Manages the list of known transaction formats.
 */
 class TxFormats : public KnownFormats <TxType>

@@ -77,10 +77,10 @@ invoke_preclaim(PreclaimContext const& ctx)
     // list one, preflight will have already a flagged a failure.
     auto const id = ctx.tx.getAccountID(sfAccount);
     auto const baseFee = T::calculateBaseFee(ctx);
-    TER result;
+
     if (id != zero)
     {
-        result = T::checkSeq(ctx);
+        TER result = T::checkSeq(ctx);
 
         if (result != tesSUCCESS)
             return { result, baseFee };
@@ -95,17 +95,9 @@ invoke_preclaim(PreclaimContext const& ctx)
         if (result != tesSUCCESS)
             return { result, baseFee };
 
-        result = T::preclaim(ctx);
-
-        if (result != tesSUCCESS)
-            return{ result, baseFee };
-    }
-    else
-    {
-        result = tesSUCCESS;
     }
 
-    return { tesSUCCESS, baseFee };
+    return{ T::preclaim(ctx), baseFee };
 }
 
 static

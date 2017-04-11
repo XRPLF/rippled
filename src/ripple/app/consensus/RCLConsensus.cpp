@@ -155,7 +155,6 @@ RCLConsensus::relay(RCLCxTx const& tx)
     if (app_.getHashRouter().shouldRelay(tx.id()))
     {
         auto const slice = tx.tx_.slice();
-
         protocol::TMTransaction msg;
         msg.set_rawtransaction(slice.data(), slice.size());
         msg.set_status(protocol::tsNEW);
@@ -479,6 +478,12 @@ RCLConsensus::doAccept(
 
                     SerialIter sit(it.second.tx().tx_.slice());
                     auto txn = std::make_shared<STTx const>(sit);
+
+                    // Disputed pseudo-transactions that were not accepted
+                    // can't be succesfully applied in the next ledger
+                    if (isPseudoTx(txn->getTxnType()))
+                        continue;
+
                     retriableTxs.insert(txn);
 
                     anyDisputes = true;

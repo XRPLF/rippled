@@ -504,6 +504,11 @@ bool passesLocalChecks (STObject const& st, std::string& reason)
         return false;
     }
 
+    if (isPseudoTx(static_cast <TxType> (st.getFieldU16 (sfTransactionType))))
+    {
+        reason = "Cannot submit pseudo transactions.";
+        return false;
+    }
     return true;
 }
 
