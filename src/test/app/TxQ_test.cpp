@@ -35,6 +35,13 @@
 #include <test/jtx/WSClient.h>
 
 namespace ripple {
+
+namespace detail {
+extern
+std::vector<std::string>
+supportedAmendments ();
+}
+
 namespace test {
 
 class TxQ_test : public beast::unit_test::suite
@@ -96,7 +103,8 @@ class TxQ_test : public beast::unit_test::suite
 
     static
     std::unique_ptr<Config>
-    makeConfig(std::map<std::string, std::string> extra = {})
+    makeConfig(std::map<std::string, std::string> extraTxQ = {},
+        std::map<std::string, std::string> extraVoting = {})
     {
         auto p = test::jtx::envconfig();
         auto& section = p->section("transaction_queue");
@@ -105,8 +113,24 @@ class TxQ_test : public beast::unit_test::suite
         section.set("max_ledger_counts_to_store", "100");
         section.set("retry_sequence_percent", "25");
         section.set("zero_basefee_transaction_feelevel", "100000000000");
-        for (auto const& value : extra)
+
+        for (auto const& value : extraTxQ)
             section.set(value.first, value.second);
+
+        // Some tests specify different fee settings that are enabled by
+        // a FeeVote
+        if (!extraVoting.empty())
+        {
+
+            auto& votingSection = p->section("voting");
+            for (auto const & value : extraVoting)
+            {
+                votingSection.set(value.first, value.second);
+            }
+
+            // In order for the vote to occur, we must run as a validator
+            p->section("validation_seed").legacy("shUwVw52ofnCUX5m7kPTKzJdr4HEH");
+        }
         return p;
     }
 
@@ -114,37 +138,22 @@ class TxQ_test : public beast::unit_test::suite
     initFee(jtx::Env& env, std::size_t expectedInLedger, std::uint32_t base,
         std::uint32_t units, std::uint32_t reserve, std::uint32_t increment)
     {
-        // Change the reserve fee so we can create an account
-        // with a lower balance.
-        STTx feeTx(ttFEE,
-            [&](auto& obj)
-        {
-            obj[sfAccount] = AccountID();
-            obj[sfLedgerSequence] = env.current()->info().seq;
-            obj[sfBaseFee] = base;
-            obj[sfReferenceFeeUnits] = units;
-            obj[sfReserveBase] = reserve;
-            obj[sfReserveIncrement] = increment;
-        });
+        // Run past the flag ledger so that a Fee change vote occurs and
+        // lowers the reserve fee.  This will allow creating accounts with lower
+        // balances.
+        for(auto i = env.current()->seq(); i <= 257; ++i)
+            env.close();
 
-        auto const changed = env.app().openLedger().modify(
-            [&](OpenView& view, beast::Journal j)
-        {
-            auto const result = ripple::apply(
-                env.app(), view, feeTx,
-                tapNONE, j);
-            BEAST_EXPECT(result.second && result.first ==
-                tesSUCCESS);
-            return result.second;
-        });
-        BEAST_EXPECT(changed);
         // Pad a couple of txs to keep the median at the default
         env(noop(env.master));
         env(noop(env.master));
+
         // Close the ledger with a delay to force the TxQ stats
         // to stay at the default.
         env.close(env.now() + 5s, 10000ms);
-        checkMetrics(env, 0, boost::none, 0, expectedInLedger, 256);
+        checkMetrics(env, 0,
+            2 * (ripple::detail::supportedAmendments().size() + 1),
+                0, expectedInLedger, 256);
         auto const fees = env.current()->fees();
         BEAST_EXPECT(fees.base == base);
         BEAST_EXPECT(fees.units == units);
@@ -694,7 +703,11 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
+        Env env(
+            *this,
+            makeConfig(
+                {{"minimum_txn_in_ledger_standalone", "3"}},
+                {{"account_reserve", "200"}, {"owner_reserve", "50"}}),
             features(featureFeeEscalation));
 
         auto alice = Account("alice");
@@ -709,15 +722,17 @@ public:
         checkMetrics(env, 0, boost::none, 0, 3, 256);
 
         initFee(env, 3, 10, 10, 200, 50);
+        auto const initQueueMax =
+            2 * (ripple::detail::supportedAmendments().size() + 1);
 
         // Create several accounts while the fee is cheap so they all apply.
         env.fund(drops(2000), noripple(alice));
         env.fund(XRP(500000), noripple(bob, charlie, daria));
-        checkMetrics(env, 0, boost::none, 4, 3, 256);
+        checkMetrics(env, 0, initQueueMax, 4, 3, 256);
 
         // Alice - price starts exploding: held
         env(noop(alice), queued);
-        checkMetrics(env, 1, boost::none, 4, 3, 256);
+        checkMetrics(env, 1, initQueueMax, 4, 3, 256);
 
         auto aliceSeq = env.seq(alice);
         auto bobSeq = env.seq(bob);
@@ -726,31 +741,31 @@ public:
         // Alice - try to queue a second transaction, but leave a gap
         env(noop(alice), seq(aliceSeq + 2), fee(100),
             ter(terPRE_SEQ));
-        checkMetrics(env, 1, boost::none, 4, 3, 256);
+        checkMetrics(env, 1, initQueueMax, 4, 3, 256);
 
         // Alice - queue a second transaction. Yay.
         env(noop(alice), seq(aliceSeq + 1), fee(13),
             queued);
-        checkMetrics(env, 2, boost::none, 4, 3, 256);
+        checkMetrics(env, 2, initQueueMax, 4, 3, 256);
 
         // Alice - queue a third transaction. Yay.
         env(noop(alice), seq(aliceSeq + 2), fee(17),
             queued);
-        checkMetrics(env, 3, boost::none, 4, 3, 256);
+        checkMetrics(env, 3, initQueueMax, 4, 3, 256);
 
         // Bob - queue a transaction
         env(noop(bob), queued);
-        checkMetrics(env, 4, boost::none, 4, 3, 256);
+        checkMetrics(env, 4, initQueueMax, 4, 3, 256);
 
         // Bob - queue a second transaction
         env(noop(bob), seq(bobSeq + 1), fee(50),
             queued);
-        checkMetrics(env, 5, boost::none, 4, 3, 256);
+        checkMetrics(env, 5, initQueueMax, 4, 3, 256);
 
         // Charlie - queue a transaction, with a higher fee
         // than default
         env(noop(charlie), fee(15), queued);
-        checkMetrics(env, 6, boost::none, 4, 3, 256);
+        checkMetrics(env, 6, initQueueMax, 4, 3, 256);
 
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
         BEAST_EXPECT(env.seq(bob) == bobSeq);
@@ -1148,9 +1163,12 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this,
-            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
-                features(featureFeeEscalation));
+        Env env(
+            *this,
+            makeConfig(
+                {{"minimum_txn_in_ledger_standalone", "3"}},
+                {{"account_reserve", "200"}, {"owner_reserve", "50"}}),
+            features(featureFeeEscalation));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -1158,18 +1176,20 @@ public:
         auto queued = ter(terQUEUED);
 
         initFee(env, 3, 10, 10, 200, 50);
+        auto const initQueueMax =
+            2 * (ripple::detail::supportedAmendments().size() + 1);
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 3, 256);
+        checkMetrics(env, 0, initQueueMax, 0, 3, 256);
 
         env.fund(drops(5000), noripple(alice));
         env.fund(XRP(50000), noripple(bob));
-        checkMetrics(env, 0, boost::none, 2, 3, 256);
+        checkMetrics(env, 0, initQueueMax, 2, 3, 256);
         auto USD = bob["USD"];
 
         env(offer(alice, USD(5000), drops(5000)), require(owners(alice, 1)));
-        checkMetrics(env, 0, boost::none, 3, 3, 256);
+        checkMetrics(env, 0, initQueueMax, 3, 3, 256);
 
         env.close();
         checkMetrics(env, 0, 6, 0, 3, 256);
