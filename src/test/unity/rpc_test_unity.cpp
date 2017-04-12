@@ -19,6 +19,7 @@
 //==============================================================================
 
 #include <test/rpc/AccountInfo_test.cpp>
+#include <test/rpc/AccountCurrencies_test.cpp>
 #include <test/rpc/AccountLinesRPC_test.cpp>
 #include <test/rpc/AccountObjects_test.cpp>
 #include <test/rpc/AccountOffers_test.cpp>

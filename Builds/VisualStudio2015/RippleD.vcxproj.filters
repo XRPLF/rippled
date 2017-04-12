@@ -5571,6 +5571,9 @@
     <ClCompile Include="..\..\src\test\resource\Logic_test.cpp">
       <Filter>test\resource</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\rpc\AccountCurrencies_test.cpp">
+      <Filter>test\rpc</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\rpc\AccountInfo_test.cpp">
       <Filter>test\rpc</Filter>
     </ClCompile>
