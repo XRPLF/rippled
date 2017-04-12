@@ -28,18 +28,28 @@ namespace ripple {
 class Application;
 class STTx;
 
+/** Describes the results of the `preflight` check
+
+    @note All members are const to make it more difficult
+        to "fake" a result without calling `preflight`.
+    @see preflight, preclaim, doApply, apply
+*/
 struct PreflightResult
 {
 public:
-    // from the context
+    /// From the input - the transaction
     STTx const& tx;
+    /// From the input - the rules
     Rules const rules;
+    /// From the input - the flags
     ApplyFlags const flags;
+    /// From the input - the journal
     beast::Journal const j;
 
-    // result
+    /// Intermediate transaction result
     TER const ter;
 
+    /// Constructor
     template<class Context>
     PreflightResult(Context const& ctx_,
         TER ter_)
@@ -51,23 +61,37 @@ public:
     {
     }
 
+    /// Deleted copy assignment operator
     PreflightResult& operator=(PreflightResult const&) = delete;
 };
 
+/** Describes the results of the `preclaim` check
+
+    @note All members are const to make it more difficult
+        to "fake" a result without calling `preclaim`.
+    @see preflight, preclaim, doApply, apply
+*/
 struct PreclaimResult
 {
 public:
-    // from the context
+    /// From the input - the ledger view
     ReadView const& view;
+    /// From the input - the transaction
     STTx const& tx;
+    /// From the input - the flags
     ApplyFlags const flags;
+    /// From the input - the journal
     beast::Journal const j;
 
-    // result
+    /// Intermediate transaction result
     TER const ter;
+    /// Transaction-specific base fee
     std::uint64_t const baseFee;
+    /// Success flag - whether the transaction is likely to
+    /// claim a fee
     bool const likelyToClaimFee;
 
+    /// Constructor
     template<class Context>
     PreclaimResult(Context const& ctx_,
         TER ter_, std::uint64_t const& baseFee_)
@@ -82,6 +106,7 @@ public:
     {
     }
 
+    /// Constructor
     template<class Context>
     PreclaimResult(Context const& ctx_,
         std::pair<TER, std::uint64_t> const& result)
@@ -89,26 +114,39 @@ public:
     {
     }
 
+    /// Deleted copy assignment operator
     PreclaimResult& operator=(PreclaimResult const&) = delete;
 };
 
+/** Structure describing the consequences to the account
+    of applying a transaction if the transaction consumes
+    the maximum XRP allowed.
+
+    @see calculateConsequences
+*/
 struct TxConsequences
 {
-    enum Category
+    /// Describes how the transaction affects subsequent
+    /// transactions
+    enum ConsequenceCategory
     {
-        // Moves currency around, creates offers, etc.
+        /// Moves currency around, creates offers, etc.
         normal = 0,
-        // Affects the ability of subsequent transactions
-        // to claim a fee. Eg. SetRegularKey
+        /// Affects the ability of subsequent transactions
+        /// to claim a fee. Eg. `SetRegularKey`
         blocker
     };
 
-    Category const category;
+    /// Describes how the transaction affects subsequent
+    /// transactions
+    ConsequenceCategory const category;
+    /// Transaction fee
     XRPAmount const fee;
-    // Does NOT include the fee.
+    /// Does NOT include the fee.
     XRPAmount const potentialSpend;
 
-    TxConsequences(Category const category_,
+    /// Constructor
+    TxConsequences(ConsequenceCategory const category_,
         XRPAmount const fee_, XRPAmount const spend_)
         : category(category_)
         , fee(fee_)
@@ -116,9 +154,13 @@ struct TxConsequences
     {
     }
 
+    /// Constructor
     TxConsequences(TxConsequences const&) = default;
+    /// Deleted copy assignment operator
     TxConsequences& operator=(TxConsequences const&) = delete;
+    /// Constructor
     TxConsequences(TxConsequences&&) = default;
+    /// Deleted copy assignment operator
     TxConsequences& operator=(TxConsequences&&) = delete;
 
 };
@@ -128,8 +170,16 @@ struct TxConsequences
     The transaction is checked against all possible
     validity constraints that do not require a ledger.
 
-    @return A PreflightResult object constaining, among
-    other things, the TER code.
+    @param app The current running `Application`.
+    @param rules The `Rules` in effect at the time of the check.
+    @param tx The transaction to be checked.
+    @param flags `ApplyFlags` describing processing options.
+    @param j A journal.
+
+    @see PreflightResult, preclaim, doApply, apply
+
+    @return A `PreflightResult` object containing, among
+    other things, the `TER` code.
 */
 PreflightResult
 preflight(Application& app, Rules const& rules,
@@ -149,8 +199,19 @@ preflight(Application& app, Rules const& rules,
     "Succeeds" in this case is defined as returning a
     `tes` or `tec`, since both lead to claiming a fee.
 
-    @return A PreclaimResult object containing, among
-    other things the TER code and the base fee value for
+    @pre The transaction has been checked
+    and validated using `preflight`
+
+    @param preflightResult The result of a previous
+        call to `preflight` for the transaction.
+    @param app The current running `Application`.
+    @param view The open ledger that the transaction
+        will attempt to be applied to.
+
+    @see PreclaimResult, preflight, doApply, apply
+
+    @return A `PreclaimResult` object containing, among
+    other things the `TER` code and the base fee value for
     this transaction.
 */
 PreclaimResult
@@ -168,6 +229,11 @@ preclaim(PreflightResult const& preflightResult,
     Since none should be thrown, that will usually
     mean terminating.
 
+    @param app The current running `Application`.
+    @param view The current open ledger.
+    @param tx The transaction to be checked.
+    @param j A journal.
+
     @return The base fee.
 */
 std::uint64_t
@@ -176,18 +242,36 @@ calculateBaseFee(Application& app, ReadView const& view,
 
 /** Determine the XRP balance consequences if a transaction
     consumes the maximum XRP allowed.
+
+    @pre The transaction has been checked
+    and validated using `preflight`
+
+    @param preflightResult The result of a previous
+    call to `preflight` for the transaction.
+
+    @return A `TxConsequences` object containing the "worst
+        case" consequences of applying this transaction to
+        a ledger.
+
+    @see TxConsequences
 */
 TxConsequences
 calculateConsequences(PreflightResult const& preflightResult);
 
 /** Apply a prechecked transaction to an OpenView.
 
-    See also: apply()
+    @pre The transaction has been checked
+    and validated using `preflight` and `preclaim`
 
-    Precondition: The transaction has been checked
-    and validated using the above functions.
+    @param preclaimResult The result of a previous
+    call to `preclaim` for the transaction.
+    @param app The current running `Application`.
+    @param view The open ledger that the transaction
+    will attempt to be applied to.
 
-    @return A pair with the TER and a bool indicating
+    @see preflight, preclaim, apply
+
+    @return A pair with the `TER` and a `bool` indicating
     whether or not the transaction was applied.
 */
 std::pair<TER, bool>
