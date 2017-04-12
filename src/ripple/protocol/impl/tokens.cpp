@@ -146,24 +146,10 @@ encodeBase58(
     return str;
 }
 
-/*  Base-58 encode a Ripple Token
-
-    Ripple Tokens have a one-byte prefx indicating
-    the type of token, followed by the data for the
-    token, and finally a 4-byte checksum.
-
-    Tokens include the following:
-
-        Wallet Seed
-        Account Public Key
-        Account ID
-
-    @param temp A pointer to storage of not
-                less than 2*(size+6) bytes
-*/
+static
 std::string
-base58EncodeToken (std::uint8_t type,
-    void const* token, std::size_t size)
+encodeToken (std::uint8_t type,
+    void const* token, std::size_t size, bool btc)
 {
     char buf[1024];
     // expanded token includes type + checksum
@@ -189,7 +175,21 @@ base58EncodeToken (std::uint8_t type,
     std::memcpy(temp + 1, token, size);
     checksum(temp + 1 + size, temp, 1 + size);
     return encodeBase58(temp, expanded,
-        temp + expanded, rippleAlphabet);
+        temp + expanded, btc ? bitcoinAlphabet : rippleAlphabet);
+}
+
+std::string
+base58EncodeToken (std::uint8_t type,
+    void const* token, std::size_t size)
+{
+    return encodeToken(type, token, size, false);
+}
+
+std::string
+base58EncodeTokenBitcoin (std::uint8_t type,
+    void const* token, std::size_t size)
+{
+    return encodeToken(type, token, size, true);
 }
 
 //------------------------------------------------------------------------------

@@ -69,11 +69,25 @@ parseHexOrBase58 (std::string const& s);
         Account Public Key
         Account ID
 
-    @param temp A pointer to storage of not
-                less than 2*(size+6) bytes
+    @param type A single byte representing the TokenType
+    @param token A pointer to storage of not
+                 less than 2*(size+6) bytes
+    @param size the size of the token buffer in bytes
 */
 std::string
 base58EncodeToken (std::uint8_t type,
+    void const* token, std::size_t size);
+
+/*  Base-58 encode a Bitcoin Token
+ *
+ *  provided here for symmetry, but should never be needed
+ *  except for testing.
+ *
+ *  @see base58EncodeToken for format description.
+ *
+ */
+std::string
+base58EncodeTokenBitcoin (std::uint8_t type,
     void const* token, std::size_t size);
 
 /** Decode a Base58 token

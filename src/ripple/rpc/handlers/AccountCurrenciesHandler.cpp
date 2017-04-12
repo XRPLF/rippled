@@ -18,10 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
@@ -51,6 +53,9 @@ Json::Value doAccountCurrencies (RPC::Context& context)
     AccountID accountID; // out param
     if (auto jvAccepted = RPC::accountFromString (accountID, strIdent, bStrict))
         return jvAccepted;
+
+    if (! ledger->read(keylet::account(accountID)))
+        return rpcError (rpcACT_NOT_FOUND);
 
     std::set<Currency> send, receive;
     for (auto const& item : getRippleStateItems (accountID, *ledger))
