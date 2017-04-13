@@ -104,6 +104,7 @@ detail::supportedAmendments ()
         { "CC5ABAE4F3EC92E94A59B1908C2BE82D2228B6485C00AFF8F22DF930D89C194E SortedDirectories" },
         { "B4D44CC3111ADD964E846FC57760C8B50FFCD5A82C86A72756F6B058DDDF96AD fix1201" },
         { "6C92211186613F9647A89DFFBAB8F94C99D4C7E956D495270789128569177DA1 fix1512" },
+        { "67A34F2CF55BFC0F93AACD5B281413176FEE195269FA6D95219A2DF738671172 fix1513" },
         { "B9E739B8296B4A1BB29BE990B17D66E21B62A300A909F25AC55C22D6C72E1F9D fix1523" },
         { "1D3463A5891F9E589C5AE839FFAC4A917CE96197098A1EF22304E1BC5B98A454 fix1528" }
     };
@@ -149,6 +150,7 @@ uint256 const featureEnforceInvariants = *getRegisteredFeature("EnforceInvariant
 uint256 const featureSortedDirectories = *getRegisteredFeature("SortedDirectories");
 uint256 const fix1201 = *getRegisteredFeature("fix1201");
 uint256 const fix1512 = *getRegisteredFeature("fix1512");
+uint256 const fix1513 = *getRegisteredFeature("fix1513");
 uint256 const fix1523 = *getRegisteredFeature("fix1523");
 uint256 const fix1528 = *getRegisteredFeature("fix1528");
 

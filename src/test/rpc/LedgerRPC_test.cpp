@@ -477,7 +477,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                     .set("minimum_txn_in_ledger_standalone", "3");
                 return cfg;
             }),
-            with_only_features(featureFeeEscalation)};
+            with_only_features(featureFeeEscalation, fix1513)};
 
         Json::Value jv;
         jv[jss::ledger_index] = "current";
