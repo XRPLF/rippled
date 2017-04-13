@@ -27,24 +27,27 @@ namespace ripple {
 
 /** Protocol specific constants, types, and data.
 
-    This information is part of the Ripple protocol. Specifically,
-    it is required for peers to be able to communicate with each other.
+    This information is, implicitly, part of the Ripple
+    protocol.
 
-    @note Changing these will create a hard fork.
-
-    @ingroup protocol
-    @defgroup protocol
+    @note Changing these values without adding code to the
+          server to detect "pre-change" and "post-change"
+          will result in a hard fork.
 */
-struct Protocol
-{
-    /** Smallest legal byte size of a transaction.
-    */
-    static int const txMinSizeBytes = 32;
+/** Smallest legal byte size of a transaction. */
+std::size_t constexpr txMinSizeBytes = 32;
 
-    /** Largest legal byte size of a transaction.
-    */
-    static int const txMaxSizeBytes = 1024 * 1024; // 1048576
-};
+/** Largest legal byte size of a transaction. */
+std::size_t constexpr txMaxSizeBytes = 1024 * 1024;
+
+/** The maximum number of unfunded offers to delete at once */
+std::size_t constexpr unfundedOfferRemoveLimit = 1000;
+
+/** The maximum number of metadata entries allowed in one transaction */
+std::size_t constexpr oversizeMetaDataCap = 5200;
+
+/** The maximum number of entries per directory page */
+std::size_t constexpr dirNodeMaxEntries = 32;
 
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
