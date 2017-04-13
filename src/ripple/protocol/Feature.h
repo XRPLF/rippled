@@ -71,6 +71,7 @@ class FeatureCollections
         "SortedDirectories",
         "fix1201",
         "fix1512",
+        "fix1513",
         "fix1523",
         "fix1528"
     };
@@ -172,6 +173,7 @@ extern uint256 const featureEnforceInvariants;
 extern uint256 const featureSortedDirectories;
 extern uint256 const fix1201;
 extern uint256 const fix1512;
+extern uint256 const fix1513;
 extern uint256 const fix1523;
 extern uint256 const fix1528;
 
