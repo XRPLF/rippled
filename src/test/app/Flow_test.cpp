@@ -1254,6 +1254,34 @@ struct Flow_test : public beast::unit_test::suite
             ter(temBAD_PATH));
     }
 
+    template<class... T>
+    void testWithFeats(bool haveFlow, T&&... fs)
+    {
+        testLineQuality({ fs... });
+        testFalseDry({ fs... });
+        if (!haveFlow)
+            return;
+        testDirectStep({ fs... });
+        testBookStep({ fs... });
+        testDirectStep({ featureOwnerPaysFee, fs... });
+        testBookStep({ featureOwnerPaysFee, fs... });
+        testTransferRate({ featureOwnerPaysFee, fs... });
+        testSelfPayment1({ fs... });
+        testSelfPayment2({ fs... });
+        testSelfFundedXRPEndpoint(false, { fs... });
+        testSelfFundedXRPEndpoint(true, { fs... });
+        testUnfundedOffer(true, { fs... });
+        testUnfundedOffer(false, { fs... });
+        testReexecuteDirectStep({ fix1368, fs... });
+        testSelfPayLowQualityOffer({ fs... });
+    }
+
+    template<class... T>
+    void testWithFeats(T&&... fs)
+    {
+        testWithFeats(!!sizeof...(fs), fs...);
+    }
+
     void run() override
     {
         testLimitQuality();
@@ -1262,35 +1290,50 @@ struct Flow_test : public beast::unit_test::suite
         testRIPD1449(true);
         testRIPD1449(false);
 
-        auto testWithFeats = [this](auto&&... fs)
-        {
-            testLineQuality({fs...});
-            testFalseDry({fs...});
-            if (!sizeof...(fs))
-                return;
-            testDirectStep({fs...});
-            testBookStep({fs...});
-            testDirectStep({featureOwnerPaysFee, fs...});
-            testBookStep({featureOwnerPaysFee, fs...});
-            testTransferRate({featureOwnerPaysFee, fs...});
-            testSelfPayment1({fs...});
-            testSelfPayment2({fs...});
-            testSelfFundedXRPEndpoint(false, {fs...});
-            testSelfFundedXRPEndpoint(true, {fs...});
-            testUnfundedOffer(true, {fs...});
-            testUnfundedOffer(false,  {fs...});
-            testReexecuteDirectStep({fix1368, fs...});
-            testSelfPayLowQualityOffer({fs...});
-        };
+        testWithFeats(false, featureFeeEscalation, fix1513);
+        testWithFeats(featureFlow, featureFeeEscalation, fix1513);
+        testWithFeats(featureFlow, fix1373, featureFeeEscalation, fix1513);
+        testWithFeats(featureFlow, fix1373, featureFlowCross,
+            featureFeeEscalation, fix1513);
+        testEmptyStrand({featureFlow, fix1373, featureFlowCross,
+            featureFeeEscalation, fix1513 });
+    }
+};
+
+struct Flow_manual_test : public Flow_test
+{
+    void run() override
+    {
         testWithFeats();
+        testWithFeats(false,
+            featureFeeEscalation);
+        testWithFeats(false,
+            featureFeeEscalation, fix1513);
         testWithFeats(featureFlow);
+        testWithFeats(featureFlow,
+            featureFeeEscalation);
+        testWithFeats(featureFlow,
+            featureFeeEscalation, fix1513);
         testWithFeats(featureFlow, fix1373);
+        testWithFeats(featureFlow, fix1373,
+            featureFeeEscalation);
+        testWithFeats(featureFlow, fix1373,
+            featureFeeEscalation, fix1513);
         testWithFeats(featureFlow, fix1373, featureFlowCross);
-        testEmptyStrand({featureFlow, fix1373, featureFlowCross});
+        testWithFeats(featureFlow, fix1373, featureFlowCross,
+            featureFeeEscalation);
+        testWithFeats(featureFlow, fix1373, featureFlowCross,
+            featureFeeEscalation, fix1513);
+        testEmptyStrand({ featureFlow, fix1373, featureFlowCross });
+        testEmptyStrand({ featureFlow, fix1373, featureFlowCross,
+            featureFeeEscalation });
+        testEmptyStrand({ featureFlow, fix1373, featureFlowCross,
+            featureFeeEscalation, fix1513 });
     }
 };
 
 BEAST_DEFINE_TESTSUITE(Flow,app,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(Flow_manual,app,ripple);
 
 } // test
 } // ripple
