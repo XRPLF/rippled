@@ -1942,7 +1942,7 @@ public:
                     .set("minimum_txn_in_ledger_standalone", "3");
                 return cfg;
             }),
-            with_features(featureFeeEscalation)};
+            with_features(featureFeeEscalation, fix1513)};
         LoadFeeTrack const& feeTrack = env.app().getFeeTrack();
 
         {
