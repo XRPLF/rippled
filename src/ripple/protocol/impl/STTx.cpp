@@ -72,7 +72,7 @@ STTx::STTx (SerialIter& sit)
 {
     int length = sit.getBytesLeft ();
 
-    if ((length < Protocol::txMinSizeBytes) || (length > Protocol::txMaxSizeBytes))
+    if ((length < txMinSizeBytes) || (length > txMaxSizeBytes))
         Throw<std::runtime_error> ("Transaction length invalid");
 
     set (sit);
