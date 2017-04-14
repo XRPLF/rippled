@@ -159,7 +159,7 @@ public:
         };
         testAll({});
         testAll({featureFlow});
-        testAll({featureFlow, featureToStrandV2});
+        testAll({featureFlow, fix1373});
     }
 };
 

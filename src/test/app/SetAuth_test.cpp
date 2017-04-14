@@ -77,7 +77,7 @@ struct SetAuth_test : public beast::unit_test::suite
     {
         testAuth({});
         testAuth({featureFlow});
-        testAuth({featureFlow, featureToStrandV2});
+        testAuth({featureFlow, fix1373});
     }
 };
 

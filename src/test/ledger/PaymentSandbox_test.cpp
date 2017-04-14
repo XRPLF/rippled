@@ -344,7 +344,7 @@ public:
             testReserve(fs);
         };
         testAll({});
-        testAll({featureFlow, featureToStrandV2});
+        testAll({featureFlow, fix1373});
     }
 };
 

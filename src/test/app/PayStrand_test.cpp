@@ -645,7 +645,7 @@ struct PayStrand_test : public beast::unit_test::suite
         using RippleCalc = ::ripple::path::RippleCalc;
 
         ExistingElementPool eep;
-        Env env(*this, features(featureToStrandV2));
+        Env env(*this, features(fix1373));
 
         auto const closeTime = amendmentRIPD1298SoTime() +
             100 * env.closed()->info().closeTimeResolution;
@@ -1264,7 +1264,7 @@ struct PayStrand_test : public beast::unit_test::suite
         auto const USD = gw["USD"];
         auto const EUR = gw["EUR"];
 
-        if (hasFeature(featureToStrandV2, fs))
+        if (hasFeature(fix1373, fs))
         {
             Env env(*this, features(fs));
             env.fund(XRP(10000), alice, bob, gw);
@@ -1363,7 +1363,7 @@ struct PayStrand_test : public beast::unit_test::suite
 
             auto const expectedResult = [&] {
                 if (hasFeature(featureFlow, fs) &&
-                    !hasFeature(featureToStrandV2, fs))
+                    !hasFeature(fix1373, fs))
                     return tesSUCCESS;
                 return temBAD_PATH_LOOP;
             }();
@@ -1404,12 +1404,12 @@ struct PayStrand_test : public beast::unit_test::suite
     {
         testAllPairs();
         testToStrand({featureFlow});
-        testToStrand({featureFlow, featureToStrandV2});
+        testToStrand({featureFlow, fix1373});
         testRIPD1373({});
-        testRIPD1373({featureFlow, featureToStrandV2});
+        testRIPD1373({featureFlow, fix1373});
         testLoop({});
         testLoop({featureFlow});
-        testLoop({featureFlow, featureToStrandV2});
+        testLoop({featureFlow, fix1373});
     }
 };
 
