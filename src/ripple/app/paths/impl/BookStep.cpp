@@ -685,7 +685,7 @@ BookStep<TIn, TOut>::check(StrandContext const& ctx) const
         return temBAD_PATH_LOOP;
     }
 
-    if (ctx.view.rules().enabled(featureToStrandV2) &&
+    if (ctx.view.rules().enabled(fix1373) &&
         ctx.seenDirectIssues[1].count(book_.out))
     {
         JLOG(j_.debug()) << "BookStep: loop detected: " << *this;

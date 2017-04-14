@@ -95,7 +95,7 @@ struct BookDirs_test : public beast::unit_test::suite
     void run() override
     {
         test_bookdir({});
-        test_bookdir({featureFlow, featureToStrandV2});
+        test_bookdir({featureFlow, fix1373});
     }
 };
 

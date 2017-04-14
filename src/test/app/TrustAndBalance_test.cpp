@@ -508,7 +508,7 @@ public:
         };
         testWithFeatures({});
         testWithFeatures({featureFlow});
-        testWithFeatures({featureFlow, featureToStrandV2});
+        testWithFeatures({featureFlow, fix1373});
     }
 };
 

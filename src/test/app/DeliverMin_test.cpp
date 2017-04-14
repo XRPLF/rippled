@@ -113,7 +113,7 @@ public:
     {
         test_convert_all_of_an_asset({});
         test_convert_all_of_an_asset({featureFlow});
-        test_convert_all_of_an_asset({featureFlow, featureToStrandV2});
+        test_convert_all_of_an_asset({featureFlow, fix1373});
     }
 };
 

@@ -154,7 +154,7 @@ public:
     run() override
     {
         testGWB({});
-        testGWB({featureFlow, featureToStrandV2});
+        testGWB({featureFlow, fix1373});
     }
 };
 

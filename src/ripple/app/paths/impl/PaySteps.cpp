@@ -104,7 +104,7 @@ toStep (
         JLOG (j.warn())
             << "Found offer/account payment step. Aborting payment strand.";
         assert (0);
-        if (ctx.view.rules().enabled(featureToStrandV2))
+        if (ctx.view.rules().enabled(fix1373))
             return {temBAD_PATH, std::unique_ptr<Step>{}};
         Throw<FlowException> (tefEXCEPTION, "Found offer/account payment step.");
     }
@@ -668,7 +668,7 @@ toStrand (
     bool ownerPaysTransferFee,
     beast::Journal j)
 {
-    if (view.rules().enabled(featureToStrandV2))
+    if (view.rules().enabled(fix1373))
         return toStrandV2(
             view, src, dst, deliver, sendMaxIssue, path, ownerPaysTransferFee, j);
     else
