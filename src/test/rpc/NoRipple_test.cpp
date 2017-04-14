@@ -219,7 +219,7 @@ public:
         };
         withFeatsTests({});
         withFeatsTests({featureFlow});
-        withFeatsTests({featureFlow, featureToStrandV2});
+        withFeatsTests({featureFlow, fix1373});
     }
 };
 

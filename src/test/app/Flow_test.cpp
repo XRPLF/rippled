@@ -1228,7 +1228,7 @@ struct Flow_test : public beast::unit_test::suite
         };
         testWithFeats();
         testWithFeats(featureFlow);
-        testWithFeats(featureFlow, featureToStrandV2);
+        testWithFeats(featureFlow, fix1373);
     }
 };
 

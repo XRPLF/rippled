@@ -59,7 +59,7 @@ uint256 const featureTickSize = feature("TickSize");
 uint256 const fix1368 = feature("fix1368");
 uint256 const featureEscrow = feature("Escrow");
 uint256 const featureCryptoConditionsSuite = feature("CryptoConditionsSuite");
-uint256 const featureToStrandV2 = feature("ToStrandV2");
+uint256 const fix1373 = feature("fix1373");
 uint256 const featureEnforceInvariants = feature("EnforceInvariants");
 
 } // ripple

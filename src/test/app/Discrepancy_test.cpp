@@ -146,7 +146,7 @@ public:
     {
         testXRPDiscrepancy ({});
         testXRPDiscrepancy ({featureFlow});
-        testXRPDiscrepancy ({featureFlow, featureToStrandV2});
+        testXRPDiscrepancy ({featureFlow, fix1373});
     }
 };
 

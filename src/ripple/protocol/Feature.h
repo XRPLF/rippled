@@ -48,7 +48,7 @@ extern uint256 const featureTickSize;
 extern uint256 const fix1368;
 extern uint256 const featureEscrow;
 extern uint256 const featureCryptoConditionsSuite;
-extern uint256 const featureToStrandV2;
+extern uint256 const fix1373;
 extern uint256 const featureEnforceInvariants;
 
 } // ripple
