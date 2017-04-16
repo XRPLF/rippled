@@ -61,8 +61,8 @@ make_seed_pair() noexcept
         std::uniform_int_distribution <std::uint64_t> dist;
 
         state_t() : gen(rng()) {}
-        // state_t(state_t const&) = delete;
-        // state_t& operator=(state_t const&) = delete;
+        state_t(state_t const&) = delete;
+        state_t& operator=(state_t const&) = delete;
     };
     static state_t state;
     std::lock_guard <std::mutex> lock (state.mutex);
