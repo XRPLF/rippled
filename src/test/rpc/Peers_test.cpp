@@ -47,20 +47,18 @@ class Peers_test : public beast::unit_test::suite
         for(auto i =0; i < 3; ++i)
         {
 
-            auto seed = generateSeed("seed" + std::to_string(i));
-            auto pubkey = derivePublicKey(
-                    KeyType::secp256k1,
-                    generateSecretKey(KeyType::secp256k1, seed));
+            auto kp = generateKeyPair (KeyType::secp256k1,
+                generateSeed("seed" + std::to_string(i)));
 
             std::string name = "Node " + std::to_string(i);
 
             env.app().cluster().update(
-                pubkey,
+                kp.first,
                 name,
                 200,
                 env.timeKeeper().now() - 10s);
             nodes.insert( std::make_pair(
-                toBase58(TokenType::TOKEN_NODE_PUBLIC, pubkey), name));
+                toBase58(TokenType::TOKEN_NODE_PUBLIC, kp.first), name));
         }
 
         // make request, verify nodes we created match
