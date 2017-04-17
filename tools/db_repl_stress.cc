@@ -1,8 +1,9 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
+#ifndef ROCKSDB_LITE
 #ifndef GFLAGS
 #include <cstdio>
 int main() {
@@ -12,13 +13,13 @@ int main() {
 #else
 
 #include <cstdio>
+#include <atomic>
 
 #include <gflags/gflags.h>
 
 #include "db/write_batch_internal.h"
 #include "rocksdb/db.h"
 #include "rocksdb/types.h"
-#include "port/atomic_pointer.h"
 #include "util/testutil.h"
 
 // Run a thread to perform Put's.
@@ -58,7 +59,7 @@ static void DataPumpThreadBody(void* arg) {
 }
 
 struct ReplicationThread {
-  port::AtomicPointer stop;
+  std::atomic<bool> stop;
   DB* db;
   volatile size_t no_read;
 };
@@ -68,11 +69,11 @@ static void ReplicationThreadBody(void* arg) {
   DB* db = t->db;
   unique_ptr<TransactionLogIterator> iter;
   SequenceNumber currentSeqNum = 1;
-  while (t->stop.Acquire_Load() != nullptr) {
+  while (!t->stop.load(std::memory_order_acquire)) {
     iter.reset();
     Status s;
     while(!db->GetUpdatesSince(currentSeqNum, &iter).ok()) {
-      if (t->stop.Acquire_Load() == nullptr) {
+      if (t->stop.load(std::memory_order_acquire)) {
         return;
       }
     }
@@ -129,15 +130,17 @@ int main(int argc, const char** argv) {
   ReplicationThread replThread;
   replThread.db = db;
   replThread.no_read = 0;
-  replThread.stop.Release_Store(env); // store something to make it non-null.
+  replThread.stop.store(false, std::memory_order_release);
 
   env->StartThread(ReplicationThreadBody, &replThread);
   while(replThread.no_read < FLAGS_num_inserts);
-  replThread.stop.Release_Store(nullptr);
+  replThread.stop.store(true, std::memory_order_release);
   if (replThread.no_read < dataPump.no_records) {
     // no. read should be => than inserted.
-    fprintf(stderr, "No. of Record's written and read not same\nRead : %zu"
-            " Written : %zu\n", replThread.no_read, dataPump.no_records);
+    fprintf(stderr,
+            "No. of Record's written and read not same\nRead : %" ROCKSDB_PRIszt
+            " Written : %" ROCKSDB_PRIszt "\n",
+            replThread.no_read, dataPump.no_records);
     exit(1);
   }
   fprintf(stderr, "Successful!\n");
@@ -145,3 +148,11 @@ int main(int argc, const char** argv) {
 }
 
 #endif  // GFLAGS
+
+#else  // ROCKSDB_LITE
+#include <stdio.h>
+int main(int argc, char** argv) {
+  fprintf(stderr, "Not supported in lite mode.\n");
+  return 1;
+}
+#endif  // ROCKSDB_LITE

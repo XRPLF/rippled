@@ -1,4 +1,4 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
@@ -13,19 +13,22 @@
 #pragma once
 #include <algorithm>
 #include <stdio.h>
-#include <sys/time.h>
+#include "port/sys_time.h"
 #include <time.h>
 #include <fcntl.h>
-#include <unistd.h>
+
 #ifdef OS_LINUX
+#ifndef FALLOC_FL_KEEP_SIZE
 #include <linux/falloc.h>
 #endif
+#endif
+
 #include "rocksdb/env.h"
+#include "util/iostats_context_imp.h"
+#include "util/sync_point.h"
 #include <atomic>
 
 namespace rocksdb {
-
-const int kDebugLogChunkSize = 128 * 1024;
 
 class PosixLogger : public Logger {
  private:
@@ -51,14 +54,20 @@ class PosixLogger : public Logger {
   virtual ~PosixLogger() {
     fclose(file_);
   }
-  virtual void Flush() {
+  virtual void Flush() override {
+    TEST_SYNC_POINT("PosixLogger::Flush:Begin1");
+    TEST_SYNC_POINT("PosixLogger::Flush:Begin2");
     if (flush_pending_) {
       flush_pending_ = false;
       fflush(file_);
     }
     last_flush_micros_ = env_->NowMicros();
   }
-  virtual void Logv(const char* format, va_list ap) {
+
+  using Logger::Logv;
+  virtual void Logv(const char* format, va_list ap) override {
+    IOSTATS_TIMER_GUARD(logger_nanos);
+
     const uint64_t thread_id = (*gettid_)();
 
     // We try twice: the first time with a fixed-size stack allocated buffer,
@@ -71,7 +80,7 @@ class PosixLogger : public Logger {
         bufsize = sizeof(buffer);
         base = buffer;
       } else {
-        bufsize = 30000;
+        bufsize = 65536;
         base = new char[bufsize];
       }
       char* p = base;
@@ -119,18 +128,21 @@ class PosixLogger : public Logger {
       const size_t write_size = p - base;
 
 #ifdef ROCKSDB_FALLOCATE_PRESENT
+      const int kDebugLogChunkSize = 128 * 1024;
+
       // If this write would cross a boundary of kDebugLogChunkSize
       // space, pre-allocate more space to avoid overly large
       // allocations from filesystem allocsize options.
       const size_t log_size = log_size_;
-      const int last_allocation_chunk =
+      const size_t last_allocation_chunk =
         ((kDebugLogChunkSize - 1 + log_size) / kDebugLogChunkSize);
-      const int desired_allocation_chunk =
+      const size_t desired_allocation_chunk =
         ((kDebugLogChunkSize - 1 + log_size + write_size) /
            kDebugLogChunkSize);
       if (last_allocation_chunk != desired_allocation_chunk) {
-        fallocate(fd_, FALLOC_FL_KEEP_SIZE, 0,
-                  desired_allocation_chunk * kDebugLogChunkSize);
+        fallocate(
+            fd_, FALLOC_FL_KEEP_SIZE, 0,
+            static_cast<off_t>(desired_allocation_chunk * kDebugLogChunkSize));
       }
 #endif
 
@@ -143,9 +155,7 @@ class PosixLogger : public Logger {
       uint64_t now_micros = static_cast<uint64_t>(now_tv.tv_sec) * 1000000 +
         now_tv.tv_usec;
       if (now_micros - last_flush_micros_ >= flush_every_seconds_ * 1000000) {
-        flush_pending_ = false;
-        fflush(file_);
-        last_flush_micros_ = now_micros;
+        Flush();
       }
       if (base != buffer) {
         delete[] base;
@@ -153,9 +163,7 @@ class PosixLogger : public Logger {
       break;
     }
   }
-  size_t GetLogFileSize() const {
-    return log_size_;
-  }
+  size_t GetLogFileSize() const override { return log_size_; }
 };
 
 }  // namespace rocksdb

@@ -1,4 +1,4 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
@@ -19,7 +19,10 @@
 namespace rocksdb {
 
 class Slice;
-class WritableFile;
+
+// Append a human-readable time in micros.
+int AppendHumanMicros(uint64_t micros, char* output, int len,
+                      bool fixed_format);
 
 // Append a human-readable size in bytes
 int AppendHumanBytes(uint64_t bytes, char* output, int len);
@@ -31,8 +34,14 @@ extern void AppendNumberTo(std::string* str, uint64_t num);
 // Escapes any non-printable characters found in "value".
 extern void AppendEscapedStringTo(std::string* str, const Slice& value);
 
-// Return a human-readable printout of "num"
+// Return a string printout of "num"
 extern std::string NumberToString(uint64_t num);
+
+// Return a human-readable version of num.
+// for num >= 10.000, prints "xxK"
+// for num >= 10.000.000, prints "xxM"
+// for num >= 10.000.000.000, prints "xxG"
+extern std::string NumberToHumanString(int64_t num);
 
 // Return a human-readable version of "value".
 // Escapes any non-printable characters found in "value".

@@ -1,4 +1,4 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
@@ -13,26 +13,39 @@
 
 namespace rocksdb {
 
-class ArenaTest {};
+namespace {
+const size_t kHugePageSize = 2 * 1024 * 1024;
+}  // namespace
+class ArenaTest : public testing::Test {};
 
-TEST(ArenaTest, Empty) { Arena arena0; }
+TEST_F(ArenaTest, Empty) { Arena arena0; }
 
-TEST(ArenaTest, MemoryAllocatedBytes) {
+namespace {
+bool CheckMemoryAllocated(size_t allocated, size_t expected) {
+  // The value returned by Arena::MemoryAllocatedBytes() may be greater than
+  // the requested memory. We choose a somewhat arbitrary upper bound of
+  // max_expected = expected * 1.1 to detect critical overallocation.
+  size_t max_expected = expected + expected / 10;
+  return allocated >= expected && allocated <= max_expected;
+}
+
+void MemoryAllocatedBytesTest(size_t huge_page_size) {
   const int N = 17;
   size_t req_sz;  // requested size
-  size_t bsz = 8192;  // block size
+  size_t bsz = 32 * 1024;  // block size
   size_t expected_memory_allocated;
 
-  Arena arena(bsz);
+  Arena arena(bsz, huge_page_size);
 
   // requested size > quarter of a block:
   //   allocate requested size separately
-  req_sz = 3001;
+  req_sz = 12 * 1024;
   for (int i = 0; i < N; i++) {
     arena.Allocate(req_sz);
   }
   expected_memory_allocated = req_sz * N + Arena::kInlineSize;
-  ASSERT_EQ(arena.MemoryAllocatedBytes(), expected_memory_allocated);
+  ASSERT_PRED2(CheckMemoryAllocated, arena.MemoryAllocatedBytes(),
+               expected_memory_allocated);
 
   arena.Allocate(Arena::kInlineSize - 1);
 
@@ -44,26 +57,37 @@ TEST(ArenaTest, MemoryAllocatedBytes) {
   for (int i = 0; i < N; i++) {
     arena.Allocate(req_sz);
   }
-  expected_memory_allocated += bsz;
-  ASSERT_EQ(arena.MemoryAllocatedBytes(), expected_memory_allocated);
+  if (huge_page_size) {
+    ASSERT_TRUE(
+        CheckMemoryAllocated(arena.MemoryAllocatedBytes(),
+                             expected_memory_allocated + bsz) ||
+        CheckMemoryAllocated(arena.MemoryAllocatedBytes(),
+                             expected_memory_allocated + huge_page_size));
+  } else {
+    expected_memory_allocated += bsz;
+    ASSERT_PRED2(CheckMemoryAllocated, arena.MemoryAllocatedBytes(),
+                 expected_memory_allocated);
+  }
 
-  // requested size > quarter of a block:
+  // requested size > size of a block:
   //   allocate requested size separately
-  req_sz = 99999999;
+  expected_memory_allocated = arena.MemoryAllocatedBytes();
+  req_sz = 8 * 1024 * 1024;
   for (int i = 0; i < N; i++) {
     arena.Allocate(req_sz);
   }
   expected_memory_allocated += req_sz * N;
-  ASSERT_EQ(arena.MemoryAllocatedBytes(), expected_memory_allocated);
+  ASSERT_PRED2(CheckMemoryAllocated, arena.MemoryAllocatedBytes(),
+               expected_memory_allocated);
 }
 
 // Make sure we didn't count the allocate but not used memory space in
 // Arena::ApproximateMemoryUsage()
-TEST(ArenaTest, ApproximateMemoryUsageTest) {
+static void ApproximateMemoryUsageTest(size_t huge_page_size) {
   const size_t kBlockSize = 4096;
   const size_t kEntrySize = kBlockSize / 8;
   const size_t kZero = 0;
-  Arena arena(kBlockSize);
+  Arena arena(kBlockSize, huge_page_size);
   ASSERT_EQ(kZero, arena.ApproximateMemoryUsage());
 
   // allocate inline bytes
@@ -71,14 +95,22 @@ TEST(ArenaTest, ApproximateMemoryUsageTest) {
   arena.AllocateAligned(Arena::kInlineSize / 2 - 16);
   arena.AllocateAligned(Arena::kInlineSize / 2);
   ASSERT_EQ(arena.ApproximateMemoryUsage(), Arena::kInlineSize - 8);
-  ASSERT_EQ(arena.MemoryAllocatedBytes(), Arena::kInlineSize);
+  ASSERT_PRED2(CheckMemoryAllocated, arena.MemoryAllocatedBytes(),
+               Arena::kInlineSize);
 
   auto num_blocks = kBlockSize / kEntrySize;
 
   // first allocation
   arena.AllocateAligned(kEntrySize);
   auto mem_usage = arena.MemoryAllocatedBytes();
-  ASSERT_EQ(mem_usage, kBlockSize + Arena::kInlineSize);
+  if (huge_page_size) {
+    ASSERT_TRUE(
+        CheckMemoryAllocated(mem_usage, kBlockSize + Arena::kInlineSize) ||
+        CheckMemoryAllocated(mem_usage, huge_page_size + Arena::kInlineSize));
+  } else {
+    ASSERT_PRED2(CheckMemoryAllocated, mem_usage,
+                 kBlockSize + Arena::kInlineSize);
+  }
   auto usage = arena.ApproximateMemoryUsage();
   ASSERT_LT(usage, mem_usage);
   for (size_t i = 1; i < num_blocks; ++i) {
@@ -87,12 +119,17 @@ TEST(ArenaTest, ApproximateMemoryUsageTest) {
     ASSERT_EQ(arena.ApproximateMemoryUsage(), usage + kEntrySize);
     usage = arena.ApproximateMemoryUsage();
   }
-  ASSERT_GT(usage, mem_usage);
+  if (huge_page_size) {
+    ASSERT_TRUE(usage > mem_usage ||
+                usage + huge_page_size - kBlockSize == mem_usage);
+  } else {
+    ASSERT_GT(usage, mem_usage);
+  }
 }
 
-TEST(ArenaTest, Simple) {
+static void SimpleTest(size_t huge_page_size) {
   std::vector<std::pair<size_t, char*>> allocated;
-  Arena arena;
+  Arena arena(Arena::kMinBlockSize, huge_page_size);
   const int N = 100000;
   size_t bytes = 0;
   Random rnd(301);
@@ -136,7 +173,25 @@ TEST(ArenaTest, Simple) {
     }
   }
 }
+}  // namespace
 
+TEST_F(ArenaTest, MemoryAllocatedBytes) {
+  MemoryAllocatedBytesTest(0);
+  MemoryAllocatedBytesTest(kHugePageSize);
+}
+
+TEST_F(ArenaTest, ApproximateMemoryUsage) {
+  ApproximateMemoryUsageTest(0);
+  ApproximateMemoryUsageTest(kHugePageSize);
+}
+
+TEST_F(ArenaTest, Simple) {
+  SimpleTest(0);
+  SimpleTest(kHugePageSize);
+}
 }  // namespace rocksdb
 
-int main(int argc, char** argv) { return rocksdb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

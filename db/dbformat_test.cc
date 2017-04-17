@@ -1,4 +1,4 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
@@ -49,9 +49,9 @@ static void TestKey(const std::string& key,
   ASSERT_TRUE(!ParseInternalKey(Slice("bar"), &decoded));
 }
 
-class FormatTest { };
+class FormatTest : public testing::Test {};
 
-TEST(FormatTest, InternalKey_EncodeDecode) {
+TEST_F(FormatTest, InternalKey_EncodeDecode) {
   const char* keys[] = { "", "k", "hello", "longggggggggggggggggggggg" };
   const uint64_t seq[] = {
     1, 2, 3,
@@ -67,7 +67,7 @@ TEST(FormatTest, InternalKey_EncodeDecode) {
   }
 }
 
-TEST(FormatTest, InternalKeyShortSeparator) {
+TEST_F(FormatTest, InternalKeyShortSeparator) {
   // When user keys are same
   ASSERT_EQ(IKey("foo", 100, kTypeValue),
             Shorten(IKey("foo", 100, kTypeValue),
@@ -92,6 +92,30 @@ TEST(FormatTest, InternalKeyShortSeparator) {
             Shorten(IKey("foo", 100, kTypeValue),
                     IKey("hello", 200, kTypeValue)));
 
+  ASSERT_EQ(IKey("ABC2", kMaxSequenceNumber, kValueTypeForSeek),
+            Shorten(IKey("ABC1AAAAA", 100, kTypeValue),
+                    IKey("ABC2ABB", 200, kTypeValue)));
+
+  ASSERT_EQ(IKey("AAA2", kMaxSequenceNumber, kValueTypeForSeek),
+            Shorten(IKey("AAA1AAA", 100, kTypeValue),
+                    IKey("AAA2AA", 200, kTypeValue)));
+
+  ASSERT_EQ(
+      IKey("AAA2", kMaxSequenceNumber, kValueTypeForSeek),
+      Shorten(IKey("AAA1AAA", 100, kTypeValue), IKey("AAA4", 200, kTypeValue)));
+
+  ASSERT_EQ(
+      IKey("AAA1B", kMaxSequenceNumber, kValueTypeForSeek),
+      Shorten(IKey("AAA1AAA", 100, kTypeValue), IKey("AAA2", 200, kTypeValue)));
+
+  ASSERT_EQ(IKey("AAA2", kMaxSequenceNumber, kValueTypeForSeek),
+            Shorten(IKey("AAA1AAA", 100, kTypeValue),
+                    IKey("AAA2A", 200, kTypeValue)));
+
+  ASSERT_EQ(
+      IKey("AAA1", 100, kTypeValue),
+      Shorten(IKey("AAA1", 100, kTypeValue), IKey("AAA2", 200, kTypeValue)));
+
   // When start user key is prefix of limit user key
   ASSERT_EQ(IKey("foo", 100, kTypeValue),
             Shorten(IKey("foo", 100, kTypeValue),
@@ -103,14 +127,14 @@ TEST(FormatTest, InternalKeyShortSeparator) {
                     IKey("foo", 200, kTypeValue)));
 }
 
-TEST(FormatTest, InternalKeyShortestSuccessor) {
+TEST_F(FormatTest, InternalKeyShortestSuccessor) {
   ASSERT_EQ(IKey("g", kMaxSequenceNumber, kValueTypeForSeek),
             ShortSuccessor(IKey("foo", 100, kTypeValue)));
   ASSERT_EQ(IKey("\xff\xff", 100, kTypeValue),
             ShortSuccessor(IKey("\xff\xff", 100, kTypeValue)));
 }
 
-TEST(FormatTest, IterKeyOperation) {
+TEST_F(FormatTest, IterKeyOperation) {
   IterKey k;
   const char p[] = "abcdefghijklmnopqrstuvwxyz";
   const char q[] = "0123456789";
@@ -149,8 +173,28 @@ TEST(FormatTest, IterKeyOperation) {
               "abcdefghijklmnopqrstuvwxyz"));
 }
 
+TEST_F(FormatTest, UpdateInternalKey) {
+  std::string user_key("abcdefghijklmnopqrstuvwxyz");
+  uint64_t new_seq = 0x123456;
+  ValueType new_val_type = kTypeDeletion;
+
+  std::string ikey;
+  AppendInternalKey(&ikey, ParsedInternalKey(user_key, 100U, kTypeValue));
+  size_t ikey_size = ikey.size();
+  UpdateInternalKey(&ikey, new_seq, new_val_type);
+  ASSERT_EQ(ikey_size, ikey.size());
+
+  Slice in(ikey);
+  ParsedInternalKey decoded;
+  ASSERT_TRUE(ParseInternalKey(in, &decoded));
+  ASSERT_EQ(user_key, decoded.user_key.ToString());
+  ASSERT_EQ(new_seq, decoded.sequence);
+  ASSERT_EQ(new_val_type, decoded.type);
+}
+
 }  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  return rocksdb::test::RunAllTests();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

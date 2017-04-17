@@ -1,4 +1,4 @@
-// Copyright (c) 2014, Facebook, Inc.  All rights reserved.
+// Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
@@ -18,13 +18,18 @@
 
 /*
  * Class:     org_rocksdb_BloomFilter
- * Method:    createNewFilter0
- * Signature: (I)V
+ * Method:    createBloomFilter
+ * Signature: (IZ)J
  */
-void Java_org_rocksdb_BloomFilter_createNewFilter0(
-    JNIEnv* env, jobject jobj, jint bits_per_key) {
-  const rocksdb::FilterPolicy* fp = rocksdb::NewBloomFilterPolicy(bits_per_key);
-  rocksdb::FilterJni::setHandle(env, jobj, fp);
+jlong Java_org_rocksdb_BloomFilter_createNewBloomFilter(
+    JNIEnv* env, jclass jcls, jint bits_per_key,
+    jboolean use_block_base_builder) {
+  auto* fp = const_cast<rocksdb::FilterPolicy *>(
+      rocksdb::NewBloomFilterPolicy(bits_per_key, use_block_base_builder));
+  auto* pFilterPolicy =
+      new std::shared_ptr<rocksdb::FilterPolicy>;
+  *pFilterPolicy = std::shared_ptr<rocksdb::FilterPolicy>(fp);
+  return reinterpret_cast<jlong>(pFilterPolicy);
 }
 
 /*
@@ -33,6 +38,9 @@ void Java_org_rocksdb_BloomFilter_createNewFilter0(
  * Signature: (J)V
  */
 void Java_org_rocksdb_Filter_disposeInternal(
-    JNIEnv* env, jobject jobj, jlong handle) {
-  delete reinterpret_cast<rocksdb::FilterPolicy*>(handle);
+    JNIEnv* env, jobject jobj, jlong jhandle) {
+
+  std::shared_ptr<rocksdb::FilterPolicy> *handle =
+      reinterpret_cast<std::shared_ptr<rocksdb::FilterPolicy> *>(jhandle);
+  handle->reset();
 }

@@ -1,19 +1,21 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
 #include "port/stack_trace.h"
 
-namespace rocksdb {
-namespace port {
-
-#if defined(ROCKSDB_LITE) || !(defined(OS_LINUX) || defined(OS_MACOSX))
+#if defined(ROCKSDB_LITE) || !(defined(ROCKSDB_BACKTRACE) || defined(OS_MACOSX)) || \
+    defined(CYGWIN) || defined(OS_FREEBSD)
 
 // noop
 
+namespace rocksdb {
+namespace port {
 void InstallStackTraceHandler() {}
 void PrintStack(int first_frames_to_skip) {}
+}  // namespace port
+}  // namespace rocksdb
 
 #else
 
@@ -25,6 +27,9 @@ void PrintStack(int first_frames_to_skip) {}
 #include <unistd.h>
 #include <cxxabi.h>
 
+namespace rocksdb {
+namespace port {
+
 namespace {
 
 #ifdef OS_LINUX
@@ -33,7 +38,7 @@ const char* GetExecutableName() {
 
   char link[1024];
   snprintf(link, sizeof(link), "/proc/%d/exe", getpid());
-  auto read = readlink(link, name, sizeof(name));
+  auto read = readlink(link, name, sizeof(name) - 1);
   if (-1 == read) {
     return nullptr;
   } else {
@@ -67,7 +72,7 @@ void PrintStackTraceLine(const char* symbol, void* frame) {
 
   fprintf(stderr, "\n");
 }
-#elif OS_MACOSX
+#elif defined(OS_MACOSX)
 
 void PrintStackTraceLine(const char* symbol, void* frame) {
   static int pid = getpid();
@@ -105,6 +110,7 @@ void PrintStack(int first_frames_to_skip) {
     fprintf(stderr, "#%-2d  ", i - first_frames_to_skip);
     PrintStackTraceLine((symbols != nullptr) ? symbols[i] : nullptr, frames[i]);
   }
+  free(symbols);
 }
 
 static void StackTraceHandler(int sig) {
@@ -126,7 +132,7 @@ void InstallStackTraceHandler() {
   signal(SIGABRT, StackTraceHandler);
 }
 
-#endif
-
 }  // namespace port
 }  // namespace rocksdb
+
+#endif

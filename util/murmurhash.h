@@ -1,4 +1,4 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
@@ -36,7 +36,7 @@ typedef unsigned int murmur_t;
 namespace rocksdb {
 struct murmur_hash {
   size_t operator()(const Slice& slice) const {
-    return MurmurHash(slice.data(), slice.size(), 0);
+    return MurmurHash(slice.data(), static_cast<int>(slice.size()), 0);
   }
 };
 }  // rocksdb

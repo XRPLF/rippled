@@ -1,4 +1,4 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
@@ -6,15 +6,16 @@
 #pragma once
 #ifndef ROCKSDB_LITE
 #include <stdint.h>
+#include <string>
 #include <vector>
 #include "rocksdb/options.h"
 #include "rocksdb/status.h"
-#include "table/table_builder.h"
-#include "table/plain_table_key_coding.h"
 #include "rocksdb/table.h"
 #include "rocksdb/table_properties.h"
 #include "table/bloom_block.h"
 #include "table/plain_table_index.h"
+#include "table/plain_table_key_coding.h"
+#include "table/table_builder.h"
 
 namespace rocksdb {
 
@@ -30,12 +31,16 @@ class PlainTableBuilder: public TableBuilder {
   // caller to close the file after calling Finish(). The output file
   // will be part of level specified by 'level'.  A value of -1 means
   // that the caller does not know which level the output file will reside.
-  PlainTableBuilder(const Options& options, WritableFile* file,
-                    uint32_t user_key_size, EncodingType encoding_type,
-                    size_t index_sparseness, uint32_t bloom_bits_per_key,
-                    uint32_t num_probes = 6, size_t huge_page_tlb_size = 0,
-                    double hash_table_ratio = 0,
-                    bool store_index_in_file = false);
+  PlainTableBuilder(
+      const ImmutableCFOptions& ioptions,
+      const std::vector<std::unique_ptr<IntTblPropCollectorFactory>>*
+          int_tbl_prop_collector_factories,
+      uint32_t column_family_id, WritableFileWriter* file,
+      uint32_t user_key_size, EncodingType encoding_type,
+      size_t index_sparseness, uint32_t bloom_bits_per_key,
+      const std::string& column_family_name, uint32_t num_probes = 6,
+      size_t huge_page_tlb_size = 0, double hash_table_ratio = 0,
+      bool store_index_in_file = false);
 
   // REQUIRES: Either Finish() or Abandon() has been called.
   ~PlainTableBuilder();
@@ -67,21 +72,23 @@ class PlainTableBuilder: public TableBuilder {
   // Finish() call, returns the size of the final generated file.
   uint64_t FileSize() const override;
 
+  TableProperties GetTableProperties() const override { return properties_; }
+
   bool SaveIndexInFile() const { return store_index_in_file_; }
 
  private:
   Arena arena_;
-  Options options_;
-  std::vector<std::unique_ptr<TablePropertiesCollector>>
+  const ImmutableCFOptions& ioptions_;
+  std::vector<std::unique_ptr<IntTblPropCollector>>
       table_properties_collectors_;
 
   BloomBlockBuilder bloom_block_;
   std::unique_ptr<PlainTableIndexBuilder> index_builder_;
 
-  WritableFile* file_;
+  WritableFileWriter* file_;
   uint64_t offset_ = 0;
   uint32_t bloom_bits_per_key_;
-  uint32_t huge_page_tlb_size_;
+  size_t huge_page_tlb_size_;
   Status status_;
   TableProperties properties_;
   PlainTableKeyEncoder encoder_;

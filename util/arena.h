@@ -1,4 +1,4 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
@@ -7,25 +7,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-// Arena is an implementation of Arena class. For a request of small size,
+// Arena is an implementation of Allocator class. For a request of small size,
 // it allocates a block with pre-defined block size. For a request of big
 // size, it uses malloc to directly get the requested size.
 
 #pragma once
+#ifndef OS_WIN
+#include <sys/mman.h>
+#endif
 #include <cstddef>
 #include <cerrno>
 #include <vector>
 #include <assert.h>
 #include <stdint.h>
-#include "util/arena.h"
+#include "util/allocator.h"
+#include "util/mutexlock.h"
 
 namespace rocksdb {
 
-class Logger;
-
-const size_t kInlineSize = 2048;
-
-class Arena {
+class Arena : public Allocator {
  public:
   // No copying allowed
   Arena(const Arena&) = delete;
@@ -35,10 +35,13 @@ class Arena {
   static const size_t kMinBlockSize;
   static const size_t kMaxBlockSize;
 
-  explicit Arena(size_t block_size = kMinBlockSize);
+  // huge_page_size: if 0, don't use huge page TLB. If > 0 (should set to the
+  // supported hugepage size of the system), block allocation will try huge
+  // page TLB first. If allocation fails, will fall back to normal case.
+  explicit Arena(size_t block_size = kMinBlockSize, size_t huge_page_size = 0);
   ~Arena();
 
-  char* Allocate(size_t bytes);
+  char* Allocate(size_t bytes) override;
 
   // huge_page_size: if >0, will try to allocate from huage page TLB.
   // The argument will be the size of the page size for huge page TLB. Bytes
@@ -53,7 +56,7 @@ class Arena {
   // huge_page_tlb_size > 0, we highly recommend a logger is passed in.
   // Otherwise, the error message will be printed out to stderr directly.
   char* AllocateAligned(size_t bytes, size_t huge_page_size = 0,
-                        Logger* logger = nullptr);
+                        Logger* logger = nullptr) override;
 
   // Returns an estimate of the total memory usage of data allocated
   // by the arena (exclude the space allocated but not yet used for future
@@ -69,12 +72,12 @@ class Arena {
 
   // If an allocation is too big, we'll allocate an irregular block with the
   // same size of that allocation.
-  virtual size_t IrregularBlockNum() const { return irregular_block_num; }
+  size_t IrregularBlockNum() const { return irregular_block_num; }
 
-  size_t BlockSize() const { return kBlockSize; }
+  size_t BlockSize() const override { return kBlockSize; }
 
  private:
-  char inline_block_[kInlineSize];
+  char inline_block_[kInlineSize] __attribute__((__aligned__(sizeof(void*))));
   // Number of bytes allocated in one block
   const size_t kBlockSize;
   // Array of new[] allocated memory blocks
@@ -100,6 +103,10 @@ class Arena {
   // How many bytes left in currently active block?
   size_t alloc_bytes_remaining_ = 0;
 
+#ifdef MAP_HUGETLB
+  size_t hugetlb_size_ = 0;
+#endif  // MAP_HUGETLB
+  char* AllocateFromHugePage(size_t bytes);
   char* AllocateFallback(size_t bytes, bool aligned);
   char* AllocateNewBlock(size_t block_bytes);
 
