@@ -23,6 +23,9 @@
 #include <ripple/server/Server.h>
 #include <ripple/server/Session.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/core/ConfigSections.h>
+#include <test/jtx.h>
+#include <test/jtx/envconfig.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -367,11 +370,164 @@ public:
         }
     }
 
+    class CaptureStreams
+    {
+    public:
+        CaptureStreams (std::string* save_messages)
+            : save_to (save_messages)
+            , origout_ (std::cout.rdbuf (msgs_.rdbuf()))
+            , origerr_ (std::cerr.rdbuf (msgs_.rdbuf()))
+        { }
+
+        ~CaptureStreams()
+        {
+            if(save_to)
+                *save_to = msgs_.str();
+            std::cerr.rdbuf (origerr_);
+            std::cout.rdbuf (origout_);
+        }
+
+
+    private:
+        std::stringstream msgs_;
+        std::string* save_to;
+        std::streambuf* const origout_;
+        std::streambuf* const origerr_;
+    };
+
+    void
+    testBadConfig ()
+    {
+        testcase ("Server config - invalid options");
+        using namespace test::jtx;
+
+        std::string messages;
+        {
+            CaptureStreams capture(&messages);
+            except ([&]
+            {
+                Env env {*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    (*cfg).deprecatedClearSection("port_rpc");
+                    return cfg;
+                })};
+            });
+        }
+        BEAST_EXPECT (
+            messages.find ("Missing 'ip' in [port_rpc]")
+            != std::string::npos);
+
+        {
+            CaptureStreams capture(&messages);
+            except ([&]
+            {
+                Env env {*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    (*cfg).deprecatedClearSection("port_rpc");
+                    (*cfg)["port_rpc"].set("ip", "127.0.0.1");
+                    return cfg;
+                })};
+            });
+        }
+        BEAST_EXPECT (
+            messages.find ("Missing 'port' in [port_rpc]")
+            != std::string::npos);
+
+        {
+            CaptureStreams capture(&messages);
+            except ([&]
+            {
+                Env env {*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    (*cfg).deprecatedClearSection("port_rpc");
+                    (*cfg)["port_rpc"].set("ip", "127.0.0.1");
+                    (*cfg)["port_rpc"].set("port", "0");
+                    return cfg;
+                })};
+            });
+        }
+        BEAST_EXPECT (
+            messages.find ("Invalid value '0' for key 'port' in [port_rpc]")
+            != std::string::npos);
+
+        {
+            CaptureStreams capture(&messages);
+            except ([&]
+            {
+                Env env {*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    (*cfg).deprecatedClearSection("port_rpc");
+                    (*cfg)["port_rpc"].set("ip", "127.0.0.1");
+                    (*cfg)["port_rpc"].set("port", "8081");
+                    (*cfg)["port_rpc"].set("protocol", "");
+                    return cfg;
+                })};
+            });
+        }
+        BEAST_EXPECT (
+            messages.find ("Missing 'protocol' in [port_rpc]")
+            != std::string::npos);
+
+        {
+            CaptureStreams capture(&messages);
+            except ([&] //this creates a standard test config without the server
+                        //section
+            {
+                Env env {*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg = std::make_unique<Config>();
+                    cfg->overwrite (
+                        ConfigSection::nodeDatabase (), "type", "memory");
+                    cfg->overwrite (
+                        ConfigSection::nodeDatabase (), "path", "main");
+                    cfg->deprecatedClearSection (
+                        ConfigSection::importNodeDatabase ());
+                    cfg->legacy("database_path", "");
+                    cfg->setupControl(true, true, true);
+                    (*cfg)["port_peer"].set("ip", "127.0.0.1");
+                    (*cfg)["port_peer"].set("port", "8080");
+                    (*cfg)["port_peer"].set("protocol", "peer");
+                    (*cfg)["port_rpc"].set("ip", "127.0.0.1");
+                    (*cfg)["port_rpc"].set("port", "8081");
+                    (*cfg)["port_rpc"].set("protocol", "http,ws2");
+                    (*cfg)["port_rpc"].set("admin", "127.0.0.1");
+                    (*cfg)["port_ws"].set("ip", "127.0.0.1");
+                    (*cfg)["port_ws"].set("port", "8082");
+                    (*cfg)["port_ws"].set("protocol", "ws");
+                    (*cfg)["port_ws"].set("admin", "127.0.0.1");
+                    return cfg;
+                })};
+            });
+        }
+        BEAST_EXPECT (
+            messages.find ("Required section [server] is missing")
+            != std::string::npos);
+
+        {
+            CaptureStreams capture(&messages);
+            except ([&] //this creates a standard test config without some of the
+                        //port sections
+            {
+                Env env {*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg = std::make_unique<Config>();
+                    cfg->overwrite (ConfigSection::nodeDatabase (), "type", "memory");
+                    cfg->overwrite (ConfigSection::nodeDatabase (), "path", "main");
+                    cfg->deprecatedClearSection (ConfigSection::importNodeDatabase ());
+                    cfg->legacy("database_path", "");
+                    cfg->setupControl(true, true, true);
+                    (*cfg)["server"].append("port_peer");
+                    (*cfg)["server"].append("port_rpc");
+                    (*cfg)["server"].append("port_ws");
+                    return cfg;
+                })};
+            });
+        }
+        BEAST_EXPECT (
+            messages.find ("Missing section: [port_peer]")
+            != std::string::npos);
+    }
+
     void
     run()
     {
         basicTests();
         stressTest();
+        testBadConfig();
     }
 };
 
