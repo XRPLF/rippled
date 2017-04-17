@@ -1,13 +1,16 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
+
+#ifndef ROCKSDB_LITE
 
 #include <vector>
 #include <string>
 #include <set>
 
 #include "rocksdb/utilities/spatial_db.h"
+#include "util/compression.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
 #include "util/random.h"
@@ -15,7 +18,7 @@
 namespace rocksdb {
 namespace spatial {
 
-class SpatialDBTest {
+class SpatialDBTest : public testing::Test {
  public:
   SpatialDBTest() {
     dbname_ = test::TmpDir() + "/spatial_db_test";
@@ -46,7 +49,10 @@ class SpatialDBTest {
   SpatialDB* db_;
 };
 
-TEST(SpatialDBTest, FeatureSetSerializeTest) {
+TEST_F(SpatialDBTest, FeatureSetSerializeTest) {
+  if (!LZ4_Supported()) {
+    return;
+  }
   FeatureSet fs;
 
   fs.Set("a", std::string("b"));
@@ -93,7 +99,10 @@ TEST(SpatialDBTest, FeatureSetSerializeTest) {
   ASSERT_TRUE(!deserialized.Deserialize(serialized));
 }
 
-TEST(SpatialDBTest, TestNextID) {
+TEST_F(SpatialDBTest, TestNextID) {
+  if (!LZ4_Supported()) {
+    return;
+  }
   ASSERT_OK(SpatialDB::Create(
       SpatialDBOptions(), dbname_,
       {SpatialIndexOptions("simple", BoundingBox<double>(0, 0, 100, 100), 2)}));
@@ -116,7 +125,10 @@ TEST(SpatialDBTest, TestNextID) {
   delete db_;
 }
 
-TEST(SpatialDBTest, FeatureSetTest) {
+TEST_F(SpatialDBTest, FeatureSetTest) {
+  if (!LZ4_Supported()) {
+    return;
+  }
   ASSERT_OK(SpatialDB::Create(
       SpatialDBOptions(), dbname_,
       {SpatialIndexOptions("simple", BoundingBox<double>(0, 0, 100, 100), 2)}));
@@ -150,7 +162,10 @@ TEST(SpatialDBTest, FeatureSetTest) {
   delete db_;
 }
 
-TEST(SpatialDBTest, SimpleTest) {
+TEST_F(SpatialDBTest, SimpleTest) {
+  if (!LZ4_Supported()) {
+    return;
+  }
   // iter 0 -- not read only
   // iter 1 -- read only
   for (int iter = 0; iter < 2; ++iter) {
@@ -226,7 +241,10 @@ BoundingBox<double> ScaleBB(BoundingBox<int> b, double step) {
 
 }  // namespace
 
-TEST(SpatialDBTest, RandomizedTest) {
+TEST_F(SpatialDBTest, RandomizedTest) {
+  if (!LZ4_Supported()) {
+    return;
+  }
   Random rnd(301);
   std::vector<std::pair<std::string, BoundingBox<int>>> elements;
 
@@ -245,7 +263,10 @@ TEST(SpatialDBTest, RandomizedTest) {
     elements.push_back(make_pair(blob, bbox));
   }
 
-  db_->Compact();
+  // parallel
+  db_->Compact(2);
+  // serial
+  db_->Compact(1);
 
   for (int i = 0; i < 1000; ++i) {
     BoundingBox<int> int_bbox = RandomBoundingBox(128, &rnd, 10);
@@ -265,4 +286,17 @@ TEST(SpatialDBTest, RandomizedTest) {
 }  // namespace spatial
 }  // namespace rocksdb
 
-int main(int argc, char** argv) { return rocksdb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
+
+#else
+#include <stdio.h>
+
+int main(int argc, char** argv) {
+  fprintf(stderr, "SKIPPED as SpatialDB is not supported in ROCKSDB_LITE\n");
+  return 0;
+}
+
+#endif  // !ROCKSDB_LITE

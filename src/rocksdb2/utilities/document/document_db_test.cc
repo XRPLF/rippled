@@ -1,7 +1,9 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
+
+#ifndef ROCKSDB_LITE
 
 #include <algorithm>
 
@@ -13,7 +15,7 @@
 
 namespace rocksdb {
 
-class DocumentDBTest {
+class DocumentDBTest : public testing::Test {
  public:
   DocumentDBTest() {
     dbname_ = test::TmpDir() + "/document_db_test";
@@ -56,7 +58,7 @@ class DocumentDBTest {
     }
   }
 
-  JSONDocument* Parse(const std::string doc) {
+  JSONDocument* Parse(const std::string& doc) {
     return JSONDocument::ParseJSON(ConvertQuotes(doc).c_str());
   }
 
@@ -64,10 +66,10 @@ class DocumentDBTest {
   DocumentDB* db_;
 };
 
-TEST(DocumentDBTest, SimpleQueryTest) {
+TEST_F(DocumentDBTest, SimpleQueryTest) {
   DocumentDBOptions options;
   DocumentDB::IndexDescriptor index;
-  index.description = Parse("{'name': 1}");
+  index.description = Parse("{\"name\": 1}");
   index.name = "name_index";
 
   ASSERT_OK(DocumentDB::Open(options, dbname_, {}, &db_));
@@ -78,8 +80,8 @@ TEST(DocumentDBTest, SimpleQueryTest) {
   delete index.description;
 
   std::vector<std::string> json_objects = {
-      "{'_id': 1, 'name': 'One'}",   "{'_id': 2, 'name': 'Two'}",
-      "{'_id': 3, 'name': 'Three'}", "{'_id': 4, 'name': 'Four'}"};
+      "{\"_id\': 1, \"name\": \"One\"}",   "{\"_id\": 2, \"name\": \"Two\"}",
+      "{\"_id\": 3, \"name\": \"Three\"}", "{\"_id\": 4, \"name\": \"Four\"}"};
 
   for (auto& json : json_objects) {
     std::unique_ptr<JSONDocument> document(Parse(json));
@@ -136,7 +138,7 @@ TEST(DocumentDBTest, SimpleQueryTest) {
   }
 }
 
-TEST(DocumentDBTest, ComplexQueryTest) {
+TEST_F(DocumentDBTest, ComplexQueryTest) {
   DocumentDBOptions options;
   DocumentDB::IndexDescriptor priority_index;
   priority_index.description = Parse("{'priority': 1}");
@@ -164,7 +166,9 @@ TEST(DocumentDBTest, ComplexQueryTest) {
       "{'_id': 8, 'job_name': 'rock', 'priority': 3, 'progress': 93.24}",
       "{'_id': 9, 'job_name': 'steady', 'priority': 3, 'progress': 9.1}",
       "{'_id': 10, 'job_name': 'white', 'priority': 1, 'progress': 61.4}",
-      "{'_id': 11, 'job_name': 'who', 'priority': 4, 'progress': 39.41}", };
+      "{'_id': 11, 'job_name': 'who', 'priority': 4, 'progress': 39.41}",
+      "{'_id': 12, 'job_name': 'who', 'priority': -1, 'progress': 39.42}",
+      "{'_id': 13, 'job_name': 'who', 'priority': -2, 'progress': 39.42}", };
 
   // add index on the fly!
   CreateIndexes({job_name_index});
@@ -183,6 +187,15 @@ TEST(DocumentDBTest, ComplexQueryTest) {
         "10.0}, '$index': 'priority'}}]"));
     std::unique_ptr<Cursor> cursor(db_->Query(ReadOptions(), *query));
     AssertCursorIDs(cursor.get(), {4, 8});
+  }
+
+  // -1 <= priority <= 1, index priority
+  {
+    std::unique_ptr<JSONDocument> query(Parse(
+        "[{'$filter': {'priority': {'$lte': 1, '$gte': -1},"
+        " '$index': 'priority'}}]"));
+    std::unique_ptr<Cursor> cursor(db_->Query(ReadOptions(), *query));
+    AssertCursorIDs(cursor.get(), {6, 10, 12});
   }
 
   // 2 < priority < 4 AND progress > 10.0, index progress
@@ -209,7 +222,7 @@ TEST(DocumentDBTest, ComplexQueryTest) {
         "[{'$filter': {'progress': {'$gt': 5.0, '$gte': 35.0, '$lt': 65.5}, "
         "'$index': 'progress'}}]"));
     std::unique_ptr<Cursor> cursor(db_->Query(ReadOptions(), *query));
-    AssertCursorIDs(cursor.get(), {2, 5, 10, 11});
+    AssertCursorIDs(cursor.get(), {2, 5, 10, 11, 12, 13});
   }
 
   // 2 < priority <= 4, index priority
@@ -244,6 +257,53 @@ TEST(DocumentDBTest, ComplexQueryTest) {
     ASSERT_OK(db_->Update(ReadOptions(), WriteOptions(), *query, *update));
   }
 
+  // update twice: set priority to 15 where job_name is 'white'
+  {
+    std::unique_ptr<JSONDocument> query(Parse("{'job_name': 'white'}"));
+    std::unique_ptr<JSONDocument> update(Parse("{'$set': {'priority': 10},"
+                                               "'$set': {'priority': 15}}"));
+    ASSERT_OK(db_->Update(ReadOptions(), WriteOptions(), *query, *update));
+  }
+
+  // update twice: set priority to 15 and
+  // progress to 40 where job_name is 'white'
+  {
+    std::unique_ptr<JSONDocument> query(Parse("{'job_name': 'white'}"));
+    std::unique_ptr<JSONDocument> update(
+        Parse("{'$set': {'priority': 10, 'progress': 35},"
+              "'$set': {'priority': 15, 'progress': 40}}"));
+    ASSERT_OK(db_->Update(ReadOptions(), WriteOptions(), *query, *update));
+  }
+
+  // priority < 0
+  {
+    std::unique_ptr<JSONDocument> query(
+        Parse("[{'$filter': {'priority': {'$lt': 0}, '$index': 'priority'}}]"));
+    std::unique_ptr<Cursor> cursor(db_->Query(ReadOptions(), *query));
+    ASSERT_OK(cursor->status());
+    AssertCursorIDs(cursor.get(), {12, 13});
+  }
+
+  // -2 < priority < 0
+  {
+    std::unique_ptr<JSONDocument> query(
+        Parse("[{'$filter': {'priority': {'$gt': -2, '$lt': 0},"
+        " '$index': 'priority'}}]"));
+    std::unique_ptr<Cursor> cursor(db_->Query(ReadOptions(), *query));
+    ASSERT_OK(cursor->status());
+    AssertCursorIDs(cursor.get(), {12});
+  }
+
+  // -2 <= priority < 0
+  {
+    std::unique_ptr<JSONDocument> query(
+        Parse("[{'$filter': {'priority': {'$gte': -2, '$lt': 0},"
+        " '$index': 'priority'}}]"));
+    std::unique_ptr<Cursor> cursor(db_->Query(ReadOptions(), *query));
+    ASSERT_OK(cursor->status());
+    AssertCursorIDs(cursor.get(), {12, 13});
+  }
+
   // 4 < priority
   {
     std::unique_ptr<JSONDocument> query(
@@ -260,4 +320,17 @@ TEST(DocumentDBTest, ComplexQueryTest) {
 
 }  //  namespace rocksdb
 
-int main(int argc, char** argv) { return rocksdb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
+
+#else
+#include <stdio.h>
+
+int main(int argc, char** argv) {
+  fprintf(stderr, "SKIPPED as DocumentDB is not supported in ROCKSDB_LITE\n");
+  return 0;
+}
+
+#endif  // !ROCKSDB_LITE

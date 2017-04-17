@@ -1,4 +1,4 @@
-// Copyright (c) 2014, Facebook, Inc.  All rights reserved.
+// Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
@@ -13,6 +13,17 @@
 #include "include/org_rocksdb_RocksIterator.h"
 #include "rocksjni/portal.h"
 #include "rocksdb/iterator.h"
+
+/*
+ * Class:     org_rocksdb_RocksIterator
+ * Method:    disposeInternal
+ * Signature: (J)V
+ */
+void Java_org_rocksdb_RocksIterator_disposeInternal(
+    JNIEnv* env, jobject jobj, jlong handle) {
+  auto it = reinterpret_cast<rocksdb::Iterator*>(handle);
+  delete it;
+}
 
 /*
  * Class:     org_rocksdb_RocksIterator
@@ -36,7 +47,7 @@ void Java_org_rocksdb_RocksIterator_seekToFirst0(
 
 /*
  * Class:     org_rocksdb_RocksIterator
- * Method:    seekToFirst0
+ * Method:    seekToLast0
  * Signature: (J)V
  */
 void Java_org_rocksdb_RocksIterator_seekToLast0(
@@ -46,7 +57,7 @@ void Java_org_rocksdb_RocksIterator_seekToLast0(
 
 /*
  * Class:     org_rocksdb_RocksIterator
- * Method:    seekToLast0
+ * Method:    next0
  * Signature: (J)V
  */
 void Java_org_rocksdb_RocksIterator_next0(
@@ -56,7 +67,7 @@ void Java_org_rocksdb_RocksIterator_next0(
 
 /*
  * Class:     org_rocksdb_RocksIterator
- * Method:    next0
+ * Method:    prev0
  * Signature: (J)V
  */
 void Java_org_rocksdb_RocksIterator_prev0(
@@ -66,42 +77,8 @@ void Java_org_rocksdb_RocksIterator_prev0(
 
 /*
  * Class:     org_rocksdb_RocksIterator
- * Method:    prev0
- * Signature: (J)V
- */
-jbyteArray Java_org_rocksdb_RocksIterator_key0(
-    JNIEnv* env, jobject jobj, jlong handle) {
-  auto it = reinterpret_cast<rocksdb::Iterator*>(handle);
-  rocksdb::Slice key_slice = it->key();
-
-  jbyteArray jkey = env->NewByteArray(key_slice.size());
-  env->SetByteArrayRegion(
-      jkey, 0, key_slice.size(),
-      reinterpret_cast<const jbyte*>(key_slice.data()));
-  return jkey;
-}
-
-/*
- * Class:     org_rocksdb_RocksIterator
- * Method:    key0
- * Signature: (J)[B
- */
-jbyteArray Java_org_rocksdb_RocksIterator_value0(
-    JNIEnv* env, jobject jobj, jlong handle) {
-  auto it = reinterpret_cast<rocksdb::Iterator*>(handle);
-  rocksdb::Slice value_slice = it->value();
-
-  jbyteArray jvalue = env->NewByteArray(value_slice.size());
-  env->SetByteArrayRegion(
-      jvalue, 0, value_slice.size(),
-      reinterpret_cast<const jbyte*>(value_slice.data()));
-  return jvalue;
-}
-
-/*
- * Class:     org_rocksdb_RocksIterator
- * Method:    value0
- * Signature: (J)[B
+ * Method:    seek0
+ * Signature: (J[BI)V
  */
 void Java_org_rocksdb_RocksIterator_seek0(
     JNIEnv* env, jobject jobj, jlong handle,
@@ -118,8 +95,8 @@ void Java_org_rocksdb_RocksIterator_seek0(
 
 /*
  * Class:     org_rocksdb_RocksIterator
- * Method:    seek0
- * Signature: (J[BI)V
+ * Method:    status0
+ * Signature: (J)V
  */
 void Java_org_rocksdb_RocksIterator_status0(
     JNIEnv* env, jobject jobj, jlong handle) {
@@ -135,11 +112,33 @@ void Java_org_rocksdb_RocksIterator_status0(
 
 /*
  * Class:     org_rocksdb_RocksIterator
- * Method:    disposeInternal
- * Signature: (J)V
+ * Method:    key0
+ * Signature: (J)[B
  */
-void Java_org_rocksdb_RocksIterator_disposeInternal(
+jbyteArray Java_org_rocksdb_RocksIterator_key0(
     JNIEnv* env, jobject jobj, jlong handle) {
   auto it = reinterpret_cast<rocksdb::Iterator*>(handle);
-  delete it;
+  rocksdb::Slice key_slice = it->key();
+
+  jbyteArray jkey = env->NewByteArray(static_cast<jsize>(key_slice.size()));
+  env->SetByteArrayRegion(jkey, 0, static_cast<jsize>(key_slice.size()),
+                          reinterpret_cast<const jbyte*>(key_slice.data()));
+  return jkey;
+}
+
+/*
+ * Class:     org_rocksdb_RocksIterator
+ * Method:    value0
+ * Signature: (J)[B
+ */
+jbyteArray Java_org_rocksdb_RocksIterator_value0(
+    JNIEnv* env, jobject jobj, jlong handle) {
+  auto it = reinterpret_cast<rocksdb::Iterator*>(handle);
+  rocksdb::Slice value_slice = it->value();
+
+  jbyteArray jkeyValue =
+      env->NewByteArray(static_cast<jsize>(value_slice.size()));
+  env->SetByteArrayRegion(jkeyValue, 0, static_cast<jsize>(value_slice.size()),
+                          reinterpret_cast<const jbyte*>(value_slice.data()));
+  return jkeyValue;
 }

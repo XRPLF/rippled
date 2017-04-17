@@ -1,4 +1,4 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
@@ -31,9 +31,9 @@ struct TestComparator {
   }
 };
 
-class SkipTest { };
+class SkipTest : public testing::Test {};
 
-TEST(SkipTest, Empty) {
+TEST_F(SkipTest, Empty) {
   Arena arena;
   TestComparator cmp;
   SkipList<Key, TestComparator> list(cmp, &arena);
@@ -45,11 +45,13 @@ TEST(SkipTest, Empty) {
   ASSERT_TRUE(!iter.Valid());
   iter.Seek(100);
   ASSERT_TRUE(!iter.Valid());
+  iter.SeekForPrev(100);
+  ASSERT_TRUE(!iter.Valid());
   iter.SeekToLast();
   ASSERT_TRUE(!iter.Valid());
 }
 
-TEST(SkipTest, InsertAndLookup) {
+TEST_F(SkipTest, InsertAndLookup) {
   const int N = 2000;
   const int R = 5000;
   Random rnd(1000);
@@ -81,6 +83,10 @@ TEST(SkipTest, InsertAndLookup) {
     ASSERT_TRUE(iter.Valid());
     ASSERT_EQ(*(keys.begin()), iter.key());
 
+    iter.SeekForPrev(R - 1);
+    ASSERT_TRUE(iter.Valid());
+    ASSERT_EQ(*(keys.rbegin()), iter.key());
+
     iter.SeekToFirst();
     ASSERT_TRUE(iter.Valid());
     ASSERT_EQ(*(keys.begin()), iter.key());
@@ -111,19 +117,22 @@ TEST(SkipTest, InsertAndLookup) {
   }
 
   // Backward iteration test
-  {
+  for (int i = 0; i < R; i++) {
     SkipList<Key, TestComparator>::Iterator iter(&list);
-    iter.SeekToLast();
+    iter.SeekForPrev(i);
 
     // Compare against model iterator
-    for (std::set<Key>::reverse_iterator model_iter = keys.rbegin();
-         model_iter != keys.rend();
-         ++model_iter) {
-      ASSERT_TRUE(iter.Valid());
-      ASSERT_EQ(*model_iter, iter.key());
-      iter.Prev();
+    std::set<Key>::iterator model_iter = keys.upper_bound(i);
+    for (int j = 0; j < 3; j++) {
+      if (model_iter == keys.begin()) {
+        ASSERT_TRUE(!iter.Valid());
+        break;
+      } else {
+        ASSERT_TRUE(iter.Valid());
+        ASSERT_EQ(*--model_iter, iter.key());
+        iter.Prev();
+      }
     }
-    ASSERT_TRUE(!iter.Valid());
   }
 }
 
@@ -191,13 +200,11 @@ class ConcurrentTest {
 
   // Per-key generation
   struct State {
-    port::AtomicPointer generation[K];
-    void Set(int k, intptr_t v) {
-      generation[k].Release_Store(reinterpret_cast<void*>(v));
+    std::atomic<int> generation[K];
+    void Set(int k, int v) {
+      generation[k].store(v, std::memory_order_release);
     }
-    intptr_t Get(int k) {
-      return reinterpret_cast<intptr_t>(generation[k].Acquire_Load());
-    }
+    int Get(int k) { return generation[k].load(std::memory_order_acquire); }
 
     State() {
       for (unsigned int k = 0; k < K; k++) {
@@ -221,9 +228,9 @@ class ConcurrentTest {
   // REQUIRES: External synchronization
   void WriteStep(Random* rnd) {
     const uint32_t k = rnd->Next() % K;
-    const intptr_t g = current_.Get(k) + 1;
-    const Key key = MakeKey(k, g);
-    list_.Insert(key);
+    const int g = current_.Get(k) + 1;
+    const Key new_key = MakeKey(k, g);
+    list_.Insert(new_key);
     current_.Set(k, g);
   }
 
@@ -255,11 +262,10 @@ class ConcurrentTest {
         // Note that generation 0 is never inserted, so it is ok if
         // <*,0,*> is missing.
         ASSERT_TRUE((gen(pos) == 0U) ||
-                    (gen(pos) > (uint64_t)initial_state.Get(key(pos)))
-                    ) << "key: " << key(pos)
-                      << "; gen: " << gen(pos)
-                      << "; initgen: "
-                      << initial_state.Get(key(pos));
+                    (gen(pos) > static_cast<uint64_t>(initial_state.Get(
+                                    static_cast<int>(key(pos))))))
+            << "key: " << key(pos) << "; gen: " << gen(pos)
+            << "; initgen: " << initial_state.Get(static_cast<int>(key(pos)));
 
         // Advance to next key in the valid key space
         if (key(pos) < key(current)) {
@@ -290,7 +296,7 @@ const uint32_t ConcurrentTest::K;
 
 // Simple test that does single-threaded testing of the ConcurrentTest
 // scaffolding.
-TEST(SkipTest, ConcurrentWithoutThreads) {
+TEST_F(SkipTest, ConcurrentWithoutThreads) {
   ConcurrentTest test;
   Random rnd(test::RandomSeed());
   for (int i = 0; i < 10000; i++) {
@@ -303,7 +309,7 @@ class TestState {
  public:
   ConcurrentTest t_;
   int seed_;
-  port::AtomicPointer quit_flag_;
+  std::atomic<bool> quit_flag_;
 
   enum ReaderState {
     STARTING,
@@ -312,10 +318,7 @@ class TestState {
   };
 
   explicit TestState(int s)
-      : seed_(s),
-        quit_flag_(nullptr),
-        state_(STARTING),
-        state_cv_(&mu_) {}
+      : seed_(s), quit_flag_(false), state_(STARTING), state_cv_(&mu_) {}
 
   void Wait(ReaderState s) {
     mu_.Lock();
@@ -343,7 +346,7 @@ static void ConcurrentReader(void* arg) {
   Random rnd(state->seed_);
   int64_t reads = 0;
   state->Change(TestState::RUNNING);
-  while (!state->quit_flag_.Acquire_Load()) {
+  while (!state->quit_flag_.load(std::memory_order_acquire)) {
     state->t_.ReadStep(&rnd);
     ++reads;
   }
@@ -362,22 +365,23 @@ static void RunConcurrent(int run) {
     TestState state(seed + 1);
     Env::Default()->Schedule(ConcurrentReader, &state);
     state.Wait(TestState::RUNNING);
-    for (int i = 0; i < kSize; i++) {
+    for (int k = 0; k < kSize; k++) {
       state.t_.WriteStep(&rnd);
     }
-    state.quit_flag_.Release_Store(&state);  // Any non-nullptr arg will do
+    state.quit_flag_.store(true, std::memory_order_release);
     state.Wait(TestState::DONE);
   }
 }
 
-TEST(SkipTest, Concurrent1) { RunConcurrent(1); }
-TEST(SkipTest, Concurrent2) { RunConcurrent(2); }
-TEST(SkipTest, Concurrent3) { RunConcurrent(3); }
-TEST(SkipTest, Concurrent4) { RunConcurrent(4); }
-TEST(SkipTest, Concurrent5) { RunConcurrent(5); }
+TEST_F(SkipTest, Concurrent1) { RunConcurrent(1); }
+TEST_F(SkipTest, Concurrent2) { RunConcurrent(2); }
+TEST_F(SkipTest, Concurrent3) { RunConcurrent(3); }
+TEST_F(SkipTest, Concurrent4) { RunConcurrent(4); }
+TEST_F(SkipTest, Concurrent5) { RunConcurrent(5); }
 
 }  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  return rocksdb::test::RunAllTests();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

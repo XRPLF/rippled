@@ -1,4 +1,4 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
@@ -14,16 +14,16 @@
 
 namespace rocksdb {
 
-class GenerateFileLevelTest {
+class GenerateLevelFilesBriefTest : public testing::Test {
  public:
   std::vector<FileMetaData*> files_;
-  FileLevel file_level_;
+  LevelFilesBrief file_level_;
   Arena arena_;
 
-  GenerateFileLevelTest() { }
+  GenerateLevelFilesBriefTest() { }
 
-  ~GenerateFileLevelTest() {
-    for (unsigned int i = 0; i < files_.size(); i++) {
+  ~GenerateLevelFilesBriefTest() {
+    for (size_t i = 0; i < files_.size(); i++) {
       delete files_[i];
     }
   }
@@ -49,33 +49,217 @@ class GenerateFileLevelTest {
   }
 };
 
-TEST(GenerateFileLevelTest, Empty) {
-  DoGenerateFileLevel(&file_level_, files_, &arena_);
+TEST_F(GenerateLevelFilesBriefTest, Empty) {
+  DoGenerateLevelFilesBrief(&file_level_, files_, &arena_);
   ASSERT_EQ(0u, file_level_.num_files);
   ASSERT_EQ(0, Compare());
 }
 
-TEST(GenerateFileLevelTest, Single) {
+TEST_F(GenerateLevelFilesBriefTest, Single) {
   Add("p", "q");
-  DoGenerateFileLevel(&file_level_, files_, &arena_);
+  DoGenerateLevelFilesBrief(&file_level_, files_, &arena_);
   ASSERT_EQ(1u, file_level_.num_files);
   ASSERT_EQ(0, Compare());
 }
 
-
-TEST(GenerateFileLevelTest, Multiple) {
+TEST_F(GenerateLevelFilesBriefTest, Multiple) {
   Add("150", "200");
   Add("200", "250");
   Add("300", "350");
   Add("400", "450");
-  DoGenerateFileLevel(&file_level_, files_, &arena_);
+  DoGenerateLevelFilesBrief(&file_level_, files_, &arena_);
   ASSERT_EQ(4u, file_level_.num_files);
   ASSERT_EQ(0, Compare());
 }
 
-class FindLevelFileTest {
+class CountingLogger : public Logger {
  public:
-  FileLevel file_level_;
+  CountingLogger() : log_count(0) {}
+  using Logger::Logv;
+  virtual void Logv(const char* format, va_list ap) override { log_count++; }
+  int log_count;
+};
+
+Options GetOptionsWithNumLevels(int num_levels,
+                                std::shared_ptr<CountingLogger> logger) {
+  Options opt;
+  opt.num_levels = num_levels;
+  opt.info_log = logger;
+  return opt;
+}
+
+class VersionStorageInfoTest : public testing::Test {
+ public:
+  const Comparator* ucmp_;
+  InternalKeyComparator icmp_;
+  std::shared_ptr<CountingLogger> logger_;
+  Options options_;
+  ImmutableCFOptions ioptions_;
+  MutableCFOptions mutable_cf_options_;
+  VersionStorageInfo vstorage_;
+
+  InternalKey GetInternalKey(const char* ukey,
+                             SequenceNumber smallest_seq = 100) {
+    return InternalKey(ukey, smallest_seq, kTypeValue);
+  }
+
+  VersionStorageInfoTest()
+      : ucmp_(BytewiseComparator()),
+        icmp_(ucmp_),
+        logger_(new CountingLogger()),
+        options_(GetOptionsWithNumLevels(6, logger_)),
+        ioptions_(options_),
+        mutable_cf_options_(options_),
+        vstorage_(&icmp_, ucmp_, 6, kCompactionStyleLevel, nullptr, false) {}
+
+  ~VersionStorageInfoTest() {
+    for (int i = 0; i < vstorage_.num_levels(); i++) {
+      for (auto* f : vstorage_.LevelFiles(i)) {
+        if (--f->refs == 0) {
+          delete f;
+        }
+      }
+    }
+  }
+
+  void Add(int level, uint32_t file_number, const char* smallest,
+           const char* largest, uint64_t file_size = 0) {
+    assert(level < vstorage_.num_levels());
+    FileMetaData* f = new FileMetaData;
+    f->fd = FileDescriptor(file_number, 0, file_size);
+    f->smallest = GetInternalKey(smallest, 0);
+    f->largest = GetInternalKey(largest, 0);
+    f->compensated_file_size = file_size;
+    f->refs = 0;
+    f->num_entries = 0;
+    f->num_deletions = 0;
+    vstorage_.AddFile(level, f);
+  }
+};
+
+TEST_F(VersionStorageInfoTest, MaxBytesForLevelStatic) {
+  ioptions_.level_compaction_dynamic_level_bytes = false;
+  mutable_cf_options_.max_bytes_for_level_base = 10;
+  mutable_cf_options_.max_bytes_for_level_multiplier = 5;
+  Add(4, 100U, "1", "2");
+  Add(5, 101U, "1", "2");
+
+  vstorage_.CalculateBaseBytes(ioptions_, mutable_cf_options_);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(1), 10U);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(2), 50U);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(3), 250U);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(4), 1250U);
+
+  ASSERT_EQ(0, logger_->log_count);
+}
+
+TEST_F(VersionStorageInfoTest, MaxBytesForLevelDynamic) {
+  ioptions_.level_compaction_dynamic_level_bytes = true;
+  mutable_cf_options_.max_bytes_for_level_base = 1000;
+  mutable_cf_options_.max_bytes_for_level_multiplier = 5;
+  Add(5, 1U, "1", "2", 500U);
+
+  vstorage_.CalculateBaseBytes(ioptions_, mutable_cf_options_);
+  ASSERT_EQ(0, logger_->log_count);
+  ASSERT_EQ(vstorage_.base_level(), 5);
+
+  Add(5, 2U, "3", "4", 550U);
+  vstorage_.CalculateBaseBytes(ioptions_, mutable_cf_options_);
+  ASSERT_EQ(0, logger_->log_count);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(4), 210U);
+  ASSERT_EQ(vstorage_.base_level(), 4);
+
+  Add(4, 3U, "3", "4", 550U);
+  vstorage_.CalculateBaseBytes(ioptions_, mutable_cf_options_);
+  ASSERT_EQ(0, logger_->log_count);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(4), 210U);
+  ASSERT_EQ(vstorage_.base_level(), 4);
+
+  Add(3, 4U, "3", "4", 250U);
+  Add(3, 5U, "5", "7", 300U);
+  vstorage_.CalculateBaseBytes(ioptions_, mutable_cf_options_);
+  ASSERT_EQ(1, logger_->log_count);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(4), 1005U);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(3), 201U);
+  ASSERT_EQ(vstorage_.base_level(), 3);
+
+  Add(1, 6U, "3", "4", 5U);
+  Add(1, 7U, "8", "9", 5U);
+  logger_->log_count = 0;
+  vstorage_.CalculateBaseBytes(ioptions_, mutable_cf_options_);
+  ASSERT_EQ(1, logger_->log_count);
+  ASSERT_GT(vstorage_.MaxBytesForLevel(4), 1005U);
+  ASSERT_GT(vstorage_.MaxBytesForLevel(3), 1005U);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(2), 1005U);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(1), 201U);
+  ASSERT_EQ(vstorage_.base_level(), 1);
+}
+
+TEST_F(VersionStorageInfoTest, MaxBytesForLevelDynamicLotsOfData) {
+  ioptions_.level_compaction_dynamic_level_bytes = true;
+  mutable_cf_options_.max_bytes_for_level_base = 100;
+  mutable_cf_options_.max_bytes_for_level_multiplier = 2;
+  Add(0, 1U, "1", "2", 50U);
+  Add(1, 2U, "1", "2", 50U);
+  Add(2, 3U, "1", "2", 500U);
+  Add(3, 4U, "1", "2", 500U);
+  Add(4, 5U, "1", "2", 1700U);
+  Add(5, 6U, "1", "2", 500U);
+
+  vstorage_.CalculateBaseBytes(ioptions_, mutable_cf_options_);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(4), 800U);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(3), 400U);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(2), 200U);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(1), 100U);
+  ASSERT_EQ(vstorage_.base_level(), 1);
+  ASSERT_EQ(0, logger_->log_count);
+}
+
+TEST_F(VersionStorageInfoTest, MaxBytesForLevelDynamicLargeLevel) {
+  uint64_t kOneGB = 1000U * 1000U * 1000U;
+  ioptions_.level_compaction_dynamic_level_bytes = true;
+  mutable_cf_options_.max_bytes_for_level_base = 10U * kOneGB;
+  mutable_cf_options_.max_bytes_for_level_multiplier = 10;
+  Add(0, 1U, "1", "2", 50U);
+  Add(3, 4U, "1", "2", 32U * kOneGB);
+  Add(4, 5U, "1", "2", 500U * kOneGB);
+  Add(5, 6U, "1", "2", 3000U * kOneGB);
+
+  vstorage_.CalculateBaseBytes(ioptions_, mutable_cf_options_);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(5), 3000U * kOneGB);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(4), 300U * kOneGB);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(3), 30U * kOneGB);
+  ASSERT_EQ(vstorage_.MaxBytesForLevel(2), 3U * kOneGB);
+  ASSERT_EQ(vstorage_.base_level(), 2);
+  ASSERT_EQ(0, logger_->log_count);
+}
+
+TEST_F(VersionStorageInfoTest, EstimateLiveDataSize) {
+  // Test whether the overlaps are detected as expected
+  Add(1, 1U, "4", "7", 1U);  // Perfect overlap with last level
+  Add(2, 2U, "3", "5", 1U);  // Partial overlap with last level
+  Add(2, 3U, "6", "8", 1U);  // Partial overlap with last level
+  Add(3, 4U, "1", "9", 1U);  // Contains range of last level
+  Add(4, 5U, "4", "5", 1U);  // Inside range of last level
+  Add(4, 5U, "6", "7", 1U);  // Inside range of last level
+  Add(5, 6U, "4", "7", 10U);
+  ASSERT_EQ(10U, vstorage_.EstimateLiveDataSize());
+}
+
+TEST_F(VersionStorageInfoTest, EstimateLiveDataSize2) {
+  Add(0, 1U, "9", "9", 1U);  // Level 0 is not ordered
+  Add(0, 1U, "5", "6", 1U);  // Ignored because of [5,6] in l1
+  Add(1, 1U, "1", "2", 1U);  // Ignored because of [2,3] in l2
+  Add(1, 2U, "3", "4", 1U);  // Ignored because of [2,3] in l2
+  Add(1, 3U, "5", "6", 1U);
+  Add(2, 4U, "2", "3", 1U);
+  Add(3, 5U, "7", "8", 1U);
+  ASSERT_EQ(4U, vstorage_.EstimateLiveDataSize());
+}
+
+class FindLevelFileTest : public testing::Test {
+ public:
+  LevelFilesBrief file_level_;
   bool disjoint_sorted_files_;
   Arena arena_;
 
@@ -131,7 +315,7 @@ class FindLevelFileTest {
   }
 };
 
-TEST(FindLevelFileTest, LevelEmpty) {
+TEST_F(FindLevelFileTest, LevelEmpty) {
   LevelFileInit(0);
 
   ASSERT_EQ(0, Find("foo"));
@@ -141,7 +325,7 @@ TEST(FindLevelFileTest, LevelEmpty) {
   ASSERT_TRUE(! Overlaps(nullptr, nullptr));
 }
 
-TEST(FindLevelFileTest, LevelSingle) {
+TEST_F(FindLevelFileTest, LevelSingle) {
   LevelFileInit(1);
 
   Add("p", "q");
@@ -173,7 +357,7 @@ TEST(FindLevelFileTest, LevelSingle) {
   ASSERT_TRUE(Overlaps(nullptr, nullptr));
 }
 
-TEST(FindLevelFileTest, LevelMultiple) {
+TEST_F(FindLevelFileTest, LevelMultiple) {
   LevelFileInit(4);
 
   Add("150", "200");
@@ -213,7 +397,7 @@ TEST(FindLevelFileTest, LevelMultiple) {
   ASSERT_TRUE(Overlaps("450", "500"));
 }
 
-TEST(FindLevelFileTest, LevelMultipleNullBoundaries) {
+TEST_F(FindLevelFileTest, LevelMultipleNullBoundaries) {
   LevelFileInit(4);
 
   Add("150", "200");
@@ -235,7 +419,7 @@ TEST(FindLevelFileTest, LevelMultipleNullBoundaries) {
   ASSERT_TRUE(Overlaps("450", nullptr));
 }
 
-TEST(FindLevelFileTest, LevelOverlapSequenceChecks) {
+TEST_F(FindLevelFileTest, LevelOverlapSequenceChecks) {
   LevelFileInit(1);
 
   Add("200", "200", 5000, 3000);
@@ -246,7 +430,7 @@ TEST(FindLevelFileTest, LevelOverlapSequenceChecks) {
   ASSERT_TRUE(Overlaps("200", "210"));
 }
 
-TEST(FindLevelFileTest, LevelOverlappingFiles) {
+TEST_F(FindLevelFileTest, LevelOverlappingFiles) {
   LevelFileInit(2);
 
   Add("150", "600");
@@ -269,5 +453,6 @@ TEST(FindLevelFileTest, LevelOverlappingFiles) {
 }  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  return rocksdb::test::RunAllTests();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+// Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
@@ -19,15 +19,48 @@
 #ifndef STORAGE_ROCKSDB_INCLUDE_ITERATOR_H_
 #define STORAGE_ROCKSDB_INCLUDE_ITERATOR_H_
 
+#include <string>
 #include "rocksdb/slice.h"
 #include "rocksdb/status.h"
 
 namespace rocksdb {
 
-class Iterator {
+class Cleanable {
  public:
-  Iterator();
-  virtual ~Iterator();
+  Cleanable();
+  ~Cleanable();
+  // Clients are allowed to register function/arg1/arg2 triples that
+  // will be invoked when this iterator is destroyed.
+  //
+  // Note that unlike all of the preceding methods, this method is
+  // not abstract and therefore clients should not override it.
+  typedef void (*CleanupFunction)(void* arg1, void* arg2);
+  void RegisterCleanup(CleanupFunction function, void* arg1, void* arg2);
+  void DelegateCleanupsTo(Cleanable* other);
+  // DoCleanup and also resets the pointers for reuse
+  void Reset();
+
+ protected:
+  struct Cleanup {
+    CleanupFunction function;
+    void* arg1;
+    void* arg2;
+    Cleanup* next;
+  };
+  Cleanup cleanup_;
+  // It also becomes the owner of c
+  void RegisterCleanup(Cleanup* c);
+
+ private:
+  // Performs all the cleanups. It does not reset the pointers. Making it
+  // private to prevent misuse
+  inline void DoCleanup();
+};
+
+class Iterator : public Cleanable {
+ public:
+  Iterator() {}
+  virtual ~Iterator() {}
 
   // An iterator is either positioned at a key/value pair, or
   // not valid.  This method returns true iff the iterator is valid.
@@ -45,6 +78,11 @@ class Iterator {
   // The iterator is Valid() after this call iff the source contains
   // an entry that comes at or past target.
   virtual void Seek(const Slice& target) = 0;
+
+  // Position at the last key in the source that at or before target
+  // The iterator is Valid() after this call iff the source contains
+  // an entry that comes at or before target.
+  virtual void SeekForPrev(const Slice& target) {}
 
   // Moves to the next entry in the source.  After this call, Valid() is
   // true iff the iterator was not positioned at the last entry in the source.
@@ -73,23 +111,19 @@ class Iterator {
   // satisfied without doing some IO, then this returns Status::Incomplete().
   virtual Status status() const = 0;
 
-  // Clients are allowed to register function/arg1/arg2 triples that
-  // will be invoked when this iterator is destroyed.
-  //
-  // Note that unlike all of the preceding methods, this method is
-  // not abstract and therefore clients should not override it.
-  typedef void (*CleanupFunction)(void* arg1, void* arg2);
-  void RegisterCleanup(CleanupFunction function, void* arg1, void* arg2);
+  // Property "rocksdb.iterator.is-key-pinned":
+  //   If returning "1", this means that the Slice returned by key() is valid
+  //   as long as the iterator is not deleted.
+  //   It is guaranteed to always return "1" if
+  //      - Iterator created with ReadOptions::pin_data = true
+  //      - DB tables were created with
+  //        BlockBasedTableOptions::use_delta_encoding = false.
+  // Property "rocksdb.iterator.super-version-number":
+  //   LSM version used by the iterator. The same format as DB Property
+  //   kCurrentSuperVersionNumber. See its comment for more information.
+  virtual Status GetProperty(std::string prop_name, std::string* prop);
 
  private:
-  struct Cleanup {
-    CleanupFunction function;
-    void* arg1;
-    void* arg2;
-    Cleanup* next;
-  };
-  Cleanup cleanup_;
-
   // No copying allowed
   Iterator(const Iterator&);
   void operator=(const Iterator&);

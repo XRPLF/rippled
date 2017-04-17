@@ -1,7 +1,8 @@
-// Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+// Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
+
 #include <cstdio>
 #include <string>
 
@@ -27,12 +28,26 @@ int main() {
   assert(s.ok());
 
   // Put key-value
-  s = db->Put(WriteOptions(), "key", "value");
+  s = db->Put(WriteOptions(), "key1", "value");
   assert(s.ok());
   std::string value;
   // get value
-  s = db->Get(ReadOptions(), "key", &value);
+  s = db->Get(ReadOptions(), "key1", &value);
   assert(s.ok());
+  assert(value == "value");
+
+  // atomically apply a set of updates
+  {
+    WriteBatch batch;
+    batch.Delete("key1");
+    batch.Put("key2", value);
+    s = db->Write(WriteOptions(), &batch);
+  }
+
+  s = db->Get(ReadOptions(), "key1", &value);
+  assert(s.IsNotFound());
+
+  db->Get(ReadOptions(), "key2", &value);
   assert(value == "value");
 
   delete db;

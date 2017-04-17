@@ -1,7 +1,9 @@
-//  Copyright (c) 2014, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
+
+#ifndef ROCKSDB_LITE
 
 #include "db/db_impl.h"
 #include "rocksdb/db.h"
@@ -14,7 +16,7 @@
 
 namespace rocksdb {
 
-class CuckooTableDBTest {
+class CuckooTableDBTest : public testing::Test {
  private:
   std::string dbname_;
   Env* env_;
@@ -23,14 +25,14 @@ class CuckooTableDBTest {
  public:
   CuckooTableDBTest() : env_(Env::Default()) {
     dbname_ = test::TmpDir() + "/cuckoo_table_db_test";
-    ASSERT_OK(DestroyDB(dbname_, Options()));
+    EXPECT_OK(DestroyDB(dbname_, Options()));
     db_ = nullptr;
     Reopen();
   }
 
   ~CuckooTableDBTest() {
     delete db_;
-    ASSERT_OK(DestroyDB(dbname_, Options()));
+    EXPECT_OK(DestroyDB(dbname_, Options()));
   }
 
   Options CurrentOptions() {
@@ -39,7 +41,7 @@ class CuckooTableDBTest {
     options.memtable_factory.reset(NewHashLinkListRepFactory(4, 0, 3, true));
     options.allow_mmap_reads = true;
     options.create_if_missing = true;
-    options.max_mem_compaction_level = 0;
+    options.allow_concurrent_memtable_write = false;
     return options;
   }
 
@@ -83,16 +85,15 @@ class CuckooTableDBTest {
 
   int NumTableFilesAtLevel(int level) {
     std::string property;
-    ASSERT_TRUE(
-        db_->GetProperty("rocksdb.num-files-at-level" + NumberToString(level),
-                         &property));
+    EXPECT_TRUE(db_->GetProperty(
+        "rocksdb.num-files-at-level" + NumberToString(level), &property));
     return atoi(property.c_str());
   }
 
   // Return spread of files per level
   std::string FilesPerLevel() {
     std::string result;
-    int last_non_zero_offset = 0;
+    size_t last_non_zero_offset = 0;
     for (int level = 0; level < db_->NumberLevels(); level++) {
       int f = NumTableFilesAtLevel(level);
       char buf[100];
@@ -107,7 +108,7 @@ class CuckooTableDBTest {
   }
 };
 
-TEST(CuckooTableDBTest, Flush) {
+TEST_F(CuckooTableDBTest, Flush) {
   // Try with empty DB first.
   ASSERT_TRUE(dbfull() != nullptr);
   ASSERT_EQ("NOT_FOUND", Get("key2"));
@@ -170,7 +171,7 @@ TEST(CuckooTableDBTest, Flush) {
   ASSERT_EQ("NOT_FOUND", Get("key6"));
 }
 
-TEST(CuckooTableDBTest, FlushWithDuplicateKeys) {
+TEST_F(CuckooTableDBTest, FlushWithDuplicateKeys) {
   Options options = CurrentOptions();
   Reopen(&options);
   ASSERT_OK(Put("key1", "v1"));
@@ -201,7 +202,7 @@ static std::string Uint64Key(uint64_t i) {
 }
 }  // namespace.
 
-TEST(CuckooTableDBTest, Uint64Comparator) {
+TEST_F(CuckooTableDBTest, Uint64Comparator) {
   Options options = CurrentOptions();
   options.comparator = test::Uint64Comparator();
   Reopen(&options);
@@ -218,6 +219,7 @@ TEST(CuckooTableDBTest, Uint64Comparator) {
 
   // Add more keys.
   ASSERT_OK(Delete(Uint64Key(2)));  // Delete.
+  dbfull()->TEST_FlushMemTable();
   ASSERT_OK(Put(Uint64Key(3), "v0"));  // Update.
   ASSERT_OK(Put(Uint64Key(4), "v4"));
   dbfull()->TEST_FlushMemTable();
@@ -227,33 +229,31 @@ TEST(CuckooTableDBTest, Uint64Comparator) {
   ASSERT_EQ("v4", Get(Uint64Key(4)));
 }
 
-TEST(CuckooTableDBTest, CompactionTrigger) {
+TEST_F(CuckooTableDBTest, CompactionIntoMultipleFiles) {
+  // Create a big L0 file and check it compacts into multiple files in L1.
   Options options = CurrentOptions();
-  options.write_buffer_size = 100 << 10;  // 100KB
-  options.level0_file_num_compaction_trigger = 2;
+  options.write_buffer_size = 270 << 10;
+  // Two SST files should be created, each containing 14 keys.
+  // Number of buckets will be 16. Total size ~156 KB.
+  options.target_file_size_base = 160 << 10;
   Reopen(&options);
 
-  // Write 11 values, each 10016 B
-  for (int idx = 0; idx < 11; ++idx) {
+  // Write 28 values, each 10016 B ~ 10KB
+  for (int idx = 0; idx < 28; ++idx) {
     ASSERT_OK(Put(Key(idx), std::string(10000, 'a' + idx)));
   }
   dbfull()->TEST_WaitForFlushMemTable();
   ASSERT_EQ("1", FilesPerLevel());
 
-  // Generate one more file in level-0, and should trigger level-0 compaction
-  for (int idx = 11; idx < 22; ++idx) {
-    ASSERT_OK(Put(Key(idx), std::string(10000, 'a' + idx)));
-  }
-  dbfull()->TEST_WaitForFlushMemTable();
-  dbfull()->TEST_CompactRange(0, nullptr, nullptr);
-
+  dbfull()->TEST_CompactRange(0, nullptr, nullptr, nullptr,
+                              true /* disallow trivial move */);
   ASSERT_EQ("0,2", FilesPerLevel());
-  for (int idx = 0; idx < 22; ++idx) {
+  for (int idx = 0; idx < 28; ++idx) {
     ASSERT_EQ(std::string(10000, 'a' + idx), Get(Key(idx)));
   }
 }
 
-TEST(CuckooTableDBTest, SameKeyInsertedInTwoDifferentFilesAndCompacted) {
+TEST_F(CuckooTableDBTest, SameKeyInsertedInTwoDifferentFilesAndCompacted) {
   // Insert same key twice so that they go to different SST files. Then wait for
   // compaction and check if the latest value is stored and old value removed.
   Options options = CurrentOptions();
@@ -281,7 +281,7 @@ TEST(CuckooTableDBTest, SameKeyInsertedInTwoDifferentFilesAndCompacted) {
   }
 }
 
-TEST(CuckooTableDBTest, AdaptiveTable) {
+TEST_F(CuckooTableDBTest, AdaptiveTable) {
   Options options = CurrentOptions();
 
   // Write some keys using cuckoo table.
@@ -318,4 +318,17 @@ TEST(CuckooTableDBTest, AdaptiveTable) {
 }
 }  // namespace rocksdb
 
-int main(int argc, char** argv) { return rocksdb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
+
+#else
+#include <stdio.h>
+
+int main(int argc, char** argv) {
+  fprintf(stderr, "SKIPPED as Cuckoo table is not supported in ROCKSDB_LITE\n");
+  return 0;
+}
+
+#endif  // ROCKSDB_LITE

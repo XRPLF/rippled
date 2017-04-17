@@ -1,4 +1,4 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
@@ -13,6 +13,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "rocksdb/slice.h"
+
 namespace rocksdb {
 
 extern uint32_t Hash(const char* data, size_t n, uint32_t seed);
@@ -24,4 +26,10 @@ inline uint32_t BloomHash(const Slice& key) {
 inline uint32_t GetSliceHash(const Slice& s) {
   return Hash(s.data(), s.size(), 397);
 }
-}
+
+// std::hash compatible interface.
+struct SliceHasher {
+  uint32_t operator()(const Slice& s) const { return GetSliceHash(s); }
+};
+
+}  // namespace rocksdb

@@ -1,4 +1,4 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
@@ -9,6 +9,7 @@
 
 #pragma once
 #include <memory>
+#include "table/internal_iterator.h"
 
 namespace rocksdb {
 
@@ -18,6 +19,8 @@ class Slice;
 class Arena;
 struct ReadOptions;
 struct TableProperties;
+class GetContext;
+class InternalIterator;
 
 // A Table is a sorted map from strings to strings.  Tables are
 // immutable and persistent.  A Table may be safely accessed from
@@ -33,7 +36,16 @@ class TableReader {
   //        When destroying the iterator, the caller will not call "delete"
   //        but Iterator::~Iterator() directly. The destructor needs to destroy
   //        all the states but those allocated in arena.
-  virtual Iterator* NewIterator(const ReadOptions&, Arena* arena = nullptr) = 0;
+  // skip_filters: disables checking the bloom filters even if they exist. This
+  //               option is effective only for block-based table format.
+  virtual InternalIterator* NewIterator(const ReadOptions&,
+                                        Arena* arena = nullptr,
+                                        bool skip_filters = false) = 0;
+
+  virtual InternalIterator* NewRangeTombstoneIterator(
+      const ReadOptions& read_options) {
+    return nullptr;
+  }
 
   // Given a key, return an approximate byte offset in the file where
   // the data for that key begins (or would begin if the key were
@@ -55,23 +67,38 @@ class TableReader {
   // Report an approximation of how much memory has been used.
   virtual size_t ApproximateMemoryUsage() const = 0;
 
-  // Calls (*result_handler)(handle_context, ...) repeatedly, starting with
-  // the entry found after a call to Seek(key), until result_handler returns
-  // false, where k is the actual internal key for a row found and v as the
-  // value of the key. May not make such a call if filter policy says that key
-  // is not present.
+  // Calls get_context->SaveValue() repeatedly, starting with
+  // the entry found after a call to Seek(key), until it returns false.
+  // May not make such a call if filter policy says that key is not present.
   //
-  // mark_key_may_exist_handler needs to be called when it is configured to be
-  // memory only and the key is not found in the block cache, with
-  // the parameter to be handle_context.
+  // get_context->MarkKeyMayExist needs to be called when it is configured to be
+  // memory only and the key is not found in the block cache.
   //
   // readOptions is the options for the read
   // key is the key to search for
-  virtual Status Get(
-      const ReadOptions& readOptions, const Slice& key, void* handle_context,
-      bool (*result_handler)(void* arg, const ParsedInternalKey& k,
-                             const Slice& v),
-      void (*mark_key_may_exist_handler)(void* handle_context) = nullptr) = 0;
+  // skip_filters: disables checking the bloom filters even if they exist. This
+  //               option is effective only for block-based table format.
+  virtual Status Get(const ReadOptions& readOptions, const Slice& key,
+                     GetContext* get_context, bool skip_filters = false) = 0;
+
+  // Prefetch data corresponding to a give range of keys
+  // Typically this functionality is required for table implementations that
+  // persists the data on a non volatile storage medium like disk/SSD
+  virtual Status Prefetch(const Slice* begin = nullptr,
+                          const Slice* end = nullptr) {
+    (void) begin;
+    (void) end;
+    // Default implementation is NOOP.
+    // The child class should implement functionality when applicable
+    return Status::OK();
+  }
+
+  // convert db file to a human readable form
+  virtual Status DumpTable(WritableFile* out_file) {
+    return Status::NotSupported("DumpTable() not supported");
+  }
+
+  virtual void Close() {}
 };
 
 }  // namespace rocksdb

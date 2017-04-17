@@ -65,6 +65,7 @@ You can contact the author at :
 // Disable some Visual warning messages
 #ifdef _MSC_VER  // Visual Studio
 #  pragma warning(disable : 4127)      // disable: C4127: conditional expression is constant
+#  pragma warning(disable : 4804)      // disable: C4804: 'operation' : unsafe use of type 'bool' in operation (static assert line 313)
 #endif
 
 #ifdef _MSC_VER    // Visual Studio
@@ -92,6 +93,7 @@ FORCE_INLINE void  XXH_free  (void* p)  { free(p); }
 FORCE_INLINE void* XXH_memcpy(void* dest, const void* src, size_t size) { return memcpy(dest,src,size); }
 
 
+namespace rocksdb {
 //**************************************
 // Basic Types
 //**************************************
@@ -473,3 +475,5 @@ U32 XXH32_digest (void* state_in)
 
     return h32;
 }
+
+}  // namespace rocksdb
