@@ -895,7 +895,8 @@ def get_soci_sources(style):
         'src/sqlite', ]
     append_sources(result,
                    'src/ripple/unity/soci.cpp',
-                   CPPPATH=cpp_path)
+                   CPPPATH=cpp_path,
+                   CCFLAGS=['-Wno-deprecated-declarations'])
     if style == 'unity':
         append_sources(result,
                        'src/ripple/unity/soci_ripple.cpp',
