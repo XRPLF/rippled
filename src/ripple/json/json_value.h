@@ -217,6 +217,22 @@ public:
     Value ( double value );
     Value ( const char* value );
     Value ( const char* beginValue, const char* endValue );
+
+    /** \brief Create string values from 64bit integers.
+     *
+     * JSON doesn't represent 64 bit integers correctly. These constructors
+     * convert those types into JSON strings.
+     */
+    Value (std::uint64_t value)
+    {
+        *this = Value (std::to_string (value));
+    }
+
+    Value (std::int64_t value)
+    {
+        *this = Value (std::to_string (value));
+    }
+
     /** \brief Constructs a value from a static string.
 
      * Like other value string constructor but do not duplicate the string for
