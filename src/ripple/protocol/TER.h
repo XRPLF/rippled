@@ -120,6 +120,7 @@ enum TER
     tefBAD_QUORUM,
     tefNOT_MULTI_SIGNING,
     tefBAD_AUTH_MASTER,
+    tefINVARIANT_FAILED,
 
     // -99 .. -1: R Retry
     //   sequence too high, no funds for txn fee, originating -account
@@ -206,7 +207,8 @@ enum TER
     tecDST_TAG_NEEDED           = 143,
     tecINTERNAL                 = 144,
     tecOVERSIZE                 = 145,
-    tecCRYPTOCONDITION_ERROR    = 146
+    tecCRYPTOCONDITION_ERROR    = 146,
+    tecINVARIANT_FAILED         = 147
 };
 
 inline bool isTelLocal(TER x)

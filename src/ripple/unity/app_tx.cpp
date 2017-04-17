@@ -28,6 +28,7 @@
 #include <ripple/app/tx/impl/CreateOffer.cpp>
 #include <ripple/app/tx/impl/CreateTicket.cpp>
 #include <ripple/app/tx/impl/Escrow.cpp>
+#include <ripple/app/tx/impl/InvariantCheck.cpp>
 #include <ripple/app/tx/impl/OfferStream.cpp>
 #include <ripple/app/tx/impl/Payment.cpp>
 #include <ripple/app/tx/impl/PayChan.cpp>

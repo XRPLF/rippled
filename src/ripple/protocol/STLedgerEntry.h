@@ -25,10 +25,14 @@
 
 namespace ripple {
 
+class Invariants_test;
+
 class STLedgerEntry final
     : public STObject
     , public CountedObject <STLedgerEntry>
 {
+    friend Invariants_test; // this test wants access to the private type_
+
 public:
     static char const* getCountedObjectName () { return "STLedgerEntry"; }
 
