@@ -1,4 +1,4 @@
-![Ripple](/images/ripple.png)
+![Stellar](/images/ripple.png)
 
 # What is Ripple?
 Ripple is a network of computers which use the [Ripple consensus algorithm]
