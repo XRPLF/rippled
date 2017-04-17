@@ -1768,6 +1768,11 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
         if (auto const reserveInc = (*val)[~sfReserveIncrement])
             jvObj [jss::reserve_inc] = *reserveInc;
 
+        auto const seq = *(*val)[~sfLedgerSequence];
+
+        if (seq != 0)
+            jvObj [jss::ledger_index]      = to_string (seq);
+
         for (auto i = mSubValidations.begin (); i != mSubValidations.end (); )
         {
             if (auto p = i->second.lock())
