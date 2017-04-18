@@ -88,6 +88,11 @@ void Job::doJob ()
     mJob = nullptr;
 }
 
+void Job::reset ()
+{
+    mJob = std::function<void (Job&)>();
+}
+
 void Job::rename (std::string const& newName)
 {
     mName = newName;

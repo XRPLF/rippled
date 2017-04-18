@@ -460,6 +460,10 @@ JobQueue::processTask ()
         on_execute(type, Job::clock_type::now() - start_time);
     }
 
+    // Make sure the job is destroyed before calling checkSotpped
+    // otherwise the jobQueue may think it has stopped while a job lingers.
+    job.reset ();
+
     {
         std::lock_guard <std::mutex> lock (m_mutex);
         // Job should be destroyed before calling checkStopped
