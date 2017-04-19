@@ -51,6 +51,12 @@ matrix:
     # - compiler: clang
     #   env: GCC_VER=5 BUILD=cmake TARGET=debug.nounity CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PWD/cmake/bin:$PATH
 
+  # Temporary workaround while the llvm apt repository is down.
+  # TODO: REMOVE THIS if/when clang builds become reliable again.
+  allow_failures:
+    - env: GCC_VER=5 TARGET=debug CLANG_VER=3.6
+    - env: GCC_VER=5 TARGET=debug.nounity CLANG_VER=3.6
+
 cache:
   directories:
   - $BOOST_ROOT
