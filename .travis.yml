@@ -10,8 +10,9 @@ env:
     # namepart must match the folder name internal
     # to boost's .tar.gz.
     - LCOV_ROOT=$HOME/lcov
-    - BOOST_ROOT=$HOME/boost_1_60_0
-    - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.60.0/boost_1_60_0.tar.gz'
+    - VALGRIND_ROOT=$HOME/valgrind-install
+    - BOOST_ROOT=$HOME/boost_1_61_0
+    - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.gz'
 
 addons:
   apt:
@@ -20,52 +21,66 @@ addons:
       - gcc-5
       - g++-5
       - python-software-properties
-      - protobuf-compiler
-      - libprotobuf-dev
       - libssl-dev
+      - libffi-dev
       - libstdc++6
       - binutils-gold
       # Provides a backtrace if the unittests crash
       - gdb
+      # Needed for installing valgrind
+      - subversion
+      - automake
+      - autotools-dev
+      - libc6-dbg
 
 matrix:
   include:
-    # Default BUILD is "scons".
-
+    # GCC/Coverage/Autobahn (if master or develop branch)
     - compiler: gcc
-      env: GCC_VER=5 BUILD=cmake TARGET=debug.nounity PATH=$PWD/cmake/bin:$PATH
+      env:
+        - GCC_VER=5
+        - VARIANT=coverage
+        - ADDRESS_MODEL=64
+        - BUILD_SYSTEM=cmake
+        - PATH=$PWD/cmake/bin:$PATH
 
-    - compiler: gcc
-      env: GCC_VER=5 TARGET=coverage
-
+    # Clang/UndefinedBehaviourSanitizer
     - compiler: clang
-      env: GCC_VER=5 TARGET=debug CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
+      env:
+        - GCC_VER=5
+        - VARIANT=usan
+        - CLANG_VER=3.8
+        - ADDRESS_MODEL=64
+        - UBSAN_OPTIONS='print_stacktrace=1'
+        - BUILD_SYSTEM=cmake
+        - PATH=$PWD/cmake/bin:$PATH
+        - PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
 
+    # Clang/AddressSanitizer
     - compiler: clang
-      env: GCC_VER=5 TARGET=debug.nounity CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
-
-    # The clang cmake builds do not link.
-    # - compiler: clang
-    #   env: GCC_VER=5 BUILD=cmake TARGET=debug CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PWD/cmake/bin:$PATH
-
-    # - compiler: clang
-    #   env: GCC_VER=5 BUILD=cmake TARGET=debug.nounity CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PWD/cmake/bin:$PATH
+      env:
+        - GCC_VER=5
+        - VARIANT=asan
+        - CLANG_VER=3.8
+        - ADDRESS_MODEL=64
+        - PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
 
 cache:
   directories:
   - $BOOST_ROOT
+  - $VALGRIND_ROOT
   - llvm-$LLVM_VERSION
   - cmake
 
 before_install:
-  - bin/ci/ubuntu/install-dependencies.sh
+  - scripts/install-dependencies.sh
 
 script:
-  - travis_retry bin/ci/ubuntu/build-and-test.sh
+  - travis_retry scripts/build-and-test.sh
+
+after_script:
+  - cat nohup.out || echo "nohup.out already deleted"
 
 notifications:
   email:
     false
-  irc:
-    channels:
-      - "chat.freenode.net#ripple-dev"

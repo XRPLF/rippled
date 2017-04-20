@@ -1,8 +1,0 @@
-[ODBC]
-Description=DSN for SOCI ODBC connection to PostgreSQL
-Driver=PostgreSQL ANSI
-Server=localhost
-Port=5432
-Database=soci_test
-UID=postgres
-PWD=
