@@ -8,6 +8,7 @@
 #ifndef BEAST_PLACEHOLDERS_HPP
 #define BEAST_PLACEHOLDERS_HPP
 
+#include <beast/config.hpp>
 #include <functional>
 
 namespace beast {

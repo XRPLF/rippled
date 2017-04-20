@@ -8,6 +8,7 @@
 #ifndef BEAST_STATIC_STREAMBUF_HPP
 #define BEAST_STATIC_STREAMBUF_HPP
 
+#include <beast/config.hpp>
 #include <boost/utility/base_from_member.hpp>
 #include <algorithm>
 #include <array>

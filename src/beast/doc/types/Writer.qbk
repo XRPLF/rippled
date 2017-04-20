@@ -28,8 +28,6 @@ In this table:
 * `m`  denotes a value of type `message const&` where
         `std::is_same<decltype(m.body), Body::value_type>:value == true`.
 
-* `rc` is an object of type [link beast.ref.http__resume_context `resume_context`].
-
 * `ec` is a value of type [link beast.ref.error_code `error_code&`]
 
 * `wf` is a [*write function]: a function object of unspecified type provided
@@ -72,8 +70,8 @@ In this table:
     ]
 ]
 [
-    [`a.write(rc, ec, wf)`]
-    [`boost::tribool`]
+    [`a.write(ec, wf)`]
+    [`bool`]
     [
         Called repeatedly after `init` succeeds. `wf` is a function object
         which takes as its single parameter any value meeting the requirements
@@ -81,12 +79,7 @@ In this table:
         must remain valid until the next member function of `writer` is
         invoked (which may be the destructor). This function returns `true`
         to indicate all message body data has been written, or `false` if
-        there is more body data. If the return value is `boost::indeterminate`,
-        the implementation will suspend the operation until the writer invokes
-        `rc`. It is the writers responsibility when returning
-        `boost::indeterminate`, to acquire ownership of `rc` via move
-        construction and eventually call it or else undefined behavior
-        results. This function must be `noexcept`.
+        there is more body data.
     ]
 ]
 ]
@@ -139,25 +132,12 @@ public:
         Postconditions:
 
             If return value is `true`:
-                * Callee does not take ownership of resume.
                 * Callee made zero or one calls to `write`.
                 * There is no more data remaining to write.
 
             If return value is `false`:
                 * Callee does not take ownership of resume.
                 * Callee made one call to `write`.
-
-            If return value is boost::indeterminate:
-                * Callee takes ownership of `resume`.
-                * Caller suspends the write operation
-                  until `resume` is invoked.
-
-        When the caller takes ownership of resume, the
-        asynchronous operation will not complete until the
-        caller destroys the object.
-
-        @param resume A functor to call to resume the write operation
-        after the writer has returned boost::indeterminate.
 
         @param ec Set to indicate an error. This will cause an
         asynchronous write operation to complete with the error.
@@ -167,17 +147,12 @@ public:
         the writer must guarantee that the buffers remain valid until the
         next member function is invoked, which may be the destructor.
 
-        @return `true` if there is no more data to send, 
-                `false` when there may be more data,
-                boost::indeterminate to suspend.
-
-        @note Undefined behavior if the callee takes ownership
-              of resume but does not return boost::indeterminate.
+        @return `true` if there is no more data to send,
+                `false` when there may be more data.
     */
     template<class WriteFunction>
-    boost::tribool
+    bool
     write(
-        resume_context&&,
         error_code&,
         WriteFunction&& wf) noexcept;
 };

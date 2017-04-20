@@ -8,6 +8,8 @@
 #ifndef BEAST_CORE_HPP
 #define BEAST_CORE_HPP
 
+#include <beast/config.hpp>
+
 #include <beast/core/async_completion.hpp>
 #include <beast/core/bind_handler.hpp>
 #include <beast/core/buffer_cat.hpp>

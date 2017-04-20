@@ -8,6 +8,8 @@
 #ifndef BEAST_VERSION_HPP
 #define BEAST_VERSION_HPP
 
+#include <beast/config.hpp>
+
 // follows http://semver.org
 
 //  BEAST_VERSION % 100 is the patch level
@@ -16,6 +18,6 @@
 //
 #define BEAST_VERSION 100000
 
-#define BEAST_VERSION_STRING "1.0.0-b30"
+#define BEAST_VERSION_STRING "1.0.0-b34"
 
 #endif

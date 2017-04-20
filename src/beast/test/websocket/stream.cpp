@@ -109,26 +109,38 @@ public:
         return false;
     }
 
-    struct identity
+    struct test_decorator
     {
-        template<class Body, class Fields>
-        void
-        operator()(http::message<true, Body, Fields>&)
+        int& what;
+
+        test_decorator(test_decorator const&) = default;
+
+        test_decorator(int& what_)
+            : what(what_)
         {
+            what = 0;
         }
 
-        template<class Body, class Fields>
+        template<class Fields>
         void
-        operator()(http::message<false, Body, Fields>&)
+        operator()(http::header<true, Fields>&) const
         {
+            what |= 1;
+        }
+
+        template<class Fields>
+        void
+        operator()(http::header<false, Fields>&) const
+        {
+            what |= 2;
         }
     };
 
-    void testOptions()
+    void
+    testOptions()
     {
         stream<socket_type> ws(ios_);
         ws.set_option(auto_fragment{true});
-        ws.set_option(decorate(identity{}));
         ws.set_option(keep_alive{false});
         ws.set_option(write_buffer_size{2048});
         ws.set_option(message_type{opcode::text});
@@ -409,6 +421,24 @@ public:
             "Sec-WebSocket-Version: 13\r\n"
             "\r\n"
         );
+    }
+
+    void
+    testDecorator(endpoint_type const& ep)
+    {
+        error_code ec;
+        socket_type sock{ios_};
+        sock.connect(ep, ec);
+        if(! BEAST_EXPECTS(! ec, ec.message()))
+            return;
+        stream<socket_type&> ws{sock};
+        int what;
+        ws.set_option(decorate(test_decorator{what}));
+        BEAST_EXPECT(what == 0);
+        ws.handshake("localhost", "/", ec);
+        if(! BEAST_EXPECTS(! ec, ec.message()))
+            return;
+        BEAST_EXPECT(what == 1);
     }
 
     void testMask(endpoint_type const& ep,
@@ -774,6 +804,32 @@ public:
             return;
     }
 #endif
+
+    /*
+        https://github.com/vinniefalco/Beast/issues/300
+
+        Write a message as two individual frames
+    */
+    void
+    testWriteFrames(endpoint_type const& ep)
+    {
+        error_code ec;
+        socket_type sock{ios_};
+        sock.connect(ep, ec);
+        if(! BEAST_EXPECTS(! ec, ec.message()))
+            return;
+        stream<socket_type&> ws{sock};
+        ws.handshake("localhost", "/", ec);
+        if(! BEAST_EXPECTS(! ec, ec.message()))
+            return;
+        ws.write_frame(false, sbuf("u"));
+        ws.write_frame(true, sbuf("v"));
+        streambuf sb;
+        opcode op;
+        ws.read(op, sb, ec);
+        if(! BEAST_EXPECTS(! ec, ec.message()))
+            return;
+    }
 
     void
     testAsyncWriteFrame(endpoint_type const& ep)
@@ -1251,17 +1307,24 @@ public:
         testBadHandshakes();
         testBadResponses();
 
+        permessage_deflate pmd;
+        pmd.client_enable = false;
+        pmd.server_enable = false;
+
         {
             error_code ec;
             ::websocket::sync_echo_server server{nullptr};
+            server.set_option(pmd);
             server.open(any, ec);
             BEAST_EXPECTS(! ec, ec.message());
             auto const ep = server.local_endpoint();
+            testDecorator(ep);
             //testInvokable1(ep);
             testInvokable2(ep);
             testInvokable3(ep);
             testInvokable4(ep);
             //testInvokable5(ep);
+            testWriteFrames(ep);
             testAsyncWriteFrame(ep);
         }
 
@@ -1308,8 +1371,6 @@ public:
                         });
                 }
             };
-
-        permessage_deflate pmd;
 
         pmd.client_enable = false;
         pmd.server_enable = false;

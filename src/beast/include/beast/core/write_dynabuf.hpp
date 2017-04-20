@@ -8,6 +8,7 @@
 #ifndef BEAST_WRITE_DYNABUF_HPP
 #define BEAST_WRITE_DYNABUF_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/buffer_concepts.hpp>
 #include <beast/core/detail/write_dynabuf.hpp>
 #include <type_traits>

@@ -15,6 +15,8 @@ add_executable (http-crawl
 
 if (NOT WIN32)
     target_link_libraries(http-crawl ${Boost_LIBRARIES} Threads::Threads)
+else()
+    target_link_libraries(http-crawl ${Boost_LIBRARIES})
 endif()
 
 add_executable (http-server
@@ -29,7 +31,10 @@ add_executable (http-server
 
 if (NOT WIN32)
     target_link_libraries(http-server ${Boost_LIBRARIES} Threads::Threads)
+else()
+    target_link_libraries(http-server ${Boost_LIBRARIES})
 endif()
+
 
 add_executable (http-example
     ${BEAST_INCLUDES}
@@ -39,7 +44,10 @@ add_executable (http-example
 
 if (NOT WIN32)
     target_link_libraries(http-example ${Boost_LIBRARIES} Threads::Threads)
+else()
+    target_link_libraries(http-example ${Boost_LIBRARIES})
 endif()
+
 
 add_executable (websocket-echo
     ${BEAST_INCLUDES}
@@ -50,7 +58,10 @@ add_executable (websocket-echo
 
 if (NOT WIN32)
     target_link_libraries(websocket-echo ${Boost_LIBRARIES} Threads::Threads)
+else()
+    target_link_libraries(websocket-echo ${Boost_LIBRARIES})
 endif()
+
 
 add_executable (websocket-example
     ${BEAST_INCLUDES}
@@ -60,4 +71,6 @@ add_executable (websocket-example
 
 if (NOT WIN32)
     target_link_libraries(websocket-example ${Boost_LIBRARIES} Threads::Threads)
+else()
+    target_link_libraries(websocket-example ${Boost_LIBRARIES})
 endif()

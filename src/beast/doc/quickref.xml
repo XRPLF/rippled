@@ -42,7 +42,6 @@
             <member><link linkend="beast.ref.http__request_header">request_header</link></member>
             <member><link linkend="beast.ref.http__response">response</link></member>
             <member><link linkend="beast.ref.http__response_header">response_header</link></member>
-            <member><link linkend="beast.ref.http__resume_context">resume_context</link></member>
             <member><link linkend="beast.ref.http__streambuf_body">streambuf_body</link></member>
             <member><link linkend="beast.ref.http__string_body">string_body</link></member>
           </simplelist>
@@ -190,6 +189,7 @@
             <member><link linkend="beast.ref.buffer_cat">buffer_cat</link></member>
             <member><link linkend="beast.ref.prepare_buffer">prepare_buffer</link></member>
             <member><link linkend="beast.ref.prepare_buffers">prepare_buffers</link></member>
+            <member><link linkend="beast.ref.system_category">system_category</link></member>
             <member><link linkend="beast.ref.to_string">to_string</link></member>
             <member><link linkend="beast.ref.write">write</link></member>
           </simplelist>

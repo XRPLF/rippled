@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_CHUNK_ENCODE_HPP
 #define BEAST_HTTP_CHUNK_ENCODE_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/buffer_cat.hpp>
 #include <beast/http/detail/chunk_encode.hpp>
 #include <boost/asio/buffer.hpp>

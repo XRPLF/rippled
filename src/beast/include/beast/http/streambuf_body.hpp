@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_STREAMBUF_BODY_HPP
 #define BEAST_HTTP_STREAMBUF_BODY_HPP
 
+#include <beast/config.hpp>
 #include <beast/http/basic_dynabuf_body.hpp>
 #include <beast/core/streambuf.hpp>
 

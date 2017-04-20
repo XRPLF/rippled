@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_PARSER_V1_HPP
 #define BEAST_HTTP_PARSER_V1_HPP
 
+#include <beast/config.hpp>
 #include <beast/http/concepts.hpp>
 #include <beast/http/header_parser_v1.hpp>
 #include <beast/http/message.hpp>

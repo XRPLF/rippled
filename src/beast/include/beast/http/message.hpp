@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_MESSAGE_HPP
 #define BEAST_HTTP_MESSAGE_HPP
 
+#include <beast/config.hpp>
 #include <beast/http/fields.hpp>
 #include <beast/core/detail/integer_sequence.hpp>
 #include <memory>

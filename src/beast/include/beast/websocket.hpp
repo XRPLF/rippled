@@ -8,6 +8,8 @@
 #ifndef BEAST_WEBSOCKET_HPP
 #define BEAST_WEBSOCKET_HPP
 
+#include <beast/config.hpp>
+
 #include <beast/websocket/error.hpp>
 #include <beast/websocket/option.hpp>
 #include <beast/websocket/rfc6455.hpp>

@@ -8,6 +8,7 @@
 #ifndef BEAST_WEBSOCKET_TEARDOWN_HPP
 #define BEAST_WEBSOCKET_TEARDOWN_HPP
 
+#include <beast/config.hpp>
 #include <beast/websocket/error.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <type_traits>

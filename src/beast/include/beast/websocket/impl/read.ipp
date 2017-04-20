@@ -1059,15 +1059,8 @@ operator()(error_code const& ec, bool again)
         case 0:
             // read payload
             d.state = 1;
-#if 0
-            // VFALCO This causes dereference of null, because
-            //        the handler is moved from the data block
-            //        before asio_handler_deallocate is called.
             d.ws.async_read_frame(
                 d.fi, d.db, std::move(*this));
-#else
-            d.ws.async_read_frame(d.fi, d.db, *this);
-#endif
             return;
 
         // got payload

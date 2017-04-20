@@ -8,6 +8,7 @@
 #ifndef BEAST_STREAM_CONCEPTS_HPP
 #define BEAST_STREAM_CONCEPTS_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/detail/stream_concepts.hpp>
 #include <type_traits>
 

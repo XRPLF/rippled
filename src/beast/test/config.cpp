@@ -6,4 +6,4 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/http/resume_context.hpp>
+#include <beast/config.hpp>

@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_RFC7230_HPP
 #define BEAST_HTTP_RFC7230_HPP
 
+#include <beast/config.hpp>
 #include <beast/http/detail/rfc7230.hpp>
 
 namespace beast {

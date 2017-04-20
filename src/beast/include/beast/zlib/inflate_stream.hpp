@@ -35,6 +35,7 @@
 #ifndef BEAST_ZLIB_INFLATE_STREAM_HPP
 #define BEAST_ZLIB_INFLATE_STREAM_HPP
 
+#include <beast/config.hpp>
 #include <beast/zlib/detail/inflate_stream.hpp>
 
 namespace beast {

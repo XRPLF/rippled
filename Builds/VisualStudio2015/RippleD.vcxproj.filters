@@ -555,6 +555,9 @@
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\thread.hpp">
       <Filter>beast\unit_test</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\config.hpp">
+      <Filter>beast</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\async_completion.hpp">
       <Filter>beast\core</Filter>
     </ClInclude>
@@ -757,9 +760,6 @@
       <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\reason.hpp">
-      <Filter>beast\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\resume_context.hpp">
       <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\rfc7230.hpp">

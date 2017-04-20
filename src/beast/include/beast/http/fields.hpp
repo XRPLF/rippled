@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_FIELDS_HPP
 #define BEAST_HTTP_FIELDS_HPP
 
+#include <beast/config.hpp>
 #include <beast/http/basic_fields.hpp>
 #include <memory>
 

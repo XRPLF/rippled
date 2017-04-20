@@ -35,6 +35,7 @@
 #ifndef BEAST_ZLIB_ERROR_HPP
 #define BEAST_ZLIB_ERROR_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/error.hpp>
 
 namespace beast {

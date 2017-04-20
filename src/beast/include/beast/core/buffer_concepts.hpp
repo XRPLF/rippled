@@ -8,6 +8,7 @@
 #ifndef BEAST_BUFFER_CONCEPTS_HPP
 #define BEAST_BUFFER_CONCEPTS_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/detail/buffer_concepts.hpp>
 #include <boost/asio/buffer.hpp>
 #include <type_traits>

@@ -8,12 +8,11 @@
 #ifndef BEAST_HTTP_BASIC_DYNABUF_BODY_HPP
 #define BEAST_HTTP_BASIC_DYNABUF_BODY_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/error.hpp>
 #include <beast/http/message.hpp>
-#include <beast/http/resume_context.hpp>
 #include <beast/core/detail/type_traits.hpp>
 #include <boost/asio/buffer.hpp>
-#include <boost/logic/tribool.hpp>
 
 namespace beast {
 namespace http {
@@ -87,9 +86,8 @@ private:
         }
 
         template<class WriteFunction>
-        boost::tribool
-        write(resume_context&&, error_code&,
-            WriteFunction&& wf) noexcept
+        bool
+        write(error_code&, WriteFunction&& wf) noexcept
         {
             wf(body_.data());
             return true;

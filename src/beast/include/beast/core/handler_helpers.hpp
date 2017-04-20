@@ -8,6 +8,7 @@
 #ifndef BEAST_HANDLER_HELPERS_HPP
 #define BEAST_HANDLER_HELPERS_HPP
 
+#include <beast/config.hpp>
 #include <boost/asio/handler_alloc_hook.hpp>
 #include <boost/asio/handler_continuation_hook.hpp>
 #include <boost/asio/handler_invoke_hook.hpp>

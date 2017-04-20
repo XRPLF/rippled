@@ -264,6 +264,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\thread.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\config.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\async_completion.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\bind_handler.hpp">
@@ -399,8 +401,6 @@
     <ClInclude Include="..\..\src\beast\include\beast\http\read.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\reason.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\resume_context.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\rfc7230.hpp">
     </ClInclude>

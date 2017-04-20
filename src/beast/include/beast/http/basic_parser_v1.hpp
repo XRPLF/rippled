@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_BASIC_PARSER_v1_HPP
 #define BEAST_HTTP_BASIC_PARSER_v1_HPP
 
+#include <beast/config.hpp>
 #include <beast/http/message.hpp>
 #include <beast/http/parse_error.hpp>
 #include <beast/http/rfc7230.hpp>

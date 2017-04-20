@@ -8,6 +8,7 @@
 #ifndef BEAST_WEBSOCKET_STREAM_HPP
 #define BEAST_WEBSOCKET_STREAM_HPP
 
+#include <beast/config.hpp>
 #include <beast/websocket/option.hpp>
 #include <beast/websocket/detail/stream_base.hpp>
 #include <beast/http/message.hpp>

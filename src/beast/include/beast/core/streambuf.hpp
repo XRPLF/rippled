@@ -8,6 +8,7 @@
 #ifndef BEAST_STREAMBUF_HPP
 #define BEAST_STREAMBUF_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/detail/empty_base_optimization.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/intrusive/list.hpp>

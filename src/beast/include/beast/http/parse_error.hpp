@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_PARSE_ERROR_HPP
 #define BEAST_HTTP_PARSE_ERROR_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/error.hpp>
 
 namespace beast {

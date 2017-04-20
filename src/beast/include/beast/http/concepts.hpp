@@ -8,11 +8,10 @@
 #ifndef BEAST_HTTP_TYPE_CHECK_HPP
 #define BEAST_HTTP_TYPE_CHECK_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/error.hpp>
 #include <beast/core/detail/type_traits.hpp>
-#include <beast/http/resume_context.hpp>
 #include <boost/asio/buffer.hpp>
-#include <boost/logic/tribool.hpp>
 #include <type_traits>
 #include <utility>
 
@@ -50,38 +49,6 @@ struct has_content_length<T, beast::detail::void_t<decltype(
         "Writer::content_length requirements not met");
 };
 
-#if 0
-template<class T, class M, class = beast::detail::void_t<>>
-struct is_Writer : std::false_type {};
-
-template<class T, class M>
-struct is_Writer<T, M, beast::detail::void_t<decltype(
-    std::declval<T>().init(
-        std::declval<error_code&>())
-    // VFALCO This is unfortunate, we have to provide the template
-    //        argument type because this is not a deduced context?
-    //
-    ,std::declval<T>().template write<detail::write_function>(
-        std::declval<resume_context>(),
-        std::declval<error_code&>(),
-        std::declval<detail::write_function>())
-            )> > : std::integral_constant<bool,
-    std::is_nothrow_constructible<T, M const&>::value &&
-    std::is_convertible<decltype(
-        std::declval<T>().template write<detail::write_function>(
-            std::declval<resume_context>(),
-            std::declval<error_code&>(),
-            std::declval<detail::write_function>())),
-                boost::tribool>::value
-        >
-{
-    static_assert(std::is_same<
-        typename M::body_type::writer, T>::value,
-            "Mismatched writer and message");
-};
-
-#else
-
 template<class T, class M>
 class is_Writer
 {
@@ -99,10 +66,9 @@ class is_Writer
     template<class U, class R =
         std::is_convertible<decltype(
             std::declval<U>().template write<detail::write_function>(
-                std::declval<resume_context>(),
                 std::declval<error_code&>(),
                 std::declval<detail::write_function>()))
-            , boost::tribool>>
+            , bool>>
     static R check2(int);
     template<class>
     static std::false_type check2(...);
@@ -119,8 +85,6 @@ public:
         && type2::value
     >;
 };
-
-#endif
 
 template<class T>
 class is_Parser

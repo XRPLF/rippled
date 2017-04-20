@@ -1,3 +1,47 @@
+1.0.0-b34
+
+* Fix and tidy up CMake build scripts
+
+--------------------------------------------------------------------------------
+
+1.0.0-b33
+
+* Require Visual Studio 2015 Update 3 or later
+
+HTTP
+
+* Use fwrite return value in file_body
+
+WebSocket
+
+* Set internal state correctly when writing frames
+* Add decorator unit test
+* Add write_frames unit test
+
+--------------------------------------------------------------------------------
+
+1.0.0-b32
+
+* Add io_service completion invariants test
+* Update CMake scripts for finding packages
+
+API Changes:
+
+* Remove http Writer suspend and resume feature
+
+--------------------------------------------------------------------------------
+
+1.0.0-b31
+
+* Tidy up build settings
+* Add missing dynabuf_readstream member
+
+WebSocket
+
+* Move the handler, don't copy it
+
+--------------------------------------------------------------------------------
+
 1.0.0-b30
 
 WebSocket

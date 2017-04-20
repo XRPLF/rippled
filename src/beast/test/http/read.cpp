@@ -17,6 +17,7 @@
 #include <beast/test/yield_to.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <boost/asio/spawn.hpp>
+#include <atomic>
 
 namespace beast {
 namespace http {
@@ -374,6 +375,55 @@ public:
         }
     }
 
+    // Ensure completion handlers are not leaked
+    struct handler
+    {
+        static std::atomic<std::size_t>&
+        count() { static std::atomic<std::size_t> n; return n; }
+        handler() { ++count(); }
+        ~handler() { --count(); }
+        handler(handler const&) { ++count(); }
+        void operator()(error_code const&) const {}
+    };
+
+    void
+    testIoService()
+    {
+        {
+            // Make sure handlers are not destroyed
+            // after calling io_service::stop
+            boost::asio::io_service ios;
+            test::string_istream is{ios,
+                "GET / HTTP/1.1\r\n\r\n"};
+            BEAST_EXPECT(handler::count() == 0);
+            streambuf sb;
+            message<true, streambuf_body, fields> m;
+            async_read(is, sb, m, handler{});
+            BEAST_EXPECT(handler::count() > 0);
+            ios.stop();
+            BEAST_EXPECT(handler::count() > 0);
+            ios.reset();
+            BEAST_EXPECT(handler::count() > 0);
+            ios.run_one();
+            BEAST_EXPECT(handler::count() == 0);
+        }
+        {
+            // Make sure uninvoked handlers are
+            // destroyed when calling ~io_service
+            {
+                boost::asio::io_service ios;
+                test::string_istream is{ios,
+                    "GET / HTTP/1.1\r\n\r\n"};
+                BEAST_EXPECT(handler::count() == 0);
+                streambuf sb;
+                message<true, streambuf_body, fields> m;
+                async_read(is, sb, m, handler{});
+                BEAST_EXPECT(handler::count() > 0);
+            }
+            BEAST_EXPECT(handler::count() == 0);
+        }
+    }
+
     void run() override
     {
         testThrow();
@@ -382,6 +432,8 @@ public:
         yield_to(&read_test::testReadHeaders, this);
         yield_to(&read_test::testRead, this);
         yield_to(&read_test::testEof, this);
+
+        testIoService();
     }
 };
 
@@ -389,4 +441,3 @@ BEAST_DEFINE_TESTSUITE(read,http,beast);
 
 } // http
 } // beast
-

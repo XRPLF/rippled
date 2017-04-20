@@ -8,6 +8,7 @@
 #ifndef BEAST_HANDLER_ALLOC_HPP
 #define BEAST_HANDLER_ALLOC_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/handler_helpers.hpp>
 #include <cstdlib>
 #include <memory>

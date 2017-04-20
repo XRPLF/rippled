@@ -8,6 +8,8 @@
 #ifndef BEAST_HTTP_REASON_HPP
 #define BEAST_HTTP_REASON_HPP
 
+#include <beast/config.hpp>
+
 namespace beast {
 namespace http {
 

@@ -8,6 +8,7 @@
 #ifndef BEAST_WEBSOCKET_OPTION_HPP
 #define BEAST_WEBSOCKET_OPTION_HPP
 
+#include <beast/config.hpp>
 #include <beast/websocket/rfc6455.hpp>
 #include <beast/websocket/detail/decorator.hpp>
 #include <beast/core/detail/type_traits.hpp>

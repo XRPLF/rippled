@@ -8,6 +8,8 @@
 #ifndef BEAST_HTTP_HPP
 #define BEAST_HTTP_HPP
 
+#include <beast/config.hpp>
+
 #include <beast/http/basic_fields.hpp>
 #include <beast/http/basic_parser_v1.hpp>
 #include <beast/http/chunk_encode.hpp>
@@ -19,7 +21,6 @@
 #include <beast/http/parser_v1.hpp>
 #include <beast/http/read.hpp>
 #include <beast/http/reason.hpp>
-#include <beast/http/resume_context.hpp>
 #include <beast/http/rfc7230.hpp>
 #include <beast/http/streambuf_body.hpp>
 #include <beast/http/string_body.hpp>

@@ -93,19 +93,20 @@ project beast
     <library>/boost/filesystem//boost_filesystem
     <library>/boost/program_options//boost_program_options
     <define>BOOST_ALL_NO_LIB=1
+    <define>BOOST_COROUTINES_NO_DEPRECATION_WARNING=1
     <threading>multi
     <runtime-link>shared
     <debug-symbols>on
     <toolset>gcc:<cxxflags>-std=c++11
     <toolset>gcc:<cxxflags>-Wno-unused-parameter
+    <toolset>gcc:<cxxflags>-Wno-unused-variable # Temporary until we can figure out -isystem
     <toolset>clang:<cxxflags>-std=c++11
     <toolset>clang:<cxxflags>-Wno-unused-parameter
-    <toolset>gcc:<cxxflags>-Wno-unused-variable   # Temporary until we can figure out -isystem
     <toolset>clang:<cxxflags>-Wno-unused-variable # Temporary until we can figure out -isystem
     <toolset>msvc:<define>_SCL_SECURE_NO_WARNINGS=1
     <toolset>msvc:<define>_CRT_SECURE_NO_WARNINGS=1
-    <toolset>msvc:<cxxflags>"/wd4100 /bigobj"
-    <toolset>msvc,<variant>release:<cxxflags>"/Ob2 /Oi /Ot"
+    <toolset>msvc:<cxxflags>"/wd4100 /wd4251 /bigobj"
+    <toolset>msvc:<variant>release:<cxxflags>"/Ob2 /Oi /Ot"
     <os>LINUX:<define>_XOPEN_SOURCE=600
     <os>LINUX:<define>_GNU_SOURCE=1
     <os>SOLARIS:<define>_XOPEN_SOURCE=500

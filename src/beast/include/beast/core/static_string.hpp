@@ -8,6 +8,7 @@
 #ifndef BEAST_WEBSOCKET_STATIC_STRING_HPP
 #define BEAST_WEBSOCKET_STATIC_STRING_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/detail/type_traits.hpp>
 #include <array>
 #include <cstdint>

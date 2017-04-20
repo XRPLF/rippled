@@ -8,12 +8,11 @@
 #ifndef BEAST_HTTP_EMPTY_BODY_HPP
 #define BEAST_HTTP_EMPTY_BODY_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/error.hpp>
 #include <beast/http/message.hpp>
-#include <beast/http/resume_context.hpp>
 #include <beast/core/detail/type_traits.hpp>
 #include <boost/asio/buffer.hpp>
-#include <boost/logic/tribool.hpp>
 #include <memory>
 #include <string>
 
@@ -59,9 +58,8 @@ private:
         }
 
         template<class WriteFunction>
-        boost::tribool
-        write(resume_context&&, error_code&,
-            WriteFunction&& wf) noexcept
+        bool
+        write(error_code&, WriteFunction&& wf) noexcept
         {
             wf(boost::asio::null_buffers{});
             return true;

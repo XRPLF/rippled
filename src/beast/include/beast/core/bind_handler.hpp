@@ -8,6 +8,7 @@
 #ifndef BEAST_BIND_HANDLER_HPP
 #define BEAST_BIND_HANDLER_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/handler_concepts.hpp>
 #include <beast/core/detail/bind_handler.hpp>
 #include <type_traits>

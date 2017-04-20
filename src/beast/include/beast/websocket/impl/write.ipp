@@ -770,6 +770,7 @@ write_frame(bool fin,
             fh.len = n;
             remain -= n;
             fh.fin = fin ? remain == 0 : false;
+            wr_.cont = ! fh.fin;
             detail::fh_streambuf fh_buf;
             detail::write<static_streambuf>(fh_buf, fh);
             boost::asio::write(stream_,

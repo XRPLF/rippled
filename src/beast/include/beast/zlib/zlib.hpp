@@ -35,6 +35,7 @@
 #ifndef BEAST_ZLIB_ZLIB_HPP
 #define BEAST_ZLIB_ZLIB_HPP
 
+#include <beast/config.hpp>
 #include <cstdint>
 #include <cstdlib>
 

@@ -1,12 +1,7 @@
 <img width="880" height = "80" alt = "Beast"
     src="https://raw.githubusercontent.com/vinniefalco/Beast/master/doc/images/readme.png">
 
-[![Join the chat at https://gitter.im/vinniefalco/Beast](https://badges.gitter.im/vinniefalco/Beast.svg)](https://gitter.im/vinniefalco/Beast?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status]
-(https://travis-ci.org/vinniefalco/Beast.svg?branch=master)](https://travis-ci.org/vinniefalco/Beast) [![codecov]
-(https://codecov.io/gh/vinniefalco/Beast/branch/master/graph/badge.svg)](https://codecov.io/gh/vinniefalco/Beast) [![coveralls]
-(https://coveralls.io/repos/github/vinniefalco/Beast/badge.svg?branch=master)](https://coveralls.io/github/vinniefalco/Beast?branch=master) [![Documentation]
-(https://img.shields.io/badge/documentation-master-brightgreen.svg)](http://vinniefalco.github.io/beast/) [![License]
-(https://img.shields.io/badge/license-boost-brightgreen.svg)](LICENSE_1_0.txt)
+[![Join the chat at https://gitter.im/vinniefalco/Beast](https://badges.gitter.im/vinniefalco/Beast.svg)](https://gitter.im/vinniefalco/Beast?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/vinniefalco/Beast.svg?branch=master)](https://travis-ci.org/vinniefalco/Beast) [![codecov](https://codecov.io/gh/vinniefalco/Beast/branch/master/graph/badge.svg)](https://codecov.io/gh/vinniefalco/Beast) [![coveralls](https://coveralls.io/repos/github/vinniefalco/Beast/badge.svg?branch=master)](https://coveralls.io/github/vinniefalco/Beast?branch=master) [![Documentation](https://img.shields.io/badge/documentation-master-brightgreen.svg)](http://vinniefalco.github.io/beast/) [![License](https://img.shields.io/badge/license-boost-brightgreen.svg)](LICENSE_1_0.txt)
 
 # HTTP and WebSocket built on Boost.Asio in C++11
 
@@ -78,9 +73,17 @@ The library has been submitted to the
 
 ## Requirements
 
-* Boost 1.58 or higher
-* C++11 or greater
+* Boost 1.58 or later
+* C++11 or later
+
+When using Microsoft Visual C++, Visual Studio 2015 Update 3 or later is required.
+
+These components are optionally required in order to build the
+tests and examples:
+
 * OpenSSL (optional)
+* CMake 3.7.2 or later (optional)
+* Properly configured bjam/b2 (optional)
 
 ## Building
 
@@ -102,17 +105,25 @@ Boost.Coroutine library. Please visit the Boost documentation for
 instructions on how to do this for your particular build system.
 
 For the examples and tests, Beast provides build scripts for Boost.Build (bjam)
-and CMake. Developers using Microsoft Visual Studio can generate Visual Studio
+and CMake. It is possible to generate Microsoft Visual Studio or Apple
+Developers using Microsoft Visual Studio can generate Visual Studio
 project files by executing these commands from the root of the repository:
-
 
 ```
 cd bin
-cmake ..                                    # for 32-bit Windows build
+cmake ..                                    # for 32-bit Windows builds
 
 cd ../bin64
 cmake ..                                    # for Linux/Mac builds, OR
 cmake -G"Visual Studio 14 2015 Win64" ..    # for 64-bit Windows builds
+```
+
+When using Apple Xcode it is possible to generate Xcode project files
+using these commands:
+
+```
+cd bin
+cmake -G Xcode ..                           # for Apple Xcode builds
 ```
 
 To build with Boost.Build, it is necessary to have the bjam executable

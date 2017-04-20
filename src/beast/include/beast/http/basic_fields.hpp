@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_BASIC_FIELDS_HPP
 #define BEAST_HTTP_BASIC_FIELDS_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/detail/empty_base_optimization.hpp>
 #include <beast/http/detail/basic_fields.hpp>
 #include <boost/lexical_cast.hpp>

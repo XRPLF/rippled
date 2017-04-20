@@ -8,6 +8,7 @@
 #ifndef BEAST_CONSUMING_BUFFERS_HPP
 #define BEAST_CONSUMING_BUFFERS_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/buffer_concepts.hpp>
 #include <boost/asio/buffer.hpp>
 #include <cstdint>

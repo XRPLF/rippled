@@ -8,6 +8,7 @@ add_executable (lib-tests
     ${BEAST_INCLUDES}
     ${EXTRAS_INCLUDES}
     ../extras/beast/unit_test/main.cpp
+    config.cpp
     core.cpp
     http.cpp
     version.cpp
@@ -16,6 +17,8 @@ add_executable (lib-tests
 )
 
 if (NOT WIN32)
+    target_link_libraries(lib-tests ${Boost_LIBRARIES} Threads::Threads)
+else()
     target_link_libraries(lib-tests ${Boost_LIBRARIES})
 endif()
 

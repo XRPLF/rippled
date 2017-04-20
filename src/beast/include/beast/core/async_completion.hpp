@@ -8,6 +8,7 @@
 #ifndef BEAST_ASYNC_COMPLETION_HPP
 #define BEAST_ASYNC_COMPLETION_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/handler_concepts.hpp>
 #include <boost/asio/async_result.hpp>
 #include <boost/asio/handler_type.hpp>

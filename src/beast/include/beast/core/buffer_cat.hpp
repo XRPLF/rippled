@@ -8,6 +8,7 @@
 #ifndef BEAST_BUFFER_CAT_HPP
 #define BEAST_BUFFER_CAT_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/detail/buffer_cat.hpp>
 #include <boost/asio/buffer.hpp>
 #include <cstdint>

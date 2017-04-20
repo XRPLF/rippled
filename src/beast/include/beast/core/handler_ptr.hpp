@@ -8,6 +8,7 @@
 #ifndef BEAST_HANDLER_PTR_HPP
 #define BEAST_HANDLER_PTR_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/detail/type_traits.hpp>
 #include <atomic>
 #include <cstdint>

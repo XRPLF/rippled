@@ -8,6 +8,7 @@
 #ifndef BEAST_WEBSOCKET_RFC6455_HPP
 #define BEAST_WEBSOCKET_RFC6455_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/static_string.hpp>
 #include <boost/optional.hpp>
 #include <array>

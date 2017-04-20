@@ -8,6 +8,7 @@
 #ifndef BEAST_PREPARE_BUFFER_HPP
 #define BEAST_PREPARE_BUFFER_HPP
 
+#include <beast/config.hpp>
 #include <boost/asio/buffer.hpp>
 #include <algorithm>
 

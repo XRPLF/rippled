@@ -9,7 +9,6 @@
 #define BEAST_HTTP_IMPL_WRITE_IPP
 
 #include <beast/http/concepts.hpp>
-#include <beast/http/resume_context.hpp>
 #include <beast/http/chunk_encode.hpp>
 #include <beast/core/buffer_cat.hpp>
 #include <beast/core/bind_handler.hpp>
@@ -21,7 +20,6 @@
 #include <beast/core/write_dynabuf.hpp>
 #include <beast/core/detail/sync_ostream.hpp>
 #include <boost/asio/write.hpp>
-#include <boost/logic/tribool.hpp>
 #include <condition_variable>
 #include <mutex>
 #include <ostream>
@@ -296,8 +294,6 @@ class write_op
         // VFALCO How do we use handler_alloc in write_preparation?
         write_preparation<
             isRequest, Body, Fields> wp;
-        resume_context resume;
-        resume_context copy;
         int state = 0;
 
         data(Handler& handler, Stream& s_,
@@ -375,25 +371,7 @@ public:
         : d_(std::forward<DeducedHandler>(h),
             s, std::forward<Args>(args)...)
     {
-        auto& d = *d_;
-        auto sp = d_;
-        d.resume = {
-            [sp]() mutable
-            {
-                write_op self{std::move(sp)};
-                self.d_->cont = false;
-                auto& ios = self.d_->s.get_io_service();
-                ios.dispatch(bind_handler(std::move(self),
-                    error_code{}, 0, false));
-            }};
-        d.copy = d.resume;
         (*this)(error_code{}, 0, false);
-    }
-
-    explicit
-    write_op(handler_ptr<data, Handler> d)
-        : d_(std::move(d))
-    {
     }
 
     void
@@ -460,20 +438,15 @@ operator()(error_code ec, std::size_t, bool again)
 
         case 1:
         {
-            boost::tribool const result = d.wp.w.write(
-                std::move(d.copy), ec, writef0_lambda{*this});
+            auto const result =
+                d.wp.w.write(ec,
+                    writef0_lambda{*this});
             if(ec)
             {
                 // call handler
                 d.state = 99;
                 d.s.get_io_service().post(bind_handler(
                     std::move(*this), ec, false));
-                return;
-            }
-            if(boost::indeterminate(result))
-            {
-                // suspend
-                d.copy = d.resume;
                 return;
             }
             if(result)
@@ -491,19 +464,14 @@ operator()(error_code ec, std::size_t, bool again)
 
         case 3:
         {
-            boost::tribool result = d.wp.w.write(
-                std::move(d.copy), ec, writef_lambda{*this});
+            auto const result =
+                d.wp.w.write(ec,
+                    writef_lambda{*this});
             if(ec)
             {
                 // call handler
                 d.state = 99;
                 break;
-            }
-            if(boost::indeterminate(result))
-            {
-                // suspend
-                d.copy = d.resume;
-                return;
             }
             if(result)
                 d.state = d.wp.chunked ? 4 : 5;
@@ -533,8 +501,6 @@ operator()(error_code ec, std::size_t, bool again)
             break;
         }
     }
-    d.copy = {};
-    d.resume = {};
     d_.invoke(ec);
 }
 
@@ -640,37 +606,12 @@ write(SyncWriteStream& stream,
     wp.init(ec);
     if(ec)
         return;
-    std::mutex m;
-    std::condition_variable cv;
-    bool ready = false;
-    resume_context resume{
-        [&]
-        {
-            std::lock_guard<std::mutex> lock(m);
-            ready = true;
-            cv.notify_one();
-        }};
-    auto copy = resume;
-    boost::tribool result =
-        wp.w.write(std::move(copy), ec,
-            detail::writef0_lambda<SyncWriteStream,
-                decltype(wp.sb)>{stream,
-                    wp.sb, wp.chunked, ec});
+    auto result = wp.w.write(
+        ec, detail::writef0_lambda<
+            SyncWriteStream, decltype(wp.sb)>{
+                stream, wp.sb, wp.chunked, ec});
     if(ec)
         return;
-    if(boost::indeterminate(result))
-    {
-        copy = resume;
-        {
-            std::unique_lock<std::mutex> lock(m);
-            cv.wait(lock, [&]{ return ready; });
-            ready = false;
-        }
-        boost::asio::write(stream, wp.sb.data(), ec);
-        if(ec)
-            return;
-        result = false;
-    }
     wp.sb.consume(wp.sb.size());
     if(! result)
     {
@@ -678,17 +619,11 @@ write(SyncWriteStream& stream,
             stream, wp.chunked, ec};
         for(;;)
         {
-            result = wp.w.write(std::move(copy), ec, wf);
+            result = wp.w.write(ec, wf);
             if(ec)
                 return;
             if(result)
                 break;
-            if(! result)
-                continue;
-            copy = resume;
-            std::unique_lock<std::mutex> lock(m);
-            cv.wait(lock, [&]{ return ready; });
-            ready = false;
         }
     }
     if(wp.chunked)

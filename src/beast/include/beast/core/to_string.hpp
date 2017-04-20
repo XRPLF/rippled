@@ -8,6 +8,7 @@
 #ifndef BEAST_TO_STRING_HPP
 #define BEAST_TO_STRING_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/buffer_concepts.hpp>
 #include <boost/asio/buffer.hpp>
 #include <string>

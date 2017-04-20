@@ -7,6 +7,7 @@
 
 import os ;
 
+compile config.cpp : : ;
 compile core.cpp : : ;
 compile http.cpp : : ;
 compile version.cpp : : ;
@@ -58,7 +59,6 @@ unit-test http-tests :
     http/parser_v1.cpp
     http/read.cpp
     http/reason.cpp
-    http/resume_context.cpp
     http/rfc7230.cpp
     http/streambuf_body.cpp
     http/string_body.cpp

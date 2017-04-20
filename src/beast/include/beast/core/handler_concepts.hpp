@@ -8,6 +8,7 @@
 #ifndef BEAST_HANDLER_CONCEPTS_HPP
 #define BEAST_HANDLER_CONCEPTS_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/detail/is_call_possible.hpp>
 #include <type_traits>
 

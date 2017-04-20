@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_PARSE_HPP
 #define BEAST_HTTP_PARSE_HPP
 
+#include <beast/config.hpp>
 #include <beast/core/error.hpp>
 #include <beast/core/async_completion.hpp>
 
