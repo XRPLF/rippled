@@ -61,9 +61,8 @@ struct json_body
         }
 
         template<class Writef>
-        boost::tribool
-        write(beast::http::resume_context&&,
-            beast::error_code&, Writef&& wf) noexcept
+        bool
+        write(beast::error_code&, Writef&& wf) noexcept
         {
             wf(sb_.data());
             return true;
