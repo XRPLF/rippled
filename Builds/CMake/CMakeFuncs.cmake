@@ -320,8 +320,11 @@ macro(use_boost)
     set(Boost_USE_STATIC_LIBS on)
     set(Boost_USE_MULTITHREADED on)
     set(Boost_USE_STATIC_RUNTIME off)
-    find_package(Boost COMPONENTS
-      ${ARGN})
+    if(MSVC)
+        find_package(Boost REQUIRED)
+    else()
+        find_package(Boost REQUIRED ${ARGN})
+    endif()
 
     if (Boost_FOUND OR
         ((CYGWIN OR WIN32) AND Boost_INCLUDE_DIRS AND Boost_LIBRARY_DIRS))
