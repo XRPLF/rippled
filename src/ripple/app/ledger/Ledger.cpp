@@ -262,7 +262,7 @@ Ledger::Ledger (
     if (! loaded)
     {
         info_.hash = calculateLedgerHash(info_);
-        family.missing_node (info_.hash);
+        family.missing_node (info_.hash, info_.seq);
     }
 }
 
@@ -311,9 +311,11 @@ Ledger::Ledger (
         Family& family)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
-        info.txHash, family, SHAMap::version{1}))
+        info.txHash, family,
+        SHAMap::version{getSHAMapV2(info) ? 2 : 1}))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
-        info.accountHash, family, SHAMap::version{1}))
+        info.accountHash, family,
+        SHAMap::version{getSHAMapV2(info) ? 2 : 1}))
     , rules_{config.features}
     , info_ (info)
 {
@@ -802,8 +804,8 @@ static bool saveValidatedLedger (
     bool current)
 {
     auto j = app.journal ("Ledger");
-
-    if (! app.pendingSaves().startWork (ledger->info().seq))
+    auto seq = ledger->info().seq;
+    if (! app.pendingSaves().startWork (seq))
     {
         // The save was completed synchronously
         JLOG (j.debug()) << "Save aborted";
@@ -813,7 +815,7 @@ static bool saveValidatedLedger (
     // TODO(tom): Fix this hard-coded SQL!
     JLOG (j.trace())
         << "saveValidatedLedger "
-        << (current ? "" : "fromAcquire ") << ledger->info().seq;
+        << (current ? "" : "fromAcquire ") << seq;
     static boost::format deleteLedger (
         "DELETE FROM Ledgers WHERE LedgerSeq = %u;");
     static boost::format deleteTrans1 (
@@ -822,8 +824,6 @@ static bool saveValidatedLedger (
         "DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
     static boost::format deleteAcctTrans (
         "DELETE FROM AccountTransactions WHERE TransID = '%s';");
-
-    auto seq = ledger->info().seq;
 
     if (! ledger->info().accountHash.isNonZero ())
     {
@@ -848,10 +848,9 @@ static bool saveValidatedLedger (
         Serializer s (128);
         s.add32 (HashPrefix::ledgerMaster);
         addRaw(ledger->info(), s);
-        app.getNodeStore ().store (
-            hotLEDGER, std::move (s.modData ()), ledger->info().hash);
+        app.getNodeStore().store(hotLEDGER,
+            std::move(s.modData()), ledger->info().hash, seq);
     }
-
 
     AcceptedLedger::pointer aLedger;
     try

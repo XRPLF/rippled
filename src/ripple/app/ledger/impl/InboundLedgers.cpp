@@ -25,6 +25,7 @@
 #include <ripple/basics/DecayingSample.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/container/aged_map.h>
@@ -65,41 +66,64 @@ public:
     }
 
     std::shared_ptr<Ledger const>
-    acquire (
-        uint256 const& hash,
-        std::uint32_t seq,
-        InboundLedger::fcReason reason)
+    acquire(uint256 const& hash, std::uint32_t seq,
+        InboundLedger::Reason reason)
     {
-        assert (hash.isNonZero ());
+        assert(hash.isNonZero());
+        assert(reason != InboundLedger::Reason::SHARD ||
+            (seq != 0 && app_.getShardStore()));
+        if (isStopping())
+            return {};
+
         bool isNew = true;
         std::shared_ptr<InboundLedger> inbound;
         {
-            ScopedLockType sl (mLock);
-
-            if (! isStopping ())
+            ScopedLockType sl(mLock);
+            auto it = mLedgers.find(hash);
+            if (it != mLedgers.end())
             {
-                auto it = mLedgers.find (hash);
-                if (it != mLedgers.end ())
-                {
-                    isNew = false;
-                    inbound = it->second;
-                }
-                else
-                {
-                    inbound = std::make_shared <InboundLedger> (app_,
-                        hash, seq, reason, std::ref (m_clock));
-                    mLedgers.emplace (hash, inbound);
-                    inbound->init (sl);
-                    ++mCounter;
-                }
+                isNew = false;
+                inbound = it->second;
+            }
+            else
+            {
+                inbound = std::make_shared <InboundLedger>(
+                    app_, hash, seq, reason, std::ref(m_clock));
+                mLedgers.emplace(hash, inbound);
+                inbound->init(sl);
+                ++mCounter;
             }
         }
-        if (inbound && ! isNew && ! inbound->isFailed ())
-            inbound->update (seq);
 
-        if (inbound && inbound->isComplete ())
-            return inbound->getLedger();
-        return {};
+        if (inbound->isFailed())
+            return {};
+
+        if (! isNew)
+            inbound->update(seq);
+
+        if (! inbound->isComplete())
+            return {};
+
+        if (reason == InboundLedger::Reason::HISTORY)
+        {
+            if (inbound->getLedger()->stateMap().family().isShardBacked())
+                app_.getNodeStore().copyLedger(inbound->getLedger());
+        }
+        else if (reason == InboundLedger::Reason::SHARD)
+        {
+            auto shardStore = app_.getShardStore();
+            if (!shardStore)
+            {
+                JLOG(j_.error()) <<
+                    "Acquiring shard with no shard store available";
+                return {};
+            }
+            if (inbound->getLedger()->stateMap().family().isShardBacked())
+                shardStore->setStored(inbound->getLedger());
+            else
+                shardStore->copyLedger(inbound->getLedger());
+        }
+        return inbound->getLedger();
     }
 
     std::shared_ptr<InboundLedger> find (uint256 const& hash)
@@ -280,13 +304,11 @@ public:
             m_clock.now());
     }
 
-    void onLedgerFetched (
-        InboundLedger::fcReason why)
+    // Should only be called with an inboundledger that has
+    // a reason of history or shard
+    void onLedgerFetched()
     {
-        if (why != InboundLedger::fcHISTORY)
-            return;
-        std::lock_guard<
-            std::mutex> lock(fetchRateMutex_);
+        std::lock_guard<std::mutex> lock(fetchRateMutex_);
         fetchRate_.add(1, m_clock.now());
     }
 

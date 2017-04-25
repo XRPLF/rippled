@@ -22,6 +22,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/shamap/Family.h>
@@ -38,6 +39,7 @@ private:
     FullBelowCache fullbelow_;
     RootStoppable parent_;
     std::unique_ptr<NodeStore::Database> db_;
+    bool shardBacked_;
     beast::Journal j_;
 
 public:
@@ -52,6 +54,8 @@ public:
         testSection.set("Path", "SHAMap_test");
         db_ = NodeStore::Manager::instance ().make_Database (
             "test", scheduler_, 1, parent_, testSection, j);
+        shardBacked_ =
+            dynamic_cast<NodeStore::DatabaseShard*>(db_.get()) != nullptr;
     }
 
     beast::manual_clock <std::chrono::steady_clock>
@@ -102,6 +106,12 @@ public:
         return *db_;
     }
 
+    bool
+    isShardBacked() const override
+    {
+        return shardBacked_;
+    }
+
     void
     missing_node (std::uint32_t refNum) override
     {
@@ -109,9 +119,16 @@ public:
     }
 
     void
-    missing_node (uint256 const& refHash) override
+    missing_node (uint256 const& refHash, std::uint32_t refNum) override
     {
         Throw<std::runtime_error> ("missing node");
+    }
+
+    void
+    reset() override
+    {
+        fullbelow_.reset();
+        treecache_.reset();
     }
 };
 

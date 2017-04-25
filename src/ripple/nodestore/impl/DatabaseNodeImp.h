@@ -17,64 +17,61 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_DATABASEROTATINGIMP_H_INCLUDED
-#define RIPPLE_NODESTORE_DATABASEROTATINGIMP_H_INCLUDED
+#ifndef RIPPLE_NODESTORE_DATABASENODEIMP_H_INCLUDED
+#define RIPPLE_NODESTORE_DATABASENODEIMP_H_INCLUDED
 
-#include <ripple/nodestore/DatabaseRotating.h>
+#include <ripple/nodestore/Database.h>
+#include <ripple/basics/chrono.h>
 
 namespace ripple {
 namespace NodeStore {
 
-class DatabaseRotatingImp : public DatabaseRotating
+class DatabaseNodeImp : public Database
 {
 public:
-    DatabaseRotatingImp() = delete;
-    DatabaseRotatingImp(DatabaseRotatingImp const&) = delete;
-    DatabaseRotatingImp& operator=(DatabaseRotatingImp const&) = delete;
+    DatabaseNodeImp() = delete;
+    DatabaseNodeImp(DatabaseNodeImp const&) = delete;
+    DatabaseNodeImp& operator=(DatabaseNodeImp const&) = delete;
 
-    DatabaseRotatingImp(std::string const& name,
+    DatabaseNodeImp(std::string const& name,
         Scheduler& scheduler, int readThreads, Stoppable& parent,
-            std::unique_ptr<Backend> writableBackend,
-                 std::unique_ptr<Backend> archiveBackend,
-                    beast::Journal j);
+            std::unique_ptr<Backend> backend, beast::Journal j)
+        : Database(name, parent, scheduler, readThreads, j)
+        , pCache_(std::make_shared<TaggedCache<uint256, NodeObject>>(
+            name, cacheTargetSize, cacheTargetSeconds, stopwatch(), j))
+        , nCache_(std::make_shared<KeyCache<uint256>>(
+            name, stopwatch(), cacheTargetSize, cacheTargetSeconds))
+        , backend_(std::move(backend))
+    {
+        assert(backend_);
+    }
 
-    ~DatabaseRotatingImp() override
+    ~DatabaseNodeImp() override
     {
         // Stop threads before data members are destroyed.
         stopThreads();
     }
 
-    std::unique_ptr<Backend> const&
-    getWritableBackend() const override
+    std::string
+    getName() const override
     {
-        std::lock_guard <std::mutex> lock (rotateMutex_);
-        return writableBackend_;
+        return backend_->getName();
     }
 
-    std::unique_ptr<Backend>
-    rotateBackends(std::unique_ptr<Backend> newBackend) override;
-
-    std::mutex& peekMutex() const override
+    std::int32_t
+    getWriteLoad() const override
     {
-        return rotateMutex_;
+        return backend_->getWriteLoad();
     }
 
-    std::string getName() const override
+    void
+    import(Database& source) override
     {
-        return getWritableBackend()->getName();
+        importInternal(source, *backend_.get());
     }
 
-    std::int32_t getWriteLoad() const override
-    {
-        return getWritableBackend()->getWriteLoad();
-    }
-
-    void import (Database& source) override
-    {
-        importInternal (source, *getWritableBackend());
-    }
-
-    void store(NodeObjectType type, Blob&& data,
+    void
+    store(NodeObjectType type, Blob&& data,
         uint256 const& hash, std::uint32_t seq) override;
 
     std::shared_ptr<NodeObject>
@@ -108,9 +105,6 @@ public:
     void
     sweep() override;
 
-    TaggedCache<uint256, NodeObject> const&
-    getPositiveCache() override {return *pCache_;}
-
 private:
     // Positive cache
     std::shared_ptr<TaggedCache<uint256, NodeObject>> pCache_;
@@ -118,30 +112,19 @@ private:
     // Negative cache
     std::shared_ptr<KeyCache<uint256>> nCache_;
 
-    std::unique_ptr<Backend> writableBackend_;
-    std::unique_ptr<Backend> archiveBackend_;
-    mutable std::mutex rotateMutex_;
+    // Persistent key/value storage
+    std::unique_ptr<Backend> backend_;
 
-    struct Backends {
-        std::unique_ptr<Backend> const& writableBackend;
-        std::unique_ptr<Backend> const& archiveBackend;
-    };
-
-    Backends getBackends() const
+    std::shared_ptr<NodeObject>
+    fetchFrom(uint256 const& hash, std::uint32_t seq) override
     {
-        std::lock_guard <std::mutex> lock (rotateMutex_);
-        return Backends {writableBackend_, archiveBackend_};
+        return fetchInternal(hash, *backend_);
     }
 
-    std::shared_ptr<NodeObject> fetchFrom(
-        uint256 const& hash, std::uint32_t seq) override;
-
     void
-    for_each(std::function <void(std::shared_ptr<NodeObject>)> f) override
+    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        Backends b = getBackends();
-        b.archiveBackend->for_each(f);
-        b.writableBackend->for_each(f);
+        backend_->for_each(f);
     }
 };
 
