@@ -44,18 +44,16 @@ public:
         std::shared_ptr<protocol::TMLedgerData>>;
 
     // These are the reasons we might acquire a ledger
-    enum fcReason
+    enum class Reason
     {
-        fcHISTORY,      // Acquiring past ledger
-        fcGENERIC,      // Generic other reasons
-        fcVALIDATION,   // Validations suggest this ledger is important
-        fcCURRENT,      // This might be the current ledger
-        fcCONSENSUS,    // We believe the consensus round requires this ledger
+        HISTORY,  // Acquiring past ledger
+        SHARD,    // Acquiring for shard
+        GENERIC,  // Generic other reasons
+        CONSENSUS // We believe the consensus round requires this ledger
     };
 
-public:
-    InboundLedger(Application& app,
-        uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type&);
+    InboundLedger(Application& app, uint256 const& hash,
+        std::uint32_t seq, Reason reason, clock_type&);
 
     ~InboundLedger ();
 
@@ -70,15 +68,24 @@ public:
     {
         return mLedger;
     }
+
     std::uint32_t getSeq () const
     {
         return mSeq;
     }
 
+    Reason
+    getReason() const
+    {
+        return mReason;
+    }
+
     bool checkLocal ();
     void init (ScopedLockType& collectionLock);
 
-    bool gotData (std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>);
+    bool
+    gotData(std::weak_ptr<Peer>,
+        std::shared_ptr<protocol::TMLedgerData> const&);
 
     using neededHash_t =
         std::pair <protocol::TMGetObjectByHash::ObjectType, uint256>;
@@ -87,6 +94,10 @@ public:
     Json::Value getJson (int);
 
     void runData ();
+
+    static
+    LedgerInfo
+    deserializeHeader(Slice data, bool hasPrefix);
 
 private:
     enum class TriggerReason
@@ -105,7 +116,7 @@ private:
     std::vector<neededHash_t> getNeededHashes ();
 
     void addPeers ();
-    bool tryLocal ();
+    void tryDB (Family& f);
 
     void done ();
 
@@ -115,7 +126,7 @@ private:
     {
         // For historical nodes, do not trigger too soon
         // since a fetch pack is probably coming
-        if (mReason != fcHISTORY)
+        if (mReason != Reason::HISTORY)
             trigger (peer, TriggerReason::added);
     }
 
@@ -146,24 +157,18 @@ private:
     neededStateHashes (
         int max, SHAMapSyncFilter* filter) const;
 
-    LedgerInfo
-    deserializeHeader (
-        Slice data,
-        bool hasPrefix);
-
-private:
     std::shared_ptr<Ledger> mLedger;
-    bool               mHaveHeader;
-    bool               mHaveState;
-    bool               mHaveTransactions;
-    bool               mSignaled;
-    bool               mByHash;
-    std::uint32_t      mSeq;
-    fcReason           mReason;
+    bool mHaveHeader;
+    bool mHaveState;
+    bool mHaveTransactions;
+    bool mSignaled;
+    bool mByHash;
+    std::uint32_t mSeq;
+    Reason const mReason;
 
     std::set <uint256> mRecentNodes;
 
-    SHAMapAddNode      mStats;
+    SHAMapAddNode mStats;
 
     // Data we have received from peers
     std::mutex mReceivedDataLock;

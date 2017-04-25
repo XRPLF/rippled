@@ -146,18 +146,20 @@ public:
         return m_hits * (100.0f / std::max (1.0f, total));
     }
 
-    void clearStats ()
-    {
-        lock_guard lock (m_mutex);
-        m_hits = 0;
-        m_misses = 0;
-    }
-
     void clear ()
     {
         lock_guard lock (m_mutex);
         m_cache.clear ();
         m_cache_count = 0;
+    }
+
+    void reset ()
+    {
+        lock_guard lock (m_mutex);
+        m_cache.clear();
+        m_cache_count = 0;
+        m_hits = 0;
+        m_misses = 0;
     }
 
     void sweep ()
@@ -476,7 +478,7 @@ public:
         return m_mutex;
     }
 
-    std::vector <key_type> getKeys ()
+    std::vector <key_type> getKeys () const
     {
         std::vector <key_type> v;
 

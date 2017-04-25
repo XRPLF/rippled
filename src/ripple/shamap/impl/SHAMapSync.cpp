@@ -44,12 +44,12 @@ SHAMap::visitNodes(std::function<bool (
     // Visit every node in a SHAMap
     assert (root_->isValid ());
 
-    if (!root_)
+    if (! root_)
         return;
 
     function (*root_);
 
-    if (!root_->isInner ())
+    if (! root_->isInner ())
         return;
 
     using StackEntry = std::pair <int, std::shared_ptr<SHAMapInnerNode>>;
@@ -63,7 +63,7 @@ SHAMap::visitNodes(std::function<bool (
         while (pos < 16)
         {
             uint256 childHash;
-            if (!node->isEmptyBranch (pos))
+            if (! node->isEmptyBranch (pos))
             {
                 std::shared_ptr<SHAMapAbstractNode> child = descendNoStore (node, pos);
                 if (! function (*child))
@@ -123,8 +123,7 @@ SHAMap::visitDifferences(SHAMap const* have,
     {
         auto leaf = std::static_pointer_cast<SHAMapTreeNode>(root_);
         if (! have || ! have->hasLeafNode(leaf->peekItem()->key(), leaf->getNodeHash()))
-            function(*root_);
-
+            function (*root_);
         return;
     }
     // contains unexplored non-matching inner node entries
@@ -141,7 +140,7 @@ SHAMap::visitDifferences(SHAMap const* have,
         stack.pop ();
 
         // 1) Add this node to the pack
-        if (! function(*node))
+        if (! function (*node))
             return;
 
         // 2) push non-matching child inner nodes
@@ -162,7 +161,7 @@ SHAMap::visitDifferences(SHAMap const* have,
                          static_cast<SHAMapTreeNode*>(next)->peekItem()->key(),
                          childHash))
                 {
-                    if (! function(*next))
+                    if (! function (*next))
                         return;
                 }
             }
@@ -318,7 +317,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
     assert (max > 0);
 
     MissingNodes mn (max, filter,
-        f_.db().getDesiredAsyncReadCount(),
+        f_.db().getDesiredAsyncReadCount(ledgerSeq_),
         f_.fullbelow().getGeneration());
 
     if (! root_->isInner () ||
@@ -568,7 +567,7 @@ SHAMapAddNode SHAMap::addRootNode (SHAMapHash const& hash, Slice const& rootNode
     {
         Serializer s;
         root_->addRaw (s, snfPREFIX);
-        filter->gotNode (false, root_->getNodeHash (),
+        filter->gotNode (false, root_->getNodeHash (), ledgerSeq_,
                          std::move(s.modData ()), root_->getType ());
     }
 
@@ -656,7 +655,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Slice const& rawNode,
             {
                 Serializer s;
                 newNode->addRaw (s, snfPREFIX);
-                filter->gotNode (false, childHash,
+                filter->gotNode (false, childHash, ledgerSeq_,
                                  std::move(s.modData ()), newNode->getType ());
             }
 

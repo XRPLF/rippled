@@ -44,6 +44,11 @@ public:
     }
 
     void
+    open() override
+    {
+    }
+
+    void
     close() override
     {
     }

@@ -2913,6 +2913,9 @@
     <ClInclude Include="..\..\src\ripple\nodestore\DatabaseRotating.h">
       <Filter>ripple\nodestore</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\DatabaseShard.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\DummyScheduler.h">
       <Filter>ripple\nodestore</Filter>
     </ClInclude>
@@ -2928,13 +2931,25 @@
     <ClInclude Include="..\..\src\ripple\nodestore\impl\codec.h">
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseImp.h">
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Database.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\DatabaseNodeImp.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseNodeImp.h">
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\impl\DatabaseRotatingImp.cpp">
       <Filter>ripple\nodestore\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseRotatingImp.h">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\DatabaseShardImp.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseShardImp.h">
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\impl\DecodedBlob.cpp">
@@ -2961,6 +2976,12 @@
     <ClCompile Include="..\..\src\ripple\nodestore\impl\NodeObject.cpp">
       <Filter>ripple\nodestore\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Shard.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\Shard.h">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\impl\Tuning.h">
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>

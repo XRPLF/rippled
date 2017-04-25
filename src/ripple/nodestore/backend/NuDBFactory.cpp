@@ -50,7 +50,7 @@ public:
         currentType = 1
     };
 
-    beast::Journal journal_;
+    beast::Journal j_;
     size_t const keyBytes_;
     std::string const name_;
     nudb::store db_;
@@ -59,7 +59,7 @@ public:
 
     NuDBBackend (int keyBytes, Section const& keyValues,
         Scheduler& scheduler, beast::Journal journal)
-        : journal_ (journal)
+        : j_(journal)
         , keyBytes_ (keyBytes)
         , name_ (get<std::string>(keyValues, "path"))
         , deletePath_(false)
@@ -68,33 +68,6 @@ public:
         if (name_.empty())
             Throw<std::runtime_error> (
                 "nodestore: Missing path in NuDB backend");
-        auto const folder = boost::filesystem::path (name_);
-        boost::filesystem::create_directories (folder);
-        auto const dp = (folder / "nudb.dat").string();
-        auto const kp = (folder / "nudb.key").string ();
-        auto const lp = (folder / "nudb.log").string ();
-        try
-        {
-            nudb::error_code ec;
-            nudb::create<nudb::xxhasher>(dp, kp, lp,
-                currentType, nudb::make_salt(), keyBytes,
-                    nudb::block_size(kp), 0.50, ec);
-            if(ec == nudb::errc::file_exists)
-                ec = {};
-            if(ec)
-                Throw<nudb::system_error>(ec);
-            db_.open (dp, kp, lp, ec);
-            if(ec)
-                Throw<nudb::system_error>(ec);
-            if (db_.appnum() != currentType)
-                Throw<std::runtime_error> ("nodestore: unknown appnum");
-        }
-        catch (std::exception const& e)
-        {
-            // log and terminate?
-            std::cerr << e.what();
-            std::terminate();
-        }
     }
 
     ~NuDBBackend ()
@@ -106,6 +79,37 @@ public:
     getName() override
     {
         return name_;
+    }
+
+    void
+    open() override
+    {
+        if (db_.is_open())
+        {
+            assert(false);
+            JLOG(j_.error()) <<
+                "database is already open";
+            return;
+        }
+        auto const folder = boost::filesystem::path(name_);
+        boost::filesystem::create_directories (folder);
+        auto const dp = (folder / "nudb.dat").string();
+        auto const kp = (folder / "nudb.key").string();
+        auto const lp = (folder / "nudb.log").string();
+        nudb::error_code ec;
+        nudb::create<nudb::xxhasher>(dp, kp, lp,
+            currentType, nudb::make_salt(), keyBytes_,
+                nudb::block_size(kp), 0.50, ec);
+        if(ec == nudb::errc::file_exists)
+            ec = {};
+        if(ec)
+            Throw<nudb::system_error>(ec);
+        db_.open (dp, kp, lp, ec);
+        if(ec)
+            Throw<nudb::system_error>(ec);
+        if (db_.appnum() != currentType)
+            Throw<std::runtime_error>(
+                "nodestore: unknown appnum");
     }
 
     void
@@ -197,7 +201,6 @@ public:
     storeBatch (Batch const& batch) override
     {
         BatchWriteReport report;
-        EncodedBlob encoded;
         report.writeCount = batch.size();
         auto const start =
             std::chrono::steady_clock::now();

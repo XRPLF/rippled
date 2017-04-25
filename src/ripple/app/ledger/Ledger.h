@@ -261,8 +261,10 @@ public:
     void
     setFull() const
     {
-        txMap_->setLedgerSeq (info_.seq);
-        stateMap_->setLedgerSeq (info_.seq);
+        txMap_->setFull();
+        stateMap_->setFull();
+        txMap_->setLedgerSeq(info_.seq);
+        stateMap_->setLedgerSeq(info_.seq);
     }
 
     void setTotalDrops (std::uint64_t totDrops)
