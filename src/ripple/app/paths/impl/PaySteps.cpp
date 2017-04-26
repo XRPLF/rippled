@@ -400,6 +400,12 @@ toStrandV2 (
         !isConsistent(deliver) || (sendMaxIssue && !isConsistent(*sendMaxIssue)))
         return {temBAD_PATH, Strand{}};
 
+    if ((sendMaxIssue && sendMaxIssue->account == noAccount()) ||
+        (src == noAccount()) ||
+        (dst == noAccount()) ||
+        (deliver.account == noAccount()))
+        return {temBAD_PATH, Strand{}};
+
     for (auto const& pe : path)
     {
         auto const t = pe.getNodeType();
@@ -422,6 +428,12 @@ toStrandV2 (
 
         if (hasCurrency && hasIssuer &&
             isXRP(pe.getCurrency()) != isXRP(pe.getIssuerID()))
+            return {temBAD_PATH, Strand{}};
+
+        if (hasIssuer && (pe.getIssuerID() == noAccount()))
+            return {temBAD_PATH, Strand{}};
+
+        if (hasAccount && (pe.getAccountID() == noAccount()))
             return {temBAD_PATH, Strand{}};
     }
 
