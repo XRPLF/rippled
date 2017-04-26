@@ -621,21 +621,8 @@ struct ExistingElementPool
     }
 };
 
-struct PayStrand_test : public beast::unit_test::suite
+struct PayStrandAllPairs_test : public beast::unit_test::suite
 {
-    static bool hasFeature(uint256 const& feat)
-    {
-        return false;
-    }
-
-    static bool hasFeature(uint256 const& feat, std::initializer_list<uint256> args)
-    {
-        for(auto const& f : args)
-            if (f == feat)
-                return true;
-        return false;
-    }
-
     // Test every combination of element type pairs on a path
     void
     testAllPairs(std::initializer_list<uint256> fs)
@@ -856,6 +843,30 @@ struct PayStrand_test : public beast::unit_test::suite
                 }
             }
         }
+    }
+    void
+    run() override
+    {
+        testAllPairs({featureFlow, fix1373});
+        testAllPairs({featureFlow, fix1373, featureFlowCross});
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_MANUAL(PayStrandAllPairs, app, ripple);
+
+struct PayStrand_test : public beast::unit_test::suite
+{
+    static bool hasFeature(uint256 const& feat)
+    {
+        return false;
+    }
+
+    static bool hasFeature(uint256 const& feat, std::initializer_list<uint256> args)
+    {
+        for(auto const& f : args)
+            if (f == feat)
+                return true;
+        return false;
     }
 
     void
@@ -1475,8 +1486,6 @@ struct PayStrand_test : public beast::unit_test::suite
     void
     run() override
     {
-        testAllPairs({featureFlow, fix1373});
-        testAllPairs({featureFlow, fix1373, featureFlowCross});
         testToStrand({featureFlow});
         testToStrand({featureFlow, fix1373});
         testToStrand({featureFlow, fix1373, featureFlowCross});
@@ -1491,7 +1500,7 @@ struct PayStrand_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(PayStrand, app, ripple);
+BEAST_DEFINE_TESTSUITE(PayStrand, app, ripple);
 
 }  // test
 }  // ripple
