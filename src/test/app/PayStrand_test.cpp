@@ -1416,6 +1416,63 @@ struct PayStrand_test : public beast::unit_test::suite
     }
 
     void
+    testNoAccount(std::initializer_list<uint256> fs)
+    {
+        testcase("test no account");
+        using namespace jtx;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+
+        Env env(*this, features(fs));
+        env.fund(XRP(10000), alice, bob, gw);
+
+        STAmount sendMax{USD.issue(), 100, 1};
+        STAmount noAccountAmount{Issue{USD.currency, noAccount()}, 100, 1};
+        STAmount deliver;
+        AccountID const srcAcc = alice.id();
+        AccountID dstAcc = bob.id();
+        STPathSet pathSet;
+        ::ripple::path::RippleCalc::Input inputs;
+        inputs.defaultPathsAllowed = true;
+        try
+        {
+            PaymentSandbox sb{env.current().get(), tapNONE};
+            {
+                auto const r = ::ripple::path::RippleCalc::rippleCalculate(
+                    sb, sendMax, deliver, dstAcc, noAccount(), pathSet,
+                    env.app().logs(), &inputs);
+                BEAST_EXPECT(r.result() == temBAD_PATH);
+            }
+            {
+                auto const r = ::ripple::path::RippleCalc::rippleCalculate(
+                    sb, sendMax, deliver, noAccount(), srcAcc, pathSet,
+                    env.app().logs(), &inputs);
+                BEAST_EXPECT(r.result() == temBAD_PATH);
+            }
+            {
+                auto const r = ::ripple::path::RippleCalc::rippleCalculate(
+                    sb, noAccountAmount, deliver, dstAcc, srcAcc, pathSet,
+                    env.app().logs(), &inputs);
+                BEAST_EXPECT(r.result() == temBAD_PATH);
+            }
+
+            {
+                auto const r = ::ripple::path::RippleCalc::rippleCalculate(
+                    sb, sendMax, noAccountAmount, dstAcc, srcAcc, pathSet,
+                    env.app().logs(), &inputs);
+                BEAST_EXPECT(r.result() == temBAD_PATH);
+            }
+        }
+        catch (...)
+        {
+            this->fail();
+        }
+    }
+
+    void
     run() override
     {
         testAllPairs({featureFlow, fix1373});
@@ -1430,6 +1487,7 @@ struct PayStrand_test : public beast::unit_test::suite
         testLoop({featureFlow});
         testLoop({featureFlow, fix1373});
         testLoop({featureFlow, fix1373, featureFlowCross});
+        testNoAccount({featureFlow, fix1373});
     }
 };
 
