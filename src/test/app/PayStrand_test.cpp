@@ -621,21 +621,8 @@ struct ExistingElementPool
     }
 };
 
-struct PayStrand_test : public beast::unit_test::suite
+struct PayStrandAllPairs_test : public beast::unit_test::suite
 {
-    static bool hasFeature(uint256 const& feat)
-    {
-        return false;
-    }
-
-    static bool hasFeature(uint256 const& feat, std::initializer_list<uint256> args)
-    {
-        for(auto const& f : args)
-            if (f == feat)
-                return true;
-        return false;
-    }
-
     // Test every combination of element type pairs on a path
     void
     testAllPairs(std::initializer_list<uint256> fs)
@@ -760,11 +747,11 @@ struct PayStrand_test : public beast::unit_test::suite
         std::vector<STPathElement> prefix;
         std::vector<STPathElement> suffix;
 
-        for (auto srcAmtIsXRP : {false, true})
+        for (auto const srcAmtIsXRP : {false, true})
         {
-            for (auto dstAmtIsXRP : {false, true})
+            for (auto const dstAmtIsXRP : {false, true})
             {
-                for (auto hasPrefix : {false, true})
+                for (auto const hasPrefix : {false, true})
                 {
                     ExistingElementPool::StateGuard esg{eep};
                     prefix.clear();
@@ -784,9 +771,9 @@ struct PayStrand_test : public beast::unit_test::suite
 
                     if (hasPrefix)
                     {
-                        for(auto e0IsAccount : {false, true})
+                        for(auto const e0IsAccount : {false, true})
                         {
-                            for (auto e1IsAccount : {false, true})
+                            for (auto const e1IsAccount : {false, true})
                             {
                                 ExistingElementPool::StateGuard presg{eep};
                                 prefix.clear();
@@ -857,7 +844,25 @@ struct PayStrand_test : public beast::unit_test::suite
             }
         }
     }
+    void
+    run() override
+    {
+        testAllPairs({featureFlow, fix1373});
+        testAllPairs({featureFlow, fix1373, featureFlowCross});
+    }
+};
 
+BEAST_DEFINE_TESTSUITE_MANUAL(PayStrandAllPairs, app, ripple);
+
+struct PayStrand_test : public beast::unit_test::suite
+{
+    static bool hasFeature(uint256 const& feat, std::initializer_list<uint256> args)
+    {
+        for(auto const& f : args)
+            if (f == feat)
+                return true;
+        return false;
+    }
     void
     testToStrand(std::initializer_list<uint256> fs)
     {
@@ -1458,7 +1463,6 @@ struct PayStrand_test : public beast::unit_test::suite
                     env.app().logs(), &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
-
             {
                 auto const r = ::ripple::path::RippleCalc::rippleCalculate(
                     sb, sendMax, noAccountAmount, dstAcc, srcAcc, pathSet,
@@ -1475,8 +1479,6 @@ struct PayStrand_test : public beast::unit_test::suite
     void
     run() override
     {
-        testAllPairs({featureFlow, fix1373});
-        testAllPairs({featureFlow, fix1373, featureFlowCross});
         testToStrand({featureFlow});
         testToStrand({featureFlow, fix1373});
         testToStrand({featureFlow, fix1373, featureFlowCross});
@@ -1491,7 +1493,7 @@ struct PayStrand_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(PayStrand, app, ripple);
+BEAST_DEFINE_TESTSUITE(PayStrand, app, ripple);
 
 }  // test
 }  // ripple
