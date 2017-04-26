@@ -87,6 +87,12 @@ public:
         return size_;
     }
 
+    bool
+    empty() const noexcept
+    {
+        return size_ == 0;
+    }
+
     Slice
     slice() const noexcept
     {
