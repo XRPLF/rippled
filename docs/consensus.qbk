@@ -480,69 +480,87 @@ struct Ledger
   //... implementation specific
 };
 ```
-[heading Generic Consensus Interface]
 
-Following the
-[@https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern CRTP]
-idiom, generic =Consensus= relies on a deriving class implementing a set of
-helpers and callbacks that encapsulate implementation specific details of the
-algorithm. Below are excerpts of the generic consensus implementation and of
-helper types that will interact with the concrete implementing class.
-
+[heading PeerProposal] The =PeerProposal= type represents the signed position taken
+by a peer during consensus. The only type requirement is owning an instance of a
+generic =ConsensusProposal=.
 ```
-
 // Represents our proposed position or a peer's proposed position
+// and is provided with the generic code
 template <class NodeID_t, class LedgerID_t, class Position_t> class ConsensusProposal;
 
+struct PeerPosition
+{
+  ConsensusProposal<
+      NodeID_t,
+      typename Ledger::ID,
+      typename TxSet::ID> const &
+  proposal() const;
+
+  // ... implementation specific
+};
+```
+[heading Generic Consensus Interface]
+
+The generic =Consensus= relies on =Adaptor= template class to implement a set
+of helper functions that plug the consensus algorithm into a specific application.
+The =Adaptor= class also defines the types above needed by the algorithm. Below
+are excerpts of the generic consensus implementation and of helper types that will
+interact with the concrete implementing class.
+
+```
 // Represents a transction under dispute this round
 template <class Tx_t, class NodeID_t> class DisputedTx;
 
-template <class Derived, class Traits> class Consensus
+// Represents how the node participates in Consensus this round
+enum class ConsensusMode { proposing, observing, wrongLedger, switchedLedger};
+
+// Measure duration of phases of consensus
+class ConsensusTimer
 {
-protected:
-    enum class Mode { proposing, observing, wrongLedger, switchedLedger};
-
-    // Measure duration of phases of consensus
-    class Stopwatch
-    {
-    public:
-        std::chrono::milliseconds read() const;
-        // details omitted ...
-    };
-
-    // Initial ledger close times, not rounded by closeTimeResolution
-    // Used to gauge degree of synchronization between a node and its peers
-    struct CloseTimes
-    {
-        std::map<NetClock::time_point, int> peers;
-        NetClock::time_point self;
-    };
-
-    // Encapsulates the result of consensus.
-    struct Result
-    {
-        //! The set of transactions consensus agrees go in the ledger
-        TxSet_t set;
-
-        //! Our proposed position on transactions/close time
-        Proposal_t position;
-
-        //! Transactions which are under dispute with our peers
-        using Dispute_t = DisputedTx<Tx_t, NodeID_t>;
-        hash_map<typename Tx_t::ID, Dispute_t> disputes;
-
-        // Set of TxSet ids we have already compared/created disputes
-        hash_set<typename TxSet_t::ID> compares;
-
-        // Measures the duration of the establish phase for this consensus round
-        Stopwatch roundTime;
-
-        // Indicates state in which consensus ended.  Once in the accept phase
-        // will be either Yes or MovedOn
-        ConsensusState state = ConsensusState::No;
-    };
-
 public:
+    std::chrono::milliseconds read() const;
+    // details omitted ...
+};
+
+// Initial ledger close times, not rounded by closeTimeResolution
+// Used to gauge degree of synchronization between a node and its peers
+struct ConsensusCloseTimes
+{
+    std::map<NetClock::time_point, int> peers;
+    NetClock::time_point self;
+};
+
+// Encapsulates the result of consensus.
+template <class Adaptor>
+struct ConsensusResult
+{
+    //! The set of transactions consensus agrees go in the ledger
+    Adaptor::TxSet_t set;
+
+    //! Our proposed position on transactions/close time
+    ConsensusProposal<...> position;
+
+    //! Transactions which are under dispute with our peers
+    hash_map<Adaptor::Tx_t::ID, DisputedTx<...>> disputes;
+
+    // Set of TxSet ids we have already compared/created disputes
+    hash_set<typename Adaptor::TxSet_t::ID> compares;
+
+    // Measures the duration of the establish phase for this consensus round
+    ConsensusTimer roundTime;
+
+    // Indicates state in which consensus ended.  Once in the accept phase
+    // will be either Yes or MovedOn
+    ConsensusState state = ConsensusState::No;
+};
+
+template <class Adaptor>
+class Consensus
+{
+public:
+    Consensus(clock_type, Adaptor &, beast::journal);
+
     // Kick-off the next round of consensus.
     void startRound(
         NetClock::time_point const& now,
@@ -568,25 +586,19 @@ public:
 The stub below shows the set of callback/helper functions required in the implementing class.
 
 ```
-struct Traits
+struct Adaptor
 {
-  using Ledger_t = Ledger;
-  using TxSet_t = TxSet;
-  using NodeID_t = ...; // Integer-like std::uint32_t to uniquely identify a node
+    using Ledger_t = Ledger;
+    using TxSet_t = TxSet;
+    using PeerProposal_t = PeerProposal;
+    using NodeID_t = ...; // Integer-like std::uint32_t to uniquely identify a node
 
-};
 
-class ConsensusImp : public Consensus<ConsensusImp, Traits>
-{
     // Attempt to acquire a specific ledger from the network.
     boost::optional<Ledger> acquireLedger(Ledger::ID const & ledgerID);
 
     // Acquire the transaction set associated with a proposed position.
     boost::optional<TxSet> acquireTxSet(TxSet::ID const & setID);
-
-    // Get peers' proposed positions. Returns an iterable
-    // with value_type convertable to ConsensusPosition<...>
-    auto const & proposals(Ledger::ID const & ledgerID);
 
     // Whether any transactions are in the open ledger
     bool hasOpenTransactions() const;
@@ -602,24 +614,27 @@ class ConsensusImp : public Consensus<ConsensusImp, Traits>
     // application thinks consensus should use as the prior ledger.
     Ledger::ID getPrevLedger(Ledger::ID const & prevLedgerID,
                     Ledger const & prevLedger,
-                    Mode mode);
+                    ConsensusMode mode);
 
+    // Called when consensus operating mode changes
+    void onModeChange(ConsensuMode before, ConsensusMode after);
+    
     // Called when ledger closes.  Implementation should generate an initial Result
     // with position based on the current open ledger's transactions.
-    Result onClose(Ledger const &, Ledger const & prev, Mode mode);
+    ConsensusResult onClose(Ledger const &, Ledger const & prev, ConsensusMode mode);
 
     // Called when ledger is accepted by consensus
-    void onAccept(Result const & result,
+    void onAccept(ConsensusResult const & result,
       RCLCxLedger const & prevLedger,
       NetClock::duration closeResolution,
-      CloseTimes const & rawCloseTimes,
-      Mode const & mode);
+      ConsensusCloseTimes const & rawCloseTimes,
+      ConsensusMode const & mode);
 
     // Propose the position to peers.
     void propose(ConsensusProposal<...> const & pos);
 
     // Relay a received peer proposal on to other peer's.
-    void relay(ConsensusProposal<...> const & pos);
+    void relay(PeerPosition_t const & pos);
 
     // Relay a disputed transaction to peers
     void relay(TxSet::Tx const & tx);

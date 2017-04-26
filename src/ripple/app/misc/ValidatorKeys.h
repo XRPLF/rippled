@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2017 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,20 +17,38 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_APP_MISC_VALIDATOR_KEYS_H_INCLUDED
+#define RIPPLE_APP_MISC_VALIDATOR_KEYS_H_INCLUDED
 
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/FeeVoteImpl.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/misc/NetworkOPs.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
+#include <ripple/beast/utility/Journal.h>
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/SecretKey.h>
+#include <string>
 
-#include <ripple/app/misc/impl/AccountTxPaging.cpp>
-#include <ripple/app/misc/impl/AmendmentTable.cpp>
-#include <ripple/app/misc/impl/LoadFeeTrack.cpp>
-#include <ripple/app/misc/impl/Manifest.cpp>
-#include <ripple/app/misc/impl/Transaction.cpp>
-#include <ripple/app/misc/impl/TxQ.cpp>
-#include <ripple/app/misc/impl/ValidatorList.cpp>
-#include <ripple/app/misc/impl/ValidatorSite.cpp>
-#include <ripple/app/misc/impl/ValidatorKeys.cpp>
+namespace ripple {
+
+class Config;
+
+/** Validator keys and manifest as set in configuration file.  Values will be
+    empty if not configured as a validator or not configured with a manifest.
+*/
+class ValidatorKeys
+{
+public:
+    PublicKey publicKey;
+    SecretKey secretKey;
+    std::string manifest;
+    ValidatorKeys(Config const& config, beast::Journal j);
+
+    bool configInvalid() const
+    {
+        return configInvalid_;
+    }
+
+private:
+    bool configInvalid_ = false; //< Set to true if config was invalid
+};
+
+}  // namespace ripple
+
+#endif
