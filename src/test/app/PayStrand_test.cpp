@@ -747,11 +747,11 @@ struct PayStrandAllPairs_test : public beast::unit_test::suite
         std::vector<STPathElement> prefix;
         std::vector<STPathElement> suffix;
 
-        for (auto srcAmtIsXRP : {false, true})
+        for (auto const srcAmtIsXRP : {false, true})
         {
-            for (auto dstAmtIsXRP : {false, true})
+            for (auto const dstAmtIsXRP : {false, true})
             {
-                for (auto hasPrefix : {false, true})
+                for (auto const hasPrefix : {false, true})
                 {
                     ExistingElementPool::StateGuard esg{eep};
                     prefix.clear();
@@ -771,9 +771,9 @@ struct PayStrandAllPairs_test : public beast::unit_test::suite
 
                     if (hasPrefix)
                     {
-                        for(auto e0IsAccount : {false, true})
+                        for(auto const e0IsAccount : {false, true})
                         {
-                            for (auto e1IsAccount : {false, true})
+                            for (auto const e1IsAccount : {false, true})
                             {
                                 ExistingElementPool::StateGuard presg{eep};
                                 prefix.clear();
@@ -856,11 +856,6 @@ BEAST_DEFINE_TESTSUITE_MANUAL(PayStrandAllPairs, app, ripple);
 
 struct PayStrand_test : public beast::unit_test::suite
 {
-    static bool hasFeature(uint256 const& feat)
-    {
-        return false;
-    }
-
     static bool hasFeature(uint256 const& feat, std::initializer_list<uint256> args)
     {
         for(auto const& f : args)
@@ -868,7 +863,6 @@ struct PayStrand_test : public beast::unit_test::suite
                 return true;
         return false;
     }
-
     void
     testToStrand(std::initializer_list<uint256> fs)
     {
@@ -1469,7 +1463,6 @@ struct PayStrand_test : public beast::unit_test::suite
                     env.app().logs(), &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
-
             {
                 auto const r = ::ripple::path::RippleCalc::rippleCalculate(
                     sb, sendMax, noAccountAmount, dstAcc, srcAcc, pathSet,
