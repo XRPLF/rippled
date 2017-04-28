@@ -1073,6 +1073,107 @@ public:
     }
 
     void
+    testCrossingBookOffer()
+    {
+        testcase("Crossing book offer");
+
+        // This was added to check that an OfferCreate transaction is only
+        // published once in a stream, even if it updates multiple offer
+        // ledger entries
+
+        using namespace jtx;
+        Env env(*this);
+
+        auto const gw = Account("gateway");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie");
+        auto const USD = gw["USD"];
+
+
+        env.fund (XRP(1000000), gw, bob, alice, charlie);
+        env.close();
+
+        env (trust(alice, USD(500)));
+        env (trust(charlie, USD(500)));
+        env.close();
+
+        env (pay(gw, alice, USD(500)));
+        env (pay(gw, charlie, USD(500)));
+        env.close();
+        env.require (offers (alice, 0), offers (bob, 0), offers(charlie, 0));
+
+        auto wsc = makeWSClient(env.app().config());
+        Json::Value books;
+
+        {
+            // RPC subscribe to books stream
+            books[jss::books] = Json::arrayValue;
+            {
+                auto &j = books[jss::books].append(Json::objectValue);
+                j[jss::snapshot] = false;
+                j[jss::taker_gets][jss::currency] = "XRP";
+                j[jss::taker_pays][jss::currency] = "USD";
+                j[jss::taker_pays][jss::issuer] = gw.human();
+            }
+
+            auto jv = wsc->invoke("subscribe", books);
+            if(! BEAST_EXPECT(jv[jss::status] == "success"))
+                return;
+        }
+
+        // Check that a stream only sees the given OfferCreate once
+        auto seeOfferOnce = [&](PrettyAmount takerGets, PrettyAmount takerPays)
+        {
+            auto maybeJv = wsc->getMsg(1s);
+            // No message
+            if (!maybeJv)
+                return false;
+            // wrong message
+            auto const& t = (*maybeJv)[jss::transaction];
+            if (t[jss::TransactionType] != "OfferCreate" ||
+                t[jss::TakerGets] != takerGets.value().getJson(0) ||
+                t[jss::TakerPays] != takerPays.value().getJson(0))
+                return false;
+            // Make sure no other message is waiting
+            return wsc->getMsg(1s) == boost::none;
+        };
+
+
+        // Alice offers $500 for 500 XRP
+        {
+            env (offer (alice, XRP(500), USD(500)));
+            env.close();
+            env.require(offers (alice, 1),offers (bob, 0), offers(charlie, 0));
+            // Check stream update
+            BEAST_EXPECT(seeOfferOnce(USD(500), XRP(500)));
+        }
+
+        // Charlie places an identical offer as Alice
+        {
+
+            env (offer (charlie, XRP(500), USD(500)));
+            env.close();
+            env.require(offers (alice, 1),offers (bob, 0), offers(charlie, 1));
+            BEAST_EXPECT(seeOfferOnce(USD(500), XRP(500)));
+        }
+
+        // Bob places an offer that cross Alice and Charlie's offers
+        {
+            env (offer (bob, USD(1000), XRP(1000)));
+            env.close();
+            env.require(offers (alice, 0));
+            env.require(offers (bob, 0));
+            env.require(offers(charlie, 0));
+            BEAST_EXPECT(seeOfferOnce(XRP(1000), USD(1000)));
+        }
+        // RPC unsubscribe
+        auto jv = wsc->invoke("unsubscribe", books);
+        BEAST_EXPECT(jv[jss::status] == "success");
+
+    }
+
+    void
     testBookOfferErrors()
     {
         testcase("BookOffersRPC Errors");
@@ -1466,6 +1567,7 @@ public:
         testMultipleBooksBothSidesEmptyBook();
         testMultipleBooksBothSidesOffersInBook();
         testTrackOffers();
+        testCrossingBookOffer();
         testBookOfferErrors();
         testBookOfferLimits(true);
         testBookOfferLimits(false);

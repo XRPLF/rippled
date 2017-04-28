@@ -239,9 +239,10 @@ void OrderBookDB::processTxn (
         const AcceptedLedgerTx& alTx, Json::Value const& jvObj)
 {
     std::lock_guard <std::recursive_mutex> sl (mLock);
-
     if (alTx.getResult () == tesSUCCESS)
     {
+        hash_set<Book> havePublished;
+
         // Check if this is an offer or an offer cancel or a payment that
         // consumes an offer.
         // Check to see what the meta looks like.
@@ -272,12 +273,15 @@ void OrderBookDB::processTxn (
                             data->isFieldPresent (sfTakerGets))
                         {
                             // determine the OrderBook
-                            auto listeners = getBookListeners (
-                                {data->getFieldAmount (sfTakerGets).issue(),
-                                 data->getFieldAmount (sfTakerPays).issue()});
+                            Book b{data->getFieldAmount(sfTakerGets).issue(),
+                                data->getFieldAmount(sfTakerPays).issue()};
 
-                            if (listeners)
-                                listeners->publish (jvObj);
+                            auto listeners = getBookListeners(b);
+                            if (listeners &&
+                                havePublished.emplace(std::move(b)).second)
+                            {
+                                listeners->publish(jvObj);
+                            }
                         }
                     }
                 }
