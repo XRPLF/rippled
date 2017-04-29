@@ -161,23 +161,14 @@ public:
     */
     int getJobCountGE (JobType t) const;
 
-    /** Shut down the job queue without completing pending jobs.
-    */
-    void shutdown ();
-
     /** Set the number of thread serving the job queue to precisely this number.
     */
     void setThreadCount (int c, bool const standaloneMode);
 
-    // VFALCO TODO Rename these to newLoadEventMeasurement or something similar
-    //             since they create the object.
-    std::shared_ptr<LoadEvent>
-    getLoadEvent (JobType t, std::string const& name);
-
-    // VFALCO TODO Why do we need two versions, one which returns a shared
-    //             pointer and the other which returns an autoptr?
+    /** Return a scoped LoadEvent.
+    */
     std::unique_ptr <LoadEvent>
-    getLoadEventAP (JobType t, std::string const& name);
+    makeLoadEvent (JobType t, std::string const& name);
 
     /** Add multiple load events.
     */

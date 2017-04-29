@@ -824,7 +824,7 @@ PeerImp::onMessageBegin (std::uint16_t type,
     std::shared_ptr <::google::protobuf::Message> const& m,
     std::size_t size)
 {
-    load_event_ = app_.getJobQueue ().getLoadEventAP (
+    load_event_ = app_.getJobQueue ().makeLoadEvent (
         jtPEER, protocolMessageName(type));
     fee_ = Resource::feeLightPeer;
     overlay_.reportTraffic (TrafficCount::categorize (*m, type, true),

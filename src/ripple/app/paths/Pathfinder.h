@@ -47,7 +47,9 @@ public:
         STAmount const& dstAmount,
         boost::optional<STAmount> const& srcAmount,
         Application& app);
-    ~Pathfinder();
+    Pathfinder (Pathfinder const&) = delete;
+    Pathfinder& operator= (Pathfinder const&) = delete;
+    ~Pathfinder() = default;
 
     static void initPathTable ();
 
@@ -181,7 +183,7 @@ private:
     bool convert_all_;
 
     std::shared_ptr <ReadView const> mLedger;
-    std::shared_ptr<LoadEvent> m_loadEvent;
+    std::unique_ptr<LoadEvent> m_loadEvent;
     std::shared_ptr<RippleLineCache> mRLCache;
 
     STPathElement mSource;

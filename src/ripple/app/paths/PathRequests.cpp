@@ -56,7 +56,7 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
                               Job::CancelCallback shouldCancel)
 {
     auto event =
-        app_.getJobQueue().getLoadEventAP(
+        app_.getJobQueue().makeLoadEvent(
             jtPATH_FIND, "PathRequest::updateAll");
 
     std::vector<PathRequest::wptr> requests;

@@ -464,7 +464,7 @@ private:
 
     void doWrite ()
     {
-        auto event = app_.getJobQueue ().getLoadEventAP (jtDISK, "ValidationWrite");
+        auto event = app_.getJobQueue ().makeLoadEvent (jtDISK, "ValidationWrite");
 
         std::string insVal ("INSERT INTO Validations "
             "(InitialSeq, LedgerSeq, LedgerHash,NodePubKey,SignTime,RawData) "

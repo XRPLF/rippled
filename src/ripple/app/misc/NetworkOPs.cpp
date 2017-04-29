@@ -838,7 +838,7 @@ void NetworkOPsImp::submitTransaction (std::shared_ptr<STTx const> const& iTrans
 void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transaction,
         bool bUnlimited, bool bLocal, FailHard failType)
 {
-    auto ev = m_job_queue.getLoadEventAP (jtTXN_PROC, "ProcessTXN");
+    auto ev = m_job_queue.makeLoadEvent (jtTXN_PROC, "ProcessTXN");
     auto const newFlags = app_.getHashRouter ().getFlags (transaction->getID ());
 
     if ((newFlags & SF_BAD) != 0)

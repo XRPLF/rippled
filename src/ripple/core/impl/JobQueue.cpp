@@ -152,14 +152,6 @@ JobQueue::getJobCountGE (JobType t) const
 }
 
 void
-JobQueue::shutdown ()
-{
-    JLOG(m_journal.info()) <<  "Job queue shutting down";
-
-    m_workers.pauseAllThreadsAndWait ();
-}
-
-void
 JobQueue::setThreadCount (int c, bool const standaloneMode)
 {
     if (standaloneMode)
@@ -178,21 +170,8 @@ JobQueue::setThreadCount (int c, bool const standaloneMode)
     m_workers.setNumberOfThreads (c);
 }
 
-std::shared_ptr<LoadEvent>
-JobQueue::getLoadEvent (JobType t, std::string const& name)
-{
-    JobDataMap::iterator iter (m_jobData.find (t));
-    assert (iter != m_jobData.end ());
-
-    if (iter == m_jobData.end ())
-        return std::shared_ptr<LoadEvent> ();
-
-    return std::make_shared<LoadEvent> (
-        std::ref (iter-> second.load ()), name, true);
-}
-
 std::unique_ptr<LoadEvent>
-JobQueue::getLoadEventAP (JobType t, std::string const& name)
+JobQueue::makeLoadEvent (JobType t, std::string const& name)
 {
     JobDataMap::iterator iter (m_jobData.find (t));
     assert (iter != m_jobData.end ());
