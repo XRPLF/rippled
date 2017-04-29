@@ -193,7 +193,7 @@ Status callMethod (
 {
     try
     {
-        auto v = context.app.getJobQueue().getLoadEventAP(
+        auto v = context.app.getJobQueue().makeLoadEvent(
             jtGENERIC, "cmd:" + name);
         return method (context, result);
     }
