@@ -268,7 +268,7 @@ public:
         using namespace test::jtx;
         using namespace std::chrono;
         Env env { *this, envconfig(validator, ""),
-                   features(featureMultiSign, featureTickets,
+                   with_features(featureMultiSign, featureTickets,
                            featureEscrow, featurePayChan) };
         Account const gw { "gateway" };
         auto const USD = gw["USD"];

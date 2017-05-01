@@ -1025,7 +1025,8 @@ public:
     {
         testcase("Path Find: CNY");
         using namespace jtx;
-        Env env(*this);
+        Env env{*this, all_features_except(featureFlow)};
+
         Account A1 {"A1"};
         Account A2 {"A2"};
         Account A3 {"A3"};
