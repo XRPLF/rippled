@@ -277,8 +277,7 @@ void OrderBookDB::processTxn (
                                 data->getFieldAmount(sfTakerPays).issue()};
 
                             auto listeners = getBookListeners(b);
-                            if (listeners &&
-                                havePublished.emplace(std::move(b)).second)
+                            if (listeners && havePublished.emplace(b).second)
                             {
                                 listeners->publish(jvObj);
                             }

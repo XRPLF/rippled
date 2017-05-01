@@ -64,7 +64,7 @@ public:
             // RPC subscribe to books stream
             books[jss::books] = Json::arrayValue;
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
                 j[jss::taker_pays][jss::currency] = "USD";
@@ -147,7 +147,7 @@ public:
             // RPC subscribe to books stream
             books[jss::books] = Json::arrayValue;
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
                 j[jss::taker_pays][jss::currency] = "USD";
@@ -225,7 +225,7 @@ public:
             // RPC subscribe to books stream
             books[jss::books] = Json::arrayValue;
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = true;
                 j[jss::both] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
@@ -319,7 +319,7 @@ public:
             // RPC subscribe to books stream
             books[jss::books] = Json::arrayValue;
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = true;
                 j[jss::both] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
@@ -414,14 +414,14 @@ public:
             // RPC subscribe to books stream
             books[jss::books] = Json::arrayValue;
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
                 j[jss::taker_pays][jss::currency] = "USD";
                 j[jss::taker_pays][jss::issuer] = Account("alice").human();
             }
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "CNY";
                 j[jss::taker_gets][jss::issuer] = Account("alice").human();
@@ -540,14 +540,14 @@ public:
             // RPC subscribe to books stream
             books[jss::books] = Json::arrayValue;
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
                 j[jss::taker_pays][jss::currency] = "USD";
                 j[jss::taker_pays][jss::issuer] = Account("alice").human();
             }
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "CNY";
                 j[jss::taker_gets][jss::issuer] = Account("alice").human();
@@ -657,7 +657,7 @@ public:
             // RPC subscribe to books stream
             books[jss::books] = Json::arrayValue;
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = true;
                 j[jss::both] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
@@ -665,7 +665,7 @@ public:
                 j[jss::taker_pays][jss::issuer] = Account("alice").human();
             }
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = true;
                 j[jss::both] = true;
                 j[jss::taker_gets][jss::currency] = "CNY";
@@ -804,7 +804,7 @@ public:
             // RPC subscribe to books stream
             books[jss::books] = Json::arrayValue;
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = true;
                 j[jss::both] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
@@ -813,7 +813,7 @@ public:
             }
             // RPC subscribe to books stream
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = true;
                 j[jss::both] = true;
                 j[jss::taker_gets][jss::currency] = "CNY";
@@ -951,7 +951,7 @@ public:
         {
             books[jss::books] = Json::arrayValue;
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = true;
                 j[jss::taker_gets][jss::currency] = "XRP";
                 j[jss::taker_pays][jss::currency] = "USD";
@@ -1110,7 +1110,7 @@ public:
             // RPC subscribe to books stream
             books[jss::books] = Json::arrayValue;
             {
-                auto &j = books[jss::books].append(Json::objectValue);
+                auto& j = books[jss::books].append(Json::objectValue);
                 j[jss::snapshot] = false;
                 j[jss::taker_gets][jss::currency] = "XRP";
                 j[jss::taker_pays][jss::currency] = "USD";
