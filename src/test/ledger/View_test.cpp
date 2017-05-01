@@ -844,7 +844,7 @@ class DirIsEmpty_test
         auto const alice = Account("alice");
         auto const bogie = Account("bogie");
 
-        Env env(*this, features(featureMultiSign));
+        Env env(*this, with_features(featureMultiSign));
 
         env.fund(XRP(10000), alice);
         env.close();

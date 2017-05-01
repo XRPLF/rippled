@@ -34,7 +34,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this, features(fs));
+        Env env(*this, with_features(fs));
 
         // Gateway account and assets
         Account const alice {"alice"};

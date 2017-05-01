@@ -739,8 +739,10 @@ public:
     testSupportedAmendments ()
     {
         for (auto const& amend : detail::supportedAmendments ())
-            BEAST_EXPECT(amend.substr (0, 64) ==
-                to_string (feature (amend.substr (65))));
+        {
+            auto const f = getRegisteredFeature(amend.substr (65));
+            BEAST_EXPECT(f && amend.substr (0, 64) == to_string (*f));
+        }
     }
 
     void run ()

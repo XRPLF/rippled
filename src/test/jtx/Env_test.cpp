@@ -27,6 +27,7 @@
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/beast/unit_test.h>
 #include <boost/lexical_cast.hpp>
+#include <boost/optional.hpp>
 #include <utility>
 
 namespace ripple {
@@ -354,7 +355,7 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this, features(featureMultiSign));
+        Env env(*this, with_features(featureMultiSign));
         env.fund(XRP(10000), "alice");
         env(signers("alice", 1,
             { { "alice", 1 }, { "bob", 2 } }),                  ter(temBAD_SIGNER));
@@ -383,7 +384,7 @@ public:
         ticket::create("alice", 60, "bob");
 
         {
-            Env env(*this, features(featureTickets));
+            Env env(*this, with_features(featureTickets));
             env.fund(XRP(10000), "alice");
             env(noop("alice"),                  require(owners("alice", 0), tickets("alice", 0)));
             env(ticket::create("alice"),        require(owners("alice", 1), tickets("alice", 1)));
@@ -627,6 +628,129 @@ public:
         }
     }
 
+    void testFeatures()
+    {
+        testcase("Env features");
+        using namespace jtx;
+        auto const supported = all_amendments();
+
+        // this finds a feature that is not in
+        // the supported amendments list and tests that it can be
+        // enabled explicitly
+
+        auto const neverSupportedFeat = [&]() -> boost::optional<uint256>
+        {
+            auto const n = supported.size();
+            for(size_t i = 0; i < n; ++i)
+                if (!supported[i])
+                    return bitsetIndexToFeature(i);
+
+            return boost::none;
+        }();
+
+        if (!neverSupportedFeat)
+        {
+            log << "No unsupported features found - skipping test." << std::endl;
+            pass();
+            return;
+        }
+
+        auto const neverSupported = with_features(*neverSupportedFeat);
+
+        auto hasFeature = [](Env& env, uint256 const& f)
+        {
+            return (env.app().config().features.find (f) !=
+                    env.app().config().features.end());
+        };
+
+        {
+            // default Env has all supported features
+            Env env{*this};
+            BEAST_EXPECT(
+                supported.count() == env.app().config().features.size());
+            foreachFeature(supported, [&](uint256 const& f) {
+                this->BEAST_EXPECT(hasFeature(env, f));
+            });
+        }
+
+        {
+            // a Env with_features has *only* those features
+            Env env{*this, with_features(featureEscrow, featureTickets)};
+            BEAST_EXPECT(env.app().config().features.size() == 2);
+            foreachFeature(supported, [&](uint256 const& f) {
+                bool const has = (f == featureEscrow || f == featureTickets);
+                this->BEAST_EXPECT(has == hasFeature(env, f));
+            });
+        }
+
+        {
+            // a Env all_features_except is missing *only* those features
+            Env env{*this, all_features_except(featureEscrow, featureTickets)};
+            BEAST_EXPECT(
+                env.app().config().features.size() == (supported.count() - 2));
+            foreachFeature(supported, [&](uint256 const& f) {
+                bool hasnot = (f == featureEscrow || f == featureTickets);
+                this->BEAST_EXPECT(hasnot != hasFeature(env, f));
+            });
+        }
+
+        {
+            // add a feature that is NOT in the supported amendments list
+            // along with a list of explicit amendments
+            // the unsupported feature should be enabled along with
+            // the two supported ones
+            Env env{
+                *this,
+                with_features(featureEscrow, featureTickets) | neverSupported};
+
+            // this app will have just 2 supported amendments and
+            // one additional never supported feature flag
+            BEAST_EXPECT(env.app().config().features.size() == (2 + 1));
+            BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
+
+            foreachFeature(supported, [&](uint256 const& f) {
+                bool has = (f == featureEscrow || f == featureTickets);
+                this->BEAST_EXPECT(has == hasFeature(env, f));
+            });
+        }
+
+        {
+            // add a feature that is NOT in the supported amendments list
+            // and omit a few standard amendments
+            // the unsupported features should be enabled
+            Env env{*this,
+                    all_features_except(featureEscrow, featureTickets) |
+                        neverSupported};
+
+            // this app will have all supported amendments minus 2 and then the
+            // one additional never supported feature flag
+            BEAST_EXPECT(
+                env.app().config().features.size() ==
+                (supported.count() - 2 + 1));
+            BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
+            foreachFeature(supported, [&](uint256 const& f) {
+                bool hasnot = (f == featureEscrow || f == featureTickets);
+                this->BEAST_EXPECT(hasnot != hasFeature(env, f));
+            });
+        }
+
+        {
+            // add a feature that is NOT in the supported amendments list
+            // along with all supported amendments
+            // the unsupported features should be enabled
+            Env env{*this, all_amendments() | neverSupported};
+
+            // this app will have all supported amendments and then the
+            // one additional never supported feature flag
+            BEAST_EXPECT(
+                env.app().config().features.size() == (supported.count() + 1));
+            BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
+            foreachFeature(supported, [&](uint256 const& f) {
+                this->BEAST_EXPECT(hasFeature(env, f));
+            });
+        }
+    }
+
     void
     run()
     {
@@ -648,6 +772,7 @@ public:
         testPath();
         testResignSigned();
         testSignAndSubmit();
+        testFeatures();
     }
 };
 
