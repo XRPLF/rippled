@@ -24,35 +24,44 @@
 
 namespace ripple {
 
-void BookListeners::addSubscriber (InfoSub::ref sub)
+void
+BookListeners::addSubscriber(InfoSub::ref sub)
 {
-    std::lock_guard <std::recursive_mutex> sl (mLock);
-    mListeners[sub->getSeq ()] = sub;
+    std::lock_guard<std::recursive_mutex> sl(mLock);
+    mListeners[sub->getSeq()] = sub;
 }
 
-void BookListeners::removeSubscriber (std::uint64_t seq)
+void
+BookListeners::removeSubscriber(std::uint64_t seq)
 {
-    std::lock_guard <std::recursive_mutex> sl (mLock);
-    mListeners.erase (seq);
+    std::lock_guard<std::recursive_mutex> sl(mLock);
+    mListeners.erase(seq);
 }
 
-void BookListeners::publish (Json::Value const& jvObj)
+void
+BookListeners::publish(
+    Json::Value const& jvObj,
+    hash_set<std::uint64_t>& havePublished)
 {
-    std::lock_guard <std::recursive_mutex> sl (mLock);
-    auto it = mListeners.cbegin ();
+    std::lock_guard<std::recursive_mutex> sl(mLock);
+    auto it = mListeners.cbegin();
 
-    while (it != mListeners.cend ())
+    while (it != mListeners.cend())
     {
-        InfoSub::pointer p = it->second.lock ();
+        InfoSub::pointer p = it->second.lock();
 
         if (p)
         {
-            p->send (jvObj, true);
+            // Only publish jvObj if this is the first occurence
+            if(havePublished.emplace(p->getSeq()).second)
+            {
+                p->send(jvObj, true);
+            }
             ++it;
         }
         else
-            it = mListeners.erase (it);
+            it = mListeners.erase(it);
     }
 }
 
-} // ripple
+}  // namespace ripple

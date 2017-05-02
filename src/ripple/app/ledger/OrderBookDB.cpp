@@ -241,7 +241,12 @@ void OrderBookDB::processTxn (
     std::lock_guard <std::recursive_mutex> sl (mLock);
     if (alTx.getResult () == tesSUCCESS)
     {
-        hash_set<Book> havePublished;
+        // For this particular transaction, maintain the set of unique
+        // subscriptions that have already published it.  This prevents sending
+        // the transaction multiple times if it touchess multiple ltOFFER
+        // entries for the same book, or if it touches multiple books and a
+        // single client has subscribed to those books.
+        hash_set<std::uint64_t> havePublished;
 
         // Check if this is an offer or an offer cancel or a payment that
         // consumes an offer.
@@ -277,9 +282,9 @@ void OrderBookDB::processTxn (
                                 data->getFieldAmount(sfTakerPays).issue()};
 
                             auto listeners = getBookListeners(b);
-                            if (listeners && havePublished.emplace(b).second)
+                            if (listeners)
                             {
-                                listeners->publish(jvObj);
+                                listeners->publish(jvObj, havePublished);
                             }
                         }
                     }
