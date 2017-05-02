@@ -116,7 +116,6 @@ public:
       BEAST_EXPECT(v4[2]==0);
       BEAST_EXPECT(v4[3]==1);
 
-      BEAST_EXPECT((!((0xff)<<16)) == 0x00000000);
       BEAST_EXPECT((~((0xff)<<16)) == 0xff00ffff);
 
       v4[1] = 10;
