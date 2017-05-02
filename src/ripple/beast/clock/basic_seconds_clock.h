@@ -63,8 +63,7 @@ public:
     seconds_clock_thread ()
         : stop_ (false)
     {
-        thread_ = thread (std::bind(
-            &seconds_clock_thread::run, this));
+        thread_ = thread (&seconds_clock_thread::run, this);
     }
 
     ~seconds_clock_thread ()
