@@ -200,18 +200,22 @@ macro(append_flags name)
   endforeach()
 endmacro()
 
-macro(group_sources curdir)
-  file(GLOB children RELATIVE ${PROJECT_SOURCE_DIR}/${curdir}
-    ${PROJECT_SOURCE_DIR}/${curdir}/*)
+macro(group_sources_in source_dir curdir)
+  file(GLOB children RELATIVE ${source_dir}/${curdir}
+    ${source_dir}/${curdir}/*)
   foreach (child ${children})
-    if (IS_DIRECTORY ${PROJECT_SOURCE_DIR}/${curdir}/${child})
-      group_sources(${curdir}/${child})
+    if (IS_DIRECTORY ${source_dir}/${curdir}/${child})
+      group_sources_in(${source_dir} ${curdir}/${child})
     else()
       string(REPLACE "/" "\\" groupname ${curdir})
       source_group(${groupname} FILES
-        ${PROJECT_SOURCE_DIR}/${curdir}/${child})
+        ${source_dir}/${curdir}/${child})
     endif()
   endforeach()
+endmacro()
+
+macro(group_sources curdir)
+  group_sources_in(${PROJECT_SOURCE_DIR} ${curdir})
 endmacro()
 
 macro(add_with_props src_var files)
