@@ -35,6 +35,13 @@
 #include <test/jtx/WSClient.h>
 
 namespace ripple {
+
+namespace detail {
+extern
+std::vector<std::string>
+supportedAmendments ();
+}
+
 namespace test {
 
 class TxQ_test : public beast::unit_test::suite
@@ -144,7 +151,9 @@ class TxQ_test : public beast::unit_test::suite
         // Close the ledger with a delay to force the TxQ stats
         // to stay at the default.
         env.close(env.now() + 5s, 10000ms);
-        checkMetrics(env, 0, 34, 0, expectedInLedger, 256);
+        checkMetrics(env, 0,
+            2 * (ripple::detail::supportedAmendments().size() + 1),
+                0, expectedInLedger, 256);
         auto const fees = env.current()->fees();
         BEAST_EXPECT(fees.base == base);
         BEAST_EXPECT(fees.units == units);
@@ -713,15 +722,17 @@ public:
         checkMetrics(env, 0, boost::none, 0, 3, 256);
 
         initFee(env, 3, 10, 10, 200, 50);
+        auto const initQueueMax =
+            2 * (ripple::detail::supportedAmendments().size() + 1);
 
         // Create several accounts while the fee is cheap so they all apply.
         env.fund(drops(2000), noripple(alice));
         env.fund(XRP(500000), noripple(bob, charlie, daria));
-        checkMetrics(env, 0, 34, 4, 3, 256);
+        checkMetrics(env, 0, initQueueMax, 4, 3, 256);
 
         // Alice - price starts exploding: held
         env(noop(alice), queued);
-        checkMetrics(env, 1, 34, 4, 3, 256);
+        checkMetrics(env, 1, initQueueMax, 4, 3, 256);
 
         auto aliceSeq = env.seq(alice);
         auto bobSeq = env.seq(bob);
@@ -730,31 +741,31 @@ public:
         // Alice - try to queue a second transaction, but leave a gap
         env(noop(alice), seq(aliceSeq + 2), fee(100),
             ter(terPRE_SEQ));
-        checkMetrics(env, 1, 34, 4, 3, 256);
+        checkMetrics(env, 1, initQueueMax, 4, 3, 256);
 
         // Alice - queue a second transaction. Yay.
         env(noop(alice), seq(aliceSeq + 1), fee(13),
             queued);
-        checkMetrics(env, 2, 34, 4, 3, 256);
+        checkMetrics(env, 2, initQueueMax, 4, 3, 256);
 
         // Alice - queue a third transaction. Yay.
         env(noop(alice), seq(aliceSeq + 2), fee(17),
             queued);
-        checkMetrics(env, 3, 34, 4, 3, 256);
+        checkMetrics(env, 3, initQueueMax, 4, 3, 256);
 
         // Bob - queue a transaction
         env(noop(bob), queued);
-        checkMetrics(env, 4, 34, 4, 3, 256);
+        checkMetrics(env, 4, initQueueMax, 4, 3, 256);
 
         // Bob - queue a second transaction
         env(noop(bob), seq(bobSeq + 1), fee(50),
             queued);
-        checkMetrics(env, 5, 34, 4, 3, 256);
+        checkMetrics(env, 5, initQueueMax, 4, 3, 256);
 
         // Charlie - queue a transaction, with a higher fee
         // than default
         env(noop(charlie), fee(15), queued);
-        checkMetrics(env, 6, 34, 4, 3, 256);
+        checkMetrics(env, 6, initQueueMax, 4, 3, 256);
 
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
         BEAST_EXPECT(env.seq(bob) == bobSeq);
@@ -1165,18 +1176,20 @@ public:
         auto queued = ter(terQUEUED);
 
         initFee(env, 3, 10, 10, 200, 50);
+        auto const initQueueMax =
+            2 * (ripple::detail::supportedAmendments().size() + 1);
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, 34, 0, 3, 256);
+        checkMetrics(env, 0, initQueueMax, 0, 3, 256);
 
         env.fund(drops(5000), noripple(alice));
         env.fund(XRP(50000), noripple(bob));
-        checkMetrics(env, 0, 34, 2, 3, 256);
+        checkMetrics(env, 0, initQueueMax, 2, 3, 256);
         auto USD = bob["USD"];
 
         env(offer(alice, USD(5000), drops(5000)), require(owners(alice, 1)));
-        checkMetrics(env, 0, 34, 3, 3, 256);
+        checkMetrics(env, 0, initQueueMax, 3, 3, 256);
 
         env.close();
         checkMetrics(env, 0, 6, 0, 3, 256);
