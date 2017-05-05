@@ -1076,16 +1076,18 @@ public:
     static
     bool
     offerOnlyOnceInStream(
-        std::unique_ptr<WSClient>& wsc,
+        std::unique_ptr<WSClient> const & wsc,
         std::chrono::milliseconds const& timeout,
-        jtx::PrettyAmount takerGets,
-        jtx::PrettyAmount takerPays)
+        jtx::PrettyAmount const& takerGets,
+        jtx::PrettyAmount const& takerPays)
     {
         auto maybeJv = wsc->getMsg(timeout);
         // No message
         if (!maybeJv)
             return false;
         // wrong message
+        if(!(*maybeJv).isMember(jss::transaction))
+            return false;
         auto const& t = (*maybeJv)[jss::transaction];
         if (t[jss::TransactionType] != "OfferCreate" ||
             t[jss::TakerGets] != takerGets.value().getJson(0) ||
@@ -1151,7 +1153,7 @@ public:
                 return;
         }
 
-        // Charlie places an offer that cross Alice and Charlie's offers
+        // Charlie places an offer that crosses Alice and Charlie's offers
         env(offer(charlie, USD(1000), XRP(1000)));
         env.close();
         env.require(offers(alice, 0), offers(bob, 0), offers(charlie, 0));
@@ -1190,9 +1192,9 @@ public:
         env.fund(XRP(1000000), gw, alice, bob, charlie);
         env.close();
 
-        for (auto& account : {alice, bob, charlie})
+        for (auto const& account : {alice, bob, charlie})
         {
-            for (auto& iou : {USD, EUR})
+            for (auto const& iou : {USD, EUR})
             {
                 env(trust(account, iou(1)));
             }

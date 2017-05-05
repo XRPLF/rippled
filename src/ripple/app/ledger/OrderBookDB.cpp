@@ -243,7 +243,7 @@ void OrderBookDB::processTxn (
     {
         // For this particular transaction, maintain the set of unique
         // subscriptions that have already published it.  This prevents sending
-        // the transaction multiple times if it touchess multiple ltOFFER
+        // the transaction multiple times if it touches multiple ltOFFER
         // entries for the same book, or if it touches multiple books and a
         // single client has subscribed to those books.
         hash_set<std::uint64_t> havePublished;
