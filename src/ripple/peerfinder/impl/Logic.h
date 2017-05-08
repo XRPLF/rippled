@@ -990,7 +990,7 @@ public:
         std::lock_guard<std::recursive_mutex> _(lock_);
         for (auto addr : list)
         {
-            if (bootcache_.insert (addr))
+            if (bootcache_.insertStatic (addr))
                 ++count;
         }
         return count;
