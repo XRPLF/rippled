@@ -129,6 +129,30 @@ Bootcache::insert (beast::IP::Endpoint const& endpoint)
     return result.second;
 }
 
+bool
+Bootcache::insertStatic (beast::IP::Endpoint const& endpoint)
+{
+    auto result (m_map.insert (
+        value_type (endpoint, staticValence)));
+
+    if (! result.second && (result.first->right.valence() < staticValence))
+    {
+        // An existing entry has too low a valence, replace it
+        m_map.erase (result.first);
+        result = m_map.insert (
+            value_type (endpoint, staticValence));
+    }
+
+    if (result.second)
+    {
+        JLOG(m_journal.trace()) << beast::leftw (18) <<
+            "Bootcache insert " << endpoint;
+        prune ();
+        flagForUpdate();
+    }
+    return result.second;
+}
+
 void
 Bootcache::on_success (beast::IP::Endpoint const& endpoint)
 {
@@ -197,7 +221,13 @@ Bootcache::periodicActivity ()
 void
 Bootcache::onWrite (beast::PropertyStream::Map& map)
 {
-    map ["entries"] = std::uint32_t (m_map.size());
+    beast::PropertyStream::Set entries ("entries", map);
+    for (auto iter = m_map.right.begin(); iter != m_map.right.end(); ++iter)
+    {
+        beast::PropertyStream::Map entry (entries);
+        entry["endpoint"] = to_string (iter->get_left());
+        entry["valence"] = std::int32_t (iter->get_right().valence());
+    }
 }
 
     // Checks the cache size and prunes if its over the limit.
