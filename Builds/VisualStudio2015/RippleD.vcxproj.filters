@@ -5682,6 +5682,9 @@
     <ClCompile Include="..\..\src\test\rpc\NoRipple_test.cpp">
       <Filter>test\rpc</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\rpc\OwnerInfo_test.cpp">
+      <Filter>test\rpc</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\rpc\Peers_test.cpp">
       <Filter>test\rpc</Filter>
     </ClCompile>
