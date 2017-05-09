@@ -1959,9 +1959,6 @@
     <ClCompile Include="..\..\src\ripple\basics\impl\mulDiv.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\basics\impl\RangeSet.cpp">
-      <Filter>ripple\basics\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\ResolverAsio.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>

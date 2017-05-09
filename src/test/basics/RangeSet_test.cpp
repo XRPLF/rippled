@@ -21,14 +21,15 @@
 #include <ripple/basics/RangeSet.h>
 #include <ripple/beast/unit_test.h>
 
-namespace ripple {
-
+namespace ripple
+{
 class RangeSet_test : public beast::unit_test::suite
 {
 public:
-    RangeSet createPredefinedSet ()
+    void
+    testPrevMissing()
     {
-        RangeSet set;
+        testcase("prevMissing");
 
         // Set will include:
         // [ 0, 5]
@@ -36,59 +37,52 @@ public:
         // [20,25]
         // etc...
 
-        for (int i = 0; i < 10; ++i)
-            set.setRange (10 * i, 10 * i + 5);
+        RangeSet<std::uint32_t> set;
+        for (std::uint32_t i = 0; i < 10; ++i)
+            set.insert(range(10 * i, 10 * i + 5));
 
-        return set;
-    }
-
-    void testMembership ()
-    {
-        testcase ("membership");
-
-        RangeSet r1, r2;
-
-        r1.setRange (1, 10);
-        r1.clearValue (5);
-        r1.setRange (11, 20);
-
-        r2.setRange (1, 4);
-        r2.setRange (6, 10);
-        r2.setRange (10, 20);
-
-        BEAST_EXPECT(!r1.hasValue (5));
-
-        BEAST_EXPECT(r2.hasValue (9));
-    }
-
-    void testPrevMissing ()
-    {
-        testcase ("prevMissing");
-
-        RangeSet const set = createPredefinedSet ();
-
-        for (int i = 0; i < 100; ++i)
+        for (std::uint32_t i = 1; i < 100; ++i)
         {
-            int const oneBelowRange = (10*(i/10))-1;
+            boost::optional<std::uint32_t> expected;
+            // no prev missing in domain for i <= 6
+            if (i > 6)
+            {
+                std::uint32_t const oneBelowRange = (10 * (i / 10)) - 1;
 
-            int const expectedPrevMissing =
-                ((i % 10) > 6) ? (i-1) : oneBelowRange;
-
-            BEAST_EXPECT(set.prevMissing (i) == expectedPrevMissing);
+                expected = ((i % 10) > 6) ? (i - 1) : oneBelowRange;
+            }
+            BEAST_EXPECT(prevMissing(set, i) == expected);
         }
     }
 
-    void run ()
+    void
+    testToString()
     {
-        testMembership ();
+        testcase("toString");
 
-        testPrevMissing ();
+        RangeSet<std::uint32_t> set;
+        BEAST_EXPECT(to_string(set) == "empty");
 
-        // TODO: Traverse functions must be tested
+        set.insert(1);
+        BEAST_EXPECT(to_string(set) == "1");
+
+        set.insert(range(4u, 6u));
+        BEAST_EXPECT(to_string(set) == "1,4-6");
+
+        set.insert(2);
+        BEAST_EXPECT(to_string(set) == "1-2,4-6");
+
+        set.erase(range(4u, 5u));
+        BEAST_EXPECT(to_string(set) == "1-2,6");
+    }
+    void
+    run()
+    {
+        testPrevMissing();
+        testToString();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RangeSet,ripple_basics,ripple);
+BEAST_DEFINE_TESTSUITE(RangeSet, ripple_basics, ripple);
 
-} // ripple
-
+}  // namespace ripple
