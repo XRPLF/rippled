@@ -305,7 +305,7 @@ private:
     std::unique_ptr<LedgerReplay> replayData;
 
     std::recursive_mutex mCompleteLock;
-    RangeSet mCompleteLedgers;
+    RangeSet<std::uint32_t> mCompleteLedgers;
 
     std::unique_ptr <detail::LedgerCleaner> mLedgerCleaner;
 
