@@ -1235,7 +1235,23 @@ struct Flow_test : public beast::unit_test::suite
              sendmax (drops(20000000000)), txflags (tfPartialPayment));
     }
 
+    void
+    testEmptyStrand(std::initializer_list<uint256> fs)
+    {
+        testcase("Empty Strand");
+        using namespace jtx;
 
+        auto const alice = Account("alice");
+
+        Env env(*this, features(fs));
+
+        env.fund(XRP(10000), alice);
+
+        env(pay(alice, alice,
+                alice["USD"](100)),
+            path(~alice["USD"]),
+            ter(temBAD_PATH));
+    }
 
     void run() override
     {
@@ -1269,6 +1285,7 @@ struct Flow_test : public beast::unit_test::suite
         testWithFeats(featureFlow);
         testWithFeats(featureFlow, fix1373);
         testWithFeats(featureFlow, fix1373, featureFlowCross);
+        testEmptyStrand({featureFlow, fix1373, featureFlowCross});
     }
 };
 

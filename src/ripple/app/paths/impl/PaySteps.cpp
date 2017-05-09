@@ -101,7 +101,7 @@ toStep (
     if (e1->isOffer() && e2->isAccount())
     {
         // should already be taken care of
-        JLOG (j.warn())
+        JLOG (j.error())
             << "Found offer/account payment step. Aborting payment strand.";
         assert (0);
         if (ctx.view.rules().enabled(fix1373))
@@ -497,6 +497,9 @@ toStrandV2 (
             normPath.emplace_back(dst, boost::none, boost::none);
         }
     }
+
+    if (normPath.size() < 2)
+        return {temBAD_PATH, Strand{}};
 
     auto const strandSrc = normPath.front().getAccountID ();
     auto const strandDst = normPath.back().getAccountID ();

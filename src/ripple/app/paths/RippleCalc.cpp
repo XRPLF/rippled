@@ -147,7 +147,7 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         }
         catch (std::exception& e)
         {
-            JLOG (j.trace()) << "Exception from flow" << e.what ();
+            JLOG (j.error()) << "Exception from flow: " << e.what ();
             if (!useFlowV1Output)
                 Rethrow();
         }
