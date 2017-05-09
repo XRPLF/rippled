@@ -73,7 +73,7 @@ enum
     targetSendQueue     =   128,
 
     /** How often to log send queue size */
-    sendQueueLogFreq    =    16,
+    sendQueueLogFreq    =    64,
 };
 
 } // Tuning

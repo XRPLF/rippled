@@ -211,9 +211,11 @@ PeerImp::send (Message::pointer const& m)
         large_sendq_ = 0;
     }
     else if ((sendq_size % Tuning::sendQueueLogFreq) == 0)
+    {
         JLOG (journal_.debug()) <<
-            (name_.empty() ? to_string(remote_address_) : name_) <<
+            (name_.empty() ? remote_address_.to_string() : name_) <<
                 " sendq: " << sendq_size;
+    }
 
     send_queue_.push(m);
 
@@ -447,7 +449,8 @@ PeerImp::fail(std::string const& reason)
     if (socket_.is_open())
     {
         JLOG (journal_.warn()) <<
-            (name_.empty() ? to_string(remote_address_) : name_) << " failed: " << reason;
+            (name_.empty() ? remote_address_.to_string() : name_) <<
+                " failed: " << reason;
     }
     close();
 }
