@@ -78,11 +78,21 @@ public:
         }
     }
 
+	void testGetPre ()
+	{
+		testcase("GetPrev");
+		RangeSet const set = createPredefinedSet();
+				
+		BEAST_EXPECT(set.getPrev(15) == 14);
+	}
+
     void run ()
     {
         testMembership ();
 
         testPrevMissing ();
+
+		testGetPre ();
 
         // TODO: Traverse functions must be tested
     }
