@@ -9,6 +9,36 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 0.60.3
+
+The `rippled` 0.60.3 release helps to increase the stability of the network under heavy load. 
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+Server overlay improvements ([#2110](https://github.com/ripple/rippled/pull/2011))
+
+## Version 0.60.2
+
+The `rippled` 0.60.2 release further strengthens handling of cases associated with a previously patched exploit, in which NoRipple flags were being bypassed by using offers. 
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+Prevent the ability to bypass the `NoRipple` flag using offers ([#7cd4d78](https://github.com/ripple/rippled/commit/4ff40d4954dfaa237c8b708c2126cb39566776da))
+
+## Version 0.60.1
+
+The rippled team has released rippled version 0.60.1, which corrects a technical flaw that resulted from using 32-bit space identifiers instead of the protocol-defined 16-bit values for Escrow and Payment Channel ledger entries. rippled version 0.60.1 also fixes a problem where the WebSocket timeout timer would not be cancelled when certain errors occurred during subscription streams. Ripple requires upgrading to rippled version 0.60.1 immediately.
+
+Ripple expects the Escrow and PayChan amendments to be enabled via amendment vote around 11:26 PM PDT on Thursday, 2017-03-30. There are no new features in the 0.60.1 release.
+
 ## Version 0.60.0
 
 The `rippled` 0.60.0 release introduces several enhancements that improve the reliability and scalability of the Ripple Consensus Ledger (RCL), including features that add ledger interoperability by improving Interledger Protocol compatibility. Ripple recommends that all server operators upgrade to version 0.60.0 by Thursday, 2017-03-30, for service continuity.

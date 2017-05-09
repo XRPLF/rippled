@@ -110,6 +110,8 @@ private:
     bool m_needsUpdate;
 
 public:
+    static constexpr int staticValence = 32;
+
     using iterator = boost::transform_iterator <Transform,
         map_type::right_map::const_iterator>;
 
@@ -140,8 +142,11 @@ public:
     /** Load the persisted data from the Store into the container. */
     void load ();
 
-    /** Add the address to the cache. */
+    /** Add a newly-learned address to the cache. */
     bool insert (beast::IP::Endpoint const& endpoint);
+
+    /** Add a staticallyconfigured address to the cache. */
+    bool insertStatic (beast::IP::Endpoint const& endpoint);
 
     /** Called when an outbound connection handshake completes. */
     void on_success (beast::IP::Endpoint const& endpoint);
