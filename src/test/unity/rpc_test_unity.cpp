@@ -36,6 +36,7 @@
 #include <test/rpc/LedgerRequestRPC_test.cpp>
 #include <test/rpc/NoRipple_test.cpp>
 #include <test/rpc/NoRippleCheck_test.cpp>
+#include <test/rpc/OwnerInfo_test.cpp>
 #include <test/rpc/Peers_test.cpp>
 #include <test/rpc/RobustTransaction_test.cpp>
 #include <test/rpc/RPCOverload_test.cpp>
