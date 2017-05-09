@@ -92,7 +92,7 @@ public:
 
         testPrevMissing ();
 
-		testGetPre ();
+        testGetPre ();
 
         // TODO: Traverse functions must be tested
     }
