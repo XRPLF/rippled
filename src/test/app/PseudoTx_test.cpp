@@ -27,12 +27,12 @@ namespace test {
 
 struct PseudoTx_test : public beast::unit_test::suite
 {
-    std::vector<std::shared_ptr<STTx>>
+    std::vector<STTx>
     getPseudoTxs(std::uint32_t seq)
     {
-        std::vector<std::shared_ptr<STTx>> res;
+        std::vector<STTx> res;
 
-        res.emplace_back(std::make_shared<STTx>(ttFEE, [&](auto& obj) {
+        res.emplace_back(STTx(ttFEE, [&](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
             obj[sfBaseFee] = 0;
@@ -41,10 +41,27 @@ struct PseudoTx_test : public beast::unit_test::suite
             obj[sfReferenceFeeUnits] = 0;
         }));
 
-        res.emplace_back(std::make_shared<STTx>(ttAMENDMENT, [&](auto& obj) {
+        res.emplace_back(STTx(ttAMENDMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID());
             obj.setFieldH256(sfAmendment, uint256(2));
             obj.setFieldU32(sfLedgerSequence, seq);
+        }));
+
+        return res;
+    }
+
+    std::vector<STTx>
+    getRealTxs()
+    {
+        std::vector<STTx> res;
+
+        res.emplace_back(STTx(ttACCOUNT_SET, [&](auto& obj) {
+            obj[sfAccount] = AccountID(1);
+        }));
+
+        res.emplace_back(STTx(ttPAYMENT, [&](auto& obj) {
+            obj.setAccountID(sfAccount, AccountID(2));
+            obj.setAccountID(sfDestination, AccountID(3));
         }));
 
         return res;
@@ -59,13 +76,13 @@ struct PseudoTx_test : public beast::unit_test::suite
         for (auto const& stx : getPseudoTxs(env.closed()->seq() + 1))
         {
             std::string reason;
-            BEAST_EXPECT(isPseudoTx(stx->getTxnType()));
-            BEAST_EXPECT(!passesLocalChecks(*stx, reason));
+            BEAST_EXPECT(isPseudoTx(stx));
+            BEAST_EXPECT(!passesLocalChecks(stx, reason));
             BEAST_EXPECT(reason == "Cannot submit pseudo transactions.");
             env.app().openLedger().modify(
                 [&](OpenView& view, beast::Journal j) {
                     auto const result =
-                        ripple::apply(env.app(), view, *stx, tapNONE, j);
+                        ripple::apply(env.app(), view, stx, tapNONE, j);
                     BEAST_EXPECT(!result.second && result.first == temINVALID);
                     return result.second;
                 });
@@ -73,9 +90,21 @@ struct PseudoTx_test : public beast::unit_test::suite
     }
 
     void
+    testAllowed()
+    {
+        for (auto const& stx : getRealTxs())
+        {
+            std::string reason;
+            BEAST_EXPECT(!isPseudoTx(stx));
+            BEAST_EXPECT(passesLocalChecks(stx, reason));
+        }
+    }
+
+    void
     run() override
     {
         testPrevented();
+        testAllowed();
     }
 };
 

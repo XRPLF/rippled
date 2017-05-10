@@ -481,7 +481,7 @@ RCLConsensus::doAccept(
 
                     // Disputed pseudo-transactions that were not accepted
                     // can't be succesfully applied in the next ledger
-                    if (isPseudoTx(txn->getTxnType()))
+                    if (isPseudoTx(*txn))
                         continue;
 
                     retriableTxs.insert(txn);

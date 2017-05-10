@@ -167,6 +167,9 @@ bool passesLocalChecks (STObject const& st, std::string&);
 std::shared_ptr<STTx const>
 sterilize (STTx const& stx);
 
+/** Check whether a transaction is a pseudo-transaction */
+bool isPseudoTx(STObject const& tx);
+
 } // ripple
 
 #endif

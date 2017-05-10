@@ -504,7 +504,7 @@ bool passesLocalChecks (STObject const& st, std::string& reason)
         return false;
     }
 
-    if (isPseudoTx(static_cast <TxType> (st.getFieldU16 (sfTransactionType))))
+    if (isPseudoTx(st))
     {
         reason = "Cannot submit pseudo transactions.";
         return false;
@@ -519,6 +519,16 @@ sterilize (STTx const& stx)
     stx.add(s);
     SerialIter sit(s.slice());
     return std::make_shared<STTx const>(std::ref(sit));
+}
+
+bool
+isPseudoTx(STObject const& tx)
+{
+    auto t = tx[~sfTransactionType];
+    if (!t)
+        return false;
+    auto tt = static_cast<TxType>(*t);
+    return tt == ttAMENDMENT || tt == ttFEE;
 }
 
 } // ripple
