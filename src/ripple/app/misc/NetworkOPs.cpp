@@ -1262,39 +1262,6 @@ void NetworkOPsImp::setAmendmentBlocked ()
     setMode (omTRACKING);
 }
 
-class ValidationCount
-{
-public:
-    int trustedValidations, nodesUsing;
-    NodeID highNodeUsing, highValidation;
-
-    ValidationCount () : trustedValidations (0), nodesUsing (0)
-    {
-    }
-
-    bool operator> (const ValidationCount& v) const
-    {
-        if (trustedValidations > v.trustedValidations)
-            return true;
-
-        if (trustedValidations < v.trustedValidations)
-            return false;
-
-        if (trustedValidations == 0)
-        {
-            if (nodesUsing > v.nodesUsing)
-                return true;
-
-            if (nodesUsing < v.nodesUsing)
-                return false;
-
-            return highNodeUsing > v.highNodeUsing;
-        }
-
-        return highValidation > v.highValidation;
-    }
-};
-
 bool NetworkOPsImp::checkLastClosedLedger (
     const Overlay::PeerSequence& peerList, uint256& networkClosed)
 {
@@ -1315,20 +1282,43 @@ bool NetworkOPsImp::checkLastClosedLedger (
     JLOG(m_journal.trace()) << "OurClosed:  " << closedLedger;
     JLOG(m_journal.trace()) << "PrevClosed: " << prevClosedLedger;
 
+    struct ValidationCount
+    {
+        int trustedValidations, nodesUsing;
+
+        ValidationCount() : trustedValidations(0), nodesUsing(0)
+        {
+        }
+
+        auto
+        asTie() const
+        {
+            return std::tie(trustedValidations, nodesUsing);
+        }
+
+        bool
+        operator>(const ValidationCount& v) const
+        {
+            return asTie() > v.asTie();
+        }
+
+        bool
+        operator==(const ValidationCount& v) const
+        {
+            return asTie() == v.asTie();
+        }
+    };
+
     hash_map<uint256, ValidationCount> ledgers;
     {
-        auto current = app_.getValidations ().currentTrustedDistribution (
-            closedLedger, prevClosedLedger,
-            m_ledgerMaster.getValidLedgerIndex());
+        hash_map<uint256, std::uint32_t> current =
+            app_.getValidations().currentTrustedDistribution(
+                closedLedger,
+                prevClosedLedger,
+                m_ledgerMaster.getValidLedgerIndex());
 
         for (auto& it: current)
-        {
-            auto& vc = ledgers[it.first];
-            vc.trustedValidations += it.second.count;
-
-            if (it.second.highNode > vc.highValidation)
-                vc.highValidation = it.second.highNode;
-        }
+            ledgers[it.first].trustedValidations += it.second;
     }
 
     auto& ourVC = ledgers[closedLedger];
@@ -1336,10 +1326,6 @@ bool NetworkOPsImp::checkLastClosedLedger (
     if (mMode >= omTRACKING)
     {
         ++ourVC.nodesUsing;
-        auto const ourNodeID = calcNodeID(
-            app_.nodeIdentity().first);
-        if (ourNodeID > ourVC.highNodeUsing)
-            ourVC.highNodeUsing = ourNodeID;
     }
 
     for (auto& peer: peerList)
@@ -1347,23 +1333,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
         uint256 peerLedger = peer->getClosedLedgerHash ();
 
         if (peerLedger.isNonZero ())
-        {
-            try
-            {
-                auto& vc = ledgers[peerLedger];
-                auto const nodeId = calcNodeID(peer->getNodePublic ());
-                if (vc.nodesUsing == 0 || nodeId > vc.highNodeUsing)
-                {
-                    vc.highNodeUsing = nodeId;
-                }
-
-                ++vc.nodesUsing;
-            }
-            catch (std::exception const&)
-            {
-                // Peer is likely not connected anymore
-            }
-        }
+            ++ledgers[peerLedger].nodesUsing;
     }
 
     auto bestVC = ledgers[closedLedger];
@@ -1381,17 +1351,20 @@ bool NetworkOPsImp::checkLastClosedLedger (
         // Temporary logging to make sure tiebreaking isn't broken
         if (it.second.trustedValidations > 0)
             JLOG(m_journal.trace())
-                << "  TieBreakTV: " << it.second.highValidation;
+                << "  TieBreakTV: " << it.first;
         else
         {
             if (it.second.nodesUsing > 0)
             {
                 JLOG(m_journal.trace())
-                    << "  TieBreakNU: " << it.second.highNodeUsing;
+                    << "  TieBreakNU: " << it.first;
             }
         }
 
-        if (it.second > bestVC)
+        // Switch to a ledger with more support
+        // or the one with higher hash if they have the same support
+        if (it.second > bestVC ||
+            (it.second == bestVC && it.first > closedLedger))
         {
             bestVC = it.second;
             closedLedger = it.first;

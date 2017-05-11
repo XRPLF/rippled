@@ -99,27 +99,6 @@ public:
         return val_->isTrusted();
     }
 
-    /// Set the prior ledger hash this validation is following
-    void
-    setPreviousLedgerID(uint256 const& hash)
-    {
-        val_->setPreviousHash(hash);
-    }
-
-    /// Get the prior ledger hash this validation is following
-    uint256
-    getPreviousLedgerID() const
-    {
-        return val_->getPreviousHash();
-    }
-
-    /// Check whether the given hash matches this validation's prior hash
-    bool
-    isPreviousLedgerID(uint256 const& hash) const
-    {
-        return val_->isPreviousHash(hash);
-    }
-
     /// Get the load fee of the validation if it exists
     boost::optional<std::uint32_t>
     loadFee() const

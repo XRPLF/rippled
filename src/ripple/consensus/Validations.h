@@ -152,21 +152,6 @@ isCurrent(
         // arrived
         bool trusted() const;
 
-        // The PreviousLedger functions below assume instances corresponding
-        // to the same validation (ID/hash/key etc.) share the same previous
-        // ledger ID storage.
-
-        // Set the previous validation ledger from this publishing node that
-        // this validation replaced
-        void setPreviousLedgerID(LedgerID &);
-
-        // Get the previous validation ledger from this publishing node that
-        // this validation replaced
-        LedgerID getPreviousLedgerID() const;
-
-        // Check if this validation had the given ledger ID as its prior ledger
-        bool isPreviousLedgerID(LedgerID const& ) const;
-
         implementation_specific_t
         unwrap() -> return the implementation-specific type being wrapped
 
@@ -207,20 +192,32 @@ class Validations
         decay_result_t<decltype (&Validation::ledgerID)(Validation)>;
     using NodeKey = decay_result_t<decltype (&Validation::key)(Validation)>;
     using NodeID = decay_result_t<decltype (&Validation::nodeID)(Validation)>;
-    using ValidationMap = hash_map<NodeKey, Validation>;
+
 
     using ScopedLock = std::lock_guard<MutexType>;
 
     // Manages concurrent access to current_ and byLedger_
     MutexType mutex_;
 
+    //! For the most recent validation, we also want to store the ID
+    //! of the ledger it replaces
+    struct ValidationAndPrevID
+    {
+        ValidationAndPrevID(Validation const& v) : val{v}, prevLedgerID{0}
+        {
+        }
+
+        Validation val;
+        LedgerID prevLedgerID;
+    };
+
     //! The latest validation from each node
-    ValidationMap current_;
+    hash_map<NodeKey, ValidationAndPrevID> current_;
 
     //! Recent validations from nodes, indexed by ledger identifier
     beast::aged_unordered_map<
         LedgerID,
-        ValidationMap,
+        hash_map<NodeKey, Validation>,
         std::chrono::steady_clock,
         beast::uhash<>>
         byLedger_;
@@ -264,15 +261,15 @@ private:
             // Check for staleness, if time specified
             if (t &&
                 !isCurrent(
-                    parms_, *t, it->second.signTime(), it->second.seenTime()))
+                    parms_, *t, it->second.val.signTime(), it->second.val.seenTime()))
             {
                 // contains a stale record
-                stalePolicy_.onStale(std::move(it->second));
+                stalePolicy_.onStale(std::move(it->second.val));
                 it = current_.erase(it);
             }
             else
             {
-                auto cit = typename ValidationMap::const_iterator{it};
+                auto cit = typename decltype(current_)::const_iterator{it};
                 // contains a live record
                 f(cit->first, cit->second);
                 ++it;
@@ -397,7 +394,8 @@ public:
             if (!ins.second)
             {
                 // Had a previous validation from the node, consider updating
-                Validation& oldVal = ins.first->second;
+                Validation& oldVal = ins.first->second.val;
+                LedgerID const previousLedgerID = ins.first->second.prevLedgerID;
 
                 std::uint32_t const oldSeq{oldVal.seq()};
                 std::uint32_t const newSeq{val.seq()};
@@ -414,7 +412,7 @@ public:
                         auto const mapIt = byLedger_.find(oldVal.ledgerID());
                         if (mapIt != byLedger_.end())
                         {
-                            ValidationMap& validationMap = mapIt->second;
+                            auto& validationMap = mapIt->second;
                             // If a new validation with the same ID was
                             // reissued we simply replace.
                             if(oldVal.ledgerID() == val.ledgerID())
@@ -449,14 +447,14 @@ public:
                         // In the case the key was revoked and a new validation
                         // for the same ledger ID was sent, the previous ledger
                         // is still the one the now revoked validation had
-                        return oldVal.getPreviousLedgerID();
+                        return previousLedgerID;
                     }();
 
                     // Allow impl to take over oldVal
                     maybeStaleValidation.emplace(std::move(oldVal));
                     // Replace old val in the map and set the previous ledger ID
-                    ins.first->second = val;
-                    ins.first->second.setPreviousLedgerID(prevID);
+                    ins.first->second.val = val;
+                    ins.first->second.prevLedgerID = prevID;
                 }
                 else
                 {
@@ -487,14 +485,6 @@ public:
         beast::expire(byLedger_, parms_.validationSET_EXPIRES);
     }
 
-    struct ValidationCounts
-    {
-        //! The number of trusted validations
-        std::size_t count;
-        //! The highest trusted node ID
-        NodeID highNode;
-    };
-
     /** Distribution of current trusted validations
 
         Calculates the distribution of current validations but allows
@@ -503,8 +493,10 @@ public:
         @param currentLedger The identifier of the ledger we believe is current
         @param priorLedger The identifier of our previous current ledger
         @param cutoffBefore Ignore ledgers with sequence number before this
+
+        @return Map representing the distribution of ledgerID by count
     */
-    hash_map<LedgerID, ValidationCounts>
+    hash_map<LedgerID, std::uint32_t>
     currentTrustedDistribution(
         LedgerID const& currentLedger,
         LedgerID const& priorLedger,
@@ -513,7 +505,7 @@ public:
         bool const valCurrentLedger = currentLedger != beast::zero;
         bool const valPriorLedger = priorLedger != beast::zero;
 
-        hash_map<LedgerID, ValidationCounts> ret;
+        hash_map<LedgerID, std::uint32_t> ret;
 
         current(
             stalePolicy_.now(),
@@ -526,8 +518,9 @@ public:
              &valCurrentLedger,
              &valPriorLedger,
              &priorLedger,
-             &ret](NodeKey const&, Validation const& v) {
-
+             &ret](NodeKey const&, ValidationAndPrevID const& vp) {
+                Validation const& v = vp.val;
+                LedgerID const& prevLedgerID = vp.prevLedgerID;
                 if (!v.trusted())
                     return;
 
@@ -541,7 +534,7 @@ public:
                     if (!countPreferred &&  // allow up to one ledger slip in
                                             // either direction
                         ((valCurrentLedger &&
-                          v.isPreviousLedgerID(currentLedger)) ||
+                          (prevLedgerID == currentLedger)) ||
                          (valPriorLedger && (v.ledgerID() == priorLedger))))
                     {
                         countPreferred = true;
@@ -549,13 +542,10 @@ public:
                                          << " not " << v.ledgerID();
                     }
 
-                    ValidationCounts& p =
-                        countPreferred ? ret[currentLedger] : ret[v.ledgerID()];
-                    ++(p.count);
-
-                    NodeID const ni = v.nodeID();
-                    if (ni > p.highNode)
-                        p.highNode = ni;
+                    if (countPreferred)
+                        ret[currentLedger]++;
+                    else
+                        ret[v.ledgerID()]++;
                 }
             });
 
@@ -582,8 +572,8 @@ public:
         current(
             boost::none,
             [&](std::size_t) {}, // nothing to reserve
-            [&](NodeKey const&, Validation const& v) {
-                if (v.trusted() && v.isPreviousLedgerID(ledgerID))
+            [&](NodeKey const&, ValidationAndPrevID const& v) {
+                if (v.val.trusted() && v.prevLedgerID == ledgerID)
                     ++count;
             });
         return count;
@@ -601,9 +591,9 @@ public:
         current(
             stalePolicy_.now(),
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
-            [&](NodeKey const&, Validation const& v) {
-                if (v.trusted())
-                    ret.push_back(v.unwrap());
+            [&](NodeKey const&, ValidationAndPrevID const& v) {
+                if (v.val.trusted())
+                    ret.push_back(v.val.unwrap());
             });
         return ret;
     }
@@ -620,7 +610,7 @@ public:
         current(
             stalePolicy_.now(),
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
-            [&](NodeKey const& k, Validation const&) { ret.insert(k); });
+            [&](NodeKey const& k, ValidationAndPrevID const&) { ret.insert(k); });
 
         return ret;
     }
@@ -717,10 +707,13 @@ public:
         JLOG(j_.info()) << "Flushing validations";
 
         hash_map<NodeKey, Validation> flushed;
-        using std::swap;
         {
             ScopedLock lock{mutex_};
-            swap(flushed, current_);
+            for (auto it : current_)
+            {
+                flushed.emplace(it.first, std::move(it.second.val));
+            }
+            current_.clear();
         }
 
         stalePolicy_.flush(std::move(flushed));

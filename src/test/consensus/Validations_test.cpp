@@ -103,11 +103,9 @@ class Validations_test : public beast::unit_test::suite
         std::size_t nodeID_ = 0;
         bool trusted_ = true;
         boost::optional<std::uint32_t> loadFee_;
-        // Shared prevID to ensure value is shared amongst instances
-        std::shared_ptr<ID> prevID_;
 
     public:
-        Validation() : prevID_(std::make_shared<ID>(0))
+        Validation()
         {
         }
 
@@ -153,24 +151,6 @@ class Validations_test : public beast::unit_test::suite
             return trusted_;
         }
 
-        void
-        setPreviousLedgerID(ID const& prevID)
-        {
-            *prevID_ = prevID;
-        }
-
-        bool
-        isPreviousLedgerID(ID const& prevID) const
-        {
-            return *prevID_ == prevID;
-        }
-
-        ID
-        getPreviousLedgerID() const
-        {
-            return *prevID_;
-        }
-
         boost::optional<std::uint32_t>
         loadFee() const
         {
@@ -194,7 +174,6 @@ class Validations_test : public beast::unit_test::suite
                 key_,
                 nodeID_,
                 trusted_,
-                *prevID_,
                 loadFee_);
         }
         bool
@@ -488,19 +467,24 @@ class Validations_test : public beast::unit_test::suite
                 // new ID but the same sequence number
                 a.advanceKey();
 
+                // No validations following ID{2}
+                BEAST_EXPECT(harness.vals().getNodesAfter(ID{2}) == 0);
+
                 BEAST_EXPECT(
                     AddOutcome::sameSeq == harness.add(a, Seq{2}, ID{20}));
 
                 // Old ID should be gone ...
                 BEAST_EXPECT(harness.vals().numTrustedForLedger(ID{2}) == 0);
                 BEAST_EXPECT(harness.vals().numTrustedForLedger(ID{20}) == 1);
-                // ... and the previous ID set to the old ID
                 {
+                    // Should be the only trusted for ID{20}
                     auto trustedVals =
                         harness.vals().getTrustedForLedger(ID{20});
                     BEAST_EXPECT(trustedVals.size() == 1);
                     BEAST_EXPECT(trustedVals[0].key() == a.currKey());
-                    BEAST_EXPECT(trustedVals[0].getPreviousLedgerID() == ID{2});
+                    // ... and should be the only node after ID{2}
+                    BEAST_EXPECT(harness.vals().getNodesAfter(ID{2}) == 1);
+
                 }
 
                 // A new key, but re-issue a validation with the same ID and
@@ -509,13 +493,14 @@ class Validations_test : public beast::unit_test::suite
 
                 BEAST_EXPECT(
                     AddOutcome::sameSeq == harness.add(a, Seq{2}, ID{20}));
-                // Ensure the old prevLedgerID was retained
                 {
+                    // Still the only trusted validation for ID{20}
                     auto trustedVals =
                         harness.vals().getTrustedForLedger(ID{20});
                     BEAST_EXPECT(trustedVals.size() == 1);
                     BEAST_EXPECT(trustedVals[0].key() == a.currKey());
-                    BEAST_EXPECT(trustedVals[0].getPreviousLedgerID() == ID{2});
+                    // and still follows ID{2} since it was a re-issue
+                    BEAST_EXPECT(harness.vals().getNodesAfter(ID{2}) == 1);
                 }
             }
 
@@ -761,8 +746,7 @@ class Validations_test : public beast::unit_test::suite
                 Seq{0});  // No cutoff
 
             BEAST_EXPECT(res.size() == 1);
-            BEAST_EXPECT(res[ID{2}].count == 3);
-            BEAST_EXPECT(res[ID{2}].highNode == mama.nodeID());
+            BEAST_EXPECT(res[ID{2}] == 3);
         }
 
         {
@@ -773,10 +757,8 @@ class Validations_test : public beast::unit_test::suite
                 Seq{0});  // No cutoff
 
             BEAST_EXPECT(res.size() == 2);
-            BEAST_EXPECT(res[ID{2}].count == 2);
-            BEAST_EXPECT(res[ID{2}].highNode == mama.nodeID());
-            BEAST_EXPECT(res[ID{1}].count == 1);
-            BEAST_EXPECT(res[ID{1}].highNode == papa.nodeID());
+            BEAST_EXPECT(res[ID{2}] == 2);
+            BEAST_EXPECT(res[ID{1}] == 1);
         }
 
         {
@@ -787,12 +769,9 @@ class Validations_test : public beast::unit_test::suite
                 Seq{0});  // No cutoff
 
             BEAST_EXPECT(res.size() == 3);
-            BEAST_EXPECT(res[ID{1}].count == 1);
-            BEAST_EXPECT(res[ID{1}].highNode == papa.nodeID());
-            BEAST_EXPECT(res[ID{2}].count == 1);
-            BEAST_EXPECT(res[ID{2}].highNode == baby.nodeID());
-            BEAST_EXPECT(res[ID{3}].count == 1);
-            BEAST_EXPECT(res[ID{3}].highNode == mama.nodeID());
+            BEAST_EXPECT(res[ID{1}] == 1);
+            BEAST_EXPECT(res[ID{2}] == 1);
+            BEAST_EXPECT(res[ID{3}] == 1);
         }
 
         {
@@ -802,8 +781,7 @@ class Validations_test : public beast::unit_test::suite
                 ID{1},    // prior ledger
                 Seq{2});  // Only sequence 2 or later
             BEAST_EXPECT(res.size() == 1);
-            BEAST_EXPECT(res[ID{2}].count == 2);
-            BEAST_EXPECT(res[ID{2}].highNode == mama.nodeID());
+            BEAST_EXPECT(res[ID{2}] == 2);
         }
     }
 
@@ -950,7 +928,6 @@ class Validations_test : public beast::unit_test::suite
         harness.clock().advance(1s);
         auto newVal = a.validation(Seq{2}, ID{2});
         BEAST_EXPECT(AddOutcome::current == harness.add(a, newVal));
-        newVal.setPreviousLedgerID(staleA.ledgerID());
         expected[a.masterKey()] = newVal;
 
         // Now flush
