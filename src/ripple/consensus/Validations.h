@@ -487,14 +487,6 @@ public:
         beast::expire(byLedger_, parms_.validationSET_EXPIRES);
     }
 
-    struct ValidationCounts
-    {
-        //! The number of trusted validations
-        std::size_t count;
-        //! The highest trusted node ID
-        NodeID highNode;
-    };
-
     /** Distribution of current trusted validations
 
         Calculates the distribution of current validations but allows
@@ -503,8 +495,10 @@ public:
         @param currentLedger The identifier of the ledger we believe is current
         @param priorLedger The identifier of our previous current ledger
         @param cutoffBefore Ignore ledgers with sequence number before this
+
+        @return Map representing the distribution of ledgerID by count
     */
-    hash_map<LedgerID, ValidationCounts>
+    hash_map<LedgerID, std::uint32_t>
     currentTrustedDistribution(
         LedgerID const& currentLedger,
         LedgerID const& priorLedger,
@@ -513,7 +507,7 @@ public:
         bool const valCurrentLedger = currentLedger != beast::zero;
         bool const valPriorLedger = priorLedger != beast::zero;
 
-        hash_map<LedgerID, ValidationCounts> ret;
+        hash_map<LedgerID, std::uint32_t> ret;
 
         current(
             stalePolicy_.now(),
@@ -549,13 +543,10 @@ public:
                                          << " not " << v.ledgerID();
                     }
 
-                    ValidationCounts& p =
-                        countPreferred ? ret[currentLedger] : ret[v.ledgerID()];
-                    ++(p.count);
-
-                    NodeID const ni = v.nodeID();
-                    if (ni > p.highNode)
-                        p.highNode = ni;
+                    if (countPreferred)
+                        ret[currentLedger]++;
+                    else
+                        ret[v.ledgerID()]++;
                 }
             });
 

@@ -242,21 +242,21 @@ RCLConsensus::Adaptor::getPrevLedger(
 
     // Get validators that are on our ledger, or "close" to being on
     // our ledger.
-    auto vals =
+    hash_map<uint256, std::uint32_t> ledgerCounts =
         app_.getValidations().currentTrustedDistribution(
             ledgerID, parentID, ledgerMaster_.getValidLedgerIndex());
 
     uint256 netLgr = ledgerID;
     int netLgrCount = 0;
-    for (auto& it : vals)
+    for (auto const & it : ledgerCounts)
     {
         // Switch to ledger supported by more peers
         // Or stick with ours on a tie
-        if ((it.second.count > netLgrCount) ||
-            ((it.second.count== netLgrCount) && (it.first == ledgerID)))
+        if ((it.second > netLgrCount) ||
+            ((it.second== netLgrCount) && (it.first == ledgerID)))
         {
             netLgr = it.first;
-            netLgrCount = it.second.count;
+            netLgrCount = it.second;
         }
     }
 
@@ -267,8 +267,8 @@ RCLConsensus::Adaptor::getPrevLedger(
 
         if (auto stream = j_.debug())
         {
-            for (auto& it : vals)
-                stream << "V: " << it.first << ", " << it.second.count;
+            for (auto const & it : ledgerCounts)
+                stream << "V: " << it.first << ", " << it.second;
         }
     }
 

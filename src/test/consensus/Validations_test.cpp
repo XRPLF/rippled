@@ -761,8 +761,7 @@ class Validations_test : public beast::unit_test::suite
                 Seq{0});  // No cutoff
 
             BEAST_EXPECT(res.size() == 1);
-            BEAST_EXPECT(res[ID{2}].count == 3);
-            BEAST_EXPECT(res[ID{2}].highNode == mama.nodeID());
+            BEAST_EXPECT(res[ID{2}] == 3);
         }
 
         {
@@ -773,10 +772,8 @@ class Validations_test : public beast::unit_test::suite
                 Seq{0});  // No cutoff
 
             BEAST_EXPECT(res.size() == 2);
-            BEAST_EXPECT(res[ID{2}].count == 2);
-            BEAST_EXPECT(res[ID{2}].highNode == mama.nodeID());
-            BEAST_EXPECT(res[ID{1}].count == 1);
-            BEAST_EXPECT(res[ID{1}].highNode == papa.nodeID());
+            BEAST_EXPECT(res[ID{2}] == 2);
+            BEAST_EXPECT(res[ID{1}] == 1);
         }
 
         {
@@ -787,12 +784,9 @@ class Validations_test : public beast::unit_test::suite
                 Seq{0});  // No cutoff
 
             BEAST_EXPECT(res.size() == 3);
-            BEAST_EXPECT(res[ID{1}].count == 1);
-            BEAST_EXPECT(res[ID{1}].highNode == papa.nodeID());
-            BEAST_EXPECT(res[ID{2}].count == 1);
-            BEAST_EXPECT(res[ID{2}].highNode == baby.nodeID());
-            BEAST_EXPECT(res[ID{3}].count == 1);
-            BEAST_EXPECT(res[ID{3}].highNode == mama.nodeID());
+            BEAST_EXPECT(res[ID{1}] == 1);
+            BEAST_EXPECT(res[ID{2}] == 1);
+            BEAST_EXPECT(res[ID{3}] == 1);
         }
 
         {
@@ -802,8 +796,7 @@ class Validations_test : public beast::unit_test::suite
                 ID{1},    // prior ledger
                 Seq{2});  // Only sequence 2 or later
             BEAST_EXPECT(res.size() == 1);
-            BEAST_EXPECT(res[ID{2}].count == 2);
-            BEAST_EXPECT(res[ID{2}].highNode == mama.nodeID());
+            BEAST_EXPECT(res[ID{2}] == 2);
         }
     }
 
