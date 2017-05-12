@@ -15,11 +15,9 @@
 #  * ninja builds
 #  * check openssl version on linux
 #  * static builds (swd TBD: needs to be tested by building & deploying on different systems)
-#
-# TBD:
-#  * jemalloc support
-#  * count
-#  * Windows protobuf compiler puts generated file in src directory instead of build directory.
+#  * jemalloc enabled builds (linux and macos only)
+#  * perf builds (linux only) - which just sets recommended compiler flags
+#          for running perf on the executable
 #
 # Notes:
 #  * Use the -G"Visual Studio 14 2015 Win64" generator on Windows. Without this

@@ -156,9 +156,15 @@ macro(setup_build_cache)
   set(assert false CACHE BOOL "Enables asserts, even in release builds")
   set(static false CACHE BOOL
     "On linux, link protobuf, openssl, libc++, and boost statically")
+  set(jemalloc false CACHE BOOL "Enables jemalloc for heap profiling")
+  set(perf false CACHE BOOL "Enables flags that assist with perf recording")
 
   if (static AND (WIN32 OR APPLE))
     message(FATAL_ERROR "Static linking is only supported on linux.")
+  endif()
+
+  if (perf AND (WIN32 OR APPLE))
+    message(FATAL_ERROR "perf flags are only supported on linux.")
   endif()
 
   if (${CMAKE_GENERATOR} STREQUAL "Unix Makefiles" AND NOT CMAKE_BUILD_TYPE)
@@ -507,6 +513,10 @@ macro(setup_build_boilerplate)
     endif()
   endif()
 
+  if (perf)
+    add_compile_options(-fno-omit-frame-pointer)
+  endif()
+
   ############################################################
 
   add_definitions(
@@ -525,8 +535,18 @@ macro(setup_build_boilerplate)
     execute_process(
       COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=gold -Wl,--version
       ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
-    if ("${LD_VERSION}" MATCHES "GNU gold")
-      append_flags(CMAKE_EXE_LINKER_FLAGS -fuse-ld=gold)
+    # NOTE: THE gold linker inserts -rpath as DT_RUNPATH by default
+    #  intead of DT_RPATH, so you might have slightly unexpected
+    #  runtime ld behavior if you were expecting DT_RPATH.
+    #  Specify --disable-new-dtags to gold if you do not want
+    #  the default DT_RUNPATH behavior. This rpath treatment as well
+    #  as static/dynamic selection means that gold does not currently
+    #  have ideal default behavior when we are using jemalloc. Thus
+    #  for simplicity we don't use it when jemalloc is requested.
+    #  An alternative to disabling would be to figure out all the settings
+    #  required to make gold play nicely with jemalloc.
+    if (("${LD_VERSION}" MATCHES "GNU gold") AND (NOT jemalloc))
+        append_flags(CMAKE_EXE_LINKER_FLAGS -fuse-ld=gold)
     endif ()
     unset(LD_VERSION)
   endif()
@@ -553,6 +573,15 @@ macro(setup_build_boilerplate)
     STRING(REGEX REPLACE "[-/]DNDEBUG" "" CMAKE_CXX_FLAGS_RELEASECLASSIC "${CMAKE_CXX_FLAGS_RELEASECLASSIC}")
     STRING(REGEX REPLACE "[-/]DNDEBUG" "" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
     STRING(REGEX REPLACE "[-/]DNDEBUG" "" CMAKE_C_FLAGS_RELEASECLASSIC "${CMAKE_C_FLAGS_RELEASECLASSIC}")
+  endif()
+
+  if (jemalloc)
+    find_package(jemalloc REQUIRED)
+    add_definitions(-DPROFILE_JEMALLOC)
+    include_directories(SYSTEM ${JEMALLOC_INCLUDE_DIRS})
+    link_libraries(${JEMALLOC_LIBRARIES})
+    get_filename_component(JEMALLOC_LIB_PATH ${JEMALLOC_LIBRARIES} DIRECTORY)
+    set(CMAKE_BUILD_RPATH ${CMAKE_BUILD_RPATH} ${JEMALLOC_LIB_PATH})
   endif()
 
   if (NOT WIN32)
