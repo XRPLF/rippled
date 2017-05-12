@@ -376,7 +376,8 @@ do_accept(boost::asio::yield_context do_yield)
             JLOG(j_.error()) <<
                 "accept: " << ec.message();
         }
-        if (ec == boost::asio::error::operation_aborted)
+        if ((ec == boost::asio::error::operation_aborted) ||
+            ! acceptor_.is_open())
             break;
         if (ec)
             continue;
