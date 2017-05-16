@@ -53,6 +53,7 @@ if [ -x $HOME/bin/g++ ]; then
     $HOME/bin/g++ -v
 fi
 
+pip install --user requests==2.13.0
 pip install --user https://github.com/codecov/codecov-python/archive/master.zip
 
 bash bin/sh/install-boost.sh
