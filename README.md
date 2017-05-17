@@ -70,7 +70,7 @@ ISC license. See the LICENSE file for more details.
 Some of the directories under `src` are external repositories inlined via
 git-subtree. See the corresponding README for more details.
 
-##For more information:
+## For more information:
 
 * [Ripple Knowledge Center](https://ripple.com/learn/)
 * [Ripple Developer Center](https://ripple.com/build/)
