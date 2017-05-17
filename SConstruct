@@ -613,7 +613,8 @@ def config_env(toolchain, variant, env):
             'boost_program_options',
             'boost_regex',
             'boost_system',
-            'boost_thread'
+            'boost_thread',
+            'boost_serialization'
         ]
         env.Append(LIBS=['dl'])
 
