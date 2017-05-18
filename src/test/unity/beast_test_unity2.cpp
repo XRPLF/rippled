@@ -18,7 +18,6 @@
 */
 //==============================================================================
 
-#include <test/beast/beast_tagged_integer_test.cpp>
 #include <test/beast/beast_weak_fn_test.cpp>
 #include <test/beast/beast_Zero_test.cpp>
 #include <test/beast/define_print.cpp>

@@ -2085,6 +2085,9 @@
     <ClInclude Include="..\..\src\ripple\basics\TaggedCache.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\tagged_integer.h">
+      <Filter>ripple\basics</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\ToString.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
@@ -2463,9 +2466,6 @@
     <ClCompile Include="..\..\src\ripple\beast\utility\src\beast_PropertyStream.cpp">
       <Filter>ripple\beast\utility\src</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\beast\utility\tagged_integer.h">
-      <Filter>ripple\beast\utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\utility\temp_dir.h">
       <Filter>ripple\beast\utility</Filter>
     </ClInclude>
@@ -5184,6 +5184,9 @@
     <ClCompile Include="..\..\src\test\basics\TaggedCache_test.cpp">
       <Filter>test\basics</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\basics\tagged_integer_test.cpp">
+      <Filter>test\basics</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\beast\aged_associative_container_test.cpp">
       <Filter>test\beast</Filter>
     </ClCompile>
@@ -5206,9 +5209,6 @@
       <Filter>test\beast</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\beast\beast_PropertyStream_test.cpp">
-      <Filter>test\beast</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\beast\beast_tagged_integer_test.cpp">
       <Filter>test\beast</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\beast\beast_weak_fn_test.cpp">
