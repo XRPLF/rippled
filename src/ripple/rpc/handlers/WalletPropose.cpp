@@ -108,31 +108,42 @@ Json::Value walletPropose (Json::Value const& params)
 
     Json::Value obj (Json::objectValue);
 
-    obj[jss::master_seed] = toBase58 (*seed);
-    obj[jss::master_seed_hex] = strHex (seed->data(), seed->size());
-    obj[jss::master_key] = seedAs1751 (*seed);
+    auto const seed1751 = seedAs1751 (*seed);
+    auto const seedHex = strHex (seed->data(), seed->size());
+    auto const seedBase58 = toBase58 (*seed);
+
+    obj[jss::master_seed] = seedBase58;
+    obj[jss::master_seed_hex] = seedHex;
+    obj[jss::master_key] = seed1751;
     obj[jss::account_id] = toBase58(calcAccountID(publicKey));
     obj[jss::public_key] = toBase58(TOKEN_ACCOUNT_PUBLIC, publicKey);
     obj[jss::key_type] = to_string (keyType);
     obj[jss::public_key_hex] = strHex (publicKey.data(), publicKey.size());
 
+    // If a passphrase was specified, and it was hashed and used as a seed
+    // run a quick entropy check and add an appropriate warning, because
+    // "brain wallets" can be easily attacked.
     if (params.isMember (jss::passphrase))
     {
-        auto const entropy = estimate_entropy (
-            params[jss::passphrase].asString());
+        auto const passphrase = params[jss::passphrase].asString();
 
-        // 80 bits of entropy isn't bad, but it's better to
-        // err on the side of caution and be conservative.
-        if (entropy < 80.0)
-            obj[jss::warning] =
-                "This wallet was generated using a user-supplied "
-                "passphrase that has low entropy and is vulnerable "
-                "to brute-force attacks.";
-        else
-            obj[jss::warning] =
-                "This wallet was generated using a user-supplied "
-                "passphrase. It may be vulnerable to brute-force "
-                "attacks.";
+        if (passphrase != seed1751 &&
+            passphrase != seedBase58 &&
+            passphrase != seedHex)
+        {
+            // 80 bits of entropy isn't bad, but it's better to
+            // err on the side of caution and be conservative.
+            if (estimate_entropy (passphrase) < 80.0)
+                obj[jss::warning] =
+                    "This wallet was generated using a user-supplied "
+                    "passphrase that has low entropy and is vulnerable "
+                    "to brute-force attacks.";
+            else
+                obj[jss::warning] =
+                    "This wallet was generated using a user-supplied "
+                    "passphrase. It may be vulnerable to brute-force "
+                    "attacks.";
+        }
     }
 
     return obj;
