@@ -29,3 +29,4 @@
 #include <test/basics/Slice_test.cpp>
 #include <test/basics/StringUtilities_test.cpp>
 #include <test/basics/TaggedCache_test.cpp>
+#include <test/basics/tagged_integer_test.cpp>
