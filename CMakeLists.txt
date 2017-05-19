@@ -69,6 +69,10 @@ parse_target()
 project(rippled)
 #########################################################
 
+# The project command can override some computed values.
+# Don't put any code above this line.
+project(rippled)
+
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
   set(dir "build")
   set(cmd "cmake")
