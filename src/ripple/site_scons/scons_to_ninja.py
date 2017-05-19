@@ -59,6 +59,12 @@ rule cmd
 # hard links here (with -l) for speed.
 rule install
   command = rm -f $out && cp -l $in $out
+
+build build/proto/ripple.pb.h: cmd src/ripple/proto/ripple.proto
+  cmd = protoc -Isrc/ripple/proto --cpp_out=build/proto src/ripple/proto/ripple.proto
+
+build build/proto/ripple.pb.cc: cmd src/ripple/proto/ripple.proto
+  cmd = protoc -Isrc/ripple/proto --cpp_out=build/proto src/ripple/proto/ripple.proto
 """)
     for node in node_list:
       dest_path = node.get_path()
