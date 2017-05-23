@@ -31,6 +31,8 @@ then
     BEGIN {skip=0; db_path="";print > OUT_FILE}
     /^\[validation_seed\]/ {skip=1; next}
     /^\[node_seed\]/ {skip=1; next}
+    /^\[validation_manifest\]/ {skip=1; next}
+    /^\[validator_token\]/ {skip=1; next}
     /^\[.*\]/ {skip=0}
     skip==1 {next}
     save==1 {save=0;db_path=$0}
