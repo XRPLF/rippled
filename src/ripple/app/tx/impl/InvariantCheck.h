@@ -132,9 +132,28 @@ public:
 };
 
 /**
- * @brief Invariant: corresponding modified ledger entries should match in type and
- * added entries should be a valid type.
- *
+ * @brief Invariant: An account XRP balance must be in XRP and take a value
+                     between 0 and SYSTEM_CURRENCY_START drops, inclusive.
+ */
+class XRPBalanceChecks
+{
+    bool bad_ = false;
+
+public:
+    void
+    visitEntry(
+        uint256 const&,
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(STTx const&, TER, beast::Journal const&);
+};
+
+/**
+ * @brief Invariant: corresponding modified ledger entries should match in type
+ *                   and added entries should be a valid type.
  */
 class LedgerEntryTypesMatch
 {
@@ -156,7 +175,6 @@ public:
 
 /**
  * @brief Invariant: Trust lines using XRP are not allowed.
- *
  */
 class NoXRPTrustLines
 {
@@ -175,13 +193,60 @@ public:
     finalize(STTx const&, TER, beast::Journal const&);
 };
 
+/**
+ * @brief Invariant: offers should be for non-negative amounts and must not
+ *                   be XRP to XRP.
+ */
+class NoBadOffers
+{
+    bool bad_ = false;
+
+public:
+
+    void
+    visitEntry(
+        uint256 const&,
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(STTx const&, TER, beast::Journal const&);
+    
+};
+
+/**
+ * @brief Invariant: an escrow entry must take a value between 0 and
+ *                   SYSTEM_CURRENCY_START drops exclusive.
+ */
+class NoZeroEscrow
+{
+    bool bad_ = false;
+
+public:
+
+    void
+    visitEntry(
+        uint256 const&,
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(STTx const&, TER, beast::Journal const&);
+    
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
     AccountRootsNotDeleted,
     LedgerEntryTypesMatch,
+    XRPBalanceChecks,
     XRPNotCreated,
-    NoXRPTrustLines
+    NoXRPTrustLines,
+    NoBadOffers,
+    NoZeroEscrow
 >;
 
 /**

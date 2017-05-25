@@ -83,6 +83,136 @@ XRPNotCreated::finalize(STTx const& tx, TER /*tec*/, beast::Journal const& j)
 //------------------------------------------------------------------------------
 
 void
+XRPBalanceChecks::visitEntry(
+    uint256 const&,
+    bool,
+    std::shared_ptr <SLE const> const& before,
+    std::shared_ptr <SLE const> const& after)
+{
+    auto isBad = [](STAmount const& balance)
+    {
+        if (!balance.native())
+            return true;
+
+        auto const drops = balance.xrp().drops();
+
+        // Can't have more than the number of drops instantiated
+        // in the genesis ledger.
+        if (drops > SYSTEM_CURRENCY_START)
+            return true;
+
+        // Can't have a negative balance (0 is OK)
+        if (drops < 0)
+            return true;
+
+        return false;
+    };
+
+    if(before && before->getType() == ltACCOUNT_ROOT)
+        bad_ |= isBad ((*before)[sfBalance]);
+
+    if(after && after->getType() == ltACCOUNT_ROOT)
+        bad_ |= isBad ((*after)[sfBalance]);
+}
+
+bool
+XRPBalanceChecks::finalize(STTx const&, TER, beast::Journal const& j)
+{
+    if (bad_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: incorrect account XRP balance";
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+NoBadOffers::visitEntry(
+    uint256 const&,
+    bool isDelete,
+    std::shared_ptr <SLE const> const& before,
+    std::shared_ptr <SLE const> const& after)
+{
+    auto isBad = [](STAmount const& pays, STAmount const& gets)
+    {
+        // An offer should never be negative
+        if (pays < beast::zero)
+            return true;
+
+        if (gets < beast::zero)
+            return true;
+
+        // Can't have an XRP to XRP offer:
+        return pays.native() && gets.native();
+    };
+
+    if(before && before->getType() == ltOFFER)
+        bad_ |= isBad ((*before)[sfTakerPays], (*before)[sfTakerGets]);
+
+    if(after && after->getType() == ltOFFER)
+        bad_ |= isBad((*after)[sfTakerPays], (*after)[sfTakerGets]);
+}
+
+bool
+NoBadOffers::finalize(STTx const& tx, TER, beast::Journal const& j)
+{
+    if (bad_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: offer with a bad amount";
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+NoZeroEscrow::visitEntry(
+    uint256 const&,
+    bool isDelete,
+    std::shared_ptr <SLE const> const& before,
+    std::shared_ptr <SLE const> const& after)
+{
+    auto isBad = [](STAmount const& amount)
+    {
+        if (!amount.native())
+            return true;
+
+        if (amount.xrp().drops() <= 0)
+            return true;
+
+        if (amount.xrp().drops() >= SYSTEM_CURRENCY_START)
+            return true;
+
+        return false;
+    };
+
+    if(before && before->getType() == ltESCROW)
+        bad_ |= isBad((*before)[sfAmount]);
+
+    if(after && after->getType() == ltESCROW)
+        bad_ |= isBad((*after)[sfAmount]);
+}
+
+bool
+NoZeroEscrow::finalize(STTx const& tx, TER, beast::Journal const& j)
+{
+    if (bad_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: escrow specifies invalid amount";
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
 AccountRootsNotDeleted::visitEntry(
     uint256 const&,
     bool isDelete,
