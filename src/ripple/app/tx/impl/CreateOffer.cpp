@@ -587,15 +587,15 @@ CreateOffer::step_account (OfferStream& stream, Taker const& taker)
 // the offer to left unfilled.
 std::pair<TER, Amounts>
 CreateOffer::takerCross (
-    PaymentSandbox& psb,
-    PaymentSandbox& psbCancel,
+    Sandbox& sb,
+    Sandbox& sbCancel,
     Amounts const& takerAmount)
 {
     NetClock::time_point const when{ctx_.view().parentCloseTime()};
 
     beast::WrappedSink takerSink (j_, "Taker ");
 
-    Taker taker (cross_type_, psb, account_, takerAmount,
+    Taker taker (cross_type_, sb, account_, takerAmount,
         ctx_.tx.getFlags(), beast::Journal (takerSink));
 
     // If the taker is unfunded before we begin crossing
@@ -615,9 +615,9 @@ CreateOffer::takerCross (
     try
     {
         if (cross_type_ == CrossType::IouToIou)
-            return bridged_cross (taker, psb, psbCancel, when);
+            return bridged_cross (taker, sb, sbCancel, when);
 
-        return direct_cross (taker, psb, psbCancel, when);
+        return direct_cross (taker, sb, sbCancel, when);
     }
     catch (std::exception const& e)
     {
@@ -825,13 +825,13 @@ static std::string to_string (SBoxCmp c)
 }
 
 static SBoxCmp compareSandboxes (char const* name, ApplyContext const& ctx,
-    PaymentSandbox const& psbTaker, PaymentSandbox const& psbFlow,
+    detail::ApplyViewBase const& viewTaker, detail::ApplyViewBase const& viewFlow,
     beast::Journal j)
 {
     SBoxCmp c = SBoxCmp::same;
     CashDiff diff = cashFlowDiff (
-        CashFilter::treatZeroOfferAsDeletion, psbTaker,
-        CashFilter::none, psbFlow);
+        CashFilter::treatZeroOfferAsDeletion, viewTaker,
+        CashFilter::none, viewFlow);
 
     if (diff.hasDiff())
     {
@@ -883,23 +883,23 @@ static SBoxCmp compareSandboxes (char const* name, ApplyContext const& ctx,
 
 std::pair<TER, Amounts>
 CreateOffer::cross (
-    PaymentSandbox& psb,
-    PaymentSandbox& psbCancel,
+    Sandbox& sb,
+    Sandbox& sbCancel,
     Amounts const& takerAmount)
 {
     // There are features for Flow offer crossing and for comparing results
     // between Taker and Flow offer crossing.  Turn those into bools.
-    bool const useFlowCross { psb.rules().enabled (featureFlowCross) };
-    bool const doCompare { psb.rules().enabled (featureCompareTakerFlowCross) };
+    bool const useFlowCross { sb.rules().enabled (featureFlowCross) };
+    bool const doCompare { sb.rules().enabled (featureCompareTakerFlowCross) };
 
-    PaymentSandbox psbTaker { &psb };
-    PaymentSandbox psbCancelTaker { &psbCancel };
+    Sandbox sbTaker { &sb };
+    Sandbox sbCancelTaker { &sbCancel };
     auto const takerR = (!useFlowCross || doCompare)
-        ? takerCross (psbTaker, psbCancelTaker, takerAmount)
+        ? takerCross (sbTaker, sbCancelTaker, takerAmount)
         : std::make_pair (tecINTERNAL, takerAmount);
 
-    PaymentSandbox psbFlow { &psb };
-    PaymentSandbox psbCancelFlow { &psbCancel };
+    PaymentSandbox psbFlow { &sb };
+    PaymentSandbox psbCancelFlow { &sbCancel };
     auto const flowR = (useFlowCross || doCompare)
         ? flowCross (psbFlow, psbCancelFlow, takerAmount)
         : std::make_pair (tecINTERNAL, takerAmount);
@@ -917,7 +917,7 @@ CreateOffer::cross (
            (takerR.second.out == zero && flowR.second.out == zero))
         {
             c = compareSandboxes ("Both Taker and Flow fully crossed",
-                ctx_, psbTaker, psbFlow, j_);
+                ctx_, sbTaker, psbFlow, j_);
         }
         else if (takerR.second.in == zero && takerR.second.out == zero)
         {
@@ -926,7 +926,7 @@ CreateOffer::cross (
                 flowR.second.out == takerAmount.out)
                     crossType = "Taker fully crossed, Flow not crossed";
 
-            c = compareSandboxes (crossType, ctx_, psbTaker, psbFlow, j_);
+            c = compareSandboxes (crossType, ctx_, sbTaker, psbFlow, j_);
         }
         else if (flowR.second.in == zero && flowR.second.out == zero)
         {
@@ -936,12 +936,12 @@ CreateOffer::cross (
                 takerR.second.out == takerAmount.out)
                     crossType = "Taker not crossed, Flow fully crossed";
 
-            c = compareSandboxes (crossType, ctx_, psbTaker, psbFlow, j_);
+            c = compareSandboxes (crossType, ctx_, sbTaker, psbFlow, j_);
         }
         else if (ctx_.tx.getFlags() & tfFillOrKill)
         {
             c = compareSandboxes (
-                "FillOrKill offer", ctx_, psbCancelTaker, psbCancelFlow, j_);
+                "FillOrKill offer", ctx_, sbCancelTaker, psbCancelFlow, j_);
         }
         else if (takerR.second.in  == takerAmount.in &&
                  flowR.second.in   == takerAmount.in &&
@@ -949,24 +949,24 @@ CreateOffer::cross (
                  flowR.second.out  == takerAmount.out)
         {
             char const * crossType = "Neither Taker nor Flow crossed";
-            c = compareSandboxes (crossType, ctx_, psbTaker, psbFlow, j_);
+            c = compareSandboxes (crossType, ctx_, sbTaker, psbFlow, j_);
         }
         else if (takerR.second.in == takerAmount.in &&
                  takerR.second.out == takerAmount.out)
         {
             char const * crossType = "Taker not crossed, Flow partially crossed";
-            c = compareSandboxes (crossType, ctx_, psbTaker, psbFlow, j_);
+            c = compareSandboxes (crossType, ctx_, sbTaker, psbFlow, j_);
         }
         else if (flowR.second.in == takerAmount.in &&
                  flowR.second.out == takerAmount.out)
         {
             char const * crossType = "Taker partially crossed, Flow not crossed";
-            c = compareSandboxes (crossType, ctx_, psbTaker, psbFlow, j_);
+            c = compareSandboxes (crossType, ctx_, sbTaker, psbFlow, j_);
         }
         else
         {
             c = compareSandboxes (
-                "Partial cross offer", ctx_, psbTaker, psbFlow, j_);
+                "Partial cross offer", ctx_, sbTaker, psbFlow, j_);
 
             // If we've gotten this far then the returned amounts matter.
             if (c <= SBoxCmp::dustDiff && takerR.second != flowR.second)
@@ -1003,13 +1003,13 @@ CreateOffer::cross (
     // Return one result or the other based on amendment.
     if (useFlowCross)
     {
-        psbFlow.apply (psb);
-        psbCancelFlow.apply (psbCancel);
+        psbFlow.apply (sb);
+        psbCancelFlow.apply (sbCancel);
         return flowR;
     }
 
-    psbTaker.apply (psb);
-    psbCancelTaker.apply (psbCancel);
+    sbTaker.apply (sb);
+    sbCancelTaker.apply (sbCancel);
     return takerR;
 }
 
@@ -1039,7 +1039,7 @@ CreateOffer::preCompute()
 }
 
 std::pair<TER, bool>
-CreateOffer::applyGuts (PaymentSandbox& psb, PaymentSandbox& psbCancel)
+CreateOffer::applyGuts (Sandbox& sb, Sandbox& sbCancel)
 {
     std::uint32_t const uTxFlags = ctx_.tx.getFlags ();
 
@@ -1070,7 +1070,7 @@ CreateOffer::applyGuts (PaymentSandbox& psb, PaymentSandbox& psbCancel)
     // Process a cancellation request that's passed along with an offer.
     if (cancelSequence)
     {
-        auto const sleCancel = psb.peek(
+        auto const sleCancel = sb.peek(
             keylet::offer(account_, *cancelSequence));
 
         // It's not an error to not find the offer to cancel: it might have
@@ -1079,7 +1079,7 @@ CreateOffer::applyGuts (PaymentSandbox& psb, PaymentSandbox& psbCancel)
         if (sleCancel)
         {
             JLOG(j_.debug()) << "Create cancels order " << *cancelSequence;
-            result = offerDelete (psb, sleCancel, viewJ);
+            result = offerDelete (sb, sleCancel, viewJ);
         }
     }
 
@@ -1111,7 +1111,7 @@ CreateOffer::applyGuts (PaymentSandbox& psb, PaymentSandbox& psbCancel)
         if (!isXRP (uPaysIssuerID))
         {
             auto const sle =
-                psb.read(keylet::account(uPaysIssuerID));
+                sb.read(keylet::account(uPaysIssuerID));
             if (sle && sle->isFieldPresent (sfTickSize))
                 uTickSize = std::min (uTickSize,
                     (*sle)[sfTickSize]);
@@ -1119,7 +1119,7 @@ CreateOffer::applyGuts (PaymentSandbox& psb, PaymentSandbox& psbCancel)
         if (!isXRP (uGetsIssuerID))
         {
             auto const sle =
-                psb.read(keylet::account(uGetsIssuerID));
+                sb.read(keylet::account(uGetsIssuerID));
             if (sle && sle->isFieldPresent (sfTickSize))
                 uTickSize = std::min (uTickSize,
                     (*sle)[sfTickSize]);
@@ -1176,7 +1176,7 @@ CreateOffer::applyGuts (PaymentSandbox& psb, PaymentSandbox& psbCancel)
             stream << "    out: " << format_amount (takerAmount.out);
         }
 
-        std::tie(result, place_offer) = cross (psb, psbCancel, takerAmount);
+        std::tie(result, place_offer) = cross (sb, sbCancel, takerAmount);
 
         // We expect the implementation of cross to succeed
         // or give a tec.
@@ -1258,7 +1258,7 @@ CreateOffer::applyGuts (PaymentSandbox& psb, PaymentSandbox& psbCancel)
         return { tesSUCCESS, true };
     }
 
-    auto const sleCreator = psb.peek (keylet::account(account_));
+    auto const sleCreator = sb.peek (keylet::account(account_));
     {
         XRPAmount reserve = ctx_.view().fees().accountReserve(
             sleCreator->getFieldU32 (sfOwnerCount) + 1);
@@ -1287,14 +1287,14 @@ CreateOffer::applyGuts (PaymentSandbox& psb, PaymentSandbox& psbCancel)
     std::uint64_t uOwnerNode;
 
     // Add offer to owner's directory.
-    std::tie(result, std::ignore) = dirAdd(psb, uOwnerNode,
+    std::tie(result, std::ignore) = dirAdd(sb, uOwnerNode,
         keylet::ownerDir (account_), offer_index,
         describeOwnerDir (account_), viewJ);
 
     if (result == tesSUCCESS)
     {
         // Update owner count.
-        adjustOwnerCount(psb, sleCreator, 1, viewJ);
+        adjustOwnerCount(sb, sleCreator, 1, viewJ);
 
         JLOG (j_.trace()) <<
             "adding to book: " << to_string (saTakerPays.issue ()) <<
@@ -1308,7 +1308,7 @@ CreateOffer::applyGuts (PaymentSandbox& psb, PaymentSandbox& psbCancel)
         // before any crossing occured.
         auto dir = keylet::quality (keylet::book (book), uRate);
 
-        std::tie(result, isNewBook) = dirAdd (psb, uBookNode,
+        std::tie(result, isNewBook) = dirAdd (sb, uBookNode,
             dir, offer_index, [&](SLE::ref sle)
             {
                 sle->setFieldH160 (sfTakerPaysCurrency,
@@ -1338,7 +1338,7 @@ CreateOffer::applyGuts (PaymentSandbox& psb, PaymentSandbox& psbCancel)
                 sleOffer->setFlag (lsfPassive);
             if (bSell)
                 sleOffer->setFlag (lsfSell);
-            psb.insert(sleOffer);
+            sb.insert(sleOffer);
 
             if (isNewBook)
                 ctx_.app.getOrderBookDB().addOrderBook(book);
@@ -1359,18 +1359,18 @@ CreateOffer::doApply()
 {
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
-    PaymentSandbox psb (&ctx_.view());
+    Sandbox sb (&ctx_.view());
 
     // This is a ledger with just the fees paid and any unfunded or expired
     // offers we encounter removed. It's used when handling Fill-or-Kill offers,
     // if the order isn't going to be placed, to avoid wasting the work we did.
-    PaymentSandbox psbCancel (&ctx_.view());
+    Sandbox sbCancel (&ctx_.view());
 
-    auto const result = applyGuts(psb, psbCancel);
+    auto const result = applyGuts(sb, sbCancel);
     if (result.second)
-        psb.apply(ctx_.rawView());
+        sb.apply(ctx_.rawView());
     else
-        psbCancel.apply(ctx_.rawView());
+        sbCancel.apply(ctx_.rawView());
     return result.first;
 }
 

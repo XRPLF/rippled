@@ -28,6 +28,7 @@
 namespace ripple {
 
 class PaymentSandbox;
+class Sandbox;
 
 /** Transactor specialized for creating offers in the ledger. */
 class CreateOffer
@@ -66,7 +67,7 @@ public:
 
 private:
     std::pair<TER, bool>
-    applyGuts (PaymentSandbox& view, PaymentSandbox& view_cancel);
+    applyGuts (Sandbox& view, Sandbox& view_cancel);
 
     // Determine if we are authorized to hold the asset we want to get.
     static
@@ -116,8 +117,8 @@ private:
     // Charges fees on top to taker.
     std::pair<TER, Amounts>
     takerCross (
-        PaymentSandbox& psb,
-        PaymentSandbox& psbCancel,
+        Sandbox& sb,
+        Sandbox& sbCancel,
         Amounts const& takerAmount);
 
     // Use the payment flow code to perform offer crossing.
@@ -133,8 +134,8 @@ private:
     // removed once flowCross is determined to be stable.
     std::pair<TER, Amounts>
     cross (
-        PaymentSandbox& psb,
-        PaymentSandbox& psbCancel,
+        Sandbox& sb,
+        Sandbox& sbCancel,
         Amounts const& takerAmount);
 
     static
