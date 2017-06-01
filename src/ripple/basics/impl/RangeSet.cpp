@@ -90,7 +90,7 @@ std::uint32_t RangeSet::getPrev (std::uint32_t v) const
         if (it.second < v)
             return it.second;
 
-        if (contains (it, v + 1))
+        if (contains (it, v - 1))
             return v - 1;
     }
     return absent;
