@@ -25,6 +25,8 @@
 #include <test/jtx/WSClient.h>
 #include <test/jtx/JSONRPCClient.h>
 #include <ripple/core/DeadlineTimer.h>
+#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <beast/http.hpp>
 #include <beast/test/yield_to.hpp>
 #include <beast/websocket/detail/mask.hpp>
@@ -87,7 +89,7 @@ class ServerStatus_test :
 
         req.target("/");
         req.version = 11;
-        req.insert("Host", host + ":" + to_string(port));
+        req.insert("Host", host + ":" + std::to_string(port));
         req.insert("User-Agent", "test");
         req.method(beast::http::verb::get);
         req.insert("Upgrade", "websocket");
@@ -111,7 +113,7 @@ class ServerStatus_test :
 
         req.target("/");
         req.version = 11;
-        req.insert("Host", host + ":" + to_string(port));
+        req.insert("Host", host + ":" + std::to_string(port));
         req.insert("User-Agent", "test");
         if(body.empty())
         {
@@ -131,7 +133,7 @@ class ServerStatus_test :
     void
     doRequest(
         boost::asio::yield_context& yield,
-        beast::http::request<beast::http::string_body>& req,
+        beast::http::request<beast::http::string_body>&& req,
         std::string const& host,
         uint16_t port,
         bool secure,
@@ -146,7 +148,7 @@ class ServerStatus_test :
 
         auto it =
             r.async_resolve(
-                ip::tcp::resolver::query{host, to_string(port)}, yield[ec]);
+                ip::tcp::resolver::query{host, std::to_string(port)}, yield[ec]);
         if(ec)
             return;
 
@@ -197,9 +199,14 @@ class ServerStatus_test :
             get<std::uint16_t>("port");
         auto ip = env.app().config()["port_ws"].
             get<std::string>("ip");
-        auto req = makeWSUpgrade(*ip, *port);
         doRequest(
-            yield, req, *ip, *port, secure, resp, ec);
+            yield,
+            makeWSUpgrade(*ip, *port),
+            *ip,
+            *port,
+            secure,
+            resp,
+            ec);
         return;
     }
 
@@ -216,10 +223,9 @@ class ServerStatus_test :
             get<std::uint16_t>("port");
         auto const ip = env.app().config()["port_rpc"].
             get<std::string>("ip");
-        auto req = makeHTTPRequest(*ip, *port, body);
         doRequest(
             yield,
-            req,
+            makeHTTPRequest(*ip, *port, body),
             *ip,
             *port,
             secure,
@@ -368,7 +374,7 @@ class ServerStatus_test :
 
         auto it =
             r.async_resolve(
-                ip::tcp::resolver::query{*ip, to_string(*port)}, yield[ec]);
+                ip::tcp::resolver::query{*ip, std::to_string(*port)}, yield[ec]);
         if(! BEAST_EXPECTS(! ec, ec.message()))
             return;
 
@@ -510,6 +516,110 @@ class ServerStatus_test :
         }
     }
 
+    void
+    testAmendmentBlock(boost::asio::yield_context& yield)
+    {
+        testcase("Status request over WS and RPC with/without Amendment Block");
+        using namespace jtx;
+        using namespace boost::asio;
+        using namespace beast::http;
+        Env env {*this, validator( envconfig([](std::unique_ptr<Config> cfg)
+            {
+                cfg->section("port_rpc").set("protocol", "http,https");
+                return cfg;
+            }), "")};
+
+        env.close();
+
+        // advance the ledger so that server status
+        // sees a published ledger -- without this, we get a status
+        // failure message about no published ledgers
+        env.app().getLedgerMaster().tryAdvance();
+
+        // make an RPC server info request and look for
+        // amendment_blocked status
+        auto si = env.rpc("server_info") [jss::result];
+        BEAST_EXPECT(! si[jss::info].isMember(jss::amendment_blocked));
+        BEAST_EXPECT(
+            env.app().getOPs().getConsensusInfo()["validating"] == true);
+
+        auto const port_ws = env.app().config()["port_ws"].
+            get<std::uint16_t>("port");
+        auto const ip_ws = env.app().config()["port_ws"].
+            get<std::string>("ip");
+
+
+        boost::system::error_code ec;
+        response<string_body> resp;
+
+        doRequest(
+            yield,
+            makeHTTPRequest(*ip_ws, *port_ws, ""),
+            *ip_ws,
+            *port_ws,
+            false,
+            resp,
+            ec);
+
+        if(! BEAST_EXPECTS(! ec, ec.message()))
+            return;
+        BEAST_EXPECT(resp.result() == beast::http::status::ok);
+        BEAST_EXPECT(
+            resp.body.find("connectivity is working.") != std::string::npos);
+
+        // mark the Network as Amendment Blocked, but still won't fail until
+        // ELB is enabled (next step)
+        env.app().getOPs().setAmendmentBlocked ();
+        env.app().getOPs().beginConsensus(env.closed()->info().hash);
+
+        // consensus now sees validation disabled
+        BEAST_EXPECT(
+            env.app().getOPs().getConsensusInfo()["validating"] == false);
+
+        // RPC request server_info again, now AB should be returned
+        si = env.rpc("server_info") [jss::result];
+        BEAST_EXPECT(
+            si[jss::info].isMember(jss::amendment_blocked) &&
+            si[jss::info][jss::amendment_blocked] == true);
+
+        // but status does not indicate because it still relies on ELB
+        // being enabled
+        doRequest(
+            yield,
+            makeHTTPRequest(*ip_ws, *port_ws, ""),
+            *ip_ws,
+            *port_ws,
+            false,
+            resp,
+            ec);
+
+        if(! BEAST_EXPECTS(! ec, ec.message()))
+            return;
+        BEAST_EXPECT(resp.result() == beast::http::status::ok);
+        BEAST_EXPECT(
+            resp.body.find("connectivity is working.") != std::string::npos);
+
+        env.app().config().ELB_SUPPORT = true;
+
+        doRequest(
+            yield,
+            makeHTTPRequest(*ip_ws, *port_ws, ""),
+            *ip_ws,
+            *port_ws,
+            false,
+            resp,
+            ec);
+
+        if(! BEAST_EXPECTS(! ec, ec.message()))
+            return;
+        BEAST_EXPECT(resp.result() == beast::http::status::internal_server_error);
+        BEAST_EXPECT(
+            resp.body.find("cannot accept clients:") != std::string::npos);
+        BEAST_EXPECT(
+            resp.body.find("Server version too old") != std::string::npos);
+
+    }
+
 public:
     void
     run()
@@ -527,6 +637,7 @@ public:
             //THIS HANGS - testCantConnect("wss", "ws", yield);
             testCantConnect("wss2", "ws2", yield);
             testCantConnect("https", "http", yield);
+            testAmendmentBlock(yield);
         });
 
         for (auto it : {"http", "ws", "ws2"})

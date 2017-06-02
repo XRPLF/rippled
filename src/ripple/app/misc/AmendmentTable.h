@@ -47,6 +47,14 @@ public:
     virtual bool isEnabled (uint256 const& amendment) = 0;
     virtual bool isSupported (uint256 const& amendment) = 0;
 
+    /**
+     * @brief returns true if one or more amendments on the network
+     * have been enabled that this server does not support
+     *
+     * @return true if an unsupported feature is enabled on the network
+     */
+    virtual bool hasUnsupportedEnabled () = 0;
+
     virtual Json::Value getJson (int) = 0;
 
     /** Returns a Json::objectValue. */
