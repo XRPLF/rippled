@@ -745,6 +745,20 @@ public:
         }
     }
 
+    void testHasUnsupported ()
+    {
+        testcase ("hasUnsupportedEnabled");
+
+        auto table = makeTable(1);
+        BEAST_EXPECT(! table->hasUnsupportedEnabled());
+
+        std::set <uint256> enabled;
+        std::for_each(m_set4.begin(), m_set4.end(),
+            [&enabled](auto const &s){ enabled.insert(amendmentId(s)); });
+        table->doValidatedLedger(1, enabled);
+        BEAST_EXPECT(table->hasUnsupportedEnabled());
+    }
+
     void run ()
     {
         testConstruct();
@@ -757,6 +771,7 @@ public:
         testDetectMajority ();
         testLostMajority ();
         testSupportedAmendments ();
+        testHasUnsupported ();
     }
 };
 

@@ -53,6 +53,7 @@ public:
         add (rpcACT_EXISTS,            "actExists",         "Account already exists.");
         add (rpcACT_MALFORMED,         "actMalformed",      "Account malformed.");
         add (rpcACT_NOT_FOUND,         "actNotFound",       "Account not found.");
+        add (rpcAMENDMENT_BLOCKED,     "amendmentBlocked",  "Amendment blocked, need upgrade.");
         add (rpcATX_DEPRECATED,        "deprecated",        "Use the new API or specify a ledger range.");
         add (rpcBAD_BLOB,              "badBlob",           "Blob must be a non-empty hex string.");
         add (rpcBAD_FEATURE,           "badFeature",        "Feature unknown or invalid.");

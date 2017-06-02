@@ -227,6 +227,13 @@ LedgerMaster::setValidLedger(
     app_.getSHAMapStore().onLedgerClosed (getValidatedLedger());
     mLedgerHistory.validatedLedger (l);
     app_.getAmendmentTable().doValidatedLedger (l);
+    if (!app_.getOPs().isAmendmentBlocked() &&
+        app_.getAmendmentTable().hasUnsupportedEnabled ())
+    {
+        JLOG (m_journal.error()) <<
+            "One or more unsupported amendments activated: server blocked.";
+        app_.getOPs().setAmendmentBlocked();
+    }
 }
 
 void
