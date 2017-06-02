@@ -492,6 +492,14 @@ Env::do_rpc(std::vector<std::string> const& args)
     return response;
 }
 
+void
+Env::enableFeature(uint256 const feature)
+{
+    // Env::close() must be called for feature
+    // enable to take place.
+    app().config().features.insert(feature);
+}
+
 } // jtx
 
 } // test

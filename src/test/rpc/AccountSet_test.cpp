@@ -17,10 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/Feature.h>
-#include <test/jtx.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/protocol/AmountConversions.h>
+#include <ripple/protocol/Feature.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/Quality.h>
+#include <ripple/protocol/Rate.h>
+#include <test/jtx.h>
 
 namespace ripple {
 
@@ -203,24 +206,124 @@ public:
 
     void testTransferRate()
     {
+        struct test_results
+        {
+            double set;
+            TER code;
+            double get;
+        };
+
         using namespace test::jtx;
-        Env env(*this);
-        Account const alice ("alice");
-        env.fund(XRP(10000), alice);
-        auto jt = noop(alice);
+        auto doTests = [this] (FeatureBitset const& features,
+            std::initializer_list<test_results> testData)
+        {
+            Env env (*this, features);
 
-        uint32 xfer_rate = 2000000000;
-        jt[sfTransferRate.fieldName] = xfer_rate;
-        env(jt);
-        BEAST_EXPECT((*env.le(alice))[ sfTransferRate ] == xfer_rate);
+            Account const alice ("alice");
+            env.fund(XRP(10000), alice);
 
-        jt[sfTransferRate.fieldName] = 0u;
-        env(jt);
-        BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfTransferRate));
+            for (auto const& r : testData)
+            {
+                env(rate(alice, r.set), ter(r.code));
 
-        // set a bad value (< QUALITY_ONE)
-        jt[sfTransferRate.fieldName] = 10u;
-        env(jt, ter(temBAD_TRANSFER_RATE));
+                // If the field is not present expect the default value
+                if (!(*env.le(alice))[~sfTransferRate])
+                    BEAST_EXPECT(r.get == 1.0);
+                else
+                    BEAST_EXPECT(*(*env.le(alice))[~sfTransferRate] ==
+                        r.get * QUALITY_ONE);
+            }
+        };
+
+        {
+            testcase ("Setting transfer rate (without fix1201)");
+            doTests (all_features_except(fix1201),
+                {
+                    { 1.0, tesSUCCESS,              1.0 },
+                    { 1.1, tesSUCCESS,              1.1 },
+                    { 2.0, tesSUCCESS,              2.0 },
+                    { 2.1, tesSUCCESS,              2.1 },
+                    { 0.0, tesSUCCESS,              1.0 },
+                    { 2.0, tesSUCCESS,              2.0 },
+                    { 0.9, temBAD_TRANSFER_RATE,    2.0 }});
+        }
+
+        {
+            testcase ("Setting transfer rate (with fix1201)");
+            doTests (all_amendments(),
+                {
+                    { 1.0, tesSUCCESS,              1.0 },
+                    { 1.1, tesSUCCESS,              1.1 },
+                    { 2.0, tesSUCCESS,              2.0 },
+                    { 2.1, temBAD_TRANSFER_RATE,    2.0 },
+                    { 0.0, tesSUCCESS,              1.0 },
+                    { 2.0, tesSUCCESS,              2.0 },
+                    { 0.9, temBAD_TRANSFER_RATE,    2.0 }});
+        }
+    }
+
+    void testGateway()
+    {
+        using namespace test::jtx;
+        auto runTest = [](Env&& env, double tr)
+        {
+            Account const alice ("alice");
+            Account const bob ("bob");
+            Account const gw ("gateway");
+            auto const USD = gw["USD"];
+
+            env.fund(XRP(10000), gw, alice, bob);
+            env.trust(USD(3), alice, bob);
+            env(rate(gw, tr));
+            env.close();
+
+            auto const amount = USD(1);
+            Rate const rate (tr * QUALITY_ONE);
+            auto const amountWithRate =
+                toAmount<STAmount> (multiply(amount.value(), rate));
+
+            env(pay(gw, alice, USD(3)));
+            env(pay(alice, bob, USD(1)), sendmax(USD(3)));
+
+            env.require(balance(alice, USD(3) - amountWithRate));
+            env.require(balance(bob, USD(1)));
+        };
+
+        // Test gateway with allowed transfer rates
+        runTest (Env{*this, all_features_except(fix1201)}, 1.02);
+        runTest (Env{*this, all_features_except(fix1201)}, 1);
+        runTest (Env{*this, all_features_except(fix1201)}, 2);
+        runTest (Env{*this, all_features_except(fix1201)}, 2.1);
+        runTest (Env{*this, all_amendments()}, 1.02);
+        runTest (Env{*this, all_amendments()}, 2);
+
+        // Test gateway when amendment is set after transfer rate
+        {
+            Env env (*this, all_features_except(fix1201));
+            Account const alice ("alice");
+            Account const bob ("bob");
+            Account const gw ("gateway");
+            auto const USD = gw["USD"];
+            double const tr = 2.75;
+
+            env.fund(XRP(10000), gw, alice, bob);
+            env.trust(USD(3), alice, bob);
+            env(rate(gw, tr));
+            env.close();
+            env.enableFeature(fix1201);
+            env.close();
+
+            auto const amount = USD(1);
+            Rate const rate (tr * QUALITY_ONE);
+            auto const amountWithRate =
+                toAmount<STAmount> (multiply(amount.value(), rate));
+
+            env(pay(gw, alice, USD(3)));
+            env(pay(alice, bob, amount), sendmax(USD(3)));
+
+            env.require(balance(alice, USD(3) - amountWithRate));
+            env.require(balance(bob, amount));
+        }
     }
 
     void testBadInputs(bool withFeatures)
@@ -303,6 +406,7 @@ public:
         testSetAndResetAccountTxnID();
         testSetNoFreeze();
         testDomain();
+        testGateway();
         testMessageKey();
         testWalletID();
         testEmailHash();

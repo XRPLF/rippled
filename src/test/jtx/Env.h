@@ -624,6 +624,9 @@ public:
     std::shared_ptr<STTx const>
     tx() const;
 
+    void
+    enableFeature(uint256 const feature);
+
 private:
     void
     fund (bool setDefaultRipple,
