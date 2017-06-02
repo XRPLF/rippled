@@ -391,7 +391,11 @@ transferRate (ReadView const& view,
     auto const sle = view.read(keylet::account(issuer));
 
     if (sle && sle->isFieldPresent (sfTransferRate))
+    {
+        if (sfTransferRate > 2 * QUALITY_ONE)
+            return Rate{ 2 * QUALITY_ONE };
         return Rate{ sle->getFieldU32 (sfTransferRate) };
+    }
 
     return parityRate;
 }

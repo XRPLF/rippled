@@ -211,11 +211,17 @@ public:
 
         uint32 xfer_rate = 2000000000;
         jt[sfTransferRate.fieldName] = xfer_rate;
-        env(jt);
+        env(jt, ter(temBAD_TRANSFER_RATE));
         BEAST_EXPECT((*env.le(alice))[ sfTransferRate ] == xfer_rate);
 
         jt[sfTransferRate.fieldName] = 0u;
         env(jt);
+        BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfTransferRate));
+
+        // set a bad value (> 2 * QUALITY_ONE)
+        xfer_rate = (2 * 1000000000) + 1;
+        jt[sfTransferRate.fieldName] = xfer_rate;
+        env(jt, ter(temBAD_TRANSFER_RATE));
         BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfTransferRate));
 
         // set a bad value (< QUALITY_ONE)
