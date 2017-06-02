@@ -25,6 +25,7 @@
 #include <beast/core/write_dynabuf.hpp>
 #include <beast/http/message.hpp>
 #include <beast/http/write.hpp>
+#include <boost/asio/streambuf.hpp>
 #include <utility>
 
 namespace ripple {
@@ -32,7 +33,7 @@ namespace ripple {
 /// Deprecated: Writer that serializes a HTTP/1 message
 class SimpleWriter : public Writer
 {
-    beast::streambuf sb_;
+    boost::asio::streambuf sb_;
 
 public:
     template<bool isRequest, class Body, class Headers>

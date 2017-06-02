@@ -61,7 +61,7 @@ protected:
     socket_type socket_;
     request_type req_;
     response_type res_;
-    beast::streambuf read_buf_;
+    boost::asio::streambuf read_buf_;
 
 public:
     WorkBase(

@@ -342,17 +342,17 @@ ServerHandlerImp::onWSMessage(
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";
         jvResult[jss::value] = buffers_to_string(buffers);
-        beast::streambuf sb;
+        auto sb = std::make_shared<StreambufWSMsg<boost::asio::streambuf>>();
         Json::stream(jvResult,
             [&sb](auto const p, auto const n)
             {
-                sb.commit(boost::asio::buffer_copy(
-                    sb.prepare(n), boost::asio::buffer(p, n)));
+                auto& buf = sb->rdbuf();
+                buf.commit(boost::asio::buffer_copy(
+                    buf.prepare(n), boost::asio::buffer(p, n)));
             });
         JLOG(m_journal.trace())
             << "Websocket sending '" << jvResult << "'";
-        session->send(std::make_shared<
-            StreambufWSMsg<decltype(sb)>>(std::move(sb)));
+        session->send(sb);
         session->complete();
         return;
     }
@@ -367,12 +367,11 @@ ServerHandlerImp::onWSMessage(
             auto const jr =
                 this->processSession(session, c, jv);
             auto const s = to_string(jr);
-            auto const n = s.length();
-            beast::streambuf sb(n);
-            sb.commit(boost::asio::buffer_copy(
-                sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
-            session->send(std::make_shared<
-                StreambufWSMsg<decltype(sb)>>(std::move(sb)));
+            auto sb = std::make_shared<StreambufWSMsg<boost::asio::streambuf>>();
+            auto& buf = sb->rdbuf();
+            buf.commit(boost::asio::buffer_copy(buf.prepare(s.length()),
+                boost::asio::buffer(s.c_str(), s.length())));
+            session->send(sb);
             session->complete();
         });
 }

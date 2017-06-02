@@ -74,17 +74,15 @@ public:
         auto sp = ws_.lock();
         if(! sp)
             return;
-        beast::streambuf sb;
+        auto sb = std::make_shared<StreambufWSMsg<boost::asio::streambuf>>();
         stream(jv,
             [&](void const* data, std::size_t n)
             {
-                sb.commit(boost::asio::buffer_copy(
-                    sb.prepare(n), boost::asio::buffer(data, n)));
+                auto& buf = sb->rdbuf();
+                buf.commit(boost::asio::buffer_copy(
+                    buf.prepare(n), boost::asio::buffer(data, n)));
             });
-        auto m = std::make_shared<
-            StreambufWSMsg<decltype(sb)>>(
-                std::move(sb));
-        sp->send(m);
+        sp->send(sb);
     }
 };
 

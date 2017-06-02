@@ -96,7 +96,7 @@ class WSClientImpl : public WSClient
     boost::asio::ip::tcp::socket stream_;
     beast::websocket::stream<boost::asio::ip::tcp::socket&> ws_;
     beast::websocket::opcode op_;
-    beast::streambuf rb_;
+    boost::asio::streambuf rb_;
 
     bool peerClosed_ = false;
 

@@ -72,7 +72,7 @@ private:
     std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
     beast::asio::ssl_bundle::socket_type& socket_;
     beast::asio::ssl_bundle::stream_type& stream_;
-    beast::streambuf read_buf_;
+    boost::asio::streambuf read_buf_;
     response_type response_;
     PeerFinder::Slot::ptr slot_;
     request_type req_;
