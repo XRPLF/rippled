@@ -114,5 +114,6 @@ uint256 const featureCryptoConditionsSuite = *getRegisteredFeature("CryptoCondit
 uint256 const fix1373 = *getRegisteredFeature("fix1373");
 uint256 const featureEnforceInvariants = *getRegisteredFeature("EnforceInvariants");
 uint256 const featureSortedDirectories = *getRegisteredFeature("SortedDirectories");
+uint256 const fix1201 = *getRegisteredFeature("fix1201");
 
 } // ripple

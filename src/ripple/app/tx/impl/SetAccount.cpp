@@ -119,7 +119,13 @@ SetAccount::preflight (PreflightContext const& ctx)
 
         if (uRate && (uRate < QUALITY_ONE))
         {
-            JLOG(j.trace()) << "Malformed transaction: Bad transfer rate.";
+            JLOG(j.trace()) << "Malformed transaction: Transfer rate too small.";
+            return temBAD_TRANSFER_RATE;
+        }
+
+        if (ctx.rules.enabled(fix1201) && (uRate > 2 * QUALITY_ONE))
+        {
+            JLOG(j.trace()) << "Malformed transaction: Transfer rate too large.";
             return temBAD_TRANSFER_RATE;
         }
     }
@@ -453,7 +459,7 @@ SetAccount::doApply ()
             JLOG(j_.trace()) << "unset transfer rate";
             sle->makeFieldAbsent (sfTransferRate);
         }
-        else if (uRate > QUALITY_ONE)
+        else
         {
             JLOG(j_.trace()) << "set transfer rate";
             sle->setFieldU32 (sfTransferRate, uRate);
