@@ -201,6 +201,7 @@ disallowRenegotiation (SSL const* ssl, bool isNew)
     return false;
 }
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 static
 void
 info_handler (SSL const* ssl, int event, int)
@@ -211,8 +212,16 @@ info_handler (SSL const* ssl, int event, int)
             ssl->s3->flags |= SSL3_FLAGS_NO_RENEGOTIATE_CIPHERS;
     }
 }
-
+#else
 static
+void
+info_handler (SSL const* ssl, int event, int)
+{
+// empty
+}
+#endif
+static
+
 std::string
 error_message (std::string const& what,
     boost::system::error_code const& ec)
