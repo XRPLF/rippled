@@ -22,7 +22,6 @@
 
 #include <ripple/basics/LocalValue.h>
 #include <ripple/basics/win32_workaround.h>
-#include <ripple/core/JobCounter.h>
 #include <ripple/core/JobTypes.h>
 #include <ripple/core/JobTypeData.h>
 #include <ripple/core/Stoppable.h>

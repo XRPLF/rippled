@@ -23,13 +23,17 @@
 #include <ripple/beast/core/LockFreeStack.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/beast/core/WaitableEvent.h>
-#include <ripple/core/JobCounter.h>
+#include <ripple/core/Job.h>
+#include <ripple/core/ClosureCounter.h>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 
 namespace ripple {
+
+// Give a reasonable name for the JobCounter
+using JobCounter = ClosureCounter<void, Job&>;
 
 class RootStoppable;
 
