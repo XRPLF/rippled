@@ -2529,6 +2529,9 @@
     <ClInclude Include="..\..\src\ripple\consensus\Validations.h">
       <Filter>ripple\consensus</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\core\ClosureCounter.h">
+      <Filter>ripple\core</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Config.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
@@ -2541,16 +2544,10 @@
     <ClInclude Include="..\..\src\ripple\core\DatabaseCon.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\core\DeadlineTimer.h">
-      <Filter>ripple\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\impl\Config.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\impl\DatabaseCon.cpp">
-      <Filter>ripple\core\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\core\impl\DeadlineTimer.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\impl\DummySociDynamicBackend.cpp">
@@ -2596,9 +2593,6 @@
       <Filter>ripple\core\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Job.h">
-      <Filter>ripple\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\core\JobCounter.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\JobQueue.h">
@@ -5235,6 +5229,9 @@
     <ClCompile Include="..\..\src\test\consensus\Validations_test.cpp">
       <Filter>test\consensus</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\core\ClosureCounter_test.cpp">
+      <Filter>test\core</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\core\Config_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>
@@ -5242,12 +5239,6 @@
       <Filter>test\core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\core\CryptoPRNG_test.cpp">
-      <Filter>test\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\core\DeadlineTimer_test.cpp">
-      <Filter>test\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\core\JobCounter_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\core\JobQueue_test.cpp">

@@ -43,7 +43,6 @@
 #include <ripple/basics/mulDiv.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/core/DeadlineTimer.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/json/to_string.h>
@@ -58,12 +57,12 @@
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/basics/make_lock.h>
 #include <beast/core/detail/base64.hpp>
+#include <boost/asio/steady_timer.hpp>
 
 namespace ripple {
 
 class NetworkOPsImp final
     : public NetworkOPs
-    , public DeadlineTimer::Listener
 {
     /**
      * Transaction with input flags and results to be applied in batches.
@@ -183,11 +182,11 @@ class NetworkOPsImp final
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
-    NetworkOPsImp (
-        Application& app, clock_type& clock, bool standalone,
-            std::size_t network_quorum, bool start_valid, JobQueue& job_queue,
-                LedgerMaster& ledgerMaster, Stoppable& parent,
-                ValidatorKeys const & validatorKeys, beast::Journal journal)
+    NetworkOPsImp (Application& app, NetworkOPs::clock_type& clock,
+        bool standalone, std::size_t network_quorum, bool start_valid,
+        JobQueue& job_queue, LedgerMaster& ledgerMaster, Stoppable& parent,
+        ValidatorKeys const & validatorKeys, boost::asio::io_service& io_svc,
+        beast::Journal journal)
         : NetworkOPs (parent)
         , app_ (app)
         , m_clock (clock)
@@ -196,8 +195,8 @@ public:
         , mMode (start_valid ? omFULL : omDISCONNECTED)
         , mNeedNetworkLedger (false)
         , m_amendmentBlocked (false)
-        , m_heartbeatTimer (this)
-        , m_clusterTimer (this)
+        , heartbeatTimer_ (io_svc)
+        , clusterTimer_ (io_svc)
         , mConsensus (app,
             make_FeeVote(setup_FeeVote (app_.config().section ("voting")),
                                         app_.logs().journal("FeeVote")),
@@ -481,16 +480,35 @@ public:
     void onStop () override
     {
         mAcquiringLedger.reset();
-        m_heartbeatTimer.cancel();
-        m_clusterTimer.cancel();
+        {
+            boost::system::error_code ec;
+            heartbeatTimer_.cancel (ec);
+            if (ec)
+            {
+                JLOG (m_journal.error())
+                    << "NetworkOPs: heartbeatTimer cancel error: "
+                    << ec.message();
+            }
 
+            ec.clear();
+            clusterTimer_.cancel (ec);
+            if (ec)
+            {
+                JLOG (m_journal.error())
+                    << "NetworkOPs: clusterTimer cancel error: "
+                    << ec.message();
+            }
+        }
+        // Make sure that any waitHandlers pending in our timers are done
+        // before we declare ourselves stopped.
+        using namespace std::chrono_literals;
+        waitHandlerCounter_.join("NetworkOPs", 1s, m_journal);
         stopped ();
     }
 
 private:
     void setHeartbeatTimer ();
     void setClusterTimer ();
-    void onDeadlineTimer (DeadlineTimer& timer) override;
     void processHeartbeatTimer ();
     void processClusterTimer ();
 
@@ -533,8 +551,9 @@ private:
     std::atomic <bool> mNeedNetworkLedger;
     bool m_amendmentBlocked;
 
-    DeadlineTimer m_heartbeatTimer;
-    DeadlineTimer m_clusterTimer;
+    ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
+    boost::asio::steady_timer heartbeatTimer_;
+    boost::asio::steady_timer clusterTimer_;
 
     RCLConsensus mConsensus;
 
@@ -638,28 +657,61 @@ void NetworkOPsImp::setStateTimer ()
 
 void NetworkOPsImp::setHeartbeatTimer ()
 {
-    m_heartbeatTimer.setExpiration (mConsensus.parms().ledgerGRANULARITY);
+    // Only start the timer if waitHandlerCounter_ is not yet joined.
+    if (auto optionalCountedHandler = waitHandlerCounter_.wrap (
+        [this] (boost::system::error_code const& e)
+        {
+            if ((e.value() == boost::system::errc::success) &&
+                (! m_job_queue.isStopped()))
+            {
+                m_job_queue.addJob (jtNETOP_TIMER, "NetOPs.heartbeat",
+                    [this] (Job&) { processHeartbeatTimer(); });
+            }
+            // Recover as best we can if an unexpected error occurs.
+            if (e.value() != boost::system::errc::success &&
+                e.value() != boost::asio::error::operation_aborted)
+            {
+                // Try again later and hope for the best.
+                JLOG (m_journal.error())
+                   << "Heartbeat timer got error '" << e.message()
+                   << "'.  Restarting timer.";
+                setHeartbeatTimer();
+            }
+        }))
+    {
+        heartbeatTimer_.expires_from_now (
+            mConsensus.parms().ledgerGRANULARITY);
+        heartbeatTimer_.async_wait (std::move (*optionalCountedHandler));
+    }
 }
 
 void NetworkOPsImp::setClusterTimer ()
 {
-    using namespace std::chrono_literals;
-    m_clusterTimer.setExpiration (10s);
-}
-
-void NetworkOPsImp::onDeadlineTimer (DeadlineTimer& timer)
-{
-    if (timer == m_heartbeatTimer)
+    // Only start the timer if waitHandlerCounter_ is not yet joined.
+    if (auto optionalCountedHandler = waitHandlerCounter_.wrap (
+        [this] (boost::system::error_code const& e)
+        {
+            if ((e.value() == boost::system::errc::success) &&
+                (! m_job_queue.isStopped()))
+            {
+                m_job_queue.addJob (jtNETOP_CLUSTER, "NetOPs.cluster",
+                    [this] (Job&) { processClusterTimer(); });
+            }
+            // Recover as best we can if an unexpected error occurs.
+            if (e.value() != boost::system::errc::success &&
+                e.value() != boost::asio::error::operation_aborted)
+            {
+                // Try again later and hope for the best.
+                JLOG (m_journal.error())
+                   << "Cluster timer got error '" << e.message()
+                   << "'.  Restarting timer.";
+                setClusterTimer();
+            }
+        }))
     {
-        m_job_queue.addJob (
-            jtNETOP_TIMER, "NetOPs.heartbeat",
-            [this] (Job&) { processHeartbeatTimer(); });
-    }
-    else if (timer == m_clusterTimer)
-    {
-        m_job_queue.addJob (
-            jtNETOP_CLUSTER, "NetOPs.cluster",
-            [this] (Job&) { processClusterTimer(); });
+        using namespace std::chrono_literals;
+        clusterTimer_.expires_from_now (10s);
+        clusterTimer_.async_wait (std::move (*optionalCountedHandler));
     }
 }
 
@@ -3347,13 +3399,15 @@ Json::Value NetworkOPsImp::StateAccounting::json() const
 //------------------------------------------------------------------------------
 
 std::unique_ptr<NetworkOPs>
-make_NetworkOPs (Application& app, NetworkOPs::clock_type& clock, bool standalone,
-    std::size_t network_quorum, bool startvalid,
-    JobQueue& job_queue, LedgerMaster& ledgerMaster,
-    Stoppable& parent, ValidatorKeys const & validatorKeys, beast::Journal journal)
+make_NetworkOPs (Application& app, NetworkOPs::clock_type& clock,
+    bool standalone, std::size_t network_quorum, bool startvalid,
+    JobQueue& job_queue, LedgerMaster& ledgerMaster, Stoppable& parent,
+    ValidatorKeys const & validatorKeys, boost::asio::io_service& io_svc,
+    beast::Journal journal)
 {
-    return std::make_unique<NetworkOPsImp> (app, clock, standalone, network_quorum,
-        startvalid, job_queue, ledgerMaster, parent, validatorKeys, journal);
+    return std::make_unique<NetworkOPsImp> (app, clock, standalone,
+        network_quorum, startvalid, job_queue, ledgerMaster, parent,
+        validatorKeys, io_svc, journal);
 }
 
 } // ripple

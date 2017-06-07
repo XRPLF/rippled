@@ -48,7 +48,6 @@
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/json/json_reader.h>
-#include <ripple/core/DeadlineTimer.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/make_Overlay.h>
@@ -56,6 +55,7 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
+#include <boost/asio/steady_timer.hpp>
 #include <fstream>
 
 namespace ripple {
@@ -218,7 +218,6 @@ supportedAmendments ();
 class ApplicationImp
     : public Application
     , public RootStoppable
-    , public DeadlineTimer::Listener
     , public BasicApp
 {
 private:
@@ -334,8 +333,9 @@ public:
     RCLValidations mValidations;
     std::unique_ptr <LoadManager> m_loadManager;
     std::unique_ptr <TxQ> txQ_;
-    DeadlineTimer m_sweepTimer;
-    DeadlineTimer m_entropyTimer;
+    ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
+    boost::asio::steady_timer sweepTimer_;
+    boost::asio::steady_timer entropyTimer_;
     bool startTimers_;
 
     std::unique_ptr <DatabaseCon> mTxnDB;
@@ -448,7 +448,7 @@ public:
         , m_networkOPs (make_NetworkOPs (*this, stopwatch(),
             config_->standalone(), config_->NETWORK_QUORUM, config_->START_VALID,
             *m_jobQueue, *m_ledgerMaster, *m_jobQueue, validatorKeys_,
-            logs_->journal("NetworkOPs")))
+            get_io_service(), logs_->journal("NetworkOPs")))
 
         , cluster_ (std::make_unique<Cluster> (
             logs_->journal("Overlay")))
@@ -481,9 +481,9 @@ public:
 
         , txQ_(make_TxQ(setup_TxQ(*config_), logs_->journal("TxQ")))
 
-        , m_sweepTimer (this)
+        , sweepTimer_ (get_io_service())
 
-        , m_entropyTimer (this)
+        , entropyTimer_ (get_io_service())
 
         , startTimers_ (false)
 
@@ -827,8 +827,8 @@ public:
         using namespace std::chrono_literals;
         if(startTimers_)
         {
-            m_sweepTimer.setExpiration (10s);
-            m_entropyTimer.setRecurringExpiration (5min);
+            setSweepTimer();
+            setEntropyTimer();
         }
 
         m_io_latency_sampler.start();
@@ -858,11 +858,28 @@ public:
         //      things will happen.
         m_resolver->stop ();
 
-        if(startTimers_)
         {
-            m_sweepTimer.cancel ();
-            m_entropyTimer.cancel ();
+            boost::system::error_code ec;
+            sweepTimer_.cancel (ec);
+            if (ec)
+            {
+                JLOG (m_journal.error())
+                    << "Application: sweepTimer cancel error: "
+                    << ec.message();
+            }
+
+            ec.clear();
+            entropyTimer_.cancel (ec);
+            if (ec)
+            {
+                JLOG (m_journal.error())
+                    << "Application: entropyTimer cancel error: "
+                    << ec.message();
+            }
         }
+        // Make sure that any waitHandlers pending in our timers are done
+        // before we declare ourselves stopped.
+        waitHandlerCounter_.join("Application", 1s, m_journal);
 
         mValidations.flush ();
 
@@ -884,7 +901,7 @@ public:
         stopped ();
     }
 
-    //------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     //
     // PropertyStream
     //
@@ -893,20 +910,64 @@ public:
     {
     }
 
-    //------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
-    void onDeadlineTimer (DeadlineTimer& timer) override
+    void setSweepTimer ()
     {
-        if (timer == m_entropyTimer)
+        // Only start the timer if waitHandlerCounter_ is not yet joined.
+        if (auto optionalCountedHandler = waitHandlerCounter_.wrap (
+            [this] (boost::system::error_code const& e)
+            {
+                if ((e.value() == boost::system::errc::success) &&
+                    (! m_jobQueue->isStopped()))
+                {
+                    m_jobQueue->addJob(
+                        jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
+                }
+                // Recover as best we can if an unexpected error occurs.
+                if (e.value() != boost::system::errc::success &&
+                    e.value() != boost::asio::error::operation_aborted)
+                {
+                    // Try again later and hope for the best.
+                    JLOG (m_journal.error())
+                       << "Sweep timer got error '" << e.message()
+                       << "'.  Restarting timer.";
+                    setSweepTimer();
+                }
+            }))
         {
-            crypto_prng().mix_entropy ();
-            return;
+            sweepTimer_.expires_from_now (
+                std::chrono::seconds {config_->getSize (siSweepInterval)});
+            sweepTimer_.async_wait (std::move (*optionalCountedHandler));
         }
+    }
 
-        if (timer == m_sweepTimer)
+    void setEntropyTimer ()
+    {
+        // Only start the timer if waitHandlerCounter_ is not yet joined.
+        if (auto optionalCountedHandler = waitHandlerCounter_.wrap (
+            [this] (boost::system::error_code const& e)
+            {
+                if (e.value() == boost::system::errc::success)
+                {
+                    crypto_prng().mix_entropy();
+                    setEntropyTimer();
+                }
+                // Recover as best we can if an unexpected error occurs.
+                if (e.value() != boost::system::errc::success &&
+                    e.value() != boost::asio::error::operation_aborted)
+                {
+                    // Try again later and hope for the best.
+                    JLOG (m_journal.error())
+                       << "Entropy timer got error '" << e.message()
+                       << "'.  Restarting timer.";
+                    setEntropyTimer();
+                }
+            }))
         {
-            m_jobQueue->addJob(
-                jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
+            using namespace std::chrono_literals;
+            entropyTimer_.expires_from_now (5min);
+            entropyTimer_.async_wait (std::move (*optionalCountedHandler));
         }
     }
 
@@ -942,8 +1003,7 @@ public:
         cachedSLEs_.expire();
 
         // Set timer to do another sweep later.
-        m_sweepTimer.setExpiration (
-            std::chrono::seconds {config_->getSize (siSweepInterval)});
+        setSweepTimer();
     }
 
 
