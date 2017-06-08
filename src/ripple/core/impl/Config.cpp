@@ -413,6 +413,9 @@ void Config::loadFromString (std::string const& fileContents)
     if (getSingleSection (secConfig, SECTION_DEBUG_LOGFILE, strTemp, j_))
         DEBUG_LOGFILE       = strTemp;
 
+    if (getSingleSection (secConfig, SECTION_WORKERS, strTemp, j_))
+        WORKERS      = beast::lexicalCastThrow <std::size_t> (strTemp);
+
     // Do not load trusted validator configuration for standalone mode
     if (! RUN_STANDALONE)
     {

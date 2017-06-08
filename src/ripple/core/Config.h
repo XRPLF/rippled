@@ -166,6 +166,9 @@ public:
     std::string                 SSL_VERIFY_FILE;
     std::string                 SSL_VERIFY_DIR;
 
+    // Thread pool configuration
+    std::size_t                 WORKERS = 0;
+
     // These override the command line client settings
     boost::optional<boost::asio::ip::address_v4> rpc_ip;
     boost::optional<std::uint16_t> rpc_port;
