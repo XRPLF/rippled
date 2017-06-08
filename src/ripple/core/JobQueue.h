@@ -108,7 +108,7 @@ public:
     using JobFunction = std::function <void(Job&)>;
 
     JobQueue (beast::insight::Collector::ptr const& collector,
-        Stoppable& parent, beast::Journal journal, Logs& logs);
+        Stoppable& parent, unsigned int threads, beast::Journal journal, Logs& logs);
     ~JobQueue ();
 
     /** Adds a job to the JobQueue.
@@ -163,7 +163,7 @@ public:
 
     /** Set the number of thread serving the job queue to precisely this number.
     */
-    void setThreadCount (int c, bool const standaloneMode);
+    void setThreadCount (int c);
 
     /** Return a scoped LoadEvent.
     */

@@ -336,14 +336,7 @@ void Config::loadFromString (std::string const& fileContents)
         else if (beast::detail::ci_equal(strTemp, "huge"))
             NODE_SIZE = 4;
         else
-        {
-            NODE_SIZE = beast::lexicalCastThrow <int> (strTemp);
-
-            if (NODE_SIZE < 0)
-                NODE_SIZE = 0;
-            else if (NODE_SIZE > 4)
-                NODE_SIZE = 4;
-        }
+            NODE_SIZE = std::min(4u, beast::lexicalCastThrow<unsigned int>(strTemp));
     }
 
     if (getSingleSection (secConfig, SECTION_ELB_SUPPORT, strTemp, j_))
