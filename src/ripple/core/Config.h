@@ -160,7 +160,7 @@ public:
     // Node storage configuration
     std::uint32_t                      LEDGER_HISTORY = 256;
     std::uint32_t                      FETCH_DEPTH = 1000000000;
-    int                         NODE_SIZE = 0;
+    unsigned int                       NODE_SIZE = 0;
 
     bool                        SSL_VERIFY = true;
     std::string                 SSL_VERIFY_FILE;

@@ -66,7 +66,7 @@ public:
         using namespace jtx;
         Env env(*this);
         auto& jq = env.app().getJobQueue();
-        jq.setThreadCount(0, false);
+        jq.setThreadCount(4);
         gate g1, g2;
         std::shared_ptr<JobQueue::Coro> c;
         jq.postCoro(jtCLIENT, "Coroutine-Test",
@@ -90,7 +90,7 @@ public:
         using namespace jtx;
         Env env(*this);
         auto& jq = env.app().getJobQueue();
-        jq.setThreadCount(0, false);
+        jq.setThreadCount(4);
         gate g;
         jq.postCoro(jtCLIENT, "Coroutine-Test",
             [&](auto const& c)
@@ -109,7 +109,7 @@ public:
         using namespace jtx;
         Env env(*this);
         auto& jq = env.app().getJobQueue();
-        jq.setThreadCount(0, true);
+        jq.setThreadCount(1);
         static int const N = 4;
         std::array<std::shared_ptr<JobQueue::Coro>, N> a;
 

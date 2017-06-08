@@ -354,13 +354,31 @@ public:
 
     static
     std::size_t
-    numberOfThreads(Config const& config)
+    asioThreadCount(Config const& config)
     {
-    #if RIPPLE_SINGLE_IO_SERVICE_THREAD
+#if RIPPLE_SINGLE_IO_SERVICE_THREAD
         return 1;
-    #else
+#else
         return (config.NODE_SIZE >= 2) ? 2 : 1;
-    #endif
+#endif
+    }
+
+    // Calculate the number of threads for the job queue
+    // taking into account the configured node size for
+    // this instance.
+    static
+    unsigned int
+    jobThreadCount (Config const& config)
+    {
+        if (config.standalone())
+            return 1;
+
+        unsigned int const minThreads = 2;
+        unsigned int const maxThreads = 2 + (config.NODE_SIZE * 4);
+
+        return 2 + std::max(
+            minThreads, std::min(
+                std::thread::hardware_concurrency(), maxThreads));
     }
 
     //--------------------------------------------------------------------------
@@ -370,7 +388,7 @@ public:
             std::unique_ptr<Logs> logs,
             std::unique_ptr<TimeKeeper> timeKeeper)
         : RootStoppable ("Application")
-        , BasicApp (numberOfThreads(*config))
+        , BasicApp (asioThreadCount(*config))
         , config_ (std::move(config))
         , logs_ (std::move(logs))
         , timeKeeper_ (std::move(timeKeeper))
@@ -404,7 +422,8 @@ public:
         //
         , m_jobQueue (std::make_unique<JobQueue>(
             m_collectorManager->group ("jobq"), m_nodeStoreScheduler,
-            logs_->journal("JobQueue"), *logs_))
+            jobThreadCount(*config_), logs_->journal("JobQueue"),
+            *logs_))
 
         //
         // Anything which calls addJob must be a descendant of the JobQueue
@@ -965,9 +984,6 @@ private:
 //
 bool ApplicationImp::setup()
 {
-    // VFALCO NOTE: 0 means use heuristics to determine the thread count.
-    m_jobQueue->setThreadCount (0, config_->standalone());
-
     // We want to intercept and wait for CTRL-C to terminate the process
     m_signals.add (SIGINT);
 

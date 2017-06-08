@@ -23,14 +23,18 @@
 
 namespace ripple {
 
-JobQueue::JobQueue (beast::insight::Collector::ptr const& collector,
-    Stoppable& parent, beast::Journal journal, Logs& logs)
+JobQueue::JobQueue (
+        beast::insight::Collector::ptr const& collector,
+        Stoppable& parent,
+        unsigned int threads,
+        beast::Journal journal,
+        Logs& logs)
     : Stoppable ("JobQueue", parent)
     , m_journal (journal)
     , m_lastJob (0)
     , m_invalidJobData (getJobTypes ().getInvalid (), collector, logs)
     , m_processCount (0)
-    , m_workers (*this, "JobQueue", 0)
+    , m_workers (*this, "JobQueue", threads)
     , m_cancelCallback (std::bind (&Stoppable::isStopping, this))
     , m_collector (collector)
 {
@@ -152,21 +156,8 @@ JobQueue::getJobCountGE (JobType t) const
 }
 
 void
-JobQueue::setThreadCount (int c, bool const standaloneMode)
+JobQueue::setThreadCount (int c)
 {
-    if (standaloneMode)
-    {
-        c = 1;
-    }
-    else if (c == 0)
-    {
-        c = static_cast<int>(std::thread::hardware_concurrency());
-        c = 2 + std::min (c, 4); // I/O will bottleneck
-
-        JLOG(m_journal.info()) << "Auto-tuning to " << c <<
-                            " validation/transaction/proposal threads";
-    }
-
     m_workers.setNumberOfThreads (c);
 }
 
