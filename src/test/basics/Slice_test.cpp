@@ -22,6 +22,7 @@
 #include <ripple/beast/unit_test.h>
 #include <array>
 #include <cstdint>
+#include <numeric>
 
 namespace ripple {
 namespace test {
@@ -108,6 +109,21 @@ struct Slice_test : beast::unit_test::suite
                     BEAST_EXPECT (s.size() == sizeof(data) - i - j);
                 }
             }
+        }
+        {
+            testcase ("Mutable");
+            boost::container::small_vector<std::uint8_t, 4> mutValues;
+            mutValues.resize(8);
+            std::iota(mutValues.begin(), mutValues.end(), 0);
+            MutableSlice ms{mutValues.data(), mutValues.size()};
+            BEAST_EXPECT(mutValues[0] == 0);
+            *ms.data() = 42;
+            BEAST_EXPECT(mutValues[0] == 42);
+            Slice s = ms; // can create an immutable slice from a a mutable slice
+            BEAST_EXPECT(*s.data() == 42);
+            s = ms; // can assign an immutable slice from a mutable slice
+            auto const svs = makeSlice(mutValues); // can create a slice from a boost small vector
+            BEAST_EXPECT(*svs.data() == 42);
         }
     }
 };
