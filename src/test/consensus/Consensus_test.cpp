@@ -32,12 +32,96 @@ class Consensus_test : public beast::unit_test::suite
 {
 public:
     void
+    testShouldCloseLedger()
+    {
+        using namespace std::chrono_literals;
+
+        // Use default parameters
+        ConsensusParms p;
+        beast::Journal j;
+
+        // Bizarre times forcibly close
+        BEAST_EXPECT(
+            shouldCloseLedger(true, 10, 10, 10, -10s, 10s, 1s, 1s, p, j));
+        BEAST_EXPECT(
+            shouldCloseLedger(true, 10, 10, 10, 100h, 10s, 1s, 1s, p, j));
+        BEAST_EXPECT(
+            shouldCloseLedger(true, 10, 10, 10, 10s, 100h, 1s, 1s, p, j));
+
+        // Rest of network has closed
+        BEAST_EXPECT(
+            shouldCloseLedger(true, 10, 3, 5, 10s, 10s, 10s, 10s, p, j));
+
+        // No transactions means wait until end of internval
+        BEAST_EXPECT(
+            !shouldCloseLedger(false, 10, 0, 0, 1s, 1s, 1s, 10s, p, j));
+        BEAST_EXPECT(
+            shouldCloseLedger(false, 10, 0, 0, 1s, 10s, 1s, 10s, p, j));
+
+        // Enforce minimum ledger open time
+        BEAST_EXPECT(
+            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 1s, 10s, p, j));
+
+        // Don't go too much faster than last time
+        BEAST_EXPECT(
+            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 3s, 10s, p, j));
+
+        BEAST_EXPECT(
+            shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 10s, 10s, p, j));
+    }
+
+    void
+    testCheckConsensus()
+    {
+        using namespace std::chrono_literals;
+
+        // Use default parameterss
+        ConsensusParms p;
+        beast::Journal j;
+
+
+        // Not enough time has elapsed
+        BEAST_EXPECT(
+            ConsensusState::No ==
+            checkConsensus(10, 2, 2, 0, 3s, 2s, p, true, j));
+
+        // If not enough peers have propsed, ensure
+        // more time for proposals
+        BEAST_EXPECT(
+            ConsensusState::No ==
+            checkConsensus(10, 2, 2, 0, 3s, 4s, p, true, j));
+
+        // Enough time has elapsed and we all agree
+        BEAST_EXPECT(
+            ConsensusState::Yes ==
+            checkConsensus(10, 2, 2, 0, 3s, 10s, p, true, j));
+
+        // Enough time has elapsed and we don't yet agree
+        BEAST_EXPECT(
+            ConsensusState::No ==
+            checkConsensus(10, 2, 1, 0, 3s, 10s, p, true, j));
+
+        // Our peers have moved on
+        // Enough time has elapsed and we all agree
+        BEAST_EXPECT(
+            ConsensusState::MovedOn ==
+            checkConsensus(10, 2, 1, 8, 3s, 10s, p, true, j));
+
+        // No peers makes it easy to agree
+        BEAST_EXPECT(
+            ConsensusState::Yes ==
+            checkConsensus(0, 0, 0, 0, 3s, 10s, p, true, j));
+    }
+
+    void
     testStandalone()
     {
+        using namespace std::chrono_literals;
         using namespace csf;
 
+        ConsensusParms parms;
         auto tg = TrustGraph::makeComplete(1);
-        Sim s(tg, topology(tg, fixed{LEDGER_GRANULARITY}));
+        Sim s(parms, tg, topology(tg, fixed{parms.ledgerGRANULARITY}));
 
         auto& p = s.peers[0];
 
@@ -63,10 +147,14 @@ public:
         using namespace csf;
         using namespace std::chrono;
 
+        ConsensusParms parms;
         auto tg = TrustGraph::makeComplete(5);
         Sim sim(
+            parms,
             tg,
-            topology(tg, fixed{round<milliseconds>(0.2 * LEDGER_GRANULARITY)}));
+            topology(
+                tg,
+                fixed{round<milliseconds>(0.2 * parms.ledgerGRANULARITY)}));
 
         // everyone submits their own ID as a TX and relay it to peers
         for (auto& p : sim.peers)
@@ -98,12 +186,13 @@ public:
 
         for (auto isParticipant : {true, false})
         {
+            ConsensusParms parms;
             auto tg = TrustGraph::makeComplete(5);
 
-            Sim sim(tg, topology(tg, [](PeerID i, PeerID j) {
+            Sim sim(parms, tg, topology(tg, [&](PeerID i, PeerID j) {
                         auto delayFactor = (i == 0 || j == 0) ? 1.1 : 0.2;
                         return round<milliseconds>(
-                            delayFactor * LEDGER_GRANULARITY);
+                            delayFactor * parms.ledgerGRANULARITY);
                     }));
 
             sim.peers[0].proposing_ = sim.peers[0].validating_ = isParticipant;
@@ -183,7 +272,7 @@ public:
         // the skews need to be at least 10 seconds.
 
         // Complicating this matter is that nodes will ignore proposals
-        // with times more than PROPOSE_FRESHNESS =20s in the past. So at
+        // with times more than proposeFRESHNESS =20s in the past. So at
         // the minimum granularity, we have at most 3 types of skews
         // (0s,10s,20s).
 
@@ -191,22 +280,26 @@ public:
         // skew.  Then no majority (1/3 < 1/2) of nodes will agree on an
         // actual close time.
 
+        ConsensusParms parms;
         auto tg = TrustGraph::makeComplete(6);
         Sim sim(
+            parms,
             tg,
-            topology(tg, fixed{round<milliseconds>(0.2 * LEDGER_GRANULARITY)}));
+            topology(
+                tg,
+                fixed{round<milliseconds>(0.2 * parms.ledgerGRANULARITY)}));
 
         // Run consensus without skew until we have a short close time
         // resolution
         while (sim.peers.front().lastClosedLedger.closeTimeResolution() >=
-               PROPOSE_FRESHNESS)
+               parms.proposeFRESHNESS)
             sim.run(1);
 
         // Introduce a shift on the time of half the peers
-        sim.peers[0].clockSkew = PROPOSE_FRESHNESS / 2;
-        sim.peers[1].clockSkew = PROPOSE_FRESHNESS / 2;
-        sim.peers[2].clockSkew = PROPOSE_FRESHNESS;
-        sim.peers[3].clockSkew = PROPOSE_FRESHNESS;
+        sim.peers[0].clockSkew = parms.proposeFRESHNESS / 2;
+        sim.peers[1].clockSkew = parms.proposeFRESHNESS / 2;
+        sim.peers[2].clockSkew = parms.proposeFRESHNESS;
+        sim.peers[3].clockSkew = parms.proposeFRESHNESS;
 
         // Verify all peers have the same LCL and it has all the Txs
         sim.run(1);
@@ -224,9 +317,12 @@ public:
         // Specialized test to exercise a temporary fork in which some peers
         // are working on an incorrect prior ledger.
 
+        ConsensusParms parms;
+
+
         // Vary the time it takes to process validations to exercise detecting
         // the wrong LCL at different phases of consensus
-        for (auto validationDelay : {0s, LEDGER_MIN_CLOSE})
+        for (auto validationDelay : {0ms, parms.ledgerMIN_CLOSE})
         {
             // Consider 10 peers:
             // 0 1    2 3 4    5 6 7 8 9
@@ -256,10 +352,10 @@ public:
 
             // This topology can fork, which is why we are using it for this
             // test.
-            BEAST_EXPECT(tg.canFork(minimumConsensusPercentage / 100.));
+            BEAST_EXPECT(tg.canFork(parms.minCONSENSUS_PCT / 100.));
 
-            auto netDelay = round<milliseconds>(0.2 * LEDGER_GRANULARITY);
-            Sim sim(tg, topology(tg, fixed{netDelay}));
+            auto netDelay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+            Sim sim(parms, tg, topology(tg, fixed{netDelay}));
 
             // initial round to set prior state
             sim.run(1);
@@ -283,7 +379,7 @@ public:
             //    wrong ones) and recover within that round since wrong LCL
             //    is detected before we close
             //
-            // With a validation delay of LEDGER_MIN_CLOSE, we need 3 more
+            // With a validation delay of ledgerMIN_CLOSE, we need 3 more
             // rounds.
             //  1. Round to generate different ledgers
             //  2. Round to detect different prior ledgers (but still generate
@@ -324,9 +420,6 @@ public:
         // switchLCL switched from establish to open phase, but still processed
         // the establish phase logic.
         {
-          using namespace csf;
-          using namespace std::chrono;
-
           // A mostly disjoint topology
           std::vector<UNL> unls;
           unls.push_back({0, 1});
@@ -337,14 +430,14 @@ public:
 
           TrustGraph tg{unls, membership};
 
-          Sim sim(tg, topology(tg, fixed{round<milliseconds>(
-                                       0.2 * LEDGER_GRANULARITY)}));
+          Sim sim(parms, tg, topology(tg, fixed{round<milliseconds>(
+                                       0.2 * parms.ledgerGRANULARITY)}));
 
           // initial ground to set prior state
           sim.run(1);
           for (auto &p : sim.peers) {
             // A long delay to acquire a missing ledger from the network
-            p.missingLedgerDelay = 2 * LEDGER_MIN_CLOSE;
+            p.missingLedgerDelay = 2 * parms.ledgerMIN_CLOSE;
 
             // Everyone sees only their own LCL
             p.openTxs.insert(Tx(p.id));
@@ -367,11 +460,15 @@ public:
         int numPeers = 10;
         for (int overlap = 0; overlap <= numPeers; ++overlap)
         {
+            ConsensusParms parms;
             auto tg = TrustGraph::makeClique(numPeers, overlap);
             Sim sim(
+                parms,
                 tg,
                 topology(
-                    tg, fixed{round<milliseconds>(0.2 * LEDGER_GRANULARITY)}));
+                    tg,
+                    fixed{
+                        round<milliseconds>(0.2 * parms.ledgerGRANULARITY)}));
 
             // Initial round to set prior state
             sim.run(1);
@@ -406,7 +503,7 @@ public:
     simClockSkew()
     {
         using namespace csf;
-
+        using namespace std::chrono_literals;
         // Attempting to test what happens if peers enter consensus well
         // separated in time.  Initial round (in which peers are not staggered)
         // is used to get the network going, then transactions are submitted
@@ -422,8 +519,9 @@ public:
 
         for (auto stagger : {800ms, 1600ms, 3200ms, 30000ms, 45000ms, 300000ms})
         {
+            ConsensusParms parms;
             auto tg = TrustGraph::makeComplete(5);
-            Sim sim(tg, topology(tg, [](PeerID i, PeerID) {
+            Sim sim(parms, tg, topology(tg, [](PeerID i, PeerID) {
                         return 200ms * (i + 1);
                     }));
 
@@ -474,6 +572,7 @@ public:
         double transProb = 0.5;
 
         std::mt19937_64 rng;
+        ConsensusParms parms;
 
         auto tg = TrustGraph::makeRandomRanked(
             N,
@@ -483,8 +582,11 @@ public:
             rng);
 
         Sim sim{
+            parms,
             tg,
-            topology(tg, fixed{round<milliseconds>(0.2 * LEDGER_GRANULARITY)})};
+            topology(
+                tg,
+                fixed{round<milliseconds>(0.2 * parms.ledgerGRANULARITY)})};
 
         // Initial round to set prior state
         sim.run(1);
@@ -511,6 +613,9 @@ public:
     void
     run() override
     {
+        testShouldCloseLedger();
+        testCheckConsensus();
+
         testStandalone();
         testPeersAgree();
         testSlowPeer();

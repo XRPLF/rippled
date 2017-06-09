@@ -18,4 +18,4 @@
 //==============================================================================
 #include <BeastConfig.h>
 
-#include <ripple/consensus/LedgerTiming.cpp>
+#include <ripple/consensus/Consensus.cpp>
