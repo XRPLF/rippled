@@ -141,7 +141,7 @@ private:
     do_peer(int id, socket_type&& sock0)
     {
         socket_type sock(std::move(sock0));
-        beast::streambuf sb;
+        boost::asio::streambuf sb;
         error_code ec;
         for(;;)
         {

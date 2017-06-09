@@ -74,9 +74,10 @@ class StreambufWSMsg : public WSMsg
     std::size_t n_ = 0;
 
 public:
-    StreambufWSMsg(Streambuf&& sb)
-        : sb_(std::move(sb))
+    Streambuf&
+    rdbuf()
     {
+        return sb_;
     }
 
     std::pair<boost::tribool,

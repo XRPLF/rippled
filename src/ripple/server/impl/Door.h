@@ -225,7 +225,7 @@ do_detect(boost::asio::yield_context do_yield)
 {
     bool ssl;
     error_code ec;
-    beast::streambuf buf(16);
+    boost::asio::streambuf buf(16);
     timer_.expires_from_now(std::chrono::seconds(15));
     std::tie(ec, ssl) = detect_ssl(socket_, buf, do_yield);
     error_code unused;

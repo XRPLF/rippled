@@ -23,6 +23,7 @@
 #include <ripple/json/json_value.h>
 #include <beast/core/streambuf.hpp>
 #include <beast/http/message.hpp>
+#include <boost/asio/streambuf.hpp>
 
 namespace ripple {
 
@@ -33,7 +34,7 @@ struct json_body
 
     class writer
     {
-        beast::streambuf sb_;
+        boost::asio::streambuf sb_;
 
     public:
         template<bool isRequest, class Fields>

@@ -75,7 +75,7 @@ class JSONRPCClient : public AbstractClient
     boost::asio::io_service ios_;
     boost::asio::ip::tcp::socket stream_;
     beast::streambuf bin_;
-    beast::streambuf bout_;
+    boost::asio::streambuf bout_;
     unsigned rpc_version_;
 
 public:
@@ -84,7 +84,7 @@ public:
         : ep_(getEndpoint(cfg))
         , stream_(ios_)
         , rpc_version_(rpc_version)
-    {   
+    {
         stream_.connect(ep_);
     }
 

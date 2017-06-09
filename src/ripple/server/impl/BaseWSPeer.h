@@ -49,8 +49,8 @@ private:
 
     http_request_type request_;
     beast::websocket::opcode op_;
-    beast::streambuf rb_;
-    beast::streambuf wb_;
+    boost::asio::streambuf rb_;
+    boost::asio::streambuf wb_;
     std::list<std::shared_ptr<WSMsg>> wq_;
     bool do_close_ = false;
     beast::websocket::close_reason cr_;
