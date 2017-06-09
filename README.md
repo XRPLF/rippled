@@ -1,5 +1,9 @@
 ![Ripple](/images/ripple.png)
 
+**Do you work at a digital asset exchange or wallet provider?** 
+
+Please [contact us](mailto:support@ripple.com). We can help guide your integration.
+
 # What is Ripple?
 Ripple is a network of computers which use the [Ripple consensus algorithm](https://www.youtube.com/watch?v=pj1QVb1vlC0) to atomically settle and record
 transactions on a secure distributed database, the Ripple Consensus Ledger
@@ -83,7 +87,7 @@ To learn about how Ripple is transforming global payments visit
 
 - - -
 
-Copyright © 2015, Ripple Labs. All rights reserved.
+Copyright © 2017, Ripple Labs. All rights reserved.
 
 Portions of this document, including but not limited to the Ripple logo,
 images and image templates are the property of Ripple Labs and cannot be
