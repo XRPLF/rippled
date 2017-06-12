@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/make_SSLContext.h>
+#include <ripple/beast/rfc2616.h>
 #include <ripple/server/Server.h>
 #include <ripple/server/Session.h>
 #include <ripple/beast/unit_test.h>
@@ -123,7 +124,7 @@ public:
         onRequest (Session& session)
         {
             session.write (std::string ("Hello, world!\n"));
-            if (is_keep_alive(session.request()))
+            if (beast::rfc2616::is_keep_alive(session.request()))
                 session.complete();
             else
                 session.close (true);

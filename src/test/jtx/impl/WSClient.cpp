@@ -24,8 +24,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
-#include <beast/core/placeholders.hpp>
-#include <beast/core/streambuf.hpp>
+#include <beast/core/multi_buffer.hpp>
 #include <beast/websocket.hpp>
 
 #include <condition_variable>
@@ -95,8 +94,7 @@ class WSClientImpl : public WSClient
     std::thread thread_;
     boost::asio::ip::tcp::socket stream_;
     beast::websocket::stream<boost::asio::ip::tcp::socket&> ws_;
-    beast::websocket::opcode op_;
-    beast::streambuf rb_;
+    beast::multi_buffer rb_;
 
     bool peerClosed_ = false;
 
@@ -139,9 +137,9 @@ public:
             stream_.connect(ep);
             ws_.handshake(ep.address().to_string() +
                 ":" + std::to_string(ep.port()), "/");
-            ws_.async_read(op_, rb_,
+            ws_.async_read(rb_,
                 strand_.wrap(std::bind(&WSClientImpl::on_read_msg,
-                    this, beast::asio::placeholders::error)));
+                    this, std::placeholders::_1)));
         }
         catch(std::exception&)
         {
@@ -278,9 +276,9 @@ private:
             msgs_.push_front(m);
             cv_.notify_all();
         }
-        ws_.async_read(op_, rb_, strand_.wrap(
+        ws_.async_read(rb_, strand_.wrap(
             std::bind(&WSClientImpl::on_read_msg,
-                this, beast::asio::placeholders::error)));
+                this, std::placeholders::_1)));
     }
 
     // Called when the read op terminates

@@ -21,7 +21,6 @@
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/unit_test.h>
-#include <beast/core/placeholders.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/optional.hpp>
@@ -211,7 +210,7 @@ private:
             {
                 acceptor_.async_accept(socket_, strand_.wrap(std::bind(
                     &Acceptor::on_accept, shared_from_this(),
-                        beast::asio::placeholders::error)));
+                        std::placeholders::_1)));
             }
 
             void
@@ -237,7 +236,7 @@ private:
                 p->run();
                 acceptor_.async_accept(socket_, strand_.wrap(std::bind(
                     &Acceptor::on_accept, shared_from_this(),
-                        beast::asio::placeholders::error)));
+                        std::placeholders::_1)));
             }
         };
 
@@ -281,10 +280,10 @@ private:
             {
                 timer_.expires_from_now(std::chrono::seconds(3));
                 timer_.async_wait(strand_.wrap(std::bind(&Connection::on_timer,
-                    shared_from_this(), beast::asio::placeholders::error)));
+                    shared_from_this(), std::placeholders::_1)));
                 stream_.async_handshake(stream_type::server, strand_.wrap(
                     std::bind(&Connection::on_handshake, shared_from_this(),
-                        beast::asio::placeholders::error)));
+                        std::placeholders::_1)));
             }
 
             void
@@ -319,8 +318,8 @@ private:
 #if 1
                 boost::asio::async_read_until(stream_, buf_, "\n", strand_.wrap(
                     std::bind(&Connection::on_read, shared_from_this(),
-                        beast::asio::placeholders::error,
-                            beast::asio::placeholders::bytes_transferred)));
+                        std::placeholders::_1,
+                            std::placeholders::_2)));
 #else
                 close();
 #endif
@@ -334,7 +333,7 @@ private:
                     server_.test_.log << "[server] read: EOF" << std::endl;
                     return stream_.async_shutdown(strand_.wrap(std::bind(
                         &Connection::on_shutdown, shared_from_this(),
-                            beast::asio::placeholders::error)));
+                            std::placeholders::_1)));
                 }
                 if (ec)
                     return fail("read", ec);
@@ -344,8 +343,8 @@ private:
                 write(buf_, "BYE\n");
                 boost::asio::async_write(stream_, buf_.data(), strand_.wrap(
                     std::bind(&Connection::on_write, shared_from_this(),
-                        beast::asio::placeholders::error,
-                            beast::asio::placeholders::bytes_transferred)));
+                        std::placeholders::_1,
+                            std::placeholders::_2)));
             }
 
             void
@@ -356,7 +355,7 @@ private:
                     return fail("write", ec);
                 stream_.async_shutdown(strand_.wrap(std::bind(
                     &Connection::on_shutdown, shared_from_this(),
-                        beast::asio::placeholders::error)));
+                        std::placeholders::_1)));
             }
 
             void
@@ -432,10 +431,10 @@ private:
             {
                 timer_.expires_from_now(std::chrono::seconds(3));
                 timer_.async_wait(strand_.wrap(std::bind(&Connection::on_timer,
-                    shared_from_this(), beast::asio::placeholders::error)));
+                    shared_from_this(), std::placeholders::_1)));
                 socket_.async_connect(endpoint(), strand_.wrap(std::bind(
                     &Connection::on_connect, shared_from_this(),
-                        beast::asio::placeholders::error)));
+                        std::placeholders::_1)));
             }
 
             void
@@ -469,7 +468,7 @@ private:
                     return fail("connect", ec);
                 stream_.async_handshake(stream_type::client, strand_.wrap(
                     std::bind(&Connection::on_handshake, shared_from_this(),
-                        beast::asio::placeholders::error)));
+                        std::placeholders::_1)));
             }
 
             void
@@ -482,12 +481,12 @@ private:
 #if 1
                 boost::asio::async_write(stream_, buf_.data(), strand_.wrap(
                     std::bind(&Connection::on_write, shared_from_this(),
-                        beast::asio::placeholders::error,
-                            beast::asio::placeholders::bytes_transferred)));
+                        std::placeholders::_1,
+                            std::placeholders::_2)));
 #else
                 stream_.async_shutdown(strand_.wrap(std::bind(
                     &Connection::on_shutdown, shared_from_this(),
-                        beast::asio::placeholders::error)));
+                        std::placeholders::_1)));
 #endif
             }
 
@@ -500,12 +499,12 @@ private:
 #if 1
                 boost::asio::async_read_until(stream_, buf_, "\n", strand_.wrap(
                     std::bind(&Connection::on_read, shared_from_this(),
-                        beast::asio::placeholders::error,
-                            beast::asio::placeholders::bytes_transferred)));
+                        std::placeholders::_1,
+                            std::placeholders::_2)));
 #else
                 stream_.async_shutdown(strand_.wrap(std::bind(
                     &Connection::on_shutdown, shared_from_this(),
-                        beast::asio::placeholders::error)));
+                        std::placeholders::_1)));
 #endif
             }
 
@@ -517,7 +516,7 @@ private:
                 buf_.commit(bytes_transferred);
                 stream_.async_shutdown(strand_.wrap(std::bind(
                     &Connection::on_shutdown, shared_from_this(),
-                        beast::asio::placeholders::error)));
+                        std::placeholders::_1)));
             }
 
             void

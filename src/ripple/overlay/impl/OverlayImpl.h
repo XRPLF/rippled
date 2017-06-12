@@ -248,9 +248,21 @@ public:
     bool
     isPeerUpgrade (http_request_type const& request);
 
+    template<class Body>
     static
     bool
-    isPeerUpgrade (http_response_type const& response);
+    isPeerUpgrade (beast::http::response<Body> const& response)
+    {
+        if (! is_upgrade(response))
+            return false;
+        if(response.result() != beast::http::status::switching_protocols)
+            return false;
+        auto const versions = parse_ProtocolVersions(
+            response["Upgrade"]);
+        if (versions.size() == 0)
+            return false;
+        return true;
+    }
 
     static
     std::string

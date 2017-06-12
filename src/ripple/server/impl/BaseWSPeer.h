@@ -25,7 +25,7 @@
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/crypto/csprng.h>
 #include <beast/websocket.hpp>
-#include <beast/core/streambuf.hpp>
+#include <beast/core/multi_buffer.hpp>
 #include <beast/http/message.hpp>
 #include <cassert>
 
@@ -48,9 +48,8 @@ private:
     friend class BasePeer<Handler, Impl>;
 
     http_request_type request_;
-    beast::websocket::opcode op_;
-    beast::streambuf rb_;
-    beast::streambuf wb_;
+    beast::multi_buffer rb_;
+    beast::multi_buffer wb_;
     std::list<std::shared_ptr<WSMsg>> wq_;
     bool do_close_ = false;
     beast::websocket::close_reason cr_;
@@ -105,25 +104,6 @@ public:
     complete() override;
 
 protected:
-    struct identity
-    {
-        template<class Body, class Headers>
-        void
-        operator()(beast::http::message<true, Body, Headers>& req) const
-        {
-            req.fields.replace("User-Agent",
-                BuildInfo::getFullVersionString());
-        }
-
-        template<class Body, class Headers>
-        void
-        operator()(beast::http::message<false, Body, Headers>& resp) const
-        {
-            resp.fields.replace("Server",
-                BuildInfo::getFullVersionString());
-        }
-    };
-
     Impl&
     impl()
     {
@@ -199,17 +179,21 @@ run()
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind(
             &BaseWSPeer::run, impl().shared_from_this()));
-    impl().ws_.set_option(beast::websocket::decorate(identity{}));
     impl().ws_.set_option(port().pmd_options);
-    impl().ws_.set_option(beast::websocket::ping_callback{
+    impl().ws_.ping_callback(
         std::bind(&BaseWSPeer::on_ping_pong, this,
-            std::placeholders::_1, std::placeholders::_2)});
+            std::placeholders::_1, std::placeholders::_2));
     using namespace beast::asio;
     start_timer();
     close_on_timer_ = true;
-    impl().ws_.async_accept(request_, strand_.wrap(std::bind(
-        &BaseWSPeer::on_ws_handshake, impl().shared_from_this(),
-            placeholders::error)));
+    impl().ws_.async_accept_ex(request_,
+        [](auto & res)
+        {
+            res.replace(beast::http::field::server,
+                BuildInfo::getFullVersionString());
+        },
+        strand_.wrap(std::bind(&BaseWSPeer::on_ws_handshake,
+            impl().shared_from_this(), std::placeholders::_1)));
 }
 
 template<class Handler, class Impl>
@@ -227,7 +211,7 @@ send(std::shared_ptr<WSMsg> w)
     {
         JLOG(this->j_.info()) <<
             "closing slow client";
-        cr_.code = static_cast<beast::websocket::close_code::value>(4000);
+        cr_.code = static_cast<beast::websocket::close_code>(4000);
         cr_.reason = "Client is too slow.";
         wq_.erase(std::next(wq_.begin()), wq_.end());
         close();
@@ -250,7 +234,7 @@ close()
     if(wq_.empty())
         impl().ws_.async_close({}, strand_.wrap(std::bind(
             &BaseWSPeer::on_close, impl().shared_from_this(),
-                beast::asio::placeholders::error)));
+                std::placeholders::_1)));
 }
 
 template<class Handler, class Impl>
@@ -305,12 +289,12 @@ on_write(error_code const& ec)
         impl().ws_.async_write_frame(
             result.first, result.second, strand_.wrap(std::bind(
                 &BaseWSPeer::on_write, impl().shared_from_this(),
-                    placeholders::error)));
+                    std::placeholders::_1)));
     else
         impl().ws_.async_write_frame(
             result.first, result.second, strand_.wrap(std::bind(
                 &BaseWSPeer::on_write_fin, impl().shared_from_this(),
-                    placeholders::error)));
+                    std::placeholders::_1)));
 }
 
 template<class Handler, class Impl>
@@ -324,7 +308,7 @@ on_write_fin(error_code const& ec)
     if(do_close_)
         impl().ws_.async_close(cr_, strand_.wrap(std::bind(
             &BaseWSPeer::on_close, impl().shared_from_this(),
-                beast::asio::placeholders::error)));
+                std::placeholders::_1)));
     else if(! wq_.empty())
         on_write({});
 }
@@ -338,9 +322,9 @@ do_read()
         return strand_.post(std::bind(
             &BaseWSPeer::do_read, impl().shared_from_this()));
     using namespace beast::asio;
-    impl().ws_.async_read(op_, rb_, strand_.wrap(
+    impl().ws_.async_read(rb_, strand_.wrap(
         std::bind(&BaseWSPeer::on_read,
-            impl().shared_from_this(), placeholders::error)));
+            impl().shared_from_this(), std::placeholders::_1)));
 }
 
 template<class Handler, class Impl>
@@ -385,7 +369,7 @@ start_timer()
         return fail(ec, "start_timer");
     timer_.async_wait(strand_.wrap(std::bind(
         &BaseWSPeer<Handler, Impl>::on_timer, impl().shared_from_this(),
-            beast::asio::placeholders::error)));
+            std::placeholders::_1)));
 }
 
 // Convenience for discarding the error code

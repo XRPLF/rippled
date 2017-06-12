@@ -21,7 +21,7 @@
 #define RIPPLE_RPC_JSON_BODY_H
 
 #include <ripple/json/json_value.h>
-#include <beast/core/streambuf.hpp>
+#include <beast/core/multi_buffer.hpp>
 #include <beast/http/message.hpp>
 
 namespace ripple {
@@ -31,21 +31,28 @@ struct json_body
 {
     using value_type = Json::Value;
 
-    class writer
+    class reader
     {
-        beast::streambuf sb_;
+        using dynamic_buffer_type = beast::multi_buffer;
+            
+        dynamic_buffer_type buffer_;
 
     public:
+        using const_buffers_type =
+            typename dynamic_buffer_type::const_buffers_type;
+
+        using is_deferred = std::false_type;
+
         template<bool isRequest, class Fields>
         explicit
-        writer(beast::http::message<
-            isRequest, json_body, Fields> const& m) noexcept
+        reader(beast::http::message<
+            isRequest, json_body, Fields> const& m)
         {
             stream(m.body,
                 [&](void const* data, std::size_t n)
                 {
-                    sb_.commit(boost::asio::buffer_copy(
-                        sb_.prepare(n), boost::asio::buffer(data, n)));
+                    buffer_.commit(boost::asio::buffer_copy(
+                        buffer_.prepare(n), boost::asio::buffer(data, n)));
                 });
         }
 
@@ -54,18 +61,15 @@ struct json_body
         {
         }
 
-        std::uint64_t
-        content_length() const noexcept
+        boost::optional<std::pair<const_buffers_type, bool>>
+        get(beast::error_code& ec)
         {
-            return sb_.size();
+            return {{buffer_.data(), false}};
         }
 
-        template<class Writef>
-        bool
-        write(beast::error_code&, Writef&& wf) noexcept
+        void
+        finish(beast::error_code&)
         {
-            wf(sb_.data());
-            return true;
         }
     };
 };

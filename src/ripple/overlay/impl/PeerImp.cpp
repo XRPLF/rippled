@@ -47,6 +47,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/beast/utility/weak_fn.h>
+#include <beast/core/ostream.hpp>
 #include <beast/http/write.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/io_service.hpp>
@@ -91,7 +92,7 @@ PeerImp::PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
     , fee_ (Resource::feeLightPeer)
     , slot_ (slot)
     , request_(std::move(request))
-    , headers_(request_.fields)
+    , headers_(request_)
 {
 }
 
@@ -225,8 +226,8 @@ PeerImp::send (Message::pointer const& m)
     boost::asio::async_write (stream_, boost::asio::buffer(
         send_queue_.front()->getBuffer()), strand_.wrap(std::bind(
             &PeerImp::onWriteMessage, shared_from_this(),
-                beast::asio::placeholders::error,
-                    beast::asio::placeholders::bytes_transferred)));
+                std::placeholders::_1,
+                    std::placeholders::_2)));
 }
 
 void
@@ -248,7 +249,7 @@ PeerImp::crawl() const
     auto const iter = headers_.find("Crawl");
     if (iter == headers_.end())
         return false;
-    return beast::detail::ci_equal(iter->second, "public");
+    return beast::detail::ci_equal(iter->value(), "public");
 }
 
 std::string
@@ -482,7 +483,7 @@ PeerImp::gracefulClose()
         return;
     setTimer();
     stream_.async_shutdown(strand_.wrap(std::bind(&PeerImp::onShutdown,
-        shared_from_this(), beast::asio::placeholders::error)));
+        shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -498,7 +499,7 @@ PeerImp::setTimer()
         return;
     }
     timer_.async_wait(strand_.wrap(std::bind(&PeerImp::onTimer,
-        shared_from_this(), beast::asio::placeholders::error)));
+        shared_from_this(), std::placeholders::_1)));
 }
 
 // convenience for ignoring the error code
@@ -609,9 +610,9 @@ void PeerImp::doAccept()
 
     // TODO Apply headers to connection state.
 
-    beast::write (write_buffer_, makeResponse(
+    beast::ostream(write_buffer_) << makeResponse(
         ! overlay_.peerFinder().config().peerPrivate,
-            request_, remote_address_, *sharedValue));
+            request_, remote_address_, *sharedValue);
 
     auto const protocol = BuildInfo::make_protocol(hello_.protoversion());
     JLOG(journal_.info()) << "Protocol: " << to_string(protocol);
@@ -657,17 +658,16 @@ PeerImp::makeResponse (bool crawl,
     uint256 const& sharedValue)
 {
     http_response_type resp;
-    resp.status = 101;
-    resp.reason = "Switching Protocols";
+    resp.result(beast::http::status::switching_protocols);
     resp.version = req.version;
-    resp.fields.insert("Connection", "Upgrade");
-    resp.fields.insert("Upgrade", "RTXP/1.2");
-    resp.fields.insert("Connect-AS", "Peer");
-    resp.fields.insert("Server", BuildInfo::getFullVersionString());
-    resp.fields.insert("Crawl", crawl ? "public" : "private");
+    resp.insert("Connection", "Upgrade");
+    resp.insert("Upgrade", "RTXP/1.2");
+    resp.insert("Connect-As", "Peer");
+    resp.insert("Server", BuildInfo::getFullVersionString());
+    resp.insert("Crawl", crawl ? "public" : "private");
     protocol::TMHello hello = buildHello(sharedValue,
         overlay_.setup().public_ip, remote, app_);
-    appendHello(resp.fields, hello);
+    appendHello(resp, hello);
     return resp;
 }
 
@@ -696,8 +696,8 @@ PeerImp::onWriteResponse (error_code ec, std::size_t bytes_transferred)
 
     stream_.async_write_some (write_buffer_.data(),
         strand_.wrap (std::bind (&PeerImp::onWriteResponse,
-            shared_from_this(), beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
+            shared_from_this(), std::placeholders::_1,
+                std::placeholders::_2)));
 }
 
 //------------------------------------------------------------------------------
@@ -771,8 +771,8 @@ PeerImp::onReadMessage (error_code ec, std::size_t bytes_transferred)
     // Timeout on writes only
     stream_.async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
         strand_.wrap (std::bind (&PeerImp::onReadMessage,
-            shared_from_this(), beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
+            shared_from_this(), std::placeholders::_1,
+                std::placeholders::_2)));
 }
 
 void
@@ -801,15 +801,15 @@ PeerImp::onWriteMessage (error_code ec, std::size_t bytes_transferred)
         return boost::asio::async_write (stream_, boost::asio::buffer(
             send_queue_.front()->getBuffer()), strand_.wrap(std::bind(
                 &PeerImp::onWriteMessage, shared_from_this(),
-                    beast::asio::placeholders::error,
-                        beast::asio::placeholders::bytes_transferred)));
+                    std::placeholders::_1,
+                        std::placeholders::_2)));
     }
 
     if (gracefulClose_)
     {
         return stream_.async_shutdown(strand_.wrap(std::bind(
             &PeerImp::onShutdown, shared_from_this(),
-                beast::asio::placeholders::error)));
+                std::placeholders::_1)));
     }
 }
 

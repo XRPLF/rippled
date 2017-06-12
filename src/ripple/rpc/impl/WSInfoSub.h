@@ -42,17 +42,17 @@ public:
         : InfoSub(source)
         , ws_(ws)
     {
-        auto const& h = ws->request().fields;
+        auto const& h = ws->request();
         auto it = h.find("X-User");
         if (it != h.end() &&
             isIdentified(
                 ws->port(), beast::IPAddressConversion::from_asio(
-                    ws->remote_endpoint()).address(), it->second))
+                    ws->remote_endpoint()).address(), it->value().to_string()))
         {
-            user_ = it->second;
+            user_ = it->value().to_string();
             it = h.find("X-Forwarded-For");
             if (it != h.end())
-                fwdfor_ = it->second;
+                fwdfor_ = it->value().to_string();
         }
     }
 
@@ -74,7 +74,7 @@ public:
         auto sp = ws_.lock();
         if(! sp)
             return;
-        beast::streambuf sb;
+        beast::multi_buffer sb;
         stream(jv,
             [&](void const* data, std::size_t n)
             {

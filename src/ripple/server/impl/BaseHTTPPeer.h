@@ -24,12 +24,11 @@
 #include <ripple/server/Session.h>
 #include <ripple/server/impl/io_list.h>
 #include <ripple/beast/net/IPAddressConversion.h>
-#include <beast/core/placeholders.hpp>
 #include <ripple/beast/asio/ssl_error.h> // for is_short_read?
 #include <beast/http/read.hpp>
 #include <beast/http/message.hpp>
-#include <beast/http/parser_v1.hpp>
-#include <beast/http/streambuf_body.hpp>
+#include <beast/http/parser.hpp>
+#include <beast/http/dynamic_body.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/streambuf.hpp>
@@ -288,7 +287,7 @@ start_timer()
         return fail(ec, "start_timer");
     timer_.async_wait(strand_.wrap(std::bind(
         &BaseHTTPPeer<Handler, Impl>::on_timer, impl().shared_from_this(),
-            beast::asio::placeholders::error)));
+            std::placeholders::_1)));
 }
 
 // Convenience for discarding the error code
@@ -328,6 +327,8 @@ do_read(yield_context do_yield)
     beast::http::async_read(impl().stream_,
         read_buf_, message_, do_yield[ec]);
     cancel_timer();
+    if(ec == beast::http::error::end_of_stream)
+        return do_close();
     if(ec)
         return fail(ec, "http::read");
     do_request();
@@ -361,8 +362,8 @@ on_write(error_code const& ec,
         using namespace beast::asio;
         return boost::asio::async_write(impl().stream_, v,
             strand_.wrap(std::bind(&BaseHTTPPeer::on_write,
-                impl().shared_from_this(), placeholders::error,
-                    placeholders::bytes_transferred)));
+                impl().shared_from_this(), std::placeholders::_1,
+                    std::placeholders::_2)));
     }
     if(! complete_)
         return;

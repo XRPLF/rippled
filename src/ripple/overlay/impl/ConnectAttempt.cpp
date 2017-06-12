@@ -23,7 +23,6 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/json/json_reader.h>
-#include <beast/core/to_string.hpp>
 #include <beast/http/read.hpp>
 #include <beast/http/write.hpp>
 
@@ -81,7 +80,7 @@ ConnectAttempt::run()
     error_code ec;
     stream_.next_layer().async_connect (remote_endpoint_,
         strand_.wrap (std::bind (&ConnectAttempt::onConnect,
-            shared_from_this(), beast::asio::placeholders::error)));
+            shared_from_this(), std::placeholders::_1)));
 }
 
 //------------------------------------------------------------------------------
@@ -138,7 +137,7 @@ ConnectAttempt::setTimer()
 
     timer_.async_wait(strand_.wrap(std::bind(
         &ConnectAttempt::onTimer, shared_from_this(),
-            beast::asio::placeholders::error)));
+            std::placeholders::_1)));
 }
 
 void
@@ -186,7 +185,7 @@ ConnectAttempt::onConnect (error_code ec)
     stream_.set_verify_mode (boost::asio::ssl::verify_none);
     stream_.async_handshake (boost::asio::ssl::stream_base::client,
         strand_.wrap (std::bind (&ConnectAttempt::onHandshake,
-            shared_from_this(), beast::asio::placeholders::error)));
+            shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -221,12 +220,12 @@ ConnectAttempt::onHandshake (error_code ec)
         overlay_.setup().public_ip,
         beast::IPAddressConversion::from_asio(remote_endpoint_),
         app_);
-    appendHello (req_.fields, hello);
+    appendHello (req_, hello);
 
     setTimer();
     beast::http::async_write(stream_, req_,
         strand_.wrap (std::bind (&ConnectAttempt::onWrite,
-            shared_from_this(), beast::asio::placeholders::error)));
+            shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -241,7 +240,7 @@ ConnectAttempt::onWrite (error_code ec)
         return fail("onWrite", ec);
     beast::http::async_read(stream_, read_buf_, response_,
         strand_.wrap(std::bind(&ConnectAttempt::onRead,
-            shared_from_this(), beast::asio::placeholders::error)));
+            shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -260,7 +259,7 @@ ConnectAttempt::onRead (error_code ec)
         setTimer();
         return stream_.async_shutdown(strand_.wrap(std::bind(
             &ConnectAttempt::onShutdown, shared_from_this(),
-                beast::asio::placeholders::error)));
+                std::placeholders::_1)));
     }
     if(ec)
         return fail("onRead", ec);
@@ -290,26 +289,32 @@ ConnectAttempt::makeRequest (bool crawl,
         request_type
 {
     request_type m;
-    m.method = "GET";
-    m.url = "/";
+    m.method(beast::http::verb::get);
+    m.target("/");
     m.version = 11;
-    m.fields.insert ("User-Agent", BuildInfo::getFullVersionString());
-    m.fields.insert ("Upgrade", "RTXP/1.2");
+    m.insert ("User-Agent", BuildInfo::getFullVersionString());
+    m.insert ("Upgrade", "RTXP/1.2");
         //std::string("RTXP/") + to_string (BuildInfo::getCurrentProtocol()));
-    m.fields.insert ("Connection", "Upgrade");
-    m.fields.insert ("Connect-As", "Peer");
-    m.fields.insert ("Crawl", crawl ? "public" : "private");
+    m.insert ("Connection", "Upgrade");
+    m.insert ("Connect-As", "Peer");
+    m.insert ("Crawl", crawl ? "public" : "private");
     return m;
 }
 
 void
 ConnectAttempt::processResponse()
 {
-    if (response_.status == 503)
+    if (response_.result() == beast::http::status::service_unavailable)
     {
         Json::Value json;
         Json::Reader r;
-        auto const success = r.parse(beast::to_string(response_.body.data()), json);
+        std::string s;
+        s.reserve(boost::asio::buffer_size(response_.body.data()));
+        for(auto const& buffer : response_.body.data())
+            s.append(
+                boost::asio::buffer_cast<char const*>(buffer),
+                boost::asio::buffer_size(buffer));
+        auto const success = r.parse(s, json);
         if (success)
         {
             if (json.isObject() && json.isMember("peer-ips"))
@@ -339,11 +344,11 @@ ConnectAttempt::processResponse()
     if (! OverlayImpl::isPeerUpgrade(response_))
     {
         JLOG(journal_.info()) <<
-            "HTTP Response: " << response_.status << " " << response_.reason;
+            "HTTP Response: " << response_.result() << " " << response_.reason();
         return close();
     }
 
-    auto hello = parseHello (false, response_.fields, journal_);
+    auto hello = parseHello (false, response_, journal_);
     if(! hello)
         return fail("processResponse: Bad TMHello");
 

@@ -144,7 +144,7 @@ ValidatorSite::setTimer ()
         timer_.expires_at (next->nextRefresh);
         timer_.async_wait (std::bind (&ValidatorSite::onTimer, this,
             std::distance (sites_.begin (), next),
-                beast::asio::placeholders::error));
+                std::placeholders::_1));
     }
 }
 
@@ -205,12 +205,12 @@ ValidatorSite::onSiteFetch(
     detail::response_type&& res,
     std::size_t siteIdx)
 {
-    if (! ec && res.status != 200)
+    if (! ec && res.result() != beast::http::status::ok)
     {
         std::lock_guard <std::mutex> lock{sites_mutex_};
         JLOG (j_.warn()) <<
             "Request for validator list at " <<
-            sites_[siteIdx].uri << " returned " << res.status;
+            sites_[siteIdx].uri << " returned " << res.result_int();
     }
     else if (! ec)
     {

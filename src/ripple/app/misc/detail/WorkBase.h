@@ -22,8 +22,7 @@
 
 #include <ripple/app/misc/detail/Work.h>
 #include <ripple/protocol/BuildInfo.h>
-#include <beast/core/placeholders.hpp>
-#include <beast/core/streambuf.hpp>
+#include <beast/core/multi_buffer.hpp>
 #include <beast/http/empty_body.hpp>
 #include <beast/http/read.hpp>
 #include <beast/http/write.hpp>
@@ -61,7 +60,7 @@ protected:
     socket_type socket_;
     request_type req_;
     response_type res_;
-    beast::streambuf read_buf_;
+    beast::multi_buffer read_buf_;
 
 public:
     WorkBase(
@@ -132,8 +131,8 @@ WorkBase<Impl>::run()
     resolver_.async_resolve(
         query_type{host_, port_},
         strand_.wrap (std::bind(&WorkBase::onResolve, impl().shared_from_this(),
-            beast::asio::placeholders::error,
-                beast::asio::placeholders::iterator)));
+            std::placeholders::_1,
+                std::placeholders::_2)));
 }
 
 template<class Impl>
@@ -171,24 +170,23 @@ WorkBase<Impl>::onResolve(error_code const& ec, resolver_type::iterator it)
 
     socket_.async_connect(*it,
         strand_.wrap (std::bind(&Impl::onConnect, impl().shared_from_this(),
-            beast::asio::placeholders::error)));
+            std::placeholders::_1)));
 }
 
 template<class Impl>
 void
 WorkBase<Impl>::onStart()
 {
-    req_.method = "GET";
-    req_.url = path_.empty() ? "/" : path_;
+    req_.method(beast::http::verb::get);
+    req_.target(path_.empty() ? "/" : path_);
     req_.version = 11;
-    req_.fields.replace (
+    req_.replace (
         "Host", host_ + ":" + port_);
-    req_.fields.replace ("User-Agent", BuildInfo::getFullVersionString());
-    beast::http::prepare (req_);
-
+    req_.replace ("User-Agent", BuildInfo::getFullVersionString());
+    req_.prepare();
     beast::http::async_write(impl().stream(), req_,
         strand_.wrap (std::bind (&WorkBase::onRequest,
-            impl().shared_from_this(), beast::asio::placeholders::error)));
+            impl().shared_from_this(), std::placeholders::_1)));
 }
 
 template<class Impl>
@@ -200,7 +198,7 @@ WorkBase<Impl>::onRequest(error_code const& ec)
 
     beast::http::async_read (impl().stream(), read_buf_, res_,
         strand_.wrap (std::bind (&WorkBase::onResponse,
-            impl().shared_from_this(), beast::asio::placeholders::error)));
+            impl().shared_from_this(), std::placeholders::_1)));
 }
 
 template<class Impl>

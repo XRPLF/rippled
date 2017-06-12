@@ -52,26 +52,16 @@
 
 namespace ripple {
 
-// Returns `true` if the HTTP request is a Websockets Upgrade
-// http://en.wikipedia.org/wiki/HTTP/1.1_Upgrade_header#Use_with_WebSockets
-static
-bool
-isWebsocketUpgrade(
-    http_request_type const& request)
-{
-    if (is_upgrade(request))
-        return beast::detail::ci_equal(
-            request.fields["Upgrade"], "websocket");
-    return false;
-}
-
 static
 bool
 isStatusRequest(
     http_request_type const& request)
 {
-    return request.version >= 11 && request.url == "/" &&
-            request.body.size() == 0 && request.method == "GET";
+    return
+        request.version >= 11 &&
+        request.target() == "/" &&
+        request.body.size() == 0 &&
+        request.method() == beast::http::verb::get;
 }
 
 static
@@ -83,12 +73,12 @@ unauthorizedResponse(
     Handoff handoff;
     response<string_body> msg;
     msg.version = request.version;
-    msg.status = 401;
-    msg.reason = "Unauthorized";
-    msg.fields.insert("Server", BuildInfo::getFullVersionString());
-    msg.fields.insert("Content-Type", "text/html");
+    msg.result(beast::http::status::unauthorized);
+    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Content-Type", "text/html");
+    msg.insert("Connection", "close");
     msg.body = "Invalid protocol.";
-    prepare(msg, beast::http::connection::close);
+    msg.prepare();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return handoff;
 }
@@ -189,7 +179,7 @@ ServerHandlerImp::onHandoff (Session& session,
         (session.port().protocol.count("wss") > 0) ||
         (session.port().protocol.count("wss2") > 0);
 
-    if(isWebsocketUpgrade(request))
+    if(beast::websocket::is_upgrade(request))
     {
         if(is_ws)
         {
@@ -229,7 +219,7 @@ ServerHandlerImp::onHandoff (Session& session,
             boost::asio::ip::tcp::endpoint remote_address) ->
     Handoff
 {
-    if(isWebsocketUpgrade(request))
+    if(beast::websocket::is_upgrade(request))
     {
         if (session.port().protocol.count("ws2") > 0 ||
             session.port().protocol.count("ws") > 0)
@@ -275,10 +265,10 @@ build_map(beast::http::fields const& h)
     std::map <std::string, std::string> c;
     for (auto const& e : h)
     {
-        auto key (e.first);
+        auto key (e.name_string().to_string());
         // TODO Replace with safe C++14 version
         std::transform (key.begin(), key.end(), key.begin(), ::tolower);
-        c [key] = e.second;
+        c [key] = e.value().to_string();
     }
     return c;
 }
@@ -312,7 +302,7 @@ ServerHandlerImp::onRequest (Session& session)
 
     // Check user/password authorization
     if (! authorized (
-            session.port(), build_map(session.request().fields)))
+            session.port(), build_map(session.request())))
     {
         HTTPReply (403, "Forbidden", makeOutput (session), app_.journal ("RPC"));
         session.close (true);
@@ -342,7 +332,7 @@ ServerHandlerImp::onWSMessage(
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";
         jvResult[jss::value] = buffers_to_string(buffers);
-        beast::streambuf sb;
+        beast::multi_buffer sb;
         Json::stream(jvResult,
             [&sb](auto const p, auto const n)
             {
@@ -368,7 +358,7 @@ ServerHandlerImp::onWSMessage(
                 this->processSession(session, c, jv);
             auto const s = to_string(jr);
             auto const n = s.length();
-            beast::streambuf sb(n);
+            beast::multi_buffer sb(n);
             sb.commit(boost::asio::buffer_copy(
                 sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
             session->send(std::make_shared<
@@ -511,23 +501,23 @@ ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
         [&]
         {
             auto const iter =
-                session->request().fields.find(
+                session->request().find(
                     "X-Forwarded-For");
-            if(iter != session->request().fields.end())
-                return iter->second;
+            if(iter != session->request().end())
+                return iter->value().to_string();
             return std::string{};
         }(),
         [&]
         {
             auto const iter =
-                session->request().fields.find(
+                session->request().find(
                     "X-User");
-            if(iter != session->request().fields.end())
-                return iter->second;
+            if(iter != session->request().end())
+                return iter->value().to_string();
             return std::string{};
         }());
 
-    if(is_keep_alive(session->request()))
+    if(beast::rfc2616::is_keep_alive(session->request()))
         session->complete();
     else
         session->close (true);
@@ -738,8 +728,7 @@ ServerHandlerImp::statusResponse(
     std::string reason;
     if (app_.serverOkay(reason))
     {
-        msg.status = 200;
-        msg.reason = "OK";
+        msg.result(beast::http::status::ok);
         msg.body = "<!DOCTYPE html><html><head><title>" + systemName() +
             " Test page for rippled</title></head><body><h1>" +
                 systemName() + " Test</h1><p>This page shows rippled http(s) "
@@ -747,15 +736,15 @@ ServerHandlerImp::statusResponse(
     }
     else
     {
-        msg.status = 500;
-        msg.reason = "Internal Server Error";
+        msg.result(beast::http::status::internal_server_error);
         msg.body = "<HTML><BODY>Server cannot accept clients: " +
             reason + "</BODY></HTML>";
     }
     msg.version = request.version;
-    msg.fields.insert("Server", BuildInfo::getFullVersionString());
-    msg.fields.insert("Content-Type", "text/html");
-    prepare(msg, beast::http::connection::close);
+    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Content-Type", "text/html");
+    msg.insert("Connection", "close");
+    msg.prepare();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return handoff;
 }

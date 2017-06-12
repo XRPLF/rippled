@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <beast/core/placeholders.hpp>
 #include <beast/core/detail/base64.hpp>
 #include <beast/http.hpp>
 #include <ripple/app/misc/ValidatorSite.h>
@@ -91,7 +90,7 @@ public:
         acceptor_.listen(boost::asio::socket_base::max_connections);
         acceptor_.async_accept(sock_,
             std::bind(&http_sync_server::on_accept, this,
-                beast::asio::placeholders::error));
+                std::placeholders::_1));
     }
 
     ~http_sync_server()
@@ -134,14 +133,14 @@ private:
         std::thread{lambda{++id_, *this, std::move(sock_)}}.detach();
         acceptor_.async_accept(sock_,
             std::bind(&http_sync_server::on_accept, this,
-                beast::asio::placeholders::error));
+                std::placeholders::_1));
     }
 
     void
     do_peer(int id, socket_type&& sock0)
     {
         socket_type sock(std::move(sock0));
-        beast::streambuf sb;
+        beast::multi_buffer sb;
         error_code ec;
         for(;;)
         {
@@ -149,44 +148,41 @@ private:
             beast::http::read(sock, sb, req, ec);
             if(ec)
                 break;
-            auto path = req.url;
+            auto path = req.target().to_string();
             if(path != "/validators")
             {
                 resp_type res;
-                res.status = 404;
-                res.reason = "Not Found";
+                res.result(beast::http::status::not_found);
                 res.version = req.version;
-                res.fields.insert("Server", "http_sync_server");
-                res.fields.insert("Content-Type", "text/html");
+                res.insert("Server", "http_sync_server");
+                res.insert("Content-Type", "text/html");
                 res.body = "The file '" + path + "' was not found";
-                prepare(res);
+                res.prepare();
                 write(sock, res, ec);
                 if(ec)
                     break;
             }
             resp_type res;
-            res.status = 200;
-            res.reason = "OK";
+            res.result(beast::http::status::ok);
             res.version = req.version;
-            res.fields.insert("Server", "http_sync_server");
-            res.fields.insert("Content-Type", "application/json");
+            res.insert("Server", "http_sync_server");
+            res.insert("Content-Type", "application/json");
 
             res.body = list_;
             try
             {
-                prepare(res);
+                res.prepare();
             }
             catch(std::exception const& e)
             {
                 res = {};
-                res.status = 500;
-                res.reason = "Internal Error";
+                res.result(beast::http::status::internal_server_error);
                 res.version = req.version;
-                res.fields.insert("Server", "http_sync_server");
-                res.fields.insert("Content-Type", "text/html");
+                res.insert("Server", "http_sync_server");
+                res.insert("Content-Type", "text/html");
                 res.body =
                     std::string{"An internal error occurred"} + e.what();
-                prepare(res);
+                res.prepare();
             }
             write(sock, res, ec);
             if(ec)
