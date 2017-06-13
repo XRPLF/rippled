@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/Quality.h>
 #include <test/jtx.h>
 #include <ripple/basics/StringUtilities.h>
 
@@ -203,54 +204,47 @@ public:
 
     void testTransferRate()
     {
-        using namespace test::jtx;
-        Env env (*this);
+        {
+            using namespace test::jtx;
+            Env env (*this);
 
-        Account const alice ("alice");
-        env.fund(XRP(10000), alice);
-        auto jt = noop(alice);
+            Account const alice ("alice");
+            env.fund(XRP(10000), alice);
+            auto jt = noop(alice);
 
-        uint32 xfer_rate = 2000000000;
-        jt[sfTransferRate.fieldName] = xfer_rate;
-        env(jt);
-        BEAST_EXPECT((*env.le(alice))[ sfTransferRate ] == xfer_rate);
+            uint32 xfer_rate = 2 * QUALITY_ONE;
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt);
+            BEAST_EXPECT((*env.le(alice))[ sfTransferRate ] == xfer_rate);
 
-        jt[sfTransferRate.fieldName] = 0u;
-        env(jt);
-        BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfTransferRate));
+            jt[sfTransferRate.fieldName] = 0u;
+            env(jt);
+            BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfTransferRate));
 
-        // set a bad value over limit (> 2 * QUALITY_ONE)
-        xfer_rate = (2 * 1000000000) + 1;
-        jt[sfTransferRate.fieldName] = xfer_rate;
-        env(jt);
-        BEAST_EXPECT((*env.le(alice))[ sfTransferRate ] == xfer_rate);
+            // set a bad value over limit (> 2 * QUALITY_ONE)
+            xfer_rate = (2 * QUALITY_ONE) + 1;
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt);
+            BEAST_EXPECT((*env.le(alice))[ sfTransferRate ] == xfer_rate);
 
-        // set a bad value under limit (< QUALITY_ONE)
-        jt[sfTransferRate.fieldName] = 10u;
-        env(jt, ter(temBAD_TRANSFER_RATE));
+            // set a bad value under limit (< QUALITY_ONE)
+            jt[sfTransferRate.fieldName] = 10u;
+            env(jt, ter(temBAD_TRANSFER_RATE));
+        }
+        {
+            // Test max transferRate with fix1201 enabled
+            using namespace test::jtx;
+            Env env(*this, features(fix1201));
 
-        // Test Feature with fix enabled
-        using namespace test::jtx;
-        Env env2(*this, features(fix1201));
+            Account const bob ("bob");
+            env.fund(XRP(10000), bob);
+            auto jt = noop(bob);
 
-        Account const bob ("bob");
-        env2.fund(XRP(10000), bob);
-        auto jt2 = noop(bob);
-
-        xfer_rate = 2000000000;
-        jt2[sfTransferRate.fieldName] = xfer_rate;
-        env2(jt2);
-        BEAST_EXPECT((*env2.le(bob))[ sfTransferRate ] == xfer_rate);
-
-        jt2[sfTransferRate.fieldName] = 0u;
-        env2(jt2);
-        BEAST_EXPECT(! env2.le(bob)->isFieldPresent(sfTransferRate));
-
-        // set a bad value over limit (> 2 * QUALITY_ONE)
-        xfer_rate = (2 * 1000000000) + 1;
-        jt2[sfTransferRate.fieldName] = xfer_rate;
-        env2(jt2);
-        BEAST_EXPECT((*env2.le(bob))[ sfTransferRate ] == xfer_rate);
+            // set a bad value over limit (> 2 * QUALITY_ONE)
+            uint32 xfer_rate = (2 * QUALITY_ONE) + 1;
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt, ter(temBAD_TRANSFER_RATE));
+        }
     }
 
     void testBadInputs()
