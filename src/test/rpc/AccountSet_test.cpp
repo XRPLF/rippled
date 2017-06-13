@@ -212,7 +212,12 @@ public:
             env.fund(XRP(10000), alice);
             auto jt = noop(alice);
 
-            uint32 xfer_rate = 2 * QUALITY_ONE;
+            uint32 xfer_rate = QUALITY_ONE;
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt);
+            BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfTransferRate));
+
+            xfer_rate = 2 * QUALITY_ONE;
             jt[sfTransferRate.fieldName] = xfer_rate;
             env(jt);
             BEAST_EXPECT((*env.le(alice))[ sfTransferRate ] == xfer_rate);
@@ -227,8 +232,14 @@ public:
             env(jt);
             BEAST_EXPECT((*env.le(alice))[ sfTransferRate ] == xfer_rate);
 
+            // set a bad value over limit (> 2 * QUALITY_ONE)
+            xfer_rate = std::numeric_limits<std::uint32_t>::max();
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt);
+            BEAST_EXPECT((*env.le(alice))[ sfTransferRate ] == xfer_rate);
+
             // set a bad value under limit (< QUALITY_ONE)
-            jt[sfTransferRate.fieldName] = 10u;
+            jt[sfTransferRate.fieldName] = 1u;
             env(jt, ter(temBAD_TRANSFER_RATE));
         }
         {
@@ -240,10 +251,69 @@ public:
             env.fund(XRP(10000), bob);
             auto jt = noop(bob);
 
+            uint32 xfer_rate = 2 * QUALITY_ONE;
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt);
+            BEAST_EXPECT((*env.le(bob))[ sfTransferRate ] == xfer_rate);
+
             // set a bad value over limit (> 2 * QUALITY_ONE)
-            uint32 xfer_rate = (2 * QUALITY_ONE) + 1;
+            xfer_rate = std::numeric_limits<std::uint32_t>::max();
             jt[sfTransferRate.fieldName] = xfer_rate;
             env(jt, ter(temBAD_TRANSFER_RATE));
+
+            // set a bad value over limit (> 2 * QUALITY_ONE)
+            xfer_rate = (2 * QUALITY_ONE) + 1;
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt, ter(temBAD_TRANSFER_RATE));
+        }
+    }
+
+    void testGateway()
+    {
+        {
+            using namespace test::jtx;
+            Env env (*this);
+
+            Account const alice ("alice");
+            Account const bob ("bob");
+            Account const gw ("gateway");
+            auto const USD = gw["USD"];
+
+            env.fund(XRP(10000), gw, alice, bob);
+            env.trust(USD(2), "alice", "bob");
+            env.close();
+
+            auto jt = noop(alice);
+            jt[sfTransferRate.fieldName] = 2 * QUALITY_ONE;
+            env(jt);
+            env.close();
+            env(pay(gw, "alice", USD(2)));
+            env(pay("alice", "bob", USD(1)));
+            env.require(balance("alice", USD(1)));
+            env.require(balance("bob", USD(1)));
+        }
+        {
+            // Test gateway with fix1201 enabled
+            using namespace test::jtx;
+            Env env(*this, features(fix1201));
+
+            Account const alice ("alice");
+            Account const bob ("bob");
+            Account const gw ("gateway");
+            auto const USD = gw["USD"];
+
+            env.fund(XRP(10000), gw, alice, bob);
+            env.trust(USD(2), "alice", "bob");
+            env.close();
+
+            auto jt = noop(alice);
+            jt[sfTransferRate.fieldName] = 2 * QUALITY_ONE;
+            env(jt);
+            env.close();
+            env(pay(gw, "alice", USD(2)));
+            env(pay("alice", "bob", USD(1)));
+            env.require(balance("alice", USD(1)));
+            env.require(balance("bob", USD(1)));
         }
     }
 
@@ -324,6 +394,7 @@ public:
         testSetAndResetAccountTxnID();
         testSetNoFreeze();
         testDomain();
+        testGateway();
         testMessageKey();
         testWalletID();
         testEmailHash();
