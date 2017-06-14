@@ -1284,74 +1284,74 @@ CreateOffer::applyGuts (Sandbox& sb, Sandbox& sbCancel)
     // We need to place the remainder of the offer into its order book.
     auto const offer_index = getOfferIndex (account_, uSequence);
 
-    std::uint64_t uOwnerNode;
-
     // Add offer to owner's directory.
-    std::tie(result, std::ignore) = dirAdd(sb, uOwnerNode,
-        keylet::ownerDir (account_), offer_index,
-        describeOwnerDir (account_), viewJ);
+    auto const ownerNode = dirAdd(sb, keylet::ownerDir (account_),
+        offer_index, false, describeOwnerDir (account_), viewJ);
 
-    if (result == tesSUCCESS)
-    {
-        // Update owner count.
-        adjustOwnerCount(sb, sleCreator, 1, viewJ);
-
-        JLOG (j_.trace()) <<
-            "adding to book: " << to_string (saTakerPays.issue ()) <<
-            " : " << to_string (saTakerGets.issue ());
-
-        Book const book { saTakerPays.issue(), saTakerGets.issue() };
-        std::uint64_t uBookNode;
-        bool isNewBook;
-
-        // Add offer to order book, using the original rate
-        // before any crossing occured.
-        auto dir = keylet::quality (keylet::book (book), uRate);
-
-        std::tie(result, isNewBook) = dirAdd (sb, uBookNode,
-            dir, offer_index, [&](SLE::ref sle)
-            {
-                sle->setFieldH160 (sfTakerPaysCurrency,
-                    saTakerPays.issue().currency);
-                sle->setFieldH160 (sfTakerPaysIssuer,
-                    saTakerPays.issue().account);
-                sle->setFieldH160 (sfTakerGetsCurrency,
-                    saTakerGets.issue().currency);
-                sle->setFieldH160 (sfTakerGetsIssuer,
-                    saTakerGets.issue().account);
-                sle->setFieldU64 (sfExchangeRate, uRate);
-            }, viewJ);
-
-        if (result == tesSUCCESS)
-        {
-            auto sleOffer = std::make_shared<SLE>(ltOFFER, offer_index);
-            sleOffer->setAccountID (sfAccount, account_);
-            sleOffer->setFieldU32 (sfSequence, uSequence);
-            sleOffer->setFieldH256 (sfBookDirectory, dir.key);
-            sleOffer->setFieldAmount (sfTakerPays, saTakerPays);
-            sleOffer->setFieldAmount (sfTakerGets, saTakerGets);
-            sleOffer->setFieldU64 (sfOwnerNode, uOwnerNode);
-            sleOffer->setFieldU64 (sfBookNode, uBookNode);
-            if (expiration)
-                sleOffer->setFieldU32 (sfExpiration, *expiration);
-            if (bPassive)
-                sleOffer->setFlag (lsfPassive);
-            if (bSell)
-                sleOffer->setFlag (lsfSell);
-            sb.insert(sleOffer);
-
-            if (isNewBook)
-                ctx_.app.getOrderBookDB().addOrderBook(book);
-        }
-    }
-
-    if (result != tesSUCCESS)
+    if (!ownerNode)
     {
         JLOG (j_.debug()) <<
-            "final result: " << transToken (result);
+            "final result: failed to add offer to owner's directory";
+        return { tecDIR_FULL, true };
     }
 
-    return { result, true };
+    // Update owner count.
+    adjustOwnerCount(sb, sleCreator, 1, viewJ);
+
+    JLOG (j_.trace()) <<
+        "adding to book: " << to_string (saTakerPays.issue ()) <<
+        " : " << to_string (saTakerGets.issue ());
+
+    Book const book { saTakerPays.issue(), saTakerGets.issue() };
+
+    // Add offer to order book, using the original rate
+    // before any crossing occured.
+    auto dir = keylet::quality (keylet::book (book), uRate);
+    bool const bookExisted = static_cast<bool>(sb.peek (dir));
+
+    auto const bookNode = dirAdd (sb, dir, offer_index, true,
+        [&](SLE::ref sle)
+        {
+            sle->setFieldH160 (sfTakerPaysCurrency,
+                saTakerPays.issue().currency);
+            sle->setFieldH160 (sfTakerPaysIssuer,
+                saTakerPays.issue().account);
+            sle->setFieldH160 (sfTakerGetsCurrency,
+                saTakerGets.issue().currency);
+            sle->setFieldH160 (sfTakerGetsIssuer,
+                saTakerGets.issue().account);
+            sle->setFieldU64 (sfExchangeRate, uRate);
+        }, viewJ);
+
+    if (!bookNode)
+    {
+        JLOG (j_.debug()) <<
+            "final result: failed to add offer to book";
+        return { tecDIR_FULL, true };
+    }
+
+    auto sleOffer = std::make_shared<SLE>(ltOFFER, offer_index);
+    sleOffer->setAccountID (sfAccount, account_);
+    sleOffer->setFieldU32 (sfSequence, uSequence);
+    sleOffer->setFieldH256 (sfBookDirectory, dir.key);
+    sleOffer->setFieldAmount (sfTakerPays, saTakerPays);
+    sleOffer->setFieldAmount (sfTakerGets, saTakerGets);
+    sleOffer->setFieldU64 (sfOwnerNode, *ownerNode);
+    sleOffer->setFieldU64 (sfBookNode, *bookNode);
+    if (expiration)
+        sleOffer->setFieldU32 (sfExpiration, *expiration);
+    if (bPassive)
+        sleOffer->setFlag (lsfPassive);
+    if (bSell)
+        sleOffer->setFlag (lsfSell);
+    sb.insert(sleOffer);
+
+    if (!bookExisted)
+        ctx_.app.getOrderBookDB().addOrderBook(book);
+
+    JLOG (j_.debug()) << "final result: success";
+
+    return { tesSUCCESS, true };
 }
 
 TER

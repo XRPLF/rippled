@@ -22,6 +22,7 @@
 
 #include <ripple/ledger/RawView.h>
 #include <ripple/ledger/ReadView.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -212,6 +213,67 @@ public:
         std::uint32_t cur, std::uint32_t next)
     {};
 
+    /** Add an entry to a directory
+
+     @param directory the base of the directory
+     @param key the entry to insert
+     @param strictOrder keep entries in order of insertion
+     @param describe callback to add required entries to a new page
+
+     @return a \c boost::optional which, if insertion was successful,
+             will contain the page number in which the item was stored.
+
+     @note this function may create a page (including a root page), if no
+           page with space is available.this function will only fail if the
+           page counter exceeds the protocol-defined maximum number of
+           allowable pages.
+    */
+    /** @{ */
+    boost::optional<std::uint64_t>
+    dirInsert (
+        Keylet const& directory,
+        uint256 const& key,
+        bool strictOrder,
+        std::function<void(std::shared_ptr<SLE> const&)> describe);
+
+    boost::optional<std::uint64_t>
+    dirInsert (
+        Keylet const& directory,
+        Keylet const& key,
+        bool strictOrder,
+        std::function<void(std::shared_ptr<SLE> const&)> describe);
+    /** @} */
+
+    /** Remove an entry from a directory
+
+        @param directory the base of the directory
+        @param page the page number for this page
+        @param key the entry to remove
+        @param keepRoot if deleting the last entry, don't
+                        delete the root page (i.e. the directory itself).
+
+        @return \c true if the entry was found and deleted and
+                \c false otherwise.
+
+        @note This function will remove zero or more pages from the directory;
+              the root page will not be deleted even if it is empty, unless
+              \p keepRoot is not set and the directory is empty.
+    */
+    /** @{ */
+    bool
+    dirRemove (
+        Keylet const& directory,
+        std::uint64_t page,
+        uint256 const& key,
+        bool keepRoot);
+
+    bool
+    dirRemove (
+        Keylet const& directory,
+        std::uint64_t page,
+        Keylet const& key,
+        bool keepRoot);
+    /** @} */
 };
 
 } // ripple

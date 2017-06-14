@@ -1440,6 +1440,9 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\ConsensusTransSetSF.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\ApplyView.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\InboundLedger.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>

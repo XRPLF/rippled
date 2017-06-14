@@ -29,6 +29,7 @@
 #include <ripple/app/ledger/OrderBookDB.cpp>
 #include <ripple/app/ledger/TransactionStateSF.cpp>
 
+#include <ripple/app/ledger/impl/ApplyView.cpp>
 #include <ripple/app/ledger/impl/InboundLedger.cpp>
 #include <ripple/app/ledger/impl/InboundLedgers.cpp>
 #include <ripple/app/ledger/impl/InboundTransactions.cpp>
