@@ -17,9 +17,11 @@
 */
 //==============================================================================
 
+#include <ripple/protocol/AmountConversions.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Quality.h>
+#include <ripple/protocol/Rate.h>
 #include <test/jtx.h>
 #include <ripple/basics/StringUtilities.h>
 
@@ -283,14 +285,18 @@ public:
             env.trust(USD(2), "alice", "bob");
             env.close();
 
-            auto jt = noop(alice);
+            auto jt = noop(gw);
             jt[sfTransferRate.fieldName] = 2 * QUALITY_ONE;
             env(jt);
             env.close();
-            env(pay(gw, "alice", USD(2)));
-            env(pay("alice", "bob", USD(1)));
-            env.require(balance("alice", USD(1)));
-            env.require(balance("bob", USD(1)));
+
+            auto const amount = USD(1);
+            Rate const rate (2 * QUALITY_ONE);
+            auto const amountWithRate = toAmount<STAmount> (multiply(amount.value(), rate));
+            env(pay(gw, alice, USD(2)));
+            env(pay(alice, bob, USD(1)));
+            env.require(balance(alice, toSTAmount(USD(1)) - amountWithRate));
+            env.require(balance(bob, USD(1)));
         }
         {
             // Test gateway with fix1201 enabled
@@ -305,15 +311,15 @@ public:
             env.fund(XRP(10000), gw, alice, bob);
             env.trust(USD(2), "alice", "bob");
             env.close();
+            
+            auto jt = noop(gw);
+            jt[sfTransferRate.fieldName] = (2 * QUALITY_ONE) + 1;
+            //env(jt);
+            //env.close();
 
-            auto jt = noop(alice);
-            jt[sfTransferRate.fieldName] = 2 * QUALITY_ONE;
-            env(jt);
-            env.close();
-            env(pay(gw, "alice", USD(2)));
-            env(pay("alice", "bob", USD(1)));
-            env.require(balance("alice", USD(1)));
-            env.require(balance("bob", USD(1)));
+            //env(pay(gw, alice, USD(2)));
+            //env(pay(alice, bob, USD(1)));
+            //env(jt, ter(temBAD_TRANSFER_RATE));
         }
     }
 

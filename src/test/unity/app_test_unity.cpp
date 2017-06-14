@@ -48,4 +48,3 @@
 #include <test/app/ValidatorSite_test.cpp>
 #include <test/app/SetTrust_test.cpp>
 #include <test/app/Ticket_test.cpp>
-#include <test/app/TransferRate_test.cpp>
