@@ -17,8 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/AmountConversions.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/Quality.h>
+#include <ripple/protocol/Rate.h>
 #include <test/jtx.h>
 #include <ripple/basics/StringUtilities.h>
 
@@ -203,24 +206,123 @@ public:
 
     void testTransferRate()
     {
-        using namespace test::jtx;
-        Env env(*this);
-        Account const alice ("alice");
-        env.fund(XRP(10000), alice);
-        auto jt = noop(alice);
+        {
+            using namespace test::jtx;
+            Env env (*this);
 
-        uint32 xfer_rate = 2000000000;
-        jt[sfTransferRate.fieldName] = xfer_rate;
-        env(jt);
-        BEAST_EXPECT((*env.le(alice))[ sfTransferRate ] == xfer_rate);
+            Account const alice ("alice");
+            env.fund(XRP(10000), alice);
+            auto jt = noop(alice);
 
-        jt[sfTransferRate.fieldName] = 0u;
-        env(jt);
-        BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfTransferRate));
+            uint32 xfer_rate = QUALITY_ONE;
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt);
+            BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfTransferRate));
 
-        // set a bad value (< QUALITY_ONE)
-        jt[sfTransferRate.fieldName] = 10u;
-        env(jt, ter(temBAD_TRANSFER_RATE));
+            xfer_rate = 2 * QUALITY_ONE;
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt);
+            BEAST_EXPECT((*env.le(alice))[ sfTransferRate ] == xfer_rate);
+
+            jt[sfTransferRate.fieldName] = 0u;
+            env(jt);
+            BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfTransferRate));
+
+            // set a bad value over limit (> 2 * QUALITY_ONE)
+            xfer_rate = (2 * QUALITY_ONE) + 1;
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt);
+            BEAST_EXPECT((*env.le(alice))[ sfTransferRate ] == xfer_rate);
+
+            // set a bad value over limit (> 2 * QUALITY_ONE)
+            xfer_rate = std::numeric_limits<std::uint32_t>::max();
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt);
+            BEAST_EXPECT((*env.le(alice))[ sfTransferRate ] == xfer_rate);
+
+            // set a bad value under limit (< QUALITY_ONE)
+            jt[sfTransferRate.fieldName] = 1u;
+            env(jt, ter(temBAD_TRANSFER_RATE));
+        }
+        {
+            // Test max transferRate with fix1201 enabled
+            using namespace test::jtx;
+            Env env(*this, features(fix1201));
+
+            Account const bob ("bob");
+            env.fund(XRP(10000), bob);
+            auto jt = noop(bob);
+
+            uint32 xfer_rate = 2 * QUALITY_ONE;
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt);
+            BEAST_EXPECT((*env.le(bob))[ sfTransferRate ] == xfer_rate);
+
+            // set a bad value over limit (> 2 * QUALITY_ONE)
+            xfer_rate = std::numeric_limits<std::uint32_t>::max();
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt, ter(temBAD_TRANSFER_RATE));
+
+            // set a bad value over limit (> 2 * QUALITY_ONE)
+            xfer_rate = (2 * QUALITY_ONE) + 1;
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt, ter(temBAD_TRANSFER_RATE));
+        }
+    }
+
+    void testGateway()
+    {
+        {
+            using namespace test::jtx;
+            Env env (*this);
+
+            Account const alice ("alice");
+            Account const bob ("bob");
+            Account const gw ("gateway");
+            auto const USD = gw["USD"];
+
+            env.fund(XRP(10000), gw, alice, bob);
+            env.trust(USD(3), alice, bob);
+            env.close();
+
+            auto jt = noop(gw);
+            //jt[sfTransferRate.fieldName] = 2 * QUALITY_ONE;
+            env(rate(gw, 2));
+            env(jt);
+            env.close();
+
+            auto const amount = USD(1);
+            Rate const rate (2 * QUALITY_ONE);
+            auto const amountWithRate = toAmount<STAmount> (multiply(amount.value(), rate));
+            std::cout << amountWithRate;
+            env(pay(gw, alice, USD(3)));
+            env(pay(alice, bob, USD(1)));
+            env.require(balance(alice, toSTAmount(USD(2)) - amountWithRate));
+            //env.require(balance(bob, USD(1)));
+        }
+        {
+            // Test gateway with fix1201 enabled
+            using namespace test::jtx;
+            Env env(*this, features(fix1201));
+
+            Account const alice ("alice");
+            Account const bob ("bob");
+            Account const gw ("gateway");
+            auto const USD = gw["USD"];
+
+            env.fund(XRP(10000), gw, alice, bob);
+            env.trust(USD(2), "alice", "bob");
+            env.close();
+            
+            auto jt = noop(gw);
+            jt[sfTransferRate.fieldName] = (2 * QUALITY_ONE) + 1;
+            //env(jt);
+            //env.close();
+
+            //env(pay(gw, alice, USD(2)));
+            //env(pay(alice, bob, USD(1)));
+            //env(jt, ter(temBAD_TRANSFER_RATE));
+        }
     }
 
     void testBadInputs()
@@ -300,6 +402,7 @@ public:
         testSetAndResetAccountTxnID();
         testSetNoFreeze();
         testDomain();
+        testGateway();
         testMessageKey();
         testWalletID();
         testEmailHash();

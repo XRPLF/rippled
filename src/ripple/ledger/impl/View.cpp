@@ -391,7 +391,13 @@ transferRate (ReadView const& view,
     auto const sle = view.read(keylet::account(issuer));
 
     if (sle && sle->isFieldPresent (sfTransferRate))
-        return Rate{ sle->getFieldU32 (sfTransferRate) };
+    {
+        auto rate = (*sle)[sfTransferRate];
+        uint32_t maxRate = 2 * QUALITY_ONE;
+        if (view.rules().enabled(fix1201))
+            rate = std::min(rate, maxRate);
+        return Rate{rate};
+    }
 
     return parityRate;
 }
