@@ -4475,6 +4475,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\test\csf\Peer.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Scheduler.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\csf\Scheduler_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\test\csf\Sim.h">
     </ClInclude>
     <ClInclude Include="..\..\src\test\csf\Tx.h">
