@@ -255,13 +255,11 @@ EscrowCreate::doApply()
 
     // Add escrow to owner directory
     {
-        uint64_t page;
-        auto result = dirAdd(ctx_.view(), page,
-            keylet::ownerDir(account), slep->key(),
-            describeOwnerDir(account), ctx_.app.journal ("View"));
-        if (! isTesSuccess(result.first))
-            return result.first;
-        (*slep)[sfOwnerNode] = page;
+        auto page = dirAdd(ctx_.view(), keylet::ownerDir(account), slep->key(),
+            false, describeOwnerDir(account), ctx_.app.journal ("View"));
+        if (!page)
+            return tecDIR_FULL;
+        (*slep)[sfOwnerNode] = *page;
     }
 
     // Deduct owner's balance, increment owner count
@@ -431,7 +429,7 @@ EscrowFinish::doApply()
     {
         auto const page = (*slep)[sfOwnerNode];
         TER const ter = dirDelete(ctx_.view(), true,
-            page, keylet::ownerDir(account).key,
+            page, keylet::ownerDir(account),
                 k.key, false, page == 0, ctx_.app.journal ("View"));
         if (! isTesSuccess(ter))
             return ter;
@@ -497,7 +495,7 @@ EscrowCancel::doApply()
     {
         auto const page = (*slep)[sfOwnerNode];
         TER const ter = dirDelete(ctx_.view(), true,
-            page, keylet::ownerDir(account).key,
+            page, keylet::ownerDir(account),
                 k.key, false, page == 0, ctx_.app.journal ("View"));
         if (! isTesSuccess(ter))
             return ter;

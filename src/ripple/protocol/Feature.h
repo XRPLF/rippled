@@ -66,7 +66,8 @@ class FeatureCollections
          "Escrow",
          "CryptoConditionsSuite",
          "fix1373",
-         "EnforceInvariants"};
+         "EnforceInvariants",
+         "SortedDirectories"};
 
     std::vector<uint256> features;
     boost::container::flat_map<uint256, std::size_t> featureToIndex;
@@ -158,6 +159,7 @@ extern uint256 const featureEscrow;
 extern uint256 const featureCryptoConditionsSuite;
 extern uint256 const fix1373;
 extern uint256 const featureEnforceInvariants;
+extern uint256 const featureSortedDirectories;
 
 } // ripple
 

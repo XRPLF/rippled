@@ -99,27 +99,24 @@ CreateTicket::doApply ()
             sleTicket->setAccountID (sfTarget, target_account);
     }
 
-    std::uint64_t hint;
-
     auto viewJ = ctx_.app.journal ("View");
 
-    auto result = dirAdd(view(), hint, keylet::ownerDir (account_),
-        sleTicket->key(), describeOwnerDir (account_), viewJ);
+    auto const page = dirAdd(view(), keylet::ownerDir (account_),
+        sleTicket->key(), false, describeOwnerDir (account_), viewJ);
 
     JLOG(j_.trace()) <<
         "Creating ticket " << to_string (sleTicket->key()) <<
-        ": " << transHuman (result.first);
+        ": " << (page ? "success" : "failure");
 
-    if (result.first == tesSUCCESS)
-    {
-        sleTicket->setFieldU64(sfOwnerNode, hint);
+    if (!page)
+        return tecDIR_FULL;
 
-        // If we succeeded, the new entry counts agains the
-        // creator's reserve.
-        adjustOwnerCount(view(), sle, 1, viewJ);
-    }
+    sleTicket->setFieldU64(sfOwnerNode, *page);
 
-    return result.first;
+    // If we succeeded, the new entry counts agains the
+    // creator's reserve.
+    adjustOwnerCount(view(), sle, 1, viewJ);
+    return tesSUCCESS;
 }
 
 }

@@ -33,6 +33,8 @@ class AccountLinesRPC_test : public beast::unit_test::suite
 public:
     void testAccountLines()
     {
+        testcase ("acccount_lines");
+
         using namespace test::jtx;
         Env env(*this);
         {
@@ -284,6 +286,7 @@ public:
 
     void testAccountLineDelete()
     {
+        testcase ("Entry pointed to by marker is removed");
         using namespace test::jtx;
         Env env(*this);
 
@@ -308,35 +311,35 @@ public:
 
         auto const USD = gw1["USD"];
         auto const EUR = gw2["EUR"];
-        env(trust(alice, EUR(200)));
-        env(trust(becky, USD(200)));
-        env(trust(cheri, USD(200)));
+        env(trust(alice, USD(200)));
+        env(trust(becky, EUR(200)));
+        env(trust(cheri, EUR(200)));
         env.close();
 
         // becky gets 100 USD from gw1.
-        env(pay(gw1, becky, USD(100)));
+        env(pay(gw2, becky, EUR(100)));
         env.close();
 
-        // alice offers to buy 100 USD for 100 XRP.
-        env(offer(alice, USD(100), XRP(100)));
+        // alice offers to buy 100 EUR for 100 XRP.
+        env(offer(alice, EUR(100), XRP(100)));
         env.close();
 
-        // becky offers to buy 100 XRP for 100 USD.
-        env(offer(becky, XRP(100), USD(100)));
+        // becky offers to buy 100 XRP for 100 EUR.
+        env(offer(becky, XRP(100), EUR(100)));
         env.close();
 
         // Get account_lines for alice.  Limit at 1, so we get a marker.
         auto const linesBeg = env.rpc ("json", "account_lines",
             R"({"account": ")" + alice.human() + R"(", )"
             R"("limit": 1})");
-        BEAST_EXPECT(linesBeg[jss::result][jss::lines][0u][jss::currency] == "EUR");
+        BEAST_EXPECT(linesBeg[jss::result][jss::lines][0u][jss::currency] == "USD");
         BEAST_EXPECT(linesBeg[jss::result].isMember(jss::marker));
 
-        // alice pays 100 USD to cheri.
-        env(pay(alice, cheri, USD(100)));
+        // alice pays 100 EUR to cheri.
+        env(pay(alice, cheri, EUR(100)));
         env.close();
 
-        // Since alice paid all her USD to cheri, alice should no longer
+        // Since alice paid all her EUR to cheri, alice should no longer
         // have a trust line to gw1.  So the old marker should now be invalid.
         auto const linesEnd = env.rpc ("json", "account_lines",
             R"({"account": ")" + alice.human() + R"(", )"
@@ -349,6 +352,8 @@ public:
     // test API V2
     void testAccountLines2()
     {
+        testcase ("V2: acccount_lines");
+
         using namespace test::jtx;
         Env env(*this);
         {
@@ -779,6 +784,8 @@ public:
     // test API V2
     void testAccountLineDelete2()
     {
+        testcase ("V2: account_lines with removed marker");
+
         using namespace test::jtx;
         Env env(*this);
 
@@ -787,12 +794,12 @@ public:
         //
         // It isn't easy to explicitly delete a trust line, so we do so in a
         // round-about fashion.  It takes 4 actors:
-        //   o Gateway gw1 issues USD
-        //   o alice offers to buy 100 USD for 100 XRP.
-        //   o becky offers to sell 100 USD for 100 XRP.
-        // There will now be an inferred trustline between alice and gw1.
-        //   o alice pays her 100 USD to cheri.
-        // alice should now have no USD and no trustline to gw1.
+        //   o Gateway gw1 issues EUR
+        //   o alice offers to buy 100 EUR for 100 XRP.
+        //   o becky offers to sell 100 EUR for 100 XRP.
+        // There will now be an inferred trustline between alice and gw2.
+        //   o alice pays her 100 EUR to cheri.
+        // alice should now have no EUR and no trustline to gw2.
         Account const alice {"alice"};
         Account const becky {"becky"};
         Account const cheri {"cheri"};
@@ -803,21 +810,21 @@ public:
 
         auto const USD = gw1["USD"];
         auto const EUR = gw2["EUR"];
-        env(trust(alice, EUR(200)));
-        env(trust(becky, USD(200)));
-        env(trust(cheri, USD(200)));
+        env(trust(alice, USD(200)));
+        env(trust(becky, EUR(200)));
+        env(trust(cheri, EUR(200)));
         env.close();
 
-        // becky gets 100 USD from gw1.
-        env(pay(gw1, becky, USD(100)));
+        // becky gets 100 EUR from gw1.
+        env(pay(gw2, becky, EUR(100)));
         env.close();
 
-        // alice offers to buy 100 USD for 100 XRP.
-        env(offer(alice, USD(100), XRP(100)));
+        // alice offers to buy 100 EUR for 100 XRP.
+        env(offer(alice, EUR(100), XRP(100)));
         env.close();
 
-        // becky offers to buy 100 XRP for 100 USD.
-        env(offer(becky, XRP(100), USD(100)));
+        // becky offers to buy 100 XRP for 100 EUR.
+        env(offer(becky, XRP(100), EUR(100)));
         env.close();
 
         // Get account_lines for alice.  Limit at 1, so we get a marker.
@@ -829,17 +836,17 @@ public:
             R"("params": [ )"
             R"({"account": ")" + alice.human() + R"(", )"
             R"("limit": 1}]})");
-        BEAST_EXPECT(linesBeg[jss::result][jss::lines][0u][jss::currency] == "EUR");
+        BEAST_EXPECT(linesBeg[jss::result][jss::lines][0u][jss::currency] == "USD");
         BEAST_EXPECT(linesBeg[jss::result].isMember(jss::marker));
         BEAST_EXPECT(linesBeg.isMember(jss::jsonrpc) && linesBeg[jss::jsonrpc] == "2.0");
         BEAST_EXPECT(linesBeg.isMember(jss::ripplerpc) && linesBeg[jss::ripplerpc] == "2.0");
         BEAST_EXPECT(linesBeg.isMember(jss::id) && linesBeg[jss::id] == 5);
 
         // alice pays 100 USD to cheri.
-        env(pay(alice, cheri, USD(100)));
+        env(pay(alice, cheri, EUR(100)));
         env.close();
 
-        // Since alice paid all her USD to cheri, alice should no longer
+        // Since alice paid all her EUR to cheri, alice should no longer
         // have a trust line to gw1.  So the old marker should now be invalid.
         auto const linesEnd = env.rpc ("json2", "{ "
             R"("method" : "account_lines",)"
