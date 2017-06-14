@@ -46,7 +46,6 @@ auto constexpr increaseLedgerTimeResolutionEvery = 8;
 //! How often we decrease the close time resolution (in numbers of ledgers)
 auto constexpr decreaseLedgerTimeResolutionEvery = 1;
 
-
 /** Calculates the close time resolution for the specified ledger.
 
     The Ripple protocol uses binning to represent time intervals using only one
@@ -62,15 +61,22 @@ auto constexpr decreaseLedgerTimeResolutionEvery = 1;
 
     @pre previousResolution must be a valid bin
          from @ref ledgerPossibleTimeResolutions
+
+    @tparam Rep Type representing number of ticks in std::chrono::duration
+    @tparam Period An std::ratio representing tick period in
+                   std::chrono::duration
+    @tparam Seq Unsigned integer-like type corresponding to the ledger sequence
+                number. It should be comparable to 0 and support modular
+                division. Built-in and tagged_integers are supported.
 */
-template <class duration>
-duration
+template <class Rep, class Period, class Seq>
+std::chrono::duration<Rep, Period>
 getNextLedgerTimeResolution(
-    duration previousResolution,
+    std::chrono::duration<Rep, Period> previousResolution,
     bool previousAgree,
-    std::uint32_t ledgerSeq)
+    Seq ledgerSeq)
 {
-    assert(ledgerSeq);
+    assert(ledgerSeq != Seq{0});
 
     using namespace std::chrono;
     // Find the current resolution:
@@ -86,7 +92,8 @@ getNextLedgerTimeResolution(
 
     // If we did not previously agree, we try to decrease the resolution to
     // improve the chance that we will agree now.
-    if (!previousAgree && ledgerSeq % decreaseLedgerTimeResolutionEvery == 0)
+    if (!previousAgree &&
+        (ledgerSeq % Seq{decreaseLedgerTimeResolutionEvery} == Seq{0}))
     {
         if (++iter != std::end(ledgerPossibleTimeResolutions))
             return *iter;
@@ -94,7 +101,8 @@ getNextLedgerTimeResolution(
 
     // If we previously agreed, we try to increase the resolution to determine
     // if we can continue to agree.
-    if (previousAgree && ledgerSeq % increaseLedgerTimeResolutionEvery == 0)
+    if (previousAgree &&
+        (ledgerSeq % Seq{increaseLedgerTimeResolutionEvery} == Seq{0}))
     {
         if (iter-- != std::begin(ledgerPossibleTimeResolutions))
             return *iter;
@@ -110,12 +118,13 @@ getNextLedgerTimeResolution(
     @return @b closeTime rounded to the nearest multiple of @b closeResolution.
     Rounds up if @b closeTime is midway between multiples of @b closeResolution.
 */
-template <class time_point>
-time_point
+template <class Clock, class Duration, class Rep, class Period>
+std::chrono::time_point<Clock, Duration>
 roundCloseTime(
-    time_point closeTime,
-    typename time_point::duration closeResolution)
+    std::chrono::time_point<Clock, Duration> closeTime,
+    std::chrono::duration<Rep, Period> closeResolution)
 {
+    using time_point = decltype(closeTime);
     if (closeTime == time_point{})
         return closeTime;
 
@@ -132,14 +141,15 @@ roundCloseTime(
     @param resolution The current close time resolution
     @param priorCloseTime The close time of the prior ledger
 */
-template <class time_point>
-time_point
+template <class Clock, class Duration, class Rep, class Period>
+std::chrono::time_point<Clock, Duration>
 effCloseTime(
-    time_point closeTime,
-    typename time_point::duration const resolution,
-    time_point priorCloseTime)
+    std::chrono::time_point<Clock, Duration> closeTime,
+    std::chrono::duration<Rep, Period> resolution,
+    std::chrono::time_point<Clock, Duration> priorCloseTime)
 {
     using namespace std::chrono_literals;
+    using time_point = decltype(closeTime);
 
     if (closeTime == time_point{})
         return closeTime;

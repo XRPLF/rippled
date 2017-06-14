@@ -176,10 +176,11 @@ checkConsensus(
   struct Ledger
   {
     using ID = ...;
+    using Seq = ...;
 
     // Unique identifier of ledgerr
     ID const id() const;
-    auto seq() const;
+    Seq seq() const;
     auto closeTimeResolution() const;
     auto closeAgree() const;
     auto closeTime() const;
@@ -257,14 +258,14 @@ checkConsensus(
       // Propose the position to peers.
       void propose(ConsensusProposal<...> const & pos);
 
-      // Relay a received peer proposal on to other peer's.
-      void relay(PeerPosition_t const & prop);
+      // Share a received peer proposal with other peer's.
+      void share(PeerPosition_t const & prop);
 
-      // Relay a disputed transaction to peers
-      void relay(Txn const & tx);
+      // Share a disputed transaction with peers
+      void share(Txn const & tx);
 
       // Share given transaction set with peers
-      void relay(TxSet const &s);
+      void share(TxSet const &s);
 
       // Consensus timing parameters and constants
       ConsensusParms const &
@@ -642,7 +643,7 @@ Consensus<Adaptor>::startRoundInternal(
     closeResolution_ = getNextLedgerTimeResolution(
         previousLedger_.closeTimeResolution(),
         previousLedger_.closeAgree(),
-        previousLedger_.seq() + 1);
+        previousLedger_.seq() + typename Ledger_t::Seq{1});
 
     playbackProposals();
     if (currPeerPositions_.size() > (prevProposers_ / 2))
@@ -878,7 +879,7 @@ Consensus<Adaptor>::getJson(bool full) const
     if (mode_.get() != ConsensusMode::wrongLedger)
     {
         ret["synched"] = true;
-        ret["ledger_seq"] = previousLedger_.seq() + 1;
+        ret["ledger_seq"] = static_cast<std::uint32_t>(previousLedger_.seq())+ 1;
         ret["close_granularity"] = static_cast<Int>(closeResolution_.count());
     }
     else
@@ -1038,7 +1039,7 @@ Consensus<Adaptor>::playbackProposals()
             if (pos.proposal().prevLedger() == prevLedgerID_)
             {
                 if (peerProposalInternal(now_, pos))
-                    adaptor_.relay(pos);
+                    adaptor_.share(pos);
             }
         }
     }
@@ -1158,7 +1159,7 @@ Consensus<Adaptor>::closeLedger()
     // Share the newly created transaction set if we haven't already
     // received it from a peer
     if (acquired_.emplace(result_->set.id(), result_->set).second)
-        adaptor_.relay(result_->set);
+        adaptor_.share(result_->set);
 
     if (mode_.get() == ConsensusMode::proposing)
         adaptor_.propose(result_->position);
@@ -1264,7 +1265,7 @@ Consensus<Adaptor>::updateOurPositions()
         }
 
         if (mutableSet)
-            ourNewSet.emplace(*mutableSet);
+            ourNewSet.emplace(std::move(*mutableSet));
     }
 
     NetClock::time_point consensusCloseTime = {};
@@ -1310,7 +1311,8 @@ Consensus<Adaptor>::updateOurPositions()
         for (auto const& it : closeTimeVotes)
         {
             JLOG(j_.debug())
-                << "CCTime: seq " << previousLedger_.seq() + 1 << ": "
+                << "CCTime: seq "
+                << static_cast<std::uint32_t>(previousLedger_.seq()) + 1 << ": "
                 << it.first.time_since_epoch().count() << " has " << it.second
                 << ", " << threshVote << " required";
 
@@ -1361,7 +1363,7 @@ Consensus<Adaptor>::updateOurPositions()
         if (acquired_.emplace(newID, result_->set).second)
         {
             if (!result_->position.isBowOut())
-                adaptor_.relay(result_->set);
+                adaptor_.share(result_->set);
 
             for (auto const& it : currPeerPositions_)
             {
@@ -1493,7 +1495,8 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
 
         JLOG(j_.debug()) << "Transaction " << txID << " is disputed";
 
-        typename Result::Dispute_t dtx{tx, result_->set.exists(txID), j_};
+        typename Result::Dispute_t dtx{tx, result_->set.exists(txID),
+         std::max(prevProposers_, currPeerPositions_.size()), j_};
 
         // Update all of the available peer's votes on the disputed transaction
         for (auto const& pit : currPeerPositions_)
@@ -1503,7 +1506,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
             if (cit != acquired_.end())
                 dtx.setVote(pit.first, cit->second.exists(txID));
         }
-        adaptor_.relay(dtx.tx());
+        adaptor_.share(dtx.tx());
 
         result_->disputes.emplace(txID, std::move(dtx));
     }
