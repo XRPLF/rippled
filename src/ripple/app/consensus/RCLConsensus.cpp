@@ -126,7 +126,7 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& ledger)
 
 
 void
-RCLConsensus::Adaptor::relay(RCLCxPeerPos const& peerPos)
+RCLConsensus::Adaptor::share(RCLCxPeerPos const& peerPos)
 {
     protocol::TMProposeSet prop;
 
@@ -150,7 +150,7 @@ RCLConsensus::Adaptor::relay(RCLCxPeerPos const& peerPos)
 }
 
 void
-RCLConsensus::Adaptor::relay(RCLCxTx const& tx)
+RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 {
     // If we didn't relay this transaction recently, relay it to all peers
     if (app_.getHashRouter().shouldRelay(tx.id()))
@@ -204,7 +204,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 }
 
 void
-RCLConsensus::Adaptor::relay(RCLTxSet const& set)
+RCLConsensus::Adaptor::share(RCLTxSet const& set)
 {
     inboundTransactions_.giveSet(set.id(), set.map_, false);
 }
@@ -254,19 +254,7 @@ RCLConsensus::Adaptor::getPrevLedger(
         app_.getValidations().currentTrustedDistribution(
             ledgerID, parentID, ledgerMaster_.getValidLedgerIndex());
 
-    uint256 netLgr = ledgerID;
-    int netLgrCount = 0;
-    for (auto const & it : ledgerCounts)
-    {
-        // Switch to ledger supported by more peers
-        // Or stick with ours on a tie
-        if ((it.second > netLgrCount) ||
-            ((it.second == netLgrCount) && (it.first == ledgerID)))
-        {
-            netLgr = it.first;
-            netLgrCount = it.second;
-        }
-    }
+    uint256 netLgr = getPreferredLedger(ledgerID, ledgerCounts);
 
     if (netLgr != ledgerID)
     {

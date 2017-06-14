@@ -4489,11 +4489,23 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\consensus\ByzantineFailureSim_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\consensus\Consensus_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\consensus\DistributedValidatorsSim_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\consensus\LedgerTiming_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\consensus\ScaleFreeSim_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -4545,19 +4557,61 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\csf\impl\UNL.cpp">
+    <ClInclude Include="..\..\src\test\csf\CollectorRef.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\collectors.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Digraph.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\csf\Digraph_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\test\csf\Ledger.h">
+    <ClInclude Include="..\..\src\test\csf\events.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Histogram.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\csf\Histogram_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\csf\impl\ledgers.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\csf\impl\Sim.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\test\csf\ledgers.h">
     </ClInclude>
     <ClInclude Include="..\..\src\test\csf\Peer.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\PeerGroup.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Proposal.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\random.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Scheduler.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\csf\Scheduler_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\test\csf\Sim.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\SimTime.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\submitters.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\timers.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\TrustGraph.h">
     </ClInclude>
     <ClInclude Include="..\..\src\test\csf\Tx.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\test\csf\UNL.h">
+    <ClInclude Include="..\..\src\test\csf\Validation.h">
     </ClInclude>
     <ClCompile Include="..\..\src\test\json\json_value_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>

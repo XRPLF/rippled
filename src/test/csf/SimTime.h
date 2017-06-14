@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
+    Copyright (c) 2012-2017 Ripple Labs Inc
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,9 +17,26 @@
 */
 //==============================================================================
 
-#include <test/consensus/ByzantineFailureSim_test.cpp>
-#include <test/consensus/Consensus_test.cpp>
-#include <test/consensus/DistributedValidatorsSim_test.cpp>
-#include <test/consensus/LedgerTiming_test.cpp>
-#include <test/consensus/ScaleFreeSim_test.cpp>
-#include <test/consensus/Validations_test.cpp>
+#ifndef RIPPLE_TEST_CSF_SIMTIME_H_INCLUDED
+#define RIPPLE_TEST_CSF_SIMTIME_H_INCLUDED
+
+#include <ripple/beast/clock/manual_clock.h>
+#include <chrono>
+
+namespace ripple {
+namespace test {
+namespace csf {
+
+using RealClock = std::chrono::system_clock;
+using RealDuration = RealClock::duration;
+using RealTime = RealClock::time_point;
+
+using SimClock = beast::manual_clock<std::chrono::steady_clock>;
+using SimDuration = typename SimClock::duration;
+using SimTime = typename SimClock::time_point;
+
+}  // namespace csf
+}  // namespace test
+}  // namespace ripple
+
+#endif

@@ -26,7 +26,6 @@
 #include <ripple/beast/container/aged_container_utility.h>
 #include <ripple/beast/container/aged_unordered_map.h>
 #include <ripple/beast/utility/Journal.h>
-#include <ripple/beast/utility/Zero.h>
 #include <boost/optional.hpp>
 #include <mutex>
 #include <utility>
@@ -74,6 +73,7 @@ struct ValidationParms
     std::chrono::seconds validationSET_EXPIRES = std::chrono::minutes{10};
 };
 
+
 /** Whether a validation is still current
 
     Determines whether a validation can still be considered the current
@@ -101,6 +101,37 @@ isCurrent(
         (signTime < (now + p.validationCURRENT_WALL)) &&
         ((seenTime == NetClock::time_point{}) ||
          (seenTime < (now + p.validationCURRENT_LOCAL)));
+}
+
+/** Determine the preferred ledger based on its support
+
+    @param current The current ledger the node follows
+    @param dist Ledger IDs and corresponding counts of support
+    @return The ID of the ledger with most support, preferring to stick with
+            current ledger in the case of equal support
+*/
+template <class LedgerID>
+inline LedgerID
+getPreferredLedger(
+    LedgerID const& current,
+    hash_map<LedgerID, std::uint32_t> const& dist)
+{
+    LedgerID netLgr = current;
+    int netLgrCount = 0;
+    for (auto const& it : dist)
+    {
+        // Switch to ledger supported by more peers
+        // On a tie, prefer the current ledger, or the one with higher ID
+        if ((it.second > netLgrCount) ||
+            ((it.second == netLgrCount) &&
+             ((it.first == current) ||
+              (it.first > netLgr && netLgr != current))))
+        {
+            netLgr = it.first;
+            netLgrCount = it.second;
+        }
+    }
+    return netLgr;
 }
 
 /** Maintains current and recent ledger validations.
@@ -192,6 +223,7 @@ class Validations
         decay_result_t<decltype (&Validation::ledgerID)(Validation)>;
     using NodeKey = decay_result_t<decltype (&Validation::key)(Validation)>;
     using NodeID = decay_result_t<decltype (&Validation::nodeID)(Validation)>;
+    using SeqType = decay_result_t<decltype (&Validation::seq)(Validation)>;
 
 
     using ScopedLock = std::lock_guard<MutexType>;
@@ -397,11 +429,12 @@ public:
                 Validation& oldVal = ins.first->second.val;
                 LedgerID const previousLedgerID = ins.first->second.prevLedgerID;
 
-                std::uint32_t const oldSeq{oldVal.seq()};
-                std::uint32_t const newSeq{val.seq()};
+                SeqType const oldSeq{oldVal.seq()};
+                SeqType const newSeq{val.seq()};
 
                 // Sequence of 0 indicates a missing sequence number
-                if (oldSeq && newSeq && oldSeq == newSeq)
+                if ((oldSeq != SeqType{0}) && (newSeq != SeqType{0}) &&
+                    oldSeq == newSeq)
                 {
                     result = AddOutcome::sameSeq;
 
@@ -491,7 +524,9 @@ public:
         ledgers one away from the current ledger to count as the current.
 
         @param currentLedger The identifier of the ledger we believe is current
+                             (0 if unknown)
         @param priorLedger The identifier of our previous current ledger
+                           (0 if unknown)
         @param cutoffBefore Ignore ledgers with sequence number before this
 
         @return Map representing the distribution of ledgerID by count
@@ -500,10 +535,10 @@ public:
     currentTrustedDistribution(
         LedgerID const& currentLedger,
         LedgerID const& priorLedger,
-        std::uint32_t cutoffBefore)
+        SeqType cutoffBefore)
     {
-        bool const valCurrentLedger = currentLedger != beast::zero;
-        bool const valPriorLedger = priorLedger != beast::zero;
+        bool const valCurrentLedger = currentLedger != LedgerID{0};
+        bool const valPriorLedger = priorLedger != LedgerID{0};
 
         hash_map<LedgerID, std::uint32_t> ret;
 
@@ -524,8 +559,8 @@ public:
                 if (!v.trusted())
                     return;
 
-                std::uint32_t const seq = v.seq();
-                if ((seq == 0) || (seq >= cutoffBefore))
+                SeqType const seq = v.seq();
+                if ((seq == SeqType{0}) || (seq >= cutoffBefore))
                 {
                     // contains a live record
                     bool countPreferred =

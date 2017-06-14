@@ -95,11 +95,32 @@ class LedgerTiming_test : public beast::unit_test::suite
 
     }
 
+    void testEffCloseTime()
+    {
+        using namespace std::chrono_literals;
+        using tp = NetClock::time_point;
+        tp close = effCloseTime(tp{10s}, 30s, tp{0s});
+        BEAST_EXPECT(close == tp{1s});
+
+        close = effCloseTime(tp{16s}, 30s, tp{0s});
+        BEAST_EXPECT(close == tp{30s});
+
+        close = effCloseTime(tp{16s}, 30s, tp{30s});
+        BEAST_EXPECT(close == tp{31s});
+
+        close = effCloseTime(tp{16s}, 30s, tp{60s});
+        BEAST_EXPECT(close == tp{61s});
+
+        close = effCloseTime(tp{31s}, 30s, tp{0s});
+        BEAST_EXPECT(close == tp{30s});
+    }
+
     void
     run() override
     {
         testGetNextLedgerTimeResolution();
         testRoundCloseTime();
+        testEffCloseTime();
     }
 
 };

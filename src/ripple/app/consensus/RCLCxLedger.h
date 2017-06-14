@@ -37,6 +37,8 @@ class RCLCxLedger
 public:
     //! Unique identifier of a ledger
     using ID = LedgerHash;
+    //! Sequence number of a ledger
+    using Seq = LedgerIndex;
 
     /** Default constructor
 
@@ -55,28 +57,28 @@ public:
     }
 
     //! Sequence number of the ledger.
-    auto const&
+    Seq const&
     seq() const
     {
         return ledger_->info().seq;
     }
 
     //! Unique identifier (hash) of this ledger.
-    auto const&
+    ID const&
     id() const
     {
         return ledger_->info().hash;
     }
 
     //! Unique identifier (hash) of this ledger's parent.
-    auto const&
+    ID const&
     parentID() const
     {
         return ledger_->info().parentHash;
     }
 
     //! Resolution used when calculating this ledger's close time.
-    auto
+    NetClock::duration
     closeTimeResolution() const
     {
         return ledger_->info().closeTimeResolution;
@@ -90,14 +92,14 @@ public:
     }
 
     //! The close time of this ledger
-    auto
+    NetClock::time_point
     closeTime() const
     {
         return ledger_->info().closeTime;
     }
 
     //! The close time of this ledger's parent.
-    auto
+    NetClock::time_point
     parentCloseTime() const
     {
         return ledger_->info().parentCloseTime;
