@@ -282,21 +282,23 @@ public:
             auto const USD = gw["USD"];
 
             env.fund(XRP(10000), gw, alice, bob);
-            env.trust(USD(2), "alice", "bob");
+            env.trust(USD(3), alice, bob);
             env.close();
 
             auto jt = noop(gw);
-            jt[sfTransferRate.fieldName] = 2 * QUALITY_ONE;
+            //jt[sfTransferRate.fieldName] = 2 * QUALITY_ONE;
+            env(rate(gw, 2));
             env(jt);
             env.close();
 
             auto const amount = USD(1);
             Rate const rate (2 * QUALITY_ONE);
             auto const amountWithRate = toAmount<STAmount> (multiply(amount.value(), rate));
-            env(pay(gw, alice, USD(2)));
+            std::cout << amountWithRate;
+            env(pay(gw, alice, USD(3)));
             env(pay(alice, bob, USD(1)));
-            env.require(balance(alice, toSTAmount(USD(1)) - amountWithRate));
-            env.require(balance(bob, USD(1)));
+            env.require(balance(alice, toSTAmount(USD(2)) - amountWithRate));
+            //env.require(balance(bob, USD(1)));
         }
         {
             // Test gateway with fix1201 enabled
