@@ -9,6 +9,43 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 0.70.0
+
+The `rippled` 0.70.0 release introduces several enhancements that improve the reliability, scalability and security of the network.
+
+Highlights of this release include:
+
+- The `FlowCross` amendment, which streamlines offer crossing and autobrigding logic by leveraging the new “Flow” payment engine.
+- The `EnforceInvariants` amendment, which can safeguard the integrity of the XRP Ledger by introducing code that executes after every transaction and ensures that the execution did not violate key protocol rules.
+- `fix1373`, which addresses an issue that would cause payments with certain path specifications to not be properly parsed.
+
+**New and Updated Features**
+
+- Implement and test invariant checks for transactions (#2054)
+- TxQ: Functionality to dump all queued transactions (#2020)
+- Consensus refactor for simulation/cleanup (#2040)
+- Payment flow code should support offer crossing (#1884)
+- make `Config` init extensible via lambda (#1993)
+- Improve Consensus Documentation (#2064)
+- Refactor Dependencies & Unit Test Consensus (#1941)
+- `feature` RPC test (#1988)
+- Add unit Tests for handlers/TxHistory.cpp (#2062)
+- Add unit tests for handlers/AccountCurrenciesHandler.cpp (#2085)
+- Add unit test for handlers/Peers.cpp (#2060)
+- Improve logging for Transaction affects no accounts warning (#2043)
+- Increase logging in PeerImpl fail (#2043)
+- Allow filtering of ledger objects by type in RPC (#2066)
+
+**Bug Fixes**
+
+- Fix displayed warning when generating brain wallets (#2121)
+- Cmake build does not append '+DEBUG' to the version info for non-unity builds
+- Crossing tiny offers can misbehave on RCL
+- `asfRequireAuth` flag not always obeyed (#2092)
+- Strand creating is incorrectly accepting invalid paths
+- JobQueue occasionally crashes on shutdown (#2025)
+- Improve pseudo-transaction handling (#2104)
+
 ## Version 0.60.3
 
 The `rippled` 0.60.3 release helps to increase the stability of the network under heavy load.
