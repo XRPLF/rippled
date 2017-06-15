@@ -272,10 +272,9 @@ public:
 
     void testGateway()
     {
+        using namespace test::jtx;
+        auto runTest = [&](Env& env, double tr)
         {
-            using namespace test::jtx;
-            Env env (*this);
-
             Account const alice ("alice");
             Account const bob ("bob");
             Account const gw ("gateway");
@@ -283,46 +282,49 @@ public:
 
             env.fund(XRP(10000), gw, alice, bob);
             env.trust(USD(3), alice, bob);
-            env.close();
-
-            auto jt = noop(gw);
-            //jt[sfTransferRate.fieldName] = 2 * QUALITY_ONE;
-            env(rate(gw, 2));
-            env(jt);
+            env(rate(gw, tr));
             env.close();
 
             auto const amount = USD(1);
-            Rate const rate (2 * QUALITY_ONE);
+            Rate const rate (tr * QUALITY_ONE);
             auto const amountWithRate = toAmount<STAmount> (multiply(amount.value(), rate));
-            std::cout << amountWithRate;
+
             env(pay(gw, alice, USD(3)));
-            env(pay(alice, bob, USD(1)));
-            env.require(balance(alice, toSTAmount(USD(2)) - amountWithRate));
-            //env.require(balance(bob, USD(1)));
+            env(pay(alice, bob, USD(1)), sendmax(USD(2)));
+
+            env.require(balance(alice, USD(3) - amountWithRate));
+            env.require(balance(bob, USD(1)));
+        };
+        {
+            Env env (*this);
+            runTest (env, 1.02);
+            env.close();
         }
         {
-            // Test gateway with fix1201 enabled
-            using namespace test::jtx;
-            Env env(*this, features(fix1201));
-
-            Account const alice ("alice");
-            Account const bob ("bob");
-            Account const gw ("gateway");
-            auto const USD = gw["USD"];
-
-            env.fund(XRP(10000), gw, alice, bob);
-            env.trust(USD(2), "alice", "bob");
+            Env env (*this);
+            runTest (env, 1);
             env.close();
-            
-            auto jt = noop(gw);
-            jt[sfTransferRate.fieldName] = (2 * QUALITY_ONE) + 1;
-            //env(jt);
-            //env.close();
-
-            //env(pay(gw, alice, USD(2)));
-            //env(pay(alice, bob, USD(1)));
-            //env(jt, ter(temBAD_TRANSFER_RATE));
         }
+        {
+            Env env (*this);
+            runTest (env, 2);
+        }
+        //{
+        //    Env env (*this);
+        //    runTest (env, 2.1);
+        //}
+        {
+            Env env (*this, features(fix1201));
+            runTest (env, 1.02);
+        }
+        {
+            Env env (*this, features(fix1201));
+            runTest (env, 2);
+        }
+        //{
+        //    Env env (*this, features(fix1201));
+        //    runTest (env, 2.1);
+        //}
     }
 
     void testBadInputs()

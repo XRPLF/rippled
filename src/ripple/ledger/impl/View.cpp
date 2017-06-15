@@ -24,6 +24,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/Quality.h>
 #include <boost/algorithm/string.hpp>
