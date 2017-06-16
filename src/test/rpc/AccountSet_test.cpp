@@ -290,29 +290,29 @@ public:
             auto const amountWithRate = toAmount<STAmount> (multiply(amount.value(), rate));
 
             env(pay(gw, alice, USD(3)));
-            env(pay(alice, bob, USD(1)), sendmax(USD(2)));
+            env(pay(alice, bob, USD(1)), sendmax(USD(3)));
 
             env.require(balance(alice, USD(3) - amountWithRate));
             env.require(balance(bob, USD(1)));
         };
+
+        // Test gateway with allowed transfer rates
         {
             Env env (*this);
             runTest (env, 1.02);
-            env.close();
         }
         {
             Env env (*this);
             runTest (env, 1);
-            env.close();
         }
         {
             Env env (*this);
             runTest (env, 2);
         }
-        //{
-        //    Env env (*this);
-        //    runTest (env, 2.1);
-        //}
+        {
+            Env env (*this);
+            runTest (env, 2.1);
+        }
         {
             Env env (*this, features(fix1201));
             runTest (env, 1.02);
@@ -321,10 +321,49 @@ public:
             Env env (*this, features(fix1201));
             runTest (env, 2);
         }
-        //{
-        //    Env env (*this, features(fix1201));
-        //    runTest (env, 2.1);
-        //}
+
+        // Test gateway when amendment is set after transfer rate
+        {
+            Env env (*this);
+            Account const alice ("alice");
+            Account const bob ("bob");
+            Account const gw ("gateway");
+            auto const USD = gw["USD"];
+            double tr = 2.75;
+
+            env.fund(XRP(10000), gw, alice, bob);
+            env.trust(USD(3), alice, bob);
+            env(rate(gw, tr));
+            env.enableFeature(fix1201);
+            env.close();
+
+            auto const amount = USD(1);
+            Rate const rate (tr * QUALITY_ONE);
+            auto const amountWithRate = toAmount<STAmount> (multiply(amount.value(), rate));
+
+            env(pay(gw, alice, USD(3)));
+            env(pay(alice, bob, USD(1)), sendmax(USD(3)));
+
+            env.require(balance(alice, USD(1)));
+            env.require(balance(bob, USD(1)));
+        }
+
+        // Test gateway with invalid transfer rate
+        {
+            Env env (*this, features(fix1201));
+            Account const alice ("alice");
+            Account const bob ("bob");
+            Account const gw ("gateway");
+            auto const USD = gw["USD"];
+            auto jt = noop(gw);
+
+            env.fund(XRP(10000), gw, alice, bob);
+            env.trust(USD(3), alice, bob);
+
+            uint32 xfer_rate = 2.1 * QUALITY_ONE;
+            jt[sfTransferRate.fieldName] = xfer_rate;
+            env(jt, ter(temBAD_TRANSFER_RATE));
+        }
     }
 
     void testBadInputs()

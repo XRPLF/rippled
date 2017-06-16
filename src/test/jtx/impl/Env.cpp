@@ -555,6 +555,14 @@ Env::do_rpc(std::vector<std::string> const& args)
     return response;
 }
 
+void
+Env::enableFeature(uint256 const feature)
+{
+    close();
+    app().config().features.insert(feature);
+    close();
+}
+
 } // jtx
 
 } // test

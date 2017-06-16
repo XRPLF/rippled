@@ -394,9 +394,11 @@ transferRate (ReadView const& view,
     if (sle && sle->isFieldPresent (sfTransferRate))
     {
         auto rate = (*sle)[sfTransferRate];
-        uint32_t maxRate = 2 * QUALITY_ONE;
         if (view.rules().enabled(fix1201))
+        {
+            constexpr uint32_t maxRate = 2 * QUALITY_ONE;
             rate = std::min(rate, maxRate);
+        }
         return Rate{rate};
     }
 
