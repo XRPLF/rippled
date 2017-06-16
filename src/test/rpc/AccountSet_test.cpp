@@ -344,7 +344,7 @@ public:
             env(pay(gw, alice, USD(3)));
             env(pay(alice, bob, USD(1)), sendmax(USD(3)));
 
-            env.require(balance(alice, USD(1)));
+            env.require(balance(alice, USD(3) - amountWithRate));
             env.require(balance(bob, USD(1)));
         }
 
