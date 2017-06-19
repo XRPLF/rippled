@@ -216,6 +216,10 @@ public:
     ~NetworkOPsImp() override
     {
         jobCounter_.join();
+        // this clear() is necessary to ensure the shared_ptrs in this map get
+        // destroyed NOW because the objects in this map invoke methods on this
+        // class when they are destroyed
+        mRpcSubMap.clear();
     }
 
 public:
@@ -476,6 +480,7 @@ public:
     InfoSub::pointer findRpcSub (std::string const& strUrl) override;
     InfoSub::pointer addRpcSub (
         std::string const& strUrl, InfoSub::ref) override;
+    bool tryRemoveRpcSub (std::string const& strUrl) override;
 
     //--------------------------------------------------------------------------
     //
@@ -1805,7 +1810,7 @@ void NetworkOPsImp::pubPeerStatus (
             }
             else
             {
-                i = mSubValidations.erase (i);
+                i = mSubPeerStatus.erase (i);
             }
         }
     }
@@ -2919,6 +2924,29 @@ InfoSub::pointer NetworkOPsImp::addRpcSub (
     mRpcSubMap.emplace (strUrl, rspEntry);
 
     return rspEntry;
+}
+
+bool NetworkOPsImp::tryRemoveRpcSub (std::string const& strUrl)
+{
+    ScopedLockType sl (mSubLock);
+    auto pInfo = findRpcSub(strUrl);
+
+    // check to see if any of the stream maps still hold a weak reference to
+    // this entry before removing
+    if ( pInfo &&
+         mSubLedger.find(pInfo->getSeq()) == mSubLedger.end() &&
+         mSubManifests.find(pInfo->getSeq()) == mSubManifests.end() &&
+         mSubServer.find(pInfo->getSeq()) == mSubServer.end() &&
+         mSubTransactions.find(pInfo->getSeq()) == mSubTransactions.end() &&
+         mSubRTTransactions.find(pInfo->getSeq()) == mSubRTTransactions.end() &&
+         mSubValidations.find(pInfo->getSeq()) == mSubValidations.end() &&
+         mSubPeerStatus.find(pInfo->getSeq()) == mSubPeerStatus.end())
+    {
+        mRpcSubMap.erase(strUrl);
+        return true;
+    }
+    else
+        return false;
 }
 
 #ifndef USE_NEW_BOOK_PAGE

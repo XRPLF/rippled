@@ -222,8 +222,8 @@ Json::Value doSubscribe (RPC::Context& context)
             if (! taker_gets.isMember (jss::currency) || !to_currency (
                 book.out.currency, taker_gets[jss::currency].asString ()))
             {
-                JLOG (context.j.info()) << "Bad taker_pays currency.";
-                return rpcError (rpcSRC_CUR_MALFORMED);
+                JLOG (context.j.info()) << "Bad taker_gets currency.";
+                return rpcError (rpcDST_AMT_MALFORMED);
             }
 
             // Parse optional issuer.
