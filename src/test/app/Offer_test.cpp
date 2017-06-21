@@ -4322,6 +4322,82 @@ public:
         env (pay (hotUS, coldEU, EUR(10)), sendmax (USD(11.1223326)));
     }
 
+    void testSelfAuth (std::initializer_list<uint256> fs)
+    {
+        testcase ("Self Auth");
+
+        using namespace jtx;
+
+        Env env {*this, with_features (fs)};
+        auto const closeTime =
+            fix1449Time() +
+                100 * env.closed()->info().closeTimeResolution;
+        env.close (closeTime);
+
+        auto const gw = Account("gw");
+        auto const alice = Account("alice");
+        auto const gwUSD = gw["USD"];
+        auto const aliceUSD = alice["USD"];
+
+        env.fund (XRP(400000), gw, alice);
+        env.close();
+
+        // Test that gw can create an offer to buy gw's currency.
+        env (offer (gw, gwUSD(40), XRP(4000)));
+        env.close();
+        std::uint32_t const gwOfferSeq = env.seq (gw) - 1;
+        env.require (offers (gw, 1));
+
+        // Since gw has an offer out, gw should not be able to set RequireAuth.
+        env(fset (gw, asfRequireAuth), ter (tecOWNERS));
+        env.close();
+
+        // Cancel gw's offer so we can set RequireAuth.
+        env (offer_cancel (gw, gwOfferSeq));
+        env.close();
+        env.require (offers (gw, 0));
+
+        // gw now requires authorization for holders of its IOUs
+        env(fset (gw, asfRequireAuth));
+        env.close();
+
+        // The test behaves differently with or without FlowCross.
+        bool const flowCross =
+            std::find (fs.begin(), fs.end(), featureFlowCross) != fs.end();
+
+        // Before FlowCross an account with lsfRequireAuth set could not
+        // create an offer to buy their own currency.  After FlowCross
+        // they can.
+        env (offer (gw, gwUSD(40), XRP(4000)),
+            ter (flowCross ? tesSUCCESS : tecNO_LINE));
+        env.close();
+
+        env.require (offers (gw, flowCross ? 1 : 0));
+
+        if (!flowCross)
+            // The rest of the test verifies FlowCross behavior.
+            return;
+
+        // Set up an authorized trust line and pay alice gwUSD 50.
+        env (trust (gw, aliceUSD(100)), txflags (tfSetfAuth));
+        env (trust (alice, gwUSD(100)));
+        env.close();
+
+        env (pay(gw, alice, gwUSD(50)));
+        env.close();
+
+        env.require (balance (alice, gwUSD(50)));
+
+        // alice's offer should cross gw's
+        env (offer (alice, XRP(4000), gwUSD(40)));
+        env.close();
+
+        env.require (offers (alice, 0));
+        env.require (balance (alice, gwUSD(10)));
+
+        env.require (offers (gw, 0));
+    }
+
     void testTickSize (std::initializer_list<uint256> fs)
     {
         testcase ("Tick Size");
@@ -4497,6 +4573,7 @@ public:
             testRequireAuth (fs);
             testMissingAuth (fs);
             testRCSmoketest (fs);
+            testSelfAuth (fs);
             testTickSize (fs);
         };
 // The first three test variants below passed at one time in the past (and
