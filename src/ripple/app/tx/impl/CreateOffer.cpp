@@ -234,6 +234,13 @@ CreateOffer::checkAcceptAsset(ReadView const& view,
             : tecNO_ISSUER;
     }
 
+    // This code is attached to the FlowCross amendment as a matter of
+    // convenience.  The change is not significant enough to deserve its
+    // own amendment.
+    if (view.rules().enabled(featureFlowCross) && (issue.account == id))
+        // An account can always accept its own issuance.
+        return tesSUCCESS;
+
     if ((*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
         auto const trustLine = view.read(
