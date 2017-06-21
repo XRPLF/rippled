@@ -4037,24 +4037,79 @@ public:
 
     void testRequireAuth (std::initializer_list<uint256> fs)
     {
-        // Only test FlowCross.  Results are different with Taker.
-        if (!hasFeature(featureFlowCross, fs))
-            return;
-
         testcase ("lsfRequireAuth");
+
+        using namespace jtx;
+
+        Env env {*this, with_features (fs)};
+        auto const closeTime =
+            fix1449Time() +
+                100 * env.closed()->info().closeTimeResolution;
+        env.close (closeTime);
+
+        auto const gw = Account("gw");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gwUSD = gw["USD"];
+        auto const aliceUSD = alice["USD"];
+        auto const bobUSD = bob["USD"];
+
+        env.fund (XRP(400000), gw, alice, bob);
+        env.close();
+
+        // GW requires authorization for holders of its IOUs
+        env(fset (gw, asfRequireAuth));
+        env.close();
+
+        // Properly set trust and have gw authorize bob and alice
+        env (trust (gw, bobUSD(100)), txflags (tfSetfAuth));
+        env (trust (bob, gwUSD(100)));
+        env (trust (gw, aliceUSD(100)), txflags (tfSetfAuth));
+        env (trust (alice, gwUSD(100)));
+        // Alice is able to place the offer since the GW has authorized her
+        env (offer (alice, gwUSD(40), XRP(4000)));
+        env.close();
+
+        env.require (offers (alice, 1));
+        env.require (balance (alice, gwUSD(0)));
+
+        env (pay(gw, bob, gwUSD(50)));
+        env.close();
+
+        env.require (balance (bob, gwUSD(50)));
+
+        // Bob's offer should cross Alice's
+        env (offer (bob, XRP(4000), gwUSD(40)));
+        env.close();
+
+        env.require (offers (alice, 0));
+        env.require (balance (alice, gwUSD(40)));
+
+        env.require (offers (bob, 0));
+        env.require (balance (bob, gwUSD(10)));
+    }
+
+    void testMissingAuth (std::initializer_list<uint256> fs)
+    {
+        testcase ("Missing Auth");
         // 1. alice creates an offer to acquire USD/gw, an asset for which
         //    she does not have a trust line.  At some point in the future,
         //    gw adds lsfRequireAuth.  Then, later, alice's offer is crossed.
-        //    alice's offer is deleted, not consumed, since alice is not
-        //    authorized to hold USD/gw.
+        //     a. With Taker alice's unauthorized offer is consumed.
+        //     b. With FlowCross  alice's offer is deleted, not consumed,
+        //        since alice is not authorized to hold USD/gw.
         //
         // 2. alice tries to create an offer for USD/gw, now that gw has
         //    lsfRequireAuth set.  This time the offer create fails because
         //    alice is not authorized to hold USD/gw.
         //
-        // 3. Now gw creates a trust line authorizing alice to own USD/gw.
-        //    At this point alice successfully creates and crosses an offer
-        //    for USD/gw.
+        // 3. Next, gw creates a trust line to alice, but does not set
+        //    tfSetfAuth on that trust line.  alice attempts to create an
+        //    offer and again fails.
+        //
+        // 4. Finally, gw sets tsfSetAuth on the trust line authorizing
+        //    alice to own USD/gw.  At this point alice successfully
+        //    creates and crosses an offer for USD/gw.
 
         using namespace jtx;
 
@@ -4092,16 +4147,35 @@ public:
         env.require (balance (bob, gwUSD(50)));
 
         // gw now requires authorization and bob has gwUSD(50).  Let's see if
-        // bob can cross alice's offer.  bob's offer shouldn't cross and
-        // alice's unauthorized offer should be deleted.
+        // bob can cross alice's offer.
+        //
+        // o With Taker bob's offer should cross alice's.
+        // o With FlowCross bob's offer shouldn't cross and alice's
+        //   unauthorized offer should be deleted.
         env (offer (bob, XRP(4000), gwUSD(40)));
         env.close();
+        std::uint32_t const bobOfferSeq = env.seq (bob) - 1;
+
+        bool const flowCross = hasFeature (featureFlowCross, fs);
 
         env.require (offers (alice, 0));
-        env.require (balance (alice, gwUSD(none)));
+        if (flowCross)
+        {
+            // alice's unauthorized offer is deleted & bob's offer not crossed.
+            env.require (balance (alice, gwUSD(none)));
+            env.require (offers (bob, 1));
+            env.require (balance (bob, gwUSD(50)));
+        }
+        else
+        {
+            // alice's offer crosses bob's
+            env.require (balance (alice, gwUSD(40)));
+            env.require (offers (bob, 0));
+            env.require (balance (bob, gwUSD(10)));
 
-        env.require (offers (bob, 1));
-        env.require (balance (bob, gwUSD(50)));
+            // The rest of the test verifies FlowCross behavior.
+            return;
+        }
 
         // See if alice can create an offer without authorization.  alice
         // should not be able to create the offer and bob's offer should be
@@ -4115,6 +4189,25 @@ public:
         env.require (offers (bob, 1));
         env.require (balance (bob, gwUSD(50)));
 
+        // Set up a trust line for alice, but don't authorize it.  alice
+        // should still not be able to create an offer for USD/gw.
+        env (trust (gw, aliceUSD(100)));
+        env.close();
+
+        env (offer (alice, gwUSD(40), XRP(4000)), ter(tecNO_AUTH));
+        env.close();
+
+        env.require (offers (alice, 0));
+        env.require (balance (alice, gwUSD(0)));
+
+        env.require (offers (bob, 1));
+        env.require (balance (bob, gwUSD(50)));
+
+        // Delete bob's offer so alice can create an offer without crossing.
+        env (offer_cancel (bob, bobOfferSeq));
+        env.close();
+        env.require (offers (bob, 0));
+
         // Finally, set up an authorized trust line for alice.  Now alice's
         // offer should succeed.  Note that, since this is an offer rather
         // than a payment, alice does not need to set a trust line limit.
@@ -4124,11 +4217,109 @@ public:
         env (offer (alice, gwUSD(40), XRP(4000)));
         env.close();
 
+        env.require (offers (alice, 1));
+
+        // Now bob creates his offer again.  alice's offer should cross.
+        env (offer (bob, XRP(4000), gwUSD(40)));
+        env.close();
+
         env.require (offers (alice, 0));
         env.require (balance (alice, gwUSD(40)));
 
         env.require (offers (bob, 0));
         env.require (balance (bob, gwUSD(10)));
+    }
+
+    void testRCSmoketest(std::initializer_list<uint256> fs)
+    {
+        testcase("RippleConnect Smoketest payment flow");
+        using namespace jtx;
+
+        Env env {*this, with_features (fs)};
+        auto const closeTime =
+            fix1449Time() +
+                100 * env.closed()->info().closeTimeResolution;
+        env.close (closeTime);
+
+        // This test mimics the payment flow used in the Ripple Connect
+        // smoke test.  The players:
+        //   A USD gateway with hot and cold wallets
+        //   A EUR gateway with hot and cold walllets
+        //   A MM gateway that will provide offers from USD->EUR and EUR->USD
+        // A path from hot US to cold EUR is found and then used to send
+        // USD for EUR that goes through the market maker
+
+        auto const hotUS = Account("hotUS");
+        auto const coldUS = Account("coldUS");
+        auto const hotEU = Account("hotEU");
+        auto const coldEU = Account("coldEU");
+        auto const mm = Account("mm");
+
+        auto const USD = coldUS["USD"];
+        auto const EUR = coldEU["EUR"];
+
+        env.fund (XRP(100000), hotUS, coldUS, hotEU, coldEU, mm);
+        env.close();
+
+        // Cold wallets require trust but will ripple by default
+        for (auto const& cold : {coldUS, coldEU})
+        {
+            env(fset (cold, asfRequireAuth));
+            env(fset (cold, asfDefaultRipple));
+        }
+        env.close();
+
+        // Each hot wallet trusts the related cold wallet for a large amount
+        env (trust(hotUS, USD(10000000)), txflags (tfSetNoRipple));
+        env (trust(hotEU, EUR(10000000)), txflags (tfSetNoRipple));
+        // Market maker trusts both cold wallets for a large amount
+        env (trust(mm, USD(10000000)), txflags (tfSetNoRipple));
+        env (trust(mm, EUR(10000000)), txflags (tfSetNoRipple));
+        env.close();
+
+        // Gateways authorize the trustlines of hot and market maker
+        env (trust (coldUS, USD(0), hotUS, tfSetfAuth));
+        env (trust (coldEU, EUR(0), hotEU, tfSetfAuth));
+        env (trust (coldUS, USD(0), mm, tfSetfAuth));
+        env (trust (coldEU, EUR(0), mm, tfSetfAuth));
+        env.close();
+
+        // Issue currency from cold wallets to hot and market maker
+        env (pay(coldUS, hotUS, USD(5000000)));
+        env (pay(coldEU, hotEU, EUR(5000000)));
+        env (pay(coldUS, mm, USD(5000000)));
+        env (pay(coldEU, mm, EUR(5000000)));
+        env.close();
+
+        // MM places offers
+        float const rate = 0.9f; // 0.9 USD = 1 EUR
+        env (offer(mm,  EUR(4000000 * rate), USD(4000000)),
+            json(jss::Flags, tfSell));
+
+        float const reverseRate = 1.0f/rate * 1.00101f;
+        env (offer(mm,  USD(4000000 * reverseRate), EUR(4000000)),
+            json(jss::Flags, tfSell));
+        env.close();
+
+        // There should be a path available from hot US to cold EUR
+        {
+            Json::Value jvParams;
+            jvParams[jss::destination_account] = coldEU.human();
+            jvParams[jss::destination_amount][jss::issuer] = coldEU.human();
+            jvParams[jss::destination_amount][jss::currency] = "EUR";
+            jvParams[jss::destination_amount][jss::value] = 10;
+            jvParams[jss::source_account] = hotUS.human();
+
+            Json::Value const jrr {env.rpc(
+                "json", "ripple_path_find", to_string(jvParams))[jss::result]};
+
+            BEAST_EXPECT(jrr[jss::status] == "success");
+            BEAST_EXPECT(
+                jrr[jss::alternatives].isArray() &&
+                jrr[jss::alternatives].size() > 0);
+        }
+        // Send the payment using the found path.
+        env (pay (hotUS, coldEU, EUR(10)), sendmax (USD(11.1223326)));
     }
 
     void testTickSize (std::initializer_list<uint256> fs)
@@ -4304,6 +4495,8 @@ public:
             testSelfPayXferFeeOffer (fs);
             testSelfPayUnlimitedFunds (fs);
             testRequireAuth (fs);
+            testMissingAuth (fs);
+            testRCSmoketest (fs);
             testTickSize (fs);
         };
 // The first three test variants below passed at one time in the past (and
