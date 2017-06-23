@@ -107,7 +107,7 @@ ApplyContext::checkInvariantsHelper(TER terResult, std::index_sequence<Is...>)
             terResult = (terResult == tecINVARIANT_FAILED) ?
                 tefINVARIANT_FAILED :
                 tecINVARIANT_FAILED ;
-            JLOG(journal.error()) <<
+            JLOG(journal.fatal()) <<
                 "Transaction has failed one or more invariants: " <<
                 to_string(tx.getJson (0));
         }
