@@ -294,8 +294,11 @@ foreach(curdir
         basics
         beast
         conditions
+        consensus
         core
+        csf
         json
+        jtx
         ledger
         nodestore
         overlay
@@ -304,9 +307,7 @@ foreach(curdir
         resource
         rpc
         server
-        shamap
-        jtx
-        csf)
+        shamap)
     file(GLOB_RECURSE cursrcs src/test/${curdir}/*.cpp)
     list(APPEND test_srcs "${cursrcs}")
 endforeach()
