@@ -12,7 +12,7 @@ endif()
 
 macro(parse_target)
 
-  if (NOT target)
+  if (NOT target OR target STREQUAL "default")
     if (NOT CMAKE_BUILD_TYPE)
       set(CMAKE_BUILD_TYPE Debug)
     endif()
@@ -110,14 +110,27 @@ macro(parse_target)
 
     endwhile()
   endif()
-  # Promote these values to the CACHE, then unset the locals
-  # to prevent shadowing.
-  set(CMAKE_C_COMPILER ${CMAKE_C_COMPILER} CACHE FILEPATH
-    "Path to a program" FORCE)
-  unset(CMAKE_C_COMPILER)
-  set(CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE FILEPATH
-    "Path to a program" FORCE)
-  unset(CMAKE_CXX_COMPILER)
+
+  if(CMAKE_C_COMPILER MATCHES "-NOTFOUND$" OR
+    CMAKE_CXX_COMPILER MATCHES "-NOTFOUND$")
+    message(FATAL_ERROR "Can not find appropriate compiler for target ${target}")
+  endif()
+
+  # If defined, promote the compiler path values to the CACHE, then
+  # unset the locals to prevent shadowing. Some scenarios do not
+  # need or want to find a compiler, such as -GNinja under Windows.
+  # Setting these values in those case may prevent CMake from finding
+  # a valid compiler.
+  if (CMAKE_C_COMPILER)
+    set(CMAKE_C_COMPILER ${CMAKE_C_COMPILER} CACHE FILEPATH
+      "Path to a program" FORCE)
+    unset(CMAKE_C_COMPILER)
+  endif (CMAKE_C_COMPILER)
+  if (CMAKE_CXX_COMPILER)
+    set(CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE FILEPATH
+      "Path to a program" FORCE)
+    unset(CMAKE_CXX_COMPILER)
+  endif (CMAKE_CXX_COMPILER)
 
   if (release)
     set(CMAKE_BUILD_TYPE Release)
@@ -308,6 +321,7 @@ macro(use_boost)
     if ((NOT DEFINED BOOST_ROOT) AND (DEFINED ENV{BOOST_ROOT}))
         set(BOOST_ROOT $ENV{BOOST_ROOT})
     endif()
+    file(TO_CMAKE_PATH ${BOOST_ROOT} BOOST_ROOT)
     if(WIN32 OR CYGWIN)
         # Workaround for MSVC having two boost versions - x86 and x64 on same PC in stage folders
         if(DEFINED BOOST_ROOT)
@@ -623,27 +637,27 @@ macro(setup_build_boilerplate)
     endif (is_gcc)
   else(NOT WIN32)
     add_compile_options(
-      /bigobj              # Increase object file max size
-      /EHa                 # ExceptionHandling all
-      /fp:precise          # Floating point behavior
-      /Gd                  # __cdecl calling convention
-      /Gm-                 # Minimal rebuild: disabled
-      /GR                  # Enable RTTI
-      /Gy-                 # Function level linking: disabled
+      /bigobj            # Increase object file max size
+      /EHa               # ExceptionHandling all
+      /fp:precise        # Floating point behavior
+      /Gd                # __cdecl calling convention
+      /Gm-               # Minimal rebuild: disabled
+      /GR                # Enable RTTI
+      /Gy-               # Function level linking: disabled
       /FS
-      /MP                  # Multiprocessor compilation
-      /openmp-             # pragma omp: disabled
-      /Zc:forScope         # Language extension: for scope
-      /Zi                  # Generate complete debug info
-      /errorReport:none    # No error reporting to Internet
-      /nologo              # Suppress login banner
-      /W3                  # Warning level 3
-      /WX-                 # Disable warnings as errors
-      /wd"4018"
-      /wd"4244"
-      /wd"4267"
-      /wd"4800"            # Disable C4800(int to bool performance)
-      /wd"4503"            # Decorated name length exceeded, name was truncated
+      /MP                # Multiprocessor compilation
+      /openmp-           # pragma omp: disabled
+      /Zc:forScope       # Language conformance: for scope
+      /Zi                # Generate complete debug info
+      /errorReport:none  # No error reporting to Internet
+      /nologo            # Suppress login banner
+      /W3                # Warning level 3
+      /WX-               # Disable warnings as errors
+      /wd4018            # Disable signed/unsigned comparison warnings
+      /wd4244            # Disable float to int possible loss of data warnings
+      /wd4267            # Disable size_t to T possible loss of data warnings
+      /wd4800            # Disable C4800(int to bool performance)
+      /wd4503            # Decorated name length exceeded, name was truncated
       )
     add_definitions(
       -D_WIN32_WINNT=0x6000

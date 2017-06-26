@@ -20,17 +20,25 @@
 #          for running perf on the executable
 #
 # Notes:
-#  * Use the -G"Visual Studio 14 2015 Win64" generator on Windows. Without this
-#    a 32-bit project will be created. There is no way to set the generator or
-#    force a 64-bit build in CMakeLists.txt (setting CMAKE_GENERATOR_PLATFORM won't work).
-#    The best solution may be to wrap cmake with a script.
+#  * Use the -G"Visual Studio 14 2015 Win64" generator, or the "VS2015 x86 x64
+#    Cross Tools" Command Prompt on Windows. Without this a 32-bit project will be
+#    created. There is no way to set the generator or force a 64-bit build in
+#    CMakeLists.txt (setting CMAKE_GENERATOR_PLATFORM won't work). The best solution
+#    may be to wrap cmake with a script.
+#
+#  * Ninja command line builds seem to work under Windows, but only from within
+#    the "VS2015 x86 x64 Cross Tools" Command Prompt.
 #
 #  * It is not possible to generate a visual studio project on linux or
 #    mac. The visual studio generator is only available on windows.
 #
-#  * The visual studio project can be _either_ unity or
-#    non-unity (selected at generation time).  It does not appear possible
-#    to disable compilation based on configuration.
+#  * The Visual Studio solution will be generated with two projects, one
+#    unity, one non-unity. Which is default depends on the nounity flag in
+#    -Dtarget. Unity targets will create `rippled` and `rippled_classic`.
+#    Non-unity targets will create `rippled` and `rippled_unity`. In either
+#    case, only the `rippled` build will be enabled by default. It does
+#    not appear possible to include both unity and non-unity configs in one
+#    project and disable compilation based on configuration.
 #
 #  * Language is _much_ worse than python, poor documentation and "quirky"
 #    language support (for example, generator expressions can only be used
