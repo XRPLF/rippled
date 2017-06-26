@@ -96,6 +96,19 @@ private:
         if (!val->isTrusted() && pubKey)
             val->setTrusted();
 
+        // Do not process partial validations.
+        if(!val->isFull())
+        {
+            JLOG (j_.debug()) <<
+            "Val (partial) for " << hash <<
+            " from " << toBase58 (TokenType::TOKEN_NODE_PUBLIC, signer) <<
+            " ignored " << (val->isTrusted () ? "trusted/" : "UNtrusted/") <<
+            (isCurrent ? "current" : "stale");
+
+            // Only forward if current
+            return isCurrent && val->isTrusted();
+        }
+
         if (!val->isTrusted ())
         {
             JLOG (j_.trace()) <<
