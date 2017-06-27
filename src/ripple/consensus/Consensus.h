@@ -371,7 +371,7 @@ public:
     startRound(
         NetClock::time_point const& now,
         typename Ledger_t::ID const& prevLedgerID,
-        Ledger_t const& prevLedger,
+        Ledger_t prevLedger,
         bool proposing);
 
     /** A peer has proposed a new position, adjust our tracking.
@@ -638,7 +638,7 @@ void
 Consensus<Derived, Traits>::startRound(
     NetClock::time_point const& now,
     typename Ledger_t::ID const& prevLedgerID,
-    Ledger_t const& prevLedger,
+    Ledger_t prevLedger,
     bool proposing)
 {
     std::lock_guard<std::recursive_mutex> _(*lock_);
@@ -653,11 +653,31 @@ Consensus<Derived, Traits>::startRound(
     {
         prevCloseTime_ = rawCloseTimes_.self;
     }
+
+    Mode startMode = proposing ? Mode::proposing : Mode::observing;
+
+    // We were handed the wrong ledger
+    if (prevLedger.id() != prevLedgerID)
+    {
+        // try to acquire the correct one
+        if(auto newLedger = impl().acquireLedger(prevLedgerID))
+        {
+            prevLedger = *newLedger;
+        }
+        else // Unable to acquire the correct ledger
+        {
+            startMode = Mode::wrongLedger;
+            JLOG(j_.info())
+                << "Entering consensus with: " << previousLedger_.id();
+            JLOG(j_.info()) << "Correct LCL is: " << prevLedgerID;
+        }
+    }
+
     startRoundInternal(
         now,
         prevLedgerID,
         prevLedger,
-        proposing ? Mode::proposing : Mode::observing);
+        startMode);
 }
 template <class Derived, class Traits>
 void
@@ -686,19 +706,6 @@ Consensus<Derived, Traits>::startRoundInternal(
         previousLedger_.closeTimeResolution(),
         previousLedger_.closeAgree(),
         previousLedger_.seq() + 1);
-
-    if (previousLedger_.id() != prevLedgerID_)
-    {
-        handleWrongLedger(prevLedgerID_);
-
-        // Unable to acquire the correct ledger
-        if (mode_ == Mode::wrongLedger)
-        {
-            JLOG(j_.info())
-                << "Entering consensus with: " << previousLedger_.id();
-            JLOG(j_.info()) << "Correct LCL is: " << prevLedgerID;
-        }
-    }
 
     playbackProposals();
     if (peerProposals_.size() > (prevProposers_ / 2))
@@ -1005,14 +1012,15 @@ Consensus<Derived, Traits>::handleWrongLedger(
 {
     assert(lgrId != prevLedgerID_ || previousLedger_.id() != lgrId);
 
+    // Stop proposing because we are out of sync
+    leaveConsensus();
+
+    // First time switching to this ledger
     if (prevLedgerID_ != lgrId)
     {
-        // first time switching to this ledger
         prevLedgerID_ = lgrId;
 
-        // Stop proposing because we are out of sync
-        leaveConsensus();
-
+        // Clear out state
         if (result_)
         {
             result_->disputes.clear();
@@ -1387,7 +1395,18 @@ Consensus<Derived, Traits>::updateOurPositions()
             // Share our new transaction set if we haven't already received
             // it from a peer
             if (acquired_.emplace(newID, result_->set).second)
+            {
                 impl().relay(result_->set);
+                // Update votes for any peers that have also taken this
+                // transaction set as their position
+                for (auto const& p : peerProposals_)
+                {
+                    if (p.second.position() == newID)
+                    {
+                        updateDisputes(p.first, result_->set);
+                    }
+                }
+            }
 
             if (mode_ == Mode::proposing)
                 impl().propose(result_->position);

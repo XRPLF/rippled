@@ -96,6 +96,14 @@ private:
         if (!val->isTrusted() && pubKey)
             val->setTrusted();
 
+        // Do not process partial validations.
+        if(!val->isFull())
+        {
+            // Only forward if current
+            return isCurrent;
+        }
+
+
         if (!val->isTrusted ())
         {
             JLOG (j_.trace()) <<
