@@ -34,6 +34,10 @@
 #include <functional>
 #include <type_traits>
 
+#ifdef __linux__
+#include <endian.h>
+#endif
+
 using beast::zero;
 using beast::Zero;
 
