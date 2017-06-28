@@ -1,13 +1,31 @@
 ![Ripple](/images/ripple.png)
 
-This document contains the release notes for `rippled`, the reference server
-implementation of the Ripple protocol. To learn more about how to build and
-run a `rippled` server, visit https://ripple.com/build/rippled-setup/
+This document contains the release notes for `rippled`, the reference server implementation of the Ripple protocol. To learn more about how to build and run a `rippled` server, visit https://ripple.com/build/rippled-setup/
 
+**Do you work at a digital asset exchange or wallet provider?** 
+
+Please [contact us](mailto:support@ripple.com). We can help guide your integration.
+
+## Updating `rippled`
 If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `yum`](https://ripple.com/build/rippled-setup/#updating-rippled). For other platforms, please [compile from source](https://wiki.ripple.com/Rippled_build_instructions).
 
-
 # Releases
+
+## Version 0.70.1
+
+The `rippled` 0.70.1 release corrects a technical flaw in the newly refactored consensus code that could cause a node to get stuck in consensus due to stale votes from a
+peer, and allows compiling `rippled` under the 1.1.x releases of OpenSSL.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- Allow compiling against OpenSSL 1.1.0 ([#2151](https://github.com/ripple/rippled/pull/2151))
+- Log invariant check messages at "fatal" level ([2154](https://github.com/ripple/rippled/pull/2154))
+- Fix the consensus code to update all disputed transactions after a node changes a position ([2156](https://github.com/ripple/rippled/pull/2156))
+
 
 ## Version 0.70.0
 
