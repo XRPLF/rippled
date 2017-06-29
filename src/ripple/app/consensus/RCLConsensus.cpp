@@ -442,11 +442,20 @@ RCLConsensus::doAccept(
 
     if (validating_ && !consensusFail)
     {
-        validate(sharedLCL, proposing);
-        JLOG(j_.info()) << "CNF Val " << newLCLHash;
+        validate (sharedLCL, proposing);
+        JLOG (j_.info()) << "CNF Val " << newLCLHash;
+    }
+    else if (haveCorrectLCL && !consensusFail && valPublic_.size())
+    {
+        validating_ = true;
+        validate (sharedLCL,
+                  app_.getOPs().getOperatingMode() == NetworkOPs::omFULL);
+        JLOG (j_.info()) << "CNF bootstrapping Val " << newLCLHash;
     }
     else
-        JLOG(j_.info()) << "CNF buildLCL " << newLCLHash;
+    {
+        JLOG (j_.info()) << "CNF buildLCL " << newLCLHash;
+    }
 
     // See if we can accept a ledger as fully-validated
     ledgerMaster_.consensusBuilt(sharedLCL.ledger_, getJson(true));
