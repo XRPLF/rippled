@@ -218,7 +218,7 @@ flow (
                 {
                     JLOG (j.error())
                         << "Strand re-execute check failed. Step: " << i;
-                    return {telFAILED_PROCESSING, std::move (ofrsToRm)};
+                    break;
                 }
             }
         }
