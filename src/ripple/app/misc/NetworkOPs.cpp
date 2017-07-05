@@ -567,7 +567,9 @@ private:
         sRTTransactions,            // All proposed and accepted transactions.
         sValidations,               // Received validations.
         sPeerStatus,                // Peer status changes.
-        sLastEntry = sPeerStatus
+
+        sLastEntry = sPeerStatus    // as this name implies, any new entry must
+                                    // be ADDED ABOVE this one
     };
     std::array<SubMapType, SubTypes::sLastEntry+1> mStreamMaps;
 

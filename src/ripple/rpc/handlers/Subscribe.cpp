@@ -70,12 +70,18 @@ Json::Value doSubscribe (RPC::Context& context)
         {
             JLOG (context.j.debug())
                 << "doSubscribe: building: " << strUrl;
-
-            auto rspSub = make_RPCSub (context.app.getOPs (),
-                context.app.getIOService (), context.app.getJobQueue (),
-                    strUrl, strUsername, strPassword, context.app.logs ());
-            ispSub  = context.netOps.addRpcSub (
-                strUrl, std::dynamic_pointer_cast<InfoSub> (rspSub));
+            try
+            {
+                auto rspSub = make_RPCSub (context.app.getOPs (),
+                    context.app.getIOService (), context.app.getJobQueue (),
+                        strUrl, strUsername, strPassword, context.app.logs ());
+                ispSub  = context.netOps.addRpcSub (
+                    strUrl, std::dynamic_pointer_cast<InfoSub> (rspSub));
+            }
+            catch (std::runtime_error& ex)
+            {
+                return RPC::make_param_error (ex.what());
+            }
         }
         else
         {

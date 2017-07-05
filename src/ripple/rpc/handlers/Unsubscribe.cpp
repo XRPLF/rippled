@@ -29,8 +29,6 @@
 
 namespace ripple {
 
-// FIXME: This leaks RPCSub objects for JSON-RPC.  Shouldn't matter for anyone
-// sane.
 Json::Value doUnsubscribe (RPC::Context& context)
 {
 

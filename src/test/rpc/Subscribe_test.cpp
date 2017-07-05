@@ -435,8 +435,8 @@ public:
             auto jr = env.rpc("json", method, to_string(jv)) [jss::result];
             if (subscribe)
             {
-                BEAST_EXPECT(jr[jss::error] == "internal");
-                BEAST_EXPECT(jr[jss::error_message] == "Internal error.");
+                BEAST_EXPECT(jr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jr[jss::error_message] == "Failed to parse url.");
             }
             // else TODO: why isn't this an error for unsubscribe ?
             // (findRpcSub returns null)
@@ -448,8 +448,8 @@ public:
             auto jr = env.rpc("json", method, to_string(jv)) [jss::result];
             if (subscribe)
             {
-                BEAST_EXPECT(jr[jss::error] == "internal");
-                BEAST_EXPECT(jr[jss::error_message] == "Internal error.");
+                BEAST_EXPECT(jr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jr[jss::error_message] == "Only http and https is supported.");
             }
         }
 
