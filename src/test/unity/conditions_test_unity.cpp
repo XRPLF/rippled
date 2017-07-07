@@ -17,4 +17,6 @@
 */
 //==============================================================================
 
+#include <test/conditions/Der_test.cpp>
+#include <test/conditions/DerChoice.cpp>
 #include <test/conditions/PreimageSha256_test.cpp>
