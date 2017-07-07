@@ -17,41 +17,33 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CONDITIONS_PREIMAGE_SHA256_H
-#define RIPPLE_CONDITIONS_PREIMAGE_SHA256_H
+#ifndef RIPPLE_CONDITIONS_ED25519_H
+#define RIPPLE_CONDITIONS_ED25519_H
 
-#include <ripple/basics/Buffer.h>
-#include <ripple/basics/Slice.h>
 #include <ripple/conditions/Condition.h>
 #include <ripple/conditions/Fulfillment.h>
 #include <ripple/conditions/impl/Der.h>
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/SecretKey.h>
+
+#include <array>
+#include <cstdint>
 
 namespace ripple {
 namespace cryptoconditions {
 
-/** Fullfillment for a preimage cryptocondition
+/** Fulfillment for an Ed25519 cryptocondition.
 
-    A preimage has a condition that is a sha256 hash and a fulfillment with a
-    payload that will hash to the specified hash in the condition.
-
-    @note a preimage does not depend on the cryptocondition message.
+    An Ed25519 condition specifies an Ed25519 public key. The fulfillment
+    contains a signature of cryptocondition message.
  */
-class PreimageSha256 final : public Fulfillment
+class Ed25519 final : public Fulfillment
 {
-public:
-    /** The maximum allowed length of a preimage.
+    static std::size_t constexpr signature_size_ = 64;
+    static std::size_t constexpr pubkey_size_ = 32;
 
-        The specification does not specify a minimum supported
-        length, nor does it require all conditions to support
-        the same minimum length.
-
-        While future versions of this code will never lower
-        this limit, they may opt to raise it.
-    */
-    static constexpr std::size_t maxPreimageLength = 128;
-
-private:
-    boost::container::small_vector<std::uint8_t, 32> preimage_;
+    std::array<std::uint8_t, pubkey_size_> publicKey_;
+    std::array<std::uint8_t, signature_size_> signature_;
 
     void
     encodeFingerprint(der::Encoder& encoder) const override;
@@ -61,61 +53,60 @@ private:
 
     bool
     validationDependsOnMessage() const override;
+
 public:
-    PreimageSha256(der::Constructor const&) noexcept {};
+    Ed25519(der::Constructor const&) noexcept {};
 
-    template <size_t N>
+    Ed25519() = delete;
+
     explicit
-    PreimageSha256(
-        boost::container::small_vector<std::uint8_t, N> b) noexcept
-        : preimage_(std::move(b))
+    Ed25519(
+        std::array<std::uint8_t, pubkey_size_> const& publicKey,
+        std::array<std::uint8_t, signature_size_> const& signature)
+        : publicKey_(publicKey), signature_(signature)
     {
     }
 
-    explicit
-    PreimageSha256(Slice s)
-    {
-        preimage_.resize(s.size());
-        std::copy(s.data(), s.data() + s.size(), preimage_.data());
-    }
-
-    explicit
-    PreimageSha256(Buffer const& b)
-        : PreimageSha256(Slice(b))
-    {
-    }
-
-    template<class F>
+    template <class F>
     void
     withTuple(F&& f, der::TraitsCache& traitsCache)
     {
-        f(std::tie(preimage_));
+        f(std::tie(publicKey_, signature_));
     }
 
     template<class F>
     void
     withTuple(F&& f, der::TraitsCache& traitsCache) const
     {
-        const_cast<PreimageSha256*>(this)->withTuple(
-            std::forward<F>(f), traitsCache);
+        const_cast<Ed25519*>(this)->withTuple(std::forward<F>(f), traitsCache);
     }
 
     Type
     type() const override
     {
-        return Type::preimageSha256;
+        return Type::ed25519Sha256;
     }
 
     std::array<std::uint8_t, 32>
-    fingerprint(std::error_code& ec) const override;
+    fingerprint(std::error_code& ec) const override
+    {
+        return Fulfillment::fingerprint(ec);
+    }
+
+    bool
+    validate(Slice data) const override;
 
     std::uint32_t
-    cost() const override;
+    cost() const override
+    {
+        return 131072;
+    }
 
     std::bitset<5>
-    subtypes() const override;
-
-    bool validate(Slice) const override;
+    subtypes() const override
+    {
+        return std::bitset<5>{};
+    }
 
     void
     encode(der::Encoder& encoder) const override;
@@ -132,7 +123,6 @@ public:
     int
     compare(Fulfillment const& rhs, der::TraitsCache& traitsCache) const override;
 };
-
 }
 }
 

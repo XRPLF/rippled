@@ -24,120 +24,109 @@
 
 namespace ripple {
 namespace cryptoconditions {
-namespace detail {
+namespace der {
 
-class cryptoconditions_error_category
-    : public std::error_category
+/** Returns an error code.
+
+    This function is used by the implementation to convert
+    @ref error values into @ref error_code objects.
+*/
+static inline std::error_category const&
+derCategory()
 {
-public:
-    const char*
-    name() const noexcept override
-    {
-        return "cryptoconditions";
-    }
+    using error_category = std::error_category;
+    using error_code = std::error_code;
+    using error_condition = std::error_condition;
 
-    std::string
-    message(int ev) const override
+    struct cat_t : public error_category
     {
-        switch (static_cast<error>(ev))
+        char const*
+        name() const noexcept override
         {
-        case error::unsupported_type:
-            return "Specification: Requested type not supported.";
-
-        case error::unsupported_subtype:
-            return "Specification: Requested subtype not supported.";
-
-        case error::unknown_type:
-            return "Specification: Requested type not recognized.";
-
-        case error::unknown_subtype:
-            return "Specification: Requested subtypes not recognized.";
-
-        case error::fingerprint_size:
-            return "Specification: Incorrect fingerprint size.";
-
-        case error::incorrect_encoding:
-            return "Specification: Incorrect encoding.";
-
-        case error::trailing_garbage:
-            return "Bad buffer: contains trailing garbage.";
-
-        case error::buffer_empty:
-            return "Bad buffer: no data.";
-
-        case error::buffer_overfull:
-            return "Bad buffer: overfull.";
-
-        case error::buffer_underfull:
-            return "Bad buffer: underfull.";
-
-        case error::malformed_encoding:
-            return "Malformed DER encoding.";
-
-        case error::unexpected_tag:
-            return "Malformed DER encoding: Unexpected tag.";
-
-        case error::short_preamble:
-            return "Malformed DER encoding: Short preamble.";
-
-        case error::long_tag:
-            return "Implementation limit: Overlong tag.";
-
-        case error::large_size:
-            return "Implementation limit: Large payload.";
-
-        case error::preimage_too_long:
-            return "Implementation limit: Specified preimage is too long.";
-
-        case error::generic:
-        default:
-            return "generic error";
+            return "Der";
         }
-    }
 
-    std::error_condition
-    default_error_condition(int ev) const noexcept override
-    {
-        return std::error_condition{ ev, *this };
-    }
+        std::string
+        message(int e) const override
+        {
+            switch (static_cast<Error>(e))
+            {
+                case Error::integerBounds:
+                    return "integer bounds";
 
-    bool
-    equivalent(
-        int ev,
-        std::error_condition const& condition) const noexcept override
-    {
-        return &condition.category() == this &&
-            condition.value() == ev;
-    }
+                case Error::longGroup:
+                    return "long group";
 
-    bool
-    equivalent(
-        std::error_code const& error,
-        int ev) const noexcept override
-    {
-        return &error.category() == this &&
-            error.value() == ev;
-    }
-};
+                case Error::shortGroup:
+                    return "short group";
 
-inline
-std::error_category const&
-get_cryptoconditions_error_category()
-{
-    static cryptoconditions_error_category const cat{};
+                case Error::badDerEncoding:
+                    return "bad der encoding";
+
+                case Error::tagOverflow:
+                    return "tag overflow";
+
+                case Error::preambleMismatch:
+                    return "preamble mismatch";
+
+                case Error::contentLengthMismatch:
+                    return "content length mismatch";
+
+                case Error::unknownChoiceTag:
+                    return "unknown choice tag";
+
+                case Error::unsupported:
+                    return "unsupported der feature";
+
+                case Error::largeSize:
+                    return "implementation limit exceeded: large payload.";
+
+                case Error::preimageTooLong:
+                    return "implementation limit exceeded: preimage is too long.";
+
+                case Error::rsaModulusSizeRangeError:
+                    return "rsa modulus size is out of range (129 and 512 bytes, inclusive)";
+
+                case Error::unsupportedType:
+                    return "Specification: Requested type not supported.";
+
+                case Error::logicError:
+                    return "a coding precondition or postcondition was "
+                           "violated";
+
+                default:
+                    return "der error";
+            }
+        }
+
+        std::error_condition
+        default_error_condition(int ev) const noexcept override
+        {
+            return std::error_condition{ev, *this};
+        }
+
+        bool
+        equivalent(int ev, error_condition const& ec) const noexcept override
+        {
+            return ec.value() == ev && &ec.category() == this;
+        }
+
+        bool
+        equivalent(error_code const& ec, int ev) const noexcept override
+        {
+            return ec.value() == ev && &ec.category() == this;
+        }
+    };
+    static cat_t const cat{};
     return cat;
 }
 
-} // detail
-
 std::error_code
-make_error_code(error ev)
+make_error_code(Error e)
 {
-    return std::error_code {
-        static_cast<std::underlying_type<error>::type>(ev),
-        detail::get_cryptoconditions_error_category()
-    };
+    return std::error_code{static_cast<int>(e), derCategory()};
 }
 
+}
 }
 }

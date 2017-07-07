@@ -17,41 +17,32 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CONDITIONS_PREIMAGE_SHA256_H
-#define RIPPLE_CONDITIONS_PREIMAGE_SHA256_H
+#ifndef RIPPLE_CONDITIONS_PREFIX_SHA256_H
+#define RIPPLE_CONDITIONS_PREFIX_SHA256_H
 
 #include <ripple/basics/Buffer.h>
-#include <ripple/basics/Slice.h>
 #include <ripple/conditions/Condition.h>
 #include <ripple/conditions/Fulfillment.h>
 #include <ripple/conditions/impl/Der.h>
 
+#include <boost/container/small_vector.hpp>
+
+#include <memory>
+
 namespace ripple {
 namespace cryptoconditions {
 
-/** Fullfillment for a preimage cryptocondition
-
-    A preimage has a condition that is a sha256 hash and a fulfillment with a
-    payload that will hash to the specified hash in the condition.
-
-    @note a preimage does not depend on the cryptocondition message.
+/** Fulfillment for a prefix cryptocondition A prefix adds a specified prefix to
+    the cryptocondition's message, and sends that new message to the specified
+    sub-fulfillment.
  */
-class PreimageSha256 final : public Fulfillment
+class PrefixSha256 final : public Fulfillment
 {
-public:
-    /** The maximum allowed length of a preimage.
-
-        The specification does not specify a minimum supported
-        length, nor does it require all conditions to support
-        the same minimum length.
-
-        While future versions of this code will never lower
-        this limit, they may opt to raise it.
-    */
-    static constexpr std::size_t maxPreimageLength = 128;
-
-private:
-    boost::container::small_vector<std::uint8_t, 32> preimage_;
+    /// prefix to add to the subcondition's message
+    boost::container::small_vector<std::uint8_t, 32> prefix_;
+    std::uint64_t maxMessageLength_ = 0;
+    /// subfulfillment used to verify the newly created message
+    std::unique_ptr<Fulfillment> subfulfillment_;
 
     void
     encodeFingerprint(der::Encoder& encoder) const override;
@@ -61,61 +52,48 @@ private:
 
     bool
     validationDependsOnMessage() const override;
+
 public:
-    PreimageSha256(der::Constructor const&) noexcept {};
+    PrefixSha256(der::Constructor const&) noexcept {};
 
-    template <size_t N>
-    explicit
-    PreimageSha256(
-        boost::container::small_vector<std::uint8_t, N> b) noexcept
-        : preimage_(std::move(b))
-    {
-    }
+    PrefixSha256() = delete;
 
-    explicit
-    PreimageSha256(Slice s)
-    {
-        preimage_.resize(s.size());
-        std::copy(s.data(), s.data() + s.size(), preimage_.data());
-    }
-
-    explicit
-    PreimageSha256(Buffer const& b)
-        : PreimageSha256(Slice(b))
-    {
-    }
+    PrefixSha256(
+        Slice prefix,
+        std::uint64_t maxLength,
+        std::unique_ptr<Fulfillment> subfulfillment);
 
     template<class F>
     void
     withTuple(F&& f, der::TraitsCache& traitsCache)
     {
-        f(std::tie(preimage_));
+        f(std::tie(prefix_, maxMessageLength_, subfulfillment_));
     }
 
     template<class F>
     void
     withTuple(F&& f, der::TraitsCache& traitsCache) const
     {
-        const_cast<PreimageSha256*>(this)->withTuple(
-            std::forward<F>(f), traitsCache);
+        const_cast<PrefixSha256*>(this)->withTuple(std::forward<F>(f), traitsCache);
     }
 
     Type
     type() const override
     {
-        return Type::preimageSha256;
+        return Type::prefixSha256;
     }
 
     std::array<std::uint8_t, 32>
     fingerprint(std::error_code& ec) const override;
+
+    bool
+    validate(Slice data) const override;
 
     std::uint32_t
     cost() const override;
 
     std::bitset<5>
     subtypes() const override;
-
-    bool validate(Slice) const override;
 
     void
     encode(der::Encoder& encoder) const override;
@@ -132,7 +110,6 @@ public:
     int
     compare(Fulfillment const& rhs, der::TraitsCache& traitsCache) const override;
 };
-
 }
 }
 

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2016 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,14 +17,26 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_CONDITIONS_TYPES_H
+#define RIPPLE_CONDITIONS_TYPES_H
 
-#include <ripple/conditions/impl/Condition.cpp>
-#include <ripple/conditions/impl/Der.cpp>
-#include <ripple/conditions/impl/Fulfillment.cpp>
-#include <ripple/conditions/impl/Ed25519.cpp>
-#include <ripple/conditions/impl/PrefixSha256.cpp>
-#include <ripple/conditions/impl/PreimageSha256.cpp>
-#include <ripple/conditions/impl/RsaSha256.cpp>
-#include <ripple/conditions/impl/ThresholdSha256.cpp>
-#include <ripple/conditions/impl/error.cpp>
+#include <cstdint>
+
+namespace ripple {
+namespace cryptoconditions {
+
+enum class Type
+    : std::uint8_t
+{
+    preimageSha256 = 0,
+    prefixSha256 = 1,
+    thresholdSha256 = 2,
+    rsaSha256 = 3,
+    ed25519Sha256 = 4,
+    last = 4
+};
+
+} // cryptoconditions
+} // ripple
+
+#endif

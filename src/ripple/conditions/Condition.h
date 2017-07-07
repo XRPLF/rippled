@@ -22,8 +22,11 @@
 
 #include <ripple/basics/Buffer.h>
 #include <ripple/basics/Slice.h>
-#include <ripple/conditions/impl/utils.h>
+#include <ripple/conditions/Types.h>
+#include <ripple/conditions/impl/Der.h>
+#include <ripple/conditions/impl/error.h>
 #include <array>
+#include <bitset>
 #include <cstdint>
 #include <set>
 #include <string>
@@ -32,16 +35,6 @@
 
 namespace ripple {
 namespace cryptoconditions {
-
-enum class Type
-    : std::uint8_t
-{
-    preimageSha256 = 0,
-    prefixSha256 = 1,
-    thresholdSha256 = 2,
-    rsaSha256 = 3,
-    ed25519Sha256 = 4
-};
 
 class Condition
 {
@@ -57,7 +50,7 @@ public:
 
     /** Load a condition from its binary form
 
-        @param s The buffer containing the fulfillment to load.
+        @param s The slice containing the condition to load.
         @param ec Set to the error, if any occurred.
 
         The binary format for a condition is specified in the
@@ -66,9 +59,12 @@ public:
         https://tools.ietf.org/html/draft-thomas-crypto-conditions-02#section-7.2
     */
     static
-    std::unique_ptr<Condition>
+    Condition
     deserialize(Slice s, std::error_code& ec);
 
+    static
+    bool
+    isCompoundCondition(Type t);
 public:
     Type type;
 
@@ -77,36 +73,64 @@ public:
         This fingerprint is meant to be unique only with
         respect to other conditions of the same type.
     */
-    Buffer fingerprint;
+    std::array<std::uint8_t, 32> fingerprint;
 
     /** The cost associated with this condition. */
     std::uint32_t cost;
 
     /** For compound conditions, set of conditions includes */
-    std::set<Type> subtypes;
+    std::bitset<5> subtypes;
 
-    Condition(Type t, std::uint32_t c, Slice fp)
-        : type(t)
-        , fingerprint(fp)
-        , cost(c)
+    Condition(
+        Type t,
+        std::uint32_t c,
+        std::array<std::uint8_t, 32> const& fp,
+        std::bitset<5> const& s = std::bitset<5>{})
+        : type(t), fingerprint(fp), cost(c), subtypes(s)
     {
     }
-
-    Condition(Type t, std::uint32_t c, Buffer&& fp)
-        : type(t)
-        , fingerprint(std::move(fp))
-        , cost(c)
-    {
-    }
-
-    ~Condition() = default;
 
     Condition(Condition const&) = default;
     Condition(Condition&&) = default;
 
-    Condition() = delete;
+    ~Condition() = default;
+
+
+    // A default constructor is needed to serialize a vector on conditions - as
+    // needed for the threshold condition.
+    Condition() = default;
+
+    /// Construct for der serialization
+    explicit
+    Condition(der::Constructor const&);
+
+    template<class F>
+    void
+    withTuple(F&& f, der::TraitsCache& traitsCache)
+    {
+        if (isCompoundCondition(type))
+            f(std::tie(fingerprint, cost, subtypes));
+        else
+            f(std::tie(fingerprint, cost));
+    }
+
+    template<class F>
+    void
+    withTuple(F&& f, der::TraitsCache& traitsCache) const
+    {
+        const_cast<Condition*>(this)->withTuple(
+            std::forward<F>(f), traitsCache);
+    }
+
+    /** Return the subtypes that this type depends on, including this type.
+
+        @see {@link #subtypes}
+     */
+    std::bitset<5>
+    selfAndSubtypes() const;
 };
 
+/// compare two conditions for equality
 inline
 bool
 operator== (Condition const& lhs, Condition const& rhs)
@@ -118,6 +142,7 @@ operator== (Condition const& lhs, Condition const& rhs)
                     lhs.fingerprint == rhs.fingerprint;
 }
 
+/// compare two conditions for inequality
 inline
 bool
 operator!= (Condition const& lhs, Condition const& rhs)
@@ -125,8 +150,61 @@ operator!= (Condition const& lhs, Condition const& rhs)
     return !(lhs == rhs);
 }
 
-}
+/** DerCoderTraits for Condition
 
-}
+    Condition will be coded in asn.1 as a choice. The actual
+    choice will depend on if the condition is a compound condition
+    or not.
+
+    @see {@link #DerCoderTraits}
+*/
+namespace der {
+template <>
+struct DerCoderTraits<Condition>
+{
+    constexpr static GroupType
+    groupType()
+    {
+        return GroupType::choice;
+    }
+    constexpr static ClassId classId(){return ClassId::contextSpecific;}
+    static boost::optional<std::uint8_t> const&
+    tagNum()
+    {
+        static boost::optional<std::uint8_t> tn;
+        return tn;
+    }
+    static std::uint8_t
+    tagNum(Condition const& f)
+    {
+        return static_cast<std::uint8_t>(f.type);
+    }
+    constexpr static bool primitive(){return false;}
+
+    static void
+    encode(Encoder& encoder, Condition const& c);
+
+    static
+    void
+    decode(Decoder& decoder, Condition& v);
+
+    static
+    std::uint64_t
+    length(
+        Condition const& v,
+        boost::optional<GroupType> const& parentGroupType,
+        TagMode encoderTagMode,
+        TraitsCache& traitsCache);
+
+    static
+    int
+    compare(
+        Condition const& lhs,
+        Condition const& rhs,
+        TraitsCache& traitsCache);
+};
+} // der
+} // cryptoconditions
+} // ripple
 
 #endif

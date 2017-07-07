@@ -663,10 +663,8 @@ struct Escrow_test : public beast::unit_test::suite
                 0xD2, 0x82, 0x02, 0x03, 0xC8
             }};
 
-            // FIXME: this transaction should, eventually, return temDISABLED
-            //        instead of temMALFORMED.
             env(condpay("alice", "carol", XRP(1000), makeSlice(cb), T(S{1})),
-                ter(temMALFORMED));
+                ter(temDISABLED));
         }
     }
 

@@ -23,14 +23,20 @@
 #include <ripple/basics/Buffer.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/conditions/Condition.h>
-#include <ripple/conditions/impl/utils.h>
+#include <ripple/conditions/impl/Der.h>
+#include <ripple/conditions/impl/error.h>
 #include <boost/optional.hpp>
+
+#include <array>
 
 namespace ripple {
 namespace cryptoconditions {
 
 struct Fulfillment
 {
+    friend class ConditionsTestBase;
+    friend class ThresholdSha256;
+    friend class PrefixSha256;
 public:
     /** The largest binary fulfillment we support.
 
@@ -39,11 +45,11 @@ public:
               that were previously considered valid to no longer
               be allowed.
     */
-    static constexpr std::size_t maxSerializedFulfillment = 256;
+    static constexpr std::size_t maxSerializedFulfillment = 4096;
 
     /** Load a fulfillment from its binary form
 
-        @param s The buffer containing the fulfillment to load.
+        @param s The slice containing the fulfillment to load.
         @param ec Set to the error, if any occurred.
 
         The binary format for a fulfillment is specified in the
@@ -57,6 +63,37 @@ public:
         Slice s,
         std::error_code& ec);
 
+protected:
+    /** encode the contents used to calculate a fingerprint
+
+        @note Most cryptoconditions (excepting preimage) calculate their
+              fingerprints by encoding into a ans.1 der format and hashing the
+              contents of that encoding. This function encodes the contents that will be
+              hashed. It does not encode the hash itself.
+     */
+    virtual
+    void
+    encodeFingerprint(der::Encoder&) const = 0;
+
+    /** FOR TEST CODE ONLY return true if the fulfillment is equal to the given
+        fulfillment. Non-test code should use operator==
+
+        @note This uses an inefficient algorithm for comparison. Threshold is
+              particular problematic. This should be used for TESTING ONLY!!!
+    */
+    virtual
+    bool
+    checkEqualForTesting(Fulfillment const& rhs) const = 0;
+
+    /** FOR TEST CODE ONLY return true if the fulfillment depends on the message.
+
+        @note Preimage does not depend on the message. So any fulfillment where
+              all the "leaf" fulfillments are preimage would not depend on the
+              message, all others would.
+     */
+    virtual
+    bool
+    validationDependsOnMessage() const = 0;
 public:
     virtual ~Fulfillment() = default;
 
@@ -68,8 +105,8 @@ public:
         same type.
    */
     virtual
-    Buffer
-    fingerprint() const = 0;
+    std::array<std::uint8_t, 32>
+    fingerprint(std::error_code& ec) const = 0;
 
     /** Returns the type of this condition. */
     virtual
@@ -91,28 +128,79 @@ public:
     std::uint32_t
     cost() const = 0;
 
+    /** Returns the subtypes that this fulfillment depends on.
+
+        @note This never including the current type, even if the current type
+        recursively depends on itself (i.e. a prefix that has a prefix as a
+        subcondition will not include the prefix type as a subtype. @see {@link
+        #selfAndSubtypes}
+     */
+    virtual
+    std::bitset<5>
+    subtypes() const = 0;
+
+    /** Return the subtypes that this type depends on, including this type.
+
+        @see {@link #subtypes}
+     */
+    std::bitset<5>
+    selfAndSubtypes() const;
+
     /** Returns the condition associated with the given fulfillment.
 
         This process is completely deterministic. All implementations
         will, if compliant, produce the identical condition for the
         same fulfillment.
     */
-    virtual
     Condition
-    condition() const = 0;
+    condition(std::error_code& ec) const;
+
+    /// serialize the fulfillment into the asn.1 der encoder
+    virtual
+    void
+    encode(der::Encoder&) const = 0;
+
+    /// deserialize from the asn.1 decoder into this object
+    virtual
+    void
+    decode(der::Decoder&) = 0;
+
+    /// return the size in bytes of the content when encoded (does not include the size of the preamble)
+    virtual
+    std::uint64_t
+    derEncodedLength(
+        boost::optional<der::GroupType> const& parentGroupType,
+        der::TagMode encoderTagMode,
+        der::TraitsCache& traitsCache) const = 0;
+
+    /** compare two fulfillments for sorting in a DER set
+
+        @return <0 if less, 0 if equal, >0 if greater
+    */
+    virtual
+    int
+    compare(Fulfillment const& rhs, der::TraitsCache& traitsCache) const = 0;
 };
 
+/// compare two fulfillments for equality
 inline
 bool
 operator== (Fulfillment const& lhs, Fulfillment const& rhs)
 {
-    // FIXME: for compound conditions, need to also check subtypes
-    return
-        lhs.type() == rhs.type() &&
+    std::error_code ec1, ec2;
+    auto const result =
+        lhs.selfAndSubtypes() == rhs.selfAndSubtypes() &&
             lhs.cost() == rhs.cost() &&
-                lhs.fingerprint() == rhs.fingerprint();
+                lhs.fingerprint(ec1) == rhs.fingerprint(ec2);
+    if (ec1 || ec2)
+    {
+        // can not compare if there is an error encoding the fingerprint
+        return false;
+    }
+    return result;
 }
 
+/// compare two fulfillments for inequality
 inline
 bool
 operator!= (Fulfillment const& lhs, Fulfillment const& rhs)
@@ -160,7 +248,66 @@ validate (
     Fulfillment const& f,
     Condition const& c);
 
-}
-}
+
+/** DerCoderTraits for std::unique_ptr<Fulfillment>
+
+    std::unique_ptr<Fulfillment> will be coded in asn.1 as a choice. The actual
+    choice will depend on the concrete type of the Fulfillment (preimage,
+    prefix, ect...)
+
+    @see {@link #DerCoderTraits}
+*/
+namespace der {
+template <>
+struct DerCoderTraits<std::unique_ptr<Fulfillment>>
+{
+    constexpr static GroupType
+    groupType()
+    {
+        return GroupType::choice;
+    }
+    constexpr static ClassId classId(){return ClassId::contextSpecific;}
+    static boost::optional<std::uint8_t> const&
+    tagNum()
+    {
+        static boost::optional<std::uint8_t> tn;
+        return tn;
+    }
+    static std::uint8_t
+    tagNum(std::unique_ptr<Fulfillment> const& f)
+    {
+        assert(f);
+        return static_cast<std::uint8_t>(f->type());
+    }
+    constexpr static bool primitive(){return false;}
+
+    static void
+    encode(Encoder& encoder, std::unique_ptr<Fulfillment> const& f);
+
+    static
+    void
+    decode(Decoder& decoder, std::unique_ptr<Fulfillment>& v);
+
+    static
+    std::uint64_t
+    length(
+        std::unique_ptr<Fulfillment> const& v,
+        boost::optional<GroupType> const& parentGroupType,
+        TagMode encoderTagMode, TraitsCache& traitsCache);
+
+    static
+    int
+    compare(
+        std::unique_ptr<Fulfillment> const& lhs,
+        std::unique_ptr<Fulfillment> const& rhs,
+        TraitsCache& traitsCache)
+    {
+        return lhs->compare(*rhs, traitsCache);
+    }
+};
+
+} // der
+} // cryptconditions
+} // ripple
 
 #endif

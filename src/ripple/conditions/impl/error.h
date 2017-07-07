@@ -25,43 +25,66 @@
 
 namespace ripple {
 namespace cryptoconditions {
+namespace der {
 
-enum class error
-{
-    generic = 1,
-    unsupported_type,
-    unsupported_subtype,
-    unknown_type,
-    unknown_subtype,
-    fingerprint_size,
-    incorrect_encoding,
-    trailing_garbage,
-    buffer_empty,
-    buffer_overfull,
-    buffer_underfull,
-    malformed_encoding,
-    short_preamble,
-    unexpected_tag,
-    long_tag,
-    large_size,
-    preimage_too_long
+/** Error types for asn.1 der coders
+ */
+enum class Error {
+    /// Integer would not fit in the bounds of the specified type
+    integerBounds = 1,
+    /** There is more content data in a group than expected. For example: after
+        decoding a group, if there is more content is a slice.
+     */  
+    longGroup,
+    /** There is less content data in a group than expected. For example: trying to
+        decode a string of length 10 from a slice of length 9.
+     */
+    shortGroup,
+    /// Encoding is not a valid der encoding
+    badDerEncoding,
+    /// This implementation only supports tag numbers that will fit in a
+    /// std::uint64_t
+    tagOverflow,
+    /// A decoded preamble did not match an expected preamble
+    preambleMismatch,
+    /// A decoded contentLength did not match an expected contentLength
+    contentLengthMismatch,
+    /// Choice tag did not match a known type
+    unknownChoiceTag,
+    /// Serialization exceeds implementation limit
+    largeSize,
+    /// Specified preimage exceeds implementation limit
+    preimageTooLong,
+    /// Specified rsa modulus size is out of range (129 and 512 bytes, inclusive)
+    rsaModulusSizeRangeError,
+    /// Requested type not supported
+    unsupportedType,
+    /// Supported by der, but not this implementation
+    unsupported,
+    /** Programming error. For example: detecting more pops than pushes on the
+        group stack.
+     */ 
+    logicError
 };
 
+/** Convert an error enum to an std::error_code
+ */
 std::error_code
-make_error_code(error ev);
-
-} // cryptoconditions
-} // ripple
+make_error_code(Error e);
+}  // der
+}  // cryptoconditions
+}  // ripple
 
 namespace std
 {
 
 template<>
-struct is_error_code_enum<ripple::cryptoconditions::error>
+struct is_error_code_enum<ripple::cryptoconditions::der::Error>
 {
     static bool const value = true;
 };
 
 } // std
+
 
 #endif
