@@ -41,7 +41,7 @@ class Discrepancy_test : public beast::unit_test::suite
     {
         testcase ("Discrepancy test : XRP Discrepancy");
         using namespace test::jtx;
-        Env env {*this, features(fs)};
+        Env env {*this, with_features(fs)};
 
         Account A1 {"A1"};
         Account A2 {"A2"};

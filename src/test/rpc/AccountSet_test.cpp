@@ -223,10 +223,12 @@ public:
         env(jt, ter(temBAD_TRANSFER_RATE));
     }
 
-    void testBadInputs()
+    void testBadInputs(bool withFeatures)
     {
         using namespace test::jtx;
-        Env env(*this);
+        std::unique_ptr<Env> penv {
+            withFeatures ?  new Env(*this) : new Env(*this, no_features)};
+        Env& env = *penv;
         Account const alice ("alice");
         env.fund(XRP(10000), alice);
 
@@ -259,13 +261,14 @@ public:
         env(jt, ter(temINVALID_FLAG));
 
         env(fset (alice, asfDisableMaster),
-            sig(alice), ter(tecNO_REGULAR_KEY));
+            sig(alice),
+            ter(withFeatures ? tecNO_ALTERNATIVE_KEY : tecNO_REGULAR_KEY));
     }
 
     void testRequireAuthWithDir()
     {
         using namespace test::jtx;
-        Env env(*this, features(featureMultiSign));
+        Env env(*this, with_features(featureMultiSign));
         Account const alice ("alice");
         Account const bob ("bob");
 
@@ -303,7 +306,8 @@ public:
         testMessageKey();
         testWalletID();
         testEmailHash();
-        testBadInputs();
+        testBadInputs(true);
+        testBadInputs(false);
         testRequireAuthWithDir();
         testTransferRate();
     }

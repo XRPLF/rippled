@@ -30,7 +30,7 @@ public:
     void testMonitorRoot()
     {
         using namespace test::jtx;
-        Env env {*this};
+        Env env {*this, no_features};
         Account const alice {"alice"};
         env.fund(XRP(10000), alice);
 

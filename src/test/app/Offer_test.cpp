@@ -30,6 +30,14 @@ namespace test {
 
 class Offer_test : public beast::unit_test::suite
 {
+    static bool hasFeature(uint256 const& feat, std::initializer_list<uint256> args)
+    {
+        for(auto const& f : args)
+            if (f == feat)
+                return true;
+        return false;
+    }
+
     XRPAmount reserve(jtx::Env& env, std::uint32_t count)
     {
         return env.current()->fees().accountReserve (count);
@@ -112,7 +120,7 @@ public:
         // not used for the payment.
 
         using namespace jtx;
-        Env env {*this, features(fs)};
+        Env env {*this, with_features(fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -163,7 +171,7 @@ public:
         testcase ("Removing Canceled Offers");
 
         using namespace jtx;
-        Env env {*this, features(fs)};
+        Env env {*this, with_features(fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -233,7 +241,7 @@ public:
         auto const USD = gw["USD"];
         auto const EUR = gw["EUR"];
 
-        Env env {*this, features(fs)};
+        Env env {*this, with_features(fs)};
 
         env.fund (XRP (10000), alice, bob, carol, gw);
         env.trust (USD (1000), alice, bob, carol);
@@ -295,7 +303,7 @@ public:
             if (!withFix && fs.size())
                 continue;
 
-            Env env {*this, features(fs)};
+            Env env {*this, with_features(fs)};
 
             auto closeTime = [&]
             {
@@ -376,7 +384,7 @@ public:
 
         {
             // No ripple with an implied account step after an offer
-            Env env {*this, features (fs)};
+            Env env {*this, with_features (fs)};
             auto const closeTime =
                 fix1449Time () +
                     100 * env.closed ()->info ().closeTimeResolution;
@@ -405,7 +413,7 @@ public:
         }
         {
             // Make sure payment works with default flags
-            Env env {*this, features (fs)};
+            Env env {*this, with_features (fs)};
             auto const closeTime =
                 fix1449Time () +
                     100 * env.closed ()->info ().closeTimeResolution;
@@ -460,7 +468,7 @@ public:
 
         // No crossing:
         {
-            Env env {*this, features (fs)};
+            Env env {*this, with_features (fs)};
             auto const closeTime =
                 fix1449Time () +
                     100 * env.closed ()->info ().closeTimeResolution;
@@ -485,7 +493,7 @@ public:
 
         // Partial cross:
         {
-            Env env {*this, features (fs)};
+            Env env {*this, with_features (fs)};
             auto const closeTime =
                 fix1449Time () +
                     100 * env.closed ()->info ().closeTimeResolution;
@@ -519,7 +527,7 @@ public:
         // if an offer were added. Attempt to sell IOUs to
         // buy XRP. If it fully crosses, we succeed.
         {
-            Env env {*this, features (fs)};
+            Env env {*this, with_features (fs)};
             auto const closeTime =
                 fix1449Time () +
                     100 * env.closed ()->info ().closeTimeResolution;
@@ -585,7 +593,7 @@ public:
         // Fill or Kill - unless we fully cross, just charge
         // a fee and not place the offer on the books:
         {
-            Env env {*this, features (fs)};
+            Env env {*this, with_features (fs)};
             auto const closeTime =
                 fix1449Time () +
                     100 * env.closed ()->info ().closeTimeResolution;
@@ -630,7 +638,7 @@ public:
         // Immediate or Cancel - cross as much as possible
         // and add nothing on the books:
         {
-            Env env {*this, features (fs)};
+            Env env {*this, with_features (fs)};
             auto const closeTime =
                 fix1449Time () +
                     100 * env.closed ()->info ().closeTimeResolution;
@@ -686,7 +694,7 @@ public:
 
         // tfPassive -- place the offer without crossing it.
         {
-            Env env (*this, features (fs));
+            Env env (*this, with_features (fs));
             auto const closeTime =
                 fix1449Time () +
                     100 * env.closed ()->info ().closeTimeResolution;
@@ -743,7 +751,7 @@ public:
 
         // tfPassive -- cross only offers of better quality.
         {
-            Env env (*this, features (fs));
+            Env env (*this, with_features (fs));
             auto const closeTime =
                 fix1449Time () +
                     100 * env.closed ()->info ().closeTimeResolution;
@@ -795,7 +803,7 @@ public:
         auto const alice = Account {"alice"};
         auto const USD = gw["USD"];
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -899,7 +907,7 @@ public:
 
         Json::StaticString const key ("Expiration");
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -972,7 +980,7 @@ public:
         auto const usdOffer = USD (1000);
         auto const xrpOffer = XRP (1000);
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1038,7 +1046,7 @@ public:
         auto const USD = gw["USD"];
         auto const BTC = gw["BTC"];
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1096,8 +1104,7 @@ public:
         {
             auto acctOffers = offersOnAccount (env, account_to_test);
             BEAST_EXPECT(acctOffers.size() ==
-                (std::find (fs.begin(), fs.end(), featureFlowCross) ==
-                    fs.end() ? 1 : 0));
+                (hasFeature (featureFlowCross, fs) ? 0 : 1));
             for (auto const& offerPtr : acctOffers)
             {
                 auto const& offer = *offerPtr;
@@ -1154,7 +1161,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1215,8 +1222,7 @@ public:
         // small_amount and transfer no XRP.  The new offer crossing transfers
         // a single drop, rather than no drops.
         auto const crossingDelta =
-            std::find (fs.begin(), fs.end(), featureFlowCross) ==
-                    fs.end() ? drops (0) : drops (1);
+            (hasFeature (featureFlowCross, fs) ? drops (1) : drops (0));
 
         jrr = ledgerEntryState (env, alice, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "50");
@@ -1242,7 +1248,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1302,7 +1308,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1352,7 +1358,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1385,7 +1391,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1419,7 +1425,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1484,7 +1490,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1517,7 +1523,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1609,7 +1615,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1653,7 +1659,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1705,7 +1711,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1775,7 +1781,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1833,7 +1839,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1873,7 +1879,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1919,7 +1925,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -1967,7 +1973,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -2076,7 +2082,7 @@ public:
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -2238,7 +2244,7 @@ public:
         auto const usdOffer = USD(1000);
         auto const xrpOffer = XRP(1000);
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -2323,7 +2329,7 @@ public:
         auto const usdOffer = USD(1000);
         auto const eurOffer = EUR(1000);
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -2420,7 +2426,7 @@ public:
         auto const usdOffer = USD(1000);
         auto const eurOffer = EUR(1000);
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -2518,7 +2524,7 @@ public:
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -2695,7 +2701,7 @@ public:
         auto const bob   = Account("bob");
         auto const USD   = gw["USD"];
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -2775,7 +2781,7 @@ public:
         auto const gw1 = Account("gateway1");
         auto const USD = gw1["USD"];
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -3100,7 +3106,7 @@ public:
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -3163,7 +3169,7 @@ public:
         auto const USD = gw1["USD"];
         auto const EUR = gw2["EUR"];
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -3284,7 +3290,7 @@ public:
         // correctly now.
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -3336,9 +3342,7 @@ public:
 
         // The problem was identified when featureOwnerPaysFee was enabled,
         // so make sure that gets included.
-        std::vector<uint256> fsPlus (fs);
-        fsPlus.push_back (featureOwnerPaysFee);
-        Env env {*this, features (fsPlus)};
+        Env env {*this, with_features(fs) | with_features(featureOwnerPaysFee)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -3388,8 +3392,7 @@ public:
 
             // Determine which TEC code we expect.
             TER const tecExpect =
-                std::find (fs.begin(), fs.end(), featureFlow) == fs.end()
-                    ? tecPATH_DRY : temBAD_PATH;
+                hasFeature(featureFlow, fs) ? temBAD_PATH : tecPATH_DRY;
 
             // This payment caused the assert.
             env (pay (ann, ann, D_BUX(30)),
@@ -3417,7 +3420,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -3472,7 +3475,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -3512,7 +3515,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -3561,7 +3564,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -3615,7 +3618,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -3674,7 +3677,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time() +
                 100 * env.closed()->info().closeTimeResolution;
@@ -3757,7 +3760,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time() +
                 100 * env.closed()->info().closeTimeResolution;
@@ -3909,7 +3912,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, features (fs)};
+        Env env {*this, with_features (fs)};
         auto const closeTime =
             fix1449Time() +
                 100 * env.closed()->info().closeTimeResolution;
@@ -3964,8 +3967,7 @@ public:
 
         // Pick the right tests.
         auto const& tests =
-            std::find (fs.begin(), fs.end(), featureFlowCross) ==
-                    fs.end() ? takerTests : flowTests;
+            hasFeature(featureFlowCross, fs) ? flowTests : takerTests;
 
         for (auto const& t : tests)
         {
@@ -4036,7 +4038,7 @@ public:
     void testRequireAuth (std::initializer_list<uint256> fs)
     {
         // Only test FlowCross.  Results are different with Taker.
-        if (std::find (fs.begin(), fs.end(), featureFlowCross) == fs.end())
+        if (!hasFeature(featureFlowCross, fs))
             return;
 
         testcase ("lsfRequireAuth");
@@ -4056,7 +4058,7 @@ public:
 
         using namespace jtx;
 
-        Env env {*this, fs};
+        Env env {*this, with_features(fs)};
         auto const closeTime =
             fix1449Time() +
                 100 * env.closed()->info().closeTimeResolution;
@@ -4137,7 +4139,7 @@ public:
 
         // Try to set tick size without enabling feature
         {
-            Env env {*this, features(fs)};
+            Env env {*this, with_features(fs)};
             auto const gw = Account {"gateway"};
             env.fund (XRP(10000), gw);
 
@@ -4146,9 +4148,11 @@ public:
             env(txn, ter(temDISABLED));
         }
 
+        auto const fsPlus = with_features(fs) | with_features(featureTickSize);
+
         // Try to set tick size out of range
         {
-            Env env {*this, features(fs), features (featureTickSize)};
+            Env env {*this, fsPlus};
             auto const gw = Account {"gateway"};
             env.fund (XRP(10000), gw);
 
@@ -4181,7 +4185,7 @@ public:
             BEAST_EXPECT (! env.le(gw)->isFieldPresent (sfTickSize));
         }
 
-        Env env {*this, features(fs), features (featureTickSize)};
+        Env env {*this, fsPlus};
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
         auto const XTS = gw["XTS"];
@@ -4302,14 +4306,14 @@ public:
             testRequireAuth (fs);
             testTickSize (fs);
         };
-// The following test variants passed at one time in the past (and should
-// still pass) but are commented out to conserve test time.
-//        testAll({                                      });
-//        testAll({                      featureFlowCross});
-//        testAll({featureFlow                           });
-        testAll({featureFlow,          featureFlowCross});
-        testAll({featureFlow, fix1373                  });
-        testAll({featureFlow, fix1373, featureFlowCross});
+// The first three test variants below passed at one time in the past (and
+// should still pass) but are commented out to conserve test time.
+//        testAll(jtx::no_features                         );
+//        testAll({                      featureFlowCross });
+//        testAll({featureFlow                            });
+        testAll({featureFlow,          featureFlowCross });
+        testAll({featureFlow, fix1373                   });
+        testAll({featureFlow, fix1373, featureFlowCross });
     }
 };
 

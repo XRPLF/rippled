@@ -52,13 +52,13 @@ struct SetAuth_test : public beast::unit_test::suite
         auto const gw = Account("gw");
         auto const USD = gw["USD"];
         {
-            Env env(*this, features(fs));
+            Env env(*this, with_features(fs));
             env.fund(XRP(100000), "alice", gw);
             env(fset(gw, asfRequireAuth));
             env(auth(gw, "alice", "USD"),       ter(tecNO_LINE_REDUNDANT));
         }
         {
-            Env env(*this, features(featureTrustSetAuth));
+            Env env(*this, with_features(featureTrustSetAuth));
             env.fund(XRP(100000), "alice", "bob", gw);
             env(fset(gw, asfRequireAuth));
             env(auth(gw, "alice", "USD"));
