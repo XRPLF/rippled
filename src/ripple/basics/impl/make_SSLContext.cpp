@@ -220,11 +220,15 @@ static
 void
 info_handler (SSL const* ssl, int event, int)
 {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     if ((ssl->s3) && (event & SSL_CB_HANDSHAKE_START))
     {
         if (disallowRenegotiation (ssl, SSL_in_before (ssl)))
             ssl->s3->flags |= SSL3_FLAGS_NO_RENEGOTIATE_CIPHERS;
     }
+#else
+    // empty, flag removed in OpenSSL 1.1
+#endif
 }
 #endif
 
@@ -448,4 +452,3 @@ make_SSLContextAuthed (
 }
 
 } // ripple
-

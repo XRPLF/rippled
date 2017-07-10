@@ -249,7 +249,7 @@ PeerImp::crawl() const
     auto const iter = headers_.find("Crawl");
     if (iter == headers_.end())
         return false;
-    return beast::detail::ci_equal(iter->value(), "public");
+    return beast::detail::iequals(iter->value(), "public");
 }
 
 std::string

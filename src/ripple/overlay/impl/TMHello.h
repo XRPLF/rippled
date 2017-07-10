@@ -84,7 +84,7 @@ verifyHello (protocol::TMHello const& h, uint256 const& sharedValue,
     excluded from the result set.
 */
 std::vector<ProtocolVersion>
-parse_ProtocolVersions(boost::string_ref const& s);
+parse_ProtocolVersions(beast::string_view const& s);
 
 }
 

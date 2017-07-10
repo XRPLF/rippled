@@ -29,6 +29,7 @@
 #include <ripple/basics/Resolver.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/UnorderedContainers.h>
+#include <ripple/overlay/impl/TMHello.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/resource/ResourceManager.h>
 #include <boost/asio/ip/tcp.hpp>
@@ -260,6 +261,32 @@ public:
         auto const versions = parse_ProtocolVersions(
             response["Upgrade"]);
         if (versions.size() == 0)
+            return false;
+        return true;
+    }
+
+    template<class Fields>
+    static
+    bool
+    is_upgrade(beast::http::header<true, Fields> const& req)
+    {
+        if(req.version < 11)
+            return false;
+        if(req.method() != beast::http::verb::get)
+            return false;
+        if(! beast::http::token_list{req["Connection"]}.exists("upgrade"))
+            return false;
+        return true;
+    }
+
+    template<class Fields>
+    static
+    bool
+    is_upgrade(beast::http::header<false, Fields> const& req)
+    {
+        if(req.version < 11)
+            return false;
+        if(! beast::http::token_list{req["Connection"]}.exists("upgrade"))
             return false;
         return true;
     }

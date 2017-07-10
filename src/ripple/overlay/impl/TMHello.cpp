@@ -188,7 +188,7 @@ appendHello (beast::http::fields& h,
 }
 
 std::vector<ProtocolVersion>
-parse_ProtocolVersions(boost::string_ref const& value)
+parse_ProtocolVersions(beast::string_view const& value)
 {
     static boost::regex re (
         "^"                  // start of line

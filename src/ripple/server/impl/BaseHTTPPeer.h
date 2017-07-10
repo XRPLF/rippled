@@ -359,7 +359,6 @@ on_write(error_code const& ec,
         for(auto const& b : wq2_)
             v.emplace_back(b.data.get(), b.bytes);
         start_timer();
-        using namespace beast::asio;
         return boost::asio::async_write(impl().stream_, v,
             strand_.wrap(std::bind(&BaseHTTPPeer::on_write,
                 impl().shared_from_this(), std::placeholders::_1,

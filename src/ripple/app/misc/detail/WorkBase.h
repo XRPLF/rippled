@@ -180,10 +180,10 @@ WorkBase<Impl>::onStart()
     req_.method(beast::http::verb::get);
     req_.target(path_.empty() ? "/" : path_);
     req_.version = 11;
-    req_.replace (
+    req_.set (
         "Host", host_ + ":" + port_);
-    req_.replace ("User-Agent", BuildInfo::getFullVersionString());
-    req_.prepare();
+    req_.set ("User-Agent", BuildInfo::getFullVersionString());
+    req_.prepare_payload();
     beast::http::async_write(impl().stream(), req_,
         strand_.wrap (std::bind (&WorkBase::onRequest,
             impl().shared_from_this(), std::placeholders::_1)));

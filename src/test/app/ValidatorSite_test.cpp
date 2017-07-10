@@ -157,7 +157,7 @@ private:
                 res.insert("Server", "http_sync_server");
                 res.insert("Content-Type", "text/html");
                 res.body = "The file '" + path + "' was not found";
-                res.prepare();
+                res.prepare_payload();
                 write(sock, res, ec);
                 if(ec)
                     break;
@@ -171,7 +171,7 @@ private:
             res.body = list_;
             try
             {
-                res.prepare();
+                res.prepare_payload();
             }
             catch(std::exception const& e)
             {
@@ -182,7 +182,7 @@ private:
                 res.insert("Content-Type", "text/html");
                 res.body =
                     std::string{"An internal error occurred"} + e.what();
-                res.prepare();
+                res.prepare_payload();
             }
             write(sock, res, ec);
             if(ec)

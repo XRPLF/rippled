@@ -279,7 +279,7 @@ split_commas(FwdIt first, FwdIt last)
 
 template <class Result = std::vector<std::string>>
 Result
-split_commas(boost::string_ref const& s)
+split_commas(beast::string_view const& s)
 {
     return split_commas(s.begin(), s.end());
 }

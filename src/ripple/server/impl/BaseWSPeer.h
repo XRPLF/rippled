@@ -141,8 +141,8 @@ protected:
     on_ping(error_code const& ec);
 
     void
-    on_ping_pong(bool is_pong,
-        beast::websocket::ping_data const& payload);
+    on_ping_pong(beast::websocket::frame_type kind,
+        beast::string_view payload);
 
     void
     on_timer(error_code ec);
@@ -180,16 +180,15 @@ run()
         return strand_.post(std::bind(
             &BaseWSPeer::run, impl().shared_from_this()));
     impl().ws_.set_option(port().pmd_options);
-    impl().ws_.ping_callback(
+    impl().ws_.control_callback(
         std::bind(&BaseWSPeer::on_ping_pong, this,
             std::placeholders::_1, std::placeholders::_2));
-    using namespace beast::asio;
     start_timer();
     close_on_timer_ = true;
     impl().ws_.async_accept_ex(request_,
         [](auto & res)
         {
-            res.replace(beast::http::field::server,
+            res.set(beast::http::field::server,
                 BuildInfo::getFullVersionString());
         },
         strand_.wrap(std::bind(&BaseWSPeer::on_ws_handshake,
@@ -278,7 +277,6 @@ on_write(error_code const& ec)
     if(ec)
         return fail(ec, "write");
     auto& w = *wq_.front();
-    using namespace beast::asio;
     auto const result = w.prepare(65536,
         std::bind(&BaseWSPeer::do_write,
             impl().shared_from_this()));
@@ -321,7 +319,6 @@ do_read()
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind(
             &BaseWSPeer::do_read, impl().shared_from_this()));
-    using namespace beast::asio;
     impl().ws_.async_read(rb_, strand_.wrap(
         std::bind(&BaseWSPeer::on_read,
             impl().shared_from_this(), std::placeholders::_1)));
@@ -398,12 +395,13 @@ on_ping(error_code const& ec)
 template<class Handler, class Impl>
 void
 BaseWSPeer<Handler, Impl>::
-on_ping_pong(bool is_pong,
-    beast::websocket::ping_data const& payload)
+on_ping_pong(beast::websocket::frame_type kind,
+    beast::string_view payload)
 {
-    if(is_pong)
+    if(kind == beast::websocket::frame_type::pong)
     {
-        if(payload == payload_)
+        beast::string_view p(payload_.begin());
+        if(payload == p)
         {
             close_on_timer_ = false;
             JLOG(this->j_.trace()) <<

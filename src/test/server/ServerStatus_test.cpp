@@ -123,7 +123,7 @@ class ServerStatus_test :
             req.insert("Content-Type", "application/json; charset=UTF-8");
             req.body = body;
         }
-        req.prepare();
+        req.prepare_payload();
 
         return req;
     }
@@ -131,7 +131,7 @@ class ServerStatus_test :
     void
     doRequest(
         boost::asio::yield_context& yield,
-        beast::http::request<beast::http::string_body> const& req,
+        beast::http::request<beast::http::string_body>& req,
         std::string const& host,
         uint16_t port,
         bool secure,
@@ -161,7 +161,7 @@ class ServerStatus_test :
             ss.async_handshake(ssl::stream_base::client, yield[ec]);
             if(ec)
                 return;
-            async_write(ss, req, yield[ec]);
+            beast::http::async_write(ss, req, yield[ec]);
             if(ec)
                 return;
             async_read(ss, sb, resp, yield[ec]);
@@ -174,7 +174,7 @@ class ServerStatus_test :
             async_connect(sock, it, yield[ec]);
             if(ec)
                 return;
-            async_write(sock, req, yield[ec]);
+            beast::http::async_write(sock, req, yield[ec]);
             if(ec)
                 return;
             async_read(sock, sb, resp, yield[ec]);
@@ -195,10 +195,11 @@ class ServerStatus_test :
     {
         auto const port = env.app().config()["port_ws"].
             get<std::uint16_t>("port");
-        auto const ip = env.app().config()["port_ws"].
+        auto ip = env.app().config()["port_ws"].
             get<std::string>("ip");
+        auto req = makeWSUpgrade(*ip, *port);
         doRequest(
-            yield, makeWSUpgrade(*ip, *port), *ip, *port, secure, resp, ec);
+            yield, req, *ip, *port, secure, resp, ec);
         return;
     }
 
@@ -215,9 +216,10 @@ class ServerStatus_test :
             get<std::uint16_t>("port");
         auto const ip = env.app().config()["port_rpc"].
             get<std::string>("ip");
+        auto req = makeHTTPRequest(*ip, *port, body);
         doRequest(
             yield,
-            makeHTTPRequest(*ip, *port, body),
+            req,
             *ip,
             *port,
             secure,

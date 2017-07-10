@@ -78,7 +78,7 @@ unauthorizedResponse(
     msg.insert("Content-Type", "text/html");
     msg.insert("Connection", "close");
     msg.body = "Invalid protocol.";
-    msg.prepare();
+    msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return handoff;
 }
@@ -251,7 +251,7 @@ ServerHandlerImp::onHandoff (Session& session,
 static inline
 Json::Output makeOutput (Session& session)
 {
-    return [&](boost::string_ref const& b)
+    return [&](beast::string_view const& b)
     {
         session.write (b.data(), b.size());
     };
@@ -744,7 +744,7 @@ ServerHandlerImp::statusResponse(
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Content-Type", "text/html");
     msg.insert("Connection", "close");
-    msg.prepare();
+    msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return handoff;
 }

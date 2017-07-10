@@ -266,13 +266,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\config.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\async_completion.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\async_result.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\bind_handler.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\buffered_read_stream.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\buffer_cat.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\buffer_concepts.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\buffer_prefix.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\consuming_buffers.hpp">
     </ClInclude>
@@ -280,133 +282,165 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\bind_handler.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\detail\buffer_cat.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\detail\buffer_concepts.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\detail\ci_char_traits.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\buffers_ref.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\clamp.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\detail\empty_base_optimization.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\config.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\detail\get_lowest_layer.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\cpu_info.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\empty_base_optimization.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\integer_sequence.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\detail\is_call_possible.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\in_place_init.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\detail\prepare_buffers.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\ostream.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\sha1.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\detail\stream_concepts.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\static_ostream.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\detail\sync_ostream.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\static_string.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\type_traits.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\detail\write_dynabuf.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\dynabuf_readstream.hpp">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\error.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\file.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\file_base.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\file_posix.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\file_stdio.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\file_win32.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\handler_alloc.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\handler_concepts.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\handler_helpers.hpp">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\handler_ptr.hpp">
     </ClInclude>
+    <None Include="..\..\src\beast\include\beast\core\impl\buffered_read_stream.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\core\impl\buffer_cat.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\core\impl\buffer_prefix.ipp">
+    </None>
     <None Include="..\..\src\beast\include\beast\core\impl\consuming_buffers.ipp">
     </None>
-    <None Include="..\..\src\beast\include\beast\core\impl\dynabuf_readstream.ipp">
+    <None Include="..\..\src\beast\include\beast\core\impl\file_posix.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\core\impl\file_stdio.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\core\impl\file_win32.ipp">
     </None>
     <None Include="..\..\src\beast\include\beast\core\impl\handler_ptr.ipp">
     </None>
-    <None Include="..\..\src\beast\include\beast\core\impl\static_streambuf.ipp">
+    <None Include="..\..\src\beast\include\beast\core\impl\multi_buffer.ipp">
     </None>
-    <None Include="..\..\src\beast\include\beast\core\impl\streambuf.ipp">
+    <None Include="..\..\src\beast\include\beast\core\impl\read_size.ipp">
     </None>
-    <ClInclude Include="..\..\src\beast\include\beast\core\placeholders.hpp">
+    <None Include="..\..\src\beast\include\beast\core\impl\static_buffer.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\core\impl\static_string.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\core\impl\string_param.ipp">
+    </None>
+    <ClInclude Include="..\..\src\beast\include\beast\core\multi_buffer.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\prepare_buffer.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\ostream.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\prepare_buffers.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\read_size.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\static_streambuf.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\span.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\static_buffer.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\static_string.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\streambuf.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\string.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\stream_concepts.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\string_param.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\to_string.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\write_dynabuf.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\type_traits.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\basic_dynabuf_body.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\basic_parser.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\basic_fields.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\buffer_body.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\basic_parser_v1.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\detail\basic_parsed_list.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\chunk_encode.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\concepts.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\detail\basic_fields.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\detail\basic_parser_v1.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\detail\basic_parser.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\detail\chunk_encode.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\detail\rfc7230.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\detail\type_traits.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\dynamic_body.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\empty_body.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\error.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\field.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\fields.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\header_parser_v1.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\file_body.hpp">
     </ClInclude>
-    <None Include="..\..\src\beast\include\beast\http\impl\basic_fields.ipp">
+    <None Include="..\..\src\beast\include\beast\http\impl\basic_parser.ipp">
     </None>
-    <None Include="..\..\src\beast\include\beast\http\impl\basic_parser_v1.ipp">
+    <None Include="..\..\src\beast\include\beast\http\impl\error.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\http\impl\field.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\http\impl\fields.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\http\impl\file_body_win32.ipp">
     </None>
     <None Include="..\..\src\beast\include\beast\http\impl\message.ipp">
     </None>
-    <None Include="..\..\src\beast\include\beast\http\impl\parse.ipp">
-    </None>
-    <None Include="..\..\src\beast\include\beast\http\impl\parse_error.ipp">
+    <None Include="..\..\src\beast\include\beast\http\impl\parser.ipp">
     </None>
     <None Include="..\..\src\beast\include\beast\http\impl\read.ipp">
     </None>
     <None Include="..\..\src\beast\include\beast\http\impl\rfc7230.ipp">
     </None>
+    <None Include="..\..\src\beast\include\beast\http\impl\serializer.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\http\impl\status.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\http\impl\verb.ipp">
+    </None>
     <None Include="..\..\src\beast\include\beast\http\impl\write.ipp">
     </None>
     <ClInclude Include="..\..\src\beast\include\beast\http\message.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\parse.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\parser_v1.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\parse_error.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\parser.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\read.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\reason.hpp">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\rfc7230.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\streambuf_body.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\serializer.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\span_body.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\status.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\string_body.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\type_traits.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\vector_body.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\verb.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\write.hpp">
     </ClInclude>
@@ -414,21 +448,17 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\decorator.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\endian.hpp">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\frame.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\hybi13.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\invokable.hpp">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\mask.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\pausation.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\pmd_extension.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\stream_base.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\type_traits.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\utf8_checker.hpp">
     </ClInclude>
@@ -445,6 +475,8 @@
     <None Include="..\..\src\beast\include\beast\websocket\impl\ping.ipp">
     </None>
     <None Include="..\..\src\beast\include\beast\websocket\impl\read.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\websocket\impl\rfc6455.ipp">
     </None>
     <None Include="..\..\src\beast\include\beast\websocket\impl\ssl.ipp">
     </None>

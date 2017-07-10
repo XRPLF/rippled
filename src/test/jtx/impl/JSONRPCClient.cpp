@@ -130,7 +130,7 @@ public:
             }
             req.body = to_string(jr);
         }
-        req.prepare();
+        req.prepare_payload();
         write(stream_, req);
 
         response<dynamic_body> res;
