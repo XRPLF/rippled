@@ -22,13 +22,13 @@
 
 #include <ripple/basics/Buffer.h>
 #include <ripple/basics/Slice.h>
+#include <ripple/conditions/impl/error.h>
 
 #include <algorithm>
 #include <bitset>
 #include <limits>
 #include <numeric>
 #include <stack>
-#include <system_error>
 #include <vector>
 
 #include <boost/container/flat_map.hpp>
@@ -121,43 +121,6 @@ enum class GroupType {
     // used in fuzz testing only
     fuzzRoot = 255
 };
-
-/** Error types for asn.1 der coders
- */
-enum class Error {
-    /// Integer would not fit in the bounds of the specified type
-    integerBounds = 1,
-    /** There is more content data in a group than expected. For example: after
-        decoding a group, if there is more content is a slice.
-     */  
-    longGroup,
-    /** There is less content data in a group than expected. For example: trying to
-        decode a string of length 10 from a slice of length 9.
-     */
-    shortGroup,
-    /// Encoding is not a valid der encoding
-    badDerEncoding,
-    /// This implementation only supports tag numbers that will fit in a
-    /// std::uint64_t
-    tagOverflow,
-    /// A decoded preamble did not match an expected preamble
-    preambleMismatch,
-    /// A decoded contentLength did not match an expected contentLength
-    contentLengthMismatch,
-    /// Choice tag did not match a known type
-    unknownChoiceTag,
-    /// Supported by der, but not this implementation
-    unsupported,
-    /** Programming error. For example: detecting more pops than pushes on the
-        group stack.
-     */ 
-    logicError
-};
-
-/** Convert an error enum to an std::error_code
- */
-std::error_code
-make_error_code(Error e);
 
 /** asn.1 class ids
  */
