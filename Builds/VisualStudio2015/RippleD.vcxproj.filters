@@ -5214,6 +5214,12 @@
     <ClInclude Include="..\..\src\test\csf\Peer.h">
       <Filter>test\csf</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Scheduler.h">
+      <Filter>test\csf</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\csf\Scheduler_test.cpp">
+      <Filter>test\csf</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\test\csf\Sim.h">
       <Filter>test\csf</Filter>
     </ClInclude>

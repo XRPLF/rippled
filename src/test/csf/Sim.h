@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_CSF_SIM_H_INCLUDED
 
 #include <test/csf/BasicNetwork.h>
+#include <test/csf/Scheduler.h>
 #include <test/csf/UNL.h>
 
 namespace ripple {
@@ -51,10 +52,11 @@ public:
     */
     template <class Topology>
     Sim(TrustGraph const& g, Topology const& top)
+        : net{scheduler}
     {
         peers.reserve(g.numPeers());
         for (int i = 0; i < g.numPeers(); ++i)
-            peers.emplace_back(i, net, g.unl(i));
+            peers.emplace_back(i, scheduler, net, g.unl(i));
 
         for (int i = 0; i < peers.size(); ++i)
         {
@@ -88,10 +90,11 @@ public:
             p.targetLedgers = p.completedLedgers + ledgers;
             p.start();
         }
-        net.step();
+        scheduler.step();
     }
 
     std::vector<Peer> peers;
+    Scheduler scheduler;
     BasicNetwork<Peer*> net;
 };
 

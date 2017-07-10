@@ -45,7 +45,7 @@ public:
         p.start();
         p.submit(Tx{1});
 
-        s.net.step();
+        s.scheduler.step();
 
         // Inspect that the proper ledger was created
         BEAST_EXPECT(p.prevLedgerID().seq == 1);
@@ -441,11 +441,11 @@ public:
             for (auto& p : sim.peers)
             {
                 p.start();
-                sim.net.step_for(stagger);
+                sim.scheduler.step_for(stagger);
             }
 
             // run until all peers have accepted all transactions
-            sim.net.step_while([&]() {
+            sim.scheduler.step_while([&]() {
                 for (auto& p : sim.peers)
                 {
                     if (p.prevLedgerID().txs.size() != 1)
