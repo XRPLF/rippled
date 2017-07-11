@@ -62,15 +62,19 @@ if [[ $TARGET == "coverage" ]]; then
   lcov --no-external -c -i -d . -o baseline.info
 fi
 
-# Execute unit tests under gdb, printing a call stack
-# if we get a crash.
-gdb -return-child-result -quiet -batch \
-    -ex "set env MALLOC_CHECK_=3" \
-    -ex "set print thread-events off" \
-    -ex run \
-    -ex "thread apply all backtrace full" \
-    -ex "quit" \
-    --args $APP_PATH $APP_ARGS
+if [[ ${TARGET} == debug ]]; then
+    # Execute unit tests under gdb, printing a call stack
+    # if we get a crash.
+    $GDB_ROOT/bin/gdb -return-child-result -quiet -batch \
+                      -ex "set env MALLOC_CHECK_=3" \
+                      -ex "set print thread-events off" \
+                      -ex run \
+                      -ex "thread apply all backtrace full" \
+                      -ex "quit" \
+                      --args $APP_PATH $APP_ARGS
+else
+    $APP_PATH $APP_ARGS
+fi
 
 if [[ $TARGET == "coverage" ]]; then
   # Create test coverage data file

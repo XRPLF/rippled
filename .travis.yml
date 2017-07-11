@@ -10,6 +10,7 @@ env:
     # namepart must match the folder name internal
     # to boost's .tar.gz.
     - LCOV_ROOT=$HOME/lcov
+    - GDB_ROOT=$HOME/gdb
     - BOOST_ROOT=$HOME/boost_1_60_0
     - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.60.0/boost_1_60_0.tar.gz'
 
@@ -27,6 +28,8 @@ addons:
       - binutils-gold
       # Provides a backtrace if the unittests crash
       - gdb
+      # needed to build gdb
+      - texinfo
 
 matrix:
   include:
