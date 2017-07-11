@@ -325,6 +325,8 @@ public:
             m("1. beast", Beast{half, half}, check);
             m("1. zlib ", ZLib {half, half}, check);
         }
+
+    #if ! BEAST_NO_SLOW_TESTS
         {
             Matrix m{*this};
             auto const check = corpus1(50000);
@@ -380,6 +382,7 @@ public:
             m("8. beast", Beast{full, once, Flush::block}, check);
             m("8. zlib ", ZLib {full, once, Z_BLOCK}, check);
         }
+    #endif
 
         // VFALCO Fails, but I'm unsure of what the correct
         //        behavior of Z_TREES/Flush::trees is.

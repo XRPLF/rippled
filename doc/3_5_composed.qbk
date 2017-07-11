@@ -1,0 +1,236 @@
+[/
+    Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
+
+    Distributed under the Boost Software License, Version 1.0. (See accompanying
+    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+]
+
+[section Writing Composed Operations]
+[block'''<?dbhtml stop-chunking?>''']
+
+Asynchronous operations are started by calling a free function or member
+function known as an asynchronous ['__async_initfn__]. This function accepts
+parameters specific to the operation as well as a "completion token." The
+token is either a completion handler, or a type defining how the caller is
+informed of the asynchronous operation result. __Asio__ comes with the
+special tokens __use_future__ and __yield_context__ for using futures
+and coroutines respectively. This system of customizing the return value
+and method of completion notification is known as the
+['Extensible Asynchronous Model] described in __N3747__, and a built in
+to __N4588__. Here is an example of an initiating function which reads a
+line from the stream and echoes it back. This function is developed
+further in the next section:
+
+[example_core_echo_op_1]
+
+Authors using Beast can reuse the library's primitives to create their
+own initiating functions for performing a series of other, intermediate
+asynchronous operations before invoking a final completion handler.
+The set of intermediate actions produced by an initiating function is
+known as a
+[@http://blog.think-async.com/2009/08/composed-operations-coroutines-and-code.html ['composed operation]].
+To ensure full interoperability and well-defined behavior, __Asio__ imposes
+requirements on the implementation of composed operations. These classes
+and functions make it easier to develop initiating functions and their
+composed operations:
+
+[table Asynchronous Helpers
+[[Name][Description]]
+[[
+    [link beast.ref.beast__async_completion `async_completion`]
+][
+    This class aggregates the completion handler customization point and
+    the asynchronous initiation function return value customization point
+    into a single object which exposes the appropriate output types for the
+    given input types, and also contains boilerplate that is necessary to
+    implement an initiation function using the Extensible Model.
+]]
+[[
+    [link beast.ref.beast__async_return_type `async_return_type`]
+][
+    This template alias determines the return value of an asynchronous
+    initiation function given the completion token and signature. It is used
+    by asynchronous initiation functions to meet the requirements of the
+    Extensible Asynchronous Model.
+]]
+[[
+    [link beast.ref.beast__bind_handler `bind_handler`]
+][
+    This function returns a new, nullary completion handler which when
+    invoked with no arguments invokes the original completion handler with a
+    list of bound arguments. The invocation is made from the same implicit
+    or explicit strand as that which would be used to invoke the original
+    handler. This is accomplished by using the correct overload of
+    `asio_handler_invoke` associated with the original completion handler.
+
+]]
+[[
+    [link beast.ref.beast__handler_alloc `handler_alloc`]
+][
+    This class meets the requirements of [*Allocator], and uses any custom
+    memory allocation and deallocation hooks associated with a given handler.
+    It is useful for when a composed operation requires temporary dynamic
+    allocations to achieve its result. Memory allocated using this allocator
+    must be freed before the final completion handler is invoked.
+]]
+[[
+    [link beast.ref.beast__handler_ptr `handler_ptr`]
+][
+    This is a smart pointer container used to manage the internal state of a
+    composed operation. It is useful when the state is non trivial. For example
+    when the state has non-copyable or expensive to copy types. The container
+    takes ownership of the final completion handler, and provides boilerplate
+    to invoke the final handler in a way that also deletes the internal state.
+    The internal state is allocated using the final completion handler's
+    associated allocator, benefiting from all handler memory management
+    optimizations transparently.
+]]
+[[
+    [link beast.ref.beast__handler_type `handler_type`]
+][
+    This template alias converts a completion token and signature to the
+    correct completion handler type. It is used in the implementation of
+    asynchronous initiation functions to meet the requirements of the
+    Extensible Asynchronous Model.
+]]
+]
+
+
+
+[section Echo]
+
+This example develops an initiating function called [*echo].
+The operation will read up to the first newline on a stream, and
+then write the same line including the newline back on the stream.
+The implementation performs both reading and writing, and has a
+non-trivially-copyable state.
+First we define the input parameters and results, then declare our
+initiation function. For our echo operation the only inputs are the
+stream and the completion token. The output is the error code which
+is usually included in all completion handler signatures.
+
+[example_core_echo_op_2]
+
+Now that we have a declaration, we will define the body of the function.
+We want to achieve the following goals: perform static type checking on
+the input parameters, set up the return value as per __N3747__, and launch
+the composed operation by constructing the object and invoking it.
+
+[example_core_echo_op_3]
+
+The initiating function contains a few relatively simple parts. There is
+the customization of the return value type, static type checking, building
+the return value type using the helper, and creating and launching the
+composed operation object. The [*`echo_op`] object does most of the work
+here, and has a somewhat non-trivial structure. This structure is necessary
+to meet the stringent requirements of composed operations (described in more
+detail in the __Asio__ documentation). We will touch on these requirements
+without explaining them in depth.
+
+Here is the boilerplate present in all composed operations written
+in this style:
+
+[example_core_echo_op_4]
+
+Next is to implement the function call operator. Our strategy is to make our
+composed object meet the requirements of a completion handler by being copyable
+(also movable), and by providing the function call operator with the correct
+signature. Rather than using `std::bind` or `boost::bind`, which destroys
+the type information and therefore breaks the allocation and invocation
+hooks, we will simply pass `std::move(*this)` as the completion handler
+parameter for any operations that we initiate. For the move to work correctly,
+care must be taken to ensure that no access to data members are made after the
+move takes place. Here is the implementation of the function call operator for
+this echo operation:
+
+[example_core_echo_op_5]
+
+This is the most important element of writing a composed operation, and
+the part which is often neglected or implemented incorrectly. It is the
+declaration and definition of the "handler hooks". There are four hooks:
+
+[table Handler Hooks
+[[Name][Description]]
+[[
+    [@http://www.boost.org/doc/html/boost_asio/reference/asio_handler_invoke.html `asio_handler_invoke`]
+][
+    Default invoke function for handlers. This hooking function ensures
+    that the invoked method used for the final handler is accessible at
+    each intermediate step.
+]]
+[[
+    [@http://www.boost.org/doc/html/boost_asio/reference/asio_handler_allocate.html `asio_handler_allocate`]
+][
+    Default allocation function for handlers. Implement `asio_handler_allocate`
+    and `asio_handler_deallocate` for your own handlers to provide custom
+    allocation for temporary objects.
+]]
+[[
+    [@http://www.boost.org/doc/html/boost_asio/reference/asio_handler_deallocate.html `asio_handler_deallocate`]
+][
+    Default deallocation function for handlers. Implement `asio_handler_allocate`
+    and `asio_handler_deallocate` for your own handlers to provide custom
+    allocation for temporary objects.
+]]
+[[
+    [@http://www.boost.org/doc/html/boost_asio/reference/asio_handler_is_continuation.html `asio_handler_is_continuation`]
+][
+    Default continuation function for handlers. Implement
+    `asio_handler_is_continuation` for your own handlers to indicate when
+    a handler represents a continuation.
+]]
+]
+
+Our composed operation stores the final handler and performs its own
+intermediate asynchronous operations. To ensure that I/O objects, in this
+case the stream, are accessed safely it is important to use the same method
+to invoke intermediate handlers as that used to invoke the final handler.
+Similarly, for the memory allocation hooks our composed operation should use
+the same hooks as those used by the final handler. And finally for the
+`asio_is_continuation` hook, we want to return `true` for any intermediate
+asynchronous operations we perform after the first one, since those represent
+continuations. For the first asynchronous operation we perform, the hook should
+return `true` only if the final handler also represents a continuation. Our
+implementation of the hooks will forward the call to the corresponding
+overloads of the final handler:
+
+[example_core_echo_op_6]
+
+There are some common mistakes that should be avoided when writing
+composed operations:
+
+* Type erasing the final handler. This will cause undefined behavior.
+
+* Not using `std::addressof` to get the address of the handler.
+
+* Forgetting to include a return statement after calling an
+  initiating function.
+
+* Calling a synchronous function by accident. In general composed
+  operations should not block for long periods of time, since this
+  ties up a thread running on the __io_service__.
+
+* Forgetting to overload `asio_handler_invoke` for the composed
+  operation. This will cause undefined behavior if someone calls
+  the initiating function with a strand-wrapped function object,
+  and there is more than thread running on the `io_service`.
+
+* For operations which complete immediately (i.e. without calling an
+  intermediate initiating function), forgetting to use `io_service::post`
+  to invoke the final handler. This breaks the following initiating
+  function guarantee: ['Regardless of whether the asynchronous operation
+  completes immediately or not, the handler will not be invoked from
+  within this function. Invocation of the handler will be performed
+  in a manner equivalent to using `boost::asio::io_service::post`].
+  The function
+  [link beast.ref.beast__bind_handler `bind_handler`]
+  is provided for this purpose.
+
+A complete, runnable version of this example may be found in the examples
+directory.
+
+[endsect]
+
+
+
+[endsect]

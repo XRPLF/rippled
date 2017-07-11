@@ -9,16 +9,16 @@
 #define BEAST_BUFFERS_ADAPTER_HPP
 
 #include <beast/config.hpp>
-#include <beast/core/buffer_concepts.hpp>
+#include <beast/core/type_traits.hpp>
 #include <boost/asio/buffer.hpp>
 #include <type_traits>
 
 namespace beast {
 
-/** Adapts a @b `MutableBufferSequence` into a @b `DynamicBuffer`.
+/** Adapts a @b MutableBufferSequence into a @b DynamicBuffer.
 
-    This class wraps a @b `MutableBufferSequence` to meet the requirements
-    of @b `DynamicBuffer`. Upon construction the input and output sequences are
+    This class wraps a @b MutableBufferSequence to meet the requirements
+    of @b DynamicBuffer. Upon construction the input and output sequences are
     empty. A copy of the mutable buffer sequence object is stored; however,
     ownership of the underlying memory is not transferred. The caller is
     responsible for making sure that referenced memory remains valid
@@ -32,7 +32,7 @@ namespace beast {
 template<class MutableBufferSequence>
 class buffers_adapter
 {
-    static_assert(is_MutableBufferSequence<MutableBufferSequence>::value,
+    static_assert(is_mutable_buffer_sequence<MutableBufferSequence>::value,
         "MutableBufferSequence requirements not met");
 
     using iter_type = typename MutableBufferSequence::const_iterator;
@@ -64,7 +64,7 @@ class buffers_adapter
     }
 
 public:
-#if GENERATING_DOCS
+#if BEAST_DOXYGEN
     /// The type used to represent the input sequence as a list of buffers.
     using const_buffers_type = implementation_defined;
 
@@ -111,6 +111,13 @@ public:
     size() const
     {
         return in_size_;
+    }
+    
+    /// Returns the maximum sum of the sizes of the input sequence and output sequence the buffer can hold without requiring reallocation.
+    std::size_t
+    capacity() const
+    {
+        return max_size_;
     }
 
     /** Get a list of buffers that represents the output sequence, with the given size.

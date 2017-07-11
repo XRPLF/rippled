@@ -254,7 +254,7 @@ void
 mask_inplace(
     MutableBuffers const& bs, KeyType& key)
 {
-    for(auto const& b : bs)
+    for(boost::asio::mutable_buffer b : bs)
         mask_inplace(b, key);
 }
 

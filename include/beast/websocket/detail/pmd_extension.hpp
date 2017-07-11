@@ -10,7 +10,7 @@
 
 #include <beast/core/error.hpp>
 #include <beast/core/consuming_buffers.hpp>
-#include <beast/core/detail/ci_char_traits.hpp>
+#include <beast/core/read_size.hpp>
 #include <beast/zlib/deflate_stream.hpp>
 #include <beast/zlib/inflate_stream.hpp>
 #include <beast/websocket/option.hpp>
@@ -46,7 +46,7 @@ struct pmd_offer
 
 template<class = void>
 int
-parse_bits(boost::string_ref const& s)
+parse_bits(string_view s)
 {
     if(s.size() == 0)
         return -1;
@@ -66,9 +66,10 @@ parse_bits(boost::string_ref const& s)
 
 // Parse permessage-deflate request fields
 //
-template<class Fields>
+template<class Allocator>
 void
-pmd_read(pmd_offer& offer, Fields const& fields)
+pmd_read(pmd_offer& offer,
+    http::basic_fields<Allocator> const& fields)
 {
     offer.accept = false;
     offer.server_max_window_bits= 0;
@@ -76,16 +77,15 @@ pmd_read(pmd_offer& offer, Fields const& fields)
     offer.server_no_context_takeover = false;
     offer.client_no_context_takeover = false;
 
-    using beast::detail::ci_equal;
     http::ext_list list{
         fields["Sec-WebSocket-Extensions"]};
     for(auto const& ext : list)
     {
-        if(ci_equal(ext.first, "permessage-deflate"))
+        if(iequals(ext.first, "permessage-deflate"))
         {
             for(auto const& param : ext.second)
             {
-                if(ci_equal(param.first,
+                if(iequals(param.first,
                     "server_max_window_bits"))
                 {
                     if(offer.server_max_window_bits != 0)
@@ -113,7 +113,7 @@ pmd_read(pmd_offer& offer, Fields const& fields)
                         return; // MUST decline
                     }
                 }
-                else if(ci_equal(param.first,
+                else if(iequals(param.first,
                     "client_max_window_bits"))
                 {
                     if(offer.client_max_window_bits != 0)
@@ -141,7 +141,7 @@ pmd_read(pmd_offer& offer, Fields const& fields)
                         offer.client_max_window_bits = -1;
                     }
                 }
-                else if(ci_equal(param.first,
+                else if(iequals(param.first,
                     "server_no_context_takeover"))
                 {
                     if(offer.server_no_context_takeover)
@@ -160,7 +160,7 @@ pmd_read(pmd_offer& offer, Fields const& fields)
                     }
                     offer.server_no_context_takeover = true;
                 }
-                else if(ci_equal(param.first,
+                else if(iequals(param.first,
                     "client_no_context_takeover"))
                 {
                     if(offer.client_no_context_takeover)
@@ -195,18 +195,19 @@ pmd_read(pmd_offer& offer, Fields const& fields)
 
 // Set permessage-deflate fields for a client offer
 //
-template<class Fields>
+template<class Allocator>
 void
-pmd_write(Fields& fields, pmd_offer const& offer)
+pmd_write(http::basic_fields<Allocator>& fields,
+    pmd_offer const& offer)
 {
-    std::string s;
+    static_string<512> s;
     s = "permessage-deflate";
     if(offer.server_max_window_bits != 0)
     {
         if(offer.server_max_window_bits != -1)
         {
             s += "; server_max_window_bits=";
-            s += std::to_string(
+            s += to_static_string(
                 offer.server_max_window_bits);
         }
         else
@@ -219,7 +220,7 @@ pmd_write(Fields& fields, pmd_offer const& offer)
         if(offer.client_max_window_bits != -1)
         {
             s += "; client_max_window_bits=";
-            s += std::to_string(
+            s += to_static_string(
                 offer.client_max_window_bits);
         }
         else
@@ -235,15 +236,15 @@ pmd_write(Fields& fields, pmd_offer const& offer)
     {
         s += "; client_no_context_takeover";
     }
-    fields.replace("Sec-WebSocket-Extensions", s);
+    fields.set(http::field::sec_websocket_extensions, s);
 }
 
 // Negotiate a permessage-deflate client offer
 //
-template<class Fields>
+template<class Allocator>
 void
 pmd_negotiate(
-    Fields& fields,
+    http::basic_fields<Allocator>& fields,
     pmd_offer& config,
     pmd_offer const& offer,
     permessage_deflate const& o)
@@ -255,7 +256,7 @@ pmd_negotiate(
     }
     config.accept = true;
 
-    std::string s = "permessage-deflate";
+    static_string<512> s = "permessage-deflate";
 
     config.server_no_context_takeover =
         offer.server_no_context_takeover ||
@@ -285,7 +286,7 @@ pmd_negotiate(
             config.server_max_window_bits = 9;
 
         s += "; server_max_window_bits=";
-        s += std::to_string(
+        s += to_static_string(
             config.server_max_window_bits);
     }
 
@@ -298,7 +299,7 @@ pmd_negotiate(
         if(config.client_max_window_bits < 15)
         {
             s += "; client_max_window_bits=";
-            s += std::to_string(
+            s += to_static_string(
                 config.client_max_window_bits);
         }
         break;
@@ -323,12 +324,12 @@ pmd_negotiate(
             o.client_max_window_bits,
                 offer.client_max_window_bits);
         s += "; client_max_window_bits=";
-        s += std::to_string(
+        s += to_static_string(
             config.client_max_window_bits);
         break;
     }
     if(config.accept)
-        fields.replace("Sec-WebSocket-Extensions", s);
+        fields.set(http::field::sec_websocket_extensions, s);
 }
 
 // Normalize the server's response
@@ -356,7 +357,7 @@ template<class InflateStream, class DynamicBuffer>
 void
 inflate(
     InflateStream& zi,
-    DynamicBuffer& dynabuf,
+    DynamicBuffer& buffer,
     boost::asio::const_buffer const& in,
     error_code& ec)
 {
@@ -368,18 +369,18 @@ inflate(
     for(;;)
     {
         // VFALCO we could be smarter about the size
-        auto const bs = dynabuf.prepare(
-            read_size_helper(dynabuf, 65536));
+        auto const bs = buffer.prepare(
+            read_size_or_throw(buffer, 65536));
         auto const out = *bs.begin();
         zs.avail_out = buffer_size(out);
         zs.next_out = buffer_cast<void*>(out);
         zi.write(zs, zlib::Flush::sync, ec);
-        dynabuf.commit(zs.total_out);
+        buffer.commit(zs.total_out);
         zs.total_out = 0;
         if( ec == zlib::error::need_buffers ||
             ec == zlib::error::end_of_stream)
         {
-            ec = {};
+            ec.assign(0, ec.category());
             break;
         }
         if(ec)
@@ -408,7 +409,7 @@ deflate(
     zs.next_in = nullptr;
     zs.avail_out = buffer_size(out);
     zs.next_out = buffer_cast<void*>(out);
-    for(auto const& in : cb)
+    for(boost::asio::const_buffer in : cb)
     {
         zs.avail_in = buffer_size(in);
         if(zs.avail_in == 0)
@@ -421,7 +422,7 @@ deflate(
                 return false;
             BOOST_ASSERT(zs.avail_out == 0);
             BOOST_ASSERT(zs.total_out == buffer_size(out));
-            ec = {};
+            ec.assign(0, ec.category());
             break;
         }
         if(zs.avail_out == 0)
@@ -445,7 +446,7 @@ deflate(
             zo.write(zs, zlib::Flush::block, ec);
             BOOST_ASSERT(! ec || ec == zlib::error::need_buffers);
             if(ec == zlib::error::need_buffers)
-                ec = {};
+                ec.assign(0, ec.category());
             if(ec)
                 return false;
             if(zs.avail_out >= 6)
@@ -460,6 +461,7 @@ deflate(
             }
         }
     }
+    ec.assign(0, ec.category());
     out = buffer(
         buffer_cast<void*>(out), zs.total_out);
     return true;

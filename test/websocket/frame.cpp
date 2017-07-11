@@ -5,9 +5,11 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include <beast/websocket/stream.hpp>
 #include <beast/websocket/detail/frame.hpp>
-#include <beast/websocket/detail/stream_base.hpp>
 #include <beast/unit_test/suite.hpp>
+#include <beast/test/pipe_stream.hpp>
+#include <beast/test/yield_to.hpp>
 #include <initializer_list>
 #include <climits>
 
@@ -30,32 +32,34 @@ operator==(frame_header const& lhs, frame_header const& rhs)
         lhs.key == rhs.key;
 }
 
-class frame_test : public beast::unit_test::suite
+class frame_test
+    : public beast::unit_test::suite
+    , public test::enable_yield_to
 {
 public:
     void testCloseCodes()
     {
-        BEAST_EXPECT(! is_valid(0));
-        BEAST_EXPECT(! is_valid(1));
-        BEAST_EXPECT(! is_valid(999));
-        BEAST_EXPECT(! is_valid(1004));
-        BEAST_EXPECT(! is_valid(1005));
-        BEAST_EXPECT(! is_valid(1006));
-        BEAST_EXPECT(! is_valid(1016));
-        BEAST_EXPECT(! is_valid(2000));
-        BEAST_EXPECT(! is_valid(2999));
-        BEAST_EXPECT(is_valid(1000));
-        BEAST_EXPECT(is_valid(1002));
-        BEAST_EXPECT(is_valid(3000));
-        BEAST_EXPECT(is_valid(4000));
-        BEAST_EXPECT(is_valid(5000));
+        BEAST_EXPECT(! is_valid_close_code(0));
+        BEAST_EXPECT(! is_valid_close_code(1));
+        BEAST_EXPECT(! is_valid_close_code(999));
+        BEAST_EXPECT(! is_valid_close_code(1004));
+        BEAST_EXPECT(! is_valid_close_code(1005));
+        BEAST_EXPECT(! is_valid_close_code(1006));
+        BEAST_EXPECT(! is_valid_close_code(1016));
+        BEAST_EXPECT(! is_valid_close_code(2000));
+        BEAST_EXPECT(! is_valid_close_code(2999));
+        BEAST_EXPECT(is_valid_close_code(1000));
+        BEAST_EXPECT(is_valid_close_code(1002));
+        BEAST_EXPECT(is_valid_close_code(3000));
+        BEAST_EXPECT(is_valid_close_code(4000));
+        BEAST_EXPECT(is_valid_close_code(5000));
     }
 
     struct test_fh : frame_header
     {
         test_fh()
         {
-            op = opcode::text;
+            op = detail::opcode::text;
             fin = false;
             mask = false;
             rsv1 = false;
@@ -68,29 +72,34 @@ public:
 
     void testFrameHeader()
     {
+        using stream_type =
+            beast::websocket::stream<test::pipe::stream&>;
+        test::pipe p{ios_};
+
         // good frame fields
         {
-            role_type role = role_type::client;
+            stream_type::role_type role =
+                stream_type::role_type::client;
 
             auto check =
                 [&](frame_header const& fh)
                 {
-                    fh_streambuf sb;
-                    write(sb, fh);
-                    close_code::value code;
-                    stream_base stream;
+                    fh_streambuf b;
+                    write(b, fh);
+                    close_code code;
+                    stream_type stream{p.server};
                     stream.open(role);
                     detail::frame_header fh1;
                     auto const n =
-                        stream.read_fh1(fh1, sb, code);
+                        stream.read_fh1(fh1, b, code);
                     if(! BEAST_EXPECT(! code))
                         return;
-                    if(! BEAST_EXPECT(sb.size() == n))
+                    if(! BEAST_EXPECT(b.size() == n))
                         return;
-                    stream.read_fh2(fh1, sb, code);
+                    stream.read_fh2(fh1, b, code);
                     if(! BEAST_EXPECT(! code))
                         return;
-                    if(! BEAST_EXPECT(sb.size() == 0))
+                    if(! BEAST_EXPECT(b.size() == 0))
                         return;
                     BEAST_EXPECT(fh1 == fh);
                 };
@@ -99,7 +108,7 @@ public:
 
             check(fh);
 
-            role = role_type::server;
+            role = stream_type::role_type::server;
             fh.mask = true;
             fh.key = 1;
             check(fh);
@@ -122,36 +131,36 @@ public:
 
         // bad frame fields
         {
-            role_type role = role_type::client;
+            stream_type::role_type role = stream_type::role_type::client;
 
             auto check =
                 [&](frame_header const& fh)
                 {
-                    fh_streambuf sb;
-                    write(sb, fh);
-                    close_code::value code;
-                    stream_base stream;
+                    fh_streambuf b;
+                    write(b, fh);
+                    close_code code;
+                    stream_type stream{p.server};
                     stream.open(role);
-                    detail::frame_header fh1;
+                    frame_header fh1;
                     auto const n =
-                        stream.read_fh1(fh1, sb, code);
+                        stream.read_fh1(fh1, b, code);
                     if(code)
                     {
                         pass();
                         return;
                     }
-                    if(! BEAST_EXPECT(sb.size() == n))
+                    if(! BEAST_EXPECT(b.size() == n))
                         return;
-                    stream.read_fh2(fh1, sb, code);
+                    stream.read_fh2(fh1, b, code);
                     if(! BEAST_EXPECT(code))
                         return;
-                    if(! BEAST_EXPECT(sb.size() == 0))
+                    if(! BEAST_EXPECT(b.size() == 0))
                         return;
                 };
 
             test_fh fh;
 
-            fh.op = opcode::close;
+            fh.op = detail::opcode::close;
             fh.fin = true;
             fh.len = 126;
             check(fh);
@@ -169,11 +178,11 @@ public:
             check(fh);
             fh.rsv3 = false;
 
-            fh.op = opcode::rsv3;
+            fh.op = detail::opcode::rsv3;
             check(fh);
-            fh.op = opcode::text;
+            fh.op = detail::opcode::text;
 
-            fh.op = opcode::ping;
+            fh.op = detail::opcode::ping;
             fh.fin = false;
             check(fh);
             fh.fin = true;
@@ -181,7 +190,7 @@ public:
             fh.mask = true;
             check(fh);
 
-            role = role_type::server;
+            role = stream_type::role_type::server;
             fh.mask = false;
             check(fh);
         }
@@ -189,29 +198,32 @@ public:
 
     void bad(std::initializer_list<std::uint8_t> bs)
     {
+        using stream_type =
+            beast::websocket::stream<test::pipe::stream&>;
         using boost::asio::buffer;
         using boost::asio::buffer_copy;
-        static role_type constexpr role = role_type::client;
+        test::pipe p{ios_};
+        static stream_type::role_type constexpr role = stream_type::role_type::client;
         std::vector<std::uint8_t> v{bs};
-        fh_streambuf sb;
-        sb.commit(buffer_copy(sb.prepare(v.size()), buffer(v)));
-        stream_base stream;
+        fh_streambuf b;
+        b.commit(buffer_copy(b.prepare(v.size()), buffer(v)));
+        stream_type stream{p.server};
         stream.open(role);
-        close_code::value code;
+        close_code code;
         detail::frame_header fh;
         auto const n =
-            stream.read_fh1(fh, sb, code);
+            stream.read_fh1(fh, b, code);
         if(code)
         {
             pass();
             return;
         }
-        if(! BEAST_EXPECT(sb.size() == n))
+        if(! BEAST_EXPECT(b.size() == n))
             return;
-        stream.read_fh2(fh, sb, code);
+        stream.read_fh2(fh, b, code);
         if(! BEAST_EXPECT(code))
             return;
-        if(! BEAST_EXPECT(sb.size() == 0))
+        if(! BEAST_EXPECT(b.size() == 0))
             return;
     }
 

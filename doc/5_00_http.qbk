@@ -1,0 +1,91 @@
+[/
+    Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
+
+    Distributed under the Boost Software License, Version 1.0. (See accompanying
+    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+]
+
+[section Using HTTP]
+
+[warning
+    Higher level functions such as Basic
+    Authentication,  mime/multipart encoding, cookies, automatic handling
+    of redirects, gzipped transfer encodings, caching, or proxying (to name
+    a few) are not directly provided, but nothing stops users from creating
+    these features using Beast's HTTP message types.
+]
+
+This library offers programmers simple and performant models of HTTP messages
+and their associated operations including synchronous, asynchronous, and
+buffer-oriented parsing and serialization of messages in the HTTP/1 wire
+format using __Asio__. Specifically, the library provides:
+
+[variablelist
+[
+    [Message Containers]
+    [
+        Complete HTTP messages are modeled using the __message__ class,
+        with possible user customizations.
+    ]
+][
+    [Stream Reading]
+    [
+        The functions
+        [link beast.ref.beast__http__read `read`],
+        [link beast.ref.beast__http__read_header `read_header`],
+        [link beast.ref.beast__http__read_some `read_some`],
+        [link beast.ref.beast__http__async_read `async_read`],
+        [link beast.ref.beast__http__async_read_header `async_read_header`], and
+        [link beast.ref.beast__http__async_read_some `async_read_some`]
+        read HTTP/1 message data from a
+        [link beast.concept.streams stream].
+]
+][
+    [Stream Writing]
+    [
+        The functions
+        [link beast.ref.beast__http__write `write`],
+        [link beast.ref.beast__http__write_header `write_header`],
+        [link beast.ref.beast__http__write_some `write_some`],
+        [link beast.ref.beast__http__async_write `async_write`],
+        [link beast.ref.beast__http__async_write_header `async_write_header`], and
+        [link beast.ref.beast__http__async_write_some `async_write_some`]
+        write HTTP/1 message data to a
+        [link beast.concept.streams stream].
+    ]
+][
+    [Serialization]
+    [
+        The __serializer__ produces a series of octet buffers
+        conforming to the __rfc7230__ wire representation of
+        a __message__.
+    ]
+][
+    [Parsing]
+    [
+        The __parser__ attempts to convert a series of octet
+        buffers into a __message__.
+    ]
+]
+]
+
+[note
+    This documentation assumes some familiarity with __Asio__ and
+    the HTTP protocol specification described in __rfc7230__. Sample
+    code and identifiers mentioned in this section is written as if
+    these declarations are in effect:
+
+    [http_snippet_1]
+]
+
+[include 5_01_primer.qbk]
+[include 5_02_message.qbk]
+[include 5_03_streams.qbk]
+[include 5_04_serializer_streams.qbk]
+[include 5_05_parser_streams.qbk]
+[include 5_06_serializer_buffers.qbk]
+[include 5_07_parser_buffers.qbk]
+[include 5_08_custom_body.qbk]
+[include 5_09_custom_parsers.qbk]
+
+[endsect]

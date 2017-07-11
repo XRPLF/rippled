@@ -1,0 +1,28 @@
+#
+# Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
+#
+# Distributed under the Boost Software License, Version 1.0. (See accompanying
+# file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+
+unit-test server-test :
+    ../../extras/beast/unit_test/main.cpp
+    file_service.cpp
+    framework.cpp
+    http_async_port.cpp
+    http_base.cpp
+    http_sync_port.cpp
+    https_ports.cpp
+    multi_port.cpp
+    server.cpp
+    service_list.cpp
+    ssl_certificate.cpp
+    tests.cpp
+    ws_async_port.cpp
+    ws_sync_port.cpp
+    ws_upgrade_service.cpp
+    wss_ports.cpp
+    :
+    <variant>coverage:<build>no
+    <variant>ubasan:<build>no
+    ;

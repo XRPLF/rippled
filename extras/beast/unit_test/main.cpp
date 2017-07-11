@@ -11,12 +11,13 @@
 #include <beast/unit_test/match.hpp>
 #include <beast/unit_test/reporter.hpp>
 #include <beast/unit_test/suite.hpp>
+#include <boost/config.hpp>
 #include <boost/program_options.hpp>
 #include <cstdlib>
 #include <iostream>
 #include <vector>
 
-#ifdef _MSC_VER
+#ifdef BOOST_MSVC
 # ifndef WIN32_LEAN_AND_MEAN // VC_EXTRALEAN
 #  define WIN32_LEAN_AND_MEAN
 #  include <windows.h>
@@ -78,7 +79,7 @@ int main(int ac, char const* av[])
     using namespace std;
     using namespace beast::unit_test;
 
-#ifdef _MSC_VER
+#if BOOST_MSVC
     {
         int flags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
         flags |= _CRTDBG_LEAK_CHECK_DF;
@@ -99,7 +100,7 @@ int main(int ac, char const* av[])
     po::store(po::parse_command_line(ac, av, desc), vm);
     po::notify(vm);
 
-    dstream log{std::cerr};
+    dstream log(std::cerr);
     std::unitbuf(log);
 
     if(vm.count("help"))

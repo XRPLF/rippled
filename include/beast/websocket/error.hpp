@@ -23,32 +23,8 @@ enum class error
     /// WebSocket connection failed, protocol violation
     failed,
 
-    /// Upgrade request failed, connection is closed
-    handshake_failed,
-
-    /// Upgrade request failed, but connection is still open
-    keep_alive,
-
-    /// HTTP response is malformed
-    response_malformed,
-
-    /// HTTP response failed the upgrade
-    response_failed,
-
-    /// Upgrade request denied for invalid fields.
-    response_denied,
-
-    /// Upgrade request is malformed
-    request_malformed,
-
-    /// Upgrade request fields incorrect
-    request_invalid,
-
-    /// Upgrade request denied
-    request_denied,
-
-    /// General WebSocket error
-    general
+    /// Upgrade handshake failed
+    handshake_failed
 };
 
 } // websocket

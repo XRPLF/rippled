@@ -34,7 +34,7 @@ if [[ ! -x cmake/bin/cmake && -d cmake ]]; then
     rm -fr cmake
 fi
 if [[ ! -d cmake && ${BUILD_SYSTEM:-} == cmake ]]; then
-  CMAKE_URL="http://www.cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz"
+  CMAKE_URL="http://www.cmake.org/files/v3.8/cmake-3.8.0-Linux-x86_64.tar.gz"
   mkdir cmake && wget --no-check-certificate -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
 fi
 
@@ -54,6 +54,7 @@ ls -lah ~/.npm || mkdir ~/.npm
 # Make sure we own it
 chown -Rc $USER ~/.npm
 # We use this so we can filter the subtrees from our coverage report
+pip install --user requests==2.13.0
 pip install --user https://github.com/codecov/codecov-python/archive/master.zip
 pip install --user autobahntestsuite
 
@@ -70,6 +71,6 @@ mkdir -p $LCOV_ROOT
 cd $HOME/lcov-1.12 && make install PREFIX=$LCOV_ROOT
 
 # Install coveralls reporter
-cd $HERE
-mkdir -p node_modules
-npm install coveralls
+#cd $HERE
+#mkdir -p node_modules
+#npm install coveralls

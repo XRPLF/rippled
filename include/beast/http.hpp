@@ -10,20 +10,25 @@
 
 #include <beast/config.hpp>
 
-#include <beast/http/basic_fields.hpp>
-#include <beast/http/basic_parser_v1.hpp>
-#include <beast/http/chunk_encode.hpp>
+#include <beast/http/basic_parser.hpp>
+#include <beast/http/buffer_body.hpp>
+#include <beast/http/dynamic_body.hpp>
 #include <beast/http/empty_body.hpp>
+#include <beast/http/error.hpp>
+#include <beast/http/field.hpp>
 #include <beast/http/fields.hpp>
+#include <beast/http/file_body.hpp>
 #include <beast/http/message.hpp>
-#include <beast/http/parse.hpp>
-#include <beast/http/parse_error.hpp>
-#include <beast/http/parser_v1.hpp>
+#include <beast/http/parser.hpp>
 #include <beast/http/read.hpp>
-#include <beast/http/reason.hpp>
 #include <beast/http/rfc7230.hpp>
-#include <beast/http/streambuf_body.hpp>
+#include <beast/http/serializer.hpp>
+#include <beast/http/span_body.hpp>
+#include <beast/http/status.hpp>
 #include <beast/http/string_body.hpp>
+#include <beast/http/type_traits.hpp>
+#include <beast/http/vector_body.hpp>
+#include <beast/http/verb.hpp>
 #include <beast/http/write.hpp>
 
 #endif

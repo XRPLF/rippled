@@ -58,7 +58,7 @@ public:
     const char*
     name() const noexcept override
     {
-        return "zlib";
+        return "beast.zlib";
     }
 
     std::string
@@ -85,7 +85,7 @@ public:
 
         case error::general:
         default:
-            return "zlib error";
+            return "beast.zlib error";
         }
     }
 

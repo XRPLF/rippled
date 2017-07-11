@@ -305,6 +305,7 @@ public:
     {
         doMatrix("1.beast ", "Hello, world!", &self::doDeflate1_beast);
         doMatrix("1.zlib  ", "Hello, world!", &self::doDeflate1_zlib);
+    #if ! BEAST_NO_SLOW_TESTS
         doMatrix("2.beast ", "Hello, world!", &self::doDeflate2_beast);
         doMatrix("2.zlib  ", "Hello, world!", &self::doDeflate2_zlib);
         {
@@ -317,6 +318,7 @@ public:
             doMatrix("4.beast ", s, &self::doDeflate1_beast);
             doMatrix("4.zlib  ", s, &self::doDeflate1_zlib);
         }
+    #endif
     }
 
     void
