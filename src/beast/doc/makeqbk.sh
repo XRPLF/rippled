@@ -5,9 +5,12 @@
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-mkdir -p ../bin/doc/xml
+mkdir -p temp
 doxygen source.dox
-cd ../bin/doc/xml
+cd temp
 xsltproc combine.xslt index.xml > all.xml
-cd ../../../doc
-xsltproc reference.xsl ../bin/doc/xml/all.xml > reference.qbk
+cp ../docca/include/docca/doxygen.xsl doxygen.xsl
+sed -i -e '/<!-- CLASS_DETAIL_TEMPLATE -->/{r ../xsl/class_detail.xsl' -e 'd}' doxygen.xsl
+sed -i -e '/<!-- INCLUDES_TEMPLATE -->/{r ../xsl/includes.xsl' -e 'd}' doxygen.xsl
+sed -i -e '/<!-- INCLUDES_FOOT_TEMPLATE -->/{r ../xsl/includes_foot.xsl' -e 'd}' doxygen.xsl
+xsltproc ../xsl/reference.xsl all.xml > ../reference.qbk

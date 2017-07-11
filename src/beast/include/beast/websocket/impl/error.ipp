@@ -28,7 +28,7 @@ public:
     const char*
     name() const noexcept override
     {
-        return "websocket";
+        return "beast.websocket";
     }
 
     std::string
@@ -39,16 +39,9 @@ public:
         case error::closed: return "WebSocket connection closed normally";
         case error::failed: return "WebSocket connection failed due to a protocol violation";
         case error::handshake_failed: return "WebSocket Upgrade handshake failed";
-        case error::keep_alive: return "WebSocket Upgrade handshake failed but connection is still open";
 
-        case error::response_malformed: return "malformed HTTP response";
-        case error::response_failed: return "upgrade request failed";
-        case error::response_denied: return "upgrade request denied";
-        case error::request_malformed: return "malformed HTTP request";
-        case error::request_invalid: return "upgrade request invalid";
-        case error::request_denied: return "upgrade request denied";
         default:
-            return "websocket error";
+            return "beast.websocket error";
         }
     }
 

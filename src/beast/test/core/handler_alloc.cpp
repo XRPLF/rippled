@@ -9,6 +9,7 @@
 #include <beast/core/handler_alloc.hpp>
 
 #include <beast/unit_test/suite.hpp>
+#include <list>
 #include <vector>
 
 namespace beast {
@@ -24,9 +25,23 @@ public:
         }
     };
 
+    // https://github.com/vinniefalco/Beast/issues/432
+    void
+    testRegression432()
+    {
+        handler h;
+        handler_alloc<int, handler> a{h};
+        std::list<int, handler_alloc<int, handler>> v{a};
+        v.push_back(1);
+        v.push_back(2);
+        v.push_back(3);
+    }
+
     void
     run() override
     {
+        testRegression432();
+
         handler h;
         handler h2;
         handler_alloc<char, handler> a1{h};

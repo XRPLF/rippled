@@ -11,6 +11,8 @@
 #include <beast/config.hpp>
 
 #include <beast/zlib/deflate_stream.hpp>
+#include <beast/zlib/error.hpp>
 #include <beast/zlib/inflate_stream.hpp>
+#include <beast/zlib/zlib.hpp>
 
 #endif

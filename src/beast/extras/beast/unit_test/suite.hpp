@@ -11,6 +11,7 @@
 #include <beast/unit_test/runner.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/throw_exception.hpp>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -551,7 +552,7 @@ fail(std::string const& reason)
     if(abort_)
     {
         aborted_ = true;
-        throw abort_exception();
+        BOOST_THROW_EXCEPTION(abort_exception());
     }
 }
 
@@ -569,7 +570,7 @@ suite::
 propagate_abort()
 {
     if(abort_ && aborted_)
-        throw abort_exception();
+        BOOST_THROW_EXCEPTION(abort_exception());
 }
 
 template<class>

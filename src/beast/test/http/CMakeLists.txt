@@ -1,52 +1,47 @@
 # Part of Beast
 
+GroupSources(example example)
 GroupSources(extras/beast extras)
 GroupSources(include/beast beast)
+
 GroupSources(test/http "/")
 
 add_executable (http-tests
     ${BEAST_INCLUDES}
+    ${EXAMPLE_INCLUDES}
     ${EXTRAS_INCLUDES}
     message_fuzz.hpp
-    fail_parser.hpp
+    test_parser.hpp
     ../../extras/beast/unit_test/main.cpp
-    basic_dynabuf_body.cpp
-    basic_fields.cpp
-    basic_parser_v1.cpp
-    concepts.cpp
+    basic_parser.cpp
+    buffer_body.cpp
+    doc_examples.cpp
+    doc_snippets.cpp
+    dynamic_body.cpp
     empty_body.cpp
+    error.cpp
+    field.cpp
     fields.cpp
-    header_parser_v1.cpp
+    file_body.cpp
     message.cpp
-    parse.cpp
-    parse_error.cpp
-    parser_v1.cpp
+    parser.cpp
     read.cpp
-    reason.cpp
     rfc7230.cpp
-    streambuf_body.cpp
+    serializer.cpp
+    span_body.cpp
+    status.cpp
     string_body.cpp
+    type_traits.cpp
+    vector_body.cpp
+    verb.cpp
     write.cpp
-    chunk_encode.cpp
 )
 
-if (NOT WIN32)
-    target_link_libraries(http-tests ${Boost_LIBRARIES} Threads::Threads)
-else()
-    target_link_libraries(http-tests ${Boost_LIBRARIES})
-endif()
-
-add_executable (bench-tests
-    ${BEAST_INCLUDES}
-    ${EXTRAS_INCLUDES}
-    nodejs_parser.hpp
-    ../../extras/beast/unit_test/main.cpp
-    nodejs_parser.cpp
-    parser_bench.cpp
-)
-
-if (NOT WIN32)
-    target_link_libraries(bench-tests ${Boost_LIBRARIES} Threads::Threads)
-else()
-    target_link_libraries(bench-tests ${Boost_LIBRARIES})
-endif()
+target_link_libraries(http-tests
+    Beast
+    ${Boost_PROGRAM_OPTIONS_LIBRARY}
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_COROUTINE_LIBRARY}
+    ${Boost_THREAD_LIBRARY}
+    ${Boost_CONTEXT_LIBRARY}
+    )

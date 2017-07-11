@@ -8,11 +8,16 @@
 // Test that header file is self-contained.
 #include <beast/http/read.hpp>
 
-#include "fail_parser.hpp"
+#include "test_parser.hpp"
 
+#include <beast/core/ostream.hpp>
+#include <beast/core/static_buffer.hpp>
 #include <beast/http/fields.hpp>
-#include <beast/http/streambuf_body.hpp>
+#include <beast/http/dynamic_body.hpp>
+#include <beast/http/parser.hpp>
+#include <beast/http/string_body.hpp>
 #include <beast/test/fail_stream.hpp>
+#include <beast/test/pipe_stream.hpp>
 #include <beast/test/string_istream.hpp>
 #include <beast/test/yield_to.hpp>
 #include <beast/unit_test/suite.hpp>
@@ -27,62 +32,9 @@ class read_test
     , public test::enable_yield_to
 {
 public:
-    struct fail_body
-    {
-        class reader;
-
-        class value_type
-        {
-            friend class reader;
-
-            std::string s_;
-            test::fail_counter& fc_;
-
-        public:
-            explicit
-            value_type(test::fail_counter& fc)
-                : fc_(fc)
-            {
-            }
-
-            value_type&
-            operator=(std::string s)
-            {
-                s_ = std::move(s);
-                return *this;
-            }
-        };
-
-        class reader
-        {
-            value_type& body_;
-
-        public:
-            template<bool isRequest, class Allocator>
-            explicit
-            reader(message<isRequest, fail_body, Allocator>& msg) noexcept
-                : body_(msg.body)
-            {
-            }
-
-            void
-            init(error_code& ec) noexcept
-            {
-                body_.fc_.fail(ec);
-            }
-
-            void
-            write(void const* data,
-                std::size_t size, error_code& ec) noexcept
-            {
-                if(body_.fc_.fail(ec))
-                    return;
-            }
-        };
-    };
-
     template<bool isRequest>
-    void failMatrix(char const* s, yield_context do_yield)
+    void
+    failMatrix(char const* s, yield_context do_yield)
     {
         using boost::asio::buffer;
         using boost::asio::buffer_copy;
@@ -91,15 +43,15 @@ public:
         auto const len = strlen(s);
         for(n = 0; n < limit; ++n)
         {
-            streambuf sb;
-            sb.commit(buffer_copy(
-                sb.prepare(len), buffer(s, len)));
+            multi_buffer b;
+            b.commit(buffer_copy(
+                b.prepare(len), buffer(s, len)));
             test::fail_counter fc(n);
             test::fail_stream<
                 test::string_istream> fs{fc, ios_, ""};
-            fail_parser<isRequest> p(fc);
-            error_code ec;
-            parse(fs, sb, p, ec);
+            test_parser<isRequest> p(fc);
+            error_code ec = test::error::fail_error;
+            read(fs, b, p, ec);
             if(! ec)
                 break;
         }
@@ -107,30 +59,30 @@ public:
         for(n = 0; n < limit; ++n)
         {
             static std::size_t constexpr pre = 10;
-            streambuf sb;
-            sb.commit(buffer_copy(
-                sb.prepare(pre), buffer(s, pre)));
+            multi_buffer b;
+            b.commit(buffer_copy(
+                b.prepare(pre), buffer(s, pre)));
             test::fail_counter fc(n);
             test::fail_stream<test::string_istream> fs{
                 fc, ios_, std::string{s + pre, len - pre}};
-            fail_parser<isRequest> p(fc);
-            error_code ec;
-            parse(fs, sb, p, ec);
+            test_parser<isRequest> p(fc);
+            error_code ec = test::error::fail_error;
+            read(fs, b, p, ec);
             if(! ec)
                 break;
         }
         BEAST_EXPECT(n < limit);
         for(n = 0; n < limit; ++n)
         {
-            streambuf sb;
-            sb.commit(buffer_copy(
-                sb.prepare(len), buffer(s, len)));
+            multi_buffer b;
+            b.commit(buffer_copy(
+                b.prepare(len), buffer(s, len)));
             test::fail_counter fc(n);
             test::fail_stream<
                 test::string_istream> fs{fc, ios_, ""};
-            fail_parser<isRequest> p(fc);
-            error_code ec;
-            async_parse(fs, sb, p, do_yield[ec]);
+            test_parser<isRequest> p(fc);
+            error_code ec = test::error::fail_error;
+            async_read(fs, b, p, do_yield[ec]);
             if(! ec)
                 break;
         }
@@ -138,29 +90,15 @@ public:
         for(n = 0; n < limit; ++n)
         {
             static std::size_t constexpr pre = 10;
-            streambuf sb;
-            sb.commit(buffer_copy(
-                sb.prepare(pre), buffer(s, pre)));
+            multi_buffer b;
+            b.commit(buffer_copy(
+                b.prepare(pre), buffer(s, pre)));
             test::fail_counter fc(n);
             test::fail_stream<test::string_istream> fs{
                 fc, ios_, std::string{s + pre, len - pre}};
-            fail_parser<isRequest> p(fc);
-            error_code ec;
-            async_parse(fs, sb, p, do_yield[ec]);
-            if(! ec)
-                break;
-        }
-        BEAST_EXPECT(n < limit);
-        for(n = 0; n < limit; ++n)
-        {
-            streambuf sb;
-            sb.commit(buffer_copy(
-                sb.prepare(len), buffer(s, len)));
-            test::fail_counter fc{n};
-            test::string_istream ss{ios_, s};
-            parser_v1<isRequest, fail_body, fields> p{fc};
-            error_code ec;
-            parse(ss, sb, p, ec);
+            test_parser<isRequest> p(fc);
+            error_code ec = test::error::fail_error;
+            async_read(fs, b, p, do_yield[ec]);
             if(! ec)
                 break;
         }
@@ -171,15 +109,61 @@ public:
     {
         try
         {
-            streambuf sb;
+            multi_buffer b;
             test::string_istream ss(ios_, "GET / X");
-            parser_v1<true, streambuf_body, fields> p;
-            parse(ss, sb, p);
+            request_parser<dynamic_body> p;
+            read(ss, b, p);
             fail();
         }
         catch(std::exception const&)
         {
             pass();
+        }
+    }
+
+    void
+    testBufferOverflow()
+    {
+        {
+            test::pipe p{ios_};
+            ostream(p.server.buffer) <<
+                "GET / HTTP/1.1\r\n"
+                "Host: localhost\r\n"
+                "User-Agent: test\r\n"
+                "Transfer-Encoding: chunked\r\n"
+                "\r\n"
+                "10\r\n"
+                "****************\r\n"
+                "0\r\n\r\n";
+            static_buffer_n<1024> b;
+            request<string_body> req;
+            try
+            {
+                read(p.server, b, req);
+                pass();
+            }
+            catch(std::exception const& e)
+            {
+                fail(e.what(), __FILE__, __LINE__);
+            }
+        }
+        {
+            test::pipe p{ios_};
+            ostream(p.server.buffer) <<
+                "GET / HTTP/1.1\r\n"
+                "Host: localhost\r\n"
+                "User-Agent: test\r\n"
+                "Transfer-Encoding: chunked\r\n"
+                "\r\n"
+                "10\r\n"
+                "****************\r\n"
+                "0\r\n\r\n";
+            error_code ec = test::error::fail_error;
+            static_buffer_n<10> b;
+            request<string_body> req;
+            read(p.server, b, req, ec);
+            BEAST_EXPECTS(ec == error::buffer_overflow,
+                ec.message());
         }
     }
 
@@ -245,52 +229,6 @@ public:
             failMatrix<false>(res[i], do_yield);
     }
 
-    void testReadHeaders(yield_context do_yield)
-    {
-        static std::size_t constexpr limit = 100;
-        std::size_t n;
-
-        for(n = 0; n < limit; ++n)
-        {
-            test::fail_stream<test::string_istream> fs{n, ios_,
-                "GET / HTTP/1.1\r\n"
-                "Host: localhost\r\n"
-                "User-Agent: test\r\n"
-                "Content-Length: 5\r\n"
-                "\r\n"
-            };
-            request_header m;
-            try
-            {
-                streambuf sb;
-                read(fs, sb, m);
-                break;
-            }
-            catch(std::exception const&)
-            {
-            }
-        }
-        BEAST_EXPECT(n < limit);
-
-        for(n = 0; n < limit; ++n)
-        {
-            test::fail_stream<test::string_istream> fs(n, ios_,
-                "GET / HTTP/1.1\r\n"
-                "Host: localhost\r\n"
-                "User-Agent: test\r\n"
-                "Content-Length: 0\r\n"
-                "\r\n"
-            );
-            request_header m;
-            error_code ec;
-            streambuf sb;
-            async_read(fs, sb, m, do_yield[ec]);
-            if(! ec)
-                break;
-        }
-        BEAST_EXPECT(n < limit);
-    }
-
     void testRead(yield_context do_yield)
     {
         static std::size_t constexpr limit = 100;
@@ -305,11 +243,11 @@ public:
                 "Content-Length: 0\r\n"
                 "\r\n"
             );
-            request<streambuf_body> m;
+            request<dynamic_body> m;
             try
             {
-                streambuf sb;
-                read(fs, sb, m);
+                multi_buffer b;
+                read(fs, b, m);
                 break;
             }
             catch(std::exception const&)
@@ -327,10 +265,10 @@ public:
                 "Content-Length: 0\r\n"
                 "\r\n"
             );
-            request<streambuf_body> m;
-            error_code ec;
-            streambuf sb;
-            read(fs, sb, m, ec);
+            request<dynamic_body> m;
+            error_code ec = test::error::fail_error;
+            multi_buffer b;
+            read(fs, b, m, ec);
             if(! ec)
                 break;
         }
@@ -345,33 +283,34 @@ public:
                 "Content-Length: 0\r\n"
                 "\r\n"
             );
-            request<streambuf_body> m;
-            error_code ec;
-            streambuf sb;
-            async_read(fs, sb, m, do_yield[ec]);
+            request<dynamic_body> m;
+            error_code ec = test::error::fail_error;
+            multi_buffer b;
+            async_read(fs, b, m, do_yield[ec]);
             if(! ec)
                 break;
         }
         BEAST_EXPECT(n < limit);
     }
 
-    void testEof(yield_context do_yield)
+    void
+    testEof(yield_context do_yield)
     {
         {
-            streambuf sb;
+            multi_buffer b;
             test::string_istream ss(ios_, "");
-            parser_v1<true, streambuf_body, fields> p;
+            request_parser<dynamic_body> p;
             error_code ec;
-            parse(ss, sb, p, ec);
-            BEAST_EXPECT(ec == boost::asio::error::eof);
+            read(ss, b, p, ec);
+            BEAST_EXPECT(ec == http::error::end_of_stream);
         }
         {
-            streambuf sb;
+            multi_buffer b;
             test::string_istream ss(ios_, "");
-            parser_v1<true, streambuf_body, fields> p;
+            request_parser<dynamic_body> p;
             error_code ec;
-            async_parse(ss, sb, p, do_yield[ec]);
-            BEAST_EXPECT(ec == boost::asio::error::eof);
+            async_read(ss, b, p, do_yield[ec]);
+            BEAST_EXPECT(ec == http::error::end_of_stream);
         }
     }
 
@@ -396,9 +335,9 @@ public:
             test::string_istream is{ios,
                 "GET / HTTP/1.1\r\n\r\n"};
             BEAST_EXPECT(handler::count() == 0);
-            streambuf sb;
-            message<true, streambuf_body, fields> m;
-            async_read(is, sb, m, handler{});
+            multi_buffer b;
+            request<dynamic_body> m;
+            async_read(is, b, m, handler{});
             BEAST_EXPECT(handler::count() > 0);
             ios.stop();
             BEAST_EXPECT(handler::count() > 0);
@@ -415,25 +354,107 @@ public:
                 test::string_istream is{ios,
                     "GET / HTTP/1.1\r\n\r\n"};
                 BEAST_EXPECT(handler::count() == 0);
-                streambuf sb;
-                message<true, streambuf_body, fields> m;
-                async_read(is, sb, m, handler{});
+                multi_buffer b;
+                request<dynamic_body> m;
+                async_read(is, b, m, handler{});
                 BEAST_EXPECT(handler::count() > 0);
             }
             BEAST_EXPECT(handler::count() == 0);
         }
     }
 
-    void run() override
+    // https://github.com/vinniefalco/Beast/issues/430
+    void
+    testRegression430()
+    {
+        test::pipe c{ios_};
+        c.server.read_size(1);
+        ostream(c.server.buffer) <<
+          "HTTP/1.1 200 OK\r\n"
+          "Transfer-Encoding: chunked\r\n"
+          "Content-Type: application/octet-stream\r\n"
+          "\r\n"
+          "4\r\nabcd\r\n"
+          "0\r\n\r\n";
+        error_code ec;
+        flat_buffer fb;
+        parser<false, dynamic_body> p;
+        read(c.server, fb, p, ec);
+        BEAST_EXPECTS(! ec, ec.message());
+    }
+
+    //--------------------------------------------------------------------------
+
+    template<class Parser, class Pred>
+    void
+    readgrind(string_view s, Pred&& pred)
+    {
+        using boost::asio::buffer;
+        for(std::size_t n = 1; n < s.size() - 1; ++n)
+        {
+            Parser p;
+            error_code ec = test::error::fail_error;
+            flat_buffer b;
+            test::pipe c{ios_};
+            ostream(c.server.buffer) << s;
+            c.server.read_size(n);
+            read(c.server, b, p, ec);
+            if(! BEAST_EXPECTS(! ec, ec.message()))
+                continue;
+            pred(p);
+        }
+    }
+
+    void
+    testReadGrind()
+    {
+        readgrind<test_parser<false>>(
+            "HTTP/1.1 200 OK\r\n"
+            "Transfer-Encoding: chunked\r\n"
+            "Content-Type: application/octet-stream\r\n"
+            "\r\n"
+            "4\r\nabcd\r\n"
+            "0\r\n\r\n"
+            ,[&](test_parser<false> const& p)
+            {
+                BEAST_EXPECT(p.body == "abcd");
+            });
+        readgrind<test_parser<false>>(
+            "HTTP/1.1 200 OK\r\n"
+            "Server: test\r\n"
+            "Expect: Expires, MD5-Fingerprint\r\n"
+            "Transfer-Encoding: chunked\r\n"
+            "\r\n"
+            "5\r\n"
+            "*****\r\n"
+            "2;a;b=1;c=\"2\"\r\n"
+            "--\r\n"
+            "0;d;e=3;f=\"4\"\r\n"
+            "Expires: never\r\n"
+            "MD5-Fingerprint: -\r\n"
+            "\r\n"
+            ,[&](test_parser<false> const& p)
+            {
+                BEAST_EXPECT(p.body == "*****--");
+            });
+    }
+
+    void
+    run() override
     {
         testThrow();
+        testBufferOverflow();
 
-        yield_to(&read_test::testFailures, this);
-        yield_to(&read_test::testReadHeaders, this);
-        yield_to(&read_test::testRead, this);
-        yield_to(&read_test::testEof, this);
+        yield_to([&](yield_context yield){
+            testFailures(yield); });
+        yield_to([&](yield_context yield){
+            testRead(yield); });
+        yield_to([&](yield_context yield){
+            testEof(yield); });
 
         testIoService();
+        testRegression430();
+        testReadGrind();
     }
 };
 

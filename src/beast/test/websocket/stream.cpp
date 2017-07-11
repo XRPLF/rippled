@@ -11,10 +11,12 @@
 #include "websocket_async_echo_server.hpp"
 #include "websocket_sync_echo_server.hpp"
 
-#include <beast/core/streambuf.hpp>
-#include <beast/core/to_string.hpp>
+#include <beast/core/ostream.hpp>
+#include <beast/core/multi_buffer.hpp>
 #include <beast/test/fail_stream.hpp>
 #include <beast/test/string_istream.hpp>
+#include <beast/test/string_iostream.hpp>
+#include <beast/test/string_ostream.hpp>
 #include <beast/test/yield_to.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <boost/asio.hpp>
@@ -35,6 +37,15 @@ public:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;
+
+    template<class ConstBufferSequence>
+    static
+    std::string
+    to_string(ConstBufferSequence const& bs)
+    {
+        return boost::lexical_cast<
+            std::string>(buffers(bs));
+    }
 
     struct con
     {
@@ -109,30 +120,432 @@ public:
         return false;
     }
 
-    struct test_decorator
+    struct SyncClient
     {
-        int& what;
-
-        test_decorator(test_decorator const&) = default;
-
-        test_decorator(int& what_)
-            : what(what_)
+        template<class NextLayer>
+        void
+        accept(stream<NextLayer>& ws) const
         {
-            what = 0;
+            ws.accept();
         }
 
-        template<class Fields>
-        void
-        operator()(http::header<true, Fields>&) const
+        template<class NextLayer, class Buffers>
+        typename std::enable_if<
+            ! http::detail::is_header<Buffers>::value>::type
+        accept(stream<NextLayer>& ws,
+            Buffers const& buffers) const
         {
-            what |= 1;
+            ws.accept(buffers);
         }
 
-        template<class Fields>
+        template<class NextLayer, class Fields>
         void
-        operator()(http::header<false, Fields>&) const
+        accept(stream<NextLayer>& ws,
+            http::header<true, Fields> const& req) const
         {
-            what |= 2;
+            ws.accept(req);
+        }
+
+        template<class NextLayer,
+            class Fields, class Buffers>
+        void
+        accept(stream<NextLayer>& ws,
+            http::header<true, Fields> const& req,
+                Buffers const& buffers) const
+        {
+            ws.accept(req, buffers);
+        }
+
+        template<class NextLayer, class Decorator>
+        void
+        accept_ex(stream<NextLayer>& ws,
+            Decorator const& d) const
+        {
+            ws.accept_ex(d);
+        }
+
+        template<class NextLayer,
+            class Buffers, class Decorator>
+        typename std::enable_if<
+            ! http::detail::is_header<Buffers>::value>::type
+        accept_ex(stream<NextLayer>& ws,
+            Buffers const& buffers,
+                Decorator const& d) const
+        {
+            ws.accept_ex(buffers, d);
+        }
+
+        template<class NextLayer,
+            class Fields, class Decorator>
+        void
+        accept_ex(stream<NextLayer>& ws,
+            http::header<true, Fields> const& req,
+                Decorator const& d) const
+        {
+            ws.accept_ex(req, d);
+        }
+
+        template<class NextLayer,
+            class Fields, class Buffers,
+                class Decorator>
+        void
+        accept_ex(stream<NextLayer>& ws,
+            http::header<true, Fields> const& req,
+                Buffers const& buffers,
+                    Decorator const& d) const
+        {
+            ws.accept_ex(req, buffers, d);
+        }
+
+        template<class NextLayer>
+        void
+        handshake(stream<NextLayer>& ws,
+            string_view uri,
+                string_view path) const
+        {
+            ws.handshake(uri, path);
+        }
+
+        template<class NextLayer>
+        void
+        handshake(stream<NextLayer>& ws,
+            response_type& res,
+                string_view uri,
+                    string_view path) const
+        {
+            ws.handshake(res, uri, path);
+        }
+
+        template<class NextLayer, class Decorator>
+        void
+        handshake_ex(stream<NextLayer>& ws,
+            string_view uri,
+                string_view path,
+                    Decorator const& d) const
+        {
+            ws.handshake_ex(uri, path, d);
+        }
+
+        template<class NextLayer, class Decorator>
+        void
+        handshake_ex(stream<NextLayer>& ws,
+            response_type& res,
+                string_view uri,
+                    string_view path,
+                        Decorator const& d) const
+        {
+            ws.handshake_ex(res, uri, path, d);
+        }
+
+        template<class NextLayer>
+        void
+        ping(stream<NextLayer>& ws,
+            ping_data const& payload) const
+        {
+            ws.ping(payload);
+        }
+
+        template<class NextLayer>
+        void
+        pong(stream<NextLayer>& ws,
+            ping_data const& payload) const
+        {
+            ws.pong(payload);
+        }
+
+        template<class NextLayer>
+        void
+        close(stream<NextLayer>& ws,
+            close_reason const& cr) const
+        {
+            ws.close(cr);
+        }
+
+        template<
+            class NextLayer, class DynamicBuffer>
+        void
+        read(stream<NextLayer>& ws,
+            DynamicBuffer& buffer) const
+        {
+            ws.read(buffer);
+        }
+
+        template<
+            class NextLayer, class ConstBufferSequence>
+        void
+        write(stream<NextLayer>& ws,
+            ConstBufferSequence const& buffers) const
+        {
+            ws.write(buffers);
+        }
+
+        template<
+            class NextLayer, class ConstBufferSequence>
+        void
+        write_frame(stream<NextLayer>& ws, bool fin,
+            ConstBufferSequence const& buffers) const
+        {
+            ws.write_frame(fin, buffers);
+        }
+
+        template<
+            class NextLayer, class ConstBufferSequence>
+        void
+        write_raw(stream<NextLayer>& ws,
+            ConstBufferSequence const& buffers) const
+        {
+            boost::asio::write(
+                ws.next_layer(), buffers);
+        }
+    };
+
+    class AsyncClient
+    {
+        yield_context& yield_;
+
+    public:
+        explicit
+        AsyncClient(yield_context& yield)
+            : yield_(yield)
+        {
+        }
+
+        template<class NextLayer>
+        void
+        accept(stream<NextLayer>& ws) const
+        {
+            error_code ec;
+            ws.async_accept(yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer, class Buffers>
+        typename std::enable_if<
+            ! http::detail::is_header<Buffers>::value>::type
+        accept(stream<NextLayer>& ws,
+            Buffers const& buffers) const
+        {
+            error_code ec;
+            ws.async_accept(buffers, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer, class Fields>
+        void
+        accept(stream<NextLayer>& ws,
+            http::header<true, Fields> const& req) const
+        {
+            error_code ec;
+            ws.async_accept(req, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer,
+            class Fields, class Buffers>
+        void
+        accept(stream<NextLayer>& ws,
+            http::header<true, Fields> const& req,
+                Buffers const& buffers) const
+        {
+            error_code ec;
+            ws.async_accept(req, buffers, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer,
+            class Decorator>
+        void
+        accept_ex(stream<NextLayer>& ws,
+            Decorator const& d) const
+        {
+            error_code ec;
+            ws.async_accept_ex(d, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer,
+            class Buffers, class Decorator>
+        typename std::enable_if<
+            ! http::detail::is_header<Buffers>::value>::type
+        accept_ex(stream<NextLayer>& ws,
+            Buffers const& buffers,
+                Decorator const& d) const
+        {
+            error_code ec;
+            ws.async_accept_ex(buffers, d, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer,
+            class Fields, class Decorator>
+        void
+        accept_ex(stream<NextLayer>& ws,
+            http::header<true, Fields> const& req,
+                Decorator const& d) const
+        {
+            error_code ec;
+            ws.async_accept_ex(req, d, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer, class Fields,
+            class Buffers, class Decorator>
+        void
+        accept_ex(stream<NextLayer>& ws,
+            http::header<true, Fields> const& req,
+                Buffers const& buffers,
+                    Decorator const& d) const
+        {
+            error_code ec;
+            ws.async_accept_ex(
+                req, buffers, d, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer>
+        void
+        handshake(stream<NextLayer>& ws,
+            string_view uri,
+                string_view path) const
+        {
+            error_code ec;
+            ws.async_handshake(
+                uri, path, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer>
+        void
+        handshake(stream<NextLayer>& ws,
+            response_type& res,
+                string_view uri,
+                    string_view path) const
+        {
+            error_code ec;
+            ws.async_handshake(
+                res, uri, path, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer, class Decorator>
+        void
+        handshake_ex(stream<NextLayer>& ws,
+            string_view uri,
+                string_view path,
+                    Decorator const &d) const
+        {
+            error_code ec;
+            ws.async_handshake_ex(
+                uri, path, d, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer, class Decorator>
+        void
+        handshake_ex(stream<NextLayer>& ws,
+            response_type& res,
+                string_view uri,
+                    string_view path,
+                        Decorator const &d) const
+        {
+            error_code ec;
+            ws.async_handshake_ex(
+                res, uri, path, d, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer>
+        void
+        ping(stream<NextLayer>& ws,
+            ping_data const& payload) const
+        {
+            error_code ec;
+            ws.async_ping(payload, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer>
+        void
+        pong(stream<NextLayer>& ws,
+            ping_data const& payload) const
+        {
+            error_code ec;
+            ws.async_pong(payload, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<class NextLayer>
+        void
+        close(stream<NextLayer>& ws,
+            close_reason const& cr) const
+        {
+            error_code ec;
+            ws.async_close(cr, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<
+            class NextLayer, class DynamicBuffer>
+        void
+        read(stream<NextLayer>& ws,
+            DynamicBuffer& buffer) const
+        {
+            error_code ec;
+            ws.async_read(buffer, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<
+            class NextLayer, class ConstBufferSequence>
+        void
+        write(stream<NextLayer>& ws,
+            ConstBufferSequence const& buffers) const
+        {
+            error_code ec;
+            ws.async_write(buffers, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<
+            class NextLayer, class ConstBufferSequence>
+        void
+        write_frame(stream<NextLayer>& ws, bool fin,
+            ConstBufferSequence const& buffers) const
+        {
+            error_code ec;
+            ws.async_write_frame(fin, buffers, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
+        }
+
+        template<
+            class NextLayer, class ConstBufferSequence>
+        void
+        write_raw(stream<NextLayer>& ws,
+            ConstBufferSequence const& buffers) const
+        {
+            error_code ec;
+            boost::asio::async_write(
+                ws.next_layer(), buffers, yield_[ec]);
+            if(ec)
+                throw system_error{ec};
         }
     };
 
@@ -140,24 +553,14 @@ public:
     testOptions()
     {
         stream<socket_type> ws(ios_);
-        ws.set_option(auto_fragment{true});
-        ws.set_option(keep_alive{false});
-        ws.set_option(write_buffer_size{2048});
-        ws.set_option(message_type{opcode::text});
-        ws.set_option(read_buffer_size{8192});
-        ws.set_option(read_message_max{1 * 1024 * 1024});
+        ws.auto_fragment(true);
+        ws.write_buffer_size(2048);
+        ws.binary(false);
+        ws.read_buffer_size(8192);
+        ws.read_message_max(1 * 1024 * 1024);
         try
         {
-            ws.set_option(write_buffer_size{7});
-            fail();
-        }
-        catch(std::exception const&)
-        {
-            pass();
-        }
-        try
-        {
-            message_type{opcode::close};
+            ws.write_buffer_size(7);
             fail();
         }
         catch(std::exception const&)
@@ -166,74 +569,418 @@ public:
         }
     }
 
-    void testAccept()
+    //--------------------------------------------------------------------------
+
+    class res_decorator
     {
+        bool& b_;
+
+    public:
+        res_decorator(res_decorator const&) = default;
+
+        explicit
+        res_decorator(bool& b)
+            : b_(b)
         {
-            static std::size_t constexpr limit = 100;
-            std::size_t n;
-            for(n = 0; n < limit; ++n)
-            {
-                // valid
-                http::request<http::empty_body> req;
-                req.method = "GET";
-                req.url = "/";
-                req.version = 11;
-                req.fields.insert("Host", "localhost");
-                req.fields.insert("Upgrade", "websocket");
-                req.fields.insert("Connection", "upgrade");
-                req.fields.insert("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
-                req.fields.insert("Sec-WebSocket-Version", "13");
-                stream<test::fail_stream<
-                    test::string_istream>> ws(n, ios_, "");
-                try
-                {
-                    ws.accept(req);
-                    break;
-                }
-                catch(system_error const&)
-                {
-                }
-            }
-            BEAST_EXPECT(n < limit);
         }
+
+        void
+        operator()(response_type&) const
         {
-            // valid
-            stream<test::string_istream> ws(ios_,
-                "GET / HTTP/1.1\r\n"
-                "Host: localhost:80\r\n"
-                "Upgrade: WebSocket\r\n"
-                "Connection: upgrade\r\n"
-                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-                "Sec-WebSocket-Version: 13\r\n"
-                "\r\n"
-            );
+            b_ = true;
+        }
+    };
+
+    template<class Client>
+    void
+    testAccept(Client const& c)
+    {
+        static std::size_t constexpr limit = 200;
+        std::size_t n;
+        for(n = 0; n < limit; ++n)
+        {
+            test::fail_counter fc{n};
             try
             {
-                ws.accept();
-                pass();
+                // request in stream
+                {
+                    stream<test::fail_stream<
+                        test::string_iostream>> ws{fc, ios_,
+                        "GET / HTTP/1.1\r\n"
+                        "Host: localhost\r\n"
+                        "Upgrade: websocket\r\n"
+                        "Connection: upgrade\r\n"
+                        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+                        "Sec-WebSocket-Version: 13\r\n"
+                        "\r\n"
+                        , 20};
+                    c.accept(ws);
+                    // VFALCO validate contents of ws.next_layer().str?
+                }
+                {
+                    stream<test::fail_stream<
+                        test::string_iostream>> ws{fc, ios_,
+                        "GET / HTTP/1.1\r\n"
+                        "Host: localhost\r\n"
+                        "Upgrade: websocket\r\n"
+                        "Connection: upgrade\r\n"
+                        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+                        "Sec-WebSocket-Version: 13\r\n"
+                        "\r\n"
+                        , 20};
+                    bool called = false;
+                    c.accept_ex(ws, res_decorator{called});
+                    BEAST_EXPECT(called);
+                }
+                // request in buffers
+                {
+                    stream<test::fail_stream<
+                        test::string_ostream>> ws{fc, ios_};
+                    c.accept(ws, sbuf(
+                        "GET / HTTP/1.1\r\n"
+                        "Host: localhost\r\n"
+                        "Upgrade: websocket\r\n"
+                        "Connection: upgrade\r\n"
+                        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+                        "Sec-WebSocket-Version: 13\r\n"
+                        "\r\n"
+                    ));
+                }
+                {
+                    stream<test::fail_stream<
+                        test::string_ostream>> ws{fc, ios_};
+                    bool called = false;
+                    c.accept_ex(ws, sbuf(
+                        "GET / HTTP/1.1\r\n"
+                        "Host: localhost\r\n"
+                        "Upgrade: websocket\r\n"
+                        "Connection: upgrade\r\n"
+                        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+                        "Sec-WebSocket-Version: 13\r\n"
+                        "\r\n"),
+                        res_decorator{called});
+                    BEAST_EXPECT(called);
+                }
+                // request in buffers and stream
+                {
+                    stream<test::fail_stream<
+                        test::string_iostream>> ws{fc, ios_,
+                        "Connection: upgrade\r\n"
+                        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+                        "Sec-WebSocket-Version: 13\r\n"
+                        "\r\n"
+                        , 16};
+                    c.accept(ws, sbuf(
+                        "GET / HTTP/1.1\r\n"
+                        "Host: localhost\r\n"
+                        "Upgrade: websocket\r\n"
+                    ));
+                }
+                {
+                    stream<test::fail_stream<
+                        test::string_iostream>> ws{fc, ios_,
+                        "Connection: upgrade\r\n"
+                        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+                        "Sec-WebSocket-Version: 13\r\n"
+                        "\r\n"
+                        , 16};
+                    bool called = false;
+                    c.accept_ex(ws, sbuf(
+                        "GET / HTTP/1.1\r\n"
+                        "Host: localhost\r\n"
+                        "Upgrade: websocket\r\n"),
+                        res_decorator{called});
+                    BEAST_EXPECT(called);
+                }
+                // request in message
+                {
+                    request_type req;
+                    req.method(http::verb::get);
+                    req.target("/");
+                    req.version = 11;
+                    req.insert("Host", "localhost");
+                    req.insert("Upgrade", "websocket");
+                    req.insert("Connection", "upgrade");
+                    req.insert("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
+                    req.insert("Sec-WebSocket-Version", "13");
+                    stream<test::fail_stream<
+                        test::string_ostream>> ws{fc, ios_};
+                    c.accept(ws, req);
+                }
+                {
+                    request_type req;
+                    req.method(http::verb::get);
+                    req.target("/");
+                    req.version = 11;
+                    req.insert("Host", "localhost");
+                    req.insert("Upgrade", "websocket");
+                    req.insert("Connection", "upgrade");
+                    req.insert("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
+                    req.insert("Sec-WebSocket-Version", "13");
+                    stream<test::fail_stream<
+                        test::string_ostream>> ws{fc, ios_};
+                    bool called = false;
+                    c.accept_ex(ws, req,
+                        res_decorator{called});
+                    BEAST_EXPECT(called);
+                }
+                // request in message, close frame in buffers
+                {
+                    request_type req;
+                    req.method(http::verb::get);
+                    req.target("/");
+                    req.version = 11;
+                    req.insert("Host", "localhost");
+                    req.insert("Upgrade", "websocket");
+                    req.insert("Connection", "upgrade");
+                    req.insert("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
+                    req.insert("Sec-WebSocket-Version", "13");
+                    stream<test::fail_stream<
+                        test::string_ostream>> ws{fc, ios_};
+                    c.accept(ws, req,
+                        cbuf(0x88, 0x82, 0xff, 0xff, 0xff, 0xff, 0xfc, 0x17));
+                    try
+                    {
+                        multi_buffer b;
+                        c.read(ws, b);
+                        fail("success", __FILE__, __LINE__);
+                    }
+                    catch(system_error const& e)
+                    {
+                        if(e.code() != websocket::error::closed)
+                            throw;
+                    }
+                }
+                {
+                    request_type req;
+                    req.method(http::verb::get);
+                    req.target("/");
+                    req.version = 11;
+                    req.insert("Host", "localhost");
+                    req.insert("Upgrade", "websocket");
+                    req.insert("Connection", "upgrade");
+                    req.insert("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
+                    req.insert("Sec-WebSocket-Version", "13");
+                    stream<test::fail_stream<
+                        test::string_ostream>> ws{fc, ios_};
+                    bool called = false;
+                    c.accept_ex(ws, req,
+                        cbuf(0x88, 0x82, 0xff, 0xff, 0xff, 0xff, 0xfc, 0x17),
+                        res_decorator{called});
+                    BEAST_EXPECT(called);
+                    try
+                    {
+                        multi_buffer b;
+                        c.read(ws, b);
+                        fail("success", __FILE__, __LINE__);
+                    }
+                    catch(system_error const& e)
+                    {
+                        if(e.code() != websocket::error::closed)
+                            throw;
+                    }
+                }
+                // request in message, close frame in stream
+                {
+                    request_type req;
+                    req.method(http::verb::get);
+                    req.target("/");
+                    req.version = 11;
+                    req.insert("Host", "localhost");
+                    req.insert("Upgrade", "websocket");
+                    req.insert("Connection", "upgrade");
+                    req.insert("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
+                    req.insert("Sec-WebSocket-Version", "13");
+                    stream<test::fail_stream<
+                        test::string_iostream>> ws{fc, ios_,
+                        "\x88\x82\xff\xff\xff\xff\xfc\x17"};
+                    c.accept(ws, req);
+                    try
+                    {
+                        multi_buffer b;
+                        c.read(ws, b);
+                        fail("success", __FILE__, __LINE__);
+                    }
+                    catch(system_error const& e)
+                    {
+                        if(e.code() != websocket::error::closed)
+                            throw;
+                    }
+                }
+                // request in message, close frame in stream and buffers
+                {
+                    request_type req;
+                    req.method(http::verb::get);
+                    req.target("/");
+                    req.version = 11;
+                    req.insert("Host", "localhost");
+                    req.insert("Upgrade", "websocket");
+                    req.insert("Connection", "upgrade");
+                    req.insert("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
+                    req.insert("Sec-WebSocket-Version", "13");
+                    stream<test::fail_stream<
+                        test::string_iostream>> ws{fc, ios_,
+                        "xff\xff\xfc\x17"};
+                    c.accept(ws, req,
+                        cbuf(0x88, 0x82, 0xff, 0xff));
+                    try
+                    {
+                        multi_buffer b;
+                        c.read(ws, b);
+                        fail("success", __FILE__, __LINE__);
+                    }
+                    catch(system_error const& e)
+                    {
+                        if(e.code() != websocket::error::closed)
+                            throw;
+                    }
+                }
+                // failed handshake (missing Sec-WebSocket-Key)
+                {
+                    stream<test::fail_stream<
+                        test::string_iostream>> ws{fc, ios_,
+                        "GET / HTTP/1.1\r\n"
+                        "Host: localhost\r\n"
+                        "Upgrade: websocket\r\n"
+                        "Connection: upgrade\r\n"
+                        "Sec-WebSocket-Version: 13\r\n"
+                        "\r\n"
+                        , 20};
+                    try
+                    {
+                        c.accept(ws);
+                        fail("success", __FILE__, __LINE__);
+                    }
+                    catch(system_error const& e)
+                    {
+                        if( e.code() !=
+                                websocket::error::handshake_failed &&
+                            e.code() !=
+                                boost::asio::error::eof)
+                            throw;
+                    }
+                }
             }
             catch(system_error const&)
             {
-                fail();
+                continue;
             }
+            break;
         }
-        {
-            // invalid
-            stream<test::string_istream> ws(ios_,
-                "GET / HTTP/1.0\r\n"
-                "\r\n"
-            );
-            try
-            {
-                ws.accept();
-                fail();
-            }
-            catch(system_error const&)
-            {
-                pass();
-            }
-        }
+        BEAST_EXPECT(n < limit);
     }
+
+    void
+    testAccept()
+    {
+        testAccept(SyncClient{});
+        yield_to(
+            [&](yield_context yield)
+            {
+                testAccept(AsyncClient{yield});
+            });
+    }
+
+    //--------------------------------------------------------------------------
+
+    class req_decorator
+    {
+        bool& b_;
+
+    public:
+        req_decorator(req_decorator const&) = default;
+
+        explicit
+        req_decorator(bool& b)
+            : b_(b)
+        {
+        }
+
+        void
+        operator()(request_type&) const
+        {
+            b_ = true;
+        }
+    };
+
+    template<class Client>
+    void
+    testHandshake(endpoint_type const& ep, Client const& c)
+    {
+        static std::size_t constexpr limit = 200;
+        std::size_t n;
+        for(n = 199; n < limit; ++n)
+        {
+            test::fail_counter fc{n};
+            try
+            {
+                // handshake
+                {
+                    stream<test::fail_stream<
+                        boost::asio::ip::tcp::socket>> ws{fc, ios_};
+                    ws.next_layer().next_layer().connect(ep);
+                    c.handshake(ws, "localhost", "/");
+                }
+                // handshake, response
+                {
+                    stream<test::fail_stream<
+                        boost::asio::ip::tcp::socket>> ws{fc, ios_};
+                    ws.next_layer().next_layer().connect(ep);
+                    response_type res;
+                    c.handshake(ws, res, "localhost", "/");
+                    // VFALCO validate res?
+                }
+                // handshake_ex
+                {
+                    stream<test::fail_stream<
+                        boost::asio::ip::tcp::socket>> ws{fc, ios_};
+                    ws.next_layer().next_layer().connect(ep);
+                    bool called = false;
+                    c.handshake_ex(ws, "localhost", "/",
+                        req_decorator{called});
+                    BEAST_EXPECT(called);
+                }
+                // handshake_ex, response
+                {
+                    stream<test::fail_stream<
+                        boost::asio::ip::tcp::socket>> ws{fc, ios_};
+                    ws.next_layer().next_layer().connect(ep);
+                    bool called = false;
+                    response_type res;
+                    c.handshake_ex(ws, res, "localhost", "/",
+                        req_decorator{called});
+                    // VFALCO validate res?
+                    BEAST_EXPECT(called);
+                }
+            }
+            catch(system_error const&)
+            {
+                continue;
+            }
+            break;
+        }
+        BEAST_EXPECT(n < limit);
+    }
+
+    void
+    testHandshake()
+    {
+        error_code ec = test::error::fail_error;
+        ::websocket::async_echo_server server{nullptr, 1};
+        auto const any = endpoint_type{
+            address_type::from_string("127.0.0.1"), 0};
+        server.open(any, ec);
+        BEAST_EXPECTS(! ec, ec.message());
+        auto const ep = server.local_endpoint();
+        testHandshake(ep, SyncClient{});
+        yield_to(
+            [&](yield_context yield)
+            {
+                testHandshake(ep, AsyncClient{yield});
+            });
+    }
+
+    //--------------------------------------------------------------------------
 
     void testBadHandshakes()
     {
@@ -244,7 +991,6 @@ public:
                 {
                     stream<test::string_istream> ws(ios_,
                         s.substr(i, s.size() - i));
-                    ws.set_option(keep_alive{true});
                     try
                     {
                         ws.accept(boost::asio::buffer(
@@ -258,7 +1004,7 @@ public:
                 }
             };
         // wrong version
-        check(error::handshake_failed,
+        check(http::error::end_of_stream,
             "GET / HTTP/1.0\r\n"
             "Host: localhost:80\r\n"
             "Upgrade: WebSocket\r\n"
@@ -359,7 +1105,7 @@ public:
                 }
                 catch(system_error const& se)
                 {
-                    BEAST_EXPECT(se.code() == error::response_failed);
+                    BEAST_EXPECT(se.code() == error::handshake_failed);
                 }
             };
         // wrong HTTP version
@@ -424,31 +1170,14 @@ public:
     }
 
     void
-    testDecorator(endpoint_type const& ep)
-    {
-        error_code ec;
-        socket_type sock{ios_};
-        sock.connect(ep, ec);
-        if(! BEAST_EXPECTS(! ec, ec.message()))
-            return;
-        stream<socket_type&> ws{sock};
-        int what;
-        ws.set_option(decorate(test_decorator{what}));
-        BEAST_EXPECT(what == 0);
-        ws.handshake("localhost", "/", ec);
-        if(! BEAST_EXPECTS(! ec, ec.message()))
-            return;
-        BEAST_EXPECT(what == 1);
-    }
-
-    void testMask(endpoint_type const& ep,
+    testMask(endpoint_type const& ep,
         yield_context do_yield)
     {
         {
             std::vector<char> v;
             for(char n = 0; n < 20; ++n)
             {
-                error_code ec;
+                error_code ec = test::error::fail_error;
                 socket_type sock(ios_);
                 sock.connect(ep, ec);
                 if(! BEAST_EXPECTS(! ec, ec.message()))
@@ -460,9 +1189,8 @@ public:
                 ws.write(boost::asio::buffer(v), ec);
                 if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
-                opcode op;
-                streambuf db;
-                ws.read(op, db, ec);
+                multi_buffer db;
+                ws.read(db, ec);
                 if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 BEAST_EXPECT(to_string(db.data()) ==
@@ -474,7 +1202,7 @@ public:
             std::vector<char> v;
             for(char n = 0; n < 20; ++n)
             {
-                error_code ec;
+                error_code ec = test::error::fail_error;
                 socket_type sock(ios_);
                 sock.connect(ep, ec);
                 if(! BEAST_EXPECTS(! ec, ec.message()))
@@ -486,9 +1214,8 @@ public:
                 ws.async_write(boost::asio::buffer(v), do_yield[ec]);
                 if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
-                opcode op;
-                streambuf db;
-                ws.async_read(op, db, do_yield[ec]);
+                multi_buffer db;
+                ws.async_read(db, do_yield[ec]);
                 if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 BEAST_EXPECT(to_string(db.data()) ==
@@ -529,7 +1256,7 @@ public:
     }
 
 #if 0
-    void testInvokable1(endpoint_type const& ep)
+    void testPausation1(endpoint_type const& ep)
     {
         boost::asio::io_service ios;
         stream<socket_type> ws(ios);
@@ -537,7 +1264,7 @@ public:
         ws.handshake("localhost", "/");
 
         // Make remote send a ping frame
-        ws.set_option(message_type(opcode::text));
+        ws.binary(false);
         ws.write(buffer_cat(sbuf("PING"), sbuf("ping")));
 
         std::size_t count = 0;
@@ -551,10 +1278,9 @@ public:
             });
 
         // Read
-        opcode op;
-        streambuf db;
+        multi_buffer db;
         ++count;
-        ws.async_read(op, db,
+        ws.async_read(db,
             [&](error_code ec)
             {
                 --count;
@@ -563,7 +1289,7 @@ public:
         while(! ws.wr_block_)
             ios.run_one();
         // Write a text message, leaving
-        // the write_op suspended as invokable.
+        // the write_op suspended as pausation.
         ws.async_write(sbuf("Hello"),
             [&](error_code ec)
             {
@@ -596,7 +1322,7 @@ public:
     }
 #endif
 
-    void testInvokable2(endpoint_type const& ep)
+    void testPausation2(endpoint_type const& ep)
     {
         boost::asio::io_service ios;
         stream<socket_type> ws(ios);
@@ -604,15 +1330,14 @@ public:
         ws.handshake("localhost", "/");
 
         // Make remote send a text message with bad utf8.
-        ws.set_option(message_type(opcode::binary));
+        ws.binary(true);
         ws.write(buffer_cat(sbuf("TEXT"),
             cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)));
-        opcode op;
-        streambuf db;
+        multi_buffer db;
         std::size_t count = 0;
         // Read text message with bad utf8.
         // Causes a close to be sent, blocking writes.
-        ws.async_read(op, db,
+        ws.async_read(db,
             [&](error_code ec)
             {
                 // Read should fail with protocol error
@@ -620,7 +1345,7 @@ public:
                 BEAST_EXPECTS(
                     ec == error::failed, ec.message());
                 // Reads after failure are aborted
-                ws.async_read(op, db,
+                ws.async_read(db,
                     [&](error_code ec)
                     {
                         ++count;
@@ -633,7 +1358,7 @@ public:
         while(! ws.wr_block_)
             ios.run_one();
         // Write a text message, leaving
-        // the write_op suspended as invokable.
+        // the write_op suspended as a pausation.
         ws.async_write(sbuf("Hello"),
             [&](error_code ec)
             {
@@ -665,7 +1390,7 @@ public:
         ios.run();
     }
 
-    void testInvokable3(endpoint_type const& ep)
+    void testPausation3(endpoint_type const& ep)
     {
         boost::asio::io_service ios;
         stream<socket_type> ws(ios);
@@ -673,14 +1398,13 @@ public:
         ws.handshake("localhost", "/");
 
         // Cause close to be received
-        ws.set_option(message_type(opcode::binary));
+        ws.binary(true);
         ws.write(sbuf("CLOSE"));
-        opcode op;
-        streambuf db;
+        multi_buffer db;
         std::size_t count = 0;
         // Read a close frame.
         // Sends a close frame, blocking writes.
-        ws.async_read(op, db,
+        ws.async_read(db,
             [&](error_code ec)
             {
                 // Read should complete with error::closed
@@ -731,7 +1455,7 @@ public:
         ios.run();
     }
 
-    void testInvokable4(endpoint_type const& ep)
+    void testPausation4(endpoint_type const& ep)
     {
         boost::asio::io_service ios;
         stream<socket_type> ws(ios);
@@ -739,12 +1463,11 @@ public:
         ws.handshake("localhost", "/");
 
         // Cause close to be received
-        ws.set_option(message_type(opcode::binary));
+        ws.binary(true);
         ws.write(sbuf("CLOSE"));
-        opcode op;
-        streambuf db;
+        multi_buffer db;
         std::size_t count = 0;
-        ws.async_read(op, db,
+        ws.async_read(db,
             [&](error_code ec)
             {
                 ++count;
@@ -775,7 +1498,7 @@ public:
     }
 
 #if 0
-    void testInvokable5(endpoint_type const& ep)
+    void testPausation5(endpoint_type const& ep)
     {
         boost::asio::io_service ios;
         stream<socket_type> ws(ios);
@@ -792,9 +1515,8 @@ public:
                         BEAST_EXPECT(! ec);
                     });
             });
-        opcode op;
-        streambuf db;
-        ws.async_read(op, db,
+        multi_buffer db;
+        ws.async_read(db,
             [&](error_code ec)
             {
                 BEAST_EXPECTS(ec == error::closed, ec.message());
@@ -824,9 +1546,8 @@ public:
             return;
         ws.write_frame(false, sbuf("u"));
         ws.write_frame(true, sbuf("v"));
-        streambuf sb;
-        opcode op;
-        ws.read(op, sb, ec);
+        multi_buffer b;
+        ws.read(b, ec);
         if(! BEAST_EXPECTS(! ec, ec.message()))
             return;
     }
@@ -863,185 +1584,6 @@ public:
         }
     }
 
-    struct SyncClient
-    {
-        template<class NextLayer>
-        void
-        handshake(stream<NextLayer>& ws,
-            boost::string_ref const& uri,
-                boost::string_ref const& path) const
-        {
-            ws.handshake(uri, path);
-        }
-
-        template<class NextLayer>
-        void
-        ping(stream<NextLayer>& ws,
-            ping_data const& payload) const
-        {
-            ws.ping(payload);
-        }
-
-        template<class NextLayer>
-        void
-        pong(stream<NextLayer>& ws,
-            ping_data const& payload) const
-        {
-            ws.pong(payload);
-        }
-
-        template<class NextLayer>
-        void
-        close(stream<NextLayer>& ws,
-            close_reason const& cr) const
-        {
-            ws.close(cr);
-        }
-
-        template<
-            class NextLayer, class DynamicBuffer>
-        void
-        read(stream<NextLayer>& ws,
-            opcode& op, DynamicBuffer& dynabuf) const
-        {
-            ws.read(op, dynabuf);
-        }
-
-        template<
-            class NextLayer, class ConstBufferSequence>
-        void
-        write(stream<NextLayer>& ws,
-            ConstBufferSequence const& buffers) const
-        {
-            ws.write(buffers);
-        }
-
-        template<
-            class NextLayer, class ConstBufferSequence>
-        void
-        write_frame(stream<NextLayer>& ws, bool fin,
-            ConstBufferSequence const& buffers) const
-        {
-            ws.write_frame(fin, buffers);
-        }
-
-        template<
-            class NextLayer, class ConstBufferSequence>
-        void
-        write_raw(stream<NextLayer>& ws,
-            ConstBufferSequence const& buffers) const
-        {
-            boost::asio::write(
-                ws.next_layer(), buffers);
-        }
-    };
-
-    class AsyncClient
-    {
-        yield_context& yield_;
-
-    public:
-        explicit
-        AsyncClient(yield_context& yield)
-            : yield_(yield)
-        {
-        }
-
-        template<class NextLayer>
-        void
-        handshake(stream<NextLayer>& ws,
-            boost::string_ref const& uri,
-                boost::string_ref const& path) const
-        {
-            error_code ec;
-            ws.async_handshake(uri, path, yield_[ec]);
-            if(ec)
-                throw system_error{ec};
-        }
-
-        template<class NextLayer>
-        void
-        ping(stream<NextLayer>& ws,
-            ping_data const& payload) const
-        {
-            error_code ec;
-            ws.async_ping(payload, yield_[ec]);
-            if(ec)
-                throw system_error{ec};
-        }
-
-        template<class NextLayer>
-        void
-        pong(stream<NextLayer>& ws,
-            ping_data const& payload) const
-        {
-            error_code ec;
-            ws.async_pong(payload, yield_[ec]);
-            if(ec)
-                throw system_error{ec};
-        }
-
-        template<class NextLayer>
-        void
-        close(stream<NextLayer>& ws,
-            close_reason const& cr) const
-        {
-            error_code ec;
-            ws.async_close(cr, yield_[ec]);
-            if(ec)
-                throw system_error{ec};
-        }
-
-        template<
-            class NextLayer, class DynamicBuffer>
-        void
-        read(stream<NextLayer>& ws,
-            opcode& op, DynamicBuffer& dynabuf) const
-        {
-            error_code ec;
-            ws.async_read(op, dynabuf, yield_[ec]);
-            if(ec)
-                throw system_error{ec};
-        }
-
-        template<
-            class NextLayer, class ConstBufferSequence>
-        void
-        write(stream<NextLayer>& ws,
-            ConstBufferSequence const& buffers) const
-        {
-            error_code ec;
-            ws.async_write(buffers, yield_[ec]);
-            if(ec)
-                throw system_error{ec};
-        }
-
-        template<
-            class NextLayer, class ConstBufferSequence>
-        void
-        write_frame(stream<NextLayer>& ws, bool fin,
-            ConstBufferSequence const& buffers) const
-        {
-            error_code ec;
-            ws.async_write_frame(fin, buffers, yield_[ec]);
-            if(ec)
-                throw system_error{ec};
-        }
-
-        template<
-            class NextLayer, class ConstBufferSequence>
-        void
-        write_raw(stream<NextLayer>& ws,
-            ConstBufferSequence const& buffers) const
-        {
-            error_code ec;
-            boost::asio::async_write(
-                ws.next_layer(), buffers, yield_[ec]);
-            if(ec)
-                throw system_error{ec};
-        }
-    };
-
     struct abort_test
     {
     };
@@ -1063,9 +1605,8 @@ public:
                 {
                     try
                     {
-                        opcode op;
-                        streambuf db;
-                        c.read(ws, op, db);
+                        multi_buffer db;
+                        c.read(ws, db);
                         fail();
                         throw abort_test{};
                     }
@@ -1092,15 +1633,14 @@ public:
                 c.handshake(ws, "localhost", "/");
 
                 // send message
-                ws.set_option(auto_fragment{false});
-                ws.set_option(message_type(opcode::text));
+                ws.auto_fragment(false);
+                ws.binary(false);
                 c.write(ws, sbuf("Hello"));
                 {
                     // receive echoed message
-                    opcode op;
-                    streambuf db;
-                    c.read(ws, op, db);
-                    BEAST_EXPECT(op == opcode::text);
+                    multi_buffer db;
+                    c.read(ws, db);
+                    BEAST_EXPECT(ws.got_text());
                     BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
 
@@ -1116,116 +1656,116 @@ public:
                 c.close(ws, {close_code::going_away, "Going away"});
                 restart(error::closed);
 
+                bool once;
+
                 // send ping and message
-                bool pong = false;
-                ws.set_option(ping_callback{
-                    [&](bool is_pong, ping_data const& payload)
+                once = false;
+                ws.control_callback(
+                    [&](frame_type kind, string_view s)
                     {
-                        BEAST_EXPECT(is_pong);
-                        BEAST_EXPECT(! pong);
-                        pong = true;
-                        BEAST_EXPECT(payload == "");
-                    }});
+                        BEAST_EXPECT(kind == frame_type::pong);
+                        BEAST_EXPECT(! once);
+                        once = true;
+                        BEAST_EXPECT(s == "");
+                    });
                 c.ping(ws, "");
-                ws.set_option(message_type(opcode::binary));
+                ws.binary(true);
                 c.write(ws, sbuf("Hello"));
                 {
                     // receive echoed message
-                    opcode op;
-                    streambuf db;
-                    c.read(ws, op, db);
-                    BEAST_EXPECT(pong == 1);
-                    BEAST_EXPECT(op == opcode::binary);
+                    multi_buffer db;
+                    c.read(ws, db);
+                    BEAST_EXPECT(once);
+                    BEAST_EXPECT(ws.got_binary());
                     BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
-                ws.set_option(ping_callback{});
+                ws.control_callback({});
 
                 // send ping and fragmented message
-                ws.set_option(ping_callback{
-                    [&](bool is_pong, ping_data const& payload)
+                once = false;
+                ws.control_callback(
+                    [&](frame_type kind, string_view s)
                     {
-                        BEAST_EXPECT(is_pong);
-                        BEAST_EXPECT(payload == "payload");
-                    }});
+                        BEAST_EXPECT(kind == frame_type::pong);
+                        BEAST_EXPECT(! once);
+                        once = true;
+                        BEAST_EXPECT(s == "payload");
+                    });
                 ws.ping("payload");
                 c.write_frame(ws, false, sbuf("Hello, "));
                 c.write_frame(ws, false, sbuf(""));
                 c.write_frame(ws, true, sbuf("World!"));
                 {
                     // receive echoed message
-                    opcode op;
-                    streambuf db;
-                    c.read(ws, op, db);
-                    BEAST_EXPECT(pong == 1);
+                    multi_buffer db;
+                    c.read(ws, db);
+                    BEAST_EXPECT(once);
                     BEAST_EXPECT(to_string(db.data()) == "Hello, World!");
                 }
-                ws.set_option(ping_callback{});
+                ws.control_callback({});
 
                 // send pong
                 c.pong(ws, "");
 
                 // send auto fragmented message
-                ws.set_option(auto_fragment{true});
-                ws.set_option(write_buffer_size{8});
+                ws.auto_fragment(true);
+                ws.write_buffer_size(8);
                 c.write(ws, sbuf("Now is the time for all good men"));
                 {
                     // receive echoed message
-                    opcode op;
-                    streambuf sb;
-                    c.read(ws, op, sb);
-                    BEAST_EXPECT(to_string(sb.data()) == "Now is the time for all good men");
+                    multi_buffer b;
+                    c.read(ws, b);
+                    BEAST_EXPECT(to_string(b.data()) == "Now is the time for all good men");
                 }
-                ws.set_option(auto_fragment{false});
-                ws.set_option(write_buffer_size{4096});
+                ws.auto_fragment(false);
+                ws.write_buffer_size(4096);
 
                 // send message with write buffer limit
                 {
                     std::string s(2000, '*');
-                    ws.set_option(write_buffer_size(1200));
+                    ws.write_buffer_size(1200);
                     c.write(ws, buffer(s.data(), s.size()));
                     {
                         // receive echoed message
-                        opcode op;
-                        streambuf db;
-                        c.read(ws, op, db);
+                        multi_buffer db;
+                        c.read(ws, db);
                         BEAST_EXPECT(to_string(db.data()) == s);
                     }
                 }
 
                 // cause ping
-                ws.set_option(message_type(opcode::binary));
+                ws.binary(true);
                 c.write(ws, sbuf("PING"));
-                ws.set_option(message_type(opcode::text));
+                ws.binary(false);
                 c.write(ws, sbuf("Hello"));
                 {
                     // receive echoed message
-                    opcode op;
-                    streambuf db;
-                    c.read(ws, op, db);
-                    BEAST_EXPECT(op == opcode::text);
+                    multi_buffer db;
+                    c.read(ws, db);
+                    BEAST_EXPECT(ws.got_text());
                     BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
 
                 // cause close
-                ws.set_option(message_type(opcode::binary));
+                ws.binary(true);
                 c.write(ws, sbuf("CLOSE"));
                 restart(error::closed);
 
                 // send bad utf8
-                ws.set_option(message_type(opcode::binary));
+                ws.binary(true);
                 c.write(ws, buffer_cat(sbuf("TEXT"),
                     cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)));
                 restart(error::failed);
 
                 // cause bad utf8
-                ws.set_option(message_type(opcode::binary));
+                ws.binary(true);
                 c.write(ws, buffer_cat(sbuf("TEXT"),
                     cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)));
                 c.write(ws, sbuf("Hello"));
                 restart(error::failed);
 
                 // cause bad close
-                ws.set_option(message_type(opcode::binary));
+                ws.binary(true);
                 c.write(ws, buffer_cat(sbuf("RAW"),
                     cbuf(0x88, 0x02, 0x03, 0xed)));
                 restart(error::failed);
@@ -1261,10 +1801,10 @@ public:
                     restart(error::closed);
 
                     // message size exceeds max
-                    ws.set_option(read_message_max{1});
+                    ws.read_message_max(1);
                     c.write(ws, cbuf(0x00, 0x00));
                     restart(error::failed);
-                    ws.set_option(read_message_max{16*1024*1024});
+                    ws.read_message_max(16*1024*1024);
                 }
             }
             catch(system_error const&)
@@ -1276,25 +1816,26 @@ public:
         BEAST_EXPECT(n < limit);
     }
 
-    void run() override
+    void
+    run() override
     {
-        static_assert(std::is_constructible<
-            stream<socket_type>, boost::asio::io_service&>::value, "");
+        BOOST_STATIC_ASSERT(std::is_constructible<
+            stream<socket_type>, boost::asio::io_service&>::value);
 
-        static_assert(std::is_move_constructible<
-            stream<socket_type>>::value, "");
+        BOOST_STATIC_ASSERT(std::is_move_constructible<
+            stream<socket_type>>::value);
 
-        static_assert(std::is_move_assignable<
-            stream<socket_type>>::value, "");
+        BOOST_STATIC_ASSERT(std::is_move_assignable<
+            stream<socket_type>>::value);
 
-        static_assert(std::is_constructible<
-            stream<socket_type&>, socket_type&>::value, "");
+        BOOST_STATIC_ASSERT(std::is_constructible<
+            stream<socket_type&>, socket_type&>::value);
 
-        static_assert(std::is_move_constructible<
-            stream<socket_type&>>::value, "");
+        BOOST_STATIC_ASSERT(std::is_move_constructible<
+            stream<socket_type&>>::value);
 
-        static_assert(! std::is_move_assignable<
-            stream<socket_type&>>::value, "");
+        BOOST_STATIC_ASSERT(! std::is_move_assignable<
+            stream<socket_type&>>::value);
 
         log << "sizeof(websocket::stream) == " <<
             sizeof(websocket::stream<boost::asio::ip::tcp::socket&>) << std::endl;
@@ -1304,6 +1845,7 @@ public:
 
         testOptions();
         testAccept();
+        testHandshake();
         testBadHandshakes();
         testBadResponses();
 
@@ -1318,12 +1860,11 @@ public:
             server.open(any, ec);
             BEAST_EXPECTS(! ec, ec.message());
             auto const ep = server.local_endpoint();
-            testDecorator(ep);
-            //testInvokable1(ep);
-            testInvokable2(ep);
-            testInvokable3(ep);
-            testInvokable4(ep);
-            //testInvokable5(ep);
+            //testPausation1(ep);
+            testPausation2(ep);
+            testPausation3(ep);
+            testPausation4(ep);
+            //testPausation5(ep);
             testWriteFrames(ep);
             testAsyncWriteFrame(ep);
         }
@@ -1376,6 +1917,7 @@ public:
         pmd.server_enable = false;
         doClientTests(pmd);
 
+    #if ! BEAST_NO_SLOW_TESTS
         pmd.client_enable = true;
         pmd.server_enable = true;
         pmd.client_max_window_bits = 10;
@@ -1387,6 +1929,7 @@ public:
         pmd.client_max_window_bits = 10;
         pmd.client_no_context_takeover = true;
         doClientTests(pmd);
+    #endif
     }
 };
 

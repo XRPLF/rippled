@@ -9,7 +9,7 @@
 #include <beast/websocket/detail/utf8_checker.hpp>
 
 #include <beast/core/consuming_buffers.hpp>
-#include <beast/core/streambuf.hpp>
+#include <beast/core/multi_buffer.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <array>
 
@@ -49,7 +49,7 @@ public:
                 BEAST_EXPECT(! utf8.write(&(*it), 1));
 
         // Invalid sequence
-        std::fill(buf.begin(), buf.end(), 0xFF);
+        std::fill(buf.begin(), buf.end(), '\xff');
         BEAST_EXPECT(! utf8.write(&buf.front(), buf.size()));
     }
 
@@ -379,15 +379,15 @@ public:
                 consuming_buffers<
                     boost::asio::const_buffers_1> cb{
                         boost::asio::const_buffers_1(s.data(), n)};
-                streambuf sb{size};
+                multi_buffer b;
                 while(n)
                 {
                     auto const amount = (std::min)(n, size);
-                    sb.commit(buffer_copy(sb.prepare(amount), cb));
+                    b.commit(buffer_copy(b.prepare(amount), cb));
                     cb.consume(amount);
                     n -= amount;
                 }
-                BEAST_EXPECT(utf8.write(sb.data()));
+                BEAST_EXPECT(utf8.write(b.data()));
                 BEAST_EXPECT(utf8.finish());
             }
         }
@@ -403,7 +403,9 @@ public:
     }
 };
 
+#if defined(NDEBUG) && ! BEAST_NO_SLOW_TESTS
 BEAST_DEFINE_TESTSUITE(utf8_checker,websocket,beast);
+#endif
 
 } // detail
 } // websocket

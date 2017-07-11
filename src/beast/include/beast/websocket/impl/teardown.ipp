@@ -8,10 +8,12 @@
 #ifndef BEAST_WEBSOCKET_IMPL_TEARDOWN_IPP
 #define BEAST_WEBSOCKET_IMPL_TEARDOWN_IPP
 
-#include <beast/core/async_completion.hpp>
-#include <beast/core/handler_concepts.hpp>
-#include <beast/core/handler_helpers.hpp>
+#include <beast/core/async_result.hpp>
 #include <beast/core/handler_ptr.hpp>
+#include <beast/core/type_traits.hpp>
+#include <boost/asio/handler_alloc_hook.hpp>
+#include <boost/asio/handler_continuation_hook.hpp>
+#include <boost/asio/handler_invoke_hook.hpp>
 #include <memory>
 
 namespace beast {
@@ -33,10 +35,10 @@ class teardown_tcp_op
         int state = 0;
 
         data(Handler& handler, socket_type& socket_)
-            : cont(beast_asio_helpers::
-                is_continuation(handler))
-            , socket(socket_)
+            : socket(socket_)
         {
+            using boost::asio::asio_handler_is_continuation;
+            cont = asio_handler_is_continuation(std::addressof(handler));
         }
     };
 
@@ -59,16 +61,18 @@ public:
     void* asio_handler_allocate(std::size_t size,
         teardown_tcp_op* op)
     {
-        return beast_asio_helpers::
-            allocate(size, op->d_.handler());
+        using boost::asio::asio_handler_allocate;
+        return asio_handler_allocate(
+            size, std::addressof(op->d_.handler()));
     }
 
     friend
     void asio_handler_deallocate(void* p,
         std::size_t size, teardown_tcp_op* op)
     {
-        return beast_asio_helpers::
-            deallocate(p, size, op->d_.handler());
+        using boost::asio::asio_handler_deallocate;
+        asio_handler_deallocate(
+            p, size, std::addressof(op->d_.handler()));
     }
 
     friend
@@ -82,8 +86,9 @@ public:
     void asio_handler_invoke(Function&& f,
         teardown_tcp_op* op)
     {
-        return beast_asio_helpers::
-            invoke(f, op->d_.handler());
+        using boost::asio::asio_handler_invoke;
+        asio_handler_invoke(
+            f, std::addressof(op->d_.handler()));
     }
 };
 
@@ -152,7 +157,7 @@ async_teardown(teardown_tag,
     boost::asio::ip::tcp::socket& socket,
         TeardownHandler&& handler)
 {
-    static_assert(beast::is_CompletionHandler<
+    static_assert(beast::is_completion_handler<
         TeardownHandler, void(error_code)>::value,
             "TeardownHandler requirements not met");
     detail::teardown_tcp_op<typename std::decay<

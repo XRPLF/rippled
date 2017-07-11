@@ -8,10 +8,13 @@
 // Test that header file is self-contained.
 #include <beast/core/buffers_adapter.hpp>
 
-#include <beast/core/streambuf.hpp>
+#include "buffer_test.hpp"
+#include <beast/core/ostream.hpp>
+#include <beast/core/multi_buffer.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/streambuf.hpp>
+#include <boost/lexical_cast.hpp>
 #include <iterator>
 
 namespace beast {
@@ -24,14 +27,8 @@ public:
     std::string
     to_string(ConstBufferSequence const& bs)
     {
-        using boost::asio::buffer_cast;
-        using boost::asio::buffer_size;
-        std::string s;
-        s.reserve(buffer_size(bs));
-        for(auto const& b : bs)
-            s.append(buffer_cast<char const*>(b),
-                buffer_size(b));
-        return s;
+        return boost::lexical_cast<
+            std::string>(buffers(bs));
     }
 
     void testBuffersAdapter()
@@ -155,19 +152,19 @@ public:
         using boost::asio::buffer_size;
         {
             using sb_type = boost::asio::streambuf;
-            sb_type sb;
+            sb_type b;
             buffers_adapter<
-                sb_type::mutable_buffers_type> ba(sb.prepare(3));
+                sb_type::mutable_buffers_type> ba(b.prepare(3));
             BEAST_EXPECT(buffer_size(ba.prepare(3)) == 3);
             ba.commit(2);
             BEAST_EXPECT(buffer_size(ba.data()) == 2);
         }
         {
-            using sb_type = beast::streambuf;
-            sb_type sb(2);
-            sb.prepare(3);
+            using sb_type = beast::multi_buffer;
+            sb_type b;
+            b.prepare(3);
             buffers_adapter<
-                sb_type::mutable_buffers_type> ba(sb.prepare(8));
+                sb_type::mutable_buffers_type> ba(b.prepare(8));
             BEAST_EXPECT(buffer_size(ba.prepare(8)) == 8);
             ba.commit(2);
             BEAST_EXPECT(buffer_size(ba.data()) == 2);
@@ -178,10 +175,22 @@ public:
             ba.consume(5);
         }
     }
+
+    void
+    testIssue386()
+    {
+        using type = boost::asio::streambuf;
+        type buffer;
+        buffers_adapter<
+            type::mutable_buffers_type> ba{buffer.prepare(512)};
+        read_size(ba, 1024);
+    }
+
     void run() override
     {
         testBuffersAdapter();
         testCommit();
+        testIssue386();
     }
 };
 

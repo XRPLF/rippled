@@ -15,6 +15,7 @@
 #include <functional>
 #include <mutex>
 #include <thread>
+#include <vector>
 
 namespace beast {
 namespace test {
@@ -32,30 +33,31 @@ protected:
 
 private:
     boost::optional<boost::asio::io_service::work> work_;
-    std::thread thread_;
+    std::vector<std::thread> threads_;
     std::mutex m_;
     std::condition_variable cv_;
-    bool running_ = false;
+    std::size_t running_ = 0;
 
 public:
     /// The type of yield context passed to functions.
     using yield_context =
         boost::asio::yield_context;
 
-    enable_yield_to()
+    explicit
+    enable_yield_to(std::size_t concurrency = 1)
         : work_(ios_)
-        , thread_([&]
-            {
-                ios_.run();
-            }
-        )
     {
+        threads_.reserve(concurrency);
+        while(concurrency--)
+            threads_.emplace_back(
+                [&]{ ios_.run(); });
     }
 
     ~enable_yield_to()
     {
         work_ = boost::none;
-        thread_.join();
+        for(auto& t : threads_)
+            t.join();
     }
 
     /// Return the `io_service` associated with the object
@@ -65,61 +67,65 @@ public:
         return ios_;
     }
 
-    /** Run a function in a coroutine.
+    /** Run one or more functions, each in a coroutine.
 
-        This call will block until the coroutine terminates.
+        This call will block until all coroutines terminate.
 
-        Function will be called with this signature:
-
+        Each functions should have this signature:
         @code
-            void f(args..., yield_context);
+            void f(yield_context);
         @endcode
 
-        @param f The Callable object to invoke.
-
-        @param args Optional arguments forwarded to the callable object.
+        @param fn... One or more functions to invoke.
     */
-#if GENERATING_DOCS
-    template<class F, class... Args>
+#if BEAST_DOXYGEN
+    template<class... FN>
     void
-    yield_to(F&& f, Args&&... args);
+    yield_to(FN&&... fn)
 #else
-    template<class F>
+    template<class F0, class... FN>
     void
-    yield_to(F&& f);
-
-    template<class Function, class Arg, class... Args>
-    void
-    yield_to(Function&& f, Arg&& arg, Args&&... args)
-    {
-        yield_to(std::bind(f,
-            std::forward<Arg>(arg),
-                std::forward<Args>(args)...,
-                    std::placeholders::_1));
-    }
+    yield_to(F0&& f0, FN&&... fn);
 #endif
+
+private:
+    void
+    spawn()
+    {
+    }
+
+    template<class F0, class... FN>
+    void
+    spawn(F0&& f, FN&&... fn);
 };
 
-template<class Function>
+template<class F0, class... FN>
 void
-enable_yield_to::yield_to(Function&& f)
+enable_yield_to::
+yield_to(F0&& f0, FN&&... fn)
 {
-    {
-        std::lock_guard<std::mutex> lock(m_);
-        running_ = true;
-    }
+    running_ = 1 + sizeof...(FN);
+    spawn(f0, fn...);
+    std::unique_lock<std::mutex> lock{m_};
+    cv_.wait(lock, [&]{ return running_ == 0; });
+}
+
+template<class F0, class... FN>
+inline
+void
+enable_yield_to::
+spawn(F0&& f, FN&&... fn)
+{
     boost::asio::spawn(ios_,
-        [&](boost::asio::yield_context do_yield)
+        [&](yield_context yield)
         {
-            f(do_yield);
-            std::lock_guard<std::mutex> lock(m_);
-            running_ = false;
-            cv_.notify_all();
+            f(yield);
+            std::lock_guard<std::mutex> lock{m_};
+            if(--running_ == 0)
+                cv_.notify_all();
         }
         , boost::coroutines::attributes(2 * 1024 * 1024));
-
-    std::unique_lock<std::mutex> lock(m_);
-    cv_.wait(lock, [&]{ return ! running_; });
+    spawn(fn...);
 }
 
 } // test

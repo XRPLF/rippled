@@ -8,12 +8,13 @@
 #ifndef BEAST_TEST_STRING_ISTREAM_HPP
 #define BEAST_TEST_STRING_ISTREAM_HPP
 
-#include <beast/core/async_completion.hpp>
+#include <beast/core/async_result.hpp>
 #include <beast/core/bind_handler.hpp>
 #include <beast/core/error.hpp>
-#include <beast/core/prepare_buffer.hpp>
+#include <beast/websocket/teardown.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_service.hpp>
+#include <boost/throw_exception.hpp>
 #include <string>
 
 namespace beast {
@@ -56,7 +57,7 @@ public:
         error_code ec;
         auto const n = read_some(buffers, ec);
         if(ec)
-            throw system_error{ec};
+            BOOST_THROW_EXCEPTION(system_error{ec});
         return n;
     }
 
@@ -66,17 +67,22 @@ public:
         error_code& ec)
     {
         auto const n = boost::asio::buffer_copy(
-            buffers, prepare_buffer(read_max_, cb_));
+            buffers, cb_, read_max_);
         if(n > 0)
+        {
+            ec.assign(0, ec.category());
             cb_ = cb_ + n;
+        }
         else
+        {
             ec = boost::asio::error::eof;
+        }
         return n;
     }
 
     template<class MutableBufferSequence, class ReadHandler>
-    typename async_completion<ReadHandler,
-        void(error_code, std::size_t)>::result_type
+    async_return_type<
+        ReadHandler, void(error_code, std::size_t)>
     async_read_some(MutableBufferSequence const& buffers,
         ReadHandler&& handler)
     {
@@ -88,10 +94,10 @@ public:
         else
             ec = boost::asio::error::eof;
         async_completion<ReadHandler,
-            void(error_code, std::size_t)> completion{handler};
+            void(error_code, std::size_t)> init{handler};
         ios_.post(bind_handler(
-            completion.handler, ec, n));
-        return completion.result.get();
+            init.completion_handler, ec, n));
+        return init.result.get();
     }
 
     template<class ConstBufferSequence>
@@ -101,29 +107,51 @@ public:
         error_code ec;
         auto const n = write_some(buffers, ec);
         if(ec)
-            throw system_error{ec};
+            BOOST_THROW_EXCEPTION(system_error{ec});
         return n;
     }
 
     template<class ConstBufferSequence>
     std::size_t
     write_some(ConstBufferSequence const& buffers,
-        error_code&)
+        error_code& ec)
     {
+        ec.assign(0, ec.category());
         return boost::asio::buffer_size(buffers);
     }
 
     template<class ConstBuffeSequence, class WriteHandler>
-    typename async_completion<WriteHandler,
-        void(error_code, std::size_t)>::result_type
+    async_return_type<
+        WriteHandler, void(error_code, std::size_t)>
     async_write_some(ConstBuffeSequence const& buffers,
         WriteHandler&& handler)
     {
         async_completion<WriteHandler,
-            void(error_code, std::size_t)> completion{handler};
-        ios_.post(bind_handler(completion.handler,
+            void(error_code, std::size_t)> init{handler};
+        ios_.post(bind_handler(init.completion_handler,
             error_code{}, boost::asio::buffer_size(buffers)));
-        return completion.result.get();
+        return init.result.get();
+    }
+
+    friend
+    void
+    teardown(websocket::teardown_tag,
+        string_istream&,
+            boost::system::error_code& ec)
+    {
+        ec.assign(0, ec.category());
+    }
+
+    template<class TeardownHandler>
+    friend
+    void
+    async_teardown(websocket::teardown_tag,
+        string_istream& stream,
+            TeardownHandler&& handler)
+    {
+        stream.get_io_service().post(
+            bind_handler(std::move(handler),
+                error_code{}));
     }
 };
 

@@ -8,8 +8,10 @@
 #ifndef BEAST_BIND_DETAIL_HANDLER_HPP
 #define BEAST_BIND_DETAIL_HANDLER_HPP
 
-#include <beast/core/handler_helpers.hpp>
 #include <beast/core/detail/integer_sequence.hpp>
+#include <boost/asio/handler_alloc_hook.hpp>
+#include <boost/asio/handler_continuation_hook.hpp>
+#include <boost/asio/handler_invoke_hook.hpp>
 #include <utility>
 
 namespace beast {
@@ -68,8 +70,9 @@ public:
     asio_handler_allocate(
         std::size_t size, bound_handler* h)
     {
-        return beast_asio_helpers::
-            allocate(size, h->h_);
+        using boost::asio::asio_handler_allocate;
+        return asio_handler_allocate(
+            size, std::addressof(h->h_));
     }
 
     friend
@@ -77,16 +80,17 @@ public:
     asio_handler_deallocate(
         void* p, std::size_t size, bound_handler* h)
     {
-        beast_asio_helpers::
-            deallocate(p, size, h->h_);
+        using boost::asio::asio_handler_deallocate;
+        asio_handler_deallocate(
+            p, size, std::addressof(h->h_));
     }
 
     friend
     bool
     asio_handler_is_continuation(bound_handler* h)
     {
-        return beast_asio_helpers::
-            is_continuation (h->h_);
+        using boost::asio::asio_handler_is_continuation;
+        return asio_handler_is_continuation(std::addressof(h->h_));
     }
 
     template<class F>
@@ -94,8 +98,9 @@ public:
     void
     asio_handler_invoke(F&& f, bound_handler* h)
     {
-        beast_asio_helpers::
-            invoke(f, h->h_);
+        using boost::asio::asio_handler_invoke;
+        asio_handler_invoke(
+            f, std::addressof(h->h_));
     }
 };
 
