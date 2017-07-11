@@ -66,22 +66,9 @@ LedgerMaster::LedgerMaster (Application& app, Stopwatch& stopwatch,
     : Stoppable ("LedgerMaster", parent)
     , app_ (app)
     , m_journal (journal)
-    , mLastValidLedger (std::make_pair (uint256(), 0))
     , mLedgerHistory (collector, app)
-    , mHeldTransactions (uint256 ())
     , mLedgerCleaner (detail::make_LedgerCleaner (
         app, *this, app_.journal("LedgerCleaner")))
-    , mLastValidateSeq (0)
-    , mAdvanceThread (false)
-    , mAdvanceWork (false)
-    , mFillInProgress (0)
-    , mPathFindThread (0)
-    , mPathFindNewRequest (false)
-    , mPubLedgerClose (0)
-    , mPubLedgerSeq (0)
-    , mValidLedgerSign (0)
-    , mValidLedgerSeq (0)
-    , mBuildingLedgerSeq (0)
     , standalone_ (app_.config().standalone())
     , fetch_depth_ (app_.getSHAMapStore ().clampFetchDepth (
         app_.config().FETCH_DEPTH))
@@ -89,7 +76,6 @@ LedgerMaster::LedgerMaster (Application& app, Stopwatch& stopwatch,
     , ledger_fetch_size_ (app_.config().getSize (siLedgerFetch))
     , fetch_packs_ ("FetchPack", 65536, 45, stopwatch,
         app_.journal("TaggedCache"))
-    , fetch_seq_ (0)
 {
 }
 
@@ -221,6 +207,10 @@ LedgerMaster::setValidLedger(
 
     mValidLedger.set (l);
     mValidLedgerSign = signTime.time_since_epoch().count();
+    assert (mValidLedgerSeq ||
+            !app_.getMaxDisallowedLedger() ||
+            l->info().seq + max_ledger_difference_ >
+                    app_.getMaxDisallowedLedger());
     mValidLedgerSeq = l->info().seq;
 
     app_.getOPs().updateLocalTx (*l);

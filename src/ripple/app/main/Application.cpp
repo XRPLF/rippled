@@ -52,11 +52,14 @@
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/make_Overlay.h>
 #include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/Protocol.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/asio/steady_timer.hpp>
 #include <fstream>
+#include <sstream>
+#include <iostream>
 
 namespace ripple {
 
@@ -77,7 +80,7 @@ private:
     beast::Journal j_;
 
     // missing node handler
-    std::uint32_t maxSeq = 0;
+    LedgerIndex maxSeq = 0;
     std::mutex maxSeqLock;
 
     void acquire (
@@ -1006,8 +1009,17 @@ public:
         setSweepTimer();
     }
 
+    LedgerIndex getMaxDisallowedLedger() override
+    {
+        return maxDisallowedLedger_;
+    }
+
 
 private:
+    // For a newly-started validator, this is the greatest persisted ledger
+    // and new validations must be greater than this.
+    std::atomic<LedgerIndex> maxDisallowedLedger_ {0};
+
     void addTxnSeqField();
     void addValidationSeqFields();
     bool updateTables ();
@@ -1024,6 +1036,8 @@ private:
         std::string const& ledgerID,
         bool replay,
         bool isFilename);
+
+    void setMaxDisallowedLedger();
 };
 
 //------------------------------------------------------------------------------
@@ -1072,6 +1086,9 @@ bool ApplicationImp::setup()
         JLOG(m_journal.fatal()) << "Cannot create database connections!";
         return false;
     }
+
+    if (validatorKeys_.publicKey.size())
+        setMaxDisallowedLedger();
 
     getLedgerDB ().getSession ()
         << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
@@ -1987,6 +2004,21 @@ bool ApplicationImp::updateTables ()
 
     return true;
 }
+
+void ApplicationImp::setMaxDisallowedLedger()
+{
+    boost::optional <LedgerIndex> seq;
+    {
+        auto db = getLedgerDB().checkoutDb();
+        *db << "SELECT MAX(LedgerSeq) FROM Ledgers;", soci::into(seq);
+    }
+    if (seq)
+        maxDisallowedLedger_ = *seq;
+
+    JLOG (m_journal.trace()) << "Max persisted ledger is "
+                             << maxDisallowedLedger_;
+}
+
 
 //------------------------------------------------------------------------------
 
