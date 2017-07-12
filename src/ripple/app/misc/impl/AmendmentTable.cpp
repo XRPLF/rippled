@@ -157,6 +157,9 @@ protected:
     // we haven't participated in one yet.
     std::unique_ptr <AmendmentSet> lastVote_;
 
+    // True if an unsupported amendment is enabled
+    bool unsupportedEnabled_;
+
     beast::Journal j_;
 
     // Finds or creates state
@@ -186,6 +189,8 @@ public:
 
     bool isEnabled (uint256 const& amendment) override;
     bool isSupported (uint256 const& amendment) override;
+
+    bool hasUnsupportedEnabled () override;
 
     Json::Value getJson (int) override;
     Json::Value getJson (uint256 const&) override;
@@ -222,6 +227,7 @@ AmendmentTableImpl::AmendmentTableImpl (
     : lastUpdateSeq_ (0)
     , majorityTime_ (majorityTime)
     , majorityFraction_ (majorityFraction)
+    , unsupportedEnabled_ (false)
     , j_ (journal)
 {
     assert (majorityFraction_ != 0);
@@ -340,6 +346,14 @@ AmendmentTableImpl::enable (uint256 const& amendment)
         return false;
 
     s->enabled = true;
+
+    if (! s->supported)
+    {
+        JLOG (j_.error()) <<
+            "Unsupported amendment " << amendment << " activated.";
+        unsupportedEnabled_ = true;
+    }
+
     return true;
 }
 
@@ -370,6 +384,13 @@ AmendmentTableImpl::isSupported (uint256 const& amendment)
     std::lock_guard <std::mutex> sl (mutex_);
     auto s = get (amendment);
     return s && s->supported;
+}
+
+bool
+AmendmentTableImpl::hasUnsupportedEnabled ()
+{
+    std::lock_guard <std::mutex> sl (mutex_);
+    return unsupportedEnabled_;
 }
 
 std::vector <uint256>
@@ -523,10 +544,8 @@ AmendmentTableImpl::doValidatedLedger (
     LedgerIndex ledgerSeq,
     std::set<uint256> const& enabled)
 {
-    std::lock_guard <std::mutex> sl (mutex_);
-
-    for (auto& e : amendmentMap_)
-        e.second.enabled = (enabled.count (e.first) != 0);
+    for (auto& e : enabled)
+        enable(e);
 }
 
 void
