@@ -21,7 +21,7 @@
 #define BEAST_UTILITY_TAGGED_INTEGER_H_INCLUDED
 
 #include <ripple/beast/hash/hash_append.h>
-
+#include <boost/operators.hpp>
 #include <functional>
 #include <iostream>
 #include <type_traits>
@@ -29,23 +29,22 @@
 
 namespace ripple {
 
-/** A type-safe wrap around standard unsigned integral types
+/** A type-safe wrap around standard integral types
 
     The tag is used to implement type safety, catching mismatched types at
     compile time. Multiple instantiations wrapping the same underlying integral
-    type are distinct types (distinguished by tag) and will not interoperate.
+    type are distinct types (distinguished by tag) and will not interoperate. A
+    tagged_integer supports all the usual assignment, arithmetic, comparison and
+    shifting operations defined for the underlying type
 
-    A tagged_integer supports all the comparison operators that are available
-    for the underlying integral type. It only supports a subset of arithmetic
-    operators, restricting mutation to only safe and meaningful types.
+    The tag is not meant as a unit, which would require restricting the set of
+    allowed arithmetic operations.
 */
 template <class Int, class Tag>
-class tagged_integer
+class tagged_integer : boost::operators<tagged_integer<Int, Tag>>
+                     , boost::shiftable<tagged_integer<Int, Tag>>
 {
 private:
-    static_assert (std::is_unsigned <Int>::value,
-        "The specified Int type must be unsigned");
-
     Int m_value;
 
 public:
@@ -56,32 +55,121 @@ public:
 
     template <
         class OtherInt,
-        class = typename std::enable_if <
-            std::is_integral <OtherInt>::value &&
-            sizeof (OtherInt) <= sizeof (Int)
-        >::type
-    >
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value &&
+            sizeof(OtherInt) <= sizeof(Int)>::type>
     explicit
-    /* constexpr */
-    tagged_integer (OtherInt value) noexcept
-        : m_value (value)
+        /* constexpr */
+        tagged_integer(OtherInt value) noexcept
+        : m_value(value)
     {
     }
 
-    // Arithmetic operators
+    bool
+    operator<(const tagged_integer & rhs) const noexcept
+    {
+        return m_value < rhs.m_value;
+    }
+
+    bool
+    operator==(const tagged_integer & rhs) const noexcept
+    {
+        return m_value == rhs.m_value;
+    }
+
+    tagged_integer&
+    operator+=(tagged_integer const& rhs) noexcept
+    {
+        m_value += rhs.m_value;
+        return *this;
+    }
+
+    tagged_integer&
+    operator-=(tagged_integer const& rhs) noexcept
+    {
+        m_value -= rhs.m_value;
+        return *this;
+    }
+
+    tagged_integer&
+    operator*=(tagged_integer const& rhs) noexcept
+    {
+        m_value *= rhs.m_value;
+        return *this;
+    }
+
+    tagged_integer&
+    operator/=(tagged_integer const& rhs) noexcept
+    {
+        m_value /= rhs.m_value;
+        return *this;
+    }
+
+    tagged_integer&
+    operator%=(tagged_integer const& rhs) noexcept
+    {
+        m_value %= rhs.m_value;
+        return *this;
+    }
+
+    tagged_integer&
+    operator|=(tagged_integer const& rhs) noexcept
+    {
+        m_value |= rhs.m_value;
+        return *this;
+    }
+
+    tagged_integer&
+    operator&=(tagged_integer const& rhs) noexcept
+    {
+        m_value &= rhs.m_value;
+        return *this;
+    }
+
+    tagged_integer&
+    operator^=(tagged_integer const& rhs) noexcept
+    {
+        m_value ^= rhs.m_value;
+        return *this;
+    }
+
+    tagged_integer&
+    operator<<=(const tagged_integer& rhs) noexcept
+    {
+        m_value <<= rhs.m_value;
+        return *this;
+    }
+
+    tagged_integer&
+    operator>>=(const tagged_integer& rhs) noexcept
+    {
+        m_value >>= rhs.m_value;
+        return *this;
+    }
+
+    tagged_integer
+    operator~() const noexcept
+    {
+        return tagged_integer{~m_value};
+    }
+
+    tagged_integer
+    operator+() const noexcept
+    {
+        return *this;
+    }
+
+    tagged_integer
+    operator-() const noexcept
+    {
+        return tagged_integer{-m_value};
+    }
+
     tagged_integer&
     operator++ () noexcept
     {
         ++m_value;
         return *this;
-    }
-
-    tagged_integer
-    operator++ (int) noexcept
-    {
-        tagged_integer orig (*this);
-        ++(*this);
-        return orig;
     }
 
     tagged_integer&
@@ -91,127 +179,10 @@ public:
         return *this;
     }
 
-    tagged_integer
-    operator-- (int) noexcept
+    explicit
+    operator Int() const noexcept
     {
-        tagged_integer orig (*this);
-        --(*this);
-        return orig;
-    }
-
-    template <class OtherInt>
-    typename std::enable_if <
-        std::is_integral <OtherInt>::value &&
-            sizeof (OtherInt) <= sizeof (Int),
-    tagged_integer <Int, Tag>>::type&
-    operator+= (OtherInt rhs) noexcept
-    {
-        m_value += rhs;
-        return *this;
-    }
-
-    template <class OtherInt>
-    typename std::enable_if <
-        std::is_integral <OtherInt>::value &&
-            sizeof (OtherInt) <= sizeof (Int),
-    tagged_integer <Int, Tag>>::type&
-    operator-= (OtherInt rhs) noexcept
-    {
-        m_value -= rhs;
-        return *this;
-    }
-
-    template <class OtherInt>
-    friend
-    typename std::enable_if <
-        std::is_integral <OtherInt>::value &&
-            sizeof (OtherInt) <= sizeof (Int),
-    tagged_integer <Int, Tag>>::type
-    operator+ (tagged_integer const& lhs,
-               OtherInt rhs) noexcept
-    {
-        return tagged_integer (lhs.m_value + rhs);
-    }
-
-    template <class OtherInt>
-    friend
-    typename std::enable_if <
-        std::is_integral <OtherInt>::value &&
-            sizeof (OtherInt) <= sizeof (Int),
-    tagged_integer <Int, Tag>>::type
-    operator+ (OtherInt lhs,
-               tagged_integer const& rhs) noexcept
-    {
-        return tagged_integer (lhs + rhs.m_value);
-    }
-
-    template <class OtherInt>
-    friend
-    typename std::enable_if <
-        std::is_integral <OtherInt>::value &&
-            sizeof (OtherInt) <= sizeof (Int),
-    tagged_integer <Int, Tag>>::type
-    operator- (tagged_integer const& lhs,
-               OtherInt rhs) noexcept
-    {
-        return tagged_integer (lhs.m_value - rhs);
-    }
-
-    friend
-    Int
-    operator- (tagged_integer const& lhs,
-               tagged_integer const& rhs) noexcept
-    {
-        return lhs.m_value - rhs.m_value;
-    }
-
-    // Comparison operators
-    friend
-    bool
-    operator== (tagged_integer const& lhs,
-                tagged_integer const& rhs) noexcept
-    {
-        return lhs.m_value == rhs.m_value;
-    }
-
-    friend
-    bool
-    operator!= (tagged_integer const& lhs,
-                tagged_integer const& rhs) noexcept
-    {
-        return lhs.m_value != rhs.m_value;
-    }
-
-    friend
-    bool
-    operator< (tagged_integer const& lhs,
-               tagged_integer const& rhs) noexcept
-    {
-        return lhs.m_value < rhs.m_value;
-    }
-
-    friend
-    bool
-    operator<= (tagged_integer const& lhs,
-                tagged_integer const& rhs) noexcept
-    {
-        return lhs.m_value <= rhs.m_value;
-    }
-
-    friend
-    bool
-    operator> (tagged_integer const& lhs,
-               tagged_integer const& rhs) noexcept
-    {
-        return lhs.m_value > rhs.m_value;
-    }
-
-    friend
-    bool
-    operator>= (tagged_integer const& lhs,
-                tagged_integer const& rhs) noexcept
-    {
-        return lhs.m_value >= rhs.m_value;
+        return m_value;
     }
 
     friend
@@ -228,6 +199,13 @@ public:
     {
         s >> t.m_value;
         return s;
+    }
+
+    friend
+    std::string
+    to_string(tagged_integer const& t)
+    {
+        return std::to_string(t.m_value);
     }
 };
 
