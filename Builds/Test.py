@@ -157,7 +157,7 @@ parser.add_argument(
 parser.add_argument(
     '--clean', '-c',
     action='store_true',
-    help='delete all build artifacts after testing (scons) or before building (CMake)',
+    help='delete all build artifacts after testing',
 )
 
 parser.add_argument(
