@@ -333,6 +333,7 @@ class PreimageSha256_test : public beast::unit_test::suite
                 log << "Fulfillment deserialize error: " << std::get<0>(x) << " " << ec.message() << '\n';
             }
             auto const c = Condition::deserialize (hexblob(std::get<2>(x)), ec);
+            (void) c;
             if (!BEAST_EXPECT(!ec))
             {
                 log << "Condition deserialize error: " << std::get<0>(x) << " " << ec.message() << '\n';

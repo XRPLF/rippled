@@ -19,4 +19,13 @@
 
 #include <test/conditions/Der_test.cpp>
 #include <test/conditions/DerChoice.cpp>
+
 #include <test/conditions/PreimageSha256_test.cpp>
+
+// tests generated from a script
+#include <test/conditions/Conditions_generated_test_ed.cpp>
+#include <test/conditions/Conditions_generated_test_preim.cpp>
+#include <test/conditions/Conditions_generated_test_json.cpp>
+#include <test/conditions/Conditions_generated_test_rsa.cpp>
+#include <test/conditions/Conditions_generated_test_prefix.cpp>
+#include <test/conditions/Conditions_generated_test_thresh.cpp>
