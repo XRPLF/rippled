@@ -255,7 +255,10 @@ class Der_test : public beast::unit_test::suite
 
         using namespace std::string_literals;
 
-        auto doTest = [this](auto const& col, auto numBits) {
+        auto doTest = [this](auto const& col, auto numBitsParam) {
+            // visual studio can't handle bitset<numbits>
+            constexpr typename decltype(numBitsParam)::value_type numBits =
+                decltype(numBitsParam)::value;
             for (auto const& ts : col)
             {
                 std::bitset<numBits> bitset{ts.first};

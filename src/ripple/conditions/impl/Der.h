@@ -2589,9 +2589,14 @@ struct DerCoderTraits<std::tuple<Ts&...>>
     {
         std::uint64_t l = 0;
         boost::optional<GroupType> thisGroupType(groupType());
-        forEachIndex(std::index_sequence_for<Ts...>{}, [&](auto index) {
+        forEachIndex(std::index_sequence_for<Ts...>{}, [&](auto indexParam) {
+            // visual studio can't handle index as a constexpr
+            constexpr typename decltype(indexParam)::value_type index =
+                decltype(indexParam)::value;
+            // visual studio can't handle std::get<index>, use decltype
             auto const& e = std::get<index>(elements);
             using ElementTraits = DerCoderTraits<std::decay_t<decltype(e)>>;
+            // visual studio can't handle childNum = index, use decltype
             std::uint64_t childNum = index;
             l += totalLength<ElementTraits>(
                 e, thisGroupType, encoderTagMode, traitsCache, childNum);
