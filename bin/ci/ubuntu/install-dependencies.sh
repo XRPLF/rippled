@@ -67,9 +67,10 @@ tar xfvz lcov-1.12.tar.gz -C $HOME
 mkdir -p $LCOV_ROOT
 cd $HOME/lcov-1.12 && make install PREFIX=$LCOV_ROOT
 
-if [[ ${TARGET} == debug ]]; then
-    #install gdb
+
+if [[ ${TARGET} == debug && ! -x ${GDB_ROOT}/bin/gdb ]]; then
     pushd $HOME
+    #install gdb
     wget https://ftp.gnu.org/gnu/gdb/gdb-8.0.tar.xz
     tar xf gdb-8.0.tar.xz
     pushd gdb-8.0

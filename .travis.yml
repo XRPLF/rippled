@@ -43,6 +43,9 @@ matrix:
 
     - compiler: clang
       env: GCC_VER=5 TARGET=debug CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
+      cache:
+        directories:
+          - $GDB_ROOT
 
     - compiler: clang
       env: GCC_VER=5 TARGET=debug.nounity CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
@@ -59,6 +62,7 @@ cache:
   - $BOOST_ROOT
   - llvm-$LLVM_VERSION
   - cmake
+  - $GDB_ROOT
 
 before_install:
   - bin/ci/ubuntu/install-dependencies.sh
