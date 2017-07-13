@@ -171,7 +171,7 @@ encodeContentLength(MutableSlice& dst, std::uint64_t v, std::error_code& ec)
         dst.push_back(static_cast<char>((v >> (n * 8)) & 0xFF));
 }
 
-size_t
+std::uint64_t
 contentLengthLength(std::uint64_t v)
 {
     if (v <= 127)
