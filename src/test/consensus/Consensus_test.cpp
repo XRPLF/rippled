@@ -175,30 +175,30 @@ public:
     }
 
     void
-    testSlowPeer()
+    testSlowPeers()
     {
         using namespace csf;
         using namespace std::chrono;
 
-        // Run two tests
-        //  1. The slow peer is participating in consensus
-        //  2. The slow peer is just observing
+        // Several tests of a complete trust graph with a subset of peers
+        // that have significantly longer network delays to the rest of the
+        // network
 
-        for (auto isParticipant : {true, false})
+        // Test when a slow peer doesn't delay a consensus quorum (4/5 agree)
         {
             ConsensusParms parms;
             auto tg = TrustGraph::makeComplete(5);
 
+            // Peers 0 is slow, 1-4 are fast
+            // This choice is based on parms.minCONSENSUS_PCT of 80
             Sim sim(parms, tg, topology(tg, [&](PeerID i, PeerID j) {
                         auto delayFactor = (i == 0 || j == 0) ? 1.1 : 0.2;
                         return round<milliseconds>(
                             delayFactor * parms.ledgerGRANULARITY);
                     }));
 
-            sim.peers[0].proposing_ = sim.peers[0].validating_ = isParticipant;
-
-            // All peers submit their own ID as a transaction and relay it to
-            // peers
+            // All peers submit their own ID as a transaction and relay it
+            // to peers
             for (auto& p : sim.peers)
             {
                 p.submit(Tx{p.id});
@@ -213,40 +213,110 @@ public:
                 auto const& lgrID = p.prevLedgerID();
                 BEAST_EXPECT(lgrID.seq == 1);
 
-                // If peer 0 is participating
-                if (isParticipant)
-                {
-                    BEAST_EXPECT(p.prevProposers() == sim.peers.size() - 1);
-                    // Peer 0 closes first because it sees a quorum of agreeing
-                    // positions from all other peers in one hop (1->0, 2->0,
-                    // ..) The other peers take an extra timer period before
-                    // they find that Peer 0 agrees with them ( 1->0->1,
-                    // 2->0->2, ...)
-                    if (p.id != 0)
-                        BEAST_EXPECT(
-                            p.prevRoundTime() > sim.peers[0].prevRoundTime());
-                }
-                else  // peer 0 is not participating
-                {
-                    auto const proposers = p.prevProposers();
-                    if (p.id == 0)
-                        BEAST_EXPECT(proposers == sim.peers.size() - 1);
-                    else
-                        BEAST_EXPECT(proposers == sim.peers.size() - 2);
-
-                    // so all peers should have closed together
-                    BEAST_EXPECT(
-                        p.prevRoundTime() == sim.peers[0].prevRoundTime());
-                }
+                BEAST_EXPECT(p.prevProposers() == sim.peers.size() - 1);
+                BEAST_EXPECT(p.prevRoundTime() == sim.peers[0].prevRoundTime());
 
                 BEAST_EXPECT(lgrID.txs.find(Tx{0}) == lgrID.txs.end());
-                for (std::uint32_t i = 1; i < sim.peers.size(); ++i)
+                for (std::uint32_t i = 2; i < sim.peers.size(); ++i)
                     BEAST_EXPECT(lgrID.txs.find(Tx{i}) != lgrID.txs.end());
                 // Matches peer 0 ledger
                 BEAST_EXPECT(lgrID.txs == sim.peers[0].prevLedgerID().txs);
             }
             BEAST_EXPECT(
                 sim.peers[0].openTxs.find(Tx{0}) != sim.peers[0].openTxs.end());
+        }
+
+        // Test when the slow peers delay a consensus quorum (4/6  agree)
+        {
+            // Run two tests
+            //  1. The slow peers are participating in consensus
+            //  2. The slow peers are just observing
+
+            for (auto isParticipant : {true, false})
+            {
+                ConsensusParms parms;
+                auto tg = TrustGraph::makeComplete(6);
+
+                // Peers 0,1 are slow, 2-5 are fast
+                // This choice is based on parms.minCONSENSUS_PCT of 80
+                Sim sim(
+                    parms, tg, topology(tg, [&](PeerID i, PeerID j) {
+                        auto delayFactor = (i <= 1 || j <= 1) ? 1.1 : 0.2;
+                        return round<milliseconds>(
+                            delayFactor * parms.ledgerGRANULARITY);
+                    }));
+
+                sim.peers[0].proposing_ = sim.peers[0].validating_ =
+                    isParticipant;
+                sim.peers[1].proposing_ = sim.peers[1].validating_ =
+                    isParticipant;
+
+                // All peers submit their own ID as a transaction and relay it
+                // to peers
+                for (auto& p : sim.peers)
+                {
+                    p.submit(Tx{p.id});
+                }
+
+                sim.run(1);
+
+                // Verify all peers have same LCL but are missing transaction 0
+                // which was not received by all peers before the ledger closed
+                for (auto& p : sim.peers)
+                {
+                    auto const& lgrID = p.prevLedgerID();
+                    BEAST_EXPECT(lgrID.seq == 1);
+
+                    // If peer 0,1 are participating
+                    if (isParticipant)
+                    {
+                        BEAST_EXPECT(p.prevProposers() == sim.peers.size() - 1);
+                        // Due to the network link delay settings
+                        //    Peer 0 initially proposes {0}
+                        //    Peer 1 initially proposes {1}
+                        //    Peers 2-5 initially propose {2,3,4,5}
+                        // Since peers 2-5 agree, 4/6 > the initial 50%
+                        // threshold on disputed transactions, so Peer 0 and 1
+                        // change their position to match peers 2-5 and declare
+                        // consensus now that 5/6 proposed positions match
+                        // (themselves and peers 2-5).
+                        //
+                        // Peers 2-5 do not change position, since tx 0 or tx 1
+                        // have less than the 50% initial threshold.  They also
+                        // cannot declare consensus, since 4/6 < 80% threshold
+                        // agreement on current positions.  Instead, they have
+                        // to wait an additional timerEntry call for the updated
+                        // peer 0 and peer 1 positions to arrive.  Once they do,
+                        // now peers 2-5 see complete agreement and declare
+                        // consensus
+                        if (p.id > 1)
+                            BEAST_EXPECT(
+                                p.prevRoundTime() >
+                                sim.peers[0].prevRoundTime());
+                    }
+                    else  // peer 0,1 are not participating
+                    {
+                        auto const proposers = p.prevProposers();
+                        if (p.id <= 1)
+                            BEAST_EXPECT(proposers == sim.peers.size() - 2);
+                        else
+                            BEAST_EXPECT(proposers == sim.peers.size() - 3);
+
+                        // so all peers should have closed together
+                        BEAST_EXPECT(
+                            p.prevRoundTime() == sim.peers[0].prevRoundTime());
+                    }
+
+                    BEAST_EXPECT(lgrID.txs.find(Tx{0}) == lgrID.txs.end());
+                    for (std::uint32_t i = 2; i < sim.peers.size(); ++i)
+                        BEAST_EXPECT(lgrID.txs.find(Tx{i}) != lgrID.txs.end());
+                    // Matches peer 0 ledger
+                    BEAST_EXPECT(lgrID.txs == sim.peers[0].prevLedgerID().txs);
+                }
+                BEAST_EXPECT(
+                    sim.peers[0].openTxs.find(Tx{0}) !=
+                    sim.peers[0].openTxs.end());
+            }
         }
     }
 
@@ -618,7 +688,7 @@ public:
 
         testStandalone();
         testPeersAgree();
-        testSlowPeer();
+        testSlowPeers();
         testCloseTimeDisagree();
         testWrongLCL();
         testFork();
