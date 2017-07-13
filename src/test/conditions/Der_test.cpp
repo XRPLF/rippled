@@ -214,8 +214,11 @@ class Der_test : public beast::unit_test::suite
             std::fill_n(s.begin(), n, fillChar);
             std::vector<char> expected(expectedHeader);
             auto const headerEnd = expected.size();
-            expected.resize(headerEnd + n);
-            std::fill_n(&expected[headerEnd], n, fillChar);
+            if (n)
+            {
+                expected.resize(headerEnd + n);
+                std::fill_n(&expected[headerEnd], n, fillChar);
+            }
             return std::make_pair(s, expected);
         };
 
