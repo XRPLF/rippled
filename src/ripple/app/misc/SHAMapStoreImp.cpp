@@ -282,10 +282,10 @@ SHAMapStoreImp::copyNode (std::uint64_t& nodeCount,
     if (! (++nodeCount % checkHealthInterval_))
     {
         if (health())
-            return true;
+            return false;
     }
 
-    return false;
+    return true;
 }
 
 void
