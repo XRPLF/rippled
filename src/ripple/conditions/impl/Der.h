@@ -1295,7 +1295,7 @@ struct IntegerTraits
         }
 
         // lengths are equal
-        auto n = std::min(lhsL, sizeof(T) - 1);
+        auto n = std::min<T>(lhsL, sizeof(T) - 1);
         while (n--)
         {
             auto const lhsV = (static_cast<unsigned char>((lhs >> (n * 8)) & 0xFF));
