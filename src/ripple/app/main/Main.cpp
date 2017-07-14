@@ -79,7 +79,7 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 
     if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
     {
-        // If the limit is infnite, then we are good.
+        // If the limit is infinite, then we are good.
         if (rl.rlim_cur == RLIM_INFINITY)
             available = needed;
         else
