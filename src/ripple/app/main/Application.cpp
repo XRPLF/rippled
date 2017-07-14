@@ -896,29 +896,27 @@ public:
 
         if (timer == m_sweepTimer)
         {
-            // VFALCO TODO Move all this into doSweep
-
-            if (! config_->standalone())
-            {
-                boost::filesystem::space_info space =
-                        boost::filesystem::space (config_->legacy ("database_path"));
-
-                // VFALCO TODO Give this magic constant a name and move it into a well documented header
-                //
-                if (space.available < (512 * 1024 * 1024))
-                {
-                    JLOG(m_journal.fatal())
-                        << "Remaining free disk space is less than 512MB";
-                    signalStop ();
-                }
-            }
-
-            m_jobQueue->addJob(jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
+            m_jobQueue->addJob(
+                jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
         }
     }
 
     void doSweep ()
     {
+        if (! config_->standalone())
+        {
+            boost::filesystem::space_info space =
+                boost::filesystem::space (config_->legacy ("database_path"));
+
+            constexpr std::uintmax_t bytes512M = 512 * 1024 * 1024;
+            if (space.available < (bytes512M))
+            {
+                JLOG(m_journal.fatal())
+                    << "Remaining free disk space is less than 512MB";
+                signalStop ();
+            }
+        }
+
         // VFALCO NOTE Does the order of calls matter?
         // VFALCO TODO fix the dependency inversion using an observer,
         //         have listeners register for "onSweep ()" notification.
@@ -934,7 +932,7 @@ public:
         family().treecache().sweep();
         cachedSLEs_.expire();
 
-        // VFALCO NOTE does the call to sweep() happen on another thread?
+        // Set timer to do another sweep later.
         m_sweepTimer.setExpiration (
             std::chrono::seconds {config_->getSize (siSweepInterval)});
     }

@@ -203,9 +203,9 @@ public:
     void setBuildingLedger (LedgerIndex index);
 
     void tryAdvance ();
-    void newPathRequest ();
+    bool newPathRequest (); // Returns true if path request successfully placed.
     bool isNewPathRequest ();
-    void newOrderBookDB ();
+    bool newOrderBookDB (); // Returns true if able to fulfill request.
 
     bool fixIndex (
         LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
@@ -242,6 +242,9 @@ public:
     std::size_t getFetchPackCacheSize () const;
 
 private:
+    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
+    using ScopedUnlockType = GenericScopedUnlock <std::recursive_mutex>;
+
     void setValidLedger(
         std::shared_ptr<Ledger const> const& l);
     void setPubLedger(
@@ -255,8 +258,9 @@ private:
     boost::optional<LedgerHash> getLedgerHashForHistory(LedgerIndex index);
     std::size_t getNeededValidations();
     void advanceThread();
-    // Try to publish ledgers, acquire missing ledgers
-    void doAdvance();
+    // Try to publish ledgers, acquire missing ledgers.  Always called with
+    // m_mutex locked.  The passed ScopedLockType is a reminder to callers.
+    void doAdvance(ScopedLockType&);
     bool shouldFetchPack(std::uint32_t seq) const;
     bool shouldAcquire(
         std::uint32_t const currentLedger,
@@ -268,12 +272,12 @@ private:
     findNewLedgersToPublish();
 
     void updatePaths(Job& job);
-    void newPFWork(const char *name);
+
+    // Returns true if work started.  Always called with m_mutex locked.
+    // The passed ScopedLockType is a reminder to callers.
+    bool newPFWork(const char *name, ScopedLockType&);
 
 private:
-    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
-    using ScopedUnlockType = GenericScopedUnlock <std::recursive_mutex>;
-
     Application& app_;
     beast::Journal m_journal;
 

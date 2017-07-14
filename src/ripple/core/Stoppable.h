@@ -23,6 +23,7 @@
 #include <ripple/beast/core/LockFreeStack.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/beast/core/WaitableEvent.h>
+#include <ripple/core/JobCounter.h>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -167,6 +168,30 @@ class RootStoppable;
         when the last thread is about to exit it would call stopped().
 
     @note A Stoppable may not be restarted.
+
+    The form of the Stoppable tree in the rippled application evolves as
+    the source code changes and reacts to new demands.  As of March in 2017
+    the Stoppable tree had this form:
+
+    @code
+
+                                   Application
+                                        |
+                   +--------------------+--------------------+
+                   |                    |                    |
+              LoadManager          SHAMapStore       NodeStoreScheduler
+                                                             |
+                                                         JobQueue
+                                                             |
+        +-----------+-----------+-----------+-----------+----+--------+
+        |           |           |           |           |             |
+        |       NetworkOPs      |     InboundLedgers    |        OrderbookDB
+        |                       |                       |
+     Overlay           InboundTransactions        LedgerMaster
+        |                                               |
+    PeerFinder                                   LedgerCleaner
+
+    @endcode
 */
 /** @{ */
 class Stoppable
@@ -189,6 +214,9 @@ public:
 
     /** Returns `true` if all children have stopped. */
     bool areChildrenStopped () const;
+
+    /* JobQueue uses this method for Job counting. */
+    inline JobCounter& jobCounter ();
 
     /** Sleep or wake up on stop.
 
@@ -282,9 +310,8 @@ private:
     std::string m_name;
     RootStoppable& m_root;
     Child m_child;
-    std::atomic<bool> m_started;
-    std::atomic<bool> m_stopped;
-    std::atomic<bool> m_childrenStopped;
+    std::atomic<bool> m_stopped {false};
+    std::atomic<bool> m_childrenStopped {false};
     Children m_children;
     beast::WaitableEvent m_stoppedEvent;
 };
@@ -296,7 +323,7 @@ class RootStoppable : public Stoppable
 public:
     explicit RootStoppable (std::string name);
 
-    ~RootStoppable () = default;
+    ~RootStoppable ();
 
     bool isStopping() const;
 
@@ -326,6 +353,18 @@ public:
     */
     void stop (beast::Journal j);
 
+    /** Return true if start() was ever called. */
+    bool started () const
+    {
+        return m_started;
+    }
+
+    /* JobQueue uses this method for Job counting. */
+    JobCounter& rootJobCounter ()
+    {
+        return jobCounter_;
+    }
+
     /** Sleep or wake up on stop.
 
         @return `true` if we are stopping
@@ -346,12 +385,21 @@ private:
     */
     bool stopAsync(beast::Journal j);
 
-    std::atomic<bool> m_prepared;
-    std::atomic<bool> m_calledStop;
+    std::atomic<bool> m_prepared {false};
+    std::atomic<bool> m_started {false};
+    std::atomic<bool> m_calledStop {false};
     std::mutex m_;
     std::condition_variable c_;
+    JobCounter jobCounter_;
 };
 /** @} */
+
+//------------------------------------------------------------------------------
+
+JobCounter& Stoppable::jobCounter ()
+{
+    return m_root.rootJobCounter();
+}
 
 //------------------------------------------------------------------------------
 

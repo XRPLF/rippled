@@ -101,6 +101,15 @@ void OrderBookDB::update(
     {
         for(auto& sle : ledger->sles)
         {
+            if (isStopping())
+            {
+                JLOG (j_.info())
+                    << "OrderBookDB::update exiting due to isStopping";
+                std::lock_guard <std::recursive_mutex> sl (mLock);
+                mSeq = 0;
+                return;
+            }
+
             if (sle->getType () == ltDIR_NODE &&
                 sle->isFieldPresent (sfExchangeRate) &&
                 sle->getFieldH256 (sfRootIndex) == sle->key())
