@@ -253,7 +253,7 @@ RCLConsensus::Adaptor::getPrevLedger(
         // Switch to ledger supported by more peers
         // Or stick with ours on a tie
         if ((it.second > netLgrCount) ||
-            ((it.second== netLgrCount) && (it.first == ledgerID)))
+            ((it.second == netLgrCount) && (it.first == ledgerID)))
         {
             netLgr = it.first;
             netLgrCount = it.second;

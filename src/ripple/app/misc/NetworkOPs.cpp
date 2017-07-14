@@ -1262,41 +1262,6 @@ void NetworkOPsImp::setAmendmentBlocked ()
     setMode (omTRACKING);
 }
 
-class ValidationCount
-{
-public:
-    int trustedValidations, nodesUsing;
-    // Ledger hashes to break ties
-    uint256 highUsingHash, highTrustedValHash;
-    
-
-    ValidationCount () : trustedValidations (0), nodesUsing (0)
-    {
-    }
-
-    bool operator> (const ValidationCount& v) const
-    {
-        if (trustedValidations > v.trustedValidations)
-            return true;
-
-        if (trustedValidations < v.trustedValidations)
-            return false;
-
-        if (trustedValidations == 0)
-        {
-            if (nodesUsing > v.nodesUsing)
-                return true;
-
-            if (nodesUsing < v.nodesUsing)
-                return false;
-
-            return highUsingHash > v.highUsingHash;
-        }
-
-        return highTrustedValHash > v.highTrustedValHash;
-    }
-};
-
 bool NetworkOPsImp::checkLastClosedLedger (
     const Overlay::PeerSequence& peerList, uint256& networkClosed)
 {
@@ -1317,6 +1282,33 @@ bool NetworkOPsImp::checkLastClosedLedger (
     JLOG(m_journal.trace()) << "OurClosed:  " << closedLedger;
     JLOG(m_journal.trace()) << "PrevClosed: " << prevClosedLedger;
 
+    struct ValidationCount
+    {
+        int trustedValidations, nodesUsing;
+
+        ValidationCount() : trustedValidations(0), nodesUsing(0)
+        {
+        }
+
+        auto
+        asTie() const
+        {
+            return std::tie(trustedValidations, nodesUsing);
+        }
+
+        bool
+        operator>(const ValidationCount& v) const
+        {
+            return asTie() > v.asTie();
+        }
+
+        bool
+        operator==(const ValidationCount& v) const
+        {
+            return asTie() == v.asTie();
+        }
+    };
+
     hash_map<uint256, ValidationCount> ledgers;
     {
         hash_map<uint256, std::uint32_t> current =
@@ -1326,13 +1318,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
                 m_ledgerMaster.getValidLedgerIndex());
 
         for (auto& it: current)
-        {
-            auto& vc = ledgers[it.first];
-            vc.trustedValidations += it.second;
-
-            if (it.first > vc.highTrustedValHash)
-                vc.highTrustedValHash = it.first;
-        }
+            ledgers[it.first].trustedValidations += it.second;
     }
 
     auto& ourVC = ledgers[closedLedger];
@@ -1340,9 +1326,6 @@ bool NetworkOPsImp::checkLastClosedLedger (
     if (mMode >= omTRACKING)
     {
         ++ourVC.nodesUsing;
-        
-        if (closedLedger > ourVC.highUsingHash)
-            ourVC.highUsingHash = closedLedger;
     }
 
     for (auto& peer: peerList)
@@ -1350,22 +1333,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
         uint256 peerLedger = peer->getClosedLedgerHash ();
 
         if (peerLedger.isNonZero ())
-        {
-            try
-            {
-                auto& vc = ledgers[peerLedger];
-                if (vc.nodesUsing == 0 || peerLedger > vc.highUsingHash)
-                {
-                    vc.highUsingHash = peerLedger;
-                }
-
-                ++vc.nodesUsing;
-            }
-            catch (std::exception const&)
-            {
-                // Peer is likely not connected anymore
-            }
-        }
+            ++ledgers[peerLedger].nodesUsing;
     }
 
     auto bestVC = ledgers[closedLedger];
@@ -1383,17 +1351,20 @@ bool NetworkOPsImp::checkLastClosedLedger (
         // Temporary logging to make sure tiebreaking isn't broken
         if (it.second.trustedValidations > 0)
             JLOG(m_journal.trace())
-                << "  TieBreakTV: " << it.second.highTrustedValHash;
+                << "  TieBreakTV: " << it.first;
         else
         {
             if (it.second.nodesUsing > 0)
             {
                 JLOG(m_journal.trace())
-                    << "  TieBreakNU: " << it.second.highUsingHash;
+                    << "  TieBreakNU: " << it.first;
             }
         }
 
-        if (it.second > bestVC)
+        // Switch to a ledger with more support
+        // or the one with higher hash if they have the same support
+        if (it.second > bestVC ||
+            (it.second == bestVC && it.first > closedLedger))
         {
             bestVC = it.second;
             closedLedger = it.first;

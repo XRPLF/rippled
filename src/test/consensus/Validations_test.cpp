@@ -477,14 +477,14 @@ class Validations_test : public beast::unit_test::suite
                 BEAST_EXPECT(harness.vals().numTrustedForLedger(ID{2}) == 0);
                 BEAST_EXPECT(harness.vals().numTrustedForLedger(ID{20}) == 1);
                 {
-                    // Should the the only trusted for ID{20}
+                    // Should be the only trusted for ID{20}
                     auto trustedVals =
                         harness.vals().getTrustedForLedger(ID{20});
                     BEAST_EXPECT(trustedVals.size() == 1);
                     BEAST_EXPECT(trustedVals[0].key() == a.currKey());
                     // ... and should be the only node after ID{2}
                     BEAST_EXPECT(harness.vals().getNodesAfter(ID{2}) == 1);
-                    
+
                 }
 
                 // A new key, but re-issue a validation with the same ID and
