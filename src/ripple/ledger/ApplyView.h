@@ -109,8 +109,8 @@ private:
     dirAdd (
         Keylet const& directory,
         uint256 const& key,
-        std::function<void(std::shared_ptr<SLE> const&)> describe,
-        std::function<void(STVector256&, uint256 const&)> add);
+        std::function<void(std::shared_ptr<SLE> const&)> const& describe,
+        std::function<void(STVector256&, uint256 const&)> const& add);
 
 public:
     ApplyView () = default;
@@ -243,13 +243,13 @@ public:
     dirAppend (
         Keylet const& directory,
         uint256 const& key,
-        std::function<void(std::shared_ptr<SLE> const&)> describe);
+        std::function<void(std::shared_ptr<SLE> const&)> const& describe);
 
     boost::optional<std::uint64_t>
     dirAppend (
         Keylet const& directory,
         Keylet const& key,
-        std::function<void(std::shared_ptr<SLE> const&)> describe)
+        std::function<void(std::shared_ptr<SLE> const&)> const& describe)
     {
         return dirAppend (directory, key.key, describe);
     }
@@ -277,13 +277,13 @@ public:
     dirInsert (
         Keylet const& directory,
         uint256 const& key,
-        std::function<void(std::shared_ptr<SLE> const&)> describe);
+        std::function<void(std::shared_ptr<SLE> const&)> const& describe);
 
     boost::optional<std::uint64_t>
     dirInsert (
         Keylet const& directory,
         Keylet const& key,
-        std::function<void(std::shared_ptr<SLE> const&)> describe)
+        std::function<void(std::shared_ptr<SLE> const&)> const& describe)
     {
         return dirInsert (directory, key.key, describe);
     }

@@ -66,7 +66,8 @@ class FeatureCollections
          "Escrow",
          "CryptoConditionsSuite",
          "fix1373",
-         "EnforceInvariants"};
+         "EnforceInvariants",
+         "SortedDirectories"};
 
     std::vector<uint256> features;
     boost::container::flat_map<uint256, std::size_t> featureToIndex;

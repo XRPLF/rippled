@@ -29,8 +29,8 @@ boost::optional<std::uint64_t>
 ApplyView::dirAdd (
     Keylet const& directory,
     uint256 const& key,
-    std::function<void(std::shared_ptr<SLE> const&)> describe,
-    std::function<void(STVector256&, uint256 const&)> add)
+    std::function<void(std::shared_ptr<SLE> const&)> const& describe,
+    std::function<void(STVector256&, uint256 const&)> const& add)
 {
     auto root = peek(directory);
 
@@ -105,7 +105,7 @@ boost::optional<std::uint64_t>
 ApplyView::dirInsert (
     Keylet const& directory,
     uint256 const& key,
-    std::function<void (std::shared_ptr<SLE> const&)> describe)
+    std::function<void (std::shared_ptr<SLE> const&)> const& describe)
 {
     return dirAdd (directory, key, describe,
         [](STVector256& v, uint256 const& k)
@@ -128,7 +128,7 @@ boost::optional<std::uint64_t>
 ApplyView::dirAppend (
     Keylet const& directory,
     uint256 const& key,
-    std::function<void (std::shared_ptr<SLE> const&)> describe)
+    std::function<void (std::shared_ptr<SLE> const&)> const& describe)
 {
     return dirAdd (directory, key, describe,
         [](STVector256& v, uint256 const& k)

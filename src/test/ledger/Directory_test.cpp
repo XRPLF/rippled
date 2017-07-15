@@ -86,9 +86,9 @@ struct Directory_test : public beast::unit_test::suite
         auto bob = Account("bob");
 
         {
-            testcase ("Directory Ordering (without sorted directories)");
+            testcase ("Directory Ordering (without 'SortedDirectories' amendment");
 
-            Env env(*this);
+            Env env(*this, all_features_except(featureSortedDirectories));
             env.fund(XRP(10000000), alice, bob, gw);
 
             // Insert 400 offers from Alice, then one from Bob:
@@ -106,17 +106,18 @@ struct Directory_test : public beast::unit_test::suite
 
                 // Check that the orders are sequential by checking
                 // that their sequence numbers are:
-                for (auto iter = dir.begin(); iter != std::end(dir); ++iter)
+                for (auto iter = dir.begin(); iter != std::end(dir); ++iter) {
+                    log << "Seq: " << (*iter)->getFieldU32(sfSequence) << "\n";
                     BEAST_EXPECT(++lastSeq == (*iter)->getFieldU32(sfSequence));
-
+                }
                 BEAST_EXPECT(lastSeq != 1);
             }
         }
 
         {
-            testcase ("Directory Ordering (with ordered directories)");
+            testcase ("Directory Ordering (with 'SortedDirectories' amendment)");
 
-            Env env(*this, features(featureSortedDirectories));
+            Env env(*this, with_features(featureSortedDirectories));
             env.fund(XRP(10000000), alice, gw);
 
             for (std::size_t i = 1; i <= 400; ++i)
@@ -184,7 +185,7 @@ struct Directory_test : public beast::unit_test::suite
 
         beast::xor_shift_engine eng;
 
-        Env env(*this, features(featureSortedDirectories, featureMultiSign));
+        Env env(*this, with_features(featureSortedDirectories, featureMultiSign));
 
         env.fund(XRP(1000000), alice, charlie, gw);
         env.close();
@@ -288,7 +289,7 @@ struct Directory_test : public beast::unit_test::suite
         testcase("RIPD-1353 Empty Offer Directories");
 
         using namespace jtx;
-        Env env(*this, features(featureSortedDirectories));
+        Env env(*this, with_features(featureSortedDirectories));
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
@@ -348,7 +349,7 @@ struct Directory_test : public beast::unit_test::suite
         testcase("Empty Chain on Delete");
 
         using namespace jtx;
-        Env env(*this, features(featureSortedDirectories));
+        Env env(*this, with_features(featureSortedDirectories));
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
