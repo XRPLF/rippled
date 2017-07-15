@@ -103,8 +103,16 @@ operator&(ApplyFlags const& lhs,
 class ApplyView
     : public ReadView
 {
-public:
+private:
+    /** Add an entry to a directory using the specified insert strategy */
+    boost::optional<std::uint64_t>
+    dirAdd (
+        Keylet const& directory,
+        uint256 const& key,
+        std::function<void(std::shared_ptr<SLE> const&)> describe,
+        std::function<void(STVector256&, uint256 const&)> add);
 
+public:
     ApplyView () = default;
 
     /** Returns the tx apply flags.
@@ -213,35 +221,72 @@ public:
         std::uint32_t cur, std::uint32_t next)
     {};
 
-    /** Add an entry to a directory
+    /** Append an entry to a directory
 
-     @param directory the base of the directory
-     @param key the entry to insert
-     @param strictOrder keep entries in order of insertion
-     @param describe callback to add required entries to a new page
+        Entries in the directory will be stored in order of insertion, i.e. new
+        entries will always be added at the tail end of the last page.
 
-     @return a \c boost::optional which, if insertion was successful,
-             will contain the page number in which the item was stored.
+        @param directory the base of the directory
+        @param key the entry to insert
+        @param describe callback to add required entries to a new page
 
-     @note this function may create a page (including a root page), if no
-           page with space is available.this function will only fail if the
-           page counter exceeds the protocol-defined maximum number of
-           allowable pages.
+        @return a \c boost::optional which, if insertion was successful,
+                will contain the page number in which the item was stored.
+
+        @note this function may create a page (including a root page), if no
+              page with space is available. This function will only fail if the
+              page counter exceeds the protocol-defined maximum number of
+              allowable pages.
+    */
+    /** @{ */
+    boost::optional<std::uint64_t>
+    dirAppend (
+        Keylet const& directory,
+        uint256 const& key,
+        std::function<void(std::shared_ptr<SLE> const&)> describe);
+
+    boost::optional<std::uint64_t>
+    dirAppend (
+        Keylet const& directory,
+        Keylet const& key,
+        std::function<void(std::shared_ptr<SLE> const&)> describe)
+    {
+        return dirAppend (directory, key.key, describe);
+    }
+    /** @} */
+
+    /** Insert an entry to a directory
+
+        Entries in the directory will be stored in a semi-random order, but
+        each page will be maintained in sorted order.
+
+        @param directory the base of the directory
+        @param key the entry to insert
+        @param describe callback to add required entries to a new page
+
+        @return a \c boost::optional which, if insertion was successful,
+                will contain the page number in which the item was stored.
+
+        @note this function may create a page (including a root page), if no
+              page with space is available.this function will only fail if the
+              page counter exceeds the protocol-defined maximum number of
+              allowable pages.
     */
     /** @{ */
     boost::optional<std::uint64_t>
     dirInsert (
         Keylet const& directory,
         uint256 const& key,
-        bool strictOrder,
         std::function<void(std::shared_ptr<SLE> const&)> describe);
 
     boost::optional<std::uint64_t>
     dirInsert (
         Keylet const& directory,
         Keylet const& key,
-        bool strictOrder,
-        std::function<void(std::shared_ptr<SLE> const&)> describe);
+        std::function<void(std::shared_ptr<SLE> const&)> describe)
+    {
+        return dirInsert (directory, key.key, describe);
+    }
     /** @} */
 
     /** Remove an entry from a directory
@@ -272,7 +317,10 @@ public:
         Keylet const& directory,
         std::uint64_t page,
         Keylet const& key,
-        bool keepRoot);
+        bool keepRoot)
+    {
+        return dirRemove (directory, page, key.key, keepRoot);
+    }
     /** @} */
 };
 

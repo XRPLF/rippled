@@ -814,7 +814,12 @@ dirAdd (ApplyView& view,
     beast::Journal j)
 {
     if (view.rules().enabled(featureSortedDirectories))
-        return view.dirInsert(dir, uLedgerIndex, strictOrder, fDescriber);
+    {
+        if (strictOrder)
+            return view.dirAppend(dir, uLedgerIndex, fDescriber);
+        else
+            return view.dirInsert(dir, uLedgerIndex, fDescriber);
+    }
 
     JLOG (j.trace()) << "dirAdd:" <<
         " dir=" << to_string (dir.key) <<

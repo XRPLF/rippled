@@ -26,11 +26,11 @@
 namespace ripple {
 
 boost::optional<std::uint64_t>
-ApplyView::dirInsert (
+ApplyView::dirAdd (
     Keylet const& directory,
     uint256 const& key,
-    bool strictOrder,
-    std::function<void (std::shared_ptr<SLE> const&)> describe)
+    std::function<void(std::shared_ptr<SLE> const&)> describe,
+    std::function<void(STVector256&, uint256 const&)> add)
 {
     auto root = peek(directory);
 
@@ -65,31 +65,9 @@ ApplyView::dirInsert (
     // If there's space, we use it:
     if (indexes.size () < dirNodeMaxEntries)
     {
-        if (!strictOrder)
-        {
-            // We can't be sure if this page is already sorted because
-            // it may be a legacy page we haven't yet touched. Take
-            // the time to sort it.
-            std::sort (indexes.begin(), indexes.end());
-
-            auto pos = std::lower_bound(indexes.begin(), indexes.end(), key);
-
-            if (pos != indexes.end() && key == *pos)
-                LogicError ("dirInsert: double insertion");
-
-            indexes.insert (pos, key);
-        }
-        else
-        {
-            if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
-                LogicError ("dirInsert: double insertion");
-
-            indexes.push_back(key);
-        }
-
+        add (indexes, key);
         node->setFieldV256 (sfIndexes, indexes);
         update(node);
-
         return page;
     }
 
@@ -126,21 +104,50 @@ ApplyView::dirInsert (
 boost::optional<std::uint64_t>
 ApplyView::dirInsert (
     Keylet const& directory,
-    Keylet const& key,
-    bool strictOrder,
+    uint256 const& key,
     std::function<void (std::shared_ptr<SLE> const&)> describe)
 {
-    return dirInsert (directory, key.key, strictOrder, describe);
+    return dirAdd (directory, key, describe,
+        [](STVector256& v, uint256 const& k)
+        {
+            // We can't be sure if this page is already sorted because
+            // it may be a legacy page we haven't yet touched. Take
+            // the time to sort it.
+            std::sort (v.begin(), v.end());
+
+            auto pos = std::lower_bound(v.begin(), v.end(), k);
+
+            if (pos != v.end() && k == *pos)
+                LogicError ("dirInsert: double insertion");
+
+            v.insert (pos, k);
+        });
+}
+
+boost::optional<std::uint64_t>
+ApplyView::dirAppend (
+    Keylet const& directory,
+    uint256 const& key,
+    std::function<void (std::shared_ptr<SLE> const&)> describe)
+{
+    return dirAdd (directory, key, describe,
+        [](STVector256& v, uint256 const& k)
+        {
+            if (std::find(v.begin(), v.end(), k) != v.end())
+                LogicError ("dirInsert: double insertion");
+
+            v.push_back(k);
+        });
 }
 
 bool
 ApplyView::dirRemove (
     Keylet const& directory,
-    std::uint64_t currPage,
+    std::uint64_t page,
     uint256 const& key,
     bool keepRoot)
 {
-    auto node = peek(keylet::page(directory, currPage));
+    auto node = peek(keylet::page(directory, page));
 
     if (!node)
         return false;
@@ -175,18 +182,18 @@ ApplyView::dirRemove (
     // treated specially: it can never be deleted even if
     // it is empty, unless we plan on removing the entire
     // directory.
-    if (currPage == rootPage)
+    if (page == rootPage)
     {
-        if (nextPage == currPage && prevPage != currPage)
+        if (nextPage == page && prevPage != page)
             LogicError ("Directory chain: fwd link broken");
 
-        if (prevPage == currPage && nextPage != currPage)
+        if (prevPage == page && nextPage != page)
             LogicError ("Directory chain: rev link broken");
 
         // Older versions of the code would, in some cases,
         // allow the last page to be empty. Remove such
         // pages if we stumble on them:
-        if (nextPage == prevPage && nextPage != currPage)
+        if (nextPage == prevPage && nextPage != page)
         {
             auto last = peek(keylet::page(directory, nextPage));
             if (!last)
@@ -196,8 +203,8 @@ ApplyView::dirRemove (
             {
                 // Update the first page's linked list and
                 // mark it as updated.
-                node->setFieldU64 (sfIndexNext, currPage);
-                node->setFieldU64 (sfIndexPrevious, currPage);
+                node->setFieldU64 (sfIndexNext, page);
+                node->setFieldU64 (sfIndexPrevious, page);
                 update(node);
 
                 // And erase the empty last page:
@@ -205,8 +212,8 @@ ApplyView::dirRemove (
 
                 // Make sure our local values reflect the
                 // updated information:
-                nextPage = currPage;
-                prevPage = currPage;
+                nextPage = page;
+                prevPage = page;
             }
         }
 
@@ -214,17 +221,17 @@ ApplyView::dirRemove (
             return true;
 
         // If there's no other pages, erase the root:
-        if (nextPage == currPage && prevPage == currPage)
+        if (nextPage == page && prevPage == page)
             erase(node);
 
         return true;
     }
 
     // This can never happen for nodes other than the root:
-    if (nextPage == currPage)
+    if (nextPage == page)
         LogicError ("Directory chain: fwd link broken");
 
-    if (prevPage == currPage)
+    if (prevPage == page)
         LogicError ("Directory chain: rev link broken");
 
     // This node isn't the root, so it can either be in the
@@ -281,16 +288,6 @@ ApplyView::dirRemove (
     }
 
     return true;
-}
-
-bool
-ApplyView::dirRemove (
-    Keylet const& directory,
-    std::uint64_t currPage,
-    Keylet const& key,
-    bool keepRoot)
-{
-    return dirRemove (directory, currPage, key.key, keepRoot);
 }
 
 } // ripple
