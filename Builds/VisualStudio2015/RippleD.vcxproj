@@ -905,10 +905,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\ConsensusTransSetSF.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\ApplyView.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\InboundLedger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -2118,6 +2114,10 @@
     <ClInclude Include="..\..\src\ripple\ledger\Directory.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\ledger\impl\ApplyStateTable.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\ledger\impl\ApplyView.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
