@@ -6,6 +6,7 @@
 # cryptography (conda install cryptography)
 # nacl (conda install -c conda-forge pynacl)
 
+import argparse
 import base64
 import binascii
 import codecs
@@ -29,13 +30,17 @@ import nacl.encoding
 import nacl.hash
 import nacl.signing
 
+
+import json_test_cases
 import logging
+from pathlib import Path
 
 import pyasn1
 from pyasn1.type import univ
 from pyasn1.codec.der.decoder import decode
 from pyasn1.codec.der.encoder import encode
 
+import os
 import string
 
 from IPython.core.debugger import Tracer
@@ -487,7 +492,7 @@ class Ed25519(Fulfillment):
         if pylist is not None and pylist != short_type(self.type_id()):
             raise ValueError('Ill formed pylist spec')
         if signing_key is None:
-            signing_key = Ed25519.known_keys[self.id]
+            signing_key = Ed25519.known_keys[self.id % len(Ed25519.known_keys)]
 
         self.signing_key = signing_key
         self.set_msg(msg)
@@ -596,7 +601,7 @@ class RsaSha256(Fulfillment):
         if pylist is not None and pylist != short_type(self.type_id()):
             raise ValueError('Ill formed pylist spec')
         if signing_key is None:
-            signing_key = RsaSha256.known_keys[self.id]
+            signing_key = RsaSha256.known_keys[self.id % len(RsaSha256.known_keys)]
 
         self.signing_key = signing_key
         self.set_msg(msg)
@@ -1149,8 +1154,7 @@ def save_test_case(file_name, test_type=prefixSha256TypeId):
 
 
 def save_json_test_cases(test_writer):
-    from json_test_cases import test_cases
-    for tc in test_cases:
+    for tc in json_test_cases.test_cases:
         test_writer.save_json_test_case(tc)
         test_type = tc['json']['type']
 
@@ -1215,3 +1219,56 @@ def save_all_test_cases(file_name_prefix, inc_json=True):
             tw.write_run()
             f.write(condition_test_template_suffix.format(RootTestName=root_condition_name))
 
+
+def save_fuzz_corpus(corpus_dir_path):
+    cdp = Path(corpus_dir_path)
+    fulfillments_dir = cdp / 'fulfillments'
+    conditions_dir = cdp / 'conditions'
+    if not fulfillments_dir.is_dir():
+        os.makedirs(fulfillments_dir)
+    if not conditions_dir.is_dir():
+        os.makedirs(conditions_dir)
+
+    test_cases = partitioned_test_cases()
+
+    fulfillments = []
+    for root_condition_name, test_list in test_cases.items():
+        for tc in test_list:
+            fulfillments.append(Fulfillment.create_from_pylist(tc))
+
+    for tc in json_test_cases.test_cases:
+        fulfillments.append(Fulfillment.create_from_json(json_init=tc['json'], json_check=tc))
+
+    for i,f in enumerate(fulfillments):
+        file_name = '{}_{}.bin'.format(short_type(f.type_id()), i)
+        with open(fulfillments_dir / file_name, 'wb') as out:
+            out.write(encode(f.to_asn1()))
+        with open(conditions_dir / file_name, 'wb') as out:
+            out.write(encode(f.condition().to_asn1()))
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description=('Generate test files for cryptocondtions'))
+    parser.add_argument(
+        '--fuzz',
+        '-f',
+        help=('fuzz corpus directory'), )
+    parser.add_argument(
+        '--prefix',
+        '-p',
+        help=('c++ test cases file name prefix'), )
+    return parser.parse_args()
+
+def run_main():
+    args = parse_args()
+    if not args.fuzz and not args.prefix:
+        print('Must specify at least one of --fuzz or --prefix')
+        return
+
+    if args.fuzz:
+        save_fuzz_corpus(args.fuzz)
+    if args.prefix:
+        save_all_test_cases(args.prefix)
+
+if __name__ == '__main__':
+    run_main()
