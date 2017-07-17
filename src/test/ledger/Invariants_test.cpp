@@ -55,6 +55,7 @@ class Invariants_test : public beast::unit_test::suite
     // changes that will cause the check to fail.
     void
     doInvariantCheck( bool enabled,
+        std::vector<std::string> const& expect_logs,
         std::function <
             bool (
                 test::jtx::Account const& a,
@@ -94,18 +95,31 @@ class Invariants_test : public beast::unit_test::suite
 
         BEAST_EXPECT(precheck(A1, A2, ac));
 
-        auto tr = ac.checkInvariants(tesSUCCESS);
-        if (enabled)
+        auto tr = tesSUCCESS;
+        // invoke check twice to cover tec and tef cases
+        for (auto i : {0,1})
         {
-            BEAST_EXPECT(tr == tecINVARIANT_FAILED);
-            BEAST_EXPECT(boost::starts_with(sink.strm_.str(), "Invariant failed:"));
-            //uncomment if you want to log the invariant failure message
-            //log << "   --> " << sink.strm_.str() << std::endl;
-        }
-        else
-        {
-            BEAST_EXPECT(tr == tesSUCCESS);
-            BEAST_EXPECT(sink.strm_.str().empty());
+            tr = ac.checkInvariants(tr);
+            if (enabled)
+            {
+                BEAST_EXPECT(
+                    tr == (i == 0 ? tecINVARIANT_FAILED : tefINVARIANT_FAILED));
+                BEAST_EXPECT(
+                    boost::starts_with(sink.strm_.str(), "Invariant failed:") ||
+                    boost::starts_with(sink.strm_.str(),
+                        "Transaction caused an exception"));
+                //uncomment if you want to log the invariant failure message
+                //log << "   --> " << sink.strm_.str() << std::endl;
+                for (auto const& m : expect_logs)
+                {
+                    BEAST_EXPECT(sink.strm_.str().find(m) != std::string::npos);
+                }
+            }
+            else
+            {
+                BEAST_EXPECT(tr == tesSUCCESS);
+                BEAST_EXPECT(sink.strm_.str().empty());
+            }
         }
     }
 
@@ -130,6 +144,7 @@ class Invariants_test : public beast::unit_test::suite
         testcase << "checks " << (enabled ? "enabled" : "disabled") <<
             " - XRP created";
         doInvariantCheck (enabled,
+            {{ "XRP net change was 500 on a fee of 0" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
             {
                 // put a single account in the view and "manufacture" some XRP
@@ -150,6 +165,7 @@ class Invariants_test : public beast::unit_test::suite
         testcase << "checks " << (enabled ? "enabled" : "disabled") <<
             " - account root removed";
         doInvariantCheck (enabled,
+            {{ "an account root was deleted" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
             {
                 // remove an account from the view
@@ -168,6 +184,8 @@ class Invariants_test : public beast::unit_test::suite
         testcase << "checks " << (enabled ? "enabled" : "disabled") <<
             " - LE types don't match";
         doInvariantCheck (enabled,
+            {{ "ledger entry type mismatch" },
+             { "XRP net change was -1000000000 on a fee of 0" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
             {
                 // replace an entry in the table with an SLE of a different type
@@ -180,6 +198,7 @@ class Invariants_test : public beast::unit_test::suite
             });
 
         doInvariantCheck (enabled,
+            {{ "invalid ledger entry type added" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
             {
                 // add an entry in the table with an SLE of an invalid type
@@ -204,6 +223,7 @@ class Invariants_test : public beast::unit_test::suite
         testcase << "checks " << (enabled ? "enabled" : "disabled") <<
             " - trust lines with XRP not allowed";
         doInvariantCheck (enabled,
+            {{ "an XRP trust line was created" }},
             [](Account const& A1, Account const& A2, ApplyContext& ac)
             {
                 // create simple trust SLE with xrp currency
@@ -215,18 +235,192 @@ class Invariants_test : public beast::unit_test::suite
             });
     }
 
+    void
+    testXRPBalanceCheck(bool enabled)
+    {
+        using namespace test::jtx;
+        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
+            " - XRP balance checks";
+
+        doInvariantCheck (enabled,
+            {{ "Cannot return non-native STAmount as XRPAmount" }},
+            [](Account const& A1, Account const& A2, ApplyContext& ac)
+            {
+                //non-native balance
+                auto const sle = ac.view().peek (keylet::account(A1.id()));
+                if(! sle)
+                    return false;
+                STAmount nonNative {A2["USD"](51)};
+                sle->setFieldAmount (sfBalance, nonNative);
+                ac.view().update (sle);
+                return true;
+            });
+
+        doInvariantCheck (enabled,
+            {{ "incorrect account XRP balance" },
+             {  "XRP net change was 99999999000000001 on a fee of 0" }},
+            [](Account const& A1, Account const&, ApplyContext& ac)
+            {
+                // balance exceeds genesis amount
+                auto const sle = ac.view().peek (keylet::account(A1.id()));
+                if(! sle)
+                    return false;
+                sle->setFieldAmount (sfBalance, SYSTEM_CURRENCY_START + 1);
+                ac.view().update (sle);
+                return true;
+            });
+
+        doInvariantCheck (enabled,
+            {{ "incorrect account XRP balance" },
+             { "XRP net change was -1000000001 on a fee of 0" }},
+            [](Account const& A1, Account const&, ApplyContext& ac)
+            {
+                // balance is negative
+                auto const sle = ac.view().peek (keylet::account(A1.id()));
+                if(! sle)
+                    return false;
+                sle->setFieldAmount (sfBalance, -1);
+                ac.view().update (sle);
+                return true;
+            });
+    }
+
+    void
+    testNoBadOffers(bool enabled)
+    {
+        using namespace test::jtx;
+        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
+            " - no bad offers";
+
+        doInvariantCheck (enabled,
+            {{ "offer with a bad amount" }},
+            [](Account const& A1, Account const&, ApplyContext& ac)
+            {
+                // offer with negative takerpays
+                auto const sle = ac.view().peek (keylet::account(A1.id()));
+                if(! sle)
+                    return false;
+                auto const offer_index =
+                    getOfferIndex (A1.id(), (*sle)[sfSequence]);
+                auto sleNew = std::make_shared<SLE> (ltOFFER, offer_index);
+                sleNew->setAccountID (sfAccount, A1.id());
+                sleNew->setFieldU32 (sfSequence, (*sle)[sfSequence]);
+                sleNew->setFieldAmount (sfTakerPays, XRP(-1));
+                ac.view().insert (sleNew);
+                return true;
+            });
+
+        doInvariantCheck (enabled,
+            {{ "offer with a bad amount" }},
+            [](Account const& A1, Account const&, ApplyContext& ac)
+            {
+                // offer with negative takergets
+                auto const sle = ac.view().peek (keylet::account(A1.id()));
+                if(! sle)
+                    return false;
+                auto const offer_index =
+                    getOfferIndex (A1.id(), (*sle)[sfSequence]);
+                auto sleNew = std::make_shared<SLE> (ltOFFER, offer_index);
+                sleNew->setAccountID (sfAccount, A1.id());
+                sleNew->setFieldU32 (sfSequence, (*sle)[sfSequence]);
+                sleNew->setFieldAmount (sfTakerPays, A1["USD"](10));
+                sleNew->setFieldAmount (sfTakerGets, XRP(-1));
+                ac.view().insert (sleNew);
+                return true;
+            });
+
+        doInvariantCheck (enabled,
+            {{ "offer with a bad amount" }},
+            [](Account const& A1, Account const&, ApplyContext& ac)
+            {
+                // offer XRP to XRP
+                auto const sle = ac.view().peek (keylet::account(A1.id()));
+                if(! sle)
+                    return false;
+                auto const offer_index =
+                    getOfferIndex (A1.id(), (*sle)[sfSequence]);
+                auto sleNew = std::make_shared<SLE> (ltOFFER, offer_index);
+                sleNew->setAccountID (sfAccount, A1.id());
+                sleNew->setFieldU32 (sfSequence, (*sle)[sfSequence]);
+                sleNew->setFieldAmount (sfTakerPays, XRP(10));
+                sleNew->setFieldAmount (sfTakerGets, XRP(11));
+                ac.view().insert (sleNew);
+                return true;
+            });
+    }
+
+    void
+    testNoZeroEscrow(bool enabled)
+    {
+        using namespace test::jtx;
+        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
+            " - no zero escrow";
+
+        doInvariantCheck (enabled,
+            {{ "Cannot return non-native STAmount as XRPAmount" }},
+            [](Account const& A1, Account const& A2, ApplyContext& ac)
+            {
+                // escrow with nonnative amount
+                auto const sle = ac.view().peek (keylet::account(A1.id()));
+                if(! sle)
+                    return false;
+                auto sleNew = std::make_shared<SLE> (
+                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
+                STAmount nonNative {A2["USD"](51)};
+                sleNew->setFieldAmount (sfAmount, nonNative);
+                ac.view().insert (sleNew);
+                return true;
+            });
+
+        doInvariantCheck (enabled,
+            {{ "XRP net change was -1000000 on a fee of 0"},
+             {  "escrow specifies invalid amount" }},
+            [](Account const& A1, Account const&, ApplyContext& ac)
+            {
+                // escrow with negative amount
+                auto const sle = ac.view().peek (keylet::account(A1.id()));
+                if(! sle)
+                    return false;
+                auto sleNew = std::make_shared<SLE> (
+                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
+                sleNew->setFieldAmount (sfAmount, XRP(-1));
+                ac.view().insert (sleNew);
+                return true;
+            });
+
+        doInvariantCheck (enabled,
+            {{ "XRP net change was 100000000000000001 on a fee of 0" },
+             {  "escrow specifies invalid amount" }},
+            [](Account const& A1, Account const&, ApplyContext& ac)
+            {
+                // escrow with too-large amount
+                auto const sle = ac.view().peek (keylet::account(A1.id()));
+                if(! sle)
+                    return false;
+                auto sleNew = std::make_shared<SLE> (
+                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
+                sleNew->setFieldAmount (sfAmount, SYSTEM_CURRENCY_START + 1);
+                ac.view().insert (sleNew);
+                return true;
+            });
+    }
+
 public:
     void run ()
     {
         testEnabled ();
-        // all invariant checks are run with
-        // the checks enabled and disabled
-        for(auto const& b : {true, false})
+
+        // now run each invariant check test with
+        // the feature enabled and disabled
+        for(auto const& b : {false, true})
         {
             testXRPNotCreated (b);
             testAccountsNotRemoved (b);
             testTypesMatch (b);
             testNoXRPTrustLine (b);
+            testXRPBalanceCheck (b);
+            testNoBadOffers (b);
+            testNoZeroEscrow (b);
         }
     }
 };
@@ -234,3 +428,4 @@ public:
 BEAST_DEFINE_TESTSUITE (Invariants, ledger, ripple);
 
 }  // ripple
+
