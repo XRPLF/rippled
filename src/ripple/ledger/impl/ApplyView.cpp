@@ -27,6 +27,7 @@ namespace ripple {
 
 boost::optional<std::uint64_t>
 ApplyView::dirAdd (
+    bool preserveOrder,
     Keylet const& directory,
     uint256 const& key,
     std::function<void(std::shared_ptr<SLE> const&)> const& describe,
@@ -65,7 +66,28 @@ ApplyView::dirAdd (
     // If there's space, we use it:
     if (indexes.size () < dirNodeMaxEntries)
     {
-        add (indexes, key);
+        if (preserveOrder)
+        {
+            if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
+                LogicError ("dirInsert: double insertion");
+
+            v.push_back(key);
+        }
+        else
+        {
+            // We can't be sure if this page is already sorted because
+            // it may be a legacy page we haven't yet touched. Take
+            // the time to sort it.
+            std::sort (indexes.begin(), indexes.end());
+
+            auto pos = std::lower_bound(indexes.begin(), indexes.end(), key);
+
+            if (pos != indexes.end() && key == *pos)
+                LogicError ("dirInsert: double insertion");
+
+            indexes.insert (pos, key);
+        }
+
         node->setFieldV256 (sfIndexes, indexes);
         update(node);
         return page;
@@ -99,45 +121,6 @@ ApplyView::dirAdd (
     insert (node);
 
     return page;
-}
-
-boost::optional<std::uint64_t>
-ApplyView::dirInsert (
-    Keylet const& directory,
-    uint256 const& key,
-    std::function<void (std::shared_ptr<SLE> const&)> const& describe)
-{
-    return dirAdd (directory, key, describe,
-        [](STVector256& v, uint256 const& k)
-        {
-            // We can't be sure if this page is already sorted because
-            // it may be a legacy page we haven't yet touched. Take
-            // the time to sort it.
-            std::sort (v.begin(), v.end());
-
-            auto pos = std::lower_bound(v.begin(), v.end(), k);
-
-            if (pos != v.end() && k == *pos)
-                LogicError ("dirInsert: double insertion");
-
-            v.insert (pos, k);
-        });
-}
-
-boost::optional<std::uint64_t>
-ApplyView::dirAppend (
-    Keylet const& directory,
-    uint256 const& key,
-    std::function<void (std::shared_ptr<SLE> const&)> const& describe)
-{
-    return dirAdd (directory, key, describe,
-        [](STVector256& v, uint256 const& k)
-        {
-            if (std::find(v.begin(), v.end(), k) != v.end())
-                LogicError ("dirInsert: double insertion");
-
-            v.push_back(k);
-        });
 }
 
 bool

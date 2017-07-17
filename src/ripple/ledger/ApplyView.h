@@ -107,10 +107,10 @@ private:
     /** Add an entry to a directory using the specified insert strategy */
     boost::optional<std::uint64_t>
     dirAdd (
+        bool preserveOrder,
         Keylet const& directory,
         uint256 const& key,
-        std::function<void(std::shared_ptr<SLE> const&)> const& describe,
-        std::function<void(STVector256&, uint256 const&)> const& add);
+        std::function<void(std::shared_ptr<SLE> const&)> const& describe);
 
 public:
     ApplyView () = default;
@@ -243,7 +243,10 @@ public:
     dirAppend (
         Keylet const& directory,
         uint256 const& key,
-        std::function<void(std::shared_ptr<SLE> const&)> const& describe);
+        std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+    {
+        return dirAdd (true, directory, key, describe);
+    }
 
     boost::optional<std::uint64_t>
     dirAppend (
@@ -277,7 +280,10 @@ public:
     dirInsert (
         Keylet const& directory,
         uint256 const& key,
-        std::function<void(std::shared_ptr<SLE> const&)> const& describe);
+        std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+    {
+        return dirAdd (false, directory, key, describe);
+    }
 
     boost::optional<std::uint64_t>
     dirInsert (
