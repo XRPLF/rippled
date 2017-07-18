@@ -107,7 +107,6 @@ struct Directory_test : public beast::unit_test::suite
                 // Check that the orders are sequential by checking
                 // that their sequence numbers are:
                 for (auto iter = dir.begin(); iter != std::end(dir); ++iter) {
-                    log << "Seq: " << (*iter)->getFieldU32(sfSequence) << "\n";
                     BEAST_EXPECT(++lastSeq == (*iter)->getFieldU32(sfSequence));
                 }
                 BEAST_EXPECT(lastSeq != 1);

@@ -30,8 +30,7 @@ ApplyView::dirAdd (
     bool preserveOrder,
     Keylet const& directory,
     uint256 const& key,
-    std::function<void(std::shared_ptr<SLE> const&)> const& describe,
-    std::function<void(STVector256&, uint256 const&)> const& add)
+    std::function<void(std::shared_ptr<SLE> const&)> const& describe)
 {
     auto root = peek(directory);
 
@@ -71,7 +70,7 @@ ApplyView::dirAdd (
             if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
                 LogicError ("dirInsert: double insertion");
 
-            v.push_back(key);
+            indexes.push_back(key);
         }
         else
         {
