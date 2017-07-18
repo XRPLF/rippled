@@ -569,7 +569,7 @@ public:
     {
         std::vector<std::shared_ptr<SLE const>> result;
         forEachItem (*env.current (), account,
-            [&env, &result](std::shared_ptr<SLE const> const& sle)
+            [&result](std::shared_ptr<SLE const> const& sle)
             {
                 if (sle->getType() == ltOFFER)
                      result.push_back (sle);
