@@ -125,10 +125,11 @@ private:
     void
     on_accept(error_code ec)
     {
-        if(! acceptor_.is_open())
+        // ec must be checked before `acceptor_` or the member variable may be
+        // accessed after the destructor has completed
+        if(ec || !acceptor_.is_open())
             return;
-        if(ec)
-            return;
+
         static int id_ = 0;
         std::thread{lambda{++id_, *this, std::move(sock_)}}.detach();
         acceptor_.async_accept(sock_,
