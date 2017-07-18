@@ -464,19 +464,19 @@ if (WIN32 OR is_xcode)
   group_sources(Builds)
 endif()
 
-if (NOT fuzzer_conditions)
-  if(unity)
-    add_executable(rippled ${rippled_src_unity} ${PROTO_HDRS})
-    add_executable(rippled_classic EXCLUDE_FROM_ALL ${rippled_src_nonunity} ${PROTO_HDRS})
-    set(other_target rippled_classic)
-  else()
-    add_executable(rippled ${rippled_src_nonunity} ${PROTO_HDRS})
-    add_executable(rippled_unity EXCLUDE_FROM_ALL ${rippled_src_unity} ${PROTO_HDRS})
-    set(other_target rippled_unity)
-  endif()
-  list(APPEND targets "rippled")
+if(unity)
+  add_executable(rippled ${rippled_src_unity} ${PROTO_HDRS})
+  add_executable(rippled_classic EXCLUDE_FROM_ALL ${rippled_src_nonunity} ${PROTO_HDRS})
+  set(other_target rippled_classic)
+else()
+  add_executable(rippled ${rippled_src_nonunity} ${PROTO_HDRS})
+  add_executable(rippled_unity EXCLUDE_FROM_ALL ${rippled_src_unity} ${PROTO_HDRS})
+  set(other_target rippled_unity)
 endif()
+
+list(APPEND targets "rippled")
 list(APPEND targets ${other_target})
+
 # Not the same as EXCLUDE_FROM_ALL. Prevents Visual Studio from building the
 # other_target when the user builds the solution (default when pressing <F7>)
 set_property(TARGET ${other_target} PROPERTY EXCLUDE_FROM_DEFAULT_BUILD true)
@@ -532,7 +532,7 @@ set_startup_project(rippled)
 
 foreach(target IN LISTS targets)
     target_link_libraries(${target}
-      ${OPENSSL_LIBRARIES} ${PROTOBUF_LIBRARIES} ${SANITIZER_LIBRARIES})
+      ${OPENSSL_LIBRARIES} ${PROTOBUF_LIBRARIES})
 
     link_common_libraries(${target})
 endforeach()
@@ -553,20 +553,18 @@ if (fuzzer_conditions)
     ${CMAKE_SOURCE_DIR}/src/ripple/basics/impl/Log.cpp
     ${CMAKE_SOURCE_DIR}/src/ripple/beast/utility/src/beast_Journal.cpp
     ${CMAKE_SOURCE_DIR}/src/ripple/basics/impl/Time.cpp
-    )
+    ${CMAKE_SOURCE_DIR}/src/fuzzers/Conditions_fuzz_test.cpp)
 
   add_with_props(FuzzerSrc src/ripple/unity/ed25519_donna.c
     -I"${CMAKE_SOURCE_DIR}/"src/ed25519-donna)
 
-  add_executable(fulfillment_fuzzer  ${FuzzerSrc}
-    ${CMAKE_SOURCE_DIR}/src/fuzzers/Conditions_fuzz_test.cpp)
-  target_link_libraries(fulfillment_fuzzer ${OPENSSL_LIBRARIES} ${SANITIZER_LIBRARIES})
+  add_executable(fulfillment_fuzzer  ${FuzzerSrc})
+  target_link_libraries(fulfillment_fuzzer ${OPENSSL_LIBRARIES})
   link_common_libraries(fulfillment_fuzzer)
   target_compile_definitions(fulfillment_fuzzer PUBLIC -DFUZZ_TEST_FULFILLMENT)
 
-  add_executable(condition_fuzzer  ${FuzzerSrc}
-    ${CMAKE_SOURCE_DIR}/src/fuzzers/Conditions_fuzz_test.cpp)
-  target_link_libraries(condition_fuzzer ${OPENSSL_LIBRARIES} ${SANITIZER_LIBRARIES})
+  add_executable(condition_fuzzer  ${FuzzerSrc})
+  target_link_libraries(condition_fuzzer ${OPENSSL_LIBRARIES})
   link_common_libraries(condition_fuzzer)
   target_compile_definitions(condition_fuzzer PUBLIC -DFUZZ_TEST_CONDITION)
 endif()

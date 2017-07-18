@@ -1,5 +1,22 @@
 #!/usr/bin/env python
 
+# This script generates two related sets of output:
+#
+# 1) c++ code used to test cryptocondtions. To generate this code, run with the
+# `--prefix <FILE_NAME_PREFIX>` switch. The results of the script will be put
+# in a set of files with names for the individual cryptoconditions. For
+# example: `--prefix Conditions_generated_test_` will result in cpp files for
+# Conditions_generated_test_ed.cpp, Conditions_generated_test_thresh, ect. Note
+# these generated files are not well formatted. It is useful to run them
+# through a formatter (such as clang-format). This is done outside of this
+# script.
+#
+# 2) A corpus used for fuzz testing. To generate the corpus, run with the
+# `--fuzz <OUTPUT_DIR>` switch. The results of the script will be put in the
+# <OUTPUT_DIR>. It will create two subdirectories under <OUTPUT_DIR>, one for
+# conditions and one for fulfillments. This is used as a corpus for fuzz
+# testing.
+#
 # This script was run using python 3.6
 # When using anaconda python, the following additional packages were installed (using conda install XXX):
 # pyasn1 (conda install pyasn1)
@@ -67,6 +84,9 @@ condition_test_template_prefix = \
     ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
+
+// THIS FILE WAS AUTOMATICALLY GENERATED -- DO NOT EDIT
+
 //==============================================================================
 
 #include <test/conditions/ConditionsTestBase.h>
@@ -106,7 +126,7 @@ def case_and_type_insensitive_cmp(s1, s2):
 
 
 def urlsafe_base64_to_hex(data):
-    '''The sample crypto condition json base 64 encoding is not correctly padded.
+    '''The sample cryptocondition json base 64 encoding is not correctly padded.
        This function adds the correct padding before decoding
     '''
     padding = len(data) % 4
@@ -191,9 +211,7 @@ def bitset_to_tuple(seq):
         if b >= 32 or b < 0:
             raise ValueError('Can only set bits between 0 and 31')
         result[b] = 1
-    # reverse for big endian
     return tuple(result)
-    return tuple(reversed(result))
 
 
 def bitset_to_int(seq):
@@ -402,9 +420,9 @@ class Fulfillment:
 
     def set_msg_self_and_children(self, msg):
         '''
-        Set the message of a fulfillment so it suceeds.
+        Set the message of a fulfillment so it succeeds.
         This will set the message of child fulfillments so they
-        will suceeds as well, in particular, this means prefix subcondition
+        will succeeds as well, in particular, this means prefix subcondition
         will change their prefixes and set its message so
         prefix+new_message==set_msg
         '''

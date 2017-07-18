@@ -240,7 +240,7 @@ class Der_test : public beast::unit_test::suite
         {
             test(i->first, i->second);
             using Traits = cryptoconditions::der::DerCoderTraits<std::string>;
-            this->BEAST_EXPECT(Traits::compare(i->first, i->first, dummy) == 0);
+            BEAST_EXPECT(Traits::compare(i->first, i->first, dummy) == 0);
             for (auto j = i + 1; j != e; ++j)
             {
                 this->BEAST_EXPECT(
