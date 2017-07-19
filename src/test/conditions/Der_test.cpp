@@ -205,7 +205,7 @@ class Der_test : public beast::unit_test::suite
     testString()
     {
         testcase("octet string");
-        auto makeTestCase = [this](
+        auto makeTestCase = [](
             size_t n,
             std::vector<char> const& expectedHeader,
             char fillChar) -> std::pair<std::string, std::vector<char>> {
