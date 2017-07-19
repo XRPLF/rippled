@@ -149,7 +149,12 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         {
             JLOG (j.error()) << "Exception from flow: " << e.what ();
             if (!useFlowV1Output)
-                Rethrow();
+            {
+                // return a tec so the tx is stored
+                path::RippleCalc::Output exceptResult;
+                exceptResult.setResult(tecINTERNAL);
+                return exceptResult;
+            }
         }
     }
 
