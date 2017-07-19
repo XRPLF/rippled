@@ -31,9 +31,6 @@
 #include <boost/utility/in_place_factory.hpp>
 #include <boost/asio.hpp>
 
-#include <mutex>
-#include <condition_variable>
-
 namespace ripple {
 namespace test {
 
@@ -52,9 +49,6 @@ class http_sync_server
 
     std::string list_;
 
-    std::condition_variable cv_;
-    std::mutex m_;
-    bool awaitingAccept_{false};
 public:
     http_sync_server(endpoint_type const& ep,
             boost::asio::io_service& ios,
@@ -94,7 +88,6 @@ public:
             boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
         acceptor_.bind(ep);
         acceptor_.listen(boost::asio::socket_base::max_connections);
-        awaitingAccept_ = true;
         acceptor_.async_accept(sock_,
             std::bind(&http_sync_server::on_accept, this,
                 std::placeholders::_1));
@@ -104,11 +97,6 @@ public:
     {
         error_code ec;
         acceptor_.close(ec);
-        std::unique_lock<std::mutex> l{m_};
-        if (awaitingAccept_)
-            // Need to wait for on_accept to finish or it may access member
-            // variables after the destructor has run
-            cv_.wait (l, [this]{return !this->awaitingAccept_;});
     }
 
 private:
@@ -137,13 +125,10 @@ private:
     void
     on_accept(error_code ec)
     {
+        // ec must be checked before `acceptor_` or the member variable may be
+        // accessed after the destructor has completed
         if(ec || !acceptor_.is_open())
-        {
-            std::lock_guard<std::mutex> l{m_};
-            awaitingAccept_ = false;
-            cv_.notify_one();
             return;
-        }
 
         static int id_ = 0;
         std::thread{lambda{++id_, *this, std::move(sock_)}}.detach();
