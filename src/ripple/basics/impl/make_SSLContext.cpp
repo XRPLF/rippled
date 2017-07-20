@@ -35,7 +35,7 @@ namespace detail {
 // the rippled server-server use case, where we only need MITM
 // detection/prevention, we also have websocket and rpc scenarios
 // and want to ensure weak ciphers can't be used.
-char const defaultCipherList[] =
+std::string const defaultCipherList =
     "HIGH:MEDIUM:!aNULL:!MD5:!DSS:!3DES:!RC4:!EXPORT";
 
 template <class>
@@ -268,9 +268,9 @@ static
 void
 initAuthenticated (
     boost::asio::ssl::context& context,
-    std::string key_file,
-    std::string cert_file,
-    std::string chain_file)
+    std::string const& key_file,
+    std::string const& cert_file,
+    std::string const& chain_file)
 {
     SSL_CTX* const ssl = context.native_handle ();
 
@@ -357,7 +357,7 @@ initAuthenticated (
 }
 
 std::shared_ptr<boost::asio::ssl::context>
-get_context (std::string cipherList)
+get_context (std::string const& cipherList)
 {
     auto c = std::make_shared<boost::asio::ssl::context> (
         boost::asio::ssl::context::sslv23);
@@ -369,10 +369,9 @@ get_context (std::string cipherList)
         boost::asio::ssl::context::single_dh_use);
 
     {
-        if (cipherList.empty())
-            cipherList = defaultCipherList;
+        auto const& l = !cipherList.empty() ? cipherList : defaultCipherList;
         auto result = SSL_CTX_set_cipher_list (
-            c->native_handle (), cipherList.c_str());
+            c->native_handle (), l.c_str());
         if (result != 1)
             LogicError ("SSL_CTX_set_cipher_list failed");
     }
@@ -428,7 +427,7 @@ get_context (std::string cipherList)
 
 //------------------------------------------------------------------------------
 std::shared_ptr<boost::asio::ssl::context>
-make_SSLContext(std::string cipherList)
+make_SSLContext(std::string const& cipherList)
 {
     auto context = openssl::detail::get_context(cipherList);
     openssl::detail::initAnonymous(*context);
@@ -440,10 +439,10 @@ make_SSLContext(std::string cipherList)
 
 std::shared_ptr<boost::asio::ssl::context>
 make_SSLContextAuthed (
-    std::string keyFile,
-    std::string certFile,
-    std::string chainFile,
-    std::string cipherList)
+    std::string const& keyFile,
+    std::string const& certFile,
+    std::string const& chainFile,
+    std::string const& cipherList)
 {
     auto context = openssl::detail::get_context(cipherList);
     openssl::detail::initAuthenticated(*context,
