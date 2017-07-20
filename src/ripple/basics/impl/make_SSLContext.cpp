@@ -68,6 +68,15 @@ struct custom_delete <X509>
     }
 };
 
+template <>
+struct custom_delete <DH>
+{
+    void operator() (DH* dh) const
+    {
+        DH_free (dh);
+    }
+};
+
 template <class T>
 using custom_delete_unique_ptr = std::unique_ptr <T, custom_delete <T>>;
 
@@ -156,13 +165,13 @@ static void x509_sign (X509* x509, EVP_PKEY* evp_pkey)
 
 static void ssl_ctx_use_certificate (SSL_CTX* const ctx, x509_ptr cert)
 {
-    if (SSL_CTX_use_certificate (ctx, cert.release()) <= 0)
+    if (SSL_CTX_use_certificate (ctx, cert.get()) <= 0)
         LogicError ("SSL_CTX_use_certificate failed");
 }
 
 static void ssl_ctx_use_privatekey (SSL_CTX* const ctx, evp_pkey_ptr key)
 {
-    if (SSL_CTX_use_PrivateKey (ctx, key.release()) <= 0)
+    if (SSL_CTX_use_PrivateKey (ctx, key.get()) <= 0)
         LogicError ("SSL_CTX_use_PrivateKey failed");
 }
 
@@ -409,11 +418,11 @@ get_context (std::string const& cipherList)
 
     unsigned char const *data = &params[0];
 
-    DH* const dh = d2i_DHparams (nullptr, &data, sizeof(params));
-    if (dh == nullptr)
+    custom_delete_unique_ptr<DH> const dh {d2i_DHparams (nullptr, &data, sizeof(params))};
+    if (!dh)
         LogicError ("d2i_DHparams returned nullptr.");
 
-    SSL_CTX_set_tmp_dh (c->native_handle (), dh);
+    SSL_CTX_set_tmp_dh (c->native_handle (), dh.get());
 
 #ifdef SSL_FLAGS_NO_RENEGOTIATE_CIPHERS
     SSL_CTX_set_info_callback (c->native_handle (), info_handler);
