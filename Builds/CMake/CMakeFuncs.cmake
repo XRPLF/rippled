@@ -321,7 +321,7 @@ macro(use_boost)
     if ((NOT DEFINED BOOST_ROOT) AND (DEFINED ENV{BOOST_ROOT}))
         set(BOOST_ROOT $ENV{BOOST_ROOT})
     endif()
-    file(TO_CMAKE_PATH ${BOOST_ROOT} BOOST_ROOT)
+    file(TO_CMAKE_PATH "${BOOST_ROOT}" BOOST_ROOT)
     if(WIN32 OR CYGWIN)
         # Workaround for MSVC having two boost versions - x86 and x64 on same PC in stage folders
         if(DEFINED BOOST_ROOT)
