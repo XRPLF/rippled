@@ -35,7 +35,7 @@ namespace detail {
 // the rippled server-server use case, where we only need MITM
 // detection/prevention, we also have websocket and rpc scenarios
 // and want to ensure weak ciphers can't be used.
-char const defaultCipherList[] =
+std::string const defaultCipherList =
     "HIGH:MEDIUM:!aNULL:!MD5:!DSS:!3DES:!RC4:!EXPORT";
 
 template <class>
@@ -65,6 +65,15 @@ struct custom_delete <X509>
     void operator() (X509* x509) const
     {
         X509_free (x509);
+    }
+};
+
+template <>
+struct custom_delete <DH>
+{
+    void operator() (DH* dh) const
+    {
+        DH_free (dh);
     }
 };
 
@@ -113,7 +122,7 @@ static evp_pkey_ptr evp_pkey_new()
     return evp_pkey_ptr (evp_pkey);
 }
 
-static void evp_pkey_assign_rsa (EVP_PKEY* evp_pkey, rsa_ptr&& rsa)
+static void evp_pkey_assign_rsa (EVP_PKEY* evp_pkey, rsa_ptr rsa)
 {
     if (! EVP_PKEY_assign_RSA (evp_pkey, rsa.get()))
         LogicError ("EVP_PKEY_assign_RSA failed");
@@ -154,15 +163,15 @@ static void x509_sign (X509* x509, EVP_PKEY* evp_pkey)
         LogicError ("X509_sign failed");
 }
 
-static void ssl_ctx_use_certificate (SSL_CTX* const ctx, x509_ptr& cert)
+static void ssl_ctx_use_certificate (SSL_CTX* const ctx, x509_ptr cert)
 {
-    if (SSL_CTX_use_certificate (ctx, cert.release()) <= 0)
+    if (SSL_CTX_use_certificate (ctx, cert.get()) <= 0)
         LogicError ("SSL_CTX_use_certificate failed");
 }
 
-static void ssl_ctx_use_privatekey (SSL_CTX* const ctx, evp_pkey_ptr& key)
+static void ssl_ctx_use_privatekey (SSL_CTX* const ctx, evp_pkey_ptr key)
 {
-    if (SSL_CTX_use_PrivateKey (ctx, key.release()) <= 0)
+    if (SSL_CTX_use_PrivateKey (ctx, key.get()) <= 0)
         LogicError ("SSL_CTX_use_PrivateKey failed");
 }
 
@@ -260,17 +269,17 @@ initAnonymous (
     x509_sign       (cert.get(), pkey.get());
 
     SSL_CTX* const ctx = context.native_handle();
-    ssl_ctx_use_certificate (ctx, cert);
-    ssl_ctx_use_privatekey  (ctx, pkey);
+    ssl_ctx_use_certificate (ctx, std::move(cert));
+    ssl_ctx_use_privatekey  (ctx, std::move(pkey));
 }
 
 static
 void
 initAuthenticated (
     boost::asio::ssl::context& context,
-    std::string key_file,
-    std::string cert_file,
-    std::string chain_file)
+    std::string const& key_file,
+    std::string const& cert_file,
+    std::string const& chain_file)
 {
     SSL_CTX* const ssl = context.native_handle ();
 
@@ -357,7 +366,7 @@ initAuthenticated (
 }
 
 std::shared_ptr<boost::asio::ssl::context>
-get_context (std::string cipherList)
+get_context (std::string const& cipherList)
 {
     auto c = std::make_shared<boost::asio::ssl::context> (
         boost::asio::ssl::context::sslv23);
@@ -369,10 +378,9 @@ get_context (std::string cipherList)
         boost::asio::ssl::context::single_dh_use);
 
     {
-        if (cipherList.empty())
-            cipherList = defaultCipherList;
+        auto const& l = !cipherList.empty() ? cipherList : defaultCipherList;
         auto result = SSL_CTX_set_cipher_list (
-            c->native_handle (), cipherList.c_str());
+            c->native_handle (), l.c_str());
         if (result != 1)
             LogicError ("SSL_CTX_set_cipher_list failed");
     }
@@ -410,11 +418,11 @@ get_context (std::string cipherList)
 
     unsigned char const *data = &params[0];
 
-    DH* const dh = d2i_DHparams (nullptr, &data, sizeof(params));
-    if (dh == nullptr)
+    custom_delete_unique_ptr<DH> const dh {d2i_DHparams (nullptr, &data, sizeof(params))};
+    if (!dh)
         LogicError ("d2i_DHparams returned nullptr.");
 
-    SSL_CTX_set_tmp_dh (c->native_handle (), dh);
+    SSL_CTX_set_tmp_dh (c->native_handle (), dh.get());
 
 #ifdef SSL_FLAGS_NO_RENEGOTIATE_CIPHERS
     SSL_CTX_set_info_callback (c->native_handle (), info_handler);
@@ -428,7 +436,7 @@ get_context (std::string cipherList)
 
 //------------------------------------------------------------------------------
 std::shared_ptr<boost::asio::ssl::context>
-make_SSLContext(std::string cipherList)
+make_SSLContext(std::string const& cipherList)
 {
     auto context = openssl::detail::get_context(cipherList);
     openssl::detail::initAnonymous(*context);
@@ -440,10 +448,10 @@ make_SSLContext(std::string cipherList)
 
 std::shared_ptr<boost::asio::ssl::context>
 make_SSLContextAuthed (
-    std::string keyFile,
-    std::string certFile,
-    std::string chainFile,
-    std::string cipherList)
+    std::string const& keyFile,
+    std::string const& certFile,
+    std::string const& chainFile,
+    std::string const& cipherList)
 {
     auto context = openssl::detail::get_context(cipherList);
     openssl::detail::initAuthenticated(*context,
