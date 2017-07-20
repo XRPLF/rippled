@@ -113,7 +113,7 @@ static evp_pkey_ptr evp_pkey_new()
     return evp_pkey_ptr (evp_pkey);
 }
 
-static void evp_pkey_assign_rsa (EVP_PKEY* evp_pkey, rsa_ptr&& rsa)
+static void evp_pkey_assign_rsa (EVP_PKEY* evp_pkey, rsa_ptr rsa)
 {
     if (! EVP_PKEY_assign_RSA (evp_pkey, rsa.get()))
         LogicError ("EVP_PKEY_assign_RSA failed");
@@ -154,13 +154,13 @@ static void x509_sign (X509* x509, EVP_PKEY* evp_pkey)
         LogicError ("X509_sign failed");
 }
 
-static void ssl_ctx_use_certificate (SSL_CTX* const ctx, x509_ptr& cert)
+static void ssl_ctx_use_certificate (SSL_CTX* const ctx, x509_ptr cert)
 {
     if (SSL_CTX_use_certificate (ctx, cert.release()) <= 0)
         LogicError ("SSL_CTX_use_certificate failed");
 }
 
-static void ssl_ctx_use_privatekey (SSL_CTX* const ctx, evp_pkey_ptr& key)
+static void ssl_ctx_use_privatekey (SSL_CTX* const ctx, evp_pkey_ptr key)
 {
     if (SSL_CTX_use_PrivateKey (ctx, key.release()) <= 0)
         LogicError ("SSL_CTX_use_PrivateKey failed");
@@ -260,8 +260,8 @@ initAnonymous (
     x509_sign       (cert.get(), pkey.get());
 
     SSL_CTX* const ctx = context.native_handle();
-    ssl_ctx_use_certificate (ctx, cert);
-    ssl_ctx_use_privatekey  (ctx, pkey);
+    ssl_ctx_use_certificate (ctx, std::move(cert));
+    ssl_ctx_use_privatekey  (ctx, std::move(pkey));
 }
 
 static
