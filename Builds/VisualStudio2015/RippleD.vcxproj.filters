@@ -1635,6 +1635,9 @@
     <ClCompile Include="..\..\src\ripple\app\misc\impl\TxQ.cpp">
       <Filter>ripple\app\misc\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\misc\impl\ValidatorKeys.cpp">
+      <Filter>ripple\app\misc\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\impl\ValidatorList.cpp">
       <Filter>ripple\app\misc\impl</Filter>
     </ClCompile>
@@ -1669,6 +1672,9 @@
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\TxQ.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\ValidatorKeys.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\ValidatorList.h">
@@ -2509,6 +2515,9 @@
       <Filter>ripple\consensus</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\consensus\ConsensusProposal.h">
+      <Filter>ripple\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\ConsensusTypes.h">
       <Filter>ripple\consensus</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\consensus\DisputedTx.h">
@@ -5119,6 +5128,9 @@
       <Filter>test\app</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\app\TxQ_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\ValidatorKeys_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\app\ValidatorList_test.cpp">

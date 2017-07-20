@@ -111,6 +111,7 @@ INPUT                  = \
     ../src/test/jtx/WSClient.h \
     ../src/ripple/consensus/Consensus.h \
     ../src/ripple/consensus/ConsensusProposal.h \
+    ../src/ripple/consensus/ConsensusTypes.h \
     ../src/ripple/consensus/DisputedTx.h \
     ../src/ripple/consensus/LedgerTiming.h \
     ../src/ripple/consensus/Validations.h \
