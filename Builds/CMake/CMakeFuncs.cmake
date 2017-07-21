@@ -388,6 +388,11 @@ macro(use_openssl openssl_min)
     endif()
 
     find_package(OpenSSL)
+    # depending on how openssl is built, it might depend
+    # on zlib. In fact, the openssl find package should
+    # figure this out for us, but it does not currently...
+    # so let's add zlib ourselves to the lib list
+    find_package(ZLIB)
 
     if (static)
       set(CMAKE_FIND_LIBRARY_SUFFIXES tmp)
@@ -395,6 +400,7 @@ macro(use_openssl openssl_min)
 
     if (OPENSSL_FOUND)
       include_directories(${OPENSSL_INCLUDE_DIR})
+      list(APPEND OPENSSL_LIBRARIES ${ZLIB_LIBRARIES})
     else()
       message(FATAL_ERROR "OpenSSL not found")
     endif()
