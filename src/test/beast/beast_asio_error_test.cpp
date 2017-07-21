@@ -33,7 +33,12 @@ public:
                 boost::system::error_code (335544539,
                     boost::asio::error::get_ssl_category ());
             std::string const s = beast::error_message_with_ssl(ec);
+
+#ifdef SSL_R_SHORT_READ
             BEAST_EXPECT(s == " (20,0,219) error:140000DB:SSL routines:SSL routines:short read");
+#else
+            BEAST_EXPECT(s == " (20,0,219) error:140000DB:SSL routines:SSL routines:reason(219)");
+#endif
         }
     }
 };
