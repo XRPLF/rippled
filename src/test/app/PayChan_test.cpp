@@ -736,6 +736,7 @@ struct PayChan_test : public beast::unit_test::suite
                 env.rpc ("account_channels", alice.human (), bob.human ());
             BEAST_EXPECT (r[jss::result][jss::channels].size () == 1);
             BEAST_EXPECT (r[jss::result][jss::channels][0u][jss::channel_id] == chan1Str);
+            BEAST_EXPECT (r[jss::result][jss::validated]);
             chan1PkStr = r[jss::result][jss::channels][0u][jss::public_key].asString();
         }
         {
@@ -743,12 +744,14 @@ struct PayChan_test : public beast::unit_test::suite
                 env.rpc ("account_channels", alice.human ());
             BEAST_EXPECT (r[jss::result][jss::channels].size () == 1);
             BEAST_EXPECT (r[jss::result][jss::channels][0u][jss::channel_id] == chan1Str);
+            BEAST_EXPECT (r[jss::result][jss::validated]);
             chan1PkStr = r[jss::result][jss::channels][0u][jss::public_key].asString();
         }
         {
             auto const r =
                 env.rpc ("account_channels", bob.human (), alice.human ());
             BEAST_EXPECT (r[jss::result][jss::channels].size () == 0);
+            BEAST_EXPECT (r[jss::result][jss::validated]);
         }
         env (create (alice, bob, channelFunds, settleDelay, pk));
         env.close();
@@ -757,6 +760,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const r =
                     env.rpc ("account_channels", alice.human (), bob.human ());
             BEAST_EXPECT (r[jss::result][jss::channels].size () == 2);
+            BEAST_EXPECT (r[jss::result][jss::validated]);
             BEAST_EXPECT (chan1Str != chan2Str);
             for (auto const& c : {chan1Str, chan2Str})
                 BEAST_EXPECT (r[jss::result][jss::channels][0u][jss::channel_id] == c ||

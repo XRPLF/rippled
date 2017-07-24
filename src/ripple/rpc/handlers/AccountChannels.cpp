@@ -78,9 +78,8 @@ Json::Value doAccountChannels (RPC::Context& context)
     std::string strIdent (params[jss::account].asString ());
     AccountID accountID;
 
-    result = RPC::accountFromString (accountID, strIdent);
-    if (result)
-        return result;
+    if (auto const actResult = RPC::accountFromString (accountID, strIdent))
+        return actResult;
 
     if (! ledger->exists(keylet::account (accountID)))
         return rpcError (rpcACT_NOT_FOUND);
@@ -93,9 +92,8 @@ Json::Value doAccountChannels (RPC::Context& context)
     AccountID raDstAccount;
     if (hasDst)
     {
-        result = RPC::accountFromString (raDstAccount, strDst);
-        if (result)
-            return result;
+        if (auto const actResult = RPC::accountFromString (raDstAccount, strDst))
+            return actResult;
     }
 
     unsigned int limit;
