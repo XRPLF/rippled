@@ -370,29 +370,56 @@ public:
         }
     }
 
-    class CaptureStreams
+    /**
+     * @brief sink for writing all log messages to a stringstream
+     */
+    class CaptureSink : public beast::Journal::Sink
     {
+        std::stringstream& strm_;
     public:
-        CaptureStreams (std::string* save_messages)
-            : save_to (save_messages)
-            , origout_ (std::cout.rdbuf (msgs_.rdbuf()))
-            , origerr_ (std::cerr.rdbuf (msgs_.rdbuf()))
-        { }
-
-        ~CaptureStreams()
+        CaptureSink(beast::severities::Severity threshold,
+            std::stringstream& strm)
+        : beast::Journal::Sink(threshold, false)
+        , strm_(strm)
         {
-            if(save_to)
-                *save_to = msgs_.str();
-            std::cerr.rdbuf (origerr_);
-            std::cout.rdbuf (origout_);
         }
 
+        void
+        write(beast::severities::Severity level, std::string const& text) override
+        {
+            strm_ << text;
+        }
+    };
 
-    private:
-        std::stringstream msgs_;
-        std::string* save_to;
-        std::streambuf* const origout_;
-        std::streambuf* const origerr_;
+    /**
+     * @brief Log manager for CaptureSinks. This class holds the stream
+     * instance that is written to by the sinks. Upon destruction, all
+     * contents of the stream are assigned to the string specified in the
+     * ctor
+     */
+    class CaptureLogs : public Logs
+    {
+        std::stringstream strm_;
+        std::string& result_;
+
+    public:
+        CaptureLogs(std::string& result)
+            : Logs (beast::severities::kInfo)
+            , result_(result)
+        {
+        }
+
+        ~CaptureLogs() override
+        {
+            result_ = strm_.str();
+        }
+
+        std::unique_ptr<beast::Journal::Sink>
+        makeSink(std::string const& partition,
+            beast::severities::Severity threshold) override
+        {
+            return std::make_unique<CaptureSink>(threshold, strm_);
+        }
     };
 
     void
@@ -402,74 +429,70 @@ public:
         using namespace test::jtx;
 
         std::string messages;
+
+        except ([&]
         {
-            CaptureStreams capture(&messages);
-            except ([&]
-            {
-                Env env {*this, envconfig([](std::unique_ptr<Config> cfg) {
+            Env env {*this,
+                envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
                     return cfg;
-                })};
-            });
-        }
+                }),
+                std::make_unique<CaptureLogs>(messages)};
+        });
         BEAST_EXPECT (
             messages.find ("Missing 'ip' in [port_rpc]")
             != std::string::npos);
 
+        except ([&]
         {
-            CaptureStreams capture(&messages);
-            except ([&]
-            {
-                Env env {*this, envconfig([](std::unique_ptr<Config> cfg) {
+            Env env {*this,
+                envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
                     (*cfg)["port_rpc"].set("ip", "127.0.0.1");
                     return cfg;
-                })};
-            });
-        }
+                }),
+                std::make_unique<CaptureLogs>(messages)};
+        });
         BEAST_EXPECT (
             messages.find ("Missing 'port' in [port_rpc]")
             != std::string::npos);
 
+        except ([&]
         {
-            CaptureStreams capture(&messages);
-            except ([&]
-            {
-                Env env {*this, envconfig([](std::unique_ptr<Config> cfg) {
+            Env env {*this,
+                envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
                     (*cfg)["port_rpc"].set("ip", "127.0.0.1");
                     (*cfg)["port_rpc"].set("port", "0");
                     return cfg;
-                })};
-            });
-        }
+                }),
+                std::make_unique<CaptureLogs>(messages)};
+        });
         BEAST_EXPECT (
             messages.find ("Invalid value '0' for key 'port' in [port_rpc]")
             != std::string::npos);
 
+        except ([&]
         {
-            CaptureStreams capture(&messages);
-            except ([&]
-            {
-                Env env {*this, envconfig([](std::unique_ptr<Config> cfg) {
+            Env env {*this,
+                envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
                     (*cfg)["port_rpc"].set("ip", "127.0.0.1");
                     (*cfg)["port_rpc"].set("port", "8081");
                     (*cfg)["port_rpc"].set("protocol", "");
                     return cfg;
-                })};
-            });
-        }
+                }),
+                std::make_unique<CaptureLogs>(messages)};
+        });
         BEAST_EXPECT (
             messages.find ("Missing 'protocol' in [port_rpc]")
             != std::string::npos);
 
+        except ([&] //this creates a standard test config without the server
+                    //section
         {
-            CaptureStreams capture(&messages);
-            except ([&] //this creates a standard test config without the server
-                        //section
-            {
-                Env env {*this, envconfig([](std::unique_ptr<Config> cfg) {
+            Env env {*this,
+                envconfig([](std::unique_ptr<Config> cfg) {
                     cfg = std::make_unique<Config>();
                     cfg->overwrite (
                         ConfigSection::nodeDatabase (), "type", "memory");
@@ -491,19 +514,18 @@ public:
                     (*cfg)["port_ws"].set("protocol", "ws");
                     (*cfg)["port_ws"].set("admin", "127.0.0.1");
                     return cfg;
-                })};
-            });
-        }
+                }),
+                std::make_unique<CaptureLogs>(messages)};
+        });
         BEAST_EXPECT (
             messages.find ("Required section [server] is missing")
             != std::string::npos);
 
+        except ([&] //this creates a standard test config without some of the
+                    //port sections
         {
-            CaptureStreams capture(&messages);
-            except ([&] //this creates a standard test config without some of the
-                        //port sections
-            {
-                Env env {*this, envconfig([](std::unique_ptr<Config> cfg) {
+            Env env {*this,
+                envconfig([](std::unique_ptr<Config> cfg) {
                     cfg = std::make_unique<Config>();
                     cfg->overwrite (ConfigSection::nodeDatabase (), "type", "memory");
                     cfg->overwrite (ConfigSection::nodeDatabase (), "path", "main");
@@ -514,9 +536,9 @@ public:
                     (*cfg)["server"].append("port_rpc");
                     (*cfg)["server"].append("port_ws");
                     return cfg;
-                })};
-            });
-        }
+                }),
+                std::make_unique<CaptureLogs>(messages)};
+        });
         BEAST_EXPECT (
             messages.find ("Missing section: [port_peer]")
             != std::string::npos);

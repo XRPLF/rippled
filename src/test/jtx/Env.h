@@ -158,6 +158,53 @@ all_features_except (uint256 const& key, Args const&... args)
         std::array<uint256, 1 + sizeof...(args)>{{key, args...}});
 }
 
+class SuiteSink : public beast::Journal::Sink
+{
+    std::string partition_;
+    beast::unit_test::suite& suite_;
+
+public:
+    SuiteSink(std::string const& partition,
+            beast::severities::Severity threshold,
+            beast::unit_test::suite& suite)
+        : Sink (threshold, false)
+        , partition_(partition + " ")
+        , suite_ (suite)
+    {
+    }
+
+    // For unit testing, always generate logging text.
+    inline bool active(beast::severities::Severity level) const override
+    {
+        return true;
+    }
+
+    void
+    write(beast::severities::Severity level, std::string const& text) override;
+};
+
+class SuiteLogs : public Logs
+{
+    beast::unit_test::suite& suite_;
+
+public:
+    explicit
+    SuiteLogs(beast::unit_test::suite& suite)
+        : Logs (beast::severities::kError)
+        , suite_(suite)
+    {
+    }
+
+    ~SuiteLogs() override = default;
+
+    std::unique_ptr<beast::Journal::Sink>
+    makeSink(std::string const& partition,
+        beast::severities::Severity threshold) override
+    {
+        return std::make_unique<SuiteSink>(partition, threshold, suite_);
+    }
+};
+
 //------------------------------------------------------------------------------
 
 /** A transaction testing environment. */
@@ -181,7 +228,8 @@ private:
         std::unique_ptr<AbstractClient> client;
 
         AppBundle (beast::unit_test::suite& suite,
-            std::unique_ptr<Config> config);
+            std::unique_ptr<Config> config,
+            std::unique_ptr<Logs> logs);
         ~AppBundle();
     };
 
@@ -208,9 +256,13 @@ public:
     // VFALCO Could wrap the suite::log in a Journal here
     Env (beast::unit_test::suite& suite_,
             std::unique_ptr<Config> config,
-            FeatureBitset features)
+            FeatureBitset features,
+            std::unique_ptr<Logs> logs = nullptr)
         : test (suite_)
-        , bundle_ (suite_, std::move(config))
+        , bundle_ (
+            suite_,
+            std::move(config),
+            logs ? std::move(logs) : std::make_unique<SuiteLogs>(suite_))
     {
         memoize(Account::master);
         Pathfinder::initPathTable();
@@ -251,8 +303,9 @@ public:
      * the pointer. See envconfig and related functions for common config tweaks.
      */
     Env (beast::unit_test::suite& suite_,
-        std::unique_ptr<Config> config)
-        : Env(suite_, std::move(config), all_amendments())
+        std::unique_ptr<Config> config,
+        std::unique_ptr<Logs> logs = nullptr)
+        : Env(suite_, std::move(config), all_amendments(), std::move(logs))
     {
     }
 
