@@ -19,8 +19,7 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/FeeVoteImpl.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/misc/NetworkOPs.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
+#include <ripple/app/main/LoadManager.cpp>
+#include <ripple/app/main/Main.cpp>
+#include <ripple/app/main/NodeIdentity.cpp>
+#include <ripple/app/main/NodeStoreScheduler.cpp>

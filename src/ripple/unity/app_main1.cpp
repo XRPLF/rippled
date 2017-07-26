@@ -1,4 +1,3 @@
-
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -18,20 +17,10 @@
 */
 //==============================================================================
 
-#include <test/beast/aged_associative_container_test.cpp>
-#include <test/beast/beast_abstract_clock_test.cpp>
-#include <test/beast/beast_asio_error_test.cpp>
-#include <test/beast/beast_basic_seconds_clock_test.cpp>
-#include <test/beast/beast_CurrentThreadName_test.cpp>
-#include <test/beast/beast_Debug_test.cpp>
-#include <test/beast/beast_Journal_test.cpp>
-#include <test/beast/beast_PropertyStream_test.cpp>
-#include <test/beast/beast_tagged_integer_test.cpp>
-#include <test/beast/beast_weak_fn_test.cpp>
-#include <test/beast/beast_Zero_test.cpp>
-#include <test/beast/define_print.cpp>
-#include <test/beast/hash_append_test.cpp>
-#include <test/beast/hash_speed_test.cpp>
-#include <test/beast/IPEndpoint_test.cpp>
-#include <test/beast/LexicalCast_test.cpp>
-#include <test/beast/SemanticVersion_test.cpp>
+#include <BeastConfig.h>
+
+#include <ripple/app/main/Amendments.cpp>
+#include <ripple/app/main/Application.cpp>
+#include <ripple/app/main/BasicApp.cpp>
+#include <ripple/app/main/CollectorManager.cpp>
+#include <ripple/app/main/DBInit.cpp>

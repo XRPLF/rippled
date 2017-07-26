@@ -19,8 +19,11 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/FeeVoteImpl.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/misc/NetworkOPs.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
+#include <ripple/overlay/impl/PeerImp.cpp>
+#include <ripple/overlay/impl/PeerSet.cpp>
+#include <ripple/overlay/impl/TMHello.cpp>
+#include <ripple/overlay/impl/TrafficCount.cpp>
+
+#if DOXYGEN
+#include <ripple/overlay/README.md>
+#endif

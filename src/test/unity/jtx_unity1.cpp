@@ -19,15 +19,19 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/overlay/impl/ConnectAttempt.cpp>
-#include <ripple/overlay/impl/Cluster.cpp>
-#include <ripple/overlay/impl/Message.cpp>
-#include <ripple/overlay/impl/OverlayImpl.cpp>
-#include <ripple/overlay/impl/PeerImp.cpp>
-#include <ripple/overlay/impl/PeerSet.cpp>
-#include <ripple/overlay/impl/TMHello.cpp>
-#include <ripple/overlay/impl/TrafficCount.cpp>
+#include <test/jtx/Env_test.cpp>
+#include <test/jtx/WSClient_test.cpp>
 
-#if DOXYGEN
-#include <ripple/overlay/README.md>
-#endif
+#include <test/jtx/impl/Account.cpp>
+#include <test/jtx/impl/amount.cpp>
+#include <test/jtx/impl/balance.cpp>
+#include <test/jtx/impl/delivermin.cpp>
+#include <test/jtx/impl/Env.cpp>
+#include <test/jtx/impl/envconfig.cpp>
+#include <test/jtx/impl/fee.cpp>
+#include <test/jtx/impl/flags.cpp>
+#include <test/jtx/impl/JSONRPCClient.cpp>
+#include <test/jtx/impl/jtx_json.cpp>
+#include <test/jtx/impl/ManualTimeKeeper.cpp>
+#include <test/jtx/impl/memo.cpp>
+#include <test/jtx/impl/multisign.cpp>

@@ -976,7 +976,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/test/server', '.cpp'))
     append_sources(result, *list_sources('src/test/shamap', '.cpp'))
     append_sources(result, *list_sources('src/test/jtx', '.cpp'))
-    append_sources(result, *list_sources('src/test/csf', '.cpp'))    
+    append_sources(result, *list_sources('src/test/csf', '.cpp'))
 
 
     if use_shp(toolchain):
@@ -1008,8 +1008,11 @@ def get_unity_sources(toolchain):
         'src/ripple/beast/unity/beast_utility_unity.cpp',
         'src/ripple/unity/app_consensus.cpp',
         'src/ripple/unity/app_ledger.cpp',
-        'src/ripple/unity/app_main.cpp',
+        'src/ripple/unity/app_ledger_impl.cpp',
+        'src/ripple/unity/app_main1.cpp',
+        'src/ripple/unity/app_main2.cpp',
         'src/ripple/unity/app_misc.cpp',
+        'src/ripple/unity/app_misc_impl.cpp',
         'src/ripple/unity/app_paths.cpp',
         'src/ripple/unity/app_tx.cpp',
         'src/ripple/unity/conditions.cpp',
@@ -1019,16 +1022,20 @@ def get_unity_sources(toolchain):
         'src/ripple/unity/crypto.cpp',
         'src/ripple/unity/ledger.cpp',
         'src/ripple/unity/net.cpp',
-        'src/ripple/unity/overlay.cpp',
+        'src/ripple/unity/overlay1.cpp',
+        'src/ripple/unity/overlay2.cpp',
         'src/ripple/unity/peerfinder.cpp',
         'src/ripple/unity/json.cpp',
         'src/ripple/unity/protocol.cpp',
-        'src/ripple/unity/rpcx.cpp',
+        'src/ripple/unity/rpcx1.cpp',
+        'src/ripple/unity/rpcx2.cpp',
         'src/ripple/unity/shamap.cpp',
         'src/ripple/unity/server.cpp',
-        'src/test/unity/app_test_unity.cpp',
+        'src/test/unity/app_test_unity1.cpp',
+        'src/test/unity/app_test_unity2.cpp',
         'src/test/unity/basics_test_unity.cpp',
-        'src/test/unity/beast_test_unity.cpp',
+        'src/test/unity/beast_test_unity1.cpp',
+        'src/test/unity/beast_test_unity2.cpp',
     	'src/test/unity/consensus_test_unity.cpp',
         'src/test/unity/core_test_unity.cpp',
         'src/test/unity/conditions_test_unity.cpp',
@@ -1040,8 +1047,10 @@ def get_unity_sources(toolchain):
         'src/test/unity/resource_test_unity.cpp',
         'src/test/unity/rpc_test_unity.cpp',
         'src/test/unity/server_test_unity.cpp',
+        'src/test/unity/server_status_test_unity.cpp',
         'src/test/unity/shamap_test_unity.cpp',
-        'src/test/unity/jtx_unity.cpp',
+        'src/test/unity/jtx_unity1.cpp',
+        'src/test/unity/jtx_unity2.cpp',
         'src/test/unity/csf_unity.cpp'
     )
 

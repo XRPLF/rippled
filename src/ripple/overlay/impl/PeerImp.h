@@ -21,25 +21,16 @@
 #define RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 
 #include <ripple/app/consensus/RCLCxPeerPos.h>
-#include <ripple/basics/Log.h> // deprecated
-#include <ripple/nodestore/Database.h>
-#include <ripple/overlay/predicates.h>
+#include <ripple/basics/Log.h>
+#include <ripple/beast/core/ByteOrder.h>
+#include <ripple/beast/utility/WrappedSink.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/core/Config.h>
-#include <ripple/core/Job.h>
-#include <ripple/core/LoadEvent.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/STValidation.h>
-#include <ripple/beast/core/ByteOrder.h>
-#include <ripple/beast/net/IPAddressConversion.h>
-#include <beast/core/multi_buffer.hpp>
-#include <ripple/beast/asio/ssl_bundle.h>
-#include <beast/http/message.hpp>
-#include <beast/http/parser.hpp>
-#include <ripple/beast/utility/WrappedSink.h>
+#include <ripple/resource/Fees.h>
+
 #include <cstdint>
 #include <deque>
 #include <queue>

@@ -3822,10 +3822,19 @@
     <ClCompile Include="..\..\src\ripple\unity\app_ledger.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\app_main.cpp">
+    <ClCompile Include="..\..\src\ripple\unity\app_ledger_impl.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\app_main1.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\app_main2.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\app_misc.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\app_misc_impl.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\app_paths.cpp">
@@ -3870,7 +3879,10 @@
     <ClCompile Include="..\..\src\ripple\unity\nodestore.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\overlay.cpp">
+    <ClCompile Include="..\..\src\ripple\unity\overlay1.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\overlay2.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\peerfinder.cpp">
@@ -3894,7 +3906,10 @@
     <ClInclude Include="..\..\src\ripple\unity\rocksdb.h">
       <Filter>ripple\unity</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unity\rpcx.cpp">
+    <ClCompile Include="..\..\src\ripple\unity\rpcx1.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\rpcx2.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\secp256k1.cpp">
@@ -5742,13 +5757,19 @@
     <ClCompile Include="..\..\src\test\shamap\SHAMap_test.cpp">
       <Filter>test\shamap</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\unity\app_test_unity.cpp">
+    <ClCompile Include="..\..\src\test\unity\app_test_unity1.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\app_test_unity2.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\unity\basics_test_unity.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\unity\beast_test_unity.cpp">
+    <ClCompile Include="..\..\src\test\unity\beast_test_unity1.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\beast_test_unity2.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\unity\conditions_test_unity.cpp">
@@ -5766,7 +5787,10 @@
     <ClCompile Include="..\..\src\test\unity\json_test_unity.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\unity\jtx_unity.cpp">
+    <ClCompile Include="..\..\src\test\unity\jtx_unity1.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\jtx_unity2.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\unity\ledger_test_unity.cpp">
@@ -5788,6 +5812,9 @@
       <Filter>test\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\unity\rpc_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\server_status_test_unity.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\unity\server_test_unity.cpp">

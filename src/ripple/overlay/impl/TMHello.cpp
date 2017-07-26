@@ -18,15 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/overlay/impl/TMHello.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <ripple/core/TimeKeeper.h>
 #include <ripple/protocol/digest.h>
-#include <ripple/protocol/BuildInfo.h>
-#include <ripple/overlay/impl/TMHello.h>
 #include <beast/core/detail/base64.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>

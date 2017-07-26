@@ -22,25 +22,7 @@
 
 #include "ripple.pb.h"
 #include <ripple/overlay/impl/OverlayImpl.h>
-#include <ripple/overlay/impl/ProtocolMessage.h>
-#include <ripple/overlay/impl/TMHello.h>
 #include <ripple/overlay/impl/Tuning.h>
-#include <ripple/overlay/Message.h>
-#include <ripple/protocol/BuildInfo.h>
-#include <ripple/protocol/UintTypes.h>
-#include <ripple/beast/asio/ssl_bundle.h>
-#include <ripple/beast/net/IPAddressConversion.h>
-#include <ripple/beast/utility/WrappedSink.h>
-#include <beast/core/multi_buffer.hpp>
-#include <beast/http/empty_body.hpp>
-#include <beast/http/string_body.hpp>
-#include <beast/http/parser.hpp>
-#include <boost/asio/basic_waitable_timer.hpp>
-#include <boost/asio/buffers_iterator.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <chrono>
-#include <functional>
-#include <memory>
 
 namespace ripple {
 

@@ -19,8 +19,7 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/FeeVoteImpl.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/misc/NetworkOPs.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
+#include <ripple/overlay/impl/Cluster.cpp>
+#include <ripple/overlay/impl/ConnectAttempt.cpp>
+#include <ripple/overlay/impl/Message.cpp>
+#include <ripple/overlay/impl/OverlayImpl.cpp>
