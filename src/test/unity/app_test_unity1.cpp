@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -17,10 +18,19 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/FeeVoteImpl.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/misc/NetworkOPs.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
+#include <test/app/AccountTxPaging_test.cpp>
+#include <test/app/AmendmentTable_test.cpp>
+#include <test/app/CrossingLimits_test.cpp>
+#include <test/app/DeliverMin_test.cpp>
+#include <test/app/Discrepancy_test.cpp>
+#include <test/app/Escrow_test.cpp>
+#include <test/app/Flow_test.cpp>
+#include <test/app/Freeze_test.cpp>
+#include <test/app/HashRouter_test.cpp>
+#include <test/app/LedgerLoad_test.cpp>
+#include <test/app/LoadFeeTrack_test.cpp>
+#include <test/app/Manifest_test.cpp>
+#include <test/app/MultiSign_test.cpp>
+#include <test/app/OfferStream_test.cpp>
+#include <test/app/Offer_test.cpp>
+#include <test/app/OversizeMeta_test.cpp>

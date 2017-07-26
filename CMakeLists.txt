@@ -187,8 +187,11 @@ prepend(ripple_unity_srcs
 src/ripple/unity/
 app_consensus.cpp
 app_ledger.cpp
-app_main.cpp
+app_ledger_impl.cpp
+app_main1.cpp
+app_main2.cpp
 app_misc.cpp
+app_misc_impl.cpp
 app_paths.cpp
 app_tx.cpp
 conditions.cpp
@@ -198,19 +201,23 @@ basics.cpp
 crypto.cpp
 ledger.cpp
 net.cpp
-overlay.cpp
+overlay1.cpp
+overlay2.cpp
 peerfinder.cpp
 json.cpp
 protocol.cpp
-rpcx.cpp
+rpcx1.cpp
+rpcx2.cpp
 shamap.cpp
 server.cpp)
 
 prepend(test_unity_srcs
 src/test/unity/
-app_test_unity.cpp
+app_test_unity1.cpp
+app_test_unity2.cpp
 basics_test_unity.cpp
-beast_test_unity.cpp
+beast_test_unity1.cpp
+beast_test_unity2.cpp
 conditions_test_unity.cpp
 consensus_test_unity.cpp
 core_test_unity.cpp
@@ -222,8 +229,10 @@ protocol_test_unity.cpp
 resource_test_unity.cpp
 rpc_test_unity.cpp
 server_test_unity.cpp
+server_status_test_unity.cpp
 shamap_test_unity.cpp
-jtx_unity.cpp
+jtx_unity1.cpp
+jtx_unity2.cpp
 csf_unity.cpp)
 
 list(APPEND rippled_src_unity ${beast_unity_srcs} ${ripple_unity_srcs} ${test_unity_srcs})

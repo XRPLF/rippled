@@ -19,12 +19,13 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/main/BasicApp.cpp>
-#include <ripple/app/main/Amendments.cpp>
-#include <ripple/app/main/Application.cpp>
-#include <ripple/app/main/CollectorManager.cpp>
-#include <ripple/app/main/Main.cpp>
-#include <ripple/app/main/NodeIdentity.cpp>
-#include <ripple/app/main/NodeStoreScheduler.cpp>
-#include <ripple/app/main/DBInit.cpp>
-#include <ripple/app/main/LoadManager.cpp>
+#include <ripple/app/ledger/impl/InboundLedger.cpp>
+#include <ripple/app/ledger/impl/InboundLedgers.cpp>
+#include <ripple/app/ledger/impl/InboundTransactions.cpp>
+#include <ripple/app/ledger/impl/LedgerCleaner.cpp>
+#include <ripple/app/ledger/impl/LedgerMaster.cpp>
+#include <ripple/app/ledger/impl/LocalTxs.cpp>
+#include <ripple/app/ledger/impl/OpenLedger.cpp>
+#include <ripple/app/ledger/impl/LedgerToJson.cpp>
+#include <ripple/app/ledger/impl/TransactionAcquire.cpp>
+#include <ripple/app/ledger/impl/TransactionMaster.cpp>

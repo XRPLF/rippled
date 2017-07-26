@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -17,10 +18,4 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/FeeVoteImpl.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/misc/NetworkOPs.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
+#include <test/server/ServerStatus_test.cpp>

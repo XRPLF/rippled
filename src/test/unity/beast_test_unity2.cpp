@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -17,10 +18,12 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/FeeVoteImpl.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/misc/NetworkOPs.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
+#include <test/beast/beast_tagged_integer_test.cpp>
+#include <test/beast/beast_weak_fn_test.cpp>
+#include <test/beast/beast_Zero_test.cpp>
+#include <test/beast/define_print.cpp>
+#include <test/beast/hash_append_test.cpp>
+#include <test/beast/hash_speed_test.cpp>
+#include <test/beast/IPEndpoint_test.cpp>
+#include <test/beast/LexicalCast_test.cpp>
+#include <test/beast/SemanticVersion_test.cpp>

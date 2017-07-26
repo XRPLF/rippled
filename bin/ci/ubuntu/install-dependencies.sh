@@ -8,7 +8,7 @@ TWD=$( cd ${TWD:-${1:-${PWD:-$( pwd )}}}; pwd )
 echo "Target path is: $TWD"
 # Override gcc version to $GCC_VER.
 # Put an appropriate symlink at the front of the path.
-mkdir -v $HOME/bin
+mkdir -pv $HOME/bin
 for g in gcc g++ gcov gcc-ar gcc-nm gcc-ranlib
 do
   test -x $( type -p ${g}-$GCC_VER )

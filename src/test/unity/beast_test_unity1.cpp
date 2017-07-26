@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -17,10 +18,11 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/FeeVoteImpl.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/misc/NetworkOPs.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
+#include <test/beast/aged_associative_container_test.cpp>
+#include <test/beast/beast_abstract_clock_test.cpp>
+#include <test/beast/beast_asio_error_test.cpp>
+#include <test/beast/beast_basic_seconds_clock_test.cpp>
+#include <test/beast/beast_CurrentThreadName_test.cpp>
+#include <test/beast/beast_Debug_test.cpp>
+#include <test/beast/beast_Journal_test.cpp>
+#include <test/beast/beast_PropertyStream_test.cpp>
