@@ -18,13 +18,10 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
 #include <ripple/overlay/impl/PeerImp.h>
-#include <ripple/overlay/impl/Tuning.h>
+#include <ripple/overlay/Cluster.h>
 #include <ripple/json/json_reader.h>
-#include <beast/http/read.hpp>
-#include <beast/http/write.hpp>
 
 namespace ripple {
 

@@ -21,26 +21,16 @@
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/ValidatorList.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/Log.h>
 #include <ripple/basics/make_SSLContext.h>
-#include <ripple/beast/rfc2616.h>
-#include <ripple/protocol/JsonFields.h>
-#include <ripple/rpc/json_body.h>
-#include <ripple/server/SimpleWriter.h>
+#include <ripple/beast/core/LexicalCast.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/overlay/Cluster.h>
+#include <ripple/overlay/predicates.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
-#include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/peerfinder/make_Manager.h>
-#include <ripple/protocol/STExchange.h>
-#include <ripple/beast/core/ByteOrder.h>
-#include <beast/core/detail/base64.hpp>
-#include <ripple/beast/core/LexicalCast.h>
-#include <beast/http.hpp>
-#include <beast/core/string.hpp>
-#include <ripple/beast/utility/WrappedSink.h>
+#include <ripple/rpc/json_body.h>
+#include <ripple/server/SimpleWriter.h>
 
 #include <boost/utility/in_place_factory.hpp>
 
