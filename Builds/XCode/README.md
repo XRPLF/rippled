@@ -2,13 +2,13 @@
 
 ## Important
 
-We don't recommend OS X for rippled production use at this time. Currently, the
+We don't recommend macos for rippled production use at this time. Currently, the
 Ubuntu platform has received the highest level of quality assurance and
-testing.
+testing. That said, macos is suitable for many development/test tasks.
 
 ## Prerequisites
 
-You'll need OSX 10.8 or later
+You'll need macos 10.8 or later
 
 To clone the source code repository, create branches for inspection or
 modification, build rippled using clang, and run the system tests you will need
@@ -17,7 +17,7 @@ these software components:
 * [XCode](https://developer.apple.com/xcode/)
 * [Homebrew](http://brew.sh/)
 * [Git](http://git-scm.com/)
-* [Scons](http://www.scons.org/)
+* [CMake](http://cmake.org/)
 
 ## Install Software
 
@@ -64,14 +64,14 @@ later.
 
 ### Install Scons
 
-Requires version 2.3.0 or later
+Requires version 3.6.0 or later
 
 ```
-brew install scons
+brew install cmake
 ```
 
 `brew` will generally install the latest stable version of any package, which
-will satisfy the scons minimum version requirement for rippled.
+should satisfy the cmake minimum version requirement for rippled.
 
 ### Install Package Config
 
@@ -163,10 +163,16 @@ export BOOST_ROOT=/Users/Abigail/Downloads/boost_1_61_0
 ## Build
 
 ```
-scons
+mkdir xcode_build && cd xcode_build
+cmake -GXcode ..
 ```
 
-See: [here](https://ripple.com/wiki/Rippled_build_instructions#Building)
+There are a number of variables/options that our CMake files support and they
+can be added to the above command as needed (e.g. `-Dassert=ON` to enable
+asserts)
+
+After generation succeeds, the xcode project file can be opened and used to
+build and debug.
 
 ## Unit Tests (Recommended)
 

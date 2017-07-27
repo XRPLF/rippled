@@ -79,3 +79,5 @@ notifications:
   irc:
     channels:
       - "chat.freenode.net#ripple-dev"
+
+dist: precise

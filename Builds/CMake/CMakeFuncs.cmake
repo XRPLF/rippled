@@ -748,7 +748,7 @@ macro(link_common_libraries cur_project)
       find_library(app_kit AppKit)
       find_library(foundation Foundation)
       target_link_libraries(${cur_project}
-        crypto ssl ${app_kit} ${foundation})
+        ${app_kit} ${foundation})
     else()
       target_link_libraries(${cur_project} rt)
     endif()
