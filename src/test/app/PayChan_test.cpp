@@ -766,15 +766,99 @@ struct PayChan_test : public beast::unit_test::suite
                 BEAST_EXPECT (r[jss::result][jss::channels][0u][jss::channel_id] == c ||
                         r[jss::result][jss::channels][1u][jss::channel_id] == c);
         }
+
+        auto sliceToHex = [](Slice const& slice) {
+            std::string s;
+            s.reserve(2 * slice.size());
+            for (int i = 0; i < slice.size(); ++i)
+            {
+                s += "0123456789ABCDEF"[((slice[i] & 0xf0) >> 4)];
+                s += "0123456789ABCDEF"[((slice[i] & 0x0f) >> 0)];
+            }
+            return s;
+        };
+
         {
             // Verify chan1 auth
             auto const rs =
                 env.rpc ("channel_authorize", "alice", chan1Str, "1000");
             auto const sig = rs[jss::result][jss::signature].asString ();
             BEAST_EXPECT (!sig.empty ());
-            auto const rv = env.rpc (
-                "channel_verify", chan1PkStr, chan1Str, "1000", sig);
-            BEAST_EXPECT (rv[jss::result][jss::signature_verified].asBool ());
+            {
+                auto const rv = env.rpc(
+                    "channel_verify", chan1PkStr, chan1Str, "1000", sig);
+                BEAST_EXPECT(rv[jss::result][jss::signature_verified].asBool());
+            }
+
+            {
+                // use pk hex to verify
+                auto const pkAsHex = sliceToHex(pk.slice());
+                auto const rv = env.rpc (
+                    "channel_verify", pkAsHex, chan1Str, "1000", sig);
+                BEAST_EXPECT (rv[jss::result][jss::signature_verified].asBool ());
+            }
+            {
+                // malformed amount
+                auto const pkAsHex = sliceToHex(pk.slice());
+                auto rv =
+                    env.rpc("channel_verify", pkAsHex, chan1Str, "1000x", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "1000 ", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "x1000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "x", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, " ", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "1000 1000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "1,000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, " 1000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+                rv = env.rpc("channel_verify", pkAsHex, chan1Str, "", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
+            }
+            {
+                // malformed channel
+                auto const pkAsHex = sliceToHex(pk.slice());
+                auto chan1StrBad = chan1Str;
+                chan1StrBad.pop_back();
+                auto rv = env.rpc("channel_verify", pkAsHex, chan1StrBad, "1000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelMalformed");
+                rv = env.rpc ("channel_authorize", "alice", chan1StrBad, "1000");
+                BEAST_EXPECT(rv[jss::error] == "channelMalformed");
+
+                chan1StrBad = chan1Str;
+                chan1StrBad.push_back('0');
+                rv = env.rpc("channel_verify", pkAsHex, chan1StrBad, "1000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelMalformed");
+                rv = env.rpc ("channel_authorize", "alice", chan1StrBad, "1000");
+                BEAST_EXPECT(rv[jss::error] == "channelMalformed");
+
+                chan1StrBad = chan1Str;
+                chan1StrBad.back() = 'x';
+                rv = env.rpc("channel_verify", pkAsHex, chan1StrBad, "1000", sig);
+                BEAST_EXPECT(rv[jss::error] == "channelMalformed");
+                rv = env.rpc ("channel_authorize", "alice", chan1StrBad, "1000");
+                BEAST_EXPECT(rv[jss::error] == "channelMalformed");
+            }
+            {
+                // give an ill formed base 58 public key
+                auto illFormedPk = chan1PkStr.substr(0, chan1PkStr.size() - 1);
+                auto const rv = env.rpc(
+                    "channel_verify", illFormedPk, chan1Str, "1000", sig);
+                BEAST_EXPECT(!rv[jss::result][jss::signature_verified].asBool());
+            }
+            {
+                // give an ill formed hex public key
+                auto const pkAsHex = sliceToHex(pk.slice());
+                auto illFormedPk = pkAsHex.substr(0, chan1PkStr.size() - 1);
+                auto const rv = env.rpc(
+                    "channel_verify", illFormedPk, chan1Str, "1000", sig);
+                BEAST_EXPECT(!rv[jss::result][jss::signature_verified].asBool());
+            }
         }
         {
             // Try to verify chan2 auth with chan1 key
@@ -782,9 +866,29 @@ struct PayChan_test : public beast::unit_test::suite
                 env.rpc ("channel_authorize", "alice", chan2Str, "1000");
             auto const sig = rs[jss::result][jss::signature].asString ();
             BEAST_EXPECT (!sig.empty ());
-            auto const rv =
-                env.rpc ("channel_verify", chan1PkStr, chan1Str, "1000", sig);
-            BEAST_EXPECT (!rv[jss::result][jss::signature_verified].asBool ());
+            {
+                auto const rv = env.rpc(
+                    "channel_verify", chan1PkStr, chan1Str, "1000", sig);
+                BEAST_EXPECT(
+                    !rv[jss::result][jss::signature_verified].asBool());
+            }
+            {
+                // use pk hex to verify
+                auto const pkAsHex = sliceToHex(pk.slice());
+                auto const rv = env.rpc(
+                    "channel_verify", pkAsHex, chan1Str, "1000", sig);
+                BEAST_EXPECT(
+                    !rv[jss::result][jss::signature_verified].asBool());
+            }
+        }
+        {
+            // send malformed amounts rpc requests
+            auto rs = env.rpc("channel_authorize", "alice", chan1Str, "1000x");
+            BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
+            rs = env.rpc("channel_authorize", "alice", chan1Str, "x1000");
+            BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
+            rs = env.rpc("channel_authorize", "alice", chan1Str, "x");
+            BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
         }
     }
 
