@@ -14,6 +14,9 @@ env:
     - BOOST_ROOT=$HOME/boost_1_60_0
     - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.60.0/boost_1_60_0.tar.gz'
 
+# Travis is timing out on Trusty.  So, for now, use Precise.  July 2017
+dist: precise
+
 addons:
   apt:
     sources: ['ubuntu-toolchain-r-test']
