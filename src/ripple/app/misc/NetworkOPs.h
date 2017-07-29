@@ -20,14 +20,14 @@
 #ifndef RIPPLE_APP_MISC_NETWORKOPS_H_INCLUDED
 #define RIPPLE_APP_MISC_NETWORKOPS_H_INCLUDED
 
-#include <ripple/core/JobQueue.h>
-#include <ripple/protocol/STValidation.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/consensus/RCLCxPeerPos.h>
+#include <ripple/core/JobQueue.h>
+#include <ripple/core/Stoppable.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/InfoSub.h>
+#include <ripple/protocol/STValidation.h>
 #include <memory>
-#include <ripple/core/Stoppable.h>
 #include <deque>
 #include <tuple>
 
@@ -96,7 +96,7 @@ public:
     }
 
 public:
-    virtual ~NetworkOPs () = 0;
+    ~NetworkOPs () override = default;
 
     //--------------------------------------------------------------------------
     //
@@ -237,10 +237,11 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<NetworkOPs>
-make_NetworkOPs (Application& app, NetworkOPs::clock_type& clock, bool standalone,
-    std::size_t network_quorum, bool start_valid,
-    JobQueue& job_queue, LedgerMaster& ledgerMaster,
-    Stoppable& parent, ValidatorKeys const & validatorKeys, beast::Journal journal);
+make_NetworkOPs (Application& app, NetworkOPs::clock_type& clock,
+    bool standalone, std::size_t network_quorum, bool start_valid,
+    JobQueue& job_queue, LedgerMaster& ledgerMaster, Stoppable& parent,
+    ValidatorKeys const & validatorKeys, boost::asio::io_service& io_svc,
+    beast::Journal journal);
 
 } // ripple
 

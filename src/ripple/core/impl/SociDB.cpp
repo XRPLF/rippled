@@ -226,7 +226,13 @@ private:
             running_ = true;
         }
 
-        jobQueue_.addJob (jtWAL, "WAL", [this] (Job&) { checkpoint(); });
+        // If the Job is not added to the JobQueue then we're not running_.
+        if (! jobQueue_.addJob (
+            jtWAL, "WAL", [this] (Job&) { checkpoint(); }))
+        {
+            std::lock_guard <std::mutex> lock (mutex_);
+            running_ = false;
+        }
     }
 
     void checkpoint ()

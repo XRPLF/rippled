@@ -49,8 +49,8 @@ public:
 private:
     void doTask (NodeStore::Task& task);
 
-    JobQueue* m_jobQueue;
-    std::atomic <int> m_taskCount;
+    JobQueue* m_jobQueue {nullptr};
+    std::atomic <int> m_taskCount {0};
 };
 
 } // ripple
