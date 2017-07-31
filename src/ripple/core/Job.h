@@ -22,6 +22,8 @@
 
 #include <ripple/core/LoadMonitor.h>
 
+#include <functional>
+
 namespace ripple {
 
 // Note that this queue should only be used for CPU-bound jobs
