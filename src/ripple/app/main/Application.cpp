@@ -1014,6 +1014,11 @@ public:
         return maxDisallowedLedger_;
     }
 
+    LedgerIndex getMaxDisallowedLedger() override
+    {
+        return maxDisallowedLedger_;
+    }
+
 
 private:
     // For a newly-started validator, this is the greatest persisted ledger
