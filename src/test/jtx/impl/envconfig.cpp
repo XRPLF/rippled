@@ -27,6 +27,19 @@ namespace test {
 void
 setupConfigForUnitTests (Config& cfg)
 {
+    static int port_base = 8000;
+    std::string port_peer;
+    std::string port_rpc;
+    std::string port_ws;
+    static std::mutex m;
+    {
+        std::lock_guard<std::mutex> l(m);
+        port_peer = to_string(port_base);
+        port_rpc = to_string(port_base + 1);
+        port_ws = to_string(port_base + 2);
+        port_base += 3;
+    }
+
     cfg.overwrite (ConfigSection::nodeDatabase (), "type", "memory");
     cfg.overwrite (ConfigSection::nodeDatabase (), "path", "main");
     cfg.deprecatedClearSection (ConfigSection::importNodeDatabase ());
@@ -34,16 +47,16 @@ setupConfigForUnitTests (Config& cfg)
     cfg.setupControl(true, true, true);
     cfg["server"].append("port_peer");
     cfg["port_peer"].set("ip", "127.0.0.1");
-    cfg["port_peer"].set("port", "8080");
+    cfg["port_peer"].set("port", port_peer);
     cfg["port_peer"].set("protocol", "peer");
     cfg["server"].append("port_rpc");
     cfg["port_rpc"].set("ip", "127.0.0.1");
-    cfg["port_rpc"].set("port", "8081");
+    cfg["port_rpc"].set("port", port_rpc);
     cfg["port_rpc"].set("protocol", "http,ws2");
     cfg["port_rpc"].set("admin", "127.0.0.1");
     cfg["server"].append("port_ws");
     cfg["port_ws"].set("ip", "127.0.0.1");
-    cfg["port_ws"].set("port", "8082");
+    cfg["port_ws"].set("port", port_ws);
     cfg["port_ws"].set("protocol", "ws");
     cfg["port_ws"].set("admin", "127.0.0.1");
 }
