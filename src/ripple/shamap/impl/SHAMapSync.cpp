@@ -41,11 +41,10 @@ void
 SHAMap::visitNodes(std::function<bool (
     SHAMapAbstractNode&)> const& function) const
 {
-    // Visit every node in a SHAMap
-    assert (root_->isValid ());
-
     if (! root_)
         return;
+
+    assert (root_->isValid ());
 
     function (*root_);
 
@@ -106,12 +105,10 @@ void
 SHAMap::visitDifferences(SHAMap const* have,
     std::function<bool (SHAMapAbstractNode&)> function) const
 {
-    // Visit every node in this SHAMap that is not present
-    // in the specified SHAMap
-    assert (root_->isValid ());
-
     if (! root_)
         return;
+
+    assert (root_->isValid ());
 
     if (root_->getNodeHash ().isZero ())
         return;

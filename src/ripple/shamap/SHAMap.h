@@ -188,6 +188,7 @@ public:
     /**  Visit every node in this SHAMap that
          is not present in the specified SHAMap
 
+         @param have The SHAMap to compare with.
          @param function called with every node visited.
          If function returns false, visitDifferences exits.
     */

@@ -172,8 +172,9 @@ public:
     int fdlimit() const override;
 
 private:
-    // callback for visitNodes
+    // Callback used with visitNodes. Returns true if copying should continue.
     bool copyNode (std::uint64_t& nodeCount, SHAMapAbstractNode const &node);
+
     void run();
     void dbPaths();
     std::shared_ptr <NodeStore::Backend> makeBackendRotating (
