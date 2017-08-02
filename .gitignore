@@ -33,9 +33,6 @@ Release/*.*
 *.gcda
 *.gcov
 
-# Ignore locally installed node_modules
-/node_modules
-
 # Ignore tmp directory.
 tmp
 
@@ -50,7 +47,6 @@ debug_log.txt
 # Ignore customized configs
 rippled.cfg
 validators.txt
-test/config.js
 
 # Doxygen generated documentation output
 HtmlDocumentation
