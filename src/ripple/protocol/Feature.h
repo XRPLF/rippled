@@ -37,8 +37,8 @@
  * 3) add a uint256 definition for the feature to the corresponding source
  *    file (Feature.cpp)
  * 4) if the feature is going to be supported in the near future, add its
- *    sha512half value and name (matching exactly the featureName here) to the
- *    supportedAmendments in Amendments.cpp.
+ *    sha512half value and name (matching exactly the featureName here) to
+ *    the supportedAmendments in Feature.cpp.
  *
  */
 
@@ -92,6 +92,10 @@ public:
     uint256 const&
     bitsetIndexToFeature(size_t i) const;
 };
+
+/** Amendments that this server supports, but doesn't enable by default */
+std::vector<std::string> const&
+supportedAmendments ();
 
 } // detail
 

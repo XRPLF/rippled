@@ -1942,7 +1942,7 @@ public:
                     .set("minimum_txn_in_ledger_standalone", "3");
                 return cfg;
             }),
-            with_features(featureFeeEscalation)};
+            with_only_features(featureFeeEscalation)};
         LoadFeeTrack const& feeTrack = env.app().getFeeTrack();
 
         {
@@ -2254,7 +2254,8 @@ public:
         // "b" (not in the ledger) is rDg53Haik2475DJx8bjMDSDPj4VX7htaMd.
         // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
 
-        test::jtx::Env env(*this, test::jtx::with_features(featureMultiSign));
+        test::jtx::Env env(*this,
+            test::jtx::with_only_features(featureMultiSign));
         env.fund(test::jtx::XRP(100000), a, ed, g);
         env.close();
 
