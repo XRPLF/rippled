@@ -34,12 +34,6 @@
 namespace ripple
 {
 
-namespace detail {
-extern
-std::vector<std::string>
-supportedAmendments ();
-}
-
 class AmendmentTable_test final : public beast::unit_test::suite
 {
 private:
