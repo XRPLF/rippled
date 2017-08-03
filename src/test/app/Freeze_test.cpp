@@ -58,7 +58,7 @@ class Freeze_test : public beast::unit_test::suite
         testcase("RippleState Freeze");
 
         using namespace test::jtx;
-        Env env(*this, with_features(fs));
+        Env env(*this, with_only_features(fs));
 
         Account G1 {"G1"};
         Account alice {"alice"};
@@ -212,7 +212,7 @@ class Freeze_test : public beast::unit_test::suite
         testcase("Global Freeze");
 
         using namespace test::jtx;
-        Env env(*this, with_features(fs));
+        Env env(*this, with_only_features(fs));
 
         Account G1 {"G1"};
         Account A1 {"A1"};
@@ -370,7 +370,7 @@ class Freeze_test : public beast::unit_test::suite
         testcase("No Freeze");
 
         using namespace test::jtx;
-        Env env(*this, with_features(fs));
+        Env env(*this, with_only_features(fs));
 
         Account G1 {"G1"};
         Account A1 {"A1"};
@@ -424,7 +424,7 @@ class Freeze_test : public beast::unit_test::suite
         testcase("Offers for Frozen Trust Lines");
 
         using namespace test::jtx;
-        Env env(*this, with_features(fs));
+        Env env(*this, with_only_features(fs));
 
         Account G1 {"G1"};
         Account A2 {"A2"};

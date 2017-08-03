@@ -47,7 +47,7 @@ public:
     testStepLimit(std::initializer_list<uint256> fs)
     {
         using namespace jtx;
-        Env env(*this, with_features(fs));
+        Env env(*this, with_only_features(fs));
         auto const xrpMax = XRP(100000000000);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -81,7 +81,7 @@ public:
     testCrossingLimit(std::initializer_list<uint256> fs)
     {
         using namespace jtx;
-        Env env(*this, with_features(fs));
+        Env env(*this, with_only_features(fs));
         auto const xrpMax = XRP(100000000000);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -110,7 +110,7 @@ public:
     testStepAndCrossingLimit(std::initializer_list<uint256> fs)
     {
         using namespace jtx;
-        Env env(*this, with_features(fs));
+        Env env(*this, with_only_features(fs));
         auto const xrpMax = XRP(100000000000);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];

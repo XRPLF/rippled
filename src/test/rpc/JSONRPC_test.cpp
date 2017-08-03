@@ -2254,7 +2254,8 @@ public:
         // "b" (not in the ledger) is rDg53Haik2475DJx8bjMDSDPj4VX7htaMd.
         // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
 
-        test::jtx::Env env(*this, test::jtx::with_features(featureMultiSign));
+        test::jtx::Env env(*this,
+            test::jtx::with_only_features(featureMultiSign));
         env.fund(test::jtx::XRP(100000), a, ed, g);
         env.close();
 

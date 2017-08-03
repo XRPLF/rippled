@@ -36,12 +36,6 @@
 
 namespace ripple {
 
-namespace detail {
-extern
-std::vector<std::string>
-supportedAmendments ();
-}
-
 namespace test {
 
 class TxQ_test : public beast::unit_test::suite
@@ -1568,7 +1562,7 @@ public:
     {
         using namespace jtx;
         using namespace std::chrono;
-        Env env(*this, with_features(featureTickets));
+        Env env(*this, with_only_features(featureTickets));
         auto const alice = Account("alice");
         env.memoize(alice);
         env.memoize("bob");
