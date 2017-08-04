@@ -33,7 +33,7 @@ enum class Error {
     /// Integer would not fit in the bounds of the specified type
     integerBounds = 1,
     /** There is more content data in a group than expected. For example: after
-        decoding a group, if there is more content is a slice.
+        decoding a group from a slice, the slice is not empty.
      */  
     longGroup,
     /** There is less content data in a group than expected. For example: trying to

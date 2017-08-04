@@ -123,7 +123,11 @@ struct Slice_test : beast::unit_test::suite
             BEAST_EXPECT(*s.data() == 42);
             s = ms; // can assign an immutable slice from a mutable slice
             auto const svs = makeSlice(mutValues); // can create a slice from a boost small vector
-            BEAST_EXPECT(*svs.data() == 42);
+
+            ms.push_back(37);
+            BEAST_EXPECT(mutValues[0] == 37);
+            BEAST_EXPECT(*ms.data() == 1);
+            BEAST_EXPECT(*svs.data() == 37);
         }
     }
 };

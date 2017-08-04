@@ -17,8 +17,21 @@
 */
 //==============================================================================
 
+/*
+  Note: This file requires clang 5.0 or greater.
+        Typical build setup:
+        cmake -Dfuzzer_conditions=ON -Dsan='fuzzer;address' -Dtarget=clang.debug <path to proj CMakeLists.txt>
+        Typical run:
+        ./fulfillment_fuzzer <path to corpus> -max_len=5000 -jobs=4
+        An initial fuzz corpus may be generated with the `conditions.py` script.
+ */
+
+
 #include <ripple/conditions/impl/Der.h>
 #include <ripple/conditions/Fulfillment.h>
+
+#include <boost/filesystem.hpp>
+
 #include <fstream>
 
 extern "C" int
@@ -36,16 +49,15 @@ LLVMFuzzerTestOneInput(uint8_t const* data, size_t size)
     Condition c;
     decoder >> c >> eos;
 #else
-#error("Must define either FUZZ_TEST_CONDITION or FUZZ_TEST_FULFILLMENT
+#error("Must define either FUZZ_TEST_CONDITION or FUZZ_TEST_FULFILLMENT")
 #endif
 
     if (decoder.ec() == Error::logicError)
     {
-        static int fileNum = 0;
+        static boost::filesystem::path model{"logic_error%%%%.dat"};
+        auto const fileName = boost::filesystem::unique_path(model);
         std::ofstream ofs;
-        char fileName[32];
-        sprintf(fileName, "logic_error%d.dat", fileNum++);
-        ofs.open(fileName, std::ofstream::out | std::ofstream::binary);
+        ofs.open(fileName.native(), std::ofstream::out | std::ofstream::binary);
         ofs.write((char const*) data, size);
         ofs.close();
     }

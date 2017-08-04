@@ -87,6 +87,20 @@ namespace cryptoconditions {
 
 namespace der {
 
+enum TagType {
+    tagBoolean = 1,
+    tagInteger = 2,
+    tagBitString = 3,
+    tagOctetString = 4,
+    tagNull = 5,
+    tagObjectIdentifier = 6,
+    tagReal = 9,
+    tagEnumerated = 10,
+    tagUtf8String = 12,
+    tagSequence = 16,
+    tagSet = 17
+};
+
 /**  Type of the group.
 
      @note Sometimes this matches the asn.1 tag number, but not always. In
@@ -98,17 +112,17 @@ namespace der {
 */
 
 enum class GroupType {
-    boolean = 1,
-    integer = 2,
-    bitString = 3,
-    octetString = 4,
-    null = 5,
-    objectIdentifier = 6,
-    real = 9,
-    enumerated = 10,
-    utf8String = 12,
-    sequence = 16,
-    set = 17,
+    boolean = tagBoolean,
+    integer = tagInteger,
+    bitString = tagBitString,
+    octetString = tagOctetString,
+    null = tagNull,
+    objectIdentifier = tagObjectIdentifier,
+    real = tagReal,
+    enumerated = tagEnumerated,
+    utf8String = tagUtf8String,
+    sequence = tagSequence,
+    set = tagSet,
 
     // The following are never tag ids.
 
@@ -495,6 +509,28 @@ public:
     }
 };
 
+template<std::uint64_t ChunkBitSize>
+std::uint64_t
+numLeadingZeroChunks(std::uint64_t v, std::uint64_t n)
+{
+    static_assert(ChunkBitSize <= 8, "Unsupported chunk bit size");
+
+    std::uint64_t result = 0;
+    while (n--)
+    {
+        auto b = static_cast<std::uint8_t>((v >> (n * ChunkBitSize)) & 0xFF);
+        if (b)
+            break;
+        ++result;
+    }
+    return result;
+}
+
+/** decode the tag from asn.1 format
+ */
+void
+decodeTag(Slice& slice, Tag& tag, std::error_code& ec);
+
 /** Encode the integer in a format appropriate for an ans.1 tag number.
 
     Encode the integer in big endian form, in as few of bytes as possible. All
@@ -508,6 +544,11 @@ encodeTagNum(MutableSlice& dst, std::uint64_t v, std::error_code& ec);
 std::uint64_t
 tagNumLength(std::uint64_t v);
 
+/** Decode the content length from asn.1 format
+*/
+void
+decodeContentLength(Slice& slice, std::uint64_t& contentLength, std::error_code& ec);
+
 /** Encode the integer in a format appropriate for an ans.1 content length
 
     Encode the integer in big endian form, in as few of bytes as possible.
@@ -515,12 +556,12 @@ tagNumLength(std::uint64_t v);
 void
 encodeContentLength(MutableSlice& dst, std::uint64_t v, std::error_code& ec);
 
-/** return the number of bytes required to encode a the given content length
+/** return the number of bytes required to encode the given content length
  */
 std::uint64_t
 contentLengthLength(std::uint64_t);
 
-/** return the number of bytes required to encode a the given tag
+/** return the number of bytes required to encode the given tag
  */
 std::uint64_t
 tagLength(Tag t);
@@ -645,10 +686,13 @@ public:
     GroupType groupType() const;
 };
 
+/** encode the preamble into the dst slice
+ */
 void
 encodePreamble(MutableSlice& dst, Preamble const& p, std::error_code& ec);
 
-/// decode the preamble from slice into p
+/** decode the preamble from slice into p
+ */
 void
 decodePreamble(Slice& slice, Preamble& p, std::error_code& ec);
 
@@ -681,7 +725,7 @@ extern Constructor constructor;
     are added to the stream using the `<<` operator. After all the values are
     added to the encoder, it must be terminated with a call to `eos()`. As a
     convenience, there is a special variable called `eos` that when streamed will
-    call the streams `eos()` function. Typically, the code to encode values to a
+    call the stream's `eos()` function. Typically, the code to encode values to a
     stream is: `encoder << value_1 << ... << value_n << eos;`.
 
     Every type to be streamed must specialize the DerCoderTraits class @see
@@ -895,7 +939,7 @@ struct Encoder
     The decode class has an interface similar to a c++ output stream. Values are
     decoded from the stream using the `>>` operator. After all the values are
     decoded, it must be terminated with a call to `eos()`. As a convenience, there
-    is a special variable called `eos` that when streamed will call the streams
+    is a special variable called `eos` that when streamed will call the stream's
     `eos()` function. Typically, the code to encode values to a stream is:
     `decoder >> value_1 >> ... >> value_n >> eos;`.
 
@@ -1118,7 +1162,7 @@ struct IntegerTraits
     boost::optional<std::uint8_t> const&
     tagNum()
     {
-        static boost::optional<std::uint8_t> tn{2};
+        static boost::optional<std::uint8_t> tn{tagInteger};
         return tn;
     }
 
@@ -1127,7 +1171,7 @@ struct IntegerTraits
     std::uint8_t
     tagNum(T)
     {
-        return 2;
+        return tagInteger;
     }
 
     constexpr static
@@ -1373,7 +1417,7 @@ struct OctetStringTraits
     boost::optional<std::uint8_t> const&
     tagNum()
     {
-        static boost::optional<std::uint8_t> tn{4};
+        static boost::optional<std::uint8_t> tn{tagOctetString};
         return tn;
     }
 
@@ -1382,7 +1426,7 @@ struct OctetStringTraits
     std::uint8_t
     tagNum(T const&)
     {
-        return 4;
+        return tagOctetString;
     }
 
     constexpr static
@@ -1574,13 +1618,11 @@ struct DerCoderTraits<boost::container::small_vector<std::uint8_t, S>> : OctetSt
             return 1;
         }
         auto const s = lhs.size();
-        auto const lhsD = lhs.data();
-        auto const rhsD = rhs.data();
         for (size_t i = 0; i < s; ++i)
         {
-            if (lhsD[i] != rhsD[i])
+            if (lhs[i] != rhs[i])
             {
-                if (lhsD[i] < rhsD[i])
+                if (lhs[i] < rhs[i])
                     return -1;
                 return 1;
             }
@@ -1829,7 +1871,7 @@ struct DerCoderTraits<std::bitset<S>>
     boost::optional<std::uint8_t> const&
     tagNum()
     {
-        static boost::optional<std::uint8_t> tn{3};
+        static boost::optional<std::uint8_t> tn{tagBitString};
         return tn;
     }
 
@@ -1837,7 +1879,7 @@ struct DerCoderTraits<std::bitset<S>>
     std::uint8_t
     tagNum(std::bitset<S> const&)
     {
-        return 3;
+        return tagBitString;
     }
 
     constexpr static
@@ -1880,23 +1922,12 @@ struct DerCoderTraits<std::bitset<S>>
         zero.
      */
     static
-    std::size_t
+    std::uint64_t
     numLeadingZeroBytes(std::bitset<S> const& s)
     {
-        std::size_t result = 0;
-        auto curByteIndex = maxBytes;
-        auto const bits = s.to_ulong();
-        if (bits == 1)
-            // Always consider the last byte, even if it is zero
-            return maxBytes - 1;
-        while (curByteIndex--)
-        {
-            std::uint8_t const b = (bits >> curByteIndex * 8) & 0xff;
-            if (b)
-                return result;
-            ++result;
-        }
-        return result-1;
+        auto const result = numLeadingZeroChunks<8>(s.to_ulong(), maxBytes);
+        // Always consider the last byte, even if it is zero
+        return std::min<std::uint64_t>(result, maxBytes - 1);
     }
 
     static
@@ -2083,8 +2114,8 @@ struct DerCoderTraits<std::bitset<S>>
             return 1;
         }
 
-        for (size_t curByte = 0; curByte <
-             maxBytes - std::min(leadingZeroBytes[0], leadingZeroBytes[1]);
+        // leadingZeroBytes and unusedBits are equal
+        for (size_t curByte = 0; curByte < maxBytes - leadingZeroBytes[0];
              ++curByte)
         {
             uint8_t const v[2] = {
@@ -2245,7 +2276,7 @@ struct DerCoderTraits<SetOfWrapper<T>>
     static boost::optional<std::uint8_t> const&
     tagNum()
     {
-        static boost::optional<std::uint8_t> tn{17};
+        static boost::optional<std::uint8_t> tn{tagSet};
         return tn;
     }
 
@@ -2253,7 +2284,7 @@ struct DerCoderTraits<SetOfWrapper<T>>
     std::uint8_t
     tagNum(SetOfWrapper<T> const&)
     {
-        return 17;
+        return tagSet;
     }
 
     constexpr static
@@ -2377,7 +2408,7 @@ struct DerCoderTraits<SequenceOfWrapper<T>>
     boost::optional<std::uint8_t> const&
     tagNum()
     {
-        static boost::optional<std::uint8_t> tn{16};
+        static boost::optional<std::uint8_t> tn{tagSequence};
         return tn;
     }
 
@@ -2385,7 +2416,7 @@ struct DerCoderTraits<SequenceOfWrapper<T>>
     std::uint8_t
     tagNum(SequenceOfWrapper<T> const&)
     {
-        return 16;
+        return tagSequence;
     }
 
     constexpr static
@@ -2505,7 +2536,7 @@ struct DerCoderTraits<std::tuple<Ts&...>>
     boost::optional<std::uint8_t> const&
     tagNum()
     {
-        static boost::optional<std::uint8_t> tn{16};
+        static boost::optional<std::uint8_t> tn{tagSequence};
         return tn;
     }
 
@@ -2513,7 +2544,7 @@ struct DerCoderTraits<std::tuple<Ts&...>>
     std::uint8_t
     tagNum(Tuple const&)
     {
-        return 16;
+        return tagSequence;
     }
 
     constexpr static bool
@@ -2593,10 +2624,8 @@ struct DerCoderTraits<std::tuple<Ts&...>>
             // visual studio can't handle index as a constexpr
             constexpr typename decltype(indexParam)::value_type index =
                 decltype(indexParam)::value;
-            // visual studio can't handle std::get<index>, use decltype
             auto const& e = std::get<index>(elements);
             using ElementTraits = DerCoderTraits<std::decay_t<decltype(e)>>;
-            // visual studio can't handle childNum = index, use decltype
             std::uint64_t childNum = index;
             l += totalLength<ElementTraits>(
                 e, thisGroupType, encoderTagMode, traitsCache, childNum);

@@ -42,9 +42,9 @@ class Der_test : public beast::unit_test::suite
         cerr << '{';
         for (auto&& e : b)
             cerr << " " << setw(2) << setfill('0') << int(uint8_t(e));
-        cerr << '}';
+        cerr << " }";
 
-        cout.flags(f);
+        cerr.flags(f);
     }
     template <class T>
     void
@@ -53,13 +53,15 @@ class Der_test : public beast::unit_test::suite
         std::vector<char> const& expected,
         std::vector<char> const& encoded)
     {
-        auto const maxOutput = 64;
+        size_t const maxOutput = 64;
         if (expected.size() > maxOutput || encoded.size() > maxOutput)
         {
-            std::vector<char> const shortExp{expected.begin(),
-                                             expected.begin() + maxOutput};
-            std::vector<char> const shortEnc{encoded.begin(),
-                                             encoded.begin() + maxOutput};
+            std::vector<char> const shortExp{
+                expected.begin(),
+                expected.begin() + std::min(maxOutput, expected.size())};
+            std::vector<char> const shortEnc{
+                encoded.begin(),
+                encoded.begin() + std::min(maxOutput, encoded.size())};
             writeDiff(v, shortExp, shortEnc);
             return;
         }

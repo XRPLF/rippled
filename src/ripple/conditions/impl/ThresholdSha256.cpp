@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2016 Ripple Labs Inc.
+    Copyright (c) 2017 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -150,11 +150,11 @@ ThresholdSha256::checkEqualForTesting(Fulfillment const& rhs) const
         {
             for (size_t j = 0; j < subfulfillments_.size(); ++j)
             {
+                if (foundEqual[j])
+                    continue;
+
                 if (c->subfulfillments_[i]->checkEqualForTesting(*subfulfillments_[j]))
                 {
-                    if (foundEqual[j])
-                        continue;
-
                     foundEqual.set(j);
                     break;
                 }
@@ -170,11 +170,11 @@ ThresholdSha256::checkEqualForTesting(Fulfillment const& rhs) const
         {
             for (size_t j = 0; j < subconditions_.size(); ++j)
             {
+                if (foundEqual[j])
+                    continue;
+
                 if (c->subconditions_[i] == subconditions_[j])
                 {
-                    if (foundEqual[j])
-                        continue;
-
                     foundEqual.set(j);
                     break;
                 }

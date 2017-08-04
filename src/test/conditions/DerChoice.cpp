@@ -45,6 +45,13 @@ DerChoiceDerived1::withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCa
     f(std::tie(buf_, subAsSeq, signedInt_));
 }
 
+template<class F>
+void DerChoiceDerived1::withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCache) const
+{
+    auto subAsSeq = cryptoconditions::der::make_sequence(subChoices_);
+    f(std::tie(buf_, subAsSeq, signedInt_));
+}
+
 std::uint64_t
 DerChoiceDerived1::derEncodedLength(
     boost::optional<cryptoconditions::der::GroupType> const& parentGroupType,
@@ -133,6 +140,15 @@ DerChoiceDerived2::withTuple(
     f(std::tie(name_, id_));
 }
 
+template <class F>
+void
+DerChoiceDerived2::withTuple(
+    F&& f,
+    cryptoconditions::der::TraitsCache& traitsCache) const
+{
+    f(std::tie(name_, id_));
+}
+
 std::uint64_t
 DerChoiceDerived2::derEncodedLength(
     boost::optional<cryptoconditions::der::GroupType> const& parentGroupType,
@@ -191,6 +207,16 @@ void
 DerChoiceDerived3::withTuple(
     F&& f,
     cryptoconditions::der::TraitsCache& traitsCache)
+{
+    auto subAsSet = cryptoconditions::der::make_set(subChoices_, traitsCache);
+    f(std::tie(subAsSet));
+}
+
+template <class F>
+void
+DerChoiceDerived3::withTuple(
+    F&& f,
+    cryptoconditions::der::TraitsCache& traitsCache) const
 {
     auto subAsSet = cryptoconditions::der::make_set(subChoices_, traitsCache);
     f(std::tie(subAsSet));
@@ -298,6 +324,16 @@ DerChoiceDerived4::withTuple(
     f(std::tie(subAsSeq));
 }
 
+template <class F>
+void
+DerChoiceDerived4::withTuple(
+    F&& f,
+    cryptoconditions::der::TraitsCache& traitsCache) const
+{
+    auto subAsSeq = cryptoconditions::der::make_sequence(subChoices_);
+    f(std::tie(subAsSeq));
+}
+
 std::uint64_t
 DerChoiceDerived4::derEncodedLength(
     boost::optional<cryptoconditions::der::GroupType> const& parentGroupType,
@@ -376,6 +412,15 @@ void
 DerChoiceDerived5::withTuple(
     F&& f,
     cryptoconditions::der::TraitsCache& traitsCache)
+{
+    f(std::tie(subChoice_, name_, id_));
+}
+
+template <class F>
+void
+DerChoiceDerived5::withTuple(
+    F&& f,
+    cryptoconditions::der::TraitsCache& traitsCache) const
 {
     f(std::tie(subChoice_, name_, id_));
 }

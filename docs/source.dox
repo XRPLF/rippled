@@ -124,6 +124,7 @@ INPUT                  = \
     ../src/ripple/app/tx/applySteps.h \
     ../src/ripple/app/tx/impl/InvariantCheck.h \
     ../src/ripple/app/consensus/RCLValidations.h \
+    ../src/ripple/conditions/impl/Der.h \
 
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          =

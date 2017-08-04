@@ -96,8 +96,7 @@ public:
     void
     withTuple(F&& f, der::TraitsCache& traitsCache) const
     {
-        const_cast<PreimageSha256*>(this)->withTuple(
-            std::forward<F>(f), traitsCache);
+        f(std::tie(preimage_));
     }
 
     Type

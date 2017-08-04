@@ -88,7 +88,7 @@ derCategory()
                     return "rsa modulus size is out of range (129 and 512 bytes, inclusive)";
 
                 case Error::unsupportedType:
-                    return "Specification: Requested type not supported.";
+                    return "requested type is not supported";
 
                 case Error::logicError:
                     return "a coding precondition or postcondition was "

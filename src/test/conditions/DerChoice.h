@@ -112,10 +112,7 @@ struct DerChoiceDerived1 : DerChoiceBaseClass
     void withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCache);
 
     template<class F>
-    void withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCache) const
-    {
-        const_cast<DerChoiceDerived1*>(this)->withTuple(std::forward<F>(f), traitsCache);
-    }
+    void withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCache) const;
 
     std::uint8_t
     type() const override;
@@ -164,10 +161,7 @@ struct DerChoiceDerived2 : DerChoiceBaseClass
 
     template <class F>
     void
-    withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCache) const
-    {
-        const_cast<DerChoiceDerived2*>(this)->withTuple(std::forward<F>(f), traitsCache);
-    }
+    withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCache) const;
 
     std::uint8_t
     type() const override;
@@ -214,11 +208,7 @@ struct DerChoiceDerived3 : DerChoiceBaseClass
     void withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCache);
 
     template<class F>
-    void withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCache) const
-    {
-        const_cast<DerChoiceDerived3*>(this)->withTuple(
-            std::forward<F>(f), traitsCache);
-    }
+    void withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCache) const;
 
     std::uint8_t
     type() const override;
@@ -267,11 +257,7 @@ struct DerChoiceDerived4 : DerChoiceBaseClass
 
     template <class F>
     void
-    withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCache) const
-    {
-        const_cast<DerChoiceDerived4*>(this)->withTuple(
-            std::forward<F>(f), traitsCache);
-    }
+    withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCache) const;
 
     std::uint8_t
     type() const override;
@@ -324,11 +310,7 @@ struct DerChoiceDerived5 : DerChoiceBaseClass
 
     template <class F>
     void
-    withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCache) const
-    {
-        const_cast<DerChoiceDerived5*>(this)->withTuple(
-            std::forward<F>(f), traitsCache);
-    }
+    withTuple(F&& f, cryptoconditions::der::TraitsCache& traitsCache) const;
 
     std::uint8_t
     type() const override;

@@ -85,36 +85,20 @@ tagNumLength(std::uint64_t v)
     if (v <= 30)
         return 1;
 
-    std::size_t n = 1 + 8 * sizeof(v) / 7;
-
-    // skip leading zeros
-    while (n--)
-    {
-        auto b = static_cast<std::uint8_t>((v >> (n * 7)) & 0xFF);
-        if (b)
-            break;
-    }
-
-    assert(n);
-    return n + 2;
+    constexpr std::uint64_t chunkSize = 7;
+    std::uint64_t const nChunks = 1 + 8 * sizeof(v) / chunkSize;
+    auto const lz = numLeadingZeroChunks<chunkSize>(v, nChunks);
+    assert(lz != nChunks);
+    return nChunks - lz + 1;
 }
 
 void
 encodeTagNum(MutableSlice& dst, std::uint64_t v, std::error_code& ec)
 {
     assert(v > 30);
-    std::size_t n = 1 + 8 * sizeof(v) / 7;
 
-    // skip leading zeros
-    while (n--)
-    {
-        auto b = static_cast<std::uint8_t>((v >> (n * 7)) & 0xFF);
-        if (b)
-            break;
-    }
+    auto n = tagNumLength(v) - 1;
 
-    assert(n);
-    ++n;
     if (dst.size() != n)
     {
         ec = make_error_code(Error::logicError);
@@ -133,6 +117,84 @@ encodeTagNum(MutableSlice& dst, std::uint64_t v, std::error_code& ec)
 }
 
 void
+decodeTag(Slice& slice, Tag& tag, std::error_code& ec)
+{
+    auto popFront = [&]() -> std::uint8_t {
+        if (slice.empty())
+        {
+            ec = make_error_code(Error::shortGroup);
+            return 0;
+        }
+        auto const r = slice[0];
+        slice += 1;
+        return r;
+    };
+
+    std::uint8_t curByte = popFront();
+    if (ec)
+        return;
+
+    tag.classId = static_cast<ClassId>(curByte >> 6);
+    tag.primitive = !(curByte & (1 << 5));
+
+    // decode the tag
+    if ((curByte & 0x1f) != 0x1f)
+    {
+        tag.tagNum = curByte & 0x1f;
+    }
+    else
+    {
+        std::uint64_t tagNum = 0;
+        do
+        {
+            curByte = popFront();
+            if (ec)
+                return;
+            auto const asBase128 = curByte & ~(1 << 7);
+
+            if (tagNum & (static_cast<decltype(tagNum)>(0xfe)
+                          << 8 * (sizeof(tagNum) - 1)))
+            {
+                // Shifting by 7 bits would overflow tagNum
+                ec = make_error_code(Error::tagOverflow);
+                return;
+            }
+
+            tagNum = (tagNum << 7) | asBase128;
+
+            if (!tagNum)
+            {
+                // leading zeros
+                ec = make_error_code(Error::badDerEncoding);
+                return;
+            }
+
+        } while (curByte & (1 << 7));
+
+        tag.tagNum = tagNum;
+        if (tagNum <= 30)
+        {
+            // tag was encoded with the long form, but should have been short
+            // form
+            ec = make_error_code(Error::badDerEncoding);
+            return;
+        }
+    }
+}
+
+std::uint64_t
+contentLengthLength(std::uint64_t v)
+{
+    if (v <= 127)
+        return 1;
+
+    constexpr std::uint64_t chunkSize = 8;
+    constexpr std::uint64_t nChunks = sizeof(v);
+    auto const lz = numLeadingZeroChunks<chunkSize>(v, nChunks);
+    return nChunks - lz + 1;
+}
+
+void
 encodeContentLength(MutableSlice& dst, std::uint64_t v, std::error_code& ec)
 {
     if (v <= 127)
@@ -146,70 +208,66 @@ encodeContentLength(MutableSlice& dst, std::uint64_t v, std::error_code& ec)
         return;
     }
 
-    std::size_t n = sizeof(v);
+    auto n = contentLengthLength(v);
 
-    // skip leading zeros
-    while (n--)
-    {
-        auto b = static_cast<std::uint8_t>((v >> (n * 8)) & 0xFF);
-        if (b)
-            break;
-    }
-
-    ++n;
-    assert(n);
-
-    if (dst.size() != n + 1)
+    if (dst.size() != n)
     {
         ec = make_error_code(Error::logicError);
         return;
     }
 
+    --n;
     dst.push_back(static_cast<char>(n) | (1 << 7));
 
     while (n--)
         dst.push_back(static_cast<char>((v >> (n * 8)) & 0xFF));
 }
 
-std::uint64_t
-contentLengthLength(std::uint64_t v)
+void
+decodeContentLength(Slice& slice, std::uint64_t& contentLength, std::error_code& ec)
 {
-    if (v <= 127)
+    auto popFront = [&]() -> std::uint8_t {
+        if (slice.empty())
+        {
+            ec = make_error_code(Error::shortGroup);
+            return 0;
+        }
+        auto const r = slice[0];
+        slice += 1;
+        return r;
+    };
+
+    contentLength = 0;
+
+    std::uint8_t curByte = popFront();
+    if (ec)
+        return;
+    if (curByte <= 127)
     {
-        return 1;
+        contentLength = curByte;
     }
-
-    std::size_t n = sizeof(v);
-
-    // skip leading zeros
-    while (n--)
+    else if ((curByte & ~(1 << 7)) > 8)
     {
-        auto b = static_cast<std::uint8_t>((v >> (n * 8)) & 0xFF);
-        if (b)
-            break;
+        ec = make_error_code(Error::unsupported);
+        return;
     }
-
-    return n + 2;
+    else
+    {
+        int const n = (curByte & ~(1 << 7));
+        for (int i = 0; i < n; ++i)
+        {
+            curByte = popFront();
+            if (ec)
+                return;
+            contentLength = (contentLength << 8) | curByte;
+        }
+    }
 }
 
 std::uint64_t
 tagLength(Tag t)
 {
-    if (t.tagNum <= 30)
-        return 1;
-
-    auto v = t.tagNum;
-    std::size_t n = 1 + 8 * sizeof(v) / 7;
-
-    // skip leading zeros
-    while (n--)
-    {
-        auto b = static_cast<std::uint8_t>((v >> (n * 7)) & 0xFF);
-        if (b)
-            break;
-    }
-
-    return 2+n;
+    return tagNumLength(t.tagNum);
 }
 
 void
@@ -244,96 +302,10 @@ encodePreamble(MutableSlice& dst, Preamble const& p, std::error_code& ec)
 void
 decodePreamble(Slice& slice, Preamble& p, std::error_code& ec)
 {
-    auto popFront = [&]() -> std::uint8_t {
-        if (slice.empty())
-        {
-            ec = make_error_code(Error::shortGroup);
-            return 0;
-        }
-        auto const r = slice[0];
-        slice += 1;
-        return r;
-    };
-
-    std::uint8_t curByte = popFront();
+    decodeTag(slice, p.tag_, ec);
     if (ec)
         return;
-
-    p.tag_.classId = static_cast<ClassId>(curByte >> 6);
-    p.tag_.primitive = !(curByte & (1 << 5));
-
-    // decode the tag
-    if ((curByte & 0x1f) != 0x1f)
-    {
-        p.tag_.tagNum = curByte & 0x1f;
-    }
-    else
-    {
-        std::uint64_t tagNum = 0;
-
-        do
-        {
-            curByte = popFront();
-            if (ec)
-                return;
-            auto const asBase128 = curByte & ~(1 << 7);
-
-            if (tagNum & (static_cast<decltype(tagNum)>(0xfe)
-                          << 8 * (sizeof(tagNum) - 1)))
-            {
-                // Shifting by 7 bits would overflow tagNum
-                ec = make_error_code(Error::tagOverflow);
-                return;
-            }
-
-            tagNum = (tagNum << 7) | asBase128;
-
-            if (!tagNum)
-            {
-                // leading zeros
-                ec = make_error_code(Error::badDerEncoding);
-                return;
-            }
-
-        } while (curByte & (1 << 7));
-
-        p.tag_.tagNum = tagNum;
-        if (tagNum <= 30)
-        {
-            // tag was encoded with the long form, but should have been short
-            // form
-            ec = make_error_code(Error::badDerEncoding);
-            return;
-        }
-    }
-
-    // decode the content length
-    std::uint64_t& contentLength = p.contentLength_;
-    contentLength = 0;
-
-    curByte = popFront();
-    if (ec)
-        return;
-    if (curByte <= 127)
-    {
-        contentLength = curByte;
-    }
-    else if ((curByte & ~(1 << 7)) > 8)
-    {
-        ec = make_error_code(Error::unsupported);
-        return;
-    }
-    else
-    {
-        int const n = (curByte & ~(1 << 7));
-        for (int i = 0; i < n; ++i)
-        {
-            curByte = popFront();
-            if (ec)
-                return;
-            contentLength = (contentLength << 8) | curByte;
-        }
-    }
+    decodeContentLength(slice, p.contentLength_, ec);
 }
 
 //------------------------------------------------------------------------------
