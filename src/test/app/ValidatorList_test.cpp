@@ -488,16 +488,19 @@ private:
         std::vector<std::string> cfgPublishers;
         hash_set<PublicKey> activeValidators;
 
+        // BFT: n >= 3f+1
+        std::size_t const n = 40;
+        std::size_t const f = 13;
         {
             std::vector<std::string> cfgKeys;
-            cfgKeys.reserve(20);
+            cfgKeys.reserve(n);
 
-            while (cfgKeys.size () != 20)
+            while (cfgKeys.size () != n)
             {
                 auto const valKey = randomNode();
                 cfgKeys.push_back (toBase58(
                     TokenType::TOKEN_NODE_PUBLIC, valKey));
-                if (cfgKeys.size () <= 15)
+                if (cfgKeys.size () <= n - 5)
                     activeValidators.emplace (valKey);
             }
 
@@ -507,7 +510,8 @@ private:
             // onConsensusStart should make all available configured
             // validators trusted
             trustedKeys->onConsensusStart (activeValidators);
-            BEAST_EXPECT(trustedKeys->quorum () == 14);
+            // Add 1 to n because I'm not on a published list.
+            BEAST_EXPECT(trustedKeys->quorum () == n + 1 - f);
             std::size_t i = 0;
             for (auto const& val : cfgKeys)
             {
@@ -566,7 +570,7 @@ private:
                 manifests.applyManifest(std::move (*m1)) ==
                     ManifestDisposition::accepted);
             trustedKeys->onConsensusStart (activeValidators);
-            BEAST_EXPECT(trustedKeys->quorum () == 15);
+            BEAST_EXPECT(trustedKeys->quorum () == n + 2 - f);
             BEAST_EXPECT(trustedKeys->listed (masterPublic));
             BEAST_EXPECT(trustedKeys->trusted (masterPublic));
             BEAST_EXPECT(trustedKeys->listed (signingPublic1));
@@ -583,7 +587,7 @@ private:
                 manifests.applyManifest(std::move (*m2)) ==
                     ManifestDisposition::accepted);
             trustedKeys->onConsensusStart (activeValidators);
-            BEAST_EXPECT(trustedKeys->quorum () == 15);
+            BEAST_EXPECT(trustedKeys->quorum () == n + 2 - f);
             BEAST_EXPECT(trustedKeys->listed (masterPublic));
             BEAST_EXPECT(trustedKeys->trusted (masterPublic));
             BEAST_EXPECT(trustedKeys->listed (signingPublic2));
@@ -607,7 +611,7 @@ private:
             BEAST_EXPECT(manifests.getSigningKey (masterPublic) == masterPublic);
             BEAST_EXPECT(manifests.revoked (masterPublic));
             trustedKeys->onConsensusStart (activeValidators);
-            BEAST_EXPECT(trustedKeys->quorum () == 15);
+            BEAST_EXPECT(trustedKeys->quorum () == n + 1 - f);
             BEAST_EXPECT(trustedKeys->listed (masterPublic));
             BEAST_EXPECT(!trustedKeys->trusted (masterPublic));
             BEAST_EXPECT(!trustedKeys->listed (signingPublicMax));
@@ -658,7 +662,7 @@ private:
         }
         {
             // Should use custom minimum quorum
-            std::size_t const minQuorum = 0;
+            std::size_t const minQuorum = 1;
             ManifestCache manifests;
             auto trustedKeys = std::make_unique <ValidatorList> (
                 manifests, manifests, env.timeKeeper(), beast::Journal (), minQuorum);
@@ -811,9 +815,9 @@ private:
             hash_set<PublicKey> activeValidators;
 
             std::vector<PublicKey> valKeys;
-            valKeys.reserve(20);
+            valKeys.reserve(n);
 
-            while (valKeys.size () != 20)
+            while (valKeys.size () != n)
             {
                 valKeys.push_back (randomNode());
                 activeValidators.emplace (valKeys.back());
@@ -866,7 +870,8 @@ private:
             }
 
             // The number of trusted keys should be 125% of the minimum quorum
-            BEAST_EXPECT(nTrusted == trustedKeys->quorum () * 5 / 4);
+            BEAST_EXPECT(nTrusted ==
+                static_cast<std::size_t>(trustedKeys->quorum () * 5 / 4));
         }
     }
 
