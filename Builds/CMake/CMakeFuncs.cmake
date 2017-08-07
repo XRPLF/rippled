@@ -628,7 +628,7 @@ macro(setup_build_boilerplate)
     if (APPLE)
       add_definitions(-DBEAST_COMPILE_OBJECTIVE_CPP=1)
       add_compile_options(
-        -Wno-deprecated -Wno-deprecated-declarations -Wno-unused-variable -Wno-unused-function)
+        -Wno-deprecated -Wno-deprecated-declarations -Wno-unused-function)
     endif()
 
     if (is_gcc)
