@@ -191,6 +191,7 @@ public:
         , app_ (app)
         , m_clock (clock)
         , m_journal (journal)
+        , m_localTX (make_LocalTxs ())
         , mMode (start_valid ? omFULL : omDISCONNECTED)
         , heartbeatTimer_ (io_svc)
         , clusterTimer_ (io_svc)
@@ -334,23 +335,23 @@ public:
 
     void needNetworkLedger () override
     {
-        mNeedNetworkLedger = true;
+        needNetworkLedger_ = true;
     }
     void clearNeedNetworkLedger () override
     {
-        mNeedNetworkLedger = false;
+        needNetworkLedger_ = false;
     }
     bool isNeedNetworkLedger () override
     {
-        return mNeedNetworkLedger;
+        return needNetworkLedger_;
     }
     bool isFull () override
     {
-        return !mNeedNetworkLedger && (mMode == omFULL);
+        return !needNetworkLedger_ && (mMode == omFULL);
     }
     bool isAmendmentBlocked () override
     {
-        return m_amendmentBlocked;
+        return amendmentBlocked_;
     }
     void setAmendmentBlocked () override;
     void consensusViewChange () override;
@@ -538,14 +539,14 @@ private:
     clock_type& m_clock;
     beast::Journal m_journal;
 
-    std::unique_ptr <LocalTxs> m_localTX {make_LocalTxs()};
+    std::unique_ptr <LocalTxs> m_localTX;
 
     std::recursive_mutex mSubLock;
 
     std::atomic<OperatingMode> mMode;
 
-    std::atomic <bool> mNeedNetworkLedger {false};
-    std::atomic <bool> m_amendmentBlocked {false};
+    std::atomic <bool> needNetworkLedger_ {false};
+    std::atomic <bool> amendmentBlocked_ {false};
 
     ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
     boost::asio::steady_timer heartbeatTimer_;
@@ -1254,7 +1255,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
 
 void NetworkOPsImp::setAmendmentBlocked ()
 {
-    m_amendmentBlocked = true;
+    amendmentBlocked_ = true;
     setMode (omTRACKING);
 }
 
@@ -1608,7 +1609,7 @@ void NetworkOPsImp::endConsensus ()
         // Count number of peers that agree with us and UNL nodes whose
         // validations we have for LCL.  If the ledger is good enough, go to
         // omTRACKING - TODO
-        if (!mNeedNetworkLedger)
+        if (!needNetworkLedger_)
             setMode (omTRACKING);
     }
 
@@ -1875,7 +1876,7 @@ void NetworkOPsImp::setMode (OperatingMode om)
             om = omCONNECTED;
     }
 
-    if ((om > omTRACKING) && m_amendmentBlocked)
+    if ((om > omTRACKING) && amendmentBlocked_)
         om = omTRACKING;
 
     if (mMode == om)
@@ -2174,7 +2175,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     info [jss::server_state] = strOperatingMode ();
 
-    if (mNeedNetworkLedger)
+    if (needNetworkLedger_)
         info[jss::network_ledger] = "waiting";
 
     info[jss::validation_quorum] = static_cast<Json::UInt>(
@@ -2204,7 +2205,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     info[jss::complete_ledgers] =
             app_.getLedgerMaster ().getCompleteLedgers ();
 
-    if (m_amendmentBlocked)
+    if (amendmentBlocked_)
         info[jss::amendment_blocked] = true;
 
     auto const fp = m_ledgerMaster.getFetchPackCacheSize ();
