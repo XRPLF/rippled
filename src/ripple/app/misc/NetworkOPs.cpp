@@ -191,10 +191,7 @@ public:
         , app_ (app)
         , m_clock (clock)
         , m_journal (journal)
-        , m_localTX (make_LocalTxs ())
         , mMode (start_valid ? omFULL : omDISCONNECTED)
-        , mNeedNetworkLedger (false)
-        , m_amendmentBlocked (false)
         , heartbeatTimer_ (io_svc)
         , clusterTimer_ (io_svc)
         , mConsensus (app,
@@ -210,7 +207,6 @@ public:
         , m_job_queue (job_queue)
         , m_standalone (standalone)
         , m_network_quorum (start_valid ? 0 : network_quorum)
-        , accounting_ ()
     {
     }
 
@@ -542,14 +538,14 @@ private:
     clock_type& m_clock;
     beast::Journal m_journal;
 
-    std::unique_ptr <LocalTxs> m_localTX;
+    std::unique_ptr <LocalTxs> m_localTX {make_LocalTxs()};
 
     std::recursive_mutex mSubLock;
 
     std::atomic<OperatingMode> mMode;
 
-    std::atomic <bool> mNeedNetworkLedger;
-    bool m_amendmentBlocked;
+    std::atomic <bool> mNeedNetworkLedger {false};
+    std::atomic <bool> m_amendmentBlocked {false};
 
     ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
     boost::asio::steady_timer heartbeatTimer_;
@@ -597,7 +593,7 @@ private:
     DispatchState mDispatchState = DispatchState::none;
     std::vector <TransactionStatus> mTransactions;
 
-    StateAccounting accounting_;
+    StateAccounting accounting_ {};
 };
 
 //------------------------------------------------------------------------------
