@@ -36,7 +36,7 @@ ValidatorList::ValidatorList (
     , publisherManifests_ (publisherManifests)
     , timeKeeper_ (timeKeeper)
     , j_ (j)
-    , quorum_ (minimumQuorum ? *minimumQuorum : 1) // Genesis ledger quorum
+    , quorum_ (minimumQuorum.value_or(1)) // Genesis ledger quorum
     , minimumQuorum_ (minimumQuorum)
 {
 }
