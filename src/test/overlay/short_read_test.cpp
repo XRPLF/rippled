@@ -1,13 +1,13 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2014 Ripple Labs Inc.
 
+    Copyright 2014 Ripple Labs Inc.
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
-
     THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+
     WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
     MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
     ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
@@ -63,13 +63,6 @@ private:
     boost::optional<io_service_type::work> work_;
     std::thread thread_;
     std::shared_ptr<boost::asio::ssl::context> context_;
-
-    static
-    endpoint_type
-    endpoint()
-    {
-        return endpoint_type(address_type::from_string("127.0.0.1"), 9000);
-    }
 
     template <class Streambuf>
     static
@@ -175,6 +168,7 @@ private:
     {
     private:
         short_read_test& test_;
+        endpoint_type endpoint_;
 
         struct Acceptor
             : Child, std::enable_shared_from_this<Acceptor>
@@ -189,11 +183,15 @@ private:
                 : Child(server)
                 , server_(server)
                 , test_(server_.test_)
-                , acceptor_(test_.io_service_, endpoint())
+                , acceptor_(test_.io_service_,
+                    endpoint_type(address_type::from_string("127.0.0.1"), 0))
                 , socket_(test_.io_service_)
                 , strand_(socket_.get_io_service())
             {
                 acceptor_.listen();
+                server_.endpoint_ = acceptor_.local_endpoint();
+                test_.log << "[server] up on port: " <<
+                    server_.endpoint_.port() << std::endl;
             }
 
             void
@@ -382,11 +380,17 @@ private:
             close();
             wait();
         }
+
+        endpoint_type const&
+        endpoint () const
+        {
+            return endpoint_;
+        }
     };
 
     //--------------------------------------------------------------------------
-
     class Client : public Base
+
     {
     private:
         short_read_test& test_;
@@ -401,8 +405,9 @@ private:
             strand_type strand_;
             timer_type timer_;
             boost::asio::streambuf buf_;
+            endpoint_type const& ep_;
 
-            Connection (Client& client)
+            Connection (Client& client, endpoint_type const& ep)
                 : Child(client)
                 , client_(client)
                 , test_(client_.test_)
@@ -410,6 +415,7 @@ private:
                 , stream_(socket_, *test_.context_)
                 , strand_(socket_.get_io_service())
                 , timer_(socket_.get_io_service())
+                , ep_(ep)
             {
             }
 
@@ -432,7 +438,7 @@ private:
                 timer_.expires_from_now(std::chrono::seconds(3));
                 timer_.async_wait(strand_.wrap(std::bind(&Connection::on_timer,
                     shared_from_this(), std::placeholders::_1)));
-                socket_.async_connect(endpoint(), strand_.wrap(std::bind(
+                socket_.async_connect(ep_, strand_.wrap(std::bind(
                     &Connection::on_connect, shared_from_this(),
                         std::placeholders::_1)));
             }
@@ -531,10 +537,10 @@ private:
         };
 
     public:
-        Client(short_read_test& test)
+        Client(short_read_test& test, endpoint_type const& ep)
             : test_(test)
         {
-            auto const p = std::make_shared<Connection>(*this);
+            auto const p = std::make_shared<Connection>(*this, ep);
             add(p);
             p->run();
         }
@@ -567,7 +573,7 @@ public:
     void run() override
     {
         Server s(*this);
-        Client c(*this);
+        Client c(*this, s.endpoint());
         c.wait();
         pass();
     }
