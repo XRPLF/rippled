@@ -95,25 +95,31 @@ class Invariants_test : public beast::unit_test::suite
 
         BEAST_EXPECT(precheck(A1, A2, ac));
 
-        auto tr = ac.checkInvariants(tesSUCCESS);
-        if (enabled)
+        auto tr = tesSUCCESS;
+        // invoke check twice to cover tec and tef cases
+        for (auto i : {0,1})
         {
-            BEAST_EXPECT(tr == tecINVARIANT_FAILED);
-            BEAST_EXPECT(
-                boost::starts_with(sink.strm_.str(), "Invariant failed:") ||
-                boost::starts_with(sink.strm_.str(),
-                    "Transaction caused an exception"));
-            //uncomment if you want to log the invariant failure message
-            //log << "   --> " << sink.strm_.str() << std::endl;
-            for (auto const& m : expect_logs)
+            tr = ac.checkInvariants(tr);
+            if (enabled)
             {
-                BEAST_EXPECT(sink.strm_.str().find(m) != std::string::npos);
+                BEAST_EXPECT(
+                    tr == (i == 0 ? tecINVARIANT_FAILED : tefINVARIANT_FAILED));
+                BEAST_EXPECT(
+                    boost::starts_with(sink.strm_.str(), "Invariant failed:") ||
+                    boost::starts_with(sink.strm_.str(),
+                        "Transaction caused an exception"));
+                //uncomment if you want to log the invariant failure message
+                //log << "   --> " << sink.strm_.str() << std::endl;
+                for (auto const& m : expect_logs)
+                {
+                    BEAST_EXPECT(sink.strm_.str().find(m) != std::string::npos);
+                }
             }
-        }
-        else
-        {
-            BEAST_EXPECT(tr == tesSUCCESS);
-            BEAST_EXPECT(sink.strm_.str().empty());
+            else
+            {
+                BEAST_EXPECT(tr == tesSUCCESS);
+                BEAST_EXPECT(sink.strm_.str().empty());
+            }
         }
     }
 
@@ -327,7 +333,7 @@ class Invariants_test : public beast::unit_test::suite
             {{ "offer with a bad amount" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
             {
-                // offer with negative takergets
+                // offer XRP to XRP
                 auto const sle = ac.view().peek (keylet::account(A1.id()));
                 if(! sle)
                     return false;
@@ -387,7 +393,7 @@ class Invariants_test : public beast::unit_test::suite
              {  "escrow specifies invalid amount" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
             {
-                // escrow with negative amount
+                // escrow with too-large amount
                 auto const sle = ac.view().peek (keylet::account(A1.id()));
                 if(! sle)
                     return false;
@@ -403,9 +409,10 @@ public:
     void run ()
     {
         testEnabled ();
-        // all invariant checks are run with
-        // the checks enabled and disabled
-        for(auto const& b : {true, false})
+
+        // now run each invariant check test with
+        // the feature enabled and disabled
+        for(auto const& b : {false, true})
         {
             testXRPNotCreated (b);
             testAccountsNotRemoved (b);
