@@ -344,6 +344,9 @@ PayChanClaim::preflight (PreflightContext const& ctx)
     if (! ctx.rules.enabled(featurePayChan))
         return temDISABLED;
 
+
+    bool const noTecs = ctx.rules.enabled(fix1512);
+
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))
         return ret;
@@ -357,7 +360,12 @@ PayChanClaim::preflight (PreflightContext const& ctx)
         return temBAD_AMOUNT;
 
     if (bal && amt && *bal > *amt)
-        return tecNO_PERMISSION;
+    {
+        if (noTecs)
+            return temBAD_AMOUNT;
+        else
+            return tecNO_PERMISSION;
+    }
 
     auto const flags = ctx.tx.getFlags ();
     if ((flags & tfClose) && (flags & tfRenew))
@@ -376,7 +384,12 @@ PayChanClaim::preflight (PreflightContext const& ctx)
         auto const authAmt = amt ? amt->xrp() : reqBalance;
 
         if (reqBalance > authAmt)
-            return tecNO_PERMISSION;
+        {
+            if (noTecs)
+                return temBAD_AMOUNT;
+            else
+                return tecNO_PERMISSION;
+        }
 
         Keylet const k (ltPAYCHAN, ctx.tx[sfPayChannel]);
         if (!publicKeyType(ctx.tx[sfPublicKey]))
