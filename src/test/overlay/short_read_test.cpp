@@ -68,7 +68,7 @@ private:
     endpoint_type
     endpoint()
     {
-        return endpoint_type(address_type::from_string("127.0.0.1"), 9000);
+        return endpoint_type(address_type::from_string("127.0.0.1"), 0);
     }
 
     template <class Streambuf>

@@ -10,26 +10,41 @@ echo "using TARGET: $TARGET"
 
 # Ensure APP defaults to rippled if it's not set.
 : ${APP:=rippled}
+echo "using APP: $APP"
 
 JOBS=${NUM_PROCESSORS:-2}
 if [[ ${TARGET} == *.nounity ]]; then
-    JOBS=$((2*${JOBS}))
+  JOBS=$((2*${JOBS}))
 fi
 
 if [[ ${BUILD:-scons} == "cmake" ]]; then
+  CMAKE_EXTRA_ARGS=""
   echo "cmake building ${APP}"
   CMAKE_TARGET=$CC.$TARGET
   if [[ ${CI:-} == true ]]; then
     CMAKE_TARGET=$CMAKE_TARGET.ci
   fi
+  if [[ ${USE_CCACHE:-} == true ]]; then
+    echo "using ccache with basedir [${CCACHE_BASEDIR:-}]"
+    CMAKE_EXTRA_ARGS+=" -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  fi
+  if [ -d "build/${CMAKE_TARGET}" ]; then
+    rm -rf "build/${CMAKE_TARGET}"
+  fi
   mkdir -p "build/${CMAKE_TARGET}"
   pushd "build/${CMAKE_TARGET}"
-  cmake ../.. -Dtarget=$CMAKE_TARGET
+  cmake ../.. -Dtarget=$CMAKE_TARGET ${CMAKE_EXTRA_ARGS}
   cmake --build . -- -j${JOBS}
+  if [[ ${BUILD_BOTH:-} == true ]]; then
+    if [[ ${TARGET} == *.unity ]]; then
+      cmake --build . --target rippled_classic -- -j$((2*${JOBS}))
+    else
+      cmake --build . --target rippled_unity -- -j${JOBS}
+    fi
+  fi
   popd
   export APP_PATH="$PWD/build/${CMAKE_TARGET}/${APP}"
   echo "using APP_PATH: $APP_PATH"
-
 else
   export APP_PATH="$PWD/build/$CC.$TARGET/${APP}"
   echo "using APP_PATH: $APP_PATH"
@@ -65,26 +80,31 @@ if [[ $TARGET == "coverage" ]]; then
   export PATH=$PATH:$LCOV_ROOT/usr/bin
 
   # Create baseline coverage data file
-  lcov --no-external -c -i -d . -o baseline.info
+  lcov --no-external -c -i -d . -o baseline.info | grep -v "ignoring data for external file"
 fi
 
-if [[ ${TARGET} == debug ]]; then
-    # Execute unit tests under gdb, printing a call stack
-    # if we get a crash.
-    $GDB_ROOT/bin/gdb -return-child-result -quiet -batch \
-                      -ex "set env MALLOC_CHECK_=3" \
-                      -ex "set print thread-events off" \
-                      -ex run \
-                      -ex "thread apply all backtrace full" \
-                      -ex "quit" \
-                      --args $APP_PATH $APP_ARGS
+if [[ ${SKIP_TESTS:-} == true ]]; then
+  echo "skipping tests for ${TARGET}"
+  exit
+fi
+
+if [[ $CC == "gcc" && $TARGET == debug* ]]; then
+  # Execute unit tests under gdb, printing a call stack
+  # if we get a crash.
+  $GDB_ROOT/bin/gdb -return-child-result -quiet -batch \
+                    -ex "set env MALLOC_CHECK_=3" \
+                    -ex "set print thread-events off" \
+                    -ex run \
+                    -ex "thread apply all backtrace full" \
+                    -ex "quit" \
+                    --args $APP_PATH $APP_ARGS
 else
-    $APP_PATH $APP_ARGS
+  $APP_PATH $APP_ARGS
 fi
 
 if [[ $TARGET == "coverage" ]]; then
   # Create test coverage data file
-  lcov --no-external -c -d . -o tests.info
+  lcov --no-external -c -d . -o tests.info | grep -v "ignoring data for external file"
 
   # Combine baseline and test coverage data
   lcov -a baseline.info -a tests.info -o lcov-all.info
