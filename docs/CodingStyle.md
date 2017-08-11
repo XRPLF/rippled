@@ -41,18 +41,16 @@ overlooked. Blank lines are used to separate code into "paragraphs."
 
 * Always place a space before and after all binary operators,
   especially assignments (`operator=`).
-* The `!` operator should always be followed by a space.
+* The `!` operator should be preceded by a space, but not followed by one.
 * The `~` operator should be preceded by a space, but not followed by one.
 * The `++` and `--` operators should have no spaces between the operator and
   the operand.
 * A space never appears before a comma, and always appears after a comma.
-* Always place a space before an opening parenthesis. One exception is if
-  the parentheses are empty.
 * Don't put spaces after a parenthesis. A typical member function call might
   look like this: `foobar (1, 2, 3);`
 * In general, leave a blank line before an `if` statement.
 * In general, leave a blank line after a closing brace `}`.
-* Do not place code or comments on the same line as any opening or
+* Do not place code on the same line as any opening or
   closing brace.
 * Do not write `if` statements all-on-one-line. The exception to this is when
   you've got a sequence of similar `if` statements, and are aligning them all
