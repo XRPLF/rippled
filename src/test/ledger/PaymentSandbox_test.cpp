@@ -278,10 +278,10 @@ class PaymentSandbox_test : public beast::unit_test::suite
         STAmount hugeAmt (issue, STAmount::cMaxValue, STAmount::cMaxOffset - 1,
             false, false, STAmount::unchecked{});
 
-        for (auto timeDelta : {-env.closed ()->info ().closeTimeResolution,
-                 env.closed ()->info ().closeTimeResolution})
+        for (auto d : {-1, 1})
         {
-            auto const closeTime = fix1141Time () + timeDelta;
+            auto const closeTime = fix1141Time () +
+                d * env.closed()->info().closeTimeResolution;
             env.close (closeTime);
             ApplyViewImpl av (&*env.current (), tapNONE);
             PaymentSandbox pv (&av);

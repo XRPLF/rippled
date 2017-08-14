@@ -253,11 +253,10 @@ public:
         for (int i=0;i<101;++i)
             env (offer (carol, USD (1), EUR (2)));
 
-        for (auto timeDelta : {
-            - env.closed()->info().closeTimeResolution,
-                env.closed()->info().closeTimeResolution} )
+        for (auto d : {-1, 1})
         {
-            auto const closeTime = STAmountSO::soTime + timeDelta;
+            auto const closeTime = STAmountSO::soTime +
+                d * env.closed()->info().closeTimeResolution;
             env.close (closeTime);
             *stAmountCalcSwitchover = closeTime > STAmountSO::soTime;
             // Will fail without the underflow fix
