@@ -747,8 +747,9 @@ struct Flow_test : public beast::unit_test::suite
 
         auto const timeDelta = Env{*this}.closed ()->info ().closeTimeResolution;
 
-        for(auto const& d: {-timeDelta*100, +timeDelta*100}){
-            auto const closeTime = fix1141Time () + d;
+        for (auto const& d : {-100 * timeDelta, +100 * timeDelta})
+        {
+            auto const closeTime = fix1141Time () + d ;
             Env env (*this, no_features);
             env.close (closeTime);
 
@@ -1112,7 +1113,7 @@ struct Flow_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this, with_features(featureFlow));
         auto const timeDelta = env.closed ()->info ().closeTimeResolution;
-        auto const d = withFix ? timeDelta*100 : -timeDelta*100;
+        auto const d = withFix ? 100*timeDelta : -100*timeDelta;
         auto closeTime = fix1443Time() + d;
         env.close(closeTime);
 
@@ -1165,7 +1166,7 @@ struct Flow_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this, with_features(featureFlow));
         auto const timeDelta = env.closed ()->info ().closeTimeResolution;
-        auto const d = withFix ? timeDelta*100 : -timeDelta*100;
+        auto const d = withFix ? 100*timeDelta : -100*timeDelta;
         auto closeTime = fix1449Time() + d;
         env.close(closeTime);
 
