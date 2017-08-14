@@ -250,7 +250,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sle = ac.view().peek (keylet::account(A1.id()));
                 if(! sle)
                     return false;
-                STAmount nonNative {A2["USD"](51)};
+                STAmount nonNative (A2["USD"](51));
                 sle->setFieldAmount (sfBalance, nonNative);
                 ac.view().update (sle);
                 return true;
@@ -366,7 +366,7 @@ class Invariants_test : public beast::unit_test::suite
                     return false;
                 auto sleNew = std::make_shared<SLE> (
                     keylet::escrow(A1, (*sle)[sfSequence] + 2));
-                STAmount nonNative {A2["USD"](51)};
+                STAmount nonNative (A2["USD"](51));
                 sleNew->setFieldAmount (sfAmount, nonNative);
                 ac.view().insert (sleNew);
                 return true;
