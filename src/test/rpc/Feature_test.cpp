@@ -117,10 +117,6 @@ class Feature_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env {*this,
             with_only_features(featureEscrow, featureCryptoConditions)};
-        // The amendment table has to be modified
-        // since that is what feature RPC actually checks
-        env.app().getAmendmentTable().enable(featureEscrow);
-        env.app().getAmendmentTable().enable(featureCryptoConditions);
 
         auto jrr = env.rpc("feature") [jss::result];
         if(! BEAST_EXPECT(jrr.isMember(jss::features)))
@@ -221,9 +217,6 @@ class Feature_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env {*this,
             with_only_features(featureCryptoConditions)};
-        // The amendment table has to be modified
-        // since that is what feature RPC actually checks
-        env.app().getAmendmentTable().enable(featureCryptoConditions);
 
         auto jrr = env.rpc("feature", "CryptoConditions") [jss::result];
         if(! BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))

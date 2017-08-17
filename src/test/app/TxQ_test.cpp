@@ -162,8 +162,8 @@ public:
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this, makeConfig({ {"minimum_txn_in_ledger_standalone", "3"} }),
-            with_features(featureFeeEscalation, fix1513));
+        Env env(*this,
+            makeConfig({ {"minimum_txn_in_ledger_standalone", "3"} }));
         auto& txq = env.app().getTxQ();
 
         auto alice = Account("alice");
@@ -349,8 +349,8 @@ public:
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }),
-            with_features(featureFeeEscalation, fix1513));
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -405,8 +405,8 @@ public:
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }),
-            with_features(featureFeeEscalation, fix1513));
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -513,8 +513,8 @@ public:
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }),
-            with_features(featureFeeEscalation, fix1513));
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -620,7 +620,7 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this, makeConfig(), with_features(featureFeeEscalation, fix1513));
+        Env env(*this, makeConfig());
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -644,8 +644,8 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }),
-            with_features(featureFeeEscalation, fix1513));
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -701,8 +701,7 @@ public:
         Env env(*this,
             makeConfig(
                 {{"minimum_txn_in_ledger_standalone", "3"}},
-                {{"account_reserve", "200"}, {"owner_reserve", "50"}}),
-            with_features(featureFeeEscalation, fix1513));
+                {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -929,8 +928,8 @@ public:
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "4" } }),
-            with_features(featureFeeEscalation, fix1513));
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "4" } }));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -1088,8 +1087,8 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "1" } }),
-            with_features(featureFeeEscalation, fix1513));
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "1" } }));
 
         auto alice = Account("alice");
 
@@ -1131,8 +1130,7 @@ public:
         Env env(*this, makeConfig(
             { {"minimum_txn_in_ledger_standalone", "2"},
                 {"target_txn_in_ledger", "4"},
-                    {"maximum_txn_in_ledger", "5"} }),
-                        with_features(featureFeeEscalation, fix1513));
+                    {"maximum_txn_in_ledger", "5"} }));
 
         auto alice = Account("alice");
         auto queued = ter(terQUEUED);
@@ -1161,8 +1159,7 @@ public:
             *this,
             makeConfig(
                 {{"minimum_txn_in_ledger_standalone", "3"}},
-                {{"account_reserve", "200"}, {"owner_reserve", "50"}}),
-            with_features(featureFeeEscalation, fix1513));
+                {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -1251,8 +1248,7 @@ public:
         using namespace jtx;
 
         Env env(*this,
-            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
-            with_features(featureFeeEscalation, featureMultiSign, fix1513));
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -1316,8 +1312,7 @@ public:
         using namespace jtx;
 
         Env env(*this,
-            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
-            with_features(featureFeeEscalation, featureTickets, fix1513));
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }));
 
         auto alice = Account("alice");
         auto charlie = Account("charlie");
@@ -1562,7 +1557,7 @@ public:
     {
         using namespace jtx;
         using namespace std::chrono;
-        Env env(*this, with_only_features(featureTickets));
+        Env env(*this, supported_features_plus (featureTickets));
         auto const alice = Account("alice");
         env.memoize(alice);
         env.memoize("bob");
@@ -1630,7 +1625,7 @@ public:
     {
         using namespace jtx;
         {
-            Env env(*this, with_features(featureFeeEscalation, fix1513));
+            Env env(*this);
 
             auto fee = env.rpc("fee");
 
@@ -1718,8 +1713,7 @@ public:
         using namespace jtx;
 
         Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "1" },
-            {"ledgers_in_queue", "10"}, {"maximum_txn_per_account", "20"} }),
-                with_features(featureFeeEscalation, fix1513));
+            {"ledgers_in_queue", "10"}, {"maximum_txn_per_account", "20"} }));
 
         // Alice will recreate the scenario. Bob will block.
         auto const alice = Account("alice");
@@ -1793,8 +1787,8 @@ public:
     {
         testcase("Autofilled sequence should account for TxQ");
         using namespace jtx;
-        Env env(*this, makeConfig({ {"minimum_txn_in_ledger_standalone", "6"} }),
-            with_features(featureFeeEscalation, fix1513));
+        Env env(*this,
+            makeConfig({ {"minimum_txn_in_ledger_standalone", "6"} }));
         Env_ss envs(env);
         auto const& txQ = env.app().getTxQ();
 
@@ -1923,8 +1917,8 @@ public:
     void testAccountInfo()
     {
         using namespace jtx;
-        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
-            with_features(featureFeeEscalation, fix1513));
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }));
         Env_ss envs(env);
 
         Account const alice{ "alice" };
@@ -2193,8 +2187,8 @@ public:
     void testServerInfo()
     {
         using namespace jtx;
-        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
-            with_features(featureFeeEscalation, fix1513));
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }));
         Env_ss envs(env);
 
         Account const alice{ "alice" };
@@ -2416,8 +2410,8 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
-            with_features(featureFeeEscalation, fix1513));
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }));
 
         Json::Value stream;
         stream[jss::streams] = Json::arrayValue;
@@ -2585,8 +2579,7 @@ public:
         using namespace jtx;
 
         Env env(*this,
-            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
-            with_features(featureFeeEscalation, fix1513));
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }));
         auto alice = Account("alice");
         auto bob = Account("bob");
 

@@ -170,8 +170,7 @@ struct Regression_test : public beast::unit_test::suite
                 cfg->section("transaction_queue")
                     .set("minimum_txn_in_ledger_standalone", "3");
                 return cfg;
-            }),
-            with_features(featureFeeEscalation, fix1513));
+            }));
         Env_ss envs(env);
 
         auto const alice = Account("alice");

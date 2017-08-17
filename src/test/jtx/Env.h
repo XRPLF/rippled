@@ -151,6 +151,37 @@ supported_features_except (uint256 const& key, Args const&... args)
         std::array<uint256, 1 + sizeof...(args)>{{key, args...}});
 }
 
+/**
+ * @brief create collection of features to pass to Env ctor
+ *
+ * The resulting collection will contain *all supported amendments* plus
+ * the features passed as arguments.
+ *
+ * @param keys features to include in the resulting collection
+ */
+template<class Col>
+FeatureBitset
+supported_features_plus (Col const& keys)
+{
+    return supported_amendments() | makeFeatureBitset(keys);
+}
+
+/**
+ *
+ * @brief create collection of features to pass to Env ctor
+ * The resulting collection will contain *all supported amendments* plus
+ * the features passed as arguments.
+ *
+ * @param key+args features to include in the resulting collection
+ */
+template <class... Args>
+FeatureBitset
+supported_features_plus (uint256 const& key, Args const&... args)
+{
+    return supported_features_plus(
+        std::array<uint256, 1 + sizeof...(args)>{{key, args...}});
+}
+
 class SuiteSink : public beast::Journal::Sink
 {
     std::string partition_;

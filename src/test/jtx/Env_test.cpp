@@ -355,7 +355,7 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this, with_only_features(featureMultiSign));
+        Env env(*this);
         env.fund(XRP(10000), "alice");
         env(signers("alice", 1,
             { { "alice", 1 }, { "bob", 2 } }),                  ter(temBAD_SIGNER));
@@ -384,7 +384,7 @@ public:
         ticket::create("alice", 60, "bob");
 
         {
-            Env env(*this, with_only_features(featureTickets));
+            Env env(*this, supported_features_plus (featureTickets));
             env.fund(XRP(10000), "alice");
             env(noop("alice"),                  require(owners("alice", 0), tickets("alice", 0)));
             env(ticket::create("alice"),        require(owners("alice", 1), tickets("alice", 1)));

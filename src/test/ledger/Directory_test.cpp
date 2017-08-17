@@ -116,7 +116,7 @@ struct Directory_test : public beast::unit_test::suite
         {
             testcase ("Directory Ordering (with 'SortedDirectories' amendment)");
 
-            Env env(*this, with_only_features(featureSortedDirectories));
+            Env env(*this);
             env.fund(XRP(10000000), alice, gw);
 
             for (std::size_t i = 1; i <= 400; ++i)
@@ -184,8 +184,7 @@ struct Directory_test : public beast::unit_test::suite
 
         beast::xor_shift_engine eng;
 
-        Env env(*this,
-            with_only_features(featureSortedDirectories, featureMultiSign));
+        Env env(*this);
 
         env.fund(XRP(1000000), alice, charlie, gw);
         env.close();
@@ -289,7 +288,7 @@ struct Directory_test : public beast::unit_test::suite
         testcase("RIPD-1353 Empty Offer Directories");
 
         using namespace jtx;
-        Env env(*this, with_only_features(featureSortedDirectories));
+        Env env(*this);
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
@@ -349,7 +348,7 @@ struct Directory_test : public beast::unit_test::suite
         testcase("Empty Chain on Delete");
 
         using namespace jtx;
-        Env env(*this, with_only_features(featureSortedDirectories));
+        Env env(*this);
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
