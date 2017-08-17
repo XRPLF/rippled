@@ -55,12 +55,12 @@ class PaymentSandbox_test : public beast::unit_test::suite
       2) New code: Path is dry because sender does not have any
          GW1 to spend until the end of the transaction.
     */
-    void testSelfFunding (std::initializer_list<uint256> fs)
+    void testSelfFunding (FeatureBitset features)
     {
         testcase ("selfFunding");
 
         using namespace jtx;
-        Env env (*this, with_only_features(fs));
+        Env env (*this, features);
         Account const gw1 ("gw1");
         Account const gw2 ("gw2");
         Account const snd ("snd");
@@ -96,12 +96,12 @@ class PaymentSandbox_test : public beast::unit_test::suite
         env.require (balance ("rcv", USD_gw2 (2)));
     }
 
-    void testSubtractCredits (std::initializer_list<uint256> fs)
+    void testSubtractCredits (FeatureBitset features)
     {
         testcase ("subtractCredits");
 
         using namespace jtx;
-        Env env (*this, with_only_features(fs));
+        Env env (*this, features);
         Account const gw1 ("gw1");
         Account const gw2 ("gw2");
         Account const alice ("alice");
@@ -256,7 +256,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         }
     }
 
-    void testTinyBalance (std::initializer_list<uint256> fs)
+    void testTinyBalance (FeatureBitset features)
     {
         testcase ("Tiny balance");
 
@@ -266,7 +266,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         using namespace jtx;
 
-        Env env (*this, with_only_features(fs));
+        Env env (*this, features);
 
         Account const gw ("gw");
         Account const alice ("alice");
@@ -293,7 +293,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         }
     }
 
-    void testReserve(std::initializer_list<uint256> fs)
+    void testReserve(FeatureBitset features)
     {
         testcase ("Reserve");
         using namespace jtx;
@@ -312,7 +312,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             return env.current ()->fees ().accountReserve (count);
         };
 
-        Env env (*this, with_only_features(fs));
+        Env env (*this, features);
 
         Account const alice ("alice");
         env.fund (reserve(env, 1), alice);
@@ -333,14 +333,14 @@ class PaymentSandbox_test : public beast::unit_test::suite
         }
     }
 
-    void testBalanceHook(std::initializer_list<uint256> fs)
+    void testBalanceHook(FeatureBitset features)
     {
         // Make sure the Issue::Account returned by PAymentSandbox::balanceHook
         // is correct.
         testcase ("balanceHook");
 
         using namespace jtx;
-        Env env (*this, with_only_features(fs));
+        Env env (*this, features);
 
         Account const gw ("gw");
         auto const USD = gw["USD"];
@@ -370,16 +370,19 @@ class PaymentSandbox_test : public beast::unit_test::suite
 public:
     void run ()
     {
-        auto testAll = [this](std::initializer_list<uint256> fs) {
-            testSelfFunding(fs);
-            testSubtractCredits(fs);
-            testTinyBalance(fs);
-            testReserve(fs);
-            testBalanceHook(fs);
+        auto testAll = [this](FeatureBitset features) {
+            testSelfFunding(features);
+            testSubtractCredits(features);
+            testTinyBalance(features);
+            testReserve(features);
+            testBalanceHook(features);
         };
-        testAll({});
-        testAll({featureFlow, fix1373});
-        testAll({featureFlow, fix1373, featureFlowCross});
+        using namespace jtx;
+        testAll(
+            supported_features_except (featureFlow, fix1373, featureFlowCross));
+        testAll(
+            supported_features_except (                      featureFlowCross));
+        testAll(supported_amendments());
     }
 };
 

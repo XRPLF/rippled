@@ -371,7 +371,7 @@ public:
     void testRequireAuthWithDir()
     {
         using namespace test::jtx;
-        Env env(*this, with_only_features(featureMultiSign));
+        Env env(*this);
         Account const alice ("alice");
         Account const bob ("bob");
 
