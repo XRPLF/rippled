@@ -115,6 +115,9 @@ featureToBitsetIndex(uint256 const& f);
 uint256
 bitsetIndexToFeature(size_t i);
 
+bool
+hasFeature (uint256 const& feat, FeatureBitset features);
+
 template <class F>
 void
 foreachFeature(FeatureBitset bs, F&& f)
