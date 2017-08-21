@@ -13,14 +13,18 @@ echo "using TARGET: $TARGET"
 echo "using APP: $APP"
 
 JOBS=${NUM_PROCESSORS:-2}
-if [[ ${TARGET} == *.nounity ]]; then
-  JOBS=$((2*${JOBS}))
-fi
+JOBS=$((JOBS+1))
 
 if [[ ${BUILD:-scons} == "cmake" ]]; then
-  CMAKE_EXTRA_ARGS=""
   echo "cmake building ${APP}"
+  CMAKE_EXTRA_ARGS=" -DCMAKE_VERBOSE_MAKEFILE=ON"
   CMAKE_TARGET=$CC.$TARGET
+  BUILDARGS=" -j${JOBS}"
+  if [[ ${VERBOSE_BUILD:-} == true ]]; then
+    # TODO: if we use a different generator, this
+    # option to build verbose would need to change:
+    BUILDARGS+=" verbose=1"
+  fi
   if [[ ${CI:-} == true ]]; then
     CMAKE_TARGET=$CMAKE_TARGET.ci
   fi
@@ -34,12 +38,12 @@ if [[ ${BUILD:-scons} == "cmake" ]]; then
   mkdir -p "build/${CMAKE_TARGET}"
   pushd "build/${CMAKE_TARGET}"
   cmake ../.. -Dtarget=$CMAKE_TARGET ${CMAKE_EXTRA_ARGS}
-  cmake --build . -- -j${JOBS}
+  cmake --build . -- $BUILDARGS
   if [[ ${BUILD_BOTH:-} == true ]]; then
     if [[ ${TARGET} == *.unity ]]; then
-      cmake --build . --target rippled_classic -- -j$((2*${JOBS}))
+      cmake --build . --target rippled_classic -- $BUILDARGS
     else
-      cmake --build . --target rippled_unity -- -j${JOBS}
+      cmake --build . --target rippled_unity -- $BUILDARGS
     fi
   fi
   popd

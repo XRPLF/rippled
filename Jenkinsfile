@@ -5,6 +5,7 @@ def variants = [
     'clang.debug.nounity',
     'gcc.debug.unity',
     'gcc.debug.nounity',
+    'clang.release.unity',
     'gcc.release.unity',
     'coverage'] as String[]
 
@@ -38,16 +39,21 @@ for (int index = 0; index < variants.size(); index++) {
                      "TARGET=${target}",
                      "CC=${compiler}",
                      'BUILD=cmake',
+                     'VERBOSE_BUILD=true',
                      "CLANG_CC=${clang_cc}",
                      "CLANG_CXX=${clang_cxx}",
+                     "CCACHE_LOGFILE=${bldtype}.ccache.log",
                      "USE_CCACHE=${ucc}"])
             {
                 myStage(bldtype)
                 try {
+                    if (fileExists("${bldtype}.ccache.log")) {
+                        sh "rm -f ${bldtype}.ccache.log"
+                    }
                     sh "ccache -s > ${bldtype}.out"
                     // the devtoolset from SCL gives us a recent gcc. It's not strictly needed
                     // when we are building with clang, but it doesn't seem to interfere either
-                    sh "source /opt/rh/devtoolset-6/enable; set -o pipefail; (/usr/bin/time -p ./bin/ci/ubuntu/build-and-test.sh) 2>&1 | tee -a ${bldtype}.out"
+                    sh "source /opt/rh/devtoolset-6/enable && (/usr/bin/time -p ./bin/ci/ubuntu/build-and-test.sh 2>&1) 2>&1 >> ${bldtype}.out"
                     sh "ccache -s >> ${bldtype}.out"
                 }
                 catch (any) {
@@ -64,6 +70,9 @@ for (int index = 0; index < variants.size(); index++) {
                     shortbld = shortbld.replace('release', 'rel')
                     manager.addShortText("${shortbld}: ${st}, t: ${time}", txtcolor, "white", "0px", "white")
                     archive "${bldtype}.out"
+                    if (ucc == "true" && fileExists("${bldtype}.ccache.log")) {
+                        archive "${bldtype}.ccache.log"
+                    }
                 }
             }
         }
@@ -128,8 +137,9 @@ def upDir(path) {
 
 @NonCPS
 def getTime(text) {
-    // example:
-    // real	5m36.708s
+    // look for text following a label 'real' for
+    // wallclock time. Some `time`s report fractional
+    // seconds and we can omit those in what we report
     def matcher = text =~ /(?m)^real\s+(.+)\.(\d+?)[s]?/
     matcher ? matcher[0][1] + "s" : "n/a"
 }
