@@ -92,7 +92,7 @@ if [[ ${SKIP_TESTS:-} == true ]]; then
   exit
 fi
 
-if [[ $CC == "gcc" && $TARGET == debug* ]]; then
+if [[ $TARGET == debug* ]]; then
   # Execute unit tests under gdb, printing a call stack
   # if we get a crash.
   $GDB_ROOT/bin/gdb -return-child-result -quiet -batch \

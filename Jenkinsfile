@@ -32,8 +32,10 @@ stage ('Parallel Build') {
                 }
                 echo "COMPILER: ${compiler}"
                 echo "TARGET: ${target}"
-                def clang_cc  = (compiler == "clang") ? '/opt/llvm-4.0.0/bin/clang' : ''
-                def clang_cxx = (compiler == "clang") ? '/opt/llvm-4.0.0/bin/clang++' : ''
+                def clang_cc  =
+                    (compiler == "clang") ? "${LLVM_ROOT}/bin/clang" : ''
+                def clang_cxx =
+                    (compiler == "clang") ? "${LLVM_ROOT}/bin/clang++" : ''
                 def ucc = isNoUnity(target) ? 'true' : 'false'
                 echo "USE_CC: ${ucc}"
                 withEnv(["CCACHE_BASEDIR=${cdir}",
@@ -44,18 +46,17 @@ stage ('Parallel Build') {
                          'VERBOSE_BUILD=true',
                          "CLANG_CC=${clang_cc}",
                          "CLANG_CXX=${clang_cxx}",
-                         "CCACHE_LOGFILE=${bldtype}.ccache.txt",
                          "USE_CCACHE=${ucc}"])
                 {
                     myStage(bldtype)
                     try {
-                        if (fileExists("${bldtype}.ccache.txt")) {
-                            sh "rm -f ${bldtype}.ccache.txt"
-                        }
                         sh "ccache -s > ${bldtype}.txt"
-                        // the devtoolset from SCL gives us a recent gcc. It's not strictly needed
-                        // when we are building with clang, but it doesn't seem to interfere either
-                        sh "source /opt/rh/devtoolset-6/enable && (/usr/bin/time -p ./bin/ci/ubuntu/build-and-test.sh 2>&1) 2>&1 >> ${bldtype}.txt"
+                        // the devtoolset from SCL gives us a recent gcc. It's
+                        // not strictly needed when we are building with clang,
+                        // but it doesn't seem to interfere either
+                        sh "source /opt/rh/devtoolset-6/enable && " +
+                           "(/usr/bin/time -p ./bin/ci/ubuntu/build-and-test.sh 2>&1) 2>&1 " +
+                           ">> ${bldtype}.txt"
                         sh "ccache -s >> ${bldtype}.txt"
                     }
                     catch (any) {
@@ -65,16 +66,16 @@ stage ('Parallel Build') {
                         def outstr = readFile("${bldtype}.txt")
                         def st = getResults(outstr)
                         def time = getTime(outstr)
-                        def txtcolor = getFailures(outstr) == 0 ? "DarkGreen" : "Crimson"
+                        def txtcolor =
+                            getFailures(outstr) == 0 ? "DarkGreen" : "Crimson"
                         outstr = null
-                        def shortbld = bldtype
-                        shortbld = shortbld.replace('debug', 'dbg')
-                        shortbld = shortbld.replace('release', 'rel')
-                        manager.addShortText("${shortbld}: ${st}, t: ${time}", txtcolor, "white", "0px", "white")
+                        manager.addShortText(
+                            "${bldtype}: ${st}, t: ${time}",
+                            txtcolor,
+                            "white",
+                            "0px",
+                            "white")
                         archive "${bldtype}.txt"
-                        if (ucc == "true" && fileExists("${bldtype}.ccache.txt")) {
-                            archive "${bldtype}.ccache.txt"
-                        }
                     }
                 }
             }
