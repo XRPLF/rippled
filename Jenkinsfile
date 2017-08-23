@@ -69,8 +69,12 @@ stage ('Parallel Build') {
                         def txtcolor =
                             getFailures(outstr) == 0 ? "DarkGreen" : "Crimson"
                         outstr = null
+                        def shortbld = bldtype
+                        shortbld = shortbld.replace('debug', 'dbg')
+                        shortbld = shortbld.replace('release', 'rel')
+                        shortbld = shortbld.replace('unity', 'un')
                         manager.addShortText(
-                            "${bldtype}: ${st}, t: ${time}",
+                            "${shortbld}: ${st}, t: ${time}",
                             txtcolor,
                             "white",
                             "0px",
@@ -100,8 +104,8 @@ def myStage(name) {
 def getResults(text) {
     // example:
     /// 194.5s, 154 suites, 948 cases, 360485 tests total, 0 failures
-    def matcher = text =~ /(\d+) tests total, (\d+) (failure(s?))/
-    matcher ? matcher[0][1] + " tests, " + matcher[0][2] + " " + matcher[0][3] : "no test results"
+    def matcher = text =~ /(\d+) cases, (\d+) tests total, (\d+) (failure(s?))/
+    matcher ? matcher[0][1] + " cases, " + matcher[0][3] + " failed" : "no test results"
 }
 
 def getFailures(text) {
