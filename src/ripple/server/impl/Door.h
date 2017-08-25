@@ -106,6 +106,11 @@ public:
     */
     void close();
 
+    endpoint_type get_endpoint() const
+    {
+        return acceptor_.local_endpoint();
+    }
+
 private:
     template <class ConstBufferSequence>
     void create (bool ssl, ConstBufferSequence const& buffers,
