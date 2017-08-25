@@ -60,38 +60,6 @@ Dir::end() const  ->
     return const_iterator(*view_, root_, root_);
 }
 
-const_iterator
-Dir::find(uint256 const& page_key, uint256 const& sle_key) const
-{
-    if (sle_ == nullptr)
-        return end();
-
-    auto it = const_iterator(*view_, root_, keylet::page(page_key, 0));
-    if (root_.key == page_key)
-    {
-        it.sle_ = sle_;
-        it.indexes_ = indexes_;
-    }
-    else
-    {
-        it.sle_ = view_->read(it.page_);
-        if (it.sle_ == nullptr)
-        {
-            it.page_ = root_;
-            return it;
-        }
-        it.indexes_ = &it.sle_->getFieldV256(sfIndexes);
-    }
-
-    it.it_ = std::find(std::begin(*it.indexes_),
-        std::end(*it.indexes_), sle_key);
-    if (it.it_ == std::end(*it.indexes_))
-        return end();
-
-    it.index_ = *it.it_;
-    return it;
-}
-
 bool
 const_iterator::operator==(const_iterator const& other) const
 {

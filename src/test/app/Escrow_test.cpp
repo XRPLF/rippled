@@ -20,10 +20,13 @@
 #include <BeastConfig.h>
 #include <test/jtx.h>
 #include <ripple/app/tx/applySteps.h>
+#include <ripple/ledger/Directory.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/TxFlags.h>
+#include <algorithm>
+#include <iterator>
 
 namespace ripple {
 namespace test {
@@ -117,6 +120,17 @@ struct Escrow_test : public beast::unit_test::suite
         jv[jss::Amount] = amount.getJson(0);
         jv["FinishAfter"] =
             expiry.time_since_epoch().count();
+        return jv;
+    }
+
+    static
+    Json::Value
+    lockup (jtx::Account const& account, jtx::Account const& to,
+        STAmount const& amount, NetClock::time_point const& expiry,
+            NetClock::time_point const& cancel)
+    {
+        Json::Value jv = lockup (account, to, amount, expiry);
+        jv["CancelAfter"] = cancel.time_since_epoch().count();
         return jv;
     }
 
@@ -654,7 +668,7 @@ struct Escrow_test : public beast::unit_test::suite
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
 
-            std::array<std::uint8_t, 45> cb = 
+            std::array<std::uint8_t, 45> cb =
             {{
                 0xA2, 0x2B, 0x80, 0x20, 0x42, 0x4A, 0x70, 0x49, 0x49, 0x52,
                 0x92, 0x67, 0xB6, 0x21, 0xB3, 0xD7, 0x91, 0x19, 0xD7, 0x29,
@@ -671,18 +685,169 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testMeta()
+    testMetaAndOwnership()
     {
-        testcase ("Metadata");
-
         using namespace jtx;
         using namespace std::chrono;
-        Env env(*this, with_features(featureEscrow));
 
-        env.fund(XRP(5000), "alice", "bob", "carol");
-        env(condpay("alice", "carol", XRP(1000), makeSlice(cb1), env.now() + 1s));
-        auto const m = env.meta();
-        BEAST_EXPECT((*m)[sfTransactionResult] == tesSUCCESS);
+        auto const alice = Account("alice");
+        auto const bruce = Account("bruce");
+        auto const carol = Account("carol");
+
+        {
+            testcase ("Metadata & Ownership (without fix1523)");
+            Env env(*this, with_features(featureEscrow));
+            env.fund(XRP(5000), alice, bruce, carol);
+            auto const seq = env.seq(alice);
+
+            env(lockup(alice, carol, XRP(1000), env.now() + 1s));
+
+            BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+
+            auto const escrow = env.le(keylet::escrow(alice.id(), seq));
+            BEAST_EXPECT(escrow);
+
+            ripple::Dir aod (*env.current(), keylet::ownerDir(alice.id()));
+            BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
+            BEAST_EXPECT(std::find(aod.begin(), aod.end(), escrow) != aod.end());
+
+            ripple::Dir cod (*env.current(), keylet::ownerDir(carol.id()));
+            BEAST_EXPECT(cod.begin() == cod.end());
+        }
+
+        {
+            testcase ("Metadata (with fix1523, to self)");
+
+            Env env(*this, with_features(featureEscrow, fix1523));
+            env.fund(XRP(5000), alice, bruce, carol);
+            auto const aseq = env.seq(alice);
+            auto const bseq = env.seq(bruce);
+
+            env(lockup(alice, alice, XRP(1000), env.now() + 1s, env.now() + 500s));
+            BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+            env.close(5s);
+            auto const aa = env.le(keylet::escrow(alice.id(), aseq));
+            BEAST_EXPECT(aa);
+
+            {
+                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
+                BEAST_EXPECT(std::find(aod.begin(), aod.end(), aa) != aod.end());
+            }
+
+            env(lockup(bruce, bruce, XRP(1000), env.now() + 1s, env.now() + 2s));
+            BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+            env.close(5s);
+            auto const bb = env.le(keylet::escrow(bruce.id(), bseq));
+            BEAST_EXPECT(bb);
+
+            {
+                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
+                BEAST_EXPECT(std::find(bod.begin(), bod.end(), bb) != bod.end());
+            }
+
+            env.close(5s);
+            env(finish(alice, alice, aseq));
+            {
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
+                BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+
+                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
+                BEAST_EXPECT(std::find(aod.begin(), aod.end(), aa) == aod.end());
+
+                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
+                BEAST_EXPECT(std::find(bod.begin(), bod.end(), bb) != bod.end());
+            }
+
+            env.close(5s);
+            env(cancel(bruce, bruce, bseq));
+            {
+                BEAST_EXPECT(!env.le(keylet::escrow(bruce.id(), bseq)));
+                BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+
+                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 0);
+                BEAST_EXPECT(std::find(bod.begin(), bod.end(), bb) == bod.end());
+            }
+        }
+
+        {
+            testcase ("Metadata (with fix1523, to other)");
+
+            Env env(*this, with_features(featureEscrow, fix1523));
+            env.fund(XRP(5000), alice, bruce, carol);
+            auto const aseq = env.seq(alice);
+            auto const bseq = env.seq(bruce);
+
+            env(lockup(alice, bruce, XRP(1000), env.now() + 1s));
+            BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+            env.close(5s);
+            env(lockup(bruce, carol, XRP(1000), env.now() + 1s, env.now() + 2s));
+            BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+            env.close(5s);
+
+            auto const ab = env.le(keylet::escrow(alice.id(), aseq));
+            BEAST_EXPECT(ab);
+
+            auto const bc = env.le(keylet::escrow(bruce.id(), bseq));
+            BEAST_EXPECT(bc);
+
+            {
+                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
+                BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) != aod.end());
+
+                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
+                BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) != bod.end());
+                BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) != bod.end());
+
+                ripple::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
+                BEAST_EXPECT(std::find(cod.begin(), cod.end(), bc) != cod.end());
+            }
+
+            env.close(5s);
+            env(finish(alice, alice, aseq));
+            {
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
+                BEAST_EXPECT(env.le(keylet::escrow(bruce.id(), bseq)));
+
+                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
+                BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) == aod.end());
+
+                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
+                BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) == bod.end());
+                BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) != bod.end());
+
+                ripple::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
+            }
+
+            env.close(5s);
+            env(cancel(bruce, bruce, bseq));
+            {
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
+                BEAST_EXPECT(!env.le(keylet::escrow(bruce.id(), bseq)));
+
+                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
+                BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) == aod.end());
+
+                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 0);
+                BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) == bod.end());
+                BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) == bod.end());
+
+                ripple::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 0);
+            }
+        }
     }
 
     void testConsequences()
@@ -745,7 +910,7 @@ struct Escrow_test : public beast::unit_test::suite
         testFails();
         testLockup();
         testEscrowConditions();
-        testMeta();
+        testMetaAndOwnership();
         testConsequences();
     }
 };

@@ -44,9 +44,6 @@ public:
 
     const_iterator
     end() const;
-
-    const_iterator
-    find(uint256 const& page_key, uint256 const& sle_key) const;
 };
 
 class Dir::const_iterator
