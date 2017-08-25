@@ -5598,6 +5598,9 @@
     <ClCompile Include="..\..\src\test\app\DeliverMin_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\app\DepositAuth_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\app\Discrepancy_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>

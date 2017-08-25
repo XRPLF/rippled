@@ -692,6 +692,75 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
+    testDepositAuth ()
+    {
+        testcase ("Deposit Authorization");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        auto const alice = Account ("alice");
+        auto const bob = Account ("bob");
+        auto USDA = alice["USD"];
+        {
+            Env env (*this);
+            env.fund (XRP (10000), alice, bob);
+
+            env (fset (bob, asfDepositAuth));
+            env.close();
+
+            auto const pk = alice.pk ();
+            auto const settleDelay = 100s;
+            env (create (alice, bob, XRP (1000), settleDelay, pk));
+            env.close();
+
+            auto const chan = channel (*env.current (), alice, bob);
+            BEAST_EXPECT (channelBalance (*env.current (), chan) == XRP (0));
+            BEAST_EXPECT (channelAmount (*env.current (), chan) == XRP (1000));
+
+            // alice can add more funds to the channel even though bob has
+            // asfDepositAuth set.
+            env (fund (alice, chan, XRP (1000)));
+            env.close();
+
+            // alice claims. Fails because bob's lsfDepositAuth flag is set.
+            env (claim (alice, chan,
+                XRP (500).value(), XRP (500).value()), ter (tecNO_PERMISSION));
+            env.close();
+
+            // Claim with signature
+            auto const baseFee = env.current()->fees().base;
+            auto const preBob = env.balance (bob);
+            {
+                auto const delta = XRP (500).value();
+                auto const sig = signClaimAuth (pk, alice.sk (), chan, delta);
+
+                // alice claims with signature.  Fails since bob has
+                // lsfDepositAuth flag set.
+                env (claim (alice, chan,
+                    delta, delta, Slice (sig), pk), ter (tecNO_PERMISSION));
+                env.close();
+                BEAST_EXPECT (env.balance (bob) == preBob);
+
+                // bob claims with signature.  Succeeds even though bob's
+                // lsfDepositAuth flag is set since bob signed the transaction.
+                env (claim (bob, chan, delta, delta, Slice (sig), pk));
+                env.close();
+                BEAST_EXPECT (env.balance (bob) == preBob + delta - baseFee);
+            }
+
+            // bob clears lsfDepositAuth.  Now alice can use an unsigned claim.
+            env (fclear (bob, asfDepositAuth));
+            env.close();
+
+            // alice claims successfully.
+            env (claim (alice, chan, XRP (800).value(), XRP (800).value()));
+            env.close();
+            BEAST_EXPECT (
+                env.balance (bob) == preBob + XRP (800) - (2 * baseFee));
+        }
+    }
+
+    void
     testMultiple ()
     {
         // auth amount defaults to balance if not present
@@ -994,6 +1063,7 @@ struct PayChan_test : public beast::unit_test::suite
         testDefaultAmount ();
         testDisallowXRP ();
         testDstTag ();
+        testDepositAuth ();
         testMultiple ();
         testRPC ();
         testOptionalFields ();
