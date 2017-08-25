@@ -49,27 +49,30 @@ namespace detail {
 class FeatureCollections
 {
     static constexpr char const* const featureNames[] =
-        {"MultiSign",
-         "Tickets",
-         "TrustSetAuth",
-         "FeeEscalation",
-         "OwnerPaysFee",
-         "CompareFlowV1V2",
-         "SHAMapV2",
-         "PayChan",
-         "Flow",
-         "CompareTakerFlowCross",
-         "FlowCross",
-         "CryptoConditions",
-         "TickSize",
-         "fix1368",
-         "Escrow",
-         "CryptoConditionsSuite",
-         "fix1373",
-         "EnforceInvariants",
-         "SortedDirectories",
-         "fix1201",
-         "fix1512"};
+    {
+        "MultiSign",
+        "Tickets",
+        "TrustSetAuth",
+        "FeeEscalation",
+        "OwnerPaysFee",
+        "CompareFlowV1V2",
+        "SHAMapV2",
+        "PayChan",
+        "Flow",
+        "CompareTakerFlowCross",
+        "FlowCross",
+        "CryptoConditions",
+        "TickSize",
+        "fix1368",
+        "Escrow",
+        "CryptoConditionsSuite",
+        "fix1373",
+        "EnforceInvariants",
+        "SortedDirectories",
+        "fix1201",
+        "fix1512",
+        "fix1523"
+    };
 
     std::vector<uint256> features;
     boost::container::flat_map<uint256, std::size_t> featureToIndex;
@@ -164,6 +167,7 @@ extern uint256 const featureEnforceInvariants;
 extern uint256 const featureSortedDirectories;
 extern uint256 const fix1201;
 extern uint256 const fix1512;
+extern uint256 const fix1523;
 
 } // ripple
 

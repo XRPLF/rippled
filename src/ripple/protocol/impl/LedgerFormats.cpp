@@ -98,7 +98,8 @@ LedgerFormats::LedgerFormats ()
         SOElement (sfDestinationTag,    SOE_OPTIONAL) <<
         SOElement (sfOwnerNode,         SOE_REQUIRED) <<
         SOElement (sfPreviousTxnID,     SOE_REQUIRED) <<
-        SOElement (sfPreviousTxnLgrSeq, SOE_REQUIRED);
+        SOElement (sfPreviousTxnLgrSeq, SOE_REQUIRED) <<
+        SOElement (sfDestinationNode,   SOE_OPTIONAL);
 
     add ("LedgerHashes", ltLEDGER_HASHES)
             << SOElement (sfFirstLedgerSequence, SOE_OPTIONAL) // Remove if we do a ledger restart
