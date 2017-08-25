@@ -433,12 +433,12 @@ private:
             }
 
             void
-            run()
+            run(endpoint_type const& ep)
             {
                 timer_.expires_from_now(std::chrono::seconds(3));
                 timer_.async_wait(strand_.wrap(std::bind(&Connection::on_timer,
                     shared_from_this(), std::placeholders::_1)));
-                socket_.async_connect(ep_, strand_.wrap(std::bind(
+                socket_.async_connect(ep, strand_.wrap(std::bind(
                     &Connection::on_connect, shared_from_this(),
                         std::placeholders::_1)));
             }
@@ -542,7 +542,7 @@ private:
         {
             auto const p = std::make_shared<Connection>(*this, ep);
             add(p);
-            p->run();
+            p->run(ep);
         }
 
         ~Client()
