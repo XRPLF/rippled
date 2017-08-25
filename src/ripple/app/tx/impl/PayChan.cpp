@@ -457,8 +457,16 @@ PayChanClaim::doApply()
         if (!sled)
             return terNO_ACCOUNT;
 
-        if (txAccount == src && ((*sled)[sfFlags] & lsfDisallowXRP))
+        if (txAccount == src && (sled->getFlags() & lsfDisallowXRP))
             return tecNO_TARGET;
+
+        // Check whether the destination account requires deposit authorization
+        if (txAccount != dst)
+        {
+            if (ctx_.view().rules().enabled(featureDepositAuth) &&
+                ((sled->getFlags() & lsfDepositAuth) == lsfDepositAuth))
+                    return tecNO_PERMISSION;
+        }
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;

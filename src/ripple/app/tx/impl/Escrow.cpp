@@ -438,6 +438,23 @@ EscrowFinish::doApply()
             return tecCRYPTOCONDITION_ERROR;
     }
 
+    // NOTE: Escrow payments cannot be used to fund accounts
+    auto const sled = ctx_.view().peek(keylet::account((*slep)[sfDestination]));
+    if (! sled)
+        return tecNO_DST;
+
+    if (ctx_.view().rules().enabled(featureDepositAuth))
+    {
+        // Is EscrowFinished authorized?
+        if (sled->getFlags() & lsfDepositAuth)
+        {
+            // Authorized if Destination == Account, otherwise no permission.
+            AccountID const destID = (*slep)[sfDestination];
+            if (ctx_.tx[sfAccount] != destID)
+                return tecNO_PERMISSION;
+        }
+    }
+
     AccountID const account = (*slep)[sfAccount];
 
     // Remove escrow from owner directory
@@ -459,14 +476,6 @@ EscrowFinish::doApply()
         if (! isTesSuccess(ter))
             return ter;
     }
-
-    // NOTE: These payments cannot be used to fund accounts
-
-    // Fetch Destination SLE
-    auto const sled = ctx_.view().peek(
-        keylet::account((*slep)[sfDestination]));
-    if (! sled)
-        return tecNO_DST;
 
     // Transfer amount to destination
     (*sled)[sfBalance] = (*sled)[sfBalance] + (*slep)[sfAmount];

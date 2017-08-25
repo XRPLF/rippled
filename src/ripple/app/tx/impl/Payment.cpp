@@ -22,6 +22,7 @@
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/JsonFields.h>
@@ -346,10 +347,17 @@ Payment::doApply ()
         view().update (sleDst);
     }
 
-    TER terResult;
+    // Determine whether the destination requires deposit authorization.
+    bool const reqDepositAuth = sleDst->getFlags() & lsfDepositAuth &&
+        view().rules().enabled(featureDepositAuth);
 
     bool const bRipple = paths || sendMax || !saDstAmount.native ();
     // XXX Should sendMax be sufficient to imply ripple?
+
+    // If the destination has lsfDepositAuth set, then only direct XRP
+    // payments (no intermediate steps) are allowed to the destination.
+    if (bRipple && reqDepositAuth)
+        return tecNO_PERMISSION;
 
     if (bRipple)
     {
@@ -369,7 +377,8 @@ Payment::doApply ()
         {
             PaymentSandbox pv(&view());
             JLOG(j_.debug())
-                << "Entering RippleCalc in payment: " << ctx_.tx.getTransactionID();
+                << "Entering RippleCalc in payment: "
+                << ctx_.tx.getTransactionID();
             rc = path::RippleCalc::rippleCalculate (
                 pv,
                 maxSourceAmount,
@@ -397,7 +406,7 @@ Payment::doApply ()
                 ctx_.deliver (rc.actualAmountOut);
         }
 
-        terResult = rc.result ();
+        auto terResult = rc.result ();
 
         // Because of its overhead, if RippleCalc
         // fails with a retry code, claim a fee
@@ -405,56 +414,77 @@ Payment::doApply ()
         // careful with their path spec next time.
         if (isTerRetry (terResult))
             terResult = tecPATH_DRY;
+        return terResult;
     }
-    else
+
+    assert (saDstAmount.native ());
+
+    // Direct XRP payment.
+
+    // uOwnerCount is the number of entries in this ledger for this
+    // account that require a reserve.
+    auto const uOwnerCount = view().read(
+        keylet::account(account_))->getFieldU32 (sfOwnerCount);
+
+    // This is the total reserve in drops.
+    auto const reserve = view().fees().accountReserve(uOwnerCount);
+
+    // mPriorBalance is the balance on the sending account BEFORE the
+    // fees were charged. We want to make sure we have enough reserve
+    // to send. Allow final spend to use reserve for fee.
+    auto const mmm = std::max(reserve,
+        ctx_.tx.getFieldAmount (sfFee).xrp ());
+
+    if (mPriorBalance < saDstAmount.xrp () + mmm)
     {
-        assert (saDstAmount.native ());
+        // Vote no. However the transaction might succeed, if applied in
+        // a different order.
+        JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " <<
+            " " << to_string (mPriorBalance) <<
+            " / " << to_string (saDstAmount.xrp () + mmm) <<
+            " (" << to_string (reserve) << ")";
 
-        // Direct XRP payment.
-
-        // uOwnerCount is the number of entries in this legder for this
-        // account that require a reserve.
-        auto const uOwnerCount = view().read(
-            keylet::account(account_))->getFieldU32 (sfOwnerCount);
-
-        // This is the total reserve in drops.
-        auto const reserve = view().fees().accountReserve(uOwnerCount);
-
-        // mPriorBalance is the balance on the sending account BEFORE the
-        // fees were charged. We want to make sure we have enough reserve
-        // to send. Allow final spend to use reserve for fee.
-        auto const mmm = std::max(reserve,
-            ctx_.tx.getFieldAmount (sfFee).xrp ());
-
-        if (mPriorBalance < saDstAmount.xrp () + mmm)
-        {
-            // Vote no. However the transaction might succeed, if applied in
-            // a different order.
-            JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " <<
-                " " << to_string (mPriorBalance) <<
-                " / " << to_string (saDstAmount.xrp () + mmm) <<
-                " (" << to_string (reserve) << ")";
-
-            terResult = tecUNFUNDED_PAYMENT;
-        }
-        else
-        {
-            // The source account does have enough money, so do the
-            // arithmetic for the transfer and make the ledger change.
-            view().peek(keylet::account(account_))->setFieldAmount (sfBalance,
-                mSourceBalance - saDstAmount);
-            sleDst->setFieldAmount (sfBalance,
-                sleDst->getFieldAmount (sfBalance) + saDstAmount);
-
-            // Re-arm the password change fee if we can and need to.
-            if ((sleDst->getFlags () & lsfPasswordSpent))
-                sleDst->clearFlag (lsfPasswordSpent);
-
-            terResult = tesSUCCESS;
-        }
+        return tecUNFUNDED_PAYMENT;
     }
 
-    return terResult;
+    // The source account does have enough money.  Make sure the
+    // source account has authority to deposit to the destination.
+    if (reqDepositAuth)
+    {
+        // Get the base reserve.
+        XRPAmount const dstReserve {view().fees().accountReserve (0)};
+
+        // If the destination's XRP balance is
+        //  1. below the base reserve and
+        //  2. the deposit amount is also below the base reserve,
+        // then we allow the deposit.
+        //
+        // This rule is designed to keep an account from getting wedged
+        // in an unusable state if it sets the lsfDepositAuth flag and
+        // then consumes all of its XRP.  Without the rule if an
+        // account with lsfDepositAuth set spent all of its XRP, it
+        // would be unable to acquire more XRP required to pay fees.
+        //
+        // We choose the base reserve as our bound because it is
+        // a small number that seldom changes but is always sufficient
+        // to get the account un-wedged.
+        if (saDstAmount > dstReserve ||
+            sleDst->getFieldAmount (sfBalance) > dstReserve)
+                return tecNO_PERMISSION;
+    }
+
+    // Do the arithmetic for the transfer and make the ledger change.
+    view()
+        .peek(keylet::account(account_))
+        ->setFieldAmount(sfBalance, mSourceBalance - saDstAmount);
+    sleDst->setFieldAmount(
+        sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
+
+    // Re-arm the password change fee if we can and need to.
+    if ((sleDst->getFlags() & lsfPasswordSpent))
+        sleDst->clearFlag(lsfPasswordSpent);
+
+    return tesSUCCESS;
 }
 
 }  // ripple

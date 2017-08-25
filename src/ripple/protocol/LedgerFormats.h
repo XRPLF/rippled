@@ -131,6 +131,7 @@ enum LedgerSpecificFlags
     lsfNoFreeze         = 0x00200000,   // True, cannot freeze ripple states
     lsfGlobalFreeze     = 0x00400000,   // True, all assets frozen
     lsfDefaultRipple    = 0x00800000,   // True, trust lines allow rippling by default
+    lsfDepositAuth      = 0x01000000,   // True, all deposits require authorization
 
     // ltOFFER
     lsfPassive          = 0x00010000,

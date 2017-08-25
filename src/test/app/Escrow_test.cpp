@@ -377,8 +377,58 @@ struct Escrow_test : public beast::unit_test::suite
             env(cancel("bob", "alice", seq),                ter(tecNO_PERMISSION));
             env(finish("bob", "alice", seq));
         }
+        {
+            // Unconditionally pay from alice to bob.  jack (neither source nor
+            // destination) signs all cancels and finishes.  This shows that
+            // Escrow will make a payment to bob with no intervention from bob.
+            Env env(*this);
+            env.fund(XRP(5000), "alice", "bob", "jack");
+            auto const seq = env.seq("alice");
+            env(lockup("alice", "bob", XRP(1000), env.now() + 1s));
+            env.require(balance("alice", XRP(4000) - drops(10)));
 
-        { // Conditional
+            env(cancel("jack", "alice", seq),                ter(tecNO_PERMISSION));
+            env(finish("jack", "alice", seq),                ter(tecNO_PERMISSION));
+            env.close();
+
+            env(cancel("jack", "alice", seq),                ter(tecNO_PERMISSION));
+            env(finish("jack", "alice", seq));
+            env.close();
+            env.require(balance("alice", XRP(4000) - drops(10)));
+            env.require(balance("bob", XRP(6000)));
+            env.require(balance("jack", XRP(5000) - drops(40)));
+        }
+        {
+            // bob sets PaymentAuth so only bob can finish the escrow.
+            Env env(*this);
+
+            env.fund(XRP(5000), "alice", "bob", "jack");
+            env(fset ("bob", asfDepositAuth));
+            env.close();
+
+            auto const seq = env.seq("alice");
+            env(lockup("alice", "bob", XRP(1000), env.now() + 1s));
+            env.require(balance("alice", XRP(4000) - drops(10)));
+
+            env(cancel("jack", "alice", seq),                ter(tecNO_PERMISSION));
+            env(finish("jack", "alice", seq),                ter(tecNO_PERMISSION));
+            env(finish("alice", "alice", seq),               ter(tecNO_PERMISSION));
+            env(finish("bob", "alice", seq),                 ter(tecNO_PERMISSION));
+            env.close();
+
+            env(cancel("jack", "alice", seq),                ter(tecNO_PERMISSION));
+            env(finish("jack", "alice", seq),                ter(tecNO_PERMISSION));
+            env(finish("alice", "alice", seq),               ter(tecNO_PERMISSION));
+            env.close();
+            env(finish("bob", "alice", seq));
+            env.close();
+            auto const baseFee = env.current()->fees().base;
+            env.require(balance("alice", XRP(4000) - (baseFee * 3)));
+            env.require(balance("bob", XRP(6000) - (baseFee * 3)));
+            env.require(balance("jack", XRP(5000) - (baseFee * 4)));
+        }
+        {
+            // Conditional
             Env env(*this);
             env.fund(XRP(5000), "alice", "bob");
             auto const seq = env.seq("alice");
@@ -393,10 +443,36 @@ struct Escrow_test : public beast::unit_test::suite
 
             env(cancel("bob", "alice", seq),                ter(tecNO_PERMISSION));
             env(finish("bob", "alice", seq),                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),                ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("alice", "alice", seq),              ter(tecCRYPTOCONDITION_ERROR));
             env.close();
 
             env(finish("bob", "alice", seq,
+                makeSlice(cb2), makeSlice(fb2)), fee(1500));
+        }
+        {
+            // Self-escrowed conditional with PaymentAuth
+            Env env(*this);
+
+            env.fund(XRP(5000), "alice", "bob");
+            auto const seq = env.seq("alice");
+            env(lockup("alice", "alice", XRP(1000), makeSlice(cb2), env.now() + 1s));
+            env.require(balance("alice", XRP(4000) - drops(10)));
+
+            env(cancel("bob", "alice", seq),                ter(tecNO_PERMISSION));
+            env(finish("bob", "alice", seq),                ter(tecNO_PERMISSION));
+            env(finish("bob", "alice", seq,
+                makeSlice(cb2), makeSlice(fb2)), fee(1500), ter(tecNO_PERMISSION));
+            env.close();
+
+            env(cancel("bob", "alice", seq),                ter(tecNO_PERMISSION));
+            env(finish("bob", "alice", seq),                ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("alice", "alice", seq),              ter(tecCRYPTOCONDITION_ERROR));
+            env(fset ("alice", asfDepositAuth));
+            env.close();
+
+            env(finish("bob", "alice", seq,
+                makeSlice(cb2), makeSlice(fb2)), fee(1500), ter(tecNO_PERMISSION));
+            env(finish("alice", "alice", seq,
                 makeSlice(cb2), makeSlice(fb2)), fee(1500));
         }
     }
