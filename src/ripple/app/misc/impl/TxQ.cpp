@@ -1027,7 +1027,7 @@ TxQ::apply(Application& app, OpenView& view,
             JLOG(j_.warn()) <<
                 "Removing last item of account " <<
                 lastRIter->account <<
-                "from queue with average fee of" <<
+                " from queue with average fee of " <<
                 endEffectiveFeeLevel << " in favor of " <<
                 transactionID << " with fee of " <<
                 feeLevelPaid;
