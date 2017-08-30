@@ -201,7 +201,7 @@ struct Directory_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
 
-        std::vector<IOU> const currencies = [this,&eng,&gw]()
+        std::vector<IOU> const currencies = [this, &gw]()
         {
             std::vector<IOU> c;
 
