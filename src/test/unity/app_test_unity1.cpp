@@ -34,3 +34,5 @@
 #include <test/app/OfferStream_test.cpp>
 #include <test/app/Offer_test.cpp>
 #include <test/app/OversizeMeta_test.cpp>
+
+#include <test/unit_test/multi_runner.cpp>

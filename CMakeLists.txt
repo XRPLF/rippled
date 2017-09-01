@@ -322,7 +322,8 @@ foreach(curdir
         resource
         rpc
         server
-        shamap)
+        shamap
+        unit_test)
     file(GLOB_RECURSE cursrcs src/test/${curdir}/*.cpp)
     list(APPEND test_srcs "${cursrcs}")
 endforeach()

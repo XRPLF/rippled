@@ -24,21 +24,18 @@
 namespace ripple {
 namespace test {
 
+int port_base = 8000;
+void incPorts()
+{
+    port_base += 3;
+}
+
 void
 setupConfigForUnitTests (Config& cfg)
 {
-    static int port_base = 8000;
-    std::string port_peer;
-    std::string port_rpc;
-    std::string port_ws;
-    static std::mutex m;
-    {
-        std::lock_guard<std::mutex> l(m);
-        port_peer = to_string(port_base);
-        port_rpc = to_string(port_base + 1);
-        port_ws = to_string(port_base + 2);
-        port_base += 3;
-    }
+    std::string const port_peer = to_string(port_base);
+    std::string port_rpc = to_string(port_base + 1);
+    std::string port_ws = to_string(port_base + 2);
 
     cfg.overwrite (ConfigSection::nodeDatabase (), "type", "memory");
     cfg.overwrite (ConfigSection::nodeDatabase (), "path", "main");

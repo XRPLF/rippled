@@ -155,6 +155,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '--testjobs',
+    default='0',
+    type=int,
+    help='Run tests in parallel'
+)
+
+parser.add_argument(
     '--clean', '-c',
     action='store_true',
     help='delete all build artifacts after testing',
@@ -377,11 +384,14 @@ def run_cmake_tests(directory, target, config):
     print('Unit tests for', executable)
     testflag = '--unittest'
     quiet = ''
+    testjobs = ''
     if ARGS.test:
         testflag += ('=' + ARGS.test)
     if ARGS.quiet:
         quiet = '-q'
-    resultcode, lines = shell(executable, (testflag, quiet,))
+    if ARGS.testjobs:
+        testjobs = ('--unittest-jobs=' + str(ARGS.testjobs))
+    resultcode, lines = shell(executable, (testflag, quiet, testjobs,))
 
     if resultcode:
         if not ARGS.verbose:

@@ -502,6 +502,9 @@
     <Filter Include="test\unity">
       <UniqueIdentifier>{4FD99791-5191-0BFF-8D77-19500238E44E}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test\unit_test">
+      <UniqueIdentifier>{D4796FCA-4A81-C3A8-FC86-FEF2CEEFC056}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\build\proto\ripple.pb.cc">
@@ -5661,9 +5664,6 @@
     <ClCompile Include="..\..\src\test\protocol\XRPAmount_test.cpp">
       <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\test\quiet_reporter.h">
-      <Filter>test</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\test\resource\Logic_test.cpp">
       <Filter>test\resource</Filter>
     </ClCompile>
@@ -5838,5 +5838,11 @@
     <ClCompile Include="..\..\src\test\unity\shamap_test_unity.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\unit_test\multi_runner.cpp">
+      <Filter>test\unit_test</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\test\unit_test\multi_runner.h">
+      <Filter>test\unit_test</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
