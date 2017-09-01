@@ -39,6 +39,7 @@ stage ('Parallel Build') {
                 def ucc = isNoUnity(target) ? 'true' : 'false'
                 echo "USE_CC: ${ucc}"
                 withEnv(["CCACHE_BASEDIR=${cdir}",
+                         "CCACHE_NOHASHDIR=true",
                          'LCOV_ROOT=""',
                          "TARGET=${target}",
                          "CC=${compiler}",
