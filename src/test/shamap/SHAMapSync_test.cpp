@@ -179,14 +179,14 @@ public:
                         gotNodes_b,
                         rand_bool(eng_),
                         rand_int(eng_, 2)))
-                    fail();
+                    fail("", __FILE__, __LINE__);
             }
 
             // Don't use BEAST_EXPECT here b/c it will be called a non-deterministic number of times
             // and the number of tests run should be deterministic
             if (gotNodeIDs_b.size() != gotNodes_b.size() ||
                 gotNodeIDs_b.empty())
-                fail();
+                fail("", __FILE__, __LINE__);
 
             for (std::size_t i = 0; i < gotNodeIDs_b.size(); ++i)
             {
@@ -196,7 +196,7 @@ public:
                          .addKnownNode(
                              gotNodeIDs_b[i], makeSlice(gotNodes_b[i]), nullptr)
                          .isUseful())
-                    fail();
+                    fail("", __FILE__, __LINE__);
             }
         }
         while (true);

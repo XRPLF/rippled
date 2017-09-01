@@ -63,7 +63,7 @@ public:
             {
                 // Don't use BEAST_EXPECT above b/c it will be called a non-deterministic number of times
                 // and the number of tests run should be deterministic
-                fail();
+                fail("", __FILE__, __LINE__);
             }
 
             if(jv.isMember(jss::warning))
