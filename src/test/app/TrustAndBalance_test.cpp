@@ -51,7 +51,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         testcase ("Payment to Nonexistent Account");
         using namespace test::jtx;
 
-        Env env {*this, with_features(fs)};
+        Env env {*this, with_only_features(fs)};
         env (pay (env.master, "alice", XRP(1)), ter(tecNO_DST_INSUF_XRP));
         env.close();
     }
@@ -167,7 +167,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         testcase ("Direct Payment, Ripple");
         using namespace test::jtx;
 
-        Env env {*this, with_features(fs)};
+        Env env {*this, with_only_features(fs)};
         Account alice {"alice"};
         Account bob {"bob"};
 
@@ -210,7 +210,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
                 (subscribe ? "With " : "Without ") + " Subscribe");
         using namespace test::jtx;
 
-        Env env {*this, with_features(fs)};
+        Env env {*this, with_only_features(fs)};
         auto wsc = test::makeWSClient(env.app().config());
         Account gw {"gateway"};
         Account alice {"alice"};
@@ -288,7 +288,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         testcase ("Payments With Paths and Fees");
         using namespace test::jtx;
 
-        Env env {*this, with_features(fs)};
+        Env env {*this, with_only_features(fs)};
         Account gw {"gateway"};
         Account alice {"alice"};
         Account bob {"bob"};
@@ -336,7 +336,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         testcase ("Indirect Payment");
         using namespace test::jtx;
 
-        Env env {*this, with_features(fs)};
+        Env env {*this, with_only_features(fs)};
         Account gw {"gateway"};
         Account alice {"alice"};
         Account bob {"bob"};
@@ -378,7 +378,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
                 (with_rate ? "With " : "Without ") + " Xfer Fee, ");
         using namespace test::jtx;
 
-        Env env {*this, with_features(fs)};
+        Env env {*this, with_only_features(fs)};
         Account gw {"gateway"};
         Account amazon {"amazon"};
         Account alice {"alice"};
@@ -443,7 +443,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         testcase ("Set Invoice ID on Payment");
         using namespace test::jtx;
 
-        Env env {*this, with_features(fs)};
+        Env env {*this, with_only_features(fs)};
         Account alice {"alice"};
         auto wsc = test::makeWSClient(env.app().config());
 
