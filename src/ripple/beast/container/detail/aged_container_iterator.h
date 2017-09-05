@@ -51,15 +51,7 @@ class aged_container_iterator
 public:
     using time_point = typename Iterator::value_type::stashed::time_point;
 
-    // Could be '= default', but Visual Studio 2013 chokes on it [Aug 2014]
-    aged_container_iterator ()
-    {
-    }
-
-    // copy constructor
-    aged_container_iterator (
-        aged_container_iterator<is_const, Iterator, Base>
-            const& other) = default;
+    aged_container_iterator() = default;
 
     // Disable constructing a const_iterator from a non-const_iterator.
     // Converting between reverse and non-reverse iterators should be explicit.

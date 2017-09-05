@@ -30,6 +30,9 @@ class Base
 {
 public:
     virtual ~Base () = 0;
+    Base() = default;
+    Base(Base const&) = default;
+    Base& operator=(Base const&) = default;
 };
 
 }

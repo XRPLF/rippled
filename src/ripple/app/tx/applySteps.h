@@ -61,6 +61,7 @@ public:
     {
     }
 
+    PreflightResult(PreflightResult const&) = default;
     /// Deleted copy assignment operator
     PreflightResult& operator=(PreflightResult const&) = delete;
 };
@@ -114,6 +115,7 @@ public:
     {
     }
 
+    PreclaimResult(PreclaimResult const&) = default;
     /// Deleted copy assignment operator
     PreclaimResult& operator=(PreclaimResult const&) = delete;
 };
