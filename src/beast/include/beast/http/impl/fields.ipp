@@ -119,8 +119,6 @@ public:
         using value_type =
             typename const_iterator::value_type;
 
-        field_range(field_range const&) = default;
-
         field_range(iter_type first, iter_type last)
             : first_(first)
             , last_(last)
