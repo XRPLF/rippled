@@ -129,6 +129,17 @@ struct ConsensusParms
 
     //! Percentage of nodes required to reach agreement on ledger close time
     std::size_t avCT_CONSENSUS_PCT = 75;
+
+    //--------------------------------------------------------------------------
+
+    /** Whether to use roundCloseTime or effCloseTime for reaching close time
+        consensus.
+        This was added to migrate from effCloseTime to roundCloseTime on the
+        live network. The desired behavior (as given by the default value) is
+        to use roundCloseTime during consensus voting and then use effCloseTime
+        when accepting the consensus ledger.
+    */
+    bool useRoundedCloseTime = true;
 };
 
 }  // ripple

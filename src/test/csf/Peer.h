@@ -311,7 +311,7 @@ struct Peer
         auto newLedger = prevLedger.close(
             result.set.txs_,
             closeResolution,
-            rawCloseTimes.self,
+            result.position.closeTime(),
             result.position.closeTime() != NetClock::time_point{});
         ledgers[newLedger.id()] = newLedger;
         prevProposers_ = result.proposers;
