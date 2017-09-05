@@ -118,6 +118,9 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& ledger)
     // Notify inbound transactions of the new ledger sequence number
     inboundTransactions_.newRound(buildLCL->info().seq);
 
+    // Use the ledger timing rules of the acquired ledger
+    parms_.useRoundedCloseTime = buildLCL->rules().enabled(fix1528);
+
     return RCLCxLedger(buildLCL);
 }
 
@@ -957,8 +960,11 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
         JLOG(j_.info()) << "Entering consensus process, watching";
     }
 
-    // Notify inbOund ledgers that we are starting a new round
+    // Notify inbound ledgers that we are starting a new round
     inboundTransactions_.newRound(prevLgr.seq());
+
+    // Use parent ledger's rules to determine whether to use rounded close time
+    parms_.useRoundedCloseTime = prevLgr.ledger_->rules().enabled(fix1528);
 
     // propose only if we're in sync with the network (and validating)
     return validating_ &&

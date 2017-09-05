@@ -117,5 +117,6 @@ uint256 const featureSortedDirectories = *getRegisteredFeature("SortedDirectorie
 uint256 const fix1201 = *getRegisteredFeature("fix1201");
 uint256 const fix1512 = *getRegisteredFeature("fix1512");
 uint256 const fix1523 = *getRegisteredFeature("fix1523");
+uint256 const fix1528 = *getRegisteredFeature("fix1528");
 
 } // ripple

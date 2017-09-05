@@ -103,12 +103,6 @@ public:
     }
 
     auto
-    actualCloseTime() const
-    {
-        return actualCloseTime_;
-    }
-
-    auto
     parentCloseTime() const
     {
         return parentCloseTime_;
@@ -140,9 +134,8 @@ public:
         res.id_.txs.insert(txs.begin(), txs.end());
         res.id_.seq = seq() + 1;
         res.closeTimeResolution_ = closeTimeResolution;
-        res.actualCloseTime_ = consensusCloseTime;
         res.closeTime_ = effCloseTime(
-            consensusCloseTime, closeTimeResolution, parentCloseTime_);
+            consensusCloseTime, closeTimeResolution, closeTime());
         res.closeTimeAgree_ = closeTimeAgree;
         res.parentCloseTime_ = closeTime();
         res.parentID_ = id();
@@ -167,9 +160,6 @@ private:
 
     //! Parent ledger close time
     NetClock::time_point parentCloseTime_;
-
-    //! Close time unadjusted by closeTimeResolution
-    NetClock::time_point actualCloseTime_;
 };
 
 inline std::ostream&

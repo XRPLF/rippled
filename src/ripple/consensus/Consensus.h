@@ -494,6 +494,10 @@ private:
     void
     leaveConsensus();
 
+    // The rounded or effective close time estimate from a proposer
+    NetClock::time_point
+    asCloseTime(NetClock::time_point raw) const;
+
 private:
     Adaptor& adaptor_;
 
@@ -1204,7 +1208,7 @@ Consensus<Adaptor>::updateOurPositions()
     auto const ourCutoff = now_ - parms.proposeINTERVAL;
 
     // Verify freshness of peer positions and compute close times
-    std::map<NetClock::time_point, int> effCloseTimes;
+    std::map<NetClock::time_point, int> closeTimeVotes;
     {
         auto it = currPeerPositions_.begin();
         while (it != currPeerPositions_.end())
@@ -1222,10 +1226,7 @@ Consensus<Adaptor>::updateOurPositions()
             else
             {
                 // proposal is still fresh
-                ++effCloseTimes[effCloseTime(
-                    peerProp.closeTime(),
-                    closeResolution_,
-                    previousLedger_.closeTime())];
+                ++closeTimeVotes[asCloseTime(peerProp.closeTime())];
                 ++it;
             }
         }
@@ -1273,10 +1274,7 @@ Consensus<Adaptor>::updateOurPositions()
     {
         // no other times
         haveCloseTimeConsensus_ = true;
-        consensusCloseTime = effCloseTime(
-            result_->position.closeTime(),
-            closeResolution_,
-            previousLedger_.closeTime());
+        consensusCloseTime = asCloseTime(result_->position.closeTime());
     }
     else
     {
@@ -1294,10 +1292,7 @@ Consensus<Adaptor>::updateOurPositions()
         int participants = currPeerPositions_.size();
         if (mode_.get() == ConsensusMode::proposing)
         {
-            ++effCloseTimes[effCloseTime(
-                result_->position.closeTime(),
-                closeResolution_,
-                previousLedger_.closeTime())];
+            ++closeTimeVotes[asCloseTime(result_->position.closeTime())];
             ++participants;
         }
 
@@ -1312,7 +1307,7 @@ Consensus<Adaptor>::updateOurPositions()
                         << " nw:" << neededWeight << " thrV:" << threshVote
                         << " thrC:" << threshConsensus;
 
-        for (auto const& it : effCloseTimes)
+        for (auto const& it : closeTimeVotes)
         {
             JLOG(j_.debug())
                 << "CCTime: seq " << previousLedger_.seq() + 1 << ": "
@@ -1342,11 +1337,7 @@ Consensus<Adaptor>::updateOurPositions()
     }
 
     if (!ourNewSet &&
-        ((consensusCloseTime !=
-          effCloseTime(
-              result_->position.closeTime(),
-              closeResolution_,
-              previousLedger_.closeTime())) ||
+        ((consensusCloseTime != asCloseTime(result_->position.closeTime())) ||
          result_->position.isStale(ourCutoff)))
     {
         // close time changed or our position is stale
@@ -1536,6 +1527,16 @@ Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
         auto& d = it.second;
         d.setVote(node, other.exists(d.tx().id()));
     }
+}
+
+template <class Adaptor>
+NetClock::time_point
+Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
+{
+    if (adaptor_.parms().useRoundedCloseTime)
+        return roundCloseTime(raw, closeResolution_);
+    else
+        return effCloseTime(raw, closeResolution_, previousLedger_.closeTime());
 }
 
 }  // namespace ripple

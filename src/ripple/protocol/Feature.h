@@ -71,7 +71,8 @@ class FeatureCollections
         "SortedDirectories",
         "fix1201",
         "fix1512",
-        "fix1523"
+        "fix1523",
+        "fix1528"
     };
 
     std::vector<uint256> features;
@@ -168,6 +169,7 @@ extern uint256 const featureSortedDirectories;
 extern uint256 const fix1201;
 extern uint256 const fix1512;
 extern uint256 const fix1523;
+extern uint256 const fix1528;
 
 } // ripple
 
