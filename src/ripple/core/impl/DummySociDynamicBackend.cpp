@@ -24,6 +24,11 @@
     header file and some macros to be defined.)
 */
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated"
+#endif
+
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/SociDB.h>
@@ -57,3 +62,6 @@ void unload_all (){};
 }  // namespace dynamic_backends
 }  // namespace soci
 
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
