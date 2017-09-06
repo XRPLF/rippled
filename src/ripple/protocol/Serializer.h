@@ -25,6 +25,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Buffer.h>
 #include <ripple/basics/Slice.h>
+#include <ripple/beast/crypto/secure_erase.h>
 #include <cassert>
 #include <cstdint>
 #include <iomanip>
@@ -198,8 +199,8 @@ public:
     }
     void secureErase ()
     {
-        memset (& (mData.front ()), 0, mData.size ());
-        erase ();
+        beast::secure_erase(mData.data(), mData.size());
+        mData.clear ();
     }
     void erase ()
     {

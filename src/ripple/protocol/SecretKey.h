@@ -88,30 +88,6 @@ operator!= (SecretKey const& lhs,
 
 //------------------------------------------------------------------------------
 
-/** Produces a sequence of secp256k1 key pairs. */
-class Generator
-{
-private:
-    Blob gen_; // VFALCO compile time size?
-
-public:
-    explicit
-    Generator (Seed const& seed);
-
-    /** Generate the nth key pair.
-
-        The seed is required to produce the private key.
-    */
-    std::pair<PublicKey, SecretKey>
-    operator()(Seed const& seed, std::size_t ordinal) const;
-
-    /** Generate the nth public key. */
-    PublicKey
-    operator()(std::size_t ordinal) const;
-};
-
-//------------------------------------------------------------------------------
-
 /** Parse a secret key */
 template <>
 boost::optional<SecretKey>

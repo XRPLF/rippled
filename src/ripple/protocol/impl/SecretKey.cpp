@@ -56,35 +56,46 @@ SecretKey::to_string() const
 }
 
 //------------------------------------------------------------------------------
-
-Generator::Generator (Seed const& seed)
+/** Produces a sequence of secp256k1 key pairs. */
+class Generator
 {
-    uint128 ui;
-    std::memcpy(ui.data(),
-        seed.data(), seed.size());
-    gen_ = generateRootDeterministicPublicKey(ui);
-}
+private:
+    Blob gen_; // VFALCO compile time size?
 
-std::pair<PublicKey, SecretKey>
-Generator::operator()(Seed const& seed, std::size_t ordinal) const
-{
-    uint128 ui;
-    std::memcpy(ui.data(), seed.data(), seed.size());
-    auto gsk = generatePrivateDeterministicKey(gen_, ui, ordinal);
-    auto gpk = generatePublicDeterministicKey(gen_, ordinal);
-    SecretKey const sk(Slice{ gsk.data(), gsk.size() });
-    PublicKey const pk(Slice{ gpk.data(), gpk.size() });
-    beast::secure_erase(ui.data(), ui.size());
-    beast::secure_erase(gsk.data(), gsk.size());
-    return { pk, sk };
-}
+public:
+    explicit
+    Generator (Seed const& seed)
+    {
+        // FIXME: Avoid copying the seed into a uint128 key only to have
+        //        generateRootDeterministicPublicKey copy out of it.
+        uint128 ui;
+        std::memcpy(ui.data(),
+            seed.data(), seed.size());
+        gen_ = generateRootDeterministicPublicKey(ui);
+    }
 
-PublicKey
-Generator::operator()(std::size_t ordinal) const
-{
-    auto gpk = generatePublicDeterministicKey(gen_, ordinal);
-    return PublicKey(Slice{ gpk.data(), gpk.size() });
-}
+    /** Generate the nth key pair.
+
+        The seed is required to produce the private key.
+    */
+    std::pair<PublicKey, SecretKey>
+    operator()(Seed const& seed, std::size_t ordinal) const
+    {
+        // FIXME: Avoid copying the seed into a uint128 key only to have
+        //        generatePrivateDeterministicKey copy out of it.
+        uint128 ui;
+        std::memcpy(ui.data(), seed.data(), seed.size());
+        auto gsk = generatePrivateDeterministicKey(gen_, ui, ordinal);
+        auto gpk = generatePublicDeterministicKey(gen_, ordinal);
+        SecretKey const sk(Slice
+        { gsk.data(), gsk.size() });
+        PublicKey const pk(Slice
+        { gpk.data(), gpk.size() });
+        beast::secure_erase(ui.data(), ui.size());
+        beast::secure_erase(gsk.data(), gsk.size());
+        return {pk, sk};
+    }
+};
 
 //------------------------------------------------------------------------------
 
@@ -192,19 +203,25 @@ generateSecretKey (KeyType type, Seed const& seed)
 {
     if (type == KeyType::ed25519)
     {
-        auto const key = sha512Half_s(Slice(
+        auto key = sha512Half_s(Slice(
             seed.data(), seed.size()));
-        return SecretKey(Slice{ key.data(), key.size() });
+        SecretKey sk = Slice{ key.data(), key.size() };
+        beast::secure_erase(key.data(), key.size());
+        return sk;
     }
 
     if (type == KeyType::secp256k1)
     {
+        // FIXME: Avoid copying the seed into a uint128 key only to have
+        //        generateRootDeterministicPrivateKey copy out of it.
         uint128 ps;
         std::memcpy(ps.data(),
             seed.data(), seed.size());
         auto const upk =
             generateRootDeterministicPrivateKey(ps);
-        return SecretKey(Slice{ upk.data(), upk.size() });
+        SecretKey sk = Slice{ upk.data(), upk.size() };
+        beast::secure_erase(ps.data(), ps.size());
+        return sk;
     }
 
     LogicError ("generateSecretKey: unknown key type");
