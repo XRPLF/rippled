@@ -610,7 +610,6 @@ public:
 
             // Run 1 more round, this time it will have a decreased
             // resolution of 20 seconds.
-            // 86481
 
             // The network delays are engineered so that the slow peers
             // initially have the wrong tx hash, but they see a majority
@@ -630,24 +629,15 @@ public:
 
             sim.run(1);
 
-            if (parms.useRoundedCloseTime)
+            for (Peer const& peer : sim.peers)
             {
-                for (Peer const& peer : sim.peers)
-                {
-                    BEAST_EXPECT(
-                        peer.lastClosedLedger.id() ==
-                        sim.peers[0].lastClosedLedger.id());
-                }
+                BEAST_EXPECT(
+                    peer.lastClosedLedger.id() ==
+                    sim.peers[0].lastClosedLedger.id());
             }
-            else
-            {
-                // All fast peers agreed on LCL TX id
-                BEAST_EXPECT(std::all_of(
-                    sim.peers.begin(), sim.peers.end(), [&sim](Peer const& p) {
-                        return p.lastClosedLedger.id() ==
-                            sim.peers[0].lastClosedLedger.id();
-                    }));
 
+            if (!parms.useRoundedCloseTime)
+            {
                 auto const & slowLCL = sim.peers[0].lastClosedLedger;
                 auto const & fastLCL = sim.peers[2].lastClosedLedger;
 
