@@ -61,7 +61,7 @@ derCategory()
                     return "short group";
 
                 case Error::badDerEncoding:
-                    return "bad der encoding";
+                    return "bad DER encoding";
 
                 case Error::tagOverflow:
                     return "tag overflow";
@@ -76,7 +76,7 @@ derCategory()
                     return "unknown choice tag";
 
                 case Error::unsupported:
-                    return "unsupported der feature";
+                    return "unsupported DER feature";
 
                 case Error::largeSize:
                     return "implementation limit exceeded: large payload.";

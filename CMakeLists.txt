@@ -540,7 +540,9 @@ endforeach()
 if (fuzzer_conditions)
   set(FuzzerSrc
     ${CMAKE_SOURCE_DIR}/src/ripple/conditions/impl/Condition.cpp
-    ${CMAKE_SOURCE_DIR}/src/ripple/conditions/impl/Der.cpp
+    ${CMAKE_SOURCE_DIR}/src/ripple/conditions/impl/DerCommon.cpp
+    ${CMAKE_SOURCE_DIR}/src/ripple/conditions/impl/DerTraits.cpp
+    ${CMAKE_SOURCE_DIR}/src/ripple/conditions/impl/DerCoder.cpp
     ${CMAKE_SOURCE_DIR}/src/ripple/conditions/impl/Ed25519.cpp
     ${CMAKE_SOURCE_DIR}/src/ripple/conditions/impl/error.cpp
     ${CMAKE_SOURCE_DIR}/src/ripple/conditions/impl/Fulfillment.cpp

@@ -2490,10 +2490,22 @@
     <ClCompile Include="..\..\src\ripple\conditions\impl\Condition.cpp">
       <Filter>ripple\conditions\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\conditions\impl\Der.cpp">
+    <ClInclude Include="..\..\src\ripple\conditions\impl\Der.h">
+      <Filter>ripple\conditions\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\conditions\impl\DerCoder.cpp">
       <Filter>ripple\conditions\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\conditions\impl\Der.h">
+    <ClInclude Include="..\..\src\ripple\conditions\impl\DerCoder.h">
+      <Filter>ripple\conditions\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\impl\DerPrimitiveTraits.h">
+      <Filter>ripple\conditions\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\conditions\impl\DerTraits.cpp">
+      <Filter>ripple\conditions\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\conditions\impl\DerTraits.h">
       <Filter>ripple\conditions\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\conditions\impl\Ed25519.cpp">

@@ -27,7 +27,7 @@ namespace ripple {
 namespace cryptoconditions {
 namespace der {
 
-/** Error types for asn.1 der coders
+/** Error types for ASN.1 DER coders
  */
 enum class Error {
     /// Integer would not fit in the bounds of the specified type
@@ -40,7 +40,7 @@ enum class Error {
         decode a string of length 10 from a slice of length 9.
      */
     shortGroup,
-    /// Encoding is not a valid der encoding
+    /// Encoding is not a valid DER encoding
     badDerEncoding,
     /// This implementation only supports tag numbers that will fit in a
     /// std::uint64_t

@@ -20,7 +20,8 @@
 #include <BeastConfig.h>
 
 #include <ripple/conditions/impl/Condition.cpp>
-#include <ripple/conditions/impl/Der.cpp>
+#include <ripple/conditions/impl/DerTraits.cpp>
+#include <ripple/conditions/impl/DerCoder.cpp>
 #include <ripple/conditions/impl/Fulfillment.cpp>
 #include <ripple/conditions/impl/Ed25519.cpp>
 #include <ripple/conditions/impl/PrefixSha256.cpp>

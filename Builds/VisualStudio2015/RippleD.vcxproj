@@ -1847,11 +1847,21 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\conditions\impl\Der.cpp">
+    <ClInclude Include="..\..\src\ripple\conditions\impl\Der.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\conditions\impl\DerCoder.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\conditions\impl\Der.h">
+    <ClInclude Include="..\..\src\ripple\conditions\impl\DerCoder.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\impl\DerPrimitiveTraits.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\conditions\impl\DerTraits.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\conditions\impl\DerTraits.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\conditions\impl\Ed25519.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>

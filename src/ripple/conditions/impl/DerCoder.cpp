@@ -17,49 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/conditions/impl/Der.h>
+#include <ripple/conditions/impl/DerCoder.h>
+#include <ripple/conditions/impl/error.h>
 
 namespace ripple {
 namespace cryptoconditions {
 namespace der {
-
-boost::optional<std::size_t>
-TraitsCache::length(void const* addr) const
-{
-    auto const i = lengthCache_.find(addr);
-    if (i != lengthCache_.end())
-        return i->second;
-    return boost::none;
-}
-
-void
-TraitsCache::length(void const* addr, size_t l)
-{
-    if (lengthCache_.empty())
-        lengthCache_.reserve(32);
-    lengthCache_[addr] = l;
-}
-
-boost::optional<boost::container::small_vector<size_t, 8>>
-TraitsCache::sortOrder(void const* addr) const
-{
-    auto const i = sortOrderCache_.find(addr);
-    if (i != sortOrderCache_.end())
-        return i->second;
-    return boost::none;
-}
-
-void
-TraitsCache::sortOrder(
-    void const* addr,
-    boost::container::small_vector<size_t, 8> const& so)
-{
-    if (sortOrderCache_.empty())
-        sortOrderCache_.reserve(32);
-    sortOrderCache_[addr] = so;
-}
-
-//------------------------------------------------------------------------------
 
 Tag::Tag(SequenceTag)
     : classId(ClassId::universal), tagNum(16), primitive(false)
@@ -370,6 +333,10 @@ GroupType Group::groupType() const
 {
     return groupType_;
 }
+
+Eos eos;
+Automatic automatic;
+Constructor constructor;
 
 //------------------------------------------------------------------------------
 
@@ -742,12 +709,6 @@ Decoder::ec() const
 {
     return ec_;
 }
-
-//------------------------------------------------------------------------------
-
-Eos eos;
-Automatic automatic;
-Constructor constructor;
 
 }  // der
 }  // ripple

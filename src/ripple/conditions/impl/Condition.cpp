@@ -17,16 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
 #include <ripple/conditions/Condition.h>
-#include <ripple/conditions/Fulfillment.h>
-#include <ripple/conditions/impl/Der.h>
+#include <ripple/conditions/impl/error.h>
 #include <ripple/conditions/impl/PreimageSha256.h>
-#include <boost/regex.hpp>
-#include <boost/optional.hpp>
-#include <bitset>
-#include <vector>
-#include <iostream>
 
 namespace ripple {
 namespace cryptoconditions {

@@ -99,6 +99,8 @@ public:
     std::uint32_t
     cost() const override
     {
+        // see crypto-conditions spec:
+        // https://tools.ietf.org/html/draft-thomas-crypto-conditions-02#page-27
         return 131072;
     }
 

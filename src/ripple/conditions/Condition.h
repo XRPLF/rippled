@@ -24,14 +24,13 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/conditions/Types.h>
 #include <ripple/conditions/impl/Der.h>
-#include <ripple/conditions/impl/error.h>
+
+#include <boost/optional.hpp>
+
 #include <array>
 #include <bitset>
-#include <cstdint>
-#include <set>
-#include <string>
 #include <system_error>
-#include <vector>
+#include <tuple>
 
 namespace ripple {
 namespace cryptoconditions {
@@ -85,7 +84,7 @@ public:
         Type t,
         std::uint32_t c,
         std::array<std::uint8_t, 32> const& fp,
-        std::bitset<5> const& s = std::bitset<5>{})
+        std::bitset<5> const& s = {})
         : type(t), fingerprint(fp), cost(c), subtypes(s)
     {
     }
@@ -100,7 +99,7 @@ public:
     // needed for the threshold condition.
     Condition() = default;
 
-    /// Construct for der serialization
+    /// Construct for DER serialization
     explicit
     Condition(der::Constructor const&);
 
@@ -152,7 +151,7 @@ operator!= (Condition const& lhs, Condition const& rhs)
 
 /** DerCoderTraits for Condition
 
-    Condition will be coded in asn.1 as a choice. The actual
+    Condition will be coded in ASN.1 as a choice. The actual
     choice will depend on if the condition is a compound condition
     or not.
 

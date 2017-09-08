@@ -40,7 +40,7 @@ PreimageSha256::fingerprint(std::error_code& ec) const
 void
 PreimageSha256::encodeFingerprint(der::Encoder& encoder) const
 {
-    // PrefixSha256's fingerprint is not der encoded
+    // PrefixSha256's fingerprint is not DER encoded
     assert(0);
 }
 

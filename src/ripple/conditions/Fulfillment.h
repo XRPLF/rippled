@@ -24,10 +24,12 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/conditions/Condition.h>
 #include <ripple/conditions/impl/Der.h>
-#include <ripple/conditions/impl/error.h>
+
 #include <boost/optional.hpp>
 
 #include <array>
+#include <memory>
+#include <system_error>
 
 namespace ripple {
 namespace cryptoconditions {
@@ -67,7 +69,7 @@ protected:
     /** encode the contents used to calculate a fingerprint
 
         @note Most cryptoconditions (excepting preimage) calculate their
-              fingerprints by encoding into a ans.1 der format and hashing the
+              fingerprints by encoding into a ans.1 DER format and hashing the
               contents of that encoding. This function encodes the contents that will be
               hashed. It does not encode the hash itself.
      */
@@ -155,12 +157,12 @@ public:
     Condition
     condition(std::error_code& ec) const;
 
-    /// serialize the fulfillment into the asn.1 der encoder
+    /// serialize the fulfillment into the ASN.1 DER encoder
     virtual
     void
     encode(der::Encoder&) const = 0;
 
-    /// deserialize from the asn.1 decoder into this object
+    /// deserialize from the ASN.1 decoder into this object
     virtual
     void
     decode(der::Decoder&) = 0;
@@ -251,7 +253,7 @@ validate (
 
 /** DerCoderTraits for std::unique_ptr<Fulfillment>
 
-    std::unique_ptr<Fulfillment> will be coded in asn.1 as a choice. The actual
+    std::unique_ptr<Fulfillment> will be coded in ASN.1 as a choice. The actual
     choice will depend on the concrete type of the Fulfillment (preimage,
     prefix, ect...)
 

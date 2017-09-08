@@ -541,6 +541,8 @@ class Ed25519(Fulfillment):
             encoder=nacl.encoding.HexEncoder)
 
     def cost(self):
+        # see crypto-conditions spec:
+        # https://tools.ietf.org/html/draft-thomas-crypto-conditions-02#page-27
         return 131072
 
     def type_id(self):
