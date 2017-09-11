@@ -203,9 +203,11 @@ generateSecretKey (KeyType type, Seed const& seed)
 {
     if (type == KeyType::ed25519)
     {
-        auto const key = sha512Half_s(Slice(
+        auto key = sha512Half_s(Slice(
             seed.data(), seed.size()));
-        return SecretKey(Slice{ key.data(), key.size() });
+        SecretKey sk = Slice{ key.data(), key.size() };
+        beast::secure_erase(key.data(), key.size());
+        return sk;
     }
 
     if (type == KeyType::secp256k1)
@@ -217,7 +219,9 @@ generateSecretKey (KeyType type, Seed const& seed)
             seed.data(), seed.size());
         auto const upk =
             generateRootDeterministicPrivateKey(ps);
-        return SecretKey(Slice{ upk.data(), upk.size() });
+        SecretKey sk = Slice{ upk.data(), upk.size() };
+        beast::secure_erase(ps.data(), ps.size());
+        return sk;
     }
 
     LogicError ("generateSecretKey: unknown key type");
