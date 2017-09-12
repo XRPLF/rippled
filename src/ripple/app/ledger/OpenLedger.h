@@ -167,6 +167,7 @@ public:
                     std::string const& suffix = "",
                         modify_type const& f = {});
 
+private:
     /** Algorithm for applying transactions.
 
         This has the retry logic and ordering semantics
@@ -178,9 +179,9 @@ public:
     apply (Application& app, OpenView& view,
         ReadView const& check, FwdRange const& txs,
             OrderedTxs& retries, ApplyFlags flags,
-                beast::Journal j);
+                std::map<uint256, bool>& shouldRecover,
+                    beast::Journal j);
 
-private:
     enum Result
     {
         success,
@@ -197,7 +198,7 @@ private:
     apply_one (Application& app, OpenView& view,
         std::shared_ptr< STTx const> const& tx,
             bool retry, ApplyFlags flags,
-                beast::Journal j);
+                bool shouldRecover, beast::Journal j);
 };
 
 //------------------------------------------------------------------------------
@@ -207,7 +208,8 @@ void
 OpenLedger::apply (Application& app, OpenView& view,
     ReadView const& check, FwdRange const& txs,
         OrderedTxs& retries, ApplyFlags flags,
-            beast::Journal j)
+            std::map<uint256, bool>& shouldRecover,
+                beast::Journal j)
 {
     for (auto iter = txs.begin();
         iter != txs.end(); ++iter)
@@ -217,10 +219,11 @@ OpenLedger::apply (Application& app, OpenView& view,
             // Dereferencing the iterator can
             // throw since it may be transformed.
             auto const tx = *iter;
-            if (check.txExists(tx->getTransactionID()))
+            auto const txId = tx->getTransactionID();
+            if (check.txExists(txId))
                 continue;
             auto const result = apply_one(app, view,
-                tx, true, flags, j);
+                tx, true, flags, shouldRecover[txId], j);
             if (result == Result::retry)
                 retries.insert(tx);
         }
@@ -241,7 +244,7 @@ OpenLedger::apply (Application& app, OpenView& view,
         {
             switch (apply_one(app, view,
                 iter->second, retry, flags,
-                    j))
+                    shouldRecover[iter->second->getTransactionID()], j))
             {
             case Result::success:
                 ++changes;

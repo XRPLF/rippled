@@ -36,6 +36,11 @@ enum ApplyFlags
     // Transaction can be retried, soft failures allowed
     tapRETRY            = 0x20,
 
+    // Transaction must pay more than both the open ledger
+    // fee and all transactions in the queue to get into the
+    // open ledger
+    tapPREFER_QUEUE     = 0x40,
+
     // Transaction came from a privileged source
     tapUNLIMITED        = 0x400,
 };

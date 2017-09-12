@@ -55,6 +55,7 @@ public:
     struct Setup
     {
         std::size_t ledgersInQueue = 20;
+        std::size_t queueSizeMin = 2000;
         std::uint32_t retrySequencePercent = 25;
         // TODO: eahennis. Can we remove the multi tx factor?
         std::int32_t multiTxnPercent = -90;

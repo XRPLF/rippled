@@ -109,6 +109,7 @@ class TxQ_test : public beast::unit_test::suite
         auto p = test::jtx::envconfig();
         auto& section = p->section("transaction_queue");
         section.set("ledgers_in_queue", "2");
+        section.set("minimum_queue_size", "2");
         section.set("min_ledgers_to_compute_size_limit", "3");
         section.set("max_ledger_counts_to_store", "100");
         section.set("retry_sequence_percent", "25");
@@ -240,7 +241,7 @@ public:
 
         // Hank sees his txn  got held and bumps the fee,
         // but doesn't even bump it enough to requeue
-        env(noop(hank), fee(11), ter(telINSUF_FEE_P));
+        env(noop(hank), fee(11), ter(telCAN_NOT_QUEUE_FEE));
         checkMetrics(env, 2, 12, 7, 6, 256);
 
         // Hank sees his txn got held and bumps the fee,
@@ -303,7 +304,7 @@ public:
 
         // Try to add another transaction with the default (low) fee,
         // it should fail because the queue is full.
-        env(noop(charlie), ter(telINSUF_FEE_P));
+        env(noop(charlie), ter(telCAN_NOT_QUEUE_FULL));
 
         // Add another transaction, with a higher fee,
         // Not high enough to get into the ledger, but high
@@ -441,7 +442,7 @@ public:
         BEAST_EXPECT(env.current()->info().seq == 6);
         // Fail to queue an item with a low LastLedgerSeq
         env(noop(alice), json(R"({"LastLedgerSequence":7})"),
-            ter(telINSUF_FEE_P));
+            ter(telCAN_NOT_QUEUE));
         // Queue an item with a sufficient LastLedgerSeq.
         env(noop(alice), json(R"({"LastLedgerSequence":8})"),
             queued);
@@ -599,7 +600,7 @@ public:
         // average fee. (Which is ~144,115,188,075,855,907
         // because of the zero fee txn.)
         env(noop(carol), fee(feeCarol),
-            seq(seqCarol), ter(telINSUF_FEE_P));
+            seq(seqCarol), ter(telCAN_NOT_QUEUE_FULL));
 
         env.close();
         // Some of Bob's transactions stay in the queue,
@@ -820,13 +821,13 @@ public:
         // queue.
         env(noop(alice), seq(aliceSeq),
             json(jss::LastLedgerSequence, lastLedgerSeq + 7),
-                fee(aliceFee), ter(telCAN_NOT_QUEUE));
+                fee(aliceFee), ter(telCAN_NOT_QUEUE_FULL));
         checkMetrics(env, 8, 8, 5, 4, 513);
 
         // Charlie - try to add another item to the queue,
         // which fails because fee is lower than Alice's
         // queued average.
-        env(noop(charlie), fee(19), ter(telINSUF_FEE_P));
+        env(noop(charlie), fee(19), ter(telCAN_NOT_QUEUE_FULL));
         checkMetrics(env, 8, 8, 5, 4, 513);
 
         // Charlie - add another item to the queue, which
@@ -845,7 +846,7 @@ public:
         // so resubmits with higher fee, but the queue
         // is full, and her account is the cheapest.
         env(noop(alice), seq(aliceSeq - 1),
-            fee(aliceFee), ter(telCAN_NOT_QUEUE));
+            fee(aliceFee), ter(telCAN_NOT_QUEUE_FULL));
         checkMetrics(env, 8, 8, 5, 4, 513);
 
         // Try to replace a middle item in the queue
@@ -853,7 +854,7 @@ public:
         aliceSeq = env.seq(alice) + 2;
         aliceFee = 25;
         env(noop(alice), seq(aliceSeq),
-            fee(aliceFee), ter(telINSUF_FEE_P));
+            fee(aliceFee), ter(telCAN_NOT_QUEUE_FEE));
         checkMetrics(env, 8, 8, 5, 4, 513);
 
         // Replace a middle item from the queue successfully
@@ -877,7 +878,7 @@ public:
         aliceFee = env.le(alice)->getFieldAmount(sfBalance).xrp().drops()
             - (59);
         env(noop(alice), seq(aliceSeq),
-            fee(aliceFee), ter(telCAN_NOT_QUEUE));
+            fee(aliceFee), ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(env, 4, 10, 6, 5, 256);
 
         // Try to spend more than Alice can afford with all the other txs.
@@ -899,7 +900,7 @@ public:
         aliceFee /= 5;
         ++aliceSeq;
         env(noop(alice), seq(aliceSeq),
-            fee(aliceFee), ter(telCAN_NOT_QUEUE));
+            fee(aliceFee), ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(env, 4, 10, 6, 5, 256);
 
         env.close();
@@ -1005,7 +1006,7 @@ public:
         // Try to add another transaction with the default (low) fee,
         // it should fail because it can't replace the one already
         // there.
-        env(noop(charlie), ter(telINSUF_FEE_P));
+        env(noop(charlie), ter(telCAN_NOT_QUEUE_FEE));
 
         // Add another transaction, with a higher fee,
         // Not high enough to get into the ledger, but high
@@ -1115,7 +1116,7 @@ public:
         // is still uninitialized, so preflight succeeds here,
         // and this txn fails because it can't be stored in the queue.
         env(noop(alice), json(R"({"AccountTxnID": "0"})"),
-            ter(telINSUF_FEE_P));
+            ter(telCAN_NOT_QUEUE));
 
         checkMetrics(env, 0, boost::none, 2, 1, 256);
         env.close();
@@ -1218,7 +1219,7 @@ public:
         // Try adding a new transaction.
         // Too many fees in flight.
         env(noop(alice), fee(drops(200)), seq(aliceSeq+1),
-            ter(telCAN_NOT_QUEUE));
+            ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(env, 4, 6, 5, 3, 256);
 
         // Close the ledger. All of Alice's transactions
@@ -1230,7 +1231,7 @@ public:
         // Still can't add a new transaction for Alice,
         // no matter the fee.
         env(noop(alice), fee(drops(200)), seq(aliceSeq + 1),
-            ter(telCAN_NOT_QUEUE));
+            ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(env, 1, 10, 3, 5, 256);
 
         /* At this point, Alice's transaction is indefinitely
@@ -1289,12 +1290,12 @@ public:
         env(noop(alice), seq(aliceSeq + 2), queued);
 
         // Can't replace the first tx with a blocker
-        env(fset(alice, asfAccountTxnID), fee(20), ter(telINSUF_FEE_P));
+        env(fset(alice, asfAccountTxnID), fee(20), ter(telCAN_NOT_QUEUE_BLOCKS));
         // Can't replace the second / middle tx with a blocker
         env(regkey(alice, bob), seq(aliceSeq + 1), fee(20),
-            ter(telCAN_NOT_QUEUE));
+            ter(telCAN_NOT_QUEUE_BLOCKS));
         env(signers(alice, 2, { {bob}, {charlie}, {daria} }), fee(20),
-            seq(aliceSeq + 1), ter(telCAN_NOT_QUEUE));
+            seq(aliceSeq + 1), ter(telCAN_NOT_QUEUE_BLOCKS));
         // CAN replace the last tx with a blocker
         env(signers(alice, 2, { { bob },{ charlie },{ daria } }), fee(20),
             seq(aliceSeq + 2), queued);
@@ -1302,7 +1303,7 @@ public:
             queued);
 
         // Can't queue up any more transactions after the blocker
-        env(noop(alice), seq(aliceSeq + 3), ter(telCAN_NOT_QUEUE));
+        env(noop(alice), seq(aliceSeq + 3), ter(telCAN_NOT_QUEUE_BLOCKED));
 
         // Other accounts are not affected
         env(noop(bob), queued);
@@ -2109,7 +2110,7 @@ public:
             }
         }
 
-        envs(noop(alice), fee(none), seq(none), ter(telCAN_NOT_QUEUE))(submitParams);
+        envs(noop(alice), fee(none), seq(none), ter(telCAN_NOT_QUEUE_BLOCKED))(submitParams);
         checkMetrics(env, 5, 6, 4, 3, 256);
 
         {

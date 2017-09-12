@@ -99,7 +99,12 @@ transResults()
         { telFAILED_PROCESSING,      { "telFAILED_PROCESSING",     "Failed to correctly process transaction."                                      } },
         { telINSUF_FEE_P,            { "telINSUF_FEE_P",           "Fee insufficient."                                                             } },
         { telNO_DST_PARTIAL,         { "telNO_DST_PARTIAL",        "Partial payment to create account not allowed."                                } },
-        { telCAN_NOT_QUEUE,          { "telCAN_NOT_QUEUE",         "Can not queue at this time." } },
+        { telCAN_NOT_QUEUE,          { "telCAN_NOT_QUEUE",         "Can not queue at this time."                                                   } },
+        { telCAN_NOT_QUEUE_BALANCE,  { "telCAN_NOT_QUEUE_BALANCE", "Can not queue at this time: insufficient balance to pay all queued fees."      } },
+        { telCAN_NOT_QUEUE_BLOCKS,   { "telCAN_NOT_QUEUE_BLOCKS",  "Can not queue at this time: would block later queued transaction(s)."          } },
+        { telCAN_NOT_QUEUE_BLOCKED,  { "telCAN_NOT_QUEUE_BLOCKED", "Can not queue at this time: blocking transaction in queue."                    } },
+        { telCAN_NOT_QUEUE_FEE,      { "telCAN_NOT_QUEUE_FEE",     "Can not queue at this time: fee insufficient to replace queued transaction."   } },
+        { telCAN_NOT_QUEUE_FULL,     { "telCAN_NOT_QUEUE_FULL",    "Can not queue at this time: queue is full."                                    } },
 
         { temMALFORMED,              { "temMALFORMED",             "Malformed transaction."                                                        } },
         { temBAD_AMOUNT,             { "temBAD_AMOUNT",            "Can only send positive amounts."                                               } },

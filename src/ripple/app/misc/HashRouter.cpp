@@ -107,4 +107,14 @@ HashRouter::shouldRelay (uint256 const& key)
     return s.releasePeerSet();
 }
 
+bool
+HashRouter::shouldRecover(uint256 const& key)
+{
+    std::lock_guard <std::mutex> lock(mutex_);
+
+    auto& s = emplace(key).first;
+
+    return s.shouldRecover(recoverLimit_);
+}
+
 } // ripple

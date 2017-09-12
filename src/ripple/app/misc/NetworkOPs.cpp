@@ -788,12 +788,6 @@ void NetworkOPsImp::submitTransaction (std::shared_ptr<STTx const> const& iTrans
     auto const txid = trans->getTransactionID ();
     auto const flags = app_.getHashRouter().getFlags(txid);
 
-    if ((flags & SF_RETRY) != 0)
-    {
-        JLOG(m_journal.warn()) << "Redundant transactions submitted";
-        return;
-    }
-
     if ((flags & SF_BAD) != 0)
     {
         JLOG(m_journal.warn()) << "Submitted transaction cached bad";
@@ -1102,7 +1096,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                     Serializer s;
 
                     e.transaction->getSTransaction()->add (s);
-                    tx.set_rawtransaction (&s.getData().front(), s.getLength());
+                    tx.set_rawtransaction (s.data(), s.size());
                     tx.set_status (protocol::tsCURRENT);
                     tx.set_receivetimestamp (app_.timeKeeper().now().time_since_epoch().count());
                     tx.set_deferred(e.result == terQUEUED);

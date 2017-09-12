@@ -47,6 +47,11 @@ enum TER
     telINSUF_FEE_P,
     telNO_DST_PARTIAL,
     telCAN_NOT_QUEUE,
+    telCAN_NOT_QUEUE_BALANCE,
+    telCAN_NOT_QUEUE_BLOCKS,
+    telCAN_NOT_QUEUE_BLOCKED,
+    telCAN_NOT_QUEUE_FEE,
+    telCAN_NOT_QUEUE_FULL,
 
     // -299 .. -200: M Malformed (bad signature)
     // Causes:
