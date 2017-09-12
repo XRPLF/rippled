@@ -79,7 +79,7 @@ git-subtree. See the corresponding README for more details.
 * [Ripple Knowledge Center](https://ripple.com/learn/)
 * [Ripple Developer Center](https://ripple.com/build/)
 * [Ripple Whitepapers & Reports](https://ripple.com/whitepapers-reports/)
-  * [Ripple Consensus Whitepaper](https://ripple.com/consensus-whitepaper/)
+  * [Ripple Consensus Whitepaper](https://ripple.com/files/ripple_consensus_whitepaper.pdf)
   * [Ripple Solutions Guide](https://ripple.com/files/ripple_solutions_guide.pdf)
 
 To learn about how Ripple is transforming global payments visit
