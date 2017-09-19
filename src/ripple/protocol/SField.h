@@ -387,6 +387,7 @@ extern SF_U64 const sfBaseFee;
 extern SF_U64 const sfExchangeRate;
 extern SF_U64 const sfLowNode;
 extern SF_U64 const sfHighNode;
+extern SF_U64 const sfDestinationNode;
 
 // 128-bit
 extern SF_U128 const sfEmailHash;

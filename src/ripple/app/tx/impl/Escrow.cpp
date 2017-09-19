@@ -253,13 +253,28 @@ EscrowCreate::doApply()
 
     ctx_.view().insert(slep);
 
-    // Add escrow to owner directory
+    // Add escrow to sender's owner directory
     {
         auto page = dirAdd(ctx_.view(), keylet::ownerDir(account), slep->key(),
             false, describeOwnerDir(account), ctx_.app.journal ("View"));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfOwnerNode] = *page;
+    }
+
+    // If it's not a self-send, add escrow to recipient's owner directory.
+    if (ctx_.view ().rules().enabled(fix1523))
+    {
+        auto const dest = ctx_.tx[sfDestination];
+
+        if (dest != ctx_.tx[sfAccount])
+        {
+            auto page = dirAdd(ctx_.view(), keylet::ownerDir(dest), slep->key(),
+                false, describeOwnerDir(dest), ctx_.app.journal ("View"));
+            if (!page)
+                return tecDIR_FULL;
+            (*slep)[sfDestinationNode] = *page;
+        }
     }
 
     // Deduct owner's balance, increment owner count
@@ -435,6 +450,16 @@ EscrowFinish::doApply()
             return ter;
     }
 
+    // Remove escrow from recipient's owner directory, if present.
+    if (ctx_.view ().rules().enabled(fix1523) && (*slep)[~sfDestinationNode])
+    {
+        TER const ter = dirDelete(ctx_.view(), true,
+            (*slep)[sfDestinationNode], keylet::ownerDir((*slep)[sfDestination]),
+            k.key, false, false, ctx_.app.journal ("View"));
+        if (! isTesSuccess(ter))
+            return ter;
+    }
+
     // NOTE: These payments cannot be used to fund accounts
 
     // Fetch Destination SLE
@@ -488,7 +513,6 @@ EscrowCancel::doApply()
         ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
             (*slep)[sfCancelAfter])
         return tecNO_PERMISSION;
-
     AccountID const account = (*slep)[sfAccount];
 
     // Remove escrow from owner directory
@@ -497,6 +521,16 @@ EscrowCancel::doApply()
         TER const ter = dirDelete(ctx_.view(), true,
             page, keylet::ownerDir(account),
                 k.key, false, page == 0, ctx_.app.journal ("View"));
+        if (! isTesSuccess(ter))
+            return ter;
+    }
+
+    // Remove escrow from recipient's owner directory, if present.
+    if (ctx_.view ().rules().enabled(fix1523) && (*slep)[~sfDestinationNode])
+    {
+        TER const ter = dirDelete(ctx_.view(), true,
+            (*slep)[sfDestinationNode], keylet::ownerDir((*slep)[sfDestination]),
+            k.key, false, false, ctx_.app.journal ("View"));
         if (! isTesSuccess(ter))
             return ter;
     }
