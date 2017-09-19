@@ -11,6 +11,21 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 0.70.2
+
+The `rippled` 0.70.2 release corrects an emergent behavior which causes large numbers of transactions to get
+stuck in different nodes' open ledgers without being passed on to validators, resulting in a spike in the open
+ledger fee on those nodes.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- Recent fee rises and TxQ issues ([#2215](https://github.com/ripple/rippled/issues/2215))
+
+
 ## Version 0.70.1
 
 The `rippled` 0.70.1 release corrects a technical flaw in the newly refactored consensus code that could cause a node to get stuck in consensus due to stale votes from a
