@@ -122,9 +122,9 @@ public:
 
         // test error on no account
         {
-            auto resp = env.rpc("account_objects");
-            BEAST_EXPECT( resp[jss::result][jss::error_message] ==
-                "Missing field 'account'.");
+            auto resp = env.rpc("json", "account_objects");
+            BEAST_EXPECT( resp[jss::error_message] ==
+                "Syntax error.");
         }
         // test error on  malformed account string.
         {
