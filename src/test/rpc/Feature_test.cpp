@@ -250,10 +250,8 @@ class Feature_test : public beast::unit_test::suite
 
         // anything other than accept or reject is an error
         jrr = env.rpc("feature", "CryptoConditions", "maybe");
-        if(! BEAST_EXPECT(jrr.isMember("client_error")))
-            return;
-        BEAST_EXPECT(jrr["client_error"][jss::error] == "invalidParams");
-        BEAST_EXPECT(jrr["client_error"][jss::error_message] == "Invalid parameters.");
+        BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+        BEAST_EXPECT(jrr[jss::error_message] == "Invalid parameters.");
     }
 
 public:
