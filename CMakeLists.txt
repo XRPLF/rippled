@@ -337,7 +337,7 @@ list(APPEND non_unity_srcs "${test_srcs}")
 
 if(WIN32 OR is_xcode)
     # Rippled headers. Only needed for IDEs.
-    file(GLOB_RECURSE rippled_headers src/*.h src/*.hpp)
+    file(GLOB_RECURSE rippled_headers src/*.h src/*.hpp *.md)
     list(APPEND rippled_headers Builds/CMake/CMakeFuncs.cmake)
     foreach(curdir
             beast/asio

@@ -1099,7 +1099,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             }
             else if (e.result == terQUEUED)
             {
-                JLOG(m_journal.info()) << "Transaction is likely to claim a " <<
+                JLOG(m_journal.debug()) << "Transaction is likely to claim a " <<
                     "fee, but is queued until fee drops";
                 e.transaction->setStatus(HELD);
                 // Add to held transactions, because it could get
