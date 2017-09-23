@@ -378,7 +378,7 @@ public:
         auto const roundTime = weekTime (week);
 
         // Build validations
-        ValidationSet validations;
+        std::vector<STValidation::pointer> validations;
         validations.reserve (validators.size ());
 
         int i = 0;
@@ -402,7 +402,7 @@ public:
                 v->setFieldV256 (sfAmendments, field);
 
             v->setTrusted();
-            validations [val] = v;
+            validations.emplace_back(v);
         }
 
         ourVotes = table.doValidation (enabled);
@@ -739,8 +739,24 @@ public:
     testSupportedAmendments ()
     {
         for (auto const& amend : detail::supportedAmendments ())
-            BEAST_EXPECT(amend.substr (0, 64) ==
-                to_string (feature (amend.substr (65))));
+        {
+            auto const f = getRegisteredFeature(amend.substr (65));
+            BEAST_EXPECT(f && amend.substr (0, 64) == to_string (*f));
+        }
+    }
+
+    void testHasUnsupported ()
+    {
+        testcase ("hasUnsupportedEnabled");
+
+        auto table = makeTable(1);
+        BEAST_EXPECT(! table->hasUnsupportedEnabled());
+
+        std::set <uint256> enabled;
+        std::for_each(m_set4.begin(), m_set4.end(),
+            [&enabled](auto const &s){ enabled.insert(amendmentId(s)); });
+        table->doValidatedLedger(1, enabled);
+        BEAST_EXPECT(table->hasUnsupportedEnabled());
     }
 
     void run ()
@@ -755,6 +771,7 @@ public:
         testDetectMajority ();
         testLostMajority ();
         testSupportedAmendments ();
+        testHasUnsupported ();
     }
 };
 

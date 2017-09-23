@@ -9,10 +9,9 @@
 #define BEAST_WEBSOCKET_DETAIL_FRAME_HPP
 
 #include <beast/websocket/rfc6455.hpp>
-#include <beast/websocket/detail/endian.hpp>
 #include <beast/websocket/detail/utf8_checker.hpp>
 #include <beast/core/consuming_buffers.hpp>
-#include <beast/core/static_streambuf.hpp>
+#include <beast/core/static_buffer.hpp>
 #include <beast/core/static_string.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/assert.hpp>
@@ -22,6 +21,77 @@
 namespace beast {
 namespace websocket {
 namespace detail {
+
+inline
+std::uint16_t
+big_uint16_to_native(void const* buf)
+{
+    auto const p = reinterpret_cast<
+        std::uint8_t const*>(buf);
+    return (p[0]<<8) + p[1];
+}
+
+inline
+std::uint64_t
+big_uint64_to_native(void const* buf)
+{
+    auto const p = reinterpret_cast<
+        std::uint8_t const*>(buf);
+    return
+        (static_cast<std::uint64_t>(p[0])<<56) +
+        (static_cast<std::uint64_t>(p[1])<<48) +
+        (static_cast<std::uint64_t>(p[2])<<40) +
+        (static_cast<std::uint64_t>(p[3])<<32) +
+        (static_cast<std::uint64_t>(p[4])<<24) +
+        (static_cast<std::uint64_t>(p[5])<<16) +
+        (static_cast<std::uint64_t>(p[6])<< 8) +
+                                    p[7];
+}
+
+inline
+std::uint32_t
+little_uint32_to_native(void const* buf)
+{
+    auto const p = reinterpret_cast<
+        std::uint8_t const*>(buf);
+    return
+                                    p[0] +
+        (static_cast<std::uint32_t>(p[1])<< 8) +
+        (static_cast<std::uint32_t>(p[2])<<16) +
+        (static_cast<std::uint32_t>(p[3])<<24);
+}
+
+inline
+void
+native_to_little_uint32(std::uint32_t v, void* buf)
+{
+    auto p = reinterpret_cast<std::uint8_t*>(buf);
+    p[0] =  v        & 0xff;
+    p[1] = (v >>  8) & 0xff;
+    p[2] = (v >> 16) & 0xff;
+    p[3] = (v >> 24) & 0xff;
+}
+
+/** WebSocket frame header opcodes. */
+enum class opcode : std::uint8_t
+{
+    cont    = 0,
+    text    = 1,
+    binary  = 2,
+    rsv3    = 3,
+    rsv4    = 4,
+    rsv5    = 5,
+    rsv6    = 6,
+    rsv7    = 7,
+    close   = 8,
+    ping    = 9,
+    pong    = 10,
+    crsvb   = 11,
+    crsvc   = 12,
+    crsvd   = 13,
+    crsve   = 14,
+    crsvf   = 15
+};
 
 // Contents of a WebSocket frame header
 struct frame_header
@@ -38,11 +108,11 @@ struct frame_header
 
 // holds the largest possible frame header
 using fh_streambuf =
-    static_streambuf_n<14>;
+    static_buffer_n<14>;
 
 // holds the largest possible control frame
 using frame_streambuf =
-    static_streambuf_n< 2 + 8 + 4 + 125 >;
+    static_buffer_n< 2 + 8 + 4 + 125 >;
 
 inline
 bool constexpr
@@ -67,33 +137,31 @@ is_control(opcode op)
     return op >= opcode::close;
 }
 
-// Returns `true` if a close code is valid
 inline
 bool
-is_valid(close_code::value code)
+is_valid_close_code(std::uint16_t v)
 {
-    auto const v = code;
     switch(v)
     {
-    case 1000:
-    case 1001:
-    case 1002:
-    case 1003:
-    case 1007:
-    case 1008:
-    case 1009:
-    case 1010:
-    case 1011:
-    case 1012:
-    case 1013:
+    case close_code::normal:            // 1000
+    case close_code::going_away:        // 1001
+    case close_code::protocol_error:    // 1002
+    case close_code::unknown_data:      // 1003
+    case close_code::bad_payload:       // 1007
+    case close_code::policy_error:      // 1008
+    case close_code::too_big:           // 1009
+    case close_code::needs_extension:   // 1010
+    case close_code::internal_error:    // 1011
+    case close_code::service_restart:   // 1012
+    case close_code::try_again_later:   // 1013
         return true;
 
     // explicitly reserved
-    case 1004:
-    case 1005:
-    case 1006:
-    case 1014:
-    case 1015:
+    case close_code::reserved1:         // 1004
+    case close_code::no_status:         // 1005
+    case close_code::abnormal:          // 1006
+    case close_code::reserved2:         // 1014
+    case close_code::reserved3:         // 1015
         return false;
     }
     // reserved
@@ -175,7 +243,7 @@ read(ping_data& data, Buffers const& bs)
 template<class Buffers>
 void
 read(close_reason& cr,
-    Buffers const& bs, close_code::value& code)
+    Buffers const& bs, close_code& code)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
@@ -201,7 +269,7 @@ read(close_reason& cr,
         cr.code = big_uint16_to_native(&b[0]);
         cb.consume(2);
         n -= 2;
-        if(! is_valid(cr.code))
+        if(! is_valid_close_code(cr.code))
         {
             code = close_code::protocol_error;
             return;

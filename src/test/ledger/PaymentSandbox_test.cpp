@@ -60,7 +60,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         testcase ("selfFunding");
 
         using namespace jtx;
-        Env env (*this, features(fs));
+        Env env (*this, with_features(fs));
         Account const gw1 ("gw1");
         Account const gw2 ("gw2");
         Account const snd ("snd");
@@ -101,7 +101,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         testcase ("subtractCredits");
 
         using namespace jtx;
-        Env env (*this, features(fs));
+        Env env (*this, with_features(fs));
         Account const gw1 ("gw1");
         Account const gw2 ("gw2");
         Account const alice ("alice");
@@ -266,7 +266,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         using namespace jtx;
 
-        Env env (*this, features(fs));
+        Env env (*this, with_features(fs));
 
         Account const gw ("gw");
         Account const alice ("alice");
@@ -278,10 +278,10 @@ class PaymentSandbox_test : public beast::unit_test::suite
         STAmount hugeAmt (issue, STAmount::cMaxValue, STAmount::cMaxOffset - 1,
             false, false, STAmount::unchecked{});
 
-        for (auto timeDelta : {-env.closed ()->info ().closeTimeResolution,
-                 env.closed ()->info ().closeTimeResolution})
+        for (auto d : {-1, 1})
         {
-            auto const closeTime = fix1141Time () + timeDelta;
+            auto const closeTime = fix1141Time () +
+                d * env.closed()->info().closeTimeResolution;
             env.close (closeTime);
             ApplyViewImpl av (&*env.current (), tapNONE);
             PaymentSandbox pv (&av);
@@ -312,7 +312,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             return env.current ()->fees ().accountReserve (count);
         };
 
-        Env env (*this, features(fs));
+        Env env (*this, with_features(fs));
 
         Account const alice ("alice");
         env.fund (reserve(env, 1), alice);
@@ -340,7 +340,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         testcase ("balanceHook");
 
         using namespace jtx;
-        Env env (*this, features(fs));
+        Env env (*this, with_features(fs));
 
         Account const gw ("gw");
         auto const USD = gw["USD"];

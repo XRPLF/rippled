@@ -14,26 +14,16 @@
 # Try if at all possible to filter only functions using fun:regex
 # Remember you must use mangled symbol names with fun:regex
 
-
-#### Compile time filters for ubsan ####
+# boost/lexical_cast.hpp:1625:43: runtime error: downcast of address 0x7fbb4fffbce8 which does not point to an object of type 'buffer_t' (aka 'parser_buf<std::basic_streambuf<char, char_traits<char> >, char>')
+# Fixed in Boost 1.63.0 https://svn.boost.org/trac/boost/ticket/12889
+#
+fun:*shl_input_streamable*
 
 ## The well known ubsan failure in libstdc++ extant for years :)
 # Line 96:24: runtime error: load of value 4294967221, which is not a valid value for type 'std::_Ios_Fmtflags'
-fun:*_Ios_Fmtflags*
+#
+#fun:*_Ios_Fmtflags*
 
 # boost/any.hpp:259:16: runtime error: downcast of address 0x000004392e70 which does not point to an object of type 'any::holder<int>'
-fun:*any_cast*
-
-# boost/lexical_cast.hpp:1625:43: runtime error: downcast of address 0x7fbb4fffbce8 which does not point to an object of type 'buffer_t' (aka 'parser_buf<std::basic_streambuf<char, char_traits<char> >, char>')
-fun:*shl_input_streamable*
-
-
-
-
-#### Compile time filters for asan ####
-
-
-#### Compile time filters for msan ####
-
-
-#### Compile time filters for tsan ####
+#
+#fun:*any_cast*

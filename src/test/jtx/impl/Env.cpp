@@ -55,81 +55,36 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-class SuiteSink : public beast::Journal::Sink
+void
+SuiteSink::write(beast::severities::Severity level, std::string const& text)
 {
-    std::string partition_;
-    beast::unit_test::suite& suite_;
-
-public:
-    SuiteSink(std::string const& partition,
-            beast::severities::Severity threshold,
-            beast::unit_test::suite& suite)
-        : Sink (threshold, false)
-        , partition_(partition + " ")
-        , suite_ (suite)
+    using namespace beast::severities;
+    std::string s;
+    switch(level)
     {
+    case kTrace:    s = "TRC:"; break;
+    case kDebug:    s = "DBG:"; break;
+    case kInfo:     s = "INF:"; break;
+    case kWarning:  s = "WRN:"; break;
+    case kError:    s = "ERR:"; break;
+    default:
+    case kFatal:    s = "FTL:"; break;
     }
 
-    // For unit testing, always generate logging text.
-    bool active(beast::severities::Severity level) const override
-    {
-        return true;
-    }
-
-    void
-    write(beast::severities::Severity level,
-        std::string const& text) override
-    {
-        using namespace beast::severities;
-        std::string s;
-        switch(level)
-        {
-        case kTrace:    s = "TRC:"; break;
-        case kDebug:    s = "DBG:"; break;
-        case kInfo:     s = "INF:"; break;
-        case kWarning:  s = "WRN:"; break;
-        case kError:    s = "ERR:"; break;
-        default:
-        case kFatal:    s = "FTL:"; break;
-        }
-
-        // Only write the string if the level at least equals the threshold.
-        if (level >= threshold())
-            suite_.log << s << partition_ << text << std::endl;
-    }
-};
-
-class SuiteLogs : public Logs
-{
-    beast::unit_test::suite& suite_;
-
-public:
-    explicit
-    SuiteLogs(beast::unit_test::suite& suite)
-        : Logs (beast::severities::kError)
-        , suite_(suite)
-    {
-    }
-
-    ~SuiteLogs() override = default;
-
-    std::unique_ptr<beast::Journal::Sink>
-    makeSink(std::string const& partition,
-        beast::severities::Severity threshold) override
-    {
-        return std::make_unique<SuiteSink>(partition, threshold, suite_);
-    }
-};
+    // Only write the string if the level at least equals the threshold.
+    if (level >= threshold())
+        suite_.log << s << partition_ << text << std::endl;
+}
 
 //------------------------------------------------------------------------------
 
 Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
-    std::unique_ptr<Config> config)
+    std::unique_ptr<Config> config,
+    std::unique_ptr<Logs> logs)
 {
     using namespace beast::severities;
     // Use kFatal threshold to reduce noise from STObject.
     setDebugLogSink (std::make_unique<SuiteSink>("Debug", kFatal, suite));
-    auto logs = std::make_unique<SuiteLogs>(suite);
     auto timeKeeper_ =
         std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();
@@ -535,6 +490,14 @@ Env::do_rpc(std::vector<std::string> const& args)
     }
 
     return response;
+}
+
+void
+Env::enableFeature(uint256 const feature)
+{
+    // Env::close() must be called for feature
+    // enable to take place.
+    app().config().features.insert(feature);
 }
 
 } // jtx

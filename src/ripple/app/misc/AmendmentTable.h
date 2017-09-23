@@ -21,7 +21,7 @@
 #define RIPPLE_APP_MISC_AMENDMENTTABLE_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/misc/Validations.h>
+#include <ripple/protocol/STValidation.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/Protocol.h>
 
@@ -46,6 +46,14 @@ public:
 
     virtual bool isEnabled (uint256 const& amendment) = 0;
     virtual bool isSupported (uint256 const& amendment) = 0;
+
+    /**
+     * @brief returns true if one or more amendments on the network
+     * have been enabled that this server does not support
+     *
+     * @return true if an unsupported feature is enabled on the network
+     */
+    virtual bool hasUnsupportedEnabled () = 0;
 
     virtual Json::Value getJson (int) = 0;
 
@@ -78,7 +86,7 @@ public:
         NetClock::time_point closeTime,
         std::set <uint256> const& enabledAmendments,
         majorityAmendments_t const& majorityAmendments,
-        ValidationSet const& valSet) = 0;
+        std::vector<STValidation::pointer> const& valSet) = 0;
 
     // Called by the consensus code when we need to
     // add feature entries to a validation
@@ -112,7 +120,7 @@ public:
     void
     doVoting (
         std::shared_ptr <ReadView const> const& lastClosedLedger,
-        ValidationSet const& parentValidations,
+        std::vector<STValidation::pointer> const& parentValidations,
         std::shared_ptr<SHAMap> const& initialPosition)
     {
         // Ask implementation what to do

@@ -35,6 +35,7 @@
 #include <ripple/protocol/STValidation.h>
 #include <ripple/beast/insight/Collector.h>
 #include <ripple/core/Stoppable.h>
+#include <ripple/protocol/Protocol.h>
 #include <ripple/beast/utility/PropertyStream.h>
 #include <mutex>
 
@@ -203,9 +204,9 @@ public:
     void setBuildingLedger (LedgerIndex index);
 
     void tryAdvance ();
-    void newPathRequest ();
+    bool newPathRequest (); // Returns true if path request successfully placed.
     bool isNewPathRequest ();
-    void newOrderBookDB ();
+    bool newOrderBookDB (); // Returns true if able to fulfill request.
 
     bool fixIndex (
         LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
@@ -242,6 +243,9 @@ public:
     std::size_t getFetchPackCacheSize () const;
 
 private:
+    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
+    using ScopedUnlockType = GenericScopedUnlock <std::recursive_mutex>;
+
     void setValidLedger(
         std::shared_ptr<Ledger const> const& l);
     void setPubLedger(
@@ -255,8 +259,9 @@ private:
     boost::optional<LedgerHash> getLedgerHashForHistory(LedgerIndex index);
     std::size_t getNeededValidations();
     void advanceThread();
-    // Try to publish ledgers, acquire missing ledgers
-    void doAdvance();
+    // Try to publish ledgers, acquire missing ledgers.  Always called with
+    // m_mutex locked.  The passed ScopedLockType is a reminder to callers.
+    void doAdvance(ScopedLockType&);
     bool shouldFetchPack(std::uint32_t seq) const;
     bool shouldAcquire(
         std::uint32_t const currentLedger,
@@ -268,12 +273,12 @@ private:
     findNewLedgersToPublish();
 
     void updatePaths(Job& job);
-    void newPFWork(const char *name);
+
+    // Returns true if work started.  Always called with m_mutex locked.
+    // The passed ScopedLockType is a reminder to callers.
+    bool newPFWork(const char *name, ScopedLockType&);
 
 private:
-    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
-    using ScopedUnlockType = GenericScopedUnlock <std::recursive_mutex>;
-
     Application& app_;
     beast::Journal m_journal;
 
@@ -295,38 +300,38 @@ private:
     std::shared_ptr<Ledger const> mHistLedger;
 
     // Fully validated ledger, whether or not we have the ledger resident.
-    std::pair <uint256, LedgerIndex> mLastValidLedger;
+    std::pair <uint256, LedgerIndex> mLastValidLedger {uint256(), 0};
 
     LedgerHistory mLedgerHistory;
 
-    CanonicalTXSet mHeldTransactions;
+    CanonicalTXSet mHeldTransactions {uint256()};
 
     // A set of transactions to replay during the next close
     std::unique_ptr<LedgerReplay> replayData;
 
     std::recursive_mutex mCompleteLock;
-    RangeSet mCompleteLedgers;
+    RangeSet<std::uint32_t> mCompleteLedgers;
 
     std::unique_ptr <detail::LedgerCleaner> mLedgerCleaner;
 
     uint256 mLastValidateHash;
-    std::uint32_t mLastValidateSeq;
+    std::uint32_t mLastValidateSeq {0};
 
     // Publish thread is running.
-    bool                        mAdvanceThread;
+    bool                        mAdvanceThread {false};
 
     // Publish thread has work to do.
-    bool                        mAdvanceWork;
-    int                         mFillInProgress;
+    bool                        mAdvanceWork {false};
+    int                         mFillInProgress {0};
 
-    int     mPathFindThread;    // Pathfinder jobs dispatched
-    bool    mPathFindNewRequest;
+    int     mPathFindThread {0};    // Pathfinder jobs dispatched
+    bool    mPathFindNewRequest {false};
 
-    std::atomic <std::uint32_t> mPubLedgerClose;
-    std::atomic <std::uint32_t> mPubLedgerSeq;
-    std::atomic <std::uint32_t> mValidLedgerSign;
-    std::atomic <std::uint32_t> mValidLedgerSeq;
-    std::atomic <std::uint32_t> mBuildingLedgerSeq;
+    std::atomic <std::uint32_t> mPubLedgerClose {0};
+    std::atomic <LedgerIndex> mPubLedgerSeq {0};
+    std::atomic <std::uint32_t> mValidLedgerSign {0};
+    std::atomic <LedgerIndex> mValidLedgerSeq {0};
+    std::atomic <LedgerIndex> mBuildingLedgerSeq {0};
 
     // The server is in standalone mode
     bool const standalone_;
@@ -341,7 +346,11 @@ private:
 
     TaggedCache<uint256, Blob> fetch_packs_;
 
-    std::uint32_t fetch_seq_;
+    std::uint32_t fetch_seq_ {0};
+
+    // Try to keep a validator from switching from test to live network
+    // without first wiping the database.
+    LedgerIndex const max_ledger_difference_ {1000000};
 
 };
 

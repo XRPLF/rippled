@@ -116,8 +116,7 @@ class Feature_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env {*this,
-            features(featureEscrow),
-            features(featureCryptoConditions)};
+            with_features(featureEscrow, featureCryptoConditions)};
         // The amendment table has to be modified
         // since that is what feature RPC actually checks
         env.app().getAmendmentTable().enable(featureEscrow);
@@ -221,7 +220,7 @@ class Feature_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env {*this,
-            features(featureCryptoConditions)};
+            with_features(featureCryptoConditions)};
         // The amendment table has to be modified
         // since that is what feature RPC actually checks
         env.app().getAmendmentTable().enable(featureCryptoConditions);

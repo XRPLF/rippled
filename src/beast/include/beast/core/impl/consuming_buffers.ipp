@@ -8,8 +8,7 @@
 #ifndef BEAST_IMPL_CONSUMING_BUFFERS_IPP
 #define BEAST_IMPL_CONSUMING_BUFFERS_IPP
 
-#include <beast/core/buffer_concepts.hpp>
-#include <boost/asio/buffer.hpp>
+#include <beast/core/type_traits.hpp>
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
@@ -18,13 +17,13 @@
 
 namespace beast {
 
-template<class BufferSequence>
-class consuming_buffers<BufferSequence>::const_iterator
+template<class Buffers>
+class consuming_buffers<Buffers>::const_iterator
 {
-    friend class consuming_buffers<BufferSequence>;
+    friend class consuming_buffers<Buffers>;
 
     using iter_type =
-        typename BufferSequence::const_iterator;
+        typename Buffers::const_iterator;
 
     iter_type it_;
     consuming_buffers const* b_ = nullptr;
@@ -110,8 +109,17 @@ private:
     }
 };
 
-template<class BufferSequence>
-consuming_buffers<BufferSequence>::
+//------------------------------------------------------------------------------
+
+template<class Buffers>
+consuming_buffers<Buffers>::
+consuming_buffers()
+    : begin_(bs_.begin())
+{
+}
+
+template<class Buffers>
+consuming_buffers<Buffers>::
 consuming_buffers(consuming_buffers&& other)
     : consuming_buffers(std::move(other),
         std::distance<iter_type>(
@@ -119,8 +127,8 @@ consuming_buffers(consuming_buffers&& other)
 {
 }
 
-template<class BufferSequence>
-consuming_buffers<BufferSequence>::
+template<class Buffers>
+consuming_buffers<Buffers>::
 consuming_buffers(consuming_buffers const& other)
     : consuming_buffers(other,
         std::distance<iter_type>(
@@ -128,9 +136,35 @@ consuming_buffers(consuming_buffers const& other)
 {
 }
 
-template<class BufferSequence>
+template<class Buffers>
+consuming_buffers<Buffers>::
+consuming_buffers(Buffers const& bs)
+    : bs_(bs)
+    , begin_(bs_.begin())
+{
+    static_assert(
+        is_const_buffer_sequence<Buffers>::value||
+        is_mutable_buffer_sequence<Buffers>::value,
+            "BufferSequence requirements not met");
+}
+
+template<class Buffers>
+template<class... Args>
+consuming_buffers<Buffers>::
+consuming_buffers(boost::in_place_init_t, Args&&... args)
+    : bs_(std::forward<Args>(args)...)
+    , begin_(bs_.begin())
+{
+    static_assert(sizeof...(Args) > 0,
+        "Missing constructor arguments");
+    static_assert(
+        std::is_constructible<Buffers, Args...>::value,
+            "Buffers not constructible from arguments");
+}
+
+template<class Buffers>
 auto
-consuming_buffers<BufferSequence>::
+consuming_buffers<Buffers>::
 operator=(consuming_buffers&& other) ->
     consuming_buffers&
 {
@@ -142,9 +176,9 @@ operator=(consuming_buffers&& other) ->
     return *this;
 }
 
-template<class BufferSequence>
+template<class Buffers>
 auto
-consuming_buffers<BufferSequence>::
+consuming_buffers<Buffers>::
 operator=(consuming_buffers const& other) ->
     consuming_buffers&
 {
@@ -156,40 +190,29 @@ operator=(consuming_buffers const& other) ->
     return *this;
 }
 
-template<class BufferSequence>
-consuming_buffers<BufferSequence>::
-consuming_buffers(BufferSequence const& bs)
-    : bs_(bs)
-    , begin_(bs_.begin())
-{
-    static_assert(
-        is_BufferSequence<BufferSequence, value_type>::value,
-            "BufferSequence requirements not met");
-}
-
-template<class BufferSequence>
+template<class Buffers>
 inline
 auto
-consuming_buffers<BufferSequence>::
+consuming_buffers<Buffers>::
 begin() const ->
     const_iterator
 {
     return const_iterator{*this, begin_};
 }
 
-template<class BufferSequence>
+template<class Buffers>
 inline
 auto
-consuming_buffers<BufferSequence>::
+consuming_buffers<Buffers>::
 end() const ->
     const_iterator
 {
     return const_iterator{*this, bs_.end()};
 }
 
-template<class BufferSequence>
+template<class Buffers>
 void
-consuming_buffers<BufferSequence>::
+consuming_buffers<Buffers>::
 consume(std::size_t n)
 {
     using boost::asio::buffer_size;

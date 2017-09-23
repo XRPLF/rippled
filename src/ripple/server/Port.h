@@ -22,7 +22,7 @@
 
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/beast/net/IPEndpoint.h>
-#include <beast/core/detail/ci_char_traits.hpp>
+#include <beast/core/string.hpp>
 #include <beast/websocket/option.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <cstdint>
@@ -40,7 +40,7 @@ struct Port
     std::string name;
     boost::asio::ip::address ip;
     std::uint16_t port = 0;
-    std::set<std::string, beast::detail::ci_less> protocol;
+    std::set<std::string, beast::iless> protocol;
     std::vector<beast::IP::Address> admin_ip;
     std::vector<beast::IP::Address> secure_gateway_ip;
     std::string user;
@@ -79,7 +79,7 @@ operator<< (std::ostream& os, Port const& p);
 struct ParsedPort
 {
     std::string name;
-    std::set<std::string, beast::detail::ci_less> protocol;
+    std::set<std::string, beast::iless> protocol;
     std::string user;
     std::string password;
     std::string admin_user;

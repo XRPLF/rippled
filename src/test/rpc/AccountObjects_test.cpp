@@ -29,96 +29,85 @@ namespace ripple {
 namespace test {
 
 static char const* bobs_account_objects[] = {
-R"json(
-{
-  "Balance": {
-    "currency": "USD",
-    "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
-    "value": "-1000"
-  },
-  "Flags": 131072,
-  "HighLimit": {
-    "currency": "USD",
-    "issuer": "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
-    "value": "1000"
-  },
-  "HighNode": "0000000000000000",
-  "LedgerEntryType": "RippleState",
-  "LowLimit": {
-    "currency": "USD",
-    "issuer": "r32rQHyesiTtdWFU7UJVtff4nCR5SHCbJW",
-    "value": "0"
-  },
-  "LowNode": "0000000000000000",
-  "index":
-    "D89BC239086183EB9458C396E643795C1134963E6550E682A190A5F021766D43"
-})json"
-,
-R"json(
-{
-  "Balance": {
-    "currency": "USD",
-    "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
-    "value": "-1000"
-  },
-  "Flags": 131072,
-  "HighLimit": {
-    "currency": "USD",
-    "issuer": "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
-    "value": "1000"
-  },
-  "HighNode": "0000000000000000",
-  "LedgerEntryType": "RippleState",
-  "LowLimit": {
-    "currency": "USD",
-    "issuer": "r9cZvwKU3zzuZK9JFovGg1JC5n7QiqNL8L",
-    "value": "0"
-  },
-  "LowNode": "0000000000000000",
-  "index":
-    "D13183BCFFC9AAC9F96AEBB5F66E4A652AD1F5D10273AEB615478302BEBFD4A4"
-})json"
-,
-R"json(
-{
-  "Account": "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
-  "BookDirectory":
-  "50AD0A9E54D2B381288D535EB724E4275FFBF41580D28A925D038D7EA4C68000",
-  "BookNode": "0000000000000000",
-  "Flags": 65536,
-  "LedgerEntryType": "Offer",
-  "OwnerNode": "0000000000000000",
-  "Sequence": 4,
-  "TakerGets": {
-    "currency": "USD",
-    "issuer": "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
-    "value": "1"
-  },
-  "TakerPays": "100000000",
-  "index":
-    "A984D036A0E562433A8377CA57D1A1E056E58C0D04818F8DFD3A1AA3F217DD82"
-})json"
-,
-R"json(
-{
-  "Account": "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
-  "BookDirectory":
-  "B025997A323F5C3E03DDF1334471F5984ABDE31C59D463525D038D7EA4C68000",
-  "BookNode": "0000000000000000",
-  "Flags": 65536,
-  "LedgerEntryType": "Offer",
-  "OwnerNode": "0000000000000000",
-  "Sequence": 5,
-  "TakerGets": {
-    "currency": "USD",
-    "issuer" : "r32rQHyesiTtdWFU7UJVtff4nCR5SHCbJW",
+R"json({
+  "Account" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
+  "BookDirectory" : "50AD0A9E54D2B381288D535EB724E4275FFBF41580D28A925D038D7EA4C68000",
+  "BookNode" : "0000000000000000",
+  "Flags" : 65536,
+  "LedgerEntryType" : "Offer",
+  "OwnerNode" : "0000000000000000",
+  "Sequence" : 4,
+  "TakerGets" : {
+    "currency" : "USD",
+    "issuer" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
     "value" : "1"
   },
   "TakerPays" : "100000000",
-  "index" :
-    "CAFE32332D752387B01083B60CC63069BA4A969C9730836929F841450F6A718E"
-}
-)json"
+  "index" : "A984D036A0E562433A8377CA57D1A1E056E58C0D04818F8DFD3A1AA3F217DD82"
+})json"
+,
+R"json({
+    "Account" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
+    "BookDirectory" : "B025997A323F5C3E03DDF1334471F5984ABDE31C59D463525D038D7EA4C68000",
+    "BookNode" : "0000000000000000",
+    "Flags" : 65536,
+    "LedgerEntryType" : "Offer",
+    "OwnerNode" : "0000000000000000",
+    "Sequence" : 5,
+    "TakerGets" : {
+        "currency" : "USD",
+        "issuer" : "r32rQHyesiTtdWFU7UJVtff4nCR5SHCbJW",
+        "value" : "1"
+    },
+    "TakerPays" : "100000000",
+    "index" : "CAFE32332D752387B01083B60CC63069BA4A969C9730836929F841450F6A718E"
+})json"
+,
+R"json({
+    "Balance" : {
+        "currency" : "USD",
+        "issuer" : "rrrrrrrrrrrrrrrrrrrrBZbvji",
+        "value" : "-1000"
+    },
+    "Flags" : 131072,
+    "HighLimit" : {
+        "currency" : "USD",
+        "issuer" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
+        "value" : "1000"
+    },
+    "HighNode" : "0000000000000000",
+    "LedgerEntryType" : "RippleState",
+    "LowLimit" : {
+        "currency" : "USD",
+        "issuer" : "r9cZvwKU3zzuZK9JFovGg1JC5n7QiqNL8L",
+        "value" : "0"
+    },
+    "LowNode" : "0000000000000000",
+    "index" : "D13183BCFFC9AAC9F96AEBB5F66E4A652AD1F5D10273AEB615478302BEBFD4A4"
+})json"
+,
+R"json({
+    "Balance" : {
+        "currency" : "USD",
+        "issuer" : "rrrrrrrrrrrrrrrrrrrrBZbvji",
+        "value" : "-1000"
+    },
+    "Flags" : 131072,
+    "HighLimit" : {
+        "currency" : "USD",
+        "issuer" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
+        "value" : "1000"
+    },
+    "HighNode" : "0000000000000000",
+    "LedgerEntryType" : "RippleState",
+    "LowLimit" : {
+        "currency" : "USD",
+        "issuer" : "r32rQHyesiTtdWFU7UJVtff4nCR5SHCbJW",
+        "value" : "0"
+    },
+    "LowNode" : "0000000000000000",
+    "index" : "D89BC239086183EB9458C396E643795C1134963E6550E682A190A5F021766D43"
+})json"
 };
 
 class AccountObjects_test : public beast::unit_test::suite
@@ -196,7 +185,7 @@ public:
             env.trust(USD(1000), bob);
             env(pay(gw, bob, XRP(1)));
             env(offer(bob, XRP(100), bob["USD"](1)), txflags(tfPassive));
- 
+
             Json::Value params;
             params[jss::account] = bob.human();
             params[jss::limit] = 1;
@@ -254,7 +243,7 @@ public:
         env.fund(XRP(1000), gw1, gw2, bob);
         env.trust(USD1(1000), bob);
         env.trust(USD2(1000), bob);
- 
+
         env(pay(gw1, bob, USD1(1000)));
         env(pay(gw2, bob, USD2(1000)));
 
@@ -280,7 +269,9 @@ public:
                 aobj.removeMember("PreviousTxnID");
                 aobj.removeMember("PreviousTxnLgrSeq");
 
-                BEAST_EXPECT( aobj == bobj[i]);
+                if (aobj != bobj[i])
+                   std::cout << "Fail at " << i << ": " << aobj << std::endl;
+                BEAST_EXPECT(aobj == bobj[i]);
             }
         }
         // test request with type parameter as filter, unstepped
@@ -298,7 +289,7 @@ public:
                 aobj.removeMember("PreviousTxnID");
                 aobj.removeMember("PreviousTxnLgrSeq");
 
-                BEAST_EXPECT( aobj == bobj[i]);
+                BEAST_EXPECT( aobj == bobj[i+2]);
             }
         }
         // test stepped one-at-a-time with limit=1, resume from prev marker
@@ -316,7 +307,8 @@ public:
 
                 aobj.removeMember("PreviousTxnID");
                 aobj.removeMember("PreviousTxnLgrSeq");
-                BEAST_EXPECT( aobj == bobj[i]);
+
+                BEAST_EXPECT(aobj == bobj[i]);
 
                 auto resume_marker = resp[jss::result][jss::marker];
                 params[jss::marker] = resume_marker;

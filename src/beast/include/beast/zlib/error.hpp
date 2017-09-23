@@ -4,6 +4,16 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
+
+#ifndef BEAST_ZLIB_ERROR_HPP
+#define BEAST_ZLIB_ERROR_HPP
+
+#include <beast/config.hpp>
+#include <beast/core/error.hpp>
+
+namespace beast {
+namespace zlib {
+
 // This is a derivative work based on Zlib, copyright below:
 /*
     Copyright (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -31,15 +41,6 @@
     Comments) 1950 to 1952 in the files http://tools.ietf.org/html/rfc1950
     (zlib format), rfc1951 (deflate format) and rfc1952 (gzip format).
 */
-
-#ifndef BEAST_ZLIB_ERROR_HPP
-#define BEAST_ZLIB_ERROR_HPP
-
-#include <beast/config.hpp>
-#include <beast/core/error.hpp>
-
-namespace beast {
-namespace zlib {
 
 /** Error codes returned by the codec.
 */

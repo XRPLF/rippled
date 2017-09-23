@@ -16,7 +16,7 @@ ABBREVIATE_BRIEF       =
 ALWAYS_DETAILED_SEC    = NO
 INLINE_INHERITED_MEMB  = YES
 FULL_PATH_NAMES        = NO
-STRIP_FROM_PATH        =
+STRIP_FROM_PATH        = ../include/
 STRIP_FROM_INC_PATH    =
 SHORT_NAMES            = NO
 JAVADOC_AUTOBRIEF      = YES
@@ -254,7 +254,7 @@ MAN_LINKS              = NO
 # Configuration options related to the XML output
 #---------------------------------------------------------------------------
 GENERATE_XML           = YES
-XML_OUTPUT             = ../bin/doc/xml
+XML_OUTPUT             = temp/
 XML_PROGRAMLISTING     = YES
 
 #---------------------------------------------------------------------------
@@ -282,8 +282,12 @@ EXPAND_ONLY_PREDEF     = YES
 SEARCH_INCLUDES        = YES
 INCLUDE_PATH           = ../
 INCLUDE_FILE_PATTERNS  =
-PREDEFINED             = DOXYGEN \
-                         GENERATING_DOCS
+
+PREDEFINED             = \
+                        BEAST_DOXYGEN \
+                        BEAST_USE_POSIX_FILE=1 \
+                        BEAST_USE_WIN32_FILE=1
+
 EXPAND_AS_DEFINED      =
 SKIP_FUNCTION_MACROS   = YES
 

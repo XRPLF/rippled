@@ -34,24 +34,24 @@ public:
 
     void run() override
     {
-        check("zlib", error::need_buffers);
-        check("zlib", error::end_of_stream);
-        check("zlib", error::stream_error);
+        check("beast.zlib", error::need_buffers);
+        check("beast.zlib", error::end_of_stream);
+        check("beast.zlib", error::stream_error);
 
-        check("zlib", error::invalid_block_type);
-        check("zlib", error::invalid_stored_length);
-        check("zlib", error::too_many_symbols);
-        check("zlib", error::invalid_code_lenths);
-        check("zlib", error::invalid_bit_length_repeat);
-        check("zlib", error::missing_eob);
-        check("zlib", error::invalid_literal_length);
-        check("zlib", error::invalid_distance_code);
-        check("zlib", error::invalid_distance);
+        check("beast.zlib", error::invalid_block_type);
+        check("beast.zlib", error::invalid_stored_length);
+        check("beast.zlib", error::too_many_symbols);
+        check("beast.zlib", error::invalid_code_lenths);
+        check("beast.zlib", error::invalid_bit_length_repeat);
+        check("beast.zlib", error::missing_eob);
+        check("beast.zlib", error::invalid_literal_length);
+        check("beast.zlib", error::invalid_distance_code);
+        check("beast.zlib", error::invalid_distance);
 
-        check("zlib", error::over_subscribed_length);
-        check("zlib", error::incomplete_length_set);
+        check("beast.zlib", error::over_subscribed_length);
+        check("beast.zlib", error::incomplete_length_set);
 
-        check("zlib", error::general);
+        check("beast.zlib", error::general);
     }
 };
 

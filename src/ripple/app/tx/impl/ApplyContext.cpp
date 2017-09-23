@@ -78,38 +78,49 @@ ApplyContext::checkInvariantsHelper(TER terResult, std::index_sequence<Is...>)
     if (view_->rules().enabled(featureEnforceInvariants))
     {
         auto checkers = getInvariantChecks();
-
-        // call each check's per-entry method
-        visit (
-            [&checkers](
-                uint256 const& index,
-                bool isDelete,
-                std::shared_ptr <SLE const> const& before,
-                std::shared_ptr <SLE const> const& after)
-            {
-                // Sean Parent for_each_argument trick
-                (void)std::array<int, sizeof...(Is)>{
-                    {((std::get<Is>(checkers).
+        try
+        {
+            // call each check's per-entry method
+            visit (
+                [&checkers](
+                    uint256 const& index,
+                    bool isDelete,
+                    std::shared_ptr <SLE const> const& before,
+                    std::shared_ptr <SLE const> const& after)
+                {
+                    // Sean Parent for_each_argument trick
+                    (void)std::array<int, sizeof...(Is)>{
+                        {((std::get<Is>(checkers).
                             visitEntry(index, isDelete, before, after)), 0)...}
-                };
-            });
+                    };
+                });
 
-        // Sean Parent for_each_argument trick
-        // (a fold expression with `&&` would be really nice here when we move
-        // to C++-17)
-        std::array<bool, sizeof...(Is)> finalizers {{
-            std::get<Is>(checkers).finalize(tx, terResult, journal)...}};
+            // Sean Parent for_each_argument trick (a fold expression with `&&`
+            // would be really nice here when we move to C++-17)
+            std::array<bool, sizeof...(Is)> finalizers {{
+                std::get<Is>(checkers).finalize(tx, terResult, journal)...}};
 
-        // call each check's finalizer to see that it passes
-        if (! std::all_of( finalizers.cbegin(), finalizers.cend(),
-                [](auto const& b) { return b; }))
+            // call each check's finalizer to see that it passes
+            if (! std::all_of( finalizers.cbegin(), finalizers.cend(),
+                    [](auto const& b) { return b; }))
+            {
+                terResult = (terResult == tecINVARIANT_FAILED) ?
+                    tefINVARIANT_FAILED :
+                    tecINVARIANT_FAILED ;
+                JLOG(journal.fatal()) <<
+                    "Transaction has failed one or more invariants: " <<
+                    to_string(tx.getJson (0));
+            }
+        }
+        catch(std::exception const& ex)
         {
             terResult = (terResult == tecINVARIANT_FAILED) ?
                 tefINVARIANT_FAILED :
                 tecINVARIANT_FAILED ;
             JLOG(journal.fatal()) <<
-                "Transaction has failed one or more invariants: " <<
-                to_string(tx.getJson (0));
+                "Transaction caused an exception in an invariant" <<
+                ", ex: " << ex.what() <<
+                ", tx: " << to_string(tx.getJson (0));
         }
     }
 

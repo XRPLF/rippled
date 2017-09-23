@@ -36,7 +36,7 @@ ValidatorList::ValidatorList (
     , publisherManifests_ (publisherManifests)
     , timeKeeper_ (timeKeeper)
     , j_ (j)
-    , quorum_ (minimumQuorum ? *minimumQuorum : 1) // Genesis ledger quorum
+    , quorum_ (minimumQuorum.value_or(1)) // Genesis ledger quorum
     , minimumQuorum_ (minimumQuorum)
 {
 }
@@ -409,15 +409,33 @@ ValidatorList::for_each_listed (
 }
 
 std::size_t
-ValidatorList::calculateQuorum (std::size_t nTrustedKeys)
+ValidatorList::calculateMinimumQuorum (
+    std::size_t nListedKeys, bool unlistedLocal)
 {
-    // Use 80% for large values of n, but have special cases for small numbers.
-    constexpr std::array<std::size_t, 10> quorum{{ 0, 1, 2, 2, 3, 3, 4, 5, 6, 7 }};
+    // Only require 51% quorum for small number of validators to facilitate
+    // bootstrapping a network.
+    if (nListedKeys <= 5)
+        return nListedKeys/2 + 1;
 
-    if (nTrustedKeys < quorum.size())
-        return quorum[nTrustedKeys];
+    // The number of listed validators is increased to preserve the safety
+    // guarantee for two unlisted validators using the same set of listed
+    // validators.
+    if (unlistedLocal)
+        ++nListedKeys;
 
-    return nTrustedKeys - nTrustedKeys / 5;
+    // Guarantee safety with up to 1/3 listed validators being malicious.
+    // This prioritizes safety (Byzantine fault tolerance) over liveness.
+    // It takes at least as many malicious nodes to split/fork the network as
+    // to stall the network.
+    // At 67%, the overlap of two quorums is 34%
+    //   67 + 67 - 100 = 34
+    // So under certain conditions, 34% of validators could vote for two
+    // different ledgers and split the network.
+    // Similarly 34% could prevent quorum from being met (by not voting) and
+    // stall the network.
+    // If/when the quorum is subsequently raised to/towards 80%, it becomes
+    // harder to split the network (more safe) and easier to stall it (less live).
+    return nListedKeys * 2/3 + 1;
 }
 
 } // ripple

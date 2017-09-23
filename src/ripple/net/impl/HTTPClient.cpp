@@ -23,7 +23,6 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/net/HTTPClient.h>
 #include <ripple/net/AutoSocket.h>
-#include <beast/core/placeholders.hpp>
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
@@ -196,7 +195,7 @@ public:
                 std::bind (
                     &HTTPClientImp::handleDeadline,
                     shared_from_this (),
-                    beast::asio::placeholders::error));
+                    std::placeholders::_1));
         }
 
         if (!mShutdown)
@@ -207,8 +206,8 @@ public:
                                      std::bind (
                                          &HTTPClientImp::handleResolve,
                                          shared_from_this (),
-                                         beast::asio::placeholders::error,
-                                         beast::asio::placeholders::iterator));
+                                         std::placeholders::_1,
+                                         std::placeholders::_2));
         }
 
         if (mShutdown)
@@ -246,7 +245,7 @@ public:
             mSocket.async_shutdown (std::bind (
                                         &HTTPClientImp::handleShutdown,
                                         shared_from_this (),
-                                        beast::asio::placeholders::error));
+                                        std::placeholders::_1));
 
         }
     }
@@ -285,7 +284,7 @@ public:
                 std::bind (
                     &HTTPClientImp::handleConnect,
                     shared_from_this (),
-                    beast::asio::placeholders::error));
+                    std::placeholders::_1));
         }
     }
 
@@ -325,7 +324,7 @@ public:
                 std::bind (
                     &HTTPClientImp::handleRequest,
                     shared_from_this (),
-                    beast::asio::placeholders::error));
+                    std::placeholders::_1));
         }
         else
         {
@@ -354,8 +353,8 @@ public:
                 mRequest,
                 std::bind (&HTTPClientImp::handleWrite,
                              shared_from_this (),
-                             beast::asio::placeholders::error,
-                             beast::asio::placeholders::bytes_transferred));
+                             std::placeholders::_1,
+                             std::placeholders::_2));
         }
     }
 
@@ -379,8 +378,8 @@ public:
                 "\r\n\r\n",
                 std::bind (&HTTPClientImp::handleHeader,
                              shared_from_this (),
-                             beast::asio::placeholders::error,
-                             beast::asio::placeholders::bytes_transferred));
+                             std::placeholders::_1,
+                             std::placeholders::_2));
         }
     }
 
@@ -430,8 +429,8 @@ public:
                 boost::asio::transfer_all (),
                 std::bind (&HTTPClientImp::handleData,
                              shared_from_this (),
-                             beast::asio::placeholders::error,
-                             beast::asio::placeholders::bytes_transferred));
+                             std::placeholders::_1,
+                             std::placeholders::_2));
         }
     }
 

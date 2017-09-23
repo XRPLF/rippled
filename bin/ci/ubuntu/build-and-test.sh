@@ -10,6 +10,12 @@ echo "using TARGET: $TARGET"
 
 # Ensure APP defaults to rippled if it's not set.
 : ${APP:=rippled}
+
+JOBS=${NUM_PROCESSORS:-2}
+if [[ ${TARGET} == *.nounity ]]; then
+    JOBS=$((2*${JOBS}))
+fi
+
 if [[ ${BUILD:-scons} == "cmake" ]]; then
   echo "cmake building ${APP}"
   CMAKE_TARGET=$CC.$TARGET
@@ -19,7 +25,7 @@ if [[ ${BUILD:-scons} == "cmake" ]]; then
   mkdir -p "build/${CMAKE_TARGET}"
   pushd "build/${CMAKE_TARGET}"
   cmake ../.. -Dtarget=$CMAKE_TARGET
-  cmake --build . -- -j${NUM_PROCESSORS:-2}
+  cmake --build . -- -j${JOBS}
   popd
   export APP_PATH="$PWD/build/${CMAKE_TARGET}/${APP}"
   echo "using APP_PATH: $APP_PATH"
@@ -33,7 +39,7 @@ else
   # $CC will be either `clang` or `gcc`
   # http://docs.travis-ci.com/user/migrating-from-legacy/?utm_source=legacy-notice&utm_medium=banner&utm_campaign=legacy-upgrade
   #   indicates that 2 cores are available to containers.
-  scons -j${NUM_PROCESSORS:-2} $CC.$TARGET
+  scons -j${JOBS} $CC.$TARGET
 fi
 # We can be sure we're using the build/$CC.$TARGET variant
 # (-f so never err)
@@ -62,15 +68,19 @@ if [[ $TARGET == "coverage" ]]; then
   lcov --no-external -c -i -d . -o baseline.info
 fi
 
-# Execute unit tests under gdb, printing a call stack
-# if we get a crash.
-gdb -return-child-result -quiet -batch \
-    -ex "set env MALLOC_CHECK_=3" \
-    -ex "set print thread-events off" \
-    -ex run \
-    -ex "thread apply all backtrace full" \
-    -ex "quit" \
-    --args $APP_PATH $APP_ARGS
+if [[ ${TARGET} == debug ]]; then
+    # Execute unit tests under gdb, printing a call stack
+    # if we get a crash.
+    $GDB_ROOT/bin/gdb -return-child-result -quiet -batch \
+                      -ex "set env MALLOC_CHECK_=3" \
+                      -ex "set print thread-events off" \
+                      -ex run \
+                      -ex "thread apply all backtrace full" \
+                      -ex "quit" \
+                      --args $APP_PATH $APP_ARGS
+else
+    $APP_PATH $APP_ARGS
+fi
 
 if [[ $TARGET == "coverage" ]]; then
   # Create test coverage data file
@@ -87,6 +97,8 @@ if [[ $TARGET == "coverage" ]]; then
 
   # Push the results (lcov.info) to codecov
   codecov -X gcov # don't even try and look for .gcov files ;)
+
+  find . -name "*.gcda" | xargs rm -f
 fi
 
 

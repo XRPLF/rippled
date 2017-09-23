@@ -21,26 +21,16 @@
 #define RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 
 #include <ripple/app/consensus/RCLCxPeerPos.h>
-#include <ripple/basics/Log.h> // deprecated
-#include <ripple/nodestore/Database.h>
-#include <ripple/overlay/predicates.h>
+#include <ripple/basics/Log.h>
+#include <ripple/beast/core/ByteOrder.h>
+#include <ripple/beast/utility/WrappedSink.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/core/Config.h>
-#include <ripple/core/Job.h>
-#include <ripple/core/LoadEvent.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/STValidation.h>
-#include <ripple/beast/core/ByteOrder.h>
-#include <ripple/beast/net/IPAddressConversion.h>
-#include <beast/core/placeholders.hpp>
-#include <beast/core/streambuf.hpp>
-#include <ripple/beast/asio/ssl_bundle.h>
-#include <beast/http/message.hpp>
-#include <beast/http/parser_v1.hpp>
-#include <ripple/beast/utility/WrappedSink.h>
+#include <ripple/resource/Fees.h>
+
 #include <cstdint>
 #include <deque>
 #include <queue>
@@ -151,11 +141,11 @@ private:
     Resource::Consumer usage_;
     Resource::Charge fee_;
     PeerFinder::Slot::ptr slot_;
-    beast::streambuf read_buffer_;
+    beast::multi_buffer read_buffer_;
     http_request_type request_;
     http_response_type response_;
     beast::http::fields const& headers_;
-    beast::streambuf write_buffer_;
+    beast::multi_buffer write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;
     int large_sendq_ = 0;
@@ -452,7 +442,7 @@ private:
     void
     checkPropose (Job& job,
         std::shared_ptr<protocol::TMProposeSet> const& packet,
-            RCLCxPeerPos::pointer peerPos);
+            RCLCxPeerPos peerPos);
 
     void
     checkValidation (STValidation::pointer val,
@@ -502,7 +492,7 @@ PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& s
     , fee_ (Resource::feeLightPeer)
     , slot_ (std::move(slot))
     , response_(std::move(response))
-    , headers_(response_.fields)
+    , headers_(response_)
 {
     read_buffer_.commit (boost::asio::buffer_copy(read_buffer_.prepare(
         boost::asio::buffer_size(buffers)), buffers));

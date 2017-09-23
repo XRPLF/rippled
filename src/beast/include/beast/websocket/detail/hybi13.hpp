@@ -8,9 +8,11 @@
 #ifndef BEAST_WEBSOCKET_DETAIL_HYBI13_HPP
 #define BEAST_WEBSOCKET_DETAIL_HYBI13_HPP
 
+#include <beast/core/static_string.hpp>
+#include <beast/core/string.hpp>
 #include <beast/core/detail/base64.hpp>
 #include <beast/core/detail/sha1.hpp>
-#include <boost/utility/string_ref.hpp>
+#include <boost/assert.hpp>
 #include <array>
 #include <cstdint>
 #include <string>
@@ -20,11 +22,17 @@ namespace beast {
 namespace websocket {
 namespace detail {
 
+using sec_ws_key_type = static_string<
+    beast::detail::base64::encoded_size(16)>;
+
+using sec_ws_accept_type = static_string<
+    beast::detail::base64::encoded_size(20)>;
+
 template<class Gen>
-std::string
-make_sec_ws_key(Gen& g)
+void
+make_sec_ws_key(sec_ws_key_type& key, Gen& g)
 {
-    std::array<std::uint8_t, 16> a;
+    char a[16];
     for(int i = 0; i < 16; i += 4)
     {
         auto const v = g();
@@ -33,24 +41,27 @@ make_sec_ws_key(Gen& g)
         a[i+2] = (v >> 16) & 0xff;
         a[i+3] = (v >> 24) & 0xff;
     }
-    return beast::detail::base64_encode(
-        a.data(), a.size());
+    key.resize(key.max_size());
+    key.resize(beast::detail::base64::encode(
+        key.data(), &a[0], 16));
 }
 
 template<class = void>
-std::string
-make_sec_ws_accept(boost::string_ref const& key)
+void
+make_sec_ws_accept(sec_ws_accept_type& accept,
+    string_view key)
 {
-    std::string s(key.data(), key.size());
-    s += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    BOOST_ASSERT(key.size() <= sec_ws_key_type::max_size_n);
+    static_string<sec_ws_key_type::max_size_n + 36> m(key);
+    m.append("258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
     beast::detail::sha1_context ctx;
     beast::detail::init(ctx);
-    beast::detail::update(ctx, s.data(), s.size());
-    std::array<std::uint8_t,
-        beast::detail::sha1_context::digest_size> digest;
-    beast::detail::finish(ctx, digest.data());
-    return beast::detail::base64_encode(
-        digest.data(), digest.size());
+    beast::detail::update(ctx, m.data(), m.size());
+    char digest[beast::detail::sha1_context::digest_size];
+    beast::detail::finish(ctx, &digest[0]);
+    accept.resize(accept.max_size());
+    accept.resize(beast::detail::base64::encode(
+        accept.data(), &digest[0], sizeof(digest)));
 }
 
 } // detail

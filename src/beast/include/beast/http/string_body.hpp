@@ -9,91 +9,180 @@
 #define BEAST_HTTP_STRING_BODY_HPP
 
 #include <beast/config.hpp>
-#include <beast/core/error.hpp>
+#include <beast/http/error.hpp>
 #include <beast/http/message.hpp>
 #include <beast/core/detail/type_traits.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/optional.hpp>
+#include <cstdint>
+#include <limits>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace beast {
 namespace http {
 
-/** A Body represented by a std::string.
+/** A @b Body using `std::basic_string`
 
-    Meets the requirements of @b `Body`.
+    This body uses `std::basic_string` as a memory-based container
+    for holding message payloads. Messages using this body type
+    may be serialized and parsed.
 */
-struct string_body
+template<
+    class CharT,
+    class Traits = std::char_traits<CharT>,
+    class Allocator = std::allocator<CharT>>
+struct basic_string_body
 {
-    /// The type of the `message::body` member
-    using value_type = std::string;
-
-#if GENERATING_DOCS
 private:
-#endif
+    static_assert(
+        std::is_integral<CharT>::value &&
+            sizeof(CharT) == 1,
+        "CharT requirements not met");
 
-    class reader
+public:
+    /** The type of container used for the body
+
+        This determines the type of @ref message::body
+        when this body type is used with a message container.
+    */
+    using value_type =
+        std::basic_string<CharT, Traits, Allocator>;
+
+    /** Returns the payload size of the body
+
+        When this body is used with @ref message::prepare_payload,
+        the Content-Length will be set to the payload size, and
+        any chunked Transfer-Encoding will be removed.
+    */
+    static
+    std::uint64_t
+    size(value_type const& body)
     {
-        value_type& s_;
+        return body.size();
+    }
 
-    public:
-        template<bool isRequest, class Fields>
-        explicit
-        reader(message<isRequest,
-                string_body, Fields>& m) noexcept
-            : s_(m.body)
-        {
-        }
+    /** The algorithm for serializing the body
 
-        void
-        init(error_code&) noexcept
-        {
-        }
-
-        void
-        write(void const* data,
-            std::size_t size, error_code&) noexcept
-        {
-            auto const n = s_.size();
-            s_.resize(n + size);
-            std::memcpy(&s_[n], data, size);
-        }
-    };
-
-    class writer
+        Meets the requirements of @b BodyReader.
+    */
+#if BEAST_DOXYGEN
+    using reader = implementation_defined;
+#else
+    class reader
     {
         value_type const& body_;
 
     public:
+        using const_buffers_type =
+            boost::asio::const_buffers_1;
+
         template<bool isRequest, class Fields>
         explicit
-        writer(message<
-                isRequest, string_body, Fields> const& msg) noexcept
+        reader(message<isRequest,
+                basic_string_body, Fields> const& msg)
             : body_(msg.body)
         {
         }
 
         void
-        init(error_code& ec) noexcept
+        init(error_code& ec)
         {
-            beast::detail::ignore_unused(ec);
+            ec.assign(0, ec.category());
         }
 
-        std::uint64_t
-        content_length() const noexcept
+        boost::optional<std::pair<const_buffers_type, bool>>
+        get(error_code& ec)
         {
-            return body_.size();
-        }
-
-        template<class WriteFunction>
-        bool
-        write(error_code&, WriteFunction&& wf) noexcept
-        {
-            wf(boost::asio::buffer(body_));
-            return true;
+            ec.assign(0, ec.category());
+            return {{const_buffers_type{
+                body_.data(), body_.size()}, false}};
         }
     };
+#endif
+
+    /** The algorithm for parsing the body
+
+        Meets the requirements of @b BodyReader.
+    */
+#if BEAST_DOXYGEN
+    using writer = implementation_defined;
+#else
+    class writer
+    {
+        value_type& body_;
+
+    public:
+        template<bool isRequest, class Fields>
+        explicit
+        writer(message<isRequest,
+                basic_string_body, Fields>& m)
+            : body_(m.body)
+        {
+        }
+
+        void
+        init(boost::optional<
+            std::uint64_t> const& length, error_code& ec)
+        {
+            if(length)
+            {
+                if(*length > (
+                    std::numeric_limits<std::size_t>::max)())
+                {
+                    ec = error::buffer_overflow;
+                    return;
+                }
+                try
+                {
+                    body_.reserve(
+                        static_cast<std::size_t>(*length));
+                }
+                catch(std::exception const&)
+                {
+                    ec = error::buffer_overflow;
+                    return;
+                }
+            }
+            ec.assign(0, ec.category());
+        }
+
+        template<class ConstBufferSequence>
+        std::size_t
+        put(ConstBufferSequence const& buffers,
+            error_code& ec)
+        {
+            using boost::asio::buffer_size;
+            using boost::asio::buffer_copy;
+            auto const n = buffer_size(buffers);
+            auto const len = body_.size();
+            try
+            {
+                body_.resize(len + n);
+            }
+            catch(std::exception const&)
+            {
+                ec = error::buffer_overflow;
+                return 0;
+            }
+            ec.assign(0, ec.category());
+            return buffer_copy(boost::asio::buffer(
+                &body_[0] + len, n), buffers);
+        }
+
+        void
+        finish(error_code& ec)
+        {
+            ec.assign(0, ec.category());
+        }
+    };
+#endif
 };
+
+/// A @b Body using `std::string`
+using string_body = basic_string_body<char>;
 
 } // http
 } // beast

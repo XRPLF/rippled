@@ -10,25 +10,31 @@
 
 #include <beast/config.hpp>
 
-#include <beast/core/async_completion.hpp>
+#include <beast/core/async_result.hpp>
 #include <beast/core/bind_handler.hpp>
 #include <beast/core/buffer_cat.hpp>
-#include <beast/core/buffer_concepts.hpp>
+#include <beast/core/buffer_prefix.hpp>
+#include <beast/core/buffered_read_stream.hpp>
 #include <beast/core/buffers_adapter.hpp>
 #include <beast/core/consuming_buffers.hpp>
+#include <beast/core/drain_buffer.hpp>
 #include <beast/core/error.hpp>
+#include <beast/core/file.hpp>
+#include <beast/core/file_base.hpp>
+#include <beast/core/file_posix.hpp>
+#include <beast/core/file_stdio.hpp>
+#include <beast/core/file_win32.hpp>
+#include <beast/core/flat_buffer.hpp>
 #include <beast/core/handler_alloc.hpp>
-#include <beast/core/handler_concepts.hpp>
-#include <beast/core/handler_helpers.hpp>
 #include <beast/core/handler_ptr.hpp>
-#include <beast/core/placeholders.hpp>
-#include <beast/core/prepare_buffers.hpp>
-#include <beast/core/static_streambuf.hpp>
+#include <beast/core/multi_buffer.hpp>
+#include <beast/core/ostream.hpp>
+#include <beast/core/read_size.hpp>
+#include <beast/core/span.hpp>
+#include <beast/core/static_buffer.hpp>
 #include <beast/core/static_string.hpp>
-#include <beast/core/stream_concepts.hpp>
-#include <beast/core/streambuf.hpp>
-#include <beast/core/dynabuf_readstream.hpp>
-#include <beast/core/to_string.hpp>
-#include <beast/core/write_dynabuf.hpp>
+#include <beast/core/string.hpp>
+#include <beast/core/string_param.hpp>
+#include <beast/core/type_traits.hpp>
 
 #endif

@@ -8,8 +8,7 @@
 #ifndef BEAST_HTTP_TEST_MESSAGE_FUZZ_HPP
 #define BEAST_HTTP_TEST_MESSAGE_FUZZ_HPP
 
-#include <beast/core/write_dynabuf.hpp>
-#include <beast/http/detail/basic_parser_v1.hpp>
+#include <beast/core/ostream.hpp>
 #include <beast/http/detail/rfc7230.hpp>
 #include <cstdint>
 #include <random>
@@ -20,7 +19,7 @@ namespace http {
 
 template<class = void>
 std::string
-escaped_string(boost::string_ref const& s)
+escaped_string(string_view s)
 {
     std::string out;
     out.reserve(s.size());
@@ -132,7 +131,7 @@ public:
             "msrp", "msrps", "mtqp", "mumble", "mupdate", "mvn", "news", "nfs", "ni",
             "nih", "nntp", "notes", "oid", "opaquelocktoken", "pack", "palm", "paparazzi",
             "pkcs11", "platform", "pop", "pres", "prospero", "proxy", "psyc", "query",
-            "redis", "rediss", "reload", "res", "resource", "rmi", "rsync", "rtmfp",
+            "redis", "rediss", "reload", "res", "target", "rmi", "rsync", "rtmfp",
             "rtmp", "rtsp", "rtsps", "rtspu", "secondlife", "service", "session", "sftp",
             "sgn", "shttp", "sieve", "sip", "sips", "skype", "smb", "sms", "smtp",
             "snews", "snmp", "soap.beep", "soap.beeps", "soldat", "spotify", "ssh",
@@ -320,7 +319,7 @@ public:
     }
 
     std::string
-    uri()
+    target()
     {
         //switch(rand(4))
         switch(1)
@@ -349,7 +348,7 @@ public:
 
 #if 0
     std::string
-    uri()
+    target()
     {
         static char constexpr alpha[63] =
             "0123456789" "ABCDEFGHIJ" "KLMNOPQRST"
@@ -477,13 +476,13 @@ public:
     void
     fields(DynamicBuffer& db)
     {
+        auto os = ostream(db);
         while(rand(6))
-        {
-            write(db, field());
-            write(db, rand(4) ? ": " : ":");
-            write(db, value());
-            write(db, "\r\n");
-        }
+            os <<
+                field() <<
+                (rand(4) ? ": " : ":") <<
+                value() <<
+                "\r\n";
     }
 
     template<class DynamicBuffer>
@@ -492,14 +491,16 @@ public:
     {
         if(! rand(4))
         {
-            write(db, "Content-Length: 0\r\n\r\n");
+            ostream(db) <<
+                "Content-Length: 0\r\n\r\n";
             return;
         }
         if(rand(2))
         {
             auto const len = rand(500);
-            write(db, "Content-Length: ", len, "\r\n\r\n");
-            for(auto const& b : db.prepare(len))
+            ostream(db) <<
+                "Content-Length: " << len << "\r\n\r\n";
+            for(boost::asio::mutable_buffer b : db.prepare(len))
             {
                 auto p = boost::asio::buffer_cast<char*>(b);
                 auto n = boost::asio::buffer_size(b);
@@ -511,13 +512,15 @@ public:
         else
         {
             auto len = rand(500);
-            write(db, "Transfer-Encoding: chunked\r\n\r\n");
+            ostream(db) <<
+                "Transfer-Encoding: chunked\r\n\r\n";
             while(len > 0)
             {
                 auto n = (std::min)(1 + rand(300), len);
                 len -= n;
-                write(db, to_hex(n), "\r\n");
-                for(auto const& b : db.prepare(n))
+                ostream(db) <<
+                    to_hex(n) << "\r\n";
+                for(boost::asio::mutable_buffer b : db.prepare(n))
                 {
                     auto p = boost::asio::buffer_cast<char*>(b);
                     auto m = boost::asio::buffer_size(b);
@@ -525,9 +528,9 @@ public:
                         *p++ = static_cast<char>(32 + rand(26+26+10+6));
                 }
                 db.commit(n);
-                write(db, "\r\n");
+                ostream(db) << "\r\n";
             }
-            write(db, "0\r\n\r\n");
+            ostream(db) << "0\r\n\r\n";
         }
     }
 
@@ -535,7 +538,8 @@ public:
     void
     request(DynamicBuffer& db)
     {
-        write(db, method(), " ", uri(), " HTTP/1.1\r\n");
+        ostream(db) <<
+            method() << " " << target() << " HTTP/1.1\r\n";
         fields(db);
         body(db);
     }
@@ -544,14 +548,15 @@ public:
     void
     response(DynamicBuffer& db)
     {
-        write(db, "HTTP/1.");
-        write(db, rand(2) ? "0" : "1");
-        write(db, " ", 100 + rand(401), " ");
-        write(db, token());
-        write(db, "\r\n");
+        ostream(db) <<
+            "HTTP/1." <<
+            (rand(2) ? "0" : "1") << " " <<
+            (100 + rand(401)) << " " <<
+            token() <<
+            "\r\n";
         fields(db);
         body(db);
-        write(db, "\r\n");
+        ostream(db) << "\r\n";
     }
 };
 

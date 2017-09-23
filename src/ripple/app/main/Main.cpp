@@ -49,6 +49,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <utility>
+#include <stdexcept>
 
 
 #if defined(BEAST_LINUX) || defined(BEAST_MAC) || defined(BEAST_BSD)
@@ -79,7 +80,7 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 
     if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
     {
-        // If the limit is infnite, then we are good.
+        // If the limit is infinite, then we are good.
         if (rl.rlim_cur == RLIM_INFINITY)
             available = needed;
         else
@@ -379,12 +380,11 @@ int run (int argc, char** argv)
                 vm["rpc_port"].as<std::uint16_t>());
 
             if (*config->rpc_port == 0)
-                Throw<std::domain_error> ("");
+                throw std::domain_error("0");
         }
-        catch(std::exception const&)
+        catch(std::exception const& e)
         {
-            std::cerr << "Invalid rpc_port = " <<
-                vm["rpc_port"].as<std::string>() << std::endl;
+            std::cerr << "Invalid rpc_port = " << e.what() << "\n";
             return -1;
         }
     }
@@ -394,11 +394,15 @@ int run (int argc, char** argv)
         try
         {
             config->VALIDATION_QUORUM = vm["quorum"].as <std::size_t> ();
+            if (config->VALIDATION_QUORUM == std::size_t{})
+            {
+                throw std::domain_error("0");
+            }
         }
-        catch(std::exception const&)
+        catch(std::exception const& e)
         {
-            std::cerr << "Invalid quorum = " <<
-                vm["quorum"].as <std::string> () << std::endl;
+            std::cerr << "Invalid value specified for --quorum ("
+                      << e.what() << ")\n";
             return -1;
         }
     }

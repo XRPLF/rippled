@@ -22,7 +22,7 @@
 
 #include <ripple/ledger/ReadView.h>
 #include <ripple/shamap/SHAMap.h>
-#include <ripple/app/misc/Validations.h>
+#include <ripple/protocol/STValidation.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/protocol/SystemParameters.h>
 
@@ -72,7 +72,7 @@ public:
     virtual
     void
     doVoting (std::shared_ptr<ReadView const> const& lastClosedLedger,
-        ValidationSet const& parentValidations,
+        std::vector<STValidation::pointer> const& parentValidations,
             std::shared_ptr<SHAMap> const& initialPosition) = 0;
 };
 

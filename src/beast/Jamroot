@@ -8,6 +8,8 @@
 import os ;
 import feature ;
 import boost ;
+import modules ;
+import testing ;
 
 boost.use-project ;
 
@@ -50,40 +52,24 @@ if [ os.name ] = MACOSX
   using clang : : ;
 }
 
-variant coverage
-  :
-    debug
-  :
-    <cxxflags>"-fprofile-arcs -ftest-coverage"
+variant coverage :
+    release
+    :
+    <cxxflags>"-msse4.2 -fprofile-arcs -ftest-coverage"
     <linkflags>"-lgcov"
-  ;
+    ;
 
-variant asan
+variant ubasan
   :
     release
   :
-    <cxxflags>"-fsanitize=address -fno-omit-frame-pointer"
-    <linkflags>"-fsanitize=address"
-  ;
-
-variant msan
-  :
-    debug
-  :
-    <cxxflags>"-fsanitize=memory -fno-omit-frame-pointer -fsanitize-memory-track-origins=2 -fsanitize-memory-use-after-dtor"
-    <linkflags>"-fsanitize=memory"
-  ;
-
-variant usan
-  :
-    debug
-  :
-    <cxxflags>"-fsanitize=undefined -fno-omit-frame-pointer"
-    <linkflags>"-fsanitize=undefined"
+    <cxxflags>"-msse4.2 -funsigned-char -fno-omit-frame-pointer -fsanitize=address,undefined -fsanitize-blacklist=scripts/blacklist.supp"
+    <linkflags>"-fsanitize=address,undefined"
   ;
 
 project beast
   : requirements
+    <implicit-dependency>/boost//headers
     <include>.
     <include>./extras
     <include>./include
@@ -103,9 +89,10 @@ project beast
     <toolset>clang:<cxxflags>-std=c++11
     <toolset>clang:<cxxflags>-Wno-unused-parameter
     <toolset>clang:<cxxflags>-Wno-unused-variable # Temporary until we can figure out -isystem
+    <toolset>clang:<cxxflags>-Wrange-loop-analysis
     <toolset>msvc:<define>_SCL_SECURE_NO_WARNINGS=1
     <toolset>msvc:<define>_CRT_SECURE_NO_WARNINGS=1
-    <toolset>msvc:<cxxflags>"/wd4100 /wd4251 /bigobj"
+    <toolset>msvc:<cxxflags>"/permissive- /bigobj"
     <toolset>msvc:<variant>release:<cxxflags>"/Ob2 /Oi /Ot"
     <os>LINUX:<define>_XOPEN_SOURCE=600
     <os>LINUX:<define>_GNU_SOURCE=1
@@ -125,4 +112,4 @@ project beast
   ;
 
 build-project test ;
-build-project examples ;
+build-project example ;

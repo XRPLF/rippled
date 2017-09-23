@@ -22,16 +22,16 @@
 
 #include <ripple/server/Writer.h>
 #include <beast/http/message.hpp>
-#include <beast/http/streambuf_body.hpp>
+#include <beast/http/dynamic_body.hpp>
 #include <memory>
 
 namespace ripple {
 
 using http_request_type =
-    beast::http::request<beast::http::streambuf_body>;
+    beast::http::request<beast::http::dynamic_body>;
 
 using http_response_type =
-    beast::http::response<beast::http::streambuf_body>;
+    beast::http::response<beast::http::dynamic_body>;
 
 /** Used to indicate the result of a server connection handoff. */
 struct Handoff

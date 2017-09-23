@@ -125,6 +125,15 @@ class ValidatorList
 
     PublicKey localPubKey_;
 
+    // The minimum number of listed validators required to allow removing
+    // non-communicative validators from the trusted set. In other words, if the
+    // number of listed validators is less, then use all of them in the
+    // trusted set.
+    std::size_t const MINIMUM_RESIZEABLE_UNL {25};
+    // The maximum size of a trusted set for which greater than Byzantine fault
+    // tolerance isn't needed.
+    std::size_t const BYZANTINE_THRESHOLD {32};
+
 public:
     ValidatorList (
         ManifestCache& validatorManifests,
@@ -308,9 +317,6 @@ public:
     for_each_listed (
         std::function<void(PublicKey const&, bool)> func) const;
 
-    static std::size_t
-    calculateQuorum (std::size_t nTrustedKeys);
-
 private:
     /** Check response for trusted valid published list
 
@@ -341,6 +347,15 @@ private:
     bool
     removePublisherList (PublicKey const& publisherKey);
 
+    /** Return safe minimum quorum for listed validator set
+
+        @param nListedKeys Number of list validator keys
+
+        @param unListedLocal Whether the local node is an unlisted validator
+    */
+    static std::size_t
+    calculateMinimumQuorum (
+        std::size_t nListedKeys, bool unlistedLocal=false);
 };
 
 //------------------------------------------------------------------------------
@@ -389,25 +404,23 @@ ValidatorList::onConsensusStart (
                 std::pair<std::size_t,PublicKey>(
                     std::numeric_limits<std::size_t>::max(), localPubKey_));
         }
-        // If no validations are being received, use all validators.
-        // Otherwise, do not use validators whose validations aren't being received
-        else if (seenValidators.empty() ||
-            seenValidators.find (val->first) != seenValidators.end ())
+        // If the total number of validators is too small, or
+        // no validations are being received, use all validators.
+        // Otherwise, do not use validators whose validations aren't
+        // being received.
+        else if (keyListings_.size() < MINIMUM_RESIZEABLE_UNL ||
+                 seenValidators.empty() ||
+                 seenValidators.find (val->first) != seenValidators.end ())
         {
             rankedKeys.insert (
                 std::pair<std::size_t,PublicKey>(val->second, val->first));
         }
     }
 
-    // This quorum guarantees sufficient overlap with the trusted sets of other
-    // nodes using the same set of published lists.
-    std::size_t quorum = keyListings_.size()/2 + 1;
-
-    // Increment the quorum to prevent two unlisted validators using the same
-    // even number of listed validators from forking.
-    if (localPubKey_.size() && ! localKeyListed &&
-            rankedKeys.size () > 1 && keyListings_.size () % 2 != 0)
-        ++quorum;
+    // This minimum quorum guarantees safe overlap with the trusted sets of
+    // other nodes using the same set of published lists.
+    std::size_t quorum = calculateMinimumQuorum (keyListings_.size(),
+        localPubKey_.size() && !localKeyListed);
 
     JLOG (j_.debug()) <<
         rankedKeys.size() << "  of " << keyListings_.size() <<
@@ -415,25 +428,32 @@ ValidatorList::onConsensusStart (
 
     auto size = rankedKeys.size();
 
-    // Use all eligible keys if there is less than 10 listed validators or
-    // only one trusted list
-    if (size < 10 || publisherLists_.size() == 1)
+    // Require 80% quorum if there are lots of validators.
+    if (rankedKeys.size() > BYZANTINE_THRESHOLD)
     {
-        // Try to raise the quorum toward or above 80% of the trusted set
-        std::size_t const targetQuorum = ValidatorList::calculateQuorum (size);
-        if (targetQuorum > quorum)
-            quorum = targetQuorum;
-    }
-    else
-    {
-        // reduce the trusted set size so that the quorum represents
-        // at least 80%
-        size = quorum * 1.25;
+        // Use all eligible keys if there is only one trusted list
+        if (publisherLists_.size() == 1 ||
+                keyListings_.size() < MINIMUM_RESIZEABLE_UNL)
+        {
+            // Try to raise the quorum to at least 80% of the trusted set
+            quorum = std::max(quorum, size - size / 5);
+        }
+        else
+        {
+            // Reduce the trusted set size so that the quorum represents
+            // at least 80%
+            size = quorum * 1.25;
+        }
     }
 
-    if (minimumQuorum_ && (seenValidators.empty() ||
-            rankedKeys.size() < quorum))
+    if (minimumQuorum_ && seenValidators.size() < quorum)
+    {
         quorum = *minimumQuorum_;
+        JLOG (j_.warn())
+            << "Using unsafe quorum of "
+            << quorum_
+            << " as specified in the command line";
+    }
 
     // Do not use achievable quorum until lists from all configured
     // publishers are available

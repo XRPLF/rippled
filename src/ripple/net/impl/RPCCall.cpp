@@ -35,7 +35,7 @@
 #include <ripple/protocol/types.h>
 #include <ripple/rpc/ServerHandler.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <beast/core/detail/ci_char_traits.hpp>
+#include <beast/core/string.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/regex.hpp>
 #include <array>
@@ -423,9 +423,9 @@ private:
             // This may look reversed, but it's intentional: jss::vetoed
             // determines whether an amendment is vetoed - so "reject" means
             // that jss::vetoed is true.
-            if (beast::detail::ci_equal(action, "reject"))
+            if (beast::detail::iequals(action, "reject"))
                 jvRequest[jss::vetoed] = Json::Value (true);
-            else if (beast::detail::ci_equal(action, "accept"))
+            else if (beast::detail::iequals(action, "accept"))
                 jvRequest[jss::vetoed] = Json::Value (false);
             else
                 return rpcError (rpcINVALID_PARAMS);

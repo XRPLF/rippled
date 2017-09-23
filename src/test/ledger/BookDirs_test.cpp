@@ -28,7 +28,7 @@ struct BookDirs_test : public beast::unit_test::suite
     void test_bookdir(std::initializer_list<uint256> fs)
     {
         using namespace jtx;
-        Env env(*this, features(fs));
+        Env env(*this, with_features(fs));
         auto gw = Account("gw");
         auto USD = gw["USD"];
         env.fund(XRP(1000000), "alice", "bob", "gw");

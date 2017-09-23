@@ -24,7 +24,6 @@
 #include <ripple/beast/insight/GaugeImpl.h>
 #include <ripple/beast/insight/MeterImpl.h>
 #include <ripple/beast/insight/StatsDCollector.h>
-#include <beast/core/placeholders.hpp>
 #include <ripple/beast/core/List.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/optional.hpp>
@@ -383,8 +382,8 @@ public:
 #endif
                 m_socket.async_send (buffers, std::bind (
                     &StatsDCollectorImp::on_send, this, keepAlive,
-                        beast::asio::placeholders::error,
-                            beast::asio::placeholders::bytes_transferred));
+                        std::placeholders::_1,
+                            std::placeholders::_2));
                 buffers.clear ();
                 size = 0;
             }
@@ -400,8 +399,8 @@ public:
 #endif
             m_socket.async_send (buffers, std::bind (
                 &StatsDCollectorImp::on_send, this, keepAlive,
-                    beast::asio::placeholders::error,
-                        beast::asio::placeholders::bytes_transferred));
+                    std::placeholders::_1,
+                        std::placeholders::_2));
         }
     }
 
@@ -411,7 +410,7 @@ public:
         m_timer.expires_from_now(1s);
         m_timer.async_wait (std::bind (
             &StatsDCollectorImp::on_timer, this,
-                beast::asio::placeholders::error));
+                std::placeholders::_1));
     }
 
     void on_timer (boost::system::error_code ec)

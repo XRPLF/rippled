@@ -12,7 +12,6 @@
 #include <beast/websocket/teardown.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
-#include <memory>
 
 namespace beast {
 namespace websocket {

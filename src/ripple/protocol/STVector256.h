@@ -144,6 +144,18 @@ public:
         return mValue;
     }
 
+    std::vector<uint256>::iterator
+    insert(std::vector<uint256>::const_iterator pos, uint256 const& value)
+    {
+        return mValue.insert(pos, value);
+    }
+
+    std::vector<uint256>::iterator
+    insert(std::vector<uint256>::const_iterator pos, uint256&& value)
+    {
+        return mValue.insert(pos, std::move(value));
+    }
+
     void
     push_back (uint256 const& v)
     {

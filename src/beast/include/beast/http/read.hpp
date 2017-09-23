@@ -9,267 +9,717 @@
 #define BEAST_HTTP_READ_HPP
 
 #include <beast/config.hpp>
-#include <beast/core/async_completion.hpp>
+#include <beast/core/async_result.hpp>
 #include <beast/core/error.hpp>
+#include <beast/http/basic_parser.hpp>
 #include <beast/http/message.hpp>
 
 namespace beast {
 namespace http {
 
-/** Read a HTTP/1 header from a stream.
+/** Read part of a message from a stream using a parser.
 
-    This function is used to synchronously read a header
-    from a stream. The call blocks until one of the following
-    conditions is true:
+    This function is used to read part of a message from a stream into a
+    subclass of @ref basic_parser.
+    The call will block until one of the following conditions is true:
 
-    @li An entire header is read in.
+    @li A call to @ref basic_parser::put with a non-empty buffer sequence
+    is successful.
 
-    @li An error occurs in the stream or parser.
+    @li An error occurs.
 
-    This function is implemented in terms of one or more calls
-    to the stream's `read_some` function. The implementation may
-    read additional octets that lie past the end of the message
-    fields being parsed. This additional data is stored in the
-    stream buffer, which may be used in subsequent calls.
+    This operation is implemented in terms of one or
+    more calls to the stream's `read_some` function.
+    The implementation may read additional octets that lie past the
+    end of the message being read. This additional data is stored
+    in the dynamic buffer, which must be retained for subsequent reads.
 
-    If the message corresponding to the header being received
-    contains a message body, it is the callers responsibility
-    to cause the body to be read in before attempting to read
-    the next message.
+    If the stream returns the error `boost::asio::error::eof` indicating the
+    end of file during a read, the error returned from this function will be:
+
+    @li @ref error::end_of_stream if no octets were parsed, or
+
+    @li @ref error::partial_message if any octets were parsed but the
+    message was incomplete, otherwise:
+
+    @li A successful result. A subsequent attempt to read will
+    return @ref error::end_of_stream
 
     @param stream The stream from which the data is to be read.
-    The type must support the @b `SyncReadStream` concept.
+    The type must support the @b SyncReadStream concept.
 
-    @param dynabuf A @b `DynamicBuffer` holding additional bytes
+    @param buffer A @b DynamicBuffer holding additional bytes
     read by the implementation from the stream. This is both
     an input and an output parameter; on entry, any data in the
-    stream buffer's input sequence will be given to the parser
+    dynamic buffer's input sequence will be given to the parser
     first.
 
-    @param msg An object used to store the header. Any contents
-    will be overwritten. The type must support copy assignment
-    or move assignment.
+    @param parser The parser to use.
 
     @throws system_error Thrown on failure.
 */
-template<class SyncReadStream, class DynamicBuffer,
-    bool isRequest, class Fields>
+template<
+    class SyncReadStream,
+    class DynamicBuffer,
+    bool isRequest, class Derived>
 void
-read(SyncReadStream& stream, DynamicBuffer& dynabuf,
-    header<isRequest, Fields>& msg);
+read_some(
+    SyncReadStream& stream,
+    DynamicBuffer& buffer,
+    basic_parser<isRequest, Derived>& parser);
 
-/** Read a HTTP/1 header from a stream.
+/** Read part of a message from a stream using a parser.
 
-    This function is used to synchronously read a header
-    from a stream. The call blocks until one of the following
-    conditions is true:
+    This function is used to read part of a message from a stream into a
+    subclass of @ref basic_parser.
+    The call will block until one of the following conditions is true:
 
-    @li An entire header is read in.
+    @li A call to @ref basic_parser::put with a non-empty buffer sequence
+    is successful.
 
-    @li An error occurs in the stream or parser.
+    @li An error occurs.
 
-    This function is implemented in terms of one or more calls
-    to the stream's `read_some` function. The implementation may
-    read additional octets that lie past the end of the message
-    fields being parsed. This additional data is stored in the
-    stream buffer, which may be used in subsequent calls.
+    This operation is implemented in terms of one or
+    more calls to the stream's `read_some` function.
+    The implementation may read additional octets that lie past the
+    end of the message being read. This additional data is stored
+    in the dynamic buffer, which must be retained for subsequent reads.
 
-    If the message corresponding to the header being received
-    contains a message body, it is the callers responsibility
-    to cause the body to be read in before attempting to read
-    the next message.
+    If the stream returns the error `boost::asio::error::eof` indicating the
+    end of file during a read, the error returned from this function will be:
+
+    @li @ref error::end_of_stream if no octets were parsed, or
+
+    @li @ref error::partial_message if any octets were parsed but the
+    message was incomplete, otherwise:
+
+    @li A successful result. A subsequent attempt to read will
+    return @ref error::end_of_stream
+
+    The function returns the number of bytes processed from the dynamic
+    buffer. The caller should remove these bytes by calling `consume` on
+    the dynamic buffer, regardless of any error.
 
     @param stream The stream from which the data is to be read.
-    The type must support the @b `SyncReadStream` concept.
+    The type must support the @b SyncReadStream concept.
 
-    @param dynabuf A @b `DynamicBuffer` holding additional bytes
+    @param buffer A @b DynamicBuffer holding additional bytes
     read by the implementation from the stream. This is both
     an input and an output parameter; on entry, any data in the
-    stream buffer's input sequence will be given to the parser
+    dynamic buffer's input sequence will be given to the parser
     first.
 
-    @param msg An object used to store the header. Any contents
-    will be overwritten. The type must support copy assignment
-    or move assignment.
+    @param parser The parser to use.
 
     @param ec Set to the error, if any occurred.
 */
-template<class SyncReadStream, class DynamicBuffer,
-    bool isRequest, class Fields>
+template<
+    class SyncReadStream,
+    class DynamicBuffer,
+    bool isRequest, class Derived>
 void
-read(SyncReadStream& stream, DynamicBuffer& dynabuf,
-    header<isRequest, Fields>& msg,
-        error_code& ec);
+read_some(
+    SyncReadStream& stream,
+    DynamicBuffer& buffer,
+    basic_parser<isRequest, Derived>& parser,
+    error_code& ec);
 
-/** Read a HTTP/1 header asynchronously from a stream.
+/** Read part of a message asynchronously from a stream using a parser.
 
-    This function is used to asynchronously read a header from
-    a stream. The function call always returns immediately. The
-    asynchronous operation will continue until one of the following
-    conditions is true:
+    This function is used to asynchronously read part of a message from
+    a stream into a subclass of @ref basic_parser.
+    The function call always returns immediately. The asynchronous operation
+    will continue until one of the following conditions is true:
 
-    @li An entire header is read in.
+    @li A call to @ref basic_parser::put with a non-empty buffer sequence
+    is successful.
 
-    @li An error occurs in the stream or parser.
+    @li An error occurs.
 
-    This operation is implemented in terms of one or more calls to
-    the stream's `async_read_some` function, and is known as a
+    This operation is implemented in terms of zero or more calls to
+    the next layer's `async_read_some` function, and is known as a
     <em>composed operation</em>. The program must ensure that the
     stream performs no other operations until this operation completes.
     The implementation may read additional octets that lie past the
-    end of the message fields being parsed. This additional data is
-    stored in the stream buffer, which may be used in subsequent calls.
-
-    If the message corresponding to the header being received
-    contains a message body, it is the callers responsibility
-    to cause the body to be read in before attempting to read
-    the next message.
-
-    @param stream The stream to read the message from.
-    The type must support the @b `AsyncReadStream` concept.
-
-    @param dynabuf A @b `DynamicBuffer` holding additional bytes
-    read by the implementation from the stream. This is both
-    an input and an output parameter; on entry, any data in the
-    stream buffer's input sequence will be given to the parser
-    first.
-
-    @param msg An object used to store the header. Any contents
-    will be overwritten. The type must support copy assignment or
-    move assignment. The object must remain valid at least until
-    the completion handler is called; ownership is not transferred.
-
-    @param handler The handler to be called when the operation
-    completes. Copies will be made of the handler as required.
-    The equivalent function signature of the handler must be:
-    @code void handler(
-        error_code const& error // result of operation
-    ); @endcode
-    Regardless of whether the asynchronous operation completes
-    immediately or not, the handler will not be invoked from within
-    this function. Invocation of the handler will be performed in a
-    manner equivalent to using `boost::asio::io_service::post`.
-*/
-template<class AsyncReadStream, class DynamicBuffer,
-    bool isRequest, class Body, class Fields,
-        class ReadHandler>
-#if GENERATING_DOCS
-void_or_deduced
-#else
-typename async_completion<
-    ReadHandler, void(error_code)>::result_type
-#endif
-async_read(AsyncReadStream& stream, DynamicBuffer& dynabuf,
-    header<isRequest, Fields>& msg,
-        ReadHandler&& handler);
-
-/** Read a HTTP/1 message from a stream.
-
-    This function is used to synchronously read a message from
-    a stream. The call blocks until one of the following conditions
-    is true:
-
-    @li A complete message is read in.
-
-    @li An error occurs in the stream or parser.
-
-    This function is implemented in terms of one or more calls
-    to the stream's `read_some` function. The implementation may
-    read additional octets that lie past the end of the message
-    being parsed. This additional data is stored in the stream
-    buffer, which may be used in subsequent calls.
-
-    @param stream The stream from which the data is to be read.
-    The type must support the @b `SyncReadStream` concept.
-
-    @param dynabuf A @b `DynamicBuffer` holding additional bytes
-    read by the implementation from the stream. This is both
-    an input and an output parameter; on entry, any data in the
-    stream buffer's input sequence will be given to the parser
-    first.
-
-    @param msg An object used to store the message. Any
-    contents will be overwritten. The type must support
-    copy assignment or move assignment.
-
-    @throws system_error Thrown on failure.
-*/
-template<class SyncReadStream, class DynamicBuffer,
-    bool isRequest, class Body, class Fields>
-void
-read(SyncReadStream& stream, DynamicBuffer& dynabuf,
-    message<isRequest, Body, Fields>& msg);
-
-/** Read a HTTP/1 message from a stream.
-
-    This function is used to synchronously read a message from
-    a stream. The call blocks until one of the following conditions
-    is true:
-
-    @li A complete message is read in.
-
-    @li An error occurs in the stream or parser.
-
-    This function is implemented in terms of one or more calls
-    to the stream's `read_some` function. The implementation may
-    read additional octets that lie past the end of the message
-    being parsed. This additional data is stored in the stream
-    buffer, which may be used in subsequent calls.
-
-    @param stream The stream from which the data is to be read.
-    The type must support the @b `SyncReadStream` concept.
-
-    @param dynabuf A @b `DynamicBuffer` holding additional bytes
-    read by the implementation from the stream. This is both
-    an input and an output parameter; on entry, any data in the
-    stream buffer's input sequence will be given to the parser
-    first.
-
-    @param msg An object used to store the message. Any
-    contents will be overwritten. The type must support
-    copy assignment or move assignment.
-
-    @param ec Set to the error, if any occurred.
-*/
-template<class SyncReadStream, class DynamicBuffer,
-    bool isRequest, class Body, class Fields>
-void
-read(SyncReadStream& stream, DynamicBuffer& dynabuf,
-    message<isRequest, Body, Fields>& msg,
-        error_code& ec);
-
-/** Read a HTTP/1 message asynchronously from a stream.
-
-    This function is used to asynchronously read a message from
-    a stream. The function call always returns immediately. The
-    asynchronous operation will continue until one of the following
-    conditions is true:
-
-    @li A complete message is read in.
-
-    @li An error occurs in the stream or parser.
-
-    This operation is implemented in terms of one or more calls to
-    the stream's `async_read_some` function, and is known as a
-    <em>composed operation</em>. The program must ensure that the
-    stream performs no other operations until this operation completes.
-    The implementation may read additional octets that lie past the
-    end of the message being parsed. This additional data is stored
+    end of the object being parsed. This additional data is stored
     in the stream buffer, which may be used in subsequent calls.
 
-    @param stream The stream to read the message from.
-    The type must support the @b `AsyncReadStream` concept.
+    If the stream returns the error `boost::asio::error::eof` indicating the
+    end of file during a read, the error returned from this function will be:
 
-    @param dynabuf A @b `DynamicBuffer` holding additional bytes
+    @li @ref error::end_of_stream if no octets were parsed, or
+
+    @li @ref error::partial_message if any octets were parsed but the
+    message was incomplete, otherwise:
+
+    @li A successful result. A subsequent attempt to read will
+    return @ref error::end_of_stream
+
+    @param stream The stream from which the data is to be read.
+    The type must support the @b AsyncReadStream concept.
+
+    @param buffer A @b DynamicBuffer holding additional bytes
     read by the implementation from the stream. This is both
     an input and an output parameter; on entry, any data in the
-    stream buffer's input sequence will be given to the parser
+    dynamic buffer's input sequence will be given to the parser
     first.
 
-    @param msg An object used to store the header. Any contents
-    will be overwritten. The type must support copy assignment or
-    move assignment. The object must remain valid at least until
-    the completion handler is called; ownership is not transferred.
+    @param parser The parser to use.
+    The object must remain valid at least until the
+    handler is called; ownership is not transferred.
+
+    @param handler The handler to be called when the request
+    completes. Copies will be made of the handler as required.
+    The equivalent function signature of the handler must be:
+    @code void handler(
+        error_code const& error     // result of operation
+    ); @endcode
+    Regardless of whether the asynchronous operation completes
+    immediately or not, the handler will not be invoked from within
+    this function. Invocation of the handler will be performed in a
+    manner equivalent to using `boost::asio::io_service::post`.
+
+    The completion handler will receive as a parameter the number
+    of octets processed from the dynamic buffer. The octets should
+    be removed by calling `consume` on the dynamic buffer after
+    the read completes, regardless of any error.
+*/
+template<
+    class AsyncReadStream,
+    class DynamicBuffer,
+    bool isRequest, class Derived,
+    class ReadHandler>
+#if BEAST_DOXYGEN
+    void_or_deduced
+#else
+async_return_type<
+    ReadHandler, void(error_code)>
+#endif
+async_read_some(
+    AsyncReadStream& stream,
+    DynamicBuffer& buffer,
+    basic_parser<isRequest, Derived>& parser,
+    ReadHandler&& handler);
+
+//------------------------------------------------------------------------------
+
+/** Read a header from a stream using a parser.
+
+    This function is used to read a header from a stream into a subclass
+    of @ref basic_parser.
+    The call will block until one of the following conditions is true:
+
+    @li @ref basic_parser::is_header_done returns `true`
+
+    @li An error occurs.
+
+    This operation is implemented in terms of one or
+    more calls to the stream's `read_some` function.
+    The implementation may read additional octets that lie past the
+    end of the message being read. This additional data is stored
+    in the dynamic buffer, which must be retained for subsequent reads.
+
+    If the stream returns the error `boost::asio::error::eof` indicating the
+    end of file during a read, the error returned from this function will be:
+
+    @li @ref error::end_of_stream if no octets were parsed, or
+
+    @li @ref error::partial_message if any octets were parsed but the
+    message was incomplete, otherwise:
+
+    @li A successful result. A subsequent attempt to read will
+    return @ref error::end_of_stream
+
+    @param stream The stream from which the data is to be read.
+    The type must support the @b SyncReadStream concept.
+
+    @param buffer A @b DynamicBuffer holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    dynamic buffer's input sequence will be given to the parser
+    first.
+
+    @param parser The parser to use.
+
+    @throws system_error Thrown on failure.
+
+    @note The implementation will call @ref basic_parser::eager
+    with the value `false` on the parser passed in.
+*/
+template<
+    class SyncReadStream,
+    class DynamicBuffer,
+    bool isRequest, class Derived>
+void
+read_header(
+    SyncReadStream& stream,
+    DynamicBuffer& buffer,
+    basic_parser<isRequest, Derived>& parser);
+
+/** Read a header from a stream using a parser.
+
+    This function is used to read a header from a stream into a subclass
+    of @ref basic_parser.
+    The call will block until one of the following conditions is true:
+
+    @li @ref basic_parser::is_header_done returns `true`
+
+    @li An error occurs.
+
+    This operation is implemented in terms of one or
+    more calls to the stream's `read_some` function.
+    The implementation may read additional octets that lie past the
+    end of the message being read. This additional data is stored
+    in the dynamic buffer, which must be retained for subsequent reads.
+
+    If the stream returns the error `boost::asio::error::eof` indicating the
+    end of file during a read, the error returned from this function will be:
+
+    @li @ref error::end_of_stream if no octets were parsed, or
+
+    @li @ref error::partial_message if any octets were parsed but the
+    message was incomplete, otherwise:
+
+    @li A successful result. A subsequent attempt to read will
+    return @ref error::end_of_stream
+
+    @param stream The stream from which the data is to be read.
+    The type must support the @b SyncReadStream concept.
+
+    @param buffer A @b DynamicBuffer holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    dynamic buffer's input sequence will be given to the parser
+    first.
+
+    @param parser The parser to use.
+
+    @param ec Set to the error, if any occurred.
+
+    @note The implementation will call @ref basic_parser::eager
+    with the value `false` on the parser passed in.
+*/
+template<
+    class SyncReadStream,
+    class DynamicBuffer,
+    bool isRequest, class Derived>
+void
+read_header(
+    SyncReadStream& stream,
+    DynamicBuffer& buffer,
+    basic_parser<isRequest, Derived>& parser,
+    error_code& ec);
+
+/** Read a header from a stream asynchronously using a parser.
+
+    This function is used to asynchronously read a header from a stream
+    into a subclass of @ref basic_parser.
+    The function call always returns immediately. The asynchronous operation
+    will continue until one of the following conditions is true:
+
+    @li @ref basic_parser::is_header_done returns `true`
+
+    @li An error occurs.
+
+    This operation is implemented in terms of one or more calls to
+    the stream's `async_read_some` function, and is known as a
+    <em>composed operation</em>. The program must ensure that the
+    stream performs no other operations until this operation completes.
+    The implementation may read additional octets that lie past the
+    end of the message being read. This additional data is stored
+    in the dynamic buffer, which must be retained for subsequent reads.
+
+    If the stream returns the error `boost::asio::error::eof` indicating the
+    end of file during a read, the error returned from this function will be:
+
+    @li @ref error::end_of_stream if no octets were parsed, or
+
+    @li @ref error::partial_message if any octets were parsed but the
+    message was incomplete, otherwise:
+
+    @li A successful result. A subsequent attempt to read will
+    return @ref error::end_of_stream
+
+    @param stream The stream from which the data is to be read.
+    The type must support the @b AsyncReadStream concept.
+
+    @param buffer A @b DynamicBuffer holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    dynamic buffer's input sequence will be given to the parser
+    first.
+
+    @param parser The parser to use.
+    The object must remain valid at least until the
+    handler is called; ownership is not transferred.
+
+    @param handler The handler to be called when the request
+    completes. Copies will be made of the handler as required.
+    The equivalent function signature of the handler must be:
+    @code void handler(
+        error_code const& error // result of operation
+    ); @endcode
+    Regardless of whether the asynchronous operation completes
+    immediately or not, the handler will not be invoked from within
+    this function. Invocation of the handler will be performed in a
+    manner equivalent to using `boost::asio::io_service::post`.
+
+    @note The implementation will call @ref basic_parser::eager
+    with the value `false` on the parser passed in.
+*/
+template<
+    class AsyncReadStream,
+    class DynamicBuffer,
+    bool isRequest, class Derived,
+    class ReadHandler>
+#if BEAST_DOXYGEN
+    void_or_deduced
+#else
+async_return_type<
+    ReadHandler, void(error_code)>
+#endif
+async_read_header(
+    AsyncReadStream& stream,
+    DynamicBuffer& buffer,
+    basic_parser<isRequest, Derived>& parser,
+    ReadHandler&& handler);
+
+//------------------------------------------------------------------------------
+
+/** Read a complete message from a stream using a parser.
+
+    This function is used to read a complete message from a stream into a
+    subclass of @ref basic_parser.
+    The call will block until one of the following conditions is true:
+
+    @li @ref basic_parser::is_done returns `true`
+
+    @li An error occurs.
+
+    This operation is implemented in terms of one or
+    more calls to the stream's `read_some` function.
+    The implementation may read additional octets that lie past the
+    end of the message being read. This additional data is stored
+    in the dynamic buffer, which must be retained for subsequent reads.
+
+    If the stream returns the error `boost::asio::error::eof` indicating the
+    end of file during a read, the error returned from this function will be:
+
+    @li @ref error::end_of_stream if no octets were parsed, or
+
+    @li @ref error::partial_message if any octets were parsed but the
+    message was incomplete, otherwise:
+
+    @li A successful result. A subsequent attempt to read will
+    return @ref error::end_of_stream
+
+    @param stream The stream from which the data is to be read.
+    The type must support the @b SyncReadStream concept.
+
+    @param buffer A @b DynamicBuffer holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    dynamic buffer's input sequence will be given to the parser
+    first.
+
+    @param parser The parser to use.
+
+    @throws system_error Thrown on failure.
+
+    @note The implementation will call @ref basic_parser::eager
+    with the value `true` on the parser passed in.
+*/
+template<
+    class SyncReadStream,
+    class DynamicBuffer,
+    bool isRequest, class Derived>
+void
+read(
+    SyncReadStream& stream,
+    DynamicBuffer& buffer,
+    basic_parser<isRequest, Derived>& parser);
+
+/** Read a complete message from a stream using a parser.
+
+    This function is used to read a complete message from a stream into a
+    subclass of @ref basic_parser.
+    The call will block until one of the following conditions is true:
+
+    @li @ref basic_parser::is_done returns `true`
+
+    @li An error occurs.
+
+    This operation is implemented in terms of one or
+    more calls to the stream's `read_some` function.
+    The implementation may read additional octets that lie past the
+    end of the message being read. This additional data is stored
+    in the dynamic buffer, which must be retained for subsequent reads.
+
+    If the stream returns the error `boost::asio::error::eof` indicating the
+    end of file during a read, the error returned from this function will be:
+
+    @li @ref error::end_of_stream if no octets were parsed, or
+
+    @li @ref error::partial_message if any octets were parsed but the
+    message was incomplete, otherwise:
+
+    @li A successful result. A subsequent attempt to read will
+    return @ref error::end_of_stream
+
+    @param stream The stream from which the data is to be read.
+    The type must support the @b SyncReadStream concept.
+
+    @param buffer A @b DynamicBuffer holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    dynamic buffer's input sequence will be given to the parser
+    first.
+
+    @param parser The parser to use.
+
+    @param ec Set to the error, if any occurred.
+
+    @note The implementation will call @ref basic_parser::eager
+    with the value `true` on the parser passed in.
+*/
+template<
+    class SyncReadStream,
+    class DynamicBuffer,
+    bool isRequest, class Derived>
+void
+read(
+    SyncReadStream& stream,
+    DynamicBuffer& buffer,
+    basic_parser<isRequest, Derived>& parser,
+    error_code& ec);
+
+/** Read a complete message from a stream asynchronously using a parser.
+
+    This function is used to asynchronously read a complete message from a
+    stream into a subclass of @ref basic_parser.
+    The function call always returns immediately. The asynchronous operation
+    will continue until one of the following conditions is true:
+
+    @li @ref basic_parser::is_done returns `true`
+
+    @li An error occurs.
+
+    This operation is implemented in terms of one or more calls to
+    the stream's `async_read_some` function, and is known as a
+    <em>composed operation</em>. The program must ensure that the
+    stream performs no other operations until this operation completes.
+    The implementation may read additional octets that lie past the
+    end of the message being read. This additional data is stored
+    in the dynamic buffer, which must be retained for subsequent reads.
+
+    If the stream returns the error `boost::asio::error::eof` indicating the
+    end of file during a read, the error returned from this function will be:
+
+    @li @ref error::end_of_stream if no octets were parsed, or
+
+    @li @ref error::partial_message if any octets were parsed but the
+    message was incomplete, otherwise:
+
+    @li A successful result. A subsequent attempt to read will
+    return @ref error::end_of_stream
+
+    @param stream The stream from which the data is to be read.
+    The type must support the @b AsyncReadStream concept.
+
+    @param buffer A @b DynamicBuffer holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    dynamic buffer's input sequence will be given to the parser
+    first.
+
+    @param parser The parser to use.
+    The object must remain valid at least until the
+    handler is called; ownership is not transferred.
+
+    @param handler The handler to be called when the request
+    completes. Copies will be made of the handler as required.
+    The equivalent function signature of the handler must be:
+    @code void handler(
+        error_code const& error // result of operation
+    ); @endcode
+    Regardless of whether the asynchronous operation completes
+    immediately or not, the handler will not be invoked from within
+    this function. Invocation of the handler will be performed in a
+    manner equivalent to using `boost::asio::io_service::post`.
+
+    @note The implementation will call @ref basic_parser::eager
+    with the value `true` on the parser passed in.
+*/
+template<
+    class AsyncReadStream,
+    class DynamicBuffer,
+    bool isRequest, class Derived,
+    class ReadHandler>
+#if BEAST_DOXYGEN
+    void_or_deduced
+#else
+async_return_type<
+    ReadHandler, void(error_code)>
+#endif
+async_read(
+    AsyncReadStream& stream,
+    DynamicBuffer& buffer,
+    basic_parser<isRequest, Derived>& parser,
+    ReadHandler&& handler);
+
+//------------------------------------------------------------------------------
+
+/** Read a complete message from a stream.
+
+    This function is used to read a complete message from a stream using HTTP/1.
+    The call will block until one of the following conditions is true:
+
+    @li The entire message is read.
+
+    @li An error occurs.
+
+    This operation is implemented in terms of one or
+    more calls to the stream's `read_some` function.
+    The implementation may read additional octets that lie past the
+    end of the message being read. This additional data is stored
+    in the dynamic buffer, which must be retained for subsequent reads.
+
+    If the stream returns the error `boost::asio::error::eof` indicating the
+    end of file during a read, the error returned from this function will be:
+
+    @li @ref error::end_of_stream if no octets were parsed, or
+
+    @li @ref error::partial_message if any octets were parsed but the
+    message was incomplete, otherwise:
+
+    @li A successful result. A subsequent attempt to read will
+    return @ref error::end_of_stream
+
+    @param stream The stream from which the data is to be read.
+    The type must support the @b SyncReadStream concept.
+
+    @param buffer A @b DynamicBuffer holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    dynamic buffer's input sequence will be given to the parser
+    first.
+
+    @param msg An object in which to store the message contents.
+    This object should not have previous contents, otherwise
+    the behavior is undefined.
+    The type must be @b MoveAssignable and @b MoveConstructible.
+
+    @throws system_error Thrown on failure.
+*/
+template<
+    class SyncReadStream,
+    class DynamicBuffer,
+    bool isRequest, class Body, class Allocator>
+void
+read(
+    SyncReadStream& stream,
+    DynamicBuffer& buffer,
+    message<isRequest, Body, basic_fields<Allocator>>& msg);
+
+/** Read a complete message from a stream.
+
+    This function is used to read a complete message from a stream using HTTP/1.
+    The call will block until one of the following conditions is true:
+
+    @li The entire message is read.
+
+    @li An error occurs.
+
+    This operation is implemented in terms of one or
+    more calls to the stream's `read_some` function.
+    The implementation may read additional octets that lie past the
+    end of the message being read. This additional data is stored
+    in the dynamic buffer, which must be retained for subsequent reads.
+
+    If the stream returns the error `boost::asio::error::eof` indicating the
+    end of file during a read, the error returned from this function will be:
+
+    @li @ref error::end_of_stream if no octets were parsed, or
+
+    @li @ref error::partial_message if any octets were parsed but the
+    message was incomplete, otherwise:
+
+    @li A successful result. A subsequent attempt to read will
+    return @ref error::end_of_stream
+
+    @param stream The stream from which the data is to be read.
+    The type must support the @b SyncReadStream concept.
+
+    @param buffer A @b DynamicBuffer holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    dynamic buffer's input sequence will be given to the parser
+    first.
+
+    @param msg An object in which to store the message contents.
+    This object should not have previous contents, otherwise
+    the behavior is undefined.
+    The type must be @b MoveAssignable and @b MoveConstructible.
+
+    @param ec Set to the error, if any occurred.
+*/
+template<
+    class SyncReadStream,
+    class DynamicBuffer,
+    bool isRequest, class Body, class Allocator>
+void
+read(
+    SyncReadStream& stream,
+    DynamicBuffer& buffer,
+    message<isRequest, Body, basic_fields<Allocator>>& msg,
+    error_code& ec);
+
+/** Read a complete message from a stream asynchronously.
+
+    This function is used to asynchronously read a complete message from a
+    stream using HTTP/1.
+    The function call always returns immediately. The asynchronous operation
+    will continue until one of the following conditions is true:
+
+    @li The entire message is read.
+
+    @li An error occurs.
+
+    This operation is implemented in terms of one or more calls to
+    the stream's `async_read_some` function, and is known as a
+    <em>composed operation</em>. The program must ensure that the
+    stream performs no other operations until this operation completes.
+    The implementation may read additional octets that lie past the
+    end of the message being read. This additional data is stored
+    in the dynamic buffer, which must be retained for subsequent reads.
+
+    If the stream returns the error `boost::asio::error::eof` indicating the
+    end of file during a read, the error returned from this function will be:
+
+    @li @ref error::end_of_stream if no octets were parsed, or
+
+    @li @ref error::partial_message if any octets were parsed but the
+    message was incomplete, otherwise:
+
+    @li A successful result. A subsequent attempt to read will
+    return @ref error::end_of_stream
+
+    @param stream The stream from which the data is to be read.
+    The type must support the @b AsyncReadStream concept.
+
+    @param buffer A @b DynamicBuffer holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    dynamic buffer's input sequence will be given to the parser
+    first.
+
+    @param msg An object in which to store the message contents.
+    This object should not have previous contents, otherwise
+    the behavior is undefined.
+    The type must be @b MoveAssignable and @b MoveConstructible.
+
+    The object must remain valid at least until the
+    handler is called; ownership is not transferred.
 
     @param handler The handler to be called when the operation
     completes. Copies will be made of the handler as required.
@@ -282,18 +732,22 @@ read(SyncReadStream& stream, DynamicBuffer& dynabuf,
     this function. Invocation of the handler will be performed in a
     manner equivalent to using `boost::asio::io_service::post`.
 */
-template<class AsyncReadStream, class DynamicBuffer,
-    bool isRequest, class Body, class Fields,
-        class ReadHandler>
-#if GENERATING_DOCS
-void_or_deduced
+template<
+    class AsyncReadStream,
+    class DynamicBuffer,
+    bool isRequest, class Body, class Allocator,
+    class ReadHandler>
+#if BEAST_DOXYGEN
+    void_or_deduced
 #else
-typename async_completion<
-    ReadHandler, void(error_code)>::result_type
+async_return_type<
+    ReadHandler, void(error_code)>
 #endif
-async_read(AsyncReadStream& stream, DynamicBuffer& dynabuf,
-    message<isRequest, Body, Fields>& msg,
-        ReadHandler&& handler);
+async_read(
+    AsyncReadStream& stream,
+    DynamicBuffer& buffer,
+    message<isRequest, Body, basic_fields<Allocator>>& msg,
+    ReadHandler&& handler);
 
 } // http
 } // beast

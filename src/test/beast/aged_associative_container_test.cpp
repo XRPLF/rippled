@@ -142,6 +142,13 @@ public:
             return true;
         }
 
+        template <class U>
+        bool operator!= (AllocT <U> const& o) const
+        {
+            return !(*this == o);
+        }
+
+
         T* allocate (std::size_t n, T const* = 0)
         {
             return static_cast <T*> (

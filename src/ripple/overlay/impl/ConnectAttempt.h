@@ -22,26 +22,7 @@
 
 #include "ripple.pb.h"
 #include <ripple/overlay/impl/OverlayImpl.h>
-#include <ripple/overlay/impl/ProtocolMessage.h>
-#include <ripple/overlay/impl/TMHello.h>
 #include <ripple/overlay/impl/Tuning.h>
-#include <ripple/overlay/Message.h>
-#include <ripple/protocol/BuildInfo.h>
-#include <ripple/protocol/UintTypes.h>
-#include <ripple/beast/asio/ssl_bundle.h>
-#include <ripple/beast/net/IPAddressConversion.h>
-#include <ripple/beast/utility/WrappedSink.h>
-#include <beast/core/placeholders.hpp>
-#include <beast/core/streambuf.hpp>
-#include <beast/http/message.hpp>
-#include <beast/http/empty_body.hpp>
-#include <beast/http/parser_v1.hpp>
-#include <boost/asio/basic_waitable_timer.hpp>
-#include <boost/asio/buffers_iterator.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <chrono>
-#include <functional>
-#include <memory>
 
 namespace ripple {
 
@@ -59,7 +40,7 @@ private:
         beast::http::request<beast::http::empty_body>;
 
     using response_type =
-        beast::http::response<beast::http::streambuf_body>;
+        beast::http::response<beast::http::dynamic_body>;
 
     Application& app_;
     std::uint32_t const id_;
@@ -72,7 +53,7 @@ private:
     std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
     beast::asio::ssl_bundle::socket_type& socket_;
     beast::asio::ssl_bundle::stream_type& stream_;
-    beast::streambuf read_buf_;
+    beast::multi_buffer read_buf_;
     response_type response_;
     PeerFinder::Slot::ptr slot_;
     request_type req_;

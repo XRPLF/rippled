@@ -8,6 +8,7 @@
 // Test that header file is self-contained.
 #include <beast/core/bind_handler.hpp>
 
+#include <beast/core/detail/type_traits.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <functional>
 
@@ -16,6 +17,21 @@ namespace beast {
 class bind_handler_test : public unit_test::suite
 {
 public:
+    struct handler
+    {
+        void
+        operator()() const;
+    };
+
+#if 0
+    // This function should fail to compile
+    void
+    failStdBind()
+    {
+        std::bind(bind_handler(handler{}));
+    }
+#endif
+
     void
     callback(int v)
     {

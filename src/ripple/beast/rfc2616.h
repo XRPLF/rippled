@@ -20,6 +20,8 @@
 #ifndef BEAST_RFC2616_HPP
 #define BEAST_RFC2616_HPP
 
+#include <beast/http/message.hpp>
+#include <beast/http/rfc7230.hpp>
 #include <boost/range/algorithm/equal.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/utility/string_ref.hpp>
@@ -277,7 +279,7 @@ split_commas(FwdIt first, FwdIt last)
 
 template <class Result = std::vector<std::string>>
 Result
-split_commas(boost::string_ref const& s)
+split_commas(beast::string_view const& s)
 {
     return split_commas(s.begin(), s.end());
 }
@@ -462,6 +464,17 @@ token_in_list(boost::string_ref const& value,
         if(ci_equal(item, token))
             return true;
     return false;
+}
+
+template<bool isRequest, class Body, class Fields>
+bool
+is_keep_alive(beast::http::message<isRequest, Body, Fields> const& m)
+{
+    if(m.version <= 10)
+        return beast::http::token_list{
+            m[beast::http::field::connection]}.exists("keep-alive");
+    return ! beast::http::token_list{
+        m[beast::http::field::connection]}.exists("close");
 }
 
 } // rfc2616

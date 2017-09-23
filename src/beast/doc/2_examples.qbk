@@ -1,0 +1,192 @@
+[/
+    Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
+
+    Distributed under the Boost Software License, Version 1.0. (See accompanying
+    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+]
+
+[section:quickstart Quick Start]
+[block'''<?dbhtml stop-chunking?>''']
+
+These complete programs are intended to quickly impress upon readers
+the flavor of the library. Source code and build scripts for them are
+located in the example/ directory.
+
+[section HTTP Client]
+
+Use HTTP to make a GET request to a website and print the response:
+
+File: [repo_file example/http-client/http_client.cpp]
+
+[example_http_client]
+
+[endsect]
+
+[section WebSocket Client]
+
+Establish a WebSocket connection, send a message and receive the reply:
+
+File: [repo_file example/websocket-client/websocket_client.cpp]
+
+[example_websocket_client]
+
+[endsect]
+
+[endsect]
+
+
+
+[section:examples Examples]
+[block'''<?dbhtml stop-chunking?>''']
+
+Source code and build scripts for these programs are located
+in the example/ directory.
+
+
+
+[section HTTP Crawl]
+
+This example retrieves the page at each of the most popular domains
+as measured by Alexa.
+
+* [repo_file example/http-crawl/http_crawl.cpp]
+
+[endsect]
+
+
+
+[section HTTP Client (with SSL)]
+
+This example demonstrates sending and receiving HTTP messages
+over a TLS connection. Requires OpenSSL to build.
+
+* [repo_file example/http-client-ssl/http_client_ssl.cpp]
+
+[endsect]
+
+
+
+[section HTTP Server (Fast)]
+
+This example implements a very simple HTTP server with
+some optimizations suitable for calculating benchmarks.
+
+* [repo_file example/http-server-fast/fields_alloc.hpp]
+* [repo_file example/http-server-fast/http_server_fast.cpp]
+
+[endsect]
+
+
+
+[section HTTP Server (Small)]
+
+This example implements a very simple HTTP server
+suitable as a starting point on an embedded device.
+
+* [repo_file example/http-server-small/http_server_small.cpp]
+
+[endsect]
+
+
+
+[section HTTP Server (Threaded)]
+
+This example implements a very simple HTTP server using
+synchronous interfaces and using one thread per connection:
+
+* [repo_file example/http-server-threaded/http_server_threaded.cpp]
+
+[endsect]
+
+
+
+[section WebSocket Client (with SSL)]
+
+Establish a WebSocket connection over an encrypted TLS connection,
+send a message and receive the reply. Requires OpenSSL to build.
+
+* [repo_file example/websocket-client-ssl/websocket_client_ssl.cpp]
+
+[endsect]
+
+
+
+[section WebSocket Server (Asynchronous)]
+
+This program implements a WebSocket echo server using asynchronous
+interfaces and a configurable number of threads.
+
+* [repo_file example/websocket-server-async/websocket_server_async.cpp]
+
+[endsect]
+
+
+
+[section Documentation Samples]
+
+Here are all of the example functions and classes presented
+throughout the documentation, they can be included and used
+in your program without modification
+
+* [repo_file example/doc/http_examples.hpp]
+
+[endsect]
+
+
+
+[section Composed Operations]
+
+This program shows how to use Beast's network foundations to build a
+composable asynchronous initiation function with associated composed
+operation implementation. This is a complete, runnable version of
+the example described in the Core Foundations document section.
+
+* [repo_file example/echo-op/echo_op.cpp]
+
+[endsect]
+
+
+
+[section Common Code]
+
+This code is reused between some of the examples. The header files
+stand alone can be directly included in your projects.
+
+* [repo_file example/common/detect_ssl.hpp]
+* [repo_file example/common/helpers.hpp]
+* [repo_file example/common/mime_types.hpp]
+* [repo_file example/common/rfc7231.hpp]
+* [repo_file example/common/ssl_stream.hpp]
+* [repo_file example/common/write_msg.hpp]
+
+[endsect]
+
+
+
+[section Server Framework]
+
+This is a complete program and framework of classes implementing
+a general purpose server that users may copy to use as the basis
+for writing their own servers. It serves both HTTP and WebSocket.
+
+* [repo_file example/server-framework/file_service.hpp]
+* [repo_file example/server-framework/framework.hpp]
+* [repo_file example/server-framework/http_async_port.hpp]
+* [repo_file example/server-framework/http_base.hpp]
+* [repo_file example/server-framework/http_sync_port.hpp]
+* [repo_file example/server-framework/https_ports.hpp]
+* [repo_file example/server-framework/main.cpp]
+* [repo_file example/server-framework/multi_port.hpp]
+* [repo_file example/server-framework/server.hpp]
+* [repo_file example/server-framework/service_list.hpp]
+* [repo_file example/server-framework/ssl_certificate.hpp]
+* [repo_file example/server-framework/ws_async_port.hpp]
+* [repo_file example/server-framework/ws_sync_port.hpp]
+* [repo_file example/server-framework/ws_upgrade_service.hpp]
+* [repo_file example/server-framework/wss_ports.hpp]
+
+[endsect]
+
+
+
+[endsect]

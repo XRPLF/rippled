@@ -44,7 +44,7 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
-#include <beast/core/detail/is_call_possible.hpp>
+#include <beast/core/detail/type_traits.hpp>
 #include <ripple/beast/unit_test.h>
 #include <functional>
 #include <string>
@@ -56,6 +56,13 @@
 
 
 namespace ripple {
+
+namespace detail {
+extern
+std::vector<std::string>
+supportedAmendments ();
+}
+
 namespace test {
 namespace jtx {
 
@@ -67,29 +74,136 @@ noripple (Account const& account, Args const&... args)
     return {{account, args...}};
 }
 
-/** Activate features in the Env ctor */
+/**
+ * @brief create collection of features to pass to Env ctor
+ *
+ * The resulting collection will contain *only* the features
+ * passed as arguments.
+ *
+ * @param key+args features to include in resulting collection
+ */
 template <class... Args>
-std::array<uint256, 1 + sizeof...(Args)>
-features (uint256 const& key, Args const&... args)
+FeatureBitset
+with_features (uint256 const& key, Args const&... args)
 {
-    return {{key, args...}};
+    return makeFeatureBitset(
+        std::array<uint256, 1 + sizeof...(args)>{{key, args...}});
 }
 
-/** Activate features in the Env ctor */
-inline
-auto
-features (std::initializer_list<uint256> keys)
+/**
+ * @brief create collection of features to pass to Env ctor
+ *
+ * The resulting collection will contain *only* the features
+ * passed as arguments.
+ *
+ * @param keys features to include in resulting collection
+ */
+template<class Col>
+FeatureBitset
+with_features (Col&& keys)
 {
-    return keys;
+    return makeFeatureBitset(std::forward<Col>(keys));
 }
 
-/** Activate features in the Env ctor */
+constexpr FeatureBitset no_features = {};
+
 inline
-auto
-features (std::vector<uint256> keys)
+FeatureBitset
+all_amendments()
 {
-    return keys;
+    static const FeatureBitset ids = []{
+        auto const& sa = ripple::detail::supportedAmendments();
+        std::vector<uint256> feats;
+        feats.reserve(sa.size());
+        for (auto const& s : sa)
+        {
+            if (auto const f = getRegisteredFeature(s.substr(65)))
+                feats.push_back(*f);
+            else
+                Throw<std::runtime_error> ("Unknown feature: " + s + "  in supportedAmendments.");
+        }
+        return makeFeatureBitset(feats);
+    }();
+    return ids;
 }
+
+/**
+ * @brief create collection of features to pass to Env ctor
+ *
+ * The resulting collection will contain *all supported amendments* minus
+ * the features passed as arguments.
+ *
+ * @param keys features to exclude from the resulting collection
+ */
+template<class Col>
+FeatureBitset
+all_features_except (Col const& keys)
+{
+    return all_amendments() & ~makeFeatureBitset(keys);
+}
+
+/**
+ *
+ * @brief create collection of features to pass to Env ctor
+ * The resulting collection will contain *all supported amendments* minus
+ * the features passed as arguments.
+ *
+ * @param key+args features to exclude from the resulting collection
+ */
+template <class... Args>
+FeatureBitset
+all_features_except (uint256 const& key, Args const&... args)
+{
+    return all_features_except(
+        std::array<uint256, 1 + sizeof...(args)>{{key, args...}});
+}
+
+class SuiteSink : public beast::Journal::Sink
+{
+    std::string partition_;
+    beast::unit_test::suite& suite_;
+
+public:
+    SuiteSink(std::string const& partition,
+            beast::severities::Severity threshold,
+            beast::unit_test::suite& suite)
+        : Sink (threshold, false)
+        , partition_(partition + " ")
+        , suite_ (suite)
+    {
+    }
+
+    // For unit testing, always generate logging text.
+    inline bool active(beast::severities::Severity level) const override
+    {
+        return true;
+    }
+
+    void
+    write(beast::severities::Severity level, std::string const& text) override;
+};
+
+class SuiteLogs : public Logs
+{
+    beast::unit_test::suite& suite_;
+
+public:
+    explicit
+    SuiteLogs(beast::unit_test::suite& suite)
+        : Logs (beast::severities::kError)
+        , suite_(suite)
+    {
+    }
+
+    ~SuiteLogs() override = default;
+
+    std::unique_ptr<beast::Journal::Sink>
+    makeSink(std::string const& partition,
+        beast::severities::Severity threshold) override
+    {
+        return std::make_unique<SuiteSink>(partition, threshold, suite_);
+    }
+};
 
 //------------------------------------------------------------------------------
 
@@ -114,76 +228,98 @@ private:
         std::unique_ptr<AbstractClient> client;
 
         AppBundle (beast::unit_test::suite& suite,
-            std::unique_ptr<Config> config);
+            std::unique_ptr<Config> config,
+            std::unique_ptr<Logs> logs);
         ~AppBundle();
     };
 
     AppBundle bundle_;
 
-    inline
-    void
-    construct()
-    {
-    }
-
-    template <class Arg, class... Args>
-    void
-    construct (Arg&& arg, Args&&... args)
-    {
-        construct_arg(std::forward<Arg>(arg));
-        construct(std::forward<Args>(args)...);
-    }
-
-    template<std::size_t N>
-    void
-    construct_arg (
-        std::array<uint256, N> const& list)
-    {
-        for(auto const& key : list)
-            app().config().features.insert(key);
-    }
-
-    void
-    construct_arg (
-        std::initializer_list<uint256> list)
-    {
-        for(auto const& key : list)
-            app().config().features.insert(key);
-    }
-
-    void
-    construct_arg (
-        std::vector<uint256> const& list)
-    {
-        for(auto const& key : list)
-            app().config().features.insert(key);
-    }
-
 public:
     Env() = delete;
-    Env (Env const&) = delete;
     Env& operator= (Env const&) = delete;
+    Env (Env const&) = delete;
 
+    /**
+     * @brief Create Env using suite, Config pointer, and explicit features.
+     *
+     * This constructor will create an Env with the specified configuration
+     * and takes ownership the passed Config pointer. Features will be enabled
+     * according to rules described below (see next constructor).
+     *
+     * @param suite_ the current unit_test::suite
+     * @param config The desired Config - ownership will be taken by moving
+     * the pointer. See envconfig and related functions for common config tweaks.
+     * @param args with_features() to explicitly enable or all_features_except() to
+     * enable all and disable specific features
+     */
     // VFALCO Could wrap the suite::log in a Journal here
-    template <class... Args>
     Env (beast::unit_test::suite& suite_,
-        std::unique_ptr<Config> config,
-            Args&&... args)
+            std::unique_ptr<Config> config,
+            FeatureBitset features,
+            std::unique_ptr<Logs> logs = nullptr)
         : test (suite_)
-        , bundle_ (suite_, std::move(config))
+        , bundle_ (
+            suite_,
+            std::move(config),
+            logs ? std::move(logs) : std::make_unique<SuiteLogs>(suite_))
     {
         memoize(Account::master);
         Pathfinder::initPathTable();
-        // enable the the invariant enforcement amendment by default.
-        construct(
-            features(featureEnforceInvariants),
-            std::forward<Args>(args)...);
+        foreachFeature(
+            features, [& appFeats = app().config().features](uint256 const& f) {
+                appFeats.insert(f);
+            });
     }
 
-    template <class... Args>
+    /**
+     * @brief Create Env with default config and specified
+     * features.
+     *
+     * This constructor will create an Env with the standard Env configuration
+     * (from envconfig()) and features explicitly specified. Use with_features(...)
+     * or all_features_except(...) to create a collection of features appropriate
+     * for passing here.
+     *
+     * @param suite_ the current unit_test::suite
+     * @param args collection of features
+     *
+     */
     Env (beast::unit_test::suite& suite_,
-            Args&&... args)
-        : Env(suite_, envconfig(), std::forward<Args>(args)...)
+            FeatureBitset features)
+        : Env(suite_, envconfig(), features)
+    {
+    }
+
+    /**
+     * @brief Create Env using suite and Config pointer.
+     *
+     * This constructor will create an Env with the specified configuration
+     * and takes ownership the passed Config pointer. All supported amendments
+     * are enabled by this version of the constructor.
+     *
+     * @param suite_ the current unit_test::suite
+     * @param config The desired Config - ownership will be taken by moving
+     * the pointer. See envconfig and related functions for common config tweaks.
+     */
+    Env (beast::unit_test::suite& suite_,
+        std::unique_ptr<Config> config,
+        std::unique_ptr<Logs> logs = nullptr)
+        : Env(suite_, std::move(config), all_amendments(), std::move(logs))
+    {
+    }
+
+    /**
+     * @brief Create Env with only the current test suite
+     *
+     * This constructor will create an Env with the standard
+     * test Env configuration (from envconfig()) and all supported
+     * amendments enabled.
+     *
+     * @param suite_ the current unit_test::suite
+     */
+    Env (beast::unit_test::suite& suite_)
+        : Env(suite_, envconfig())
     {
     }
 
@@ -488,6 +624,9 @@ public:
     std::shared_ptr<STTx const>
     tx() const;
 
+    void
+    enableFeature(uint256 const feature);
+
 private:
     void
     fund (bool setDefaultRipple,
@@ -642,7 +781,7 @@ protected:
         FN const&... fN)
     {
         maybe_invoke(stx, f,
-            beast::detail::is_call_possible<F,
+            beast::detail::is_invocable<F,
                 void(Env&, STTx const&)>());
         invoke(stx, fN...);
     }
@@ -676,7 +815,7 @@ protected:
         FN const&... fN)
     {
         maybe_invoke(jt, f,
-            beast::detail::is_call_possible<F,
+            beast::detail::is_invocable<F,
                 void(Env&, JTx&)>());
         invoke(jt, fN...);
     }

@@ -17,20 +17,22 @@ namespace beast {
 namespace http {
 namespace detail {
 
-class chunk_encode_delim
+/** A buffer sequence containing a chunk-encoding header
+*/
+class chunk_header
 {
     boost::asio::const_buffer cb_;
 
-    // Storage for the longest hex string we might need, plus delimiters.
-    std::array<char, 2 * sizeof(std::size_t) + 2> buf_;
+    // Storage for the longest hex string we might need
+    char buf_[2 * sizeof(std::size_t)];
 
     template<class = void>
     void
-    copy(chunk_encode_delim const& other);
+    copy(chunk_header const& other);
 
     template<class = void>
     void
-    setup(std::size_t n);
+    prepare_impl(std::size_t n);
 
     template<class OutIter>
     static
@@ -55,15 +57,27 @@ public:
 
     using const_iterator = value_type const*;
 
-    chunk_encode_delim(chunk_encode_delim const& other)
+    /** Constructor (default)
+
+        Default-constructed chunk headers are in an
+        undefined state.
+    */
+    chunk_header() = default;
+
+    /// Copy constructor
+    chunk_header(chunk_header const& other)
     {
         copy(other);
     }
 
+    /** Construct a chunk header
+
+        @param n The number of octets in this chunk.
+    */
     explicit
-    chunk_encode_delim(std::size_t n)
+    chunk_header(std::size_t n)
     {
-        setup(n);
+        prepare_impl(n);
     }
 
     const_iterator
@@ -77,31 +91,55 @@ public:
     {
         return begin() + 1;
     }
+
+    void
+    prepare(std::size_t n)
+    {
+        prepare_impl(n);
+    }
 };
 
 template<class>
 void
-chunk_encode_delim::
-copy(chunk_encode_delim const& other)
+chunk_header::
+copy(chunk_header const& other)
 {
+    using boost::asio::buffer_copy;
     auto const n =
         boost::asio::buffer_size(other.cb_);
-    buf_ = other.buf_;
-    cb_ = boost::asio::const_buffer(
-        &buf_[buf_.size() - n], n);
+    auto const mb = boost::asio::mutable_buffers_1(
+        &buf_[sizeof(buf_) - n], n);
+    cb_ = *mb.begin();
+    buffer_copy(mb,
+        boost::asio::const_buffers_1(other.cb_));
 }
 
 template<class>
 void
-chunk_encode_delim::
-setup(std::size_t n)
+chunk_header::
+prepare_impl(std::size_t n)
 {
-    buf_[buf_.size() - 2] = '\r';
-    buf_[buf_.size() - 1] = '\n';
-    auto it = to_hex(buf_.end() - 2, n);
+    auto const end = &buf_[sizeof(buf_)];
+    auto it = to_hex(end, n);
     cb_ = boost::asio::const_buffer{&*it,
         static_cast<std::size_t>(
-            std::distance(it, buf_.end()))};
+            std::distance(it, end))};
+}
+
+/// Returns a buffer sequence holding a CRLF for chunk encoding
+inline
+boost::asio::const_buffers_1
+chunk_crlf()
+{
+    return {"\r\n", 2};
+}
+
+/// Returns a buffer sequence holding a final chunk header
+inline
+boost::asio::const_buffers_1
+chunk_final()
+{
+    return {"0\r\n", 3};
 }
 
 } // detail

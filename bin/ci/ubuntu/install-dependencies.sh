@@ -8,7 +8,7 @@ TWD=$( cd ${TWD:-${1:-${PWD:-$( pwd )}}}; pwd )
 echo "Target path is: $TWD"
 # Override gcc version to $GCC_VER.
 # Put an appropriate symlink at the front of the path.
-mkdir -v $HOME/bin
+mkdir -pv $HOME/bin
 for g in gcc g++ gcov gcc-ar gcc-nm gcc-ranlib
 do
   test -x $( type -p ${g}-$GCC_VER )
@@ -66,3 +66,17 @@ tar xfvz lcov-1.12.tar.gz -C $HOME
 # Set install path
 mkdir -p $LCOV_ROOT
 cd $HOME/lcov-1.12 && make install PREFIX=$LCOV_ROOT
+
+
+if [[ ${TARGET} == debug && ! -x ${GDB_ROOT}/bin/gdb ]]; then
+    pushd $HOME
+    #install gdb
+    wget https://ftp.gnu.org/gnu/gdb/gdb-8.0.tar.xz
+    tar xf gdb-8.0.tar.xz
+    pushd gdb-8.0
+    ./configure CFLAGS='-w -O2' CXXFLAGS='-std=gnu++11 -g -O2 -w' --prefix=$GDB_ROOT
+    make -j2
+    make install
+    popd
+    popd
+fi

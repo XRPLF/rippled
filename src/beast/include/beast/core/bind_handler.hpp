@@ -9,7 +9,7 @@
 #define BEAST_BIND_HANDLER_HPP
 
 #include <beast/config.hpp>
-#include <beast/core/handler_concepts.hpp>
+#include <beast/core/type_traits.hpp>
 #include <beast/core/detail/bind_handler.hpp>
 #include <type_traits>
 #include <utility>
@@ -24,24 +24,23 @@ namespace beast {
     the returned handler, which provides the same `io_service`
     execution guarantees as the original handler.
 
-    Unlike `io_service::wrap`, the returned handler can be used in
-    a subsequent call to `io_service::post` instead of
-    `io_service::dispatch`, to ensure that the handler will not be
-    invoked immediately by the calling function.
+    Unlike `boost::asio::io_service::wrap`, the returned handler can
+    be used in a subsequent call to `boost::asio::io_service::post`
+    instead of `boost::asio::io_service::dispatch`, to ensure that
+    the handler will not be invoked immediately by the calling
+    function.
 
     Example:
 
     @code
-
     template<class AsyncReadStream, class ReadHandler>
     void
-    do_cancel(AsyncReadStream& stream, ReadHandler&& handler)
+    signal_aborted(AsyncReadStream& stream, ReadHandler&& handler)
     {
         stream.get_io_service().post(
             bind_handler(std::forward<ReadHandler>(handler),
                 boost::asio::error::operation_aborted, 0));
     }
-
     @endcode
 
     @param handler The handler to wrap.
@@ -50,7 +49,7 @@ namespace beast {
     arguments are forwarded into the returned object.
 */
 template<class Handler, class... Args>
-#if GENERATING_DOCS
+#if BEAST_DOXYGEN
 implementation_defined
 #else
 detail::bound_handler<
@@ -58,7 +57,7 @@ detail::bound_handler<
 #endif
 bind_handler(Handler&& handler, Args&&... args)
 {
-    static_assert(is_CompletionHandler<
+    static_assert(is_completion_handler<
         Handler, void(Args...)>::value,
             "Handler requirements not met");
     return detail::bound_handler<typename std::decay<

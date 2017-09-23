@@ -10,7 +10,7 @@
 
 namespace beast {
 
-#if GENERATING_DOCS
+#if BEAST_DOXYGEN
 
 /// doc type (documentation debug helper)
 using doc_type = int;

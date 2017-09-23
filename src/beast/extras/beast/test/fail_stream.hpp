@@ -8,10 +8,10 @@
 #ifndef BEAST_TEST_FAIL_STREAM_HPP
 #define BEAST_TEST_FAIL_STREAM_HPP
 
-#include <beast/core/async_completion.hpp>
+#include <beast/core/async_result.hpp>
 #include <beast/core/bind_handler.hpp>
 #include <beast/core/error.hpp>
-#include <beast/core/detail/get_lowest_layer.hpp>
+#include <beast/core/detail/type_traits.hpp>
 #include <beast/websocket/teardown.hpp>
 #include <beast/test/fail_counter.hpp>
 #include <boost/optional.hpp>
@@ -36,8 +36,7 @@ public:
         typename std::remove_reference<NextLayer>::type;
 
     using lowest_layer_type =
-        typename beast::detail::get_lowest_layer<
-            next_layer_type>::type;
+        typename get_lowest_layer<next_layer_type>::type;
 
     fail_stream(fail_stream&&) = delete;
     fail_stream(fail_stream const&) = delete;
@@ -103,20 +102,19 @@ public:
     }
 
     template<class MutableBufferSequence, class ReadHandler>
-    typename async_completion<
-        ReadHandler, void(error_code)>::result_type
+    async_return_type<
+        ReadHandler, void(error_code, std::size_t)>
     async_read_some(MutableBufferSequence const& buffers,
         ReadHandler&& handler)
     {
         error_code ec;
         if(pfc_->fail(ec))
         {
-            async_completion<
-                ReadHandler, void(error_code, std::size_t)
-                    > completion{handler};
+            async_completion<ReadHandler,
+                void(error_code, std::size_t)> init{handler};
             next_layer_.get_io_service().post(
-                bind_handler(completion.handler, ec, 0));
-            return completion.result.get();
+                bind_handler(init.completion_handler, ec, 0));
+            return init.result.get();
         }
         return next_layer_.async_read_some(buffers,
             std::forward<ReadHandler>(handler));
@@ -140,20 +138,19 @@ public:
     }
 
     template<class ConstBufferSequence, class WriteHandler>
-    typename async_completion<
-        WriteHandler, void(error_code)>::result_type
+    async_return_type<
+        WriteHandler, void(error_code, std::size_t)>
     async_write_some(ConstBufferSequence const& buffers,
         WriteHandler&& handler)
     {
         error_code ec;
         if(pfc_->fail(ec))
         {
-            async_completion<
-                WriteHandler, void(error_code, std::size_t)
-                    > completion{handler};
+            async_completion<WriteHandler,
+                void(error_code, std::size_t)> init{handler};
             next_layer_.get_io_service().post(
-                bind_handler(completion.handler, ec, 0));
-            return completion.result.get();
+                bind_handler(init.completion_handler, ec, 0));
+            return init.result.get();
         }
         return next_layer_.async_write_some(buffers,
             std::forward<WriteHandler>(handler));

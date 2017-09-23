@@ -21,6 +21,9 @@
 #define RIPPLE_CORE_JOB_H_INCLUDED
 
 #include <ripple/core/LoadMonitor.h>
+#include <functional>
+
+#include <functional>
 
 namespace ripple {
 

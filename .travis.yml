@@ -10,8 +10,12 @@ env:
     # namepart must match the folder name internal
     # to boost's .tar.gz.
     - LCOV_ROOT=$HOME/lcov
+    - GDB_ROOT=$HOME/gdb
     - BOOST_ROOT=$HOME/boost_1_60_0
     - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.60.0/boost_1_60_0.tar.gz'
+
+# Travis is timing out on Trusty.  So, for now, use Precise.  July 2017
+dist: precise
 
 addons:
   apt:
@@ -27,6 +31,8 @@ addons:
       - binutils-gold
       # Provides a backtrace if the unittests crash
       - gdb
+      # needed to build gdb
+      - texinfo
 
 matrix:
   include:
@@ -40,6 +46,9 @@ matrix:
 
     - compiler: clang
       env: GCC_VER=5 TARGET=debug CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
+      cache:
+        directories:
+          - $GDB_ROOT
 
     - compiler: clang
       env: GCC_VER=5 TARGET=debug.nounity CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
@@ -56,6 +65,7 @@ cache:
   - $BOOST_ROOT
   - llvm-$LLVM_VERSION
   - cmake
+  - $GDB_ROOT
 
 before_install:
   - bin/ci/ubuntu/install-dependencies.sh
@@ -69,3 +79,5 @@ notifications:
   irc:
     channels:
       - "chat.freenode.net#ripple-dev"
+
+dist: precise

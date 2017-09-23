@@ -22,7 +22,6 @@
 
 #include <ripple/basics/LocalValue.h>
 #include <ripple/basics/win32_workaround.h>
-#include <ripple/core/JobCounter.h>
 #include <ripple/core/JobTypes.h>
 #include <ripple/core/JobTypeData.h>
 #include <ripple/core/Stoppable.h>
@@ -97,9 +96,31 @@ public:
               When the job runs, the coroutine's stack is restored and execution
                 continues at the beginning of coroutine function or the statement
                 after the previous call to yield.
-            Undefined behavior if called consecutively without a corresponding yield.
+            Undefined behavior if called after the coroutine has completed
+              with a return (as opposed to a yield()).
+            Undefined behavior if post() or resume() called consecutively
+              without a corresponding yield.
+
+            @return true if the Coro's job is added to the JobQueue.
         */
-        void post();
+        bool post();
+
+        /** Resume coroutine execution.
+            Effects:
+               The coroutine continues execution from where it last left off
+                 using this same thread.
+            Undefined behavior if called after the coroutine has completed
+              with a return (as opposed to a yield()).
+            Undefined behavior if resume() or post() called consecutively
+              without a corresponding yield.
+        */
+        void resume();
+
+        /** Returns true if the Coro is still runnable (has not returned). */
+        bool runnable() const;
+
+        /** Once called, the Coro allows early exit without an assert. */
+        void expectEarlyExit();
 
         /** Waits until coroutine returns from the user function. */
         void join();
@@ -113,29 +134,23 @@ public:
 
     /** Adds a job to the JobQueue.
 
-        @param t The type of job.
+        @param type The type of job.
         @param name Name of the job.
-        @param func std::function with signature void (Job&).  Called when the job is executed.
-    */
-    void addJob (JobType type, std::string const& name, JobFunction const& func);
-
-    /** Adds a counted job to the JobQueue.
-
-        @param t The type of job.
-        @param name Name of the job.
-        @param counter JobCounter for counting the Job.
         @param jobHandler Lambda with signature void (Job&).  Called when the job is executed.
 
-        @return true if JobHandler added, false if JobCounter is already joined.
+        @return true if jobHandler added to queue.
     */
-    template <typename JobHandler>
-    bool addCountedJob (JobType type,
-        std::string const& name, JobCounter& counter, JobHandler&& jobHandler)
+    template <typename JobHandler,
+        typename = std::enable_if_t<std::is_same<decltype(
+            std::declval<JobHandler&&>()(std::declval<Job&>())), void>::value>>
+    bool addJob (JobType type,
+        std::string const& name, JobHandler&& jobHandler)
     {
-        if (auto optionalCountedJob = counter.wrap (std::move (jobHandler)))
+        if (auto optionalCountedJob =
+            Stoppable::jobCounter().wrap (std::forward<JobHandler>(jobHandler)))
         {
-            addJob (type, name, std::move (*optionalCountedJob));
-            return true;
+            return addRefCountedJob (
+                type, name, std::move (*optionalCountedJob));
         }
         return false;
     }
@@ -145,9 +160,11 @@ public:
         @param t The type of job.
         @param name Name of the job.
         @param f Has a signature of void(std::shared_ptr<Coro>). Called when the job executes.
+
+        @return shared_ptr to posted Coro.  nullptr if post was not successful.
     */
     template <class F>
-    void postCoro (JobType t, std::string const& name, F&& f);
+    std::shared_ptr<Coro> postCoro (JobType t, std::string const& name, F&& f);
 
     /** Jobs waiting at this priority.
     */
@@ -226,6 +243,16 @@ private:
 
     // Signals the service stopped if the stopped condition is met.
     void checkStopped (std::lock_guard <std::mutex> const& lock);
+
+    // Adds a reference counted job to the JobQueue.
+    //
+    //    param type The type of job.
+    //    param name Name of the job.
+    //    param func std::function with signature void (Job&).  Called when the job is executed.
+    //
+    //    return true if func added to queue.
+    bool addRefCountedJob (
+        JobType type, std::string const& name, JobFunction const& func);
 
     // Signals an added Job for processing.
     //
@@ -311,15 +338,15 @@ private:
     other requests while the RPC command completes its work asynchronously.
 
     postCoro() creates a Coro object. When the Coro ctor is called, and its
-    coro_ member is initialized(a boost::coroutines::pull_type), execution
+    coro_ member is initialized (a boost::coroutines::pull_type), execution
     automatically passes to the coroutine, which we don't want at this point,
     since we are still in the handler thread context. It's important to note here
     that construction of a boost pull_type automatically passes execution to the
     coroutine. A pull_type object automatically generates a push_type that is
-    used as the as a parameter(do_yield) in the signature of the function the
+    passed as a parameter (do_yield) in the signature of the function the
     pull_type was created with. This function is immediately called during coro_
     construction and within it, Coro::yield_ is assigned the push_type
-    parameter(do_yield) address and called(yield()) so we can return execution
+    parameter (do_yield) address and called (yield()) so we can return execution
     back to the caller's stack.
 
     postCoro() then calls Coro::post(), which schedules a job on the job
@@ -368,15 +395,23 @@ private:
 namespace ripple {
 
 template <class F>
-void JobQueue::postCoro (JobType t, std::string const& name, F&& f)
+std::shared_ptr<JobQueue::Coro>
+JobQueue::postCoro (JobType t, std::string const& name, F&& f)
 {
     /*  First param is a detail type to make construction private.
         Last param is the function the coroutine runs. Signature of
         void(std::shared_ptr<Coro>).
     */
-    auto const coro = std::make_shared<Coro>(
+    auto coro = std::make_shared<Coro>(
         Coro_create_t{}, *this, t, name, std::forward<F>(f));
-    coro->post();
+    if (! coro->post())
+    {
+        // The Coro was not successfully posted.  Disable it so it's destructor
+        // can run with no negative side effects.  Then destroy it.
+        coro->expectEarlyExit();
+        coro.reset();
+    }
+    return coro;
 }
 
 }

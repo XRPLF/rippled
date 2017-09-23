@@ -18,50 +18,103 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/protocol/digest.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/basics/contract.h>
+#include <ripple/protocol/digest.h>
+
 #include <cstring>
 
 namespace ripple {
 
-static
-uint256
-feature (char const* s, std::size_t n)
+//------------------------------------------------------------------------------
+
+constexpr char const* const detail::FeatureCollections::featureNames[];
+
+detail::FeatureCollections::FeatureCollections()
 {
-    sha512_half_hasher h;
-    h(s, n);
-    return static_cast<uint256>(h);
+    features.reserve(numFeatures());
+    featureToIndex.reserve(numFeatures());
+    nameToFeature.reserve(numFeatures());
+
+    for (std::size_t i = 0; i < numFeatures(); ++i)
+    {
+        auto const name = featureNames[i];
+        sha512_half_hasher h;
+        h (name, std::strlen (name));
+        auto const f = static_cast<uint256>(h);
+
+        features.push_back(f);
+        featureToIndex[f] = i;
+        nameToFeature[name] = f;
+    }
 }
 
-uint256
-feature (std::string const& name)
+boost::optional<uint256>
+detail::FeatureCollections::getRegisteredFeature(std::string const& name) const
 {
-    return feature(name.c_str(), name.size());
+    auto const i = nameToFeature.find(name);
+    if (i == nameToFeature.end())
+        return boost::none;
+    return i->second;
 }
 
-uint256
-feature (const char* name)
+size_t
+detail::FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 {
-    return feature(name, std::strlen(name));
+    auto const i = featureToIndex.find(f);
+    if (i == featureToIndex.end())
+        LogicError("Invalid Feature ID");
+    return i->second;
 }
 
-uint256 const featureMultiSign = feature("MultiSign");
-uint256 const featureTickets = feature("Tickets");
-uint256 const featureTrustSetAuth = feature("TrustSetAuth");
-uint256 const featureFeeEscalation = feature("FeeEscalation");
-uint256 const featureOwnerPaysFee = feature("OwnerPaysFee");
-uint256 const featureCompareFlowV1V2 = feature("CompareFlowV1V2");
-uint256 const featureSHAMapV2 = feature("SHAMapV2");
-uint256 const featurePayChan = feature("PayChan");
-uint256 const featureFlow = feature("Flow");
-uint256 const featureCompareTakerFlowCross = feature("CompareTakerFlowCross");
-uint256 const featureFlowCross = feature("FlowCross");
-uint256 const featureCryptoConditions = feature("CryptoConditions");
-uint256 const featureTickSize = feature("TickSize");
-uint256 const fix1368 = feature("fix1368");
-uint256 const featureEscrow = feature("Escrow");
-uint256 const featureCryptoConditionsSuite = feature("CryptoConditionsSuite");
-uint256 const fix1373 = feature("fix1373");
-uint256 const featureEnforceInvariants = feature("EnforceInvariants");
+uint256 const&
+detail::FeatureCollections::bitsetIndexToFeature(size_t i) const
+{
+    if (i >= features.size())
+        LogicError("Invalid FeatureBitset index");
+    return features[i];
+}
+
+static detail::FeatureCollections const featureCollections;
+
+//------------------------------------------------------------------------------
+
+boost::optional<uint256>
+getRegisteredFeature (std::string const& name)
+{
+    return featureCollections.getRegisteredFeature(name);
+}
+
+size_t featureToBitsetIndex(uint256 const& f)
+{
+    return featureCollections.featureToBitsetIndex(f);
+}
+
+uint256 bitsetIndexToFeature(size_t i)
+{
+    return featureCollections.bitsetIndexToFeature(i);
+}
+
+uint256 const featureMultiSign = *getRegisteredFeature("MultiSign");
+uint256 const featureTickets = *getRegisteredFeature("Tickets");
+uint256 const featureTrustSetAuth = *getRegisteredFeature("TrustSetAuth");
+uint256 const featureFeeEscalation = *getRegisteredFeature("FeeEscalation");
+uint256 const featureOwnerPaysFee = *getRegisteredFeature("OwnerPaysFee");
+uint256 const featureCompareFlowV1V2 = *getRegisteredFeature("CompareFlowV1V2");
+uint256 const featureSHAMapV2 = *getRegisteredFeature("SHAMapV2");
+uint256 const featurePayChan = *getRegisteredFeature("PayChan");
+uint256 const featureFlow = *getRegisteredFeature("Flow");
+uint256 const featureCompareTakerFlowCross = *getRegisteredFeature("CompareTakerFlowCross");
+uint256 const featureFlowCross = *getRegisteredFeature("FlowCross");
+uint256 const featureCryptoConditions = *getRegisteredFeature("CryptoConditions");
+uint256 const featureTickSize = *getRegisteredFeature("TickSize");
+uint256 const fix1368 = *getRegisteredFeature("fix1368");
+uint256 const featureEscrow = *getRegisteredFeature("Escrow");
+uint256 const featureCryptoConditionsSuite = *getRegisteredFeature("CryptoConditionsSuite");
+uint256 const fix1373 = *getRegisteredFeature("fix1373");
+uint256 const featureEnforceInvariants = *getRegisteredFeature("EnforceInvariants");
+uint256 const featureSortedDirectories = *getRegisteredFeature("SortedDirectories");
+uint256 const fix1201 = *getRegisteredFeature("fix1201");
+uint256 const fix1512 = *getRegisteredFeature("fix1512");
 
 } // ripple

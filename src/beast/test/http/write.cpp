@@ -8,15 +8,16 @@
 // Test that header file is self-contained.
 #include <beast/http/write.hpp>
 
+#include <beast/http/buffer_body.hpp>
 #include <beast/http/fields.hpp>
 #include <beast/http/message.hpp>
-#include <beast/http/empty_body.hpp>
+#include <beast/http/read.hpp>
 #include <beast/http/string_body.hpp>
-#include <beast/http/write.hpp>
 #include <beast/core/error.hpp>
-#include <beast/core/streambuf.hpp>
-#include <beast/core/to_string.hpp>
+#include <beast/core/multi_buffer.hpp>
 #include <beast/test/fail_stream.hpp>
+#include <beast/test/pipe_stream.hpp>
+#include <beast/test/string_istream.hpp>
 #include <beast/test/string_ostream.hpp>
 #include <beast/test/yield_to.hpp>
 #include <beast/unit_test/suite.hpp>
@@ -36,58 +37,177 @@ public:
     {
         using value_type = std::string;
 
-        class writer
+        class reader
         {
             value_type const& body_;
 
         public:
+            using const_buffers_type =
+                boost::asio::const_buffers_1;
+
             template<bool isRequest, class Allocator>
             explicit
-            writer(message<isRequest, unsized_body, Allocator> const& msg) noexcept
+            reader(message<isRequest,
+                    unsized_body, Allocator> const& msg)
                 : body_(msg.body)
             {
             }
 
             void
-            init(error_code& ec) noexcept
+            init(error_code& ec)
             {
-                beast::detail::ignore_unused(ec);
+                ec.assign(0, ec.category());
             }
 
-            template<class WriteFunction>
-            bool
-            write(error_code&, WriteFunction&& wf) noexcept
+            boost::optional<std::pair<const_buffers_type, bool>>
+            get(error_code& ec)
             {
-                wf(boost::asio::buffer(body_));
-                return true;
+                ec.assign(0, ec.category());
+                return {{const_buffers_type{
+                    body_.data(), body_.size()}, false}};
+            }
+        };
+    };
+
+    template<
+        bool isSplit,
+        bool isFinalEmpty
+    >
+    struct test_body
+    {
+        struct value_type
+        {
+            std::string s;
+            bool mutable read = false;
+        };
+
+        class reader
+        {
+            int step_ = 0;
+            value_type const& body_;
+
+        public:
+            using const_buffers_type =
+                boost::asio::const_buffers_1;
+
+            template<bool isRequest, class Fields>
+            explicit
+            reader(message<isRequest,
+                    test_body, Fields> const& msg)
+                : body_(msg.body)
+            {
+            }
+
+            void
+            init(error_code& ec)
+            {
+                ec.assign(0, ec.category());
+            }
+
+            boost::optional<std::pair<const_buffers_type, bool>>
+            get(error_code& ec)
+            {
+                ec.assign(0, ec.category());
+                body_.read = true;
+                return get(
+                    std::integral_constant<bool, isSplit>{},
+                    std::integral_constant<bool, isFinalEmpty>{});
+            }
+
+        private:
+            boost::optional<std::pair<const_buffers_type, bool>>
+            get(
+                std::false_type,    // isSplit
+                std::false_type)    // isFinalEmpty
+            {
+                using boost::asio::buffer;
+                if(body_.s.empty())
+                    return boost::none;
+                return {{buffer(body_.s.data(), body_.s.size()), false}};
+            }
+
+            boost::optional<std::pair<const_buffers_type, bool>>
+            get(
+                std::false_type,    // isSplit
+                std::true_type)     // isFinalEmpty
+            {
+                using boost::asio::buffer;
+                if(body_.s.empty())
+                    return boost::none;
+                switch(step_)
+                {
+                case 0:
+                    step_ = 1;
+                    return {{buffer(
+                        body_.s.data(), body_.s.size()), true}};
+                default:
+                    return boost::none;
+                }
+            }
+
+            boost::optional<std::pair<const_buffers_type, bool>>
+            get(
+                std::true_type,     // isSplit
+                std::false_type)    // isFinalEmpty
+            {
+                using boost::asio::buffer;
+                auto const n = (body_.s.size() + 1) / 2;
+                switch(step_)
+                {
+                case 0:
+                    if(n == 0)
+                        return boost::none;
+                    step_ = 1;
+                    return {{buffer(body_.s.data(), n),
+                        body_.s.size() > 1}};
+                default:
+                    return {{buffer(body_.s.data() + n,
+                        body_.s.size() - n), false}};
+                }
+            }
+
+            boost::optional<std::pair<const_buffers_type, bool>>
+            get(
+                std::true_type,     // isSplit
+                std::true_type)     // isFinalEmpty
+            {
+                using boost::asio::buffer;
+                auto const n = (body_.s.size() + 1) / 2;
+                switch(step_)
+                {
+                case 0:
+                    if(n == 0)
+                        return boost::none;
+                    step_ = body_.s.size() > 1 ? 1 : 2;
+                    return {{buffer(body_.s.data(), n), true}};
+                case 1:
+                    BOOST_ASSERT(body_.s.size() > 1);
+                    step_ = 2;
+                    return {{buffer(body_.s.data() + n,
+                        body_.s.size() - n), true}};
+                default:
+                    return boost::none;
+                }
             }
         };
     };
 
     struct fail_body
     {
-        class writer;
+        class reader;
 
         class value_type
         {
-            friend class writer;
+            friend class reader;
 
             std::string s_;
             test::fail_counter& fc_;
-            boost::asio::io_service& ios_;
 
         public:
-            value_type(test::fail_counter& fc,
-                    boost::asio::io_service& ios)
+            explicit
+            value_type(test::fail_counter& fc)
                 : fc_(fc)
-                , ios_(ios)
             {
-            }
-
-            boost::asio::io_service&
-            get_io_service() const
-            {
-                return ios_;
             }
 
             value_type&
@@ -98,101 +218,88 @@ public:
             }
         };
 
-        class writer
+        class reader
         {
             std::size_t n_ = 0;
             value_type const& body_;
 
         public:
+            using const_buffers_type =
+                boost::asio::const_buffers_1;
+
             template<bool isRequest, class Allocator>
             explicit
-            writer(message<isRequest, fail_body, Allocator> const& msg) noexcept
+            reader(message<isRequest,
+                    fail_body, Allocator> const& msg)
                 : body_(msg.body)
             {
             }
 
             void
-            init(error_code& ec) noexcept
+            init(error_code& ec)
             {
                 body_.fc_.fail(ec);
             }
 
-            template<class WriteFunction>
-            bool
-            write(error_code& ec, WriteFunction&& wf) noexcept
+            boost::optional<std::pair<const_buffers_type, bool>>
+            get(error_code& ec)
             {
                 if(body_.fc_.fail(ec))
-                    return false;
+                    return boost::none;
                 if(n_ >= body_.s_.size())
-                    return true;
-                wf(boost::asio::buffer(body_.s_.data() + n_, 1));
-                ++n_;
-                return n_ == body_.s_.size();
+                    return boost::none;
+                return {{const_buffers_type{
+                    body_.s_.data() + n_++, 1}, true}};
             }
         };
     };
+
+    template<bool isRequest>
+    bool
+    equal_body(string_view sv, string_view body)
+    {
+        test::string_istream si{
+            get_io_service(), sv.to_string()};
+        message<isRequest, string_body, fields> m;
+        multi_buffer b;
+        try
+        {
+            read(si, b, m);
+            return m.body == body;
+        }
+        catch(std::exception const& e)
+        {
+            log << "equal_body: " << e.what() << std::endl;
+            return false;
+        }
+    }
 
     template<bool isRequest, class Body, class Fields>
     std::string
     str(message<isRequest, Body, Fields> const& m)
     {
         test::string_ostream ss(ios_);
-        write(ss, m);
+        error_code ec;
+        write(ss, m, ec);
+        if(ec && ec != error::end_of_stream)
+            BOOST_THROW_EXCEPTION(system_error{ec});
         return ss.str;
-    }
-
-    void
-    testAsyncWriteHeaders(yield_context do_yield)
-    {
-        {
-            header<true, fields> m;
-            m.version = 11;
-            m.method = "GET";
-            m.url = "/";
-            m.fields.insert("User-Agent", "test");
-            error_code ec;
-            test::string_ostream ss{ios_};
-            async_write(ss, m, do_yield[ec]);
-            if(BEAST_EXPECTS(! ec, ec.message()))
-                BEAST_EXPECT(ss.str ==
-                    "GET / HTTP/1.1\r\n"
-                    "User-Agent: test\r\n"
-                    "\r\n");
-        }
-        {
-            header<false, fields> m;
-            m.version = 10;
-            m.status = 200;
-            m.reason = "OK";
-            m.fields.insert("Server", "test");
-            m.fields.insert("Content-Length", "5");
-            error_code ec;
-            test::string_ostream ss{ios_};
-            async_write(ss, m, do_yield[ec]);
-            if(BEAST_EXPECTS(! ec, ec.message()))
-                BEAST_EXPECT(ss.str ==
-                    "HTTP/1.0 200 OK\r\n"
-                    "Server: test\r\n"
-                    "Content-Length: 5\r\n"
-                    "\r\n");
-        }
     }
 
     void
     testAsyncWrite(yield_context do_yield)
     {
         {
-            message<false, string_body, fields> m;
+            response<string_body> m;
             m.version = 10;
-            m.status = 200;
-            m.reason = "OK";
-            m.fields.insert("Server", "test");
-            m.fields.insert("Content-Length", "5");
+            m.result(status::ok);
+            m.set(field::server, "test");
+            m.set(field::content_length, "5");
             m.body = "*****";
             error_code ec;
             test::string_ostream ss{ios_};
             async_write(ss, m, do_yield[ec]);
-            if(BEAST_EXPECTS(! ec, ec.message()))
+            if(BEAST_EXPECTS(ec == error::end_of_stream, ec.message()))
                 BEAST_EXPECT(ss.str ==
                     "HTTP/1.0 200 OK\r\n"
                     "Server: test\r\n"
@@ -201,12 +308,11 @@ public:
                     "*****");
         }
         {
-            message<false, string_body, fields> m;
+            response<string_body> m;
             m.version = 11;
-            m.status = 200;
-            m.reason = "OK";
-            m.fields.insert("Server", "test");
-            m.fields.insert("Transfer-Encoding", "chunked");
+            m.result(status::ok);
+            m.set(field::server, "test");
+            m.set(field::transfer_encoding, "chunked");
             m.body = "*****";
             error_code ec;
             test::string_ostream ss(ios_);
@@ -234,14 +340,10 @@ public:
             test::fail_counter fc(n);
             test::fail_stream<
                 test::string_ostream> fs(fc, ios_);
-            message<true, fail_body, fields> m(
-                std::piecewise_construct,
-                    std::forward_as_tuple(fc, ios_));
-            m.method = "GET";
-            m.url = "/";
-            m.version = 10;
-            m.fields.insert("User-Agent", "test");
-            m.fields.insert("Content-Length", "5");
+            request<fail_body> m(verb::get, "/", 10, fc);
+            m.set(field::user_agent, "test");
+            m.set(field::connection, "keep-alive");
+            m.set(field::content_length, "5");
             m.body = "*****";
             try
             {
@@ -249,6 +351,7 @@ public:
                 BEAST_EXPECT(fs.next_layer().str ==
                     "GET / HTTP/1.0\r\n"
                     "User-Agent: test\r\n"
+                    "Connection: keep-alive\r\n"
                     "Content-Length: 5\r\n"
                     "\r\n"
                     "*****"
@@ -267,18 +370,13 @@ public:
             test::fail_counter fc(n);
             test::fail_stream<
                 test::string_ostream> fs(fc, ios_);
-            message<true, fail_body, fields> m(
-                std::piecewise_construct,
-                    std::forward_as_tuple(fc, ios_));
-            m.method = "GET";
-            m.url = "/";
-            m.version = 10;
-            m.fields.insert("User-Agent", "test");
-            m.fields.insert("Transfer-Encoding", "chunked");
+            request<fail_body> m{verb::get, "/", 10, fc};
+            m.set(field::user_agent, "test");
+            m.set(field::transfer_encoding, "chunked");
             m.body = "*****";
-            error_code ec;
+            error_code ec = test::error::fail_error;
             write(fs, m, ec);
-            if(ec == boost::asio::error::eof)
+            if(ec == error::end_of_stream)
             {
                 BEAST_EXPECT(fs.next_layer().str ==
                     "GET / HTTP/1.0\r\n"
@@ -302,18 +400,13 @@ public:
             test::fail_counter fc(n);
             test::fail_stream<
                 test::string_ostream> fs(fc, ios_);
-            message<true, fail_body, fields> m(
-                std::piecewise_construct,
-                    std::forward_as_tuple(fc, ios_));
-            m.method = "GET";
-            m.url = "/";
-            m.version = 10;
-            m.fields.insert("User-Agent", "test");
-            m.fields.insert("Transfer-Encoding", "chunked");
+            request<fail_body> m{verb::get, "/", 10, fc};
+            m.set(field::user_agent, "test");
+            m.set(field::transfer_encoding, "chunked");
             m.body = "*****";
-            error_code ec;
+            error_code ec = test::error::fail_error;
             async_write(fs, m, do_yield[ec]);
-            if(ec == boost::asio::error::eof)
+            if(ec == error::end_of_stream)
             {
                 BEAST_EXPECT(fs.next_layer().str ==
                     "GET / HTTP/1.0\r\n"
@@ -337,22 +430,19 @@ public:
             test::fail_counter fc(n);
             test::fail_stream<
                 test::string_ostream> fs(fc, ios_);
-            message<true, fail_body, fields> m(
-                std::piecewise_construct,
-                    std::forward_as_tuple(fc, ios_));
-            m.method = "GET";
-            m.url = "/";
-            m.version = 10;
-            m.fields.insert("User-Agent", "test");
-            m.fields.insert("Content-Length", "5");
+            request<fail_body> m{verb::get, "/", 10, fc};
+            m.set(field::user_agent, "test");
+            m.set(field::connection, "keep-alive");
+            m.set(field::content_length, "5");
             m.body = "*****";
-            error_code ec;
+            error_code ec = test::error::fail_error;
             write(fs, m, ec);
             if(! ec)
             {
                 BEAST_EXPECT(fs.next_layer().str ==
                     "GET / HTTP/1.0\r\n"
                     "User-Agent: test\r\n"
+                    "Connection: keep-alive\r\n"
                     "Content-Length: 5\r\n"
                     "\r\n"
                     "*****"
@@ -367,22 +457,19 @@ public:
             test::fail_counter fc(n);
             test::fail_stream<
                 test::string_ostream> fs(fc, ios_);
-            message<true, fail_body, fields> m(
-                std::piecewise_construct,
-                    std::forward_as_tuple(fc, ios_));
-            m.method = "GET";
-            m.url = "/";
-            m.version = 10;
-            m.fields.insert("User-Agent", "test");
-            m.fields.insert("Content-Length", "5");
+            request<fail_body> m{verb::get, "/", 10, fc};
+            m.set(field::user_agent, "test");
+            m.set(field::connection, "keep-alive");
+            m.set(field::content_length, "5");
             m.body = "*****";
-            error_code ec;
+            error_code ec = test::error::fail_error;
             async_write(fs, m, do_yield[ec]);
             if(! ec)
             {
                 BEAST_EXPECT(fs.next_layer().str ==
                     "GET / HTTP/1.0\r\n"
                     "User-Agent: test\r\n"
+                    "Connection: keep-alive\r\n"
                     "Content-Length: 5\r\n"
                     "\r\n"
                     "*****"
@@ -398,13 +485,13 @@ public:
     {
         // auto content-length HTTP/1.0
         {
-            message<true, string_body, fields> m;
-            m.method = "GET";
-            m.url = "/";
+            request<string_body> m;
+            m.method(verb::get);
+            m.target("/");
             m.version = 10;
-            m.fields.insert("User-Agent", "test");
+            m.set(field::user_agent, "test");
             m.body = "*";
-            prepare(m);
+            m.prepare_payload();
             BEAST_EXPECT(str(m) ==
                 "GET / HTTP/1.0\r\n"
                 "User-Agent: test\r\n"
@@ -412,56 +499,20 @@ public:
                 "\r\n"
                 "*"
             );
-        }
-        // keep-alive HTTP/1.0
-        {
-            message<true, string_body, fields> m;
-            m.method = "GET";
-            m.url = "/";
-            m.version = 10;
-            m.fields.insert("User-Agent", "test");
-            m.body = "*";
-            prepare(m, connection::keep_alive);
-            BEAST_EXPECT(str(m) ==
-                "GET / HTTP/1.0\r\n"
-                "User-Agent: test\r\n"
-                "Content-Length: 1\r\n"
-                "Connection: keep-alive\r\n"
-                "\r\n"
-                "*"
-            );
-        }
-        // upgrade HTTP/1.0
-        {
-            message<true, string_body, fields> m;
-            m.method = "GET";
-            m.url = "/";
-            m.version = 10;
-            m.fields.insert("User-Agent", "test");
-            m.body = "*";
-            try
-            {
-                prepare(m, connection::upgrade);
-                fail();
-            }
-            catch(std::exception const&)
-            {
-                pass();
-            }
         }
         // no content-length HTTP/1.0
         {
-            message<true, unsized_body, fields> m;
-            m.method = "GET";
-            m.url = "/";
+            request<unsized_body> m;
+            m.method(verb::get);
+            m.target("/");
             m.version = 10;
-            m.fields.insert("User-Agent", "test");
+            m.set(field::user_agent, "test");
             m.body = "*";
-            prepare(m);
+            m.prepare_payload();
             test::string_ostream ss(ios_);
             error_code ec;
             write(ss, m, ec);
-            BEAST_EXPECT(ec == boost::asio::error::eof);
+            BEAST_EXPECT(ec == error::end_of_stream);
             BEAST_EXPECT(ss.str ==
                 "GET / HTTP/1.0\r\n"
                 "User-Agent: test\r\n"
@@ -471,67 +522,30 @@ public:
         }
         // auto content-length HTTP/1.1
         {
-            message<true, string_body, fields> m;
-            m.method = "GET";
-            m.url = "/";
+            request<string_body> m;
+            m.method(verb::get);
+            m.target("/");
             m.version = 11;
-            m.fields.insert("User-Agent", "test");
+            m.set(field::user_agent, "test");
             m.body = "*";
-            prepare(m);
+            m.prepare_payload();
             BEAST_EXPECT(str(m) ==
                 "GET / HTTP/1.1\r\n"
                 "User-Agent: test\r\n"
                 "Content-Length: 1\r\n"
                 "\r\n"
                 "*"
-            );
-        }
-        // close HTTP/1.1
-        {
-            message<true, string_body, fields> m;
-            m.method = "GET";
-            m.url = "/";
-            m.version = 11;
-            m.fields.insert("User-Agent", "test");
-            m.body = "*";
-            prepare(m, connection::close);
-            test::string_ostream ss(ios_);
-            error_code ec;
-            write(ss, m, ec);
-            BEAST_EXPECT(ec == boost::asio::error::eof);
-            BEAST_EXPECT(ss.str ==
-                "GET / HTTP/1.1\r\n"
-                "User-Agent: test\r\n"
-                "Content-Length: 1\r\n"
-                "Connection: close\r\n"
-                "\r\n"
-                "*"
-            );
-        }
-        // upgrade HTTP/1.1
-        {
-            message<true, empty_body, fields> m;
-            m.method = "GET";
-            m.url = "/";
-            m.version = 11;
-            m.fields.insert("User-Agent", "test");
-            prepare(m, connection::upgrade);
-            BEAST_EXPECT(str(m) ==
-                "GET / HTTP/1.1\r\n"
-                "User-Agent: test\r\n"
-                "Connection: upgrade\r\n"
-                "\r\n"
             );
         }
         // no content-length HTTP/1.1
         {
-            message<true, unsized_body, fields> m;
-            m.method = "GET";
-            m.url = "/";
+            request<unsized_body> m;
+            m.method(verb::get);
+            m.target("/");
             m.version = 11;
-            m.fields.insert("User-Agent", "test");
+            m.set(field::user_agent, "test");
             m.body = "*";
-            prepare(m);
+            m.prepare_payload();
             test::string_ostream ss(ios_);
             error_code ec;
             write(ss, m, ec);
@@ -550,65 +564,14 @@ public:
     void test_std_ostream()
     {
         // Conversion to std::string via operator<<
-        message<true, string_body, fields> m;
-        m.method = "GET";
-        m.url = "/";
+        request<string_body> m;
+        m.method(verb::get);
+        m.target("/");
         m.version = 11;
-        m.fields.insert("User-Agent", "test");
+        m.set(field::user_agent, "test");
         m.body = "*";
         BEAST_EXPECT(boost::lexical_cast<std::string>(m) ==
             "GET / HTTP/1.1\r\nUser-Agent: test\r\n\r\n*");
-        BEAST_EXPECT(boost::lexical_cast<std::string>(m.base()) ==
-            "GET / HTTP/1.1\r\nUser-Agent: test\r\n\r\n");
-        // Cause exceptions in operator<<
-        {
-            std::stringstream ss;
-            ss.setstate(ss.rdstate() |
-                std::stringstream::failbit);
-            try
-            {
-                // header
-                ss << m.base();
-                fail("", __FILE__, __LINE__);
-            }
-            catch(std::exception const&)
-            {
-                pass();
-            }
-            try
-            {
-                // message
-                ss << m;
-                fail("", __FILE__, __LINE__);
-            }
-            catch(std::exception const&)
-            {
-                pass();
-            }
-        }
-    }
-
-    void testOstream()
-    {
-        message<true, string_body, fields> m;
-        m.method = "GET";
-        m.url = "/";
-        m.version = 11;
-        m.fields.insert("User-Agent", "test");
-        m.body = "*";
-        prepare(m);
-        std::stringstream ss;
-        ss.setstate(ss.rdstate() |
-            std::stringstream::failbit);
-        try
-        {
-            ss << m;
-            fail();
-        }
-        catch(std::exception const&)
-        {
-            pass();
-        }
     }
 
     // Ensure completion handlers are not leaked
@@ -631,11 +594,11 @@ public:
             boost::asio::io_service ios;
             test::string_ostream os{ios};
             BEAST_EXPECT(handler::count() == 0);
-            message<true, string_body, fields> m;
-            m.method = "GET";
+            request<string_body> m;
+            m.method(verb::get);
             m.version = 11;
-            m.url = "/";
-            m.fields["Content-Length"] = "5";
+            m.target("/");
+            m.set("Content-Length", 5);
             m.body = "*****";
             async_write(os, m, handler{});
             BEAST_EXPECT(handler::count() > 0);
@@ -653,11 +616,11 @@ public:
                 boost::asio::io_service ios;
                 test::string_ostream is{ios};
                 BEAST_EXPECT(handler::count() == 0);
-                message<true, string_body, fields> m;
-                m.method = "GET";
+                request<string_body> m;
+                m.method(verb::get);
                 m.version = 11;
-                m.url = "/";
-                m.fields["Content-Length"] = "5";
+                m.target("/");
+                m.set("Content-Length", 5);
                 m.body = "*****";
                 async_write(is, m, handler{});
                 BEAST_EXPECT(handler::count() > 0);
@@ -666,15 +629,224 @@ public:
         }
     }
 
+    template<class Stream,
+        bool isRequest, class Body, class Fields,
+            class Decorator = no_chunk_decorator>
+    void
+    do_write(Stream& stream, message<
+        isRequest, Body, Fields> const& m, error_code& ec,
+            Decorator const& decorator = Decorator{})
+    {
+        serializer<isRequest, Body, Fields, Decorator> sr{m, decorator};
+        for(;;)
+        {
+            stream.nwrite = 0;
+            write_some(stream, sr, ec);
+            if(ec)
+                return;
+            BEAST_EXPECT(stream.nwrite <= 1);
+            if(sr.is_done())
+                break;
+        }
+    }
+
+    template<class Stream,
+        bool isRequest, class Body, class Fields,
+            class Decorator = no_chunk_decorator>
+    void
+    do_async_write(Stream& stream,
+        message<isRequest, Body, Fields> const& m,
+            error_code& ec, yield_context yield,
+                Decorator const& decorator = Decorator{})
+    {
+        serializer<isRequest, Body, Fields, Decorator> sr{m, decorator};
+        for(;;)
+        {
+            stream.nwrite = 0;
+            async_write_some(stream, sr, yield[ec]);
+            if(ec)
+                return;
+            BEAST_EXPECT(stream.nwrite <= 1);
+            if(sr.is_done())
+                break;
+        }
+    }
+
+    struct test_decorator
+    {
+        std::string s;
+
+        template<class ConstBufferSequence>
+        string_view
+        operator()(ConstBufferSequence const& buffers)
+        {
+            s = ";x=" + std::to_string(boost::asio::buffer_size(buffers));
+            return s;
+        }
+
+        string_view
+        operator()(boost::asio::null_buffers)
+        {
+            return "Result: OK\r\n";
+        }
+    };
+
+    template<class Body>
+    void
+    testWriteStream(boost::asio::yield_context yield)
+    {
+        test::pipe p{ios_};
+        p.client.write_size(3);
+
+        response<Body> m0;
+        m0.version = 11;
+        m0.result(status::ok);
+        m0.reason("OK");
+        m0.set(field::server, "test");
+        m0.body.s = "Hello, world!\n";
+
+        {
+            std::string const result =
+                "HTTP/1.1 200 OK\r\n"
+                "Server: test\r\n"
+                "\r\n"
+                "Hello, world!\n";
+            {
+                auto m = m0;
+                error_code ec;
+                do_write(p.client, m, ec);
+                BEAST_EXPECT(p.server.str() == result);
+                BEAST_EXPECT(equal_body<false>(
+                    p.server.str(), m.body.s));
+                p.server.clear();
+            }
+            {
+                auto m = m0;
+                error_code ec;
+                do_async_write(p.client, m, ec, yield);
+                BEAST_EXPECT(p.server.str() == result);
+                BEAST_EXPECT(equal_body<false>(
+                    p.server.str(), m.body.s));
+                p.server.clear();
+            }
+            {
+                auto m = m0;
+                error_code ec;
+                response_serializer<Body, fields> sr{m};
+                sr.split(true);
+                for(;;)
+                {
+                    write_some(p.client, sr);
+                    if(sr.is_header_done())
+                        break;
+                }
+                BEAST_EXPECT(! m.body.read);
+                p.server.clear();
+            }
+            {
+                auto m = m0;
+                error_code ec;
+                response_serializer<Body, fields> sr{m};
+                sr.split(true);
+                for(;;)
+                {
+                    async_write_some(p.client, sr, yield);
+                    if(sr.is_header_done())
+                        break;
+                }
+                BEAST_EXPECT(! m.body.read);
+                p.server.clear();
+            }
+        }
+        {
+            m0.set("Transfer-Encoding", "chunked");
+            {
+                auto m = m0;
+                error_code ec;
+                do_write(p.client, m, ec);
+                BEAST_EXPECT(equal_body<false>(
+                    p.server.str(), m.body.s));
+                p.server.clear();
+            }
+            {
+                auto m = m0;
+                error_code ec;
+                do_write(p.client, m, ec, test_decorator{});
+                BEAST_EXPECT(equal_body<false>(
+                    p.server.str(), m.body.s));
+                p.server.clear();
+            }
+            {
+                auto m = m0;
+                error_code ec;
+                do_async_write(p.client, m, ec, yield);
+                BEAST_EXPECT(equal_body<false>(
+                    p.server.str(), m.body.s));
+                p.server.clear();
+            }
+            {
+                auto m = m0;
+                error_code ec;
+                do_async_write(p.client, m, ec, yield, test_decorator{});
+                BEAST_EXPECT(equal_body<false>(
+                    p.server.str(), m.body.s));
+                p.server.clear();
+            }
+            {
+                auto m = m0;
+                error_code ec;
+                test::string_ostream so{get_io_service(), 3};
+                response_serializer<Body, fields> sr{m};
+                sr.split(true);
+                for(;;)
+                {
+                    write_some(p.client, sr);
+                    if(sr.is_header_done())
+                        break;
+                }
+                BEAST_EXPECT(! m.body.read);
+                p.server.clear();
+            }
+            {
+                auto m = m0;
+                error_code ec;
+                response_serializer<Body, fields> sr{m};
+                sr.split(true);
+                for(;;)
+                {
+                    async_write_some(p.client, sr, yield);
+                    if(sr.is_header_done())
+                        break;
+                }
+                BEAST_EXPECT(! m.body.read);
+                p.server.clear();
+            }
+        }
+    }
+
     void run() override
     {
-        yield_to(&write_test::testAsyncWriteHeaders, this);
-        yield_to(&write_test::testAsyncWrite, this);
-        yield_to(&write_test::testFailures, this);
+        yield_to(
+            [&](yield_context yield)
+            {
+                testAsyncWrite(yield);
+            });
+        yield_to(
+            [&](yield_context yield)
+            {
+                testFailures(yield);
+            });
         testOutput();
         test_std_ostream();
-        testOstream();
         testIoService();
+        yield_to(
+            [&](yield_context yield)
+            {
+                testWriteStream<test_body<false, false>>(yield);
+                testWriteStream<test_body<false,  true>>(yield);
+                testWriteStream<test_body< true, false>>(yield);
+                testWriteStream<test_body< true,  true>>(yield);
+            });
     }
 };
 

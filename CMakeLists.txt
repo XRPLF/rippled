@@ -15,24 +15,30 @@
 #  * ninja builds
 #  * check openssl version on linux
 #  * static builds (swd TBD: needs to be tested by building & deploying on different systems)
-#
-# TBD:
-#  * jemalloc support
-#  * count
-#  * Windows protobuf compiler puts generated file in src directory instead of build directory.
+#  * jemalloc enabled builds (linux and macos only)
+#  * perf builds (linux only) - which just sets recommended compiler flags
+#          for running perf on the executable
 #
 # Notes:
-#  * Use the -G"Visual Studio 14 2015 Win64" generator on Windows. Without this
-#    a 32-bit project will be created. There is no way to set the generator or
-#    force a 64-bit build in CMakeLists.txt (setting CMAKE_GENERATOR_PLATFORM won't work).
-#    The best solution may be to wrap cmake with a script.
+#  * Use the -G"Visual Studio 14 2015 Win64" generator, or the "VS2015 x86 x64
+#    Cross Tools" Command Prompt on Windows. Without this a 32-bit project will be
+#    created. There is no way to set the generator or force a 64-bit build in
+#    CMakeLists.txt (setting CMAKE_GENERATOR_PLATFORM won't work). The best solution
+#    may be to wrap cmake with a script.
+#
+#  * Ninja command line builds seem to work under Windows, but only from within
+#    the "VS2015 x86 x64 Cross Tools" Command Prompt.
 #
 #  * It is not possible to generate a visual studio project on linux or
 #    mac. The visual studio generator is only available on windows.
 #
-#  * The visual studio project can be _either_ unity or
-#    non-unity (selected at generation time).  It does not appear possible
-#    to disable compilation based on configuration.
+#  * The Visual Studio solution will be generated with two projects, one
+#    unity, one non-unity. Which is default depends on the nounity flag in
+#    -Dtarget. Unity targets will create `rippled` and `rippled_classic`.
+#    Non-unity targets will create `rippled` and `rippled_unity`. In either
+#    case, only the `rippled` build will be enabled by default. It does
+#    not appear possible to include both unity and non-unity configs in one
+#    project and disable compilation based on configuration.
 #
 #  * Language is _much_ worse than python, poor documentation and "quirky"
 #    language support (for example, generator expressions can only be used
@@ -181,8 +187,11 @@ prepend(ripple_unity_srcs
 src/ripple/unity/
 app_consensus.cpp
 app_ledger.cpp
-app_main.cpp
+app_ledger_impl.cpp
+app_main1.cpp
+app_main2.cpp
 app_misc.cpp
+app_misc_impl.cpp
 app_paths.cpp
 app_tx.cpp
 conditions.cpp
@@ -192,19 +201,23 @@ basics.cpp
 crypto.cpp
 ledger.cpp
 net.cpp
-overlay.cpp
+overlay1.cpp
+overlay2.cpp
 peerfinder.cpp
 json.cpp
 protocol.cpp
-rpcx.cpp
+rpcx1.cpp
+rpcx2.cpp
 shamap.cpp
 server.cpp)
 
 prepend(test_unity_srcs
 src/test/unity/
-app_test_unity.cpp
+app_test_unity1.cpp
+app_test_unity2.cpp
 basics_test_unity.cpp
-beast_test_unity.cpp
+beast_test_unity1.cpp
+beast_test_unity2.cpp
 conditions_test_unity.cpp
 consensus_test_unity.cpp
 core_test_unity.cpp
@@ -216,8 +229,10 @@ protocol_test_unity.cpp
 resource_test_unity.cpp
 rpc_test_unity.cpp
 server_test_unity.cpp
+server_status_test_unity.cpp
 shamap_test_unity.cpp
-jtx_unity.cpp
+jtx_unity1.cpp
+jtx_unity2.cpp
 csf_unity.cpp)
 
 list(APPEND rippled_src_unity ${beast_unity_srcs} ${ripple_unity_srcs} ${test_unity_srcs})
@@ -294,8 +309,11 @@ foreach(curdir
         basics
         beast
         conditions
+        consensus
         core
+        csf
         json
+        jtx
         ledger
         nodestore
         overlay
@@ -304,9 +322,7 @@ foreach(curdir
         resource
         rpc
         server
-        shamap
-        jtx
-        csf)
+        shamap)
     file(GLOB_RECURSE cursrcs src/test/${curdir}/*.cpp)
     list(APPEND test_srcs "${cursrcs}")
 endforeach()

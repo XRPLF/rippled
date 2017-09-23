@@ -150,7 +150,8 @@ public:
     void testEvolution()
     {
         using namespace test::jtx;
-        Env env { *this };
+        Env env {*this, no_features}; //the hashes being checked below assume
+                                     //no amendments
         Account const gw { "gateway" };
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);

@@ -1,0 +1,51 @@
+#
+# Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
+#
+# Distributed under the Boost Software License, Version 1.0. (See accompanying
+# file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+
+import os ;
+
+if [ os.name ] = SOLARIS
+{
+  lib socket ;
+  lib nsl ;
+}
+else if [ os.name ] = NT
+{
+  lib ws2_32 ;
+  lib mswsock ;
+}
+else if [ os.name ] = HPUX
+{
+  lib ipv6 ;
+}
+else if [ os.name ] = HAIKU
+{
+  lib network ;
+}
+
+if [ os.name ] = NT
+{
+  lib ssl : : <name>ssleay32 ;
+  lib crypto : : <name>libeay32  ;
+}
+else
+{
+  lib ssl ;
+  lib crypto ;
+}
+
+project
+  : requirements
+    <library>ssl
+    <library>crypto
+  ;
+
+exe http-client-ssl :
+    http_client_ssl.cpp
+    :
+    <variant>coverage:<build>no
+    <variant>ubasan:<build>no
+    ;

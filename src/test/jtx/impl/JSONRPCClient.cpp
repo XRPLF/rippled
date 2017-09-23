@@ -23,7 +23,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
 #include <beast/http/message.hpp>
-#include <beast/http/streambuf_body.hpp>
+#include <beast/http/dynamic_body.hpp>
 #include <beast/http/string_body.hpp>
 #include <beast/http/read.hpp>
 #include <beast/http/write.hpp>
@@ -74,8 +74,8 @@ class JSONRPCClient : public AbstractClient
     boost::asio::ip::tcp::endpoint ep_;
     boost::asio::io_service ios_;
     boost::asio::ip::tcp::socket stream_;
-    beast::streambuf bin_;
-    beast::streambuf bout_;
+    beast::multi_buffer bin_;
+    beast::multi_buffer bout_;
     unsigned rpc_version_;
 
 public:
@@ -109,12 +109,11 @@ public:
         using namespace std::string_literals;
 
         request<string_body> req;
-        req.method = "POST";
-        req.url = "/";
+        req.method(beast::http::verb::post);
+        req.target("/");
         req.version = 11;
-        req.fields.insert("Content-Type", "application/json; charset=UTF-8");
-        req.fields.insert("Host",
-            ep_.address().to_string() + ":" + std::to_string(ep_.port()));
+        req.insert("Content-Type", "application/json; charset=UTF-8");
+        req.insert("Host", ep_);
         {
             Json::Value jr;
             jr[jss::method] = cmd;
@@ -131,10 +130,10 @@ public:
             }
             req.body = to_string(jr);
         }
-        prepare(req);
+        req.prepare_payload();
         write(stream_, req);
 
-        response<streambuf_body> res;
+        response<dynamic_body> res;
         read(stream_, bin_, res);
 
         Json::Reader jr;

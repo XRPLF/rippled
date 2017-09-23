@@ -36,19 +36,12 @@ namespace ripple {
 
 /** A peer's signed, proposed position for use in RCLConsensus.
 
-    Carries a ConsensusProposal signed by a peer.
+    Carries a ConsensusProposal signed by a peer. Provides value semantics
+    but manages shared storage of the peer position internally.
 */
-class RCLCxPeerPos : public CountedObject<RCLCxPeerPos>
+class RCLCxPeerPos
 {
 public:
-    static char const*
-    getCountedObjectName()
-    {
-        return "RCLCxPeerPos";
-    }
-    using pointer = std::shared_ptr<RCLCxPeerPos>;
-    using ref = const pointer&;
-
     //< The type of the proposed position
     using Proposal = ConsensusProposal<NodeID, uint256, uint256>;
 
@@ -70,7 +63,7 @@ public:
 
     //! Create the signing hash for the proposal
     uint256
-    getSigningHash() const;
+    signingHash() const;
 
     //! Verify the signing hash of the proposal
     bool
@@ -78,45 +71,59 @@ public:
 
     //! Signature of the proposal (not necessarily verified)
     Slice
-    getSignature() const
+    signature() const
     {
-        return signature_;
+        return data_->signature_;
     }
 
     //! Public key of peer that sent the proposal
     PublicKey const&
-    getPublicKey() const
+    publicKey() const
     {
-        return publicKey_;
+        return data_->publicKey_;
     }
 
     //! ?????
     uint256 const&
-    getSuppressionID() const
+    suppressionID() const
     {
-        return mSuppression;
+        return data_->supression_;
     }
 
-    //! The consensus proposal
-    Proposal const&
+    Proposal const &
     proposal() const
     {
-        return proposal_;
+        return data_->proposal_;
     }
-
-    /// @cond Ignore
-    //! Add a conversion operator to conform to the Consensus interface
-    operator Proposal const&() const
-    {
-        return proposal_;
-    }
-    /// @endcond
 
     //! JSON representation of proposal
     Json::Value
     getJson() const;
 
 private:
+
+    struct Data : public CountedObject<Data>
+    {
+        PublicKey publicKey_;
+        Buffer signature_;
+        uint256 supression_;
+        Proposal proposal_;
+
+        Data(
+            PublicKey const& publicKey,
+            Slice const& signature,
+            uint256 const& suppress,
+            Proposal&& proposal);
+
+        static char const*
+        getCountedObjectName()
+        {
+            return "RCLCxPeerPos::Data";
+        }
+    };
+
+    std::shared_ptr<Data> data_;
+
     template <class Hasher>
     void
     hash_append(Hasher& h) const
@@ -129,10 +136,6 @@ private:
         hash_append(h, proposal().position());
     }
 
-    Proposal proposal_;
-    uint256 mSuppression;
-    PublicKey publicKey_;
-    Buffer signature_;
 };
 
 /** Calculate a unique identifier for a signed proposal.

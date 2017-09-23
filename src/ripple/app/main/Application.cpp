@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/app/consensus/RCLValidations.h>
 #include <ripple/app/main/DBInit.h>
 #include <ripple/app/main/BasicApp.h>
 #include <ripple/app/main/Tuning.h>
@@ -41,20 +42,24 @@
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/ValidatorSite.h>
+#include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/json/json_reader.h>
-#include <ripple/core/DeadlineTimer.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/make_Overlay.h>
 #include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/Protocol.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
+#include <boost/asio/steady_timer.hpp>
 #include <fstream>
+#include <sstream>
+#include <iostream>
 
 namespace ripple {
 
@@ -75,7 +80,7 @@ private:
     beast::Journal j_;
 
     // missing node handler
-    std::uint32_t maxSeq = 0;
+    LedgerIndex maxSeq = 0;
     std::mutex maxSeqLock;
 
     void acquire (
@@ -216,7 +221,6 @@ supportedAmendments ();
 class ApplicationImp
     : public Application
     , public RootStoppable
-    , public DeadlineTimer::Listener
     , public BasicApp
 {
 private:
@@ -304,6 +308,7 @@ public:
     std::unique_ptr <CollectorManager> m_collectorManager;
     CachedSLEs cachedSLEs_;
     std::pair<PublicKey, SecretKey> nodeIdentity_;
+    ValidatorKeys const validatorKeys_;
 
     std::unique_ptr <Resource::Manager> m_resourceManager;
 
@@ -328,11 +333,12 @@ public:
     std::unique_ptr <AmendmentTable> m_amendmentTable;
     std::unique_ptr <LoadFeeTrack> mFeeTrack;
     std::unique_ptr <HashRouter> mHashRouter;
-    std::unique_ptr <Validations> mValidations;
+    RCLValidations mValidations;
     std::unique_ptr <LoadManager> m_loadManager;
     std::unique_ptr <TxQ> txQ_;
-    DeadlineTimer m_sweepTimer;
-    DeadlineTimer m_entropyTimer;
+    ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
+    boost::asio::steady_timer sweepTimer_;
+    boost::asio::steady_timer entropyTimer_;
     bool startTimers_;
 
     std::unique_ptr <DatabaseCon> mTxnDB;
@@ -393,8 +399,8 @@ public:
 
         , m_collectorManager (CollectorManager::New (
             config_->section (SECTION_INSIGHT), logs_->journal("Collector")))
-
         , cachedSLEs_ (std::chrono::minutes(1), stopwatch())
+        , validatorKeys_(*config_, m_journal)
 
         , m_resourceManager (Resource::make_Manager (
             m_collectorManager->collector(), logs_->journal("Resource")))
@@ -444,8 +450,8 @@ public:
 
         , m_networkOPs (make_NetworkOPs (*this, stopwatch(),
             config_->standalone(), config_->NETWORK_QUORUM, config_->START_VALID,
-            *m_jobQueue, *m_ledgerMaster, *m_jobQueue,
-            logs_->journal("NetworkOPs")))
+            *m_jobQueue, *m_ledgerMaster, *m_jobQueue, validatorKeys_,
+            get_io_service(), logs_->journal("NetworkOPs")))
 
         , cluster_ (std::make_unique<Cluster> (
             logs_->journal("Overlay")))
@@ -472,15 +478,16 @@ public:
             stopwatch(), HashRouter::getDefaultHoldTime (),
             HashRouter::getDefaultRecoverLimit ()))
 
-        , mValidations (make_Validations (*this))
+        , mValidations (ValidationParms(),stopwatch(), logs_->journal("Validations"),
+            *this)
 
         , m_loadManager (make_LoadManager (*this, *this, logs_->journal("LoadManager")))
 
         , txQ_(make_TxQ(setup_TxQ(*config_), logs_->journal("TxQ")))
 
-        , m_sweepTimer (this)
+        , sweepTimer_ (get_io_service())
 
-        , m_entropyTimer (this)
+        , entropyTimer_ (get_io_service())
 
         , startTimers_ (false)
 
@@ -567,6 +574,13 @@ public:
     nodeIdentity () override
     {
         return nodeIdentity_;
+    }
+
+    virtual
+    PublicKey const &
+    getValidationPublicKey() const override
+    {
+        return validatorKeys_.publicKey;
     }
 
     NetworkOPs& getOPs () override
@@ -671,9 +685,9 @@ public:
         return *mHashRouter;
     }
 
-    Validations& getValidations () override
+    RCLValidations& getValidations () override
     {
-        return *mValidations;
+        return mValidations;
     }
 
     ValidatorList& validators () override
@@ -817,8 +831,8 @@ public:
         using namespace std::chrono_literals;
         if(startTimers_)
         {
-            m_sweepTimer.setExpiration (10s);
-            m_entropyTimer.setRecurringExpiration (5min);
+            setSweepTimer();
+            setEntropyTimer();
         }
 
         m_io_latency_sampler.start();
@@ -848,13 +862,30 @@ public:
         //      things will happen.
         m_resolver->stop ();
 
-        if(startTimers_)
         {
-            m_sweepTimer.cancel ();
-            m_entropyTimer.cancel ();
-        }
+            boost::system::error_code ec;
+            sweepTimer_.cancel (ec);
+            if (ec)
+            {
+                JLOG (m_journal.error())
+                    << "Application: sweepTimer cancel error: "
+                    << ec.message();
+            }
 
-        mValidations->flush ();
+            ec.clear();
+            entropyTimer_.cancel (ec);
+            if (ec)
+            {
+                JLOG (m_journal.error())
+                    << "Application: entropyTimer cancel error: "
+                    << ec.message();
+            }
+        }
+        // Make sure that any waitHandlers pending in our timers are done
+        // before we declare ourselves stopped.
+        waitHandlerCounter_.join("Application", 1s, m_journal);
+
+        mValidations.flush ();
 
         validatorSites_->stop ();
 
@@ -874,7 +905,7 @@ public:
         stopped ();
     }
 
-    //------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     //
     // PropertyStream
     //
@@ -883,41 +914,83 @@ public:
     {
     }
 
-    //------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
-    void onDeadlineTimer (DeadlineTimer& timer) override
+    void setSweepTimer ()
     {
-        if (timer == m_entropyTimer)
-        {
-            crypto_prng().mix_entropy ();
-            return;
-        }
-
-        if (timer == m_sweepTimer)
-        {
-            // VFALCO TODO Move all this into doSweep
-
-            if (! config_->standalone())
+        // Only start the timer if waitHandlerCounter_ is not yet joined.
+        if (auto optionalCountedHandler = waitHandlerCounter_.wrap (
+            [this] (boost::system::error_code const& e)
             {
-                boost::filesystem::space_info space =
-                        boost::filesystem::space (config_->legacy ("database_path"));
-
-                // VFALCO TODO Give this magic constant a name and move it into a well documented header
-                //
-                if (space.available < (512 * 1024 * 1024))
+                if ((e.value() == boost::system::errc::success) &&
+                    (! m_jobQueue->isStopped()))
                 {
-                    JLOG(m_journal.fatal())
-                        << "Remaining free disk space is less than 512MB";
-                    signalStop ();
+                    m_jobQueue->addJob(
+                        jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
                 }
-            }
+                // Recover as best we can if an unexpected error occurs.
+                if (e.value() != boost::system::errc::success &&
+                    e.value() != boost::asio::error::operation_aborted)
+                {
+                    // Try again later and hope for the best.
+                    JLOG (m_journal.error())
+                       << "Sweep timer got error '" << e.message()
+                       << "'.  Restarting timer.";
+                    setSweepTimer();
+                }
+            }))
+        {
+            sweepTimer_.expires_from_now (
+                std::chrono::seconds {config_->getSize (siSweepInterval)});
+            sweepTimer_.async_wait (std::move (*optionalCountedHandler));
+        }
+    }
 
-            m_jobQueue->addJob(jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
+    void setEntropyTimer ()
+    {
+        // Only start the timer if waitHandlerCounter_ is not yet joined.
+        if (auto optionalCountedHandler = waitHandlerCounter_.wrap (
+            [this] (boost::system::error_code const& e)
+            {
+                if (e.value() == boost::system::errc::success)
+                {
+                    crypto_prng().mix_entropy();
+                    setEntropyTimer();
+                }
+                // Recover as best we can if an unexpected error occurs.
+                if (e.value() != boost::system::errc::success &&
+                    e.value() != boost::asio::error::operation_aborted)
+                {
+                    // Try again later and hope for the best.
+                    JLOG (m_journal.error())
+                       << "Entropy timer got error '" << e.message()
+                       << "'.  Restarting timer.";
+                    setEntropyTimer();
+                }
+            }))
+        {
+            using namespace std::chrono_literals;
+            entropyTimer_.expires_from_now (5min);
+            entropyTimer_.async_wait (std::move (*optionalCountedHandler));
         }
     }
 
     void doSweep ()
     {
+        if (! config_->standalone())
+        {
+            boost::filesystem::space_info space =
+                boost::filesystem::space (config_->legacy ("database_path"));
+
+            constexpr std::uintmax_t bytes512M = 512 * 1024 * 1024;
+            if (space.available < (bytes512M))
+            {
+                JLOG(m_journal.fatal())
+                    << "Remaining free disk space is less than 512MB";
+                signalStop ();
+            }
+        }
+
         // VFALCO NOTE Does the order of calls matter?
         // VFALCO TODO fix the dependency inversion using an observer,
         //         have listeners register for "onSweep ()" notification.
@@ -927,19 +1000,27 @@ public:
         getNodeStore().sweep();
         getLedgerMaster().sweep();
         getTempNodeCache().sweep();
-        getValidations().sweep();
+        getValidations().expire();
         getInboundLedgers().sweep();
         m_acceptedLedgerCache.sweep();
         family().treecache().sweep();
         cachedSLEs_.expire();
 
-        // VFALCO NOTE does the call to sweep() happen on another thread?
-        m_sweepTimer.setExpiration (
-            std::chrono::seconds {config_->getSize (siSweepInterval)});
+        // Set timer to do another sweep later.
+        setSweepTimer();
+    }
+
+    LedgerIndex getMaxDisallowedLedger() override
+    {
+        return maxDisallowedLedger_;
     }
 
 
 private:
+    // For a newly-started validator, this is the greatest persisted ledger
+    // and new validations must be greater than this.
+    std::atomic<LedgerIndex> maxDisallowedLedger_ {0};
+
     void addTxnSeqField();
     void addValidationSeqFields();
     bool updateTables ();
@@ -956,6 +1037,8 @@ private:
         std::string const& ledgerID,
         bool replay,
         bool isFilename);
+
+    void setMaxDisallowedLedger();
 };
 
 //------------------------------------------------------------------------------
@@ -1004,6 +1087,9 @@ bool ApplicationImp::setup()
         JLOG(m_journal.fatal()) << "Cannot create database connections!";
         return false;
     }
+
+    if (validatorKeys_.publicKey.size())
+        setMaxDisallowedLedger();
 
     getLedgerDB ().getSession ()
         << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
@@ -1085,38 +1171,11 @@ bool ApplicationImp::setup()
     }
 
     {
-        PublicKey valPublic;
-        SecretKey valSecret;
-        std::string manifest;
-        if (config().exists (SECTION_VALIDATOR_TOKEN))
-        {
-            if (auto const token = ValidatorToken::make_ValidatorToken (
-                config().section (SECTION_VALIDATOR_TOKEN).lines ()))
-            {
-                valSecret = token->validationSecret;
-                valPublic = derivePublicKey (KeyType::secp256k1, valSecret);
-                manifest = std::move(token->manifest);
-            }
-            else
-            {
-                JLOG(m_journal.fatal()) <<
-                    "Invalid entry in validator token configuration.";
-                return false;
-            }
-        }
-        else if (config().exists (SECTION_VALIDATION_SEED))
-        {
-            auto const seed = parseBase58<Seed>(
-                config().section (SECTION_VALIDATION_SEED).lines ().front());
-            if (!seed)
-                Throw<std::runtime_error> (
-                    "Invalid seed specified in [" SECTION_VALIDATION_SEED "]");
-            valSecret = generateSecretKey (KeyType::secp256k1, *seed);
-            valPublic = derivePublicKey (KeyType::secp256k1, valSecret);
-        }
+        if(validatorKeys_.configInvalid())
+            return false;
 
         if (!validatorManifests_->load (
-            getWalletDB (), "ValidatorManifests", manifest,
+            getWalletDB (), "ValidatorManifests", validatorKeys_.manifest,
             config().section (SECTION_VALIDATOR_KEY_REVOCATION).values ()))
         {
             JLOG(m_journal.fatal()) << "Invalid configured validator manifest.";
@@ -1126,11 +1185,9 @@ bool ApplicationImp::setup()
         publisherManifests_->load (
             getWalletDB (), "PublisherManifests");
 
-        m_networkOPs->setValidationKeys (valSecret, valPublic);
-
         // Setup trusted validators
         if (!validators_->load (
-                valPublic,
+                validatorKeys_.publicKey,
                 config().section (SECTION_VALIDATORS).values (),
                 config().section (SECTION_VALIDATOR_LIST_KEYS).values ()))
         {
@@ -1572,7 +1629,7 @@ bool ApplicationImp::loadOldLedger (
                 }
             }
         }
-        else if (ledgerID.empty () || beast::detail::ci_equal(ledgerID, "latest"))
+        else if (ledgerID.empty () || beast::detail::iequals(ledgerID, "latest"))
         {
             loadLedger = getLastFullLedger ();
         }
@@ -1948,6 +2005,21 @@ bool ApplicationImp::updateTables ()
 
     return true;
 }
+
+void ApplicationImp::setMaxDisallowedLedger()
+{
+    boost::optional <LedgerIndex> seq;
+    {
+        auto db = getLedgerDB().checkoutDb();
+        *db << "SELECT MAX(LedgerSeq) FROM Ledgers;", soci::into(seq);
+    }
+    if (seq)
+        maxDisallowedLedger_ = *seq;
+
+    JLOG (m_journal.trace()) << "Max persisted ledger is "
+                             << maxDisallowedLedger_;
+}
+
 
 //------------------------------------------------------------------------------
 

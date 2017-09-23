@@ -100,26 +100,11 @@ public:
     // Signs the validation and returns the signing hash
     uint256 sign (SecretKey const& secretKey);
 
-    // The validation this replaced
-    uint256 const& getPreviousHash ()
-    {
-        return mPreviousHash;
-    }
-    bool isPreviousHash (uint256 const& h) const
-    {
-        return mPreviousHash == h;
-    }
-    void setPreviousHash (uint256 const& h)
-    {
-        mPreviousHash = h;
-    }
-
 private:
     static SOTemplate const& getFormat ();
 
     void setNode ();
 
-    uint256 mPreviousHash;
     NodeID mNodeID;
     bool mTrusted = false;
     NetClock::time_point mSeen = {};

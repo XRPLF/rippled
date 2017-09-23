@@ -39,7 +39,10 @@
 #include <beast/zlib/detail/ranges.hpp>
 #include <beast/core/detail/type_traits.hpp>
 #include <boost/assert.hpp>
+#include <boost/config.hpp>
+#include <boost/make_unique.hpp>
 #include <boost/optional.hpp>
+#include <boost/throw_exception.hpp>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -132,7 +135,7 @@ protected:
     static std::uint16_t constexpr maxMatch = 258;
 
     // Can't change minMatch without also changing code, see original zlib
-    static_assert(minMatch==3, "");
+    BOOST_STATIC_ASSERT(minMatch == 3);
 
     // end of block literal code
     static std::uint16_t constexpr END_BLOCK = 256;
@@ -645,9 +648,10 @@ protected:
             init();
     }
 
+    template<class Unsigned>
     static
-    unsigned
-    bi_reverse(unsigned code, int len);
+    Unsigned
+    bi_reverse(Unsigned code, unsigned len);
 
     template<class = void>
     static
@@ -665,7 +669,7 @@ protected:
     template<class = void> std::size_t doUpperBound (std::size_t sourceLen) const;
     template<class = void> void doTune              (int good_length, int max_lazy, int nice_length, int max_chain);
     template<class = void> void doParams            (z_params& zs, int level, Strategy strategy, error_code& ec);
-    template<class = void> void doWrite             (z_params& zs, Flush flush, error_code& ec);
+    template<class = void> void doWrite             (z_params& zs, boost::optional<Flush> flush, error_code& ec);
     template<class = void> void doDictionary        (Byte const* dict, uInt dictLength, error_code& ec);
     template<class = void> void doPrime             (int bits, int value, error_code& ec);
     template<class = void> void doPending           (unsigned* value, int* bits);
@@ -741,12 +745,15 @@ protected:
 //--------------------------------------------------------------------------
 
 // Reverse the first len bits of a code
+template<class Unsigned>
 inline
-unsigned
+Unsigned
 deflate_stream::
-bi_reverse(unsigned code, int len)
+bi_reverse(Unsigned code, unsigned len)
 {
-    unsigned res = 0;
+    BOOST_STATIC_ASSERT(std::is_unsigned<Unsigned>::value);
+    BOOST_ASSERT(len <= 8 * sizeof(unsigned));
+    Unsigned res = 0;
     do
     {
         res |= code & 1;
@@ -807,7 +814,7 @@ deflate_stream::get_lut() ->
             //std::uint16_t bl_count[maxBits+1];
 
             // Initialize the mapping length (0..255) -> length code (0..28)
-            int length = 0;
+            std::uint8_t length = 0;
             for(std::uint8_t code = 0; code < lengthCodes-1; ++code)
             {
                 tables.base_length[code] = length;
@@ -815,7 +822,7 @@ deflate_stream::get_lut() ->
                 for(unsigned n = 0; n < run; ++n)
                     tables.length_code[length++] = code;
             }
-            BOOST_ASSERT(length == 256);
+            BOOST_ASSERT(length == 0);
             // Note that the length 255 (match length 258) can be represented
             // in two different ways: code 284 + 5 bits or code 285, so we
             // overwrite length_code[255] to use the best encoding:
@@ -894,19 +901,17 @@ doReset(
     if(windowBits == 8)
         windowBits = 9;
 
-    using beast::detail::make_exception;
-
     if(level < 0 || level > 9)
-        throw make_exception<std::invalid_argument>(
-            "invalid level", __FILE__, __LINE__);
+        BOOST_THROW_EXCEPTION(std::invalid_argument{
+            "invalid level"});
 
     if(windowBits < 8 || windowBits > 15)
-        throw make_exception<std::invalid_argument>(
-            "invalid windowBits", __FILE__, __LINE__);
+        BOOST_THROW_EXCEPTION(std::invalid_argument{
+            "invalid windowBits"});
 
     if(memLevel < 1 || memLevel > MAX_MEM_LEVEL)
-        throw make_exception<std::invalid_argument>(
-            "invalid memLevel", __FILE__, __LINE__);
+        BOOST_THROW_EXCEPTION(std::invalid_argument{
+            "invalid memLevel"});
 
     w_bits_ = windowBits;
 
@@ -998,7 +1003,7 @@ doParams(z_params& zs, int level, Strategy strategy, error_code& ec)
         // Flush the last buffer:
         doWrite(zs, Flush::block, ec);
         if(ec == error::need_buffers && pending_ == 0)
-            ec = {};
+            ec.assign(0, ec.category());
     }
     if(level_ != level)
     {
@@ -1011,10 +1016,14 @@ doParams(z_params& zs, int level, Strategy strategy, error_code& ec)
     strategy_ = strategy;
 }
 
+// VFALCO boost::optional param is a workaround for
+//        gcc "maybe uninitialized" warning
+//        https://github.com/vinniefalco/Beast/issues/532
+//
 template<class>
 void
 deflate_stream::
-doWrite(z_params& zs, Flush flush, error_code& ec)
+doWrite(z_params& zs, boost::optional<Flush> flush, error_code& ec)
 {
     maybe_init();
 
@@ -1050,8 +1059,9 @@ doWrite(z_params& zs, Flush flush, error_code& ec)
             return;
         }
     }
-    else if(zs.avail_in == 0 && flush <= old_flush &&
-        flush != Flush::finish)
+    else if(zs.avail_in == 0 && (
+            old_flush && flush <= *old_flush
+        ) && flush != Flush::finish)
     {
         /* Make sure there is something to do and avoid duplicate consecutive
          * flushes. For repeated and useless calls with Flush::finish, we keep
@@ -1078,14 +1088,14 @@ doWrite(z_params& zs, Flush flush, error_code& ec)
         switch(strategy_)
         {
         case Strategy::huffman:
-            bstate = deflate_huff(zs, flush);
+            bstate = deflate_huff(zs, flush.get());
             break;
         case Strategy::rle:
-            bstate = deflate_rle(zs, flush);
+            bstate = deflate_rle(zs, flush.get());
             break;
         default:
         {
-            bstate = (this->*(get_config(level_).func))(zs, flush);
+            bstate = (this->*(get_config(level_).func))(zs, flush.get());
             break;
         }
         }
@@ -1273,7 +1283,8 @@ init()
 
     if(! buf_ || buf_size_ != needed)
     {
-        buf_.reset(new std::uint8_t[needed]);
+        buf_ = boost::make_unique_noinit<
+            std::uint8_t[]>(needed);
         buf_size_ = needed;
     }
 
@@ -1436,7 +1447,7 @@ gen_bitlen(tree_desc *desc)
     std::uint16_t f;                // frequency
     int overflow = 0;               // number of elements with bit length too large
 
-    std::fill(&bl_count_[0], &bl_count_[maxBits+1], 0);
+    std::fill(&bl_count_[0], &bl_count_[maxBits+1], std::uint16_t{0});
 
     /* In a first pass, compute the optimal bit lengths (which may
      * overflow in the case of the bit length tree).
@@ -1615,7 +1626,7 @@ scan_tree(
     int prevlen = -1;           // last emitted length
     int curlen;                 // length of current code
     int nextlen = tree[0].dl;   // length of next code
-    int count = 0;              // repeat count of the current code
+    std::uint16_t count = 0;    // repeat count of the current code
     int max_count = 7;          // max repeat count
     int min_count = 4;          // min repeat count
 
@@ -2283,18 +2294,18 @@ fill_window(z_params& zs)
     if(high_water_ < window_size_)
     {
         std::uint32_t curr = strstart_ + (std::uint32_t)(lookahead_);
-        std::uint32_t init;
+        std::uint32_t winit;
 
         if(high_water_ < curr)
         {
             /*  Previous high water mark below current data -- zero kWinInit
                 bytes or up to end of window, whichever is less.
             */
-            init = window_size_ - curr;
-            if(init > kWinInit)
-                init = kWinInit;
-            std::memset(window_ + curr, 0, (unsigned)init);
-            high_water_ = curr + init;
+            winit = window_size_ - curr;
+            if(winit > kWinInit)
+                winit = kWinInit;
+            std::memset(window_ + curr, 0, (unsigned)winit);
+            high_water_ = curr + winit;
         }
         else if(high_water_ < (std::uint32_t)curr + kWinInit)
         {
@@ -2302,11 +2313,11 @@ fill_window(z_params& zs)
                 plus kWinInit -- zero out to current data plus kWinInit, or up
                 to end of window, whichever is less.
             */
-            init = (std::uint32_t)curr + kWinInit - high_water_;
-            if(init > window_size_ - high_water_)
-                init = window_size_ - high_water_;
-            std::memset(window_ + high_water_, 0, (unsigned)init);
-            high_water_ += init;
+            winit = (std::uint32_t)curr + kWinInit - high_water_;
+            if(winit > window_size_ - high_water_)
+                winit = window_size_ - high_water_;
+            std::memset(window_ + high_water_, 0, (unsigned)winit);
+            high_water_ += winit;
         }
     }
 }
@@ -2626,8 +2637,8 @@ f_fast(z_params& zs, Flush flush) ->
         }
         if(match_length_ >= minMatch)
         {
-            tr_tally_dist(strstart_ - match_start_,
-                           match_length_ - minMatch, bflush);
+            tr_tally_dist(static_cast<std::uint16_t>(strstart_ - match_start_),
+                static_cast<std::uint8_t>(match_length_ - minMatch), bflush);
 
             lookahead_ -= match_length_;
 
@@ -2762,8 +2773,9 @@ f_slow(z_params& zs, Flush flush) ->
             /* Do not insert strings in hash table beyond this. */
             uInt max_insert = strstart_ + lookahead_ - minMatch;
 
-            tr_tally_dist(strstart_ -1 - prev_match_,
-                           prev_length_ - minMatch, bflush);
+            tr_tally_dist(
+                static_cast<std::uint16_t>(strstart_ -1 - prev_match_),
+                static_cast<std::uint8_t>(prev_length_ - minMatch), bflush);
 
             /* Insert in hash table all strings up to the end of the match.
              * strstart-1 and strstart are already inserted. If there is not
@@ -2887,7 +2899,9 @@ f_rle(z_params& zs, Flush flush) ->
 
         /* Emit match if have run of minMatch or longer, else emit literal */
         if(match_length_ >= minMatch) {
-            tr_tally_dist(1, match_length_ - minMatch, bflush);
+            tr_tally_dist(std::uint16_t{1},
+                static_cast<std::uint8_t>(match_length_ - minMatch),
+                bflush);
 
             lookahead_ -= match_length_;
             strstart_ += match_length_;

@@ -93,13 +93,13 @@ public:
         stack_.top().type = ct;
     }
 
-    void output (boost::string_ref const& bytes)
+    void output (beast::string_view const& bytes)
     {
         markStarted ();
         output_ (bytes);
     }
 
-    void stringOutput (boost::string_ref const& bytes)
+    void stringOutput (beast::string_view const& bytes)
     {
         markStarted ();
         std::size_t position = 0, writtenUntil = 0;

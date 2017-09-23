@@ -128,7 +128,7 @@ public:
 
         // This lambda contains the bulk of the test code.
         auto testMalformedSigningAccount =
-            [this, &txn, &id1]
+            [this, &txn]
                 (STObject const& signer, bool expectPass)
         {
             // Create SigningAccounts array.

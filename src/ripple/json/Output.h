@@ -20,19 +20,19 @@
 #ifndef RIPPLE_JSON_OUTPUT_H_INCLUDED
 #define RIPPLE_JSON_OUTPUT_H_INCLUDED
 
-#include <boost/utility/string_ref.hpp>
+#include <beast/core/string.hpp>
 #include <functional>
 
 namespace Json {
 
 class Value;
 
-using Output = std::function <void (boost::string_ref const&)>;
+using Output = std::function <void (beast::string_view const&)>;
 
 inline
 Output stringOutput (std::string& s)
 {
-    return [&](boost::string_ref const& b) { s.append (b.data(), b.size()); };
+    return [&](beast::string_view const& b) { s.append (b.data(), b.size()); };
 }
 
 /** Writes a minimal representation of a Json value to an Output in O(n) time.

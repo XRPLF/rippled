@@ -18,11 +18,10 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/main/Application.h>
 #include <ripple/overlay/PeerSet.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/overlay/Overlay.h>
-#include <beast/core/placeholders.hpp>
 
 namespace ripple {
 

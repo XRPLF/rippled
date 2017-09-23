@@ -10,6 +10,7 @@
 
 #include <beast/core/detail/type_traits.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/throw_exception.hpp>
 #include <algorithm>
 #include <cstring>
 #include <iterator>
@@ -414,8 +415,8 @@ buffers_adapter<MutableBufferSequence>::prepare(std::size_t n) ->
         }
     }
     if(n > 0)
-        throw detail::make_exception<std::length_error>(
-            "no space", __FILE__, __LINE__);
+        BOOST_THROW_EXCEPTION(std::length_error{
+            "buffer overflow"});
     return mutable_buffers_type{*this};
 }
 

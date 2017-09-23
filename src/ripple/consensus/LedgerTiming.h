@@ -27,15 +27,9 @@
 
 namespace ripple {
 
-//------------------------------------------------------------------------------
-// These are protocol parameters used to control the behavior of the system and
-// they should not be changed arbitrarily.
-
-//! The percentage threshold above which we can declare consensus.
-auto constexpr minimumConsensusPercentage = 80;
-
 using namespace std::chrono_literals;
-/**  Possible close time resolutions.
+
+/**  Possible ledger close time resolutions.
 
     Values should not be duplicated.
     @see getNextLedgerTimeResolution
@@ -52,84 +46,6 @@ auto constexpr increaseLedgerTimeResolutionEvery = 8;
 //! How often we decrease the close time resolution (in numbers of ledgers)
 auto constexpr decreaseLedgerTimeResolutionEvery = 1;
 
-//! The number of seconds a ledger may remain idle before closing
-auto constexpr LEDGER_IDLE_INTERVAL = 15s;
-
-/** The number of seconds a validation remains current after its ledger's close
-    time.
-
-    This is a safety to protect against very old validations and the time
-    it takes to adjust the close time accuracy window.
-*/
-auto constexpr VALIDATION_VALID_WALL = 5min;
-
-/** Duration a validation remains current after first observed.
-
-    The number of seconds a validation remains current after the time we first
-    saw it. This provides faster recovery in very rare cases where the number
-    of validations produced by the network is lower than normal
-*/
-auto constexpr VALIDATION_VALID_LOCAL = 3min;
-
-/**  Duration pre-close in which validations are acceptable.
-
-    The number of seconds before a close time that we consider a validation
-    acceptable. This protects against extreme clock errors
-*/
-auto constexpr VALIDATION_VALID_EARLY = 3min;
-
-//! The number of seconds we wait minimum to ensure participation
-auto constexpr LEDGER_MIN_CONSENSUS = 1950ms;
-
-//! Minimum number of seconds to wait to ensure others have computed the LCL
-auto constexpr LEDGER_MIN_CLOSE = 2s;
-
-//! How often we check state or change positions
-auto constexpr LEDGER_GRANULARITY = 1s;
-
-//! How long we consider a proposal fresh
-auto constexpr PROPOSE_FRESHNESS = 20s;
-
-//! How often we force generating a new proposal to keep ours fresh
-auto constexpr PROPOSE_INTERVAL = 12s;
-
-//------------------------------------------------------------------------------
-// Avalanche tuning
-//! Percentage of nodes on our UNL that must vote yes
-auto constexpr AV_INIT_CONSENSUS_PCT = 50;
-
-//! Percentage of previous close time before we advance
-auto constexpr AV_MID_CONSENSUS_TIME = 50;
-
-//! Percentage of nodes that most vote yes after advancing
-auto constexpr AV_MID_CONSENSUS_PCT = 65;
-
-//! Percentage of previous close time before we advance
-auto constexpr AV_LATE_CONSENSUS_TIME = 85;
-
-//! Percentage of nodes that most vote yes after advancing
-auto constexpr AV_LATE_CONSENSUS_PCT = 70;
-
-//! Percentage of previous close time before we are stuck
-auto constexpr AV_STUCK_CONSENSUS_TIME = 200;
-
-//! Percentage of nodes that must vote yes after we are stuck
-auto constexpr AV_STUCK_CONSENSUS_PCT = 95;
-
-//! Percentage of nodes required to reach agreement on ledger close time
-auto constexpr AV_CT_CONSENSUS_PCT = 75;
-
-/** The minimum amount of time to consider the previous round
-    to have taken.
-
-    The minimum amount of time to consider the previous round
-    to have taken. This ensures that there is an opportunity
-    for a round at each avalanche threshold even if the
-    previous consensus was very fast. This should be at least
-    twice the interval between proposals (0.7s) divided by
-    the interval between mid and late consensus ([85-50]/100).
-*/
-auto constexpr AV_MIN_CONSENSUS_TIME = 5s;
 
 /** Calculates the close time resolution for the specified ledger.
 
@@ -223,6 +139,8 @@ effCloseTime(
     typename time_point::duration const resolution,
     time_point priorCloseTime)
 {
+    using namespace std::chrono_literals;
+
     if (closeTime == time_point{})
         return closeTime;
 
@@ -230,78 +148,5 @@ effCloseTime(
         roundCloseTime(closeTime, resolution), (priorCloseTime + 1s));
 }
 
-/** Determines whether the current ledger should close at this time.
-
-    This function should be called when a ledger is open and there is no close
-    in progress, or when a transaction is received and no close is in progress.
-
-    @param anyTransactions indicates whether any transactions have been received
-    @param prevProposers proposers in the last closing
-    @param proposersClosed proposers who have currently closed this ledger
-    @param proposersValidated proposers who have validated the last closed
-                              ledger
-    @param prevRoundTime time for the previous ledger to reach consensus
-    @param timeSincePrevClose  time since the previous ledger's (possibly rounded)
-                        close time
-    @param openTime     duration this ledger has been open
-    @param idleInterval the network's desired idle interval
-    @param j            journal for logging
-*/
-bool
-shouldCloseLedger(
-    bool anyTransactions,
-    std::size_t prevProposers,
-    std::size_t proposersClosed,
-    std::size_t proposersValidated,
-    std::chrono::milliseconds prevRoundTime,
-    std::chrono::milliseconds timeSincePrevClose,
-    std::chrono::milliseconds openTime,
-    std::chrono::seconds idleInterval,
-    beast::Journal j);
-
-/** Determine if a consensus has been reached
-
-    This function determines if a consensus has been reached
-
-    @param agreeing count of agreements with our position
-    @param total count of participants other than us
-    @param count_self whether we count ourselves
-    @return True if a consensus has been reached
-*/
-bool
-checkConsensusReached(std::size_t agreeing, std::size_t total, bool count_self);
-
-/** Whether we have or don't have a consensus */
-enum class ConsensusState {
-    No,       //!< We do not have consensus
-    MovedOn,  //!< The network has consensus without us
-    Yes       //!< We have consensus along with the network
-};
-
-/** Determine whether the network reached consensus and whether we joined.
-
-    @param prevProposers proposers in the last closing (not including us)
-    @param currentProposers proposers in this closing so far (not including us)
-    @param currentAgree proposers who agree with us
-    @param currentFinished proposers who have validated a ledger after this one
-    @param previousAgreeTime how long, in milliseconds, it took to agree on the
-                             last ledger
-    @param currentAgreeTime how long, in milliseconds, we've been trying to
-                            agree
-    @param proposing        whether we should count ourselves
-    @param j                journal for logging
-*/
-ConsensusState
-checkConsensus(
-    std::size_t prevProposers,
-    std::size_t currentProposers,
-    std::size_t currentAgree,
-    std::size_t currentFinished,
-    std::chrono::milliseconds previousAgreeTime,
-    std::chrono::milliseconds currentAgreeTime,
-    bool proposing,
-    beast::Journal j);
-
-}  // ripple
-
+}
 #endif

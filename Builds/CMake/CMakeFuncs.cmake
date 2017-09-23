@@ -12,7 +12,7 @@ endif()
 
 macro(parse_target)
 
-  if (NOT target)
+  if (NOT target OR target STREQUAL "default")
     if (NOT CMAKE_BUILD_TYPE)
       set(CMAKE_BUILD_TYPE Debug)
     endif()
@@ -110,14 +110,27 @@ macro(parse_target)
 
     endwhile()
   endif()
-  # Promote these values to the CACHE, then unset the locals
-  # to prevent shadowing.
-  set(CMAKE_C_COMPILER ${CMAKE_C_COMPILER} CACHE FILEPATH
-    "Path to a program" FORCE)
-  unset(CMAKE_C_COMPILER)
-  set(CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE FILEPATH
-    "Path to a program" FORCE)
-  unset(CMAKE_CXX_COMPILER)
+
+  if(CMAKE_C_COMPILER MATCHES "-NOTFOUND$" OR
+    CMAKE_CXX_COMPILER MATCHES "-NOTFOUND$")
+    message(FATAL_ERROR "Can not find appropriate compiler for target ${target}")
+  endif()
+
+  # If defined, promote the compiler path values to the CACHE, then
+  # unset the locals to prevent shadowing. Some scenarios do not
+  # need or want to find a compiler, such as -GNinja under Windows.
+  # Setting these values in those case may prevent CMake from finding
+  # a valid compiler.
+  if (CMAKE_C_COMPILER)
+    set(CMAKE_C_COMPILER ${CMAKE_C_COMPILER} CACHE FILEPATH
+      "Path to a program" FORCE)
+    unset(CMAKE_C_COMPILER)
+  endif (CMAKE_C_COMPILER)
+  if (CMAKE_CXX_COMPILER)
+    set(CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER} CACHE FILEPATH
+      "Path to a program" FORCE)
+    unset(CMAKE_CXX_COMPILER)
+  endif (CMAKE_CXX_COMPILER)
 
   if (release)
     set(CMAKE_BUILD_TYPE Release)
@@ -156,9 +169,15 @@ macro(setup_build_cache)
   set(assert false CACHE BOOL "Enables asserts, even in release builds")
   set(static false CACHE BOOL
     "On linux, link protobuf, openssl, libc++, and boost statically")
+  set(jemalloc false CACHE BOOL "Enables jemalloc for heap profiling")
+  set(perf false CACHE BOOL "Enables flags that assist with perf recording")
 
   if (static AND (WIN32 OR APPLE))
     message(FATAL_ERROR "Static linking is only supported on linux.")
+  endif()
+
+  if (perf AND (WIN32 OR APPLE))
+    message(FATAL_ERROR "perf flags are only supported on linux.")
   endif()
 
   if (${CMAKE_GENERATOR} STREQUAL "Unix Makefiles" AND NOT CMAKE_BUILD_TYPE)
@@ -302,6 +321,7 @@ macro(use_boost)
     if ((NOT DEFINED BOOST_ROOT) AND (DEFINED ENV{BOOST_ROOT}))
         set(BOOST_ROOT $ENV{BOOST_ROOT})
     endif()
+    file(TO_CMAKE_PATH "${BOOST_ROOT}" BOOST_ROOT)
     if(WIN32 OR CYGWIN)
         # Workaround for MSVC having two boost versions - x86 and x64 on same PC in stage folders
         if(DEFINED BOOST_ROOT)
@@ -368,6 +388,11 @@ macro(use_openssl openssl_min)
     endif()
 
     find_package(OpenSSL)
+    # depending on how openssl is built, it might depend
+    # on zlib. In fact, the openssl find package should
+    # figure this out for us, but it does not currently...
+    # so let's add zlib ourselves to the lib list
+    find_package(ZLIB)
 
     if (static)
       set(CMAKE_FIND_LIBRARY_SUFFIXES tmp)
@@ -375,6 +400,7 @@ macro(use_openssl openssl_min)
 
     if (OPENSSL_FOUND)
       include_directories(${OPENSSL_INCLUDE_DIR})
+      list(APPEND OPENSSL_LIBRARIES ${ZLIB_LIBRARIES})
     else()
       message(FATAL_ERROR "OpenSSL not found")
     endif()
@@ -507,6 +533,10 @@ macro(setup_build_boilerplate)
     endif()
   endif()
 
+  if (perf)
+    add_compile_options(-fno-omit-frame-pointer)
+  endif()
+
   ############################################################
 
   add_definitions(
@@ -525,8 +555,18 @@ macro(setup_build_boilerplate)
     execute_process(
       COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=gold -Wl,--version
       ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
-    if ("${LD_VERSION}" MATCHES "GNU gold")
-      append_flags(CMAKE_EXE_LINKER_FLAGS -fuse-ld=gold)
+    # NOTE: THE gold linker inserts -rpath as DT_RUNPATH by default
+    #  intead of DT_RPATH, so you might have slightly unexpected
+    #  runtime ld behavior if you were expecting DT_RPATH.
+    #  Specify --disable-new-dtags to gold if you do not want
+    #  the default DT_RUNPATH behavior. This rpath treatment as well
+    #  as static/dynamic selection means that gold does not currently
+    #  have ideal default behavior when we are using jemalloc. Thus
+    #  for simplicity we don't use it when jemalloc is requested.
+    #  An alternative to disabling would be to figure out all the settings
+    #  required to make gold play nicely with jemalloc.
+    if (("${LD_VERSION}" MATCHES "GNU gold") AND (NOT jemalloc))
+        append_flags(CMAKE_EXE_LINKER_FLAGS -fuse-ld=gold)
     endif ()
     unset(LD_VERSION)
   endif()
@@ -553,6 +593,15 @@ macro(setup_build_boilerplate)
     STRING(REGEX REPLACE "[-/]DNDEBUG" "" CMAKE_CXX_FLAGS_RELEASECLASSIC "${CMAKE_CXX_FLAGS_RELEASECLASSIC}")
     STRING(REGEX REPLACE "[-/]DNDEBUG" "" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
     STRING(REGEX REPLACE "[-/]DNDEBUG" "" CMAKE_C_FLAGS_RELEASECLASSIC "${CMAKE_C_FLAGS_RELEASECLASSIC}")
+  endif()
+
+  if (jemalloc)
+    find_package(jemalloc REQUIRED)
+    add_definitions(-DPROFILE_JEMALLOC)
+    include_directories(SYSTEM ${JEMALLOC_INCLUDE_DIRS})
+    link_libraries(${JEMALLOC_LIBRARIES})
+    get_filename_component(JEMALLOC_LIB_PATH ${JEMALLOC_LIBRARIES} DIRECTORY)
+    set(CMAKE_BUILD_RPATH ${CMAKE_BUILD_RPATH} ${JEMALLOC_LIB_PATH})
   endif()
 
   if (NOT WIN32)
@@ -585,7 +634,7 @@ macro(setup_build_boilerplate)
     if (APPLE)
       add_definitions(-DBEAST_COMPILE_OBJECTIVE_CPP=1)
       add_compile_options(
-        -Wno-deprecated -Wno-deprecated-declarations -Wno-unused-variable -Wno-unused-function)
+        -Wno-deprecated -Wno-deprecated-declarations -Wno-unused-function)
     endif()
 
     if (is_gcc)
@@ -594,27 +643,27 @@ macro(setup_build_boilerplate)
     endif (is_gcc)
   else(NOT WIN32)
     add_compile_options(
-      /bigobj              # Increase object file max size
-      /EHa                 # ExceptionHandling all
-      /fp:precise          # Floating point behavior
-      /Gd                  # __cdecl calling convention
-      /Gm-                 # Minimal rebuild: disabled
-      /GR                  # Enable RTTI
-      /Gy-                 # Function level linking: disabled
+      /bigobj            # Increase object file max size
+      /EHa               # ExceptionHandling all
+      /fp:precise        # Floating point behavior
+      /Gd                # __cdecl calling convention
+      /Gm-               # Minimal rebuild: disabled
+      /GR                # Enable RTTI
+      /Gy-               # Function level linking: disabled
       /FS
-      /MP                  # Multiprocessor compilation
-      /openmp-             # pragma omp: disabled
-      /Zc:forScope         # Language extension: for scope
-      /Zi                  # Generate complete debug info
-      /errorReport:none    # No error reporting to Internet
-      /nologo              # Suppress login banner
-      /W3                  # Warning level 3
-      /WX-                 # Disable warnings as errors
-      /wd"4018"
-      /wd"4244"
-      /wd"4267"
-      /wd"4800"            # Disable C4800(int to bool performance)
-      /wd"4503"            # Decorated name length exceeded, name was truncated
+      /MP                # Multiprocessor compilation
+      /openmp-           # pragma omp: disabled
+      /Zc:forScope       # Language conformance: for scope
+      /Zi                # Generate complete debug info
+      /errorReport:none  # No error reporting to Internet
+      /nologo            # Suppress login banner
+      /W3                # Warning level 3
+      /WX-               # Disable warnings as errors
+      /wd4018            # Disable signed/unsigned comparison warnings
+      /wd4244            # Disable float to int possible loss of data warnings
+      /wd4267            # Disable size_t to T possible loss of data warnings
+      /wd4800            # Disable C4800(int to bool performance)
+      /wd4503            # Decorated name length exceeded, name was truncated
       )
     add_definitions(
       -D_WIN32_WINNT=0x6000
@@ -699,7 +748,7 @@ macro(link_common_libraries cur_project)
       find_library(app_kit AppKit)
       find_library(foundation Foundation)
       target_link_libraries(${cur_project}
-        crypto ssl ${app_kit} ${foundation})
+        ${app_kit} ${foundation})
     else()
       target_link_libraries(${cur_project} rt)
     endif()
