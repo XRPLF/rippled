@@ -5,12 +5,10 @@
 Please [contact us](mailto:support@ripple.com). We can help guide your integration.
 
 # What is Ripple?
-Ripple is a network of computers which use the [Ripple consensus algorithm](https://www.youtube.com/watch?v=pj1QVb1vlC0) to atomically settle and record
-transactions on a secure distributed database, the Ripple Consensus Ledger
-(RCL). Because of its distributed nature, the RCL offers transaction immutability
-without a central operator. The RCL contains a built-in currency exchange and its
-path-finding algorithm finds competitive exchange rates across order books
-and currency pairs.
+Ripple connects banks, payment providers and digital asset exchanges via RippleNet to provide one frictionless experience to send money globally.
+
+# What is the XRP Ledger?
+The XRP Ledger is a network of computers, which uses [a consensus algorithm](https://www.youtube.com/watch?v=pj1QVb1vlC0) to atomically settle and record transactions on a secure distributed database. Because of its distributed nature, the XRP Ledger offers transaction immutability without a central operator. The XRP Ledger contains a built-in currency exchange and its path-finding algorithm finds competitive exchange rates across order books and currency pairs.
 
 ### Key Features
 - **Distributed**
@@ -23,31 +21,19 @@ and currency pairs.
   - Capacity to process the world’s cross-border payments volume
   - Easy access to liquidity through a competitive FX marketplace
 
-## Cross-border payments
-Ripple enables banks to settle cross-border payments in real-time, with
-end-to-end transparency, and at lower costs. Banks can provide liquidity
-for FX themselves or source it from third parties.
+## Global payments
+Ripple connects banks, payment providers, digital asset exchanges and corporates via RippleNet to provide one frictionless experience to send money globally.
 
-As Ripple adoption grows, so do the number of currencies and counterparties.
-Liquidity providers need to maintain accounts with each counterparty for
-each currency – a capital- and time-intensive endeavor that spreads liquidity
-thin. Further, some transactions, such as exotic currency trades, will require
-multiple trading parties, who each layer costs to the transaction. Thin
-liquidity and many intermediary trading parties make competitive pricing
-challenging.
+Ripple is built on the most advanced blockchain technology that is scalable, secure and interoperates different networks, while providing optional access to the world’s fastest and most scalable digital asset for payments, XRP.
 
-![Flow - Direct](images/flow1.png)
+Banks, payment providers and digital asset exchanges process and provide liquidity for payments on RippleNet, creating new, competitive cross-border payments services for their customers.
 
 ### XRP as a Bridge Currency
-Ripple can bridge even exotic currency pairs directly through XRP. Similar to
-USD in today’s currency market, XRP allows liquidity providers to focus on
-offering competitive FX rates on fewer pairs and adding depth to order books.
-Unlike USD, trading through XRP does not require bank accounts, service fees,
-counterparty risk, or additional operational costs. By using XRP, liquidity
-providers can specialize in certain currency corridors, reduce operational
-costs, and ultimately, offer more competitive FX pricing.
+Built for enterprise use, XRP offers banks and payment providers a highly efficient, scalable, reliable liquidity option to service cross-border payments. Using XRP, banks can source liquidity on demand in real time without having to pre-fund nostro accounts. Ripple can bridge even exotic currency pairs directly through XRP. Payment Providers use XRP to expand reach into new markets, lower foreign exchange costs and provide faster payment settlement. 
 
-![Flow - Bridged over XRP](images/flow2.png)
+xRapid is for payment providers and other financial institutions who want to minimize liquidity costs while improving their customer experience. Because payments into emerging markets often require pre-funded local currency accounts around the world, liquidity costs are high. xRapid dramatically lowers the capital requirements for liquidity. xRapid uses digital assets, such as XRP, to offer on-demand liquidity, which dramatically lowers costs while enabling real-time payments in emerging markets.
+
+![Flow - Bridged over XRP](images/img_xrapid_1@2x.png)
 
 # rippled - Ripple server
 `rippled` is the reference server implementation of the Ripple
