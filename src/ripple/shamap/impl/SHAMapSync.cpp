@@ -227,7 +227,8 @@ void SHAMap::gmn_ProcessDeferredReads (MissingNodes& mn)
     auto const process_time = std::chrono::duration_cast
         <std::chrono::milliseconds> (std::chrono::steady_clock::now() - after);
 
-    if ((count > 50) || (elapsed.count() > 50))
+    using namespace std::chrono_literals;
+    if ((count > 50) || (elapsed > 50ms))
     {
         JLOG(journal_.debug()) << "getMissingNodes reads " <<
             count << " nodes (" << hits << " hits) in "

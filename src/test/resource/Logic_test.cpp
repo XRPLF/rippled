@@ -144,10 +144,11 @@ public:
         // Makes sure the Consumer is eventually removed from blacklist
         bool readmitted = false;
         {
+            using namespace std::chrono_literals;
             // Give Consumer time to become readmitted.  Should never
             // exceed expiration time.
-            std::size_t n (secondsUntilExpiration + 1);
-            while (--n > 0)
+            auto n = secondsUntilExpiration + 1s;
+            while (--n > 0s)
             {
                 ++logic.clock ();
                 logic.periodicActivity();

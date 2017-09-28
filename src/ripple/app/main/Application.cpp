@@ -247,16 +247,16 @@ private:
         void operator() (Duration const& elapsed)
         {
             using namespace std::chrono;
-            auto const ms (ceil <std::chrono::milliseconds> (elapsed));
+            auto const lastSample = ceil<milliseconds>(elapsed);
 
-            lastSample_ = ms;
+            lastSample_ = lastSample;
 
-            if (ms.count() >= 10)
-                m_event.notify (ms);
-            if (ms.count() >= 500)
+            if (lastSample >= 10ms)
+                m_event.notify (lastSample);
+            if (lastSample >= 500ms)
             {
                 JLOG(m_journal.warn()) <<
-                    "io_service latency = " << ms.count();
+                    "io_service latency = " << lastSample.count();
             }
         }
 
