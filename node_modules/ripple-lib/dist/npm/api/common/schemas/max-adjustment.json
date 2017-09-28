@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "maxAdjustment",
+  "type": "object",
+  "properties": {
+    "address": {"$ref": "address"},
+    "maxAmount": {
+      "type": "object",
+      "properties": {
+        "currency": {"$ref": "currency"},
+        "counterparty": {"$ref": "address"},
+        "value": {"$ref": "value"}
+      },
+      "required": ["currency", "value"],
+      "additionalProperties": false
+    },
+    "tag": {
+      "description": "A string representing an unsigned 32-bit integer most commonly used to refer to a sender's hosted account at a Ripple gateway",
+      "$ref": "uint32"
+    }
+  },
+  "required": ["address", "maxAmount"],
+  "additionalProperties": false
+}

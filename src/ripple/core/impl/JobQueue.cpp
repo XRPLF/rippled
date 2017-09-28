@@ -221,6 +221,7 @@ JobQueue::isOverloaded ()
 Json::Value
 JobQueue::getJson (int c)
 {
+    using namespace std::chrono_literals;
     Json::Value ret (Json::objectValue);
 
     ret["threads"] = m_workers.getNumberOfThreads ();
@@ -244,7 +245,7 @@ JobQueue::getJson (int c)
         int running (data.running);
 
         if ((stats.count != 0) || (waiting != 0) ||
-            (stats.latencyPeak != 0) || (running != 0))
+            (stats.latencyPeak != 0ms) || (running != 0))
         {
             Json::Value& pri = priorities.append (Json::objectValue);
 
@@ -259,11 +260,11 @@ JobQueue::getJson (int c)
             if (stats.count != 0)
                 pri["per_second"] = static_cast<int> (stats.count);
 
-            if (stats.latencyPeak != 0)
-                pri["peak_time"] = static_cast<int> (stats.latencyPeak);
+            if (stats.latencyPeak != 0ms)
+                pri["peak_time"] = static_cast<int> (stats.latencyPeak.count());
 
-            if (stats.latencyAvg != 0)
-                pri["avg_time"] = static_cast<int> (stats.latencyAvg);
+            if (stats.latencyAvg != 0ms)
+                pri["avg_time"] = static_cast<int> (stats.latencyAvg.count());
 
             if (running != 0)
                 pri["in_progress"] = running;
@@ -408,9 +409,9 @@ void JobQueue::on_dequeue (JobType type,
     std::chrono::duration <Rep, Period> const& value)
 {
     using namespace std::chrono;
-    auto const ms (ceil <std::chrono::milliseconds> (value));
+    auto const ms = ceil<milliseconds>(value);
 
-    if (ms.count() >= 10)
+    if (ms >= 10ms)
         getJobTypeData (type).dequeue.notify (ms);
 }
 
@@ -419,9 +420,9 @@ void JobQueue::on_execute (JobType type,
     std::chrono::duration <Rep, Period> const& value)
 {
     using namespace std::chrono;
-    auto const ms (ceil <std::chrono::milliseconds> (value));
+    auto const ms (ceil <milliseconds> (value));
 
-    if (ms.count() >= 10)
+    if (ms >= 10ms)
         getJobTypeData (type).execute.notify (ms);
 }
 

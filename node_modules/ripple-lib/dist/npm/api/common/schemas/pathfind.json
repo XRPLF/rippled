@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "pathfind",
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "object",
+      "properties": {
+        "address": {"$ref": "address"},
+        "currencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "currency": {"$ref": "currency"},
+              "counterparty": {"$ref": "address"}
+            },
+            "required": ["currency"],
+            "additionalProperties": false
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false,
+      "required": ["address"]
+    },
+    "destination": {"$ref": "adjustment"}
+  },
+  "required": ["source", "destination"],
+  "additionalProperties": false
+}

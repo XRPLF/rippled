@@ -1,0 +1,13 @@
+{
+  "id": 0,
+  "status": "error",
+  "type": "response",
+  "error": "lgrNotFound",
+  "error_code": 20,
+  "error_message": "ledgerNotFound",
+  "request": {
+    "command": "ledger",
+    "id": 3,
+    "ledger_index": 34
+  }
+}

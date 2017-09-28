@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "getServerInfo",
+  "type": "object",
+  "properties": {
+    "buildVersion": {"type": "string"},
+    "completeLedgers": {"type": "string", "pattern": "[0-9,-]+"},
+    "hostid": {"type": "string"},
+    "ioLatencyMs": {"type": "number"},
+    "load": {
+      "type": "object",
+      "properties": {
+        "jobTypes": {
+          "type": "array",
+          "items": {"type": "object"}
+        },
+        "threads": {"type": "number"}
+      }
+    },
+    "lastClose": {
+      "type": "object",
+      "properties": {
+        "convergeTimeS": {"type": "number"},
+        "proposers": {"type": "integer", "minimum": 0}
+      }
+    },
+    "loadFactor": {"type": "number"},
+    "peers": {"type": "integer", "minimum": 0},
+    "pubkeyNode": {"type": "string"},
+    "pubkeyValidator": {"type": "string"},
+    "serverState": {
+      "type": "string",
+      "enum": ["disconnected", "connected", "syncing", "tracking", "full", "validating", "proposing"]
+    },
+    "validatedLedger": {
+      "type": "object",
+      "properties": {
+        "age": {"type": "integer", "minimum": 0},
+        "baseFeeXrp": {"type": "number"},
+        "hash": {"$ref": "hash256"},
+        "reserveBaseXrp": {"type": "integer", "minimum": 0},
+        "reserveIncXrp": {"type": "integer", "minimum": 0},
+        "seq": {"type": "integer", "minimum": 0}
+      }
+    },
+    "validationQuorum": {"type": "number"}
+  },
+  "additionalProperties": false
+}

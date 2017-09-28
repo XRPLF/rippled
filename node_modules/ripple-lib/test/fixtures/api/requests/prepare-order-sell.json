@@ -1,0 +1,13 @@
+{
+  "direction": "sell",
+  "quantity": {
+    "currency": "USD",
+    "counterparty": "rMH4UxPrbuMa1spCBR98hLLyNJp4d8p4tM",
+    "value": "10.1"
+  },
+  "totalPrice": {
+    "currency": "XRP",
+    "value": "2"
+  },
+  "immediateOrCancel": true
+}

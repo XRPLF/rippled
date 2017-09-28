@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "orderChange",
+  "type": "object",
+  "properties": {
+    "direction": {
+      "type": "string",
+      "enum": ["buy", "sell"]
+    },
+    "quantity": {"$ref": "balance"},
+    "totalPrice": {"$ref": "balance"},
+    "sequence": {"$ref": "sequence"},
+    "status": {"enum": ["created", "open", "closed", "canceled"]}
+  },
+  "required": ["direction", "quantity", "totalPrice", "sequence", "status"],
+  "additionalProperties": false
+}

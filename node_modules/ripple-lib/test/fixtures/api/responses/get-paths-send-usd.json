@@ -1,0 +1,20 @@
+[
+  {
+    "source": {
+      "address": "rpZc4mVfWUif9CRoHRKKcmhu1nx2xktxBo",
+      "amount": {
+        "currency": "USD",
+        "value": "0.000001002",
+        "counterparty": "rpZc4mVfWUif9CRoHRKKcmhu1nx2xktxBo"
+      }
+    },
+    "destination": {
+      "address": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59",
+      "amount": {
+        "value": "0.000001",
+        "currency": "USD"
+      }
+    },
+    "paths": "[[{\"account\":\"rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B\"}],[{\"account\":\"rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B\"},{\"account\":\"rLMJ4db4uwHcd6NHg6jvTaYb8sH5Gy4tg5\"},{\"account\":\"rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun\"}],[{\"account\":\"rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B\"},{\"currency\":\"USD\",\"issuer\":\"rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun\"},{\"account\":\"rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun\"}],[{\"account\":\"rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B\"},{\"account\":\"rLMJ4db4uwHcd6NHg6jvTaYb8sH5Gy4tg5\"},{\"account\":\"r9vbV3EHvXWjSkeQ6CAcYVPGeq7TuiXY2X\"}]]"
+  }
+]

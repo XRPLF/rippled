@@ -1,0 +1,14 @@
+{
+  "Flags": 655360,
+  "TransactionType": "OfferCreate",
+  "Account": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59",
+  "TakerGets": {
+    "value": "10.1",
+    "currency": "USD",
+    "issuer": "rMH4UxPrbuMa1spCBR98hLLyNJp4d8p4tM"
+  },
+  "TakerPays": "2000000",
+  "LastLedgerSequence": 8820051,
+  "Fee": "12",
+  "Sequence": 23
+}

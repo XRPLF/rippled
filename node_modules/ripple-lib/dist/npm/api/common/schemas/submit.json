@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "submit",
+  "type": "object",
+  "properties": {
+    "success": {"type": "boolean"},
+    "engineResult": {"type": "string"},
+    "engineResultCode": {"type": "integer"},
+    "engineResultMessage": {"type": "string"},
+    "txBlob": {"type": "string"},
+    "txJson": {"type": "object"}
+  },
+  "required": ["success", "engineResult", "engineResultCode"],
+  "additionalProperties": false
+}

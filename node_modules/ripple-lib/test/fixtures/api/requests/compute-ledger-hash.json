@@ -1,0 +1,14 @@
+{
+  "accepted": true,
+  "stateHash": "D9ABF622DA26EEEE48203085D4BC23B0F77DC6F8724AC33D975DA3CA492D2E44",
+  "closeTime": 492656470,
+  "parentCloseTime": 492656460,
+  "closeFlags": 0,
+  "closeTimeHuman": "2015-Aug-12 01:01:10",
+  "closeTimeResolution": 10,
+  "closed": true,
+  "ledgerVersion": 15202439,
+  "parentLedgerHash": "12724A65B030C15A1573AA28B1BBB5DF3DA4589AA3623675A31CAE69B23B1C4E",
+  "totalDrops": "99998831688050493",
+  "transactionHash": "325EACC5271322539EEEC2D6A5292471EF1B3E72AE7180533EFC3B8F0AD435C8"
+}

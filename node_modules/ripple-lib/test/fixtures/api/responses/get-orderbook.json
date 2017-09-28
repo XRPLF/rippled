@@ -1,0 +1,478 @@
+{
+  "bids": [
+    {
+      "specification": {
+        "direction": "buy",
+        "quantity": {
+          "currency": "USD",
+          "value": "93.030522464522",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.2849323720855092",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rwBYyfufTzk77zUSKEu4MvixfarC35av1J",
+        "sequence": 386940,
+        "makerExchangeRate": "326.5003614141928"
+      }
+    },
+    {
+      "specification": {
+        "direction": "buy",
+        "quantity": {
+          "currency": "USD",
+          "value": "1",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.00302447007930511",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rwjsRktX1eguUr1pHTffyHnC4uyrvX58V1",
+        "sequence": 207855,
+        "makerExchangeRate": "330.6364334177034"
+      }
+    },
+    {
+      "specification": {
+        "direction": "buy",
+        "quantity": {
+          "currency": "USD",
+          "value": "99.34014894048333",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.3",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "raudnGKfTK23YKfnS7ixejHrqGERTYNFXk",
+        "sequence": 110103,
+        "makerExchangeRate": "331.1338298016111"
+      }
+    },
+    {
+      "specification": {
+        "direction": "buy",
+        "quantity": {
+          "currency": "USD",
+          "value": "268.754",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.8095",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rPyYxUGK8L4dgEvjPs3aRc1B1jEiLr3Hx5",
+        "sequence": 392,
+        "makerExchangeRate": "332"
+      },
+      "state": {
+        "fundedAmount": {
+          "currency": "BTC",
+          "value": "0.8078974385735969",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "priceOfFundedAmount": {
+          "currency": "USD",
+          "value": "268.2219496064341",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      }
+    },
+    {
+      "specification": {
+        "direction": "buy",
+        "quantity": {
+          "currency": "USD",
+          "value": "152.0098333185607",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.4499999999999999",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "raudnGKfTK23YKfnS7ixejHrqGERTYNFXk",
+        "sequence": 110105,
+        "makerExchangeRate": "337.7996295968016"
+      }
+    },
+    {
+      "specification": {
+        "direction": "buy",
+        "quantity": {
+          "currency": "USD",
+          "value": "1.308365894430151",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.003768001830745216",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rDbsCJr5m8gHDCNEHCZtFxcXHsD4S9jH83",
+        "sequence": 110061,
+        "makerExchangeRate": "347.2306949944844"
+      }
+    },
+    {
+      "specification": {
+        "direction": "buy",
+        "quantity": {
+          "currency": "USD",
+          "value": "176.3546101589987",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.5",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rDVBvAQScXrGRGnzrxRrcJPeNLeLeUTAqE",
+        "sequence": 35788,
+        "makerExchangeRate": "352.7092203179974"
+      }
+    },
+    {
+      "specification": {
+        "direction": "buy",
+        "quantity": {
+          "currency": "USD",
+          "value": "179.48",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.5",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rN6jbxx4H6NxcnmkzBxQnbCWLECNKrgSSf",
+        "sequence": 491,
+        "makerExchangeRate": "358.96"
+      },
+      "state": {
+        "fundedAmount": {
+          "currency": "BTC",
+          "value": "0.499001996007984",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "priceOfFundedAmount": {
+          "currency": "USD",
+          "value": "179.1217564870259",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      }
+    },
+    {
+      "specification": {
+        "direction": "buy",
+        "quantity": {
+          "currency": "USD",
+          "value": "288.7710263794967",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.8",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rDVBvAQScXrGRGnzrxRrcJPeNLeLeUTAqE",
+        "sequence": 35789,
+        "makerExchangeRate": "360.9637829743709"
+      }
+    },
+    {
+      "specification": {
+        "direction": "buy",
+        "quantity": {
+          "currency": "USD",
+          "value": "182.9814890090516",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.5",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rUeCeioKJkbYhv4mRGuAbZpPcqkMCoYq6N",
+        "sequence": 5255,
+        "makerExchangeRate": "365.9629780181032"
+      },
+      "state": {
+        "fundedAmount": {
+          "currency": "BTC",
+          "value": "0.2254411038203033",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "priceOfFundedAmount": {
+          "currency": "USD",
+          "value": "82.50309772176658",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      }
+    }
+  ],
+  "asks": [
+    {
+      "specification": {
+        "direction": "sell",
+        "quantity": {
+          "currency": "USD",
+          "value": "3205.1",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "10",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "r49y2xKuKVG2dPkNHgWQAV61cjxk8gryjQ",
+        "sequence": 434,
+        "makerExchangeRate": "0.003120027456241615"
+      }
+    },
+    {
+      "specification": {
+        "direction": "sell",
+        "quantity": {
+          "currency": "USD",
+          "value": "1599.063669386278",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "4.99707396683212",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rDYCRhpahKEhCFV25xScg67Bwf4W9sTYAm",
+        "sequence": 233,
+        "makerExchangeRate": "0.003125"
+      }
+    },
+    {
+      "specification": {
+        "direction": "sell",
+        "quantity": {
+          "currency": "USD",
+          "value": "143.1050962074379",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.4499999999999999",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "raudnGKfTK23YKfnS7ixejHrqGERTYNFXk",
+        "sequence": 110104,
+        "makerExchangeRate": "0.003144542101755081"
+      },
+      "state": {
+        "fundedAmount": {
+          "currency": "USD",
+          "value": "0",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "priceOfFundedAmount": {
+          "currency": "BTC",
+          "value": "0",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      }
+    },
+    {
+      "specification": {
+        "direction": "sell",
+        "quantity": {
+          "currency": "USD",
+          "value": "254.329207354604",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.8",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rDVBvAQScXrGRGnzrxRrcJPeNLeLeUTAqE",
+        "sequence": 35625,
+        "makerExchangeRate": "0.003145529403882357"
+      },
+      "state": {
+        "fundedAmount": {
+          "currency": "USD",
+          "value": "0",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "priceOfFundedAmount": {
+          "currency": "BTC",
+          "value": "0",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      }
+    },
+    {
+      "specification": {
+        "direction": "sell",
+        "quantity": {
+          "currency": "USD",
+          "value": "390.4979",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "1.23231134568807",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rwBYyfufTzk77zUSKEu4MvixfarC35av1J",
+        "sequence": 387756,
+        "makerExchangeRate": "0.003155743848271834"
+      }
+    },
+    {
+      "specification": {
+        "direction": "sell",
+        "quantity": {
+          "currency": "USD",
+          "value": "1",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.003160328237957649",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rwjsRktX1eguUr1pHTffyHnC4uyrvX58V1",
+        "sequence": 208927,
+        "makerExchangeRate": "0.003160328237957649"
+      }
+    },
+    {
+      "specification": {
+        "direction": "sell",
+        "quantity": {
+          "currency": "USD",
+          "value": "4725",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "15",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "r49y2xKuKVG2dPkNHgWQAV61cjxk8gryjQ",
+        "sequence": 429,
+        "makerExchangeRate": "0.003174603174603175"
+      }
+    },
+    {
+      "specification": {
+        "direction": "sell",
+        "quantity": {
+          "currency": "USD",
+          "value": "1.24252537879871",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "0.003967400879423823",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rDbsCJr5m8gHDCNEHCZtFxcXHsD4S9jH83",
+        "sequence": 110099,
+        "makerExchangeRate": "0.003193013959408667"
+      }
+    },
+    {
+      "specification": {
+        "direction": "sell",
+        "quantity": {
+          "currency": "USD",
+          "value": "496.5429474010489",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "1.6",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "rDVBvAQScXrGRGnzrxRrcJPeNLeLeUTAqE",
+        "sequence": 35627,
+        "makerExchangeRate": "0.003222279177208227"
+      },
+      "state": {
+        "fundedAmount": {
+          "currency": "USD",
+          "value": "0",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "priceOfFundedAmount": {
+          "currency": "BTC",
+          "value": "0",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      }
+    },
+    {
+      "specification": {
+        "direction": "sell",
+        "quantity": {
+          "currency": "USD",
+          "value": "3103",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        },
+        "totalPrice": {
+          "currency": "BTC",
+          "value": "10",
+          "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+        }
+      },
+      "properties": {
+        "maker": "r49y2xKuKVG2dPkNHgWQAV61cjxk8gryjQ",
+        "sequence": 431,
+        "makerExchangeRate": "0.003222687721559781"
+      }
+    }
+  ]
+}

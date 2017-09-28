@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "getTrustlines",
+  "type": "array",
+  "items": {
+    "properties": {
+      "specification": {"$ref": "trustline"},
+      "counterparty": {
+        "properties": {
+          "limit": {"$ref": "value"},
+          "ripplingDisabled": {"type": "boolean"},
+          "frozen": {"type": "boolean"},
+          "authorized": {"type": "boolean"}
+        },
+        "required": ["limit"],
+        "additionalProperties": false
+      },
+      "state": {
+        "properties": {
+          "balance": {"$ref": "value"}
+        },
+        "required": ["balance"],
+        "additionalProperties": false
+      }
+    },
+    "required": ["specification", "counterparty", "state"],
+    "additionalProperties": false
+  }
+}

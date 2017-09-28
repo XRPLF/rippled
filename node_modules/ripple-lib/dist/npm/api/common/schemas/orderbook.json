@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "orderbook",
+  "type": "object",
+  "properties": {
+    "base": {"$ref": "issue"},
+    "counter": {"$ref": "issue"}
+  },
+  "required": ["base", "counter"],
+  "additionalProperties": false
+}

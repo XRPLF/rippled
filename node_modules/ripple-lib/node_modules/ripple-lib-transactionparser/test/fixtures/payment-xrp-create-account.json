@@ -1,0 +1,60 @@
+{
+  "engine_result": "tesSUCCESS",
+  "engine_result_code": 0,
+  "engine_result_message": "The transaction was applied.",
+  "ledger_hash": "5FA9BBBE9EF6CE4BF9BB56CC3A70106C1475EA4C02EDE26651710FAA46E81F60",
+  "ledger_index": 10424084,
+  "metadata": {
+    "AffectedNodes": [
+      {
+        "CreatedNode": {
+          "LedgerEntryType": "AccountRoot",
+          "LedgerIndex": "C24354B286600B8F28E51233B4AC41A3B4DDD0FDC9BCF96BB171573F6B40A4AE",
+          "NewFields": {
+            "Account": "rLDYrujdKUfVx28T9vRDAbyJ7G2WVXKo4K",
+            "Balance": "100000000",
+            "Sequence": 1
+          }
+        }
+      },
+      {
+        "ModifiedNode": {
+          "FinalFields": {
+            "Account": "rKmBGxocj9Abgy25J51Mk1iqFzW9aVF9Tc",
+            "Balance": "339903994",
+            "Flags": 0,
+            "OwnerCount": 0,
+            "Sequence": 9
+          },
+          "LedgerEntryType": "AccountRoot",
+          "LedgerIndex": "E9A39B0BA8703D5FFD05D9EAD01EE6C0E7A15CF33C2C6B7269107BD2BD535818",
+          "PreviousFields": {
+            "Balance": "439915994",
+            "Sequence": 8
+          },
+          "PreviousTxnID": "0E6CF1A13C6A804BE50B08C1D0446C7405D8461254CC6B62337CA9FEA4DF13EC",
+          "PreviousTxnLgrSeq": 10424064
+        }
+      }
+    ],
+    "TransactionIndex": 3,
+    "TransactionResult": "tesSUCCESS"
+  },
+  "status": "closed",
+  "transaction": {
+    "Account": "rKmBGxocj9Abgy25J51Mk1iqFzW9aVF9Tc",
+    "Amount": "100000000",
+    "Destination": "rLDYrujdKUfVx28T9vRDAbyJ7G2WVXKo4K",
+    "Fee": "12000",
+    "Flags": 2147483648,
+    "LastLedgerSequence": 10424091,
+    "Sequence": 8,
+    "SigningPubKey": "03F16A52EBDCA6EBF5D99828E1E6918C64D45E6F136476A8F4757512FE553D18F0",
+    "TransactionType": "Payment",
+    "TxnSignature": "304402207676FE35FF0D01E01F13531760658ADECC493181A4EF618A970E4C209FC989C102206660147F17B46469864E9E10152844C4DA62363DB70B5F610E6DAEA87A6781A9",
+    "date": 471490400,
+    "hash": "43CAAC76C95358CA2F84EA8BF5BFC327B90B21039A3C69EC4EAC7FEDC54CDB9F"
+  },
+  "type": "transaction",
+  "validated": true
+}

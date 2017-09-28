@@ -1,0 +1,13 @@
+{
+  "source": {
+    "address": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59"
+  },
+  "destination": {
+    "address": "rpZc4mVfWUif9CRoHRKKcmhu1nx2xktxBo",
+    "amount": {
+      "currency": "USD",
+      "counterparty": "rMH4UxPrbuMa1spCBR98hLLyNJp4d8p4tM",
+      "value": "100"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "orderTransaction",
+  "type": "object",
+  "properties": {
+    "type": {"enum": ["order"]},
+    "specification": {"$ref": "order"},
+    "outcome": {"$ref": "outcome"},
+    "id": {"$ref": "hash256"},
+    "address": {"$ref": "address"},
+    "sequence": {"$ref": "sequence"}
+  },
+  "required": ["type", "id", "address", "sequence", "specification", "outcome"],
+  "additionalProperties": false
+}

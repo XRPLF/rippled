@@ -1,0 +1,63 @@
+# .gitignore
+
+# Ignore vim swap files.
+*.swp
+
+# Ignore SCons support files.
+.sconsign.dblite
+
+# Ignore python compiled files.
+*.pyc
+
+# Ignore Macintosh Desktop Services Store files.
+.DS_Store
+
+# Ignore backup/temps
+*~
+
+# Ignore object files.
+*.o
+build/
+tags
+bin/rippled
+Debug/*.*
+Release/*.*
+
+# Ignore locally installed node_modules
+node_modules
+!test/node_modules
+
+# Ignore tmp directory.
+tmp
+
+# Ignore database directory.
+db/*.db
+db/*.db-*
+
+# Ignore customized configs
+rippled.cfg
+validators.txt
+test/config.js
+
+# Ignore coverage files
+/lib-cov
+/src-cov
+/coverage.html
+/coverage
+
+# Ignore IntelliJ files
+.idea
+
+# Ignore npm-debug
+npm-debug.log
+
+# Ignore dist folder, build for bower
+dist/
+
+# Ignore flow output directory
+out/
+
+# Ignore perf test cache
+scripts/cache
+
+eslintrc

@@ -1,0 +1,15 @@
+{
+  "id": 0,
+  "status": "error",
+  "type": "response",
+  "account": "rajTAg3hon5Lcu1RxQQPxTgHvqfhc1EaUS",
+  "error": "actNotFound",
+  "error_code": 15,
+  "error_message": "Account not found.",
+  "ledger_current_index": 8861245,
+  "request": {
+    "account": "rajTAg3hon5Lcu1RxQQPxTgHvqfhc1EaUS",
+    "command": "account_info",
+    "id": 0
+  }
+}

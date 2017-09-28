@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "settings",
+  "allOf": [
+    {
+      "$ref": "getSettings"
+    },
+    {
+      "minProperties": 1,
+      "maxProperties": 1
+    }
+  ]
+}

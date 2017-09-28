@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "orderCancellation",
+  "type": "object",
+  "properties": {
+    "orderSequence": {"$ref": "sequence"}
+  },
+  "required": ["orderSequence"],
+  "additionalProperties": false
+}

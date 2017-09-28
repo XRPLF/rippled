@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "uint32",
+  "description": "A 32-bit unsigned integer",
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 4294967295
+}

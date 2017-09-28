@@ -1,0 +1,7 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "ledgerVersion",
+  "description": "A ledger version number",
+  "type": "integer",
+  "minimum": 1
+}

@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "issue",
+  "description": "A currency-counterparty pair, or just currency if it's XRP",
+  "allOf": [
+    {"$ref": "amountbase"},
+    {"not": {"required": ["value"]}}
+  ]
+}

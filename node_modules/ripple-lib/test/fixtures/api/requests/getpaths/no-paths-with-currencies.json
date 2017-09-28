@@ -1,0 +1,17 @@
+{
+  "source": {
+    "address": "rwBYyfufTzk77zUSKEu4MvixfarC35av1J",
+    "currencies": [
+      {
+        "currency": "USD"
+      }
+    ]
+  },
+  "destination": {
+    "address": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59",
+    "amount": {
+      "value": "1000002",
+      "currency": "USD"
+    }
+  }
+}

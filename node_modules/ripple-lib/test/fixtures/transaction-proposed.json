@@ -1,0 +1,19 @@
+{
+  "engine_result": "tesSUCCESS",
+  "engine_result_code": 0,
+  "engine_result_message": "The transaction was applied. Only final in a validated ledger.",
+  "ledger_current_index": 114177,
+  "status": "proposed",
+  "transaction": {
+    "Account": "rUPotLj5CNKaP4bQANcecEuT8hai3VpxfB",
+    "Fee": "10",
+    "Flags": 2147483648,
+    "LastLedgerSequence": 114177,
+    "Sequence": 3862,
+    "SigningPubKey": "FA16E9F38DF11402953A5B030C1AE8A88C47E348170C3B8EC6C8D775E797168F09",
+    "TransactionType": "AccountSet",
+    "hash": "815AF3AC669F513C039C0AB9F31D30703343A4D39EA7AA8D26F515B56B74D728"
+  },
+  "type": "transaction",
+  "validated": false
+}

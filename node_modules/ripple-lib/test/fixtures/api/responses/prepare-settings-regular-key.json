@@ -1,0 +1,9 @@
+{
+  "Flags": 0,
+  "TransactionType": "SetRegularKey",
+  "Account": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59",
+  "RegularKey": "rAR8rR8sUkBoCZFawhkWzY4Y5YoyuznwD",
+  "LastLedgerSequence": 8820051,
+  "Fee": "12",
+  "Sequence": 23
+}

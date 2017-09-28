@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "getPaths",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "source": {"$ref": "adjustment"},
+      "destination": {"$ref": "adjustment"},
+      "paths": {"type": "string"}
+    },
+    "required": ["source", "destination", "paths"],
+    "additionalProperties": false
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "getAccountInfo",
+  "type": "object",
+  "properties": {
+    "sequence": {"$ref": "sequence"},
+    "xrpBalance": {"$ref": "value"},
+    "ownerCount": {"type": "integer", "minimum": 0},
+    "previousInitiatedTransactionID": {"$ref": "hash256"},
+    "previousAffectingTransactionID": {"$ref": "hash256"},
+    "previousAffectingTransactionLedgerVersion": {"$ref": "ledgerVersion"}
+  },
+  "required": [
+    "sequence",
+    "xrpBalance",
+    "ownerCount",
+    "previousAffectingTransactionID",
+    "previousAffectingTransactionLedgerVersion"
+  ],
+  "additionalProperties": false
+}

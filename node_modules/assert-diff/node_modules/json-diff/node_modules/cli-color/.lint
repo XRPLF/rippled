@@ -1,0 +1,7 @@
+@root
+indent 2
+maxlen 80
+nomen
+plusplus
+tabs
+predef __dirname, process, setTimeout

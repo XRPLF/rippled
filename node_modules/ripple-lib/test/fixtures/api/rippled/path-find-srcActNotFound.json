@@ -1,0 +1,20 @@
+{
+  "error": "srcActNotFound",
+  "error_code": 58,
+  "error_message": "Source account not found.",
+  "id": 0,
+  "request": {
+    "command": "path_find",
+    "destination_account": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59",
+    "destination_amount": {
+      "currency": "USD",
+      "issuer": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59",
+      "value": "5"
+    },
+    "id": 1,
+    "source_account": "rajTAg3hon5Lcu1RxQQPxTgHvqfhc1EaUS",
+    "subcommand": "create"
+  },
+  "status": "error",
+  "type": "response"
+}

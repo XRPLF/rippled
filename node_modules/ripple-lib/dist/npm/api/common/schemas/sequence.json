@@ -1,0 +1,7 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "sequence",
+  "description": "An account transaction sequence number",
+  "type": "integer",
+  "minimum": 1
+}

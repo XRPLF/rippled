@@ -1,0 +1,53 @@
+{
+  "id": 0,
+  "status": "success",
+  "type": "response",
+  "result": {
+    "Account": "r9UHu5CWni1qRY7Q4CfFZLGvXo2pGQy96b",
+    "Fee": "12000",
+    "Flags": 131072,
+    "LastLedgerSequence": 14640622,
+    "LimitAmount": {
+      "currency": "USD",
+      "issuer": "rMH4UxPrbuMa1spCBR98hLLyNJp4d8p4tM",
+      "value": "10000"
+    },
+    "QualityIn": 500000000,
+    "QualityOut": 500000000,
+    "Sequence": 449,
+    "SigningPubKey": "036A749E3B7187E43E8936E3D83A7030989325249E03803F12B7F64BAACABA6025",
+    "TransactionType": "TrustSet",
+    "TxnSignature": "3045022100D91DB5E6E8B6650E67A61C04D110EB61FA1F83E25815F7EE1A24A1A0DD40C3DD0220578726715E597B6FB8EBDAD88CA9E6A5A64F17BE1AC9EEA89584663BC55021BE",
+    "date": 490233540,
+    "hash": "635A0769BD94710A1F6A76CDE65A3BC661B20B798807D1BBBDADCEA26420538D",
+    "inLedger": 14640523,
+    "ledger_index": 14640523,
+    "meta": {
+      "AffectedNodes": [
+        {
+          "ModifiedNode": {
+            "FinalFields": {
+              "Account": "r9UHu5CWni1qRY7Q4CfFZLGvXo2pGQy96b",
+              "Balance": "72019096",
+              "Domain": "726970706C652E636F6D",
+              "Flags": 0,
+              "OwnerCount": 3,
+              "Sequence": 450
+            },
+            "LedgerEntryType": "AccountRoot",
+            "LedgerIndex": "4AD70690C6FF8A069F8AE00B09F70E9B732360026E8085050D314432091A59C9",
+            "PreviousFields": {
+              "Balance": "72031096",
+              "Sequence": 449
+            },
+            "PreviousTxnID": "B1E5D76EA71644EF349843D9AB03D76651A42649A95E2FC07C1D8284F10D76A2",
+            "PreviousTxnLgrSeq": 14640521
+          }
+        }
+      ],
+      "TransactionIndex": 1,
+      "TransactionResult": "tesSUCCESS"
+    },
+    "validated": true
+  }
+}

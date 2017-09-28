@@ -1,0 +1,13 @@
+language: node_js
+node_js:
+- '0.10'
+- '0.11'
+branches:
+  only:
+  - master
+env:
+  global:
+    secure: ewqsRnX7z3+g6q+mM6peRPhuTlTlkJIRmVG/Ya9AcDXEb7as49KDTdqfMcOu7+FxF50ehqla+TRRCLRPOcVkWqs72OVUXEsjRASp9jQwpQGl+g/vZhyTMwlM2ENEkyiFQtobI1hYKgVW1ogftkc6vm7ywvoyTrFp/leVJBrTuHk=
+script:
+- npm test --coverage
+- npm run-script coveralls

@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "remote-options",
+  "type": "object",
+  "properties": {
+    "trace": {"type": "boolean"},
+    "servers": {"type": "array", "items": {"type": "string", "format": "uri"}}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "getOrders",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "specification": {"$ref": "order"},
+      "properties": {
+        "type": "object",
+        "properties": {
+          "maker": {"$ref": "address"},
+          "sequence": {"$ref": "sequence"},
+          "makerExchangeRate": {"$ref": "value"}
+        },
+        "required": ["maker", "sequence", "makerExchangeRate"],
+        "addtionalProperties": false
+      }
+    },
+    "required": ["specification", "properties"],
+    "additionalProperties": false
+  }
+}

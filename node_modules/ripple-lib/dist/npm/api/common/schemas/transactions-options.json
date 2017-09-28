@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "transactions-options",
+  "description": "Options for getTransactions",
+  "type": "object",
+  "properties": {
+    "start": {"$ref": "hash256"},
+    "limit": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "minLedgerVersion": {"$ref": "ledgerVersion"},
+    "maxLedgerVersion": {"$ref": "ledgerVersion"},
+    "earliestFirst": {"type": "boolean"},
+    "excludeFailures": {"type": "boolean"},
+    "initiated": {"type": "boolean"},
+    "counterparty": {"$ref": "address"},
+    "types": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "payment",
+          "trustline",
+          "order",
+          "orderCancellation",
+          "settings"
+        ]
+      }
+    },
+    "binary": {"type": "boolean"}
+  },
+  "additionalProperties": false,
+  "not": {
+    "anyOf": [
+      {"required": ["incoming", "outgoing"]},
+      {"required": ["start", "minLedgerVersion"]},
+      {"required": ["start", "maxLedgerVersion"]}
+    ]
+  }
+}
