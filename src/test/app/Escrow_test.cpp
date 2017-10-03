@@ -254,6 +254,35 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
+    testDisallowXRP()
+    {
+        testcase ("Disallow XRP");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        {
+            // Respect the "asfDisallowXRP" account flag:
+            Env env(*this, supported_amendments() - featureDepositAuth);
+
+            env.fund(XRP(5000), "bob", "george");
+            env(fset("george", asfDisallowXRP));
+            env(lockup("bob", "george", XRP(10), env.now() + 1s),
+                ter (tecNO_TARGET));
+        }
+        {
+            // Ignore the "asfDisallowXRP" account flag, which we should
+            // have been doing before.
+            Env env(*this);
+
+            env.fund(XRP(5000), "bob", "george");
+            env(fset("george", asfDisallowXRP));
+            env(lockup("bob", "george", XRP(10), env.now() + 1s));
+        }
+
+    }
+
+    void
     testFails()
     {
         testcase ("Failure Cases");
@@ -330,11 +359,6 @@ struct Escrow_test : public beast::unit_test::suite
 
         env.fund (accountReserve, "frank");
         env(lockup("frank", "bob", XRP(1), env.now() + 1s),   ter (tecINSUFFICIENT_RESERVE));
-
-        // Respect the "asfDisallowXRP" account flag:
-        env.fund (accountReserve + accountIncrement, "george");
-        env(fset("george", asfDisallowXRP));
-        env(lockup("bob", "george", XRP(10), env.now() + 1s),  ter (tecNO_TARGET));
 
         { // Specify incorrect sequence number
             env.fund (XRP(5000), "hannah");
@@ -980,6 +1004,7 @@ struct Escrow_test : public beast::unit_test::suite
     {
         testEnablement();
         testTags();
+        testDisallowXRP();
         testFails();
         testLockup();
         testEscrowConditions();

@@ -206,7 +206,11 @@ PayChanCreate::preclaim(PreclaimContext const &ctx)
         if (((*sled)[sfFlags] & lsfRequireDestTag) &&
             !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
-        if ((*sled)[sfFlags] & lsfDisallowXRP)
+
+        // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
+        // featureDepositAuth to remove the bug.
+        if (!ctx.view.rules().enabled(featureDepositAuth) &&
+            ((*sled)[sfFlags] & lsfDisallowXRP))
             return tecNO_TARGET;
     }
 
@@ -457,15 +461,19 @@ PayChanClaim::doApply()
         if (!sled)
             return terNO_ACCOUNT;
 
-        if (txAccount == src && (sled->getFlags() & lsfDisallowXRP))
+        // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
+        // featureDepositAuth to remove the bug.
+        bool const depositAuth {ctx_.view().rules().enabled(featureDepositAuth)};
+        if (!depositAuth &&
+            (txAccount == src && (sled->getFlags() & lsfDisallowXRP)))
             return tecNO_TARGET;
 
         // Check whether the destination account requires deposit authorization
         if (txAccount != dst)
         {
-            if (ctx_.view().rules().enabled(featureDepositAuth) &&
+            if (depositAuth &&
                 ((sled->getFlags() & lsfDepositAuth) == lsfDepositAuth))
-                    return tecNO_PERMISSION;
+                return tecNO_PERMISSION;
         }
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];

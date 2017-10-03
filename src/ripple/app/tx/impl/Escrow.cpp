@@ -235,7 +235,11 @@ EscrowCreate::doApply()
         if (((*sled)[sfFlags] & lsfRequireDestTag) &&
                 ! ctx_.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
-        if ((*sled)[sfFlags] & lsfDisallowXRP)
+
+        // Obeying the lsfDissalowXRP flag was a bug.  Piggyback on
+        // featureDepositAuth to remove the bug.
+        if (! ctx_.view().rules().enabled(featureDepositAuth) &&
+                ((*sled)[sfFlags] & lsfDisallowXRP))
             return tecNO_TARGET;
     }
 
