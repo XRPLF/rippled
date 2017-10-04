@@ -757,8 +757,8 @@ private:
             BEAST_EXPECT(trustedKeys->load (
                 emptyLocalKey, emptyCfgKeys, cfgKeys));
 
-            std::vector<Validator> list ({randomValidator()});
-            hash_set<PublicKey> activeValidators ({ list[0].masterPublic });
+            std::vector<Validator> list ({randomValidator(), randomValidator()});
+            hash_set<PublicKey> activeValidators ({ list[0].masterPublic, list[1].masterPublic });
 
             // do not apply expired list
             auto const version = 1;
@@ -774,13 +774,43 @@ private:
                     manifest, blob, sig, version));
 
             trustedKeys->onConsensusStart (activeValidators);
-            BEAST_EXPECT(trustedKeys->trusted (list[0].masterPublic));
-            BEAST_EXPECT(trustedKeys->trusted (list[0].signingPublic));
+			for(Validator const & val : list)
+	        {
+			    BEAST_EXPECT(trustedKeys->trusted (val.masterPublic));
+				BEAST_EXPECT(trustedKeys->trusted (val.signingPublic));
+			}
+            BEAST_EXPECT(trustedKeys->quorum () == 2);
 
             env.timeKeeper().set(expiration);
             trustedKeys->onConsensusStart (activeValidators);
             BEAST_EXPECT(! trustedKeys->trusted (list[0].masterPublic));
-            BEAST_EXPECT(! trustedKeys->trusted (list[0].signingPublic));
+            BEAST_EXPECT(! trustedKeys->trusted (list[1].masterPublic));
+            BEAST_EXPECT(trustedKeys->quorum () ==
+                std::numeric_limits<std::size_t>::max());
+
+            // (Re)trust validators from new valid list
+            std::vector<Validator> list2 ({list[0], randomValidator()});
+            activeValidators.insert(list2[1].masterPublic);
+            auto const sequence2 = 2;
+            NetClock::time_point const expiration2 =
+                env.timeKeeper().now() + 60s;
+            auto const blob2 = makeList (
+                list2, sequence2, expiration2.time_since_epoch().count());
+            auto const sig2 = signList (blob2, pubSigningKeys);
+
+            BEAST_EXPECT(ListDisposition::accepted ==
+                trustedKeys->applyList (
+                    manifest, blob2, sig2, version));
+
+            trustedKeys->onConsensusStart (activeValidators);
+			for(Validator const & val : list2)
+	        {
+			    BEAST_EXPECT(trustedKeys->trusted (val.masterPublic));
+				BEAST_EXPECT(trustedKeys->trusted (val.signingPublic));
+			}
+            BEAST_EXPECT(! trustedKeys->trusted (list[1].masterPublic));
+			BEAST_EXPECT(! trustedKeys->trusted (list[1].signingPublic));
+            BEAST_EXPECT(trustedKeys->quorum () == 2);
         }
         {
             // Test 1-9 configured validators

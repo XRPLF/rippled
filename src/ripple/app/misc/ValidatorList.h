@@ -378,7 +378,8 @@ ValidatorList::onConsensusStart (
                 list.second.expiration <=
                 timeKeeper_.now().time_since_epoch().count())
             removePublisherList (list.first);
-        else if (! list.second.available)
+
+        if (! list.second.available)
             allListsAvailable = false;
     }
 
