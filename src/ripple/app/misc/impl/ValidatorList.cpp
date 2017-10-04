@@ -235,7 +235,7 @@ ValidatorList::applyList (
             (iOld != oldList.end () && *iOld < *iNew))
         {
             // Decrement list count for removed keys
-            if (keyListings_[*iOld] == 1)
+            if (keyListings_[*iOld] <= 1)
                 keyListings_.erase (*iOld);
             else
                 --keyListings_[*iOld];
@@ -394,6 +394,9 @@ ValidatorList::removePublisherList (PublicKey const& publisherKey)
         else
             --iVal->second;
     }
+
+    iList->second.list.clear();
+    iList->second.available = false;
 
     return true;
 }
