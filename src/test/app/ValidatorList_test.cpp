@@ -723,10 +723,9 @@ private:
             BEAST_EXPECT(trustedKeys->load (
                 emptyLocalKey, emptyCfgKeys, cfgKeys));
 
-            std::vector<PublicKey> list ({randomNode()});
-            hash_set<PublicKey> activeValidators ({ list[0] });
+            std::vector<PublicKey> list ({randomNode(), randomNode()});
+            hash_set<PublicKey> activeValidators ({ list[0], list[1] });
 
-            // do not apply expired list
             auto const version = 1;
             auto const sequence = 1;
             NetClock::time_point const expiration =
@@ -741,10 +740,35 @@ private:
 
             trustedKeys->onConsensusStart (activeValidators);
             BEAST_EXPECT(trustedKeys->trusted (list[0]));
+            BEAST_EXPECT(trustedKeys->trusted (list[1]));
+            BEAST_EXPECT(trustedKeys->quorum () == 2);
 
             env.timeKeeper().set(expiration);
             trustedKeys->onConsensusStart (activeValidators);
             BEAST_EXPECT(! trustedKeys->trusted (list[0]));
+            BEAST_EXPECT(! trustedKeys->trusted (list[1]));
+            BEAST_EXPECT(trustedKeys->quorum () ==
+                std::numeric_limits<std::size_t>::max());
+
+            // (Re)trust validators from new valid list
+            std::vector<PublicKey> list2 ({list[0], randomNode()});
+            activeValidators.insert(list2[1]);
+            auto const sequence2 = 2;
+            NetClock::time_point const expiration2 =
+                env.timeKeeper().now() + 60s;
+            auto const blob2 = makeList (
+                list2, sequence2, expiration2.time_since_epoch().count());
+            auto const sig2 = signList (blob2, pubSigningKeys);
+
+            BEAST_EXPECT(ListDisposition::accepted ==
+                trustedKeys->applyList (
+                    manifest, blob2, sig2, version));
+
+            trustedKeys->onConsensusStart (activeValidators);
+            BEAST_EXPECT(trustedKeys->trusted (list[0]));
+            BEAST_EXPECT(trustedKeys->trusted (list2[1]));
+            BEAST_EXPECT(! trustedKeys->trusted (list[1]));
+            BEAST_EXPECT(trustedKeys->quorum () == 2);
         }
         {
             // Test 1-9 configured validators
