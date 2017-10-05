@@ -46,3 +46,4 @@
 #include <test/rpc/Subscribe_test.cpp>
 #include <test/rpc/TransactionEntry_test.cpp>
 #include <test/rpc/TransactionHistory_test.cpp>
+#include <test/rpc/ValidatorRPC_test.cpp>

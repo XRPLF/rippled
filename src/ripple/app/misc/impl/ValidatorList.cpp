@@ -21,10 +21,32 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/protocol/JsonFields.h>
 #include <beast/core/detail/base64.hpp>
 #include <boost/regex.hpp>
 
 namespace ripple {
+
+std::string
+to_string(ListDisposition disposition)
+{
+    switch (disposition)
+    {
+        case ListDisposition::accepted:
+            return "accepted";
+        case ListDisposition::same_sequence:
+            return "same_sequence";
+        case ListDisposition::unsupported_version:
+            return "unsupported_version";
+        case ListDisposition::untrusted:
+            return "untrusted";
+        case ListDisposition::stale:
+            return "stale";
+        case ListDisposition::invalid:
+            return "invalid";
+    }
+    return "unknown";
+}
 
 ValidatorList::ValidatorList (
     ManifestCache& validatorManifests,
@@ -150,8 +172,15 @@ ValidatorList::load (
             JLOG (j_.warn()) << "Duplicate node identity: " << match[1];
             continue;
         }
-        publisherLists_[local].list.emplace_back (std::move(*id));
-        publisherLists_[local].available = true;
+        auto it = publisherLists_.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(local),
+            std::forward_as_tuple());
+        // Config listed keys never expire
+        if (it.second)
+            it.first->second.expiration = TimeKeeper::time_point::max();
+        it.first->second.list.emplace_back(std::move(*id));
+        it.first->second.available = true;
         ++count;
     }
 
@@ -169,7 +198,7 @@ ValidatorList::applyList (
     std::string const& signature,
     std::uint32_t version)
 {
-    if (version != 1)
+    if (version != requiredListVersion)
         return ListDisposition::unsupported_version;
 
     boost::unique_lock<boost::shared_mutex> lock{mutex_};
@@ -184,7 +213,8 @@ ValidatorList::applyList (
     Json::Value const& newList = list["validators"];
     publisherLists_[pubKey].available = true;
     publisherLists_[pubKey].sequence = list["sequence"].asUInt ();
-    publisherLists_[pubKey].expiration = list["expiration"].asUInt ();
+    publisherLists_[pubKey].expiration = TimeKeeper::time_point{
+        TimeKeeper::duration{list["expiration"].asUInt()}};
     std::vector<PublicKey>& publisherList = publisherLists_[pubKey].list;
 
     std::vector<PublicKey> oldList = publisherList;
@@ -302,11 +332,14 @@ ValidatorList::verify (
         list.isMember("expiration") && list["expiration"].isInt() &&
         list.isMember("validators") && list["validators"].isArray())
     {
-        auto const sequence = list["sequence"].asUInt ();
-        auto const expiration = list["expiration"].asUInt ();
-        if (sequence <= publisherLists_[pubKey].sequence ||
-                expiration <= timeKeeper_.now().time_since_epoch().count())
+        auto const sequence = list["sequence"].asUInt();
+        auto const expiration = TimeKeeper::time_point{
+            TimeKeeper::duration{list["expiration"].asUInt()}};
+        if (sequence < publisherLists_[pubKey].sequence ||
+            expiration <= timeKeeper_.now())
             return ListDisposition::stale;
+        else if (sequence == publisherLists_[pubKey].sequence)
+            return ListDisposition::same_sequence;
     }
     else
     {
@@ -399,6 +432,89 @@ ValidatorList::removePublisherList (PublicKey const& publisherKey)
     iList->second.available = false;
 
     return true;
+}
+
+boost::optional<TimeKeeper::time_point>
+ValidatorList::expires() const
+{
+    boost::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    boost::optional<TimeKeeper::time_point> res{boost::none};
+    for (auto const& p : publisherLists_)
+    {
+        // Unfetched
+        if (p.second.expiration == TimeKeeper::time_point{})
+            return boost::none;
+
+        // Earliest
+        if (!res || p.second.expiration < *res)
+            res = p.second.expiration;
+    }
+    return res;
+}
+
+Json::Value
+ValidatorList::getJson() const
+{
+    Json::Value res(Json::objectValue);
+
+    boost::shared_lock<boost::shared_mutex> read_lock{mutex_};
+
+    res[jss::validation_quorum] = static_cast<Json::UInt>(quorum());
+
+    if (auto when = expires())
+    {
+        if (*when == TimeKeeper::time_point::max())
+            res[jss::validator_list_expires] = "never";
+        else
+            res[jss::validator_list_expires] = to_string(*when);
+    }
+    else
+        res[jss::validator_list_expires] = "unknown";
+
+    // Local static keys
+    PublicKey local;
+    Json::Value& jLocalStaticKeys =
+        (res[jss::local_static_keys] = Json::arrayValue);
+    auto it = publisherLists_.find(local);
+    if (it != publisherLists_.end())
+    {
+        for (auto const& key : it->second.list)
+            jLocalStaticKeys.append(
+                toBase58(TokenType::TOKEN_NODE_PUBLIC, key));
+    }
+
+    // Publisher lists
+    Json::Value& jPublisherLists =
+        (res[jss::publisher_lists] = Json::arrayValue);
+    for (auto const& p : publisherLists_)
+    {
+        if(local == p.first)
+            continue;
+        Json::Value& curr = jPublisherLists.append(Json::objectValue);
+        curr[jss::pubkey_publisher] = strHex(p.first);
+        curr[jss::available] = p.second.available;
+        if(p.second.expiration != TimeKeeper::time_point{})
+        {
+            curr[jss::seq] = static_cast<Json::UInt>(p.second.sequence);
+            curr[jss::expiration] = to_string(p.second.expiration);
+            curr[jss::version] = requiredListVersion;
+        }
+        Json::Value& keys = (curr[jss::list] = Json::arrayValue);
+        for (auto const& key : p.second.list)
+        {
+            keys.append(toBase58(TokenType::TOKEN_NODE_PUBLIC, key));
+        }
+    }
+
+    // Trusted validator keys
+    Json::Value& jValidatorKeys =
+        (res[jss::trusted_validator_keys] = Json::arrayValue);
+    for (auto const& k : trustedKeys_)
+    {
+        jValidatorKeys.append(toBase58(TokenType::TOKEN_NODE_PUBLIC, k));
+    }
+
+    return res;
 }
 
 void
