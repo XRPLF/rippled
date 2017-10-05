@@ -151,6 +151,8 @@ Handler handlerArray[] {
     {   "unl_list",             byRef (&doUnlList),             Role::ADMIN,   NO_CONDITION     },
     {   "validation_create",    byRef (&doValidationCreate),    Role::ADMIN,   NO_CONDITION     },
     {   "validation_seed",      byRef (&doValidationSeed),      Role::ADMIN,   NO_CONDITION     },
+    {   "validators",           byRef (&doValidators),          Role::ADMIN,   NO_CONDITION     },
+    {   "validator_list_sites", byRef (&doValidatorListSites),  Role::ADMIN,   NO_CONDITION     },
     {   "wallet_propose",       byRef (&doWalletPropose),       Role::ADMIN,   NO_CONDITION     },
     {   "wallet_seed",          byRef (&doWalletSeed),          Role::ADMIN,   NO_CONDITION     },
 

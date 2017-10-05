@@ -425,7 +425,7 @@ private:
             trustedKeys->applyList (
                 manifest1, blob1, sig1, version));
 
-        BEAST_EXPECT(ListDisposition::stale ==
+        BEAST_EXPECT(ListDisposition::same_sequence ==
             trustedKeys->applyList (
                 manifest1, blob2, sig2, version));
 
@@ -899,6 +899,120 @@ private:
         }
     }
 
+    void
+    testExpires()
+    {
+        testcase("Expires");
+
+        beast::Journal journal;
+        jtx::Env env(*this);
+
+        auto toStr = [](PublicKey const& publicKey) {
+            return toBase58(TokenType::TOKEN_NODE_PUBLIC, publicKey);
+        };
+
+        // Config listed keys
+        {
+            ManifestCache manifests;
+            auto trustedKeys = std::make_unique<ValidatorList>(
+                manifests, manifests, env.timeKeeper(), journal);
+
+            // Empty list has no expiration
+            BEAST_EXPECT(trustedKeys->expires() == boost::none);
+
+            // Config listed keys have maximum expiry
+            PublicKey emptyLocalKey;
+            PublicKey localCfgListed = randomNode();
+            trustedKeys->load(emptyLocalKey, {toStr(localCfgListed)}, {});
+            BEAST_EXPECT(
+                trustedKeys->expires() &&
+                trustedKeys->expires().get() == NetClock::time_point::max());
+            BEAST_EXPECT(trustedKeys->listed(localCfgListed));
+        }
+
+        // Published keys with expirations
+        {
+            ManifestCache manifests;
+            auto trustedKeys = std::make_unique<ValidatorList>(
+                manifests, manifests, env.app().timeKeeper(), journal);
+
+            std::vector<PublicKey> valKeys = {randomNode()};
+            hash_set<PublicKey> activeKeys{valKeys.begin(), valKeys.end()};
+            // Store prepared list data to control when it is applied
+            struct PreparedList
+            {
+                std::string manifest;
+                std::string blob;
+                std::string sig;
+                int version;
+                NetClock::time_point expiration;
+            };
+
+            auto addPublishedList = [this, &env, &trustedKeys, &valKeys]()
+            {
+                auto const publisherSecret = randomSecretKey();
+                auto const publisherPublic =
+                    derivePublicKey(KeyType::ed25519, publisherSecret);
+                auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
+                auto const manifest = beast::detail::base64_encode(makeManifestString (
+                    publisherPublic, publisherSecret,
+                    pubSigningKeys.first, pubSigningKeys.second, 1));
+
+                std::vector<std::string> cfgPublishers({
+                    strHex(publisherPublic)});
+                PublicKey emptyLocalKey;
+                std::vector<std::string> emptyCfgKeys;
+
+                BEAST_EXPECT(trustedKeys->load (
+                    emptyLocalKey, emptyCfgKeys, cfgPublishers));
+
+                auto const version = 1;
+                auto const sequence = 1;
+                NetClock::time_point const expiration =
+                    env.timeKeeper().now() + 3600s;
+                auto const blob = makeList (
+                    valKeys, sequence, expiration.time_since_epoch().count());
+                auto const sig = signList (blob, pubSigningKeys);
+
+                return PreparedList{manifest, blob, sig, version, expiration};
+            };
+
+
+            // Configure two publishers and prepare 2 lists
+            PreparedList prep1 = addPublishedList();
+            env.timeKeeper().set(env.timeKeeper().now() + 200s);
+            PreparedList prep2 = addPublishedList();
+
+            // Initially, no list has been published, so no known expiration
+            BEAST_EXPECT(trustedKeys->expires() == boost::none);
+
+            // Apply first list
+            BEAST_EXPECT(
+                ListDisposition::accepted == trustedKeys->applyList(
+                    prep1.manifest, prep1.blob, prep1.sig, prep1.version));
+
+            // One list still hasn't published, so expiration is still unknown
+            BEAST_EXPECT(trustedKeys->expires() == boost::none);
+
+            // Apply second list
+            BEAST_EXPECT(
+                ListDisposition::accepted == trustedKeys->applyList(
+                    prep2.manifest, prep2.blob, prep2.sig, prep2.version));
+
+            // We now have loaded both lists, so expiration is known
+            BEAST_EXPECT(
+                trustedKeys->expires() &&
+                trustedKeys->expires().get() == prep1.expiration);
+
+            // Advance past the first list's expiration, but it remains the
+            // earliest expiration
+            env.timeKeeper().set(prep1.expiration + 1s);
+            trustedKeys->onConsensusStart(activeKeys);
+            BEAST_EXPECT(
+                trustedKeys->expires() &&
+                trustedKeys->expires().get() == prep1.expiration);
+        }
+}
 public:
     void
     run() override
@@ -907,6 +1021,7 @@ public:
         testConfigLoad ();
         testApplyList ();
         testUpdate ();
+        testExpires ();
     }
 };
 
