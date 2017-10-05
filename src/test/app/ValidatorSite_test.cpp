@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <beast/core/detail/base64.hpp>
-#include <beast/http.hpp>
 #include <ripple/app/misc/ValidatorSite.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/strHex.h>
@@ -28,181 +27,18 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Sign.h>
 #include <test/jtx.h>
-#include <boost/utility/in_place_factory.hpp>
+#include <test/jtx/TrustedPublisherServer.h>
 #include <boost/asio.hpp>
 
 namespace ripple {
 namespace test {
 
-struct Validator
-{
-    PublicKey masterPublic;
-    PublicKey signingPublic;
-    std::string manifest;
-};
-
-class http_sync_server
-{
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using address_type = boost::asio::ip::address;
-    using socket_type = boost::asio::ip::tcp::socket;
-
-    using req_type = beast::http::request<beast::http::string_body>;
-    using resp_type = beast::http::response<beast::http::string_body>;
-    using error_code = boost::system::error_code;
-
-    socket_type sock_;
-    boost::asio::ip::tcp::acceptor acceptor_;
-
-    std::string list_;
-
-public:
-    http_sync_server(endpoint_type const& ep,
-            boost::asio::io_service& ios,
-            std::pair<PublicKey, SecretKey> keys,
-            std::string const& manifest,
-            int sequence,
-            std::size_t expiration,
-            int version,
-            std::vector <Validator> const& validators)
-        : sock_(ios)
-        , acceptor_(ios)
-    {
-        std::string data =
-            "{\"sequence\":" + std::to_string(sequence) +
-            ",\"expiration\":" + std::to_string(expiration) +
-            ",\"validators\":[";
-
-        for (auto const& val : validators)
-        {
-            data += "{\"validation_public_key\":\"" + strHex(val.masterPublic) +
-                "\",\"manifest\":\"" + val.manifest + "\"},";
-        }
-        data.pop_back();
-        data += "]}";
-        std::string blob = beast::detail::base64_encode(data);
-
-        list_ = "{\"blob\":\"" + blob + "\"";
-
-        auto const sig = sign(keys.first, keys.second, makeSlice(data));
-
-        list_ += ",\"signature\":\"" + strHex(sig) + "\"";
-        list_ += ",\"manifest\":\"" + manifest + "\"";
-        list_ += ",\"version\":" + std::to_string(version) + '}';
-
-        acceptor_.open(ep.protocol());
-        error_code ec;
-        acceptor_.set_option(
-            boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
-        acceptor_.bind(ep);
-        acceptor_.listen(boost::asio::socket_base::max_connections);
-        acceptor_.async_accept(sock_,
-            std::bind(&http_sync_server::on_accept, this,
-                std::placeholders::_1));
-    }
-
-    ~http_sync_server()
-    {
-        error_code ec;
-        acceptor_.close(ec);
-    }
-
-private:
-    struct lambda
-    {
-        int id;
-        http_sync_server& self;
-        socket_type sock;
-        boost::asio::io_service::work work;
-
-        lambda(int id_, http_sync_server& self_,
-                socket_type&& sock_)
-            : id(id_)
-            , self(self_)
-            , sock(std::move(sock_))
-            , work(sock.get_io_service())
-        {
-        }
-
-        void operator()()
-        {
-            self.do_peer(id, std::move(sock));
-        }
-    };
-
-    void
-    on_accept(error_code ec)
-    {
-        // ec must be checked before `acceptor_` or the member variable may be
-        // accessed after the destructor has completed
-        if(ec || !acceptor_.is_open())
-            return;
-
-        static int id_ = 0;
-        std::thread{lambda{++id_, *this, std::move(sock_)}}.detach();
-        acceptor_.async_accept(sock_,
-            std::bind(&http_sync_server::on_accept, this,
-                std::placeholders::_1));
-    }
-
-    void
-    do_peer(int id, socket_type&& sock0)
-    {
-        socket_type sock(std::move(sock0));
-        beast::multi_buffer sb;
-        error_code ec;
-        for(;;)
-        {
-            req_type req;
-            beast::http::read(sock, sb, req, ec);
-            if(ec)
-                break;
-            auto path = req.target().to_string();
-            if(path != "/validators")
-            {
-                resp_type res;
-                res.result(beast::http::status::not_found);
-                res.version = req.version;
-                res.insert("Server", "http_sync_server");
-                res.insert("Content-Type", "text/html");
-                res.body = "The file '" + path + "' was not found";
-                res.prepare_payload();
-                write(sock, res, ec);
-                if(ec)
-                    break;
-            }
-            resp_type res;
-            res.result(beast::http::status::ok);
-            res.version = req.version;
-            res.insert("Server", "http_sync_server");
-            res.insert("Content-Type", "application/json");
-
-            res.body = list_;
-            try
-            {
-                res.prepare_payload();
-            }
-            catch(std::exception const& e)
-            {
-                res = {};
-                res.result(beast::http::status::internal_server_error);
-                res.version = req.version;
-                res.insert("Server", "http_sync_server");
-                res.insert("Content-Type", "text/html");
-                res.body =
-                    std::string{"An internal error occurred"} + e.what();
-                res.prepare_payload();
-            }
-            write(sock, res, ec);
-            if(ec)
-                break;
-        }
-    }
-};
-
 class ValidatorSite_test : public beast::unit_test::suite
 {
 private:
+
+    using Validator = TrustedPublisherServer::Validator;
+
     static
     PublicKey
     randomNode ()
@@ -293,7 +129,6 @@ private:
         using namespace jtx;
 
         Env env (*this);
-        auto& ioService = env.app ().getIOService ();
         auto& trustedKeys = env.app ().validators ();
 
         beast::Journal journal;
@@ -337,27 +172,42 @@ private:
         while (list2.size () < listSize)
             list2.push_back (randomValidator());
 
-        std::uint16_t constexpr port1 = 7475;
-        std::uint16_t constexpr port2 = 7476;
 
         using endpoint_type = boost::asio::ip::tcp::endpoint;
         using address_type = boost::asio::ip::address;
 
-        endpoint_type ep1{address_type::from_string("127.0.0.1"), port1};
-        endpoint_type ep2{address_type::from_string("127.0.0.1"), port2};
+        // Use ports of 0 to allow OS selection
+        endpoint_type ep1{address_type::from_string("127.0.0.1"), 0};
+        endpoint_type ep2{address_type::from_string("127.0.0.1"), 0};
 
         auto const sequence = 1;
         auto const version = 1;
         NetClock::time_point const expiration =
             env.timeKeeper().now() + 3600s;
 
-        http_sync_server server1(
-            ep1, ioService, pubSigningKeys1, manifest1, sequence,
-            expiration.time_since_epoch().count(), version, list1);
+        TrustedPublisherServer server1(
+            ep1,
+            env.app().getIOService(),
+            pubSigningKeys1,
+            manifest1,
+            sequence,
+            expiration,
+            version,
+            list1);
 
-        http_sync_server server2(
-            ep2, ioService, pubSigningKeys2, manifest2, sequence,
-            expiration.time_since_epoch().count(), version, list2);
+        TrustedPublisherServer server2(
+            ep2,
+            env.app().getIOService(),
+            pubSigningKeys2,
+            manifest2,
+            sequence,
+            expiration,
+            version,
+            list2);
+
+        std::uint16_t const port1 = server1.local_endpoint().port();
+        std::uint16_t const port2 = server2.local_endpoint().port();
+
 
         {
             // fetch single site

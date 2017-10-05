@@ -24,6 +24,7 @@
 #include <ripple/app/misc/detail/Work.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/json/json_value.h>
 #include <boost/asio.hpp>
 #include <mutex>
 
@@ -68,10 +69,17 @@ private:
 
     struct Site
     {
+        struct Status
+        {
+            clock_type::time_point refreshed;
+            ListDisposition disposition;
+        };
+
         std::string uri;
         parsedURL pUrl;
         std::chrono::minutes refreshInterval;
         clock_type::time_point nextRefresh;
+        boost::optional<Status> lastRefreshStatus;
     };
 
     boost::asio::io_service& ios_;
@@ -145,6 +153,11 @@ public:
     */
     void
     stop ();
+
+    /** Return JSON representation of configured validator sites
+     */
+    Json::Value
+    getJson() const;
 
 private:
     /// Queue next site to be fetched

@@ -25,6 +25,7 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/crypto/csprng.h>
+#include <ripple/json/json_value.h>
 #include <ripple/protocol/PublicKey.h>
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
@@ -40,6 +41,9 @@ enum class ListDisposition
     /// List is valid
     accepted = 0,
 
+    /// Same sequence as current list
+    same_sequence,
+
     /// List version is not supported
     unsupported_version,
 
@@ -50,8 +54,11 @@ enum class ListDisposition
     stale,
 
     /// Invalid format or signature
-    invalid,
+    invalid
 };
+
+std::string
+to_string(ListDisposition disposition);
 
 /**
     Trusted Validators List
@@ -103,7 +110,7 @@ class ValidatorList
         bool available;
         std::vector<PublicKey> list;
         std::size_t sequence;
-        std::size_t expiration;
+        TimeKeeper::time_point expiration;
     };
 
     ManifestCache& validatorManifests_;
@@ -126,6 +133,9 @@ class ValidatorList
 
     PublicKey localPubKey_;
 
+    // Currently supported version of publisher list format
+    static constexpr std::uint32_t requiredListVersion = 1;
+
     // The minimum number of listed validators required to allow removing
     // non-communicative validators from the trusted set. In other words, if the
     // number of listed validators is less, then use all of them in the
@@ -134,6 +144,8 @@ class ValidatorList
     // The maximum size of a trusted set for which greater than Byzantine fault
     // tolerance isn't needed.
     std::size_t const BYZANTINE_THRESHOLD {32};
+
+
 
 public:
     ValidatorList (
@@ -318,6 +330,26 @@ public:
     for_each_listed (
         std::function<void(PublicKey const&, bool)> func) const;
 
+    /** Return the time when the validator list will expire
+
+        @note This may be a time in the past if a published list has not
+        been updated since its expiration. It will be boost::none if any
+        configured published list has not been fetched.
+
+        @par Thread Safety
+        May be called concurrently
+    */
+    boost::optional<TimeKeeper::time_point>
+    expires() const;
+
+    /** Return a JSON representation of the state of the validator list
+
+        @par Thread Safety
+        May be called concurrently
+    */
+    Json::Value
+    getJson() const;
+
 private:
     /** Check response for trusted valid published list
 
@@ -374,10 +406,9 @@ ValidatorList::onConsensusStart (
     for (auto const& list : publisherLists_)
     {
         // Remove any expired published lists
-        if (list.second.expiration &&
-                list.second.expiration <=
-                timeKeeper_.now().time_since_epoch().count())
-            removePublisherList (list.first);
+        if (TimeKeeper::time_point{} < list.second.expiration &&
+            list.second.expiration <= timeKeeper_.now())
+            removePublisherList(list.first);
 
         if (! list.second.available)
             allListsAvailable = false;
