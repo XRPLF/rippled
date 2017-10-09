@@ -254,6 +254,16 @@ ValidatorSite::onSiteFetch(
                     "Invalid validator list from " <<
                     sites_[siteIdx].uri;
             }
+            else if (ListDisposition::unsupported_version == disp)
+            {
+                JLOG (j_.warn()) <<
+                    "Unsupported version validator list from " <<
+                    sites_[siteIdx].uri;
+            }
+            else
+            {
+                BOOST_ASSERT(false);
+            }
 
             if (body.isMember ("refresh_interval") &&
                 body["refresh_interval"].isNumeric ())
@@ -268,6 +278,16 @@ ValidatorSite::onSiteFetch(
                 "Unable to parse JSON response from  " <<
                 sites_[siteIdx].uri;
         }
+    }
+    else
+    {
+        JLOG (j_.warn()) <<
+            "Problem retrieving from " <<
+            sites_[siteIdx].uri <<
+            " " <<
+            ec.value() <<
+            ":" <<
+            ec.message();
     }
 
     std::lock_guard <std::mutex> lock{state_mutex_};
