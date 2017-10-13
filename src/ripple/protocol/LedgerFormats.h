@@ -83,6 +83,8 @@ enum LedgerEntryType
     // Simple unidirection xrp channel
     ltPAYCHAN           = 'x',
 
+    ltCHECK             = 'C',
+
     // No longer used or supported. Left here to prevent accidental
     // reassignment of the ledger type.
     ltNICKNAME          = 'n',
@@ -111,6 +113,7 @@ enum LedgerNameSpace
     spaceTicket         = 'T',
     spaceSignerList     = 'S',
     spaceXRPUChannel    = 'x',
+    spaceCheck          = 'C',
 
     // No longer used or supported. Left here to reserve the space and
     // avoid accidental reuse of the space.

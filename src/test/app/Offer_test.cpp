@@ -918,7 +918,6 @@ public:
 
         auto const f = env.current ()->fees ().base;
 
-        // Place an offer that should have already expired
         env (trust (alice, usdOffer),             ter(tesSUCCESS));
         env (pay (gw, alice, usdOffer),           ter(tesSUCCESS));
         env.close();
@@ -928,8 +927,13 @@ public:
             offers (alice, 0),
             owners (alice, 1));
 
-        env (offer (alice, xrpOffer, usdOffer),
-            json (key, lastClose(env)),             ter(tesSUCCESS));
+        // Place an offer that should have already expired.
+        // The Checks amendment changes the return code; adapt to that.
+        bool const featChecks {features[featureChecks]};
+
+        env (offer (alice, xrpOffer, usdOffer), json (key, lastClose(env)),
+            ter (featChecks ? tecEXPIRED : tesSUCCESS));
+
         env.require (
             balance (alice, startBalance - f - f),
             balance (alice, usdOffer),
@@ -937,7 +941,7 @@ public:
             owners (alice, 1));
         env.close();
 
-        // Add an offer that's expires before the next ledger close
+        // Add an offer that expires before the next ledger close
         env (offer (alice, xrpOffer, usdOffer),
             json (key, lastClose(env) + 1),         ter(tesSUCCESS));
         env.require (

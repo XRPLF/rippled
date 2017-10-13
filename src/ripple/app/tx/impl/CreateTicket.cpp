@@ -113,7 +113,7 @@ CreateTicket::doApply ()
 
     sleTicket->setFieldU64(sfOwnerNode, *page);
 
-    // If we succeeded, the new entry counts agains the
+    // If we succeeded, the new entry counts against the
     // creator's reserve.
     adjustOwnerCount(view(), sle, 1, viewJ);
     return tesSUCCESS;

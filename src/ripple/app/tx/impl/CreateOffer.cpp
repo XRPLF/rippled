@@ -194,10 +194,12 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     if (expiration &&
         (ctx.view.parentCloseTime() >= tp{d{*expiration}}))
     {
-        // Note that this will get checked again in applyGuts,
-        // but it saves us a call to checkAcceptAsset and
-        // possible false negative.
-        return tesSUCCESS;
+        // Note that this will get checked again in applyGuts, but it saves
+        // us a call to checkAcceptAsset and possible false negative.
+        //
+        // The return code change is attached to featureChecks as a convenience.
+        // The change is not big enough to deserve its own amendment.
+        return ctx.view.rules().enabled(featureChecks) ? tecEXPIRED : tesSUCCESS;
     }
 
     // Make sure that we are authorized to hold what the taker will pay us.
@@ -1102,7 +1104,12 @@ CreateOffer::applyGuts (Sandbox& sb, Sandbox& sbCancel)
     {
         // If the offer has expired, the transaction has successfully
         // done nothing, so short circuit from here.
-        return{ tesSUCCESS, true };
+        //
+        // The return code change is attached to featureChecks as a convenience.
+        // The change is not big enough to deserve its own amendment.
+        TER const ter {ctx_.view().rules().enabled(
+            featureChecks) ? tecEXPIRED : tesSUCCESS};
+        return{ ter, true };
     }
 
     bool const bOpenLedger = ctx_.view().open();

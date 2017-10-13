@@ -1878,6 +1878,12 @@
     <ClInclude Include="..\..\src\ripple\app\tx\impl\BookTip.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\CancelCheck.cpp">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\CancelCheck.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\CancelOffer.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
@@ -1890,10 +1896,22 @@
     <ClInclude Include="..\..\src\ripple\app\tx\impl\CancelTicket.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\CashCheck.cpp">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\CashCheck.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\Change.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\impl\Change.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\CreateCheck.cpp">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\CreateCheck.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\CreateOffer.cpp">
@@ -5590,6 +5608,9 @@
       <Filter>test\app</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\app\AmendmentTable_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\Check_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\app\CrossingLimits_test.cpp">

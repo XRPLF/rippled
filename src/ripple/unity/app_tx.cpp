@@ -22,9 +22,12 @@
 #include <ripple/app/tx/impl/apply.cpp>
 #include <ripple/app/tx/impl/applySteps.cpp>
 #include <ripple/app/tx/impl/BookTip.cpp>
+#include <ripple/app/tx/impl/CancelCheck.cpp>
 #include <ripple/app/tx/impl/CancelOffer.cpp>
 #include <ripple/app/tx/impl/CancelTicket.cpp>
+#include <ripple/app/tx/impl/CashCheck.cpp>
 #include <ripple/app/tx/impl/Change.cpp>
+#include <ripple/app/tx/impl/CreateCheck.cpp>
 #include <ripple/app/tx/impl/CreateOffer.cpp>
 #include <ripple/app/tx/impl/CreateTicket.cpp>
 #include <ripple/app/tx/impl/Escrow.cpp>
