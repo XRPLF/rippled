@@ -72,6 +72,7 @@ transResults()
         { tecINTERNAL,               { "tecINTERNAL",              "An internal error has occurred during processing."                             } },
         { tecCRYPTOCONDITION_ERROR,  { "tecCRYPTOCONDITION_ERROR", "Malformed, invalid, or mismatched conditional or fulfillment."                 } },
         { tecINVARIANT_FAILED,       { "tecINVARIANT_FAILED",      "One or more invariants for the transaction were not satisfied."                } },
+        { tecEXPIRED,                { "tecEXPIRED",               "Expiration time is passed."                                                    } },
 
         { tefALREADY,                { "tefALREADY",               "The exact transaction was already in this ledger."                             } },
         { tefBAD_ADD_AUTH,           { "tefBAD_ADD_AUTH",          "Not authorized to add account."                                                } },

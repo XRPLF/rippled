@@ -84,6 +84,10 @@ protected:
     XRPAmount     mPriorBalance;  // Balance before fees.
     XRPAmount     mSourceBalance; // Balance after fees.
 
+    virtual ~Transactor() = default;
+    Transactor (Transactor const&) = delete;
+    Transactor& operator= (Transactor const&) = delete;
+
 public:
     /** Process the transaction. */
     std::pair<TER, bool>
