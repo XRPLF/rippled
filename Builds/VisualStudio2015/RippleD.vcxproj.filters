@@ -5742,6 +5742,9 @@
     <ClCompile Include="..\..\src\test\rpc\AccountSet_test.cpp">
       <Filter>test\rpc</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\rpc\AccountTx_test.cpp">
+      <Filter>test\rpc</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\rpc\AmendmentBlocked_test.cpp">
       <Filter>test\rpc</Filter>
     </ClCompile>
