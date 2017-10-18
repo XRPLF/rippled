@@ -24,6 +24,7 @@
 #include <test/rpc/AccountObjects_test.cpp>
 #include <test/rpc/AccountOffers_test.cpp>
 #include <test/rpc/AccountSet_test.cpp>
+#include <test/rpc/AccountTx_test.cpp>
 #include <test/rpc/AmendmentBlocked_test.cpp>
 #include <test/rpc/Book_test.cpp>
 #include <test/rpc/Feature_test.cpp>
