@@ -414,7 +414,7 @@ ValidatorList::calculateMinimumQuorum (
 {
     // Only require 51% quorum for small number of validators to facilitate
     // bootstrapping a network.
-    if (nListedKeys <= 5)
+    if (nListedKeys <= 6)
         return nListedKeys/2 + 1;
 
     // The number of listed validators is increased to preserve the safety
