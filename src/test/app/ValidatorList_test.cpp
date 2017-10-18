@@ -768,8 +768,8 @@ private:
                     emptyLocalKey, cfgKeys, cfgPublishers));
                 trustedKeys->onConsensusStart (activeValidators);
                 BEAST_EXPECT(trustedKeys->quorum () ==
-                    (cfgKeys.size() <= 5) ? cfgKeys.size()/2 + 1 :
-                        cfgKeys.size() * 2/3 + 1);
+                    ((cfgKeys.size() <= 6) ? cfgKeys.size()/2 + 1 :
+                        cfgKeys.size() * 2/3 + 1));
                 for (auto const& key : activeValidators)
                     BEAST_EXPECT(trustedKeys->trusted (key));
             }
@@ -799,8 +799,8 @@ private:
                 trustedKeys->onConsensusStart (activeValidators);
 
                 BEAST_EXPECT(trustedKeys->quorum () ==
-                    (cfgKeys.size() <= 5) ? cfgKeys.size()/2 + 1 :
-                        (cfgKeys.size() + 1) * 2/3 + 1);
+                    ((cfgKeys.size() <= 6) ? cfgKeys.size()/2 + 1 :
+                        (cfgKeys.size() + 1) * 2/3 + 1));
 
                 for (auto const& key : activeValidators)
                     BEAST_EXPECT(trustedKeys->trusted (key));
