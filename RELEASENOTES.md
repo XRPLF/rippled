@@ -11,6 +11,35 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 0.80.0
+
+The `rippled` 0.80.0 release introduces several enhancements that improve the reliability, scalability and security of the XRP Ledger.
+
+Highlights of this release include:
+
+- The `SortedDirectories` amendment, which allows the entries stored within a page to be sorted, and corrects a technical flaw that could, in some edge cases, prevent an empty intermediate page from being deleted.
+- Changes to the UNL and quorum rules
+  + Use a fixed size UNL if the total listed validators are below threshold
+  + Ensure a quorum of 0 cannot be configured
+  + Set a quorum to provide Byzantine fault tolerance until a threshold of total validators is exceeded, at which time the quorum is 80%
+
+**New and Updated Features**
+
+- Improve directory insertion and deletion ([#2165](https://github.com/ripple/rippled/issues/2165))
+- Move consensus thread safety logic from the generic implementation in Consensus into the RCL adapted version RCLConsensus ([#2106](https://github.com/ripple/rippled/issues/2106))
+- Refactor Validations class into a generic version that can be adapted ([#2084](https://github.com/ripple/rippled/issues/2084))
+- Make minimum quorum Byzantine fault tolerant ([#2093](https://github.com/ripple/rippled/issues/2093))
+- Make amendment blocked state thread-safe and simplify a constructor ([#2207](https://github.com/ripple/rippled/issues/2207))
+- Use ledger hash to break ties ([#2169](https://github.com/ripple/rippled/issues/2169))
+- Refactor RangeSet ([#2113](https://github.com/ripple/rippled/issues/2113))
+
+**Bug Fixes**
+
+- Fix an issue where `setAmendmentBlocked` is only called when processing the `EnableAmendment` transaction for the amendment ([#2137](https://github.com/ripple/rippled/issues/2137))
+- Track escrow in recipient's owner directory ([#2212](https://github.com/ripple/rippled/issues/2212))
+
+**New and Updated Features**
+
 ## Version 0.70.2
 
 The `rippled` 0.70.2 release corrects an emergent behavior which causes large numbers of transactions to get
