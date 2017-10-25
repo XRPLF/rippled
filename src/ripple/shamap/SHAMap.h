@@ -352,7 +352,13 @@ private:
             int,              // while child we check first
             int,              // which child we check next
             bool>;            // whether we've found any missing children yet
-        std::stack <StackEntry> stack_;
+
+        // We explicitly choose to specify the use of std::deque here, because
+        // we need to ensure that pointers and/or references to existing elements
+        // will not be invalidated during the course of element insertion and
+        // removal. Containers that do not offer this guarantee, such as
+        // std::vector, can't be used here.
+        std::stack <StackEntry, std::deque<StackEntry>> stack_;
 
         // nodes we may acquire from deferred reads
         std::vector <std::tuple <SHAMapInnerNode*, SHAMapNodeID, int>> deferredReads_;
