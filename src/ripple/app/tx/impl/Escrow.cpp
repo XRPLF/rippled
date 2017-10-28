@@ -99,6 +99,9 @@ EscrowCreate::preflight (PreflightContext const& ctx)
     if (! ctx.rules.enabled(featureEscrow))
         return temDISABLED;
 
+    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
+        return temINVALID_FLAG;
+
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))
         return ret;
@@ -296,6 +299,9 @@ EscrowFinish::preflight (PreflightContext const& ctx)
 {
     if (! ctx.rules.enabled(featureEscrow))
         return temDISABLED;
+
+    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
+        return temINVALID_FLAG;
 
     {
         auto const ret = preflight1 (ctx);
@@ -503,6 +509,9 @@ EscrowCancel::preflight (PreflightContext const& ctx)
 {
     if (! ctx.rules.enabled(featureEscrow))
         return temDISABLED;
+
+    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
+        return temINVALID_FLAG;
 
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))

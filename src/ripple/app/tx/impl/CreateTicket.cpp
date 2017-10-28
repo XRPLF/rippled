@@ -23,6 +23,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
 
@@ -31,6 +32,9 @@ CreateTicket::preflight (PreflightContext const& ctx)
 {
     if (! ctx.rules.enabled(featureTickets))
         return temDISABLED;
+
+    if (ctx.tx.getFlags() & tfUniversalMask)
+        return temINVALID_FLAG;
 
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))
