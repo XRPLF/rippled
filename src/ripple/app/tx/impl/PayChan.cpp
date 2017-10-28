@@ -161,6 +161,9 @@ PayChanCreate::preflight (PreflightContext const& ctx)
     if (!ctx.rules.enabled (featurePayChan))
         return temDISABLED;
 
+    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
+        return temINVALID_FLAG;
+
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))
         return ret;
@@ -266,6 +269,9 @@ PayChanFund::preflight (PreflightContext const& ctx)
     if (!ctx.rules.enabled (featurePayChan))
         return temDISABLED;
 
+    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
+        return temINVALID_FLAG;
+
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))
         return ret;
@@ -370,9 +376,15 @@ PayChanClaim::preflight (PreflightContext const& ctx)
             return tecNO_PERMISSION;
     }
 
-    auto const flags = ctx.tx.getFlags ();
-    if ((flags & tfClose) && (flags & tfRenew))
-        return temMALFORMED;
+    {
+        auto const flags = ctx.tx.getFlags();
+
+        if (ctx.rules.enabled(fix1543) && (flags & tfPayChanClaimMask))
+            return temINVALID_FLAG;
+
+        if ((flags & tfClose) && (flags & tfRenew))
+            return temMALFORMED;
+    }
 
     if (auto const sig = ctx.tx[~sfSignature])
     {
