@@ -1259,7 +1259,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
             return;
         }
 
-        if (app_.getFeeTrack ().isLoadedLocal () && ! cluster())
+        if (! cluster() && app_.getFeeTrack ().isLoadedLocal())
         {
             JLOG(p_journal_.debug()) << "Proposal: Dropping UNTRUSTED (load)";
             return;
@@ -1901,8 +1901,8 @@ PeerImp::checkPropose (Job& job,
     }
     else
     {
-        if (app_.getOPs().getConsensusLCL() == peerPos.proposal().prevLedger() ||
-            cluster())
+        if (cluster() ||
+            (app_.getOPs().getConsensusLCL() == peerPos.proposal().prevLedger()))
         {
             // relay untrusted proposal
             JLOG(p_journal_.trace()) <<
