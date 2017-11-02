@@ -1275,29 +1275,8 @@ bool NetworkOPsImp::checkLastClosedLedger (
 
     struct ValidationCount
     {
-        int trustedValidations, nodesUsing;
-
-        ValidationCount() : trustedValidations(0), nodesUsing(0)
-        {
-        }
-
-        auto
-        asTie() const
-        {
-            return std::tie(trustedValidations, nodesUsing);
-        }
-
-        bool
-        operator>(const ValidationCount& v) const
-        {
-            return asTie() > v.asTie();
-        }
-
-        bool
-        operator==(const ValidationCount& v) const
-        {
-            return asTie() == v.asTie();
-        }
+        std::uint32_t trustedValidations = 0;
+        std::uint32_t nodesUsing = 0;
     };
 
     hash_map<uint256, ValidationCount> ledgers;
@@ -1327,38 +1306,47 @@ bool NetworkOPsImp::checkLastClosedLedger (
             ++ledgers[peerLedger].nodesUsing;
     }
 
-    auto bestVC = ledgers[closedLedger];
 
     // 3) Is there a network ledger we'd like to switch to? If so, do we have
     // it?
     bool switchLedgers = false;
+    ValidationCount bestCounts = ledgers[closedLedger];
 
     for (auto const& it: ledgers)
     {
-        JLOG(m_journal.debug()) << "L: " << it.first
-                              << " t=" << it.second.trustedValidations
-                              << ", n=" << it.second.nodesUsing;
+        uint256 const & currLedger =  it.first;
+        ValidationCount const & currCounts = it.second;
 
-        // Temporary logging to make sure tiebreaking isn't broken
-        if (it.second.trustedValidations > 0)
-            JLOG(m_journal.trace())
-                << "  TieBreakTV: " << it.first;
-        else
+        JLOG(m_journal.debug()) << "L: " << currLedger
+                              << " t=" << currCounts.trustedValidations
+                              << ", n=" << currCounts.nodesUsing;
+
+        bool const preferCurr = [&]()
         {
-            if (it.second.nodesUsing > 0)
+            // Prefer ledger with more trustedValidations
+            if (currCounts.trustedValidations > bestCounts.trustedValidations)
+                return true;
+            if (currCounts.trustedValidations < bestCounts.trustedValidations)
+                return false;
+            // If neither are trusted, prefer more nodesUsing
+            if (currCounts.trustedValidations == 0)
             {
-                JLOG(m_journal.trace())
-                    << "  TieBreakNU: " << it.first;
+                if (currCounts.nodesUsing > bestCounts.nodesUsing)
+                    return true;
+                if (currCounts.nodesUsing < bestCounts.nodesUsing)
+                    return false;
             }
-        }
+            // If tied trustedValidations (non-zero) or tied nodesUsing,
+            // prefer higher ledger hash
+            return currLedger > closedLedger;
 
-        // Switch to a ledger with more support
-        // or the one with higher hash if they have the same support
-        if (it.second > bestVC ||
-            (it.second == bestVC && it.first > closedLedger))
+        }();
+
+        // Switch to current ledger if it is preferred over best so far
+        if (preferCurr)
         {
-            bestVC = it.second;
-            closedLedger = it.first;
+            bestCounts = currCounts;
+            closedLedger = currLedger;
             switchLedgers = true;
         }
     }
