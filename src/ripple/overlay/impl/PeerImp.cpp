@@ -1305,7 +1305,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
     {
         if (!closedLedgerHash_.isZero ())
         {
-            JLOG(p_journal_.trace()) << "Status: Out of sync";
+            JLOG(p_journal_.debug()) << "Status: Out of sync";
             closedLedgerHash_.zero ();
         }
 
@@ -1318,11 +1318,11 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
         // a peer has changed ledgers
         memcpy (closedLedgerHash_.begin (), m->ledgerhash ().data (), 256 / 8);
         addLedger (closedLedgerHash_);
-        JLOG(p_journal_.trace()) << "LCL is " << closedLedgerHash_;
+        JLOG(p_journal_.debug()) << "LCL is " << closedLedgerHash_;
     }
     else
     {
-        JLOG(p_journal_.trace()) << "Status: No ledger";
+        JLOG(p_journal_.debug()) << "Status: No ledger";
         closedLedgerHash_.zero ();
     }
 
