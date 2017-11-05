@@ -1305,6 +1305,6 @@ def do_count(target, source, env):
     lines = 0
     for f in testfiles:
         lines = lines + sum(1 for line in open(f))
-    print "Total unit test lines: %d" % lines
+    print("Total unit test lines: %d" % lines)
 
 PhonyTargets(env, count = do_count)
