@@ -876,6 +876,16 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, bool proposing)
     app_.overlay().send(val);
 }
 
+void
+RCLConsensus::Adaptor::onModeChange(
+    ConsensusMode before,
+    ConsensusMode after)
+{
+    JLOG(j_.info()) << "Consensus mode change before=" << to_string(before)
+                    << ", after=" << to_string(after);
+    mode_ = after;
+}
+
 Json::Value
 RCLConsensus::getJson(bool full) const
 {
@@ -950,14 +960,18 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
                   prevLgr.seq() >= app_.getMaxDisallowedLedger() &&
                   !app_.getOPs().isAmendmentBlocked();
 
+    const bool synced = app_.getOPs().getOperatingMode() == NetworkOPs::omFULL;
+
     if (validating_)
     {
-        JLOG(j_.info()) << "Entering consensus process, validating";
+        JLOG(j_.info()) << "Entering consensus process, validating, synced="
+                        << (synced ? "yes" : "no");
     }
     else
     {
         // Otherwise we just want to monitor the validation process.
-        JLOG(j_.info()) << "Entering consensus process, watching";
+        JLOG(j_.info()) << "Entering consensus process, watching, synced="
+                        << (synced ? "yes" : "no");
     }
 
     // Notify inbound ledgers that we are starting a new round
@@ -967,8 +981,7 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
     parms_.useRoundedCloseTime = prevLgr.ledger_->rules().enabled(fix1528);
 
     // propose only if we're in sync with the network (and validating)
-    return validating_ &&
-        (app_.getOPs().getOperatingMode() == NetworkOPs::omFULL);
+    return validating_ && synced;
 }
 
 void
