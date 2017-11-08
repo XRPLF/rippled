@@ -178,8 +178,6 @@ public:
     testDynamicUNL()
     {
         using namespace test::jtx;
-        using endpoint_type = boost::asio::ip::tcp::endpoint;
-        using address_type = boost::asio::ip::address;
 
         auto toStr = [](PublicKey const& publicKey) {
             return toBase58(TokenType::NodePublic, publicKey);
@@ -208,7 +206,9 @@ public:
         // Publisher list site unavailable
         {
             // Publisher site information
-            std::string siteURI = "http://127.0.0.1:1234/validators";
+            using namespace std::string_literals;
+            std::string siteURI =
+                "http://"s + ENV_LOCALHOST_ADDR + ":1234/validators";
 
             Env env{
                 *this,
@@ -271,9 +271,6 @@ public:
         {
             NetClock::time_point const expiration{3600s};
 
-            // 0 port means to use OS port selection
-            endpoint_type ep{address_type::from_string("127.0.0.1"), 0};
-
             // Manage single thread io_service for server
             struct Worker : BasicApp
             {
@@ -282,7 +279,6 @@ public:
             Worker w;
 
             TrustedPublisherServer server(
-                ep,
                 w.get_io_service(),
                 publisherSigningKeys,
                 manifest,
@@ -291,9 +287,9 @@ public:
                 1,
                 validators);
 
-            endpoint_type const & local_ep = server.local_endpoint();
-            std::string siteURI = "http://127.0.0.1:" +
-                std::to_string(local_ep.port()) + "/validators";
+            std::stringstream uri;
+            uri << "http://" << server.local_endpoint() << "/validators";
+            auto siteURI = uri.str();
 
             Env env{
                 *this,

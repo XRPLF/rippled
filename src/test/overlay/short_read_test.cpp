@@ -20,6 +20,7 @@
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/unit_test.h>
+#include <test/jtx/envconfig.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/optional.hpp>
@@ -62,6 +63,13 @@ private:
     boost::optional<io_service_type::work> work_;
     std::thread thread_;
     std::shared_ptr<boost::asio::ssl::context> context_;
+
+    static
+    endpoint_type
+    endpoint()
+    {
+        return endpoint_type(address_type::from_string(test::ENV_LOCALHOST_ADDR), 9000);
+    }
 
     template <class Streambuf>
     static
@@ -183,7 +191,8 @@ private:
                 , server_(server)
                 , test_(server_.test_)
                 , acceptor_(test_.io_service_,
-                    endpoint_type(address_type::from_string("127.0.0.1"), 0))
+                    endpoint_type(address_type::from_string(
+                        test::ENV_LOCALHOST_ADDR), 0))
                 , socket_(test_.io_service_)
                 , strand_(socket_.get_io_service())
             {

@@ -25,6 +25,15 @@
 namespace ripple {
 namespace test {
 
+// USE ipv6 localhost for unit test environment
+#define ENV_USE_IPV6 1
+
+#if ENV_USE_IPV6
+constexpr char ENV_LOCALHOST_ADDR[] = "::1";
+#else
+constexpr char ENV_LOCALHOST_ADDR[] = "127.0.0.1";
+#endif
+
 /// @brief initializes a config object for use with jtx::Env
 ///
 /// @param config the configuration object to be initialized

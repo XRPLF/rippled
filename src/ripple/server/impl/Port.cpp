@@ -95,7 +95,7 @@ populate (Section const& section, std::string const& field, std::ostream& log,
             {
                 if (! allowAllIps)
                 {
-                    log << "0.0.0.0 not allowed'" <<
+                    log << addr.first.address() << " not allowed'" <<
                         "' for key '" << field << "' in [" <<
                         section.name () << "]";
                     Throw<std::exception> ();
@@ -108,8 +108,8 @@ populate (Section const& section, std::string const& field, std::ostream& log,
 
             if (has_any && ! ips->empty ())
             {
-                log << "IP specified along with 0.0.0.0 '" << ip <<
-                    "' for key '" << field << "' in [" <<
+                log << "IP specified along with " << addr.first.address() <<
+                    " '" << ip << "' for key '" << field << "' in [" <<
                     section.name () << "]";
                 Throw<std::exception> ();
             }

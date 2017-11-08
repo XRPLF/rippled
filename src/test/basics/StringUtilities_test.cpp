@@ -77,6 +77,9 @@ public:
         BEAST_EXPECT(parseUrl (pUrl, "Mixed://domain/path"));
         BEAST_EXPECT(pUrl.scheme == "mixed");
         BEAST_EXPECT(pUrl.path == "/path");
+        BEAST_EXPECT(parseUrl (pUrl, "scheme://[::1]:123/path"));
+        BEAST_EXPECT(*pUrl.port == 123);
+        BEAST_EXPECT(pUrl.domain == "::1");
     }
 
     void testToString ()

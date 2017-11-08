@@ -23,7 +23,7 @@
 #include <ripple/basics/ToString.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/algorithm/string.hpp>
-#include <boost/asio/ip/address.hpp>
+#include <ripple/beast/net/IPEndpoint.h>
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <cstdarg>
@@ -93,24 +93,38 @@ uint64_t uintFromHex (std::string const& strSrc)
 bool parseUrl (parsedURL& pUrl, std::string const& strUrl)
 {
     // scheme://username:password@hostname:port/rest
-    static boost::regex reUrl ("(?i)\\`\\s*([[:alpha:]][-+.[:alpha:][:digit:]]*)://([^:/]+)(?::(\\d+))?(/.*)?\\s*?\\'");
+    static boost::regex reUrl ("(?i)\\`\\s*([[:alpha:]][-+.[:alpha:][:digit:]]*)://([^/]+)(/.*)?\\s*?\\'");
     boost::smatch smMatch;
 
     bool bMatch = boost::regex_match (strUrl, smMatch, reUrl); // Match status code.
 
     if (bMatch)
     {
-        std::string strPort;
-
         pUrl.scheme = smMatch[1];
         boost::algorithm::to_lower (pUrl.scheme);
+        pUrl.path = smMatch[3];
         pUrl.domain = smMatch[2];
-        if (smMatch[3].length ())
+
+        // now consider the domain/port fragment
+        auto colonPos = pUrl.domain.find_last_of(':');
+        if (colonPos != std::string::npos)
         {
-            pUrl.port = beast::lexicalCast <std::uint16_t> (
-                std::string (smMatch[3]));
+            // use Endpoint class to see if this thing looks
+            // like an IP addr...
+            auto result {beast::IP::Endpoint::from_string_checked (pUrl.domain)};
+            if (result.second)
+            {
+                pUrl.domain = result.first.address().to_string();
+                pUrl.port = result.first.port();
+            }
+            else // otherwise we are DNS name + port
+            {
+                pUrl.port = beast::lexicalCast <std::uint16_t> (
+                    pUrl.domain.substr(colonPos+1));
+                pUrl.domain = pUrl.domain.substr(0, colonPos);
+            }
         }
-        pUrl.path = smMatch[4];
+        //else, the whole thing is domain, not port
     }
 
     return bMatch;

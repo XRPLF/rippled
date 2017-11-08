@@ -21,6 +21,7 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <test/jtx.h>
+#include <test/jtx/envconfig.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/resource/ResourceManager.h>
@@ -265,7 +266,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
                 using namespace std::chrono;
                 using namespace beast::IP;
                 auto c = env.app().getResourceManager()
-                    .newInboundEndpoint (Endpoint::from_string ("127.0.0.1"));
+                    .newInboundEndpoint (Endpoint::from_string (test::ENV_LOCALHOST_ADDR));
                 if (dropThreshold - c.balance() <= 20)
                 {
                     using clock_type = beast::abstract_clock <steady_clock>;

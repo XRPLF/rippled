@@ -21,62 +21,27 @@
 #endif
 
 #include <ripple/beast/net/IPAddressV6.h>
+#include <ripple/beast/net/IPAddressV4.h>
 
 namespace beast {
 namespace IP {
 
-//------------------------------------------------------------------------------
-
-bool is_loopback (AddressV6 const&)
+bool is_private (AddressV6 const& addr)
 {
-    // VFALCO TODO
-    assert(false);
-    return false;
+    return ((addr.to_bytes()[0] & 0xfd) || // TODO  fc00::/8 too ?
+            (addr.is_v4_mapped() &&
+               addr.is_v4_compatible() &&
+               is_public(addr.to_v4())) );
 }
 
-bool is_unspecified (AddressV6 const&)
+bool is_public (AddressV6 const& addr)
 {
-    // VFALCO TODO
-    assert(false);
-    return false;
+    // TODO is this correct?
+    return
+        ! is_private (addr) &&
+        ! addr.is_multicast();
 }
 
-bool is_multicast (AddressV6 const&)
-{
-    // VFALCO TODO
-    assert(false);
-    return false;
-}
-
-bool is_private (AddressV6 const&)
-{
-    // VFALCO TODO
-    assert(false);
-    return false;
-}
-
-bool is_public (AddressV6 const&)
-{
-    // VFALCO TODO
-    assert(false);
-    return false;
-}
-
-//------------------------------------------------------------------------------
-
-std::string to_string (AddressV6 const&)
-{
-    // VFALCO TODO
-    assert(false);
-    return "";
-}
-
-std::istream& operator>> (std::istream& is, AddressV6&)
-{
-    // VFALCO TODO
-    assert(false);
-    return is;
-}
 
 }
 }

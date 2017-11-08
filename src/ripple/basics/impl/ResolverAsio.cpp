@@ -20,6 +20,7 @@
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Log.h>
 #include <ripple/beast/net/IPAddressConversion.h>
+#include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/beast/core/WaitableEvent.h>
 #include <boost/asio.hpp>
 #include <atomic>
@@ -259,6 +260,21 @@ public:
 
     HostAndPort parseName(std::string const& str)
     {
+        // first attempt to parse as an endpoint (IP addr + port).
+        // If that doesn't succeed, fall back to generic name + port parsing
+
+        auto result {beast::IP::Endpoint::from_string_checked (str)};
+        if (result.second)
+        {
+            return make_pair (
+                result.first.address().to_string(),
+                std::to_string(result.first.port()));
+        }
+
+        // generic name/port parsing, which doesn't work for
+        // IPv6 addresses in particular because it considers a colon
+        // a port separator
+
         // Attempt to find the first and last non-whitespace
         auto const find_whitespace = std::bind (
             &std::isspace <std::string::value_type>,

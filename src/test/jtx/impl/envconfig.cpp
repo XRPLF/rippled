@@ -43,19 +43,21 @@ setupConfigForUnitTests (Config& cfg)
     cfg.legacy("database_path", "");
     cfg.setupControl(true, true, true);
     cfg["server"].append("port_peer");
-    cfg["port_peer"].set("ip", "127.0.0.1");
+    cfg["port_peer"].set("ip", ENV_LOCALHOST_ADDR);
     cfg["port_peer"].set("port", port_peer);
     cfg["port_peer"].set("protocol", "peer");
+
     cfg["server"].append("port_rpc");
-    cfg["port_rpc"].set("ip", "127.0.0.1");
+    cfg["port_rpc"].set("ip", ENV_LOCALHOST_ADDR);
+    cfg["port_rpc"].set("admin", ENV_LOCALHOST_ADDR);
     cfg["port_rpc"].set("port", port_rpc);
     cfg["port_rpc"].set("protocol", "http,ws2");
-    cfg["port_rpc"].set("admin", "127.0.0.1");
+
     cfg["server"].append("port_ws");
-    cfg["port_ws"].set("ip", "127.0.0.1");
+    cfg["port_ws"].set("ip", ENV_LOCALHOST_ADDR);
+    cfg["port_ws"].set("admin", ENV_LOCALHOST_ADDR);
     cfg["port_ws"].set("port", port_ws);
     cfg["port_ws"].set("protocol", "ws");
-    cfg["port_ws"].set("admin", "127.0.0.1");
 }
 
 namespace jtx {

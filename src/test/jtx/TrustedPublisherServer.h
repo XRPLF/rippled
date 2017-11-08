@@ -23,6 +23,7 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/basics/strHex.h>
+#include <test/jtx/envconfig.h>
 #include <boost/asio.hpp>
 #include <boost/beast/core/detail/base64.hpp>
 #include <boost/beast/http.hpp>
@@ -55,7 +56,6 @@ public:
     };
 
     TrustedPublisherServer(
-        endpoint_type const& ep,
         boost::asio::io_service& ios,
         std::pair<PublicKey, SecretKey> keys,
         std::string const& manifest,
@@ -65,6 +65,9 @@ public:
         std::vector<Validator> const& validators)
         : sock_(ios), acceptor_(ios)
     {
+        endpoint_type const& ep {
+            address_type::from_string(ripple::test::ENV_LOCALHOST_ADDR),
+            0}; // 0 means let OS pick the port based on what's available
         std::string data = "{\"sequence\":" + std::to_string(sequence) +
             ",\"expiration\":" +
             std::to_string(expiration.time_since_epoch().count()) +

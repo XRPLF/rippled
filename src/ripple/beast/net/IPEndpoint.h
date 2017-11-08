@@ -71,9 +71,9 @@ public:
         { return m_addr.is_v4(); }
     bool is_v6 () const
         { return m_addr.is_v6(); }
-    AddressV4 const& to_v4 () const
+    AddressV4 const to_v4 () const
         { return m_addr.to_v4 (); }
-    AddressV6 const& to_v6 () const
+    AddressV6 const to_v6 () const
         { return m_addr.to_v6 (); }
     /** @} */
 
