@@ -1041,10 +1041,11 @@ setup_Client (ServerHandler::Setup& setup)
         return;
     setup.client.secure =
         iter->protocol.count("https") > 0;
-    setup.client.ip = iter->ip.to_string();
-    // VFALCO HACK! to make localhost work
-    if (setup.client.ip == "0.0.0.0")
-        setup.client.ip = "127.0.0.1";
+    setup.client.ip =
+        beast::IP::is_unspecified(iter->ip) ?
+            // VFALCO HACK! to make localhost work
+            (iter->ip.is_v6() ? "::1" : "127.0.0.1") :
+            iter->ip.to_string();
     setup.client.port = iter->port;
     setup.client.user = iter->user;
     setup.client.password = iter->password;

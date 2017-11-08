@@ -618,8 +618,15 @@ public:
             {
                 Endpoint ep;
                 ep.hops = 0;
+                // we use the unspecified (0) address here because the value is
+                // irrelevant to recipients. When peers receive an endpoint
+                // with 0 hops, they use the socket remote_addr instead of the
+                // value in the message. Furthermore, since the address value
+                // is ignored, the type/version (ipv4 vs ipv6) doesn't matter
+                // either. ipv6 has a slightly more compact string
+                // representation of 0, so use that for self entries.
                 ep.address = beast::IP::Endpoint (
-                    beast::IP::AddressV4 ()).at_port (
+                    beast::IP::AddressV6 ()).at_port (
                         config_.listeningPort);
                 for (auto& t : targets)
                     t.insert (ep);
