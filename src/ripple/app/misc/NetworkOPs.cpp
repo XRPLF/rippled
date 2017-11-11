@@ -1422,7 +1422,7 @@ void NetworkOPsImp::switchLastClosedLedger (
     // TODO: Needs an open ledger
     //app_.getTxQ().processClosedLedger(app_, *newLCL, true);
 
-    // Caller must own master lock
+    std::lock_guard <std::recursive_mutex> lock (m_ledgerMaster.peekMutex());
     {
         // Apply tx in old open ledger to new
         // open ledger. Then apply local tx.
