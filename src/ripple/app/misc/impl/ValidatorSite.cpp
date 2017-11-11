@@ -17,12 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/detail/WorkPlain.h>
-#include <ripple/app/misc/detail/WorkSSL.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/misc/ValidatorSite.h>
+#include <ripple/app/misc/detail/WorkPlain.h>
+#include <ripple/app/misc/detail/WorkSSL.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/protocol/JsonFields.h>
 #include <beast/core/detail/base64.hpp>
 #include <boost/regex.hpp>
 
@@ -211,6 +212,9 @@ ValidatorSite::onSiteFetch(
         JLOG (j_.warn()) <<
             "Request for validator list at " <<
             sites_[siteIdx].uri << " returned " << res.result_int();
+
+        sites_[siteIdx].lastRefreshStatus.emplace(
+                Site::Status{clock_type::now(), ListDisposition::invalid});
     }
     else if (! ec)
     {
@@ -231,10 +235,19 @@ ValidatorSite::onSiteFetch(
                 body["signature"].asString(),
                 body["version"].asUInt());
 
+            sites_[siteIdx].lastRefreshStatus.emplace(
+                Site::Status{clock_type::now(), disp});
+
             if (ListDisposition::accepted == disp)
             {
                 JLOG (j_.debug()) <<
                     "Applied new validator list from " <<
+                    sites_[siteIdx].uri;
+            }
+            else if (ListDisposition::same_sequence == disp)
+            {
+                JLOG (j_.debug()) <<
+                    "Validator list with current sequence from " <<
                     sites_[siteIdx].uri;
             }
             else if (ListDisposition::stale == disp)
@@ -254,6 +267,16 @@ ValidatorSite::onSiteFetch(
                     "Invalid validator list from " <<
                     sites_[siteIdx].uri;
             }
+            else if (ListDisposition::unsupported_version == disp)
+            {
+                JLOG (j_.warn()) <<
+                    "Unsupported version validator list from " <<
+                    sites_[siteIdx].uri;
+            }
+            else
+            {
+                BOOST_ASSERT(false);
+            }
 
             if (body.isMember ("refresh_interval") &&
                 body["refresh_interval"].isNumeric ())
@@ -267,7 +290,24 @@ ValidatorSite::onSiteFetch(
             JLOG (j_.warn()) <<
                 "Unable to parse JSON response from  " <<
                 sites_[siteIdx].uri;
+
+            sites_[siteIdx].lastRefreshStatus.emplace(
+                Site::Status{clock_type::now(), ListDisposition::invalid});
         }
+    }
+    else
+    {
+        std::lock_guard <std::mutex> lock{sites_mutex_};
+        sites_[siteIdx].lastRefreshStatus.emplace(
+                Site::Status{clock_type::now(), ListDisposition::invalid});
+
+        JLOG (j_.warn()) <<
+            "Problem retrieving from " <<
+            sites_[siteIdx].uri <<
+            " " <<
+            ec.value() <<
+            ":" <<
+            ec.message();
     }
 
     std::lock_guard <std::mutex> lock{state_mutex_};
@@ -277,4 +317,32 @@ ValidatorSite::onSiteFetch(
     cv_.notify_all();
 }
 
+Json::Value
+ValidatorSite::getJson() const
+{
+    using namespace std::chrono;
+    using Int = Json::Value::Int;
+
+    Json::Value jrr(Json::objectValue);
+    Json::Value& jSites = (jrr[jss::validator_sites] = Json::arrayValue);
+    {
+        std::lock_guard<std::mutex> lock{sites_mutex_};
+        for (Site const& site : sites_)
+        {
+            Json::Value& v = jSites.append(Json::objectValue);
+            v[jss::uri] = site.uri;
+            if (site.lastRefreshStatus)
+            {
+                v[jss::last_refresh_time] =
+                    to_string(site.lastRefreshStatus->refreshed);
+                v[jss::last_refresh_status] =
+                    to_string(site.lastRefreshStatus->disposition);
+            }
+
+            v[jss::refresh_interval_min] =
+                static_cast<Int>(site.refreshInterval.count());
+        }
+    }
+    return jrr;
+}
 } // ripple

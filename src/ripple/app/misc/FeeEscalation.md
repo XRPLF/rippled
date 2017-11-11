@@ -28,8 +28,12 @@ consensus process, but will be at least [5](#other-constants).
   * If consensus stays [healthy](#consensus-health), the limit will
   be the max of the current limit or the number of transactions in
   the validated ledger until it gets to [50](#other-constants), at
-  which point, the limit will only be updated to the number of
-  transactions in the validated ledger if it is larger than 50.
+  which point, the limit will be the largest number of transactions
+  in the last [20](#other-constants) validated ledgers which had
+  more than 50 transactions. Any time the limit decreases (ie. a
+  large ledger is no longer recent), the limit will decrease to the
+  new largest value by 10% each time the ledger has more than 50
+  transactions.
   * If consensus does not stay [healthy](#consensus-health),
   the limit will clamp down to the smaller of [50](#other-constants)
   or the number of transactions in the validated ledger.
@@ -109,7 +113,8 @@ but in practice, either
   sequence number and at least a [25% higher fee](#other-constants), or
   * it will get dropped when the queue fills up with more valuable transactions.
   The size limit is computed dynamically, and can hold transactions for
-  the next [20 ledgers](#other-constants). The lower the transaction's
+  the next [20 ledgers](#other-constants) (restricted to a minimum of
+  [2000 transactions](#other-constants)). The lower the transaction's
   fee, the more likely that it will get dropped if the network is busy.
 
 If a transaction is submitted for an account with one or more transactions
@@ -200,7 +205,9 @@ automatically as the ripple network's performance improves, allowing
 more transactions per second, and thus more transactions per ledger
 to process successfully.  The limit of 20 ledgers was used to provide
 a balance between resource (specifically memory) usage, and giving
-transactions a realistic chance to be processed. This exact value was
+transactions a realistic chance to be processed. The minimum size of
+2000 transactions was chosen to allow a decent functional backlog during
+network congestion conditions. These exact values were
 chosen experimentally, and can easily change in the future.
 * *Maximum retries*. A transaction in the queue can attempt to apply
 to the open ledger, but get a retry (`ter`) code up to 10 times, at
