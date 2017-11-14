@@ -27,6 +27,7 @@
 #include <ripple/server/WSSession.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/app/main/CollectorManager.h>
+#include <ripple/json/Output.h>
 #include <map>
 #include <mutex>
 #include <vector>
