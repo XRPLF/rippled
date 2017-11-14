@@ -606,14 +606,6 @@ public:
     }
 };
 
-//------------------------------------------------------------------------------
-
-using write_t = std::function<void(void const*, std::size_t)>;
-
-/** Stream compact JSON to the specified function. */
-void
-stream (Json::Value const& jv, write_t write);
-
 } // namespace Json
 
 

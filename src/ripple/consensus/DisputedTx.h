@@ -25,6 +25,7 @@
 #include <ripple/basics/base_uint.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/consensus/ConsensusParms.h>
+#include <ripple/json/json_writer.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/UintTypes.h>
 #include <memory>
@@ -239,14 +240,14 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
         JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO")
                         << ") : weight " << weight << ", percent "
                         << percentTime;
-        JLOG(j_.debug()) << getJson();
+        JLOG(j_.debug()) << Json::Compact{getJson()};
         return false;
     }
 
     ourVote_ = newPosition;
     JLOG(j_.debug()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on "
                      << tx_.id();
-    JLOG(j_.debug()) << getJson();
+    JLOG(j_.debug()) << Json::Compact{getJson()};
     return true;
 }
 

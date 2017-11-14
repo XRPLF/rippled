@@ -22,6 +22,7 @@
 
 #include <ripple/json/json_forwards.h>
 #include <ripple/json/json_value.h>
+#include <ostream>
 #include <vector>
 
 namespace Json
@@ -175,8 +176,137 @@ std::string valueToQuotedString ( const char* value );
 /// \see Json::operator>>()
 std::ostream& operator<< ( std::ostream&, const Value& root );
 
-} // namespace Json
+//------------------------------------------------------------------------------
 
+// Helpers for stream
+namespace detail {
 
+template <class Write>
+void
+write_string(Write const& write, std::string const& s)
+{
+    write(s.data(), s.size());
+}
+
+template <class Write>
+void
+write_value(Write const& write, Value const& value)
+{
+    switch (value.type())
+    {
+        case nullValue:
+            write("null", 4);
+            break;
+
+        case intValue:
+            write_string(write, valueToString(value.asInt()));
+            break;
+
+        case uintValue:
+            write_string(write, valueToString(value.asUInt()));
+            break;
+
+        case realValue:
+            write_string(write, valueToString(value.asDouble()));
+            break;
+
+        case stringValue:
+            write_string(write, valueToQuotedString(value.asCString()));
+            break;
+
+        case booleanValue:
+            write_string(write, valueToString(value.asBool()));
+            break;
+
+        case arrayValue:
+        {
+            write("[", 1);
+            int const size = value.size();
+            for (int index = 0; index < size; ++index)
+            {
+                if (index > 0)
+                    write(",", 1);
+                write_value(write, value[index]);
+            }
+            write("]", 1);
+            break;
+        }
+
+        case objectValue:
+        {
+            Value::Members const members = value.getMemberNames();
+            write("{", 1);
+            for (auto it = members.begin(); it != members.end(); ++it)
+            {
+                std::string const& name = *it;
+                if (it != members.begin())
+                    write(",", 1);
+
+                write_string(write, valueToQuotedString(name.c_str()));
+                write(":", 1);
+                write_value(write, value[name]);
+            }
+            write("}", 1);
+            break;
+        }
+    }
+}
+
+}  // namespace detail
+
+/** Stream compact JSON to the specified function.
+
+    @param jv The Json::Value to write
+    @param write Invocable with signature void(void const*, std::size_t) that
+                 is called when output should be written to the stream.
+*/
+template <class Write>
+void
+stream(Json::Value const& jv, Write const& write)
+{
+    detail::write_value(write, jv);
+    write("\n", 1);
+}
+
+/** Decorator for streaming out compact json
+
+    Use
+
+        Json::Value jv;
+        out << Json::Compact{jv}
+
+    to write a single-line, compact version of `jv` to the stream, rather
+    than the styled format that comes from undecorated streaming.
+*/
+class Compact
+{
+    Json::Value jv_;
+
+public:
+    /** Wrap a Json::Value for compact streaming
+
+        @param jv The Json::Value to stream
+
+        @note For now, we do not support wrapping lvalues to avoid
+              potentially costly copies. If we find a need, we can consider
+              adding support for compact lvalue streaming in the future.
+    */
+    Compact(Json::Value&& jv) : jv_{std::move(jv)}
+    {
+    }
+
+    friend std::ostream&
+    operator<<(std::ostream& o, Compact const& cJv)
+    {
+        detail::write_value(
+            [&o](void const* data, std::size_t n) {
+                o.write(static_cast<char const*>(data), n);
+            },
+            cJv.jv_);
+        return o;
+    }
+};
+
+}  // namespace Json
 
 #endif // JSON_WRITER_H_INCLUDED

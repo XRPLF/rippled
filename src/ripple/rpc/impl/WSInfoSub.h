@@ -23,8 +23,7 @@
 #include <ripple/server/WSSession.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/beast/net/IPAddressConversion.h>
-#include <ripple/json/Output.h>
-#include <ripple/json/to_string.h>
+#include <ripple/json/json_writer.h>
 #include <ripple/rpc/Role.h>
 #include <memory>
 #include <string>
@@ -75,7 +74,7 @@ public:
         if(! sp)
             return;
         beast::multi_buffer sb;
-        stream(jv,
+        Json::stream(jv,
             [&](void const* data, std::size_t n)
             {
                 sb.commit(boost::asio::buffer_copy(
