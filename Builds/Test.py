@@ -78,16 +78,16 @@ CMAKE_UNITY_COMBOS = { '' : [['rippled', 'rippled_classic'], CMAKE_UNITY_CONFIGS
 
 if IS_WINDOWS:
     CMAKE_DIR_TARGETS = { ('msvc' + unity,) : targets for unity, targets in
-        CMAKE_UNITY_COMBOS.iteritems() }
+        CMAKE_UNITY_COMBOS.items() }
 elif IS_OS_X:
     CMAKE_DIR_TARGETS = { (build + unity,) : targets
                    for build in ['debug', 'release']
-                   for unity, targets in CMAKE_UNITY_COMBOS.iteritems() }
+                   for unity, targets in CMAKE_UNITY_COMBOS.items() }
 else:
     CMAKE_DIR_TARGETS = { (cc + "." + build + unity,) : targets
                    for cc in ['gcc', 'clang']
                    for build in ['debug', 'release', 'coverage', 'profile']
-                   for unity, targets in CMAKE_UNITY_COMBOS.iteritems() }
+                   for unity, targets in CMAKE_UNITY_COMBOS.items() }
 
 # list of tuples of all possible options
 if IS_WINDOWS or IS_OS_X:
@@ -450,7 +450,7 @@ def main():
             ARGS.build_option = list(ARGS.extra_args)
 
         for args in generator_options:
-            for build_dirs, (build_targets, build_configs) in build_dir_targets.iteritems():
+            for build_dirs, (build_targets, build_configs) in build_dir_targets.items():
                 if not build_dirs:
                     build_dirs = ('default',)
                 if not build_targets:
