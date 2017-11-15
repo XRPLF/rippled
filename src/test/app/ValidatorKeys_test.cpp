@@ -57,6 +57,17 @@ class ValidatorKeys_test : public beast::unit_test::suite
         "gBD67kMaRFGvmpATHlGKJdvDFlWPYy5AqDedFv5TJa2w0i21eq3MYywLVJZnFOr7C0kw"
         "2AiTzSCjIzditQ8=";
 
+    // Manifest does not match private key
+    const std::vector<std::string> invalidTokenBlob = {
+        "eyJtYW5pZmVzdCI6IkpBQUFBQVZ4SWUyOVVBdzViZFJudHJ1elVkREk4aDNGV1JWZl\n",
+        "k3SXVIaUlKQUhJd3MxdzZzM01oQWtsa1VXQWR2RnFRVGRlSEpvS1pNY0hlS0RzOExo\n",
+        "b3d3bDlHOEdkVGNJbmFka1l3UkFJZ0h2Q01lQU1aSzlqQnV2aFhlaFRLRzVDQ3BBR1\n",
+        "k0bGtvZHRXYW84UGhzR3NDSUREVTA1d1c3bWNiMjlVNkMvTHBpZmgvakZPRGhFR21i\n",
+        "NWF6dTJMVHlqL1pjQkpBbitmNGhtQTQ0U0tYbGtTTUFqak1rSWRyR1Rxa21SNjBzVG\n",
+        "JaTjZOOUYwdk9UV3VYcUZ6eDFoSGIyL0RqWElVZXhDVGlITEcxTG9UdUp1eXdXbk55\n",
+        "RFE9PSIsInZhbGlkYXRpb25fc2VjcmV0X2tleSI6IjkyRDhCNDBGMzYwMTc5MTkwMU\n",
+        "MzQTUzMzI3NzBDMkUwMTA4MDI0NTZFOEM2QkI0NEQ0N0FFREQ0NzJGMDQ2RkYifQ==\n"};
+
 public:
     void
     run() override
@@ -134,6 +145,17 @@ public:
             Config c;
             c.section(SECTION_VALIDATION_SEED).append(seed);
             c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
+            ValidatorKeys k{c, j};
+
+            BEAST_EXPECT(k.configInvalid());
+            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(k.manifest.empty());
+        }
+
+        {
+            // Token manifest and private key must match
+            Config c;
+            c.section(SECTION_VALIDATOR_TOKEN).append(invalidTokenBlob);
             ValidatorKeys k{c, j};
 
             BEAST_EXPECT(k.configInvalid());

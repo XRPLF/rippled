@@ -24,6 +24,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
+#include <beast/core/detail/base64.hpp>
 
 namespace ripple {
 ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
@@ -42,9 +43,23 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         if (auto const token = ValidatorToken::make_ValidatorToken(
                 config.section(SECTION_VALIDATOR_TOKEN).lines()))
         {
-            secretKey = token->validationSecret;
-            publicKey = derivePublicKey(KeyType::secp256k1, secretKey);
-            manifest = std::move(token->manifest);
+            auto const pk = derivePublicKey(
+                KeyType::secp256k1, token->validationSecret);
+            auto const m = Manifest::make_Manifest(
+                beast::detail::base64_decode(token->manifest));
+
+            if (! m || pk != m->signingKey)
+            {
+                configInvalid_ = true;
+                JLOG(j.fatal())
+                    << "Invalid token specified in [" SECTION_VALIDATOR_TOKEN "]";
+            }
+            else
+            {
+                secretKey = token->validationSecret;
+                publicKey = pk;
+                manifest = std::move(token->manifest);
+            }
         }
         else
         {
