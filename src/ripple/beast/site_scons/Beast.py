@@ -111,7 +111,7 @@ def printChildren(target):
 def variantFile(path, variant_dirs):
     '''Returns the path to the corresponding dict entry in variant_dirs'''
     path = str(path)
-    for dest, source in variant_dirs.iteritems():
+    for dest, source in variant_dirs.items():
         common = os.path.commonprefix([path, source])
         if common == source:
             return os.path.join(dest, path[len(common)+1:])

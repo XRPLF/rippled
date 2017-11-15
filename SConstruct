@@ -422,7 +422,7 @@ def get_libs(lib, static):
     try:
         cmd = ['pkg-config', '--static', '--libs', lib]
         libs = subprocess.check_output(cmd,
-                                       stderr=subprocess.STDOUT).strip()
+                                       stderr=subprocess.STDOUT).strip().decode("utf-8")
         all_libs = [l[2:] for l in libs.split() if l.startswith('-l')]
         if not static:
             return ([], all_libs)
@@ -1161,7 +1161,7 @@ for tu_style in ['classic', 'unity']:
                 os.path.join(variant_dir, 'proto') :
                     os.path.join (build_dir, 'proto'),
                 }
-            for dest, source in variant_dirs.iteritems():
+            for dest, source in variant_dirs.items():
                 env.VariantDir(dest, source, duplicate=0)
 
             object_builder = ObjectBuilder(env, variant_dirs)
@@ -1264,7 +1264,7 @@ for tu_style in ['classic', 'unity']:
                     [object_builder.env] + object_builder.child_envs + [base],
                     dest_file='build.ninja')
 
-for key, value in aliases.iteritems():
+for key, value in aliases.items():
     env.Alias(key, value)
 
 vcxproj = base.VSProject(
@@ -1305,6 +1305,6 @@ def do_count(target, source, env):
     lines = 0
     for f in testfiles:
         lines = lines + sum(1 for line in open(f))
-    print "Total unit test lines: %d" % lines
+    print ("Total unit test lines: %d" % lines)
 
 PhonyTargets(env, count = do_count)

@@ -816,12 +816,12 @@ class _ProjectGenerator(object):
     def build(self):
         try:
             self.project_file = open(str(self.project_node), 'wb')
-        except IOError, detail:
+        except (IOError, detail):
             raise SCons.Errors.InternalError('Unable to open "' +
                 str(self.project_node) + '" for writing:' + str(detail))
         try:
             self.filters_file = open(str(self.filters_node), 'wb')
-        except IOError, detail:
+        except (IOError, detail):
             raise SCons.Errors.InternalError('Unable to open "' +
                 str(self.filters_node) + '" for writing:' + str(detail))
         self.writeProject()
