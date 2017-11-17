@@ -2835,6 +2835,9 @@
     <ClCompile Include="..\..\src\ripple\net\impl\InfoSub.cpp">
       <Filter>ripple\net\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\net\impl\RegisterSSLCerts.cpp">
+      <Filter>ripple\net\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\net\impl\RPCCall.cpp">
       <Filter>ripple\net\impl</Filter>
     </ClCompile>
@@ -2845,6 +2848,9 @@
       <Filter>ripple\net\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\net\InfoSub.h">
+      <Filter>ripple\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\net\RegisterSSLCerts.h">
       <Filter>ripple\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\RPCCall.h">

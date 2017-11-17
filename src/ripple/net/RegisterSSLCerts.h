@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2016 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,13 +17,26 @@
 */
 //==============================================================================
 
-#undef DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER
-#define DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER /**/
+#ifndef RIPPLE_NET_REGISTER_SSL_CERTS_H_INCLUDED
+#define RIPPLE_NET_REGISTER_SSL_CERTS_H_INCLUDED
 
-#include <BeastConfig.h>
-#include <ripple/net/impl/HTTPClient.cpp>
-#include <ripple/net/impl/InfoSub.cpp>
-#include <ripple/net/impl/RPCCall.cpp>
-#include <ripple/net/impl/RPCErr.cpp>
-#include <ripple/net/impl/RPCSub.cpp>
-#include <ripple/net/impl/RegisterSSLCerts.cpp>
+#include <boost/asio/ssl/context.hpp>
+#include <ripple/basics/Log.h>
+
+namespace ripple {
+/** Register default SSL certificates.
+
+    Register the system default SSL root certificates. On linux/mac,
+    this just calls asio's `set_default_verify_paths` to look in standard
+    operating system locations. On windows, it uses the OS certificate
+    store accessible via CryptoAPI.
+*/
+void
+registerSSLCerts(
+    boost::asio::ssl::context&,
+    boost::system::error_code&,
+    beast::Journal j);
+
+}  // namespace ripple
+
+#endif

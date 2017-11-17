@@ -89,7 +89,7 @@ Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
         std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();
     // Hack so we don't have to call Config::setup
-    HTTPClient::initializeSSLContext(*config);
+    HTTPClient::initializeSSLContext(*config, debugLog());
     owned = make_Application(std::move(config),
         std::move(logs), std::move(timeKeeper_));
     app = owned.get();

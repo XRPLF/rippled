@@ -178,6 +178,7 @@ ValidatorSite::onTimer (
             sites_[siteIdx].pUrl.path,
             std::to_string(*sites_[siteIdx].pUrl.port),
             ios_,
+            j_,
             [this, siteIdx](error_code const& err, detail::response_type&& resp)
             {
                 onSiteFetch (err, std::move(resp), siteIdx);
