@@ -16,14 +16,47 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
-#undef DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER
-#define DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER /**/
-
 #include <BeastConfig.h>
-#include <ripple/net/impl/HTTPClient.cpp>
-#include <ripple/net/impl/InfoSub.cpp>
-#include <ripple/net/impl/RPCCall.cpp>
-#include <ripple/net/impl/RPCErr.cpp>
-#include <ripple/net/impl/RPCSub.cpp>
-#include <ripple/net/impl/RegisterSSLCerts.cpp>
+#include <ripple/net/RegisterSSLCerts.h>
+#if BEAST_WINDOWS
+#include <wincrypt.h>
+#endif
+
+namespace ripple {
+
+void
+registerSSLCerts(boost::asio::ssl::context& ctx, boost::system::error_code& ec)
+{
+#if BEAST_WINDOWS
+    HCERTSTORE hStore = CertOpenSystemStore(0, "ROOT");
+    if (hStore == NULL)
+    {
+        return;
+    }
+
+    X509_STORE* store = X509_STORE_new();
+    PCCERT_CONTEXT pContext = NULL;
+    while ((pContext = CertEnumCertificatesInStore(hStore, pContext)) != NULL)
+    {
+        X509* x509 = d2i_X509(
+            NULL,
+            (const unsigned char**)&pContext->pbCertEncoded,
+            pContext->cbCertEncoded);
+        if (x509 != NULL)
+        {
+            X509_STORE_add_cert(store, x509);
+            X509_free(x509);
+        }
+    }
+
+    CertFreeCertificateContext(pContext);
+    CertCloseStore(hStore, 0);
+
+    SSL_CTX_set_cert_store(ctx.native_handle(), store);
+#else
+
+    ctx.set_default_verify_paths(ec);
+#endif
+}
+
+}  // namespace ripple

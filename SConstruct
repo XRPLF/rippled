@@ -754,6 +754,7 @@ def config_env(toolchain, variant, env):
             'uuid.lib',
             'odbc32.lib',
             'odbccp32.lib',
+	    'crypt32.lib'
             ])
         env.Append(LINKFLAGS=[
             '/DEBUG',

@@ -761,6 +761,6 @@ macro(link_common_libraries cur_project)
       $<$<OR:$<CONFIG:Release>,$<CONFIG:ReleaseClassic>>:VC/static/libeay32MT>)
     target_link_libraries(${cur_project}
       legacy_stdio_definitions.lib Shlwapi kernel32 user32 gdi32 winspool comdlg32
-      advapi32 shell32 ole32 oleaut32 uuid odbc32 odbccp32)
+      advapi32 shell32 ole32 oleaut32 uuid odbc32 odbccp32 crypt32)
   endif (NOT MSVC)
 endmacro()
