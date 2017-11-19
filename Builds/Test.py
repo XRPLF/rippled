@@ -450,7 +450,7 @@ def main():
             ARGS.build_option = list(ARGS.extra_args)
 
         for args in generator_options:
-            for build_dirs, (build_targets, build_configs) in build_dir_targets.iteritems():
+            for build_dirs, (build_targets, build_configs) in build_dir_targets.items():
                 if not build_dirs:
                     build_dirs = ('default',)
                 if not build_targets:
