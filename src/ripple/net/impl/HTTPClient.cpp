@@ -23,6 +23,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/net/HTTPClient.h>
 #include <ripple/net/AutoSocket.h>
+#include <ripple/net/RegisterSSLCerts.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
@@ -48,7 +49,7 @@ public:
 
         if (config.SSL_VERIFY_FILE.empty ())
         {
-            m_context.set_default_verify_paths (ec);
+            registerSSLCerts(m_context, ec);
 
             if (ec && config.SSL_VERIFY_DIR.empty ())
                 Throw<std::runtime_error> (
@@ -277,6 +278,12 @@ public:
         else
         {
             JLOG (j_.trace()) << "Resolve complete.";
+
+            // If we intend  to verify the SSL connection, we need to
+            // set the default domain for server name indication *prior* to
+            // connecting
+            if (httpClientSSLContext->sslVerify())
+                mSocket.setTLSHostName(mDeqSites[0]);
 
             boost::asio::async_connect (
                 mSocket.lowest_layer (),

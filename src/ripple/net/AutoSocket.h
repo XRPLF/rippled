@@ -149,6 +149,10 @@ public:
         return ec;
     }
 
+    void setTLSHostName(std::string const & host)
+    {
+        SSL_set_tlsext_host_name(mSocket->native_handle(), host.c_str());
+    }
 /*
     template <typename HandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler,
