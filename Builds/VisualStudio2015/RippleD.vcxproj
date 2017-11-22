@@ -110,7 +110,7 @@
       <AdditionalOptions>/bigobj /FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;user32.lib;uuid.lib;VC/static/libeay32MTd.lib;VC/static/ssleay32MTd.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;comdlg32.lib;crypt32.lib;gdi32.lib;kernel32.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;user32.lib;uuid.lib;VC/static/libeay32MTd.lib;VC/static/ssleay32MTd.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>True</SuppressStartupBanner>
       <ErrorReporting>NoErrorReport</ErrorReporting>
       <SubSystem>Console</SubSystem>
@@ -147,7 +147,7 @@
       <AdditionalOptions>/bigobj /FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;user32.lib;uuid.lib;VC/static/libeay32MTd.lib;VC/static/ssleay32MTd.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;comdlg32.lib;crypt32.lib;gdi32.lib;kernel32.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;user32.lib;uuid.lib;VC/static/libeay32MTd.lib;VC/static/ssleay32MTd.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>True</SuppressStartupBanner>
       <ErrorReporting>NoErrorReport</ErrorReporting>
       <SubSystem>Console</SubSystem>
@@ -182,7 +182,7 @@
       <AdditionalOptions>/bigobj /FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;user32.lib;uuid.lib;VC/static/libeay32MT.lib;VC/static/ssleay32MT.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;comdlg32.lib;crypt32.lib;gdi32.lib;kernel32.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;user32.lib;uuid.lib;VC/static/libeay32MT.lib;VC/static/ssleay32MT.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>True</SuppressStartupBanner>
       <ErrorReporting>NoErrorReport</ErrorReporting>
       <SubSystem>Console</SubSystem>
@@ -217,7 +217,7 @@
       <AdditionalOptions>/bigobj /FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;user32.lib;uuid.lib;VC/static/libeay32MT.lib;VC/static/ssleay32MT.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;comdlg32.lib;crypt32.lib;gdi32.lib;kernel32.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;user32.lib;uuid.lib;VC/static/libeay32MT.lib;VC/static/ssleay32MT.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>True</SuppressStartupBanner>
       <ErrorReporting>NoErrorReport</ErrorReporting>
       <SubSystem>Console</SubSystem>
@@ -2199,6 +2199,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\net\impl\RegisterSSLCerts.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\net\impl\RPCCall.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -2212,6 +2216,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\net\InfoSub.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\net\RegisterSSLCerts.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\RPCCall.h">
     </ClInclude>
