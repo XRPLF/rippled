@@ -34,6 +34,13 @@
 namespace ripple {
 namespace test {
 
+struct Validator
+{
+    PublicKey masterPublic;
+    PublicKey signingPublic;
+    std::string manifest;
+};
+
 class http_sync_server
 {
     using endpoint_type = boost::asio::ip::tcp::endpoint;
@@ -57,7 +64,7 @@ public:
             int sequence,
             std::size_t expiration,
             int version,
-            std::vector <PublicKey> const& validators)
+            std::vector <Validator> const& validators)
         : sock_(ios)
         , acceptor_(ios)
     {
@@ -68,7 +75,8 @@ public:
 
         for (auto const& val : validators)
         {
-            data += "{\"validation_public_key\":\"" + strHex (val) + "\"},";
+            data += "{\"validation_public_key\":\"" + strHex(val.masterPublic) +
+                "\",\"manifest\":\"" + val.manifest + "\"},";
         }
         data.pop_back();
         data += "]}";
@@ -202,6 +210,7 @@ private:
         return derivePublicKey (KeyType::secp256k1, randomSecretKey());
     }
 
+    static
     std::string
     makeManifestString (
         PublicKey const& pk,
@@ -224,6 +233,18 @@ private:
 
         return beast::detail::base64_encode (std::string(
             static_cast<char const*> (s.data()), s.size()));
+    }
+
+    static
+    Validator
+    randomValidator ()
+    {
+        auto const secret = randomSecretKey();
+        auto const masterPublic =
+            derivePublicKey(KeyType::ed25519, secret);
+        auto const signingKeys = randomKeyPair(KeyType::secp256k1);
+        return { masterPublic, signingKeys.first, makeManifestString (
+            masterPublic, secret, signingKeys.first, signingKeys.second, 1) };
     }
 
     void
@@ -306,15 +327,15 @@ private:
             emptyLocalKey, emptyCfgKeys, cfgPublishers));
 
         auto constexpr listSize = 20;
-        std::vector<PublicKey> list1;
+        std::vector<Validator> list1;
         list1.reserve (listSize);
         while (list1.size () < listSize)
-            list1.push_back (randomNode());
+            list1.push_back (randomValidator());
 
-        std::vector<PublicKey> list2;
+        std::vector<Validator> list2;
         list2.reserve (listSize);
         while (list2.size () < listSize)
-            list2.push_back (randomNode());
+            list2.push_back (randomValidator());
 
         std::uint16_t constexpr port1 = 7475;
         std::uint16_t constexpr port2 = 7476;
@@ -351,7 +372,10 @@ private:
             sites->join();
 
             for (auto const& val : list1)
-                BEAST_EXPECT(trustedKeys.listed (val));
+            {
+                BEAST_EXPECT(trustedKeys.listed (val.masterPublic));
+                BEAST_EXPECT(trustedKeys.listed (val.signingPublic));
+            }
         }
         {
             // fetch multiple sites
@@ -367,10 +391,16 @@ private:
             sites->join();
 
             for (auto const& val : list1)
-                BEAST_EXPECT(trustedKeys.listed (val));
+            {
+                BEAST_EXPECT(trustedKeys.listed (val.masterPublic));
+                BEAST_EXPECT(trustedKeys.listed (val.signingPublic));
+            }
 
             for (auto const& val : list2)
-                BEAST_EXPECT(trustedKeys.listed (val));
+            {
+                BEAST_EXPECT(trustedKeys.listed (val.masterPublic));
+                BEAST_EXPECT(trustedKeys.listed (val.signingPublic));
+            }
         }
     }
 

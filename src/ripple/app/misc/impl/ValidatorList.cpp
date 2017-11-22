@@ -190,6 +190,7 @@ ValidatorList::applyList (
     std::vector<PublicKey> oldList = publisherList;
     publisherList.clear ();
     publisherList.reserve (newList.size ());
+    std::vector<std::string> manifests;
     for (auto const& val : newList)
     {
         if (val.isObject () &&
@@ -210,6 +211,9 @@ ValidatorList::applyList (
                 publisherList.push_back (
                     PublicKey(Slice{ ret.first.data (), ret.first.size() }));
             }
+
+            if (val.isMember ("manifest") && val["manifest"].isString ())
+                manifests.push_back(val["manifest"].asString ());
         }
     }
 
@@ -252,6 +256,28 @@ ValidatorList::applyList (
     {
         JLOG (j_.warn()) <<
             "No validator keys included in valid list";
+    }
+
+    for (auto const& valManifest : manifests)
+    {
+        auto m = Manifest::make_Manifest (
+            beast::detail::base64_decode(valManifest));
+
+        if (! m || ! keyListings_.count (m->masterKey))
+        {
+            JLOG (j_.warn()) <<
+                "List for " << strHex(pubKey) <<
+                " contained untrusted validator manifest";
+            continue;
+        }
+
+        auto const result = validatorManifests_.applyManifest (std::move(*m));
+        if (result == ManifestDisposition::invalid)
+        {
+            JLOG (j_.warn()) <<
+                "List for " << strHex(pubKey) <<
+                " contained invalid validator manifest";
+        }
     }
 
     return ListDisposition::accepted;

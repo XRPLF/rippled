@@ -44,8 +44,9 @@ namespace ripple {
         "expiration", and @c "validators" field. @c "expiration" contains the
         Ripple timestamp (seconds since January 1st, 2000 (00:00 UTC)) for when
         the list expires. @c "validators" contains an array of objects with a
-        @c "validation_public_key" field.
+        @c "validation_public_key" and optional @c "manifest" field.
         @c "validation_public_key" should be the hex-encoded master public key.
+        @c "manifest" should be the base64-encoded validator manifest.
 
     @li @c "manifest": Base64-encoded serialization of a manifest containing the
         publisher's master and signing public keys.

@@ -35,6 +35,13 @@ namespace test {
 class ValidatorList_test : public beast::unit_test::suite
 {
 private:
+    struct Validator
+    {
+        PublicKey masterPublic;
+        PublicKey signingPublic;
+        std::string manifest;
+    };
+
     static
     PublicKey
     randomNode ()
@@ -49,6 +56,7 @@ private:
         return derivePublicKey (KeyType::ed25519, randomSecretKey());
     }
 
+    static
     std::string
     makeManifestString (
         PublicKey const& pk,
@@ -72,9 +80,22 @@ private:
         return std::string(static_cast<char const*> (s.data()), s.size());
     }
 
+    static
+    Validator
+    randomValidator ()
+    {
+        auto const secret = randomSecretKey();
+        auto const masterPublic =
+            derivePublicKey(KeyType::ed25519, secret);
+        auto const signingKeys = randomKeyPair(KeyType::secp256k1);
+        return { masterPublic, signingKeys.first,
+            beast::detail::base64_encode(makeManifestString (
+            masterPublic, secret, signingKeys.first, signingKeys.second, 1)) };
+    }
+
     std::string
     makeList (
-        std::vector <PublicKey> const& validators,
+        std::vector <Validator> const& validators,
         std::size_t sequence,
         std::size_t expiration)
     {
@@ -85,7 +106,8 @@ private:
 
         for (auto const& val : validators)
         {
-            data += "{\"validation_public_key\":\"" + strHex(val) + "\"},";
+            data += "{\"validation_public_key\":\"" + strHex(val.masterPublic) +
+                "\",\"manifest\":\"" + val.manifest + "\"},";
         }
 
         data.pop_back();
@@ -355,15 +377,15 @@ private:
             emptyLocalKey, emptyCfgKeys, cfgKeys1));
 
         auto constexpr listSize = 20;
-        std::vector<PublicKey> list1;
+        std::vector<Validator> list1;
         list1.reserve (listSize);
         while (list1.size () < listSize)
-            list1.push_back (randomNode());
+            list1.push_back (randomValidator());
 
-        std::vector<PublicKey> list2;
+        std::vector<Validator> list2;
         list2.reserve (listSize);
         while (list2.size () < listSize)
-            list2.push_back (randomNode());
+            list2.push_back (randomValidator());
 
         // do not apply expired list
         auto const version = 1;
@@ -387,7 +409,10 @@ private:
             manifest1, blob1, sig1, version));
 
         for (auto const& val : list1)
-            BEAST_EXPECT(trustedKeys->listed (val));
+        {
+            BEAST_EXPECT(trustedKeys->listed (val.masterPublic));
+            BEAST_EXPECT(trustedKeys->listed (val.signingPublic));
+        }
 
         // do not use list from untrusted publisher
         auto const untrustedManifest = beast::detail::base64_encode(
@@ -415,10 +440,16 @@ private:
                 manifest1, blob2, sig2, version));
 
         for (auto const& val : list1)
-            BEAST_EXPECT(! trustedKeys->listed (val));
+        {
+            BEAST_EXPECT(! trustedKeys->listed (val.masterPublic));
+            BEAST_EXPECT(! trustedKeys->listed (val.signingPublic));
+        }
 
         for (auto const& val : list2)
-            BEAST_EXPECT(trustedKeys->listed (val));
+        {
+            BEAST_EXPECT(trustedKeys->listed (val.masterPublic));
+            BEAST_EXPECT(trustedKeys->listed (val.signingPublic));
+        }
 
         // do not re-apply lists with past or current sequence numbers
         BEAST_EXPECT(ListDisposition::stale ==
@@ -471,7 +502,10 @@ private:
 
         BEAST_EXPECT(! trustedKeys->trustedPublisher(publisherPublic));
         for (auto const& val : list1)
-            BEAST_EXPECT(! trustedKeys->listed (val));
+        {
+            BEAST_EXPECT(! trustedKeys->listed (val.masterPublic));
+            BEAST_EXPECT(! trustedKeys->listed (val.signingPublic));
+        }
     }
 
     void
@@ -723,8 +757,8 @@ private:
             BEAST_EXPECT(trustedKeys->load (
                 emptyLocalKey, emptyCfgKeys, cfgKeys));
 
-            std::vector<PublicKey> list ({randomNode()});
-            hash_set<PublicKey> activeValidators ({ list[0] });
+            std::vector<Validator> list ({randomValidator()});
+            hash_set<PublicKey> activeValidators ({ list[0].masterPublic });
 
             // do not apply expired list
             auto const version = 1;
@@ -740,11 +774,13 @@ private:
                     manifest, blob, sig, version));
 
             trustedKeys->onConsensusStart (activeValidators);
-            BEAST_EXPECT(trustedKeys->trusted (list[0]));
+            BEAST_EXPECT(trustedKeys->trusted (list[0].masterPublic));
+            BEAST_EXPECT(trustedKeys->trusted (list[0].signingPublic));
 
             env.timeKeeper().set(expiration);
             trustedKeys->onConsensusStart (activeValidators);
-            BEAST_EXPECT(! trustedKeys->trusted (list[0]));
+            BEAST_EXPECT(! trustedKeys->trusted (list[0].masterPublic));
+            BEAST_EXPECT(! trustedKeys->trusted (list[0].signingPublic));
         }
         {
             // Test 1-9 configured validators
@@ -814,13 +850,13 @@ private:
 
             hash_set<PublicKey> activeValidators;
 
-            std::vector<PublicKey> valKeys;
+            std::vector<Validator> valKeys;
             valKeys.reserve(n);
 
             while (valKeys.size () != n)
             {
-                valKeys.push_back (randomNode());
-                activeValidators.emplace (valKeys.back());
+                valKeys.push_back (randomValidator());
+                activeValidators.emplace (valKeys.back().masterPublic);
             }
 
             auto addPublishedList = [this, &env, &trustedKeys, &valKeys]()
