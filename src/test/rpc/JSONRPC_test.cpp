@@ -1840,6 +1840,17 @@ R"({
 class JSONRPC_test : public beast::unit_test::suite
 {
 public:
+    void testBadRpcCommand ()
+    {
+        test::jtx::Env env(*this);
+        Json::Value const result {
+            env.rpc ("bad_command", R"({"MakingThisUp": 0})")};
+
+        BEAST_EXPECT (result[jss::result][jss::error] == "unknownCmd");
+        BEAST_EXPECT (
+            result[jss::result][jss::request][jss::command] == "bad_command");
+    }
+
     void testAutoFillFees ()
     {
         test::jtx::Env env(*this);
@@ -2345,6 +2356,7 @@ public:
 
     void run ()
     {
+        testBadRpcCommand ();
         testAutoFillFees ();
         testAutoFillEscalatedFees ();
         testTransactionRPC ();
