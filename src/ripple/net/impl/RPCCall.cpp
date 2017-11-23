@@ -879,6 +879,31 @@ private:
         return rpcError (rpcINVALID_PARAMS);
     }
 
+    // transaction_entry <tx_hash> <ledger_hash/ledger_index>
+    Json::Value parseTransactionEntry (Json::Value const& jvParams)
+    {
+        // Parameter count should have already been verified.
+        assert (jvParams.size() == 2);
+
+        std::string const txHash = jvParams[0u].asString();
+        if (txHash.length() != 64)
+            return rpcError (rpcINVALID_PARAMS);
+
+        Json::Value jvRequest;
+        jvRequest[jss::tx_hash] = txHash;
+
+        jvParseLedger (jvRequest, jvParams[1u].asString());
+
+        // jvParseLedger inserts a "ledger_index" of 0 if it doesn't
+        // find a match.
+        if (jvRequest.isMember(jss::ledger_index) &&
+            jvRequest[jss::ledger_index] == 0)
+                return rpcError (rpcINVALID_PARAMS);
+
+        return jvRequest;
+    }
+
+
     // tx <transaction_id>
     Json::Value parseTx (Json::Value const& jvParams)
     {
@@ -1073,7 +1098,7 @@ public:
             {   "server_info",          &RPCParser::parseAsIs,                  0,  0   },
             {   "server_state",         &RPCParser::parseAsIs,                  0,  0   },
             {   "stop",                 &RPCParser::parseAsIs,                  0,  0   },
-    //      {   "transaction_entry",    &RPCParser::parseTransactionEntry,     -1,  -1  },
+            {   "transaction_entry",    &RPCParser::parseTransactionEntry,      2,  2   },
             {   "tx",                   &RPCParser::parseTx,                    1,  2   },
             {   "tx_account",           &RPCParser::parseTxAccount,             1,  7   },
             {   "tx_history",           &RPCParser::parseTxHistory,             1,  1   },
@@ -1323,12 +1348,6 @@ rpcClient(std::vector<std::string> const& args,
                     jvParams.append(jvRequest[i]);
             }
 
-            if (jvRequest.isMember(jss::params))
-            {
-                auto const& params = jvRequest[jss::params];
-                assert(params.size() == 1);
-                jvParams.append(params[0u]);
-            }
             {
                 boost::asio::io_service isService;
                 RPCCall::fromNetwork (
