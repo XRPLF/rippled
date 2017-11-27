@@ -41,27 +41,32 @@ Manifest::make_Manifest (std::string s)
         STObject st (sfGeneric);
         SerialIter sit (s.data (), s.size ());
         st.set (sit);
-        auto const opt_pk = get<PublicKey>(st, sfPublicKey);
+        auto const pk = st.getFieldVL (sfPublicKey);
+        if (! publicKeyType (makeSlice(pk)))
+            return boost::none;
+
         auto const opt_seq = get (st, sfSequence);
         auto const opt_msig = get (st, sfMasterSignature);
-        if (!opt_pk || !opt_seq || !opt_msig)
+        if (!opt_seq || !opt_msig)
             return boost::none;
 
         // Signing key and signature are not required for
         // master key revocations
         if (*opt_seq != std::numeric_limits<std::uint32_t>::max ())
         {
-            auto const opt_spk = get<PublicKey>(st, sfSigningPubKey);
-            auto const opt_sig = get (st, sfSignature);
-            if (!opt_spk || !opt_sig)
-            {
+            auto const spk = st.getFieldVL (sfSigningPubKey);
+            if (! publicKeyType (makeSlice(spk)))
                 return boost::none;
-            }
+            auto const opt_sig = get (st, sfSignature);
+            if (! opt_sig)
+                return boost::none;
 
-            return Manifest (std::move (s), *opt_pk, *opt_spk, *opt_seq);
+            return Manifest (std::move (s), PublicKey (makeSlice(pk)),
+                PublicKey (makeSlice(spk)), *opt_seq);
         }
 
-        return Manifest (std::move (s), *opt_pk, PublicKey(), *opt_seq);
+        return Manifest (std::move (s), PublicKey (makeSlice(pk)),
+            PublicKey(), *opt_seq);
     }
     catch (std::exception const&)
     {

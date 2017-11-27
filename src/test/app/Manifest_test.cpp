@@ -461,6 +461,195 @@ public:
         }
     }
 
+    void testMakeManifest()
+    {
+        testcase ("make_Manifest");
+
+        std::array<KeyType, 2> const keyTypes {{
+            KeyType::ed25519,
+            KeyType::secp256k1 }};
+
+        std::uint32_t sequence = 0;
+
+        // public key with invalid type
+        auto const ret = strUnHex("9930E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020");
+        auto const badKey = Slice{ret.first.data(), ret.first.size()};
+
+        // short public key
+        auto const retShort = strUnHex("0330");
+        auto const shortKey = Slice{retShort.first.data(), retShort.first.size()};
+
+        auto toString = [](STObject const& st)
+        {
+            Serializer s;
+            st.add(s);
+
+            return std::string (static_cast<char const*> (s.data()), s.size());
+        };
+
+        for (auto const keyType : keyTypes)
+        {
+            auto const sk = generateSecretKey (keyType, randomSeed ());
+            auto const pk = derivePublicKey(keyType, sk);
+
+            for (auto const sKeyType : keyTypes)
+            {
+                auto const ssk = generateSecretKey (sKeyType, randomSeed ());
+                auto const spk = derivePublicKey(sKeyType, ssk);
+
+                auto buildManifestObject = [&](
+                    std::uint32_t const& seq,
+                    bool noSigningPublic = false,
+                    bool noSignature = false)
+                {
+                    STObject st(sfGeneric);
+                    st[sfSequence] = seq;
+                    st[sfPublicKey] = pk;
+
+                    if (! noSigningPublic)
+                        st[sfSigningPubKey] = spk;
+
+                    sign(st, HashPrefix::manifest, keyType, sk,
+                        sfMasterSignature);
+
+                    if (! noSignature)
+                        sign(st, HashPrefix::manifest, sKeyType, ssk);
+
+                    return st;
+                };
+
+                auto const st = buildManifestObject(++sequence);
+
+                {
+                    // valid manifest
+                    auto const m = toString(st);
+
+                    auto const manifest = Manifest::make_Manifest (m);
+
+                    BEAST_EXPECT(manifest);
+                    BEAST_EXPECT(manifest->masterKey == pk);
+                    BEAST_EXPECT(manifest->signingKey == spk);
+                    BEAST_EXPECT(manifest->sequence == sequence);
+                    BEAST_EXPECT(manifest->serialized == m);
+                    BEAST_EXPECT(manifest->verify());
+                }
+                {
+                    // valid manifest with invalid signature
+                    auto badSigSt = st;
+                    badSigSt[sfPublicKey] = badSigSt[sfSigningPubKey];
+
+                    auto const m = toString(badSigSt);
+                    auto const manifest = Manifest::make_Manifest (m);
+
+                    BEAST_EXPECT(manifest);
+                    BEAST_EXPECT(manifest->masterKey == spk);
+                    BEAST_EXPECT(manifest->signingKey == spk);
+                    BEAST_EXPECT(manifest->sequence == sequence);
+                    BEAST_EXPECT(manifest->serialized == m);
+                    BEAST_EXPECT(! manifest->verify());
+                }
+                {
+                    // reject missing sequence
+                    auto badSt = st;
+                    BEAST_EXPECT(badSt.delField(sfSequence));
+                    BEAST_EXPECT(! Manifest::make_Manifest (toString(badSt)));
+                }
+                {
+                    // reject missing public key
+                    auto badSt = st;
+                    BEAST_EXPECT(badSt.delField(sfPublicKey));
+                    BEAST_EXPECT(! Manifest::make_Manifest (toString(badSt)));
+                }
+                {
+                    // reject invalid public key type
+                    auto badSt = st;
+                    badSt[sfPublicKey] = badKey;
+                    BEAST_EXPECT(! Manifest::make_Manifest (toString(badSt)));
+                }
+                {
+                    // reject short public key
+                    auto badSt = st;
+                    badSt[sfPublicKey] = shortKey;
+                    BEAST_EXPECT(! Manifest::make_Manifest (toString(badSt)));
+                }
+                {
+                    // reject missing signing public key
+                    auto badSt = st;
+                    BEAST_EXPECT(badSt.delField(sfSigningPubKey));
+                    BEAST_EXPECT(! Manifest::make_Manifest (toString(badSt)));
+                }
+                {
+                    // reject invalid signing public key type
+                    auto badSt = st;
+                    badSt[sfSigningPubKey] = badKey;
+                    BEAST_EXPECT(! Manifest::make_Manifest (toString(badSt)));
+                }
+                {
+                    // reject short signing public key
+                    auto badSt = st;
+                    badSt[sfSigningPubKey] = shortKey;
+                    BEAST_EXPECT(! Manifest::make_Manifest (toString(badSt)));
+                }
+                {
+                    // reject missing signature
+                    auto badSt = st;
+                    BEAST_EXPECT(badSt.delField(sfMasterSignature));
+                    BEAST_EXPECT(! Manifest::make_Manifest (toString(badSt)));
+                }
+                {
+                    // reject missing signing key signature
+                    auto badSt = st;
+                    BEAST_EXPECT(badSt.delField(sfSignature));
+                    BEAST_EXPECT(! Manifest::make_Manifest (toString(badSt)));
+                }
+
+                // test revocations (max sequence revoking the master key)
+                auto testRevocation = [&](STObject const& st)
+                {
+                    auto const m = toString(st);
+                    auto const manifest = Manifest::make_Manifest (m);
+
+                    BEAST_EXPECT(manifest);
+                    BEAST_EXPECT(manifest->masterKey == pk);
+                    BEAST_EXPECT(manifest->signingKey == PublicKey());
+                    BEAST_EXPECT(manifest->sequence ==
+                        std::numeric_limits<std::uint32_t>::max ());
+                    BEAST_EXPECT(manifest->serialized == m);
+                    BEAST_EXPECT(manifest->verify());
+                };
+
+                // valid revocation
+                {
+                    auto const revSt = buildManifestObject(
+                        std::numeric_limits<std::uint32_t>::max ());
+                    testRevocation(revSt);
+                }
+
+                // signing key and signature are optional in revocation
+                {
+                    auto const revSt = buildManifestObject(
+                        std::numeric_limits<std::uint32_t>::max (),
+                        true /* no signing key */);
+                    testRevocation(revSt);
+                }
+                {
+                    auto const revSt = buildManifestObject(
+                        std::numeric_limits<std::uint32_t>::max (),
+                        false, true /* no signature */);
+                    testRevocation(revSt);
+
+                }
+                {
+                    auto const revSt = buildManifestObject(
+                        std::numeric_limits<std::uint32_t>::max (),
+                        true /* no signing key */,
+                        true /* no signature */);
+                    testRevocation(revSt);
+                }
+            }
+        }
+    }
+
     void
     run() override
     {
@@ -523,6 +712,7 @@ public:
         testGetSignature ();
         testGetKeys ();
         testValidatorToken ();
+        testMakeManifest ();
     }
 };
 
