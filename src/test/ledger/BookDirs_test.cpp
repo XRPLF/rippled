@@ -95,11 +95,10 @@ struct BookDirs_test : public beast::unit_test::suite
     void run() override
     {
         using namespace jtx;
-        test_bookdir(
-            supported_features_except (featureFlow, fix1373, featureFlowCross));
-        test_bookdir(
-            supported_features_except (                      featureFlowCross));
-        test_bookdir(supported_amendments ());
+        auto const sa = supported_amendments();
+        test_bookdir(sa - featureFlow - fix1373 - featureFlowCross);
+        test_bookdir(sa                         - featureFlowCross);
+        test_bookdir(sa);
     }
 };
 

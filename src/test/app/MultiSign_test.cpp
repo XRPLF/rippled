@@ -191,7 +191,7 @@ public:
     test_enablement()
     {
         using namespace jtx;
-        Env env(*this, no_features);
+        Env env(*this, FeatureBitset{});
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
         env.close();

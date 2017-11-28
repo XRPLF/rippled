@@ -129,11 +129,6 @@ uint256 bitsetIndexToFeature(size_t i)
     return featureCollections.bitsetIndexToFeature(i);
 }
 
-bool hasFeature(uint256 const& feat, FeatureBitset features)
-{
-    return features[featureToBitsetIndex(feat)];
-}
-
 
 uint256 const featureMultiSign = *getRegisteredFeature("MultiSign");
 uint256 const featureTickets = *getRegisteredFeature("Tickets");

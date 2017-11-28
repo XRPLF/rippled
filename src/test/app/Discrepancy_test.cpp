@@ -145,13 +145,11 @@ public:
     void run ()
     {
         using namespace test::jtx;
-        testXRPDiscrepancy (
-            supported_features_except (featureFlow, fix1373, featureFlowCross));
-        testXRPDiscrepancy (
-            supported_features_except (             fix1373, featureFlowCross));
-        testXRPDiscrepancy (
-            supported_features_except (                      featureFlowCross));
-        testXRPDiscrepancy (supported_amendments());
+        auto const sa = supported_amendments();
+        testXRPDiscrepancy (sa - featureFlow - fix1373 - featureFlowCross);
+        testXRPDiscrepancy (sa               - fix1373 - featureFlowCross);
+        testXRPDiscrepancy (sa                         - featureFlowCross);
+        testXRPDiscrepancy (sa);
     }
 };
 

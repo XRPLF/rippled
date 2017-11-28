@@ -384,7 +384,7 @@ public:
         ticket::create("alice", 60, "bob");
 
         {
-            Env env(*this, supported_features_plus (featureTickets));
+            Env env(*this, supported_amendments().set(featureTickets));
             env.fund(XRP(10000), "alice");
             env(noop("alice"),                  require(owners("alice", 0), tickets("alice", 0)));
             env(ticket::create("alice"),        require(owners("alice", 1), tickets("alice", 1)));
@@ -655,8 +655,6 @@ public:
             return;
         }
 
-        auto const neverSupported = with_only_features(*neverSupportedFeat);
-
         auto hasFeature = [](Env& env, uint256 const& f)
         {
             return (env.app().config().features.find (f) !=
@@ -674,8 +672,8 @@ public:
         }
 
         {
-            // a Env with_only_features has *only* those features
-            Env env{*this, with_only_features(featureEscrow, featureFlow)};
+            // a Env FeatureBitset has *only* those features
+            Env env{*this, FeatureBitset(featureEscrow, featureFlow)};
             BEAST_EXPECT(env.app().config().features.size() == 2);
             foreachFeature(supported, [&](uint256 const& f) {
                 bool const has = (f == featureEscrow || f == featureFlow);
@@ -683,10 +681,11 @@ public:
             });
         }
 
+        auto const noFlowOrEscrow =
+            supported_amendments() - featureEscrow - featureFlow;
         {
             // a Env supported_features_except is missing *only* those features
-            Env env{*this,
-                supported_features_except(featureEscrow, featureFlow)};
+            Env env{*this, noFlowOrEscrow};
             BEAST_EXPECT(
                 env.app().config().features.size() == (supported.count() - 2));
             foreachFeature(supported, [&](uint256 const& f) {
@@ -702,8 +701,7 @@ public:
             // the two supported ones
             Env env{
                 *this,
-                with_only_features(
-                    featureEscrow, featureFlow) | neverSupported};
+                FeatureBitset(featureEscrow, featureFlow, *neverSupportedFeat)};
 
             // this app will have just 2 supported amendments and
             // one additional never supported feature flag
@@ -721,8 +719,7 @@ public:
             // and omit a few standard amendments
             // the unsupported features should be enabled
             Env env{*this,
-                    supported_features_except(featureEscrow, featureFlow) |
-                        neverSupported};
+                    noFlowOrEscrow | FeatureBitset{*neverSupportedFeat}};
 
             // this app will have all supported amendments minus 2 and then the
             // one additional never supported feature flag
@@ -740,7 +737,7 @@ public:
             // add a feature that is NOT in the supported amendments list
             // along with all supported amendments
             // the unsupported features should be enabled
-            Env env{*this, supported_amendments() | neverSupported};
+            Env env{*this, supported_amendments().set(*neverSupportedFeat)};
 
             // this app will have all supported amendments and then the
             // one additional never supported feature flag

@@ -218,13 +218,11 @@ public:
             testDefaultRipple(features);
         };
         using namespace jtx;
-        withFeatsTests(
-            supported_features_except (featureFlow, fix1373, featureFlowCross));
-        withFeatsTests(
-            supported_features_except (             fix1373, featureFlowCross));
-        withFeatsTests(
-            supported_features_except (                      featureFlowCross));
-        withFeatsTests(supported_amendments());
+        auto const sa = supported_amendments();
+        withFeatsTests(sa - featureFlow - fix1373 - featureFlowCross);
+        withFeatsTests(sa               - fix1373 - featureFlowCross);
+        withFeatsTests(sa                         - featureFlowCross);
+        withFeatsTests(sa);
     }
 };
 

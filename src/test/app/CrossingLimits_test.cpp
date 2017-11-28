@@ -267,13 +267,11 @@ public:
             testAutoBridgedLimits(features);
         };
         using namespace jtx;
-        testAll(
-            supported_features_except (featureFlow, fix1373, featureFlowCross));
-        testAll(
-            supported_features_except (             fix1373, featureFlowCross));
-        testAll(
-            supported_features_except (                      featureFlowCross));
-//      testAll(supported_amendments());// Does not pass with FlowCross enabled.
+        auto const sa = supported_amendments();
+        testAll(sa - featureFlow - fix1373 - featureFlowCross);
+        testAll(sa               - fix1373 - featureFlowCross);
+        testAll(sa                         - featureFlowCross);
+//      testAll(sa);// Does not pass with FlowCross enabled.
     }
 };
 

@@ -67,39 +67,6 @@ noripple (Account const& account, Args const&... args)
     return {{account, args...}};
 }
 
-/**
- * @brief create collection of features to pass to Env ctor
- *
- * The resulting collection will contain *only* the features
- * passed as arguments.
- *
- * @param key+args features to include in resulting collection
- */
-template <class... Args>
-FeatureBitset
-with_only_features (uint256 const& key, Args const&... args)
-{
-    return makeFeatureBitset(
-        std::array<uint256, 1 + sizeof...(args)>{{key, args...}});
-}
-
-/**
- * @brief create collection of features to pass to Env ctor
- *
- * The resulting collection will contain *only* the features
- * passed as arguments.
- *
- * @param keys features to include in resulting collection
- */
-template<class Col>
-FeatureBitset
-with_only_features (Col&& keys)
-{
-    return makeFeatureBitset(std::forward<Col>(keys));
-}
-
-constexpr FeatureBitset no_features = {};
-
 inline
 FeatureBitset
 supported_amendments()
@@ -115,71 +82,9 @@ supported_amendments()
             else
                 Throw<std::runtime_error> ("Unknown feature: " + s + "  in supportedAmendments.");
         }
-        return makeFeatureBitset(feats);
+        return FeatureBitset(feats);
     }();
     return ids;
-}
-
-/**
- * @brief create collection of features to pass to Env ctor
- *
- * The resulting collection will contain *all supported amendments* minus
- * the features passed as arguments.
- *
- * @param keys features to exclude from the resulting collection
- */
-template<class Col>
-FeatureBitset
-supported_features_except (Col const& keys)
-{
-    return supported_amendments() & ~makeFeatureBitset(keys);
-}
-
-/**
- *
- * @brief create collection of features to pass to Env ctor
- * The resulting collection will contain *all supported amendments* minus
- * the features passed as arguments.
- *
- * @param key+args features to exclude from the resulting collection
- */
-template <class... Args>
-FeatureBitset
-supported_features_except (uint256 const& key, Args const&... args)
-{
-    return supported_features_except(
-        std::array<uint256, 1 + sizeof...(args)>{{key, args...}});
-}
-
-/**
- * @brief create collection of features to pass to Env ctor
- *
- * The resulting collection will contain *all supported amendments* plus
- * the features passed as arguments.
- *
- * @param keys features to include in the resulting collection
- */
-template<class Col>
-FeatureBitset
-supported_features_plus (Col const& keys)
-{
-    return supported_amendments() | makeFeatureBitset(keys);
-}
-
-/**
- *
- * @brief create collection of features to pass to Env ctor
- * The resulting collection will contain *all supported amendments* plus
- * the features passed as arguments.
- *
- * @param key+args features to include in the resulting collection
- */
-template <class... Args>
-FeatureBitset
-supported_features_plus (uint256 const& key, Args const&... args)
-{
-    return supported_features_plus(
-        std::array<uint256, 1 + sizeof...(args)>{{key, args...}});
 }
 
 class SuiteSink : public beast::Journal::Sink

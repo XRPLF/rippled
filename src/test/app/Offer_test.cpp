@@ -297,12 +297,10 @@ public:
 
         auto const USD = gw["USD"];
 
-        FeatureBitset const feeEscAndFlow =
-            with_only_features (featureFeeEscalation, featureFlow);
-
         for (auto withFix : {false, true})
         {
-            if (!withFix && ((features & feeEscAndFlow) != FeatureBitset{}))
+            if (!withFix &&
+                features[featureFlow] && features[featureFeeEscalation])
                 continue;
 
             Env env {*this, features};
@@ -1105,8 +1103,7 @@ public:
         // behavior.
         {
             auto acctOffers = offersOnAccount (env, account_to_test);
-            BEAST_EXPECT(acctOffers.size() ==
-                (hasFeature (featureFlowCross, features) ? 0 : 1));
+            BEAST_EXPECT(acctOffers.size() == (features[featureFlowCross] ? 0 : 1));
             for (auto const& offerPtr : acctOffers)
             {
                 auto const& offer = *offerPtr;
@@ -1223,8 +1220,7 @@ public:
         // algorithms becomes apparent.  The old offer crossing would consume
         // small_amount and transfer no XRP.  The new offer crossing transfers
         // a single drop, rather than no drops.
-        auto const crossingDelta =
-            (hasFeature (featureFlowCross, features) ? drops (1) : drops (0));
+        auto const crossingDelta = features[featureFlowCross] ? drops (1) : drops (0);
 
         jrr = ledgerEntryState (env, alice, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "50");
@@ -3344,7 +3340,7 @@ public:
 
         // The problem was identified when featureOwnerPaysFee was enabled,
         // so make sure that gets included.
-        Env env {*this, features | with_only_features(featureOwnerPaysFee)};
+        Env env {*this, features | featureOwnerPaysFee};
         auto const closeTime =
             fix1449Time () +
                 100 * env.closed ()->info ().closeTimeResolution;
@@ -3394,7 +3390,7 @@ public:
 
             // Determine which TEC code we expect.
             TER const tecExpect =
-                hasFeature(featureFlow, features) ? temBAD_PATH : tecPATH_DRY;
+                features[featureFlow] ? temBAD_PATH : tecPATH_DRY;
 
             // This payment caused the assert.
             env (pay (ann, ann, D_BUX(30)),
@@ -3968,8 +3964,7 @@ public:
         };
 
         // Pick the right tests.
-        auto const& tests =
-            hasFeature(featureFlowCross, features) ? flowTests : takerTests;
+        auto const& tests = features[featureFlowCross] ? flowTests : takerTests;
 
         for (auto const& t : tests)
         {
@@ -4158,7 +4153,7 @@ public:
         env.close();
         std::uint32_t const bobOfferSeq = env.seq (bob) - 1;
 
-        bool const flowCross = hasFeature (featureFlowCross, features);
+        bool const flowCross = features[featureFlowCross];
 
         env.require (offers (alice, 0));
         if (flowCross)
@@ -4364,7 +4359,7 @@ public:
         env.close();
 
         // The test behaves differently with or without FlowCross.
-        bool const flowCross = hasFeature (featureFlowCross, features);
+        bool const flowCross = features[featureFlowCross];
 
         // Before FlowCross an account with lsfRequireAuth set could not
         // create an offer to buy their own currency.  After FlowCross
@@ -4406,11 +4401,11 @@ public:
         using namespace jtx;
 
         // Should be called with TickSize enabled.
-        BEAST_EXPECT (hasFeature (featureTickSize, features));
+        BEAST_EXPECT(features[featureTickSize]);
 
         // Try to set tick size without enabling feature
         {
-            Env env {*this, features & ~with_only_features(featureTickSize)};
+            Env env{*this, features - featureTickSize};
             auto const gw = Account {"gateway"};
             env.fund (XRP(10000), gw);
 
@@ -4575,26 +4570,26 @@ public:
         testMissingAuth (features);
         testRCSmoketest (features);
         testSelfAuth (features);
-        testTickSize (features);
+        testTickSize (features | featureTickSize);
     }
 
     void run () override
     {
         using namespace jtx;
         auto const all           = supported_amendments();
-        auto const flow          = with_only_features (featureFlow);
-        auto const f1373         = with_only_features (fix1373);
-        auto const flowCross     = with_only_features (featureFlowCross);
+        FeatureBitset const flow{featureFlow};
+        FeatureBitset const f1373{fix1373};
+        FeatureBitset const flowCross{featureFlowCross};
         (void) flow;
 
         // The first three test variants below passed at one time in the past
         // (and should still pass) but are commented out to conserve test time.
-//      testAll(all & ~(flow | f1373 | flowCross));
-//      testAll(all & ~(flow | f1373            ));
-//      testAll(all & ~(       f1373 | flowCross));
-        testAll(all & ~(       f1373            ));
-        testAll(all & ~(               flowCross));
-        testAll(all                              );
+//      testAll(all - flow - f1373 - flowCross);
+//      testAll(all - flow - f1373            );
+//      testAll(all        - f1373 - flowCross);
+        testAll(all        - f1373            );
+        testAll(all                - flowCross);
+        testAll(all                           );
     }
 };
 
@@ -4603,31 +4598,31 @@ class Offer_manual_test : public Offer_test
     void run() override
     {
         using namespace jtx;
-        auto const all           = supported_amendments();
-        auto const feeEscalation = with_only_features (featureFeeEscalation);
-        auto const flow          = with_only_features (featureFlow);
-        auto const f1373         = with_only_features (fix1373);
-        auto const flowCross     = with_only_features (featureFlowCross);
-        auto const f1513         = with_only_features (fix1513);
+        auto const all = supported_amendments();
+        FeatureBitset const feeEscalation{featureFeeEscalation};
+        FeatureBitset const flow{featureFlow};
+        FeatureBitset const f1373{fix1373};
+        FeatureBitset const flowCross{featureFlowCross};
+        FeatureBitset const f1513{fix1513};
 
-        testAll(all & ~(feeEscalation | flow | f1373 | flowCross | f1513));
-        testAll(all & ~(                flow | f1373 | flowCross | f1513));
-        testAll(all & ~(                flow | f1373 | flowCross        ));
-        testAll(all & ~(feeEscalation | flow | f1373 |             f1513));
-        testAll(all & ~(                flow | f1373 |             f1513));
-        testAll(all & ~(                flow | f1373                    ));
-        testAll(all & ~(feeEscalation |        f1373 | flowCross | f1513));
-        testAll(all & ~(                       f1373 | flowCross | f1513));
-        testAll(all & ~(                       f1373 | flowCross        ));
-        testAll(all & ~(feeEscalation |        f1373 |             f1513));
-        testAll(all & ~(                       f1373 |             f1513));
-        testAll(all & ~(                       f1373                    ));
-        testAll(all & ~(feeEscalation |                flowCross | f1513));
-        testAll(all & ~(                               flowCross | f1513));
-        testAll(all & ~(                               flowCross        ));
-        testAll(all & ~(feeEscalation |                            f1513));
-        testAll(all & ~(                                           f1513));
-        testAll(all                                                      );
+        testAll(all -feeEscalation - flow - f1373 - flowCross - f1513);
+        testAll(all                - flow - f1373 - flowCross - f1513);
+        testAll(all                - flow - f1373 - flowCross        );
+        testAll(all -feeEscalation - flow - f1373             - f1513);
+        testAll(all                - flow - f1373             - f1513);
+        testAll(all                - flow - f1373                    );
+        testAll(all -feeEscalation        - f1373 - flowCross - f1513);
+        testAll(all                       - f1373 - flowCross - f1513);
+        testAll(all                       - f1373 - flowCross        );
+        testAll(all -feeEscalation        - f1373             - f1513);
+        testAll(all                       - f1373             - f1513);
+        testAll(all                       - f1373                    );
+        testAll(all -feeEscalation                - flowCross - f1513);
+        testAll(all                               - flowCross - f1513);
+        testAll(all                               - flowCross        );
+        testAll(all -feeEscalation                            - f1513);
+        testAll(all                                           - f1513);
+        testAll(all                                                  );
     }
 };
 
