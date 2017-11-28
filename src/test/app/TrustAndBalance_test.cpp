@@ -508,13 +508,11 @@ public:
         };
 
         using namespace test::jtx;
-        testWithFeatures(
-            supported_features_except (featureFlow, fix1373, featureFlowCross));
-        testWithFeatures(
-            supported_features_except (             fix1373, featureFlowCross));
-        testWithFeatures(
-            supported_features_except (                      featureFlowCross));
-        testWithFeatures(supported_amendments());
+        auto const sa = supported_amendments();
+        testWithFeatures(sa - featureFlow - fix1373 - featureFlowCross);
+        testWithFeatures(sa               - fix1373 - featureFlowCross);
+        testWithFeatures(sa                          -featureFlowCross);
+        testWithFeatures(sa);
     }
 };
 

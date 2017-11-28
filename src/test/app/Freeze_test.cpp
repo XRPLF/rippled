@@ -531,13 +531,11 @@ public:
             testOffersWhenFrozen(features);
         };
         using namespace test::jtx;
-        testAll(
-            supported_features_except (featureFlow, fix1373, featureFlowCross));
-        testAll(
-            supported_features_except (             fix1373, featureFlowCross));
-        testAll(
-            supported_features_except (                      featureFlowCross));
-        testAll(supported_amendments());
+        auto const sa = supported_amendments();
+        testAll(sa - featureFlow - fix1373 - featureFlowCross);
+        testAll(sa               - fix1373 - featureFlowCross);
+        testAll(sa                         - featureFlowCross);
+        testAll(sa);
     }
 };
 

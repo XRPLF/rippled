@@ -112,13 +112,11 @@ public:
     run()
     {
         using namespace jtx;
-        test_convert_all_of_an_asset(
-            supported_features_except (featureFlow, fix1373, featureFlowCross));
-        test_convert_all_of_an_asset(
-            supported_features_except (             fix1373, featureFlowCross));
-        test_convert_all_of_an_asset(
-            supported_features_except (                      featureFlowCross));
-        test_convert_all_of_an_asset(supported_amendments());
+        auto const sa = supported_amendments();
+        test_convert_all_of_an_asset(sa - featureFlow - fix1373 - featureFlowCross);
+        test_convert_all_of_an_asset(sa - fix1373 - featureFlowCross);
+        test_convert_all_of_an_asset(sa - featureFlowCross);
+        test_convert_all_of_an_asset(sa);
     }
 };
 

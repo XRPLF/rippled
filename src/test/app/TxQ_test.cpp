@@ -1065,7 +1065,7 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this, no_features);
+        Env env(*this, FeatureBitset{});
 
         auto alice = Account("alice");
 
@@ -1557,7 +1557,7 @@ public:
     {
         using namespace jtx;
         using namespace std::chrono;
-        Env env(*this, supported_features_plus (featureTickets));
+        Env env(*this, supported_amendments().set(featureTickets));
         auto const alice = Account("alice");
         env.memoize(alice);
         env.memoize("bob");
@@ -1682,7 +1682,7 @@ public:
         }
 
         {
-            Env env(*this, no_features);
+            Env env(*this, FeatureBitset{});
 
             auto fee = env.rpc("fee");
 

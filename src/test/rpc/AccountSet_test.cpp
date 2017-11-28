@@ -237,7 +237,7 @@ public:
 
         {
             testcase ("Setting transfer rate (without fix1201)");
-            doTests (supported_features_except(fix1201),
+            doTests (supported_amendments().reset(fix1201),
                 {
                     { 1.0, tesSUCCESS,              1.0 },
                     { 1.1, tesSUCCESS,              1.1 },
@@ -290,16 +290,17 @@ public:
         };
 
         // Test gateway with allowed transfer rates
-        runTest (Env{*this, supported_features_except(fix1201)}, 1.02);
-        runTest (Env{*this, supported_features_except(fix1201)}, 1);
-        runTest (Env{*this, supported_features_except(fix1201)}, 2);
-        runTest (Env{*this, supported_features_except(fix1201)}, 2.1);
+        auto const noFix1201 = supported_amendments().reset(fix1201);
+        runTest (Env{*this, noFix1201}, 1.02);
+        runTest (Env{*this, noFix1201}, 1);
+        runTest (Env{*this, noFix1201}, 2);
+        runTest (Env{*this, noFix1201}, 2.1);
         runTest (Env{*this, supported_amendments()}, 1.02);
         runTest (Env{*this, supported_amendments()}, 2);
 
         // Test gateway when amendment is set after transfer rate
         {
-            Env env (*this, supported_features_except(fix1201));
+            Env env (*this, noFix1201);
             Account const alice ("alice");
             Account const bob ("bob");
             Account const gw ("gateway");
@@ -330,7 +331,7 @@ public:
     {
         using namespace test::jtx;
         std::unique_ptr<Env> penv {
-            withFeatures ?  new Env(*this) : new Env(*this, no_features)};
+            withFeatures ?  new Env(*this) : new Env(*this, FeatureBitset{})};
         Env& env = *penv;
         Account const alice ("alice");
         env.fund(XRP(10000), alice);

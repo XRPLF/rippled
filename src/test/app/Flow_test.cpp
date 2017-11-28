@@ -211,7 +211,7 @@ struct Flow_test : public beast::unit_test::suite
         for (auto bobDanQIn : {80, 100, 120})
             for (auto bobAliceQOut : {80, 100, 120})
             {
-                if (!hasFeature(featureFlow, features) && bobDanQIn < 100 &&
+                if (!features[featureFlow] && bobDanQIn < 100 &&
                     bobAliceQOut < 100)
                     continue;  // Bug in flow v1
                 Env env(*this, features);
@@ -657,7 +657,7 @@ struct Flow_test : public beast::unit_test::suite
                 balance (alice, xrpMinusFee(env, 10000-100)),
                 balance (bob, USD (100)));
         }
-        if (!hasFeature(featureOwnerPaysFee, features))
+        if (!features[featureOwnerPaysFee])
         {
             // Offer where the owner is also the issuer, sender pays fee
             Env env (*this, features);
@@ -742,7 +742,7 @@ struct Flow_test : public beast::unit_test::suite
         for (auto const& d : {-100 * timeDelta, +100 * timeDelta})
         {
             auto const closeTime = fix1141Time () + d ;
-            Env env (*this, no_features);
+            Env env (*this, FeatureBitset{});
             env.close (closeTime);
 
             env.fund (XRP(10000), alice, bob, carol, gw);
@@ -1249,13 +1249,12 @@ struct Flow_test : public beast::unit_test::suite
     void testWithFeats(FeatureBitset features)
     {
         using namespace jtx;
-        FeatureBitset const ownerPaysFee
-            {with_only_features (featureOwnerPaysFee)};
+        FeatureBitset const ownerPaysFee{featureOwnerPaysFee};
 
         testLineQuality(features);
         testFalseDry(features);
         // Only do the rest of the tests if featureFlow is enabled.
-        if (! hasFeature (featureFlow, features))
+        if (!features[featureFlow])
             return;
         testDirectStep(features);
         testBookStep(features);
@@ -1268,7 +1267,7 @@ struct Flow_test : public beast::unit_test::suite
         testSelfFundedXRPEndpoint(true, features);
         testUnfundedOffer(true, features);
         testUnfundedOffer(false, features);
-        testReexecuteDirectStep(features | with_only_features (fix1368));
+        testReexecuteDirectStep(features | fix1368);
         testSelfPayLowQualityOffer(features);
     }
 
@@ -1281,15 +1280,12 @@ struct Flow_test : public beast::unit_test::suite
         testRIPD1449(false);
 
         using namespace jtx;
-        testWithFeats(
-            supported_features_except (featureFlow, fix1373, featureFlowCross));
-        testWithFeats(
-            supported_features_except (             fix1373, featureFlowCross));
-        testWithFeats(
-            supported_features_except (                      featureFlowCross));
-        testWithFeats(supported_amendments());
-
-        testEmptyStrand(supported_amendments());
+        auto const sa = supported_amendments();
+        testWithFeats(sa - featureFlow - fix1373 - featureFlowCross);
+        testWithFeats(sa               - fix1373 - featureFlowCross);
+        testWithFeats(sa                         - featureFlowCross);
+        testWithFeats(sa);
+        testEmptyStrand(sa);
     }
 };
 
@@ -1298,29 +1294,29 @@ struct Flow_manual_test : public Flow_test
     void run() override
     {
         using namespace jtx;
-        auto const all           = supported_amendments();
-        auto const feeEscalation = with_only_features (featureFeeEscalation);
-        auto const flow          = with_only_features (featureFlow);
-        auto const f1373         = with_only_features (fix1373);
-        auto const flowCross     = with_only_features (featureFlowCross);
-        auto const f1513         = with_only_features (fix1513);
+        auto const all = supported_amendments();
+        FeatureBitset const feeEscalation{featureFeeEscalation};
+        FeatureBitset const flow{featureFlow};
+        FeatureBitset const f1373{fix1373};
+        FeatureBitset const flowCross{featureFlowCross};
+        FeatureBitset const f1513{fix1513};
 
-        testWithFeats(all & ~(feeEscalation | flow | f1373 | flowCross | f1513));
-        testWithFeats(all & ~(                flow | f1373 | flowCross | f1513));
-        testWithFeats(all & ~(                flow | f1373 | flowCross        ));
-        testWithFeats(all & ~(feeEscalation |        f1373 | flowCross | f1513));
-        testWithFeats(all & ~(                       f1373 | flowCross | f1513));
-        testWithFeats(all & ~(                       f1373 | flowCross        ));
-        testWithFeats(all & ~(feeEscalation |                flowCross | f1513));
-        testWithFeats(all & ~(                               flowCross | f1513));
-        testWithFeats(all & ~(                               flowCross        ));
-        testWithFeats(all & ~(feeEscalation |                            f1513));
-        testWithFeats(all & ~(                                           f1513));
+        testWithFeats(all - feeEscalation - flow - f1373 - flowCross - f1513);
+        testWithFeats(all                 - flow - f1373 - flowCross - f1513);
+        testWithFeats(all                 - flow - f1373 - flowCross        );
+        testWithFeats(all - feeEscalation        - f1373 - flowCross - f1513);
+        testWithFeats(all                        - f1373 - flowCross - f1513);
+        testWithFeats(all                        - f1373 - flowCross        );
+        testWithFeats(all - feeEscalation                - flowCross - f1513);
+        testWithFeats(all                                - flowCross - f1513);
+        testWithFeats(all                                - flowCross        );
+        testWithFeats(all - feeEscalation                            - f1513);
+        testWithFeats(all                                            - f1513);
         testWithFeats(all                                                      );
 
-        testEmptyStrand(all & ~(feeEscalation | f1513));
-        testEmptyStrand(all & ~(                f1513));
-        testEmptyStrand(all                           );
+        testEmptyStrand(all - feeEscalation - f1513);
+        testEmptyStrand(all                 - f1513);
+        testEmptyStrand(all                        );
     }
 };
 

@@ -154,11 +154,10 @@ public:
     run() override
     {
         using namespace jtx;
-        testGWB(
-            supported_features_except (featureFlow, fix1373, featureFlowCross));
-        testGWB(
-            supported_features_except (                      featureFlowCross));
-        testGWB(supported_amendments());
+        auto const sa = supported_amendments();
+        testGWB(sa - featureFlow - fix1373 - featureFlowCross);
+        testGWB(sa                         - featureFlowCross);
+        testGWB(sa);
     }
 };
 

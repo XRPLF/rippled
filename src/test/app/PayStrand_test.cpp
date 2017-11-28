@@ -847,8 +847,9 @@ struct PayStrandAllPairs_test : public beast::unit_test::suite
     void
     run() override
     {
-        testAllPairs(jtx::supported_features_except (featureFlowCross));
-        testAllPairs(jtx::supported_amendments());
+        auto const sa = jtx::supported_amendments();
+        testAllPairs(sa - featureFlowCross);
+        testAllPairs(sa);
     }
 };
 
@@ -1278,7 +1279,7 @@ struct PayStrand_test : public beast::unit_test::suite
         auto const USD = gw["USD"];
         auto const EUR = gw["EUR"];
 
-        if (hasFeature(fix1373, features))
+        if (features[fix1373])
         {
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob, gw);
@@ -1376,8 +1377,7 @@ struct PayStrand_test : public beast::unit_test::suite
             env(offer(bob, USD(100), XRP(100)), txflags(tfPassive));
 
             auto const expectedResult = [&] {
-                if (hasFeature(featureFlow, features) &&
-                    !hasFeature(fix1373, features))
+                if (features[featureFlow] && !features[fix1373])
                     return tesSUCCESS;
                 return temBAD_PATH_LOOP;
             }();
@@ -1473,25 +1473,21 @@ struct PayStrand_test : public beast::unit_test::suite
     run() override
     {
         using namespace jtx;
-        testToStrand(supported_features_except (fix1373, featureFlowCross));
-        testToStrand(supported_features_except (         featureFlowCross));
-        testToStrand(supported_amendments ());
+        auto const sa = supported_amendments();
+        testToStrand(sa - fix1373 - featureFlowCross);
+        testToStrand(sa           - featureFlowCross);
+        testToStrand(sa);
 
-        testRIPD1373(
-            supported_features_except (featureFlow, fix1373, featureFlowCross));
-        testRIPD1373(
-            supported_features_except (                      featureFlowCross));
-        testRIPD1373(supported_amendments ());
+        testRIPD1373(sa - featureFlow - fix1373 - featureFlowCross);
+        testRIPD1373(sa                         - featureFlowCross);
+        testRIPD1373(sa);
 
-        testLoop(
-            supported_features_except (featureFlow, fix1373, featureFlowCross));
-        testLoop(
-            supported_features_except (             fix1373, featureFlowCross));
-        testLoop(
-            supported_features_except (                      featureFlowCross));
-        testLoop(supported_amendments ());
+        testLoop(sa - featureFlow - fix1373 - featureFlowCross);
+        testLoop(sa               - fix1373 - featureFlowCross);
+        testLoop(sa                         - featureFlowCross);
+        testLoop(sa);
 
-        testNoAccount(supported_amendments ());
+        testNoAccount(sa);
     }
 };
 

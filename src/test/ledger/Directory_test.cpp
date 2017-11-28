@@ -88,7 +88,9 @@ struct Directory_test : public beast::unit_test::suite
         {
             testcase ("Directory Ordering (without 'SortedDirectories' amendment");
 
-            Env env(*this, supported_features_except(featureSortedDirectories));
+            Env env(
+                *this,
+                supported_amendments().reset(featureSortedDirectories));
             env.fund(XRP(10000000), alice, bob, gw);
 
             // Insert 400 offers from Alice, then one from Bob:
