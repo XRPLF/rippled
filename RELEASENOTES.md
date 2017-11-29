@@ -11,6 +11,25 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 0.80.1
+
+The `rippled` 0.80.1 release provides several enhancements in support of published validator lists and corrects several bugs.
+
+**New and Updated Features**
+
+- Allow including validator manifests in published list ([#2278](https://github.com/ripple/rippled/issues/2278))
+- Add validator list RPC commands ([#2242](https://github.com/ripple/rippled/issues/2242))
+- Support [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication) when querying published list sites and use Windows system root certificates ([#2275](https://github.com/ripple/rippled/issues/2275))
+- Grow TxQ expected size quickly, shrink slowly ([#2235](https://github.com/ripple/rippled/issues/2235))
+
+**Bug Fixes**
+
+- Make consensus quorum unreachable if validator list expires ([#2240](https://github.com/ripple/rippled/issues/2240))
+- Properly use ledger hash to break ties when determing working ledger for consensus ([#2257](https://github.com/ripple/rippled/issues/2257))
+- Explictly use std::deque for missing node handler in SHAMap code ([#2252](https://github.com/ripple/rippled/issues/2252))
+- Verify validator token manifest matches private key ([#2268](https://github.com/ripple/rippled/issues/2268))
+
+
 ## Version 0.80.0
 
 The `rippled` 0.80.0 release introduces several enhancements that improve the reliability, scalability and security of the XRP Ledger.
