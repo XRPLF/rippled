@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/json/json_writer.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/type_name.h>
 
@@ -222,6 +223,32 @@ struct json_value_test : beast::unit_test::suite
         testGreaterThan ("big");
     }
 
+    void test_compact ()
+    {
+        Json::Value j;
+        Json::Reader r;
+        char const* s ("{\"array\":[{\"12\":23},{},null,false,0.5]}");
+
+        auto countLines = [](std::string const & s)
+        {
+            return 1 + std::count_if(s.begin(), s.end(), [](char c){
+                return c == '\n';
+            });
+        };
+
+        BEAST_EXPECT(r.parse(s,j));
+        {
+            std::stringstream ss;
+            ss << j;
+            BEAST_EXPECT(countLines(ss.str()) > 1);
+        }
+        {
+            std::stringstream ss;
+            ss << Json::Compact(std::move(j));
+            BEAST_EXPECT(countLines(ss.str()) == 1);
+        }
+    }
+
     void run ()
     {
         test_bool ();
@@ -230,6 +257,7 @@ struct json_value_test : beast::unit_test::suite
         test_copy ();
         test_move ();
         test_comparisons ();
+        test_compact ();
     }
 };
 

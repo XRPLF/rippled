@@ -1019,8 +1019,9 @@ Consensus<Adaptor>::checkLedger()
                         << ", "
                         << " mode=" << to_string(mode_.get());
         JLOG(j_.warn()) << prevLedgerID_ << " to " << netLgr;
-        JLOG(j_.warn()) << previousLedger_.getJson();
-        JLOG(j_.debug()) << "State on consensus change " << getJson(true);
+        JLOG(j_.warn()) << Json::Compact{previousLedger_.getJson()};
+        JLOG(j_.debug()) << "State on consensus change "
+                         << Json::Compact{getJson(true)};
         handleWrongLedger(netLgr);
     }
     else if (previousLedger_.id() != prevLedgerID_)
@@ -1432,7 +1433,7 @@ Consensus<Adaptor>::haveConsensus()
     if (result_->state == ConsensusState::MovedOn)
     {
         JLOG(j_.error()) << "Unable to reach consensus";
-        JLOG(j_.error()) << getJson(true);
+        JLOG(j_.error()) << Json::Compact{getJson(true)};
     }
 
     return true;
