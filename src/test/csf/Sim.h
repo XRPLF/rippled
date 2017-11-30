@@ -20,84 +20,142 @@
 #ifndef RIPPLE_TEST_CSF_SIM_H_INCLUDED
 #define RIPPLE_TEST_CSF_SIM_H_INCLUDED
 
+#include <test/csf/Digraph.h>
+#include <test/csf/SimTime.h>
 #include <test/csf/BasicNetwork.h>
-#include <test/csf/UNL.h>
+#include <test/csf/Scheduler.h>
+#include <test/csf/Peer.h>
+#include <test/csf/PeerGroup.h>
+#include <test/csf/TrustGraph.h>
+#include <test/csf/CollectorRef.h>
+
+#include <iostream>
+#include <deque>
+#include <random>
 
 namespace ripple {
 namespace test {
 namespace csf {
 
+/** Sink that prepends simulation time to messages */
+class BasicSink : public beast::Journal::Sink
+{
+    Scheduler::clock_type const & clock_;
+public:
+    BasicSink (Scheduler::clock_type const & clock)
+        : Sink (beast::severities::kDisabled, false)
+        , clock_{clock}
+    {
+    }
+
+    void
+    write (beast::severities::Severity level,
+        std::string const& text) override
+    {
+        if (level < threshold())
+            return;
+
+        std::cout << clock_.now().time_since_epoch().count() << " " << text
+                  << std::endl;
+    }
+};
+
 class Sim
 {
+    // Use a deque to have stable pointers even when dynamically adding peers
+    //  - Alternatively consider using unique_ptrs allocated from arena
+    std::deque<Peer> peers;
+
 public:
-    /** Create a simulator for the given trust graph and network topology.
+    std::mt19937_64 rng;
+    Scheduler scheduler;
+    BasicSink sink;
+    beast::Journal j;
+    LedgerOracle oracle;
+    BasicNetwork<Peer*> net;
+    TrustGraph<Peer*> trustGraph;
+    CollectorRefs collectors;
 
-        Create a simulator for consensus over the given trust graph and connect
-        the network links between nodes based on the provided topology.
+    /** Create a simulation
 
-        Topology is is a functor with signature
-
-               boost::optional<std::chrono::duration> (NodeId i, NodeId j)
-
-        that returns the delay sending messages from node i to node j.
-
-        In general, this network graph is distinct from the trust graph, but
-        users can use adaptors to present a TrustGraph as a Topology by
-        specifying the delay between nodes.
-
-        @param g The trust graph between peers.
-        @param top The network topology between peers.
-        @param parms Consensus parameters to use in the simulation
+        Creates a new simulation. The simulation has no peers, no trust links
+        and no network connections.
 
     */
-    template <class Topology>
-    Sim(ConsensusParms parms, TrustGraph const& g, Topology const& top)
+    Sim() : sink{scheduler.clock()}, j{sink}, net{scheduler}
     {
-        peers.reserve(g.numPeers());
-        for (int i = 0; i < g.numPeers(); ++i)
-            peers.emplace_back(i, net, g.unl(i), parms);
+    }
 
-        for (int i = 0; i < peers.size(); ++i)
+    /** Create a new group of peers.
+
+        Creates a new group of peers. The peers do not have any trust relations
+        or network connections by default. Those must be configured by the client.
+
+        @param numPeers The number of peers in the group
+        @return PeerGroup representing these new peers
+
+        @note This increases the number of peers in the simulation by numPeers.
+    */
+    PeerGroup
+    createGroup(std::size_t numPeers)
+    {
+        std::vector<Peer*> newPeers;
+        newPeers.reserve(numPeers);
+        for (std::size_t i = 0; i < numPeers; ++i)
         {
-            for (int j = 0; j < peers.size(); ++j)
-            {
-                if (i != j)
-                {
-                    auto d = top(i, j);
-                    if (d)
-                    {
-                        net.connect(&peers[i], &peers[j], *d);
-                    }
-                }
-            }
+            peers.emplace_back(
+                PeerID{static_cast<std::uint32_t>(peers.size())},
+                scheduler,
+                oracle,
+                net,
+                trustGraph,
+                collectors,
+                j);
+            newPeers.emplace_back(&peers.back());
         }
+        return PeerGroup{newPeers};
+    }
+
+    //! The number of peers in the simulation
+    std::size_t
+    size() const
+    {
+        return peers.size();
     }
 
     /** Run consensus protocol to generate the provided number of ledgers.
 
-        Has each peer run consensus until it creates `ledgers` more ledgers.
+        Has each peer run consensus until it closes `ledgers` more ledgers.
 
-        @param ledgers The number of additional ledgers to create
+        @param ledgers The number of additional ledgers to close
     */
     void
-    run(int ledgers)
-    {
-        for (auto& p : peers)
-        {
-            if (p.completedLedgers == 0)
-                p.relay(Validation{p.id, p.prevLedgerID(), p.prevLedgerID()});
-            p.targetLedgers = p.completedLedgers + ledgers;
-            p.start();
-        }
-        net.step();
-    }
+    run(int ledgers);
 
-    std::vector<Peer> peers;
-    BasicNetwork<Peer*> net;
+    /** Run consensus for the given duration */
+    void
+    run(SimDuration const& dur);
+
+    /** Check whether all peers in the network are synchronized.
+
+        Nodes in the network are synchronized if they share the same last
+        fully validated and last generated ledger.
+    */
+    bool
+    synchronized() const;
+
+    /** Calculate the number of branches in the network.
+
+        A branch occurs if two peers have fullyValidatedLedgers that are not on
+        the same chain of ledgers.
+    */
+    std::size_t
+    branches() const;
+
 };
 
-}  // csf
-}  // test
-}  // ripple
+}  // namespace csf
+}  // namespace test
+}  // namespace ripple
 
 #endif
