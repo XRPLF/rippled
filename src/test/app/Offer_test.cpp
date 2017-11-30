@@ -253,12 +253,20 @@ public:
         for (int i=0;i<101;++i)
             env (offer (carol, USD (1), EUR (2)));
 
+        auto hasFeature = [](Env& env, uint256 const& f)
+        {
+            return (env.app().config().features.find(f) !=
+                env.app().config().features.end());
+        };
+
         for (auto d : {-1, 1})
         {
             auto const closeTime = STAmountSO::soTime +
                 d * env.closed()->info().closeTimeResolution;
             env.close (closeTime);
-            *stAmountCalcSwitchover = closeTime > STAmountSO::soTime;
+            *stAmountCalcSwitchover = closeTime > STAmountSO::soTime ||
+                (hasFeature(env, featureFeeEscalation) &&
+                    !hasFeature(env, fix1513));
             // Will fail without the underflow fix
             auto expectedResult = *stAmountCalcSwitchover ?
                 tesSUCCESS : tecPATH_PARTIAL;
@@ -4519,74 +4527,111 @@ public:
         BEAST_EXPECT (++it == offers.end());
     }
 
-    void run ()
+    void testAll(std::initializer_list<uint256> fs)
     {
-        auto testAll = [this](std::initializer_list<uint256> fs) {
-            testCanceledOffer(fs);
-            testRmFundedOffer(fs);
-            testTinyPayment(fs);
-            testXRPTinyPayment(fs);
-            testEnforceNoRipple(fs);
-            testInsufficientReserve(fs);
-            testFillModes(fs);
-            testMalformed(fs);
-            testExpiration(fs);
-            testUnfundedCross(fs);
-            testSelfCross(false, fs);
-            testSelfCross(true, fs);
-            testNegativeBalance(fs);
-            testOfferCrossWithXRP(true, fs);
-            testOfferCrossWithXRP(false, fs);
-            testOfferCrossWithLimitOverride(fs);
-            testOfferAcceptThenCancel(fs);
-            testOfferCancelPastAndFuture(fs);
-            testCurrencyConversionEntire(fs);
-            testCurrencyConversionIntoDebt(fs);
-            testCurrencyConversionInParts(fs);
-            testCrossCurrencyStartXRP(fs);
-            testCrossCurrencyEndXRP(fs);
-            testCrossCurrencyBridged(fs);
-            testOfferFeesConsumeFunds(fs);
-            testOfferCreateThenCross(fs);
-            testSellFlagBasic(fs);
-            testSellFlagExceedLimit(fs);
-            testGatewayCrossCurrency(fs);
-            testPartialCross (fs);
-            testXRPDirectCross (fs);
-            testDirectCross (fs);
-            testBridgedCross (fs);
-            testSellOffer (fs);
-            testSellWithFillOrKill (fs);
-            testTransferRateOffer(fs);
-            testSelfCrossOffer (fs);
-            testSelfIssueOffer (fs);
-            testBadPathAssert (fs);
-            testDirectToDirectPath (fs);
-            testSelfCrossLowQualityOffer (fs);
-            testOfferInScaling (fs);
-            testOfferInScalingWithXferRate (fs);
-            testOfferThresholdWithReducedFunds (fs);
-            testTinyOffer (fs);
-            testSelfPayXferFeeOffer (fs);
-            testSelfPayUnlimitedFunds (fs);
-            testRequireAuth (fs);
-            testMissingAuth (fs);
-            testRCSmoketest (fs);
-            testSelfAuth (fs);
-            testTickSize (fs);
-        };
+        testCanceledOffer(fs);
+        testRmFundedOffer(fs);
+        testTinyPayment(fs);
+        testXRPTinyPayment(fs);
+        testEnforceNoRipple(fs);
+        testInsufficientReserve(fs);
+        testFillModes(fs);
+        testMalformed(fs);
+        testExpiration(fs);
+        testUnfundedCross(fs);
+        testSelfCross(false, fs);
+        testSelfCross(true, fs);
+        testNegativeBalance(fs);
+        testOfferCrossWithXRP(true, fs);
+        testOfferCrossWithXRP(false, fs);
+        testOfferCrossWithLimitOverride(fs);
+        testOfferAcceptThenCancel(fs);
+        testOfferCancelPastAndFuture(fs);
+        testCurrencyConversionEntire(fs);
+        testCurrencyConversionIntoDebt(fs);
+        testCurrencyConversionInParts(fs);
+        testCrossCurrencyStartXRP(fs);
+        testCrossCurrencyEndXRP(fs);
+        testCrossCurrencyBridged(fs);
+        testOfferFeesConsumeFunds(fs);
+        testOfferCreateThenCross(fs);
+        testSellFlagBasic(fs);
+        testSellFlagExceedLimit(fs);
+        testGatewayCrossCurrency(fs);
+        testPartialCross(fs);
+        testXRPDirectCross(fs);
+        testDirectCross(fs);
+        testBridgedCross(fs);
+        testSellOffer(fs);
+        testSellWithFillOrKill(fs);
+        testTransferRateOffer(fs);
+        testSelfCrossOffer(fs);
+        testSelfIssueOffer(fs);
+        testBadPathAssert(fs);
+        testDirectToDirectPath(fs);
+        testSelfCrossLowQualityOffer(fs);
+        testOfferInScaling(fs);
+        testOfferInScalingWithXferRate(fs);
+        testOfferThresholdWithReducedFunds(fs);
+        testTinyOffer(fs);
+        testSelfPayXferFeeOffer(fs);
+        testSelfPayUnlimitedFunds(fs);
+        testRequireAuth(fs);
+        testMissingAuth(fs);
+        testRCSmoketest(fs);
+        testSelfAuth(fs);
+        testTickSize(fs);
+    }
+    void run () override
+    {
 // The first three test variants below passed at one time in the past (and
 // should still pass) but are commented out to conserve test time.
 //        testAll(jtx::no_features                         );
 //        testAll({                      featureFlowCross });
 //        testAll({featureFlow                            });
-        testAll({featureFlow,          featureFlowCross });
-        testAll({featureFlow, fix1373                   });
-        testAll({featureFlow, fix1373, featureFlowCross });
+        testAll({featureFlow,          featureFlowCross,
+            featureFeeEscalation, fix1513 });
+        testAll({ featureFlow, fix1373,
+            featureFeeEscalation, fix1513 });
+        testAll({featureFlow, fix1373, featureFlowCross,
+            featureFeeEscalation, fix1513 });
+    }
+};
+
+class Offer_manual_test : public Offer_test
+{
+    void run() override
+    {
+        testAll({});
+        testAll({ featureFeeEscalation });
+        testAll({ featureFeeEscalation, fix1513 });
+        testAll({                      featureFlowCross });
+        testAll({                      featureFlowCross,
+            featureFeeEscalation });
+        testAll({                      featureFlowCross,
+            featureFeeEscalation, fix1513 });
+        testAll({featureFlow                            });
+        testAll({ featureFlow, featureFeeEscalation });
+        testAll({ featureFlow, featureFeeEscalation, fix1513 });
+        testAll({featureFlow,          featureFlowCross});
+        testAll({featureFlow,          featureFlowCross,
+            featureFeeEscalation });
+        testAll({featureFlow,          featureFlowCross,
+            featureFeeEscalation, fix1513 });
+        testAll({featureFlow, fix1373                  });
+        testAll({ featureFlow, fix1373, featureFeeEscalation });
+        testAll({ featureFlow, fix1373, featureFeeEscalation, fix1513 });
+        testAll({ featureFlow, fix1373, featureFlowCross });
+        testAll({featureFlow, fix1373, featureFlowCross,
+            featureFeeEscalation });
+        testAll({featureFlow, fix1373, featureFlowCross,
+            featureFeeEscalation, fix1513 });
+
     }
 };
 
 BEAST_DEFINE_TESTSUITE (Offer, tx, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL (Offer_manual, tx, ripple);
 
 }  // test
 }  // ripple
