@@ -37,11 +37,11 @@ class Discrepancy_test : public beast::unit_test::suite
     // A payment with path and sendmax is made and the transaction is queried
     // to verify that the net of balance changes match the fee charged.
     void
-    testXRPDiscrepancy (std::initializer_list<uint256> fs)
+    testXRPDiscrepancy (FeatureBitset features)
     {
         testcase ("Discrepancy test : XRP Discrepancy");
         using namespace test::jtx;
-        Env env {*this, with_features(fs)};
+        Env env {*this, features};
 
         Account A1 {"A1"};
         Account A2 {"A2"};
@@ -144,10 +144,14 @@ class Discrepancy_test : public beast::unit_test::suite
 public:
     void run ()
     {
-        testXRPDiscrepancy ({});
-        testXRPDiscrepancy ({featureFlow});
-        testXRPDiscrepancy ({featureFlow, fix1373});
-        testXRPDiscrepancy ({featureFlow, fix1373, featureFlowCross});
+        using namespace test::jtx;
+        testXRPDiscrepancy (
+            supported_features_except (featureFlow, fix1373, featureFlowCross));
+        testXRPDiscrepancy (
+            supported_features_except (             fix1373, featureFlowCross));
+        testXRPDiscrepancy (
+            supported_features_except (                      featureFlowCross));
+        testXRPDiscrepancy (supported_amendments());
     }
 };
 

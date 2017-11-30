@@ -25,10 +25,10 @@ namespace test {
 
 struct BookDirs_test : public beast::unit_test::suite
 {
-    void test_bookdir(std::initializer_list<uint256> fs)
+    void test_bookdir(FeatureBitset features)
     {
         using namespace jtx;
-        Env env(*this, with_features(fs));
+        Env env(*this, features);
         auto gw = Account("gw");
         auto USD = gw["USD"];
         env.fund(XRP(1000000), "alice", "bob", "gw");
@@ -94,9 +94,12 @@ struct BookDirs_test : public beast::unit_test::suite
 
     void run() override
     {
-        test_bookdir({});
-        test_bookdir({featureFlow, fix1373});
-        test_bookdir({featureFlow, fix1373, featureFlowCross});
+        using namespace jtx;
+        test_bookdir(
+            supported_features_except (featureFlow, fix1373, featureFlowCross));
+        test_bookdir(
+            supported_features_except (                      featureFlowCross));
+        test_bookdir(supported_amendments ());
     }
 };
 

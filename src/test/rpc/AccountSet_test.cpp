@@ -237,7 +237,7 @@ public:
 
         {
             testcase ("Setting transfer rate (without fix1201)");
-            doTests (all_features_except(fix1201),
+            doTests (supported_features_except(fix1201),
                 {
                     { 1.0, tesSUCCESS,              1.0 },
                     { 1.1, tesSUCCESS,              1.1 },
@@ -250,7 +250,7 @@ public:
 
         {
             testcase ("Setting transfer rate (with fix1201)");
-            doTests (all_amendments(),
+            doTests (supported_amendments(),
                 {
                     { 1.0, tesSUCCESS,              1.0 },
                     { 1.1, tesSUCCESS,              1.1 },
@@ -290,16 +290,16 @@ public:
         };
 
         // Test gateway with allowed transfer rates
-        runTest (Env{*this, all_features_except(fix1201)}, 1.02);
-        runTest (Env{*this, all_features_except(fix1201)}, 1);
-        runTest (Env{*this, all_features_except(fix1201)}, 2);
-        runTest (Env{*this, all_features_except(fix1201)}, 2.1);
-        runTest (Env{*this, all_amendments()}, 1.02);
-        runTest (Env{*this, all_amendments()}, 2);
+        runTest (Env{*this, supported_features_except(fix1201)}, 1.02);
+        runTest (Env{*this, supported_features_except(fix1201)}, 1);
+        runTest (Env{*this, supported_features_except(fix1201)}, 2);
+        runTest (Env{*this, supported_features_except(fix1201)}, 2.1);
+        runTest (Env{*this, supported_amendments()}, 1.02);
+        runTest (Env{*this, supported_amendments()}, 2);
 
         // Test gateway when amendment is set after transfer rate
         {
-            Env env (*this, all_features_except(fix1201));
+            Env env (*this, supported_features_except(fix1201));
             Account const alice ("alice");
             Account const bob ("bob");
             Account const gw ("gateway");
@@ -371,7 +371,7 @@ public:
     void testRequireAuthWithDir()
     {
         using namespace test::jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice ("alice");
         Account const bob ("bob");
 

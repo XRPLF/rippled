@@ -265,6 +265,9 @@ TxQ::MaybeTx::MaybeTx(
 std::pair<TER, bool>
 TxQ::MaybeTx::apply(Application& app, OpenView& view)
 {
+    boost::optional<STAmountSO> saved;
+    if (view.rules().enabled(fix1513))
+        saved.emplace(view.info().parentCloseTime);
     // If the rules or flags change, preflight again
     assert(pfresult);
     if (pfresult->rules != view.rules() ||
@@ -517,8 +520,13 @@ TxQ::tryClearAccountQueue(Application& app, OpenView& view,
     }
     // Apply the current tx. Because the state of the view has been changed
     // by the queued txs, we also need to preclaim again.
-    auto const pcresult = preclaim(pfresult, app, view);
-    auto txResult = doApply(pcresult, app, view);
+    auto txResult = [&]{
+        boost::optional<STAmountSO> saved;
+        if (view.rules().enabled(fix1513))
+            saved.emplace(view.info().parentCloseTime);
+        auto const pcresult = preclaim(pfresult, app, view);
+        return doApply(pcresult, app, view);
+    }();
 
     if (txResult.second)
     {
@@ -614,11 +622,15 @@ TxQ::apply(Application& app, OpenView& view,
     auto const transactionID = tx->getTransactionID();
     auto const tSeq = tx->getSequence();
 
+    boost::optional<STAmountSO> saved;
+    if (view.rules().enabled(fix1513))
+        saved.emplace(view.info().parentCloseTime);
+
     // See if the transaction is valid, properly formed,
     // etc. before doing potentially expensive queue
     // replace and multi-transaction operations.
     auto const pfresult = preflight(app, view.rules(),
-        *tx, flags, j);
+            *tx, flags, j);
     if (pfresult.ter != tesSUCCESS)
         return{ pfresult.ter, false };
 
@@ -929,7 +941,7 @@ TxQ::apply(Application& app, OpenView& view,
     // See if the transaction is likely to claim a fee.
     assert(!multiTxn || multiTxn->openView);
     auto const pcresult = preclaim(pfresult, app,
-        multiTxn ? *multiTxn->openView : view);
+            multiTxn ? *multiTxn->openView : view);
     if (!pcresult.likelyToClaimFee)
         return{ pcresult.ter, false };
 

@@ -1530,9 +1530,6 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\TransactionStateSF.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\main\Amendments.cpp">
-      <Filter>ripple\app\main</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\main\Application.cpp">
       <Filter>ripple\app\main</Filter>
     </ClCompile>

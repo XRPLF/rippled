@@ -37,8 +37,8 @@
  * 3) add a uint256 definition for the feature to the corresponding source
  *    file (Feature.cpp)
  * 4) if the feature is going to be supported in the near future, add its
- *    sha512half value and name (matching exactly the featureName here) to the
- *    supportedAmendments in Amendments.cpp.
+ *    sha512half value and name (matching exactly the featureName here) to
+ *    the supportedAmendments in Feature.cpp.
  *
  */
 
@@ -71,6 +71,7 @@ class FeatureCollections
         "SortedDirectories",
         "fix1201",
         "fix1512",
+        "fix1513",
         "fix1523",
         "fix1528"
     };
@@ -97,6 +98,10 @@ public:
     bitsetIndexToFeature(size_t i) const;
 };
 
+/** Amendments that this server supports, but doesn't enable by default */
+std::vector<std::string> const&
+supportedAmendments ();
+
 } // detail
 
 boost::optional<uint256>
@@ -109,6 +114,9 @@ featureToBitsetIndex(uint256 const& f);
 
 uint256
 bitsetIndexToFeature(size_t i);
+
+bool
+hasFeature (uint256 const& feat, FeatureBitset features);
 
 template <class F>
 void
@@ -168,6 +176,7 @@ extern uint256 const featureEnforceInvariants;
 extern uint256 const featureSortedDirectories;
 extern uint256 const fix1201;
 extern uint256 const fix1512;
+extern uint256 const fix1513;
 extern uint256 const fix1523;
 extern uint256 const fix1528;
 

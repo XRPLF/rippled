@@ -51,6 +51,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/make_Overlay.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/resource/Fees.h>
@@ -203,15 +204,6 @@ public:
         acquire (hash, 0);
     }
 };
-
-
-/** Amendments that this server supports and enables by default */
-std::vector<std::string>
-preEnabledAmendments ();
-
-/** Amendments that this server supports, but doesn't enable by default */
-std::vector<std::string>
-supportedAmendments ();
 
 } // detail
 
@@ -1111,7 +1103,6 @@ bool ApplicationImp::setup()
         supportedAmendments.append (detail::supportedAmendments ());
 
         Section enabledAmendments = config_->section (SECTION_AMENDMENTS);
-        enabledAmendments.append (detail::preEnabledAmendments ());
 
         m_amendmentTable = make_AmendmentTable (
             weeks{2},

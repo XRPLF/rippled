@@ -268,8 +268,8 @@ public:
         using namespace test::jtx;
         using namespace std::chrono;
         Env env { *this, envconfig(validator, ""),
-                   with_features(featureMultiSign, featureTickets,
-                           featureEscrow, featurePayChan) };
+            supported_features_plus(featureTickets) };
+
         Account const gw { "gateway" };
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);

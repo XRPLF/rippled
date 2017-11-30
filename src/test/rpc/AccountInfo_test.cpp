@@ -59,7 +59,7 @@ public:
    void testSignerLists()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice"};
         env.fund(XRP(1000), alice);
 
@@ -165,7 +165,7 @@ public:
    void testSignerListsV2()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice"};
         env.fund(XRP(1000), alice);
 
