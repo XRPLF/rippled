@@ -690,7 +690,7 @@ class View_test
 
         // The two Env's can't share the same ports, so modifiy the config
         // of the second Env to use higher port numbers
-        Env eB {*this, envconfig(port_increment, 5)};
+        Env eB {*this, envconfig(port_increment, 3)};
 
         // Make ledgers that are incompatible with the first ledgers.  Note
         // that bob is funded before alice.

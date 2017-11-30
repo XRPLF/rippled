@@ -58,9 +58,13 @@ public:
             // When booted, we just get a null json response
             if(jv.isNull())
                 booted = true;
-            else
-                BEAST_EXPECT(jv.isMember(jss::status)
-                             && (jv[jss::status] == "success"));
+            else if (!(jv.isMember(jss::status) &&
+                       (jv[jss::status] == "success")))
+            {
+                // Don't use BEAST_EXPECT above b/c it will be called a non-deterministic number of times
+                // and the number of tests run should be deterministic
+                fail("", __FILE__, __LINE__);
+            }
 
             if(jv.isMember(jss::warning))
                 warned = jv[jss::warning] == jss::load;
