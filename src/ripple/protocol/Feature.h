@@ -37,8 +37,8 @@
  * 3) add a uint256 definition for the feature to the corresponding source
  *    file (Feature.cpp)
  * 4) if the feature is going to be supported in the near future, add its
- *    sha512half value and name (matching exactly the featureName here) to the
- *    supportedAmendments in Amendments.cpp.
+ *    sha512half value and name (matching exactly the featureName here) to
+ *    the supportedAmendments in Feature.cpp.
  *
  */
 
@@ -71,6 +71,7 @@ class FeatureCollections
         "SortedDirectories",
         "fix1201",
         "fix1512",
+        "fix1513",
         "fix1523",
         "fix1528"
     };
@@ -97,18 +98,227 @@ public:
     bitsetIndexToFeature(size_t i) const;
 };
 
+/** Amendments that this server supports, but doesn't enable by default */
+std::vector<std::string> const&
+supportedAmendments ();
+
 } // detail
 
 boost::optional<uint256>
 getRegisteredFeature (std::string const& name);
-
-using FeatureBitset = std::bitset<detail::FeatureCollections::numFeatures()>;
 
 size_t
 featureToBitsetIndex(uint256 const& f);
 
 uint256
 bitsetIndexToFeature(size_t i);
+
+class FeatureBitset
+    : private std::bitset<detail::FeatureCollections::numFeatures()>
+{
+    using base = std::bitset<detail::FeatureCollections::numFeatures()>;
+
+    void initFromFeatures()
+    {
+    }
+
+    template<class... Fs>
+    void initFromFeatures(uint256 const& f, Fs&&... fs)
+    {
+        set(f);
+        initFromFeatures(std::forward<Fs>(fs)...);
+    }
+
+public:
+    using base::bitset;
+    using base::operator==;
+    using base::operator!=;
+ 
+    using base::test;
+    using base::all;
+    using base::any;
+    using base::none;
+    using base::count;
+    using base::size;
+    using base::set;
+    using base::reset;
+    using base::flip;
+    using base::operator[];
+    using base::to_string;
+    using base::to_ulong;
+    using base::to_ullong;
+
+    FeatureBitset() = default;
+
+    explicit
+    FeatureBitset(base const& b)
+        : base(b)
+    {
+    }
+
+    template<class... Fs>
+    explicit
+    FeatureBitset(uint256 const& f, Fs&&... fs)
+    {
+        initFromFeatures(f, std::forward<Fs>(fs)...);
+    }
+
+    template <class Col>
+    explicit
+    FeatureBitset(Col const& fs)
+    {
+        for (auto const& f : fs)
+            set(featureToBitsetIndex(f));
+    }
+
+    auto operator[](uint256 const& f)
+    {
+        return base::operator[](featureToBitsetIndex(f));
+    }
+
+    auto operator[](uint256 const& f) const
+    {
+        return base::operator[](featureToBitsetIndex(f));
+    }
+
+    FeatureBitset&
+    set(uint256 const& f, bool value = true)
+    {
+        base::set(featureToBitsetIndex(f), value);
+        return *this;
+    }
+
+    FeatureBitset&
+    reset(uint256 const& f)
+    {
+        base::reset(featureToBitsetIndex(f));
+        return *this;
+    }
+
+    FeatureBitset&
+    flip(uint256 const& f)
+    {
+        base::flip(featureToBitsetIndex(f));
+        return *this;
+    }
+
+    FeatureBitset& operator&=(FeatureBitset const& rhs)
+    {
+        base::operator&=(rhs);
+        return *this;
+    }
+
+    FeatureBitset& operator|=(FeatureBitset const& rhs)
+    {
+        base::operator|=(rhs);
+        return *this;
+    }
+
+    FeatureBitset operator~() const
+    {
+        return FeatureBitset{base::operator~()};
+    }
+
+    friend
+    FeatureBitset operator&(
+        FeatureBitset const& lhs,
+        FeatureBitset const& rhs)
+    {
+        return FeatureBitset{static_cast<base const&>(lhs) &
+                             static_cast<base const&>(rhs)};
+    }
+
+    friend
+    FeatureBitset operator&(
+        FeatureBitset const& lhs,
+        uint256 const& rhs)
+    {
+        return lhs & FeatureBitset{rhs};
+    }
+
+    friend
+    FeatureBitset operator&(
+        uint256 const& lhs,
+        FeatureBitset const& rhs)
+    {
+        return FeatureBitset{lhs} & rhs;
+    }
+
+    friend
+    FeatureBitset operator|(
+        FeatureBitset const& lhs,
+        FeatureBitset const& rhs)
+    {
+        return FeatureBitset{static_cast<base const&>(lhs) |
+                             static_cast<base const&>(rhs)};
+    }
+
+    friend
+    FeatureBitset operator|(
+        FeatureBitset const& lhs,
+        uint256 const& rhs)
+    {
+        return lhs | FeatureBitset{rhs};
+    }
+
+    friend
+    FeatureBitset operator|(
+        uint256 const& lhs,
+        FeatureBitset const& rhs)
+    {
+        return FeatureBitset{lhs} | rhs;
+    }
+
+    friend
+    FeatureBitset operator^(
+        FeatureBitset const& lhs,
+        FeatureBitset const& rhs)
+    {
+        return FeatureBitset{static_cast<base const&>(lhs) ^
+                             static_cast<base const&>(rhs)};
+    }
+
+    friend
+    FeatureBitset operator^(
+        FeatureBitset const& lhs,
+        uint256 const& rhs)
+    {
+        return lhs ^ FeatureBitset{rhs};
+    }
+
+    friend
+    FeatureBitset operator^(
+        uint256 const& lhs,
+        FeatureBitset const& rhs)
+    {
+        return FeatureBitset{lhs} ^ rhs;
+    }
+
+    // set difference
+    friend
+    FeatureBitset operator-(
+        FeatureBitset const& lhs,
+        FeatureBitset const& rhs)
+    {
+        return lhs & ~rhs;
+    }
+
+    friend
+    FeatureBitset operator-(
+        FeatureBitset const& lhs,
+        uint256 const& rhs)
+    {
+        return lhs - FeatureBitset{rhs};
+    }
+
+    friend
+    FeatureBitset operator-(
+        uint256 const& lhs,
+        FeatureBitset const& rhs)
+    {
+        return FeatureBitset{lhs} - rhs;
+    }
+};
 
 template <class F>
 void
@@ -117,34 +327,6 @@ foreachFeature(FeatureBitset bs, F&& f)
     for (size_t i = 0; i < bs.size(); ++i)
         if (bs[i])
             f(bitsetIndexToFeature(i));
-}
-
-template <class Col>
-FeatureBitset
-makeFeatureBitset(Col&& fs)
-{
-    FeatureBitset result;
-    for (auto const& f : fs)
-        result.set(featureToBitsetIndex(f));
-    return result;
-}
-
-template <class Col>
-FeatureBitset
-addFeatures(FeatureBitset bs, Col&& fs)
-{
-    for (auto const& f : fs)
-        bs.set(featureToBitsetIndex(f));
-    return bs;
-}
-
-template <class Col>
-FeatureBitset
-removeFeatures(FeatureBitset bs, Col&& fs)
-{
-    for (auto const& f : fs)
-        bs.reset(featureToBitsetIndex(f));
-    return bs;
 }
 
 extern uint256 const featureMultiSign;
@@ -168,6 +350,7 @@ extern uint256 const featureEnforceInvariants;
 extern uint256 const featureSortedDirectories;
 extern uint256 const fix1201;
 extern uint256 const fix1512;
+extern uint256 const fix1513;
 extern uint256 const fix1523;
 extern uint256 const fix1528;
 

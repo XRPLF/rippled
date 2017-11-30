@@ -115,7 +115,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase ("Feature Not Enabled");
 
         using namespace test::jtx;
-        Env env {*this, no_features};
+        Env env {*this, FeatureBitset{}};
 
         env (ticket::create (env.master), ter(temDISABLED));
         env (ticket::cancel (env.master, idOne), ter (temDISABLED));
@@ -126,7 +126,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase ("Cancel Nonexistent");
 
         using namespace test::jtx;
-        Env env {*this, with_features (featureTickets)};
+        Env env {*this, supported_amendments().set(featureTickets)};
         env (ticket::cancel (env.master, idOne), ter (tecNO_ENTRY));
     }
 
@@ -135,7 +135,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase ("Create/Cancel Ticket with Bad Fee, Fail Preflight");
 
         using namespace test::jtx;
-        Env env {*this, with_features (featureTickets)};
+        Env env {*this, supported_amendments().set(featureTickets)};
 
         env (ticket::create (env.master), fee (XRP (-1)), ter (temBAD_FEE));
         env (ticket::cancel (env.master, idOne), fee (XRP (-1)), ter (temBAD_FEE));
@@ -146,7 +146,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase ("Create Tickets with Nonexistent Accounts");
 
         using namespace test::jtx;
-        Env env {*this, with_features (featureTickets)};
+        Env env {*this, supported_amendments().set(featureTickets)};
         Account alice {"alice"};
         env.memoize (alice);
 
@@ -162,7 +162,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase ("Create Tickets with Same Account and Target");
 
         using namespace test::jtx;
-        Env env {*this, with_features (featureTickets)};
+        Env env {*this, supported_amendments().set(featureTickets)};
 
         env (ticket::create (env.master, env.master));
         auto cr = checkTicketMeta (env);
@@ -183,7 +183,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase ("Create Ticket and Then Cancel by Creator");
 
         using namespace test::jtx;
-        Env env {*this, with_features (featureTickets)};
+        Env env {*this, supported_amendments().set(featureTickets)};
 
         // create and verify
         env (ticket::create (env.master));
@@ -215,7 +215,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase ("Create Ticket Insufficient Reserve");
 
         using namespace test::jtx;
-        Env env {*this, with_features (featureTickets)};
+        Env env {*this, supported_amendments().set(featureTickets)};
         Account alice {"alice"};
 
         env.fund (env.current ()->fees ().accountReserve (0), alice);
@@ -229,7 +229,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase ("Create Ticket and Then Cancel by Target");
 
         using namespace test::jtx;
-        Env env {*this, with_features (featureTickets)};
+        Env env {*this, supported_amendments().set(featureTickets)};
         Account alice {"alice"};
 
         env.fund (XRP (10000), alice);
@@ -275,7 +275,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase ("Create Ticket with Future Expiration");
 
         using namespace test::jtx;
-        Env env {*this, with_features (featureTickets)};
+        Env env {*this, supported_amendments().set(featureTickets)};
 
         // create and verify
         uint32_t expire =
@@ -300,7 +300,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase ("Create Ticket with Zero Expiration");
 
         using namespace test::jtx;
-        Env env {*this, with_features (featureTickets)};
+        Env env {*this, supported_amendments().set(featureTickets)};
 
         // create and verify
         env (ticket::create (env.master, 0u), ter (temBAD_EXPIRATION));
@@ -311,7 +311,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase ("Create Ticket with Past Expiration");
 
         using namespace test::jtx;
-        Env env {*this, with_features (featureTickets)};
+        Env env {*this, supported_amendments().set(featureTickets)};
 
         env.timeKeeper ().adjustCloseTime (days {2});
         env.close ();
@@ -340,7 +340,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase ("Create Ticket and Allow to Expire");
 
         using namespace test::jtx;
-        Env env {*this, with_features (featureTickets)};
+        Env env {*this, supported_amendments().set(featureTickets)};
 
         // create and verify
         uint32_t expire =

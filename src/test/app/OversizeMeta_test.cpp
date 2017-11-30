@@ -35,7 +35,10 @@ public:
     {
         using namespace jtx;
         for (std::size_t i = 1; i <= n; ++i)
+        {
             env(offer("alice", XRP(i), iou(1)));
+            env.close();
+        }
     }
 
     void
@@ -47,8 +50,8 @@ public:
         env.disable_sigs();
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
-        env.fund(XRP(billion), gw, "alice", "bob", "carol");
-        env.trust(USD(billion), "alice", "bob", "carol");
+        env.fund(XRP(billion), gw, "alice");
+        env.trust(USD(billion), "alice");
         env(pay(gw, "alice", USD(billion)));
         createOffers(env, USD, n);
     }
@@ -88,7 +91,10 @@ public:
     {
         using namespace jtx;
         for (std::size_t i = 1; i <= n; ++i)
+        {
             env(offer("alice", XRP(1), iou(1)));
+            env.close();
+        }
     }
 
     void
@@ -101,8 +107,8 @@ public:
         env.disable_sigs();
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
-        env.fund(XRP(billion), gw, "alice", "bob", "carol");
-        env.trust(USD(billion), "alice", "bob", "carol");
+        env.fund(XRP(billion), gw, "alice");
+        env.trust(USD(billion), "alice");
         env(pay(gw, "alice", USD(billion)));
         createOffers(env, USD, n);
         env(pay("alice", gw, USD(billion)));
@@ -151,7 +157,10 @@ public:
     {
         using namespace jtx;
         for (std::size_t i = 1; i <= n; ++i)
+        {
             env(offer("alice", XRP(i), iou(1)));
+            env.close();
+        }
     }
 
     bool
@@ -163,8 +172,8 @@ public:
         env.disable_sigs();
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
-        env.fund(XRP(billion), gw, "alice", "bob", "carol");
-        env.trust(USD(billion), "alice", "bob", "carol");
+        env.fund(XRP(billion), gw, "alice");
+        env.trust(USD(billion), "alice");
         env(pay(gw, "alice", USD(billion)));
         createOffers(env, USD, n);
         env(pay("alice", gw, USD(billion)));
