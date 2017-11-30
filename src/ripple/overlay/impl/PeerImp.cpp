@@ -1259,7 +1259,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
             return;
         }
 
-        if (app_.getFeeTrack ().isLoadedLocal ())
+        if (! cluster() && app_.getFeeTrack ().isLoadedLocal())
         {
             JLOG(p_journal_.debug()) << "Proposal: Dropping UNTRUSTED (load)";
             return;
@@ -1587,7 +1587,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
             JLOG(p_journal_.debug()) <<
                 "Validation: dropping untrusted from insane peer";
         }
-        if (isTrusted || !app_.getFeeTrack ().isLoadedLocal ())
+        if (isTrusted || cluster() ||
+            ! app_.getFeeTrack ().isLoadedLocal ())
         {
             std::weak_ptr<PeerImp> weak = shared_from_this();
             app_.getJobQueue ().addJob (
@@ -1900,7 +1901,8 @@ PeerImp::checkPropose (Job& job,
     }
     else
     {
-        if (app_.getOPs().getConsensusLCL() == peerPos.proposal().prevLedger())
+        if (cluster() ||
+            (app_.getOPs().getConsensusLCL() == peerPos.proposal().prevLedger()))
         {
             // relay untrusted proposal
             JLOG(p_journal_.trace()) <<
@@ -1931,9 +1933,11 @@ PeerImp::checkValidation (STValidation::pointer val,
             return;
         }
 
-        if (app_.getOPs ().recvValidation(
-                val, std::to_string(id())))
+        if (app_.getOPs ().recvValidation(val, std::to_string(id())) ||
+            cluster())
+        {
             overlay_.relay(*packet, signingHash);
+        }
     }
     catch (std::exception const&)
     {
