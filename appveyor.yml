@@ -6,7 +6,7 @@ environment:
   # that it's a small download. We also use appveyor's free cache, avoiding fees
   # downloading from S3 each time. 
   # TODO: script to create this package.
-  RIPPLED_DEPS_PATH: rippled_deps15.02
+  RIPPLED_DEPS_PATH: rippled_deps17.01
   RIPPLED_DEPS_URL: https://ripple.github.io/Downloads/appveyor/%RIPPLED_DEPS_PATH%.zip
 
   # Other dependencies we just download each time.
@@ -30,7 +30,7 @@ environment:
     target: msvc.debug
     buildconfig: Debug
 
-os: Visual Studio 2015
+os: Visual Studio 2017
 
 # At the end of each successful build we cache this directory.
 # https://www.appveyor.com/docs/build-cache/
@@ -103,7 +103,7 @@ build_script:
           "$cmake_target"
           New-Item -ItemType Directory -Force -Path "build/$cmake_target"
           Push-Location "build/$cmake_target"
-          cmake -G"Visual Studio 14 2015 Win64" -Dtarget="$cmake_target" ../..
+          cmake -G"Visual Studio 15 2017 Win64" -Dtarget="$cmake_target" ../..
           if ($LastExitCode -ne 0) { throw "CMake failed" }
           cmake --build . --config $env:buildconfig -- -m
           if ($LastExitCode -ne 0) { throw "CMake build failed" }
