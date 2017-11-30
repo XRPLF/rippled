@@ -786,7 +786,7 @@ class ServerStatus_test :
         using namespace beast::http;
         Env env {*this, validator( envconfig([](std::unique_ptr<Config> cfg)
             {
-                cfg->section("port_rpc").set("protocol", "http,https");
+                cfg->section("port_rpc").set("protocol", "http");
                 return cfg;
             }), "")};
 
