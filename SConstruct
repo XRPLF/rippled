@@ -563,7 +563,8 @@ def config_env(toolchain, variant, env):
         env.Append(CXXFLAGS=[
             '-frtti',
             '-std=c++14',
-            '-Wno-invalid-offsetof'
+            '-Wno-invalid-offsetof',
+            '-Wdeprecated'
             ])
 
         env.Append(CPPDEFINES=['_FILE_OFFSET_BITS=64'])
@@ -576,7 +577,6 @@ def config_env(toolchain, variant, env):
         # These should be the same regardless of platform...
         if Beast.system.osx:
             env.Append(CCFLAGS=[
-                '-Wno-deprecated',
                 '-Wno-deprecated-declarations',
                 '-Wno-unused-function',
                 ])

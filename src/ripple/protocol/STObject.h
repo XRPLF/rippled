@@ -98,6 +98,7 @@ private:
             typename T::value_type;
 
     public:
+        ValueProxy(ValueProxy const&) = default;
         ValueProxy& operator= (ValueProxy const&) = delete;
 
         template <class U>
@@ -125,6 +126,7 @@ private:
             typename std::decay<value_type>::type>;
 
     public:
+        OptionalProxy(OptionalProxy const&) = default;
         OptionalProxy& operator= (OptionalProxy const&) = delete;
 
         /** Returns `true` if the field is set.

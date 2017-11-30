@@ -38,6 +38,9 @@ class RawView
 {
 public:
     virtual ~RawView() = default;
+    RawView() = default;
+    RawView(RawView const&) = default;
+    RawView& operator=(RawView const&) = delete;
 
     /** Delete an existing state item.
 
