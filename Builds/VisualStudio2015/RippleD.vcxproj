@@ -4067,6 +4067,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\soci\include\soci\boost-tuple.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\column-info.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\soci\include\soci\connection-parameters.h">
     </ClInclude>
     <ClInclude Include="..\..\src\soci\include\soci\connection-pool.h">
@@ -4107,6 +4109,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\soci\include\soci\soci-backend.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\soci-config.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\soci\include\soci\soci-platform.h">
     </ClInclude>
     <ClInclude Include="..\..\src\soci\include\soci\soci-simple.h">
@@ -4127,6 +4131,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\soci\include\soci\type-ptr.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\soci\include\soci\type-wrappers.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\soci\include\soci\unsigned-types.h">
     </ClInclude>
     <ClInclude Include="..\..\src\soci\include\soci\use-type.h">
@@ -4138,9 +4144,6 @@
     <ClInclude Include="..\..\src\soci\include\soci\values.h">
     </ClInclude>
     <ClCompile Include="..\..\src\soci\src\backends\sqlite3\blob.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\soci\src\backends\sqlite3\common.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\soci\src\backends\sqlite3\common.h">
@@ -4173,6 +4176,9 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\soci\src\core\blob.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\soci\src\core\common.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\soci\src\core\connection-parameters.cpp">

@@ -25,6 +25,7 @@
 #include <BeastConfig.h>
 
 // Core soci
+#include <core/common.cpp>
 #include <core/connection-parameters.cpp>
 #include <core/connection-pool.cpp>
 #include <core/error.cpp>
@@ -43,7 +44,6 @@
 #include <core/use-type.cpp>
 #include <core/values.cpp>
 
-#include <backends/sqlite3/common.cpp>
 #include <backends/sqlite3/error.cpp>
 #include <backends/sqlite3/factory.cpp>
 #include <backends/sqlite3/row-id.cpp>
