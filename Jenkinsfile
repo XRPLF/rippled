@@ -8,6 +8,10 @@ def commit_id = ''
 // this is not the actual token, but an ID/key into the jenkins
 // credential store which httpRequest can access.
 def github_cred = '6bd3f3b9-9a35-493e-8aef-975403c82d3e'
+//
+// root API url for our repo (default, overriden below)
+//
+String github_repo = 'https://api.github.com/repos/ripple/rippled'
 
 try {
     stage ('Startup Checks') {
@@ -15,37 +19,70 @@ try {
         // we need a node to do this because readJSON requires
         // a filesystem (although we just pass it text)
         node {
-            echo "CHANGE AUTHOR ---> $CHANGE_AUTHOR"
-            echo "CHANGE TARGET ---> $CHANGE_TARGET"
-            echo "CHANGE ID ---> $CHANGE_ID"
             checkout scm
-            commit_id = sh(script: 'git rev-parse HEAD', returnStdout: true)
+            commit_id = sh(
+                script: 'git rev-parse HEAD',
+                returnStdout: true)
             commit_id = commit_id.trim()
             echo "commit ID is ${commit_id}"
-            def response = httpRequest(
-                timeout: 10,
-                authentication: github_cred,
-                url: 'https://api.github.com/repos/ripple/rippled/collaborators')
-            def collab_data = readJSON(text: response.content)
-            collab_found = false;
-            for (collaborator in collab_data) {
-                if (collaborator['login'] == "$CHANGE_AUTHOR") {
-                    echo "$CHANGE_AUTHOR is a collaborator!"
-                    collab_found = true;
-                    break;
-                }
+            commit_log = sh (
+                 script: "git show --name-status ${commit_id}",
+                 returnStdout: true)
+            printGitInfo (commit_id, commit_log)
+            //
+            // NOTE this getUserRemoteConfigs call requires a one-time
+            // In-process Script Approval (configure jenkins). We need this
+            // to detect the remote repo to interact with via the github API.
+            //
+            def remote_url = scm.getUserRemoteConfigs()[0].getUrl()
+            if (remote_url) {
+                echo "GIT URL scm: $remote_url"
+                def fork = remote_url.tokenize('/')[2]
+                def repo = remote_url.tokenize('/')[3].split('\\.')[0]
+                echo "GIT FORK: $fork"
+                echo "GIT REPO: $repo"
+                github_repo = "https://api.github.com/repos/${fork}/${repo}"
+                echo "API URL REPO: $github_repo"
             }
 
-            if (! collab_found) {
-                manager.addShortText(
-                    "Author of this change is not a collaborator!",
-                    "Crimson",
-                    "white",
-                    "0px",
-                    "white")
-                all_status['startup'] =
-                    [false, 'Author Check', "$CHANGE_AUTHOR is not a collaborator!"]
-                error "$CHANGE_AUTHOR does not appear to be a collaborator...bailing on this build"
+            if (env.CHANGE_AUTHOR) {
+                //
+                // this means we have some sort of PR , so verify the author
+                //
+                echo "CHANGE AUTHOR ---> $CHANGE_AUTHOR"
+                echo "CHANGE TARGET ---> $CHANGE_TARGET"
+                echo "CHANGE ID ---> $CHANGE_ID"
+                //
+                // check the commit author against collaborators
+                // we need a node to do this because readJSON requires
+                // a filesystem (although we just pass it text)
+                //
+                def response = httpRequest(
+                    timeout: 10,
+                    authentication: github_cred,
+                    url: "${github_repo}/collaborators")
+                def collab_data = readJSON(
+                    text: response.content)
+                collab_found = false;
+                for (collaborator in collab_data) {
+                    if (collaborator['login'] == "$CHANGE_AUTHOR") {
+                        echo "$CHANGE_AUTHOR is a collaborator!"
+                        collab_found = true;
+                        break;
+                    }
+                }
+
+                if (! collab_found) {
+                    manager.addShortText(
+                        "Author of this change is not a collaborator!",
+                        "Crimson",
+                        "white",
+                        "0px",
+                        "white")
+                    all_status['startup'] =
+                        [false, 'Author Check', "$CHANGE_AUTHOR is not a collaborator!"]
+                    error "$CHANGE_AUTHOR does not appear to be a collaborator...bailing on this build"
+                }
             }
         }
     }
@@ -171,22 +208,27 @@ Build Type | Result | Status
 
             try {
                 def url_comment = ""
-                if ("$CHANGE_ID" ==~ /\d+/) {
+                if (env.CHANGE_ID && env.CHANGE_ID ==~ /\d+/) {
+                    //
                     // CHANGE_ID indicates we are building a PR
                     // find PR comments
+                    //
                     def resp = httpRequest(
                         timeout: 10,
                         authentication: github_cred,
-                        url: "https://api.github.com/repos/ripple/rippled/pulls/$CHANGE_ID")
+                        url: "${github_repo}/pulls/$CHANGE_ID")
                     def result = readJSON(text: resp.content)
+                    //
                     // follow issue comments link
+                    //
                     url_comment = result['_links']['issue']['href'] + '/comments'
                 }
                 else {
+                    //
                     // if not a PR, just search comments for our commit ID
+                    //
                     url_comment =
-                        'https://api.github.com/repos/ripple/rippled/commits/' +
-                        "${commit_id}/comments"
+                        "${github_repo}/commits/${commit_id}/comments"
                 }
 
                 def response = httpRequest(
@@ -238,6 +280,16 @@ def myStage(name) {
     echo """
 +++++++++++++++++++++++++++++++++++++++++
   >> building ${name}
++++++++++++++++++++++++++++++++++++++++++
+"""
+}
+
+def printGitInfo(id, log) {
+    echo """
++++++++++++++++++++++++++++++++++++++++++
+  >> Building commit ID ${id}
+  >>
+${log}
 +++++++++++++++++++++++++++++++++++++++++
 """
 }
