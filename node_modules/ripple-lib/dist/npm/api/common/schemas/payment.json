@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "payment",
+  "type": "object",
+  "properties": {
+    "source": {"$ref": "maxAdjustment"},
+    "destination": {"$ref": "adjustment"},
+    "paths": {"type": "string"},
+    "memos": {
+      "type": "array",
+      "items": {
+        "$ref": "memo"
+      }
+    },
+    "invoiceID": {
+      "description": "A 256-bit hash that can be used to identify a particular payment",
+      "$ref": "hash256"
+    },
+    "allowPartialPayment": {
+      "description": "A boolean that, if set to true, indicates that this payment should go through even if the whole amount cannot be delivered because of a lack of liquidity or funds in the source_account account",
+      "type": "boolean"
+    },
+    "noDirectRipple": {
+      "description": "A boolean that can be set to true if paths are specified and the sender would like the Ripple Network to disregard any direct paths from the source_account to the destination_account. This may be used to take advantage of an arbitrage opportunity or by gateways wishing to issue balances from a hot wallet to a user who has mistakenly set a trustline directly to the hot wallet",
+      "type": "boolean"
+    },
+    "limitQuality": {"type": "boolean"}
+  },
+  "required": ["source", "destination"],
+  "additionalProperties": false
+}

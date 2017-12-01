@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "quality",
+  "description": "Ratio for incoming/outgoing transit fees.",
+  "type": "number",
+  "minimum": 0.000000001,
+  "maximum": 4.294967295
+}

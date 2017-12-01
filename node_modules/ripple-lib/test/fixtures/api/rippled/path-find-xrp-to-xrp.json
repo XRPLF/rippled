@@ -1,0 +1,23 @@
+{
+  "id": 1,
+  "result": {
+    "full_reply": true,
+    "alternatives": [],
+    "source_account": "rwBYyfufTzk77zUSKEu4MvixfarC35av1J",
+    "destination_amount": "2",
+    "destination_account": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59",
+    "destination_currencies": [
+      "JOE",
+      "BTC",
+      "DYM",
+      "CNY",
+      "EUR",
+      "015841551A748AD2C1F76FF6ECB0CCCD00000000",
+      "MXN",
+      "USD",
+      "XRP"
+    ]
+  },
+  "status": "success",
+  "type": "response"
+}

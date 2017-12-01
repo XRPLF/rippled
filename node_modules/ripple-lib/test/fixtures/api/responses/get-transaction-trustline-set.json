@@ -1,0 +1,30 @@
+{
+  "type": "trustline",
+  "address": "r9UHu5CWni1qRY7Q4CfFZLGvXo2pGQy96b",
+  "sequence": 449,
+  "id": "635A0769BD94710A1F6A76CDE65A3BC661B20B798807D1BBBDADCEA26420538D",
+  "specification": {
+    "limit": "10000",
+    "currency": "USD",
+    "counterparty": "rMH4UxPrbuMa1spCBR98hLLyNJp4d8p4tM",
+    "qualityIn": 0.5,
+    "qualityOut": 0.5,
+    "ripplingDisabled": true
+  },
+  "outcome": {
+    "result": "tesSUCCESS",
+    "timestamp": "2015-07-14T23:59:00.000Z",
+    "fee": "0.012",
+    "balanceChanges": {
+      "r9UHu5CWni1qRY7Q4CfFZLGvXo2pGQy96b": [
+        {
+          "currency": "XRP",
+          "value": "-0.012"
+        }
+      ]
+    },
+    "orderbookChanges": {},
+    "ledgerVersion": 14640523,
+    "indexInLedger": 1
+  }
+}

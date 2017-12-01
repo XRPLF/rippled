@@ -1,0 +1,14 @@
+{
+  "Account": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59",
+  "Fee": "12",
+  "Flags": 131072,
+  "LastLedgerSequence": 8820051,
+  "Sequence": 23,
+  "TakerGets": "2000000",
+  "TakerPays": {
+    "currency": "USD",
+    "issuer": "rMH4UxPrbuMa1spCBR98hLLyNJp4d8p4tM",
+    "value": "10.1"
+  },
+  "TransactionType": "OfferCreate"
+}

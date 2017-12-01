@@ -1,0 +1,19 @@
+{
+  "Flags": 0,
+  "TransactionType": "Payment",
+  "Account": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59",
+  "Destination": "rpZc4mVfWUif9CRoHRKKcmhu1nx2xktxBo",
+  "Amount": {
+    "value": "0.01",
+    "currency": "USD",
+    "issuer": "rMH4UxPrbuMa1spCBR98hLLyNJp4d8p4tM"
+  },
+  "LastLedgerSequence": 8820051,
+  "SendMax": {
+    "currency": "USD",
+    "issuer": "rMH4UxPrbuMa1spCBR98hLLyNJp4d8p4tM",
+    "value": "0.01"
+  },
+  "Fee": "12",
+  "Sequence": 23
+}

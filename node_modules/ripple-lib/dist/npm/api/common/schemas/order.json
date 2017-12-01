@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "order",
+  "type": "object",
+  "properties": {
+    "direction": {
+      "type": "string",
+      "enum": ["buy", "sell"]
+    },
+    "quantity": {"$ref": "amount"},
+    "totalPrice": {"$ref": "amount"},
+    "immediateOrCancel": {"type": "boolean"},
+    "fillOrKill": {"type": "boolean"},
+    "passive": {
+      "description": "If enabled, the offer will not consume offers that exactly match it, and instead becomes an Offer node in the ledger. It will still consume offers that cross it.",
+      "type": "boolean"
+    }
+  },
+  "required": ["direction", "quantity", "totalPrice"],
+  "additionalProperties": false,
+  "not": {
+    "description": "immediateOrCancel and fillOrKill are mutually exclusive",
+    "required": ["immediateOrCancel", "fillOrKill"]
+  }
+}

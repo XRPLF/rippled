@@ -1,0 +1,318 @@
+{
+  "ACCOUNT": {
+    "address": "rNP2Y5EZrVZdFKsow11NoKTE5FjXuBQd3d",
+    "secret": "snoBcf899BdZP6nyaRHnSvE7qAJFP"
+  },
+  "ACCOUNT2": {
+    "address": "rn7GZeJpUafLAyKQ7wrU5SUCu2hpQq7S2W",
+    "secret": "ssThngbFXQWyJpK1mTeaNBrhHxHhp"
+  },
+  "SUBSCRIBE_RESPONSE": {
+    "id": 1,
+    "type": "response",
+    "status": "success",
+    "result": {
+      "fee_base": 10,
+      "fee_ref": 10,
+      "hostid": "NBZ",
+      "ledger_hash": "F1AF7D977B01D99D013EEE75136263A0937575882CC9A741662C3C111B08B112",
+      "ledger_index": 1,
+      "ledger_time": 463782770,
+      "load_base": 256,
+      "load_factor": 256,
+      "pubkey_node": "n3Lp7DfQmxjHF5mYJsV2U9anALHmPem8PWQHWGpw4XMz79HA5aJH",
+      "random": "EECFEE93BBB608914F190EC177B11DE52FC1D75D2C97DACBD26D2DFC6050E874",
+      "reserve_base": 20000000,
+      "reserve_inc": 5000000,
+      "server_status": "full",
+      "validated_ledgers": "32570-11692908"
+    }
+  },
+  "ACCOUNT_INFO_RESPONSE": {
+    "id": 1,
+    "type": "response",
+    "status": "success",
+    "result": {
+      "account_data": {
+        "Account": "rNP2Y5EZrVZdFKsow11NoKTE5FjXuBQd3d",
+        "Balance": "10000",
+        "Flags": 4849664,
+        "LedgerEntryType": "AccountRoot",
+        "OwnerCount": 1,
+        "Sequence": 3,
+        "index": "01F3A2D58A5B986BF31CD92B513EB539CE48F705BB0E18FA39EF042DBE07A5DE"
+      },
+      "ledger_current_index": 11699032,
+      "validated": false
+    }
+
+  },
+  "TX_STREAM_TRANSACTION": {
+    "engine_result": "tesSUCCESS",
+    "engine_result_code": 0,
+    "engine_result_message": "The transaction was applied. Only final in a validated ledger.",
+    "ledger_hash": "8093A78DEFD1F02037ABD349BD452081554A1DB1FE5E20DCB82D8DF16DD23B6D",
+    "ledger_index": 1,
+    "meta": {
+      "AffectedNodes": [
+        {
+        "ModifiedNode": {
+          "FinalFields": {
+            "Account": "rNP2Y5EZrVZdFKsow11NoKTE5FjXuBQd3d",
+            "Balance": "1000",
+            "Flags": 4849664,
+            "OwnerCount": 1,
+            "Sequence": 1
+          },
+          "LedgerEntryType": "AccountRoot",
+          "LedgerIndex": "A4B28FB972EF890DC39A8557DF8960D41DADA00D39B0F1EFCD4BBB85FCA13A30",
+          "PreviousFields": {
+            "Balance": "1000",
+            "Sequence": 3864
+          },
+          "PreviousTxnID": "F4910E55A39C42AB82071212D84119631DDE0B0F4F8F9040F252B0066898DBDF",
+          "PreviousTxnLgrSeq": 11693103
+        }
+      }
+      ],
+      "TransactionIndex": 9,
+      "TransactionResult": "tesSUCCESS"
+    },
+    "status": "closed",
+    "transaction": {
+      "Account": "rNP2Y5EZrVZdFKsow11NoKTE5FjXuBQd3d",
+      "Fee": "10",
+      "Flags": 2147483648,
+      "LastLedgerSequence": 11693114,
+      "Sequence": 1,
+      "SigningPubKey": "2D7F6A1F5F1AE2E0105A88F47D33A0B68031DE7FC43FF42388DA7D4B4C93865F",
+      "TransactionType": "AccountSet",
+      "TxnSignature": "39A0EC2307723546901BC8017CED16DF3DD79F50CA68A32377E0CF1BE097DCA004C21D99120220321921230C53A87629D79E6A5E74C08ECB59F8CBB9D695256DE5D0F8CB22FF0A",
+      "date": 4771619,
+      "hash": "01D66ACBD00B2A8F5D66FC8F67AC879CAECF49BC94FB97CF24F66B8406F4C040"
+    },
+    "type": "transaction",
+    "validated": true
+
+  },
+  "ACCOUNT_TX_TRANSACTION": {
+    "validated": true,
+    "meta": {
+      "TransactionIndex": 3,
+      "AffectedNodes": [
+        {
+        "ModifiedNode": {
+          "LedgerEntryType": "AccountRoot",
+          "PreviousTxnLgrSeq": 11693103,
+          "PreviousTxnID": "F4910E55A39C42AB82071212D84119631DDE0B0F4F8F9040F252B0066898DBDF",
+          "LedgerIndex": "A4B28FB972EF890DC39A8557DF8960D41DADA00D39B0F1EFCD4BBB85FCA13A30",
+          "PreviousFields": {
+            "Sequence": 3864,
+            "Balance": "1000"
+          },
+          "FinalFields": {
+            "Flags": 4849664,
+            "Sequence": 3865,
+            "OwnerCount": 1,
+            "Balance": "1000",
+            "Account": "rNP2Y5EZrVZdFKsow11NoKTE5FjXuBQd3d"
+          }
+        }
+      }
+      ],
+      "TransactionResult": "tesSUCCESS"
+    },
+    "tx": {
+      "TransactionType": "AccountSet",
+      "Flags": 2147483648,
+      "Sequence": 3864,
+      "LastLedgerSequence": 2,
+      "Fee": "10",
+      "SigningPubKey": "2D7F6A1F5F1AE2E0105A88F47D33A0B68031DE7FC43FF42388DA7D4B4C93865F",
+      "TxnSignature": "39A0EC2307723546901BC8017CED16DF3DD79F50CA68A32377E0CF1BE097DCA004C21D99120220321921230C53A87629D79E6A5E74C08ECB59F8CBB9D695256DE5D0F8CB22FF",
+      "Account": "rNP2Y5EZrVZdFKsow11NoKTE5FjXuBQd3d",
+      "hash": "01D66ACBD00B2A8F5D66FC8F67AC879CAECF49BC94FB97CF24F66B8406F4C040",
+      "ledger_index": 1,
+      "inLedger": 1
+    }
+  },
+  "ACCOUNT_TX_RESPONSE": {
+    "id": 1,
+    "status": "success",
+    "type": "response",
+    "result": {
+      "account": "rNP2Y5EZrVZdFKsow11NoKTE5FjXuBQd3d",
+      "ledger_index_max": 100,
+      "ledger_index_min": 1,
+      "limit": 10,
+      "transactions": [ ]
+    }
+  },
+  "LEDGER": {
+    "type": "ledgerClosed",
+    "fee_base": 10,
+    "fee_ref": 10,
+    "ledger_hash": "FF757ECCF710C27DBCEC569840C38C5583594B56C49693079D95D8A99C30A928",
+    "ledger_index": 1,
+    "ledger_time": 478088,
+    "reserve_base": 20000000,
+    "reserve_inc": 5000000,
+    "txn_count": 1,
+    "validated_ledgers": "1-2"
+  },
+  "ACCOUNT_TX_ERROR": {
+    "id": 1,
+    "status": "error",
+    "type": "response",
+    "error": "actMalformed",
+    "error_code": 33,
+    "error_message": "Account malformed.",
+    "request": {
+      "account": "rNP2Y5EZrVZdFKsow11NoKTE5FjXuBQd3dZ",
+      "binary": true,
+      "command": "account_tx",
+      "id": 1,
+      "ledger_index_max": -1,
+      "ledger_index_min": -1,
+      "limit": 10
+    }
+  },
+  "SUBMIT_RESPONSE": {
+    "id": 1,
+    "result": {
+      "engine_result": "tesSUCCESS",
+      "engine_result_code": 0,
+      "engine_result_message": "The transaction was applied. Only final in a validated ledger.",
+      "tx_blob": "12000322800000002400000001201B0000000568400000000000000C732102999FB4BC17144F83CDC2F17EA642519FF115EE7B0CC8C78DE9061F1A473F7BAC744730450221008DFE8B50D66F2094652AA6BD1B354CC97E885BC1AEDF586C7ED61C7D786AA66202200FEE38460CF25C726A7F31626BD7A45542AFB2E468EBE9A175F9A9EC3FD19DDB811492DECA2DC92352BE97C1F6347F7E6CCB9A8241C8",
+      "tx_json": {
+        "Account": "rNP2Y5EZrVZdFKsow11NoKTE5FjXuBQd3d",
+        "Fee": "12000",
+        "Flags": 2147483648,
+        "LastLedgerSequence": 1,
+        "Sequence": 1,
+        "SigningPubKey": "02999FB4BC17144F83CDC2F17EA642519FF115EE7B0CC8C78DE9061F1A473F7BAC",
+        "TransactionType": "AccountSet",
+        "TxnSignature": "30440220332316AC7B96B1385F4BD0159706439889A9E05AD62D168E61AC5CBD7BD417C00220361D9FBC31A5919F68FA70E9FB78C6E6C25CC7F89D0A2F9CC42660594EE0D0A2",
+        "hash": "0D15A847D605DB5F1B76A4EE88EDCD5D279D47F009CFCE27F1D3DFE763225975"
+      }
+    },
+    "status": "success",
+    "type": "response"
+
+  },
+  "SUBMIT_TEC_RESPONSE": {
+    "id": 1,
+    "result": {
+      "engine_result": "tecNO_REGULAR_KEY",
+      "engine_result_code": 131,
+      "engine_result_message": "Regular key is not set.",
+      "tx_blob": "12000322800000002400000001201B0000000520210000000468400000000000000C732102999FB4BC17144F83CDC2F17EA642519FF115EE7B0CC8C78DE9061F1A473F7BAC74473045022100EEB2D1EFDC4B63A3FA9BD934307D3377197E86133A156022A01FFAD7CE3A78FA022024EB39D525FE42853F8E6B62BB74124FD0A1F763C56621AA8EC6A0FC0D0A6FC0811492DECA2DC92352BE97C1F6347F7E6CCB9A8241C8",
+      "tx_json": {
+        "Account": "rNP2Y5EZrVZdFKsow11NoKTE5FjXuBQd3d",
+        "Fee": "12000",
+        "Flags": 2147483648,
+        "LastLedgerSequence": 2,
+        "Sequence": 1,
+        "SetFlag": 4,
+        "SigningPubKey": "02999FB4BC17144F83CDC2F17EA642519FF115EE7B0CC8C78DE9061F1A473F7BAC",
+        "TransactionType": "AccountSet",
+        "TxnSignature": "304402202DF7ED29DCA16F7A6191A74127437ACA04ADFCE6DB570101737C6426DD664FF5022069E9C6965DED37207708420B3B77A8CE9D0D009EE1D2434580ED4871398574D0",
+        "hash": "56DCAE121213AA2E3A74921F934E78635DC0576E4DA1184AEE7D0F8E49046790"
+      }
+    },
+    "status": "success",
+    "type": "response"
+  },
+  "SUBMIT_TER_RESPONSE": {
+    "id": 1,
+    "result": {
+      "engine_result": "terNO_ACCOUNT",
+      "engine_result_code": -96,
+      "engine_result_message": "The source account does not exist.",
+      "tx_blob": "12000022800000002400000004201B0000000561400000000000000168400000000000000C732102999FB4BC17144F83CDC2F17EA642519FF115EE7B0CC8C78DE9061F1A473F7BAC74473045022100BDEF89CF25B541FFDBBE0B652BF29D8C30715C8226346C72DBA69B275BC471C50220582C5F3DE6DE489E10594BD8911B2917EE9A452E6ED3A1BEED25E402CD2E3EFF811492DECA2DC92352BE97C1F6347F7E6CCB9A8241C883143108B9AC27BF036EFE5CBE787921F54D622B7A5B",
+      "tx_json": {
+        "Account": "rNP2Y5EZrVZdFKsow11NoKTE5FjXuBQd3d",
+        "Amount": "1",
+        "Destination": "rn7GZeJpUafLAyKQ7wrU5SUCu2hpQq7S2W",
+        "Fee": "12000",
+        "Flags": 2147483648,
+        "LastLedgerSequence": 2,
+        "Sequence": 1,
+        "SigningPubKey": "02999FB4BC17144F83CDC2F17EA642519FF115EE7B0CC8C78DE9061F1A473F7BAC",
+        "TransactionType": "Payment",
+        "TxnSignature": "3044022041F099FD8F35F67E73B5F41FFD3CBCF5781748BFEBA6FD1AB56586EE71B7EE9902205F1C4DF58B40859A404939B44A169DA995DA03C6ED713C5DF76E57A843CCE7D1",
+        "hash": "31090EA7996DFA6C2E0B43F704C30EC9AE635C18D7BEF90F42D4E0E2943A2680"
+      }
+    },
+    "status": "success",
+    "type": "response"
+  },
+  "SUBMIT_TEF_RESPONSE": {
+    "id": 1,
+    "result": {
+      "engine_result": "tefPAST_SEQ",
+      "engine_result_code": -189,
+      "engine_result_message": "This sequence number has already past.",
+      "tx_blob": "12000322800000002400000002201B0000000568400000000000000C732102999FB4BC17144F83CDC2F17EA642519FF115EE7B0CC8C78DE9061F1A473F7BAC744730450221008B213EA1B4AACA9545E3DBFE43C69711DF295170B6F510CCD24B383684852C0702200E2A8FA3B205F1AFECF6D6DE298889D71E06336942ADF538847C8EFB88D3AA74811492DECA2DC92352BE97C1F6347F7E6CCB9A8241C8",
+      "tx_json": {
+        "Account": "rNP2Y5EZrVZdFKsow11NoKTE5FjXuBQd3d",
+        "Fee": "12000",
+        "Flags": 2147483648,
+        "LastLedgerSequence": 2,
+        "Sequence": 1,
+        "SigningPubKey": "02999FB4BC17144F83CDC2F17EA642519FF115EE7B0CC8C78DE9061F1A473F7BAC",
+        "TransactionType": "AccountSet",
+        "TxnSignature": "304402203F6B9445B3B2176957C1008EBC0F18668464080A2CB10E78D83FB67DE2ABC3F50220769673DE79E6C1AF0E076A716ABE53018158385615E7EC2866DCFD6268806BF8",
+        "hash": "731E94632E219ECAF2043C09C0075F1DEA2EC08E66A381CD536F0B1F3B30844D"
+      }
+    },
+    "status": "success",
+    "type": "response"
+  },
+  "SUBMIT_TEL_RESPONSE": {
+    "id": 1,
+    "result": {
+      "engine_result": "telINSUF_FEE_P",
+      "engine_result_code": -394,
+      "engine_result_message": "Fee insufficient.",
+      "tx_blob": "12000322800000002400000003201B00000005684000000000000001732102999FB4BC17144F83CDC2F17EA642519FF115EE7B0CC8C78DE9061F1A473F7BAC7446304402206480AC2410BE4370E74E27B4427EF05F8A156D313C9D768E57B6EEC3BB89CDD402201503759955F367F88E5442F08D713B5369C5528475F046500721E676C24D0DFD811492DECA2DC92352BE97C1F6347F7E6CCB9A8241C8",
+      "tx_json": {
+        "Account": "rNP2Y5EZrVZdFKsow11NoKTE5FjXuBQd3d",
+        "Fee": "12000",
+        "Flags": 2147483648,
+        "LastLedgerSequence": 2,
+        "Sequence": 1,
+        "SigningPubKey": "02999FB4BC17144F83CDC2F17EA642519FF115EE7B0CC8C78DE9061F1A473F7BAC",
+        "TransactionType": "AccountSet",
+        "TxnSignature": "3044022002C0C13B21F9B690C6A3FF4B5A3F966AC47ACEE80453DAD553F5051FB3CED0E902202851BCC9EF8E2160BD1F3F6CF91B7C679149BD5FAD502C2BA544F7E61755AD1B",
+        "hash": "ABF970193B8C9BE9BBD2777750924B28E7542DE1491EB55F4795539045AEA8B9"
+      }
+    },
+    "status": "success",
+    "type": "response"
+  },
+  "SUBMIT_REMOTE_ERROR": {
+    "error": "invalidTransaction",
+    "error_exception": "fails local checks: The MemoType and MemoFormat fields may only contain characters that are allowed in URLs under RFC 3986.",
+    "id": 1,
+    "request": {
+      "command": "submit",
+      "id": 1,
+      "tx_blob": "12000022800000002400000001201B00CCEAD0614000000000000001684000000000002EE0732102999FB4BC17144F83CDC2F17EA642519FF115EE7B0CC8C78DE9061F1A473F7BAC7447304502210098DC7E9ED1CE860FB6B0904E6E8140D5463D288BA633F36E69A68ACB3D6FCA06022014E76E22F5173B37239F9F56F904839B462F5019169C56A324D3F074FBA39A2A811492DECA2DC92352BE97C1F6347F7E6CCB9A8241C883143108B9AC27BF036EFE5CBE787921F54D622B7A5BF9EA7C0B6D79206D656D6F747970657E0C6D79206D656D6F5F64617461E1F1"
+    },
+    "status": "error",
+    "type": "response"
+  },
+  "SUBMIT_TOO_BUSY_ERROR": {
+    "error": "tooBusy",
+    "error_exception": "Too busy",
+    "id": 1,
+    "request": {
+      "command": "submit",
+      "id": 1,
+      "tx_blob": "12000022800000002400000001201B00CCEAD0614000000000000001684000000000002EE0732102999FB4BC17144F83CDC2F17EA642519FF115EE7B0CC8C78DE9061F1A473F7BAC7447304502210098DC7E9ED1CE860FB6B0904E6E8140D5463D288BA633F36E69A68ACB3D6FCA06022014E76E22F5173B37239F9F56F904839B462F5019169C56A324D3F074FBA39A2A811492DECA2DC92352BE97C1F6347F7E6CCB9A8241C883143108B9AC27BF036EFE5CBE787921F54D622B7A5BF9EA7C0B6D79206D656D6F747970657E0C6D79206D656D6F5F64617461E1F1"
+    },
+    "status": "error",
+    "type": "response"
+  }
+}

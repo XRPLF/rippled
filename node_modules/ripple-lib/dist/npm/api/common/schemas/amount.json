@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "amount",
+  "description": "An Amount on the Ripple Protocol, used also for XRP in the ripple-rest API",
+  "allOf": [
+    {"$ref": "amountbase"},
+    {"required": ["value"]}
+  ]
+}

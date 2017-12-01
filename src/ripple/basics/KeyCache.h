@@ -252,8 +252,8 @@ public:
         }
         else
         {
-            when_expire = now - clock_type::duration (
-                m_target_age.count() * m_target_size / m_map.size ());
+            when_expire = now -
+                m_target_age * m_target_size / m_map.size();
 
             clock_type::duration const minimumAge (
                 std::chrono::seconds (1));

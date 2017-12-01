@@ -1,0 +1,20 @@
+{
+  "source": {
+    "address": "rpZc4mVfWUif9CRoHRKKcmhu1nx2xktxBo",
+    "currencies": [
+      {
+        "currency": "LTC"
+      },
+      {
+        "currency": "USD"
+      }
+    ]
+  },
+  "destination": {
+    "address": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59",
+    "amount": {
+      "currency": "USD",
+      "value": "0.000001"
+    }
+  }
+}

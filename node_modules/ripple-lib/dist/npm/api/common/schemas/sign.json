@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "sign",
+  "type": "object",
+  "properties": {
+    "signedTransaction": {
+      "type": "string",
+      "pattern": "^[A-F0-9]+$"
+    },
+    "id": {"$ref": "hash256"}
+  },
+  "required": ["signedTransaction", "id"],
+  "additionalProperties": false
+}

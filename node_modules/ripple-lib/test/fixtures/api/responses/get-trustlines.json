@@ -1,0 +1,99 @@
+[
+  {
+    "specification": {
+      "limit": "5",
+      "currency": "USD",
+      "counterparty": "rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q",
+      "ripplingDisabled": true,
+      "frozen": true
+    },
+    "counterparty": {
+      "limit": "0"
+    },
+    "state": {
+      "balance": "2.497605752725159"
+    }
+  },
+  {
+    "specification": {
+      "limit": "5000",
+      "currency": "USD",
+      "counterparty": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+    },
+    "counterparty": {
+      "limit": "0"
+    },
+    "state": {
+      "balance": "0"
+    }
+  },
+  {
+    "specification": {
+      "limit": "1",
+      "currency": "USD",
+      "counterparty": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun"
+    },
+    "counterparty": {
+      "limit": "0"
+    },
+    "state": {
+      "balance": "1"
+    }
+  },
+  {
+    "specification": {
+      "limit": "1",
+      "currency": "USD",
+      "counterparty": "r9vbV3EHvXWjSkeQ6CAcYVPGeq7TuiXY2X",
+      "ripplingDisabled": true
+    },
+    "counterparty": {
+      "limit": "0"
+    },
+    "state": {
+      "balance": "0"
+    }
+  },
+  {
+    "specification": {
+      "limit": "500",
+      "currency": "USD",
+      "counterparty": "rfF3PNkwkq1DygW2wum2HK3RGfgkJjdPVD",
+      "ripplingDisabled": true
+    },
+    "counterparty": {
+      "limit": "0"
+    },
+    "state": {
+      "balance": "35"
+    }
+  },
+  {
+    "specification": {
+      "limit": "0",
+      "currency": "USD",
+      "counterparty": "rE6R3DWF9fBD7CyiQciePF9SqK58Ubp8o2"
+    },
+    "counterparty": {
+      "limit": "100",
+      "ripplingDisabled": true
+    },
+    "state": {
+      "balance": "0"
+    }
+  },
+  {
+    "specification": {
+      "limit": "0",
+      "currency": "USD",
+      "counterparty": "rEhDDUUNxpXgEHVJtC2cjXAgyx5VCFxdMF",
+      "frozen": true
+    },
+    "counterparty": {
+      "limit": "1"
+    },
+    "state": {
+      "balance": "0"
+    }
+  }
+]

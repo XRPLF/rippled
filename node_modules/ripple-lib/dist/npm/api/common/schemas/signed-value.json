@@ -1,0 +1,7 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "signedValue",
+  "description": "A string representation of a floating point number",
+  "type": "string",
+  "pattern": "^[-]?[0-9]*[.]?[0-9]+([eE][-+]?[0-9]+)?$"
+}

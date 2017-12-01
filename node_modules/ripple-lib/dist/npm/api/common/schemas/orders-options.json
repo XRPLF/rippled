@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "orders-options",
+  "description": "Options for getOrders and getOrderbook",
+  "type": "object",
+  "properties": {
+    "limit": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "ledgerVersion": {"$ref": "ledgerVersion"}
+  },
+  "additionalProperties": false
+}

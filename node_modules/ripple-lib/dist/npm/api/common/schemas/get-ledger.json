@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "getLedger",
+  "type": "object",
+  "properties": {
+    "accepted": {"type": "boolean"},
+    "closed": {"type": "boolean"},
+    "stateHash": {"$ref": "hash256"},
+    "closeTime": {"type": "integer", "minimum": 0},
+    "closeTimeResolution": {"type": "integer", "minimum": 1},
+    "closeFlags": {"type": "integer", "minimum": 0},
+    "ledgerHash": {"$ref": "hash256"},
+    "ledgerVersion": {"$ref": "ledgerVersion"},
+    "parentLedgerHash": {"$ref": "hash256"},
+    "parentCloseTime": {"type": "integer", "minimum": 0},
+    "totalDrops": {"$ref": "value"},
+    "transactionHash": {"$ref": "hash256"},
+    "transactions": {"type": "array", "items": {"type": "object"}},
+    "rawTransactions": {"type": "string"},
+    "transactionHashes": {"type": "array", "items": {"$ref": "hash256"}},
+    "rawState": {"type": "string"},
+    "stateHashes": {"type": "array", "items": {"$ref": "hash256"}}
+  },
+  "required": [
+    "accepted",
+    "closed",
+    "stateHash",
+    "closeTime",
+    "closeTimeResolution",
+    "closeFlags",
+    "ledgerHash",
+    "ledgerVersion",
+    "parentLedgerHash",
+    "parentCloseTime",
+    "totalDrops",
+    "transactionHash"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "ledger-options",
+  "description": "Options for getLedger",
+  "type": "object",
+  "properties": {
+    "ledgerVersion": {"$ref": "ledgerVersion"},
+    "includeAllData": {"type": "boolean"},
+    "includeTransactions": {"type": "boolean"},
+    "includeState": {"type": "boolean"}
+  },
+  "additionalProperties": false
+}

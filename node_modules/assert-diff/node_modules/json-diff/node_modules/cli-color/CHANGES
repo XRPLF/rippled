@@ -1,0 +1,30 @@
+v0.1.7  --  2012.06.13
+* Update up to v0.8 branch of es5-ext
+* package.json now in npm friendly format
+
+v0.1.6  --  2012.01.22
+* Update dependencies to latest versions
+* Travis CI support
+* More reliable tests for throbber
+
+v0.1.5  --  2011.12.12
+* Cleared npm warning for misnamed property in package.json
+
+v0.1.4  --  2011.10.05
+* Added bright color variants
+
+v0.1.3  --  2011.08.08
+* Added TAD test suite to devDependencies, configured test commands.
+  Tests can be run with 'make test' or 'npm test'
+
+v0.1.2  --  2011.08.08
+* trim - for removing ANSI formatting from string
+* throbber - displays throbber with preconfigured interval
+* Compatibility with es5-ext v0.6
+* Test with TAD
+
+v0.1.1  --  2011.07.12
+* Better documentation
+
+v0.1.0  --  2011.07.11
+* Initial version

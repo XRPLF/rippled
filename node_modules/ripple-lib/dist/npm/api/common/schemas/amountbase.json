@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "amountbase",
+  "description": "Base class for amount and issue",
+  "type": "object",
+  "properties": {
+    "value": {
+      "description": "The quantity of the currency, denoted as a string to retain floating point precision",
+      "$ref": "value"
+    },
+    "currency": {
+      "description": "The three-character code or hex string used to denote currencies",
+      "$ref": "currency"
+    },
+    "counterparty": {
+      "description": "The Ripple account address of the currency's issuer or gateway",
+      "$ref": "address"
+    }
+  },
+  "additionalProperties": false,
+  "required": ["currency"],
+  "oneOf": [
+    {
+      "properties": {
+        "currency": {
+          "not": {
+            "enum": ["XRP"]
+          }
+        }
+      },
+      "required": ["counterparty"]
+    },
+    {
+      "properties": {
+        "currency": {
+          "enum": ["XRP"]
+        }
+      },
+      "not": {
+        "required": ["counterparty"]
+      }
+    }
+  ]
+}

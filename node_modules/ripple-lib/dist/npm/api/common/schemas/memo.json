@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "memo",
+  "description": "Memo objects represent arbitrary data that can be included in a transaction",
+  "type": "object",
+  "properties": {
+    "type": {
+      "pattern": "^[A-Za-z0-9\\-._~:/?#[\\]@!$&'()*+,;=%]*$"
+    },
+    "format": {
+      "pattern": "^[A-Za-z0-9\\-._~:/?#[\\]@!$&'()*+,;=%]*$"
+    },
+    "data": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "anyOf": [
+    {"required": ["data"]},
+    {"required": ["type"]}
+  ]
+}

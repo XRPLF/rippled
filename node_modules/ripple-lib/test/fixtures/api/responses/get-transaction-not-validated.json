@@ -1,0 +1,11 @@
+{
+  "type": "settings",
+  "address": "rLVKsA4F9iJBbA6rX2x4wCmkj6drgtqpQe",
+  "sequence": 1,
+  "id": "4FB3ADF22F3C605E23FAEFAA185F3BD763C4692CAC490D9819D117CD33BFAA10",
+  "specification": {
+    "requireAuthorization": true,
+    "disallowIncomingXRP": true,
+    "globalFreeze": false
+  }
+}

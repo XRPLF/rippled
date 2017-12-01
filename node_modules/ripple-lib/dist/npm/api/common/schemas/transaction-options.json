@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "transaction-options",
+  "description": "Options for getTransaction",
+  "type": "object",
+  "properties": {
+    "minLedgerVersion": {"$ref": "ledgerVersion"},
+    "maxLedgerVersion": {"$ref": "ledgerVersion"}
+  },
+  "additionalProperties": false
+}

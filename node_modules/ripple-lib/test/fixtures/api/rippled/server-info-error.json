@@ -1,0 +1,12 @@
+{
+  "id": 0,
+  "status": "error",
+  "type": "response",
+  "error": "slowDown",
+  "error_code": 15,
+  "error_message": "You are placing too much load on the server.",
+  "request": {
+    "command": "server_info",
+    "id": 0
+  }
+}

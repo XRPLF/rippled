@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "settings-options",
+  "description": "Options for getSettings and getAccountInfo",
+  "type": "object",
+  "properties": {
+    "ledgerVersion": {"$ref": "ledgerVersion"}
+  },
+  "additionalProperties": false
+}

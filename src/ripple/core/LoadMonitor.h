@@ -41,19 +41,21 @@ public:
 
     void addSamples (int count, std::chrono::milliseconds latency);
 
-    void setTargetLatency (std::uint64_t avg, std::uint64_t pk);
+    void setTargetLatency (std::chrono::milliseconds avg,
+                           std::chrono::milliseconds pk);
 
-    bool isOverTarget (std::uint64_t avg, std::uint64_t peak);
+    bool isOverTarget (std::chrono::milliseconds avg,
+                       std::chrono::milliseconds peak);
 
     // VFALCO TODO make this return the values in a struct.
     struct Stats
     {
         Stats();
 
-        std::uint64_t count;
-        std::uint64_t latencyAvg;
-        std::uint64_t latencyPeak;
-        bool isOverloaded;
+        std::uint64_t             count;
+        std::chrono::milliseconds latencyAvg;
+        std::chrono::milliseconds latencyPeak;
+        bool                      isOverloaded;
     };
 
     Stats getStats ();
@@ -65,13 +67,13 @@ private:
 
     std::mutex mutex_;
 
-    std::uint64_t mCounts;
-    int           mLatencyEvents;
-    std::uint64_t mLatencyMSAvg;
-    std::uint64_t mLatencyMSPeak;
-    std::uint64_t mTargetLatencyAvg;
-    std::uint64_t mTargetLatencyPk;
-    int           mLastUpdate;
+    std::uint64_t             mCounts;
+    int                       mLatencyEvents;
+    std::chrono::milliseconds mLatencyMSAvg;
+    std::chrono::milliseconds mLatencyMSPeak;
+    std::chrono::milliseconds mTargetLatencyAvg;
+    std::chrono::milliseconds mTargetLatencyPk;
+    int                       mLastUpdate;
     beast::Journal j_;
 };
 

@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "trustline",
+  "type": "object",
+  "properties": {
+    "currency": {"$ref": "currency"},
+    "counterparty": {"$ref": "address"},
+    "limit": {"$ref": "value"},
+    "qualityIn": {"$ref": "quality"},
+    "qualityOut": {"$ref": "quality"},
+    "ripplingDisabled": {"type": "boolean"},
+    "authorized": {"type": "boolean"},
+    "frozen": {"type": "boolean"}
+  },
+  "required": ["currency", "counterparty", "limit"],
+  "additionalProperties": false
+}

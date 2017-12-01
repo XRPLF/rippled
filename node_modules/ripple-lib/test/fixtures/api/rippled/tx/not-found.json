@@ -1,0 +1,13 @@
+{
+  "id": 0,
+  "status": "error",
+  "type": "response",
+  "error": "txnNotFound",
+  "error_code": 24,
+  "error_message": "Transaction not found.",
+  "request": {
+    "command": "tx",
+    "id": 0,
+    "transaction": "E08D6E9754025CA2534A78707605E0601F03ACE063687A0CA1BDDACFCD1698C7"
+  }
+}

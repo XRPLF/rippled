@@ -1,0 +1,25 @@
+{
+  "type": "settings",
+  "address": "r9UHu5CWni1qRY7Q4CfFZLGvXo2pGQy96b",
+  "sequence": 476,
+  "id": "C8C5E20DFB1BF533D0D81A2ED23F0A3CBD1EF2EE8A902A1D760500473CC9C582",
+  "specification": {
+    "enableTransactionIDTracking": false
+  },
+  "outcome": {
+    "result": "tesSUCCESS",
+    "timestamp": "2015-07-28T18:45:00.000Z",
+    "fee": "0.012",
+    "balanceChanges": {
+      "r9UHu5CWni1qRY7Q4CfFZLGvXo2pGQy96b": [
+        {
+          "currency": "XRP",
+          "value": "-0.012"
+        }
+      ]
+    },
+    "orderbookChanges": {},
+    "ledgerVersion": 14915293,
+    "indexInLedger": 2
+  }
+}

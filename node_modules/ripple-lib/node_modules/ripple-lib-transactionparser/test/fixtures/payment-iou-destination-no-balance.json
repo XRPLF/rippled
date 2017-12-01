@@ -1,0 +1,123 @@
+{
+  "engine_result": "tesSUCCESS",
+  "engine_result_code": 0,
+  "engine_result_message": "The transaction was applied.",
+  "ledger_hash": "1B549453005A924A4EEF6DA9E1BA7D8D1E51D7B685CE8DE072667321FBA792C8",
+  "ledger_index": 10425094,
+  "status": "closed",
+  "type": "transaction",
+  "validated": true,
+  "metadata": {
+    "AffectedNodes": [
+      {
+        "ModifiedNode": {
+          "FinalFields": {
+            "Balance": {
+              "currency": "USD",
+              "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+              "value": "1.535330905250352"
+            },
+            "Flags": 1114112,
+            "HighLimit": {
+              "currency": "USD",
+              "issuer": "rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q",
+              "value": "0"
+            },
+            "HighNode": "00000000000001E8",
+            "LowLimit": {
+              "currency": "USD",
+              "issuer": "rKmBGxocj9Abgy25J51Mk1iqFzW9aVF9Tc",
+              "value": "1000000000"
+            },
+            "LowNode": "0000000000000000"
+          },
+          "LedgerEntryType": "RippleState",
+          "LedgerIndex": "2F323020B4288ACD4066CC64C89DAD2E4D5DFC2D44571942A51C005BF79D6E25",
+          "PreviousFields": {
+            "Balance": {
+              "currency": "USD",
+              "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+              "value": "1.545330905250352"
+            }
+          },
+          "PreviousTxnID": "CEB7B6040C2989B9849C8D7E49F710457EDDE1D95ECDF1E298FD30CF2AC5BE11",
+          "PreviousTxnLgrSeq": 10424776
+        }
+      },
+      {
+        "ModifiedNode": {
+          "FinalFields": {
+            "Balance": {
+              "currency": "USD",
+              "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+              "value": "0.01"
+            },
+            "Flags": 1114112,
+            "HighLimit": {
+              "currency": "USD",
+              "issuer": "rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q",
+              "value": "0"
+            },
+            "HighNode": "00000000000001E8",
+            "LowLimit": {
+              "currency": "USD",
+              "issuer": "rLDYrujdKUfVx28T9vRDAbyJ7G2WVXKo4K",
+              "value": "1000000000"
+            },
+            "LowNode": "0000000000000000"
+          },
+          "LedgerEntryType": "RippleState",
+          "LedgerIndex": "AAE13AF5192EFBFD49A8EEE5869595563FEB73228C0B38FED9CC3D20EE74F399",
+          "PreviousFields": {
+            "Balance": {
+              "currency": "USD",
+              "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+              "value": "0"
+            }
+          },
+          "PreviousTxnID": "A788447CF5FD7108CBF49416E2335F95ED3F5A9FC016686C8F9EFB34BBEA613A",
+          "PreviousTxnLgrSeq": 10425088
+        }
+      },
+      {
+        "ModifiedNode": {
+          "FinalFields": {
+            "Account": "rKmBGxocj9Abgy25J51Mk1iqFzW9aVF9Tc",
+            "Balance": "239807992",
+            "Flags": 0,
+            "OwnerCount": 1,
+            "Sequence": 17
+          },
+          "LedgerEntryType": "AccountRoot",
+          "LedgerIndex": "E9A39B0BA8703D5FFD05D9EAD01EE6C0E7A15CF33C2C6B7269107BD2BD535818",
+          "PreviousFields": {
+            "Balance": "239819992",
+            "Sequence": 16
+          },
+          "PreviousTxnID": "3109F5A0F891CCA20B4D891EB7437973F40A7664C5176092EB2E5C0A949992AD",
+          "PreviousTxnLgrSeq": 10424942
+        }
+      }
+    ],
+    "TransactionIndex": 3,
+    "TransactionResult": "tesSUCCESS"
+  },
+  "tx_json": {
+    "Account": "rKmBGxocj9Abgy25J51Mk1iqFzW9aVF9Tc",
+    "Amount": {
+      "currency": "USD",
+      "issuer": "rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q",
+      "value": "0.01"
+    },
+    "Destination": "rLDYrujdKUfVx28T9vRDAbyJ7G2WVXKo4K",
+    "Fee": "12000",
+    "Flags": 2147483648,
+    "LastLedgerSequence": 10425102,
+    "Sequence": 16,
+    "SigningPubKey": "03F16A52EBDCA6EBF5D99828E1E6918C64D45E6F136476A8F4757512FE553D18F0",
+    "TransactionType": "Payment",
+    "TxnSignature": "3044022017DC45606103FF2CCE5D63E340D1E2B302BE16C206673B99712058CA0DBD2CC5022074A19CF5AF9CDFCEC821650A4C22E83E49E14956E1F2A094181E8E14F6881200",
+    "date": 471494760,
+    "hash": "D038C9D95926EACAA9FBDF3E6CA0675ACF1700B3CE13FF4CA52B463B58860BBA"
+  }
+}

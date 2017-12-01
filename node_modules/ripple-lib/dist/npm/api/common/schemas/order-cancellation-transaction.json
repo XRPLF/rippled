@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "orderCancellationTransaction",
+  "type": "object",
+  "properties": {
+    "type": {"enum": ["orderCancellation"]},
+    "specification": {"$ref": "orderCancellation"},
+    "outcome": {"$ref": "outcome"},
+    "id": {"$ref": "hash256"},
+    "address": {"$ref": "address"},
+    "sequence": {"$ref": "sequence"}
+  },
+  "required": ["type", "id", "address", "sequence", "specification", "outcome"],
+  "additionalProperties": false
+}

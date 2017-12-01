@@ -1,0 +1,13 @@
+{
+  "Flags": 0,
+  "TransactionType": "TrustSet",
+  "Account": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59",
+  "LimitAmount": {
+    "value": "0.1",
+    "currency": "BTC",
+    "issuer": "rMH4UxPrbuMa1spCBR98hLLyNJp4d8p4tM"
+  },
+  "LastLedgerSequence": 8820051,
+  "Fee": "12",
+  "Sequence": 23
+}

@@ -1,0 +1,52 @@
+{
+  "Flags": 458752,
+  "TransactionType": "Payment",
+  "Account": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59",
+  "Destination": "rpZc4mVfWUif9CRoHRKKcmhu1nx2xktxBo",
+  "Amount": {
+    "value": "0.01",
+    "currency": "LTC",
+    "issuer": "rpZc4mVfWUif9CRoHRKKcmhu1nx2xktxBo"
+  },
+  "InvoiceID": "A98FD36C17BE2B8511AD36DC335478E7E89F06262949F36EB88E2D683BBCC50A",
+  "SourceTag": 14,
+  "DestinationTag": 58,
+  "Paths": [
+    [
+      {
+        "account": "rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q",
+        "issuer": "rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q",
+        "currency": "USD",
+        "type_hex": "0000000000000031"
+      },
+      {
+        "issuer": "rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX",
+        "currency": "LTC",
+        "type_hex": "0000000000000030"
+      },
+      {
+        "account": "rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX",
+        "issuer": "rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX",
+        "currency": "LTC",
+        "type_hex": "0000000000000031"
+      }
+    ]
+  ],
+  "Memos": [
+    {
+      "Memo": {
+        "MemoType": "74657374",
+        "MemoFormat": "706C61696E2F74657874",
+        "MemoData": "7465787465642064617461"
+      }
+    }
+  ],
+  "SendMax": {
+    "value": "0.01",
+    "currency": "USD",
+    "issuer": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59"
+  },
+  "LastLedgerSequence": 8820051,
+  "Fee": "12",
+  "Sequence": 23
+}

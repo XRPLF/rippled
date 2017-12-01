@@ -1,0 +1,49 @@
+{
+  "id": 0,
+  "result": {
+    "Account": "r9UHu5CWni1qRY7Q4CfFZLGvXo2pGQy96b",
+    "Fee": "12000",
+    "Flags": 0,
+    "LastLedgerSequence": 14892747,
+    "RegularKey": "rsvEdWvfwzqkgvmaSEh9kgbcWiUc6s69ZC",
+    "Sequence": 468,
+    "SigningPubKey": "036A749E3B7187E43E8936E3D83A7030989325249E03803F12B7F64BAACABA6025",
+    "TransactionType": "SetRegularKey",
+    "TxnSignature": "3045022100B123D47C46E20654B4FCC1A94E3337BB8C5A9E840F8E0D4049AD5FD63A3C3B9502200EEA73F85248217E349901B6B64D9A43F660F90743F42860FF5D23243C9C5174",
+    "date": 491326250,
+    "hash": "278E6687C1C60C6873996210A6523564B63F2844FB1019576C157353B1813E60",
+    "inLedger": 14892648,
+    "ledger_index": 14892648,
+    "meta": {
+      "AffectedNodes": [
+        {
+          "ModifiedNode": {
+            "FinalFields": {
+              "Account": "r9UHu5CWni1qRY7Q4CfFZLGvXo2pGQy96b",
+              "Balance": "71791094",
+              "Domain": "726970706C652E636F6D",
+              "Flags": 65536,
+              "OwnerCount": 3,
+              "RegularKey": "rsvEdWvfwzqkgvmaSEh9kgbcWiUc6s69ZC",
+              "Sequence": 469
+            },
+            "LedgerEntryType": "AccountRoot",
+            "LedgerIndex": "4AD70690C6FF8A069F8AE00B09F70E9B732360026E8085050D314432091A59C9",
+            "PreviousFields": {
+              "Balance": "71803094",
+              "Flags": 0,
+              "Sequence": 468
+            },
+            "PreviousTxnID": "D0F627D9A2CB4B45F2AC38C7741CE70D947BE64CB8CA1E2D34FBB372730A7970",
+            "PreviousTxnLgrSeq": 14682436
+          }
+        }
+      ],
+      "TransactionIndex": 0,
+      "TransactionResult": "tesSUCCESS"
+    },
+    "validated": true
+  },
+  "status": "success",
+  "type": "response"
+}

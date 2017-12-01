@@ -1,0 +1,27 @@
+{
+  "type": "settings",
+  "address": "rLVKsA4F9iJBbA6rX2x4wCmkj6drgtqpQe",
+  "sequence": 1,
+  "id": "4FB3ADF22F3C605E23FAEFAA185F3BD763C4692CAC490D9819D117CD33BFAA1B",
+  "specification": {
+    "requireAuthorization": true,
+    "disallowIncomingXRP": true,
+    "globalFreeze": false
+  },
+  "outcome": {
+    "result": "tesSUCCESS",
+    "timestamp": "2014-08-08T16:57:50.000Z",
+    "fee": "0.00001",
+    "balanceChanges": {
+      "rLVKsA4F9iJBbA6rX2x4wCmkj6drgtqpQe": [
+        {
+          "currency": "XRP",
+          "value": "-0.00001"
+        }
+      ]
+    },
+    "orderbookChanges": {},
+    "ledgerVersion": 8206418,
+    "indexInLedger": 5
+  }
+}

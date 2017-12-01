@@ -1,0 +1,10 @@
+language: node_js
+node_js:
+  - 0.6
+
+before_script:
+  - ln -s ../ node_modules/es5-ext
+
+notifications:
+  email:
+    - medikoo+es5-ext@medikoo.com

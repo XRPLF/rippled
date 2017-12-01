@@ -1,0 +1,97 @@
+{
+  "id": 0,
+  "result": {
+    "full_reply": true,
+    "alternatives": [
+      {
+        "paths_canonical": [],
+        "paths_computed": [
+          [
+            {
+              "account": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B",
+              "type": 1,
+              "type_hex": "0000000000000001"
+            }
+          ],
+          [
+            {
+              "account": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B",
+              "type": 1,
+              "type_hex": "0000000000000001"
+            },
+            {
+              "account": "rLMJ4db4uwHcd6NHg6jvTaYb8sH5Gy4tg5",
+              "type": 1,
+              "type_hex": "0000000000000001"
+            },
+            {
+              "account": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
+              "type": 1,
+              "type_hex": "0000000000000001"
+            }
+          ],
+          [
+            {
+              "account": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B",
+              "type": 1,
+              "type_hex": "0000000000000001"
+            },
+            {
+              "currency": "USD",
+              "issuer": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
+              "type": 48,
+              "type_hex": "0000000000000030"
+            },
+            {
+              "account": "rLEsXccBGNR3UPuPu2hUXPjziKC3qKSBun",
+              "type": 1,
+              "type_hex": "0000000000000001"
+            }
+          ],
+          [
+            {
+              "account": "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B",
+              "type": 1,
+              "type_hex": "0000000000000001"
+            },
+            {
+              "account": "rLMJ4db4uwHcd6NHg6jvTaYb8sH5Gy4tg5",
+              "type": 1,
+              "type_hex": "0000000000000001"
+            },
+            {
+              "account": "r9vbV3EHvXWjSkeQ6CAcYVPGeq7TuiXY2X",
+              "type": 1,
+              "type_hex": "0000000000000001"
+            }
+          ]
+        ],
+        "source_amount": {
+          "currency": "USD",
+          "issuer": "rpZc4mVfWUif9CRoHRKKcmhu1nx2xktxBo",
+          "value": "0.000001002"
+        }
+      }
+    ],
+    "source_account": "rpZc4mVfWUif9CRoHRKKcmhu1nx2xktxBo",
+    "destination_amount": {
+      "currency": "USD",
+      "value": "0.000001",
+      "issuer": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59"
+    },
+    "destination_account": "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59",
+    "destination_currencies": [
+      "JOE",
+      "BTC",
+      "DYM",
+      "CNY",
+      "EUR",
+      "015841551A748AD2C1F76FF6ECB0CCCD00000000",
+      "MXN",
+      "USD",
+      "XRP"
+    ]
+  },
+  "status": "success",
+  "type": "response"
+}
