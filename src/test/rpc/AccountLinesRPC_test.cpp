@@ -374,7 +374,7 @@ public:
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5)"
                 " }");
-            BEAST_EXPECT(lines[jss::result][jss::error_message] ==
+            BEAST_EXPECT(lines[jss::error][jss::message] ==
                 RPC::missing_field_error(jss::account)[jss::error_message]);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -387,10 +387,10 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": )"
-                R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"}]})");
-            BEAST_EXPECT(lines[jss::result][jss::error_message] ==
+                R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"}})");
+            BEAST_EXPECT(lines[jss::error][jss::message] ==
                 RPC::make_error(rpcBAD_SEED)[jss::error_message]);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -404,9 +404,9 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
-                R"({"account": ")" + alice.human() + R"("}]})");
-            BEAST_EXPECT(lines[jss::result][jss::error_message] ==
+                R"("params": )"
+                R"({"account": ")" + alice.human() + R"("}})");
+            BEAST_EXPECT(lines[jss::error][jss::message] ==
                 RPC::make_error(rpcACT_NOT_FOUND)[jss::error_message]);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -424,8 +424,8 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
-                R"({"account": ")" + alice.human() + R"("}]})");
+                R"("params": )"
+                R"({"account": ")" + alice.human() + R"("}})");
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 0);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
@@ -439,10 +439,10 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
-                R"("ledger_index": "nonsense"}]})");
-            BEAST_EXPECT(lines[jss::result][jss::error_message] ==
+                R"("ledger_index": "nonsense"}})");
+            BEAST_EXPECT(lines[jss::error][jss::message] ==
                 "ledgerIndexMalformed");
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -455,10 +455,10 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
-                R"("ledger_index": 50000}]})");
-            BEAST_EXPECT(lines[jss::result][jss::error_message] ==
+                R"("ledger_index": 50000}})");
+            BEAST_EXPECT(lines[jss::error][jss::message] ==
                 "ledgerNotFound");
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -525,9 +525,9 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + account.human() + R"(", )"
-                R"("ledger_index": )" + std::to_string(info.seq) + "}]}");
+                R"("ledger_index": )" + std::to_string(info.seq) + "}}");
             BEAST_EXPECT(linesSeq[jss::result][jss::lines].isArray());
             BEAST_EXPECT(linesSeq[jss::result][jss::lines].size() == count);
             BEAST_EXPECT(linesSeq.isMember(jss::jsonrpc) && linesSeq[jss::jsonrpc] == "2.0");
@@ -540,9 +540,9 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + account.human() + R"(", )"
-                R"("ledger_hash": ")" + to_string(info.hash) + R"("}]})");
+                R"("ledger_hash": ")" + to_string(info.hash) + R"("}})");
             BEAST_EXPECT(linesHash[jss::result][jss::lines].isArray());
             BEAST_EXPECT(linesHash[jss::result][jss::lines].size() == count);
             BEAST_EXPECT(linesHash.isMember(jss::jsonrpc) && linesHash[jss::jsonrpc] == "2.0");
@@ -567,10 +567,10 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("ledger_hash": ")" + to_string(ledger4Info.hash) + R"(", )"
-                R"("ledger_index": )" + std::to_string(ledger58Info.seq) + "}]}");
+                R"("ledger_index": )" + std::to_string(ledger58Info.seq) + "}}");
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
@@ -584,8 +584,8 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
-                R"({"account": ")" + alice.human() + R"("}]})");
+                R"("params": )"
+                R"({"account": ")" + alice.human() + R"("}})");
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 52);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
@@ -599,9 +599,9 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
-                R"("peer": ")" + gw1.human() + R"("}]})");
+                R"("peer": ")" + gw1.human() + R"("}})");
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
@@ -615,11 +615,11 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("peer": )"
-                R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"}]})");
-            BEAST_EXPECT(lines[jss::result][jss::error_message] ==
+                R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"}})");
+            BEAST_EXPECT(lines[jss::error][jss::message] ==
                 RPC::make_error(rpcBAD_SEED)[jss::error_message]);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -632,10 +632,10 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
-                R"("limit": -1}]})");
-            BEAST_EXPECT(lines[jss::result][jss::error_message] ==
+                R"("limit": -1}})");
+            BEAST_EXPECT(lines[jss::error][jss::message] ==
                 RPC::expected_field_message(jss::limit, "unsigned integer"));
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -648,9 +648,9 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
-                R"("limit": 1}]})");
+                R"("limit": 1}})");
             BEAST_EXPECT(linesA[jss::result][jss::lines].isArray());
             BEAST_EXPECT(linesA[jss::result][jss::lines].size() == 1);
             BEAST_EXPECT(linesA.isMember(jss::jsonrpc) && linesA[jss::jsonrpc] == "2.0");
@@ -664,9 +664,9 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
-                R"("marker": ")" + marker + R"("}]})");
+                R"("marker": ")" + marker + R"("}})");
             BEAST_EXPECT(linesB[jss::result][jss::lines].isArray());
             BEAST_EXPECT(linesB[jss::result][jss::lines].size() == 51);
             BEAST_EXPECT(linesB.isMember(jss::jsonrpc) && linesB[jss::jsonrpc] == "2.0");
@@ -679,10 +679,10 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("limit": 3, )"
-                R"("marker": ")" + marker + R"("}]})");
+                R"("marker": ")" + marker + R"("}})");
             BEAST_EXPECT(linesC[jss::result][jss::lines].isArray());
             BEAST_EXPECT(linesC[jss::result][jss::lines].size() == 3);
             BEAST_EXPECT(linesC.isMember(jss::jsonrpc) && linesC[jss::jsonrpc] == "2.0");
@@ -696,10 +696,10 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
-                R"("marker": ")" + marker + R"("}]})");
-            BEAST_EXPECT(linesD[jss::result][jss::error_message] ==
+                R"("marker": ")" + marker + R"("}})");
+            BEAST_EXPECT(linesD[jss::error][jss::message] ==
                 RPC::make_error(rpcINVALID_PARAMS)[jss::error_message]);
             BEAST_EXPECT(linesD.isMember(jss::jsonrpc) && linesD[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(linesD.isMember(jss::ripplerpc) && linesD[jss::ripplerpc] == "2.0");
@@ -712,10 +712,10 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
-                R"("marker": true}]})");
-            BEAST_EXPECT(lines[jss::result][jss::error_message] ==
+                R"("marker": true}})");
+            BEAST_EXPECT(lines[jss::error][jss::message] ==
                 RPC::expected_field_message(jss::marker, "string"));
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -728,10 +728,10 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("limit": 1, )"
-                R"("peer": ")" + gw2.human() + R"("}]})");
+                R"("peer": ")" + gw2.human() + R"("}})");
             auto const& line = lines[jss::result][jss::lines][0u];
             BEAST_EXPECT(line[jss::freeze].asBool() == true);
             BEAST_EXPECT(line[jss::no_ripple].asBool() == true);
@@ -747,10 +747,10 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + gw2.human() + R"(", )"
                 R"("limit": 1, )"
-                R"("peer": ")" + alice.human() + R"("}]})");
+                R"("peer": ")" + alice.human() + R"("}})");
             auto const& lineA = linesA[jss::result][jss::lines][0u];
             BEAST_EXPECT(lineA[jss::freeze_peer].asBool() == true);
             BEAST_EXPECT(lineA[jss::no_ripple_peer].asBool() == true);
@@ -767,11 +767,11 @@ public:
                 R"("jsonrpc" : "2.0",)"
                 R"("ripplerpc" : "2.0",)"
                 R"("id" : 5,)"
-                R"("params": [ )"
+                R"("params": )"
                 R"({"account": ")" + gw2.human() + R"(", )"
                 R"("limit": 25, )"
                 R"("marker": ")" + marker + R"(", )"
-                R"("peer": ")" + alice.human() + R"("}]})");
+                R"("peer": ")" + alice.human() + R"("}})");
             BEAST_EXPECT(linesB[jss::result][jss::lines].isArray());
             BEAST_EXPECT(linesB[jss::result][jss::lines].size() == 25);
             BEAST_EXPECT(! linesB[jss::result].isMember(jss::marker));
@@ -833,9 +833,9 @@ public:
             R"("jsonrpc" : "2.0",)"
             R"("ripplerpc" : "2.0",)"
             R"("id" : 5,)"
-            R"("params": [ )"
+            R"("params": )"
             R"({"account": ")" + alice.human() + R"(", )"
-            R"("limit": 1}]})");
+            R"("limit": 1}})");
         BEAST_EXPECT(linesBeg[jss::result][jss::lines][0u][jss::currency] == "USD");
         BEAST_EXPECT(linesBeg[jss::result].isMember(jss::marker));
         BEAST_EXPECT(linesBeg.isMember(jss::jsonrpc) && linesBeg[jss::jsonrpc] == "2.0");
@@ -853,11 +853,11 @@ public:
             R"("jsonrpc" : "2.0",)"
             R"("ripplerpc" : "2.0",)"
             R"("id" : 5,)"
-            R"("params": [ )"
+            R"("params": )"
             R"({"account": ")" + alice.human() + R"(", )"
             R"("marker": ")" +
-            linesBeg[jss::result][jss::marker].asString() + R"("}]})");
-        BEAST_EXPECT(linesEnd[jss::result][jss::error_message] ==
+            linesBeg[jss::result][jss::marker].asString() + R"("}})");
+        BEAST_EXPECT(linesEnd[jss::error][jss::message] ==
                 RPC::make_error(rpcINVALID_PARAMS)[jss::error_message]);
         BEAST_EXPECT(linesEnd.isMember(jss::jsonrpc) && linesEnd[jss::jsonrpc] == "2.0");
         BEAST_EXPECT(linesEnd.isMember(jss::ripplerpc) && linesEnd[jss::ripplerpc] == "2.0");

@@ -497,6 +497,17 @@ private:
 
     bool isValidJson2(Json::Value const& jv)
     {
+        if (jv.isArray())
+        {
+            if (jv.size() == 0)
+                return false;
+            for (auto const& j : jv)
+            {
+                if (!isValidJson2(j))
+                    return false;
+            }
+            return true;
+        }
         if (jv.isObject())
         {
             if (jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0" &&
@@ -504,7 +515,7 @@ private:
                 jv.isMember(jss::id) && jv.isMember(jss::method))
             {
                 if (jv.isMember(jss::params) &&
-                      !(jv[jss::params].isArray() || jv[jss::params].isNull()))
+                      !(jv[jss::params].isArray() || jv[jss::params].isObject()))
                     return false;
                 return true;
             }
@@ -519,17 +530,36 @@ private:
         bool valid_parse = reader.parse(jvParams[0u].asString(), jv);
         if (valid_parse && isValidJson2(jv))
         {
-            Json::Value jv1{Json::objectValue};
-            if (jv.isMember(jss::params))
+            if (jv.isObject())
             {
-                auto const& params = jv[jss::params][0u];
-                for (auto i = params.begin(); i != params.end(); ++i)
-                    jv1[i.key().asString()] = *i;
+                Json::Value jv1{Json::objectValue};
+                if (jv.isMember(jss::params))
+                {
+                    auto const& params = jv[jss::params];
+                    for (auto i = params.begin(); i != params.end(); ++i)
+                        jv1[i.key().asString()] = *i;
+                }
+                jv1[jss::jsonrpc] = jv[jss::jsonrpc];
+                jv1[jss::ripplerpc] = jv[jss::ripplerpc];
+                jv1[jss::id] = jv[jss::id];
+                jv1[jss::method] = jv[jss::method];
+                return jv1;
             }
-            jv1[jss::jsonrpc] = jv[jss::jsonrpc];
-            jv1[jss::ripplerpc] = jv[jss::ripplerpc];
-            jv1[jss::id] = jv[jss::id];
-            jv1[jss::method] = jv[jss::method];
+            // else jv.isArray()
+            Json::Value jv1{Json::arrayValue};
+            for (Json::UInt j = 0; j < jv.size(); ++j)
+            {
+                if (jv[j].isMember(jss::params))
+                {
+                    auto const& params = jv[j][jss::params];
+                    for (auto i = params.begin(); i != params.end(); ++i)
+                        jv1[j][i.key().asString()] = *i;
+                }
+                jv1[j][jss::jsonrpc] = jv[j][jss::jsonrpc];
+                jv1[j][jss::ripplerpc] = jv[j][jss::ripplerpc];
+                jv1[j][jss::id] = jv[j][jss::id];
+                jv1[j][jss::method] = jv[j][jss::method];
+            }
             return jv1;
         }
         auto jv_error = rpcError(rpcINVALID_PARAMS);
@@ -849,6 +879,31 @@ private:
         return rpcError (rpcINVALID_PARAMS);
     }
 
+    // transaction_entry <tx_hash> <ledger_hash/ledger_index>
+    Json::Value parseTransactionEntry (Json::Value const& jvParams)
+    {
+        // Parameter count should have already been verified.
+        assert (jvParams.size() == 2);
+
+        std::string const txHash = jvParams[0u].asString();
+        if (txHash.length() != 64)
+            return rpcError (rpcINVALID_PARAMS);
+
+        Json::Value jvRequest;
+        jvRequest[jss::tx_hash] = txHash;
+
+        jvParseLedger (jvRequest, jvParams[1u].asString());
+
+        // jvParseLedger inserts a "ledger_index" of 0 if it doesn't
+        // find a match.
+        if (jvRequest.isMember(jss::ledger_index) &&
+            jvRequest[jss::ledger_index] == 0)
+                return rpcError (rpcINVALID_PARAMS);
+
+        return jvRequest;
+    }
+
+
     // tx <transaction_id>
     Json::Value parseTx (Json::Value const& jvParams)
     {
@@ -1043,7 +1098,7 @@ public:
             {   "server_info",          &RPCParser::parseAsIs,                  0,  0   },
             {   "server_state",         &RPCParser::parseAsIs,                  0,  0   },
             {   "stop",                 &RPCParser::parseAsIs,                  0,  0   },
-    //      {   "transaction_entry",    &RPCParser::parseTransactionEntry,     -1,  -1  },
+            {   "transaction_entry",    &RPCParser::parseTransactionEntry,      2,  2   },
             {   "tx",                   &RPCParser::parseTx,                    1,  2   },
             {   "tx_account",           &RPCParser::parseTxAccount,             1,  7   },
             {   "tx_history",           &RPCParser::parseTxHistory,             1,  1   },
@@ -1145,7 +1200,6 @@ struct RPCCallImp
 
             Json::Reader    reader;
             Json::Value     jvReply;
-
             if (!reader.parse (strData, jvReply))
                 Throw<std::runtime_error> ("couldn't parse reply from server");
 
@@ -1202,7 +1256,6 @@ rpcCmdLineToJson (std::vector<std::string> const& args,
     jvRequest   = rpParser.parseCommand (args[0], jvRpcParams, true);
 
     JLOG (j.trace()) << "RPC Request: " << jvRequest << std::endl;
-
     return jvRequest;
 }
 
@@ -1287,14 +1340,14 @@ rpcClient(std::vector<std::string> const& args,
             if (!setup.client.admin_password.empty ())
                 jvRequest["admin_password"] = setup.client.admin_password;
 
-            jvParams.append (jvRequest);
-
-            if (jvRequest.isMember(jss::params))
+            if (jvRequest.isObject())
+                jvParams.append (jvRequest);
+            else if (jvRequest.isArray())
             {
-                auto const& params = jvRequest[jss::params];
-                assert(params.size() == 1);
-                jvParams.append(params[0u]);
+                for (Json::UInt i = 0; i < jvRequest.size(); ++i)
+                    jvParams.append(jvRequest[i]);
             }
+
             {
                 boost::asio::io_service isService;
                 RPCCall::fromNetwork (
@@ -1305,7 +1358,10 @@ rpcClient(std::vector<std::string> const& args,
                     setup.client.password,
                     "",
                     jvRequest.isMember (jss::method)           // Allow parser to rewrite method.
-                        ? jvRequest[jss::method].asString () : args[0],
+                        ? jvRequest[jss::method].asString ()
+                        : jvRequest.isArray()
+                           ? "batch"
+                           : args[0],
                     jvParams,                               // Parsed, execute.
                     setup.client.secure != 0,                // Use SSL
                     config.quiet(),
@@ -1314,7 +1370,6 @@ rpcClient(std::vector<std::string> const& args,
                                std::placeholders::_1));
                 isService.run(); // This blocks until there is no more outstanding async calls.
             }
-
             if (jvOutput.isMember ("result"))
             {
                 // Had a successful JSON-RPC 2.0 call.
@@ -1343,10 +1398,12 @@ rpcClient(std::vector<std::string> const& args,
         if (jvOutput.isMember (jss::error))
         {
             jvOutput[jss::status]  = "error";
-
-            nRet    = jvOutput.isMember (jss::error_code)
-                      ? beast::lexicalCast <int> (jvOutput[jss::error_code].asString ())
-                      : rpcBAD_SYNTAX;
+            if (jvOutput.isMember(jss::error_code))
+                nRet = std::stoi(jvOutput[jss::error_code].asString());
+            else if (jvOutput[jss::error].isMember(jss::error_code))
+                nRet = std::stoi(jvOutput[jss::error][jss::error_code].asString());
+            else
+                nRet = rpcBAD_SYNTAX;
         }
 
         // YYY We could have a command line flag for single line output for scripts.
@@ -1358,13 +1415,6 @@ rpcClient(std::vector<std::string> const& args,
         jvOutput["error_what"]  = e.what ();
         nRet                    = rpcINTERNAL;
     }
-
-    if (jvRequest.isMember(jss::jsonrpc))
-        jvOutput[jss::jsonrpc] = jvRequest[jss::jsonrpc];
-    if (jvRequest.isMember(jss::ripplerpc))
-        jvOutput[jss::ripplerpc] = jvRequest[jss::ripplerpc];
-    if (jvRequest.isMember(jss::id))
-        jvOutput[jss::id] = jvRequest[jss::id];
 
     return { nRet, std::move(jvOutput) };
 }
