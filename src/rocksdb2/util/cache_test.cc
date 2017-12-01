@@ -1,4 +1,4 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
 //  This source code is licensed under the BSD-style license found in the
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
@@ -9,10 +9,15 @@
 
 #include "rocksdb/cache.h"
 
-#include <vector>
-#include <string>
+#include <forward_list>
+#include <functional>
 #include <iostream>
+#include <string>
+#include <vector>
+#include "util/clock_cache.h"
 #include "util/coding.h"
+#include "util/lru_cache.h"
+#include "util/string_util.h"
 #include "util/testharness.h"
 
 namespace rocksdb {
@@ -28,9 +33,21 @@ static int DecodeKey(const Slice& k) {
   return DecodeFixed32(k.data());
 }
 static void* EncodeValue(uintptr_t v) { return reinterpret_cast<void*>(v); }
-static int DecodeValue(void* v) { return reinterpret_cast<uintptr_t>(v); }
+static int DecodeValue(void* v) {
+  return static_cast<int>(reinterpret_cast<uintptr_t>(v));
+}
 
-class CacheTest {
+const std::string kLRU = "lru";
+const std::string kClock = "clock";
+
+void dumbDeleter(const Slice& key, void* value) {}
+
+void eraseDeleter(const Slice& key, void* value) {
+  Cache* cache = reinterpret_cast<Cache*>(value);
+  cache->Erase("foo");
+}
+
+class CacheTest : public testing::TestWithParam<std::string> {
  public:
   static CacheTest* current_;
 
@@ -41,25 +58,45 @@ class CacheTest {
 
   static const int kCacheSize = 1000;
   static const int kNumShardBits = 4;
-  static const int kRemoveScanCountLimit = 16;
 
   static const int kCacheSize2 = 100;
   static const int kNumShardBits2 = 2;
-  static const int kRemoveScanCountLimit2 = 200;
 
   std::vector<int> deleted_keys_;
   std::vector<int> deleted_values_;
   shared_ptr<Cache> cache_;
   shared_ptr<Cache> cache2_;
 
-  CacheTest() :
-      cache_(NewLRUCache(kCacheSize, kNumShardBits, kRemoveScanCountLimit)),
-      cache2_(NewLRUCache(kCacheSize2, kNumShardBits2,
-                          kRemoveScanCountLimit2)) {
+  CacheTest()
+      : cache_(NewCache(kCacheSize, kNumShardBits, false)),
+        cache2_(NewCache(kCacheSize2, kNumShardBits2, false)) {
     current_ = this;
   }
 
   ~CacheTest() {
+  }
+
+  std::shared_ptr<Cache> NewCache(size_t capacity) {
+    auto type = GetParam();
+    if (type == kLRU) {
+      return NewLRUCache(capacity);
+    }
+    if (type == kClock) {
+      return NewClockCache(capacity);
+    }
+    return nullptr;
+  }
+
+  std::shared_ptr<Cache> NewCache(size_t capacity, int num_shard_bits,
+                                  bool strict_capacity_limit) {
+    auto type = GetParam();
+    if (type == kLRU) {
+      return NewLRUCache(capacity, num_shard_bits, strict_capacity_limit);
+    }
+    if (type == kClock) {
+      return NewClockCache(capacity, num_shard_bits, strict_capacity_limit);
+    }
+    return nullptr;
   }
 
   int Lookup(shared_ptr<Cache> cache, int key) {
@@ -72,8 +109,8 @@ class CacheTest {
   }
 
   void Insert(shared_ptr<Cache> cache, int key, int value, int charge = 1) {
-    cache->Release(cache->Insert(EncodeKey(key), EncodeValue(value), charge,
-                                  &CacheTest::Deleter));
+    cache->Insert(EncodeKey(key), EncodeValue(value), charge,
+                  &CacheTest::Deleter);
   }
 
   void Erase(shared_ptr<Cache> cache, int key) {
@@ -107,34 +144,27 @@ class CacheTest {
 };
 CacheTest* CacheTest::current_;
 
-namespace {
-void dumbDeleter(const Slice& key, void* value) { }
-}  // namespace
-
-TEST(CacheTest, UsageTest) {
+TEST_P(CacheTest, UsageTest) {
   // cache is shared_ptr and will be automatically cleaned up.
   const uint64_t kCapacity = 100000;
-  auto cache = NewLRUCache(kCapacity, 8, 200);
+  auto cache = NewCache(kCapacity, 8, false);
 
   size_t usage = 0;
-  const char* value = "abcdef";
+  char value[10] = "abcdef";
   // make sure everything will be cached
   for (int i = 1; i < 100; ++i) {
     std::string key(i, 'a');
     auto kv_size = key.size() + 5;
-    cache->Release(
-        cache->Insert(key, (void*)value, kv_size, dumbDeleter)
-    );
+    cache->Insert(key, reinterpret_cast<void*>(value), kv_size, dumbDeleter);
     usage += kv_size;
     ASSERT_EQ(usage, cache->GetUsage());
   }
 
   // make sure the cache will be overloaded
   for (uint64_t i = 1; i < kCapacity; ++i) {
-    auto key = std::to_string(i);
-    cache->Release(
-        cache->Insert(key, (void*)value, key.size() + 5, dumbDeleter)
-    );
+    auto key = ToString(i);
+    cache->Insert(key, reinterpret_cast<void*>(value), key.size() + 5,
+                  dumbDeleter);
   }
 
   // the usage should be close to the capacity
@@ -142,7 +172,59 @@ TEST(CacheTest, UsageTest) {
   ASSERT_LT(kCapacity * 0.95, cache->GetUsage());
 }
 
-TEST(CacheTest, HitAndMiss) {
+TEST_P(CacheTest, PinnedUsageTest) {
+  // cache is shared_ptr and will be automatically cleaned up.
+  const uint64_t kCapacity = 100000;
+  auto cache = NewCache(kCapacity, 8, false);
+
+  size_t pinned_usage = 0;
+  char value[10] = "abcdef";
+
+  std::forward_list<Cache::Handle*> unreleased_handles;
+
+  // Add entries. Unpin some of them after insertion. Then, pin some of them
+  // again. Check GetPinnedUsage().
+  for (int i = 1; i < 100; ++i) {
+    std::string key(i, 'a');
+    auto kv_size = key.size() + 5;
+    Cache::Handle* handle;
+    cache->Insert(key, reinterpret_cast<void*>(value), kv_size, dumbDeleter,
+                  &handle);
+    pinned_usage += kv_size;
+    ASSERT_EQ(pinned_usage, cache->GetPinnedUsage());
+    if (i % 2 == 0) {
+      cache->Release(handle);
+      pinned_usage -= kv_size;
+      ASSERT_EQ(pinned_usage, cache->GetPinnedUsage());
+    } else {
+      unreleased_handles.push_front(handle);
+    }
+    if (i % 3 == 0) {
+      unreleased_handles.push_front(cache->Lookup(key));
+      // If i % 2 == 0, then the entry was unpinned before Lookup, so pinned
+      // usage increased
+      if (i % 2 == 0) {
+        pinned_usage += kv_size;
+      }
+      ASSERT_EQ(pinned_usage, cache->GetPinnedUsage());
+    }
+  }
+
+  // check that overloading the cache does not change the pinned usage
+  for (uint64_t i = 1; i < 2 * kCapacity; ++i) {
+    auto key = ToString(i);
+    cache->Insert(key, reinterpret_cast<void*>(value), key.size() + 5,
+                  dumbDeleter);
+  }
+  ASSERT_EQ(pinned_usage, cache->GetPinnedUsage());
+
+  // release handles for pinned entries to prevent memory leaks
+  for (auto handle : unreleased_handles) {
+    cache->Release(handle);
+  }
+}
+
+TEST_P(CacheTest, HitAndMiss) {
   ASSERT_EQ(-1, Lookup(100));
 
   Insert(100, 101);
@@ -165,7 +247,13 @@ TEST(CacheTest, HitAndMiss) {
   ASSERT_EQ(101, deleted_values_[0]);
 }
 
-TEST(CacheTest, Erase) {
+TEST_P(CacheTest, InsertSameKey) {
+  Insert(1, 1);
+  Insert(1, 2);
+  ASSERT_EQ(2, Lookup(1));
+}
+
+TEST_P(CacheTest, Erase) {
   Erase(200);
   ASSERT_EQ(0U, deleted_keys_.size());
 
@@ -184,46 +272,76 @@ TEST(CacheTest, Erase) {
   ASSERT_EQ(1U, deleted_keys_.size());
 }
 
-TEST(CacheTest, EntriesArePinned) {
+TEST_P(CacheTest, EntriesArePinned) {
   Insert(100, 101);
   Cache::Handle* h1 = cache_->Lookup(EncodeKey(100));
   ASSERT_EQ(101, DecodeValue(cache_->Value(h1)));
+  ASSERT_EQ(1U, cache_->GetUsage());
 
   Insert(100, 102);
   Cache::Handle* h2 = cache_->Lookup(EncodeKey(100));
   ASSERT_EQ(102, DecodeValue(cache_->Value(h2)));
   ASSERT_EQ(0U, deleted_keys_.size());
+  ASSERT_EQ(2U, cache_->GetUsage());
 
   cache_->Release(h1);
   ASSERT_EQ(1U, deleted_keys_.size());
   ASSERT_EQ(100, deleted_keys_[0]);
   ASSERT_EQ(101, deleted_values_[0]);
+  ASSERT_EQ(1U, cache_->GetUsage());
 
   Erase(100);
   ASSERT_EQ(-1, Lookup(100));
   ASSERT_EQ(1U, deleted_keys_.size());
+  ASSERT_EQ(1U, cache_->GetUsage());
 
   cache_->Release(h2);
   ASSERT_EQ(2U, deleted_keys_.size());
   ASSERT_EQ(100, deleted_keys_[1]);
   ASSERT_EQ(102, deleted_values_[1]);
+  ASSERT_EQ(0U, cache_->GetUsage());
 }
 
-TEST(CacheTest, EvictionPolicy) {
+TEST_P(CacheTest, EvictionPolicy) {
   Insert(100, 101);
   Insert(200, 201);
 
   // Frequently used entry must be kept around
   for (int i = 0; i < kCacheSize + 100; i++) {
     Insert(1000+i, 2000+i);
-    ASSERT_EQ(2000+i, Lookup(1000+i));
     ASSERT_EQ(101, Lookup(100));
   }
   ASSERT_EQ(101, Lookup(100));
   ASSERT_EQ(-1, Lookup(200));
 }
 
-TEST(CacheTest, EvictionPolicyRef) {
+TEST_P(CacheTest, ExternalRefPinsEntries) {
+  Insert(100, 101);
+  Cache::Handle* h = cache_->Lookup(EncodeKey(100));
+  ASSERT_TRUE(cache_->Ref(h));
+  ASSERT_EQ(101, DecodeValue(cache_->Value(h)));
+  ASSERT_EQ(1U, cache_->GetUsage());
+
+  for (int i = 0; i < 3; ++i) {
+    if (i > 0) {
+      // First release (i == 1) corresponds to Ref(), second release (i == 2)
+      // corresponds to Lookup(). Then, since all external refs are released,
+      // the below insertions should push out the cache entry.
+      cache_->Release(h);
+    }
+    // double cache size because the usage bit in block cache prevents 100 from
+    // being evicted in the first kCacheSize iterations
+    for (int j = 0; j < 2 * kCacheSize + 100; j++) {
+      Insert(1000 + j, 2000 + j);
+    }
+    if (i < 2) {
+      ASSERT_EQ(101, Lookup(100));
+    }
+  }
+  ASSERT_EQ(-1, Lookup(100));
+}
+
+TEST_P(CacheTest, EvictionPolicyRef) {
   Insert(100, 101);
   Insert(101, 102);
   Insert(102, 103);
@@ -271,77 +389,46 @@ TEST(CacheTest, EvictionPolicyRef) {
   cache_->Release(h204);
 }
 
-TEST(CacheTest, EvictionPolicyRef2) {
-  std::vector<Cache::Handle*> handles;
+TEST_P(CacheTest, EvictEmptyCache) {
+  // Insert item large than capacity to trigger eviction on empty cache.
+  auto cache = NewCache(1, 0, false);
+  ASSERT_OK(cache->Insert("foo", nullptr, 10, dumbDeleter));
+}
 
-  Insert(100, 101);
-  // Insert entries much more than Cache capacity
-  for (int i = 0; i < kCacheSize + 100; i++) {
-    Insert(1000 + i, 2000 + i);
-    if (i < kCacheSize ) {
-      handles.push_back(cache_->Lookup(EncodeKey(1000 + i)));
-    }
-  }
+TEST_P(CacheTest, EraseFromDeleter) {
+  // Have deleter which will erase item from cache, which will re-enter
+  // the cache at that point.
+  std::shared_ptr<Cache> cache = NewCache(10, 0, false);
+  ASSERT_OK(cache->Insert("foo", nullptr, 1, dumbDeleter));
+  ASSERT_OK(cache->Insert("bar", cache.get(), 1, eraseDeleter));
+  cache->Erase("bar");
+  ASSERT_EQ(nullptr, cache->Lookup("foo"));
+  ASSERT_EQ(nullptr, cache->Lookup("bar"));
+}
 
-  // Make sure referenced keys are also possible to be deleted
-  // if there are not sufficient non-referenced keys
-  for (int i = 0; i < 5; i++) {
-    ASSERT_EQ(-1, Lookup(1000 + i));
-  }
+TEST_P(CacheTest, ErasedHandleState) {
+  // insert a key and get two handles
+  Insert(100, 1000);
+  Cache::Handle* h1 = cache_->Lookup(EncodeKey(100));
+  Cache::Handle* h2 = cache_->Lookup(EncodeKey(100));
+  ASSERT_EQ(h1, h2);
+  ASSERT_EQ(DecodeValue(cache_->Value(h1)), 1000);
+  ASSERT_EQ(DecodeValue(cache_->Value(h2)), 1000);
 
-  for (int i = kCacheSize; i < kCacheSize + 100; i++) {
-    ASSERT_EQ(2000 + i, Lookup(1000 + i));
-  }
+  // delete the key from the cache
+  Erase(100);
+  // can no longer find in the cache
   ASSERT_EQ(-1, Lookup(100));
 
-  // Cleaning up all the handles
-  while (handles.size() > 0) {
-    cache_->Release(handles.back());
-    handles.pop_back();
-  }
+  // release one handle
+  cache_->Release(h1);
+  // still can't find in cache
+  ASSERT_EQ(-1, Lookup(100));
+
+  cache_->Release(h2);
 }
 
-TEST(CacheTest, EvictionPolicyRefLargeScanLimit) {
-  std::vector<Cache::Handle*> handles2;
-
-  // Cache2 has a cache RemoveScanCountLimit higher than cache size
-  // so it would trigger a boundary condition.
-
-  // Populate the cache with 10 more keys than its size.
-  // Reference all keys except one close to the end.
-  for (int i = 0; i < kCacheSize2 + 10; i++) {
-    Insert2(1000 + i, 2000+i);
-    if (i != kCacheSize2 ) {
-      handles2.push_back(cache2_->Lookup(EncodeKey(1000 + i)));
-    }
-  }
-
-  // Make sure referenced keys are also possible to be deleted
-  // if there are not sufficient non-referenced keys
-  for (int i = 0; i < 3; i++) {
-    ASSERT_EQ(-1, Lookup2(1000 + i));
-  }
-  // The non-referenced value is deleted even if it's accessed
-  // recently.
-  ASSERT_EQ(-1, Lookup2(1000 + kCacheSize2));
-  // Other values recently accessed are not deleted since they
-  // are referenced.
-  for (int i = kCacheSize2 - 10; i < kCacheSize2 + 10; i++) {
-    if (i != kCacheSize2) {
-      ASSERT_EQ(2000 + i, Lookup2(1000 + i));
-    }
-  }
-
-  // Cleaning up all the handles
-  while (handles2.size() > 0) {
-    cache2_->Release(handles2.back());
-    handles2.pop_back();
-  }
-}
-
-
-
-TEST(CacheTest, HeavyEntries) {
+TEST_P(CacheTest, HeavyEntries) {
   // Add a bunch of light and heavy entries and then count the combined
   // size of items still in the cache, which must be approximately the
   // same as the total capacity.
@@ -368,7 +455,7 @@ TEST(CacheTest, HeavyEntries) {
   ASSERT_LE(cached_weight, kCacheSize + kCacheSize/10);
 }
 
-TEST(CacheTest, NewId) {
+TEST_P(CacheTest, NewId) {
   uint64_t a = cache_->NewId();
   uint64_t b = cache_->NewId();
   ASSERT_NE(a, b);
@@ -376,48 +463,159 @@ TEST(CacheTest, NewId) {
 
 
 class Value {
- private:
-  int v_;
  public:
-  explicit Value(int v) : v_(v) { }
+  explicit Value(size_t v) : v_(v) { }
 
-  ~Value() { std::cout << v_ << " is destructed\n"; }
+  size_t v_;
 };
 
 namespace {
 void deleter(const Slice& key, void* value) {
-  delete (Value *)value;
+  delete static_cast<Value *>(value);
 }
 }  // namespace
 
-TEST(CacheTest, BadEviction) {
-  int n = 10;
+TEST_P(CacheTest, SetCapacity) {
+  // test1: increase capacity
+  // lets create a cache with capacity 5,
+  // then, insert 5 elements, then increase capacity
+  // to 10, returned capacity should be 10, usage=5
+  std::shared_ptr<Cache> cache = NewCache(5, 0, false);
+  std::vector<Cache::Handle*> handles(10);
+  // Insert 5 entries, but not releasing.
+  for (size_t i = 0; i < 5; i++) {
+    std::string key = ToString(i+1);
+    Status s = cache->Insert(key, new Value(i + 1), 1, &deleter, &handles[i]);
+    ASSERT_TRUE(s.ok());
+  }
+  ASSERT_EQ(5U, cache->GetCapacity());
+  ASSERT_EQ(5U, cache->GetUsage());
+  cache->SetCapacity(10);
+  ASSERT_EQ(10U, cache->GetCapacity());
+  ASSERT_EQ(5U, cache->GetUsage());
+
+  // test2: decrease capacity
+  // insert 5 more elements to cache, then release 5,
+  // then decrease capacity to 7, final capacity should be 7
+  // and usage should be 7
+  for (size_t i = 5; i < 10; i++) {
+    std::string key = ToString(i+1);
+    Status s = cache->Insert(key, new Value(i + 1), 1, &deleter, &handles[i]);
+    ASSERT_TRUE(s.ok());
+  }
+  ASSERT_EQ(10U, cache->GetCapacity());
+  ASSERT_EQ(10U, cache->GetUsage());
+  for (size_t i = 0; i < 5; i++) {
+    cache->Release(handles[i]);
+  }
+  ASSERT_EQ(10U, cache->GetCapacity());
+  ASSERT_EQ(10U, cache->GetUsage());
+  cache->SetCapacity(7);
+  ASSERT_EQ(7, cache->GetCapacity());
+  ASSERT_EQ(7, cache->GetUsage());
+
+  // release remaining 5 to keep valgrind happy
+  for (size_t i = 5; i < 10; i++) {
+    cache->Release(handles[i]);
+  }
+}
+
+TEST_P(CacheTest, SetStrictCapacityLimit) {
+  // test1: set the flag to false. Insert more keys than capacity. See if they
+  // all go through.
+  std::shared_ptr<Cache> cache = NewLRUCache(5, 0, false);
+  std::vector<Cache::Handle*> handles(10);
+  Status s;
+  for (size_t i = 0; i < 10; i++) {
+    std::string key = ToString(i + 1);
+    s = cache->Insert(key, new Value(i + 1), 1, &deleter, &handles[i]);
+    ASSERT_OK(s);
+    ASSERT_NE(nullptr, handles[i]);
+  }
+
+  // test2: set the flag to true. Insert and check if it fails.
+  std::string extra_key = "extra";
+  Value* extra_value = new Value(0);
+  cache->SetStrictCapacityLimit(true);
+  Cache::Handle* handle;
+  s = cache->Insert(extra_key, extra_value, 1, &deleter, &handle);
+  ASSERT_TRUE(s.IsIncomplete());
+  ASSERT_EQ(nullptr, handle);
+
+  for (size_t i = 0; i < 10; i++) {
+    cache->Release(handles[i]);
+  }
+
+  // test3: init with flag being true.
+  std::shared_ptr<Cache> cache2 = NewLRUCache(5, 0, true);
+  for (size_t i = 0; i < 5; i++) {
+    std::string key = ToString(i + 1);
+    s = cache2->Insert(key, new Value(i + 1), 1, &deleter, &handles[i]);
+    ASSERT_OK(s);
+    ASSERT_NE(nullptr, handles[i]);
+  }
+  s = cache2->Insert(extra_key, extra_value, 1, &deleter, &handle);
+  ASSERT_TRUE(s.IsIncomplete());
+  ASSERT_EQ(nullptr, handle);
+  // test insert without handle
+  s = cache2->Insert(extra_key, extra_value, 1, &deleter);
+  // AS if the key have been inserted into cache but get evicted immediately.
+  ASSERT_OK(s);
+  ASSERT_EQ(5, cache->GetUsage());
+  ASSERT_EQ(nullptr, cache2->Lookup(extra_key));
+
+  for (size_t i = 0; i < 5; i++) {
+    cache2->Release(handles[i]);
+  }
+}
+
+TEST_P(CacheTest, OverCapacity) {
+  size_t n = 10;
 
   // a LRUCache with n entries and one shard only
-  std::shared_ptr<Cache> cache = NewLRUCache(n, 0);
+  std::shared_ptr<Cache> cache = NewCache(n, 0, false);
 
   std::vector<Cache::Handle*> handles(n+1);
 
   // Insert n+1 entries, but not releasing.
-  for (int i = 0; i < n+1; i++) {
-    std::string key = std::to_string(i+1);
-    handles[i] = cache->Insert(key, new Value(i+1), 1, &deleter);
+  for (size_t i = 0; i < n + 1; i++) {
+    std::string key = ToString(i+1);
+    Status s = cache->Insert(key, new Value(i + 1), 1, &deleter, &handles[i]);
+    ASSERT_TRUE(s.ok());
   }
 
   // Guess what's in the cache now?
-  for (int i = 0; i < n+1; i++) {
-    std::string key = std::to_string(i+1);
+  for (size_t i = 0; i < n + 1; i++) {
+    std::string key = ToString(i+1);
     auto h = cache->Lookup(key);
-    std::cout << key << (h?" found\n":" not found\n");
-    // Only the first entry should be missing
-    ASSERT_TRUE(h || i == 0);
+    ASSERT_TRUE(h != nullptr);
     if (h) cache->Release(h);
   }
 
-  for (int i = 0; i < n+1; i++) {
+  // the cache is over capacity since nothing could be evicted
+  ASSERT_EQ(n + 1U, cache->GetUsage());
+  for (size_t i = 0; i < n + 1; i++) {
     cache->Release(handles[i]);
   }
-  std::cout << "Poor entries\n";
+  // Make sure eviction is triggered.
+  cache->SetCapacity(n);
+
+  // cache is under capacity now since elements were released
+  ASSERT_EQ(n, cache->GetUsage());
+
+  // element 0 is evicted and the rest is there
+  // This is consistent with the LRU policy since the element 0
+  // was released first
+  for (size_t i = 0; i < n + 1; i++) {
+    std::string key = ToString(i+1);
+    auto h = cache->Lookup(key);
+    if (h) {
+      ASSERT_NE(i, 0U);
+      cache->Release(h);
+    } else {
+      ASSERT_EQ(i, 0U);
+    }
+  }
 }
 
 namespace {
@@ -427,7 +625,7 @@ void callback(void* entry, size_t charge) {
 }
 };
 
-TEST(CacheTest, ApplyToAllCacheEntiresTest) {
+TEST_P(CacheTest, ApplyToAllCacheEntiresTest) {
   std::vector<std::pair<int, int>> inserted;
   callback_state.clear();
 
@@ -437,13 +635,38 @@ TEST(CacheTest, ApplyToAllCacheEntiresTest) {
   }
   cache_->ApplyToAllCacheEntries(callback, true);
 
-  sort(inserted.begin(), inserted.end());
-  sort(callback_state.begin(), callback_state.end());
+  std::sort(inserted.begin(), inserted.end());
+  std::sort(callback_state.begin(), callback_state.end());
   ASSERT_TRUE(inserted == callback_state);
 }
+
+TEST_P(CacheTest, DefaultShardBits) {
+  // test1: set the flag to false. Insert more keys than capacity. See if they
+  // all go through.
+  std::shared_ptr<Cache> cache = NewCache(16 * 1024L * 1024L);
+  ShardedCache* sc = dynamic_cast<ShardedCache*>(cache.get());
+  ASSERT_EQ(5, sc->GetNumShardBits());
+
+  cache = NewLRUCache(511 * 1024L, -1, true);
+  sc = dynamic_cast<ShardedCache*>(cache.get());
+  ASSERT_EQ(0, sc->GetNumShardBits());
+
+  cache = NewLRUCache(1024L * 1024L * 1024L, -1, true);
+  sc = dynamic_cast<ShardedCache*>(cache.get());
+  ASSERT_EQ(6, sc->GetNumShardBits());
+}
+
+#ifdef SUPPORT_CLOCK_CACHE
+shared_ptr<Cache> (*new_clock_cache_func)(size_t, int, bool) = NewClockCache;
+INSTANTIATE_TEST_CASE_P(CacheTestInstance, CacheTest,
+                        testing::Values(kLRU, kClock));
+#else
+INSTANTIATE_TEST_CASE_P(CacheTestInstance, CacheTest, testing::Values(kLRU));
+#endif  // SUPPORT_CLOCK_CACHE
 
 }  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  return rocksdb::test::RunAllTests();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

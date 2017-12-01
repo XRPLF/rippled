@@ -1,5 +1,37 @@
 # RocksJava Change Log
 
+## 3.13 (8/4/2015)
+### New Features
+* Exposed BackupEngine API.
+* Added CappedPrefixExtractor support.  To use such extractor, simply call useCappedPrefixExtractor in either Options or ColumnFamilyOptions.
+* Added RemoveEmptyValueCompactionFilter.
+
+## 3.10.0 (3/24/2015)
+### New Features
+* Added compression per level API.
+* MemEnv is now available in RocksJava via RocksMemEnv class.
+* lz4 compression is now included in rocksjava static library when running `make rocksdbjavastatic`.
+
+### Public API Changes
+* Overflowing a size_t when setting rocksdb options now throws an IllegalArgumentException, which removes the necessity for a developer to catch these Exceptions explicitly.
+* The set and get functions for tableCacheRemoveScanCountLimit are deprecated.
+
+
+## By 01/31/2015
+### New Features
+* WriteBatchWithIndex support.
+* Iterator support for WriteBatch and WriteBatchWithIndex
+* GetUpdatesSince support.
+* Snapshots carry now information about the related sequence number.
+* TTL DB support.
+
+## By 11/14/2014
+### New Features
+* Full support for Column Family.
+* Slice and Comparator support.
+* Default merge operator support.
+* RateLimiter support.
+
 ## By 06/15/2014
 ### New Features
 * Added basic Java binding for rocksdb::Env such that multiple RocksDB can share the same thread pool and environment.
