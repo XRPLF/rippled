@@ -1,6 +1,7 @@
 #ifndef SOCI_BIND_VALUES_H_INCLUDED
 #define SOCI_BIND_VALUES_H_INCLUDED
 
+#include "soci/soci-platform.h"
 #include "exchange-traits.h"
 #include "into-type.h"
 #include "into.h"
@@ -9,10 +10,10 @@
 #include "use.h"
 
 
-#ifdef HAVE_BOOST
+#ifdef SOCI_HAVE_BOOST
 #       include <boost/fusion/algorithm/iteration/for_each.hpp>
 #       include <boost/mpl/bool.hpp>
-#endif // HAVE_BOOST
+#endif // SOCI_HAVE_BOOST
 #include <vector>
 
 namespace soci
@@ -35,15 +36,15 @@ public:
     template <typename T, typename Indicator>
     void exchange(use_container<T, Indicator> const &uc)
     {
-#ifdef HAVE_BOOST
+#ifdef SOCI_HAVE_BOOST
         exchange_(uc, (typename boost::fusion::traits::is_sequence<T>::type *)NULL);
 #else
         exchange_(uc, NULL);
-#endif // HAVE_BOOST
+#endif // SOCI_HAVE_BOOST
     }
 
 private:
-#ifdef HAVE_BOOST
+#ifdef SOCI_HAVE_BOOST
     template <typename T, typename Indicator>
     struct use_sequence
     {
@@ -91,7 +92,7 @@ private:
         boost::fusion::for_each(uc.t, use_sequence<T, details::no_indicator>(*this));
     }
 
-#endif // HAVE_BOOST
+#endif // SOCI_HAVE_BOOST
 
     template <typename T, typename Indicator>
     void exchange_(use_container<T, Indicator> const &uc, ...)
@@ -125,15 +126,15 @@ public:
     template <typename T, typename Indicator>
     void exchange(into_container<T, Indicator> const &ic)
     {
-#ifdef HAVE_BOOST
+#ifdef SOCI_HAVE_BOOST
         exchange_(ic, (typename boost::fusion::traits::is_sequence<T>::type *)NULL);
 #else
         exchange_(ic, NULL);
-#endif // HAVE_BOOST
+#endif // SOCI_HAVE_BOOST
     }
 
 private:
-#ifdef HAVE_BOOST
+#ifdef SOCI_HAVE_BOOST
     template <typename T, typename Indicator>
     struct into_sequence
     {
@@ -180,7 +181,7 @@ private:
     {
         boost::fusion::for_each(ic.t, into_sequence<T, details::no_indicator>(*this));
     }
-#endif // HAVE_BOOST
+#endif // SOCI_HAVE_BOOST
 
     template <typename T, typename Indicator>
     void exchange_(into_container<T, Indicator> const &ic, ...)

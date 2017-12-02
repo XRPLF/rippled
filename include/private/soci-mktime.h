@@ -39,6 +39,11 @@ mktime_from_ymdhms(tm& t,
     mktime(&t);
 }
 
+// Helper function for parsing datetime values.
+//
+// Throws if the string in buf couldn't be parsed as a date or a time string.
+SOCI_DECL void parse_std_tm(char const *buf, std::tm &t);
+
 } // namespace details
 
 } // namespace soci

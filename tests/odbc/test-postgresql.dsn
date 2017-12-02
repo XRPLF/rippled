@@ -1,8 +1,9 @@
 [ODBC]
-Description=DSN for SOCI ODBC connection to PostgreSQL
+Description=DSN for SOCI ODBC connection to PostgreSQL(Travis-CI)
 Driver=PostgreSQL ANSI
 Server=localhost
 Port=5432
 Database=soci_test
 UID=postgres
-PWD=
+PWD=Password12!
+UnknownsAsLongVarchar=1

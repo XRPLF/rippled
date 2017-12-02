@@ -5,12 +5,14 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#define SOCI_SQLITE3_SOURCE
 #include "soci/soci-platform.h"
 #include "soci/sqlite3/soci-sqlite3.h"
 #include "soci/rowid.h"
 #include "common.h"
 #include "soci/blob.h"
 #include "soci-cstrtod.h"
+#include "soci-mktime.h"
 #include "soci-exchange-cast.h"
 // std
 #include <cstdlib>

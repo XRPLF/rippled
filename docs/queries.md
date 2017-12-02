@@ -1,25 +1,30 @@
-## Queries
+# Queries
 
-### Simple SQL statements
+## Simple SQL statements
 
 In many cases, the SQL query is intended to be executed only once, which means that statement parsing and execution can go together. The `session` class provides a special `once` member, which triggers parsing and execution of such one-time statements:
 
-    sql.once << "drop table persons";
+```cpp
+sql.once << "drop table persons";
+```
 
 For shorter syntax, the following form is also allowed:
 
-  sql << "drop table persons";
+```cpp
+sql << "drop table persons";
+```
 
 The IOStream-like interface is exactly what it looks like, so that the statement text can be composed of many parts, involving anything that is *streamable* (including custom classes, if they have appropriate `operator<<`):
 
+```cpp
+string tableName = "persons";
+sql << "drop table " << tableName;
 
-    string tableName = "persons";
-    sql << "drop table " << tableName;
+int id = 123;
+sql << "delete from companies where id = " << id;
+```
 
-    int id = 123;
-    sql << "delete from companies where id = " << id;
-
-### Query transformation
+## Query transformation
 
 In SOCI 3.2.0, query transformation mechanism was introduced.
 
@@ -31,46 +36,51 @@ For one-time statements, query transformation is performed before each execution
 
 A few short examples how to use query transformation:
 
-*defined as free function:*
+* defined as free function:
 
-    std::string less_than_ten(std::string query)
+```cpp
+std::string less_than_ten(std::string query)
+{
+    return query + " WHERE price < 10";
+}
+
+session sql(postgresql, "dbname=mydb");
+sql.set_query_transformation(less_than_ten);
+sql << "DELETE FROM item";
+```
+
+* defined as function object:
+
+```cpp
+struct order : std::unary_function<std::string, std::string&gt;
+{
+    order(std::string const&amp; by) : by_(by) {}
+
+    result_type operator()(argument_type query) const
     {
-        return query + " WHERE price < 10";
+        return query + " ORDER BY " + by_;
     }
 
-    session sql(postgresql, "dbname=mydb");
-    sql.set_query_transformation(less_than_ten);
-    sql << "DELETE FROM item";
+    std::string by_;
+};
 
-*defined as function object:*
+char const* query = "SELECT * FROM product";
+sql.set_query_transformation(order("price");
+sql << query;
+sql.set_query_transformation(order("id");
+sql << query;
+```
 
-    struct order : std::unary_function<std::string, std::string&gt;
-    {
-        order(std::string const&amp; by) : by_(by) {}
+* defined as lambda function (since C++11):
 
-        result_type operator()(argument_type query) const
-        {
-            return query + " ORDER BY " + by_;
-        }
-
-        std::string by_;
-    };
-
-    char const* query = "SELECT * FROM product";
-    sql.set_query_transformation(order("price");
-    sql << query;
-    sql.set_query_transformation(order("id");
-    sql << query;
-
-*defined as lambda function (since C++11):*
-
-    std::string dep = "sales";
-    sql.set_query_transformation(
-        [&dep](std::string const&amp; query) {
-            return query + " WHERE department = '" + dep + "'";
-    });
-    sql << "SELECT * FROM employee";
-
+```cpp
+std::string dep = "sales";
+sql.set_query_transformation(
+    [&dep](std::string const&amp; query) {
+        return query + " WHERE department = '" + dep + "'";
+});
+sql << "SELECT * FROM employee";
+```
 
 Query transformations enable users with simple mechanism to apply extra requirements to or interact with SQL statement being executed and that is without changing the SQL statement itself which may be passed from different
 parts of application.

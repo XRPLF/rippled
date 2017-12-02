@@ -22,7 +22,6 @@ macro(soci_backend_deps_found NAME DEPS SUCCESS)
   # Determine required dependencies
   set(DEPS_INCLUDE_DIRS)
   set(DEPS_LIBRARIES)
-  set(DEPS_DEFS)
   set(DEPS_NOT_FOUND)
 
   # CMake 2.8+ syntax only:
@@ -33,10 +32,13 @@ macro(soci_backend_deps_found NAME DEPS SUCCESS)
       list(APPEND DEPS_NOT_FOUND ${dep})
     else()
       string(TOUPPER "${dep}" DEPU)
-      list(APPEND DEPS_INCLUDE_DIRS ${${DEPU}_INCLUDE_DIR})
-      list(APPEND DEPS_INCLUDE_DIRS ${${DEPU}_INCLUDE_DIRS})
+      if( ${DEPU}_INCLUDE_DIR )
+        list(APPEND DEPS_INCLUDE_DIRS ${${DEPU}_INCLUDE_DIR})
+      endif()
+      if( ${DEPU}_INCLUDE_DIRS )
+        list(APPEND DEPS_INCLUDE_DIRS ${${DEPU}_INCLUDE_DIRS})
+      endif()
       list(APPEND DEPS_LIBRARIES ${${DEPU}_LIBRARIES})
-      list(APPEND DEPS_DEFS HAVE_${DEPU}=1)
     endif()
   endforeach()
 
@@ -47,7 +49,6 @@ macro(soci_backend_deps_found NAME DEPS SUCCESS)
   else()
     set(${NAME}_DEPS_INCLUDE_DIRS ${DEPS_INCLUDE_DIRS})
     set(${NAME}_DEPS_LIBRARIES ${DEPS_LIBRARIES})
-    set(${NAME}_DEPS_DEFS ${DEPS_DEFS})
     set(${SUCCESS} True)
   endif()
 
@@ -83,8 +84,7 @@ macro(soci_backend NAME)
   soci_backend_deps_found(${NAMEU} "${THIS_BACKEND_DEPENDS}" ${NAMEU}_DEPS_FOUND)
   if(NOT ${NAMEU}_DEPS_FOUND)
 
-    colormsg(_RED_ "WARNING:")
-    colormsg(RED "Some required dependencies of ${NAME} backend not found:")
+    colormsg(_RED_ "WARNING: Some required dependencies of ${NAME} backend not found:")
 
     if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} LESS 2.8)
       foreach(dep ${DEPENDS_NOT_FOUND})
@@ -214,17 +214,22 @@ macro(soci_backend NAME)
 
       if (SOCI_SHARED)
         install(TARGETS ${THIS_BACKEND_TARGET}
-         RUNTIME DESTINATION ${BINDIR}
-         LIBRARY DESTINATION ${LIBDIR}
-         ARCHIVE DESTINATION ${LIBDIR})
+          EXPORT SOCI
+          RUNTIME DESTINATION ${BINDIR}
+          LIBRARY DESTINATION ${LIBDIR}
+          ARCHIVE DESTINATION ${LIBDIR})
       endif()
 
-      if (SOCI_SHARED)
+      if (SOCI_STATIC)
         install(TARGETS ${THIS_BACKEND_TARGET_STATIC}
-         RUNTIME DESTINATION ${BINDIR}
-         LIBRARY DESTINATION ${LIBDIR}
-         ARCHIVE DESTINATION ${LIBDIR})
+          EXPORT SOCI
+          RUNTIME DESTINATION ${BINDIR}
+          LIBRARY DESTINATION ${LIBDIR}
+          ARCHIVE DESTINATION ${LIBDIR}
+         )
       endif()
+
+      install(EXPORT SOCI NAMESPACE SOCI:: DESTINATION cmake)
 
     else()
         colormsg(HIRED "${NAME}" RED "backend disabled, since")
@@ -320,8 +325,7 @@ macro(soci_backend_test)
         INCLUDE_DIRECTORIES "${THIS_INCLUDE_DIRS}"
         COMPILE_DEFINITIONS "${THIS_COMPILE_DEFS}")
     else()
-       colormsg(_RED_ "WARNING:")
-       colormsg(RED "Some dependencies of ${THIS_TEST_BACKEND} test not found")
+       colormsg(_RED_ "WARNING: Some dependencies of ${THIS_TEST_BACKEND} test not found")
     endif()
 
     set(TEST_CONNSTR_VAR ${TEST_FULL_NAME}_CONNSTR)
@@ -330,8 +334,13 @@ macro(soci_backend_test)
 
     if(NOT ${TEST_CONNSTR_VAR} AND THIS_TEST_CONNSTR)
       set(${TEST_CONNSTR_VAR} ${THIS_TEST_CONNSTR})
+      if(${TEST_CONNSTR_VAR} MATCHES ".dsn")
+        set(_dsnpath "${CMAKE_CURRENT_SOURCE_DIR}/${${TEST_CONNSTR_VAR}}")
+        set(${TEST_CONNSTR_VAR} "FILEDSN=${_dsnpath}")
+      endif()
     endif()
-    boost_report_value(${TEST_CONNSTR_VAR})
+
+    boost_message_value(${TEST_CONNSTR_VAR})
 
     if( SOCI_SHARED )
       # Shared libraries test
@@ -362,8 +371,8 @@ macro(soci_backend_test)
       target_link_libraries(${TEST_TARGET_STATIC}
         ${SOCI_CORE_DEPS_LIBS}
         ${THIS_TEST_DEPENDS_LIBRARIES}
-        soci_core_static
-        soci_${BACKENDL}_static)
+        soci_${BACKENDL}_static
+        soci_core_static)
 
       add_test(${TEST_TARGET_STATIC}
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TEST_TARGET_STATIC}
@@ -375,7 +384,7 @@ macro(soci_backend_test)
       add_dependencies(check ${TEST_TARGET_STATIC})
     endif(SOCI_STATIC)
 
-    
+
 
     # Group source files for IDE source explorers (e.g. Visual Studio)
     source_group("Source Files" FILES ${THIS_TEST_SOURCE})

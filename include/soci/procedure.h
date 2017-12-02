@@ -42,13 +42,13 @@ class SOCI_DECL procedure
 public:
     // this is a conversion constructor
     procedure(details::prepare_temp_type const & prep)
-        : impl_(new details::procedure_impl(prep)) {}
+        : impl_(new details::procedure_impl(prep)), gotData_(false) {}
 
     ~procedure() { impl_->dec_ref(); }
 
     // copy is supported here
     procedure(procedure const & other)
-        : impl_(other.impl_)
+        : impl_(other.impl_), gotData_(other.gotData_)
     {
         impl_->inc_ref();
     }
@@ -57,6 +57,7 @@ public:
         other.impl_->inc_ref();
         impl_->dec_ref();
         impl_ = other.impl_;
+        gotData_ = other.gotData_;
     }
 
     // forwarders to procedure_impl

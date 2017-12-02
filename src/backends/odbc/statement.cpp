@@ -150,20 +150,29 @@ odbc_statement_backend::execute(int number)
     SQLRETURN rc = SQLExecute(hstmt_);
     if (is_odbc_error(rc))
     {
+        // Construct the error object immediately, before calling any other
+        // ODBC functions, in order to not lose the error message.
+        const odbc_soci_error err(SQL_HANDLE_STMT, hstmt_, "executing statement");
+
+        // There is no universal way to determine the number of affected rows
+        // after a failed update.
+        rowsAffected_ = -1LL;
+
         // If executing bulk operation a partial
         // number of rows affected may be available.
         if (hasVectorUseElements_)
         {
-            rowsAffected_ = 0;
-
             do
             {
                 SQLLEN res = 0;
                 // SQLRowCount will return error after a partially executed statement.
                 // SQL_DIAG_ROW_COUNT returns the same info but must be collected immediatelly after the execution.
                 rc = SQLGetDiagField(SQL_HANDLE_STMT, hstmt_, 0, SQL_DIAG_ROW_COUNT, &res, 0, NULL);
-                if (!is_odbc_error(rc) && res > 0) // 'res' will be -1 for the where the statement failed.
+                if (!is_odbc_error(rc) && res != -1)
                 {
+                  if (rowsAffected_ == -1LL)
+                    rowsAffected_ = res;
+                  else
                     rowsAffected_ += res;
                 }
                 --rows_processed; // Avoid unnecessary calls to SQLGetDiagField
@@ -171,7 +180,7 @@ odbc_statement_backend::execute(int number)
             // Move forward to the next result while there are rows processed.
             while (rows_processed > 0 && SQLMoreResults(hstmt_) == SQL_SUCCESS);
         }
-        throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_, "executing statement");
+        throw err;
     }
     else if (hasVectorUseElements_)
     {
@@ -180,20 +189,15 @@ odbc_statement_backend::execute(int number)
     }
     else // We need to retrieve the number of rows affected explicitly.
     {
-        rowsAffected_ = 0;
-
-        do {
-            SQLLEN res = 0;
-            SQLRETURN rc = SQLRowCount(hstmt_, &res);
-            if (is_odbc_error(rc))
-            {
-                throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_,
-                                      "getting number of affected rows");
-            }
-            rowsAffected_ += res;
+        SQLLEN res = 0;
+        rc = SQLRowCount(hstmt_, &res);
+        if (is_odbc_error(rc))
+        {
+            throw odbc_soci_error(SQL_HANDLE_STMT, hstmt_,
+                                  "getting number of affected rows");
         }
-        // Move forward to the next result if executing a bulk operation.
-        while (hasVectorUseElements_ && SQLMoreResults(hstmt_) == SQL_SUCCESS);
+
+        rowsAffected_ = res;
     }
     SQLSMALLINT colCount;
     SQLNumResultCols(hstmt_, &colCount);

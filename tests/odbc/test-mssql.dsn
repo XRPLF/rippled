@@ -1,8 +1,10 @@
 [ODBC]
-DRIVER=SQL Native Client
-UID=David
+DRIVER=SQL Server Native Client 11.0
+UID=sa
+PWD=Password12!
+WSID=SOLARWIND
+APP=SOCI Test Application
+SERVER=(local)\SQL2014
 DATABASE=soci_test
-WSID=NANO
-APP=Microsoft Data Access Components
-Trusted_Connection=Yes
-SERVER=localhost\SQLEXPRESS
+Description=SQL on AppVeyor
+

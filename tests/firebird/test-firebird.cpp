@@ -170,7 +170,9 @@ TEST_CASE("Firebird date and time", "[firebird][datetime]")
 
     sql.begin();
 
-    std::tm t1, t2, t3;
+    std::tm t1 = std::tm();
+    std::tm t2 = std::tm();
+    std::tm t3 = std::tm();
     std::time_t now = std::time(NULL);
     std::tm t = *std::localtime(&now);
     sql << "insert into test3(p1, p2, p3) "
@@ -612,6 +614,23 @@ TEST_CASE("Firebird blobs", "[firebird][blob]")
 
         sql << "select img from test7 where id = 1", into(b, ind);
         CHECK(ind==i_null);
+    }
+
+    {
+        //create large blob
+        const int blobSize = 65536; //max segment size is 65535(unsigned short)
+        std::vector<char> data(blobSize);
+        blob b(sql);
+        b.write(0, data.data(), blobSize);
+        sql << "insert into test7(id, img) values(3,?)", use(b);
+
+        //now read blob back from database and make sure it has correct content and size
+        blob br(sql);
+        sql << "select img from test7 where id = 3", into(br);
+        std::vector<char> data2(br.get_len());
+        if(br.get_len()>0)
+            br.read(0, data2.data(), br.get_len());
+        CHECK(data == data2);
     }
 
     sql << "drop table test7";
@@ -1081,7 +1100,7 @@ TEST_CASE("Firebird string coercions", "[firebird][string]")
 
     {
         double a;
-        std::tm b, c, d;
+        std::tm b = std::tm(), c = std::tm(), d = std::tm();
         sql << "select a, b, c, d from test12",
             into(a), into(b), into(c), into(d);
         CHECK(std::fabs(a - (-3.141)) < 0.000001);
@@ -1255,6 +1274,28 @@ struct TableCreator4 : public tests::table_creator_base
     }
 };
 
+struct TableCreatorCLOB : public tests::table_creator_base
+{
+    TableCreatorCLOB(soci::session & sql)
+            : tests::table_creator_base(sql)
+    {
+        sql << "create table soci_test(id integer, s blob sub_type text)";
+        sql.commit();
+        sql.begin();
+    }
+};
+
+struct TableCreatorXML : public tests::table_creator_base
+{
+    TableCreatorXML(soci::session & sql)
+            : tests::table_creator_base(sql)
+    {
+        sql << "create table soci_test(id integer, x blob sub_type text)";
+        sql.commit();
+        sql.begin();
+    }
+};
+
 class test_context : public tests::test_context_base
 {
     public:
@@ -1263,34 +1304,49 @@ class test_context : public tests::test_context_base
                 : test_context_base(backEnd, connectString)
         {}
 
-        tests::table_creator_base* table_creator_1(soci::session& s) const
+        tests::table_creator_base* table_creator_1(soci::session& s) const SOCI_OVERRIDE
         {
             return new TableCreator1(s);
         }
 
-        tests::table_creator_base* table_creator_2(soci::session& s) const
+        tests::table_creator_base* table_creator_2(soci::session& s) const SOCI_OVERRIDE
         {
             return new TableCreator2(s);
         }
 
-        tests::table_creator_base* table_creator_3(soci::session& s) const
+        tests::table_creator_base* table_creator_3(soci::session& s) const SOCI_OVERRIDE
         {
             return new TableCreator3(s);
         }
 
-        tests::table_creator_base* table_creator_4(soci::session& s) const
+        tests::table_creator_base* table_creator_4(soci::session& s) const SOCI_OVERRIDE
         {
             return new TableCreator4(s);
         }
 
-        std::string to_date_time(std::string const &datdt_string) const
+        tests::table_creator_base* table_creator_clob(soci::session& s) const SOCI_OVERRIDE
+        {
+            return new TableCreatorCLOB(s);
+        }
+
+        tests::table_creator_base* table_creator_xml(soci::session& s) const SOCI_OVERRIDE
+        {
+            return new TableCreatorXML(s);
+        }
+
+        std::string to_date_time(std::string const &datdt_string) const SOCI_OVERRIDE
         {
             return "'" + datdt_string + "'";
         }
 
-        virtual void on_after_ddl(soci::session& sql) const
+        void on_after_ddl(soci::session& sql) const SOCI_OVERRIDE
         {
             sql.commit();
+        }
+
+        std::string sql_length(std::string const& s) const SOCI_OVERRIDE
+        {
+            return "char_length(" + s + ")";
         }
 };
 

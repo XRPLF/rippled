@@ -4,6 +4,8 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //
+
+#define SOCI_SQLITE3_SOURCE
 #include "soci/sqlite3/soci-sqlite3.h"
 // std
 #include <algorithm>
@@ -80,11 +82,16 @@ void sqlite3_statement_backend::reset_if_needed()
 {
     if (stmt_ && databaseReady_ == false)
     {
-        int const res = sqlite3_reset(stmt_);
-        if (SQLITE_OK == res)
-        {
-            databaseReady_ = true;
-        }
+        reset();
+    }
+}
+
+void sqlite3_statement_backend::reset()
+{
+    int const res = sqlite3_reset(stmt_);
+    if (SQLITE_OK == res)
+    {
+        databaseReady_ = true;
     }
 }
 
@@ -177,6 +184,9 @@ sqlite3_statement_backend::load_rowset(int totalRows)
                             col.buffer_.data_ = (col.buffer_.size_ > 0 ? new char[col.buffer_.size_] : NULL);
                             memcpy(col.buffer_.data_, sqlite3_column_blob(stmt_, c), col.buffer_.size_);
                             break;
+
+                        case dt_xml:
+                            throw soci_error("XML data type is not supported");
                     }
                 }
             }
@@ -200,8 +210,10 @@ sqlite3_statement_backend::load_rowset(int totalRows)
 statement_backend::exec_fetch_result
 sqlite3_statement_backend::load_one()
 {
-    statement_backend::exec_fetch_result retVal = ef_success;
+    if( !databaseReady_ )
+        return ef_no_data;
 
+    statement_backend::exec_fetch_result retVal = ef_success;
     int const res = sqlite3_step(stmt_);
 
     if (SQLITE_DONE == res)
@@ -218,10 +230,9 @@ sqlite3_statement_backend::load_one()
 
         std::ostringstream ss;
         ss << "sqlite3_statement_backend::loadOne: "
-           << zErrMsg;
+            << zErrMsg;
         throw sqlite3_soci_error(ss.str(), res);
     }
-
     return retVal;
 }
 
@@ -232,6 +243,8 @@ sqlite3_statement_backend::bind_and_execute(int number)
     statement_backend::exec_fetch_result retVal = ef_no_data;
 
     long long rowsAffectedBulkTemp = 0;
+
+    rowsAffectedBulk_ = -1;
 
     int const rows = static_cast<int>(useData_.size());
     for (int row = 0; row < rows; ++row)
@@ -272,6 +285,9 @@ sqlite3_statement_backend::bind_and_execute(int number)
                     case dt_blob:
                         bindRes = sqlite3_bind_blob(stmt_, pos, col.buffer_.constData_, static_cast<int>(col.buffer_.size_), NULL);
                         break;
+
+                    case dt_xml:
+                        throw soci_error("XML data type is not supported");
                 }
             }
 
@@ -290,7 +306,8 @@ sqlite3_statement_backend::bind_and_execute(int number)
             return load_rowset(number);
         }
 
-        retVal = load_one(); //execute each bound line
+        databaseReady_=true; // Mark sqlite engine is ready to perform sqlite3_step
+        retVal = load_one(); // execute each bound line
         rowsAffectedBulkTemp += get_affected_rows();
     }
 

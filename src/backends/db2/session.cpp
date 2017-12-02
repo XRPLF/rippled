@@ -10,12 +10,16 @@
 #include "soci/db2/soci-db2.h"
 #include "soci/connection-parameters.h"
 
+#include <cstdio>
+
 #ifdef _MSC_VER
 #pragma warning(disable:4355)
 #endif
 
 using namespace soci;
 using namespace soci::details;
+
+const char* soci::db2_option_driver_complete = "db2.driver_complete";
 
 const std::string db2_soci_error::sqlState(std::string const & msg,const SQLSMALLINT htype,const SQLHANDLE hndl) {
     std::ostringstream ss(msg, std::ostringstream::app);
@@ -45,15 +49,6 @@ void db2_session_backend::parseKeyVal(std::string const & keyVal) {
     std::string key=keyVal.substr(0,delimiter);
     std::string value=keyVal.substr(delimiter+1,keyVal.length());
 
-    if (!key.compare("DSN")) {
-        this->dsn=value;
-    }
-    if (!key.compare("Uid")) {
-        this->username=value;
-    }
-    if (!key.compare("Pwd")) {
-        this->password=value;
-    }
     this->autocommit=true; //Default value
     if (!key.compare("autocommit")) {
         if (!value.compare("off")) {
@@ -63,6 +58,7 @@ void db2_session_backend::parseKeyVal(std::string const & keyVal) {
 }
 
 /* DSN=SAMPLE;Uid=db2inst1;Pwd=db2inst1;AutoCommit=off */
+/* DATABASE=SAMPLE;hostname=server.com;UID=db2inst1;PWD=db2inst1;ServiceName=50000;Protocol=TCPIP; */
 void db2_session_backend::parseConnectString(std::string const &  connectString) {
     std::string processingString(connectString);
     size_t delimiter=processingString.find_first_of(";");
@@ -81,8 +77,10 @@ db2_session_backend::db2_session_backend(
     connection_parameters const & parameters) :
         in_transaction(false)
 {
-    parseConnectString(parameters.get_connect_string());
-    SQLRETURN cliRC = SQL_SUCCESS;
+    std::string const& connectString = parameters.get_connect_string();
+    parseConnectString(connectString);
+
+    SQLRETURN cliRC = SQL_ERROR;
 
     /* Prepare handles */
     cliRC = SQLAllocHandle(SQL_HANDLE_ENV,SQL_NULL_HANDLE,&hEnv);
@@ -111,15 +109,48 @@ db2_session_backend::db2_session_backend(
     }
 
     /* Connect to database */
-    cliRC = SQLConnect(hDbc, const_cast<SQLCHAR *>((const SQLCHAR *) dsn.c_str()), SQL_NTS,
-        const_cast<SQLCHAR *>((const SQLCHAR *) username.c_str()), SQL_NTS,
-        const_cast<SQLCHAR *>((const SQLCHAR *) password.c_str()), SQL_NTS);
+    // NOTE: SQLDriverConnect preparation steps below copied from ODBC backend.
+    SQLCHAR outConnString[1024];
+    SQLSMALLINT strLength;
+
+    // Prompt the user for any missing information (typically UID/PWD) in the
+    // connection string by default but allow overriding this using "prompt"
+    // option.
+    SQLHWND hwnd_for_prompt = NULL;
+    unsigned completion = SQL_DRIVER_COMPLETE;
+    std::string completionString;
+    if (parameters.get_option(db2_option_driver_complete, completionString))
+    {
+      // The value of the option is supposed to be just the integer value of
+      // one of SQL_DRIVER_XXX constants but don't check for the exact value in
+      // case more of them are added in the future, the ODBC driver will return
+      // an error if we pass it an invalid value anyhow.
+      if (std::sscanf(completionString.c_str(), "%u", &completion) != 1)
+      {
+        throw soci_error("Invalid non-numeric driver completion option value \"" +
+                          completionString + "\".");
+      }
+    }
+
+    #ifdef _WIN32
+    if (completion != SQL_DRIVER_NOPROMPT)
+      hwnd_for_prompt = ::GetDesktopWindow();
+    #endif // _WIN32
+
+    cliRC = SQLDriverConnect(hDbc, hwnd_for_prompt,
+                reinterpret_cast<SQLCHAR*>(const_cast<char*>(connectString.c_str())),
+                (SQLSMALLINT)connectString.size(),
+                outConnString, 1024, &strLength,
+                static_cast<SQLUSMALLINT>(completion));
+
     if (cliRC != SQL_SUCCESS) {
         std::string msg=db2_soci_error::sqlState("Error connecting to database",SQL_HANDLE_DBC,hDbc);
         SQLFreeHandle(SQL_HANDLE_DBC,hDbc);
         SQLFreeHandle(SQL_HANDLE_ENV,hEnv);
         throw db2_soci_error(msg,cliRC);
     }
+
+    connection_string_.assign((const char*)outConnString, strLength);
 }
 
 db2_session_backend::~db2_session_backend()

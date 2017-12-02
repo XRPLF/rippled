@@ -151,6 +151,7 @@ private:
 
     std::size_t intos_size();
     std::size_t uses_size();
+    void pre_exec(int num);
     void pre_fetch();
     void pre_use();
     void post_fetch(bool gotData, bool calledFromFetch);

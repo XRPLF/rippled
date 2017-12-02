@@ -1,0 +1,12 @@
+COMPILER = g++
+CXXFLAGS = -Wall -pedantic -Wno-long-long
+INCLUDEDIRS = -I../../include -I../../include/private -I.. -I/usr/include/sqlite3
+LIBDIRS = -L../../src/core -L../../src/backends/sqlite3 -L/usr/lib/x86_64-linux-gnu
+LIBS = -lsoci_sqlite3 -lsoci_core -ldl -lsqlite3
+
+test-sqlite3 : test-sqlite3.cpp
+	${COMPILER} $? -o $@ ${INCLUDEDIRS} ${LIBDIRS} ${LIBS}
+
+
+clean :
+	rm -f test-sqlite3

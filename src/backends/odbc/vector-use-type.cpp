@@ -165,10 +165,12 @@ void odbc_vector_use_type_backend::prepare_for_bind(void *&data, SQLUINTEGER &si
             prepare_indicators(vecSize);
             for (std::size_t i = 0; i != vecSize; ++i)
             {
-                std::size_t sz = v[i].length() + 1;  // add one for null
+                std::size_t sz = v[i].length();
                 indHolderVec_[i] = static_cast<long>(sz);
                 maxSize = sz > maxSize ? sz : maxSize;
             }
+
+            maxSize++; // For terminating nul.
 
             buf_ = new char[maxSize * vecSize];
             memset(buf_, 0, maxSize * vecSize);
@@ -176,7 +178,7 @@ void odbc_vector_use_type_backend::prepare_for_bind(void *&data, SQLUINTEGER &si
             char *pos = buf_;
             for (std::size_t i = 0; i != vecSize; ++i)
             {
-                strncpy(pos, v[i].c_str(), v[i].length());
+                memcpy(pos, v[i].c_str(), v[i].length());
                 pos += maxSize;
             }
 
@@ -202,9 +204,9 @@ void odbc_vector_use_type_backend::prepare_for_bind(void *&data, SQLUINTEGER &si
         }
         break;
 
-    case x_statement: break; // not supported
-    case x_rowid:     break; // not supported
-    case x_blob:      break; // not supported
+    // not supported
+    default:
+        throw soci_error("Use vector element used with non-supported type.");
     }
 
     colSize_ = size;
@@ -215,9 +217,9 @@ void odbc_vector_use_type_backend::bind_helper(int &position, void *data, exchan
     data_ = data; // for future reference
     type_ = type; // for future reference
 
-    SQLSMALLINT sqlType;
-    SQLSMALLINT cType;
-    SQLUINTEGER size;
+    SQLSMALLINT sqlType(0);
+    SQLSMALLINT cType(0);
+    SQLUINTEGER size(0);
 
     prepare_for_bind(data, size, sqlType, cType);
 
@@ -290,57 +292,94 @@ void odbc_vector_use_type_backend::bind_by_name(
 void odbc_vector_use_type_backend::pre_use(indicator const *ind)
 {
     // first deal with data
-    if (type_ == x_stdtm)
+    SQLLEN non_null_indicator = 0;
+    switch (type_)
     {
-        std::vector<std::tm> *vp
-             = static_cast<std::vector<std::tm> *>(data_);
+        case x_short:
+        case x_integer:
+        case x_double:
+            // Length of the parameter value is ignored for these types.
+            break;
 
-        std::vector<std::tm> &v(*vp);
+        case x_char:
+        case x_stdstring:
+            non_null_indicator = SQL_NTS;
+            break;
 
-        char *pos = buf_;
-        std::size_t const vsize = v.size();
-        for (std::size_t i = 0; i != vsize; ++i)
-        {
-            std::tm t = v[i];
-            TIMESTAMP_STRUCT * ts = reinterpret_cast<TIMESTAMP_STRUCT*>(pos);
+        case x_stdtm:
+            {
+                std::vector<std::tm> *vp
+                     = static_cast<std::vector<std::tm> *>(data_);
 
-            ts->year = static_cast<SQLSMALLINT>(t.tm_year + 1900);
-            ts->month = static_cast<SQLUSMALLINT>(t.tm_mon + 1);
-            ts->day = static_cast<SQLUSMALLINT>(t.tm_mday);
-            ts->hour = static_cast<SQLUSMALLINT>(t.tm_hour);
-            ts->minute = static_cast<SQLUSMALLINT>(t.tm_min);
-            ts->second = static_cast<SQLUSMALLINT>(t.tm_sec);
-            ts->fraction = 0;
-            pos += sizeof(TIMESTAMP_STRUCT);
-        }
-    }
-    else if (type_ == x_long_long && use_string_for_bigint())
-    {
-        std::vector<long long> *vp
-             = static_cast<std::vector<long long> *>(data_);
-        std::vector<long long> &v(*vp);
+                std::vector<std::tm> &v(*vp);
 
-        char *pos = buf_;
-        std::size_t const vsize = v.size();
-        for (std::size_t i = 0; i != vsize; ++i)
-        {
-            snprintf(pos, max_bigint_length, "%" LL_FMT_FLAGS "d", v[i]);
-            pos += max_bigint_length;
-        }
-    }
-    else if (type_ == x_unsigned_long_long && use_string_for_bigint())
-    {
-        std::vector<unsigned long long> *vp
-             = static_cast<std::vector<unsigned long long> *>(data_);
-        std::vector<unsigned long long> &v(*vp);
+                char *pos = buf_;
+                std::size_t const vsize = v.size();
+                for (std::size_t i = 0; i != vsize; ++i)
+                {
+                    std::tm t = v[i];
+                    TIMESTAMP_STRUCT * ts = reinterpret_cast<TIMESTAMP_STRUCT*>(pos);
 
-        char *pos = buf_;
-        std::size_t const vsize = v.size();
-        for (std::size_t i = 0; i != vsize; ++i)
-        {
-            snprintf(pos, max_bigint_length, "%" LL_FMT_FLAGS "u", v[i]);
-            pos += max_bigint_length;
-        }
+                    ts->year = static_cast<SQLSMALLINT>(t.tm_year + 1900);
+                    ts->month = static_cast<SQLUSMALLINT>(t.tm_mon + 1);
+                    ts->day = static_cast<SQLUSMALLINT>(t.tm_mday);
+                    ts->hour = static_cast<SQLUSMALLINT>(t.tm_hour);
+                    ts->minute = static_cast<SQLUSMALLINT>(t.tm_min);
+                    ts->second = static_cast<SQLUSMALLINT>(t.tm_sec);
+                    ts->fraction = 0;
+                    pos += sizeof(TIMESTAMP_STRUCT);
+                }
+            }
+            break;
+
+        case x_long_long:
+            if (use_string_for_bigint())
+            {
+                std::vector<long long> *vp
+                     = static_cast<std::vector<long long> *>(data_);
+                std::vector<long long> &v(*vp);
+
+                char *pos = buf_;
+                std::size_t const vsize = v.size();
+                for (std::size_t i = 0; i != vsize; ++i)
+                {
+                    snprintf(pos, max_bigint_length, "%" LL_FMT_FLAGS "d", v[i]);
+                    pos += max_bigint_length;
+                }
+
+                non_null_indicator = SQL_NTS;
+            }
+            break;
+
+        case x_unsigned_long_long:
+            if (use_string_for_bigint())
+            {
+                std::vector<unsigned long long> *vp
+                     = static_cast<std::vector<unsigned long long> *>(data_);
+                std::vector<unsigned long long> &v(*vp);
+
+                char *pos = buf_;
+                std::size_t const vsize = v.size();
+                for (std::size_t i = 0; i != vsize; ++i)
+                {
+                    snprintf(pos, max_bigint_length, "%" LL_FMT_FLAGS "u", v[i]);
+                    pos += max_bigint_length;
+                }
+
+                non_null_indicator = SQL_NTS;
+            }
+            break;
+
+        case x_statement:
+        case x_rowid:
+        case x_blob:
+        case x_xmltype:
+        case x_longstring:
+            // Those are unreachable, we would have thrown from
+            // prepare_for_bind() if we we were using one of them, only handle
+            // them here to avoid compiler warnings about unhandled enum
+            // elements.
+            break;
     }
 
     // then handle indicators
@@ -358,7 +397,7 @@ void odbc_vector_use_type_backend::pre_use(indicator const *ind)
             // for strings we have already set the values
             if (type_ != x_stdstring)
                 {
-                    indHolderVec_[i] = SQL_NTS;  // value is OK
+                    indHolderVec_[i] = non_null_indicator;
                 }
             }
         }
@@ -372,7 +411,7 @@ void odbc_vector_use_type_backend::pre_use(indicator const *ind)
             // for strings we have already set the values
             if (type_ != x_stdstring)
             {
-                indHolderVec_[i] = SQL_NTS;  // value is OK
+                indHolderVec_[i] = non_null_indicator;
             }
         }
     }
@@ -438,9 +477,9 @@ std::size_t odbc_vector_use_type_backend::size()
         }
         break;
 
-    case x_statement: break; // not supported
-    case x_rowid:     break; // not supported
-    case x_blob:      break; // not supported
+    // not supported
+    default:
+        throw soci_error("Use vector element used with non-supported type.");
     }
 
     return sz;

@@ -99,6 +99,8 @@ void *db2_standard_use_type_backend::prepare_for_bind(
         break;
 
     case x_blob:
+    case x_xmltype:
+    case x_longstring:
         break;
     case x_statement:
     case x_rowid:

@@ -1,71 +1,68 @@
-# Documentation and tutorial
+# SOCI - The C++ Database Access Library
 
-* [Structure](structure.html)
-* [Installation](installation.html)
-* [Errors](errors.html)
-* [Connections](connections.html)
-* [Queries](queries.html)
-* [Exchanging data](exchange.html)
-* [Statements, procedures and transactions](statements.html)
-* [Multithreading and SOCI](multithreading.html)
-* [Integration with Boost](boost.html)
-* [Interfaces](interfaces.html)
-* [Beyond standard SQL](beyond.html)
-* [Client interface reference](interfaces.html)
-* [Backends reference](backends.html)
-* [Rationale FAQ](rationale.html)
-* [Ada language binding](languages/ada.html)
-* [Existing backends and supported platforms](backends/index.html)
+SOCI is a database access library written in C++ that makes an illusion of embedding
+SQL queries in the regular C++ code, staying entirely within the Standard C++.
 
-The following (complete!) example is purposedly provided without any explanation.
+The idea is to provide C++ programmers a way to access SQL databases in the most natural and intuitive way.
+If you find existing libraries too difficult for your needs or just distracting, SOCI can be a good alternative.
 
-    #include "soci.h"
-    #include "soci-oracle.h"
-    #include <iostream>
-    #include <istream>
-    #include <ostream>
-    #include <string>
-    #include <exception>
+## Basic Syntax
 
-    using namespace soci;
-    using namespace std;
+The simplest motivating code example for the SQL query that is supposed to retrieve a single row is:
 
-    bool get_name(string &name) {
-        cout << "Enter name: ";
-        return cin >> name;
-    }
+```cpp
+int id = ...;
+string name;
+int salary;
 
-    int main()
-    {
-        try
-        {
-            session sql(oracle, "service=mydb user=john password=secret");
+sql << "select name, salary from persons where id = " << id,
+        into(name), into(salary);
+```
 
-            int count;
-            sql << "select count(*) from phonebook", into(count);
+## Basic ORM
 
-            cout << "We have " << count << " entries in the phonebook.\n";
+The following benefits from extensive support for object-relational mapping:
 
-            string name;
-            while (get_name(name))
-            {
-                string phone;
-                indicator ind;
-                sql << "select phone from phonebook where name = :name",
-                    into(phone, ind), use(name);
+```cpp
+int id = ...;
+Person p;
 
-                if (ind == i_ok)
-                {
-                    cout << "The phone number is " << phone << '\n';
-                }
-                else
-                {
-                    cout << "There is no phone for " << name << '\n';
-                }
-            }
-        }
-        catch (exception const &e)
-        {
-            cerr << "Error: " << e.what() << '\n';
-        }
-    }
+sql << "select first_name, last_name, date_of_birth "
+       "from persons where id = " << id, into(p);
+```
+
+## Integrations
+
+Integration with STL is also supported:
+
+```cpp
+Rowset<string> rs = (sql.prepare << "select name from persons");
+std::copy(rs.begin(), rs.end(), std::ostream_iterator<std::string>(std::cout, "\n"));
+```
+
+SOCI offers also extensive [integration with Boost](boost.md) datatypes (optional, tuple and fusion) and flexible support for user-defined datatypes.
+
+## Database Backends
+
+Starting from its 2.0.0 release, SOCI uses the plug-in architecture for
+backends - this allows to target various database servers.
+
+Currently (SOCI 4.0.0), backends for following database systems are supported:
+
+* [DB2](backends/db2.md)
+* [Firebird](backends/firebird.md)
+* [MySQL](backends/mysql.md)
+* [ODBC](backends/odbc.md) (generic backend)
+* [Oracle](backends/oracle.md)
+* [PostgreSQL](backends/postgresql.md)
+* [SQLite3](backends/sqlite3.md)
+
+The intent of the library is to cover as many database technologies as possible.
+For this, the project has to rely on volunteer contributions from other programmers,
+who have expertise with the existing database interfaces and would like to help
+writing dedicated backends.
+
+## Langauge Bindings
+
+Even though SOCI is mainly a C++ library, it also allows to use it from other programming languages.
+Currently the package contains the Ada binding, with more bindings likely to come in the future.
