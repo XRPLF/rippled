@@ -1,9 +1,10 @@
-// Copyright (c) 2013, Facebook, Inc. All rights reserved.
-// This source code is licensed under the BSD-style license found in the
-// LICENSE file in the root directory of this source tree. An additional grant
-// of patent rights can be found in the PATENTS file in the same directory.
+// Copyright (c) 2011-present, Facebook, Inc. All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 #pragma once
 
+#include <stdint.h>
 #include "rocksdb/status.h"
 
 namespace rocksdb {
@@ -23,7 +24,7 @@ class BlockPrefixIndex {
   // the key, based on the prefix.
   // Returns the total number of relevant blocks, 0 means the key does
   // not exist.
-  const uint32_t GetBlocks(const Slice& key, uint32_t** blocks);
+  uint32_t GetBlocks(const Slice& key, uint32_t** blocks);
 
   size_t ApproximateMemoryUsage() const {
     return sizeof(BlockPrefixIndex) +

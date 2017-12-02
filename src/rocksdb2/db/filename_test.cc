@@ -1,13 +1,13 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
-//  This source code is licensed under the BSD-style license found in the
-//  LICENSE file in the root directory of this source tree. An additional grant
-//  of patent rights can be found in the PATENTS file in the same directory.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 //
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/filename.h"
+#include "util/filename.h"
 
 #include "db/dbformat.h"
 #include "port/port.h"
@@ -16,9 +16,9 @@
 
 namespace rocksdb {
 
-class FileNameTest { };
+class FileNameTest : public testing::Test {};
 
-TEST(FileNameTest, Parse) {
+TEST_F(FileNameTest, Parse) {
   Slice db;
   FileType type;
   uint64_t number;
@@ -105,7 +105,7 @@ TEST(FileNameTest, Parse) {
   };
 }
 
-TEST(FileNameTest, InfoLogFileName) {
+TEST_F(FileNameTest, InfoLogFileName) {
   std::string dbname = ("/data/rocksdb");
   std::string db_absolute_path;
   Env::Default()->GetAbsolutePath(dbname, &db_absolute_path);
@@ -121,7 +121,7 @@ TEST(FileNameTest, InfoLogFileName) {
       OldInfoLogFileName(dbname, 666u, db_absolute_path, "/data/rocksdb_log"));
 }
 
-TEST(FileNameTest, Construction) {
+TEST_F(FileNameTest, Construction) {
   uint64_t number;
   FileType type;
   std::string fname;
@@ -175,5 +175,6 @@ TEST(FileNameTest, Construction) {
 }  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  return rocksdb::test::RunAllTests();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

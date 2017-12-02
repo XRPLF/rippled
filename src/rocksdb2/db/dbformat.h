@@ -1,7 +1,7 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
-//  This source code is licensed under the BSD-style license found in the
-//  LICENSE file in the root directory of this source tree. An additional grant
-//  of patent rights can be found in the PATENTS file in the same directory.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 //
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
@@ -10,6 +10,7 @@
 #pragma once
 #include <stdio.h>
 #include <string>
+#include <utility>
 #include "rocksdb/comparator.h"
 #include "rocksdb/db.h"
 #include "rocksdb/filter_policy.h"
@@ -33,37 +34,64 @@ enum ValueType : unsigned char {
   kTypeDeletion = 0x0,
   kTypeValue = 0x1,
   kTypeMerge = 0x2,
-  // Following types are used only in write ahead logs. They are not used in
-  // memtables or sst files:
-  kTypeLogData = 0x3,
-  kTypeColumnFamilyDeletion = 0x4,
-  kTypeColumnFamilyValue = 0x5,
-  kTypeColumnFamilyMerge = 0x6,
-  kMaxValue = 0x7F
+  kTypeLogData = 0x3,               // WAL only.
+  kTypeColumnFamilyDeletion = 0x4,  // WAL only.
+  kTypeColumnFamilyValue = 0x5,     // WAL only.
+  kTypeColumnFamilyMerge = 0x6,     // WAL only.
+  kTypeSingleDeletion = 0x7,
+  kTypeColumnFamilySingleDeletion = 0x8,  // WAL only.
+  kTypeBeginPrepareXID = 0x9,             // WAL only.
+  kTypeEndPrepareXID = 0xA,               // WAL only.
+  kTypeCommitXID = 0xB,                   // WAL only.
+  kTypeRollbackXID = 0xC,                 // WAL only.
+  kTypeNoop = 0xD,                        // WAL only.
+  kTypeColumnFamilyRangeDeletion = 0xE,   // WAL only.
+  kTypeRangeDeletion = 0xF,               // meta block
+  kTypeColumnFamilyBlobIndex = 0x10,      // Blob DB only
+  kTypeBlobIndex = 0x11,                  // Blob DB only
+  kMaxValue = 0x7F                        // Not used for storing records.
 };
 
-// kValueTypeForSeek defines the ValueType that should be passed when
-// constructing a ParsedInternalKey object for seeking to a particular
-// sequence number (since we sort sequence numbers in decreasing order
-// and the value type is embedded as the low 8 bits in the sequence
-// number in internal keys, we need to use the highest-numbered
-// ValueType, not the lowest).
-static const ValueType kValueTypeForSeek = kTypeMerge;
+// Defined in dbformat.cc
+extern const ValueType kValueTypeForSeek;
+extern const ValueType kValueTypeForSeekForPrev;
+
+// Checks whether a type is an inline value type
+// (i.e. a type used in memtable skiplist and sst file datablock).
+inline bool IsValueType(ValueType t) {
+  return t <= kTypeMerge || t == kTypeSingleDeletion || t == kTypeBlobIndex;
+}
+
+// Checks whether a type is from user operation
+// kTypeRangeDeletion is in meta block so this API is separated from above
+inline bool IsExtendedValueType(ValueType t) {
+  return IsValueType(t) || t == kTypeRangeDeletion;
+}
 
 // We leave eight bits empty at the bottom so a type and sequence#
 // can be packed together into 64-bits.
 static const SequenceNumber kMaxSequenceNumber =
     ((0x1ull << 56) - 1);
 
+static const SequenceNumber kDisableGlobalSequenceNumber = port::kMaxUint64;
+
 struct ParsedInternalKey {
   Slice user_key;
   SequenceNumber sequence;
   ValueType type;
 
-  ParsedInternalKey() { }  // Intentionally left uninitialized (for speed)
+  ParsedInternalKey()
+      : sequence(kMaxSequenceNumber)  // Make code analyzer happy
+  {}  // Intentionally left uninitialized (for speed)
   ParsedInternalKey(const Slice& u, const SequenceNumber& seq, ValueType t)
       : user_key(u), sequence(seq), type(t) { }
   std::string DebugString(bool hex = false) const;
+
+  void clear() {
+    user_key.clear();
+    sequence = 0;
+    type = kTypeDeletion;
+  }
 };
 
 // Return the length of the encoding of "key".
@@ -71,11 +99,21 @@ inline size_t InternalKeyEncodingLength(const ParsedInternalKey& key) {
   return key.user_key.size() + 8;
 }
 
+// Pack a sequence number and a ValueType into a uint64_t
 extern uint64_t PackSequenceAndType(uint64_t seq, ValueType t);
+
+// Given the result of PackSequenceAndType, store the sequence number in *seq
+// and the ValueType in *t.
+extern void UnPackSequenceAndType(uint64_t packed, uint64_t* seq, ValueType* t);
 
 // Append the serialization of "key" to *result.
 extern void AppendInternalKey(std::string* result,
                               const ParsedInternalKey& key);
+// Serialized internal key consists of user key followed by footer.
+// This function appends the footer to *result, assuming that *result already
+// contains the user key at the end.
+extern void AppendInternalKeyFooter(std::string* result, SequenceNumber s,
+                                    ValueType t);
 
 // Attempt to parse an internal key from "internal_key".  On success,
 // stores the parsed data in "*result", and returns true.
@@ -111,17 +149,19 @@ class InternalKeyComparator : public Comparator {
   }
   virtual ~InternalKeyComparator() {}
 
-  virtual const char* Name() const;
-  virtual int Compare(const Slice& a, const Slice& b) const;
-  virtual void FindShortestSeparator(
-      std::string* start,
-      const Slice& limit) const;
-  virtual void FindShortSuccessor(std::string* key) const;
+  virtual const char* Name() const override;
+  virtual int Compare(const Slice& a, const Slice& b) const override;
+  virtual void FindShortestSeparator(std::string* start,
+                                     const Slice& limit) const override;
+  virtual void FindShortSuccessor(std::string* key) const override;
 
   const Comparator* user_comparator() const { return user_comparator_; }
 
   int Compare(const InternalKey& a, const InternalKey& b) const;
   int Compare(const ParsedInternalKey& a, const ParsedInternalKey& b) const;
+  virtual const Comparator* GetRootComparator() const override {
+    return user_comparator_->GetRootComparator();
+  }
 };
 
 // Modules in this directory should keep internal keys wrapped inside
@@ -132,8 +172,22 @@ class InternalKey {
   std::string rep_;
  public:
   InternalKey() { }   // Leave rep_ as empty to indicate it is invalid
-  InternalKey(const Slice& user_key, SequenceNumber s, ValueType t) {
-    AppendInternalKey(&rep_, ParsedInternalKey(user_key, s, t));
+  InternalKey(const Slice& _user_key, SequenceNumber s, ValueType t) {
+    AppendInternalKey(&rep_, ParsedInternalKey(_user_key, s, t));
+  }
+
+  // sets the internal key to be bigger or equal to all internal keys with this
+  // user key
+  void SetMaxPossibleForUserKey(const Slice& _user_key) {
+    AppendInternalKey(&rep_, ParsedInternalKey(_user_key, kMaxSequenceNumber,
+                                               kValueTypeForSeek));
+  }
+
+  // sets the internal key to be smaller or equal to all internal keys with this
+  // user key
+  void SetMinPossibleForUserKey(const Slice& _user_key) {
+    AppendInternalKey(
+        &rep_, ParsedInternalKey(_user_key, 0, static_cast<ValueType>(0)));
   }
 
   bool Valid() const {
@@ -148,6 +202,11 @@ class InternalKey {
   }
 
   Slice user_key() const { return ExtractUserKey(rep_); }
+  size_t size() { return rep_.size(); }
+
+  void Set(const Slice& _user_key, SequenceNumber s, ValueType t) {
+    SetFrom(ParsedInternalKey(_user_key, s, t));
+  }
 
   void SetFrom(const ParsedInternalKey& p) {
     rep_.clear();
@@ -155,6 +214,16 @@ class InternalKey {
   }
 
   void Clear() { rep_.clear(); }
+
+  // The underlying representation.
+  // Intended only to be used together with ConvertFromUserKey().
+  std::string* rep() { return &rep_; }
+
+  // Assuming that *rep() contains a user key, this method makes internal key
+  // out of it in-place. This saves a memcpy compared to Set()/SetFrom().
+  void ConvertFromUserKey(SequenceNumber s, ValueType t) {
+    AppendInternalKeyFooter(&rep_, s, t);
+  }
 
   std::string DebugString(bool hex = false) const;
 };
@@ -174,17 +243,19 @@ inline bool ParseInternalKey(const Slice& internal_key,
   result->type = static_cast<ValueType>(c);
   assert(result->type <= ValueType::kMaxValue);
   result->user_key = Slice(internal_key.data(), n - 8);
-  return (c <= static_cast<unsigned char>(kValueTypeForSeek));
+  return IsExtendedValueType(result->type);
 }
 
-// Update the sequence number in the internal key
-inline void UpdateInternalKey(char* internal_key,
-                              const size_t internal_key_size,
-                              uint64_t seq, ValueType t) {
-  assert(internal_key_size >= 8);
-  char* seqtype = internal_key + internal_key_size - 8;
+// Update the sequence number in the internal key.
+// Guarantees not to invalidate ikey.data().
+inline void UpdateInternalKey(std::string* ikey, uint64_t seq, ValueType t) {
+  size_t ikey_sz = ikey->size();
+  assert(ikey_sz >= 8);
   uint64_t newval = (seq << 8) | t;
-  EncodeFixed64(seqtype, newval);
+
+  // Note: Since C++11, strings are guaranteed to be stored contiguously and
+  // string::operator[]() is guaranteed not to change ikey.data().
+  EncodeFixed64(&(*ikey)[ikey_sz - 8], newval);
 }
 
 // Get the sequence number from the internal key
@@ -201,18 +272,24 @@ class LookupKey {
  public:
   // Initialize *this for looking up user_key at a snapshot with
   // the specified sequence number.
-  LookupKey(const Slice& user_key, SequenceNumber sequence);
+  LookupKey(const Slice& _user_key, SequenceNumber sequence);
 
   ~LookupKey();
 
   // Return a key suitable for lookup in a MemTable.
-  Slice memtable_key() const { return Slice(start_, end_ - start_); }
+  Slice memtable_key() const {
+    return Slice(start_, static_cast<size_t>(end_ - start_));
+  }
 
   // Return an internal key (suitable for passing to an internal iterator)
-  Slice internal_key() const { return Slice(kstart_, end_ - kstart_); }
+  Slice internal_key() const {
+    return Slice(kstart_, static_cast<size_t>(end_ - kstart_));
+  }
 
   // Return the user key
-  Slice user_key() const { return Slice(kstart_, end_ - kstart_ - 8); }
+  Slice user_key() const {
+    return Slice(kstart_, static_cast<size_t>(end_ - kstart_ - 8));
+  }
 
  private:
   // We construct a char array of the form:
@@ -238,13 +315,30 @@ inline LookupKey::~LookupKey() {
 
 class IterKey {
  public:
-  IterKey() : key_(space_), buf_size_(sizeof(space_)), key_size_(0) {}
+  IterKey()
+      : buf_(space_),
+        buf_size_(sizeof(space_)),
+        key_(buf_),
+        key_size_(0),
+        is_user_key_(true) {}
 
   ~IterKey() { ResetBuffer(); }
 
-  Slice GetKey() const { return Slice(key_, key_size_); }
+  Slice GetInternalKey() const {
+    assert(!IsUserKey());
+    return Slice(key_, key_size_);
+  }
 
-  const size_t Size() { return key_size_; }
+  Slice GetUserKey() const {
+    if (IsUserKey()) {
+      return Slice(key_, key_size_);
+    } else {
+      assert(key_size_ >= 8);
+      return Slice(key_, key_size_ - 8);
+    }
+  }
+
+  size_t Size() const { return key_size_; }
 
   void Clear() { key_size_ = 0; }
 
@@ -255,33 +349,69 @@ class IterKey {
   void TrimAppend(const size_t shared_len, const char* non_shared_data,
                   const size_t non_shared_len) {
     assert(shared_len <= key_size_);
-
     size_t total_size = shared_len + non_shared_len;
-    if (total_size <= buf_size_) {
-      key_size_ = total_size;
-    } else {
+
+    if (IsKeyPinned() /* key is not in buf_ */) {
+      // Copy the key from external memory to buf_ (copy shared_len bytes)
+      EnlargeBufferIfNeeded(total_size);
+      memcpy(buf_, key_, shared_len);
+    } else if (total_size > buf_size_) {
       // Need to allocate space, delete previous space
       char* p = new char[total_size];
       memcpy(p, key_, shared_len);
 
-      if (key_ != nullptr && key_ != space_) {
-        delete[] key_;
+      if (buf_ != space_) {
+        delete[] buf_;
       }
 
-      key_ = p;
-      key_size_ = total_size;
+      buf_ = p;
       buf_size_ = total_size;
     }
 
-    memcpy(key_ + shared_len, non_shared_data, non_shared_len);
+    memcpy(buf_ + shared_len, non_shared_data, non_shared_len);
+    key_ = buf_;
+    key_size_ = total_size;
   }
 
-  void SetKey(const Slice& key) {
-    size_t size = key.size();
-    EnlargeBufferIfNeeded(size);
-    memcpy(key_, key.data(), size);
-    key_size_ = size;
+  Slice SetUserKey(const Slice& key, bool copy = true) {
+    is_user_key_ = true;
+    return SetKeyImpl(key, copy);
   }
+
+  Slice SetInternalKey(const Slice& key, bool copy = true) {
+    is_user_key_ = false;
+    return SetKeyImpl(key, copy);
+  }
+
+  // Copies the content of key, updates the reference to the user key in ikey
+  // and returns a Slice referencing the new copy.
+  Slice SetInternalKey(const Slice& key, ParsedInternalKey* ikey) {
+    size_t key_n = key.size();
+    assert(key_n >= 8);
+    SetInternalKey(key);
+    ikey->user_key = Slice(key_, key_n - 8);
+    return Slice(key_, key_n);
+  }
+
+  // Copy the key into IterKey own buf_
+  void OwnKey() {
+    assert(IsKeyPinned() == true);
+
+    Reserve(key_size_);
+    memcpy(buf_, key_, key_size_);
+    key_ = buf_;
+  }
+
+  // Update the sequence number in the internal key.  Guarantees not to
+  // invalidate slices to the key (and the user key).
+  void UpdateInternalKey(uint64_t seq, ValueType t) {
+    assert(!IsKeyPinned());
+    assert(key_size_ >= 8);
+    uint64_t newval = (seq << 8) | t;
+    EncodeFixed64(&buf_[key_size_ - 8], newval);
+  }
+
+  bool IsKeyPinned() const { return (key_ != buf_); }
 
   void SetInternalKey(const Slice& key_prefix, const Slice& user_key,
                       SequenceNumber s,
@@ -290,11 +420,14 @@ class IterKey {
     size_t usize = user_key.size();
     EnlargeBufferIfNeeded(psize + usize + sizeof(uint64_t));
     if (psize > 0) {
-      memcpy(key_, key_prefix.data(), psize);
+      memcpy(buf_, key_prefix.data(), psize);
     }
-    memcpy(key_ + psize, user_key.data(), usize);
-    EncodeFixed64(key_ + usize + psize, PackSequenceAndType(s, value_type));
+    memcpy(buf_ + psize, user_key.data(), usize);
+    EncodeFixed64(buf_ + usize + psize, PackSequenceAndType(s, value_type));
+
+    key_ = buf_;
     key_size_ = psize + usize + sizeof(uint64_t);
+    is_user_key_ = false;
   }
 
   void SetInternalKey(const Slice& user_key, SequenceNumber s,
@@ -319,22 +452,43 @@ class IterKey {
 
   void EncodeLengthPrefixedKey(const Slice& key) {
     auto size = key.size();
-    EnlargeBufferIfNeeded(size + VarintLength(size));
-    char* ptr = EncodeVarint32(key_, size);
+    EnlargeBufferIfNeeded(size + static_cast<size_t>(VarintLength(size)));
+    char* ptr = EncodeVarint32(buf_, static_cast<uint32_t>(size));
     memcpy(ptr, key.data(), size);
+    key_ = buf_;
+    is_user_key_ = true;
   }
 
+  bool IsUserKey() const { return is_user_key_; }
+
  private:
-  char* key_;
+  char* buf_;
   size_t buf_size_;
+  const char* key_;
   size_t key_size_;
   char space_[32];  // Avoid allocation for short keys
+  bool is_user_key_;
+
+  Slice SetKeyImpl(const Slice& key, bool copy) {
+    size_t size = key.size();
+    if (copy) {
+      // Copy key to buf_
+      EnlargeBufferIfNeeded(size);
+      memcpy(buf_, key.data(), size);
+      key_ = buf_;
+    } else {
+      // Update key_ to point to external memory
+      key_ = key.data();
+    }
+    key_size_ = size;
+    return Slice(key_, key_size_);
+  }
 
   void ResetBuffer() {
-    if (key_ != nullptr && key_ != space_) {
-      delete[] key_;
+    if (buf_ != space_) {
+      delete[] buf_;
+      buf_ = space_;
     }
-    key_ = space_;
     buf_size_ = sizeof(space_);
     key_size_ = 0;
   }
@@ -350,7 +504,7 @@ class IterKey {
     if (key_size > buf_size_) {
       // Need to enlarge the buffer.
       ResetBuffer();
-      key_ = new char[key_size];
+      buf_ = new char[key_size];
       buf_size_ = key_size;
     }
   }
@@ -365,19 +519,19 @@ class InternalKeySliceTransform : public SliceTransform {
   explicit InternalKeySliceTransform(const SliceTransform* transform)
       : transform_(transform) {}
 
-  virtual const char* Name() const { return transform_->Name(); }
+  virtual const char* Name() const override { return transform_->Name(); }
 
-  virtual Slice Transform(const Slice& src) const {
+  virtual Slice Transform(const Slice& src) const override {
     auto user_key = ExtractUserKey(src);
     return transform_->Transform(user_key);
   }
 
-  virtual bool InDomain(const Slice& src) const {
+  virtual bool InDomain(const Slice& src) const override {
     auto user_key = ExtractUserKey(src);
     return transform_->InDomain(user_key);
   }
 
-  virtual bool InRange(const Slice& dst) const {
+  virtual bool InRange(const Slice& dst) const override {
     auto user_key = ExtractUserKey(dst);
     return transform_->InRange(user_key);
   }
@@ -390,6 +544,12 @@ class InternalKeySliceTransform : public SliceTransform {
   const SliceTransform* const transform_;
 };
 
+// Read the key of a record from a write batch.
+// if this record represent the default column family then cf_record
+// must be passed as false, otherwise it must be passed as true.
+extern bool ReadKeyFromWriteBatchEntry(Slice* input, Slice* key,
+                                       bool cf_record);
+
 // Read record from a write batch piece from input.
 // tag, column_family, key, value and blob are return values. Callers own the
 // Slice they point to.
@@ -397,5 +557,42 @@ class InternalKeySliceTransform : public SliceTransform {
 // input will be advanced to after the record.
 extern Status ReadRecordFromWriteBatch(Slice* input, char* tag,
                                        uint32_t* column_family, Slice* key,
-                                       Slice* value, Slice* blob);
+                                       Slice* value, Slice* blob, Slice* xid);
+
+// When user call DeleteRange() to delete a range of keys,
+// we will store a serialized RangeTombstone in MemTable and SST.
+// the struct here is a easy-understood form
+// start/end_key_ is the start/end user key of the range to be deleted
+struct RangeTombstone {
+  Slice start_key_;
+  Slice end_key_;
+  SequenceNumber seq_;
+  RangeTombstone() = default;
+  RangeTombstone(Slice sk, Slice ek, SequenceNumber sn)
+      : start_key_(sk), end_key_(ek), seq_(sn) {}
+
+  RangeTombstone(ParsedInternalKey parsed_key, Slice value) {
+    start_key_ = parsed_key.user_key;
+    seq_ = parsed_key.sequence;
+    end_key_ = value;
+  }
+
+  // be careful to use Serialize(), allocates new memory
+  std::pair<InternalKey, Slice> Serialize() const {
+    auto key = InternalKey(start_key_, seq_, kTypeRangeDeletion);
+    Slice value = end_key_;
+    return std::make_pair(std::move(key), std::move(value));
+  }
+
+  // be careful to use SerializeKey(), allocates new memory
+  InternalKey SerializeKey() const {
+    return InternalKey(start_key_, seq_, kTypeRangeDeletion);
+  }
+
+  // be careful to use SerializeEndKey(), allocates new memory
+  InternalKey SerializeEndKey() const {
+    return InternalKey(end_key_, seq_, kTypeRangeDeletion);
+  }
+};
+
 }  // namespace rocksdb

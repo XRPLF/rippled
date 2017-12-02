@@ -37,8 +37,8 @@
  * @author Deon Nicholas (dnicholas@fb.com)
  */
 
-#ifndef ROCKSDB_LITE
 #pragma once
+#ifndef ROCKSDB_LITE
 
 #include <string>
 
@@ -65,15 +65,14 @@ class RedisListIterator {
   ///  e) result_ will always contain data_[0..cur_byte_) and a header
   ///  f) Whenever corrupt data is encountered or an invalid operation is
   ///      attempted, a RedisListException will immediately be thrown.
-  RedisListIterator(const std::string& list_data)
+  explicit RedisListIterator(const std::string& list_data)
       : data_(list_data.data()),
-        num_bytes_(list_data.size()),
+        num_bytes_(static_cast<uint32_t>(list_data.size())),
         cur_byte_(0),
         cur_elem_(0),
         cur_elem_length_(0),
         length_(0),
         result_() {
-
     // Initialize the result_ (reserve enough space for header)
     InitializeResult();
 
@@ -135,11 +134,11 @@ class RedisListIterator {
     // Ensure we are in a valid state
     CheckErrors();
 
-    const int kOrigSize = result_.size();
+    const int kOrigSize = static_cast<int>(result_.size());
     result_.resize(kOrigSize + SizeOf(elem));
-    EncodeFixed32(result_.data() + kOrigSize, elem.size());
-    memcpy(result_.data() + kOrigSize + sizeof(uint32_t),
-           elem.data(),
+    EncodeFixed32(result_.data() + kOrigSize,
+                  static_cast<uint32_t>(elem.size()));
+    memcpy(result_.data() + kOrigSize + sizeof(uint32_t), elem.data(),
            elem.size());
     ++length_;
     ++cur_elem_;
@@ -169,7 +168,7 @@ class RedisListIterator {
   int Size() const {
     // result_ holds the currently written data
     // data_[cur_byte..num_bytes-1] is the remainder of the data
-    return result_.size() + (num_bytes_ - cur_byte_);
+    return static_cast<int>(result_.size() + (num_bytes_ - cur_byte_));
   }
 
   // Reached the end?
@@ -209,7 +208,7 @@ class RedisListIterator {
   /// E.G. This can be used to compute the bytes we want to Reserve().
   static uint32_t SizeOf(const Slice& elem) {
     // [Integer Length . Data]
-    return sizeof(uint32_t) + elem.size();
+    return static_cast<uint32_t>(sizeof(uint32_t) + elem.size());
   }
 
  private: // Private functions
@@ -269,7 +268,7 @@ class RedisListIterator {
                    data_+cur_byte_+ sizeof(uint32_t) + cur_elem_length_);
   }
 
-  /// Will ThrowError() if neccessary.
+  /// Will ThrowError() if necessary.
   /// Checks for common/ubiquitous errors that can arise after most operations.
   /// This method should be called before any reading operation.
   /// If this function succeeds, then we are guaranteed to be in a valid state.

@@ -53,7 +53,7 @@ You can contact the author at :
 // By default, xxHash library provides endian-independent Hash values, based on little-endian convention.
 // Results are therefore identical for little-endian and big-endian CPU.
 // This comes at a performance cost for big-endian CPU, since some swapping is required to emulate little-endian format.
-// Should endian-independance be of no importance for your application, you may set the #define below to 1.
+// Should endian-independence be of no importance for your application, you may set the #define below to 1.
 // It will improve speed for Big-endian CPU.
 // This option has no impact on Little_Endian CPU.
 #define XXH_FORCE_NATIVE_FORMAT 0
@@ -65,6 +65,7 @@ You can contact the author at :
 // Disable some Visual warning messages
 #ifdef _MSC_VER  // Visual Studio
 #  pragma warning(disable : 4127)      // disable: C4127: conditional expression is constant
+#  pragma warning(disable : 4804)      // disable: C4804: 'operation' : unsafe use of type 'bool' in operation (static assert line 313)
 #endif
 
 #ifdef _MSC_VER    // Visual Studio
@@ -92,6 +93,7 @@ FORCE_INLINE void  XXH_free  (void* p)  { free(p); }
 FORCE_INLINE void* XXH_memcpy(void* dest, const void* src, size_t size) { return memcpy(dest,src,size); }
 
 
+namespace rocksdb {
 //**************************************
 // Basic Types
 //**************************************
@@ -473,3 +475,5 @@ U32 XXH32_digest (void* state_in)
 
     return h32;
 }
+
+}  // namespace rocksdb

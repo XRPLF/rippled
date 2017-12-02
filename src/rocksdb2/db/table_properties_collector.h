@@ -1,7 +1,7 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
-//  This source code is licensed under the BSD-style license found in the
-//  LICENSE file in the root directory of this source tree. An additional grant
-//  of patent rights can be found in the PATENTS file in the same directory.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 //
 // This file defines a collection of statistics collectors.
 #pragma once
@@ -16,13 +16,45 @@ namespace rocksdb {
 
 struct InternalKeyTablePropertiesNames {
   static const std::string kDeletedKeys;
+  static const std::string kMergeOperands;
+};
+
+// Base class for internal table properties collector.
+class IntTblPropCollector {
+ public:
+  virtual ~IntTblPropCollector() {}
+  virtual Status Finish(UserCollectedProperties* properties) = 0;
+
+  virtual const char* Name() const = 0;
+
+  // @params key    the user key that is inserted into the table.
+  // @params value  the value that is inserted into the table.
+  virtual Status InternalAdd(const Slice& key, const Slice& value,
+                             uint64_t file_size) = 0;
+
+  virtual UserCollectedProperties GetReadableProperties() const = 0;
+
+  virtual bool NeedCompact() const { return false; }
+};
+
+// Factory for internal table properties collector.
+class IntTblPropCollectorFactory {
+ public:
+  virtual ~IntTblPropCollectorFactory() {}
+  // has to be thread-safe
+  virtual IntTblPropCollector* CreateIntTblPropCollector(
+      uint32_t column_family_id) = 0;
+
+  // The name of the properties collector can be used for debugging purpose.
+  virtual const char* Name() const = 0;
 };
 
 // Collecting the statistics for internal keys. Visible only by internal
 // rocksdb modules.
-class InternalKeyPropertiesCollector : public TablePropertiesCollector {
+class InternalKeyPropertiesCollector : public IntTblPropCollector {
  public:
-  virtual Status Add(const Slice& key, const Slice& value) override;
+  virtual Status InternalAdd(const Slice& key, const Slice& value,
+                             uint64_t file_size) override;
 
   virtual Status Finish(UserCollectedProperties* properties) override;
 
@@ -34,12 +66,14 @@ class InternalKeyPropertiesCollector : public TablePropertiesCollector {
 
  private:
   uint64_t deleted_keys_ = 0;
+  uint64_t merge_operands_ = 0;
 };
 
 class InternalKeyPropertiesCollectorFactory
-    : public TablePropertiesCollectorFactory {
+    : public IntTblPropCollectorFactory {
  public:
-  virtual TablePropertiesCollector* CreateTablePropertiesCollector() {
+  virtual IntTblPropCollector* CreateIntTblPropCollector(
+      uint32_t column_family_id) override {
     return new InternalKeyPropertiesCollector();
   }
 
@@ -53,7 +87,7 @@ class InternalKeyPropertiesCollectorFactory
 //
 // This class extracts user key from the encoded internal key when Add() is
 // invoked.
-class UserKeyTablePropertiesCollector : public TablePropertiesCollector {
+class UserKeyTablePropertiesCollector : public IntTblPropCollector {
  public:
   // transfer of ownership
   explicit UserKeyTablePropertiesCollector(TablePropertiesCollector* collector)
@@ -61,7 +95,8 @@ class UserKeyTablePropertiesCollector : public TablePropertiesCollector {
 
   virtual ~UserKeyTablePropertiesCollector() {}
 
-  virtual Status Add(const Slice& key, const Slice& value) override;
+  virtual Status InternalAdd(const Slice& key, const Slice& value,
+                             uint64_t file_size) override;
 
   virtual Status Finish(UserCollectedProperties* properties) override;
 
@@ -69,19 +104,26 @@ class UserKeyTablePropertiesCollector : public TablePropertiesCollector {
 
   UserCollectedProperties GetReadableProperties() const override;
 
+  virtual bool NeedCompact() const override {
+    return collector_->NeedCompact();
+  }
+
  protected:
   std::unique_ptr<TablePropertiesCollector> collector_;
 };
 
 class UserKeyTablePropertiesCollectorFactory
-    : public TablePropertiesCollectorFactory {
+    : public IntTblPropCollectorFactory {
  public:
   explicit UserKeyTablePropertiesCollectorFactory(
       std::shared_ptr<TablePropertiesCollectorFactory> user_collector_factory)
       : user_collector_factory_(user_collector_factory) {}
-  virtual TablePropertiesCollector* CreateTablePropertiesCollector() {
+  virtual IntTblPropCollector* CreateIntTblPropCollector(
+      uint32_t column_family_id) override {
+    TablePropertiesCollectorFactory::Context context;
+    context.column_family_id = column_family_id;
     return new UserKeyTablePropertiesCollector(
-        user_collector_factory_->CreateTablePropertiesCollector());
+        user_collector_factory_->CreateTablePropertiesCollector(context));
   }
 
   virtual const char* Name() const override {

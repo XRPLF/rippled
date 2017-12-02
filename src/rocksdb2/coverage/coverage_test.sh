@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Exit on error.
 set -e
@@ -11,8 +11,8 @@ fi
 ROOT=".."
 # Fetch right version of gcov
 if [ -d /mnt/gvfs/third-party -a -z "$CXX" ]; then
-  source $ROOT/build_tools/fbcode.gcc471.sh
-  GCOV=$TOOLCHAIN_EXECUTABLES/gcc/gcc-4.7.1/cc6c9dc/bin/gcov
+  source $ROOT/build_tools/fbcode_config.sh
+  GCOV=$GCC_BASE/bin/gcov
 else
   GCOV=$(which gcov)
 fi

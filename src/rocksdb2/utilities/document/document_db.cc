@@ -1,7 +1,7 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
-//  This source code is licensed under the BSD-style license found in the
-//  LICENSE file in the root directory of this source tree. An additional grant
-//  of patent rights can be found in the PATENTS file in the same directory.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 
 #ifndef ROCKSDB_LITE
 
@@ -23,7 +23,7 @@ namespace rocksdb {
 // IMPORTANT NOTE: Secondary index column families should be very small and
 // generally fit in memory. Assume that accessing secondary index column
 // families is much faster than accessing primary index (data heap) column
-// family. Accessing a key (i.e. checking for existance) from a column family in
+// family. Accessing a key (i.e. checking for existence) from a column family in
 // RocksDB is not much faster than accessing both key and value since they are
 // kept together and loaded from storage together.
 
@@ -33,7 +33,7 @@ namespace {
 // > 0   <=>  lhs == rhs
 // TODO(icanadi) move this to JSONDocument?
 int DocumentCompare(const JSONDocument& lhs, const JSONDocument& rhs) {
-  assert(rhs.IsObject() == false && rhs.IsObject() == false &&
+  assert(lhs.IsObject() == false && rhs.IsObject() == false &&
          lhs.type() == rhs.type());
 
   switch (lhs.type()) {
@@ -64,43 +64,45 @@ class Filter {
   static Filter* ParseFilter(const JSONDocument& filter);
 
   struct Interval {
-    const JSONDocument* upper_bound;
-    const JSONDocument* lower_bound;
+    JSONDocument upper_bound;
+    JSONDocument lower_bound;
     bool upper_inclusive;
     bool lower_inclusive;
     Interval()
-        : upper_bound(nullptr),
-          lower_bound(nullptr),
+        : upper_bound(),
+          lower_bound(),
           upper_inclusive(false),
           lower_inclusive(false) {}
-    Interval(const JSONDocument* ub, const JSONDocument* lb, bool ui, bool li)
+    Interval(const JSONDocument& ub, const JSONDocument& lb, bool ui, bool li)
         : upper_bound(ub),
           lower_bound(lb),
           upper_inclusive(ui),
-          lower_inclusive(li) {}
-    void UpdateUpperBound(const JSONDocument* ub, bool inclusive);
-    void UpdateLowerBound(const JSONDocument* lb, bool inclusive);
+          lower_inclusive(li) {
+    }
+
+    void UpdateUpperBound(const JSONDocument& ub, bool inclusive);
+    void UpdateLowerBound(const JSONDocument& lb, bool inclusive);
   };
 
   bool SatisfiesFilter(const JSONDocument& document) const;
   const Interval* GetInterval(const std::string& field) const;
 
  private:
-  explicit Filter(const JSONDocument& filter) : filter_(filter) {}
+  explicit Filter(const JSONDocument& filter) : filter_(filter.Copy()) {
+    assert(filter_.IsOwner());
+  }
 
   // copied from the parameter
   const JSONDocument filter_;
-  // upper_bound and lower_bound point to JSONDocuments in filter_, so no need
-  // to free them
   // constant after construction
   std::unordered_map<std::string, Interval> intervals_;
 };
 
-void Filter::Interval::UpdateUpperBound(const JSONDocument* ub,
+void Filter::Interval::UpdateUpperBound(const JSONDocument& ub,
                                         bool inclusive) {
-  bool update = (upper_bound == nullptr);
+  bool update = upper_bound.IsNull();
   if (!update) {
-    int cmp = DocumentCompare(*upper_bound, *ub);
+    int cmp = DocumentCompare(upper_bound, ub);
     update = (cmp > 0) || (cmp == 0 && !inclusive);
   }
   if (update) {
@@ -109,11 +111,11 @@ void Filter::Interval::UpdateUpperBound(const JSONDocument* ub,
   }
 }
 
-void Filter::Interval::UpdateLowerBound(const JSONDocument* lb,
+void Filter::Interval::UpdateLowerBound(const JSONDocument& lb,
                                         bool inclusive) {
-  bool update = (lower_bound == nullptr);
+  bool update = lower_bound.IsNull();
   if (!update) {
-    int cmp = DocumentCompare(*lower_bound, *lb);
+    int cmp = DocumentCompare(lower_bound, lb);
     update = (cmp < 0) || (cmp == 0 && !inclusive);
   }
   if (update) {
@@ -135,14 +137,14 @@ Filter* Filter::ParseFilter(const JSONDocument& filter) {
       continue;
     }
     assert(f->intervals_.find(items.first) == f->intervals_.end());
-    if (items.second->IsObject()) {
-      if (items.second->Count() == 0) {
+    if (items.second.IsObject()) {
+      if (items.second.Count() == 0) {
         // uhm...?
         return nullptr;
       }
       Interval interval;
-      for (const auto& condition : items.second->Items()) {
-        if (condition.second->IsObject() || condition.second->IsArray()) {
+      for (const auto& condition : items.second.Items()) {
+        if (condition.second.IsObject() || condition.second.IsArray()) {
           // comparison operators not defined on objects. invalid array
           return nullptr;
         }
@@ -164,7 +166,8 @@ Filter* Filter::ParseFilter(const JSONDocument& filter) {
     } else {
       // equality
       f->intervals_.insert(
-          {items.first, Interval(items.second, items.second, true, true)});
+          {items.first, Interval(items.second,
+                                 items.second, true, true)});
     }
   }
 
@@ -182,30 +185,30 @@ const Filter::Interval* Filter::GetInterval(const std::string& field) const {
 
 bool Filter::SatisfiesFilter(const JSONDocument& document) const {
   for (const auto& interval : intervals_) {
-    auto value = document.Get(interval.first);
-    if (value == nullptr) {
+    if (!document.Contains(interval.first)) {
       // doesn't have the value, doesn't satisfy the filter
       // (we don't support null queries yet)
       return false;
     }
-    if (interval.second.upper_bound != nullptr) {
-      if (value->type() != interval.second.upper_bound->type()) {
+    auto value = document[interval.first];
+    if (!interval.second.upper_bound.IsNull()) {
+      if (value.type() != interval.second.upper_bound.type()) {
         // no cross-type queries yet
         // TODO(icanadi) do this at least for numbers!
         return false;
       }
-      int cmp = DocumentCompare(*interval.second.upper_bound, *value);
+      int cmp = DocumentCompare(interval.second.upper_bound, value);
       if (cmp < 0 || (cmp == 0 && interval.second.upper_inclusive == false)) {
         // bigger (or equal) than upper bound
         return false;
       }
     }
-    if (interval.second.lower_bound != nullptr) {
-      if (value->type() != interval.second.lower_bound->type()) {
+    if (!interval.second.lower_bound.IsNull()) {
+      if (value.type() != interval.second.lower_bound.type()) {
         // no cross-type queries yet
         return false;
       }
-      int cmp = DocumentCompare(*interval.second.lower_bound, *value);
+      int cmp = DocumentCompare(interval.second.lower_bound, value);
       if (cmp > 0 || (cmp == 0 && interval.second.lower_inclusive == false)) {
         // smaller (or equal) than the lower bound
         return false;
@@ -312,8 +315,11 @@ bool EncodeJSONPrimitive(const JSONDocument& json, std::string* dst) {
       break;
     case JSONDocument::kInt64:
       dst->push_back(kInt64);
-      // TODO(icanadi) oops, this will not work correctly for negative numbers
-      PutFixed64(dst, static_cast<uint64_t>(json.GetInt64()));
+      {
+        auto val = json.GetInt64();
+        dst->push_back((val < 0) ? '0' : '1');
+        PutFixed64(dst, static_cast<uint64_t>(val));
+      }
       break;
     case JSONDocument::kString:
       dst->push_back(kString);
@@ -376,44 +382,43 @@ class IndexKey {
 
 class SimpleSortedIndex : public Index {
  public:
-  SimpleSortedIndex(const std::string field, const std::string& name)
+  SimpleSortedIndex(const std::string& field, const std::string& name)
       : field_(field), name_(name) {}
 
   virtual const char* Name() const override { return name_.c_str(); }
 
   virtual void GetIndexKey(const JSONDocument& document, std::string* key) const
       override {
-    auto value = document.Get(field_);
-    if (value == nullptr) {
-      // null
+    if (!document.Contains(field_)) {
       if (!EncodeJSONPrimitive(JSONDocument(JSONDocument::kNull), key)) {
         assert(false);
       }
-    }
-    if (!EncodeJSONPrimitive(*value, key)) {
-      assert(false);
+    } else {
+      if (!EncodeJSONPrimitive(document[field_], key)) {
+        assert(false);
+      }
     }
   }
   virtual const Comparator* GetComparator() const override {
     return BytewiseComparator();
   }
 
-  virtual bool UsefulIndex(const Filter& filter) const {
+  virtual bool UsefulIndex(const Filter& filter) const override {
     return filter.GetInterval(field_) != nullptr;
   }
   // REQUIRES: UsefulIndex(filter) == true
-  virtual Direction Position(const Filter& filter, Iterator* iterator) const {
+  virtual Direction Position(const Filter& filter,
+                             Iterator* iterator) const override {
     auto interval = filter.GetInterval(field_);
     assert(interval != nullptr);  // because index is useful
     Direction direction;
 
-    std::string op;
     const JSONDocument* limit;
-    if (interval->lower_bound != nullptr) {
-      limit = interval->lower_bound;
+    if (!interval->lower_bound.IsNull()) {
+      limit = &(interval->lower_bound);
       direction = kForwards;
     } else {
-      limit = interval->upper_bound;
+      limit = &(interval->upper_bound);
       direction = kBackwards;
     }
 
@@ -426,19 +431,18 @@ class SimpleSortedIndex : public Index {
     return direction;
   }
   // REQUIRES: UsefulIndex(filter) == true
-  virtual bool ShouldContinueLooking(const Filter& filter,
-                                     const Slice& secondary_key,
-                                     Index::Direction direction) const {
+  virtual bool ShouldContinueLooking(
+      const Filter& filter, const Slice& secondary_key,
+      Index::Direction direction) const override {
     auto interval = filter.GetInterval(field_);
     assert(interval != nullptr);  // because index is useful
-
     if (direction == kForwards) {
-      if (interval->upper_bound == nullptr) {
+      if (interval->upper_bound.IsNull()) {
         // continue looking, no upper bound
         return true;
       }
       std::string encoded_upper_bound;
-      if (!EncodeJSONPrimitive(*interval->upper_bound, &encoded_upper_bound)) {
+      if (!EncodeJSONPrimitive(interval->upper_bound, &encoded_upper_bound)) {
         // uhm...?
         // TODO(icanadi) store encoded upper and lower bounds in Filter*?
         assert(false);
@@ -454,12 +458,12 @@ class SimpleSortedIndex : public Index {
                  : true;
     } else {
       assert(direction == kBackwards);
-      if (interval->lower_bound == nullptr) {
+      if (interval->lower_bound.IsNull()) {
         // continue looking, no lower bound
         return true;
       }
       std::string encoded_lower_bound;
-      if (!EncodeJSONPrimitive(*interval->lower_bound, &encoded_lower_bound)) {
+      if (!EncodeJSONPrimitive(interval->lower_bound, &encoded_lower_bound)) {
         // uhm...?
         // TODO(icanadi) store encoded upper and lower bounds in Filter*?
         assert(false);
@@ -492,7 +496,7 @@ Index* Index::CreateIndexFromDescription(const JSONDocument& description,
     return nullptr;
   }
   const auto& field = *description.Items().begin();
-  if (field.second->IsInt64() == false || field.second->GetInt64() != 1) {
+  if (field.second.IsInt64() == false || field.second.GetInt64() != 1) {
     // not supported yet
     return nullptr;
   }
@@ -519,17 +523,17 @@ class CursorWithFilterIndexed : public Cursor {
   virtual bool Valid() const override {
     return valid_ && secondary_index_iter_->Valid();
   }
-  virtual void Next() {
+  virtual void Next() override {
     assert(Valid());
     Advance();
     AdvanceUntilSatisfies();
   }
   // temporary object. copy it if you want to use it
-  virtual const JSONDocument& document() const {
+  virtual const JSONDocument& document() const override {
     assert(Valid());
     return *current_json_document_;
   }
-  virtual Status status() const {
+  virtual Status status() const override {
     if (!status_.ok()) {
       return status_;
     }
@@ -582,6 +586,7 @@ class CursorWithFilterIndexed : public Cursor {
     }
     current_json_document_.reset(
         JSONDocument::Deserialize(primary_index_iter_->value()));
+    assert(current_json_document_->IsOwner());
     if (current_json_document_.get() == nullptr) {
       status_ = Status::Corruption("JSON deserialization failed");
       valid_ = false;
@@ -724,7 +729,7 @@ class DocumentDBImpl : public DocumentDB {
   }
 
   virtual Status CreateIndex(const WriteOptions& write_options,
-                             const IndexDescriptor& index) {
+                             const IndexDescriptor& index) override {
     auto index_obj =
         Index::CreateIndexFromDescription(*index.description, index.name);
     if (index_obj == nullptr) {
@@ -736,6 +741,7 @@ class DocumentDBImpl : public DocumentDB {
         CreateColumnFamily(ColumnFamilyOptions(rocksdb_options_),
                            InternalSecondaryIndexName(index.name), &cf_handle);
     if (!s.ok()) {
+      delete index_obj;
       return s;
     }
 
@@ -766,7 +772,7 @@ class DocumentDBImpl : public DocumentDB {
     return DocumentDB::Write(write_options, &batch);
   }
 
-  virtual Status DropIndex(const std::string& name) {
+  virtual Status DropIndex(const std::string& name) override {
     MutexLock l(&write_mutex_);
 
     auto index_iter = name_to_index_.find(name);
@@ -792,22 +798,25 @@ class DocumentDBImpl : public DocumentDB {
   }
 
   virtual Status Insert(const WriteOptions& options,
-                        const JSONDocument& document) {
+                        const JSONDocument& document) override {
     WriteBatch batch;
 
     if (!document.IsObject()) {
       return Status::InvalidArgument("Document not an object");
     }
-    auto primary_key = document.Get(kPrimaryKey);
-    if (primary_key == nullptr || primary_key->IsNull() ||
-        (!primary_key->IsString() && !primary_key->IsInt64())) {
+    if (!document.Contains(kPrimaryKey)) {
+      return Status::InvalidArgument("No primary key");
+    }
+    auto primary_key = document[kPrimaryKey];
+    if (primary_key.IsNull() ||
+        (!primary_key.IsString() && !primary_key.IsInt64())) {
       return Status::InvalidArgument(
-          "No primary key or primary key format error");
+          "Primary key format error");
     }
     std::string encoded_document;
     document.Serialize(&encoded_document);
     std::string primary_key_encoded;
-    if (!EncodeJSONPrimitive(*primary_key, &primary_key_encoded)) {
+    if (!EncodeJSONPrimitive(primary_key, &primary_key_encoded)) {
       // previous call should be guaranteed to pass because of all primary_key
       // conditions checked before
       assert(false);
@@ -817,7 +826,7 @@ class DocumentDBImpl : public DocumentDB {
     // Lock now, since we're starting DB operations
     MutexLock l(&write_mutex_);
     // check if there is already a document with the same primary key
-    std::string value;
+    PinnableSlice value;
     Status s = DocumentDB::Get(ReadOptions(), primary_key_column_family_,
                                primary_key_slice, &value);
     if (!s.IsNotFound()) {
@@ -850,16 +859,19 @@ class DocumentDBImpl : public DocumentDB {
       if (!document.IsObject()) {
         return Status::Corruption("Document corruption");
       }
-      auto primary_key = document.Get(kPrimaryKey);
-      if (primary_key == nullptr || primary_key->IsNull() ||
-          (!primary_key->IsString() && !primary_key->IsInt64())) {
+      if (!document.Contains(kPrimaryKey)) {
+        return Status::Corruption("Document corruption");
+      }
+      auto primary_key = document[kPrimaryKey];
+      if (primary_key.IsNull() ||
+          (!primary_key.IsString() && !primary_key.IsInt64())) {
         return Status::Corruption("Document corruption");
       }
 
       // TODO(icanadi) Instead of doing this, just get primary key encoding from
       // cursor, as it already has this information
       std::string primary_key_encoded;
-      if (!EncodeJSONPrimitive(*primary_key, &primary_key_encoded)) {
+      if (!EncodeJSONPrimitive(primary_key, &primary_key_encoded)) {
         // previous call should be guaranteed to pass because of all primary_key
         // conditions checked before
         assert(false);
@@ -885,11 +897,14 @@ class DocumentDBImpl : public DocumentDB {
   virtual Status Update(const ReadOptions& read_options,
                         const WriteOptions& write_options,
                         const JSONDocument& filter,
-                        const JSONDocument& updates) {
+                        const JSONDocument& updates) override {
     MutexLock l(&write_mutex_);
     std::unique_ptr<Cursor> cursor(
         ConstructFilterCursor(read_options, nullptr, filter));
 
+    if (!updates.IsObject()) {
+        return Status::Corruption("Bad update document format");
+    }
     WriteBatch batch;
     for (; cursor->status().ok() && cursor->Valid(); cursor->Next()) {
       const auto& old_document = cursor->document();
@@ -900,12 +915,35 @@ class DocumentDBImpl : public DocumentDB {
       // TODO(icanadi) Make this nicer, something like class Filter
       for (const auto& update : updates.Items()) {
         if (update.first == "$set") {
-          for (const auto& itr : update.second->Items()) {
+          JSONDocumentBuilder builder;
+          bool res __attribute__((unused)) = builder.WriteStartObject();
+          assert(res);
+          for (const auto& itr : update.second.Items()) {
             if (itr.first == kPrimaryKey) {
               return Status::NotSupported("Please don't change primary key");
             }
-            new_document.Set(itr.first, *itr.second);
+            res = builder.WriteKeyValue(itr.first, itr.second);
+            assert(res);
           }
+          res = builder.WriteEndObject();
+          assert(res);
+          JSONDocument update_document = builder.GetJSONDocument();
+          builder.Reset();
+          res = builder.WriteStartObject();
+          assert(res);
+          for (const auto& itr : new_document.Items()) {
+            if (update_document.Contains(itr.first)) {
+              res = builder.WriteKeyValue(itr.first,
+                                          update_document[itr.first]);
+            } else {
+              res = builder.WriteKeyValue(itr.first, new_document[itr.first]);
+            }
+            assert(res);
+          }
+          res = builder.WriteEndObject();
+          assert(res);
+          new_document = builder.GetJSONDocument();
+          assert(new_document.IsOwner());
         } else {
           // TODO(icanadi) more commands
           return Status::InvalidArgument("Can't understand update command");
@@ -913,9 +951,12 @@ class DocumentDBImpl : public DocumentDB {
       }
 
       // TODO(icanadi) reuse some of this code
-      auto primary_key = new_document.Get(kPrimaryKey);
-      if (primary_key == nullptr || primary_key->IsNull() ||
-          (!primary_key->IsString() && !primary_key->IsInt64())) {
+      if (!new_document.Contains(kPrimaryKey)) {
+        return Status::Corruption("Corrupted document -- primary key missing");
+      }
+      auto primary_key = new_document[kPrimaryKey];
+      if (primary_key.IsNull() ||
+          (!primary_key.IsString() && !primary_key.IsInt64())) {
         // This will happen when document on storage doesn't have primary key,
         // since we don't support any update operations on primary key. That's
         // why this is corruption error
@@ -924,7 +965,7 @@ class DocumentDBImpl : public DocumentDB {
       std::string encoded_document;
       new_document.Serialize(&encoded_document);
       std::string primary_key_encoded;
-      if (!EncodeJSONPrimitive(*primary_key, &primary_key_encoded)) {
+      if (!EncodeJSONPrimitive(primary_key, &primary_key_encoded)) {
         // previous call should be guaranteed to pass because of all primary_key
         // conditions checked before
         assert(false);
@@ -979,7 +1020,7 @@ class DocumentDBImpl : public DocumentDB {
       const auto& command = *command_doc.Items().begin();
 
       if (command.first == "$filter") {
-        cursor = ConstructFilterCursor(read_options, cursor, *command.second);
+        cursor = ConstructFilterCursor(read_options, cursor, command.second);
       } else {
         // only filter is supported for now
         delete cursor;
@@ -996,9 +1037,10 @@ class DocumentDBImpl : public DocumentDB {
   }
 
   // RocksDB functions
+  using DB::Get;
   virtual Status Get(const ReadOptions& options,
                      ColumnFamilyHandle* column_family, const Slice& key,
-                     std::string* value) override {
+                     PinnableSlice* value) override {
     return Status::NotSupported("");
   }
   virtual Status Get(const ReadOptions& options, const Slice& key,
@@ -1028,12 +1070,12 @@ class DocumentDBImpl : public DocumentDB {
     IndexColumnFamily tmp_storage(nullptr, nullptr);
 
     if (cursor == nullptr) {
-      auto index_name = query.Get("$index");
       IndexColumnFamily* index_column_family = nullptr;
-      if (index_name != nullptr && index_name->IsString()) {
+      if (query.Contains("$index") && query["$index"].IsString()) {
         {
+          auto index_name = query["$index"];
           MutexLock l(&name_to_index_mutex_);
-          auto index_iter = name_to_index_.find(index_name->GetString());
+          auto index_iter = name_to_index_.find(index_name.GetString());
           if (index_iter != name_to_index_.end()) {
             tmp_storage = index_iter->second;
             index_column_family = &tmp_storage;

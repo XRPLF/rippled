@@ -1,7 +1,7 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
-//  This source code is licensed under the BSD-style license found in the
-//  LICENSE file in the root directory of this source tree. An additional grant
-//  of patent rights can be found in the PATENTS file in the same directory.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 //
 #include "rocksdb/status.h"
 #include "rocksdb/env.h"
@@ -12,7 +12,7 @@
 
 namespace rocksdb {
 
-class LockTest {
+class LockTest : public testing::Test {
  public:
   static LockTest* current_;
   std::string file_;
@@ -36,7 +36,7 @@ class LockTest {
 };
 LockTest* LockTest::current_;
 
-TEST(LockTest, LockBySameThread) {
+TEST_F(LockTest, LockBySameThread) {
   FileLock* lock1;
   FileLock* lock2;
 
@@ -54,5 +54,6 @@ TEST(LockTest, LockBySameThread) {
 }  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  return rocksdb::test::RunAllTests();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

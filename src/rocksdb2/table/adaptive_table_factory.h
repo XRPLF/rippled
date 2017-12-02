@@ -12,7 +12,6 @@
 
 namespace rocksdb {
 
-struct Options;
 struct EnvOptions;
 
 using std::unique_ptr;
@@ -31,23 +30,22 @@ class AdaptiveTableFactory : public TableFactory {
       std::shared_ptr<TableFactory> block_based_table_factory,
       std::shared_ptr<TableFactory> plain_table_factory,
       std::shared_ptr<TableFactory> cuckoo_table_factory);
+
   const char* Name() const override { return "AdaptiveTableFactory"; }
-  Status NewTableReader(const Options& options, const EnvOptions& soptions,
-                        const InternalKeyComparator& internal_comparator,
-                        unique_ptr<RandomAccessFile>&& file, uint64_t file_size,
-                        unique_ptr<TableReader>* table) const override;
-  TableBuilder* NewTableBuilder(const Options& options,
-                                const InternalKeyComparator& icomparator,
-                                WritableFile* file,
-                                CompressionType compression_type) const
-      override;
+
+  Status NewTableReader(
+      const TableReaderOptions& table_reader_options,
+      unique_ptr<RandomAccessFileReader>&& file, uint64_t file_size,
+      unique_ptr<TableReader>* table,
+      bool prefetch_index_and_filter_in_cache = true) const override;
+
+  TableBuilder* NewTableBuilder(
+      const TableBuilderOptions& table_builder_options,
+      uint32_t column_family_id, WritableFileWriter* file) const override;
 
   // Sanitizes the specified DB Options.
-  Status SanitizeDBOptions(const DBOptions* db_opts) const override {
-    if (db_opts->allow_mmap_reads == false) {
-      return Status::NotSupported(
-          "AdaptiveTable with allow_mmap_reads == false is not supported.");
-    }
+  Status SanitizeOptions(const DBOptions& db_opts,
+                         const ColumnFamilyOptions& cf_opts) const override {
     return Status::OK();
   }
 

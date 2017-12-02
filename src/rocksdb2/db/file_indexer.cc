@@ -1,7 +1,7 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
-//  This source code is licensed under the BSD-style license found in the
-//  LICENSE file in the root directory of this source tree. An additional grant
-//  of patent rights can be found in the PATENTS file in the same directory.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 //
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
@@ -9,25 +9,28 @@
 
 #include "db/file_indexer.h"
 #include <algorithm>
-#include "rocksdb/comparator.h"
+#include <functional>
 #include "db/version_edit.h"
+#include "rocksdb/comparator.h"
 
 namespace rocksdb {
 
 FileIndexer::FileIndexer(const Comparator* ucmp)
     : num_levels_(0), ucmp_(ucmp), level_rb_(nullptr) {}
 
-uint32_t FileIndexer::NumLevelIndex() {
-  return next_level_index_.size();
-}
+size_t FileIndexer::NumLevelIndex() const { return next_level_index_.size(); }
 
-uint32_t FileIndexer::LevelIndexSize(uint32_t level) {
+size_t FileIndexer::LevelIndexSize(size_t level) const {
+  if (level >= next_level_index_.size()) {
+    return 0;
+  }
   return next_level_index_[level].num_index;
 }
 
-void FileIndexer::GetNextLevelIndex(
-    const uint32_t level, const uint32_t file_index, const int cmp_smallest,
-    const int cmp_largest, int32_t* left_bound, int32_t* right_bound) {
+void FileIndexer::GetNextLevelIndex(const size_t level, const size_t file_index,
+                                    const int cmp_smallest,
+                                    const int cmp_largest, int32_t* left_bound,
+                                    int32_t* right_bound) const {
   assert(level > 0);
 
   // Last level, no hint
@@ -69,7 +72,7 @@ void FileIndexer::GetNextLevelIndex(
   assert(*right_bound <= level_rb_[level + 1]);
 }
 
-void FileIndexer::UpdateIndex(Arena* arena, const uint32_t num_levels,
+void FileIndexer::UpdateIndex(Arena* arena, const size_t num_levels,
                               std::vector<FileMetaData*>* const files) {
   if (files == nullptr) {
     return;
@@ -90,17 +93,17 @@ void FileIndexer::UpdateIndex(Arena* arena, const uint32_t num_levels,
   }
 
   // L1 - Ln-1
-  for (uint32_t level = 1; level < num_levels_ - 1; ++level) {
+  for (size_t level = 1; level < num_levels_ - 1; ++level) {
     const auto& upper_files = files[level];
-    const int32_t upper_size = upper_files.size();
+    const int32_t upper_size = static_cast<int32_t>(upper_files.size());
     const auto& lower_files = files[level + 1];
-    level_rb_[level] = upper_files.size() - 1;
+    level_rb_[level] = static_cast<int32_t>(upper_files.size()) - 1;
     if (upper_size == 0) {
       continue;
     }
     IndexLevel& index_level = next_level_index_[level];
     index_level.num_index = upper_size;
-    char* mem = arena->AllocateAligned(upper_size * sizeof(IndexUnit));
+    mem = arena->AllocateAligned(upper_size * sizeof(IndexUnit));
     index_level.index_units = new (mem) IndexUnit[upper_size];
 
     CalculateLB(
@@ -129,7 +132,8 @@ void FileIndexer::UpdateIndex(Arena* arena, const uint32_t num_levels,
         [](IndexUnit* index, int32_t f_idx) { index->largest_rb = f_idx; });
   }
 
-  level_rb_[num_levels_ - 1] = files[num_levels_ - 1].size() - 1;
+  level_rb_[num_levels_ - 1] =
+      static_cast<int32_t>(files[num_levels_ - 1].size()) - 1;
 }
 
 void FileIndexer::CalculateLB(
@@ -137,8 +141,8 @@ void FileIndexer::CalculateLB(
     const std::vector<FileMetaData*>& lower_files, IndexLevel* index_level,
     std::function<int(const FileMetaData*, const FileMetaData*)> cmp_op,
     std::function<void(IndexUnit*, int32_t)> set_index) {
-  const int32_t upper_size = upper_files.size();
-  const int32_t lower_size = lower_files.size();
+  const int32_t upper_size = static_cast<int32_t>(upper_files.size());
+  const int32_t lower_size = static_cast<int32_t>(lower_files.size());
   int32_t upper_idx = 0;
   int32_t lower_idx = 0;
 
@@ -175,8 +179,8 @@ void FileIndexer::CalculateRB(
     const std::vector<FileMetaData*>& lower_files, IndexLevel* index_level,
     std::function<int(const FileMetaData*, const FileMetaData*)> cmp_op,
     std::function<void(IndexUnit*, int32_t)> set_index) {
-  const int32_t upper_size = upper_files.size();
-  const int32_t lower_size = lower_files.size();
+  const int32_t upper_size = static_cast<int32_t>(upper_files.size());
+  const int32_t lower_size = static_cast<int32_t>(lower_files.size());
   int32_t upper_idx = upper_size - 1;
   int32_t lower_idx = lower_size - 1;
 
