@@ -1,7 +1,7 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
-//  This source code is licensed under the BSD-style license found in the
-//  LICENSE file in the root directory of this source tree. An additional grant
-//  of patent rights can be found in the PATENTS file in the same directory.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 //
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
@@ -9,11 +9,18 @@
 
 #include "port/port_posix.h"
 
-#include <stdio.h>
 #include <assert.h>
+#if defined(__i386__) || defined(__x86_64__)
+#include <cpuid.h>
+#endif
 #include <errno.h>
-#include <sys/time.h>
+#include <sched.h>
+#include <signal.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <unistd.h>
 #include <cstdlib>
 #include "util/logging.h"
 
@@ -29,7 +36,7 @@ static int PthreadCall(const char* label, int result) {
 }
 
 Mutex::Mutex(bool adaptive) {
-#ifdef OS_LINUX
+#ifdef ROCKSDB_PTHREAD_ADAPTIVE_MUTEX
   if (!adaptive) {
     PthreadCall("init mutex", pthread_mutex_init(&mu_, nullptr));
   } else {
@@ -42,9 +49,9 @@ Mutex::Mutex(bool adaptive) {
     PthreadCall("destroy mutex attr",
                 pthread_mutexattr_destroy(&mutex_attr));
   }
-#else // ignore adaptive for non-linux platform
+#else
   PthreadCall("init mutex", pthread_mutex_init(&mu_, nullptr));
-#endif // OS_LINUX
+#endif // ROCKSDB_PTHREAD_ADAPTIVE_MUTEX
 }
 
 Mutex::~Mutex() { PthreadCall("destroy mutex", pthread_mutex_destroy(&mu_)); }
@@ -88,8 +95,8 @@ void CondVar::Wait() {
 
 bool CondVar::TimedWait(uint64_t abs_time_us) {
   struct timespec ts;
-  ts.tv_sec = abs_time_us / 1000000;
-  ts.tv_nsec = (abs_time_us % 1000000) * 1000;
+  ts.tv_sec = static_cast<time_t>(abs_time_us / 1000000);
+  ts.tv_nsec = static_cast<suseconds_t>((abs_time_us % 1000000) * 1000);
 
 #ifndef NDEBUG
   mu_->locked_ = false;
@@ -129,9 +136,72 @@ void RWMutex::ReadUnlock() { PthreadCall("read unlock", pthread_rwlock_unlock(&m
 
 void RWMutex::WriteUnlock() { PthreadCall("write unlock", pthread_rwlock_unlock(&mu_)); }
 
+int PhysicalCoreID() {
+#if defined(ROCKSDB_SCHED_GETCPU_PRESENT) && defined(__x86_64__) && \
+    (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 22))
+  // sched_getcpu uses VDSO getcpu() syscall since 2.22. I believe Linux offers VDSO
+  // support only on x86_64. This is the fastest/preferred method if available.
+  int cpuno = sched_getcpu();
+  if (cpuno < 0) {
+    return -1;
+  }
+  return cpuno;
+#elif defined(__x86_64__) || defined(__i386__)
+  // clang/gcc both provide cpuid.h, which defines __get_cpuid(), for x86_64 and i386.
+  unsigned eax, ebx = 0, ecx, edx;
+  if (!__get_cpuid(1, &eax, &ebx, &ecx, &edx)) {
+    return -1;
+  }
+  return ebx >> 24;
+#else
+  // give up, the caller can generate a random number or something.
+  return -1;
+#endif
+}
+
 void InitOnce(OnceType* once, void (*initializer)()) {
   PthreadCall("once", pthread_once(once, initializer));
 }
+
+void Crash(const std::string& srcfile, int srcline) {
+  fprintf(stdout, "Crashing at %s:%d\n", srcfile.c_str(), srcline);
+  fflush(stdout);
+  kill(getpid(), SIGTERM);
+}
+
+int GetMaxOpenFiles() {
+#if defined(RLIMIT_NOFILE)
+  struct rlimit no_files_limit;
+  if (getrlimit(RLIMIT_NOFILE, &no_files_limit) != 0) {
+    return -1;
+  }
+  // protect against overflow
+  if (no_files_limit.rlim_cur >= std::numeric_limits<int>::max()) {
+    return std::numeric_limits<int>::max();
+  }
+  return static_cast<int>(no_files_limit.rlim_cur);
+#endif
+  return -1;
+}
+
+void *cacheline_aligned_alloc(size_t size) {
+#if __GNUC__ < 5 && defined(__SANITIZE_ADDRESS__)
+  return malloc(size);
+#elif defined(_ISOC11_SOURCE)
+  return aligned_alloc(CACHE_LINE_SIZE, size);
+#elif ( _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600 || defined(__APPLE__))
+  void *m;
+  errno = posix_memalign(&m, CACHE_LINE_SIZE, size);
+  return errno ? NULL : m;
+#else
+  return malloc(size);
+#endif
+}
+
+void cacheline_aligned_free(void *memblock) {
+  free(memblock);
+}
+
 
 }  // namespace port
 }  // namespace rocksdb

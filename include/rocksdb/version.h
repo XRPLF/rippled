@@ -1,13 +1,12 @@
-// Copyright (c) 2013, Facebook, Inc.  All rights reserved.
-// This source code is licensed under the BSD-style license found in the
-// LICENSE file in the root directory of this source tree. An additional grant
-// of patent rights can be found in the PATENTS file in the same directory.
+// Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 #pragma once
 
-// Also update Makefile if you change these
-#define ROCKSDB_MAJOR 3
-#define ROCKSDB_MINOR 5
-#define ROCKSDB_PATCH 1
+#define ROCKSDB_MAJOR 5
+#define ROCKSDB_MINOR 8
+#define ROCKSDB_PATCH 7
 
 // Do not use these. We made the mistake of declaring macros starting with
 // double underscore. Now we have to live with our choice. We'll deprecate these

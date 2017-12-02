@@ -1,7 +1,7 @@
-// Copyright (c) 2013, Facebook, Inc. All rights reserved.
-// This source code is licensed under the BSD-style license found in the
-// LICENSE file in the root directory of this source tree. An additional grant
-// of patent rights can be found in the PATENTS file in the same directory.
+// Copyright (c) 2011-present, Facebook, Inc. All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 
 #include "dynamic_bloom.h"
 
@@ -9,6 +9,7 @@
 
 #include "port/port.h"
 #include "rocksdb/slice.h"
+#include "util/allocator.h"
 #include "util/hash.h"
 
 namespace rocksdb {
@@ -29,13 +30,13 @@ uint32_t GetTotalBitsForLocality(uint32_t total_bits) {
 }
 }
 
-DynamicBloom::DynamicBloom(Arena* arena, uint32_t total_bits, uint32_t locality,
-                           uint32_t num_probes,
+DynamicBloom::DynamicBloom(Allocator* allocator, uint32_t total_bits,
+                           uint32_t locality, uint32_t num_probes,
                            uint32_t (*hash_func)(const Slice& key),
                            size_t huge_page_tlb_size,
                            Logger* logger)
     : DynamicBloom(num_probes, hash_func) {
-  SetTotalBits(arena, total_bits, locality, huge_page_tlb_size, logger);
+  SetTotalBits(allocator, total_bits, locality, huge_page_tlb_size, logger);
 }
 
 DynamicBloom::DynamicBloom(uint32_t num_probes,
@@ -47,12 +48,12 @@ DynamicBloom::DynamicBloom(uint32_t num_probes,
 
 void DynamicBloom::SetRawData(unsigned char* raw_data, uint32_t total_bits,
                               uint32_t num_blocks) {
-  data_ = raw_data;
+  data_ = reinterpret_cast<std::atomic<uint8_t>*>(raw_data);
   kTotalBits = total_bits;
   kNumBlocks = num_blocks;
 }
 
-void DynamicBloom::SetTotalBits(Arena* arena,
+void DynamicBloom::SetTotalBits(Allocator* allocator,
                                 uint32_t total_bits, uint32_t locality,
                                 size_t huge_page_tlb_size,
                                 Logger* logger) {
@@ -67,16 +68,15 @@ void DynamicBloom::SetTotalBits(Arena* arena,
   if (kNumBlocks > 0) {
     sz += CACHE_LINE_SIZE - 1;
   }
-  assert(arena);
-  raw_ = reinterpret_cast<unsigned char*>(
-      arena->AllocateAligned(sz, huge_page_tlb_size, logger));
-  memset(raw_, 0, sz);
-  if (kNumBlocks > 0 && (reinterpret_cast<uint64_t>(raw_) % CACHE_LINE_SIZE)) {
-    data_ = raw_ + CACHE_LINE_SIZE -
-            reinterpret_cast<uint64_t>(raw_) % CACHE_LINE_SIZE;
-  } else {
-    data_ = raw_;
+  assert(allocator);
+
+  char* raw = allocator->AllocateAligned(sz, huge_page_tlb_size, logger);
+  memset(raw, 0, sz);
+  auto cache_line_offset = reinterpret_cast<uintptr_t>(raw) % CACHE_LINE_SIZE;
+  if (kNumBlocks > 0 && cache_line_offset > 0) {
+    raw += CACHE_LINE_SIZE - cache_line_offset;
   }
+  data_ = reinterpret_cast<std::atomic<uint8_t>*>(raw);
 }
 
 }  // rocksdb
