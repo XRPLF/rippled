@@ -30,6 +30,7 @@ using ssize_t = std::ptrdiff_t;
 #if BEAST_CLANG
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-function"
+#pragma clang diagnostic ignored "-Wdeprecated"
 #endif
 
 #include <snappy/snappy/snappy.cc>
