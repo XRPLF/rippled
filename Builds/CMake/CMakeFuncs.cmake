@@ -337,7 +337,10 @@ macro(use_boost)
       set(BOOST_ROOT $ENV{CLANG_BOOST_ROOT})
     endif()
 
-    set(Boost_USE_STATIC_LIBS on)
+
+    if (static)
+      set(Boost_USE_STATIC_LIBS on)
+    endif()
     set(Boost_USE_MULTITHREADED on)
     set(Boost_USE_STATIC_RUNTIME off)
     if(MSVC)
