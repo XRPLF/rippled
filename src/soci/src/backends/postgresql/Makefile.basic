@@ -43,7 +43,7 @@ blob.o : blob.cpp
 error.o : error.cpp
 	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
 
-common.o : common.cpp
+common.o : ../../core/common.cpp
 	${COMPILER} -c $? ${CXXFLAGS} ${INCLUDEDIRS}
 
 factory.o : factory.cpp
@@ -82,7 +82,7 @@ blob-s.o : blob.cpp
 error-s.o : error.cpp
 	${COMPILER} -c -o $@ $? ${CXXFLAGS} ${INCLUDEDIRS}
 
-common-s.o : common.cpp
+common-s.o : ../../core/common.cpp
 	${COMPILER} -c -o $@ $? ${SHARED_CXXFLAGS} ${INCLUDEDIRS}
 
 factory-s.o : factory.cpp

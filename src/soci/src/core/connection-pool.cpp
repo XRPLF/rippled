@@ -83,26 +83,6 @@ connection_pool::~connection_pool()
     delete pimpl_;
 }
 
-session & connection_pool::at(std::size_t pos)
-{
-    if (pos >= pimpl_->sessions_.size())
-    {
-        throw soci_error("Invalid pool position");
-    }
-
-    return *(pimpl_->sessions_[pos].second);
-}
-
-std::size_t connection_pool::lease()
-{
-    std::size_t pos;
-
-    // no timeout, so can't fail
-    try_lease(pos, -1);
-
-    return pos;
-}
-
 bool connection_pool::try_lease(std::size_t & pos, int timeout)
 {
     struct timespec tm;
@@ -266,26 +246,6 @@ connection_pool::~connection_pool()
     delete pimpl_;
 }
 
-session & connection_pool::at(std::size_t pos)
-{
-    if (pos >= pimpl_->sessions_.size())
-    {
-        throw soci_error("Invalid pool position");
-    }
-
-    return *(pimpl_->sessions_[pos].second);
-}
-
-std::size_t connection_pool::lease()
-{
-    std::size_t pos;
-
-    // no timeout, allow unlimited blocking
-    try_lease(pos, -1);
-
-    return pos;
-}
-
 bool connection_pool::try_lease(std::size_t & pos, int timeout)
 {
     DWORD cc = WaitForSingleObject(pimpl_->sem_,
@@ -341,3 +301,26 @@ void connection_pool::give_back(std::size_t pos)
 }
 
 #endif // _WIN32
+
+session & connection_pool::at(std::size_t pos)
+{
+    if (pos >= pimpl_->sessions_.size())
+    {
+        throw soci_error("Invalid pool position");
+    }
+
+    return *(pimpl_->sessions_[pos].second);
+}
+
+std::size_t connection_pool::lease()
+{
+    // dummy default value avoids compiler warning, never leaks to client
+    std::size_t pos(0);
+
+    // no timeout, so can't fail
+    try_lease(pos, -1);
+
+    return pos;
+}
+
+

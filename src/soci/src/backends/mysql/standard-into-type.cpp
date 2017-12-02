@@ -11,6 +11,7 @@
 #include "soci/soci-platform.h"
 #include "common.h"
 #include "soci-exchange-cast.h"
+#include "soci-mktime.h"
 // std
 #include <ciso646>
 #include <cstdlib>

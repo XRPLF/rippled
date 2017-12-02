@@ -1,0 +1,104 @@
+version: 4.0.0.{build}
+
+configuration: Release
+
+environment:
+  MINGW_ARCHIVE: C:\projects\mingw\x86_64-4.8.3-release-posix-seh-rt_v3-rev2.7z
+  MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.3/threads-posix/seh/x86_64-4.8.3-release-posix-seh-rt_v3-rev2.7z/download
+  matrix:
+    - G: "Visual Studio 15 2017 Win64"
+      BOOST_ROOT: C:\Libraries\boost_1_59_0
+      POSTGRESQL_ROOT: C:\Program Files\PostgreSQL\9.6
+      MYSQL_DIR: C:\Program Files\MySql\MySQL Server 5.7
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    - G: "Visual Studio 14 2015 Win64"
+      BOOST_ROOT: C:\Libraries\boost_1_59_0
+      POSTGRESQL_ROOT: C:\Program Files\PostgreSQL\9.4
+      MYSQL_DIR: C:\Program Files\MySql\MySQL Server 5.7
+    - G: "Visual Studio 12 2013 Win64"
+      BOOST_ROOT: C:\Libraries\boost_1_58_0
+      POSTGRESQL_ROOT: C:\Program Files\PostgreSQL\9.4
+      MYSQL_DIR: C:\Program Files\MySql\MySQL Server 5.7
+    - G: "Visual Studio 11 2012 Win64"
+      BOOST_ROOT: C:\Libraries\boost_1_58_0
+      POSTGRESQL_ROOT: C:\Program Files\PostgreSQL\9.4
+      MYSQL_DIR: C:\Program Files\MySql\MySQL Server 5.7
+    - G: "MinGW Makefiles"
+      MINGW_ROOT: C:\projects\mingw\4.8.3\mingw64\bin
+      BOOST_ROOT: C:\Libraries\boost_1_59_0
+      POSTGRESQL_ROOT: C:\Program Files\PostgreSQL\9.4
+      MYSQL_DIR: C:\Program Files\MySql\MySQL Server 5.7
+
+services:
+  - mssql2014
+  - mysql
+  - postgresql
+
+cache:
+  - C:\projects\mingw
+
+install:
+  - ps: |
+      if ($env:G -eq "MinGW Makefiles")
+      {
+        if (!(Test-Path C:\projects\mingw))
+        {
+          mkdir C:\projects\mingw
+        }
+        if (!(Test-Path $env:MINGW_ARCHIVE))
+        {
+          (new-object net.webclient).DownloadFile("$env:MINGW_URL", "$env:MINGW_ARCHIVE")
+          7z x -y -oC:\projects\mingw\4.8.3\ $env:MINGW_ARCHIVE > $null
+        }
+      }
+      Import-Module C:\projects\soci\scripts\windows\Get-ODBCList.ps1
+      Get-ODBCList
+  - git clone https://github.com/snikulov/sqlite.cmake.build.git C:\projects\sqlite\src
+
+before_build:
+  # dirty little hack - remove sh from Git to make generator happy
+  - ps: |
+      if ($env:G -eq "MinGW Makefiles")
+      {
+        $shellPath = (Get-Command sh.exe).definition
+        if ($shellPath)
+        {
+          if (Test-Path $shellPath)
+          {
+            Remove-Item $shellPath
+          }
+        }
+      }
+  - cd C:\projects\sqlite\src
+  - mkdir build
+  - cd build
+  - set SQLITE_ROOT=C:\projects\sqlite\sqlite
+  - set PATH=%MINGW_ROOT%;%PATH%;%SQLITE_ROOT%\bin;%POSTGRESQL_ROOT%\bin;%MYSQL_DIR%\bin;%MYSQL_DIR%\lib
+  - echo %PATH%
+  - cmake --version
+  - set PGUSER=postgres
+  - set PGPASSWORD=Password12!
+  - createdb soci_test
+  - set MYSQL_PWD=Password12!
+  - set USER=root
+  - mysql -e "create database soci_test;" --user=root
+  - sqlcmd -U sa -P Password12! -S (local)\SQL2014 -i C:\projects\soci\scripts\windows\mssql_db_create.sql
+  - cmake .. -G"%G%" -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DCMAKE_INSTALL_PREFIX=C:\projects\sqlite\sqlite
+  - cmake --build . --config %CONFIGURATION% --target install
+
+build_script:
+  - cd C:\projects\soci
+  - mkdir build
+  - cd build
+  - cmake .. -G"%G%" -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DCMAKE_VERBOSE_MAKEFILE=ON
+  - cmake --build . --config %CONFIGURATION% --clean-first
+
+test_script:
+  - ctest -V --output-on-failure -R "soci_empty|soci_postgresql|soci_sqlite3|soci_odbc_test_mssql|soci_mysql|soci_odbc_test_mysql|soci_odbc_test_postgresql"
+
+notifications:
+  - provider: Webhook
+    url: https://webhooks.gitter.im/e/2038138a652d952f9372
+    on_build_success: true
+    on_build_failure: true
+    on_build_status_changed: true

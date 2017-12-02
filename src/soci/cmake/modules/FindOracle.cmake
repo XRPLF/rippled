@@ -23,47 +23,52 @@
 ###############################################################################
 
 # First check for CMAKE  variable
-if( NOT ORACLE_HOME )
+if(NOT ORACLE_HOME)
   # If ORACLE_HOME is not defined check for env var and if exists set from env var
   if(EXISTS $ENV{ORACLE_HOME})
     set(ORACLE_HOME $ENV{ORACLE_HOME})
-  endif(EXISTS $ENV{ORACLE_HOME})
-endif(NOT ORACLE_HOME)
+  endif()
+endif()
 
 message(STATUS "ORACLE_HOME=${ORACLE_HOME}")
+
 find_path(ORACLE_INCLUDE_DIR
-NAMES oci.h
-PATHS
-${ORACLE_HOME}/rdbms/public
-${ORACLE_HOME}/include
-${ORACLE_HOME}/sdk/include  # Oracle SDK
-${ORACLE_HOME}/OCI/include) # Oracle XE on Windows
+  NAMES oci.h
+  PATHS
+  ${ORACLE_HOME}/rdbms/public
+  ${ORACLE_HOME}/include
+  ${ORACLE_HOME}/sdk/include  # Oracle SDK
+  ${ORACLE_HOME}/OCI/include # Oracle XE on Windows
+  # instant client from rpm
+  /usr/include/oracle/*/client${LIB_SUFFIX})
 
 set(ORACLE_OCI_NAMES clntsh libclntsh oci) # Dirty trick might help on OSX, see issues/89
 set(ORACLE_OCCI_NAMES libocci occi oraocci10 oraocci11 oraocci12)
 set(ORACLE_NNZ_NAMES nnz10 libnnz10 nnz11 libnnz11 nnz12 libnnz12 ociw32)
 
 set(ORACLE_LIB_DIR
-${ORACLE_HOME}
-${ORACLE_HOME}/lib
-${ORACLE_HOME}/sdk/lib       # Oracle SDK
-${ORACLE_HOME}/sdk/lib/msvc
-${ORACLE_HOME}/OCI/lib/msvc) # Oracle XE on Windows
+  ${ORACLE_HOME}
+  ${ORACLE_HOME}/lib
+  ${ORACLE_HOME}/sdk/lib       # Oracle SDK
+  ${ORACLE_HOME}/sdk/lib/msvc
+  ${ORACLE_HOME}/OCI/lib/msvc # Oracle XE on Windows
+  # Instant client from rpm
+  /usr/lib/oracle/*/client${LIB_SUFFIX}/lib)
 
 find_library(ORACLE_OCI_LIBRARY
-NAMES ${ORACLE_OCI_NAMES} PATHS ${ORACLE_LIB_DIR})
+  NAMES ${ORACLE_OCI_NAMES} PATHS ${ORACLE_LIB_DIR})
 find_library(ORACLE_OCCI_LIBRARY
-NAMES ${ORACLE_OCCI_NAMES} PATHS ${ORACLE_LIB_DIR})
+  NAMES ${ORACLE_OCCI_NAMES} PATHS ${ORACLE_LIB_DIR})
 find_library(ORACLE_NNZ_LIBRARY
-NAMES ${ORACLE_NNZ_NAMES} PATHS ${ORACLE_LIB_DIR})
+  NAMES ${ORACLE_NNZ_NAMES} PATHS ${ORACLE_LIB_DIR})
 
 set(ORACLE_LIBRARY
-${ORACLE_OCI_LIBRARY}
-${ORACLE_OCCI_LIBRARY}
-${ORACLE_NNZ_LIBRARY})
+  ${ORACLE_OCI_LIBRARY}
+  ${ORACLE_OCCI_LIBRARY}
+  ${ORACLE_NNZ_LIBRARY})
 
 if(NOT WIN32)
-set(ORACLE_LIBRARY ${ORACLE_LIBRARY} ${ORACLE_CLNTSH_LIBRARY})
+  set(ORACLE_LIBRARY ${ORACLE_LIBRARY} ${ORACLE_CLNTSH_LIBRARY})
 endif(NOT WIN32)
 
 set(ORACLE_LIBRARIES ${ORACLE_LIBRARY})

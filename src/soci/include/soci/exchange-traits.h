@@ -10,6 +10,7 @@
 
 #include "soci/type-conversion-traits.h"
 #include "soci/soci-backend.h"
+#include "soci/type-wrappers.h"
 // std
 #include <ctime>
 #include <string>
@@ -129,6 +130,22 @@ struct exchange_traits<std::vector<T> >
 {
     typedef typename exchange_traits<T>::type_family type_family;
     enum { x_type = exchange_traits<T>::x_type };
+};
+
+// handling of wrapper types
+
+template <>
+struct exchange_traits<xml_type>
+{
+    typedef basic_type_tag type_family;
+    enum { x_type = x_xmltype };
+};
+
+template <>
+struct exchange_traits<long_string>
+{
+    typedef basic_type_tag type_family;
+    enum { x_type = x_longstring };
 };
 
 } // namespace details

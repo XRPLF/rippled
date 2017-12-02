@@ -9,9 +9,11 @@
 #include "soci/soci-platform.h"
 #include "soci/postgresql/soci-postgresql.h"
 #include "soci-cstrtod.h"
+#include "soci-mktime.h"
 #include "common.h"
 #include "soci/rowid.h"
 #include "soci/blob.h"
+#include "soci/type-wrappers.h"
 #include "soci-exchange-cast.h"
 #include <libpq/libpq-fs.h> // libpq
 #include <cctype>
@@ -149,6 +151,12 @@ void postgresql_standard_into_type_backend::post_fetch(
                 bbe->fd_ = fd;
                 bbe->oid_ = oid;
             }
+            break;
+        case x_xmltype:
+            exchange_type_cast<x_xmltype>(data_).value.assign(buf);
+            break;
+        case x_longstring:
+            exchange_type_cast<x_longstring>(data_).value.assign(buf);
             break;
 
         default:

@@ -25,13 +25,53 @@
 using namespace soci;
 using namespace soci::details;
 
-postgresql_statement_backend::postgresql_statement_backend(
-    postgresql_session_backend &session)
-     : session_(session)
-     , rowsAffectedBulk_(-1LL), justDescribed_(false)
-     , hasIntoElements_(false), hasVectorIntoElements_(false)
-     , hasUseElements_(false), hasVectorUseElements_(false)
+namespace // unnamed
 {
+
+// used only with asynchronous operations in single-row mode
+
+void wait_until_operation_complete(postgresql_session_backend & session)
+{
+    while (true)
+    {
+        PGresult * result = PQgetResult(session.conn_);
+        if (result == NULL)
+        {
+            break;
+        }
+        else
+        {
+            postgresql_result r(session, result);
+            r.check_for_errors("Cannot execute asynchronous query in single-row mode");
+        }
+    }
+}
+
+void throw_soci_error(PGconn * conn, const char * msg)
+{
+    std::string description = msg;
+    description += ": ";
+    description += PQerrorMessage(conn);
+
+    throw soci_error(description);
+}
+
+} // unnamed namespace
+
+postgresql_statement_backend::postgresql_statement_backend(
+    postgresql_session_backend &session, bool single_row_mode)
+    : session_(session), single_row_mode_(single_row_mode),
+      result_(session, NULL),
+      rowsAffectedBulk_(-1LL), justDescribed_(false),
+      hasIntoElements_(false), hasVectorIntoElements_(false),
+      hasUseElements_(false), hasVectorUseElements_(false)
+{
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+  if (single_row_mode)
+  {
+    throw soci_error("Single row mode not supported in this version of the library");
+  }
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
 }
 
 postgresql_statement_backend::~postgresql_statement_backend()
@@ -185,10 +225,31 @@ void postgresql_statement_backend::prepare(std::string const & query,
         // if it fails to prepare it we can't DEALLOCATE it.
         std::string statementName = session_.get_next_statement_name();
 
-        postgresql_result result(
-            PQprepare(session_.conn_, statementName.c_str(),
-              query_.c_str(), static_cast<int>(names_.size()), NULL));
-        result.check_for_errors("Cannot prepare statement.");
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+        if (single_row_mode_)
+        {
+            // prepare for single-row retrieval
+
+            int result = PQsendPrepare(session_.conn_, statementName.c_str(),
+                query_.c_str(), static_cast<int>(names_.size()), NULL);
+            if (result != 1)
+            {
+                throw_soci_error(session_.conn_,
+                    "Cannot prepare statement in singlerow mode");
+            }
+
+            wait_until_operation_complete(session_);
+        }
+        else
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
+        {
+            // default multi-row query execution
+            
+            postgresql_result result(session_,
+                PQprepare(session_.conn_, statementName.c_str(),
+                    query_.c_str(), static_cast<int>(names_.size()), NULL));
+            result.check_for_errors("Cannot prepare statement.");
+        }
 
         // Now it's safe to save this info.
         statementName_ = statementName;
@@ -202,18 +263,29 @@ void postgresql_statement_backend::prepare(std::string const & query,
 statement_backend::exec_fetch_result
 postgresql_statement_backend::execute(int number)
 {
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+    if (single_row_mode_ && (number > 1))
+    {
+        throw soci_error("Bulk operations are not supported with single-row mode.");
+    }
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
+
     // If the statement was "just described", then we know that
     // it was actually executed with all the use elements
     // already bound and pre-used. This means that the result of the
     // query is already on the client side, so there is no need
     // to re-execute it.
+    // The optimization based on the existing results
+    // from the row description can be performed only once.
+    // If the same statement is re-executed,
+    // it will be *really* re-executed, without reusing existing data.
 
     if (justDescribed_ == false)
     {
         // This object could have been already filled with data before.
         clean_up();
 
-        if (number > 1 && hasIntoElements_)
+        if ((number > 1) && hasIntoElements_)
         {
              throw soci_error(
                   "Bulk use with single into elements is not supported.");
@@ -295,27 +367,103 @@ postgresql_statement_backend::execute(int number)
 
 #ifdef SOCI_POSTGRESQL_NOPREPARE
 
-                result_.reset(PQexecParams(session_.conn_, query_.c_str(),
-                    static_cast<int>(paramValues.size()),
-                    NULL, &paramValues[0], NULL, NULL, 0));
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+                if (single_row_mode_)
+                {
+                    int result = PQsendQueryParams(
+                        session_.conn_, query_.c_str(),
+                        static_cast<int>(paramValues.size()),
+                        NULL, &paramValues[0], NULL, NULL, 0);
+                    if (result != 1)
+                    {
+                        throw_soci_error(session_.conn_,
+                            "Cannot execute query in single-row mode");
+                    }
+
+                    result = PQsetSingleRowMode(session_.conn_);
+                    if (result != 1)
+                    {
+                        throw_soci_error(session_.conn_,
+                            "cannot set singlerow mode");
+                    }
+                }
+                else
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
+                {
+                    // default multi-row execution
+                    result_.reset(PQexecParams(session_.conn_, query_.c_str(),
+                            static_cast<int>(paramValues.size()),
+                            NULL, &paramValues[0], NULL, NULL, 0));
+                }
 #else
                 if (stType_ == st_repeatable_query)
                 {
                     // this query was separately prepared
 
-                    result_.reset(PQexecPrepared(session_.conn_,
-                        statementName_.c_str(),
-                        static_cast<int>(paramValues.size()),
-                        &paramValues[0], NULL, NULL, 0));
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+                    if (single_row_mode_)
+                    {
+                        int result = PQsendQueryPrepared(session_.conn_,
+                            statementName_.c_str(),
+                            static_cast<int>(paramValues.size()),
+                            &paramValues[0], NULL, NULL, 0);
+                        if (result != 1)
+                        {
+                            throw_soci_error(session_.conn_,
+                                "Cannot execute prepared query in single-row mode");
+                        }
+                        
+                        result = PQsetSingleRowMode(session_.conn_);
+                        if (result != 1)
+                        {
+                            throw_soci_error(session_.conn_,
+                                "Cannot set singlerow mode");
+                        }
+                    }
+                    else
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
+                    {
+                        // default multi-row execution
+                        
+                        result_.reset(PQexecPrepared(session_.conn_,
+                                statementName_.c_str(),
+                                static_cast<int>(paramValues.size()),
+                                &paramValues[0], NULL, NULL, 0));
+                    }
                 }
                 else // stType_ == st_one_time_query
                 {
                     // this query was not separately prepared and should
                     // be executed as a one-time query
 
-                    result_.reset(PQexecParams(session_.conn_, query_.c_str(),
-                        static_cast<int>(paramValues.size()),
-                        NULL, &paramValues[0], NULL, NULL, 0));
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+                    if (single_row_mode_)
+                    {
+                        int result = PQsendQueryParams(session_.conn_, query_.c_str(),
+                            static_cast<int>(paramValues.size()),
+                            NULL, &paramValues[0], NULL, NULL, 0);
+                        if (result != 1)
+                        {
+                            throw_soci_error(session_.conn_,
+                                "cannot execute query in single-row mode");
+                        }
+                        
+                        result = PQsetSingleRowMode(session_.conn_);
+                        if (result != 1)
+                        {
+                            throw_soci_error(session_.conn_,
+                                "Cannot set singlerow mode");
+                        }
+                    }
+                    else
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
+                    {
+                        // default multi-row execution
+                        
+                        result_.reset(PQexecParams(session_.conn_, query_.c_str(),
+                                static_cast<int>(paramValues.size()),
+                                NULL, &paramValues[0], NULL, NULL, 0));
+                    }
                 }
 
 #endif // SOCI_POSTGRESQL_NOPREPARE
@@ -352,34 +500,122 @@ postgresql_statement_backend::execute(int number)
 
 #ifdef SOCI_POSTGRESQL_NOPREPARE
 
-            result_.reset(PQexec(session_.conn_, query_.c_str()));
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+            if (single_row_mode_)
+            {
+                int result = PQsendQuery(session_.conn_, query_.c_str());
+                if (result != 1)
+                {
+                    throw_soci_error(session_.conn_,
+                        "Cannot execute query in single-row mode");
+                }
+
+                result = PQsetSingleRowMode(session_.conn_);
+                if (result != 1)
+                {
+                    throw_soci_error(session_.conn_,
+                        "Cannot set single-row mode");
+                }
+            }
+            else
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
+            {
+                // default multi-row execution
+                
+                result_.reset(PQexec(session_.conn_, query_.c_str()));
+            }
 #else
             if (stType_ == st_repeatable_query)
             {
                 // this query was separately prepared
 
-                result_.reset(PQexecPrepared(session_.conn_,
-                    statementName_.c_str(), 0, NULL, NULL, NULL, 0));
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+                if (single_row_mode_)
+                {
+                    int result = PQsendQueryPrepared(session_.conn_,
+                        statementName_.c_str(), 0, NULL, NULL, NULL, 0);
+                    if (result != 1)
+                    {
+                        throw_soci_error(session_.conn_,
+                            "Cannot execute prepared query in single-row mode");
+                    }
+                    
+                    result = PQsetSingleRowMode(session_.conn_);
+                    if (result != 1)
+                    {
+                        throw_soci_error(session_.conn_,
+                            "Cannot set singlerow mode");
+                    }
+                }
+                else
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
+                {
+                    // default multi-row execution
+                    
+                    result_.reset(PQexecPrepared(session_.conn_,
+                            statementName_.c_str(), 0, NULL, NULL, NULL, 0));
+                }
             }
             else // stType_ == st_one_time_query
             {
-                result_.reset(PQexec(session_.conn_, query_.c_str()));
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+                if (single_row_mode_)
+                {
+                    int result = PQsendQuery(session_.conn_, query_.c_str());
+                    if (result != 1)
+                    {
+                        throw_soci_error(session_.conn_,
+                            "Cannot execute query in single-row mode");
+                    }
+
+                    result = PQsetSingleRowMode(session_.conn_);
+                    if (result != 1)
+                    {
+                        throw_soci_error(session_.conn_,
+                            "Cannot set single-row mode");
+                    }
+                }
+                else
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
+                {
+                    // default multi-row execution
+                    
+                    result_.reset(PQexec(session_.conn_, query_.c_str()));
+                }
             }
 
 #endif // SOCI_POSTGRESQL_NOPREPARE
         }
     }
-    else
-    {
-        // The optimization based on the existing results
-        // from the row description can be performed only once.
-        // If the same statement is re-executed,
-        // it will be *really* re-executed, without reusing existing data.
 
-        justDescribed_ = false;
+    bool process_result;
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+    if (single_row_mode_)
+    {
+        if (justDescribed_)
+        {
+            // reuse the result_ that was already filled when executing the query
+            // for the purpose of row describe
+        }
+        else
+        {
+            PGresult * res = PQgetResult(session_.conn_);
+            result_.reset(res);
+        }
+
+        process_result = result_.check_for_data("Cannot execute query.");
+    }
+    else
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
+    {
+        // default multi-row execution
+        
+        process_result = result_.check_for_data("Cannot execute query.");
     }
 
-    if (result_.check_for_data("Cannot execute query."))
+    justDescribed_ = false;
+    
+    if (process_result)
     {
         currentRow_ = 0;
         rowsToConsume_ = 0;
@@ -405,41 +641,106 @@ postgresql_statement_backend::execute(int number)
     }
     else
     {
-      return ef_no_data;
+        return ef_no_data;
     }
 }
 
 statement_backend::exec_fetch_result
 postgresql_statement_backend::fetch(int number)
 {
-    // Note: This function does not actually fetch anything from anywhere
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+    if (single_row_mode_ && (number > 1))
+    {
+        throw soci_error("Bulk operations are not supported with single-row mode.");
+    }
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
+
+    // Note:
+    // In the multi-row mode this function does not actually fetch anything from anywhere
     // - the data was already retrieved from the server in the execute()
     // function, and the actual consumption of this data will take place
     // in the postFetch functions, called for each into element.
     // Here, we only prepare for this to happen (to emulate "the Oracle way").
+    // In the single-row mode the fetch of single row of data is performed as expected.
 
     // forward the "cursor" from the last fetch
     currentRow_ += rowsToConsume_;
 
     if (currentRow_ >= numberOfRows_)
     {
-        // all rows were already consumed
-        return ef_no_data;
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+        if (single_row_mode_)
+        {
+            PGresult* res = PQgetResult(session_.conn_);
+            result_.reset(res);
+            
+            if (res == NULL)
+            {
+                return ef_no_data;
+            }
+            
+            currentRow_ = 0;
+            rowsToConsume_ = 0;
+
+            numberOfRows_ = PQntuples(result_);
+            if (numberOfRows_ == 0)
+            {
+                return ef_no_data;
+            }
+            else
+            {
+                rowsToConsume_ = 1;
+                
+                return ef_success;
+            }
+        }
+        else
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
+        {
+            // default multi-row execution
+            
+            // all rows were already consumed
+            
+            return ef_no_data;
+        }
     }
     else
     {
         if (currentRow_ + number > numberOfRows_)
         {
-            rowsToConsume_ = numberOfRows_ - currentRow_;
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+            if (single_row_mode_)
+            {
+                rowsToConsume_ = 1;
+            
+                return ef_success;
+            }
+            else
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
+            {
+                // default multi-row execution
+            
+                rowsToConsume_ = numberOfRows_ - currentRow_;
 
-            // this simulates the behaviour of Oracle
-            // - when EOF is hit, we return ef_no_data even when there are
-            // actually some rows fetched
-            return ef_no_data;
+                // this simulates the behaviour of Oracle
+                // - when EOF is hit, we return ef_no_data even when there are
+                // actually some rows fetched
+                return ef_no_data;
+            }
         }
         else
         {
-            rowsToConsume_ = number;
+#ifndef SOCI_POSTGRESQL_NOSINLGEROWMODE
+            if (single_row_mode_)
+            {
+                rowsToConsume_ = 1;
+            }
+            else
+#endif // !SOCI_POSTGRESQL_NOSINLGEROWMODE
+            {
+                rowsToConsume_ = number;
+            }
+            
             return ef_success;
         }
     }
@@ -512,9 +813,9 @@ void postgresql_statement_backend::describe_column(int colNum, data_type & type,
     case 2275: // cstring
     case 18:   // char
     case 1042: // bpchar
-    case 142: // xml
+    case 142:  // xml
     case 114:  // json
-    case 17: // bytea
+    case 17:   // bytea
     case 2950: // uuid
         type = dt_string;
         break;
@@ -557,7 +858,9 @@ void postgresql_statement_backend::describe_column(int colNum, data_type & type,
         else
         {
             std::stringstream message;
-            message << "unknown data type with typelem: " << typeOid << " for colNum: " << colNum << " with name: " << PQfname(result_, pos);
+            message << "unknown data type with typelem: " << typeOid
+                << " for colNum: " << colNum
+                << " with name: " << PQfname(result_, pos);
             throw soci_error(message.str());
         }
     }

@@ -35,12 +35,17 @@ soci_backend_test(
   SOURCE test-odbc-mysql.cpp ${SOCI_TESTS_COMMON}
   CONNSTR "test-mysql.dsn")
 
+if(WIN32)
+  set(TEST_PGSQL_DSN "test-postgresql-win64.dsn")
+else()
+  set(TEST_PGSQL_DSN "test-postgresql.dsn")
+endif()
 soci_backend_test(
   NAME postgresql
   BACKEND ODBC
   DEPENDS ODBC
   SOURCE test-odbc-postgresql.cpp ${SOCI_TESTS_COMMON}
-  CONNSTR "test-postgresql.dsn")
+  CONNSTR ${TEST_PGSQL_DSN})
 
 # TODO: DB2 backend is tested by Travis CI on dedicated VM, separate from ODBC,
 # in order to test DB2 with ODBC, it would be best to install DB2 driver only.

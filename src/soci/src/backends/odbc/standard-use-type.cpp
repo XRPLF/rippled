@@ -86,22 +86,8 @@ void* odbc_standard_use_type_backend::prepare_for_bind(
     case x_stdstring:
     {
         std::string const& s = exchange_type_cast<x_stdstring>(data_);
-        sqlType = SQL_VARCHAR;
-        cType = SQL_C_CHAR;
-        size = s.size();
-        buf_ = new char[size+1];
-        memcpy(buf_, s.c_str(), size);
-        buf_[size++] = '\0';
-        indHolder_ = SQL_NTS;
 
-        // Strings of greater length are silently truncated at 8000 limit by MS
-        // SQL unless SQL_SS_LENGTH_UNLIMITED (which is defined as 0, but not
-        // available in all headers) is used.
-        if (size > 8000)
-        {
-          sqlType = SQL_LONGVARCHAR;
-          size = 0 /* SQL_SS_LENGTH_UNLIMITED */;
-        }
+        copy_from_string(s, size, sqlType, cType);
     }
     break;
     case x_stdtm:
@@ -127,30 +113,39 @@ void* odbc_standard_use_type_backend::prepare_for_bind(
     }
     break;
 
-    case x_blob:
-    {
-//         sqlType = SQL_VARBINARY;
-//         cType = SQL_C_BINARY;
+    case x_longstring:
+        copy_from_string(exchange_type_cast<x_longstring>(data_).value,
+                         size, sqlType, cType);
+        break;
+    case x_xmltype:
+        copy_from_string(exchange_type_cast<x_xmltype>(data_).value,
+                         size, sqlType, cType);
+        break;
 
-//         BLOB *b = static_cast<BLOB *>(data);
-
-//         odbc_blob_backend *bbe
-//         = static_cast<odbc_blob_backend *>(b->getBackEnd());
-
-//         size = 0;
-//         indHolder_ = size;
-        //TODO            data = &bbe->lobp_;
-    }
-    break;
-    case x_statement:
-    case x_rowid:
-        // Unsupported data types.
-        return NULL;
+    // unsupported types
+    default:
+        throw soci_error("Use element used with non-supported type.");
     }
 
     // Return either the pointer to C++ data itself or the buffer that we
     // allocated, if any.
     return buf_ ? buf_ : data_;
+}
+
+void odbc_standard_use_type_backend::copy_from_string(
+        std::string const& s,
+        SQLLEN& size,
+        SQLSMALLINT& sqlType,
+        SQLSMALLINT& cType
+    )
+{
+    sqlType = SQL_VARCHAR;
+    cType = SQL_C_CHAR;
+    size = s.size();
+    buf_ = new char[size+1];
+    memcpy(buf_, s.c_str(), size);
+    buf_[size++] = '\0';
+    indHolder_ = SQL_NTS;
 }
 
 void odbc_standard_use_type_backend::bind_by_pos(
@@ -209,17 +204,22 @@ void odbc_standard_use_type_backend::bind_by_name(
 void odbc_standard_use_type_backend::pre_use(indicator const *ind)
 {
     // first deal with data
-    SQLSMALLINT sqlType;
-    SQLSMALLINT cType;
-    SQLLEN size;
+    SQLSMALLINT sqlType(0);
+    SQLSMALLINT cType(0);
+    SQLLEN size(0);
+    SQLLEN bufLen(0);
 
     void* const sqlData = prepare_for_bind(size, sqlType, cType);
-
+    if (size > ODBC_MAX_COL_SIZE)
+    {
+        bufLen = size;
+        size   = SQL_SS_LENGTH_UNLIMITED;
+    }
     SQLRETURN rc = SQLBindParameter(statement_.hstmt_,
                                     static_cast<SQLUSMALLINT>(position_),
                                     SQL_PARAM_INPUT,
                                     cType, sqlType, size, 0,
-                                    sqlData, 0, &indHolder_);
+                                    sqlData, bufLen, &indHolder_);
 
     if (is_odbc_error(rc))
     {

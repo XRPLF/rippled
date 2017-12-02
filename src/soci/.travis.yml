@@ -3,7 +3,11 @@
 #
 # Copyright (c) 2013 Mateusz Loskot <mateusz@loskot.net>
 #
+# TODO: Switch to Trusty https://github.com/SOCI/soci/issues/574
+dist: precise
 language: cpp
+
+sudo: required
 
 compiler:
   - g++
@@ -14,32 +18,43 @@ services:
   - postgresql
 
 env:
-  - SOCI_TRAVIS_BACKEND=db2
-  - SOCI_TRAVIS_BACKEND=empty
-  - SOCI_TRAVIS_BACKEND=firebird
-  - SOCI_TRAVIS_BACKEND=mysql
-  - SOCI_TRAVIS_BACKEND=odbc
-  - SOCI_TRAVIS_BACKEND=oracle CFLAGS=-m32 CXXFLAGS=-m32 WITH_BOOST=OFF
-  - SOCI_TRAVIS_BACKEND=postgresql
-  - SOCI_TRAVIS_BACKEND=postgression
-  - SOCI_TRAVIS_BACKEND=sqlite3
+  global:
+    - secure: "I7/28jg7R24y64426d5XsfILrd/VW0BdwFbNpEgBfW1qNk9GpkNGTvp/ET6hKwBVrW5jmN9QdEviGcPpQRIAlMj6g9GvZeAUxM+VZTcXD2u30REUPPxNTJMRVHPfL9DA7EMFCST8SjBCgMdTHFwqLV4vSQEF4NTXbntley/IPfM="
+  matrix:
+    - SOCI_TRAVIS_BACKEND=db2
+    - SOCI_TRAVIS_BACKEND=empty
+    - SOCI_TRAVIS_BACKEND=firebird
+    - SOCI_TRAVIS_BACKEND=mysql
+    - SOCI_TRAVIS_BACKEND=odbc
+    - SOCI_TRAVIS_BACKEND=postgresql
+    - SOCI_TRAVIS_BACKEND=sqlite3
+    - SOCI_TRAVIS_BACKEND=valgrind
+    - SOCI_TRAVIS_BACKEND=oracle WITH_BOOST=OFF
 
-matrix:
-  fast_finish: true
-  allow_failures:
-    - env: SOCI_TRAVIS_BACKEND=postgression
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - kalakris-cmake
+    packages:
+      - cmake
+  coverity_scan:
+    project:
+      name: "SOCI/soci"
+    notification_email: soci-devel@lists.sourceforge.net
+    build_command_prepend: "mkdir build.cov; cd build.cov; cmake .."
+    build_command: "make -j 4"
+    branch_pattern: coverity_scan
 
-before_install: ./bin/ci/before_install.sh
-before_script: ./bin/ci/before_script.sh
-script: ./bin/ci/script.sh
+before_install: ./scripts/travis/before_install.sh
+before_script: ./scripts/travis/before_script.sh
+script: ./scripts/travis/script.sh
 
 notifications:
-  email:
-    recipients:
-      - soci-devel@lists.sourceforge.net
-    on_success: change # [always|never|change] # default: change
-    on_failure: always # [always|never|change] # default: always
-
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/000781732a3b1637ef82
+    on_start: always
   irc:
     channels:
       - "irc.freenode.org#soci"

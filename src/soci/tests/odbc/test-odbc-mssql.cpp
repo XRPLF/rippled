@@ -116,6 +116,24 @@ struct table_creator_for_get_affected_rows : table_creator_base
     }
 };
 
+struct table_creator_for_clob : table_creator_base
+{
+    table_creator_for_clob(soci::session & sql)
+        : table_creator_base(sql)
+    {
+        sql << "create table soci_test(id integer, s text)";
+    }
+};
+
+struct table_creator_for_xml : table_creator_base
+{
+    table_creator_for_xml(soci::session & sql)
+        : table_creator_base(sql)
+    {
+        sql << "create table soci_test(id integer, x xml)";
+    }
+};
+
 //
 // Support for SOCI Common Tests
 //
@@ -127,38 +145,58 @@ public:
                 std::string const &connectString)
         : test_context_base(backEnd, connectString) {}
 
-    table_creator_base* table_creator_1(soci::session& s) const
+    table_creator_base* table_creator_1(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_one(s);
     }
 
-    table_creator_base* table_creator_2(soci::session& s) const
+    table_creator_base* table_creator_2(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_two(s);
     }
 
-    table_creator_base* table_creator_3(soci::session& s) const
+    table_creator_base* table_creator_3(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_three(s);
     }
 
-    table_creator_base * table_creator_4(soci::session& s) const
+    table_creator_base * table_creator_4(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_for_get_affected_rows(s);
     }
 
-    std::string to_date_time(std::string const &datdt_string) const
+    tests::table_creator_base* table_creator_clob(soci::session& s) const SOCI_OVERRIDE
+    {
+        return new table_creator_for_clob(s);
+    }
+
+    tests::table_creator_base* table_creator_xml(soci::session& s) const SOCI_OVERRIDE
+    {
+        return new table_creator_for_xml(s);
+    }
+
+    bool has_real_xml_support() const SOCI_OVERRIDE
+    {
+        return true;
+    }
+
+    std::string to_date_time(std::string const &datdt_string) const SOCI_OVERRIDE
     {
         return "convert(datetime, \'" + datdt_string + "\', 120)";
     }
 
-    virtual bool has_multiple_select_bug() const
+    bool has_multiple_select_bug() const SOCI_OVERRIDE
     {
         // MS SQL does support MARS (multiple active result sets) since 2005
         // version, but this support needs to be explicitly enabled and is not
         // implemented in FreeTDS ODBC driver used under Unix currently, so err
         // on the side of caution and suppose that it's not supported.
         return true;
+    }
+
+    std::string sql_length(std::string const& s) const SOCI_OVERRIDE
+    {
+        return "len(" + s + ")";
     }
 };
 

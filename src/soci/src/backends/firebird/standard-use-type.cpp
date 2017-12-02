@@ -147,9 +147,26 @@ void firebird_standard_use_type_backend::exchangeData()
                 memcpy(buf_, &blob->bid_, var->sqllen);
             }
             break;
+
+        case x_longstring:
+            copy_to_blob(exchange_type_cast<x_longstring>(data_).value);
+            break;
+
+        case x_xmltype:
+            copy_to_blob(exchange_type_cast<x_xmltype>(data_).value);
+            break;
+
         default:
             throw soci_error("Use element used with non-supported type.");
     } // switch
+}
+
+void firebird_standard_use_type_backend::copy_to_blob(const std::string& in)
+{
+    blob_ = new firebird_blob_backend(statement_.session_);
+    blob_->append(in.c_str(), in.length());
+    blob_->save();
+    memcpy(buf_, &blob_->bid_, sizeof(blob_->bid_));
 }
 
 void firebird_standard_use_type_backend::post_use(
@@ -175,6 +192,13 @@ void firebird_standard_use_type_backend::clean_up()
         delete [] buf_;
         buf_ = NULL;
     }
+
+    if (blob_)
+    {
+        delete blob_;
+        blob_ = NULL;
+    }
+
     std::vector<void*>::iterator it =
         std::find(statement_.uses_.begin(), statement_.uses_.end(), this);
     if (it != statement_.uses_.end())

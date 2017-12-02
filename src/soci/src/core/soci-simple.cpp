@@ -582,6 +582,8 @@ bool name_exists_check_failed(statement_wrapper & wrapper,
                 iterator const it = wrapper.use_blob.find(name);
                 name_exists = (it != wrapper.use_blob.end());
             }
+        case dt_xml:
+            // no support for xml
             break;
         }
     }
@@ -642,7 +644,8 @@ bool name_exists_check_failed(statement_wrapper & wrapper,
             }
             break;
         case dt_blob:
-            // no support for bulk load
+        case dt_xml:
+            // no support for bulk and xml load
             break;
         }
     }
@@ -1096,6 +1099,7 @@ SOCI_DECL void soci_into_resize_v(statement_handle st, int new_size)
             wrapper->into_dates_v[i].resize(new_size);
             break;
         case dt_blob:
+        case dt_xml:
             // no support for bulk blob
             break;
         }
@@ -1494,7 +1498,7 @@ SOCI_DECL void soci_set_use_date(statement_handle st, char const * name, char co
         return;
     }
 
-    std::tm dt;
+    std::tm dt = std::tm();
     bool const converted = string_to_date(val, dt, *wrapper);
     if (converted == false)
     {
@@ -1697,7 +1701,7 @@ SOCI_DECL void soci_set_use_date_v(statement_handle st,
         return;
     }
 
-    std::tm dt;
+    std::tm dt = std::tm();
     bool const converted = string_to_date(val, dt, *wrapper);
     if (converted == false)
     {
@@ -1851,6 +1855,9 @@ SOCI_DECL void soci_prepare(statement_handle st, char const * query)
                     wrapper->st.exchange(
                         into(wrapper->into_blob[i]->blob_, wrapper->into_indicators[i]));
                     break;
+                case dt_xml:
+                    // no support for xml
+                    break;
                 }
             }
         }
@@ -1883,7 +1890,8 @@ SOCI_DECL void soci_prepare(statement_handle st, char const * query)
                         into(wrapper->into_dates_v[i], wrapper->into_indicators_v[i]));
                     break;
                 case dt_blob:
-                    // no support for bulk blob
+                case dt_xml:
+                    // no support for bulk blob and xml
                     break;
                 }
             }

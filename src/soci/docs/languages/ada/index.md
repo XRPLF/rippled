@@ -1,10 +1,8 @@
-# SOCI-Ada Language Binding - documentation
+# Ada Bindings
 
-* [Introduction](#introduction)
-* [Compilation](#compilation)
-* [Concepts](concepts.html)
-* [Common Idioms](idioms.html)
-* [API Reference](reference.html)
+* [Concepts](concepts.md)
+* [Idioms](idioms.md)
+* [API Reference](reference.md)
 
 ## Introduction
 
@@ -22,9 +20,9 @@ The SOCI-Ada library offers the following features to the Ada community:
 
 Currently the following database servers are directly supported via their native interfaces:
 
-  * Oracle
-  * PostgreSQL
-  * MySQL
+* Oracle
+* PostgreSQL
+* MySQL
 
 Other backends exist in the SOCI Git repository and can be provided with future version of the library.
 

@@ -1,0 +1,9 @@
+[ODBC]
+Description=DSN for SOCI ODBC connection to PostgreSQL(AppVeyor)
+Driver=PostgreSQL ANSI(x64)
+Server=localhost
+Port=5432
+Database=soci_test
+UID=postgres
+PWD=Password12!
+UnknownsAsLongVarchar=1

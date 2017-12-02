@@ -35,7 +35,7 @@
 namespace soci
 {
 
-class mysql_soci_error : public soci_error
+class SOCI_MYSQL_DECL mysql_soci_error : public soci_error
 {
 public:
     mysql_soci_error(std::string const & msg, int errNum)
@@ -50,14 +50,14 @@ struct mysql_standard_into_type_backend : details::standard_into_type_backend
     mysql_standard_into_type_backend(mysql_statement_backend &st)
         : statement_(st) {}
 
-    virtual void define_by_pos(int &position,
-        void *data, details::exchange_type type);
+    void define_by_pos(int &position,
+        void *data, details::exchange_type type) SOCI_OVERRIDE;
 
-    virtual void pre_fetch();
-    virtual void post_fetch(bool gotData, bool calledFromFetch,
-        indicator *ind);
+    void pre_fetch() SOCI_OVERRIDE;
+    void post_fetch(bool gotData, bool calledFromFetch,
+        indicator *ind) SOCI_OVERRIDE;
 
-    virtual void clean_up();
+    void clean_up() SOCI_OVERRIDE;
 
     mysql_statement_backend &statement_;
 
@@ -71,16 +71,16 @@ struct mysql_vector_into_type_backend : details::vector_into_type_backend
     mysql_vector_into_type_backend(mysql_statement_backend &st)
         : statement_(st) {}
 
-    virtual void define_by_pos(int &position,
-        void *data, details::exchange_type type);
+    void define_by_pos(int &position,
+        void *data, details::exchange_type type) SOCI_OVERRIDE;
 
-    virtual void pre_fetch();
-    virtual void post_fetch(bool gotData, indicator *ind);
+    void pre_fetch() SOCI_OVERRIDE;
+    void post_fetch(bool gotData, indicator *ind) SOCI_OVERRIDE;
 
-    virtual void resize(std::size_t sz);
-    virtual std::size_t size();
+    void resize(std::size_t sz) SOCI_OVERRIDE;
+    std::size_t size() SOCI_OVERRIDE;
 
-    virtual void clean_up();
+    void clean_up() SOCI_OVERRIDE;
 
     mysql_statement_backend &statement_;
 
@@ -94,15 +94,15 @@ struct mysql_standard_use_type_backend : details::standard_use_type_backend
     mysql_standard_use_type_backend(mysql_statement_backend &st)
         : statement_(st), position_(0), buf_(NULL) {}
 
-    virtual void bind_by_pos(int &position,
-        void *data, details::exchange_type type, bool readOnly);
-    virtual void bind_by_name(std::string const &name,
-        void *data, details::exchange_type type, bool readOnly);
+    void bind_by_pos(int &position,
+        void *data, details::exchange_type type, bool readOnly) SOCI_OVERRIDE;
+    void bind_by_name(std::string const &name,
+        void *data, details::exchange_type type, bool readOnly) SOCI_OVERRIDE;
 
-    virtual void pre_use(indicator const *ind);
-    virtual void post_use(bool gotData, indicator *ind);
+    void pre_use(indicator const *ind) SOCI_OVERRIDE;
+    void post_use(bool gotData, indicator *ind) SOCI_OVERRIDE;
 
-    virtual void clean_up();
+    void clean_up() SOCI_OVERRIDE;
 
     mysql_statement_backend &statement_;
 
@@ -118,16 +118,16 @@ struct mysql_vector_use_type_backend : details::vector_use_type_backend
     mysql_vector_use_type_backend(mysql_statement_backend &st)
         : statement_(st), position_(0) {}
 
-    virtual void bind_by_pos(int &position,
-        void *data, details::exchange_type type);
-    virtual void bind_by_name(std::string const &name,
-        void *data, details::exchange_type type);
+    void bind_by_pos(int &position,
+        void *data, details::exchange_type type) SOCI_OVERRIDE;
+    void bind_by_name(std::string const &name,
+        void *data, details::exchange_type type) SOCI_OVERRIDE;
 
-    virtual void pre_use(indicator const *ind);
+    void pre_use(indicator const *ind) SOCI_OVERRIDE;
 
-    virtual std::size_t size();
+    std::size_t size() SOCI_OVERRIDE;
 
-    virtual void clean_up();
+    void clean_up() SOCI_OVERRIDE;
 
     mysql_statement_backend &statement_;
 
@@ -143,28 +143,28 @@ struct mysql_statement_backend : details::statement_backend
 {
     mysql_statement_backend(mysql_session_backend &session);
 
-    virtual void alloc();
-    virtual void clean_up();
-    virtual void prepare(std::string const &query,
-        details::statement_type eType);
+    void alloc() SOCI_OVERRIDE;
+    void clean_up() SOCI_OVERRIDE;
+    void prepare(std::string const &query,
+        details::statement_type eType) SOCI_OVERRIDE;
 
-    virtual exec_fetch_result execute(int number);
-    virtual exec_fetch_result fetch(int number);
+    exec_fetch_result execute(int number) SOCI_OVERRIDE;
+    exec_fetch_result fetch(int number) SOCI_OVERRIDE;
 
-    virtual long long get_affected_rows();
-    virtual int get_number_of_rows();
-    virtual std::string get_parameter_name(int index) const;
+    long long get_affected_rows() SOCI_OVERRIDE;
+    int get_number_of_rows() SOCI_OVERRIDE;
+    std::string get_parameter_name(int index) const SOCI_OVERRIDE;
 
-    virtual std::string rewrite_for_procedure_call(std::string const &query);
+    std::string rewrite_for_procedure_call(std::string const &query) SOCI_OVERRIDE;
 
-    virtual int prepare_for_describe();
-    virtual void describe_column(int colNum, data_type &dtype,
-        std::string &columnName);
+    int prepare_for_describe() SOCI_OVERRIDE;
+    void describe_column(int colNum, data_type &dtype,
+        std::string &columnName) SOCI_OVERRIDE;
 
-    virtual mysql_standard_into_type_backend * make_into_type_backend();
-    virtual mysql_standard_use_type_backend * make_use_type_backend();
-    virtual mysql_vector_into_type_backend * make_vector_into_type_backend();
-    virtual mysql_vector_use_type_backend * make_vector_use_type_backend();
+    mysql_standard_into_type_backend * make_into_type_backend() SOCI_OVERRIDE;
+    mysql_standard_use_type_backend * make_use_type_backend() SOCI_OVERRIDE;
+    mysql_vector_into_type_backend * make_vector_into_type_backend() SOCI_OVERRIDE;
+    mysql_vector_use_type_backend * make_vector_use_type_backend() SOCI_OVERRIDE;
 
     mysql_session_backend &session_;
 
@@ -209,22 +209,22 @@ struct mysql_rowid_backend : details::rowid_backend
 {
     mysql_rowid_backend(mysql_session_backend &session);
 
-    ~mysql_rowid_backend();
+    ~mysql_rowid_backend() SOCI_OVERRIDE;
 };
 
 struct mysql_blob_backend : details::blob_backend
 {
     mysql_blob_backend(mysql_session_backend &session);
 
-    ~mysql_blob_backend();
+    ~mysql_blob_backend() SOCI_OVERRIDE;
 
-    virtual std::size_t get_len();
-    virtual std::size_t read(std::size_t offset, char *buf,
-        std::size_t toRead);
-    virtual std::size_t write(std::size_t offset, char const *buf,
-        std::size_t toWrite);
-    virtual std::size_t append(char const *buf, std::size_t toWrite);
-    virtual void trim(std::size_t newLen);
+    std::size_t get_len() SOCI_OVERRIDE;
+    std::size_t read(std::size_t offset, char *buf,
+        std::size_t toRead) SOCI_OVERRIDE;
+    std::size_t write(std::size_t offset, char const *buf,
+        std::size_t toWrite) SOCI_OVERRIDE;
+    std::size_t append(char const *buf, std::size_t toWrite) SOCI_OVERRIDE;
+    void trim(std::size_t newLen) SOCI_OVERRIDE;
 
     mysql_session_backend &session_;
 };
@@ -233,21 +233,25 @@ struct mysql_session_backend : details::session_backend
 {
     mysql_session_backend(connection_parameters const & parameters);
 
-    ~mysql_session_backend();
+    ~mysql_session_backend() SOCI_OVERRIDE;
 
-    virtual void begin();
-    virtual void commit();
-    virtual void rollback();
+    void begin() SOCI_OVERRIDE;
+    void commit() SOCI_OVERRIDE;
+    void rollback() SOCI_OVERRIDE;
 
-    virtual bool get_last_insert_id(session&, std::string const&, long&);
+    bool get_last_insert_id(session&, std::string const&, long&) SOCI_OVERRIDE;
 
-    virtual std::string get_backend_name() const { return "mysql"; }
+    // Note that MySQL supports both "SELECT 2+2" and "SELECT 2+2 FROM DUAL"
+    // syntaxes, but there doesn't seem to be any reason to use the longer one.
+    std::string get_dummy_from_table() const SOCI_OVERRIDE { return std::string(); }
+
+    std::string get_backend_name() const SOCI_OVERRIDE { return "mysql"; }
 
     void clean_up();
 
-    virtual mysql_statement_backend * make_statement_backend();
-    virtual mysql_rowid_backend * make_rowid_backend();
-    virtual mysql_blob_backend * make_blob_backend();
+    mysql_statement_backend * make_statement_backend() SOCI_OVERRIDE;
+    mysql_rowid_backend * make_rowid_backend() SOCI_OVERRIDE;
+    mysql_blob_backend * make_blob_backend() SOCI_OVERRIDE;
 
     MYSQL *conn_;
 };
@@ -256,8 +260,8 @@ struct mysql_session_backend : details::session_backend
 struct mysql_backend_factory : backend_factory
 {
     mysql_backend_factory() {}
-    virtual mysql_session_backend * make_session(
-        connection_parameters const & parameters) const;
+    mysql_session_backend * make_session(
+        connection_parameters const & parameters) const SOCI_OVERRIDE;
 };
 
 extern SOCI_MYSQL_DECL mysql_backend_factory const mysql;

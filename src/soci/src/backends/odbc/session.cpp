@@ -133,6 +133,23 @@ void odbc_session_backend::configure_connection()
             throw odbc_soci_error(SQL_HANDLE_DBC, henv_,
                                   "setting extra_float_digits for PostgreSQL");
         }
+
+        // This is extracted from pgapifunc.h header from psqlODBC driver.
+        enum
+        {
+            SQL_ATTR_PGOPT_UNKNOWNSASLONGVARCHAR = 65544
+        };
+
+        // Also configure the driver to handle unknown types, such as "xml",
+        // that we use for x_xmltype, as long varchar instead of limiting them
+        // to 256 characters (by default).
+        rc = SQLSetConnectAttr(hdbc_, SQL_ATTR_PGOPT_UNKNOWNSASLONGVARCHAR, (SQLPOINTER)1, 0);
+
+        // Ignore the error from this one, failure to set it is not fatal and
+        // the attribute is only supported in very recent version of the driver
+        // (>= 9.6.300). Using "UnknownsAsLongVarchar=1" in odbc.ini (or
+        // setting the corresponding option in the driver dialog box) should
+        // work with all versions however.
     }
 }
 
@@ -253,6 +270,37 @@ bool odbc_session_backend::get_last_insert_id(
     return true;
 }
 
+std::string odbc_session_backend::get_dummy_from_table() const
+{
+    std::string table;
+
+    switch ( get_database_product() )
+    {
+        case prod_firebird:
+            table = "rdb$database";
+            break;
+
+        case prod_oracle:
+            table = "dual";
+            break;
+
+        case prod_mssql:
+        case prod_mysql:
+        case prod_sqlite:
+        case prod_postgresql:
+            // No special dummy table needed.
+            break;
+
+            // These cases are here just to make the switch exhaustive, we
+            // can't really do anything about them anyhow.
+        case prod_unknown:
+        case prod_uninitialized:
+            break;
+    }
+
+    return table;
+}
+
 void odbc_session_backend::reset_transaction()
 {
     SQLRETURN rc = SQLSetConnectAttr( hdbc_, SQL_ATTR_AUTOCOMMIT,
@@ -301,7 +349,7 @@ odbc_blob_backend * odbc_session_backend::make_blob_backend()
 }
 
 odbc_session_backend::database_product
-odbc_session_backend::get_database_product()
+odbc_session_backend::get_database_product() const
 {
     // Cache the product type, it's not going to change during our life time.
     if (product_ != prod_uninitialized)

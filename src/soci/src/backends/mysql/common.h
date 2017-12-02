@@ -27,9 +27,6 @@ namespace details
 namespace mysql
 {
 
-// helper function for parsing datetime values
-void parse_std_tm(char const *buf, std::tm &t);
-
 // The idea is that infinity - infinity gives NaN, and NaN != NaN is true.
 //
 // This should work on any IEEE-754-compliant implementation, which is

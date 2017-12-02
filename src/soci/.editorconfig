@@ -1,0 +1,32 @@
+# This is the EditorConfig (http://editorconfig.org/) coding style file for SOCI.
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+charset = utf-8
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+# CMake configuration files
+[{CMakeLists.txt,*.cmake}]
+indent_size = 2
+indent_style = space
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# CI configuration files
+[{.travis.yml,appveyor.yml,Vagrantfile}]
+indent_size = 2
+indent_style = space
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Windows shell scripts
+[*.{cmd,bat,ps1}]
+end_of_line = crlf
+indent_size = 4
+indent_style = space
+insert_final_newline = false
+trim_trailing_whitespace = true

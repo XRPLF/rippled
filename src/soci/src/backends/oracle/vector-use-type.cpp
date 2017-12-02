@@ -36,7 +36,7 @@ void oracle_vector_use_type_backend::prepare_indicators(std::size_t size)
 }
 
 void oracle_vector_use_type_backend::prepare_for_bind(
-    void *&data, sb4 &size, ub2 &oracleType)
+    void * & data, sb4 & elementSize, ub2 & oracleType)
 {
     switch (type_)
     {
@@ -44,41 +44,41 @@ void oracle_vector_use_type_backend::prepare_for_bind(
     case x_char:
         {
             oracleType = SQLT_AFC;
-            size = sizeof(char);
-            std::vector<char> *vp = static_cast<std::vector<char> *>(data);
+            elementSize = sizeof(char);
+            std::vector<char> *vp = static_cast<std::vector<char> *>(data_);
             std::vector<char> &v(*vp);
-            prepare_indicators(v.size());
-            data = &v[0];
+            prepare_indicators(size());
+            data = &v[begin_];
         }
         break;
     case x_short:
         {
             oracleType = SQLT_INT;
-            size = sizeof(short);
-            std::vector<short> *vp = static_cast<std::vector<short> *>(data);
+            elementSize = sizeof(short);
+            std::vector<short> *vp = static_cast<std::vector<short> *>(data_);
             std::vector<short> &v(*vp);
-            prepare_indicators(v.size());
-            data = &v[0];
+            prepare_indicators(size());
+            data = &v[begin_];
         }
         break;
     case x_integer:
         {
             oracleType = SQLT_INT;
-            size = sizeof(int);
-            std::vector<int> *vp = static_cast<std::vector<int> *>(data);
+            elementSize = sizeof(int);
+            std::vector<int> *vp = static_cast<std::vector<int> *>(data_);
             std::vector<int> &v(*vp);
-            prepare_indicators(v.size());
-            data = &v[0];
+            prepare_indicators(size());
+            data = &v[begin_];
         }
         break;
     case x_double:
         {
             oracleType = statement_.session_.get_double_sql_type();
-            size = sizeof(double);
-            std::vector<double> *vp = static_cast<std::vector<double> *>(data);
+            elementSize = sizeof(double);
+            std::vector<double> *vp = static_cast<std::vector<double> *>(data_);
             std::vector<double> &v(*vp);
-            prepare_indicators(v.size());
-            data = &v[0];
+            prepare_indicators(size());
+            data = &v[begin_];
         }
         break;
 
@@ -86,36 +86,28 @@ void oracle_vector_use_type_backend::prepare_for_bind(
 
     case x_long_long:
         {
-            std::vector<long long> *vp
-                = static_cast<std::vector<long long> *>(data);
-            std::vector<long long> &v(*vp);
-
-            std::size_t const vecSize = v.size();
+            std::size_t const vecSize = size();
             std::size_t const entrySize = 100; // arbitrary
             std::size_t const bufSize = entrySize * vecSize;
             buf_ = new char[bufSize];
 
             oracleType = SQLT_STR;
             data = buf_;
-            size = entrySize;
+            elementSize = entrySize;
 
             prepare_indicators(vecSize);
         }
         break;
     case x_unsigned_long_long:
         {
-            std::vector<unsigned long long> *vp
-                = static_cast<std::vector<unsigned long long> *>(data);
-            std::vector<unsigned long long> &v(*vp);
-
-            std::size_t const vecSize = v.size();
+            std::size_t const vecSize = size();
             std::size_t const entrySize = 100; // arbitrary
             std::size_t const bufSize = entrySize * vecSize;
             buf_ = new char[bufSize];
 
             oracleType = SQLT_STR;
             data = buf_;
-            size = entrySize;
+            elementSize = entrySize;
 
             prepare_indicators(vecSize);
         }
@@ -123,15 +115,15 @@ void oracle_vector_use_type_backend::prepare_for_bind(
     case x_stdstring:
         {
             std::vector<std::string> *vp
-                = static_cast<std::vector<std::string> *>(data);
+                = static_cast<std::vector<std::string> *>(data_);
             std::vector<std::string> &v(*vp);
 
             std::size_t maxSize = 0;
-            std::size_t const vecSize = v.size();
+            std::size_t const vecSize = size();
             prepare_indicators(vecSize);
             for (std::size_t i = 0; i != vecSize; ++i)
             {
-                std::size_t sz = v[i].length();
+                std::size_t sz = v[begin_ + i].length();
                 sizes_.push_back(static_cast<ub2>(sz));
                 maxSize = sz > maxSize ? sz : maxSize;
             }
@@ -140,47 +132,53 @@ void oracle_vector_use_type_backend::prepare_for_bind(
             char *pos = buf_;
             for (std::size_t i = 0; i != vecSize; ++i)
             {
-                strncpy(pos, v[i].c_str(), v[i].length());
+                strncpy(pos, v[begin_ + i].c_str(), v[begin_ + i].length());
                 pos += maxSize;
             }
 
             oracleType = SQLT_CHR;
             data = buf_;
-            size = static_cast<sb4>(maxSize);
+            elementSize = static_cast<sb4>(maxSize);
         }
         break;
     case x_stdtm:
         {
-            std::vector<std::tm> *vp
-                = static_cast<std::vector<std::tm> *>(data);
-
-            prepare_indicators(vp->size());
+            std::size_t const vecSize = size();
+            prepare_indicators(vecSize);
 
             sb4 const dlen = 7; // size of SQLT_DAT
-            buf_ = new char[dlen * vp->size()];
+            buf_ = new char[dlen * vecSize];
 
             oracleType = SQLT_DAT;
             data = buf_;
-            size = dlen;
+            elementSize = dlen;
         }
         break;
 
-    case x_statement: break; // not supported
-    case x_rowid:     break; // not supported
-    case x_blob:      break; // not supported
+    case x_xmltype:    break; // not supported
+    case x_longstring: break; // not supported
+    case x_statement:  break; // not supported
+    case x_rowid:      break; // not supported
+    case x_blob:       break; // not supported
     }
 }
 
-void oracle_vector_use_type_backend::bind_by_pos(int &position,
-        void *data, exchange_type type)
+void oracle_vector_use_type_backend::bind_by_pos_bulk(int & position,
+    void * data, exchange_type type,
+    std::size_t begin, std::size_t * end)
 {
     data_ = data; // for future reference
     type_ = type; // for future reference
+    begin_ = begin;
+    end_ = end;
 
+    end_var_ = full_size();
+    
     ub2 oracleType;
-    sb4 size;
+    sb4 elementSize;
+    void * dataBuf;
 
-    prepare_for_bind(data, size, oracleType);
+    prepare_for_bind(dataBuf, elementSize, oracleType);
 
     ub2 *sizesP = 0; // used only for std::string
     if (type == x_stdstring)
@@ -190,7 +188,7 @@ void oracle_vector_use_type_backend::bind_by_pos(int &position,
 
     sword res = OCIBindByPos(statement_.stmtp_, &bindp_,
         statement_.session_.errhp_,
-        position++, data, size, oracleType,
+        position++, dataBuf, elementSize, oracleType,
         indOCIHolders_, sizesP, 0, 0, 0, OCI_DEFAULT);
     if (res != OCI_SUCCESS)
     {
@@ -198,16 +196,22 @@ void oracle_vector_use_type_backend::bind_by_pos(int &position,
     }
 }
 
-void oracle_vector_use_type_backend::bind_by_name(
-    std::string const &name, void *data, exchange_type type)
+void oracle_vector_use_type_backend::bind_by_name_bulk(
+    std::string const &name, void *data, exchange_type type,
+    std::size_t begin, std::size_t * end)
 {
     data_ = data; // for future reference
     type_ = type; // for future reference
+    begin_ = begin;
+    end_ = end;
 
+    end_var_ = full_size();
+    
     ub2 oracleType;
-    sb4 size;
+    sb4 elementSize;
+    void * dataBuf;
 
-    prepare_for_bind(data, size, oracleType);
+    prepare_for_bind(dataBuf, elementSize, oracleType);
 
     ub2 *sizesP = 0; // used only for std::string
     if (type == x_stdstring)
@@ -219,7 +223,7 @@ void oracle_vector_use_type_backend::bind_by_name(
         statement_.session_.errhp_,
         reinterpret_cast<text*>(const_cast<char*>(name.c_str())),
         static_cast<sb4>(name.size()),
-        data, size, oracleType,
+        dataBuf, elementSize, oracleType,
         indOCIHolders_, sizesP, 0, 0, 0, OCI_DEFAULT);
     if (res != OCI_SUCCESS)
     {
@@ -244,10 +248,10 @@ void oracle_vector_use_type_backend::pre_use(indicator const *ind)
 
         char *pos = buf_;
         std::size_t const entrySize = 100; // arbitrary, but consistent
-        std::size_t const vecSize = v.size();
+        std::size_t const vecSize = size();
         for (std::size_t i = 0; i != vecSize; ++i)
         {
-            snprintf(pos, entrySize, "%" LL_FMT_FLAGS "d", v[i]);
+            snprintf(pos, entrySize, "%" LL_FMT_FLAGS "d", v[begin_ + i]);
             pos += entrySize;
         }
     }
@@ -259,10 +263,10 @@ void oracle_vector_use_type_backend::pre_use(indicator const *ind)
 
         char *pos = buf_;
         std::size_t const entrySize = 100; // arbitrary, but consistent
-        std::size_t const vecSize = v.size();
+        std::size_t const vecSize = size();
         for (std::size_t i = 0; i != vecSize; ++i)
         {
-            snprintf(pos, entrySize, "%" LL_FMT_FLAGS "u", v[i]);
+            snprintf(pos, entrySize, "%" LL_FMT_FLAGS "u", v[begin_ + i]);
             pos += entrySize;
         }
     }
@@ -273,26 +277,28 @@ void oracle_vector_use_type_backend::pre_use(indicator const *ind)
         std::vector<std::tm> &v(*vp);
 
         ub1* pos = reinterpret_cast<ub1*>(buf_);
-        std::size_t const vsize = v.size();
-        for (std::size_t i = 0; i != vsize; ++i)
+        std::size_t const vecSize = size();
+        for (std::size_t i = 0; i != vecSize; ++i)
         {
-            *pos++ = static_cast<ub1>(100 + (1900 + v[i].tm_year) / 100);
-            *pos++ = static_cast<ub1>(100 + v[i].tm_year % 100);
-            *pos++ = static_cast<ub1>(v[i].tm_mon + 1);
-            *pos++ = static_cast<ub1>(v[i].tm_mday);
-            *pos++ = static_cast<ub1>(v[i].tm_hour + 1);
-            *pos++ = static_cast<ub1>(v[i].tm_min + 1);
-            *pos++ = static_cast<ub1>(v[i].tm_sec + 1);
+            std::tm & t = v[begin_ + i];
+            
+            *pos++ = static_cast<ub1>(100 + (1900 + t.tm_year) / 100);
+            *pos++ = static_cast<ub1>(100 + t.tm_year % 100);
+            *pos++ = static_cast<ub1>(t.tm_mon + 1);
+            *pos++ = static_cast<ub1>(t.tm_mday);
+            *pos++ = static_cast<ub1>(t.tm_hour + 1);
+            *pos++ = static_cast<ub1>(t.tm_min + 1);
+            *pos++ = static_cast<ub1>(t.tm_sec + 1);
         }
     }
 
     // then handle indicators
     if (ind != NULL)
     {
-        std::size_t const vsize = size();
-        for (std::size_t i = 0; i != vsize; ++i, ++ind)
+        std::size_t const vecSize = size();
+        for (std::size_t i = 0; i != vecSize; ++i)
         {
-            if (*ind == i_null)
+            if (ind[begin_ + i] == i_null)
             {
                 indOCIHolderVec_[i] = -1; // null
             }
@@ -305,8 +311,8 @@ void oracle_vector_use_type_backend::pre_use(indicator const *ind)
     else
     {
         // no indicators - treat all fields as OK
-        std::size_t const vsize = size();
-        for (std::size_t i = 0; i != vsize; ++i, ++ind)
+        std::size_t const vecSize = size();
+        for (std::size_t i = 0; i != vecSize; ++i)
         {
             indOCIHolderVec_[i] = 0;  // value is OK
         }
@@ -314,6 +320,27 @@ void oracle_vector_use_type_backend::pre_use(indicator const *ind)
 }
 
 std::size_t oracle_vector_use_type_backend::size()
+{
+    // as a special error-detection measure, check if the actual vector size
+    // was changed since the original bind (when it was stored in end_var_):
+    const std::size_t actual_size = full_size();
+    if (actual_size != end_var_)
+    {
+        // ... and in that case return the actual size
+        return actual_size;
+    }
+    
+    if (end_ != NULL && *end_ != 0)
+    {
+        return *end_ - begin_;
+    }
+    else
+    {
+        return end_var_;
+    }
+}
+
+std::size_t oracle_vector_use_type_backend::full_size()
 {
     std::size_t sz = 0; // dummy initialization to please the compiler
     switch (type_)
@@ -373,9 +400,11 @@ std::size_t oracle_vector_use_type_backend::size()
         }
         break;
 
-    case x_statement: break; // not supported
-    case x_rowid:     break; // not supported
-    case x_blob:      break; // not supported
+    case x_xmltype:    break; // not supported
+    case x_longstring: break; // not supported
+    case x_statement:  break; // not supported
+    case x_rowid:      break; // not supported
+    case x_blob:       break; // not supported
     }
 
     return sz;
