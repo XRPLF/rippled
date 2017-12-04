@@ -1,6 +1,6 @@
 /*
   LZ4io.h - LZ4 File/Stream Interface
-  Copyright (C) Yann Collet 2011-2015
+  Copyright (C) Yann Collet 2011-2016
   GPL v2 License
 
   This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,7 @@
   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
   You can contact the author at :
-  - LZ4 source repository : https://github.com/Cyan4973/lz4
+  - LZ4 source repository : https://github.com/lz4/lz4
   - LZ4 public forum : https://groups.google.com/forum/#!forum/lz4c
 */
 /*
@@ -29,18 +29,23 @@
   - The license of this source file is GPLv2.
 */
 
-#pragma once
+#ifndef LZ4IO_H_237902873
+#define LZ4IO_H_237902873
+
+/*---   Dependency   ---*/
+#include <stddef.h>   /* size_t */
+
 
 /* ************************************************** */
 /* Special input/output values                        */
 /* ************************************************** */
 #define NULL_OUTPUT "null"
-static char const stdinmark[] = "stdin";
-static char const stdoutmark[] = "stdout";
+static const char stdinmark[]  = "stdin";
+static const char stdoutmark[] = "stdout";
 #ifdef _WIN32
-static char const nulmark[] = "nul";
+static const char nulmark[] = "nul";
 #else
-static char const nulmark[] = "/dev/null";
+static const char nulmark[] = "/dev/null";
 #endif
 
 
@@ -51,9 +56,9 @@ static char const nulmark[] = "/dev/null";
 int LZ4IO_compressFilename  (const char* input_filename, const char* output_filename, int compressionlevel);
 int LZ4IO_decompressFilename(const char* input_filename, const char* output_filename);
 
-
 int LZ4IO_compressMultipleFilenames(const char** inFileNamesTable, int ifntSize, const char* suffix, int compressionlevel);
 int LZ4IO_decompressMultipleFilenames(const char** inFileNamesTable, int ifntSize, const char* suffix);
+
 
 /* ************************************************** */
 /* ****************** Parameters ******************** */
@@ -63,9 +68,13 @@ int LZ4IO_decompressMultipleFilenames(const char** inFileNamesTable, int ifntSiz
    return : overwrite mode (0/1) */
 int LZ4IO_setOverwrite(int yes);
 
+/* Default setting : testMode = 0;
+   return : testMode (0/1) */
+int LZ4IO_setTestMode(int yes);
+
 /* blockSizeID : valid values : 4-5-6-7
-   return : -1 if error, blockSize if OK */
-int LZ4IO_setBlockSizeID(int blockSizeID);
+   return : 0 if error, blockSize if OK */
+size_t LZ4IO_setBlockSizeID(unsigned blockSizeID);
 
 /* Default setting : independent blocks */
 typedef enum { LZ4IO_blockLinked=0, LZ4IO_blockIndependent} LZ4IO_blockMode_t;
@@ -85,3 +94,8 @@ int LZ4IO_setSparseFile(int enable);
 
 /* Default setting : 0 (disabled) */
 int LZ4IO_setContentSize(int enable);
+
+void LZ4IO_setRemoveSrcFile(unsigned flag);
+
+
+#endif  /* LZ4IO_H_237902873 */
