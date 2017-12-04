@@ -28,8 +28,8 @@
 //
 // Various stubs for the unit tests for the open-source version of Snappy.
 
-#ifndef UTIL_SNAPPY_OPENSOURCE_SNAPPY_TEST_H_
-#define UTIL_SNAPPY_OPENSOURCE_SNAPPY_TEST_H_
+#ifndef THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_TEST_H_
+#define THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_TEST_H_
 
 #include <iostream>
 #include <string>
@@ -52,7 +52,6 @@
 #endif
 
 #ifdef HAVE_WINDOWS_H
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
@@ -111,35 +110,18 @@
 #include "lzo/lzo1x.h"
 #endif
 
-#ifdef HAVE_LIBLZF
-extern "C" {
-#include "lzf.h"
-}
-#endif
-
-#ifdef HAVE_LIBFASTLZ
-#include "fastlz.h"
-#endif
-
-#ifdef HAVE_LIBQUICKLZ
-#include "quicklz.h"
-#endif
-
 namespace {
 
-namespace File {
-  void Init() { }
-}  // namespace File
-
 namespace file {
-  int Defaults() { }
+  int Defaults() { return 0; }
 
   class DummyStatus {
    public:
     void CheckSuccess() { }
   };
 
-  DummyStatus GetContents(const string& filename, string* data, int unused) {
+  DummyStatus GetContents(
+      const std::string& filename, std::string* data, int unused) {
     FILE* fp = fopen(filename.c_str(), "rb");
     if (fp == NULL) {
       perror(filename.c_str());
@@ -154,15 +136,16 @@ namespace file {
         perror("fread");
         exit(1);
       }
-      data->append(string(buf, ret));
+      data->append(std::string(buf, ret));
     }
 
     fclose(fp);
+
+    return DummyStatus();
   }
 
-  DummyStatus SetContents(const string& filename,
-                          const string& str,
-                          int unused) {
+  inline DummyStatus SetContents(
+      const std::string& filename, const std::string& str, int unused) {
     FILE* fp = fopen(filename.c_str(), "wb");
     if (fp == NULL) {
       perror(filename.c_str());
@@ -176,6 +159,8 @@ namespace file {
     }
 
     fclose(fp);
+
+    return DummyStatus();
   }
 }  // namespace file
 
@@ -193,6 +178,7 @@ void Test_Snappy_RandomData();
 void Test_Snappy_FourByteOffset();
 void Test_SnappyCorruption_TruncatedVarint();
 void Test_SnappyCorruption_UnterminatedVarint();
+void Test_SnappyCorruption_OverflowingVarint();
 void Test_Snappy_ReadPastEndOfBuffer();
 void Test_Snappy_FindMatchLength();
 void Test_Snappy_FindMatchLengthRandom();
@@ -463,7 +449,7 @@ class ZLib {
 
 DECLARE_bool(run_microbenchmarks);
 
-static void RunSpecifiedBenchmarks() {
+static inline void RunSpecifiedBenchmarks() {
   if (!FLAGS_run_microbenchmarks) {
     return;
   }
@@ -497,6 +483,7 @@ static inline int RUN_ALL_TESTS() {
   snappy::Test_Snappy_FourByteOffset();
   snappy::Test_SnappyCorruption_TruncatedVarint();
   snappy::Test_SnappyCorruption_UnterminatedVarint();
+  snappy::Test_SnappyCorruption_OverflowingVarint();
   snappy::Test_Snappy_ReadPastEndOfBuffer();
   snappy::Test_Snappy_FindMatchLength();
   snappy::Test_Snappy_FindMatchLengthRandom();
@@ -510,10 +497,6 @@ static inline int RUN_ALL_TESTS() {
 // For main().
 namespace snappy {
 
-static void CompressFile(const char* fname);
-static void UncompressFile(const char* fname);
-static void MeasureFile(const char* fname);
-
 // Logging.
 
 #define LOG(level) LogMessage()
@@ -524,15 +507,15 @@ class LogMessage {
  public:
   LogMessage() { }
   ~LogMessage() {
-    cerr << endl;
+    std::cerr << std::endl;
   }
 
   LogMessage& operator<<(const std::string& msg) {
-    cerr << msg;
+    std::cerr << msg;
     return *this;
   }
   LogMessage& operator<<(int x) {
-    cerr << x;
+    std::cerr << x;
     return *this;
   }
 };
@@ -541,17 +524,28 @@ class LogMessage {
 // and ones that are always active.
 
 #define CRASH_UNLESS(condition) \
-    PREDICT_TRUE(condition) ? (void)0 : \
+    SNAPPY_PREDICT_TRUE(condition) ? (void)0 : \
     snappy::LogMessageVoidify() & snappy::LogMessageCrash()
+
+#ifdef _MSC_VER
+// ~LogMessageCrash calls abort() and therefore never exits. This is by design
+// so temporarily disable warning C4722.
+#pragma warning(push)
+#pragma warning(disable:4722)
+#endif
 
 class LogMessageCrash : public LogMessage {
  public:
   LogMessageCrash() { }
   ~LogMessageCrash() {
-    cerr << endl;
+    std::cerr << std::endl;
     abort();
   }
 };
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 // This class is used to explicitly ignore values in the conditional
 // logging macros.  This avoids compiler warnings like "value computed
@@ -572,11 +566,8 @@ class LogMessageVoidify {
 #define CHECK_NE(a, b) CRASH_UNLESS((a) != (b))
 #define CHECK_LT(a, b) CRASH_UNLESS((a) < (b))
 #define CHECK_GT(a, b) CRASH_UNLESS((a) > (b))
+#define CHECK_OK(cond) (cond).CheckSuccess()
 
-}  // namespace
+}  // namespace snappy
 
-using snappy::CompressFile;
-using snappy::UncompressFile;
-using snappy::MeasureFile;
-
-#endif  // UTIL_SNAPPY_OPENSOURCE_SNAPPY_TEST_H_
+#endif  // THIRD_PARTY_SNAPPY_OPENSOURCE_SNAPPY_TEST_H_
