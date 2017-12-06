@@ -264,7 +264,7 @@ def shell(cmd, args=(), silent=False):
     count = 0
     # readline returns '' at EOF
     for line in iter(process.stdout.readline, ''):
-        if process.poll() is not None:
+        if process.poll() is None:
             decoded = decodeString(line)
             lines.append(decoded)
             if verbose:
