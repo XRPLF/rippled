@@ -363,7 +363,8 @@ multi_runner_parent::multi_runner_parent()
 {
     message_queue_thread_ = std::thread([this] {
         std::vector<char> buf(1 << 20);
-        while (this->continue_message_queue_)
+        while (this->continue_message_queue_ ||
+               this->message_queue_->get_num_msg())
         {
             // let children know the parent is still alive
             this->inc_keep_alive_count();
@@ -423,7 +424,7 @@ multi_runner_child::multi_runner_child(
     : job_index_{checkout_job_index()}
     , num_jobs_{num_jobs}
     , quiet_{quiet}
-    , print_log_{print_log}
+    , print_log_{!quiet || print_log}
 {
     // incPort twice (2*jobIndex_) because some tests need two envs
     for (std::size_t i = 0; i < 2 * job_index_; ++i)
