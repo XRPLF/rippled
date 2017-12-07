@@ -123,7 +123,7 @@ public:
 
         if (auto const v = get<int>(keyValues, "filter_bits"))
         {
-            bool filter_blocks = ! keyValues.exists ("filter_full") ||
+            bool filter_blocks = !keyValues.exists("filter_full") ||
                 (get<int>(keyValues, "filter_full") == 0);
             table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (v, filter_blocks));
         }
@@ -176,8 +176,10 @@ public:
 
         if (keyValues.exists("bbt_options"))
         {
-            auto s = rocksdb::GetBlockBasedTableOptionsFromString (table_options,
-                get<std::string>(keyValues, "bbt_options"), &table_options);
+            auto const s = rocksdb::GetBlockBasedTableOptionsFromString(
+                table_options,
+                get<std::string>(keyValues, "bbt_options"),
+                &table_options);
             if (! s.ok())
                 Throw<std::runtime_error> (
                     std::string("Unable to set RocksDB bbt_options: ") + s.ToString());
@@ -187,8 +189,8 @@ public:
 
         if (keyValues.exists("options"))
         {
-            auto s = rocksdb::GetOptionsFromString (options,
-                get<std::string>(keyValues, "options"), &options);
+            auto const s = rocksdb::GetOptionsFromString(
+                options, get<std::string>(keyValues, "options"), &options);
             if (! s.ok())
                 Throw<std::runtime_error> (
                     std::string("Unable to set RocksDB options: ") + s.ToString());
