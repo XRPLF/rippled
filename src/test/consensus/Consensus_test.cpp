@@ -512,8 +512,7 @@ public:
                                 peerJumps.closeJumps.front();
                             // Jump is to a different chain
                             BEAST_EXPECT(jump.from.seq() <= jump.to.seq());
-                            BEAST_EXPECT(
-                                !sim.oracle.isAncestor(jump.from, jump.to));
+                            BEAST_EXPECT(!jump.to.isAncestor(jump.from));
                         }
                     }
                     // fully validated jump forward in same chain
@@ -525,8 +524,7 @@ public:
                                 peerJumps.fullyValidatedJumps.front();
                             // Jump is to a different chain with same seq
                             BEAST_EXPECT(jump.from.seq() < jump.to.seq());
-                            BEAST_EXPECT(
-                                sim.oracle.isAncestor(jump.from, jump.to));
+                            BEAST_EXPECT(jump.to.isAncestor(jump.from));
                         }
                     }
                 }

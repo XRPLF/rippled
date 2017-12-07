@@ -94,6 +94,11 @@ private:
         //! Parent ledger close time
         NetClock::time_point parentCloseTime;
 
+        //! IDs of this ledgers ancestors. Since each ledger already has unique
+        //! ancestors based on the parentID, this member is not needed foor any
+        //! of the operators below.
+        std::vector<Ledger::ID> ancestors;
+
         auto
         asTie() const
         {
@@ -189,6 +194,21 @@ public:
         return instance_->txs;
     }
 
+    /** Determine whether ancestor is really an ancestor of this ledger */
+    bool
+    isAncestor(Ledger const& ancestor) const;
+
+    /** Return the id of the ancestor with the given seq (if exists/known)
+     */
+    ID
+    operator[](Seq seq) const;
+
+    /** Return the sequence number of the first mismatching ancestor
+    */
+    friend
+    Ledger::Seq
+    mismatch(Ledger const & a, Ledger const & o);
+
     Json::Value getJson() const;
 
     friend bool
@@ -238,9 +258,16 @@ public:
         NetClock::duration closeTimeResolution,
         NetClock::time_point const& consensusCloseTime);
 
-    /** Determine whether ancestor is really an ancestor of descendent */
-    bool
-    isAncestor(Ledger const & ancestor, Ledger const& descendant) const;
+    Ledger
+    accept(Ledger const& curr, Tx tx)
+    {
+        using namespace std::chrono_literals;
+        return accept(
+            curr,
+            TxSetType{tx},
+            curr.closeTimeResolution(),
+            curr.closeTime() + 1s);
+    }
 
     /** Determine the number of distinct branches for the set of ledgers.
 
@@ -254,6 +281,57 @@ public:
     std::size_t
     branches(std::set<Ledger> const & ledgers) const;
 
+};
+
+/** Helper for writing unit tests with controlled ledger histories.
+
+    This class allows clients to refer to distinct ledgers as strings, where
+    each character in the string indicates a unique ledger. It enforces the
+    uniqueness at runtime, but this simplifies creation of alternate ledger
+    histories, e.g.
+
+     HistoryHelper hh;
+     hh["a"]
+     hh["ab"]
+     hh["ac"]
+     hh["abd"]
+
+   Creates a history like
+           b - d
+         /
+       a - c
+
+*/
+struct LedgerHistoryHelper
+{
+    csf::LedgerOracle oracle;
+    csf::Tx::ID nextTx{0};
+    std::unordered_map<std::string, csf::Ledger> ledgers;
+    std::set<char> seen;
+
+    LedgerHistoryHelper()
+    {
+        ledgers[""] = csf::Ledger{};
+    }
+
+    /** Get or create the ledger with the given string history.
+
+        Creates an necessary intermediate ledgers, but asserts if
+        a letter is re-used (e.g. "abc" then "adc" would assert)
+    */
+    csf::Ledger const& operator[](std::string const& s)
+    {
+        auto it = ledgers.find(s);
+        if (it != ledgers.end())
+            return it->second;
+
+        // enforce that the new suffix has never been seen
+        assert(seen.emplace(s.back()).second);
+
+        csf::Ledger const& parent = (*this)[s.substr(0, s.size() - 1)];
+        return ledgers.emplace(s, oracle.accept(parent, ++nextTx))
+            .first->second;
+    }
 };
 
 }  // csf

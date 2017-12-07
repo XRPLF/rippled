@@ -555,7 +555,7 @@ struct Peer
             // Only send validation if the new ledger is compatible with our
             // fully validated ledger
             bool const isCompatible =
-                oracle.isAncestor(fullyValidatedLedger, newLedger);
+                newLedger.isAncestor(fullyValidatedLedger);
 
             if (runAsValidator && isCompatible)
             {
@@ -691,7 +691,7 @@ struct Peer
         std::size_t const count = validations.numTrustedForLedger(ledger.id());
         std::size_t const numTrustedPeers = trustGraph.graph().outDegree(this);
         quorum = static_cast<std::size_t>(std::ceil(numTrustedPeers * 0.8));
-        if (count >= quorum && oracle.isAncestor(fullyValidatedLedger, ledger))
+        if (count >= quorum && ledger.isAncestor(fullyValidatedLedger))
         {
             issue(FullyValidateLedger{ledger, fullyValidatedLedger});
             fullyValidatedLedger = ledger;
