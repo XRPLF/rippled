@@ -30,10 +30,24 @@ public:
     ~blob();
 
     std::size_t get_len();
+
+    // offset is backend-specific
     std::size_t read(std::size_t offset, char * buf, std::size_t toRead);
+
+    // offset starts from 0
+    std::size_t read_from_start(char * buf, std::size_t toRead,
+        std::size_t offset = 0);
+
+    // offset is backend-specific
     std::size_t write(std::size_t offset, char const * buf,
         std::size_t toWrite);
+
+    // offset starts from 0
+    std::size_t write_from_start(const char * buf, std::size_t toWrite,
+        std::size_t offset = 0);
+    
     std::size_t append(char const * buf, std::size_t toWrite);
+    
     void trim(std::size_t newLen);
 
     details::blob_backend * get_backend() { return backEnd_; }

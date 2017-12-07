@@ -1,32 +1,23 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
-//  This source code is licensed under the BSD-style license found in the
-//  LICENSE file in the root directory of this source tree. An additional grant
-//  of patent rights can be found in the PATENTS file in the same directory.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
+#pragma once
 
 #ifndef ROCKSDB_LITE
-#pragma once
 #include <vector>
 
+#include "db/log_reader.h"
+#include "db/version_set.h"
+#include "options/db_options.h"
+#include "port/port.h"
 #include "rocksdb/env.h"
 #include "rocksdb/options.h"
-#include "rocksdb/types.h"
 #include "rocksdb/transaction_log.h"
-#include "db/db_impl.h"
-#include "db/log_reader.h"
-#include "db/filename.h"
+#include "rocksdb/types.h"
+#include "util/filename.h"
 
 namespace rocksdb {
-
-struct LogReporter : public log::Reader::Reporter {
-  Env* env;
-  Logger* info_log;
-  virtual void Corruption(size_t bytes, const Status& s) {
-    Log(info_log, "dropping %zu bytes; %s", bytes, s.ToString().c_str());
-  }
-  virtual void Info(const char* s) {
-    Log(info_log, "%s", s);
-  }
-};
 
 class LogFileImpl : public LogFile {
  public:
@@ -38,20 +29,20 @@ class LogFileImpl : public LogFile {
     sizeFileBytes_(sizeBytes) {
   }
 
-  std::string PathName() const {
+  std::string PathName() const override {
     if (type_ == kArchivedLogFile) {
       return ArchivedLogFileName("", logNumber_);
     }
     return LogFileName("", logNumber_);
   }
 
-  uint64_t LogNumber() const { return logNumber_; }
+  uint64_t LogNumber() const override { return logNumber_; }
 
-  WalFileType Type() const { return type_; }
+  WalFileType Type() const override { return type_; }
 
-  SequenceNumber StartSequence() const { return startSequence_; }
+  SequenceNumber StartSequence() const override { return startSequence_; }
 
-  uint64_t SizeFileBytes() const { return sizeFileBytes_; }
+  uint64_t SizeFileBytes() const override { return sizeFileBytes_; }
 
   bool operator < (const LogFile& that) const {
     return LogNumber() < that.LogNumber();
@@ -68,22 +59,22 @@ class LogFileImpl : public LogFile {
 class TransactionLogIteratorImpl : public TransactionLogIterator {
  public:
   TransactionLogIteratorImpl(
-      const std::string& dir, const DBOptions* options,
+      const std::string& dir, const ImmutableDBOptions* options,
       const TransactionLogIterator::ReadOptions& read_options,
       const EnvOptions& soptions, const SequenceNumber seqNum,
-      std::unique_ptr<VectorLogPtr> files, DBImpl const* const dbimpl);
+      std::unique_ptr<VectorLogPtr> files, VersionSet const* const versions);
 
-  virtual bool Valid();
+  virtual bool Valid() override;
 
-  virtual void Next();
+  virtual void Next() override;
 
-  virtual Status status();
+  virtual Status status() override;
 
-  virtual BatchResult GetBatch();
+  virtual BatchResult GetBatch() override;
 
  private:
   const std::string& dir_;
-  const DBOptions* options_;
+  const ImmutableDBOptions* options_;
   const TransactionLogIterator::ReadOptions read_options_;
   const EnvOptions& soptions_;
   SequenceNumber startingSequenceNumber_;
@@ -94,11 +85,24 @@ class TransactionLogIteratorImpl : public TransactionLogIterator {
   size_t currentFileIndex_;
   std::unique_ptr<WriteBatch> currentBatch_;
   unique_ptr<log::Reader> currentLogReader_;
-  Status OpenLogFile(const LogFile* logFile, unique_ptr<SequentialFile>* file);
-  LogReporter reporter_;
+  Status OpenLogFile(const LogFile* logFile,
+                     unique_ptr<SequentialFileReader>* file);
+
+  struct LogReporter : public log::Reader::Reporter {
+    Env* env;
+    Logger* info_log;
+    virtual void Corruption(size_t bytes, const Status& s) override {
+      ROCKS_LOG_ERROR(info_log, "dropping %" ROCKSDB_PRIszt " bytes; %s", bytes,
+                      s.ToString().c_str());
+    }
+    virtual void Info(const char* s) { ROCKS_LOG_INFO(info_log, "%s", s); }
+  } reporter_;
+
   SequenceNumber currentBatchSeq_; // sequence number at start of current batch
   SequenceNumber currentLastSeq_; // last sequence in the current batch
-  DBImpl const * const dbimpl_; // The db on whose log files this iterates
+  // Used only to get latest seq. num
+  // TODO(icanadi) can this be just a callback?
+  VersionSet const* const versions_;
 
   // Reads from transaction log only if the writebatch record has been written
   bool RestrictedRead(Slice* record, std::string* scratch);

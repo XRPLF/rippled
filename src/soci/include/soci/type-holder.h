@@ -7,6 +7,8 @@
 
 #ifndef SOCI_TYPE_HOLDER_H_INCLUDED
 #define SOCI_TYPE_HOLDER_H_INCLUDED
+
+#include "soci/soci-platform.h"
 // std
 #include <typeinfo>
 
@@ -52,7 +54,7 @@ class type_holder : public holder
 {
 public:
     type_holder(T * t) : t_(t) {}
-    ~type_holder() { delete t_; }
+    ~type_holder() SOCI_OVERRIDE { delete t_; }
 
     template<typename TypeValue>
     TypeValue value() const { return *t_; }

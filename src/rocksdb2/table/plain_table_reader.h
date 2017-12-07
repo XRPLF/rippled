@@ -22,6 +22,7 @@
 #include "table/plain_table_index.h"
 #include "util/arena.h"
 #include "util/dynamic_bloom.h"
+#include "util/file_reader_writer.h"
 
 namespace rocksdb {
 
@@ -36,11 +37,27 @@ class TableCache;
 class TableReader;
 class InternalKeyComparator;
 class PlainTableKeyDecoder;
+class GetContext;
+class InternalIterator;
 
 using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
 extern const uint32_t kPlainTableVariableLength;
+
+struct PlainTableReaderFileInfo {
+  bool is_mmap_mode;
+  Slice file_data;
+  uint32_t data_end_offset;
+  unique_ptr<RandomAccessFileReader> file;
+
+  PlainTableReaderFileInfo(unique_ptr<RandomAccessFileReader>&& _file,
+                           const EnvOptions& storage_options,
+                           uint32_t _data_size_offset)
+      : is_mmap_mode(storage_options.use_mmap_reads),
+        data_end_offset(_data_size_offset),
+        file(std::move(_file)) {}
+};
 
 // Based on following output file format shown in plain_table_factory.h
 // When opening the output file, IndexedTableReader creates a hash table
@@ -52,29 +69,30 @@ extern const uint32_t kPlainTableVariableLength;
 // The implementation of IndexedTableReader requires output file is mmaped
 class PlainTableReader: public TableReader {
  public:
-  static Status Open(const Options& options, const EnvOptions& soptions,
+  static Status Open(const ImmutableCFOptions& ioptions,
+                     const EnvOptions& env_options,
                      const InternalKeyComparator& internal_comparator,
-                     unique_ptr<RandomAccessFile>&& file, uint64_t file_size,
-                     unique_ptr<TableReader>* table,
+                     unique_ptr<RandomAccessFileReader>&& file,
+                     uint64_t file_size, unique_ptr<TableReader>* table,
                      const int bloom_bits_per_key, double hash_table_ratio,
                      size_t index_sparseness, size_t huge_page_tlb_size,
                      bool full_scan_mode);
 
-  Iterator* NewIterator(const ReadOptions&, Arena* arena = nullptr) override;
+  InternalIterator* NewIterator(const ReadOptions&,
+                                Arena* arena = nullptr,
+                                bool skip_filters = false) override;
 
-  void Prepare(const Slice& target);
+  void Prepare(const Slice& target) override;
 
-  Status Get(const ReadOptions&, const Slice& key, void* arg,
-             bool (*result_handler)(void* arg, const ParsedInternalKey& k,
-                                    const Slice& v),
-             void (*mark_key_may_exist)(void*) = nullptr);
+  Status Get(const ReadOptions&, const Slice& key, GetContext* get_context,
+             bool skip_filters = false) override;
 
-  uint64_t ApproximateOffsetOf(const Slice& key);
+  uint64_t ApproximateOffsetOf(const Slice& key) override;
 
   uint32_t GetIndexSize() const { return index_.GetIndexSize(); }
-  void SetupForCompaction();
+  void SetupForCompaction() override;
 
-  std::shared_ptr<const TableProperties> GetTableProperties() const {
+  std::shared_ptr<const TableProperties> GetTableProperties() const override {
     return table_properties_;
   }
 
@@ -82,8 +100,9 @@ class PlainTableReader: public TableReader {
     return arena_.MemoryAllocatedBytes();
   }
 
-  PlainTableReader(const Options& options, unique_ptr<RandomAccessFile>&& file,
-                   const EnvOptions& storage_options,
+  PlainTableReader(const ImmutableCFOptions& ioptions,
+                   unique_ptr<RandomAccessFileReader>&& file,
+                   const EnvOptions& env_options,
                    const InternalKeyComparator& internal_comparator,
                    EncodingType encoding_type, uint64_t file_size,
                    const TableProperties* table_properties);
@@ -106,14 +125,13 @@ class PlainTableReader: public TableReader {
                        double hash_table_ratio, size_t index_sparseness,
                        size_t huge_page_tlb_size);
 
-  Status MmapDataFile();
+  Status MmapDataIfNeeded();
 
  private:
   const InternalKeyComparator internal_comparator_;
   EncodingType encoding_type_;
   // represents plain table's current status.
   Status status_;
-  Slice file_data_;
 
   PlainTableIndex index_;
   bool full_scan_mode_;
@@ -121,8 +139,7 @@ class PlainTableReader: public TableReader {
   // data_start_offset_ and data_end_offset_ defines the range of the
   // sst file that stores data.
   const uint32_t data_start_offset_ = 0;
-  const uint32_t data_end_offset_;
-  const size_t user_key_len_;
+  const uint32_t user_key_len_;
   const SliceTransform* prefix_extractor_;
 
   static const size_t kNumInternalBytes = 8;
@@ -130,11 +147,13 @@ class PlainTableReader: public TableReader {
   // Bloom filter is used to rule out non-existent key
   bool enable_bloom_;
   DynamicBloom bloom_;
+  PlainTableReaderFileInfo file_info_;
   Arena arena_;
+  std::unique_ptr<char[]> index_block_alloc_;
+  std::unique_ptr<char[]> bloom_block_alloc_;
 
-  const Options& options_;
-  unique_ptr<RandomAccessFile> file_;
-  uint32_t file_size_;
+  const ImmutableCFOptions& ioptions_;
+  uint64_t file_size_;
   std::shared_ptr<const TableProperties> table_properties_;
 
   bool IsFixedLength() const {
@@ -201,9 +220,9 @@ class PlainTableReader: public TableReader {
   // Get file offset for key target.
   // return value prefix_matched is set to true if the offset is confirmed
   // for a key with the same prefix as target.
-  Status GetOffset(const Slice& target, const Slice& prefix,
-                   uint32_t prefix_hash, bool& prefix_matched,
-                   uint32_t* offset) const;
+  Status GetOffset(PlainTableKeyDecoder* decoder, const Slice& target,
+                   const Slice& prefix, uint32_t prefix_hash,
+                   bool& prefix_matched, uint32_t* offset) const;
 
   bool IsTotalOrderMode() const { return (prefix_extractor_ == nullptr); }
 

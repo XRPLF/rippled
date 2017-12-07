@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2004-2008 Maciej Sobczak, Stephen Hutton
+// Copyright (C) 2004-2016 Maciej Sobczak, Stephen Hutton
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -37,6 +37,11 @@ public:
         {
             try
             {
+                if (tail_.empty() == false)
+                {
+                    accumulate(tail_);
+                }
+
                 final_action();
             }
             catch (...)
@@ -52,6 +57,10 @@ public:
     template <typename T>
     void accumulate(T const & t) { get_query_stream() << t; }
 
+    void set_tail(const std::string & tail) { tail_ = tail; }
+    void set_need_comma(bool need_comma) { need_comma_ = need_comma; }
+    bool get_need_comma() const { return need_comma_; }
+
 protected:
     // this function allows to break the circular dependenc
     // between session and this class
@@ -60,6 +69,10 @@ protected:
     int refCount_;
 
     session & session_;
+
+    // used mainly for portable ddl
+    std::string tail_;
+    bool need_comma_;
 
 private:
     SOCI_NOT_COPYABLE(ref_counted_statement_base)
@@ -73,7 +86,7 @@ public:
     ref_counted_statement(session & s)
         : ref_counted_statement_base(s), st_(s) {}
 
-    virtual void final_action();
+    void final_action() SOCI_OVERRIDE;
 
     template <typename T>
     void exchange(T &t) { st_.exchange(t); }

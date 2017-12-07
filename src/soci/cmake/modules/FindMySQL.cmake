@@ -67,7 +67,7 @@ if(WIN32)
       $ENV{SystemDrive}/MySQL/*/lib/opt
       $ENV{ProgramW6432}/MySQL/*/lib
    )
-   find_library(MYSQL_LIBRARIES NAMES mysqlclient libmysql
+   find_library(MYSQL_LIBRARIES NAMES libmysql
       PATHS
       ${MYSQL_LIB_PATHS}
    )

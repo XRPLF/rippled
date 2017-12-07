@@ -3,7 +3,15 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #pragma once
+#include <map>
+#include <string>
 #include "rocksdb/db.h"
+
+#ifdef _WIN32
+// Windows API macro interference
+#undef DeleteFile
+#endif
+
 
 namespace rocksdb {
 
@@ -21,14 +29,39 @@ class StackableDB : public DB {
     return db_;
   }
 
+  virtual DB* GetRootDB() override { return db_->GetRootDB(); }
+
   virtual Status CreateColumnFamily(const ColumnFamilyOptions& options,
                                     const std::string& column_family_name,
-                                    ColumnFamilyHandle** handle) {
+                                    ColumnFamilyHandle** handle) override {
     return db_->CreateColumnFamily(options, column_family_name, handle);
   }
 
-  virtual Status DropColumnFamily(ColumnFamilyHandle* column_family) {
+  virtual Status CreateColumnFamilies(
+      const ColumnFamilyOptions& options,
+      const std::vector<std::string>& column_family_names,
+      std::vector<ColumnFamilyHandle*>* handles) override {
+    return db_->CreateColumnFamilies(options, column_family_names, handles);
+  }
+
+  virtual Status CreateColumnFamilies(
+      const std::vector<ColumnFamilyDescriptor>& column_families,
+      std::vector<ColumnFamilyHandle*>* handles) override {
+    return db_->CreateColumnFamilies(column_families, handles);
+  }
+
+  virtual Status DropColumnFamily(ColumnFamilyHandle* column_family) override {
     return db_->DropColumnFamily(column_family);
+  }
+
+  virtual Status DropColumnFamilies(
+      const std::vector<ColumnFamilyHandle*>& column_families) override {
+    return db_->DropColumnFamilies(column_families);
+  }
+
+  virtual Status DestroyColumnFamilyHandle(
+      ColumnFamilyHandle* column_family) override {
+    return db_->DestroyColumnFamilyHandle(column_family);
   }
 
   using DB::Put;
@@ -41,7 +74,7 @@ class StackableDB : public DB {
   using DB::Get;
   virtual Status Get(const ReadOptions& options,
                      ColumnFamilyHandle* column_family, const Slice& key,
-                     std::string* value) override {
+                     PinnableSlice* value) override {
     return db_->Get(options, column_family, key, value);
   }
 
@@ -53,6 +86,16 @@ class StackableDB : public DB {
       std::vector<std::string>* values) override {
     return db_->MultiGet(options, column_family, keys, values);
   }
+
+  using DB::IngestExternalFile;
+  virtual Status IngestExternalFile(
+      ColumnFamilyHandle* column_family,
+      const std::vector<std::string>& external_files,
+      const IngestExternalFileOptions& options) override {
+    return db_->IngestExternalFile(column_family, external_files, options);
+  }
+
+  virtual Status VerifyChecksum() override { return db_->VerifyChecksum(); }
 
   using DB::KeyMayExist;
   virtual bool KeyMayExist(const ReadOptions& options,
@@ -67,6 +110,13 @@ class StackableDB : public DB {
                         ColumnFamilyHandle* column_family,
                         const Slice& key) override {
     return db_->Delete(wopts, column_family, key);
+  }
+
+  using DB::SingleDelete;
+  virtual Status SingleDelete(const WriteOptions& wopts,
+                              ColumnFamilyHandle* column_family,
+                              const Slice& key) override {
+    return db_->SingleDelete(wopts, column_family, key);
   }
 
   using DB::Merge;
@@ -91,7 +141,7 @@ class StackableDB : public DB {
   virtual Status NewIterators(
       const ReadOptions& options,
       const std::vector<ColumnFamilyHandle*>& column_families,
-      std::vector<Iterator*>* iterators) {
+      std::vector<Iterator*>* iterators) override {
     return db_->NewIterators(options, column_families, iterators);
   }
 
@@ -104,10 +154,16 @@ class StackableDB : public DB {
     return db_->ReleaseSnapshot(snapshot);
   }
 
+  using DB::GetMapProperty;
   using DB::GetProperty;
   virtual bool GetProperty(ColumnFamilyHandle* column_family,
                            const Slice& property, std::string* value) override {
     return db_->GetProperty(column_family, property, value);
+  }
+  virtual bool GetMapProperty(ColumnFamilyHandle* column_family,
+                              const Slice& property,
+                              std::map<std::string, double>* value) override {
+    return db_->GetMapProperty(column_family, property, value);
   }
 
   using DB::GetIntProperty;
@@ -116,20 +172,57 @@ class StackableDB : public DB {
     return db_->GetIntProperty(column_family, property, value);
   }
 
+  using DB::GetAggregatedIntProperty;
+  virtual bool GetAggregatedIntProperty(const Slice& property,
+                                        uint64_t* value) override {
+    return db_->GetAggregatedIntProperty(property, value);
+  }
+
   using DB::GetApproximateSizes;
   virtual void GetApproximateSizes(ColumnFamilyHandle* column_family,
-                                   const Range* r, int n,
-                                   uint64_t* sizes) override {
-      return db_->GetApproximateSizes(column_family, r, n, sizes);
+                                   const Range* r, int n, uint64_t* sizes,
+                                   uint8_t include_flags
+                                   = INCLUDE_FILES) override {
+    return db_->GetApproximateSizes(column_family, r, n, sizes,
+                                    include_flags);
+  }
+
+  using DB::GetApproximateMemTableStats;
+  virtual void GetApproximateMemTableStats(ColumnFamilyHandle* column_family,
+                                           const Range& range,
+                                           uint64_t* const count,
+                                           uint64_t* const size) override {
+    return db_->GetApproximateMemTableStats(column_family, range, count, size);
   }
 
   using DB::CompactRange;
-  virtual Status CompactRange(ColumnFamilyHandle* column_family,
-                              const Slice* begin, const Slice* end,
-                              bool reduce_level = false, int target_level = -1,
-                              uint32_t target_path_id = 0) override {
-    return db_->CompactRange(column_family, begin, end, reduce_level,
-                             target_level, target_path_id);
+  virtual Status CompactRange(const CompactRangeOptions& options,
+                              ColumnFamilyHandle* column_family,
+                              const Slice* begin, const Slice* end) override {
+    return db_->CompactRange(options, column_family, begin, end);
+  }
+
+  using DB::CompactFiles;
+  virtual Status CompactFiles(
+      const CompactionOptions& compact_options,
+      ColumnFamilyHandle* column_family,
+      const std::vector<std::string>& input_file_names,
+      const int output_level, const int output_path_id = -1) override {
+    return db_->CompactFiles(
+        compact_options, column_family, input_file_names,
+        output_level, output_path_id);
+  }
+
+  virtual Status PauseBackgroundWork() override {
+    return db_->PauseBackgroundWork();
+  }
+  virtual Status ContinueBackgroundWork() override {
+    return db_->ContinueBackgroundWork();
+  }
+
+  virtual Status EnableAutoCompaction(
+      const std::vector<ColumnFamilyHandle*>& column_family_handles) override {
+    return db_->EnableAutoCompaction(column_family_handles);
   }
 
   using DB::NumberLevels;
@@ -158,9 +251,13 @@ class StackableDB : public DB {
   }
 
   using DB::GetOptions;
-  virtual const Options& GetOptions(ColumnFamilyHandle* column_family) const
-      override {
+  virtual Options GetOptions(ColumnFamilyHandle* column_family) const override {
     return db_->GetOptions(column_family);
+  }
+
+  using DB::GetDBOptions;
+  virtual DBOptions GetDBOptions() const override {
+    return db_->GetDBOptions();
   }
 
   using DB::Flush;
@@ -168,6 +265,14 @@ class StackableDB : public DB {
                        ColumnFamilyHandle* column_family) override {
     return db_->Flush(fopts, column_family);
   }
+
+  virtual Status SyncWAL() override {
+    return db_->SyncWAL();
+  }
+
+  virtual Status FlushWAL(bool sync) override { return db_->FlushWAL(sync); }
+
+#ifndef ROCKSDB_LITE
 
   virtual Status DisableFileDeletions() override {
     return db_->DisableFileDeletions();
@@ -181,6 +286,14 @@ class StackableDB : public DB {
       std::vector<LiveFileMetaData>* metadata) override {
     db_->GetLiveFilesMetaData(metadata);
   }
+
+  virtual void GetColumnFamilyMetaData(
+      ColumnFamilyHandle *column_family,
+      ColumnFamilyMetaData* cf_meta) override {
+    db_->GetColumnFamilyMetaData(column_family, cf_meta);
+  }
+
+#endif  // ROCKSDB_LITE
 
   virtual Status GetLiveFiles(std::vector<std::string>& vec, uint64_t* mfs,
                               bool flush_memtable = true) override {
@@ -199,20 +312,55 @@ class StackableDB : public DB {
     return db_->DeleteFile(name);
   }
 
-  virtual Status GetDbIdentity(std::string& identity) {
+  virtual Status GetDbIdentity(std::string& identity) const override {
     return db_->GetDbIdentity(identity);
   }
 
+  using DB::SetOptions;
+  virtual Status SetOptions(ColumnFamilyHandle* column_family_handle,
+                            const std::unordered_map<std::string, std::string>&
+                                new_options) override {
+    return db_->SetOptions(column_family_handle, new_options);
+  }
+
+  virtual Status SetDBOptions(
+      const std::unordered_map<std::string, std::string>& new_options)
+      override {
+    return db_->SetDBOptions(new_options);
+  }
+
+  using DB::ResetStats;
+  virtual Status ResetStats() override { return db_->ResetStats(); }
+
   using DB::GetPropertiesOfAllTables;
-  virtual Status GetPropertiesOfAllTables(ColumnFamilyHandle* column_family,
-                                          TablePropertiesCollection* props) {
+  virtual Status GetPropertiesOfAllTables(
+      ColumnFamilyHandle* column_family,
+      TablePropertiesCollection* props) override {
     return db_->GetPropertiesOfAllTables(column_family, props);
+  }
+
+  using DB::GetPropertiesOfTablesInRange;
+  virtual Status GetPropertiesOfTablesInRange(
+      ColumnFamilyHandle* column_family, const Range* range, std::size_t n,
+      TablePropertiesCollection* props) override {
+    return db_->GetPropertiesOfTablesInRange(column_family, range, n, props);
   }
 
   virtual Status GetUpdatesSince(
       SequenceNumber seq_number, unique_ptr<TransactionLogIterator>* iter,
       const TransactionLogIterator::ReadOptions& read_options) override {
     return db_->GetUpdatesSince(seq_number, iter, read_options);
+  }
+
+  virtual Status SuggestCompactRange(ColumnFamilyHandle* column_family,
+                                     const Slice* begin,
+                                     const Slice* end) override {
+    return db_->SuggestCompactRange(column_family, begin, end);
+  }
+
+  virtual Status PromoteL0(ColumnFamilyHandle* column_family,
+                           int target_level) override {
+    return db_->PromoteL0(column_family, target_level);
   }
 
   virtual ColumnFamilyHandle* DefaultColumnFamily() const override {

@@ -11,6 +11,11 @@
 
 colormsg(_HIBLUE_ "Configuring SOCI tests:")
 
+# Request CATCH to disable all the C++11 features
+if (NOT SOCI_CXX_C11)
+  add_definitions(-DCATCH_CONFIG_NO_CPP11)
+endif()
+
 include_directories(
   ${SOCI_SOURCE_DIR}/include/private
   ${CMAKE_CURRENT_SOURCE_DIR})

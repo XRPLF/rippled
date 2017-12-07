@@ -7,6 +7,7 @@
 
 #define SOCI_ORACLE_SOURCE
 #include "soci/oracle/soci-oracle.h"
+#include "soci/callbacks.h"
 #include "error.h"
 #include <cctype>
 #include <cstdio>
@@ -22,17 +23,128 @@ using namespace soci;
 using namespace soci::details;
 using namespace soci::details::oracle;
 
+namespace // unnamed
+{
+
+sb4 fo_callback(void * /* svchp */, void * /* envhp */, void * fo_ctx,
+    ub4 /* fo_type */, ub4 fo_event)
+{
+    oracle_session_backend * backend =
+        static_cast<oracle_session_backend *>(fo_ctx);
+
+    failover_callback * callback = backend->failoverCallback_;
+    
+    if (callback != NULL)
+    {
+        session * sql = backend->session_;
+        
+        switch (fo_event)
+        {
+        case OCI_FO_BEGIN:
+            // failover operation was initiated
+    
+            try
+            {
+                callback->started();
+            }
+            catch (...)
+            {
+                // ignore exceptions from user callbacks
+            }
+            
+            break;
+            
+        case OCI_FO_END:
+            // failover was successful
+            
+            try
+            {
+                callback->finished(*sql);
+            }
+            catch (...)
+            {
+                // ignore exceptions from user callbacks
+            }
+
+            break;
+            
+        case OCI_FO_ABORT:
+            // failover was aborted with no possibility to recovery
+
+            try
+            {
+                callback->aborted();
+            }
+            catch (...)
+            {
+                // ignore exceptions from user callbacks
+            }
+
+            break;
+
+        case OCI_FO_ERROR:
+            // failover failed, but can be retried
+            
+            try
+            {
+                bool retry = false;
+                std::string newTarget;
+                callback->failed(retry, newTarget);
+                
+                // newTarget is ignored, as the new target
+                // is selected by Oracle client configuration
+                
+                if (retry)
+                {
+                    return OCI_FO_RETRY;
+                }
+            }
+            catch (...)
+            {
+                // ignore exceptions from user callbacks
+            }
+
+            break;
+
+        case OCI_FO_REAUTH:
+            // nothing interesting
+            break;
+            
+        default:
+            // ignore unknown callback types (if any)
+            break;
+        }
+    }
+
+    return 0;
+}
+
+} // unnamed namespace
+
 oracle_session_backend::oracle_session_backend(std::string const & serviceName,
     std::string const & userName, std::string const & password, int mode,
-    bool decimals_as_strings)
-    : envhp_(NULL), srvhp_(NULL), errhp_(NULL), svchp_(NULL), usrhp_(NULL)
-      , decimals_as_strings_(decimals_as_strings)
+    bool decimals_as_strings, int charset, int ncharset)
+    : envhp_(NULL), srvhp_(NULL), errhp_(NULL), svchp_(NULL), usrhp_(NULL),
+      decimals_as_strings_(decimals_as_strings)
 {
+    // assume service/user/password are utf8-compatible already
+    const int defaultSourceCharSetId = 871;
+
+    // arbitrary length for charset conversion buffer
+    const size_t nlsBufLen = 100;
+    
+    char nlsService[nlsBufLen];
+    size_t nlsServiceLen;
+    char nlsUserName[nlsBufLen];
+    size_t nlsUserNameLen;
+    char nlsPassword[nlsBufLen];
+    size_t nlsPasswordLen;
+    
     sword res;
 
     // create the environment
-    res = OCIEnvCreate(&envhp_, OCI_THREADED | OCI_ENV_NO_MUTEX,
-        0, 0, 0, 0, 0, 0);
+    res = OCIEnvNlsCreate(&envhp_, OCI_THREADED | OCI_ENV_NO_MUTEX,
+        0, 0, 0, 0, 0, 0, charset, ncharset);
     if (res != OCI_SUCCESS)
     {
         throw soci_error("Cannot create environment");
@@ -56,11 +168,100 @@ oracle_session_backend::oracle_session_backend(std::string const & serviceName,
         throw soci_error("Cannot create error handle");
     }
 
+    if (charset != 0)
+    {
+        // convert service/user/password to the expected charset
+        
+        res = OCINlsCharSetConvert(envhp_, errhp_,
+            charset, nlsService, nlsBufLen,
+            defaultSourceCharSetId, serviceName.c_str(), serviceName.size(), &nlsServiceLen);
+        if (res != OCI_SUCCESS)
+        {
+            std::string msg;
+            int errNum;
+            get_error_details(res, errhp_, msg, errNum);
+            clean_up();
+            throw oracle_soci_error(msg, errNum);
+        }
+        
+        res = OCINlsCharSetConvert(envhp_, errhp_,
+            charset, nlsUserName, nlsBufLen,
+            defaultSourceCharSetId, userName.c_str(), userName.size(), &nlsUserNameLen);
+        if (res != OCI_SUCCESS)
+        {
+            std::string msg;
+            int errNum;
+            get_error_details(res, errhp_, msg, errNum);
+            clean_up();
+            throw oracle_soci_error(msg, errNum);
+        }
+        
+        res = OCINlsCharSetConvert(envhp_, errhp_,
+            charset, nlsPassword, nlsBufLen,
+            defaultSourceCharSetId, password.c_str(), password.size(), &nlsPasswordLen);
+        if (res != OCI_SUCCESS)
+        {
+            std::string msg;
+            int errNum;
+            get_error_details(res, errhp_, msg, errNum);
+            clean_up();
+            throw oracle_soci_error(msg, errNum);
+        }
+    }
+    else
+    {
+        // do not perform any charset conversions
+        
+        nlsServiceLen = serviceName.size();
+        if (nlsServiceLen < nlsBufLen)
+        {
+            std::strcpy(nlsService, serviceName.c_str());
+        }
+        else
+        {
+            throw soci_error("Service name is too long.");
+        }
+
+        nlsUserNameLen = userName.size();
+        if (nlsUserNameLen < nlsBufLen)
+        {
+            std::strcpy(nlsUserName, userName.c_str());
+        }
+        else
+        {
+            throw soci_error("User name is too long.");
+        }
+
+        nlsPasswordLen = password.size();
+        if (nlsPasswordLen < nlsBufLen)
+        {
+            std::strcpy(nlsPassword, password.c_str());
+        }
+        else
+        {
+            throw soci_error("Password is too long.");
+        }
+    }
+    
     // create the server context
-    sb4 serviceNameLen = static_cast<sb4>(serviceName.size());
     res = OCIServerAttach(srvhp_, errhp_,
-        reinterpret_cast<text*>(const_cast<char*>(serviceName.c_str())),
-        serviceNameLen, OCI_DEFAULT);
+        reinterpret_cast<text*>(nlsService), nlsServiceLen, OCI_DEFAULT);
+    if (res != OCI_SUCCESS)
+    {
+        std::string msg;
+        int errNum;
+        get_error_details(res, errhp_, msg, errNum);
+        clean_up();
+        throw oracle_soci_error(msg, errNum);
+    }
+
+    // register failover callback
+    OCIFocbkStruct fo;
+    fo.fo_ctx = this;
+    fo.callback_function = &fo_callback;
+
+    res = OCIAttrSet(srvhp_, static_cast<ub4>(OCI_HTYPE_SERVER),
+        &fo, 0, static_cast<ub4>(OCI_ATTR_FOCBK), errhp_);
     if (res != OCI_SUCCESS)
     {
         std::string msg;
@@ -100,32 +301,41 @@ oracle_session_backend::oracle_session_backend(std::string const & serviceName,
         throw soci_error("Cannot allocate user session handle");
     }
 
-    // set username attribute in the user session handle
-    sb4 userNameLen = static_cast<sb4>(userName.size());
-    res = OCIAttrSet(usrhp_, OCI_HTYPE_SESSION,
-        reinterpret_cast<dvoid*>(const_cast<char*>(userName.c_str())),
-        userNameLen, OCI_ATTR_USERNAME, errhp_);
-    if (res != OCI_SUCCESS)
+    // select credentials type - use rdbms based credentials by default
+    // and switch to external credentials if username and 
+    // password are both not specified
+    ub4 credentialType = OCI_CRED_RDBMS;
+    if (userName.empty() && password.empty())
     {
-        clean_up();
-        throw soci_error("Cannot set username");
+        credentialType = OCI_CRED_EXT;
     }
-
-    // set password attribute
-    sb4 passwordLen = static_cast<sb4>(password.size());
-    res = OCIAttrSet(usrhp_, OCI_HTYPE_SESSION,
-        reinterpret_cast<dvoid*>(const_cast<char*>(password.c_str())),
-        passwordLen, OCI_ATTR_PASSWORD, errhp_);
-    if (res != OCI_SUCCESS)
+    else
     {
-        clean_up();
-        throw soci_error("Cannot set password");
+        // set username attribute in the user session handle
+        res = OCIAttrSet(usrhp_, OCI_HTYPE_SESSION,
+            reinterpret_cast<dvoid*>(nlsUserName),
+            nlsUserNameLen, OCI_ATTR_USERNAME, errhp_);
+        if (res != OCI_SUCCESS)
+        {
+            clean_up();
+            throw soci_error("Cannot set username");
+        }
+
+        // set password attribute
+        res = OCIAttrSet(usrhp_, OCI_HTYPE_SESSION,
+            reinterpret_cast<dvoid*>(nlsPassword),
+            nlsPasswordLen, OCI_ATTR_PASSWORD, errhp_);
+        if (res != OCI_SUCCESS)
+        {
+            clean_up();
+            throw soci_error("Cannot set password");
+        }
     }
 
     // begin the session
     res = OCISessionBegin(svchp_, errhp_, usrhp_,
-        OCI_CRED_RDBMS, mode);
-    if (res != OCI_SUCCESS)
+        credentialType, mode);
+    if (res != OCI_SUCCESS && res != OCI_SUCCESS_WITH_INFO)
     {
         std::string msg;
         int errNum;

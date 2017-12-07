@@ -1,7 +1,7 @@
-// Copyright (c) 2014, Facebook, Inc. All rights reserved.
-// This source code is licensed under the BSD-style license found in the
-// LICENSE file in the root directory of this source tree. An additional grant
-// of patent rights can be found in the PATENTS file in the same directory.
+// Copyright (c) 2011-present, Facebook, Inc. All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 
 #ifndef ROCKSDB_LITE
 #include "table/cuckoo_table_factory.h"
@@ -11,12 +11,15 @@
 #include "table/cuckoo_table_reader.h"
 
 namespace rocksdb {
-Status CuckooTableFactory::NewTableReader(const Options& options,
-    const EnvOptions& soptions, const InternalKeyComparator& icomp,
-    std::unique_ptr<RandomAccessFile>&& file, uint64_t file_size,
-    std::unique_ptr<TableReader>* table) const {
-  std::unique_ptr<CuckooTableReader> new_reader(new CuckooTableReader(options,
-      std::move(file), file_size, icomp.user_comparator(), nullptr));
+
+Status CuckooTableFactory::NewTableReader(
+    const TableReaderOptions& table_reader_options,
+    unique_ptr<RandomAccessFileReader>&& file, uint64_t file_size,
+    std::unique_ptr<TableReader>* table,
+    bool prefetch_index_and_filter_in_cache) const {
+  std::unique_ptr<CuckooTableReader> new_reader(new CuckooTableReader(
+      table_reader_options.ioptions, std::move(file), file_size,
+      table_reader_options.internal_comparator.user_comparator(), nullptr));
   Status s = new_reader->status();
   if (s.ok()) {
     *table = std::move(new_reader);
@@ -25,10 +28,19 @@ Status CuckooTableFactory::NewTableReader(const Options& options,
 }
 
 TableBuilder* CuckooTableFactory::NewTableBuilder(
-    const Options& options, const InternalKeyComparator& internal_comparator,
-    WritableFile* file, CompressionType compression_type) const {
-  return new CuckooTableBuilder(file, hash_table_ratio_, 64, max_search_depth_,
-      internal_comparator.user_comparator(), cuckoo_block_size_, nullptr);
+    const TableBuilderOptions& table_builder_options, uint32_t column_family_id,
+    WritableFileWriter* file) const {
+  // Ignore the skipFIlters flag. Does not apply to this file format
+  //
+
+  // TODO: change builder to take the option struct
+  return new CuckooTableBuilder(
+      file, table_options_.hash_table_ratio, 64,
+      table_options_.max_search_depth,
+      table_builder_options.internal_comparator.user_comparator(),
+      table_options_.cuckoo_block_size, table_options_.use_module_hash,
+      table_options_.identity_as_first_hash, nullptr /* get_slice_hash */,
+      column_family_id, table_builder_options.column_family_name);
 }
 
 std::string CuckooTableFactory::GetPrintableTableOptions() const {
@@ -38,21 +50,22 @@ std::string CuckooTableFactory::GetPrintableTableOptions() const {
   char buffer[kBufferSize];
 
   snprintf(buffer, kBufferSize, "  hash_table_ratio: %lf\n",
-           hash_table_ratio_);
+           table_options_.hash_table_ratio);
   ret.append(buffer);
   snprintf(buffer, kBufferSize, "  max_search_depth: %u\n",
-           max_search_depth_);
+           table_options_.max_search_depth);
   ret.append(buffer);
   snprintf(buffer, kBufferSize, "  cuckoo_block_size: %u\n",
-           cuckoo_block_size_);
+           table_options_.cuckoo_block_size);
+  ret.append(buffer);
+  snprintf(buffer, kBufferSize, "  identity_as_first_hash: %d\n",
+           table_options_.identity_as_first_hash);
   ret.append(buffer);
   return ret;
 }
 
-TableFactory* NewCuckooTableFactory(double hash_table_ratio,
-    uint32_t max_search_depth, uint32_t cuckoo_block_size) {
-  return new CuckooTableFactory(
-      hash_table_ratio, max_search_depth, cuckoo_block_size);
+TableFactory* NewCuckooTableFactory(const CuckooTableOptions& table_options) {
+  return new CuckooTableFactory(table_options);
 }
 
 }  // namespace rocksdb

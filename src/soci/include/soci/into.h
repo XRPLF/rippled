@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2004-2008 Maciej Sobczak, Stephen Hutton
+// Copyright (C) 2004-2016 Maciej Sobczak, Stephen Hutton
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -65,6 +65,24 @@ template <typename T>
 details::into_type_ptr into(T & t, std::size_t bufSize)
 {
     return details::into_type_ptr(new details::into_type<T>(t, bufSize));
+}
+
+// vectors with index ranges
+    
+template <typename T>
+details::into_type_ptr into(std::vector<T> & t,
+    std::size_t begin, std::size_t & end)
+{
+    return details::do_into(t, begin, &end,
+        typename details::exchange_traits<std::vector<T> >::type_family());
+}
+
+template <typename T>
+details::into_type_ptr into(std::vector<T> & t, std::vector<indicator> & ind,
+    std::size_t begin, std::size_t & end)
+{
+    return details::do_into(t, ind, begin, &end,
+        typename details::exchange_traits<std::vector<T> >::type_family());
 }
 
 } // namespace soci

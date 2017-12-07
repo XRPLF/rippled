@@ -1,0 +1,59 @@
+version: 2
+jobs:
+  lint:
+    docker:
+      - image: circleci/ruby:2.4.1-node
+    steps:
+      - checkout
+      - run:
+          name: install markdownlint
+          command: |
+            sudo npm install -g markdownlint-cli
+            markdownlint --version
+      - run:
+          name: lint README.md
+          command: markdownlint --config .markdownlint.json README.md
+      - run:
+          name: lint docs/
+          command: markdownlint --config .markdownlint.json docs/
+  build-deploy:
+    docker:
+      - image: circleci/python:2.7
+    steps:
+      - checkout
+      - run:
+          name: install mkdocs
+          command: sudo pip install mkdocs
+      - run:
+          name: generate docs
+          command: mkdocs build --clean
+      - run:
+          name: install lftp
+          command: |
+            sudo apt-get update -q
+            sudo apt-get install -y lftp
+      - run:
+          name: deploy docs
+          command: lftp sftp://${DEPLOY_DOCS_USER}:${DEPLOY_DOCS_PASS}@${DEPLOY_DOCS_HOST} -e "set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate no; set sftp:auto-confirm yes; mirror -v -R ./site ${DEPLOY_DOCS_BASE}/doc/${CIRCLE_BRANCH}; quit"
+
+workflows:
+  version: 2
+  docs-workflow:
+    jobs:
+      - lint:
+          filters:
+            branches:
+              only:
+                - master
+                - /release*/
+      - build-deploy:
+          requires:
+            - lint
+          filters:
+            branches:
+              only:
+                - master
+                - /release*/
+notify:
+  webhooks:
+    - url: https://webhooks.gitter.im/e/9ff4be3a6f08f55106e2

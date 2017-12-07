@@ -9,6 +9,7 @@
 #include "soci/postgresql/soci-postgresql.h"
 #include "soci/blob.h"
 #include "soci/rowid.h"
+#include "soci/type-wrappers.h"
 #include "soci/soci-platform.h"
 #include "soci-dtocstr.h"
 #include "soci-exchange-cast.h"
@@ -70,11 +71,7 @@ void postgresql_standard_use_type_backend::pre_use(indicator const * ind)
             }
             break;
         case x_stdstring:
-            {
-                std::string const& s = exchange_type_cast<x_stdstring>(data_);
-                buf_ = new char[s.size() + 1];
-                std::strcpy(buf_, s.c_str());
-            }
+            copy_from_string(exchange_type_cast<x_stdstring>(data_));
             break;
         case x_short:
             {
@@ -113,12 +110,7 @@ void postgresql_standard_use_type_backend::pre_use(indicator const * ind)
             }
             break;
         case x_double:
-            {
-                std::string const s = double_to_cstring(exchange_type_cast<x_double>(data_));
-
-                buf_ = new char[s.size() + 1];
-                std::strcpy(buf_, s.c_str());
-            }
+            copy_from_string(double_to_cstring(exchange_type_cast<x_double>(data_)));
             break;
         case x_stdtm:
             {
@@ -159,7 +151,13 @@ void postgresql_standard_use_type_backend::pre_use(indicator const * ind)
                 snprintf(buf_, bufSize, "%lu", bbe->oid_);
             }
             break;
-
+        case x_xmltype:
+            copy_from_string(exchange_type_cast<x_xmltype>(data_).value);
+            break;
+        case x_longstring:
+            copy_from_string(exchange_type_cast<x_longstring>(data_).value);
+            break;
+            
         default:
             throw soci_error("Use element used with non-supported type.");
         }
@@ -197,4 +195,10 @@ void postgresql_standard_use_type_backend::clean_up()
         delete [] buf_;
         buf_ = NULL;
     }
+}
+
+void postgresql_standard_use_type_backend::copy_from_string(std::string const& s)
+{
+    buf_ = new char[s.size() + 1];
+    std::strcpy(buf_, s.c_str());
 }

@@ -25,20 +25,36 @@ public:
     soci_error(soci_error const& e);
     soci_error& operator=(soci_error const& e);
 
-    virtual ~soci_error() throw();
+    ~soci_error() throw() SOCI_OVERRIDE;
 
     // Returns just the error message itself, without the context.
     std::string get_error_message() const;
 
     // Returns the full error message combining the message given to the ctor
     // with all the available context records.
-    virtual char const* what() const throw();
+    char const* what() const throw() SOCI_OVERRIDE;
 
     // This is used only by SOCI itself to provide more information about the
     // exception as it bubbles up. It can be called multiple times, with the
     // first call adding the lowest level context and the last one -- the
     // highest level context.
     void add_context(std::string const& context);
+
+    // Basic error classes.
+    enum error_category
+    {
+        connection_error,
+        invalid_statement,
+        no_privilege,
+        no_data,
+        constraint_violation,
+        unknown_transaction_state,
+        system_error,
+        unknown
+    };
+
+    // Basic error classification support
+    virtual error_category get_error_category() const { return unknown; }
 
 private:
     // Optional extra information (currently just the context data).

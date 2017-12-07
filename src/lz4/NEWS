@@ -1,3 +1,61 @@
+v1.8.0
+cli : fix : do not modify /dev/null permissions, reported by @Maokaman1
+cli : added GNU separator -- specifying that all following arguments are files
+API : added LZ4_compress_HC_destSize(), by Oleg (@remittor)
+API : added LZ4F_resetDecompressionContext()
+API : lz4frame : negative compression levels trigger fast acceleration, request by Lawrence Chan
+API : lz4frame : can control block checksum and dictionary ID
+API : fix : expose obsolete decoding functions, reported by Chen Yufei
+API : experimental : lz4frame_static : new dictionary compression API
+build : fix : static lib installation, by Ido Rosen
+build : dragonFlyBSD, OpenBSD, NetBSD supported
+build : LZ4_MEMORY_USAGE can be modified at compile time, through external define
+doc : Updated LZ4 Frame format to v1.6.0, restoring Dictionary-ID field
+doc : lz4 api manual, by Przemyslaw Skibinski
+
+v1.7.5
+lz4hc : new high compression mode : levels 10-12 compress more and slower, by Przemyslaw Skibinski
+lz4cat : fix : works with relative path (#284) and stdin (#285) (reported by @beiDei8z)
+cli : fix minor notification when using -r recursive mode
+API : lz4frame : LZ4F_frameBound(0) gives upper bound of *flush() and *End() operations (#290, #280)
+doc : markdown version of man page, by Takayuki Matsuoka (#279)
+build : Makefile : fix make -jX lib+exe concurrency (#277)
+build : cmake : improvements by Michał Górny (#296)
+
+v1.7.4.2
+fix : Makefile : release build compatible with PIE and customized compilation directives provided through environment variables (#274, reported by Antoine Martin)
+
+v1.7.4
+Improved : much better speed in -mx32 mode
+cli : fix : Large file support in 32-bits mode on Mac OS-X
+fix : compilation on gcc 4.4 (#272), reported by Antoine Martin
+
+v1.7.3
+Changed : moved to versioning; package, cli and library have same version number
+Improved: Small decompression speed boost
+Improved: Small compression speed improvement on 64-bits systems
+Improved: Small compression ratio and speed improvement on small files
+Improved: Significant speed boost on ARMv6 and ARMv7
+Fix : better ratio on 64-bits big-endian targets
+Improved cmake build script, by Evan Nemerson
+New liblz4-dll project, by Przemyslaw Skibinki
+Makefile: Generates object files (*.o) for faster (re)compilation on low power systems
+cli : new : --rm and --help commands
+cli : new : preserved file attributes, by Przemyslaw Skibinki
+cli : fix : crash on some invalid inputs
+cli : fix : -t correctly validates lz4-compressed files, by Nick Terrell
+cli : fix : detects and reports fread() errors, thanks to Hiroshi Fujishima report #243
+cli : bench : new : -r recursive mode
+lz4cat : can cat multiple files in a single command line (#184)
+Added : doc/lz4_manual.html, by Przemyslaw Skibinski
+Added : dictionary compression and frame decompression examples, by Nick Terrell
+Added : Debianization, by Evgeniy Polyakov
+
+r131
+New    : Dos/DJGPP target, thanks to Louis Santillan (#114)
+Added  : Example using lz4frame library, by Zbigniew Jędrzejewski-Szmek (#118)
+Changed: xxhash symbols are modified (namespace emulation) within liblz4
+
 r130:
 Fixed  : incompatibility sparse mode vs console, reported by Yongwoon Cho (#105)
 Fixed  : LZ4IO exits too early when frame crc not present, reported by Yongwoon Cho (#106)

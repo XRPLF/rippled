@@ -20,6 +20,9 @@
 #ifndef RIPPLE_NODESTORE_CODEC_H_INCLUDED
 #define RIPPLE_NODESTORE_CODEC_H_INCLUDED
 
+// Disable lz4 deprecation warning due to incompatibility with clang attributes
+#define LZ4_DISABLE_DEPRECATE_WARNINGS
+
 #include <ripple/basics/contract.h>
 #include <nudb/detail/field.hpp>
 #include <ripple/nodestore/impl/varint.h>
@@ -117,10 +120,10 @@ lz4_compress (void const* in,
         std::uint8_t*>(bf(n + out_max));
     result.first = out;
     std::memcpy(out, vi.data(), n);
-    auto const out_size = LZ4_compress(
+    auto const out_size = LZ4_compress_default(
         reinterpret_cast<char const*>(in),
             reinterpret_cast<char*>(out + n),
-                in_size);
+                in_size, out_max);
     if (out_size == 0)
         Throw<std::runtime_error> (
             "lz4 compress");
@@ -514,7 +517,7 @@ nodeobject_compress (void const* in,
     case 1: // lz4
     {
         std::uint8_t* p;
-        auto const lzr = lz4_compress(
+        auto const lzr = NodeStore::lz4_compress(
                 in, in_size, [&p, &vn, &bf]
             (std::size_t n)
             {

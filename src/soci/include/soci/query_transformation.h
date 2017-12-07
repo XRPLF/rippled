@@ -43,7 +43,7 @@ public:
         : callback_(callback)
     {}
 
-    result_type operator()(argument_type query) const
+    result_type operator()(argument_type query) const SOCI_OVERRIDE
     {
         return callback_(query);
     }

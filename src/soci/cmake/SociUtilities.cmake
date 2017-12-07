@@ -301,6 +301,14 @@ function(boost_report_value NAME)
   colormsg("${NAME}${varpadding} = ${${NAME}}")
 endfunction()
 
+function(boost_message_value NAME)
+  string(LENGTH "${NAME}" varlen)
+  math(EXPR padding_len 40-${varlen})
+  string(SUBSTRING "                                      "
+    0 ${padding_len} varpadding)
+  message(STATUS "${NAME}${varpadding} = ${${NAME}}")
+endfunction()
+
 function(trace NAME)
   if(BOOST_CMAKE_TRACE)
     string(LENGTH "${NAME}" varlen)

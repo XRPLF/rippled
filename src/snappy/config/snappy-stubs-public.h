@@ -44,8 +44,8 @@
 #endif
 
 #define SNAPPY_MAJOR 1 // @SNAPPY_MAJOR@
-#define SNAPPY_MINOR 0 // @SNAPPY_MINOR@
-#define SNAPPY_PATCHLEVEL 0 // @SNAPPY_PATCHLEVEL@
+#define SNAPPY_MINOR 1 // @SNAPPY_MINOR@
+#define SNAPPY_PATCHLEVEL 7 // @SNAPPY_PATCHLEVEL@
 #define SNAPPY_VERSION \
     ((SNAPPY_MAJOR << 16) | (SNAPPY_MINOR << 8) | SNAPPY_PATCHLEVEL)
 
@@ -64,9 +64,6 @@ typedef std::uint64_t uint64;
 
 typedef std::string string;
 
-#define DISALLOW_COPY_AND_ASSIGN(TypeName) \
-  TypeName(const TypeName&);               \
-  void operator=(const TypeName&)
 
 #ifdef _MSC_VER
 // Windows does not have an iovec type, yet the concept is universally useful.

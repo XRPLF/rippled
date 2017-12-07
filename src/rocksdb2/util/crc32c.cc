@@ -1,7 +1,7 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
-//  This source code is licensed under the BSD-style license found in the
-//  LICENSE file in the root directory of this source tree. An additional grant
-//  of patent rights can be found in the PATENTS file in the same directory.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 //
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
@@ -13,7 +13,7 @@
 #include "util/crc32c.h"
 
 #include <stdint.h>
-#ifdef __SSE4_2__
+#ifdef HAVE_SSE42
 #include <nmmintrin.h>
 #endif
 #include "util/coding.h"
@@ -291,21 +291,21 @@ static inline uint32_t LE_LOAD32(const uint8_t *p) {
   return DecodeFixed32(reinterpret_cast<const char*>(p));
 }
 
-#ifdef __SSE4_2__
+#if defined(HAVE_SSE42) && (defined(__LP64__) || defined(_WIN64))
 static inline uint64_t LE_LOAD64(const uint8_t *p) {
   return DecodeFixed64(reinterpret_cast<const char*>(p));
 }
 #endif
 
 static inline void Slow_CRC32(uint64_t* l, uint8_t const **p) {
-  uint32_t c = *l ^ LE_LOAD32(*p);
+  uint32_t c = static_cast<uint32_t>(*l ^ LE_LOAD32(*p));
   *p += 4;
   *l = table3_[c & 0xff] ^
   table2_[(c >> 8) & 0xff] ^
   table1_[(c >> 16) & 0xff] ^
   table0_[c >> 24];
   // DO it twice.
-  c = *l ^ LE_LOAD32(*p);
+  c = static_cast<uint32_t>(*l ^ LE_LOAD32(*p));
   *p += 4;
   *l = table3_[c & 0xff] ^
   table2_[(c >> 8) & 0xff] ^
@@ -314,11 +314,16 @@ static inline void Slow_CRC32(uint64_t* l, uint8_t const **p) {
 }
 
 static inline void Fast_CRC32(uint64_t* l, uint8_t const **p) {
-#ifdef __SSE4_2__
+#ifndef HAVE_SSE42
+  Slow_CRC32(l, p);
+#elif defined(__LP64__) || defined(_WIN64)
   *l = _mm_crc32_u64(*l, LE_LOAD64(*p));
   *p += 8;
 #else
-  Slow_CRC32(l, p);
+  *l = _mm_crc32_u32(static_cast<unsigned int>(*l), LE_LOAD32(*p));
+  *p += 4;
+  *l = _mm_crc32_u32(static_cast<unsigned int>(*l), LE_LOAD32(*p));
+  *p += 4;
 #endif
 }
 
@@ -362,16 +367,22 @@ uint32_t ExtendImpl(uint32_t crc, const char* buf, size_t size) {
   }
 #undef STEP1
 #undef ALIGN
-  return l ^ 0xffffffffu;
+  return static_cast<uint32_t>(l ^ 0xffffffffu);
 }
 
 // Detect if SS42 or not.
 static bool isSSE42() {
-#if defined(__GNUC__) && defined(__x86_64__) && !defined(IOS_CROSS_COMPILE)
+#ifndef HAVE_SSE42
+  return false;
+#elif defined(__GNUC__) && defined(__x86_64__) && !defined(IOS_CROSS_COMPILE)
   uint32_t c_;
   uint32_t d_;
   __asm__("cpuid" : "=c"(c_), "=d"(d_) : "a"(1) : "ebx");
   return c_ & (1U << 20);  // copied from CpuId.h in Folly.
+#elif defined(_WIN64)
+  int info[4];
+  __cpuidex(info, 0x00000001, 0);
+  return (info[2] & ((int)1 << 20)) != 0;
 #else
   return false;
 #endif
@@ -381,6 +392,10 @@ typedef uint32_t (*Function)(uint32_t, const char*, size_t);
 
 static inline Function Choose_Extend() {
   return isSSE42() ? ExtendImpl<Fast_CRC32> : ExtendImpl<Slow_CRC32>;
+}
+
+bool IsFastCrc32Supported() {
+  return isSSE42();
 }
 
 Function ChosenExtend = Choose_Extend();

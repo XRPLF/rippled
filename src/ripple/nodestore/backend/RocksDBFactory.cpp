@@ -118,10 +118,15 @@ public:
         options.env = env;
 
         if (keyValues.exists ("cache_mb"))
-            table_options.block_cache = rocksdb::NewLRUCache (get<int>(keyValues, "cache_mb") * 1024L * 1024L);
+            table_options.block_cache = rocksdb::NewLRUCache (
+                get<int>(keyValues, "cache_mb") * 1024L * 1024L);
 
         if (auto const v = get<int>(keyValues, "filter_bits"))
-            table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (v));
+        {
+            bool filter_blocks = !keyValues.exists("filter_full") ||
+                (get<int>(keyValues, "filter_full") == 0);
+            table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (v, filter_blocks));
+        }
 
         if (get_if_exists (keyValues, "open_files", options.max_open_files))
             fdlimit_ = options.max_open_files;
@@ -169,7 +174,27 @@ public:
             options.write_buffer_size = 6 * options.target_file_size_base;
         }
 
+        if (keyValues.exists("bbt_options"))
+        {
+            auto const s = rocksdb::GetBlockBasedTableOptionsFromString(
+                table_options,
+                get<std::string>(keyValues, "bbt_options"),
+                &table_options);
+            if (! s.ok())
+                Throw<std::runtime_error> (
+                    std::string("Unable to set RocksDB bbt_options: ") + s.ToString());
+        }
+
         options.table_factory.reset(NewBlockBasedTableFactory(table_options));
+
+        if (keyValues.exists("options"))
+        {
+            auto const s = rocksdb::GetOptionsFromString(
+                options, get<std::string>(keyValues, "options"), &options);
+            if (! s.ok())
+                Throw<std::runtime_error> (
+                    std::string("Unable to set RocksDB options: ") + s.ToString());
+        }
 
         rocksdb::DB* db = nullptr;
         rocksdb::Status status = rocksdb::DB::Open (options, m_name, &db);
@@ -178,6 +203,12 @@ public:
                 std::string("Unable to open/create RocksDB: ") + status.ToString());
 
         m_db.reset (db);
+
+        std::string s1, s2;
+        rocksdb::GetStringFromDBOptions(&s1, options, "; ");
+        rocksdb::GetStringFromColumnFamilyOptions(&s2, options, "; ");
+        JLOG(m_journal.debug()) << "RocksDB DBOptions: " << s1;
+        JLOG(m_journal.debug()) << "RocksDB CFOptions: " << s2;
     }
 
     ~RocksDBBackend ()

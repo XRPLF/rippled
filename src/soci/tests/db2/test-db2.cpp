@@ -68,32 +68,37 @@ public:
     test_context(backend_factory const & pi_back_end, std::string const & pi_connect_string)
         : test_context_base(pi_back_end, pi_connect_string) {}
 
-    table_creator_base* table_creator_1(soci::session & pr_s) const
+    table_creator_base* table_creator_1(soci::session & pr_s) const SOCI_OVERRIDE
     {
         pr_s << "SET CURRENT SCHEMA = 'DB2INST1'";
         return new table_creator_one(pr_s);
     }
 
-    table_creator_base* table_creator_2(soci::session & pr_s) const
+    table_creator_base* table_creator_2(soci::session & pr_s) const SOCI_OVERRIDE
     {
         pr_s << "SET CURRENT SCHEMA = 'DB2INST1'";
         return new table_creator_two(pr_s);
     }
 
-    table_creator_base* table_creator_3(soci::session & pr_s) const
+    table_creator_base* table_creator_3(soci::session & pr_s) const SOCI_OVERRIDE
     {
         pr_s << "SET CURRENT SCHEMA = 'DB2INST1'";
         return new table_creator_three(pr_s);
     }
 
-    table_creator_base* table_creator_4(soci::session& s) const
+    table_creator_base* table_creator_4(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_for_get_affected_rows(s);
     }
 
-    std::string to_date_time(std::string const & pi_datdt_string) const
+    std::string to_date_time(std::string const & pi_datdt_string) const SOCI_OVERRIDE
     {
         return "to_date('" + pi_datdt_string + "', 'YYYY-MM-DD HH24:MI:SS')";
+    }
+
+    std::string sql_length(std::string const& s) const SOCI_OVERRIDE
+    {
+        return "length(" + s + ")";
     }
 };
 

@@ -128,6 +128,24 @@ struct table_creator_for_get_affected_rows : table_creator_base
     }
 };
 
+struct table_creator_for_xml : table_creator_base
+{
+    table_creator_for_xml(soci::session& sql)
+        : table_creator_base(sql)
+    {
+        sql << "create table soci_test(id integer, x xml)";
+    }
+};
+
+struct table_creator_for_clob : table_creator_base
+{
+    table_creator_for_clob(soci::session& sql)
+        : table_creator_base(sql)
+    {
+        sql << "create table soci_test(id integer, s text)";
+    }
+};
+
 //
 // Support for SOCI Common Tests
 //
@@ -143,32 +161,47 @@ public:
         std::cout << "Using ODBC driver version " << m_verDriver << "\n";
     }
 
-    table_creator_base * table_creator_1(soci::session& s) const
+    table_creator_base * table_creator_1(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_one(s);
     }
 
-    table_creator_base * table_creator_2(soci::session& s) const
+    table_creator_base * table_creator_2(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_two(s);
     }
 
-    table_creator_base * table_creator_3(soci::session& s) const
+    table_creator_base * table_creator_3(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_three(s);
     }
 
-    table_creator_base * table_creator_4(soci::session& s) const
+    table_creator_base * table_creator_4(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_for_get_affected_rows(s);
     }
 
-    std::string to_date_time(std::string const &datdt_string) const
+    table_creator_base* table_creator_xml(soci::session& s) const SOCI_OVERRIDE
+    {
+        return new table_creator_for_xml(s);
+    }
+
+    table_creator_base* table_creator_clob(soci::session& s) const SOCI_OVERRIDE
+    {
+        return new table_creator_for_clob(s);
+    }
+
+    bool has_real_xml_support() const SOCI_OVERRIDE
+    {
+        return true;
+    }
+
+    std::string to_date_time(std::string const &datdt_string) const SOCI_OVERRIDE
     {
         return "timestamptz(\'" + datdt_string + "\')";
     }
 
-    virtual bool has_fp_bug() const
+    bool has_fp_bug() const SOCI_OVERRIDE
     {
         // The bug with using insufficiently many digits for double values was
         // only fixed in 9.03.0400 version of the ODBC driver (see commit
@@ -179,37 +212,50 @@ public:
         return !m_verDriver.is_initialized() || m_verDriver < odbc_version(9, 3, 400);
     }
 
+    std::string sql_length(std::string const& s) const SOCI_OVERRIDE
+    {
+        return "char_length(" + s + ")";
+    }
+
 private:
     odbc_version get_driver_version() const
     {
-        soci::session sql(get_backend_factory(), get_connect_string());
-        odbc_session_backend* const
-            odbc_session = static_cast<odbc_session_backend*>(sql.get_backend());
-        if (!odbc_session)
+        try
         {
-            std::cerr << "Failed to get odbc_session_backend?\n";
+            soci::session sql(get_backend_factory(), get_connect_string());
+            odbc_session_backend* const
+                odbc_session = static_cast<odbc_session_backend*>(sql.get_backend());
+            if (!odbc_session)
+            {
+                std::cerr << "Failed to get odbc_session_backend?\n";
+                return odbc_version();
+            }
+
+            char driver_ver[1024];
+            SQLSMALLINT len = sizeof(driver_ver);
+            SQLRETURN rc = SQLGetInfo(odbc_session->hdbc_, SQL_DRIVER_VER,
+                                      driver_ver, len, &len);
+            if (soci::is_odbc_error(rc))
+            {
+                std::cerr << "Retrieving ODBC driver version failed: "
+                          << rc << "\n";
+                return odbc_version();
+            }
+
+            odbc_version v;
+            if (!v.init_from_string(driver_ver))
+            {
+                std::cerr << "Unknown ODBC driver version format: \""
+                          << driver_ver << "\"\n";
+            }
+
+            return v;
+        }
+        catch ( ... )
+        {
+            // Failure getting the version is not fatal.
             return odbc_version();
         }
-
-        char driver_ver[1024];
-        SQLSMALLINT len = sizeof(driver_ver);
-        SQLRETURN rc = SQLGetInfo(odbc_session->hdbc_, SQL_DRIVER_VER,
-                                  driver_ver, len, &len);
-        if (soci::is_odbc_error(rc))
-        {
-            std::cerr << "Retrieving ODBC driver version failed: "
-                      << rc << "\n";
-            return odbc_version();
-        }
-
-        odbc_version v;
-        if (!v.init_from_string(driver_ver))
-        {
-            std::cerr << "Unknown ODBC driver version format: \""
-                      << driver_ver << "\"\n";
-        }
-
-        return v;
     }
 
     odbc_version const m_verDriver;

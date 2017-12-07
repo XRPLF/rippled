@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2004-2008 Maciej Sobczak, Stephen Hutton
+// Copyright (C) 2004-2016 Maciej Sobczak, Stephen Hutton
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -32,6 +32,7 @@ public:
     virtual void bind(statement_impl & st, int & position) = 0;
     virtual std::string get_name() const = 0;
     virtual void dump_value(std::ostream& os) const = 0;
+    virtual void pre_exec(int num) = 0;
     virtual void pre_use() = 0;
     virtual void post_use(bool gotData) = 0;
     virtual void clean_up() = 0;
@@ -72,10 +73,10 @@ public:
         //convert_to_base();
     }
 
-    virtual ~standard_use_type();
-    virtual void bind(statement_impl & st, int & position);
-    virtual std::string get_name() const { return name_; }
-    virtual void dump_value(std::ostream& os) const;
+    ~standard_use_type() SOCI_OVERRIDE;
+    void bind(statement_impl & st, int & position) SOCI_OVERRIDE;
+    std::string get_name() const SOCI_OVERRIDE { return name_; }
+    void dump_value(std::ostream& os) const SOCI_OVERRIDE;
     virtual void * get_data() { return data_; }
 
     // conversion hook (from arbitrary user type to base type)
@@ -83,12 +84,13 @@ public:
     virtual void convert_from_base() {}
 
 protected:
-    virtual void pre_use();
+    void pre_use() SOCI_OVERRIDE;
 
 private:
-    virtual void post_use(bool gotData);
-    virtual void clean_up();
-    virtual std::size_t size() const { return 1; }
+    void pre_exec(int num) SOCI_OVERRIDE;
+    void post_use(bool gotData) SOCI_OVERRIDE;
+    void clean_up() SOCI_OVERRIDE;
+    std::size_t size() const SOCI_OVERRIDE { return 1; }
 
     void* data_;
     exchange_type type_;
@@ -107,6 +109,20 @@ public:
         : data_(data)
         , type_(type)
         , ind_(NULL)
+        , begin_(0)
+        , end_(NULL)
+        , name_(name)
+        , backEnd_(NULL)
+    {}
+
+    vector_use_type(void* data, exchange_type type,
+        std::size_t begin, std::size_t * end,
+        std::string const& name = std::string())
+        : data_(data)
+        , type_(type)
+        , ind_(NULL)
+        , begin_(begin)
+        , end_(end)
         , name_(name)
         , backEnd_(NULL)
     {}
@@ -117,24 +133,42 @@ public:
         : data_(data)
         , type_(type)
         , ind_(&ind)
+        , begin_(0)
+        , end_(NULL)
         , name_(name)
         , backEnd_(NULL)
     {}
 
-    ~vector_use_type();
+    vector_use_type(void* data, exchange_type type,
+        std::vector<indicator> const& ind,
+        std::size_t begin, std::size_t * end,
+        std::string const& name = std::string())
+        : data_(data)
+        , type_(type)
+        , ind_(&ind)
+        , begin_(begin)
+        , end_(end)
+        , name_(name)
+        , backEnd_(NULL)
+    {}
+
+    ~vector_use_type() SOCI_OVERRIDE;
 
 private:
-    virtual void bind(statement_impl& st, int & position);
-    virtual std::string get_name() const { return name_; }
-    virtual void dump_value(std::ostream& os) const;
-    virtual void pre_use();
-    virtual void post_use(bool) { /* nothing to do */ }
-    virtual void clean_up();
-    virtual std::size_t size() const;
+    void bind(statement_impl& st, int & position) SOCI_OVERRIDE;
+    std::string get_name() const SOCI_OVERRIDE { return name_; }
+    void dump_value(std::ostream& os) const SOCI_OVERRIDE;
+    void pre_exec(int num) SOCI_OVERRIDE;
+    void pre_use() SOCI_OVERRIDE;
+    void post_use(bool) SOCI_OVERRIDE { /* nothing to do */ }
+    void clean_up() SOCI_OVERRIDE;
+    std::size_t size() const SOCI_OVERRIDE;
 
     void* data_;
     exchange_type type_;
     std::vector<indicator> const* ind_;
+    std::size_t begin_;
+    std::size_t * end_;
     std::string name_;
 
     vector_use_type_backend * backEnd_;
@@ -179,9 +213,21 @@ public:
             static_cast<exchange_type>(exchange_traits<T>::x_type), name)
     {}
 
+    use_type(std::vector<T>& v, std::size_t begin, std::size_t * end,
+        std::string const& name = std::string())
+        : vector_use_type(&v,
+            static_cast<exchange_type>(exchange_traits<T>::x_type), begin, end, name)
+    {}
+
     use_type(std::vector<T> const& v, std::string const& name = std::string())
         : vector_use_type(const_cast<std::vector<T>*>(&v),
             static_cast<exchange_type>(exchange_traits<T>::x_type), name)
+    {}
+
+    use_type(std::vector<T> const& v, std::size_t begin, std::size_t * end,
+        std::string const& name = std::string())
+        : vector_use_type(const_cast<std::vector<T>*>(&v),
+            static_cast<exchange_type>(exchange_traits<T>::x_type), begin, end, name)
     {}
 
     use_type(std::vector<T>& v, std::vector<indicator> const& ind,
@@ -190,10 +236,22 @@ public:
             static_cast<exchange_type>(exchange_traits<T>::x_type), ind, name)
     {}
 
+    use_type(std::vector<T>& v, std::vector<indicator> const& ind,
+        std::size_t begin, std::size_t * end, std::string const& name = std::string())
+        : vector_use_type(&v,
+            static_cast<exchange_type>(exchange_traits<T>::x_type), ind, begin, end, name)
+    {}
+
     use_type(std::vector<T> const& v, std::vector<indicator> const& ind,
         std::string const& name = std::string())
         : vector_use_type(const_cast<std::vector<T> *>(&v),
             static_cast<exchange_type>(exchange_traits<T>::x_type), ind, name)
+    {}
+
+    use_type(std::vector<T> const& v, std::vector<indicator> const& ind,
+        std::size_t begin, std::size_t * end, std::string const& name = std::string())
+        : vector_use_type(const_cast<std::vector<T> *>(&v),
+            static_cast<exchange_type>(exchange_traits<T>::x_type), ind, begin, end, name)
     {}
 };
 
@@ -237,6 +295,42 @@ use_type_ptr do_use(T const & t, std::vector<indicator> & ind,
     std::string const & name, basic_type_tag)
 {
     return use_type_ptr(new use_type<T>(t, ind, name));
+}
+
+template <typename T>
+use_type_ptr do_use(std::vector<T> & t,
+    std::size_t begin, std::size_t * end,
+    std::string const & name, basic_type_tag)
+{
+    return use_type_ptr(
+        new use_type<std::vector<T> >(t, begin, end, name));
+}
+
+template <typename T>
+use_type_ptr do_use(const std::vector<T> & t,
+    std::size_t begin, std::size_t * end,
+    std::string const & name, basic_type_tag)
+{
+    return use_type_ptr(
+        new use_type<std::vector<T> >(t, begin, end, name));
+}
+
+template <typename T>
+use_type_ptr do_use(std::vector<T> & t, std::vector<indicator> & ind,
+    std::size_t begin, std::size_t * end,
+    std::string const & name, basic_type_tag)
+{
+    return use_type_ptr(
+        new use_type<std::vector<T> >(t, ind, begin, end, name));
+}
+
+template <typename T>
+use_type_ptr do_use(const std::vector<T> & t, std::vector<indicator> & ind,
+    std::size_t begin, std::size_t * end,
+    std::string const & name, basic_type_tag)
+{
+    return use_type_ptr(
+        new use_type<std::vector<T> >(t, ind, begin, end, name));
 }
 
 } // namespace details

@@ -1,7 +1,7 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
-//  This source code is licensed under the BSD-style license found in the
-//  LICENSE file in the root directory of this source tree. An additional grant
-//  of patent rights can be found in the PATENTS file in the same directory.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 //
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
@@ -12,6 +12,7 @@
 #include <functional>
 #include <limits>
 #include <vector>
+#include "port/port.h"
 #include "util/arena.h"
 #include "util/autovector.h"
 
@@ -25,9 +26,9 @@ struct FileLevel;
 // The file tree structure in Version is prebuilt and the range of each file
 // is known. On Version::Get(), it uses binary search to find a potential file
 // and then check if a target key can be found in the file by comparing the key
-// to each file's smallest and largest key. The results of these comparisions
+// to each file's smallest and largest key. The results of these comparisons
 // can be reused beyond checking if a key falls into a file's range.
-// With some pre-calculated knowledge, each key comparision that has been done
+// With some pre-calculated knowledge, each key comparison that has been done
 // can serve as a hint to narrow down further searches: if a key compared to
 // be smaller than a file's smallest or largest, that comparison can be used
 // to find out the right bound of next binary search. Similarly, if a key
@@ -42,27 +43,28 @@ class FileIndexer {
  public:
   explicit FileIndexer(const Comparator* ucmp);
 
-  uint32_t NumLevelIndex();
+  size_t NumLevelIndex() const;
 
-  uint32_t LevelIndexSize(uint32_t level);
+  size_t LevelIndexSize(size_t level) const;
 
   // Return a file index range in the next level to search for a key based on
-  // smallest and largest key comparision for the current file specified by
+  // smallest and largest key comparison for the current file specified by
   // level and file_index. When *left_index < *right_index, both index should
   // be valid and fit in the vector size.
-  void GetNextLevelIndex(
-    const uint32_t level, const uint32_t file_index, const int cmp_smallest,
-    const int cmp_largest, int32_t* left_bound, int32_t* right_bound);
+  void GetNextLevelIndex(const size_t level, const size_t file_index,
+                         const int cmp_smallest, const int cmp_largest,
+                         int32_t* left_bound, int32_t* right_bound) const;
 
-  void UpdateIndex(Arena* arena, const uint32_t num_levels,
+  void UpdateIndex(Arena* arena, const size_t num_levels,
                    std::vector<FileMetaData*>* const files);
 
   enum {
-    kLevelMaxIndex = std::numeric_limits<int32_t>::max()
+    // MSVC version 1800 still does not have constexpr for ::max()
+    kLevelMaxIndex = rocksdb::port::kMaxInt32
   };
 
  private:
-  uint32_t num_levels_;
+  size_t num_levels_;
   const Comparator* ucmp_;
 
   struct IndexUnit {

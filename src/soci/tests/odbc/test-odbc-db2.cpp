@@ -93,6 +93,11 @@ public:
     {
         return "\'" + datdt_string + "\'";
     }
+
+    virtual std::string sql_length(std::string const& s) const
+    {
+        return "length(" + s + ")";
+    }
 };
 
 struct table_creator_bigint : table_creator_base
