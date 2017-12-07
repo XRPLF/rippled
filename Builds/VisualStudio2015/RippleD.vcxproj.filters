@@ -2151,6 +2151,9 @@
     <ClInclude Include="..\..\src\ripple\consensus\LedgerTiming.h">
       <Filter>ripple\consensus</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\LedgerTrie.h">
+      <Filter>ripple\consensus</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\consensus\Validations.h">
       <Filter>ripple\consensus</Filter>
     </ClInclude>
@@ -5268,6 +5271,9 @@
     <ClCompile Include="..\..\src\test\app\PseudoTx_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\app\RCLValidations_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\app\Regression_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
@@ -5404,6 +5410,9 @@
       <Filter>test\consensus</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\consensus\LedgerTiming_test.cpp">
+      <Filter>test\consensus</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\consensus\LedgerTrie_test.cpp">
       <Filter>test\consensus</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\consensus\ScaleFreeSim_test.cpp">

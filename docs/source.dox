@@ -114,6 +114,7 @@ INPUT                  = \
     ../src/ripple/consensus/ConsensusTypes.h \
     ../src/ripple/consensus/DisputedTx.h \
     ../src/ripple/consensus/LedgerTiming.h \
+    ../src/ripple/consensus/LedgerTrie.h \
     ../src/ripple/consensus/Validations.h \
     ../src/ripple/consensus/ConsensusParms.h \
     ../src/ripple/app/consensus/RCLCxTx.h \

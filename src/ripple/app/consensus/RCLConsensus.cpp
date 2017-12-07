@@ -233,9 +233,13 @@ RCLConsensus::Adaptor::proposersValidated(LedgerHash const& h) const
 }
 
 std::size_t
-RCLConsensus::Adaptor::proposersFinished(LedgerHash const& h) const
+RCLConsensus::Adaptor::proposersFinished(
+    RCLCxLedger const& ledger,
+    LedgerHash const& h) const
 {
-    return app_.getValidations().getNodesAfter(h);
+    RCLValidations& vals = app_.getValidations();
+    return vals.getNodesAfter(
+        RCLValidatedLedger(ledger.ledger_, vals.adaptor().journal()), h);
 }
 
 uint256
@@ -244,29 +248,17 @@ RCLConsensus::Adaptor::getPrevLedger(
     RCLCxLedger const& ledger,
     ConsensusMode mode)
 {
-    uint256 parentID;
-    // Only set the parent ID if we believe ledger is the right ledger
-    if (mode != ConsensusMode::wrongLedger)
-        parentID = ledger.parentID();
-
-    // Get validators that are on our ledger, or "close" to being on
-    // our ledger.
-    hash_map<uint256, std::uint32_t> ledgerCounts =
-        app_.getValidations().currentTrustedDistribution(
-            ledgerID, parentID, ledgerMaster_.getValidLedgerIndex());
-
-    uint256 netLgr = getPreferredLedger(ledgerID, ledgerCounts);
+    RCLValidations& vals = app_.getValidations();
+    uint256 netLgr = vals.getPreferred(
+        RCLValidatedLedger{ledger.ledger_, vals.adaptor().journal()},
+        ledgerMaster_.getValidLedgerIndex());
 
     if (netLgr != ledgerID)
     {
         if (mode != ConsensusMode::wrongLedger)
             app_.getOPs().consensusViewChange();
 
-        if (auto stream = j_.debug())
-        {
-            for (auto const & it : ledgerCounts)
-                stream << "V: " << it.first << ", " << it.second;
-        }
+        JLOG(j_.debug())<< Json::Compact(app_.getValidations().getJsonTrie());
     }
 
     return netLgr;
@@ -454,7 +446,8 @@ RCLConsensus::Adaptor::doAccept(
             app_.journal("LedgerConsensus").warn(),
             "Not validating");
 
-    if (validating_ && !consensusFail)
+    if (validating_ && !consensusFail &&
+        app_.getValidations().canValidateSeq(sharedLCL.seq()))
     {
         validate(sharedLCL, proposing);
         JLOG(j_.info()) << "CNF Val " << newLCLHash;
@@ -841,7 +834,10 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, bool proposing)
 
     // Build validation
     auto v = std::make_shared<STValidation>(
-        ledger.id(), validationTime, valPublic_, proposing);
+        ledger.id(),
+        validationTime,
+        valPublic_,
+        proposing /* full if proposed */);
     v->setFieldU32(sfLedgerSequence, ledger.seq());
 
     // Add our load fee to the validation
