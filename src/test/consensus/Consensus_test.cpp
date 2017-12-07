@@ -825,6 +825,175 @@ public:
         BEAST_EXPECT(sim.synchronized());
     }
 
+
+    // Helper collector for testPreferredByBranch
+    // Invasively disconnects network at bad times to cause splits
+    struct Disruptor
+    {
+        csf::PeerGroup& network;
+        csf::PeerGroup& groupCfast;
+        csf::PeerGroup& groupCsplit;
+        csf::SimDuration delay;
+        bool reconnected = false;
+
+        Disruptor(
+            csf::PeerGroup& net,
+            csf::PeerGroup& c,
+            csf::PeerGroup& split,
+            csf::SimDuration d)
+            : network(net), groupCfast(c), groupCsplit(split), delay(d)
+        {
+        }
+
+        template <class E>
+        void
+        on(csf::PeerID, csf::SimTime, E const&)
+        {
+        }
+
+
+        void
+        on(csf::PeerID who, csf::SimTime, csf::FullyValidateLedger const& e)
+        {
+            using namespace std::chrono;
+            // As soon as the the fastC node fully validates C, disconnect
+            // ALL c nodes from the network. The fast C node needs to disconnect
+            // as well to prevent it from relaying the validations it did see
+            if (who == groupCfast[0]->id &&
+                e.ledger.seq() == csf::Ledger::Seq{2})
+            {
+                network.disconnect(groupCsplit);
+                network.disconnect(groupCfast);
+            }
+        }
+
+        void
+        on(csf::PeerID who, csf::SimTime, csf::AcceptLedger const& e)
+        {
+            // As soon as anyone generates a child of B or C, reconnect the
+            // network so those validation make it through
+            if (!reconnected && e.ledger.seq() == csf::Ledger::Seq{3})
+            {
+                reconnected = true;
+                network.connect(groupCsplit, delay);
+            }
+        }
+
+
+    };
+
+    void
+    testPreferredByBranch()
+    {
+        using namespace csf;
+        using namespace std::chrono;
+
+        // Simulate network splits that are prevented from forking when using
+        // preferred ledger by trie.  This is a contrived example that involves
+        // excessive network splits, but demonstrates the safety improvement
+        // from the preferred ledger by trie approach.
+
+        // Consider 10 validating nodes that comprise a single common UNL
+        // Ledger history:
+        // 1:           A
+        //            _/ \_
+        // 2:         B    C
+        //          _/  _/  \_
+        // 3:       D   C'  |||||||| (8 different ledgers)
+
+        // - All nodes generate the common ledger A
+        // - 2 nodes generate B and 8 nodes generate C
+        // - Only 1 of the C nodes sees all the C validations and fully
+        //   validates C. The rest of the C nodes disconnect split at just
+        //   the right time such that they never see any C validations but
+        //   their own.
+        // - The C nodes continue and generate 8 different child ledgers.
+        // - Meanwhile, the D nodes only saw 1 validation for C and 2 validations
+        //   for C.
+        // - The network reconnects and the validations for generation 3 ledgers
+        //   are observed (D and the 8 C's)
+        // - In the old approach, 2 votes for D outweights 1 vote for each C'
+        //   so the network would avalanche towards D and fully validate it
+        //   EVEN though C was fully validated by one node
+        // - In the new approach, 2 votes for D are not enough to outweight the
+        //   8 implicit votes for C, so nodes will avalanche to C instead
+
+
+        ConsensusParms const parms{};
+        Sim sim;
+
+        // Goes A->B->D
+        PeerGroup groupABD = sim.createGroup(2);
+        // Single node that initially fully validates C before the split
+        PeerGroup groupCfast = sim.createGroup(1);
+        // Generates C, but fails to fully validate before the split
+        PeerGroup groupCsplit = sim.createGroup(7);
+
+        PeerGroup groupNotFastC = groupABD + groupCsplit;
+        PeerGroup network = groupABD + groupCsplit + groupCfast;
+
+        SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+        SimDuration fDelay = round<milliseconds>(0.1 * parms.ledgerGRANULARITY);
+
+        network.trust(network);
+        // C must have a shorter delay to see all the validations before the
+        // other nodes
+        network.connect(groupCfast, fDelay);
+        // The rest of the network is connected at the same speed
+        (network - groupCfast).connect(network - groupCfast, delay);
+
+        Disruptor dc(network, groupCfast, groupCsplit, delay);
+        sim.collectors.add(dc);
+
+        // Consensus round to generate ledger A
+        sim.run(1);
+        BEAST_EXPECT(sim.synchronized());
+
+        // Next round generates B and C
+        // To force B, we inject an extra transaction in to those nodes
+        for(Peer * peer : groupABD)
+        {
+            peer->txInjections.emplace(
+                    peer->lastClosedLedger.seq(), Tx{42});
+        }
+        // The Disruptor will ensure that nodes disconnect before the C
+        // validations make it to all but the fastC node
+        sim.run(1);
+
+        // We are no longer in sync, but have not yet forked:
+        // 9 nodes consider A the last fully validated ledger and fastC sees C
+        BEAST_EXPECT(!sim.synchronized());
+        BEAST_EXPECT(sim.branches() == 1);
+
+        //  Run another round to generate the 8 different C' ledgers
+        for (Peer * p : network)
+            p->submit(Tx(static_cast<std::uint32_t>(p->id)));
+        sim.run(1);
+
+        // Still not forked
+        BEAST_EXPECT(!sim.synchronized());
+        BEAST_EXPECT(sim.branches() == 1);
+
+        // Disruptor will reconnect all but the fastC node
+        sim.run(1);
+        BEAST_EXPECT(!sim.synchronized());
+
+        if(BEAST_EXPECT(sim.branches() == 1))
+        {
+            // New approach will not fork and will resync once the fast node
+            // reconnects for a few rounds
+            network.connect(groupCfast, fDelay);
+            sim.run(2);
+            BEAST_EXPECT(sim.synchronized());
+            BEAST_EXPECT(sim.branches() == 1);
+
+        }
+        else // old approach caused a fork
+        {
+            BEAST_EXPECT(sim.branches(groupNotFastC) == 1);
+            BEAST_EXPECT(sim.synchronized(groupNotFastC) == 1);
+        }
+    }
     void
     run() override
     {
@@ -839,6 +1008,7 @@ public:
         testConsensusCloseTimeRounding();
         testFork();
         testHubNetwork();
+        testPreferredByBranch();
     }
 };
 

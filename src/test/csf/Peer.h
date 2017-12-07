@@ -213,9 +213,9 @@ struct Peer
     //! TxSet associated with a TxSet::ID
     bc::flat_map<TxSet::ID, TxSet> txSets;
 
-    // Ledgers and txSets that we have already attempted to acquire
-    bc::flat_set<Ledger::ID> acquiringLedgers;
-    bc::flat_set<TxSet::ID> acquiringTxSets;
+    // Ledgers/TxSets we are acquiring and when that request times out
+    bc::flat_map<Ledger::ID,SimTime> acquiringLedgers;
+    bc::flat_map<TxSet::ID,SimTime> acquiringTxSets;
 
     //! The number of ledgers this peer has completed
     int completedLedgers = 0;
@@ -380,16 +380,30 @@ struct Peer
     Ledger const*
     acquireLedger(Ledger::ID const& ledgerID)
     {
+        using namespace std::chrono;
+
         auto it = ledgers.find(ledgerID);
         if (it != ledgers.end())
             return &(it->second);
 
-        // Don't retry if we already are acquiring it
-        if(!acquiringLedgers.emplace(ledgerID).second)
+        // No peers
+        if(net.links(this).empty())
             return nullptr;
 
+        // Don't retry if we already are acquiring it and haven't timed out
+        auto aIt = acquiringLedgers.find(ledgerID);
+        if(aIt!= acquiringLedgers.end())
+        {
+            if(scheduler.now() < aIt->second)
+                return nullptr;
+        }
+
+
+        SimDuration minDuration{10s};
         for (auto const& link : net.links(this))
         {
+            minDuration = std::min(minDuration, link.data.delay);
+
             // Send a messsage to neighbors to find the ledger
             net.send(
                 this, link.target, [ to = link.target, from = this, ledgerID ]() {
@@ -400,11 +414,13 @@ struct Peer
                         // requesting peer where it is added to the available
                         // ledgers
                         to->net.send(to, from, [ from, ledger = it->second ]() {
+                            from->acquiringLedgers.erase(ledger.id());
                             from->ledgers.emplace(ledger.id(), ledger);
                         });
                     }
                 });
         }
+        acquiringLedgers[ledgerID] = scheduler.now() + 2 * minDuration;
         return nullptr;
     }
 
@@ -416,12 +432,22 @@ struct Peer
         if (it != txSets.end())
             return &(it->second);
 
-        // Don't retry if we already are acquiring it
-        if(!acquiringTxSets.emplace(setId).second)
+        // No peers
+        if(net.links(this).empty())
             return nullptr;
 
+        // Don't retry if we already are acquiring it and haven't timed out
+        auto aIt = acquiringTxSets.find(setId);
+        if(aIt!= acquiringTxSets.end())
+        {
+            if(scheduler.now() < aIt->second)
+                return nullptr;
+        }
+
+        SimDuration minDuration{10s};
         for (auto const& link : net.links(this))
         {
+            minDuration = std::min(minDuration, link.data.delay);
             // Send a message to neighbors to find the tx set
             net.send(
                 this, link.target, [ to = link.target, from = this, setId ]() {
@@ -432,11 +458,13 @@ struct Peer
                         // requesting peer, where it is handled like a TxSet
                         // that was broadcast over the network
                         to->net.send(to, from, [ from, txSet = it->second ]() {
+                            from->acquiringTxSets.erase(txSet.id());
                             from->handle(txSet);
                         });
                     }
                 });
         }
+        acquiringTxSets[setId] = scheduler.now() + 2 * minDuration;
         return nullptr;
     }
 
@@ -663,7 +691,7 @@ struct Peer
         std::size_t const count = validations.numTrustedForLedger(ledger.id());
         std::size_t const numTrustedPeers = trustGraph.graph().outDegree(this);
         quorum = static_cast<std::size_t>(std::ceil(numTrustedPeers * 0.8));
-        if (count >= quorum)
+        if (count >= quorum && oracle.isAncestor(fullyValidatedLedger, ledger))
         {
             issue(FullyValidateLedger{ledger, fullyValidatedLedger});
             fullyValidatedLedger = ledger;
@@ -830,7 +858,7 @@ struct Peer
             lastClosedLedger.parentID(),
             earliestAllowedSeq());
 
-        // Between rounds, we take the majority ledger and use the 
+        // Between rounds, we take the majority ledger and use the
         Ledger::ID const bestLCL =
             getPreferredLedger(lastClosedLedger.id(), valDistribution);
 

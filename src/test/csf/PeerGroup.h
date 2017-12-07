@@ -62,7 +62,6 @@ public:
 
     PeerGroup(std::set<Peer*> const& peers) : peers_{peers.begin(), peers.end()}
     {
-
     }
 
     iterator
@@ -99,6 +98,14 @@ public:
     contains(Peer const * p)
     {
         return std::find(peers_.begin(), peers_.end(), p) != peers_.end();
+    }
+
+    bool
+    contains(PeerID id)
+    {
+        return std::find_if(peers_.begin(), peers_.end(), [id](Peer const* p) {
+                   return p->id == id;
+               }) != peers_.end();
     }
 
     std::size_t
