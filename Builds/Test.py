@@ -304,7 +304,9 @@ def run_tests(args):
                 testflag += ('=' + ARGS.test)
             if ARGS.quiet:
                 quiet = '-q'
-            resultcode, lines = shell(executable, (testflag, quiet,))
+            if ARGS.testjobs:
+                testjobs = ('--unittest-jobs=' + str(ARGS.testjobs))
+            resultcode, lines = shell(executable, (testflag, quiet, testjobs,))
 
             if resultcode:
                 if not ARGS.verbose:
