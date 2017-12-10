@@ -1050,9 +1050,7 @@ private:
 bool ApplicationImp::setup()
 {
     // VFALCO NOTE: 0 means use heuristics to determine the thread count.
-    m_jobQueue->setThreadCount (config_->WORKERS, config_->standalone(),
-                                config_->exists (SECTION_VALIDATOR_TOKEN) ||
-                                config_->exists (SECTION_VALIDATION_SEED));
+    m_jobQueue->setThreadCount (config_->WORKERS, config_->standalone());
 
     // We want to intercept and wait for CTRL-C to terminate the process
     m_signals.add (SIGINT);

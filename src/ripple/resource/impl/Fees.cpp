@@ -23,31 +23,24 @@
 namespace ripple {
 namespace Resource {
 
-Charge const feeInvalidRequest    (  10, "malformed request"      );
-Charge const feeRequestNoReply    (   1, "unsatisfiable request"  );
-Charge const feeInvalidSignature  ( 100, "invalid signature"      );
-Charge const feeUnwantedData      (  15, "useless data"           );
-Charge const feeBadData           (  20, "invalid data"           );
+Charge const feeInvalidRequest    (  100, "malformed request"      );
+Charge const feeRequestNoReply    (   10, "unsatisfiable request"  );
+Charge const feeInvalidSignature  ( 1000, "invalid signature"      );
+Charge const feeUnwantedData      (  150, "useless data"           );
+Charge const feeBadData           (  200, "invalid data"           );
 
-Charge const feeInvalidRPC        (  10, "malformed RPC"          );
-Charge const feeReferenceRPC      (   2, "reference RPC"          );
-Charge const feeExceptionRPC      (  10, "exceptioned RPC"        );
-Charge const feeLightRPC          (   5, "light RPC"              ); // DAVID: Check the cost
-Charge const feeLowBurdenRPC      (  20, "low RPC"                );
-Charge const feeMediumBurdenRPC   (  40, "medium RPC"             );
-Charge const feeHighBurdenRPC     ( 300, "heavy RPC"              );
+Charge const feeInvalidRPC        (  100, "malformed RPC"          );
+Charge const feeReferenceRPC      (   20, "reference RPC"          );
+Charge const feeExceptionRPC      (  100, "exceptioned RPC"        );
+Charge const feeMediumBurdenRPC   (  400, "medium RPC"             );
+Charge const feeHighBurdenRPC     ( 3000, "heavy RPC"              );
 
-Charge const feeLightPeer         (1, "trivial peer request"      );
-Charge const feeLowBurdenPeer     (2, "simple peer request"       );
-Charge const feeMediumBurdenPeer  (50, "moderate peer request"    );
-Charge const feeHighBurdenPeer    (250, "heavy peer request"      );
+Charge const feeLightPeer         (    1, "trivial peer request"   );
+Charge const feeMediumBurdenPeer  (  250, "moderate peer request"  );
+Charge const feeHighBurdenPeer    ( 2000, "heavy peer request"     );
 
-Charge const feeNewTrustedNote    (  10, "trusted note"           );
-Charge const feeNewValidTx        (  10, "valid tx"               );
-Charge const feeSatisfiedRequest  (  10, "needed data"            );
-
-Charge const feeWarning           ( 200, "received warning"       );
-Charge const feeDrop              ( 300, "dropped"                );
+Charge const feeWarning           ( 2000, "received warning"       );
+Charge const feeDrop              ( 3000, "dropped"                );
 
 }
 }

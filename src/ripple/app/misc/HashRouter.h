@@ -118,12 +118,21 @@ private:
             return ++recoveries_ % limit != 0;
         }
 
+        bool shouldProcess(Stopwatch::time_point now, std::chrono::seconds interval)
+        {
+             if (processed_ && ((*processed_ + interval) > now))
+                 return false;
+             processed_.emplace (now);
+             return true;
+        }
+
     private:
         int flags_ = 0;
         std::set <PeerShortID> peers_;
         // This could be generalized to a map, if more
         // than one flag needs to expire independently.
         boost::optional<Stopwatch::time_point> relayed_;
+        boost::optional<Stopwatch::time_point> processed_;
         std::uint32_t recoveries_ = 0;
     };
 
@@ -160,6 +169,10 @@ public:
 
     bool addSuppressionPeer (uint256 const& key, PeerShortID peer,
                              int& flags);
+
+    // Add a peer suppression and return whether the entry should be processed
+    bool shouldProcess (uint256 const& key, PeerShortID peer,
+        int& flags, Stopwatch::time_point now, std::chrono::seconds interval);
 
     /** Set the flags on a hash.
 

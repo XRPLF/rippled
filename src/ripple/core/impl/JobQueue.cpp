@@ -153,8 +153,7 @@ JobQueue::getJobCountGE (JobType t) const
 }
 
 void
-JobQueue::setThreadCount (int c, bool const standaloneMode,
-                          bool const validator)
+JobQueue::setThreadCount (int c, bool const standaloneMode)
 {
     if (standaloneMode)
     {
@@ -163,13 +162,9 @@ JobQueue::setThreadCount (int c, bool const standaloneMode,
     else if (c == 0)
     {
         c = static_cast<int>(std::thread::hardware_concurrency());
-        if (validator)
-            c = 2 + std::min(c, 4); // I/O will bottleneck
-        else
-            c *= 2; // Tested to improve stability under high RPC load.
+        c = 2 + std::min(c, 4); // I/O will bottleneck
         JLOG (m_journal.info()) << "Auto-tuning to " << c <<
-                            " validation/transaction/proposal threads for " <<
-                            (validator ? "" : "non-") << "validator.";
+                            " validation/transaction/proposal threads.";
     }
     else
     {
