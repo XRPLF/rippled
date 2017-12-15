@@ -138,15 +138,34 @@ class Validations_test : public beast::unit_test::suite
         hash_map<PeerKey, Validation> flushed;
     };
 
-    // Generic Validations policy that saves stale/flushed data into
+    // Generic Validations adaptor that saves stale/flushed data into
     // a StaleData instance.
-    class StalePolicy
+    class Adaptor
     {
         StaleData& staleData_;
         clock_type& c_;
+        beast::Journal j_;
 
     public:
-        StalePolicy(StaleData& sd, clock_type& c) : staleData_{sd}, c_{c}
+        // Non-locking mutex to avoid locks in generic Validations
+        struct Mutex
+        {
+            void
+            lock()
+            {
+            }
+
+            void
+            unlock()
+            {
+            }
+        };
+
+        using Validation = csf::Validation;
+        using Ledger = csf::Ledger;
+
+        Adaptor(StaleData& sd, clock_type& c, beast::Journal j)
+            : staleData_{sd}, c_{c}, j_{j}
         {
         }
 
@@ -167,24 +186,17 @@ class Validations_test : public beast::unit_test::suite
         {
             staleData_.flushed = std::move(remaining);
         }
-    };
 
-    // Non-locking mutex to avoid locks in generic Validations
-    struct NotAMutex
-    {
-        void
-        lock()
+        beast::Journal
+        journal() const
         {
+            return j_;
         }
 
-        void
-        unlock()
-        {
-        }
     };
 
     // Specialize generic Validations using the above types
-    using TestValidations = Validations<StalePolicy, Validation, NotAMutex>;
+    using TestValidations = Validations<Adaptor>;
 
     // Hoist enum for writing simpler tests
     using AddOutcome = TestValidations::AddOutcome;
@@ -201,7 +213,7 @@ class Validations_test : public beast::unit_test::suite
         PeerID nextNodeId_{0};
 
     public:
-        TestHarness() : tv_(p_, clock_, j_, staleData_, clock_)
+        TestHarness() : tv_(p_, clock_, staleData_, clock_, j_)
         {
         }
 

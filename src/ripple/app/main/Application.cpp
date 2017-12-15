@@ -497,8 +497,7 @@ public:
             stopwatch(), HashRouter::getDefaultHoldTime (),
             HashRouter::getDefaultRecoverLimit ()))
 
-        , mValidations (ValidationParms(),stopwatch(), logs_->journal("Validations"),
-            *this)
+        , mValidations (ValidationParms(),stopwatch(), *this, logs_->journal("Validations"))
 
         , m_loadManager (make_LoadManager (*this, *this, logs_->journal("LoadManager")))
 
@@ -916,7 +915,9 @@ public:
         // before we declare ourselves stopped.
         waitHandlerCounter_.join("Application", 1s, m_journal);
 
+        JLOG(m_journal.debug()) << "Flushing validations";
         mValidations.flush ();
+        JLOG(m_journal.debug()) << "Validations flushed";
 
         validatorSites_->stop ();
 

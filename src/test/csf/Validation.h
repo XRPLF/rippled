@@ -57,6 +57,9 @@ class Validation
     boost::optional<std::uint32_t> loadFee_;
 
 public:
+    using NodeKey = PeerKey;
+    using NodeID = PeerID;
+
     Validation(Ledger::ID id,
         Ledger::Seq seq,
         NetClock::time_point sign,

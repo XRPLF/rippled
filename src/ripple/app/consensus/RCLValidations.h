@@ -23,6 +23,7 @@
 #include <ripple/basics/ScopedLock.h>
 #include <ripple/consensus/Validations.h>
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
 #include <vector>
 
@@ -39,6 +40,8 @@ class RCLValidation
 {
     STValidation::pointer val_;
 public:
+    using NodeKey = ripple::PublicKey;
+    using NodeID = ripple::NodeID;
 
     /** Constructor
 
@@ -115,35 +118,31 @@ public:
 
 };
 
-/** Implements the StalePolicy policy class for adapting Validations in the RCL
-
-    Manages storing and writing stale RCLValidations to the sqlite DB.
-*/
-class RCLValidationsPolicy
+class RCLValidatedLedger
 {
-    using LockType = std::mutex;
-    using ScopedLockType = std::lock_guard<LockType>;
-    using ScopedUnlockType = GenericScopedUnlock<LockType>;
-
-    Application& app_;
-
-    // Lock for managing staleValidations_ and writing_
-    std::mutex staleLock_;
-    std::vector<RCLValidation> staleValidations_;
-    bool staleWriting_ = false;
-
-    // Write the stale validations to sqlite DB, the scoped lock argument
-    // is used to remind callers that the staleLock_ must be *locked* prior
-    // to making the call
-    void
-    doStaleWrite(ScopedLockType&);
-
 public:
+    using ID = LedgerHash;
+    using Seq = LedgerIndex;
 
-    RCLValidationsPolicy(Application & app);
+};
+
+/** Generic validations adaptor classs for RCL
+
+    Manages storing and writing stale RCLValidations to the sqlite DB and
+    acquiring validated ledgers from the network.
+*/
+class RCLValidationsAdaptor
+{
+public:
+    // Type definitions for generic Validation
+    using Mutex = std::mutex;
+    using Validation = RCLValidation;
+    using Ledger = RCLValidatedLedger;
+
+    RCLValidationsAdaptor(Application& app, beast::Journal j);
 
     /** Current time used to determine if validations are stale.
-    */
+     */
     NetClock::time_point
     now() const;
 
@@ -163,13 +162,39 @@ public:
         @param remaining The remaining validations to flush
     */
     void
-    flush(hash_map<PublicKey, RCLValidation> && remaining);
+    flush(hash_map<PublicKey, RCLValidation>&& remaining);
+
+    /** Attempt to acquire the ledger with given id from the network */
+    boost::optional<RCLValidatedLedger>
+    acquire(LedgerHash const & id);
+
+    beast::Journal
+    journal() const
+    {
+        return j_;
+    }
+
+private:
+    using ScopedLockType = std::lock_guard<Mutex>;
+    using ScopedUnlockType = GenericScopedUnlock<Mutex>;
+
+    Application& app_;
+    beast::Journal j_;
+
+    // Lock for managing staleValidations_ and writing_
+    std::mutex staleLock_;
+    std::vector<RCLValidation> staleValidations_;
+    bool staleWriting_ = false;
+
+    // Write the stale validations to sqlite DB, the scoped lock argument
+    // is used to remind callers that the staleLock_ must be *locked* prior
+    // to making the call
+    void
+    doStaleWrite(ScopedLockType&);
 };
 
-
 /// Alias for RCL-specific instantiation of generic Validations
-using RCLValidations =
-    Validations<RCLValidationsPolicy, RCLValidation, std::mutex>;
+using RCLValidations = Validations<RCLValidationsAdaptor>;
 
 /** Handle a new validation
 

@@ -110,13 +110,13 @@ isCurrent(
     @return The ID of the ledger with most support, preferring to stick with
             current ledger in the case of equal support
 */
-template <class LedgerID>
-inline LedgerID
+template <class ID>
+inline ID
 getPreferredLedger(
-    LedgerID const& current,
-    hash_map<LedgerID, std::uint32_t> const& dist)
+    ID const& current,
+    hash_map<ID, std::uint32_t> const& dist)
 {
-    LedgerID netLgr = current;
+    ID netLgr = current;
     int netLgrCount = 0;
     for (auto const& it : dist)
     {
@@ -144,28 +144,34 @@ getPreferredLedger(
     and implementations should take care to use `trusted` member functions or
     check the validation's trusted status.
 
-    This class uses a policy design to allow adapting the handling of stale
-    validations in various circumstances. Below is a set of stubs illustrating
-    the required type interface.
+    This class uses a generic interface to allow adapting Validations for
+    specific applications. The Adaptor template implements a set of helper
+    functions and type definitions. The code stubs below outline the
+    interface and type requirements.
 
-    @warning The MutexType is used to manage concurrent access to private
-             members of Validations but does not manage any data in the
-             StalePolicy instance.
+
+    @warning The Adaptor::MutexType is used to manage concurrent access to
+             private members of Validations but does not manage any data in the
+             Adaptor instance itself.
 
     @code
 
-    // Identifier types that should be equality-comparable and copyable
-    struct LedgerID;
-    struct NodeID;
-    struct NodeKey;
+    struct Ledger
+    {
+        using ID = ...;
+        using Seq = ...;
+        //...
+    }
 
     struct Validation
     {
+        using NodeKey = ...;
+
         // Ledger ID associated with this validation
-        LedgerID ledgerID() const;
+        Ledger::ID ledgerID() const;
 
         // Sequence number of validation's ledger (0 means no sequence number)
-        std::uint32_t seq() const
+        Ledger::Seq seq() const
 
         // When the validation was signed
         NetClock::time_point signTime() const;
@@ -175,9 +181,6 @@ getPreferredLedger(
 
         // Signing key of node that published the validation
         NodeKey key() const;
-
-        // Identifier of node that published the validation
-        NodeID nodeID() const;
 
         // Whether the publishing node was trusted at the time the validation
         // arrived
@@ -189,8 +192,12 @@ getPreferredLedger(
         // ... implementation specific
     };
 
-    class StalePolicy
+    class Adaptor
     {
+        using Mutex = std::mutex;
+        using Validation = Validation;
+        using Ledger = Ledger;
+
         // Handle a newly stale validation, this should do minimal work since
         // it is called by Validations while it may be iterating Validations
         // under lock
@@ -200,36 +207,31 @@ getPreferredLedger(
         void flush(hash_map<NodeKey,Validation> && remaining);
 
         // Return the current network time (used to determine staleness)
-        NetClock::time_point now() const;
+        NetClock::time_point now() const
 
         // ... implementation specific
     };
     @endcode
 
-    @tparam StalePolicy Determines how to determine and handle stale validations
-    @tparam Validation Conforming type representing a ledger validation
-    @tparam MutexType Mutex used to manage concurrent access
-
+    @tparam Adaptor Provides type definitions and callbacks
 */
-template <class StalePolicy, class Validation, class MutexType>
+template <class Adaptor>
 class Validations
 {
-    template <typename T>
-    using decay_result_t = std::decay_t<std::result_of_t<T>>;
+    using Mutex = typename Adaptor::Mutex;
+    using Validation = typename Adaptor::Validation;
+    using Ledger = typename Adaptor::Ledger;
+    using ID = typename Ledger::ID;
+    using Seq = typename Ledger::Seq;
+    using NodeKey = typename Validation::NodeKey;
 
-    using WrappedValidationType =
-        decay_result_t<decltype (&Validation::unwrap)(Validation)>;
-    using LedgerID =
-        decay_result_t<decltype (&Validation::ledgerID)(Validation)>;
-    using NodeKey = decay_result_t<decltype (&Validation::key)(Validation)>;
-    using NodeID = decay_result_t<decltype (&Validation::nodeID)(Validation)>;
-    using SeqType = decay_result_t<decltype (&Validation::seq)(Validation)>;
+    using WrappedValidationType = std::decay_t<
+        std::result_of_t<decltype (&Validation::unwrap)(Validation)>>;
 
-
-    using ScopedLock = std::lock_guard<MutexType>;
+    using ScopedLock = std::lock_guard<Mutex>;
 
     // Manages concurrent access to current_ and byLedger_
-    MutexType mutex_;
+    Mutex mutex_;
 
     //! For the most recent validation, we also want to store the ID
     //! of the ledger it replaces
@@ -240,7 +242,7 @@ class Validations
         }
 
         Validation val;
-        LedgerID prevLedgerID;
+        ID prevLedgerID;
     };
 
     //! The latest validation from each node
@@ -248,7 +250,7 @@ class Validations
 
     //! Recent validations from nodes, indexed by ledger identifier
     beast::aged_unordered_map<
-        LedgerID,
+        ID,
         hash_map<NodeKey, Validation>,
         std::chrono::steady_clock,
         beast::uhash<>>
@@ -257,11 +259,9 @@ class Validations
     //! Parameters to determine validation staleness
     ValidationParms const parms_;
 
-    beast::Journal j_;
-
-    //! StalePolicy details providing now(), onStale() and flush() callbacks
-    //! Is NOT managed by the mutex_ above
-    StalePolicy stalePolicy_;
+    // Adaptor instance
+    // Is NOT managed by the mutex_ above
+    Adaptor adaptor_;
 
 private:
     /** Iterate current validations.
@@ -296,7 +296,7 @@ private:
                     parms_, *t, it->second.val.signTime(), it->second.val.seenTime()))
             {
                 // contains a stale record
-                stalePolicy_.onStale(std::move(it->second.val));
+                adaptor_.onStale(std::move(it->second.val));
                 it = current_.erase(it);
             }
             else
@@ -322,7 +322,7 @@ private:
     */
     template <class Pre, class F>
     void
-    byLedger(LedgerID const& ledgerID, Pre&& pre, F&& f)
+    byLedger(ID const& ledgerID, Pre&& pre, F&& f)
     {
         ScopedLock lock{mutex_};
         auto it = byLedger_.find(ledgerID);
@@ -341,17 +341,23 @@ public:
 
         @param p ValidationParms to control staleness/expiration of validaitons
         @param c Clock to use for expiring validations stored by ledger
-        @param j Journal used for logging
-        @param ts Parameters for constructing StalePolicy instance
+        @param ts Parameters for constructing Adaptor instance
     */
     template <class... Ts>
     Validations(
         ValidationParms const& p,
         beast::abstract_clock<std::chrono::steady_clock>& c,
-        beast::Journal j,
         Ts&&... ts)
-        : byLedger_(c), parms_(p), j_(j), stalePolicy_(std::forward<Ts>(ts)...)
+        : byLedger_(c), parms_(p), adaptor_(std::forward<Ts>(ts)...)
     {
+    }
+
+    /** Return the adaptor instance
+    */
+    Adaptor const &
+    adaptor() const
+    {
+        return adaptor_;
     }
 
     /** Return the validation timing parameters
@@ -360,14 +366,6 @@ public:
     parms() const
     {
         return parms_;
-    }
-
-    /** Return the journal
-     */
-    beast::Journal
-    journal() const
-    {
-        return j_;
     }
 
     /** Result of adding a new validation
@@ -399,11 +397,11 @@ public:
     AddOutcome
     add(NodeKey const& key, Validation const& val)
     {
-        NetClock::time_point t = stalePolicy_.now();
+        NetClock::time_point t = adaptor_.now();
         if (!isCurrent(parms_, t, val.signTime(), val.seenTime()))
             return AddOutcome::stale;
 
-        LedgerID const& id = val.ledgerID();
+        ID const& id = val.ledgerID();
 
         // This is only seated if a validation became stale
         boost::optional<Validation> maybeStaleValidation;
@@ -427,13 +425,13 @@ public:
             {
                 // Had a previous validation from the node, consider updating
                 Validation& oldVal = ins.first->second.val;
-                LedgerID const previousLedgerID = ins.first->second.prevLedgerID;
+                ID const previousLedgerID = ins.first->second.prevLedgerID;
 
-                SeqType const oldSeq{oldVal.seq()};
-                SeqType const newSeq{val.seq()};
+                Seq const oldSeq{oldVal.seq()};
+                Seq const newSeq{val.seq()};
 
                 // Sequence of 0 indicates a missing sequence number
-                if ((oldSeq != SeqType{0}) && (newSeq != SeqType{0}) &&
+                if ((oldSeq != Seq{0}) && (newSeq != Seq{0}) &&
                     oldSeq == newSeq)
                 {
                     result = AddOutcome::sameSeq;
@@ -472,7 +470,7 @@ public:
                     val.key() != oldVal.key())
                 {
                     // This is either a newer validation or a new signing key
-                    LedgerID const prevID = [&]() {
+                    ID const prevID = [&]() {
                         // In the normal case, the prevID is the ID of the
                         // ledger we replace
                         if (oldVal.ledgerID() != val.ledgerID())
@@ -500,7 +498,7 @@ public:
         // Handle the newly stale validation outside the lock
         if (maybeStaleValidation)
         {
-            stalePolicy_.onStale(std::move(*maybeStaleValidation));
+            adaptor_.onStale(std::move(*maybeStaleValidation));
         }
 
         return result;
@@ -531,19 +529,19 @@ public:
 
         @return Map representing the distribution of ledgerID by count
     */
-    hash_map<LedgerID, std::uint32_t>
+    hash_map<ID, std::uint32_t>
     currentTrustedDistribution(
-        LedgerID const& currentLedger,
-        LedgerID const& priorLedger,
-        SeqType cutoffBefore)
+        ID const& currentLedger,
+        ID const& priorLedger,
+        Seq cutoffBefore)
     {
-        bool const valCurrentLedger = currentLedger != LedgerID{0};
-        bool const valPriorLedger = priorLedger != LedgerID{0};
+        bool const valCurrentLedger = currentLedger != ID{0};
+        bool const valPriorLedger = priorLedger != ID{0};
 
-        hash_map<LedgerID, std::uint32_t> ret;
+        hash_map<ID, std::uint32_t> ret;
 
         current(
-            stalePolicy_.now(),
+            adaptor_.now(),
             // The number of validations does not correspond to the number of
             // distinct ledgerIDs so we do not call reserve on ret.
             [](std::size_t) {},
@@ -555,12 +553,12 @@ public:
              &priorLedger,
              &ret](NodeKey const&, ValidationAndPrevID const& vp) {
                 Validation const& v = vp.val;
-                LedgerID const& prevLedgerID = vp.prevLedgerID;
+                ID const& prevLedgerID = vp.prevLedgerID;
                 if (!v.trusted())
                     return;
 
-                SeqType const seq = v.seq();
-                if ((seq == SeqType{0}) || (seq >= cutoffBefore))
+                Seq const seq = v.seq();
+                if ((seq == Seq{0}) || (seq >= cutoffBefore))
                 {
                     // contains a live record
                     bool countPreferred =
@@ -573,8 +571,9 @@ public:
                          (valPriorLedger && (v.ledgerID() == priorLedger))))
                     {
                         countPreferred = true;
-                        JLOG(this->j_.trace()) << "Counting for " << currentLedger
-                                         << " not " << v.ledgerID();
+                        JLOG(this->adaptor_.journal().trace())
+                            << "Counting for " << currentLedger << " not "
+                            << v.ledgerID();
                     }
 
                     if (countPreferred)
@@ -598,7 +597,7 @@ public:
                 prior ledger.
     */
     std::size_t
-    getNodesAfter(LedgerID const& ledgerID)
+    getNodesAfter(ID const& ledgerID)
     {
         std::size_t count = 0;
 
@@ -624,7 +623,7 @@ public:
         std::vector<WrappedValidationType> ret;
 
         current(
-            stalePolicy_.now(),
+            adaptor_.now(),
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
             [&](NodeKey const&, ValidationAndPrevID const& v) {
                 if (v.val.trusted())
@@ -643,7 +642,7 @@ public:
     {
         hash_set<NodeKey> ret;
         current(
-            stalePolicy_.now(),
+            adaptor_.now(),
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
             [&](NodeKey const& k, ValidationAndPrevID const&) { ret.insert(k); });
 
@@ -656,7 +655,7 @@ public:
         @return The number of trusted validations
     */
     std::size_t
-    numTrustedForLedger(LedgerID const& ledgerID)
+    numTrustedForLedger(ID const& ledgerID)
     {
         std::size_t count = 0;
         byLedger(
@@ -675,7 +674,7 @@ public:
          @return Trusted validations associated with ledger
     */
     std::vector<WrappedValidationType>
-    getTrustedForLedger(LedgerID const& ledgerID)
+    getTrustedForLedger(ID const& ledgerID)
     {
         std::vector<WrappedValidationType> res;
         byLedger(
@@ -695,7 +694,7 @@ public:
         @return Vector of times
     */
     std::vector<NetClock::time_point>
-    getTrustedValidationTimes(LedgerID const& ledgerID)
+    getTrustedValidationTimes(ID const& ledgerID)
     {
         std::vector<NetClock::time_point> times;
         byLedger(
@@ -715,7 +714,7 @@ public:
         @return Vector of fees
     */
     std::vector<std::uint32_t>
-    fees(LedgerID const& ledgerID, std::uint32_t baseFee)
+    fees(ID const& ledgerID, std::uint32_t baseFee)
     {
         std::vector<std::uint32_t> res;
         byLedger(
@@ -739,8 +738,6 @@ public:
     void
     flush()
     {
-        JLOG(j_.info()) << "Flushing validations";
-
         hash_map<NodeKey, Validation> flushed;
         {
             ScopedLock lock{mutex_};
@@ -751,9 +748,7 @@ public:
             current_.clear();
         }
 
-        stalePolicy_.flush(std::move(flushed));
-
-        JLOG(j_.debug()) << "Validations flushed";
+        adaptor_.flush(std::move(flushed));
     }
 };
 }  // namespace ripple

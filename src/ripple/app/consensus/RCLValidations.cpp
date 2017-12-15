@@ -36,19 +36,20 @@
 
 namespace ripple {
 
-RCLValidationsPolicy::RCLValidationsPolicy(Application& app) : app_(app)
+RCLValidationsAdaptor::RCLValidationsAdaptor(Application& app, beast::Journal j)
+    : app_(app),  j_(j)
 {
     staleValidations_.reserve(512);
 }
 
 NetClock::time_point
-RCLValidationsPolicy::now() const
+RCLValidationsAdaptor::now() const
 {
     return app_.timeKeeper().closeTime();
 }
 
 void
-RCLValidationsPolicy::onStale(RCLValidation&& v)
+RCLValidationsAdaptor::onStale(RCLValidation&& v)
 {
     // Store the newly stale validation; do not do significant work in this
     // function since this is a callback from Validations, which may be
@@ -60,7 +61,7 @@ RCLValidationsPolicy::onStale(RCLValidation&& v)
         return;
 
     // addJob() may return false (Job not added) at shutdown.
-    staleWriting_  = app_.getJobQueue().addJob(
+    staleWriting_ = app_.getJobQueue().addJob(
         jtWRITE, "Validations::doStaleWrite", [this](Job&) {
             auto event =
                 app_.getJobQueue().makeLoadEvent(jtDISK, "ValidationWrite");
@@ -70,7 +71,7 @@ RCLValidationsPolicy::onStale(RCLValidation&& v)
 }
 
 void
-RCLValidationsPolicy::flush(hash_map<PublicKey, RCLValidation>&& remaining)
+RCLValidationsAdaptor::flush(hash_map<PublicKey, RCLValidation>&& remaining)
 {
     bool anyNew = false;
     {
@@ -106,7 +107,7 @@ RCLValidationsPolicy::flush(hash_map<PublicKey, RCLValidation>&& remaining)
 // NOTE: doStaleWrite() must be called with staleLock_ *locked*.  The passed
 // ScopedLockType& acts as a reminder to future maintainers.
 void
-RCLValidationsPolicy::doStaleWrite(ScopedLockType&)
+RCLValidationsAdaptor::doStaleWrite(ScopedLockType&)
 {
     static const std::string insVal(
         "INSERT INTO Validations "
@@ -170,7 +171,8 @@ RCLValidationsPolicy::doStaleWrite(ScopedLockType&)
 }
 
 bool
-handleNewValidation(Application& app,
+handleNewValidation(
+    Application& app,
     STValidation::ref val,
     std::string const& source)
 {
@@ -181,9 +183,9 @@ handleNewValidation(Application& app,
     boost::optional<PublicKey> pubKey = app.validators().getTrustedKey(signer);
     if (!val->isTrusted() && pubKey)
         val->setTrusted();
-    RCLValidations& validations  = app.getValidations();
+    RCLValidations& validations = app.getValidations();
 
-    beast::Journal j = validations.journal();
+    beast::Journal j = validations.adaptor().journal();
 
     // Do not process partial validations.
     if (!val->isFull())
@@ -195,10 +197,10 @@ handleNewValidation(Application& app,
             val->getSeenTime());
 
         JLOG(j.debug()) << "Val (partial) for " << hash << " from "
-                         << toBase58(TokenType::TOKEN_NODE_PUBLIC, signer)
-                         << " ignored "
-                         << (val->isTrusted() ? "trusted/" : "UNtrusted/")
-                         << (current ? "current" : "stale");
+                        << toBase58(TokenType::TOKEN_NODE_PUBLIC, signer)
+                        << " ignored "
+                        << (val->isTrusted() ? "trusted/" : "UNtrusted/")
+                        << (current ? "current" : "stale");
 
         // Only forward if current and trusted
         return current && val->isTrusted();
@@ -243,10 +245,10 @@ handleNewValidation(Application& app,
         }
 
         JLOG(j.debug()) << "Val for " << hash << " from "
-                    << toBase58(TokenType::TOKEN_NODE_PUBLIC, signer)
-                    << " added "
-                    << (val->isTrusted() ? "trusted/" : "UNtrusted/")
-                    << ((res == AddOutcome::current) ? "current" : "stale");
+                        << toBase58(TokenType::TOKEN_NODE_PUBLIC, signer)
+                        << " added "
+                        << (val->isTrusted() ? "trusted/" : "UNtrusted/")
+                        << ((res == AddOutcome::current) ? "current" : "stale");
 
         // Trusted current validations should be checked and relayed.
         // Trusted validations with sameSeq replaced an older validation
@@ -263,8 +265,8 @@ handleNewValidation(Application& app,
     else
     {
         JLOG(j.debug()) << "Val for " << hash << " from "
-                    << toBase58(TokenType::TOKEN_NODE_PUBLIC, signer)
-                    << " not added UNtrusted/";
+                        << toBase58(TokenType::TOKEN_NODE_PUBLIC, signer)
+                        << " not added UNtrusted/";
     }
 
     // This currently never forwards untrusted validations, though we may
