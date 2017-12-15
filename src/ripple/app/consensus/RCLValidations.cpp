@@ -36,6 +36,77 @@
 
 namespace ripple {
 
+RCLValidatedLedger::RCLValidatedLedger(
+    std::shared_ptr<Ledger const> ledger,
+    beast::Journal j)
+    : ledger_{std::move(ledger)}, j_{j}
+{
+    auto const hashIndex = ledger_->read(keylet::skip());
+    if (hashIndex)
+    {
+        assert(hashIndex->getFieldU32(sfLastLedgerSequence) == (seq() - 1));
+        ancestors_ = hashIndex->getFieldV256(sfHashes).value();
+    }
+    else
+        JLOG(j_.warn()) << "Ledger " << ledger_->seq() << ":"
+                        << ledger_->info().hash
+                        << " missing recent ancestor hashes";
+}
+
+auto
+RCLValidatedLedger::minSeq() const -> Seq
+{
+    return seq() - std::min(seq(), static_cast<Seq>(ancestors_.size()));
+}
+
+auto
+RCLValidatedLedger::seq() const -> Seq
+{
+    return ledger_ ? ledger_->info().seq : Seq{0};
+}
+auto
+RCLValidatedLedger::id() const -> ID
+{
+    return ledger_ ? ledger_->info().hash : ID{0};
+}
+
+auto RCLValidatedLedger::operator[](Seq const& s) const -> ID
+{
+    if (ledger_ && s >= minSeq() && s <= seq())
+    {
+        if (s == seq())
+            return ledger_->info().hash;
+        Seq const diff = seq() - s;
+        if (ancestors_.size() >= diff)
+            return ancestors_[ancestors_.size() - diff];
+    }
+
+    JLOG(j_.warn()) << "Unable to determine hash of ancestor seq=" << s
+                    << " from ledger hash=" << ledger_->info().hash
+                    << " seq=" << ledger_->info().seq;
+    // Default ID that is less than all others
+    return ID{};
+}
+
+// Return the sequence number of the earliest possible mismatching ancestor
+RCLValidatedLedger::Seq
+mismatch(RCLValidatedLedger const& a, RCLValidatedLedger const& b)
+{
+    using Seq = RCLValidatedLedger::Seq;
+
+    // Find overlapping interval for known sequence for the the ledgers
+    Seq const lower = std::max(a.minSeq(), b.minSeq());
+    Seq const upper = std::min(a.seq(), b.seq());
+
+    Seq curr = upper;
+    while (a[curr] != b[curr] && curr >= lower && curr != Seq{0})
+        --curr;
+
+    // If the searchable interval mismatches entirely, then we have to
+    // assume the ledgers mismatch starting post genesis ledger
+    return (curr < lower) ? Seq{1} : (curr + Seq{1});
+}
+
 RCLValidationsAdaptor::RCLValidationsAdaptor(Application& app, beast::Journal j)
     : app_(app),  j_(j)
 {

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
 #define RIPPLE_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
 
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/ScopedLock.h>
 #include <ripple/consensus/Validations.h>
 #include <ripple/protocol/Protocol.h>
@@ -123,12 +124,52 @@ public:
 
 };
 
+/** Wraps a ledger instance for use in generic Validations LedgerTrie.
+
+    The LedgerTrie models a ledger's history as a map from Seq -> ID. Any
+    two ledgers that have the same ID for a given Seq have the same ID for
+    all earlier sequences (e.g. shared ancestry). In practice, a ledger only
+    conveniently has the prior 256 ancestor hashes available. For
+    RCLValidatedLedger, we treat any ledgers separated by more than 256 Seq as
+    distinct.
+*/
 class RCLValidatedLedger
 {
 public:
     using ID = LedgerHash;
     using Seq = LedgerIndex;
 
+    RCLValidatedLedger() = default;
+
+    RCLValidatedLedger(std::shared_ptr<Ledger const> ledger, beast::Journal j);
+
+    /// The sequence (index) of the ledger
+    Seq
+    seq() const;
+
+    /// The ID (hash) of the ledger
+    ID
+    id() const;
+
+    /** Lookup the ID of the ancestor ledger
+
+        @param s The sequence (index) of the ancestor
+        @return The ID of this ledger's ancestor with that sequence number or
+                ID{} if one was not determined
+    */
+    ID operator[](Seq const& s) const;
+
+    /// Find the sequence number of the earliest mismatching ancestor
+    friend Seq
+    mismatch(RCLValidatedLedger const& a, RCLValidatedLedger const& b);
+
+    Seq
+    minSeq() const;
+
+private:
+    std::shared_ptr<Ledger const> ledger_;
+    std::vector<uint256> ancestors_;
+    beast::Journal j_;
 };
 
 /** Generic validations adaptor classs for RCL
