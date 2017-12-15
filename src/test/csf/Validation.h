@@ -53,7 +53,8 @@ class Validation
     NetClock::time_point seenTime_;
     PeerKey key_;
     PeerID nodeID_{0};
-    bool trusted_ = true;
+    bool trusted_ = false;
+    bool full_ = false;
     boost::optional<std::uint32_t> loadFee_;
 
 public:
@@ -66,7 +67,7 @@ public:
         NetClock::time_point seen,
         PeerKey key,
         PeerID nodeID,
-        bool trusted,
+        bool full,
         boost::optional<std::uint32_t> loadFee = boost::none)
         : ledgerID_{id}
         , seq_{seq}
@@ -74,7 +75,7 @@ public:
         , seenTime_{seen}
         , key_{key}
         , nodeID_{nodeID}
-        , trusted_{trusted}
+        , full_{full}
         , loadFee_{loadFee}
     {
     }
@@ -121,6 +122,13 @@ public:
         return trusted_;
     }
 
+    bool
+    full() const
+    {
+        return full_;
+    }
+
+
     boost::optional<std::uint32_t>
     loadFee() const
     {
@@ -136,8 +144,9 @@ public:
     auto
     asTie() const
     {
+        // trusted is a status set by the receiver, so it is not part of the tie
         return std::tie(ledgerID_, seq_, signTime_, seenTime_, key_, nodeID_,
-            trusted_, loadFee_);
+            trusted_, loadFee_, full_);
     }
     bool
     operator==(Validation const& o) const

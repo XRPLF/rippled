@@ -186,6 +186,9 @@ getPreferredLedger(
         // arrived
         bool trusted() const;
 
+        // Whether this is a full or partial validation
+        bool full() const;
+
         implementation_specific_t
         unwrap() -> return the implementation-specific type being wrapped
 
