@@ -55,7 +55,7 @@ namespace ripple {
                             + sum_(child : node->children) child->branchSupport
         @endcode
 
-    This is analagous to the merkle tree property in which a node's hash is
+    This is analogous to the merkle tree property in which a node's hash is
     the hash of the concatenation of its child node hashes.
 
     The templated Ledger type represents a ledger which has a unique history.
@@ -501,7 +501,7 @@ public:
     /** Return the count of branch support for the specific ledger
 
         @param ledger The ledger to lookup
-        @return The number of entries in the trie for this ledger or a descendent
+        @return The number of entries in the trie for this ledger or a descendant
      */
     std::uint32_t
     branchSupport(Ledger const& ledger) const
@@ -550,7 +550,7 @@ public:
            - The prior sequence preferred ledger, e.g. B.
            - The (tip) support of ledgers with this sequence number,e.g. the
              number of validators whose last validation was for C or D.
-           - The (branch) total support of all descendents of the current
+           - The (branch) total support of all descendants of the current
              sequence number ledgers, e.g. the branch support of D is the
              tip support of D plus the tip support of E; the branch support of
              C is just the tip support of C.
@@ -572,8 +572,8 @@ public:
         If a preferred ledger does exist, then we continue with the next
         sequence but increase prefixSupport with the non-preferred tip support
         this round, e.g. if C were preferred over D, then prefixSupport would
-        incerase by the support of D and E, since if those validators are
-        following the protocl, they will switch to the C branch, but might
+        increase by the support of D and E, since if those validators are
+        following the protocol, they will switch to the C branch, but might
         initially support a different descendant.
     */
     std::pair<Seq,ID>
@@ -631,12 +631,12 @@ public:
                 // of curr and its ancestors, along with the branch support of
                 // any of its siblings that are inconsistent.
                 //
-                // The additional prefix suppport that is carried to best is
+                // The additional prefix support that is carried to best is
                 //   A->branchSupport + B->branchSupport + best->tipSupport
                 // This is the amount of support that has not yet voted
-                // on a descendent of best, or has voted on a conflicting
-                // descendent and will switch to best in the future. This means
-                // that they may support an arbitrary descendent of best.
+                // on a descendant of best, or has voted on a conflicting
+                // descendant and will switch to best in the future. This means
+                // that they may support an arbitrary descendant of best.
                 //
                 // The calculation is simplified using
                 //     A->branchSupport+B->branchSupport
