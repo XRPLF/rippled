@@ -839,9 +839,14 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, bool proposing)
         validationTime = lastValidationTime_ + 1s;
     lastValidationTime_ = validationTime;
 
+    // Can only fully validate later sequenced ledgers
+    const bool isFull = proposing && ledger.seq() > largestFullValidationSeq_;
+    largestFullValidationSeq_ =
+        std::max(largestFullValidationSeq_, ledger.seq());
+
     // Build validation
     auto v = std::make_shared<STValidation>(
-        ledger.id(), validationTime, valPublic_, proposing);
+        ledger.id(), validationTime, valPublic_, isFull);
     v->setFieldU32(sfLedgerSequence, ledger.seq());
 
     // Add our load fee to the validation
@@ -955,6 +960,9 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
     validating_ = valPublic_.size() != 0 &&
                   prevLgr.seq() >= app_.getMaxDisallowedLedger() &&
                   !app_.getOPs().isAmendmentBlocked();
+
+    largestFullValidationSeq_ =
+        std::max(largestFullValidationSeq_, app_.getMaxDisallowedLedger());
 
     const bool synced = app_.getOPs().getOperatingMode() == NetworkOPs::omFULL;
 

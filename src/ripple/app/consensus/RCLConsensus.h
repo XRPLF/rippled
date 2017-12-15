@@ -69,6 +69,9 @@ class RCLConsensus
         // The timestamp of the last validation we used
         NetClock::time_point lastValidationTime_;
 
+        // Largest sequence number fully validated
+        LedgerIndex largestFullValidationSeq_ = 0;
+
         // These members are queried via public accesors and are atomic for
         // thread safety.
         std::atomic<bool> validating_{false};

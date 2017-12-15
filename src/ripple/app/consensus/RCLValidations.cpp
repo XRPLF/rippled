@@ -211,6 +211,12 @@ handleNewValidation(Application& app,
         if(j.debug())
             dmp(j.debug(), to_string(outcome));
 
+        if(outcome == ValStatus::badFullSeq && j.warn())
+        {
+            auto const seq = val->getFieldU32(sfLedgerSequence);
+            dmp(j.warn(), " already fully validated sequence past " + to_string(seq));
+        }
+
         if (val->isTrusted() && outcome == ValStatus::current)
         {
             app.getLedgerMaster().checkAccept(

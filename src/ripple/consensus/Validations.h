@@ -142,7 +142,9 @@ enum class ValStatus {
     /// Already had this exact same validation
     repeat,
     /// Not current or was older than current from this node
-    stale
+    stale,
+    /// A validation was marked full but it violates increasing seq requirement
+    badFullSeq
 };
 
 inline std::string
@@ -156,6 +158,8 @@ to_string(ValStatus m)
             return "repeat";
         case ValStatus::stale:
             return "stale";
+        case ValStatus::badFullSeq:
+            return "badFullSeq";
         default:
             return "unknown";
     }
@@ -263,8 +267,8 @@ class Validations
     // Manages concurrent access to current_ and byLedger_
     Mutex mutex_;
 
-    //! For the most recent validation, we also want to store the ID
-    //! of the ledger it replaces
+    // For the most recent validation, we also want to store the ID
+    // of the ledger it replaces
     struct ValidationAndPrevID
     {
         ValidationAndPrevID(Validation const& v) : val{v}, prevLedgerID{0}
@@ -275,10 +279,13 @@ class Validations
         ID prevLedgerID;
     };
 
-    //! The latest validation from each node
+    // Validations from currently listed and trusted nodes (partial and full)
     hash_map<NodeKey, ValidationAndPrevID> current_;
 
-    //! Recent validations from nodes, indexed by ledger identifier
+    // Sequence of the largest full validation received from each node
+    hash_map<NodeKey, Seq> largestFullValidation_;
+
+    // Validations from listed nodes, indexed by ledger id (partial and full)
     beast::aged_unordered_map<
         ID,
         hash_map<NodeKey, Validation>,
@@ -286,7 +293,7 @@ class Validations
         beast::uhash<>>
         byLedger_;
 
-    //! Parameters to determine validation staleness
+    // Parameters to determine validation staleness
     ValidationParms const parms_;
 
     // Adaptor instance
@@ -414,6 +421,18 @@ public:
 
         {
             ScopedLock lock{mutex_};
+
+            // Ensure full validations are for increasing sequence numbers
+            if (val.full() && val.seq() != Seq{0})
+            {
+                auto const ins = largestFullValidation_.emplace(key, val.seq());
+                if (!ins.second)
+                {
+                    if (val.seq() <= ins.first->second)
+                        return ValStatus::badFullSeq;
+                    ins.first->second = val.seq();
+                }
+            }
 
             // This validation is a repeat if we already have
             // one with the same id for this key

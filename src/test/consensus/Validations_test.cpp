@@ -307,7 +307,7 @@ class Validations_test : public beast::unit_test::suite
                 BEAST_EXPECT(ValStatus::current == harness.add(v));
 
                 // Re-adding is repeat
-                BEAST_EXPECT(ValStatus::repeat == harness.add(v));
+                BEAST_EXPECT(ValStatus::badFullSeq == harness.add(v));
             }
 
             {
@@ -340,31 +340,27 @@ class Validations_test : public beast::unit_test::suite
                 BEAST_EXPECT(harness.vals().getNodesAfter(Ledger::ID{2}) == 0);
 
                 BEAST_EXPECT(
-                    ValStatus::stale ==
+                    ValStatus::badFullSeq ==
                     harness.add(a.validate(Ledger::Seq{2}, Ledger::ID{20})));
 
-                BEAST_EXPECT(harness.vals().numTrustedForLedger(Ledger::ID{2}) == 1);
-                // THIS FAILS pending filtering on increasing seq #'s
-                BEAST_EXPECT(harness.vals().numTrustedForLedger(Ledger::ID{20}) == 0);
+                BEAST_EXPECT(
+                    harness.vals().numTrustedForLedger(Ledger::ID{2}) == 1);
+                BEAST_EXPECT(
+                    harness.vals().numTrustedForLedger(Ledger::ID{20}) == 0);
             }
 
             {
                 // Processing validations out of order should ignore the older
                 harness.clock().advance(2s);
-                auto const val3 = a.validate(Ledger::Seq{3}, Ledger::ID{3});
+                auto const val3 = a.validate(Ledger::Seq{4}, Ledger::ID{4});
 
                 harness.clock().advance(4s);
-                auto const val4 = a.validate(Ledger::Seq{4}, Ledger::ID{4});
+                auto const val4 = a.validate(Ledger::Seq{3}, Ledger::ID{3});
 
                 BEAST_EXPECT(ValStatus::current == harness.add(val4));
 
                 BEAST_EXPECT(ValStatus::stale == harness.add(val3));
 
-                // re-issued should not be added
-                auto const val4reissue =
-                    a.validate(Ledger::Seq{4}, Ledger::ID{44});
-
-                BEAST_EXPECT(ValStatus::stale == harness.add(val4reissue));
             }
             {
                 // Process validations out of order with shifted times
@@ -381,13 +377,6 @@ class Validations_test : public beast::unit_test::suite
                     ValStatus::stale ==
                     harness.add(
                         a.validate(Ledger::Seq{9}, Ledger::ID{9}, -1s, -1s)));
-
-                // Process a validation that has an "earlier" seq but later sign
-                // time
-                BEAST_EXPECT(
-                    ValStatus::current ==
-                    harness.add(
-                        a.validate(Ledger::Seq{7}, Ledger::ID{7}, 1s, 1s)));
             }
             {
                 // Test stale on arrival validations
