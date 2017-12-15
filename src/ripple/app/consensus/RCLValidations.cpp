@@ -226,16 +226,14 @@ handleNewValidation(
     // only add trusted or listed
     if (pubKey)
     {
-        using AddOutcome = RCLValidations::AddOutcome;
-
-        AddOutcome const res = validations.add(*pubKey, val);
+        ValStatus const res = validations.add(*pubKey, val);
 
         // This is a duplicate validation
-        if (res == AddOutcome::repeat)
+        if (res == ValStatus::repeat)
             return false;
 
         // This validation replaced a prior one with the same sequence number
-        if (res == AddOutcome::sameSeq)
+        if (res == ValStatus::sameSeq)
         {
             auto const seq = val->getFieldU32(sfLedgerSequence);
             JLOG(j.warn()) << "Trusted node "
@@ -248,13 +246,13 @@ handleNewValidation(
                         << toBase58(TokenType::TOKEN_NODE_PUBLIC, signer)
                         << " added "
                         << (val->isTrusted() ? "trusted/" : "UNtrusted/")
-                        << ((res == AddOutcome::current) ? "current" : "stale");
+                        << ((res == ValStatus::current) ? "current" : "stale");
 
         // Trusted current validations should be checked and relayed.
         // Trusted validations with sameSeq replaced an older validation
         // with that sequence number, so should still be checked and relayed.
         if (val->isTrusted() &&
-            (res == AddOutcome::current || res == AddOutcome::sameSeq))
+            (res == ValStatus::current || res == ValStatus::sameSeq))
         {
             app.getLedgerMaster().checkAccept(
                 hash, val->getFieldU32(sfLedgerSequence));

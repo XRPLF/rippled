@@ -134,6 +134,37 @@ getPreferredLedger(
     return netLgr;
 }
 
+/** Status of newly received validation
+ */
+enum class ValStatus {
+    /// This was a new validation and was added
+    current,
+    /// Already had this exact same validation
+    repeat,
+    /// Not current or was older than current from this node
+    stale,
+    /// A validation was re-issued for the same sequence number
+    sameSeq
+};
+
+inline std::string
+to_string(ValStatus m)
+{
+    switch (m)
+    {
+        case ValStatus::current:
+            return "current";
+        case ValStatus::repeat:
+            return "repeat";
+        case ValStatus::stale:
+            return "stale";
+        case ValStatus::sameSeq:
+            return "sameSeq";
+        default:
+            return "unknown";
+    }
+}
+
 /** Maintains current and recent ledger validations.
 
     Manages storage and queries related to validations received on the network.
@@ -371,19 +402,6 @@ public:
         return parms_;
     }
 
-    /** Result of adding a new validation
-     */
-    enum class AddOutcome {
-        /// This was a new validation and was added
-        current,
-        /// Already had this validation
-        repeat,
-        /// Not current or was older than current from this node
-        stale,
-        /// Had a validation with same sequence number
-        sameSeq,
-    };
-
     /** Add a new validation
 
         Attempt to add a new validation.
@@ -397,19 +415,19 @@ public:
               validation might be signed by a temporary or rotating key.
 
     */
-    AddOutcome
+    ValStatus
     add(NodeKey const& key, Validation const& val)
     {
         NetClock::time_point t = adaptor_.now();
         if (!isCurrent(parms_, t, val.signTime(), val.seenTime()))
-            return AddOutcome::stale;
+            return ValStatus::stale;
 
         ID const& id = val.ledgerID();
 
         // This is only seated if a validation became stale
         boost::optional<Validation> maybeStaleValidation;
 
-        AddOutcome result = AddOutcome::current;
+        ValStatus result = ValStatus::current;
 
         {
             ScopedLock lock{mutex_};
@@ -419,7 +437,7 @@ public:
             // This validation is a repeat if we already have
             // one with the same id and signing key.
             if (!ret.second && ret.first->second.key() == val.key())
-                return AddOutcome::repeat;
+                return ValStatus::repeat;
 
             // Attempt to insert
             auto const ins = current_.emplace(key, val);
@@ -437,7 +455,7 @@ public:
                 if ((oldSeq != Seq{0}) && (newSeq != Seq{0}) &&
                     oldSeq == newSeq)
                 {
-                    result = AddOutcome::sameSeq;
+                    result = ValStatus::sameSeq;
 
                     // If the validation key was revoked, update the
                     // existing validation in the byLedger_ set
@@ -493,7 +511,7 @@ public:
                 else
                 {
                     // We already have a newer validation from this source
-                    result = AddOutcome::stale;
+                    result = ValStatus::stale;
                 }
             }
         }

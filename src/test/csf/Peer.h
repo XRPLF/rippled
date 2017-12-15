@@ -203,7 +203,6 @@ struct Peer
 
     //! Validations from trusted nodes
     Validations<ValAdaptor> validations;
-    using AddOutcome = Validations<ValAdaptor>::AddOutcome;
 
     //! The most recent ledger that has been fully validated by the network from
     //! the perspective of this Peer
@@ -675,9 +674,9 @@ struct Peer
     {
         v.setTrusted();
         v.setSeen(now());
-        AddOutcome const res = validations.add(v.key(), v);
+        ValStatus const res = validations.add(v.key(), v);
 
-        if(res == AddOutcome::stale || res == AddOutcome::repeat)
+        if(res == ValStatus::stale || res == ValStatus::repeat)
             return false;
 
         // Acquire will try to get from network if not already local
