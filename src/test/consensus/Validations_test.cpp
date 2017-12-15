@@ -294,7 +294,7 @@ class Validations_test : public beast::unit_test::suite
     void
     testAddValidation()
     {
-        // Test adding current,stale,repeat,sameSeq validations
+        // Test adding current,stale,repeat validations
         using namespace std::chrono_literals;
 
         TestHarness harness;
@@ -340,39 +340,12 @@ class Validations_test : public beast::unit_test::suite
                 BEAST_EXPECT(harness.vals().getNodesAfter(Ledger::ID{2}) == 0);
 
                 BEAST_EXPECT(
-                    ValStatus::sameSeq ==
+                    ValStatus::stale ==
                     harness.add(a.validate(Ledger::Seq{2}, Ledger::ID{20})));
 
-                // Old ID should be gone ...
-                BEAST_EXPECT(harness.vals().numTrustedForLedger(Ledger::ID{2}) == 0);
-                BEAST_EXPECT(harness.vals().numTrustedForLedger(Ledger::ID{20}) == 1);
-                {
-                    // Should be the only trusted for ID{20}
-                    auto trustedVals =
-                        harness.vals().getTrustedForLedger(Ledger::ID{20});
-                    BEAST_EXPECT(trustedVals.size() == 1);
-                    BEAST_EXPECT(trustedVals[0].key() == a.currKey());
-                    // ... and should be the only node after ID{2}
-                    BEAST_EXPECT(harness.vals().getNodesAfter(Ledger::ID{2}) == 1);
-
-                }
-
-                // A new key, but re-issue a validation with the same ID and
-                // Sequence
-                a.advanceKey();
-
-                BEAST_EXPECT(
-                    ValStatus::sameSeq ==
-                    harness.add(a.validate(Ledger::Seq{2}, Ledger::ID{20})));
-                {
-                    // Still the only trusted validation for ID{20}
-                    auto trustedVals =
-                        harness.vals().getTrustedForLedger(Ledger::ID{20});
-                    BEAST_EXPECT(trustedVals.size() == 1);
-                    BEAST_EXPECT(trustedVals[0].key() == a.currKey());
-                    // and still follows ID{2} since it was a re-issue
-                    BEAST_EXPECT(harness.vals().getNodesAfter(Ledger::ID{2}) == 1);
-                }
+                BEAST_EXPECT(harness.vals().numTrustedForLedger(Ledger::ID{2}) == 1);
+                // THIS FAILS pending filtering on increasing seq #'s
+                BEAST_EXPECT(harness.vals().numTrustedForLedger(Ledger::ID{20}) == 0);
             }
 
             {

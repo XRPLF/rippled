@@ -142,9 +142,7 @@ enum class ValStatus {
     /// Already had this exact same validation
     repeat,
     /// Not current or was older than current from this node
-    stale,
-    /// A validation was re-issued for the same sequence number
-    sameSeq
+    stale
 };
 
 inline std::string
@@ -158,8 +156,6 @@ to_string(ValStatus m)
             return "repeat";
         case ValStatus::stale:
             return "stale";
-        case ValStatus::sameSeq:
-            return "sameSeq";
         default:
             return "unknown";
     }
@@ -403,123 +399,45 @@ public:
 
         Attempt to add a new validation.
 
-        @param key The NodeKey to use for the validation
-        @param val The validation to store
-        @return The outcome of the attempt
+        @param key The master key associated with this validation
+        @param val The validationo to store
+        @return The outcome
 
-        @note The provided key may differ from the validation's
-              key() member since we might be storing by master key and the
-              validation might be signed by a temporary or rotating key.
-
+        @note The provided key may differ from the validations's  key()
+              member if the validator is using ephemeral signing keys.
     */
     ValStatus
     add(NodeKey const& key, Validation const& val)
     {
-        NetClock::time_point t = adaptor_.now();
-        if (!isCurrent(parms_, t, val.signTime(), val.seenTime()))
+        if (!isCurrent(parms_, adaptor_.now(), val.signTime(), val.seenTime()))
             return ValStatus::stale;
-
-        ID const& id = val.ledgerID();
-
-        // This is only seated if a validation became stale
-        boost::optional<Validation> maybeStaleValidation;
-
-        ValStatus result = ValStatus::current;
 
         {
             ScopedLock lock{mutex_};
 
-            auto const ret = byLedger_[id].emplace(key, val);
-
             // This validation is a repeat if we already have
-            // one with the same id and signing key.
+            // one with the same id for this key
+            auto const ret = byLedger_[val.ledgerID()].emplace(key, val);
             if (!ret.second && ret.first->second.key() == val.key())
                 return ValStatus::repeat;
 
-            // Attempt to insert
             auto const ins = current_.emplace(key, val);
-
             if (!ins.second)
             {
-                // Had a previous validation from the node, consider updating
+                // Replace existing only if this one is newer
                 Validation& oldVal = ins.first->second.val;
-                ID const previousLedgerID = ins.first->second.prevLedgerID;
-
-                Seq const oldSeq{oldVal.seq()};
-                Seq const newSeq{val.seq()};
-
-                // Sequence of 0 indicates a missing sequence number
-                if ((oldSeq != Seq{0}) && (newSeq != Seq{0}) &&
-                    oldSeq == newSeq)
+                if (val.signTime() > oldVal.signTime())
                 {
-                    result = ValStatus::sameSeq;
-
-                    // If the validation key was revoked, update the
-                    // existing validation in the byLedger_ set
-                    if (val.key() != oldVal.key())
-                    {
-                        auto const mapIt = byLedger_.find(oldVal.ledgerID());
-                        if (mapIt != byLedger_.end())
-                        {
-                            auto& validationMap = mapIt->second;
-                            // If a new validation with the same ID was
-                            // reissued we simply replace.
-                            if(oldVal.ledgerID() == val.ledgerID())
-                            {
-                                auto replaceRes = validationMap.emplace(key, val);
-                                // If it was already there, replace
-                                if(!replaceRes.second)
-                                    replaceRes.first->second = val;
-                            }
-                            else
-                            {
-                                // If the new validation has a different ID,
-                                // we remove the old.
-                                validationMap.erase(key);
-                                // Erase the set if it is now empty
-                                if (validationMap.empty())
-                                    byLedger_.erase(mapIt);
-                            }
-                        }
-                    }
-                }
-
-                if (val.signTime() > oldVal.signTime() ||
-                    val.key() != oldVal.key())
-                {
-                    // This is either a newer validation or a new signing key
-                    ID const prevID = [&]() {
-                        // In the normal case, the prevID is the ID of the
-                        // ledger we replace
-                        if (oldVal.ledgerID() != val.ledgerID())
-                            return oldVal.ledgerID();
-                        // In the case the key was revoked and a new validation
-                        // for the same ledger ID was sent, the previous ledger
-                        // is still the one the now revoked validation had
-                        return previousLedgerID;
-                    }();
-
-                    // Allow impl to take over oldVal
-                    maybeStaleValidation.emplace(std::move(oldVal));
-                    // Replace old val in the map and set the previous ledger ID
+                    ID oldID = oldVal.ledgerID();
+                    adaptor_.onStale(std::move(oldVal));
                     ins.first->second.val = val;
-                    ins.first->second.prevLedgerID = prevID;
+                    ins.first->second.prevLedgerID = oldID;
                 }
                 else
-                {
-                    // We already have a newer validation from this source
-                    result = ValStatus::stale;
-                }
+                    return ValStatus::stale;
             }
         }
-
-        // Handle the newly stale validation outside the lock
-        if (maybeStaleValidation)
-        {
-            adaptor_.onStale(std::move(*maybeStaleValidation));
-        }
-
-        return result;
+        return ValStatus::current;
     }
 
     /** Expire old validation sets
