@@ -25,7 +25,6 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/container/aged_container_utility.h>
 #include <ripple/beast/container/aged_unordered_map.h>
-#include <ripple/beast/utility/Journal.h>
 #include <ripple/consensus/LedgerTrie.h>
 #include <boost/optional.hpp>
 #include <mutex>
@@ -598,85 +597,6 @@ public:
         return trie_.getJson();
     }
 
-    /** Distribution of current trusted validations
-
-        Calculates the distribution of current validations but allows
-        ledgers one away from the current ledger to count as the current.
-
-        @param currentLedger The identifier of the ledger we believe is current
-                             (0 if unknown)
-        @param priorLedger The identifier of our previous current ledger
-                           (0 if unknown)
-        @param cutoffBefore Ignore ledgers with sequence number before this
-
-        @return Map representing the distribution of ledgerID by count
-    */
-    hash_map<ID, std::uint32_t>
-    currentTrustedDistribution(
-        ID const& currentLedger,
-        ID const& priorLedger,
-        Seq cutoffBefore)
-    {
-        bool const valCurrentLedger = currentLedger != ID{0};
-        bool const valPriorLedger = priorLedger != ID{0};
-
-        hash_map<ID, std::uint32_t> ret;
-
-        ScopedLock lock{mutex_};
-        current(
-            lock,
-            // The number of validations does not correspond to the number of
-            // distinct ledgerIDs so we do not call reserve on ret.
-            [](std::size_t) {},
-            [this,
-             &cutoffBefore,
-             &currentLedger,
-             &valCurrentLedger,
-             &valPriorLedger,
-             &priorLedger,
-             &ret](NodeKey const& k, Validation const& v) {
-
-                ID prevLedgerID;
-                auto it = lastLedger_.find(k);
-                if(it != lastLedger_.end())
-                {
-                    Ledger const & ledger = it->second;
-                    if(ledger.seq() > Seq{1})
-                        prevLedgerID = ledger[ledger.seq() - Seq{1}];
-                }
-
-                if (!v.trusted() || !v.full())
-                    return;
-
-                Seq const seq = v.seq();
-                if ((seq == Seq{0}) || (seq >= cutoffBefore))
-                {
-                    // contains a live record
-                    bool countPreferred =
-                        valCurrentLedger && (v.ledgerID() == currentLedger);
-
-                    if (!countPreferred &&  // allow up to one ledger slip in
-                                            // either direction
-                        ((valCurrentLedger &&
-                          (prevLedgerID == currentLedger)) ||
-                         (valPriorLedger && (v.ledgerID() == priorLedger))))
-                    {
-                        countPreferred = true;
-                        JLOG(this->adaptor_.journal().trace())
-                            << "Counting for " << currentLedger << " not "
-                            << v.ledgerID();
-                    }
-
-                    if (countPreferred)
-                        ret[currentLedger]++;
-                    else
-                        ret[v.ledgerID()]++;
-                }
-            });
-
-        return ret;
-    }
-
     /** Return the sequence number and ID of the preferred working ledger
 
         A ledger is preferred if it has more support amongst trusted validators
@@ -825,13 +745,6 @@ public:
                 ++count;
         }
         return count;
-    }
-
-    // Temporary pending refactor to use getNodesAfter above
-    std::size_t
-    getNodesAfter(ID const& ledgerID)
-    {
-        return getNodesAfter(Ledger{}, ledgerID);
     }
 
     /** Get the currently trusted full validations

@@ -160,12 +160,6 @@ struct Peer
                 return *ledger;
             return boost::none;
         }
-
-        beast::Journal
-        journal() const
-        {
-            return p_.j;
-        }
     };
 
     //! Type definitions for generic consensus
