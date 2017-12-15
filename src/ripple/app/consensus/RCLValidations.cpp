@@ -344,4 +344,26 @@ handleNewValidation(Application& app,
     // ability/bandwidth to. None of that was implemented.
     return shouldRelay;
 }
+
+std::size_t
+getNodesAfter(
+    RCLValidations& vals,
+    std::shared_ptr<Ledger const> ledger,
+    uint256 const& ledgerID)
+{
+    return vals.getNodesAfter(
+        RCLValidatedLedger{std::move(ledger), vals.adaptor().journal()},
+        ledgerID);
+}
+
+uint256
+getPreferred(
+    RCLValidations& vals,
+    std::shared_ptr<Ledger const> ledger,
+    LedgerIndex minValidSeq)
+{
+    return vals.getPreferred(
+        RCLValidatedLedger{std::move(ledger), vals.adaptor().journal()},
+        minValidSeq);
+}
 }  // namespace ripple

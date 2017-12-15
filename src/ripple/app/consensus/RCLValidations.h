@@ -242,12 +242,11 @@ private:
 /// Alias for RCL-specific instantiation of generic Validations
 using RCLValidations = Validations<RCLValidationsAdaptor>;
 
+
 /** Handle a new validation
 
-    1. Set the trust status of a validation based on the validating node's
-       public key and this node's current UNL.
-    2. Add the validation to the set of validations if current.
-    3. If new and trusted, send the validation to the ledgerMaster.
+    Also sets the trust status of a validation based on the validating node's
+    public key and this node's current UNL.
 
     @param app Application object containing validations and ledgerMaster
     @param val The validation to add
@@ -256,8 +255,24 @@ using RCLValidations = Validations<RCLValidationsAdaptor>;
     @return Whether the validation should be relayed
 */
 bool
-handleNewValidation(Application & app, STValidation::ref val, std::string const& source);
+handleNewValidation(
+    Application& app,
+    STValidation::ref val,
+    std::string const& source);
 
+// @see Validations::getNodesAfter
+std::size_t
+getNodesAfter(
+    RCLValidations& vals,
+    std::shared_ptr<Ledger const> ledger,
+    uint256 const& ledgerID);
+
+// @see Validations::getPreferred
+uint256
+getPreferred(
+    RCLValidations& vals,
+    std::shared_ptr<Ledger const> ledger,
+    LedgerIndex minSeq);
 
 }  // namespace ripple
 
