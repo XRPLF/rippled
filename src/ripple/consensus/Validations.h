@@ -573,7 +573,7 @@ public:
              &ret](NodeKey const&, ValidationAndPrevID const& vp) {
                 Validation const& v = vp.val;
                 ID const& prevLedgerID = vp.prevLedgerID;
-                if (!v.trusted())
+                if (!v.trusted() || !v.full())
                     return;
 
                 Seq const seq = v.seq();
@@ -623,9 +623,10 @@ public:
         ScopedLock lock{mutex_};
         current(
             lock,
-            [&](std::size_t) {}, // nothing to reserve
+            [&](std::size_t) {},  // nothing to reserve
             [&](NodeKey const&, ValidationAndPrevID const& v) {
-                if (v.val.trusted() && v.prevLedgerID == ledgerID)
+                if (v.val.trusted() && v.prevLedgerID == ledgerID &&
+                    v.val.full())
                     ++count;
             });
         return count;
@@ -645,7 +646,7 @@ public:
             lock,
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
             [&](NodeKey const&, ValidationAndPrevID const& v) {
-                if (v.val.trusted())
+                if (v.val.trusted() && v.val.full())
                     ret.push_back(v.val.unwrap());
             });
         return ret;
@@ -654,7 +655,8 @@ public:
     /** Get the set of known public keys associated with current validations
 
         @return The set of of knowns keys for current trusted and untrusted
-                validations
+                validations. This includes nodes whose last validation is
+                partial.
     */
     hash_set<NodeKey>
     getCurrentPublicKeys()
@@ -664,7 +666,9 @@ public:
         current(
             lock,
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
-            [&](NodeKey const& k, ValidationAndPrevID const&) { ret.insert(k); });
+            [&](NodeKey const& k, ValidationAndPrevID const& ) {
+                    ret.insert(k);
+            });
 
         return ret;
     }
@@ -684,7 +688,7 @@ public:
             ledgerID,
             [&](std::size_t) {}, // nothing to reserve
             [&](NodeKey const&, Validation const& v) {
-                if (v.trusted())
+                if (v.trusted() && v.full())
                     ++count;
             });
         return count;
@@ -705,7 +709,7 @@ public:
             ledgerID,
             [&](std::size_t numValidations) { res.reserve(numValidations); },
             [&](NodeKey const&, Validation const& v) {
-                if (v.trusted())
+                if (v.trusted() && v.full())
                     res.emplace_back(v.unwrap());
             });
 
@@ -727,7 +731,7 @@ public:
             ledgerID,
             [&](std::size_t numValidations) { times.reserve(numValidations); },
             [&](NodeKey const&, Validation const& v) {
-                if (v.trusted())
+                if (v.trusted() && v.full())
                     times.emplace_back(v.signTime());
             });
         return times;
@@ -749,7 +753,7 @@ public:
             ledgerID,
             [&](std::size_t numValidations) { res.reserve(numValidations); },
             [&](NodeKey const&, Validation const& v) {
-                if (v.trusted())
+                if (v.trusted() && v.full())
                 {
                     boost::optional<std::uint32_t> loadFee = v.loadFee();
                     if (loadFee)
