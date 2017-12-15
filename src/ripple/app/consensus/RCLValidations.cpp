@@ -19,6 +19,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/consensus/RCLValidations.h>
+#include <ripple/app/ledger/InboundLedger.h>
+#include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -119,6 +121,31 @@ RCLValidationsAdaptor::now() const
     return app_.timeKeeper().closeTime();
 }
 
+boost::optional<RCLValidatedLedger>
+RCLValidationsAdaptor::acquire(LedgerHash const & hash)
+{
+    auto ledger = app_.getLedgerMaster().getLedgerByHash(hash);
+    if (!ledger)
+    {
+        JLOG(j_.debug())
+            << "Need validated ledger for preferred ledger analysis " << hash;
+
+        Application * pApp = &app_;
+
+        app_.getJobQueue().addJob(
+            jtADVANCE, "getConsensusLedger", [pApp, hash](Job&) {
+                pApp ->getInboundLedgers().acquire(
+                    hash, 0, InboundLedger::fcVALIDATION);
+            });
+        return boost::none;
+    }
+
+    assert(!ledger->open() && ledger->isImmutable());
+    assert(ledger->info().hash == hash);
+
+    return RCLValidatedLedger(std::move(ledger), j_);
+}
+
 void
 RCLValidationsAdaptor::onStale(RCLValidation&& v)
 {
@@ -206,10 +233,10 @@ RCLValidationsAdaptor::doStaleWrite(ScopedLockType&)
                 for (RCLValidation const& wValidation : currentStale)
                 {
                     // Only save full validations until we update the schema
-                    if(!wValidation.isFull())
+                    if(!wValidation.full())
                         continue;
                     s.erase();
-                    STValidation::pointer const& val = rclValidation.unwrap();
+                    STValidation::pointer const& val = wValidation.unwrap();
                     val->add(s);
 
                     auto const ledgerHash = to_string(val->getLedgerHash());

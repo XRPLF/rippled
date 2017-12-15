@@ -26,6 +26,7 @@
 #include <ripple/beast/container/aged_container_utility.h>
 #include <ripple/beast/container/aged_unordered_map.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/consensus/LedgerTrie.h>
 #include <boost/optional.hpp>
 #include <mutex>
 #include <utility>
@@ -72,7 +73,6 @@ struct ValidationParms
     */
     std::chrono::seconds validationSET_EXPIRES = std::chrono::minutes{10};
 };
-
 
 /** Whether a validation is still current
 
@@ -187,12 +187,8 @@ to_string(ValStatus m)
 
     @code
 
-    struct Ledger
-    {
-        using ID = ...;
-        using Seq = ...;
-        //...
-    }
+    // Conforms to the Ledger type requirements of LedgerTrie
+    struct Ledger;
 
     struct Validation
     {
@@ -241,7 +237,10 @@ to_string(ValStatus m)
         void flush(hash_map<NodeKey,Validation> && remaining);
 
         // Return the current network time (used to determine staleness)
-        NetClock::time_point now() const
+        NetClock::time_point now() const;
+
+        // Attempt to acquire a specific ledger.
+        boost::optional<Ledger> acquire(Ledger::ID const & ledgerID);
 
         // ... implementation specific
     };
@@ -264,34 +263,32 @@ class Validations
 
     using ScopedLock = std::lock_guard<Mutex>;
 
-    // Manages concurrent access to current_ and byLedger_
-    Mutex mutex_;
-
-    // For the most recent validation, we also want to store the ID
-    // of the ledger it replaces
-    struct ValidationAndPrevID
-    {
-        ValidationAndPrevID(Validation const& v) : val{v}, prevLedgerID{0}
-        {
-        }
-
-        Validation val;
-        ID prevLedgerID;
-    };
+    // Manages concurrent access to members
+    mutable Mutex mutex_;
 
     // Validations from currently listed and trusted nodes (partial and full)
-    hash_map<NodeKey, ValidationAndPrevID> current_;
+    hash_map<NodeKey, Validation> current_;
 
     // Sequence of the largest full validation received from each node
     hash_map<NodeKey, Seq> largestFullValidation_;
 
-    // Validations from listed nodes, indexed by ledger id (partial and full)
+    //! Validations from listed nodes, indexed by ledger id (partial and full)
     beast::aged_unordered_map<
         ID,
         hash_map<NodeKey, Validation>,
         std::chrono::steady_clock,
         beast::uhash<>>
         byLedger_;
+
+    // Represents the ancestry of validated ledgers
+    LedgerTrie<Ledger> trie_;
+
+    // Last (validated) ledger successfully acquired. If in this map, it is
+    // accounted for in the trie.
+    hash_map<NodeKey, Ledger> lastLedger_;
+
+    // Set of ledgers being acquired from the network
+    hash_map<ID, hash_set<NodeKey>> acquiring_;
 
     // Parameters to determine validation staleness
     ValidationParms const parms_;
@@ -301,6 +298,123 @@ class Validations
     Adaptor adaptor_;
 
 private:
+    // Remove support of a validated ledger
+    void
+    removeTrie(ScopedLock const&, NodeKey const& key, Validation const& val)
+    {
+        {
+            auto it = acquiring_.find(val.ledgerID());
+            if (it != acquiring_.end())
+            {
+                it->second.erase(key);
+                if (it->second.empty())
+                    acquiring_.erase(it);
+            }
+        }
+        {
+            auto it = lastLedger_.find(key);
+            if (it != lastLedger_.end() && it->second.id() == val.ledgerID())
+            {
+                trie_.remove(it->second);
+                lastLedger_.erase(key);
+            }
+        }
+    }
+
+    // Check if any pending acquire ledger requests are complete
+    void
+    checkAcquired(ScopedLock const& lock)
+    {
+        for (auto it = acquiring_.begin(); it != acquiring_.end();)
+        {
+            if (boost::optional<Ledger> ledger = adaptor_.acquire(it->first))
+            {
+                for (NodeKey const& key : it->second)
+                    updateTrie(lock, key, *ledger);
+
+                it = acquiring_.erase(it);
+            }
+            else
+                ++it;
+        }
+    }
+
+    // Update the trie to reflect a new validated ledger
+    void
+    updateTrie(ScopedLock const&, NodeKey const& key, Ledger ledger)
+    {
+        auto ins = lastLedger_.emplace(key, ledger);
+        if (!ins.second)
+        {
+            trie_.remove(ins.first->second);
+            ins.first->second = ledger;
+        }
+        trie_.insert(ledger);
+    }
+
+    /** Process a new validation
+
+        Process a new trusted validation from a validator. This will be
+        reflected only after the validated ledger is succesfully acquired by
+        the local node. In the interim, the prior validated ledger from this
+        node remains.
+
+        @param lock Existing lock of mutex_
+        @param key The master public key identifying the validating node
+        @param val The trusted validation issued by the node
+        @param priorID If not none, the ID of the last current validated ledger.
+    */
+    void
+    updateTrie(
+        ScopedLock const& lock,
+        NodeKey const& key,
+        Validation const& val,
+        boost::optional<ID> priorID)
+    {
+        assert(val.trusted());
+
+        // Clear any prior acquiring ledger for this node
+        if (priorID)
+        {
+            auto it = acquiring_.find(*priorID);
+            if (it != acquiring_.end())
+            {
+                it->second.erase(key);
+                if (it->second.empty())
+                    acquiring_.erase(it);
+            }
+        }
+
+        checkAcquired(lock);
+
+        if (boost::optional<Ledger> ledger = adaptor_.acquire(val.ledgerID()))
+            updateTrie(lock, key, *ledger);
+        else
+            acquiring_[val.ledgerID()].insert(key);
+    }
+
+    /** Use the trie for a calculation
+
+        Accessing the trie through this helper ensures acquiring validations
+        are checked and any stale validations are flushed from the trie.
+
+        @param lock Existing locked of mutex_
+        @param f Invokable with signature (LedgerTrie<Ledger> &)
+
+        @warning The invokable `f` is expected to be a simple transformation of
+                 its arguments and will be called with mutex_ under lock.
+
+    */
+    template <class F>
+    auto
+    withTrie(ScopedLock const& lock, F&& f)
+    {
+        // Call current to flush any stale validations
+        current(lock, [](auto){}, [](auto, auto){});
+        checkAcquired(lock);
+        return f(trie_);
+    }
+
     /** Iterate current validations.
 
         Iterate current validations, flushing any which are stale.
@@ -328,9 +442,10 @@ private:
         {
             // Check for staleness
             if (!isCurrent(
-                    parms_, t, it->second.val.signTime(), it->second.val.seenTime()))
+                    parms_, t, it->second.signTime(), it->second.seenTime()))
             {
-                adaptor_.onStale(std::move(it->second.val));
+                removeTrie(lock, it->first, it->second);
+                adaptor_.onStale(std::move(it->second));
                 it = current_.erase(it);
             }
             else
@@ -444,16 +559,21 @@ public:
             if (!ins.second)
             {
                 // Replace existing only if this one is newer
-                Validation& oldVal = ins.first->second.val;
+                Validation& oldVal = ins.first->second;
                 if (val.signTime() > oldVal.signTime())
                 {
                     ID oldID = oldVal.ledgerID();
                     adaptor_.onStale(std::move(oldVal));
-                    ins.first->second.val = val;
-                    ins.first->second.prevLedgerID = oldID;
+                    ins.first->second = val;
+                    if (val.trusted())
+                        updateTrie(lock, key, val, oldID);
                 }
                 else
                     return ValStatus::stale;
+            }
+            else if (val.trusted())
+            {
+                updateTrie(lock, key, val, boost::none);
             }
         }
         return ValStatus::current;
@@ -469,6 +589,13 @@ public:
     {
         ScopedLock lock{mutex_};
         beast::expire(byLedger_, parms_.validationSET_EXPIRES);
+    }
+
+    Json::Value
+    getJsonTrie() const
+    {
+        ScopedLock lock{mutex_};
+        return trie_.getJson();
     }
 
     /** Distribution of current trusted validations
@@ -507,9 +634,17 @@ public:
              &valCurrentLedger,
              &valPriorLedger,
              &priorLedger,
-             &ret](NodeKey const&, ValidationAndPrevID const& vp) {
-                Validation const& v = vp.val;
-                ID const& prevLedgerID = vp.prevLedgerID;
+             &ret](NodeKey const& k, Validation const& v) {
+
+                ID prevLedgerID;
+                auto it = lastLedger_.find(k);
+                if(it != lastLedger_.end())
+                {
+                    Ledger const & ledger = it->second;
+                    if(ledger.seq() > Seq{1})
+                        prevLedgerID = ledger[ledger.seq() - Seq{1}];
+                }
+
                 if (!v.trusted() || !v.full())
                     return;
 
@@ -542,34 +677,164 @@ public:
         return ret;
     }
 
-    /** Count the number of current trusted validators working on the next
-        ledger.
+    /** Return the sequence number and ID of the preferred working ledger
 
-        Counts the number of current trusted validations that replaced the
-        provided ledger.  Does not check or update staleness of the validations.
+        A ledger is preferred if it has more support amongst trusted validators
+        and is *not* an ancestor of the current working ledger; otherwise it
+        remains the current working ledger.
 
-        @param ledgerID The identifier of the preceding ledger of interest
-        @return The number of current trusted validators with ledgerID as the
-                prior ledger.
+        @param currLedger The local nodes current working ledger
+
+        @return The sequence and id of the preferred working ledger,
+                or Seq{0},ID{} if no trusted validations are available to
+                determine the preferred ledger.
     */
-    std::size_t
-    getNodesAfter(ID const& ledgerID)
+    std::pair<Seq, ID>
+    getPreferred(Ledger const& currLedger)
     {
-        std::size_t count = 0;
+        Seq preferredSeq;
+        ID preferredID;
 
         ScopedLock lock{mutex_};
-        current(
-            lock,
-            [&](std::size_t) {},  // nothing to reserve
-            [&](NodeKey const&, ValidationAndPrevID const& v) {
-                if (v.val.trusted() && v.prevLedgerID == ledgerID &&
-                    v.val.full())
-                    ++count;
+        std::tie(preferredSeq, preferredID) = withTrie(
+            lock, [](LedgerTrie<Ledger>& trie) { return trie.getPreferred(); });
+
+        // No trusted validations to determine branch
+        if (preferredSeq == Seq{0})
+            return std::make_pair(preferredSeq, preferredID);
+
+        Seq currSeq = currLedger.seq();
+        ID currID = currLedger.id();
+
+        // If we are the parent of the preferred ledger, stick with our
+        // current ledger since we might be about to generate it
+        if (preferredSeq == currSeq + Seq{1})
+        {
+            for (auto const& it : lastLedger_)
+            {
+                Ledger const& ledger = it.second;
+                if (ledger.seq() == preferredSeq &&
+                    ledger.id() == preferredID && ledger[currSeq] == currID)
+                    return std::make_pair(currSeq, currID);
+            }
+        }
+
+        // A ledger ahead of us is preferred regardless of whether it is
+        // a descendent of our working ledger or it is on a different chain
+        if (preferredSeq > currSeq)
+            return std::make_pair(preferredSeq, preferredID);
+
+        // Only switch to earlier sequence numbers if it is a different
+        // chain to avoid jumping backward unnecessarily
+        if (currLedger[preferredSeq] != preferredID)
+            return std::make_pair(preferredSeq, preferredID);
+
+        // Stick with current ledger
+        return std::make_pair(currSeq, currID);
+    }
+
+    /** Get the ID of the preferred working ledger that exceeds a minimum valid
+        ledger sequence number
+
+        @param currLedger Current working ledger
+        @param minValidSeq Minimum allowed sequence number
+
+        @return ID Of the preferred ledger, or currLedger if the preferred ledger
+                   is not valid
+    */
+    ID
+    getPreferred(Ledger const& currLedger, Seq minValidSeq)
+    {
+        std::pair<Seq, ID> preferred = getPreferred(currLedger);
+        if(preferred.first >= minValidSeq && preferred.second != ID{})
+            return preferred.second;
+        return currLedger.id();
+
+    }
+
+
+    /** Determine the preferred last closed ledger for the next consensus round.
+
+        Called before starting the next round of ledger consensus to determine the
+        preferred working ledger. Uses the dominant peerCount ledger if no
+        trusted validations are available.
+
+        @param lcl Last closed ledger by this node
+        @param minSeq Minimum allowed sequence number of the trusted preferred ledger
+        @param peerCounts Map from ledger ids to count of peers with that as the
+                          last closed ledger
+        @return The preferred last closed ledger ID
+
+        @note The minSeq does not apply to the peerCounts, since this function
+              does not know their sequence number
+    */
+    ID
+    getPreferredLCL(
+        Ledger const & lcl,
+        Seq minSeq,
+        hash_map<ID, std::uint32_t> const& peerCounts)
+    {
+        std::pair<Seq, ID> preferred = getPreferred(lcl);
+
+        // Trusted validations exist
+        if (preferred.second != ID{} && preferred.first > Seq{0})
+            return (preferred.first >= minSeq) ? preferred.second : lcl.id();
+
+        // Otherwise, rely on peer ledgers
+        auto it = std::max_element(
+            peerCounts.begin(), peerCounts.end(), [](auto& a, auto& b) {
+                // Prefer larger counts, then larger ids on ties
+                // (max_element expects this to return true if a < b)
+                return std::tie(a.second, a.first) <
+                    std::tie(b.second, b.first);
             });
+
+        if (it != peerCounts.end())
+            return it->first;
+        return lcl.id();
+    }
+
+    /** Count the number of current trusted validators working on a ledger
+        after the specified one.
+
+        @param ledger The working ledger
+        @param ledgerID The preferred ledger
+        @return The number of current trusted validators working on a descendent
+                of the preferred ledger
+
+        @note If ledger.id() != ledgerID, only counts immediate child ledgers of
+              ledgerID
+    */
+    std::size_t
+    getNodesAfter(Ledger const& ledger, ID const& ledgerID)
+    {
+        ScopedLock lock{mutex_};
+
+        // Use trie if ledger is the right one
+        if (ledger.id() == ledgerID)
+            return withTrie(lock, [&ledger](LedgerTrie<Ledger>& trie) {
+                return trie.branchSupport(ledger) - trie.tipSupport(ledger);
+            });
+
+        // Count parent ledgers as fallback
+        std::size_t count = 0;
+        for (auto const& it : lastLedger_)
+        {
+            Ledger const& curr = it.second;
+            if (curr.seq() > Seq{0} && curr[curr.seq() - Seq{1}] == ledgerID)
+                ++count;
+        }
         return count;
     }
 
-    /** Get the currently trusted validations
+    // Temporary pending refactor to use getNodesAfter above
+    std::size_t
+    getNodesAfter(ID const& ledgerID)
+    {
+        return getNodesAfter(Ledger{}, ledgerID);
+    }
+
+    /** Get the currently trusted full validations
 
         @return Vector of validations from currently trusted validators
     */
@@ -577,23 +842,20 @@ public:
     currentTrusted()
     {
         std::vector<WrappedValidationType> ret;
-
         ScopedLock lock{mutex_};
         current(
             lock,
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
-            [&](NodeKey const&, ValidationAndPrevID const& v) {
-                if (v.val.trusted() && v.val.full())
-                    ret.push_back(v.val.unwrap());
+            [&](NodeKey const&, Validation const& v) {
+                if (v.trusted() && v.full())
+                    ret.push_back(v.unwrap());
             });
         return ret;
     }
 
     /** Get the set of known public keys associated with current validations
 
-        @return The set of of knowns keys for current trusted and untrusted
-                validations. This includes nodes whose last validation is
-                partial.
+        @return The set of of knowns keys for current listed validators
     */
     hash_set<NodeKey>
     getCurrentPublicKeys()
@@ -603,14 +865,12 @@ public:
         current(
             lock,
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
-            [&](NodeKey const& k, ValidationAndPrevID const& ) {
-                    ret.insert(k);
-            });
+            [&](NodeKey const& k, Validation const&) { ret.insert(k); });
 
         return ret;
     }
 
-    /** Count the number of trusted validations for the given ledger
+    /** Count the number of trusted full validations for the given ledger
 
         @param ledgerID The identifier of ledger of interest
         @return The number of trusted validations
@@ -623,7 +883,7 @@ public:
         byLedger(
             lock,
             ledgerID,
-            [&](std::size_t) {}, // nothing to reserve
+            [&](std::size_t) {},  // nothing to reserve
             [&](NodeKey const&, Validation const& v) {
                 if (v.trusted() && v.full())
                     ++count;
@@ -631,7 +891,7 @@ public:
         return count;
     }
 
-    /**  Get set of trusted validations associated with a given ledger
+    /**  Get trusted full validations for a specific ledger
 
          @param ledgerID The identifier of ledger of interest
          @return Trusted validations associated with ledger
@@ -653,7 +913,7 @@ public:
         return res;
     }
 
-    /** Return the sign times of all validations associated with a given ledger
+    /** Return the sign times of all trusted full validations
 
         @param ledgerID The identifier of ledger of interest
         @return Vector of times
@@ -674,7 +934,7 @@ public:
         return times;
     }
 
-    /** Returns fees reported by trusted validators in the given ledger
+    /** Returns fees reported by trusted full validators in the given ledger
 
         @param ledgerID The identifier of ledger of interest
         @param baseFee The fee to report if not present in the validation
@@ -712,7 +972,7 @@ public:
             ScopedLock lock{mutex_};
             for (auto it : current_)
             {
-                flushed.emplace(it.first, std::move(it.second.val));
+                flushed.emplace(it.first, std::move(it.second));
             }
             current_.clear();
         }
@@ -720,5 +980,6 @@ public:
         adaptor_.flush(std::move(flushed));
     }
 };
+
 }  // namespace ripple
 #endif

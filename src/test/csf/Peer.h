@@ -153,6 +153,14 @@ struct Peer
         {
         }
 
+        boost::optional<Ledger>
+        acquire(Ledger::ID const & id)
+        {
+            if(Ledger const * ledger = p_.acquireLedger(id))
+                return *ledger;
+            return boost::none;
+        }
+
         beast::Journal
         journal() const
         {
