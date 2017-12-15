@@ -300,10 +300,9 @@ class Validations
 private:
     /** Iterate current validations.
 
-        Iterate current validations, optionally removing any stale validations
-        if a time is specified.
+        Iterate current validations, flushing any which are stale.
 
-        @param t (Optional) Time used to determine staleness
+        @param lock Existing lock of mutex_
         @param pre Invokable with signature (std::size_t) called prior to
                    looping.
         @param f Invokable with signature (NodeKey const &, Validations const &)
@@ -317,19 +316,17 @@ private:
 
     template <class Pre, class F>
     void
-    current(boost::optional<NetClock::time_point> t, Pre&& pre, F&& f)
+    current(ScopedLock const& lock, Pre&& pre, F&& f)
     {
-        ScopedLock lock{mutex_};
+        NetClock::time_point t = adaptor_.now();
         pre(current_.size());
         auto it = current_.begin();
         while (it != current_.end())
         {
-            // Check for staleness, if time specified
-            if (t &&
-                !isCurrent(
-                    parms_, *t, it->second.val.signTime(), it->second.val.seenTime()))
+            // Check for staleness
+            if (!isCurrent(
+                    parms_, t, it->second.val.signTime(), it->second.val.seenTime()))
             {
-                // contains a stale record
                 adaptor_.onStale(std::move(it->second.val));
                 it = current_.erase(it);
             }
@@ -345,6 +342,7 @@ private:
 
     /** Iterate the set of validations associated with a given ledger id
 
+        @param lock Existing lock on mutex_
         @param ledgerID The identifier of the ledger
         @param pre Invokable with signature(std::size_t)
         @param f Invokable with signature (NodeKey const &, Validation const &)
@@ -356,9 +354,8 @@ private:
     */
     template <class Pre, class F>
     void
-    byLedger(ID const& ledgerID, Pre&& pre, F&& f)
+    byLedger(ScopedLock const&, ID const& ledgerID, Pre&& pre, F&& f)
     {
-        ScopedLock lock{mutex_};
         auto it = byLedger_.find(ledgerID);
         if (it != byLedger_.end())
         {
@@ -561,8 +558,9 @@ public:
 
         hash_map<ID, std::uint32_t> ret;
 
+        ScopedLock lock{mutex_};
         current(
-            adaptor_.now(),
+            lock,
             // The number of validations does not correspond to the number of
             // distinct ledgerIDs so we do not call reserve on ret.
             [](std::size_t) {},
@@ -622,10 +620,9 @@ public:
     {
         std::size_t count = 0;
 
-        // Historically this did not not check for stale validations
-        // That may not be important, but this preserves the behavior
+        ScopedLock lock{mutex_};
         current(
-            boost::none,
+            lock,
             [&](std::size_t) {}, // nothing to reserve
             [&](NodeKey const&, ValidationAndPrevID const& v) {
                 if (v.val.trusted() && v.prevLedgerID == ledgerID)
@@ -643,8 +640,9 @@ public:
     {
         std::vector<WrappedValidationType> ret;
 
+        ScopedLock lock{mutex_};
         current(
-            adaptor_.now(),
+            lock,
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
             [&](NodeKey const&, ValidationAndPrevID const& v) {
                 if (v.val.trusted())
@@ -662,8 +660,9 @@ public:
     getCurrentPublicKeys()
     {
         hash_set<NodeKey> ret;
+        ScopedLock lock{mutex_};
         current(
-            adaptor_.now(),
+            lock,
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
             [&](NodeKey const& k, ValidationAndPrevID const&) { ret.insert(k); });
 
@@ -679,7 +678,9 @@ public:
     numTrustedForLedger(ID const& ledgerID)
     {
         std::size_t count = 0;
+        ScopedLock lock{mutex_};
         byLedger(
+            lock,
             ledgerID,
             [&](std::size_t) {}, // nothing to reserve
             [&](NodeKey const&, Validation const& v) {
@@ -698,7 +699,9 @@ public:
     getTrustedForLedger(ID const& ledgerID)
     {
         std::vector<WrappedValidationType> res;
+        ScopedLock lock{mutex_};
         byLedger(
+            lock,
             ledgerID,
             [&](std::size_t numValidations) { res.reserve(numValidations); },
             [&](NodeKey const&, Validation const& v) {
@@ -718,7 +721,9 @@ public:
     getTrustedValidationTimes(ID const& ledgerID)
     {
         std::vector<NetClock::time_point> times;
+        ScopedLock lock{mutex_};
         byLedger(
+            lock,
             ledgerID,
             [&](std::size_t numValidations) { times.reserve(numValidations); },
             [&](NodeKey const&, Validation const& v) {
@@ -738,7 +743,9 @@ public:
     fees(ID const& ledgerID, std::uint32_t baseFee)
     {
         std::vector<std::uint32_t> res;
+        ScopedLock lock{mutex_};
         byLedger(
+            lock,
             ledgerID,
             [&](std::size_t numValidations) { res.reserve(numValidations); },
             [&](NodeKey const&, Validation const& v) {
