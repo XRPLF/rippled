@@ -526,8 +526,8 @@ public:
         for consensus amongst competing alternatives.
 
         Recall that each validator is normally validating a chain of ledgers,
-        e.g. A->B->C->D. However, if due to network connectivity or other issues,
-        validators generate different chains
+        e.g. A->B->C->D. However, if due to network connectivity or other
+        issues, validators generate different chains
 
         @code
                /->C
@@ -537,19 +537,23 @@ public:
 
         we need a way for validators to converge on the chain with the most
         support. We call this the preferred ledger.  Intuitively, the idea is to
-        be conservative and only switch to a different branch when you see enough
-        peer validations to *know* another branch won't have preferred support.
-        This ensures the preferred branch has monotonically increasing support.
+        be conservative and only switch to a different branch when you see
+        enough peer validations to *know* another branch won't have preferred
+        support. This ensures the preferred branch has monotonically increasing
+        support.
 
         The preferred ledger is found by walking this tree of validated ledgers
         starting from the common ancestor ledger.
 
         At each sequence number, we have
 
-           - The prior sequence preferred ledger (B).
-           - The support of ledgers that have been explicitly validated by a
-             validator (C,D), or are an ancestor of that validators current
-             validated ledger (E).
+           - The prior sequence preferred ledger, e.g. B.
+           - The (tip) support of ledgers with this sequence number,e.g. the
+             number of validators whose last validation was for C or D.
+           - The (branch) total support of all descendents of the current
+             sequence number ledgers, e.g. the branch support of D is the
+             tip support of D plus the tip support of E; the branch support of
+             C is just the tip support of C.
            - The number of validators that have yet to validate a ledger
              with this sequence number (prefixSupport).
 
@@ -557,11 +561,20 @@ public:
         with relative majority of support, where prefixSupport can be given to
         ANY ledger at that sequence number (including one not yet known). If no
         such preferred ledger exists, than prior sequence preferred ledger is
-        the overall preferred ledger.  If one does exist, then we continue
-        with the next sequence but increase prefixSupport with the non
-        preferred ones this round, e.g. if C were preferred over D, then
-        prefixSupport would incerase by the support of D and E.
+        the overall preferred ledger.
 
+        In this example, for D to be preferred, the number of validators
+        supporting it or a descendant must exceed the number of validators
+        supporting C _plus_ the current prefix support. This is because if all
+        the prefix support validators end up validating C, that new support must
+        be less than that for D to be preferred.
+
+        If a preferred ledger does exist, then we continue with the next
+        sequence but increase prefixSupport with the non-preferred tip support
+        this round, e.g. if C were preferred over D, then prefixSupport would
+        incerase by the support of D and E, since if those validators are
+        following the protocl, they will switch to the C branch, but might
+        initially support a different descendant.
     */
     std::pair<Seq,ID>
     getPreferred()
