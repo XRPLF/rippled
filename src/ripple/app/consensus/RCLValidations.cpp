@@ -203,8 +203,11 @@ RCLValidationsAdaptor::doStaleWrite(ScopedLockType&)
 
                 Serializer s(1024);
                 soci::transaction tr(*db);
-                for (auto const& rclValidation : currentStale)
+                for (RCLValidation const& wValidation : currentStale)
                 {
+                    // Only save full validations until we update the schema
+                    if(!wValidation.isFull())
+                        continue;
                     s.erase();
                     STValidation::pointer const& val = rclValidation.unwrap();
                     val->add(s);
