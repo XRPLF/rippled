@@ -112,21 +112,53 @@ class Validations_test : public beast::unit_test::suite
         // Issue a new validation with given sequence number and id and
         // with signing and seen times offset from the common clock
         Validation
-        validation(Ledger::Seq seq,
-            Ledger::ID i,
+        validate(
+            Ledger::Seq seq,
+            Ledger::ID id,
+            NetClock::duration signOffset,
+            NetClock::duration seenOffset,
+            bool full) const
+        {
+            Validation v{id,
+                         seq,
+                         now() + signOffset,
+                         now() + seenOffset,
+                         currKey(),
+                         nodeID_,
+                         full,
+                         loadFee_};
+            if (trusted_)
+                v.setTrusted();
+            return v;
+        }
+
+        Validation
+        validate(
+            Ledger::Seq seq,
+            Ledger::ID id,
             NetClock::duration signOffset,
             NetClock::duration seenOffset) const
         {
-            return Validation{i, seq, now() + signOffset, now() + seenOffset,
-                currKey(), nodeID_, trusted_, loadFee_};
+            return validate(
+                seq, id, signOffset, seenOffset, true);
         }
 
-        // Issue a new validation with the given sequence number and id
         Validation
-        validation(Ledger::Seq seq, Ledger::ID i) const
+        validate(Ledger::Seq seq,  Ledger::ID id) const
         {
-            return validation(
-                seq, i, NetClock::duration{0}, NetClock::duration{0});
+            return validate(
+                seq, id, NetClock::duration{0}, NetClock::duration{0}, true);
+        }
+
+        Validation
+        partial(Ledger::Seq seq, Ledger::ID id) const
+        {
+            return validate(
+                seq,
+                id,
+                NetClock::duration{0},
+                NetClock::duration{0},
+                false);
         }
     };
 
@@ -219,17 +251,10 @@ class Validations_test : public beast::unit_test::suite
 
         // Helper to add an existing validation
         AddOutcome
-        add(Node const& n, Validation const& v)
+        add(Validation const& v)
         {
-            return tv_.add(n.masterKey(), v);
-        }
-
-        // Helper to directly create the validation
-        template <class... Ts>
-        std::enable_if_t<(sizeof...(Ts) > 1), AddOutcome>
-        add(Node const& n, Ts&&... ts)
-        {
-            return add(n, n.validation(std::forward<Ts>(ts)...));
+            PeerKey masterKey{v.nodeID(), 0};
+            return tv_.add(masterKey, v);
         }
 
         TestValidations&
@@ -279,13 +304,13 @@ class Validations_test : public beast::unit_test::suite
         Node a = harness.makeNode();
         {
             {
-                auto const v = a.validation(Ledger::Seq{1}, Ledger::ID{1});
+                auto const v = a.validate(Ledger::Seq{1}, Ledger::ID{1});
 
                 // Add a current validation
-                BEAST_EXPECT(AddOutcome::current == harness.add(a, v));
+                BEAST_EXPECT(AddOutcome::current == harness.add(v));
 
                 // Re-adding is repeat
-                BEAST_EXPECT(AddOutcome::repeat == harness.add(a, v));
+                BEAST_EXPECT(AddOutcome::repeat == harness.add(v));
             }
 
             {
@@ -294,7 +319,7 @@ class Validations_test : public beast::unit_test::suite
                 BEAST_EXPECT(harness.stale().empty());
 
                 BEAST_EXPECT(AddOutcome::current ==
-                    harness.add(a, Ledger::Seq{2}, Ledger::ID{2}));
+                    harness.add(a.validate(Ledger::Seq{2}, Ledger::ID{2})));
 
                 BEAST_EXPECT(harness.stale().size() == 1);
 
@@ -318,7 +343,8 @@ class Validations_test : public beast::unit_test::suite
                 BEAST_EXPECT(harness.vals().getNodesAfter(Ledger::ID{2}) == 0);
 
                 BEAST_EXPECT(
-                    AddOutcome::sameSeq == harness.add(a, Ledger::Seq{2}, Ledger::ID{20}));
+                    AddOutcome::sameSeq ==
+                    harness.add(a.validate(Ledger::Seq{2}, Ledger::ID{20})));
 
                 // Old ID should be gone ...
                 BEAST_EXPECT(harness.vals().numTrustedForLedger(Ledger::ID{2}) == 0);
@@ -339,7 +365,8 @@ class Validations_test : public beast::unit_test::suite
                 a.advanceKey();
 
                 BEAST_EXPECT(
-                    AddOutcome::sameSeq == harness.add(a, Ledger::Seq{2}, Ledger::ID{20}));
+                    AddOutcome::sameSeq ==
+                    harness.add(a.validate(Ledger::Seq{2}, Ledger::ID{20})));
                 {
                     // Still the only trusted validation for ID{20}
                     auto trustedVals =
@@ -354,20 +381,20 @@ class Validations_test : public beast::unit_test::suite
             {
                 // Processing validations out of order should ignore the older
                 harness.clock().advance(2s);
-                auto const val3 = a.validation(Ledger::Seq{3}, Ledger::ID{3});
+                auto const val3 = a.validate(Ledger::Seq{3}, Ledger::ID{3});
 
                 harness.clock().advance(4s);
-                auto const val4 = a.validation(Ledger::Seq{4}, Ledger::ID{4});
+                auto const val4 = a.validate(Ledger::Seq{4}, Ledger::ID{4});
 
-                BEAST_EXPECT(AddOutcome::current == harness.add(a, val4));
+                BEAST_EXPECT(AddOutcome::current == harness.add(val4));
 
-                BEAST_EXPECT(AddOutcome::stale == harness.add(a, val3));
+                BEAST_EXPECT(AddOutcome::stale == harness.add(val3));
 
                 // re-issued should not be added
                 auto const val4reissue =
-                    a.validation(Ledger::Seq{4}, Ledger::ID{44});
+                    a.validate(Ledger::Seq{4}, Ledger::ID{44});
 
-                BEAST_EXPECT(AddOutcome::stale == harness.add(a, val4reissue));
+                BEAST_EXPECT(AddOutcome::stale == harness.add(val4reissue));
             }
             {
                 // Process validations out of order with shifted times
@@ -377,32 +404,36 @@ class Validations_test : public beast::unit_test::suite
 
                 // Establish a new current validation
                 BEAST_EXPECT(AddOutcome::current ==
-                    harness.add(a, Ledger::Seq{8}, Ledger::ID{8}));
+                    harness.add(a.validate(Ledger::Seq{8}, Ledger::ID{8})));
 
                 // Process a validation that has "later" seq but early sign time
-                BEAST_EXPECT(AddOutcome::stale ==
-                    harness.add(a, Ledger::Seq{9}, Ledger::ID{9}, -1s, -1s));
+                BEAST_EXPECT(
+                    AddOutcome::stale ==
+                    harness.add(
+                        a.validate(Ledger::Seq{9}, Ledger::ID{9}, -1s, -1s)));
 
                 // Process a validation that has an "earlier" seq but later sign
                 // time
-                BEAST_EXPECT(AddOutcome::current ==
-                    harness.add(a, Ledger::Seq{7}, Ledger::ID{7}, 1s, 1s));
+                BEAST_EXPECT(
+                    AddOutcome::current ==
+                    harness.add(
+                        a.validate(Ledger::Seq{7}, Ledger::ID{7}, 1s, 1s)));
             }
             {
                 // Test stale on arrival validations
                 harness.clock().advance(1h);
 
                 BEAST_EXPECT(AddOutcome::stale ==
-                    harness.add(a, Ledger::Seq{15}, Ledger::ID{15},
-                        -harness.parms().validationCURRENT_EARLY, 0s));
+                    harness.add(a.validate(Ledger::Seq{15}, Ledger::ID{15},
+                        -harness.parms().validationCURRENT_EARLY, 0s)));
 
                 BEAST_EXPECT(AddOutcome::stale ==
-                    harness.add(a, Ledger::Seq{15}, Ledger::ID{15},
-                        harness.parms().validationCURRENT_WALL, 0s));
+                    harness.add(a.validate(Ledger::Seq{15}, Ledger::ID{15},
+                        harness.parms().validationCURRENT_WALL, 0s)));
 
                 BEAST_EXPECT(AddOutcome::stale ==
-                    harness.add(a, Ledger::Seq{15}, Ledger::ID{15}, 0s,
-                        harness.parms().validationCURRENT_LOCAL));
+                    harness.add(a.validate(Ledger::Seq{15}, Ledger::ID{15}, 0s,
+                        harness.parms().validationCURRENT_LOCAL)));
             }
         }
     }
@@ -415,7 +446,7 @@ class Validations_test : public beast::unit_test::suite
         Node a = harness.makeNode();
 
         BEAST_EXPECT(AddOutcome::current ==
-            harness.add(a, Ledger::Seq{1}, Ledger::ID{1}));
+            harness.add(a.validate(Ledger::Seq{1}, Ledger::ID{1})));
         harness.vals().currentTrusted();
         BEAST_EXPECT(harness.stale().empty());
         harness.clock().advance(harness.parms().validationCURRENT_LOCAL);
@@ -443,9 +474,9 @@ class Validations_test : public beast::unit_test::suite
         // first round a,b,c agree, d has differing id
         for (auto const& node : {a, b, c})
             BEAST_EXPECT(AddOutcome::current ==
-                harness.add(node, Ledger::Seq{1}, Ledger::ID{1}));
+                harness.add(node.validate(Ledger::Seq{1}, Ledger::ID{1})));
         BEAST_EXPECT(AddOutcome::current ==
-            harness.add(d, Ledger::Seq{1}, Ledger::ID{10}));
+            harness.add(d.validate(Ledger::Seq{1}, Ledger::ID{10})));
 
         // Nothing past ledger 1 yet
         BEAST_EXPECT(harness.vals().getNodesAfter(Ledger::ID{1}) == 0);
@@ -456,13 +487,13 @@ class Validations_test : public beast::unit_test::suite
         // c is untrusted but on the same prior id
         // d has a different prior id
         BEAST_EXPECT(AddOutcome::current ==
-            harness.add(a, Ledger::Seq{2}, Ledger::ID{2}));
+            harness.add(a.validate(Ledger::Seq{2}, Ledger::ID{2})));
         BEAST_EXPECT(AddOutcome::current ==
-            harness.add(b, Ledger::Seq{2}, Ledger::ID{20}));
+            harness.add(b.validate(Ledger::Seq{2}, Ledger::ID{20})));
         BEAST_EXPECT(AddOutcome::current ==
-            harness.add(c, Ledger::Seq{2}, Ledger::ID{2}));
+            harness.add(c.validate(Ledger::Seq{2}, Ledger::ID{2})));
         BEAST_EXPECT(AddOutcome::current ==
-            harness.add(d, Ledger::Seq{2}, Ledger::ID{2}));
+            harness.add(d.validate(Ledger::Seq{2}, Ledger::ID{2})));
 
         BEAST_EXPECT(harness.vals().getNodesAfter(Ledger::ID{1}) == 2);
     }
@@ -478,9 +509,9 @@ class Validations_test : public beast::unit_test::suite
         b.untrust();
 
         BEAST_EXPECT(AddOutcome::current ==
-            harness.add(a, Ledger::Seq{1}, Ledger::ID{1}));
+            harness.add(a.validate(Ledger::Seq{1}, Ledger::ID{1})));
         BEAST_EXPECT(AddOutcome::current ==
-            harness.add(b, Ledger::Seq{1}, Ledger::ID{3}));
+            harness.add(b.validate(Ledger::Seq{1}, Ledger::ID{3})));
 
         // Only a is trusted
         BEAST_EXPECT(harness.vals().currentTrusted().size() == 1);
@@ -493,7 +524,7 @@ class Validations_test : public beast::unit_test::suite
 
         for (auto const& node : {a, b})
             BEAST_EXPECT(AddOutcome::current ==
-                harness.add(node, Ledger::Seq{2}, Ledger::ID{2}));
+                harness.add(node.validate(Ledger::Seq{2}, Ledger::ID{2})));
 
         // New validation for a
         BEAST_EXPECT(harness.vals().currentTrusted().size() == 1);
@@ -519,7 +550,7 @@ class Validations_test : public beast::unit_test::suite
 
         for (auto const& node : {a, b})
             BEAST_EXPECT(AddOutcome::current ==
-                harness.add(node, Ledger::Seq{1}, Ledger::ID{1}));
+                harness.add(node.validate(Ledger::Seq{1}, Ledger::ID{1})));
 
         {
             hash_set<PeerKey> const expectedKeys = {
@@ -535,7 +566,7 @@ class Validations_test : public beast::unit_test::suite
 
         for (auto const& node : {a, b})
             BEAST_EXPECT(AddOutcome::current ==
-                harness.add(node, Ledger::Seq{2}, Ledger::ID{2}));
+                harness.add(node.validate(Ledger::Seq{2}, Ledger::ID{2})));
 
         {
             hash_set<PeerKey> const expectedKeys = {
@@ -569,16 +600,16 @@ class Validations_test : public beast::unit_test::suite
 
         for (auto const& node : {baby, papa, mama, goldilocks})
             BEAST_EXPECT(AddOutcome::current ==
-                harness.add(node, Ledger::Seq{1}, Ledger::ID{1}));
+                harness.add(node.validate(Ledger::Seq{1}, Ledger::ID{1})));
 
         harness.clock().advance(1s);
         for (auto const& node : {baby, mama, goldilocks})
             BEAST_EXPECT(AddOutcome::current ==
-                harness.add(node, Ledger::Seq{2}, Ledger::ID{2}));
+                harness.add(node.validate(Ledger::Seq{2}, Ledger::ID{2})));
 
         harness.clock().advance(1s);
         BEAST_EXPECT(AddOutcome::current ==
-            harness.add(mama, Ledger::Seq{3}, Ledger::ID{3}));
+            harness.add(mama.validate(Ledger::Seq{3}, Ledger::ID{3})));
 
         {
             // Allow slippage that treats all trusted as the current ledger
@@ -699,14 +730,14 @@ class Validations_test : public beast::unit_test::suite
         // first round a,b,c agree, d differs
         for (auto const& node : {a, b, c})
         {
-            auto const val = node.validation(Ledger::Seq{1}, Ledger::ID{1});
-            BEAST_EXPECT(AddOutcome::current == harness.add(node, val));
+            auto const val = node.validate(Ledger::Seq{1}, Ledger::ID{1});
+            BEAST_EXPECT(AddOutcome::current == harness.add(val));
             if (val.trusted())
                 trustedValidations[val.ledgerID()].emplace_back(val);
         }
         {
-            auto const val = d.validation(Ledger::Seq{1}, Ledger::ID{11});
-            BEAST_EXPECT(AddOutcome::current == harness.add(d, val));
+            auto const val = d.validate(Ledger::Seq{1}, Ledger::ID{11});
+            BEAST_EXPECT(AddOutcome::current == harness.add(val));
             trustedValidations[val.ledgerID()].emplace_back(val);
         }
 
@@ -714,14 +745,14 @@ class Validations_test : public beast::unit_test::suite
         // second round, a,b,c move to ledger 2, d now thinks ledger 1
         for (auto const& node : {a, b, c})
         {
-            auto const val = node.validation(Ledger::Seq{2}, Ledger::ID{2});
-            BEAST_EXPECT(AddOutcome::current == harness.add(node, val));
+            auto const val = node.validate(Ledger::Seq{2}, Ledger::ID{2});
+            BEAST_EXPECT(AddOutcome::current == harness.add(val));
             if (val.trusted())
                 trustedValidations[val.ledgerID()].emplace_back(val);
         }
         {
-            auto const val = d.validation(Ledger::Seq{2}, Ledger::ID{1});
-            BEAST_EXPECT(AddOutcome::current == harness.add(d, val));
+            auto const val = d.validate(Ledger::Seq{2}, Ledger::ID{1});
+            BEAST_EXPECT(AddOutcome::current == harness.add(val));
             trustedValidations[val.ledgerID()].emplace_back(val);
         }
 
@@ -737,7 +768,7 @@ class Validations_test : public beast::unit_test::suite
         Node a = harness.makeNode();
 
         BEAST_EXPECT(AddOutcome::current ==
-            harness.add(a, Ledger::Seq{1}, Ledger::ID{1}));
+            harness.add(a.validate(Ledger::Seq{1}, Ledger::ID{1})));
         BEAST_EXPECT(harness.vals().numTrustedForLedger(Ledger::ID{1}));
         harness.clock().advance(harness.parms().validationSET_EXPIRES);
         harness.vals().expire();
@@ -759,8 +790,8 @@ class Validations_test : public beast::unit_test::suite
         hash_map<PeerKey, Validation> expected;
         for (auto const& node : {a, b, c})
         {
-            auto const val = node.validation(Ledger::Seq{1}, Ledger::ID{1});
-            BEAST_EXPECT(AddOutcome::current == harness.add(node, val));
+            auto const val = node.validate(Ledger::Seq{1}, Ledger::ID{1});
+            BEAST_EXPECT(AddOutcome::current == harness.add(val));
             expected.emplace(node.masterKey(), val);
         }
         Validation staleA = expected.find(a.masterKey())->second;
@@ -769,8 +800,8 @@ class Validations_test : public beast::unit_test::suite
         // Send in a new validation for a, saving the new one into the expected
         // map after setting the proper prior ledger ID it replaced
         harness.clock().advance(1s);
-        auto newVal = a.validation(Ledger::Seq{2}, Ledger::ID{2});
-        BEAST_EXPECT(AddOutcome::current == harness.add(a, newVal));
+        auto newVal = a.validate(Ledger::Seq{2}, Ledger::ID{2});
+        BEAST_EXPECT(AddOutcome::current == harness.add(newVal));
         expected.find(a.masterKey())->second = newVal;
 
         // Now flush
