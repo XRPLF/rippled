@@ -47,7 +47,6 @@ public:
     using const_reference = peers_type::const_reference;
 
     PeerGroup() = default;
-    PeerGroup(PeerGroup const&) = default;
     PeerGroup(Peer* peer) : peers_{1, peer}
     {
     }
