@@ -1,19 +1,21 @@
 # ################################################################
 # LZ4 - Makefile
-# Copyright (C) Yann Collet 2011-2015
+# Copyright (C) Yann Collet 2011-2016
 # All rights reserved.
-# 
+#
+# This Makefile is validated for Linux, macOS, *BSD, Hurd, Solaris, MSYS2 targets
+#
 # BSD license
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
-# 
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-# 
+#
 # * Redistributions in binary form must reproduce the above copyright notice, this
 #   list of conditions and the following disclaimer in the documentation and/or
 #   other materials provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -24,103 +26,156 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # You can contact the author at :
-#  - LZ4 source repository : https://github.com/Cyan4973/lz4
+#  - LZ4 source repository : https://github.com/lz4/lz4
 #  - LZ4 forum froup : https://groups.google.com/forum/#!forum/lz4c
 # ################################################################
 
-# Version number
-export VERSION=130
-export RELEASE=r$(VERSION)
-
-DESTDIR?=
-PREFIX ?= /usr/local
-
-LIBDIR ?= $(PREFIX)/lib
-INCLUDEDIR=$(PREFIX)/include
-PRGDIR  = programs
 LZ4DIR  = lib
+PRGDIR  = programs
+TESTDIR = tests
+EXDIR   = examples
 
-
-# Select test target for Travis CI's Build Matrix
-ifneq (,$(filter test-%,$(LZ4_TRAVIS_CI_ENV)))
-TRAVIS_TARGET=prg-travis
-else
-TRAVIS_TARGET=$(LZ4_TRAVIS_CI_ENV)
-endif
 
 # Define nul output
 ifneq (,$(filter Windows%,$(OS)))
+EXT  = .exe
 VOID = nul
 else
+EXT  =
 VOID = /dev/null
 endif
 
 
-default: lz4programs
+.PHONY: default
+default: lib-release lz4-release
 
-all: 
-	@cd $(LZ4DIR); $(MAKE) -e all
-	@cd $(PRGDIR); $(MAKE) -e all
+.PHONY: all
+all: allmost manuals
 
-lz4programs:
-	@cd $(PRGDIR); $(MAKE) -e
+.PHONY: allmost
+allmost: lib lz4 examples
 
+.PHONY: lib lib-release
+lib lib-release:
+	@$(MAKE) -C $(LZ4DIR) $@
+
+.PHONY: lz4 lz4-release
+lz4 : lib
+lz4-release : lib-release
+lz4 lz4-release :
+	@$(MAKE) -C $(PRGDIR) $@
+	@cp $(PRGDIR)/lz4$(EXT) .
+
+.PHONY: examples
+examples: lib lz4
+	$(MAKE) -C $(EXDIR) test
+
+.PHONY: manuals
+manuals:
+	@$(MAKE) -C contrib/gen_manual $@
+
+.PHONY: clean
 clean:
-	@cd $(PRGDIR); $(MAKE) clean > $(VOID)
-	@cd $(LZ4DIR); $(MAKE) clean > $(VOID)
-	@cd examples;  $(MAKE) clean > $(VOID)
-	@cd test;      $(MAKE) clean > $(VOID)
+	@$(MAKE) -C $(LZ4DIR) $@ > $(VOID)
+	@$(MAKE) -C $(PRGDIR) $@ > $(VOID)
+	@$(MAKE) -C $(TESTDIR) $@ > $(VOID)
+	@$(MAKE) -C $(EXDIR) $@ > $(VOID)
+	@$(MAKE) -C contrib/gen_manual $@
+	@$(RM) lz4$(EXT)
 	@echo Cleaning completed
 
 
-#------------------------------------------------------------------------
-#make install is validated only for Linux, OSX, kFreeBSD and Hurd targets
-ifneq (,$(filter $(shell uname),Linux Darwin GNU/kFreeBSD GNU))
+#-----------------------------------------------------------------------------
+# make install is validated only for Linux, OSX, BSD, Hurd and Solaris targets
+#-----------------------------------------------------------------------------
+ifneq (,$(filter $(shell uname),Linux Darwin GNU/kFreeBSD GNU OpenBSD FreeBSD NetBSD DragonFly SunOS))
+HOST_OS = POSIX
 
-install:
-	@cd $(LZ4DIR); $(MAKE) -e install
-	@cd $(PRGDIR); $(MAKE) -e install
-
-uninstall:
-	@cd $(LZ4DIR); $(MAKE) uninstall
-	@cd $(PRGDIR); $(MAKE) uninstall
+.PHONY: install uninstall
+install uninstall:
+	@$(MAKE) -C $(LZ4DIR) $@
+	@$(MAKE) -C $(PRGDIR) $@
 
 travis-install:
-	sudo $(MAKE) install
-
-test:
-	@cd $(PRGDIR); $(MAKE) -e test
-
-test-travis: $(TRAVIS_TARGET)
+	$(MAKE) -j1 install DESTDIR=~/install_test_dir
 
 cmake:
-	@cd cmake_unofficial; cmake CMakeLists.txt; $(MAKE)
+	@cd contrib/cmake_unofficial; cmake $(CMAKE_PARAMS) CMakeLists.txt; $(MAKE)
 
-gpptest: clean
-	$(MAKE) all CC=g++ CFLAGS="-O3 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror"
+endif
+
+
+ifneq (,$(filter MSYS%,$(shell uname)))
+HOST_OS = MSYS
+CMAKE_PARAMS = -G"MSYS Makefiles"
+endif
+
+
+#------------------------------------------------------------------------
+#make tests validated only for MSYS, Linux, OSX, kFreeBSD and Hurd targets
+#------------------------------------------------------------------------
+ifneq (,$(filter $(HOST_OS),MSYS POSIX))
+
+.PHONY: list
+list:
+	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | xargs
+
+.PHONY: test
+test:
+	$(MAKE) -C $(TESTDIR) $@
 
 clangtest: clean
-	$(MAKE) all CC=clang CPPFLAGS="-Werror -Wconversion -Wno-sign-conversion"
+	clang -v
+	@CFLAGS="-O3 -Werror -Wconversion -Wno-sign-conversion" $(MAKE) -C $(LZ4DIR)  all CC=clang
+	@CFLAGS="-O3 -Werror -Wconversion -Wno-sign-conversion" $(MAKE) -C $(PRGDIR)  all CC=clang
+	@CFLAGS="-O3 -Werror -Wconversion -Wno-sign-conversion" $(MAKE) -C $(TESTDIR) all CC=clang
 
-sanitize: clean
-	$(MAKE) test CC=clang CPPFLAGS="-g -fsanitize=undefined" FUZZER_TIME="-T1mn" NB_LOOPS=-i1
+clangtest-native: clean
+	clang -v
+	@CFLAGS="-O3 -Werror -Wconversion -Wno-sign-conversion" $(MAKE) -C $(LZ4DIR)  all    CC=clang
+	@CFLAGS="-O3 -Werror -Wconversion -Wno-sign-conversion" $(MAKE) -C $(PRGDIR)  native CC=clang
+	@CFLAGS="-O3 -Werror -Wconversion -Wno-sign-conversion" $(MAKE) -C $(TESTDIR) native CC=clang
+
+usan: clean
+	CC=clang CFLAGS="-O3 -g -fsanitize=undefined" $(MAKE) test FUZZER_TIME="-T1mn" NB_LOOPS=-i1
+
+usan32: clean
+	CFLAGS="-m32 -O3 -g -fsanitize=undefined" $(MAKE) test FUZZER_TIME="-T1mn" NB_LOOPS=-i1
 
 staticAnalyze: clean
-	scan-build --status-bugs -v $(MAKE) all CFLAGS=-g
+	CFLAGS=-g scan-build --status-bugs -v $(MAKE) all
 
-armtest: clean
-	cd lib; $(MAKE) -e all CC=arm-linux-gnueabi-gcc CPPFLAGS="-Werror"
-	cd programs; $(MAKE) -e bins CC=arm-linux-gnueabi-gcc CPPFLAGS="-Werror"
+platformTest: clean
+	@echo "\n ---- test lz4 with $(CC) compiler ----"
+	@$(CC) -v
+	CFLAGS="-O3 -Werror"         $(MAKE) -C $(LZ4DIR) all
+	CFLAGS="-O3 -Werror -static" $(MAKE) -C $(PRGDIR) all
+	CFLAGS="-O3 -Werror -static" $(MAKE) -C $(TESTDIR) all
+	$(MAKE) -C $(TESTDIR) test-platform
 
-versionstest: clean
-	@cd test; $(MAKE)
+.PHONY: versionsTest
+versionsTest: clean
+	$(MAKE) -C $(TESTDIR) $@
 
-streaming-examples:
-	cd examples; $(MAKE) -e test
+gpptest: clean
+	g++ -v
+	CC=g++ $(MAKE) -C $(LZ4DIR)  all CFLAGS="-O3 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror"
+	CC=g++ $(MAKE) -C $(PRGDIR)  all CFLAGS="-O3 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror"
+	CC=g++ $(MAKE) -C $(TESTDIR) all CFLAGS="-O3 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror"
 
-prg-travis:
-	@cd $(PRGDIR); $(MAKE) -e test-travis
+gpptest32: clean
+	g++ -v
+	CC=g++ $(MAKE) -C $(LZ4DIR)  all    CFLAGS="-m32 -O3 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror"
+	CC=g++ $(MAKE) -C $(PRGDIR)  native CFLAGS="-m32 -O3 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror"
+	CC=g++ $(MAKE) -C $(TESTDIR) native CFLAGS="-m32 -O3 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Werror"
+
+c_standards: clean
+	# note : lz4 is not C90 compatible, because it requires long long support
+	CFLAGS="-std=gnu90 -Werror" $(MAKE) clean allmost
+	CFLAGS="-std=c99   -Werror" $(MAKE) clean allmost
+	CFLAGS="-std=gnu99 -Werror" $(MAKE) clean allmost
+	CFLAGS="-std=c11   -Werror" $(MAKE) clean allmost
 
 endif
