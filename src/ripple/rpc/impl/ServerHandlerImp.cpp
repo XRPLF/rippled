@@ -893,19 +893,19 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
 
     if (! parsed.ip)
     {
-        log << "Missing 'ip' in [" << p.name << "]\n";
+        log << "Missing 'ip' in [" << p.name << "]";
         Throw<std::exception> ();
     }
     p.ip = *parsed.ip;
 
     if (! parsed.port)
     {
-        log << "Missing 'port' in [" << p.name << "]\n";
+        log << "Missing 'port' in [" << p.name << "]";
         Throw<std::exception> ();
     }
     else if (*parsed.port == 0)
     {
-        log << "Port " << *parsed.port << "in [" << p.name << "] is invalid\n";
+        log << "Port " << *parsed.port << "in [" << p.name << "] is invalid";
         Throw<std::exception> ();
     }
     p.port = *parsed.port;
@@ -916,7 +916,7 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
 
     if (parsed.protocol.empty())
     {
-        log << "Missing 'protocol' in [" << p.name << "]\n";
+        log << "Missing 'protocol' in [" << p.name << "]";
         Throw<std::exception> ();
     }
     p.protocol = parsed.protocol;
@@ -947,7 +947,7 @@ parse_Ports (
     if (! config.exists("server"))
     {
         log <<
-            "Required section [server] is missing\n";
+            "Required section [server] is missing";
         Throw<std::exception> ();
     }
 
@@ -961,7 +961,7 @@ parse_Ports (
         if (! config.exists(name))
         {
             log <<
-                "Missing section: [" << name << "]\n";
+                "Missing section: [" << name << "]";
             Throw<std::exception> ();
         }
         ParsedPort parsed = common;
@@ -997,12 +997,12 @@ parse_Ports (
 
         if (count > 1)
         {
-            log << "Error: More than one peer protocol configured in [server]\n";
+            log << "Error: More than one peer protocol configured in [server]";
             Throw<std::exception> ();
         }
 
         if (count == 0)
-            log << "Warning: No peer protocol configured\n";
+            log << "Warning: No peer protocol configured";
     }
 
     return result;

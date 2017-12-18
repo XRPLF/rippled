@@ -1227,11 +1227,18 @@ bool ApplicationImp::setup()
     }
 
     {
-        auto setup = setup_ServerHandler(
-            *config_,
-            beast::logstream { m_journal.error() });
-        setup.makeContexts();
-        serverHandler_->setup (setup, m_journal);
+        try
+        {
+            auto setup = setup_ServerHandler(
+                *config_, beast::logstream{m_journal.error()});
+            setup.makeContexts();
+            serverHandler_->setup(setup, m_journal);
+        }
+        catch (std::exception const&)
+        {
+            JLOG(m_journal.fatal()) << "Unable to setup server handler";
+            return false;
+        }
     }
 
     // Begin connecting to network.
