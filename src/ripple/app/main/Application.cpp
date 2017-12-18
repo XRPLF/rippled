@@ -61,6 +61,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <cstring>
 
 namespace ripple {
 
@@ -1225,11 +1226,23 @@ bool ApplicationImp::setup()
     }
 
     {
-        auto setup = setup_ServerHandler(
-            *config_,
-            beast::logstream { m_journal.error() });
-        setup.makeContexts();
-        serverHandler_->setup (setup, m_journal);
+        try
+        {
+            auto setup = setup_ServerHandler(
+                *config_, beast::logstream{m_journal.error()});
+            setup.makeContexts();
+            serverHandler_->setup(setup, m_journal);
+        }
+        catch (std::exception const& e)
+        {
+            if (auto stream = m_journal.fatal())
+            {
+                stream << "Unable to setup server handler";
+                if(std::strlen(e.what()) > 0)
+                    stream << ": " << e.what();
+            }
+            return false;
+        }
     }
 
     // Begin connecting to network.
