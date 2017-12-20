@@ -1234,9 +1234,10 @@ bool ApplicationImp::setup()
             setup.makeContexts();
             serverHandler_->setup(setup, m_journal);
         }
-        catch (std::exception const&)
+        catch (std::exception const& e)
         {
-            JLOG(m_journal.fatal()) << "Unable to setup server handler";
+            JLOG(m_journal.fatal())
+                << "Unable to setup server handler " << e.what();
             return false;
         }
     }
