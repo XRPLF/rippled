@@ -61,6 +61,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <cstring>
 
 namespace ripple {
 
@@ -1236,8 +1237,12 @@ bool ApplicationImp::setup()
         }
         catch (std::exception const& e)
         {
-            JLOG(m_journal.fatal())
-                << "Unable to setup server handler " << e.what();
+            if (auto stream = m_journal.fatal())
+            {
+                stream << "Unable to setup server handler";
+                if(std::strlen(e.what()) > 0)
+                    stream << ": " << e.what();
+            }
             return false;
         }
     }
