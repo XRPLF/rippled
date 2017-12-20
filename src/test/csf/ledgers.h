@@ -66,6 +66,7 @@ public:
     struct IdTag;
     using ID = tagged_integer<std::uint32_t, IdTag>;
 
+    struct MakeGenesis {};
 private:
     // The instance is the common immutable data that will be assigned a unique
     // ID by the oracle
@@ -142,7 +143,13 @@ private:
     }
 
 public:
-    Ledger() : id_{0}, instance_(&genesis)
+    Ledger(MakeGenesis) : instance_(&genesis)
+    {
+    }
+
+    // This is required by the generic Consensus for now and should be
+    // migrated to the MakeGenesis approach above.
+    Ledger() : Ledger(MakeGenesis{})
     {
     }
 
@@ -304,14 +311,14 @@ public:
 */
 struct LedgerHistoryHelper
 {
-    csf::LedgerOracle oracle;
-    csf::Tx::ID nextTx{0};
-    std::unordered_map<std::string, csf::Ledger> ledgers;
+    LedgerOracle oracle;
+    Tx::ID nextTx{0};
+    std::unordered_map<std::string, Ledger> ledgers;
     std::set<char> seen;
 
     LedgerHistoryHelper()
     {
-        ledgers[""] = csf::Ledger{};
+        ledgers[""] = Ledger{Ledger::MakeGenesis{}};
     }
 
     /** Get or create the ledger with the given string history.
@@ -319,7 +326,7 @@ struct LedgerHistoryHelper
         Creates an necessary intermediate ledgers, but asserts if
         a letter is re-used (e.g. "abc" then "adc" would assert)
     */
-    csf::Ledger const& operator[](std::string const& s)
+    Ledger const& operator[](std::string const& s)
     {
         auto it = ledgers.find(s);
         if (it != ledgers.end())
@@ -328,7 +335,7 @@ struct LedgerHistoryHelper
         // enforce that the new suffix has never been seen
         assert(seen.emplace(s.back()).second);
 
-        csf::Ledger const& parent = (*this)[s.substr(0, s.size() - 1)];
+        Ledger const& parent = (*this)[s.substr(0, s.size() - 1)];
         return ledgers.emplace(s, oracle.accept(parent, ++nextTx))
             .first->second;
     }

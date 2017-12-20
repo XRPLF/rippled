@@ -138,8 +138,9 @@ class RCLValidatedLedger
 public:
     using ID = LedgerHash;
     using Seq = LedgerIndex;
+    struct MakeGenesis{};
 
-    RCLValidatedLedger() = default;
+    RCLValidatedLedger(MakeGenesis) {};
 
     RCLValidatedLedger(std::shared_ptr<Ledger const> ledger, beast::Journal j);
 

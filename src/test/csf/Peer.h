@@ -285,7 +285,9 @@ struct Peer
         , scheduler{s}
         , net{n}
         , trustGraph(tg)
+        , lastClosedLedger{Ledger::MakeGenesis{}}
         , validations{ValidationParms{}, s.clock(), *this}
+        , fullyValidatedLedger{Ledger::MakeGenesis{}}
         , collectors{c}
     {
         // All peers start from the default constructed genesis ledger

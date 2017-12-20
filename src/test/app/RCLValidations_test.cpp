@@ -97,7 +97,7 @@ public:
 
         // Empty ledger
         {
-            RCLValidatedLedger a;
+            RCLValidatedLedger a{RCLValidatedLedger::MakeGenesis{}};
             BEAST_EXPECT(a.seq() == Seq{0});
             BEAST_EXPECT(a[Seq{0}] == ID{0});
             BEAST_EXPECT(a.minSeq() == Seq{0});
@@ -124,7 +124,7 @@ public:
 
         // Empty with non-empty
         {
-            RCLValidatedLedger a;
+            RCLValidatedLedger a{RCLValidatedLedger::MakeGenesis{}};
 
             for (auto ledger : {history.back(),
                                 history[maxAncestors - 1]})

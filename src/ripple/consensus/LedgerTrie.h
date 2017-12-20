@@ -27,10 +27,11 @@
 
 namespace ripple {
 
+
 /** Ancestry trie of ledgers
 
-    Combination of a compressed trie and merkle-ish tree that maintains
-    validation support of recent ledgers based on their ancestry.
+    A compressed trie tree that maintains validation support of recent ledgers
+    based on their ancestry.
 
     The compressed trie structure comes from recognizing that ledger history
     can be viewed as a string over the alphabet of ledger ids. That is,
@@ -45,18 +46,15 @@ namespace ripple {
     support has either no children or multiple children. In other words, a
     non-root 0-tip-support node can be combined with its single child.
 
-    The merkle-ish property is based on the branch support calculation. Each
-    node has a tipSupport, which is the number of current validations for that
-    particular ledger. The branch support is the sum of the tip support and
-    the branch support of that node's children:
+    Each node has a tipSupport, which is the number of current validations for
+    that particular ledger. The node's branch support is the sum of the tip
+    support and the branch support of that node's children:
 
         @code
-        node->branchSupport = node->tipSupport
-                            + sum_(child : node->children) child->branchSupport
+        node->branchSupport = node->tipSupport;
+        for (child : node->children)
+           node->branchSupport += child->branchSupport;
         @endcode
-
-    This is analogous to the merkle tree property in which a node's hash is
-    the hash of the concatenation of its child node hashes.
 
     The templated Ledger type represents a ledger which has a unique history.
     It should be lightweight and cheap to copy.
@@ -68,12 +66,14 @@ namespace ripple {
 
        struct Ledger
        {
-          // The default ledger represents a ledger that prefixes all other
-          // ledgers, e.g. the genesis ledger
-          Ledger();
+          struct MakeGenesis{};
 
-          Ledger(Ledger &);
-          Ledger& operator=(Ledger );
+          // The genesis ledger represents a ledger that prefixes all other
+          // ledgers
+          Ledger(MakeGenesis{});
+
+          Ledger(Ledger const&);
+          Ledger& operator=(Ledger const&);
 
           // Return the sequence number of this ledger
           Seq seq() const;
@@ -120,7 +120,7 @@ class LedgerTrie
         Ledger ledger_;
 
     public:
-        Span()
+        Span() : ledger_{typename Ledger::MakeGenesis{}}
         {
             // Require default ledger to be genesis seq
             assert(ledger_.seq() == start_);
@@ -183,7 +183,7 @@ class LedgerTrie
         std::pair<Seq, ID>
         tip() const
         {
-            Seq tipSeq{end_ -Seq{1}};
+            Seq tipSeq{end_ - Seq{1}};
             return {tipSeq, ledger_[tipSeq]};
         }
 
@@ -210,8 +210,8 @@ class LedgerTrie
         friend std::ostream&
         operator<<(std::ostream& o, Span const& s)
         {
-            return o << s.tip().second << "(" << s.start_ << "," << s.end_
-                     << "]";
+            return o << s.tip().second << "[" << s.start_ << "," << s.end_
+                     << ")";
         }
 
         friend Span
@@ -228,15 +228,13 @@ class LedgerTrie
     // A node in the trie
     struct Node
     {
-        Node() : span{}, tipSupport{0}, branchSupport{0}
+        Node() = default;
+
+        explicit Node(Ledger const& l) : span{l}, tipSupport{1}, branchSupport{1}
         {
         }
 
-        Node(Ledger const& l) : span{l}, tipSupport{1}, branchSupport{1}
-        {
-        }
-
-        Node(Span s) : span{std::move(s)}
+        explicit Node(Span s) : span{std::move(s)}
         {
         }
 
@@ -256,14 +254,16 @@ class LedgerTrie
         void
         erase(Node const* child)
         {
-            auto it = std::remove_if(
-                    children.begin(),
-                    children.end(),
-                    [child](std::unique_ptr<Node> const& curr) {
-                        return curr.get() == child;
-                    });
+            auto it = std::find_if(
+                children.begin(),
+                children.end(),
+                [child](std::unique_ptr<Node> const& curr) {
+                    return curr.get() == child;
+                });
             assert(it != children.end());
-            children.erase(it, children.end());
+            using std::swap;
+            swap(*it, children.back());
+            children.pop_back();
         }
 
         friend std::ostream&
@@ -284,7 +284,7 @@ class LedgerTrie
             if(!children.empty())
             {
                 Json::Value &cs = (res["children"] = Json::arrayValue);
-                for(auto const & child : children)
+                for (auto const& child : children)
                 {
                     cs.append(child->getJson());
                 }
@@ -322,7 +322,7 @@ class LedgerTrie
             // Find the child with the longest ancestry match
             for (std::unique_ptr<Node> const& child : curr->children)
             {
-                auto childPos = child->span.diff(ledger);
+                auto const childPos = child->span.diff(ledger);
                 if (childPos > pos)
                 {
                     done = false;
@@ -385,7 +385,7 @@ public:
             //    becomes abcd->ef->...
 
             // Create oldSuffix node that takes over loc
-            std::unique_ptr<Node> newNode{std::make_unique<Node>(oldSuffix)};
+            auto newNode = std::make_unique<Node>(oldSuffix);
             newNode->tipSupport = loc->tipSupport;
             newNode->branchSupport = loc->branchSupport;
             using std::swap;
@@ -406,7 +406,7 @@ public:
             // ->   abc->  ...
             //          -> de
 
-            std::unique_ptr<Node> newNode{std::make_unique<Node>(newSuffix)};
+            auto newNode = std::make_unique<Node>(newSuffix);
             newNode->parent = loc;
             // increment support starting from the new node
             incNode = newNode.get();
@@ -560,7 +560,7 @@ public:
         The preferred ledger for this sequence number is then the ledger
         with relative majority of support, where prefixSupport can be given to
         ANY ledger at that sequence number (including one not yet known). If no
-        such preferred ledger exists, than prior sequence preferred ledger is
+        such preferred ledger exists, then prior sequence preferred ledger is
         the overall preferred ledger.
 
         In this example, for D to be preferred, the number of validators
