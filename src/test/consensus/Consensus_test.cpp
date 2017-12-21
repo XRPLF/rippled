@@ -992,6 +992,7 @@ public:
             BEAST_EXPECT(sim.synchronized(groupNotFastC) == 1);
         }
     }
+
     void
     run() override
     {

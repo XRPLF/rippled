@@ -302,6 +302,7 @@ class Validations_test : public beast::unit_test::suite
         LedgerHistoryHelper h;
         Ledger ledgerA = h["a"];
         Ledger ledgerAB = h["ab"];
+        Ledger ledgerAZ = h["az"];
         Ledger ledgerABC = h["abc"];
         Ledger ledgerABCD = h["abcd"];
         Ledger ledgerABCDE = h["abcde"];
@@ -427,6 +428,14 @@ class Validations_test : public beast::unit_test::suite
                 ValStatus::badFullSeq == harness.add(n.validate(ledgerAB)));
             BEAST_EXPECT(
                 ValStatus::current == harness.add(n.partial(ledgerAB)));
+            // If we advance far enough for AB to expire, we can fully validate
+            // that sequence number again
+            BEAST_EXPECT(
+                ValStatus::badFullSeq == harness.add(n.validate(ledgerAZ)));
+            harness.clock().advance(
+                harness.parms().validationSET_EXPIRES + 1ms);
+            BEAST_EXPECT(
+                ValStatus::current == harness.add(n.validate(ledgerAZ)));
         }
     }
 
@@ -987,6 +996,28 @@ class Validations_test : public beast::unit_test::suite
     }
 
     void
+    testFullSeqEnforcer()
+    {
+        testcase("FullSeqEnforcer");
+        using Seq = Ledger::Seq;
+        using namespace std::chrono;
+
+        beast::manual_clock<steady_clock> clock;
+        FullSeqEnforcer<Seq> enforcer;
+
+        ValidationParms p;
+
+        BEAST_EXPECT(enforcer.tryAdvance(clock.now(), Seq{1}, p));
+        BEAST_EXPECT(enforcer.tryAdvance(clock.now(), Seq{10}, p));
+        BEAST_EXPECT(!enforcer.tryAdvance(clock.now(), Seq{9}, p));
+        BEAST_EXPECT(!enforcer.tryAdvance(clock.now(), Seq{5}, p));
+        clock.advance(p.validationSET_EXPIRES - 1ms);
+        BEAST_EXPECT(!enforcer.tryAdvance(clock.now(), Seq{1}, p));
+        clock.advance(2ms);
+        BEAST_EXPECT(enforcer.tryAdvance(clock.now(), Seq{1}, p));
+    }
+
+    void
     run() override
     {
         testAddValidation();
@@ -1001,6 +1032,7 @@ class Validations_test : public beast::unit_test::suite
         testGetPreferredLCL();
         testAcquireValidatedLedger();
         testNumTrustedForLedger();
+        testFullSeqEnforcer();
     }
 };
 

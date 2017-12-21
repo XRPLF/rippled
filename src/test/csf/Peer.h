@@ -238,8 +238,8 @@ struct Peer
     //! Whether to simulate running as validator or a tracking node
     bool runAsValidator = true;
 
-    //! Sequence number of largest full validation thus far
-    Ledger::Seq largestFullValidation{0};
+    //! Enforce invariants on full validation sequence numbers
+    FullSeqEnforcer<Ledger::Seq> fullSeqEnforcer;
 
     //TODO: Consider removing these two, they are only a convenience for tests
     // Number of proposers in the prior round
@@ -575,10 +575,9 @@ struct Peer
             if (runAsValidator && isCompatible && !consensusFail)
             {
                 // Can only send one fully validated ledger per seq
-                bool isFull =
-                    proposing && newLedger.seq() > largestFullValidation;
-                largestFullValidation =
-                    std::max(largestFullValidation, newLedger.seq());
+                bool isFull = proposing &&
+                    fullSeqEnforcer.tryAdvance(
+                        scheduler.now(), newLedger.seq(), validations.parms());
 
                 Validation v{newLedger.id(),
                              newLedger.seq(),

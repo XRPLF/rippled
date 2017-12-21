@@ -73,6 +73,43 @@ struct ValidationParms
     std::chrono::seconds validationSET_EXPIRES = std::chrono::minutes{10};
 };
 
+/** Enforce full validation increasing sequence requirement.
+
+    Helper class for enforcing that a full validation must be larger than all
+    unexpired full validation sequence numbers previously received from the
+    issuing validator tracked by the instance of this class.
+*/
+template <class Seq>
+class FullSeqEnforcer
+{
+    using time_point = std::chrono::steady_clock::time_point;
+    Seq seq_{0};
+    time_point when_;
+public:
+    /** Try advancing the largest observed full validation ledger sequence
+
+        Try setting the largest full sequence observed, but return false if it
+        violates the invaraint that a full validation must be larger than all
+        unexpired full validation sequence numbers.
+
+        @param now The current time
+        @param s The sequence number we want to fully validate
+        @param p Validation parameters
+
+        @return Whether the validation can be marked full
+    */
+    bool
+    tryAdvance(time_point now, Seq s, ValidationParms const & p)
+    {
+        if(now > (when_ + p.validationSET_EXPIRES))
+            seq_ = Seq{0};
+        if(seq_ != Seq{0} && s <= seq_)
+            return false;
+        seq_ = s;
+        when_ = now;
+        return true;
+    }
+};
 /** Whether a validation is still current
 
     Determines whether a validation can still be considered the current
@@ -269,7 +306,7 @@ class Validations
     hash_map<NodeKey, Validation> current_;
 
     // Sequence of the largest full validation received from each node
-    hash_map<NodeKey, Seq> largestFullValidation_;
+    hash_map<NodeKey, FullSeqEnforcer<Seq>> fullSeqEnforcers_;
 
     //! Validations from listed nodes, indexed by ledger id (partial and full)
     beast::aged_unordered_map<
@@ -536,16 +573,14 @@ public:
         {
             ScopedLock lock{mutex_};
 
-            // Ensure full validations are for increasing sequence numbers
+            // Check that full validation is greater than any non-expired
+            // full validations
             if (val.full() && val.seq() != Seq{0})
             {
-                auto const ins = largestFullValidation_.emplace(key, val.seq());
-                if (!ins.second)
-                {
-                    if (val.seq() <= ins.first->second)
-                        return ValStatus::badFullSeq;
-                    ins.first->second = val.seq();
-                }
+                auto const now = byLedger_.clock().now();
+                FullSeqEnforcer<Seq>& enforcer = fullSeqEnforcers_[key];
+                if (!enforcer.tryAdvance(now, val.seq(), parms_))
+                    return ValStatus::badFullSeq;
             }
 
             // This validation is a repeat if we already have

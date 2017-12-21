@@ -29,6 +29,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/consensus/Consensus.h>
+#include <ripple/consensus/Validations.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/overlay/Message.h>
 #include <ripple/protocol/RippleLedgerHash.h>
@@ -69,8 +70,8 @@ class RCLConsensus
         // The timestamp of the last validation we used
         NetClock::time_point lastValidationTime_;
 
-        // Largest sequence number fully validated
-        LedgerIndex largestFullValidationSeq_ = 0;
+        // Enforces invariants on issuing full validations
+        FullSeqEnforcer<LedgerIndex> fullSeqEnforcer_;
 
         // These members are queried via public accesors and are atomic for
         // thread safety.
