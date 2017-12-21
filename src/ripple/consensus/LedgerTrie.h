@@ -146,14 +146,14 @@ class LedgerTrie
 
         // Return the Span from (spot,end_]
         Span
-        from(Seq spot)
+        from(Seq spot) const
         {
             return sub(spot, end_);
         }
 
         // Return the Span from (start_,spot]
         Span
-        before(Seq spot)
+        before(Seq spot) const
         {
             return sub(start_, spot);
         }
@@ -202,7 +202,7 @@ class LedgerTrie
 
         // Return a span of this over the half-open interval [from,to)
         Span
-        sub(Seq from, Seq to)
+        sub(Seq from, Seq to) const
         {
             return Span(clamp(from), clamp(to), ledger_);
         }
@@ -577,7 +577,7 @@ public:
         initially support a different descendant.
     */
     std::pair<Seq,ID>
-    getPreferred()
+    getPreferred() const
     {
         Node* curr = root.get();
 
