@@ -1297,9 +1297,8 @@ bool NetworkOPsImp::checkLastClosedLedger (
     for(auto const & it: peerCounts)
         JLOG(m_journal.debug()) << "L: " << it.first << " n=" << it.second;
 
-    uint256 preferredLCL = getPreferredLCL(
-        validations,
-        ourClosed,
+    uint256 preferredLCL = validations.getPreferredLCL(
+        RCLValidatedLedger{ourClosed, validations.adaptor().journal()},
         m_ledgerMaster.getValidLedgerIndex(),
         peerCounts);
 

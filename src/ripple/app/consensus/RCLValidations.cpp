@@ -38,20 +38,24 @@
 
 namespace ripple {
 
-RCLValidatedLedger::RCLValidatedLedger(
-    std::shared_ptr<Ledger const> ledger,
-    beast::Journal j)
-    : ledger_{std::move(ledger)}, j_{j}
+RCLValidatedLedger::RCLValidatedLedger(MakeGenesis)
+    : ledgerID_{0}, ledgerSeq_{0}
 {
-    auto const hashIndex = ledger_->read(keylet::skip());
+}
+
+RCLValidatedLedger::RCLValidatedLedger(
+    std::shared_ptr<Ledger const> const& ledger,
+    beast::Journal j)
+    : ledgerID_{ledger->info().hash}, ledgerSeq_{ledger->seq()}, j_{j}
+{
+    auto const hashIndex = ledger->read(keylet::skip());
     if (hashIndex)
     {
         assert(hashIndex->getFieldU32(sfLastLedgerSequence) == (seq() - 1));
         ancestors_ = hashIndex->getFieldV256(sfHashes).value();
     }
     else
-        JLOG(j_.warn()) << "Ledger " << ledger_->seq() << ":"
-                        << ledger_->info().hash
+        JLOG(j_.warn()) << "Ledger " << ledgerSeq_ << ":" << ledgerID_
                         << " missing recent ancestor hashes";
 }
 
@@ -64,28 +68,28 @@ RCLValidatedLedger::minSeq() const -> Seq
 auto
 RCLValidatedLedger::seq() const -> Seq
 {
-    return ledger_ ? ledger_->info().seq : Seq{0};
+    return ledgerSeq_;
 }
 auto
 RCLValidatedLedger::id() const -> ID
 {
-    return ledger_ ? ledger_->info().hash : ID{0};
+    return ledgerID_;
 }
 
 auto RCLValidatedLedger::operator[](Seq const& s) const -> ID
 {
-    if (ledger_ && s >= minSeq() && s <= seq())
+    if (s >= minSeq() && s <= seq())
     {
         if (s == seq())
-            return ledger_->info().hash;
+            return ledgerID_;
         Seq const diff = seq() - s;
         if (ancestors_.size() >= diff)
             return ancestors_[ancestors_.size() - diff];
     }
 
     JLOG(j_.warn()) << "Unable to determine hash of ancestor seq=" << s
-                    << " from ledger hash=" << ledger_->info().hash
-                    << " seq=" << ledger_->info().seq;
+                    << " from ledger hash=" << ledgerID_
+                    << " seq=" << ledgerSeq_;
     // Default ID that is less than all others
     return ID{};
 }
@@ -345,38 +349,5 @@ handleNewValidation(Application& app,
     return shouldRelay;
 }
 
-std::size_t
-getNodesAfter(
-    RCLValidations& vals,
-    std::shared_ptr<Ledger const> ledger,
-    uint256 const& ledgerID)
-{
-    return vals.getNodesAfter(
-        RCLValidatedLedger{std::move(ledger), vals.adaptor().journal()},
-        ledgerID);
-}
 
-uint256
-getPreferred(
-    RCLValidations& vals,
-    std::shared_ptr<Ledger const> ledger,
-    LedgerIndex minValidSeq)
-{
-    return vals.getPreferred(
-        RCLValidatedLedger{std::move(ledger), vals.adaptor().journal()},
-        minValidSeq);
-}
-
-uint256
-getPreferredLCL(
-    RCLValidations& vals,
-    std::shared_ptr<Ledger const> ledger,
-    LedgerIndex minSeq,
-    hash_map<uint256, std::uint32_t> const& peerCounts)
-{
-    return vals.getPreferredLCL(
-        RCLValidatedLedger{std::move(ledger), vals.adaptor().journal()},
-        minSeq,
-        peerCounts);
-}
 }  // namespace ripple

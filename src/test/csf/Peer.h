@@ -575,8 +575,9 @@ struct Peer
             if (runAsValidator && isCompatible && !consensusFail)
             {
                 // Can only send one fully validated ledger per seq
-                bool isFull = proposing &&
-                    fullSeqEnforcer.tryAdvance(
+                bool isFull =
+                    proposing &&
+                    fullSeqEnforcer(
                         scheduler.now(), newLedger.seq(), validations.parms());
 
                 Validation v{newLedger.id(),
@@ -630,7 +631,7 @@ struct Peer
         Ledger::ID const netLgr =
             validations.getPreferred(ledger, earliestAllowedSeq());
 
-        if (netLgr != ledgerID && netLgr != Ledger::ID{})
+        if (netLgr != ledgerID)
         {
             JLOG(j.trace()) << Json::Compact(validations.getJsonTrie());
             issue(WrongPrevLedger{ledgerID, netLgr});

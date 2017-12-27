@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
 #define RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
 
+#include <ripple/json/json_value.h>
 #include <algorithm>
 #include <memory>
 #include <vector>
-#include <ripple/json/json_value.h>
 
 namespace ripple {
 

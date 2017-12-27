@@ -89,7 +89,7 @@ public:
     /** Try advancing the largest observed full validation ledger sequence
 
         Try setting the largest full sequence observed, but return false if it
-        violates the invaraint that a full validation must be larger than all
+        violates the invariant that a full validation must be larger than all
         unexpired full validation sequence numbers.
 
         @param now The current time
@@ -99,7 +99,7 @@ public:
         @return Whether the validation can be marked full
     */
     bool
-    tryAdvance(time_point now, Seq s, ValidationParms const & p)
+    operator()(time_point now, Seq s, ValidationParms const & p)
     {
         if(now > (when_ + p.validationSET_EXPIRES))
             seq_ = Seq{0};
@@ -139,36 +139,6 @@ isCurrent(
          (seenTime < (now + p.validationCURRENT_LOCAL)));
 }
 
-/** Determine the preferred ledger based on its support
-
-    @param current The current ledger the node follows
-    @param dist Ledger IDs and corresponding counts of support
-    @return The ID of the ledger with most support, preferring to stick with
-            current ledger in the case of equal support
-*/
-template <class ID>
-inline ID
-getPreferredLedger(
-    ID const& current,
-    hash_map<ID, std::uint32_t> const& dist)
-{
-    ID netLgr = current;
-    int netLgrCount = 0;
-    for (auto const& it : dist)
-    {
-        // Switch to ledger supported by more peers
-        // On a tie, prefer the current ledger, or the one with higher ID
-        if ((it.second > netLgrCount) ||
-            ((it.second == netLgrCount) &&
-             ((it.first == current) ||
-              (it.first > netLgr && netLgr != current))))
-        {
-            netLgr = it.first;
-            netLgrCount = it.second;
-        }
-    }
-    return netLgr;
-}
 
 /** Status of newly received validation
  */
@@ -579,7 +549,7 @@ public:
             {
                 auto const now = byLedger_.clock().now();
                 FullSeqEnforcer<Seq>& enforcer = fullSeqEnforcers_[key];
-                if (!enforcer.tryAdvance(now, val.seq(), parms_))
+                if (!enforcer(now, val.seq(), parms_))
                     return ValStatus::badFullSeq;
             }
 
@@ -772,14 +742,14 @@ public:
             });
 
         // Count parent ledgers as fallback
-        std::size_t count = 0;
-        for (auto const& it : lastLedger_)
-        {
-            Ledger const& curr = it.second;
-            if (curr.seq() > Seq{0} && curr[curr.seq() - Seq{1}] == ledgerID)
-                ++count;
-        }
-        return count;
+        return std::count_if(
+            lastLedger_.begin(),
+            lastLedger_.end(),
+            [&ledgerID](auto const& it) {
+                auto const& curr = it.second;
+                return curr.seq() > Seq{0} &&
+                    curr[curr.seq() - Seq{1}] == ledgerID;
+            });
     }
 
     /** Get the currently trusted full validations

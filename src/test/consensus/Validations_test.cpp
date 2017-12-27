@@ -1007,14 +1007,14 @@ class Validations_test : public beast::unit_test::suite
 
         ValidationParms p;
 
-        BEAST_EXPECT(enforcer.tryAdvance(clock.now(), Seq{1}, p));
-        BEAST_EXPECT(enforcer.tryAdvance(clock.now(), Seq{10}, p));
-        BEAST_EXPECT(!enforcer.tryAdvance(clock.now(), Seq{9}, p));
-        BEAST_EXPECT(!enforcer.tryAdvance(clock.now(), Seq{5}, p));
+        BEAST_EXPECT(enforcer(clock.now(), Seq{1}, p));
+        BEAST_EXPECT(enforcer(clock.now(), Seq{10}, p));
+        BEAST_EXPECT(!enforcer(clock.now(), Seq{9}, p));
+        BEAST_EXPECT(!enforcer(clock.now(), Seq{5}, p));
         clock.advance(p.validationSET_EXPIRES - 1ms);
-        BEAST_EXPECT(!enforcer.tryAdvance(clock.now(), Seq{1}, p));
+        BEAST_EXPECT(!enforcer(clock.now(), Seq{1}, p));
         clock.advance(2ms);
-        BEAST_EXPECT(enforcer.tryAdvance(clock.now(), Seq{1}, p));
+        BEAST_EXPECT(enforcer(clock.now(), Seq{1}, p));
     }
 
     void

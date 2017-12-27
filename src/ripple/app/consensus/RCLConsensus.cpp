@@ -237,7 +237,9 @@ RCLConsensus::Adaptor::proposersFinished(
     RCLCxLedger const& ledger,
     LedgerHash const& h) const
 {
-    return getNodesAfter(app_.getValidations(), ledger.ledger_, h);
+    RCLValidations& vals = app_.getValidations();
+    return vals.getNodesAfter(
+        RCLValidatedLedger(ledger.ledger_, vals.adaptor().journal()), h);
 }
 
 uint256
@@ -246,12 +248,12 @@ RCLConsensus::Adaptor::getPrevLedger(
     RCLCxLedger const& ledger,
     ConsensusMode mode)
 {
-    uint256 netLgr = getPreferred(
-        app_.getValidations(),
-        ledger.ledger_,
+    RCLValidations& vals = app_.getValidations();
+    uint256 netLgr = vals.getPreferred(
+        RCLValidatedLedger{ledger.ledger_, vals.adaptor().journal()},
         ledgerMaster_.getValidLedgerIndex());
 
-    if (netLgr != ledgerID && netLgr != uint256{})
+    if (netLgr != ledgerID)
     {
         if (mode != ConsensusMode::wrongLedger)
             app_.getOPs().consensusViewChange();
@@ -831,8 +833,9 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, bool proposing)
 
     // Can only fully validate if proposed and increasing full sequence invariant
     // satisfied
-    const bool isFull = proposing &&
-        fullSeqEnforcer_.tryAdvance(
+    const bool isFull =
+        proposing &&
+        fullSeqEnforcer_(
             stopwatch().now(), ledger.seq(), app_.getValidations().parms());
 
     // Build validation

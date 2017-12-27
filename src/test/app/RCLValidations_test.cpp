@@ -49,11 +49,11 @@ public:
         // Generate two ledger histories that agree on the first maxAncestors
         // ledgers, then diverge.
 
-        std::vector<std::shared_ptr<Ledger>> history;
+        std::vector<std::shared_ptr<Ledger const>> history;
 
         jtx::Env env(*this);
         Config config;
-        auto prev = std::make_shared<Ledger>(
+        auto prev = std::make_shared<Ledger const>(
             create_genesis, config,
             std::vector<uint256>{}, env.app().family());
         history.push_back(prev);
@@ -69,7 +69,7 @@ public:
 
         // altHistory agrees with first half of regular history
         Seq const diverge = history.size()/2;
-        std::vector<std::shared_ptr<Ledger>> altHistory(
+        std::vector<std::shared_ptr<Ledger const>> altHistory(
             history.begin(), history.begin() + diverge);
         // advance clock too get new ledgers
         env.timeKeeper().set(env.timeKeeper().now() + 1200s);
@@ -105,7 +105,7 @@ public:
 
         // Full history ledgers
         {
-            std::shared_ptr<Ledger> ledger = history.back();
+            std::shared_ptr<Ledger const> ledger = history.back();
             RCLValidatedLedger a{ledger, j};
             BEAST_EXPECT(a.seq() == ledger->info().seq);
             BEAST_EXPECT(
