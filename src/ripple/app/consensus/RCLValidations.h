@@ -160,7 +160,7 @@ public:
 
         @param s The sequence (index) of the ancestor
         @return The ID of this ledger's ancestor with that sequence number or
-                ID{} if one was not determined
+                ID{0} if one was not determined
     */
     ID operator[](Seq const& s) const;
 

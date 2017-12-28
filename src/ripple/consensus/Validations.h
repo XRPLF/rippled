@@ -611,14 +611,14 @@ public:
         @param currLedger The local nodes current working ledger
 
         @return The sequence and id of the preferred working ledger,
-                or Seq{0},ID{} if no trusted validations are available to
+                or Seq{0},ID{0} if no trusted validations are available to
                 determine the preferred ledger.
     */
     std::pair<Seq, ID>
     getPreferred(Ledger const& currLedger)
     {
-        Seq preferredSeq;
-        ID preferredID;
+        Seq preferredSeq{0};
+        ID preferredID{0};
 
         ScopedLock lock{mutex_};
         std::tie(preferredSeq, preferredID) = withTrie(
@@ -671,7 +671,7 @@ public:
     getPreferred(Ledger const& currLedger, Seq minValidSeq)
     {
         std::pair<Seq, ID> preferred = getPreferred(currLedger);
-        if(preferred.first >= minValidSeq && preferred.second != ID{})
+        if(preferred.first >= minValidSeq && preferred.second != ID{0})
             return preferred.second;
         return currLedger.id();
 
@@ -702,7 +702,7 @@ public:
         std::pair<Seq, ID> preferred = getPreferred(lcl);
 
         // Trusted validations exist
-        if (preferred.second != ID{} && preferred.first > Seq{0})
+        if (preferred.second != ID{0} && preferred.first > Seq{0})
             return (preferred.first >= minSeq) ? preferred.second : lcl.id();
 
         // Otherwise, rely on peer ledgers
