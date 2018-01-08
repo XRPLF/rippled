@@ -393,6 +393,10 @@ public:
         auto result = env.rpc("validation_create");
         BEAST_EXPECT(result.isMember(jss::result) &&
                      result[jss::result][jss::status] == "success");
+        result = env.rpc("validation_create",
+                         "BAWL MAN JADE MOON DOVE GEM SON NOW HAD ADEN GLOW TIRE");
+        BEAST_EXPECT(result.isMember(jss::result) &&
+                     result[jss::result][jss::status] == "success");
     }
 
     void
