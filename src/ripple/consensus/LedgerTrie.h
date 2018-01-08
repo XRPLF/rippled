@@ -21,6 +21,7 @@
 #define RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
 
 #include <ripple/json/json_value.h>
+#include <boost/optional.hpp>
 #include <algorithm>
 #include <memory>
 #include <vector>
@@ -144,24 +145,18 @@ class LedgerTrie
             return end_;
         }
 
-        // Return the Span from (spot,end_]
-        Span
+        // Return the Span from [spot,end_) or none if no such valid span
+        boost::optional<Span>
         from(Seq spot) const
         {
             return sub(spot, end_);
         }
 
-        // Return the Span from (start_,spot]
-        Span
+        // Return the Span from [start_,spot) or none if no such valid span
+        boost::optional<Span>
         before(Seq spot) const
         {
             return sub(start_, spot);
-        }
-
-        bool
-        empty() const
-        {
-            return start_ == end_;
         }
 
         //Return the ID of the ledger that starts this span
@@ -191,7 +186,8 @@ class LedgerTrie
         Span(Seq start, Seq end, Ledger const& l)
             : start_{start}, end_{end}, ledger_{l}
         {
-            assert(start <= end);
+            // Spans cannot be empty
+            assert(start < end);
         }
 
         Seq
@@ -201,10 +197,14 @@ class LedgerTrie
         };
 
         // Return a span of this over the half-open interval [from,to)
-        Span
+        boost::optional<Span>
         sub(Seq from, Seq to) const
         {
-            return Span(clamp(from), clamp(to), ledger_);
+            Seq newFrom = clamp(from);
+            Seq newTo = clamp(to);
+            if(newFrom < newTo)
+                return Span(newFrom, newTo, ledger_);
+            return boost::none;
         }
 
         friend std::ostream&
@@ -261,8 +261,7 @@ class LedgerTrie
                     return curr.get() == child;
                 });
             assert(it != children.end());
-            using std::swap;
-            swap(*it, children.back());
+            std::swap(*it, children.back());
             children.pop_back();
         }
 
@@ -372,41 +371,62 @@ public:
         // There is always a place to insert
         assert(loc);
 
-        Span lTmp{ledger};
-        Span prefix = lTmp.before(diffSeq);
-        Span oldSuffix = loc->span.from(diffSeq);
-        Span newSuffix = lTmp.from(diffSeq);
+        // Node from which to start incrementing branchSupport
         Node* incNode = loc;
 
-        if (!oldSuffix.empty())
+        // loc->span has the longest common prefix with Span{ledger} of all
+        // existing nodes in the trie. The optional<Span>'s below represent
+        // the possible common suffixes between loc->span and Span{ledger}.
+        //
+        // loc->span
+        //  a b c  | d e f
+        //  prefix | oldSuffix
+        //
+        // Span{ledger}
+        //  a b c  | g h i
+        //  prefix | newSuffix
+
+        boost::optional<Span> prefix = loc->span.before(diffSeq);
+        boost::optional<Span> oldSuffix = loc->span.from(diffSeq);
+        boost::optional<Span> newSuffix = Span{ledger}.from(diffSeq);
+
+
+        if (oldSuffix)
         {
-            // new is a prefix of current
-            // e.g. abcdef->..., adding abcd
-            //    becomes abcd->ef->...
+            // Have
+            //   abcdef -> ....
+            // Inserting
+            //   abc
+            // Becomes
+            //   abc -> def -> ...
 
             // Create oldSuffix node that takes over loc
-            auto newNode = std::make_unique<Node>(oldSuffix);
+            auto newNode = std::make_unique<Node>(*oldSuffix);
             newNode->tipSupport = loc->tipSupport;
             newNode->branchSupport = loc->branchSupport;
-            using std::swap;
-            swap(newNode->children, loc->children);
+            newNode->children = std::move(loc->children);
+            assert(loc->children.empty());
             for(std::unique_ptr<Node> & child : newNode->children)
                 child->parent = newNode.get();
 
             // Loc truncates to prefix and newNode is its child
-            loc->span = prefix;
+            assert(!prefix.empty());
+            loc->span = *prefix;
             newNode->parent = loc;
             loc->children.emplace_back(std::move(newNode));
             loc->tipSupport = 0;
         }
-        if (!newSuffix.empty())
+        if (newSuffix)
         {
-            //  current is a substring of new
-            // e.g.  abc->... adding abcde
-            // ->   abc->  ...
-            //          -> de
+            // Have
+            //  abc -> ...
+            // Inserting
+            //  abcdef-> ...
+            // Becomes
+            //  abc -> ...
+            //     \-> def
 
-            auto newNode = std::make_unique<Node>(newSuffix);
+            auto newNode = std::make_unique<Node>(*newSuffix);
             newNode->parent = loc;
             // increment support starting from the new node
             incNode = newNode.get();
