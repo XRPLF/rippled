@@ -28,6 +28,191 @@
 
 namespace ripple {
 
+namespace ledger_trie_detail {
+// Represents a span of ancestry of a ledger
+template <class Ledger>
+class Span
+{
+    using Seq = typename Ledger::Seq;
+    using ID = typename Ledger::ID;
+
+    // The span is the half-open interval [start,end) of ledger_
+    Seq start_{0};
+    Seq end_{1};
+    Ledger ledger_;
+
+public:
+    Span() : ledger_{typename Ledger::MakeGenesis{}}
+    {
+        // Require default ledger to be genesis seq
+        assert(ledger_.seq() == start_);
+    }
+
+    Span(Ledger ledger)
+        : start_{0}, end_{ledger.seq() + Seq{1}}, ledger_{std::move(ledger)}
+    {
+    }
+
+    Span(Span const& s) = default;
+    Span(Span&& s) = default;
+    Span&
+    operator=(Span const&) = default;
+    Span&
+    operator=(Span&&) = default;
+
+    Seq
+    end() const
+    {
+        return end_;
+    }
+
+    // Return the Span from [spot,end_) or none if no such valid span
+    boost::optional<Span>
+    from(Seq spot) const
+    {
+        return sub(spot, end_);
+    }
+
+    // Return the Span from [start_,spot) or none if no such valid span
+    boost::optional<Span>
+    before(Seq spot) const
+    {
+        return sub(start_, spot);
+    }
+
+    // Return the ID of the ledger that starts this span
+    ID
+    startID() const
+    {
+        return ledger_[start_];
+    }
+
+    // Return the ledger sequence number of the first possible difference
+    // between this span and a given ledger.
+    Seq
+    diff(Ledger const& o) const
+    {
+        return clamp(mismatch(ledger_, o));
+    }
+
+    //  The Seq and ID of the end of the span
+    std::pair<Seq, ID>
+    tip() const
+    {
+        Seq tipSeq{end_ - Seq{1}};
+        return {tipSeq, ledger_[tipSeq]};
+    }
+
+private:
+    Span(Seq start, Seq end, Ledger const& l)
+        : start_{start}, end_{end}, ledger_{l}
+    {
+        // Spans cannot be empty
+        assert(start < end);
+    }
+
+    Seq
+    clamp(Seq val) const
+    {
+        return std::min(std::max(start_, val), end_);
+    };
+
+    // Return a span of this over the half-open interval [from,to)
+    boost::optional<Span>
+    sub(Seq from, Seq to) const
+    {
+        Seq newFrom = clamp(from);
+        Seq newTo = clamp(to);
+        if (newFrom < newTo)
+            return Span(newFrom, newTo, ledger_);
+        return boost::none;
+    }
+
+    friend std::ostream&
+    operator<<(std::ostream& o, Span const& s)
+    {
+        return o << s.tip().second << "[" << s.start_ << "," << s.end_ << ")";
+    }
+
+    friend Span
+    merge(Span const& a, Span const& b)
+    {
+        // Return combined span, using ledger_ from higher sequence span
+        if (a.end_ < b.end_)
+            return Span(std::min(a.start_, b.start_), b.end_, b.ledger_);
+
+        return Span(std::min(a.start_, b.start_), a.end_, a.ledger_);
+    }
+};
+
+// A node in the trie
+template <class Ledger>
+struct Node
+{
+    Node() = default;
+
+    explicit Node(Ledger const& l) : span{l}, tipSupport{1}, branchSupport{1}
+    {
+    }
+
+    explicit Node(Span<Ledger> s) : span{std::move(s)}
+    {
+    }
+
+    Span<Ledger> span;
+    std::uint32_t tipSupport = 0;
+    std::uint32_t branchSupport = 0;
+
+    std::vector<std::unique_ptr<Node>> children;
+    Node* parent = nullptr;
+
+    /** Remove the given node from this Node's children
+
+        @param child The address of the child node to remove
+        @note The child must be a member of the vector. The passed pointer
+              will be dangling as a result of this call
+    */
+    void
+    erase(Node const* child)
+    {
+        auto it = std::find_if(
+            children.begin(),
+            children.end(),
+            [child](std::unique_ptr<Node> const& curr) {
+                return curr.get() == child;
+            });
+        assert(it != children.end());
+        std::swap(*it, children.back());
+        children.pop_back();
+    }
+
+    friend std::ostream&
+    operator<<(std::ostream& o, Node const& s)
+    {
+        return o << s.span << "(T:" << s.tipSupport << ",B:" << s.branchSupport
+                 << ")";
+    }
+
+    Json::Value
+    getJson() const
+    {
+        Json::Value res;
+        res["id"] = to_string(span.tip().second);
+        res["seq"] = static_cast<std::uint32_t>(span.tip().first);
+        res["tipSupport"] = tipSupport;
+        res["branchSupport"] = branchSupport;
+        if (!children.empty())
+        {
+            Json::Value& cs = (res["children"] = Json::arrayValue);
+            for (auto const& child : children)
+            {
+                cs.append(child->getJson());
+            }
+        }
+        return res;
+    }
+};
+}  // namespace ledger_trie_detail
 
 /** Ancestry trie of ledgers
 
@@ -112,185 +297,8 @@ class LedgerTrie
     using Seq = typename Ledger::Seq;
     using ID = typename Ledger::ID;
 
-    /// Represents a span of ancestry of a ledger
-    class Span
-    {
-        // The span is the half-open interval [start,end) of ledger_
-        Seq start_{0};
-        Seq end_{1};
-        Ledger ledger_;
-
-    public:
-        Span() : ledger_{typename Ledger::MakeGenesis{}}
-        {
-            // Require default ledger to be genesis seq
-            assert(ledger_.seq() == start_);
-        }
-
-        Span(Ledger ledger)
-            : start_{0}, end_{ledger.seq() + Seq{1}}, ledger_{std::move(ledger)}
-        {
-        }
-
-        Span(Span const& s) = default;
-        Span(Span&& s) = default;
-        Span&
-        operator=(Span const&) = default;
-        Span&
-        operator=(Span&&) = default;
-
-        Seq
-        end() const
-        {
-            return end_;
-        }
-
-        // Return the Span from [spot,end_) or none if no such valid span
-        boost::optional<Span>
-        from(Seq spot) const
-        {
-            return sub(spot, end_);
-        }
-
-        // Return the Span from [start_,spot) or none if no such valid span
-        boost::optional<Span>
-        before(Seq spot) const
-        {
-            return sub(start_, spot);
-        }
-
-        //Return the ID of the ledger that starts this span
-        ID
-        startID() const
-        {
-            return ledger_[start_];
-        }
-
-        // Return the ledger sequence number of the first possible difference
-        // between this span and a given ledger.
-        Seq
-        diff(Ledger const& o) const
-        {
-            return clamp(mismatch(ledger_, o));
-        }
-
-        //  The Seq and ID of the end of the span
-        std::pair<Seq, ID>
-        tip() const
-        {
-            Seq tipSeq{end_ - Seq{1}};
-            return {tipSeq, ledger_[tipSeq]};
-        }
-
-    private:
-        Span(Seq start, Seq end, Ledger const& l)
-            : start_{start}, end_{end}, ledger_{l}
-        {
-            // Spans cannot be empty
-            assert(start < end);
-        }
-
-        Seq
-        clamp(Seq val) const
-        {
-            return std::min(std::max(start_, val), end_);
-        };
-
-        // Return a span of this over the half-open interval [from,to)
-        boost::optional<Span>
-        sub(Seq from, Seq to) const
-        {
-            Seq newFrom = clamp(from);
-            Seq newTo = clamp(to);
-            if(newFrom < newTo)
-                return Span(newFrom, newTo, ledger_);
-            return boost::none;
-        }
-
-        friend std::ostream&
-        operator<<(std::ostream& o, Span const& s)
-        {
-            return o << s.tip().second << "[" << s.start_ << "," << s.end_
-                     << ")";
-        }
-
-        friend Span
-        merge(Span const& a, Span const& b)
-        {
-            // Return combined span, using ledger_ from higher sequence span
-            if (a.end_ < b.end_)
-                return Span(std::min(a.start_, b.start_), b.end_, b.ledger_);
-
-            return Span(std::min(a.start_, b.start_), a.end_, a.ledger_);
-        }
-    };
-
-    // A node in the trie
-    struct Node
-    {
-        Node() = default;
-
-        explicit Node(Ledger const& l) : span{l}, tipSupport{1}, branchSupport{1}
-        {
-        }
-
-        explicit Node(Span s) : span{std::move(s)}
-        {
-        }
-
-        Span span;
-        std::uint32_t tipSupport = 0;
-        std::uint32_t branchSupport = 0;
-
-        std::vector<std::unique_ptr<Node>> children;
-        Node* parent = nullptr;
-
-        /** Remove the given node from this Node's children
-
-            @param child The address of the child node to remove
-            @note The child must be a member of the vector. The passed pointer
-                  will be dangling as a result of this call
-        */
-        void
-        erase(Node const* child)
-        {
-            auto it = std::find_if(
-                children.begin(),
-                children.end(),
-                [child](std::unique_ptr<Node> const& curr) {
-                    return curr.get() == child;
-                });
-            assert(it != children.end());
-            std::swap(*it, children.back());
-            children.pop_back();
-        }
-
-        friend std::ostream&
-        operator<<(std::ostream& o, Node const& s)
-        {
-            return o << s.span << "(T:" << s.tipSupport
-                     << ",B:" << s.branchSupport << ")";
-        }
-
-        Json::Value
-        getJson() const
-        {
-            Json::Value res;
-            res["id"] = to_string(span.tip().second);
-            res["seq"] = static_cast<std::uint32_t>(span.tip().first);
-            res["tipSupport"] = tipSupport;
-            res["branchSupport"] = branchSupport;
-            if(!children.empty())
-            {
-                Json::Value &cs = (res["children"] = Json::arrayValue);
-                for (auto const& child : children)
-                {
-                    cs.append(child->getJson());
-                }
-            }
-            return res;
-        }
-    };
+    using Node = ledger_trie_detail::Node<Ledger>;
+    using Span = ledger_trie_detail::Span<Ledger>;
 
     // The root of the trie. The root is allowed to break the no-single child
     // invariant.
