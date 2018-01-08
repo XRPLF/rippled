@@ -418,7 +418,7 @@ public:
                 child->parent = newNode.get();
 
             // Loc truncates to prefix and newNode is its child
-            assert(!prefix.empty());
+            assert(prefix);
             loc->span = *prefix;
             newNode->parent = loc;
             loc->children.emplace_back(std::move(newNode));
