@@ -445,7 +445,8 @@ def add_sanitizer (toolchain, env):
         raise Exception("Sanitizers are only supported for gcc and clang")
     env.Append(CCFLAGS=['-fsanitize='+san, '-fno-omit-frame-pointer'])
     env.Append(LINKFLAGS=['-fsanitize='+san])
-    add_static_libs(env, [san_to_lib[san]])
+    if toolchain in['gcc']:
+        add_static_libs(env, [san_to_lib[san]])
     env.Append(CPPDEFINES=['SANITIZER='+san_to_lib[san].upper()])
 
 def add_boost_and_protobuf(toolchain, env):
