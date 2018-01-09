@@ -1055,8 +1055,9 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
 
         int flags;
 
-        if (! app_.getHashRouter ().addSuppressionPeer (
-            txID, id_, flags))
+        constexpr std::chrono::seconds tx_interval = 10s;
+        if (! app_.getHashRouter ().shouldProcess (
+            txID, id_, flags, clock_type::now(), tx_interval))
         {
             // we have seen this transaction recently
             if (flags & SF_BAD)
@@ -1064,8 +1065,9 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
                 fee_ = Resource::feeInvalidSignature;
                 JLOG(p_journal_.debug()) << "Ignoring known bad tx " <<
                     txID;
-                return;
             }
+
+            return;
         }
 
         JLOG(p_journal_.debug()) << "Got tx " << txID;
@@ -1088,7 +1090,9 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
             }
         }
 
-        if (app_.getJobQueue().getJobCount(jtTRANSACTION) > 100)
+        // The maximum number of transactions to have in the job queue.
+        constexpr int max_transactions = 250;
+        if (app_.getJobQueue().getJobCount(jtTRANSACTION) > max_transactions)
         {
             JLOG(p_journal_.info()) << "Transaction queue is full";
         }

@@ -29,17 +29,17 @@ namespace Resource {
 enum
 {
     // Balance at which a warning is issued
-     warningThreshold           = 500
+     warningThreshold           = 5000
 
     // Balance at which the consumer is disconnected
-    ,dropThreshold              = 1500
+    ,dropThreshold              = 15000
 
     // The number of seconds in the exponential decay window
     // (This should be a power of two)
     ,decayWindowSeconds         = 32
 
     // The minimum balance required in order to include a load source in gossip
-    ,minimumGossipBalance       = 100
+    ,minimumGossipBalance       = 1000
 };
 
 // The number of seconds until an inactive table item is removed

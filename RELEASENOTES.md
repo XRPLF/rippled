@@ -11,6 +11,34 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 0.81.0
+
+The `rippled` 0.81.0 release introduces changes that improve the scalability of the XRP Ledger and transitions the recommended validator configuration to a new hosted site, as described in Ripple's [Decentralization Strategy Update](https://ripple.com/dev-blog/decentralization-strategy-update/) post.
+
+**New and Updated Features**
+
+- New hosted validator configuration.
+
+
+**Bug Fixes**
+
+- Optimize queries for account_tx to work around SQLite query planner ([#2312](https://github.com/ripple/rippled/issues/2312))
+
+
+## Version 0.80.2
+
+The `rippled` 0.80.2 release introduces changes that improve the scalability of the XRP Ledger.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- Do not dispatch a transaction received from a peer for processing if it has already been dispatched within the past ten seconds.
+- Increase the number of transaction handlers that can be in flight in the job queue and decrease the relative cost for peers to share transaction and ledger data.
+- Make better use of resources by adjusting the number of threads we initialize, by reverting commit [#68b8ffd](https://github.com/ripple/rippled/commit/68b8ffdb638d07937f841f7217edeb25efdb3b5d).
+
 ## Version 0.80.1
 
 The `rippled` 0.80.1 release provides several enhancements in support of published validator lists and corrects several bugs.
