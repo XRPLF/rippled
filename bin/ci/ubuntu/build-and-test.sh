@@ -17,7 +17,8 @@ JOBS=$((JOBS+1))
 
 if [[ ${BUILD:-scons} == "cmake" ]]; then
   echo "cmake building ${APP}"
-  CMAKE_EXTRA_ARGS=" -DCMAKE_VERBOSE_MAKEFILE=ON"
+  : ${CMAKE_EXTRA_ARGS:=""}
+  CMAKE_EXTRA_ARGS+=" -DCMAKE_VERBOSE_MAKEFILE=ON"
   CMAKE_TARGET=$CC.$TARGET
   BUILDARGS=" -j${JOBS}"
   if [[ ${VERBOSE_BUILD:-} == true ]]; then
