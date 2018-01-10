@@ -50,6 +50,7 @@ validators.txt
 
 # Doxygen generated documentation output
 HtmlDocumentation
+docs/html_doc
 
 # Xcode user-specific project settings
 # Xcode
