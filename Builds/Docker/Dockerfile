@@ -21,7 +21,7 @@ RUN cd src/; scons build/rippled
 RUN cp src/build/rippled rippled; strip rippled
 
 # copy default config
-RUN cp src/doc/rippled-example.cfg rippled.cfg
+RUN cp src/cfg/rippled-example.cfg rippled.cfg
 
 # clean source
 RUN rm -r src

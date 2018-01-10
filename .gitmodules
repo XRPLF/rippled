@@ -1,6 +1,3 @@
-[submodule "docs/docca"]
-	path = docs/docca
-	url = https://github.com/vinniefalco/docca.git
 [submodule "src/nudb/extras/beast"]
 	path = src/nudb/extras/beast
 	url = https://github.com/vinniefalco/Beast.git

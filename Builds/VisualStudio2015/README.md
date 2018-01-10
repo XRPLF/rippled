@@ -200,7 +200,7 @@ the rippled server where that file is.
 
 1. Create a directory to hold the configuration file. In this example, the
   ripple config directory was created in `C:\Users\joe\ripple\config`.
-2. Copy the example config file located in `doc\rippled-example.cfg` to the
+2. Copy the example config file located in `cfg\rippled-example.cfg` to the
   new directory and rename it "rippled.cfg".
 3. Read the rippled.cfg file and edit as appropriate.
 

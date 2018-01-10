@@ -32,7 +32,6 @@ addons:
 
 matrix:
   include:
-    # Default BUILD is "scons".
 
     - compiler: gcc
       env: GCC_VER=5 BUILD=cmake TARGET=debug

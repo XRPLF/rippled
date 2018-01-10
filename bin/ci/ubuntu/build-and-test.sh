@@ -6,6 +6,12 @@
 set -ex
 __dirname=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 echo "using CC: $CC"
+"${CC}" --version
+COMPNAME=$(basename $CC)
+echo "using CXX: ${CXX:-notset}"
+if [[ $CXX ]]; then
+  "${CXX}" --version
+fi
 echo "using TARGET: $TARGET"
 
 # Ensure APP defaults to rippled if it's not set.
@@ -25,42 +31,69 @@ else
   time=
 fi
 
-if [[ ${BUILD:-scons} == "cmake" ]]; then
+if [[ ${BUILD:-cmake} == "cmake" ]]; then
   echo "cmake building ${APP}"
-  CMAKE_EXTRA_ARGS=" -DCMAKE_VERBOSE_MAKEFILE=ON"
-  CMAKE_TARGET=$CC.$TARGET
-  BUILDARGS=" -j${JOBS}"
-  if [[ ${VERBOSE_BUILD:-} == true ]]; then
-    # TODO: if we use a different generator, this
-    # option to build verbose would need to change:
-    BUILDARGS+=" verbose=1"
+  : ${CMAKE_EXTRA_ARGS:=""}
+  if [[ ${NINJA_BUILD:-} == true ]]; then
+    CMAKE_EXTRA_ARGS+=" -G Ninja"
   fi
+  CMAKE_TARGET=${COMPNAME}.${TARGET}
   if [[ ${CI:-} == true ]]; then
     CMAKE_TARGET=$CMAKE_TARGET.ci
   fi
+  #
+  # allow explicit setting of the name of the build
+  # dir, otherwise default to the CMAKE_TARGET value
+  #
+  : "${BUILD_DIR:=$CMAKE_TARGET}"
+  BUILDARGS=" -j${JOBS}"
+  if [[ ${VERBOSE_BUILD:-} == true ]]; then
+    CMAKE_EXTRA_ARGS+=" -DCMAKE_VERBOSE_MAKEFILE=ON"
+
+    # TODO: if we use a different generator, this
+    # option to build verbose would need to change:
+    if [[ ${NINJA_BUILD:-} == true ]]; then
+      BUILDARGS+=" -v"
+    else
+      BUILDARGS+=" verbose=1"
+    fi
+  fi
   if [[ ${USE_CCACHE:-} == true ]]; then
     echo "using ccache with basedir [${CCACHE_BASEDIR:-}]"
-    CMAKE_EXTRA_ARGS+=" -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+    CMAKE_EXTRA_ARGS+=" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
   fi
-  if [ -d "build/${CMAKE_TARGET}" ]; then
-    rm -rf "build/${CMAKE_TARGET}"
+  if [ -d "build/${BUILD_DIR}" ]; then
+    rm -rf "build/${BUILD_DIR}"
   fi
-  mkdir -p "build/${CMAKE_TARGET}"
-  pushd "build/${CMAKE_TARGET}"
+
+  mkdir -p "build/${BUILD_DIR}"
+  pushd "build/${BUILD_DIR}"
   $time cmake ../.. -Dtarget=$CMAKE_TARGET ${CMAKE_EXTRA_ARGS}
-  $time cmake --build . -- $BUILDARGS
-  if [[ ${BUILD_BOTH:-} == true ]]; then
-    if [[ ${TARGET} == *.unity ]]; then
-      $time cmake --build . --target rippled_classic -- $BUILDARGS
+  if [[ ${TARGET} == "docs" ]]; then
+    $time cmake --build . --target docs -- $BUILDARGS
+    ## mimic the standard test output for docs build
+    ## to make controlling processes like jenkins happy
+    if [ -f html_doc/index.html ]; then
+        echo "1 case, 1 test total, 0 failures"
     else
-      $time cmake --build . --target rippled_unity -- $BUILDARGS
+        echo "1 case, 1 test total, 1 failures"
+    fi
+    exit
+  else
+    $time cmake --build . -- $BUILDARGS
+    if [[ ${BUILD_BOTH:-} == true ]]; then
+      if [[ ${TARGET} == *.unity ]]; then
+        cmake --build . --target rippled_classic -- $BUILDARGS
+      else
+        cmake --build . --target rippled_unity -- $BUILDARGS
+      fi
     fi
   fi
   popd
-  export APP_PATH="$PWD/build/${CMAKE_TARGET}/${APP}"
+  export APP_PATH="$PWD/build/${BUILD_DIR}/${APP}"
   echo "using APP_PATH: $APP_PATH"
 else
-  export APP_PATH="$PWD/build/$CC.$TARGET/${APP}"
+  export APP_PATH="$PWD/build/${COMPNAME}.${TARGET}/${APP}"
   echo "using APP_PATH: $APP_PATH"
   # Make sure vcxproj is up to date
   $time scons vcxproj
@@ -68,21 +101,21 @@ else
   # $CC will be either `clang` or `gcc`
   # http://docs.travis-ci.com/user/migrating-from-legacy/?utm_source=legacy-notice&utm_medium=banner&utm_campaign=legacy-upgrade
   #   indicates that 2 cores are available to containers.
-  $time scons -j${JOBS} $CC.$TARGET
+  $time scons -j${JOBS} ${COMPNAME}.$TARGET
 fi
-# We can be sure we're using the build/$CC.$TARGET variant
-# (-f so never err)
-rm -f build/${APP}
 
 # See what we've actually built
 ldd $APP_PATH
 
 if [[ ${APP} == "rippled" ]]; then
-  export APP_ARGS+=" --unittest --quiet --unittest-log"
+  APP_ARGS+="--unittest --quiet --unittest-log"
   # Only report on src/ripple files
   export LCOV_FILES="*/src/ripple/*"
   # Nothing to explicitly exclude
   export LCOV_EXCLUDE_FILES="LCOV_NO_EXCLUDE"
+  if [[ $TARGET != "coverage" && ${PARALLEL_TESTS:-} == true ]]; then
+    APP_ARGS+=" --unittest-jobs ${JOBS}"
+  fi
 else
   : ${APP_ARGS:=}
   : ${LCOV_FILES:="*/src/*"}
@@ -106,6 +139,7 @@ if [[ $TARGET == debug* && -v GDB_ROOT && -x $GDB_ROOT/bin/gdb ]]; then
   $GDB_ROOT/bin/gdb -v
   # Execute unit tests under gdb, printing a call stack
   # if we get a crash.
+  export APP_ARGS
   $GDB_ROOT/bin/gdb -return-child-result -quiet -batch \
                     -ex "set env MALLOC_CHECK_=3" \
                     -ex "set print thread-events off" \

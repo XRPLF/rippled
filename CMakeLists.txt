@@ -369,15 +369,10 @@ if (WIN32 OR is_xcode)
   # Documentation sources. Only needed for IDEs.
   prepend(doc_srcs
     docs/
-    Jamfile.v2
-    boostbook.dtd
-    consensus.qbk
-    index.xml
-    main.qbk
-    quickref.xml
-    reference.xsl
     source.dox)
 
+  file(GLOB_RECURSE other_docs docs/*.md)
+  list(APPEND doc_srcs "${other_docs}")
   set_property(
     SOURCE ${doc_srcs}
     APPEND
@@ -481,52 +476,32 @@ list(APPEND targets ${other_target})
 # other_target when the user builds the solution (default when pressing <F7>)
 set_property(TARGET ${other_target} PROPERTY EXCLUDE_FROM_DEFAULT_BUILD true)
 
-find_program(
-  B2_EXE
-  NAMES b2
-  HINTS ${BOOST_ROOT}
-  PATHS ${BOOST_ROOT}
-  DOC "Location of the b2 build executable from Boost")
-if(${B2_EXE} STREQUAL "B2_EXE-NOTFOUND")
-  message(WARNING
-    "Boost b2 executable not found. docs target will not be buildable")
-elseif(NOT BOOST_ROOT)
-    if(Boost_INCLUDE_DIRS)
-        set(BOOST_ROOT ${Boost_INCLUDE_DIRS})
-    else()
-        get_filename_component(BOOST_ROOT ${B2_EXE} DIRECTORY)
+find_package(Doxygen)
+if(TARGET Doxygen::doxygen)
+    if (NOT DEFINED ENV{PLANTUML_JAR})
+        message(WARNING
+            "PLANTUML_JAR not set - @startuml diagrams will not generate")
+    endif()
+    # read the source config and make a modified one
+    # that points the output files to our build directory
+    FILE(READ "${CMAKE_SOURCE_DIR}/docs/source.dox" dox_content)
+    string(REGEX REPLACE "[\t ]*OUTPUT_DIRECTORY[\t ]*=(.*)"
+        "OUTPUT_DIRECTORY=${CMAKE_BINARY_DIR}\n\\1"
+        new_config "${dox_content}")
+    FILE(WRITE "${CMAKE_BINARY_DIR}/source.dox" "${new_config}")
+    add_custom_target(docs
+        COMMAND "${DOXYGEN_EXECUTABLE}" "${CMAKE_BINARY_DIR}/source.dox"
+        BYPRODUCTS "${CMAKE_BINARY_DIR}/html_doc/index.html"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/docs"
+        SOURCES "${doc_srcs}"
+    )
+else()
+    message(WARNING
+        "doxygen executable not found. docs target will not be buildable")
+    if(${CMAKE_VERSION} VERSION_LESS "3.9.0")
+        message("...consider updating to CMake 3.9.0 or greater for better doxygen support")
     endif()
 endif()
-# The value for BOOST_ROOT will be determined based on
-#   1) The environment BOOST_ROOT
-#   2) The Boost_INCLUDE_DIRS found by `get_boost`
-#   3) The folder the `b2` executable is found in.
-# If those checks don't yield the correct path, BOOST_ROOT
-# can be defined on the cmake command line:
-#    cmake <path> -DBOOST_ROOT=<boost_path>
-if(BOOST_ROOT)
-    set(B2_PARAMS "-sBOOST_ROOT=${BOOST_ROOT}")
-endif()
-
-# Find bash to help Windows avoid file association problems
-find_program(
-    BASH_EXE
-    NAMES bash sh
-    DOC "Location of the bash shell executable"
-    )
-if(${BASH_EXE} STREQUAL "BASH_EXE-NOTFOUND")
-    message(WARNING
-        "Unable to find bash executable. docs target may not be buildable")
-    set(BASH_EXE "")
-endif()
-
-add_custom_target(docs
-  COMMAND ${CMAKE_COMMAND} -E env "PATH=$ENV{PATH} " ${BASH_EXE} ./makeqbk.sh
-  COMMAND ${B2_EXE} ${B2_PARAMS}
-  BYPRODUCTS "${CMAKE_SOURCE_DIR}/docs/html/index.html"
-  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/docs"
-  SOURCES "${doc_srcs}"
-  )
 
 set_startup_project(rippled)
 
