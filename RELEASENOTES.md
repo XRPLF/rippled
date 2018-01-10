@@ -1,12 +1,15 @@
+# Release Notes
+
 ![Ripple](/images/ripple.png)
 
 This document contains the release notes for `rippled`, the reference server implementation of the Ripple protocol. To learn more about how to build and run a `rippled` server, visit https://ripple.com/build/rippled-setup/
 
-**Do you work at a digital asset exchange or wallet provider?** 
-
-Please [contact us](mailto:support@ripple.com). We can help guide your integration.
+> **Do you work at a digital asset exchange or wallet provider?** 
+> 
+> Please [contact us](mailto:support@ripple.com). We can help guide your integration.
 
 ## Updating `rippled`
+
 If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `yum`](https://ripple.com/build/rippled-setup/#updating-rippled). For other platforms, please [compile from source](https://wiki.ripple.com/Rippled_build_instructions).
 
 # Releases

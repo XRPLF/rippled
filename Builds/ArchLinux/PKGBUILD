@@ -32,7 +32,7 @@ package() {
 	cd "$srcdir/$pkgname"
 	install -D -m644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 	install -D build/rippled "$pkgdir/usr/bin/rippled"
-	install -D -m644 doc/rippled-example.cfg "$pkgdir/etc/$pkgname/rippled.cfg"
+	install -D -m644 cfg/rippled-example.cfg "$pkgdir/etc/$pkgname/rippled.cfg"
 	mkdir -p "$pkgdir/var/lib/$pkgname/db"
 	mkdir -p "$pkgdir/var/log/$pkgname"
 }

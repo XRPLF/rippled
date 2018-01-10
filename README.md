@@ -1,10 +1,11 @@
-![Ripple](/images/ripple.png)
-
-**Do you work at a digital asset exchange or wallet provider?** 
-
-Please [contact us](mailto:support@ripple.com). We can help guide your integration.
-
 # What is Ripple?
+
+![Ripple](docs/images/ripple.png)
+
+> **Do you work at a digital asset exchange or wallet provider?** 
+>
+> Please [contact us](mailto:support@ripple.com). We can help guide your integration.
+
 Ripple is a network of computers which use the [Ripple consensus algorithm](https://www.youtube.com/watch?v=pj1QVb1vlC0) to atomically settle and record
 transactions on a secure distributed database, the Ripple Consensus Ledger
 (RCL). Because of its distributed nature, the RCL offers transaction immutability
@@ -36,7 +37,7 @@ multiple trading parties, who each layer costs to the transaction. Thin
 liquidity and many intermediary trading parties make competitive pricing
 challenging.
 
-![Flow - Direct](images/flow1.png)
+![Flow - Direct](docs/images/flow1.png)
 
 ### XRP as a Bridge Currency
 Ripple can bridge even exotic currency pairs directly through XRP. Similar to
@@ -47,7 +48,7 @@ counterparty risk, or additional operational costs. By using XRP, liquidity
 providers can specialize in certain currency corridors, reduce operational
 costs, and ultimately, offer more competitive FX pricing.
 
-![Flow - Bridged over XRP](images/flow2.png)
+![Flow - Bridged over XRP](docs/images/flow2.png)
 
 # rippled - Ripple server
 `rippled` is the reference server implementation of the Ripple
