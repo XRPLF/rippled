@@ -569,7 +569,7 @@ macro(setup_build_boilerplate)
     #  An alternative to disabling would be to figure out all the settings
     #  required to make gold play nicely with jemalloc.
     if (("${LD_VERSION}" MATCHES "GNU gold") AND (NOT jemalloc))
-        append_flags(CMAKE_EXE_LINKER_FLAGS -fuse-ld=gold)
+        append_flags(CMAKE_EXE_LINKER_FLAGS -fuse-ld=gold -Wl,--no-as-needed)
     endif ()
     unset(LD_VERSION)
   endif()
