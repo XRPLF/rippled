@@ -29,8 +29,6 @@ namespace Json
 // Implementation of class Reader
 // ////////////////////////////////
 
-constexpr unsigned nest_limit = 1000;
-
 static
 std::string
 codePointToUTF8 (unsigned int cp)
@@ -143,7 +141,7 @@ Reader::readValue(unsigned depth)
 {
     Token token;
     skipCommentTokens ( token );
-    if (depth >= nest_limit)
+    if (depth > nest_limit)
         return addError("Syntax error: maximum nesting depth exceeded", token);
     bool successful = true;
 
