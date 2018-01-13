@@ -19,8 +19,65 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <ripple/core/impl/Workers.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/basics/PerfLog.h>
+#include <ripple/core/JobTypes.h>
+#include <ripple/json/json_value.h>
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <string>
 
 namespace ripple {
+
+/**
+ * Dummy class for unit tests.
+ */
+
+namespace perf {
+
+class PerfLogTest
+    : public PerfLog
+{
+    void rpcStart(std::string const &method, std::uint64_t requestId) override
+    {}
+
+    void rpcFinish(std::string const &method, std::uint64_t requestId) override
+    {}
+
+    void rpcError(std::string const &method, std::uint64_t dur) override
+    {}
+
+    void jobQueue(JobType const type) override
+    {}
+
+    void jobStart(JobType const type,
+        std::chrono::microseconds dur,
+        std::chrono::time_point<std::chrono::steady_clock> startTime,
+        int instance) override
+    {}
+
+    void jobFinish(JobType const type, std::chrono::microseconds dur,
+        int instance) override
+    {}
+
+    Json::Value countersJson() const override
+    {
+        return Json::Value();
+    }
+
+    Json::Value currentJson() const override
+    {
+        return Json::Value();
+    }
+
+    void resizeJobs(int const resize) override
+    {}
+
+    void rotate() override
+    {}
+};
+
+} // perf
 
 //------------------------------------------------------------------------------
 
@@ -35,7 +92,7 @@ public:
         {
         }
 
-        void processTask()
+        void processTask(int instance) override
         {
             if (--count == 0)
                 finished.signal();
@@ -51,8 +108,10 @@ public:
             " -> " + std::to_string(tc2) + " -> " + std::to_string(tc3));
 
         TestCallback cb;
+        std::unique_ptr<perf::PerfLog> perfLog =
+            std::make_unique<perf::PerfLogTest>();
 
-        Workers w(cb, "Test", tc1);
+        Workers w(cb, *perfLog, "Test", tc1);
         BEAST_EXPECT(w.getNumberOfThreads() == tc1);
 
         auto testForThreadCount = [this, &cb, &w] (int const threadCount)

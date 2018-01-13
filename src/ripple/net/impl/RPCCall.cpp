@@ -1013,6 +1013,15 @@ private:
         return jvRequest;
     }
 
+    // server_info [counters]
+    Json::Value parseServerInfo (Json::Value const& jvParams)
+    {
+        Json::Value     jvRequest (Json::objectValue);
+        if (jvParams.size() == 1 && jvParams[0u].asString() == "counters")
+            jvRequest[jss::counters] = true;
+        return jvRequest;
+    }
+
 public:
     //--------------------------------------------------------------------------
 
@@ -1088,8 +1097,8 @@ public:
             {   "sign_for",             &RPCParser::parseSignFor,               3,  4   },
             {   "submit",               &RPCParser::parseSignSubmit,            1,  3   },
             {   "submit_multisigned",   &RPCParser::parseSubmitMultiSigned,     1,  1   },
-            {   "server_info",          &RPCParser::parseAsIs,                  0,  0   },
-            {   "server_state",         &RPCParser::parseAsIs,                  0,  0   },
+            {   "server_info",          &RPCParser::parseServerInfo,            0,  1   },
+            {   "server_state",         &RPCParser::parseServerInfo,            0,  1   },
             {   "stop",                 &RPCParser::parseAsIs,                  0,  0   },
             {   "transaction_entry",    &RPCParser::parseTransactionEntry,      2,  2   },
             {   "tx",                   &RPCParser::parseTx,                    1,  2   },

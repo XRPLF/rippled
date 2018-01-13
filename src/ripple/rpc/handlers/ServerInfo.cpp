@@ -32,7 +32,9 @@ Json::Value doServerInfo (RPC::Context& context)
     Json::Value ret (Json::objectValue);
 
     ret[jss::info] = context.netOps.getServerInfo (
-        true, context.role == Role::ADMIN);
+        true, context.role == Role::ADMIN,
+        context.params.isMember(jss::counters) &&
+            context.params[jss::counters].asBool());
 
     return ret;
 }

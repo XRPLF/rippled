@@ -31,14 +31,11 @@ namespace ripple {
 
 // A few handy aliases
 
-using days = std::chrono::duration
-    <int, std::ratio_multiply<
-        std::chrono::hours::period,
-            std::ratio<24>>>;
+using days = std::chrono::duration<
+    int, std::ratio_multiply<std::chrono::hours::period, std::ratio<24>>>;
 
-using weeks = std::chrono::duration
-    <int, std::ratio_multiply<
-        days::period, std::ratio<7>>>;
+using weeks = std::chrono::duration<
+    int, std::ratio_multiply<days::period, std::ratio<7>>>;
 
 /** Clock for measuring Ripple Network Time.
 
@@ -58,21 +55,30 @@ public:
     static bool const is_steady = false;
 };
 
-std::string to_string(NetClock::time_point tp);
-std::string to_string(std::chrono::system_clock::time_point tp);
+template <class Duration>
+std::string
+to_string(date::sys_time<Duration> tp)
+{
+    return date::format("%Y-%b-%d %T", tp);
+}
+
+inline
+std::string
+to_string(NetClock::time_point tp)
+{
+    using namespace std::chrono;
+    return to_string(
+        system_clock::time_point{tp.time_since_epoch() + 946684800s});
+}
 
 /** A clock for measuring elapsed time.
 
     The epoch is unspecified.
 */
-using Stopwatch =
-    beast::abstract_clock<
-        std::chrono::steady_clock>;
+using Stopwatch = beast::abstract_clock<std::chrono::steady_clock>;
 
 /** A manual Stopwatch for unit tests. */
-using TestStopwatch =
-    beast::manual_clock<
-        std::chrono::steady_clock>;
+using TestStopwatch = beast::manual_clock<std::chrono::steady_clock>;
 
 /** Returns an instance of a wall clock. */
 inline
@@ -81,8 +87,7 @@ stopwatch()
 {
     return beast::get_abstract_clock<
         std::chrono::steady_clock,
-            beast::basic_seconds_clock<
-                std::chrono::steady_clock>>();
+        beast::basic_seconds_clock<std::chrono::steady_clock>>();
 }
 
 } // ripple

@@ -26,6 +26,7 @@
 #include <test/basics/hardened_hash_test.cpp>
 #include <test/basics/KeyCache_test.cpp>
 #include <test/basics/mulDiv_test.cpp>
+#include <test/basics/PerfLog_test.cpp>
 #include <test/basics/RangeSet_test.cpp>
 #include <test/basics/Slice_test.cpp>
 #include <test/basics/StringUtilities_test.cpp>

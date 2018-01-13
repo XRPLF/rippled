@@ -19,7 +19,7 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/basics/UptimeTimer.h>
-#include <ripple/beast/clock/chrono_util.h>
+#include <ripple/basics/date.h>
 #include <ripple/core/LoadMonitor.h>
 
 namespace ripple {
@@ -108,14 +108,15 @@ void LoadMonitor::addLoadSample (LoadEvent const& s)
 
     auto const total = s.runTime() + s.waitTime();
     // Don't include "jitter" as part of the latency
-    auto const latency = total < 2ms ? 0ms : round<milliseconds>(total);
+    auto const latency = total < 2ms ? 0ms : date::round<milliseconds>(total);
 
     if (latency > 500ms)
     {
         auto mj = (latency > 1s) ? j_.warn() : j_.info();
         JLOG (mj) << "Job: " << s.name() <<
-            " run: " << round<milliseconds>(s.runTime()).count() << "ms" <<
-            " wait: " << round<milliseconds>(s.waitTime()).count() << "ms";
+            " run: " << date::round<milliseconds>(s.runTime()).count() <<
+            "ms" << " wait: " <<
+            date::round<milliseconds>(s.waitTime()).count() << "ms";
     }
 
     addSamples (1, latency);

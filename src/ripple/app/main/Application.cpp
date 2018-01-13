@@ -46,6 +46,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Sustain.h>
+#include <ripple/basics/PerfLog.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/overlay/Cluster.h>
@@ -269,7 +270,7 @@ private:
         void operator() (Duration const& elapsed)
         {
             using namespace std::chrono;
-            auto const lastSample = ceil<milliseconds>(elapsed);
+            auto const lastSample = date::ceil<milliseconds>(elapsed);
 
             lastSample_ = lastSample;
 
@@ -306,6 +307,7 @@ public:
     std::unique_ptr<TimeKeeper> timeKeeper_;
 
     beast::Journal m_journal;
+    std::unique_ptr<perf::PerfLog> perfLog_;
     Application::MutexType m_masterMutex;
 
     // Required by the SHAMapStore
@@ -399,6 +401,11 @@ public:
 
         , m_journal (logs_->journal("Application"))
 
+        // PerfLog must be started before any other threads are launched.
+        , perfLog_ (perf::make_PerfLog(
+            perf::setup_PerfLog(config_->section("perf"), config_->CONFIG_DIR),
+            *this, logs_->journal("PerfLog"), [this] () { signalStop(); }))
+
         , m_txMaster (*this)
 
         , m_nodeStoreScheduler (*this)
@@ -425,7 +432,7 @@ public:
         //
         , m_jobQueue (std::make_unique<JobQueue>(
             m_collectorManager->group ("jobq"), m_nodeStoreScheduler,
-            logs_->journal("JobQueue"), *logs_))
+            logs_->journal("JobQueue"), *logs_, *perfLog_))
 
         //
         // Anything which calls addJob must be a descendant of the JobQueue
@@ -488,7 +495,8 @@ public:
             get_io_service (), *validators_, logs_->journal("ValidatorSite")))
 
         , serverHandler_ (make_ServerHandler (*this, *m_networkOPs, get_io_service (),
-            *m_jobQueue, *m_networkOPs, *m_resourceManager, *m_collectorManager))
+            *m_jobQueue, *m_networkOPs, *m_resourceManager,
+            *m_collectorManager))
 
         , mFeeTrack (std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
 
@@ -651,6 +659,11 @@ public:
     TransactionMaster& getMasterTransaction () override
     {
         return m_txMaster;
+    }
+
+    perf::PerfLog& getPerfLog () override
+    {
+        return *perfLog_;
     }
 
     NodeCache& getTempNodeCache () override

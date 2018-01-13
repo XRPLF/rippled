@@ -130,7 +130,7 @@ class RootStoppable;
         For stoppables which are only considered stopped when all of their
         children have stopped, and their own internal logic indicates a stop, it
         will be necessary to perform special actions in onChildrenStopped(). The
-        funtion areChildrenStopped() can be used after children have stopped,
+        function areChildrenStopped() can be used after children have stopped,
         but before the Stoppable logic itself has stopped, to determine if the
         stoppable's logic is a true stop.
 
