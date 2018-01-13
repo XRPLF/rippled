@@ -23,6 +23,9 @@
 #include <ripple/core/Job.h>
 #include <ripple/core/JobTypeInfo.h>
 #include <map>
+#include <string>
+#include <type_traits>
+#include <unordered_map>
 
 namespace ripple
 {
@@ -33,6 +36,7 @@ public:
     using Map = std::map <JobType, JobTypeInfo>;
     using const_iterator = Map::const_iterator;
 
+private:
     JobTypes ()
         : m_unknown (jtINVALID, "invalid", 0, true, std::chrono::milliseconds{0},
                                                     std::chrono::milliseconds{0})
@@ -56,7 +60,7 @@ add(    jtADVANCE,       "advanceLedger",           maxLimit, false, 0ms,     0m
 add(    jtPUBLEDGER,     "publishNewLedger",        maxLimit, false, 3000ms,  4500ms);
 add(    jtTXN_DATA,      "fetchTxnData",            1,        false, 0ms,     0ms);
 add(    jtWAL,           "writeAhead",              maxLimit, false, 1000ms,  2500ms);
-add(    jtVALIDATION_t,  "trustedValidation",       maxLimit, false, 500ms,  1500ms);
+add(    jtVALIDATION_t,  "trustedValidation",       maxLimit, false, 500ms,   1500ms);
 add(    jtWRITE,         "writeObjects",            maxLimit, false, 1750ms,  2500ms);
 add(    jtACCEPT,        "acceptLedger",            maxLimit, false, 0ms,     0ms);
 add(    jtPROPOSAL_t,    "trustedProposal",         maxLimit, false, 100ms,   500ms);
@@ -79,6 +83,13 @@ add(    jtNS_WRITE,      "WriteNode",               0,        true,  0ms,     0m
 
     }
 
+public:
+    static JobTypes const& instance()
+    {
+        static JobTypes const types;
+        return types;
+    }
+
     JobTypeInfo const& get (JobType jt) const
     {
         Map::const_iterator const iter (m_map.find (jt));
@@ -93,6 +104,11 @@ add(    jtNS_WRITE,      "WriteNode",               0,        true,  0ms,     0m
     JobTypeInfo const& getInvalid () const
     {
         return m_unknown;
+    }
+
+    Map::size_type size () const
+    {
+        return m_map.size();
     }
 
     const_iterator begin () const

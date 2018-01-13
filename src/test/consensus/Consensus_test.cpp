@@ -147,7 +147,7 @@ public:
 
         // Connected trust and network graphs with single fixed delay
         peers.trustAndConnect(
-            peers, round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
+            peers, date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
         // everyone submits their own ID as a TX
         for (Peer * p : peers)
@@ -195,10 +195,11 @@ public:
 
             // Fast and slow network connections
             fast.connect(
-                fast, round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
+                fast, date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
             slow.connect(
-                network, round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
+                network,
+                date::round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
 
             // All peers submit their own ID as a transaction
             for (Peer* peer : network)
@@ -251,10 +252,12 @@ public:
 
                 // Fast and slow network connections
                 fast.connect(
-                    fast, round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
+                    fast,
+                    date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
                 slow.connect(
-                    network, round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
+                    network,
+                    date::round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
 
                 for (Peer* peer : slow)
                     peer->runAsValidator = isParticipant;
@@ -378,7 +381,7 @@ public:
 
         network.trust(network);
         network.connect(
-            network, round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
+            network, date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
         // Run consensus without skew until we have a short close time
         // resolution
@@ -448,7 +451,7 @@ public:
             PeerGroup network = minority + majority;
 
             SimDuration delay =
-                round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+                date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
             minority.trustAndConnect(minority + majorityA, delay);
             majority.trustAndConnect(majority, delay);
 
@@ -553,7 +556,8 @@ public:
 
             PeerGroup network = loner + clique;
             network.connect(
-                network, round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
+                network,
+                date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
             // initial round to set prior state
             sim.run(1);
@@ -607,9 +611,10 @@ public:
 
             // Fast and slow network connections
             fast.connect(
-                fast, round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
+                fast, date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
             slow.connect(
-                network, round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
+                network,
+                date::round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
 
             // Run to the ledger *prior* to decreasing the resolution
             sim.run(increaseLedgerTimeResolutionEvery - 2);
@@ -758,7 +763,7 @@ public:
             PeerGroup network = a + b;
 
             SimDuration delay =
-                round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+                date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
             a.trustAndConnect(a, delay);
             b.trustAndConnect(b, delay);
 
@@ -805,7 +810,7 @@ public:
         center.trust(validators);
 
         SimDuration delay =
-                round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+                date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
         validators.connect(center, delay);
 
         center[0]->runAsValidator = false;
@@ -929,8 +934,10 @@ public:
         PeerGroup groupNotFastC = groupABD + groupCsplit;
         PeerGroup network = groupABD + groupCsplit + groupCfast;
 
-        SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
-        SimDuration fDelay = round<milliseconds>(0.1 * parms.ledgerGRANULARITY);
+        SimDuration delay = date::round<milliseconds>(
+            0.2 * parms.ledgerGRANULARITY);
+        SimDuration fDelay = date::round<milliseconds>(
+            0.1 * parms.ledgerGRANULARITY);
 
         network.trust(network);
         // C must have a shorter delay to see all the validations before the

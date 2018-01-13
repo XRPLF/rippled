@@ -41,6 +41,7 @@
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/mulDiv.h>
+#include <ripple/basics/PerfLog.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/crypto/csprng.h>
@@ -356,7 +357,7 @@ public:
     void consensusViewChange () override;
 
     Json::Value getConsensusInfo () override;
-    Json::Value getServerInfo (bool human, bool admin) override;
+    Json::Value getServerInfo (bool human, bool admin, bool counters) override;
     void clearLedgerFetch () override;
     Json::Value getLedgerFetchInfo () override;
     std::uint32_t acceptLedger (
@@ -2077,7 +2078,7 @@ Json::Value NetworkOPsImp::getConsensusInfo ()
     return mConsensus.getJson (true);
 }
 
-Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
+Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin, bool counters)
 {
     Json::Value info = Json::objectValue;
 
@@ -2088,6 +2089,9 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     info [jss::build_version] = BuildInfo::getVersionString ();
 
     info [jss::server_state] = strOperatingMode ();
+
+    info [jss::time] = to_string(date::floor<std::chrono::microseconds>(
+        std::chrono::system_clock::now()));
 
     if (needNetworkLedger_)
         info[jss::network_ledger] = "waiting";
@@ -2133,6 +2137,12 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         {
             info[jss::pubkey_validator] = "none";
         }
+    }
+
+    if (counters)
+    {
+        info[jss::counters] = app_.getPerfLog().countersJson();
+        info[jss::current_activities] = app_.getPerfLog().currentJson();
     }
 
     info[jss::pubkey_node] = toBase58 (

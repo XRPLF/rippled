@@ -56,48 +56,7 @@ Status handle (Context& context, Object& object)
     return status;
 };
 
-class HandlerTable {
-  public:
-    template<std::size_t N>
-    explicit
-    HandlerTable (const Handler(&entries)[N])
-    {
-        for (std::size_t i = 0; i < N; ++i)
-        {
-            auto const& entry = entries[i];
-            assert (table_.find(entry.name_) == table_.end());
-            table_[entry.name_] = entry;
-        }
-
-        // This is where the new-style handlers are added.
-        addHandler<LedgerHandler>();
-        addHandler<VersionHandler>();
-    }
-
-    const Handler* getHandler(std::string name) const {
-        auto i = table_.find(name);
-        return i == table_.end() ? nullptr : &i->second;
-    }
-
-  private:
-    std::map<std::string, Handler> table_;
-
-    template <class HandlerImpl>
-    void addHandler()
-    {
-        assert (table_.find(HandlerImpl::name()) == table_.end());
-
-        Handler h;
-        h.name_ = HandlerImpl::name();
-        h.valueMethod_ = &handle<Json::Value, HandlerImpl>;
-        h.role_ = HandlerImpl::role();
-        h.condition_ = HandlerImpl::condition();
-
-        table_[HandlerImpl::name()] = h;
-    };
-};
-
-Handler handlerArray[] {
+Handler const handlerArray[] {
     // Some handlers not specified here are added to the table via addHandler()
     // Request-response methods
     {   "account_info",         byRef (&doAccountInfo),         Role::USER,  NO_CONDITION  },
@@ -160,12 +119,77 @@ Handler handlerArray[] {
     {   "unsubscribe",          byRef (&doUnsubscribe),         Role::USER,  NO_CONDITION     },
 };
 
+class HandlerTable {
+  private:
+    template<std::size_t N>
+    explicit
+    HandlerTable (const Handler(&entries)[N])
+    {
+        for (std::size_t i = 0; i < N; ++i)
+        {
+            auto const& entry = entries[i];
+            assert (table_.find(entry.name_) == table_.end());
+            table_[entry.name_] = entry;
+        }
+
+        // This is where the new-style handlers are added.
+        addHandler<LedgerHandler>();
+        addHandler<VersionHandler>();
+    }
+
+  public:
+    static HandlerTable const& instance()
+    {
+        static HandlerTable const handlerTable (handlerArray);
+        return handlerTable;
+    }
+
+    Handler const* getHandler(std::string name) const
+    {
+        auto i = table_.find(name);
+        return i == table_.end() ? nullptr : &i->second;
+    }
+
+    std::vector<char const*>
+    getHandlerNames() const
+    {
+        std::vector<char const*> ret;
+        ret.reserve(table_.size());
+        for (auto const& i : table_)
+            ret.push_back(i.second.name_);
+        return ret;
+    }
+
+  private:
+    std::map<std::string, Handler> table_;
+
+    template <class HandlerImpl>
+    void addHandler()
+    {
+        assert (table_.find(HandlerImpl::name()) == table_.end());
+
+        Handler h;
+        h.name_ = HandlerImpl::name();
+        h.valueMethod_ = &handle<Json::Value, HandlerImpl>;
+        h.role_ = HandlerImpl::role();
+        h.condition_ = HandlerImpl::condition();
+
+        table_[HandlerImpl::name()] = h;
+    }
+};
+
 } // namespace
 
-const Handler* getHandler(std::string const& name) {
-    static HandlerTable const handlers(handlerArray);
-    return handlers.getHandler(name);
+Handler const* getHandler(std::string const& name)
+{
+    return HandlerTable::instance().getHandler(name);
 }
+
+std::vector<char const*>
+getHandlerNames()
+{
+    return HandlerTable::instance().getHandlerNames();
+};
 
 } // RPC
 } // ripple
