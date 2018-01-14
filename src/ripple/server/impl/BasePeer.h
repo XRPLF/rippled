@@ -96,11 +96,8 @@ void
 BasePeer<Handler, Impl>::
 close()
 {
-    if (! strand_.running_in_this_thread())
-        return strand_.post(std::bind(
+    strand_.dispatch(std::bind(
             &BasePeer::close, impl().shared_from_this()));
-    error_code ec;
-    impl().ws_.lowest_layer().close(ec);
 }
 
 } // ripple
