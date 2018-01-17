@@ -215,6 +215,7 @@ JSS ( issuer );                     // in: RipplePathFind, Subscribe,
                                     //     Unsubscribe, BookOffers
                                     // out: paths/Node, STPathSet, STAmount
 JSS ( jsonrpc );                    // json version
+JSS ( jq_trans_overflow );          // JobQueue transaction limit overflow.
 JSS ( key );                        // out: WalletSeed
 JSS ( key_type );                   // in/out: WalletPropose, TransactionSign
 JSS ( latency );                    // out: PeerImp
@@ -326,6 +327,9 @@ JSS ( peer );                       // in: AccountLines
 JSS ( peer_authorized );            // out: AccountLines
 JSS ( peer_id );                    // out: RCLCxPeerPos
 JSS ( peers );                      // out: InboundLedger, handlers/Peers, Overlay
+JSS ( peer_disconnects );           // Severed peer connection counter.
+JSS ( peer_disconnects_resources ); // Severed peer connections because of
+                                    // excess resource consumption.
 JSS ( port );                       // in: Connect
 JSS ( previous_ledger );            // out: LedgerPropose
 JSS ( proof );                      // in: BookOffers

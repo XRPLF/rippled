@@ -71,8 +71,8 @@ bool HashRouter::addSuppressionPeer (uint256 const& key, PeerShortID peer, int& 
     return result.second;
 }
 
-bool HashRouter::shouldProcess (uint256 const& key, PeerShortID peer, int& flags,
-    Stopwatch::time_point now, std::chrono::seconds interval)
+bool HashRouter::shouldProcess (uint256 const& key, PeerShortID peer,
+    int& flags, std::chrono::seconds tx_interval)
 {
     std::lock_guard <std::mutex> lock (mutex_);
 
@@ -80,7 +80,7 @@ bool HashRouter::shouldProcess (uint256 const& key, PeerShortID peer, int& flags
     auto& s = result.first;
     s.addPeer (peer);
     flags = s.getFlags ();
-    return s.shouldProcess (now, interval);
+    return s.shouldProcess (suppressionMap_.clock().now(), tx_interval);
 }
 
 int HashRouter::getFlags (uint256 const& key)
