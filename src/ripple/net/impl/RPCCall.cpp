@@ -1228,7 +1228,8 @@ struct RPCCallImp
 
             // Parse reply
             JLOG (j.debug()) << "RPC reply: " << strData << std::endl;
-
+            if (strData.find("Unable to parse request") == 0)
+                Throw<std::runtime_error> (strData);
             Json::Reader    reader;
             Json::Value     jvReply;
             if (!reader.parse (strData, jvReply))
@@ -1442,9 +1443,18 @@ rpcClient(std::vector<std::string> const& args,
     }
     catch (std::exception& e)
     {
-        jvOutput                = rpcError (rpcINTERNAL);
-        jvOutput["error_what"]  = e.what ();
-        nRet                    = rpcINTERNAL;
+        if (memcmp(e.what(), "Unable to parse request", 23) == 0)
+        {
+            jvOutput                = rpcError(rpcINVALID_PARAMS);
+            jvOutput["error_what"]  = e.what();
+            nRet                    = rpcINVALID_PARAMS;
+        }
+        else
+        {
+            jvOutput                = rpcError (rpcINTERNAL);
+            jvOutput["error_what"]  = e.what ();
+            nRet                    = rpcINTERNAL;
+        }
     }
 
     return { nRet, std::move(jvOutput) };
