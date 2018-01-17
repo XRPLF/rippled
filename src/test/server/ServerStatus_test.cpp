@@ -893,7 +893,7 @@ class ServerStatus_test :
             boost::beast::http::response<boost::beast::http::string_body> resp;
             doHTTPRequest(env, yield, false, resp, ec, "{}");
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
-            BEAST_EXPECT(resp.body() == "Unable to parse request\r\n");
+            BEAST_EXPECT(resp.body() == "Unable to parse request: \r\n");
         }
 
         Json::Value jv;

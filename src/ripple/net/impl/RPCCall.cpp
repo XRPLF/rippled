@@ -1197,6 +1197,15 @@ std::string JSONRPCRequest (std::string const& strMethod, Json::Value const& par
     return to_string (request) + "\n";
 }
 
+namespace
+{
+    // Special local exception type thrown when request can't be parsed.
+    class RequestNotParseable : public std::runtime_error
+    {
+        using std::runtime_error::runtime_error; // Inherit constructors
+    };
+};
+
 struct RPCCallImp
 {
     // VFALCO NOTE Is this a to-do comment or a doc comment?
@@ -1228,7 +1237,8 @@ struct RPCCallImp
 
             // Parse reply
             JLOG (j.debug()) << "RPC reply: " << strData << std::endl;
-
+            if (strData.find("Unable to parse request") == 0)
+                Throw<RequestNotParseable> (strData);
             Json::Reader    reader;
             Json::Value     jvReply;
             if (!reader.parse (strData, jvReply))
@@ -1439,6 +1449,12 @@ rpcClient(std::vector<std::string> const& args,
 
         // YYY We could have a command line flag for single line output for scripts.
         // YYY We would intercept output here and simplify it.
+    }
+    catch (RequestNotParseable& e)
+    {
+        jvOutput                = rpcError(rpcINVALID_PARAMS);
+        jvOutput["error_what"]  = e.what();
+        nRet                    = rpcINVALID_PARAMS;
     }
     catch (std::exception& e)
     {
