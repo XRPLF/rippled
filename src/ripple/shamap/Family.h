@@ -63,12 +63,20 @@ public:
     db() const = 0;
 
     virtual
+    bool
+    isShardBacked() const = 0;
+
+    virtual
     void
     missing_node (std::uint32_t refNum) = 0;
 
     virtual
     void
-    missing_node (uint256 const& refHash) = 0;
+    missing_node (uint256 const& refHash, std::uint32_t refNum) = 0;
+
+    virtual
+    void
+    reset () = 0;
 };
 
 } // ripple

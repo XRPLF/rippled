@@ -138,7 +138,6 @@ isGlobalFrozen (ReadView const& view,
 
 // Can the specified account spend the specified currency issued by
 // the specified issuer or does the freeze flag prohibit it?
-static
 bool
 isFrozen (ReadView const& view, AccountID const& account,
     Currency const& currency, AccountID const& issuer)

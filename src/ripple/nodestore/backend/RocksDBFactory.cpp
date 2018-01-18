@@ -100,6 +100,7 @@ public:
     std::string m_name;
     std::unique_ptr <rocksdb::DB> m_db;
     int fdlimit_ = 2048;
+    rocksdb::Options m_options;
 
     RocksDBBackend (int keyBytes, Section const& keyValues,
         Scheduler& scheduler, beast::Journal journal, RocksDBEnv* env)
@@ -112,10 +113,9 @@ public:
         if (! get_if_exists(keyValues, "path", m_name))
             Throw<std::runtime_error> ("Missing path in RocksDBFactory backend");
 
-        rocksdb::Options options;
         rocksdb::BlockBasedTableOptions table_options;
-        options.create_if_missing = true;
-        options.env = env;
+        m_options.create_if_missing = true;
+        m_options.env = env;
 
         if (keyValues.exists ("cache_mb"))
             table_options.block_cache = rocksdb::NewLRUCache (
@@ -128,39 +128,39 @@ public:
             table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (v, filter_blocks));
         }
 
-        if (get_if_exists (keyValues, "open_files", options.max_open_files))
-            fdlimit_ = options.max_open_files;
+        if (get_if_exists (keyValues, "open_files", m_options.max_open_files))
+            fdlimit_ = m_options.max_open_files;
 
         if (keyValues.exists ("file_size_mb"))
         {
-            options.target_file_size_base = 1024 * 1024 * get<int>(keyValues,"file_size_mb");
-            options.max_bytes_for_level_base = 5 * options.target_file_size_base;
-            options.write_buffer_size = 2 * options.target_file_size_base;
+            m_options.target_file_size_base = 1024 * 1024 * get<int>(keyValues,"file_size_mb");
+            m_options.max_bytes_for_level_base = 5 * m_options.target_file_size_base;
+            m_options.write_buffer_size = 2 * m_options.target_file_size_base;
         }
 
-        get_if_exists (keyValues, "file_size_mult", options.target_file_size_multiplier);
+        get_if_exists (keyValues, "file_size_mult", m_options.target_file_size_multiplier);
 
         if (keyValues.exists ("bg_threads"))
         {
-            options.env->SetBackgroundThreads
+            m_options.env->SetBackgroundThreads
                 (get<int>(keyValues, "bg_threads"), rocksdb::Env::LOW);
         }
 
         if (keyValues.exists ("high_threads"))
         {
             auto const highThreads = get<int>(keyValues, "high_threads");
-            options.env->SetBackgroundThreads (highThreads, rocksdb::Env::HIGH);
+            m_options.env->SetBackgroundThreads (highThreads, rocksdb::Env::HIGH);
 
             // If we have high-priority threads, presumably we want to
             // use them for background flushes
             if (highThreads > 0)
-                options.max_background_flushes = highThreads;
+                m_options.max_background_flushes = highThreads;
         }
 
         if (keyValues.exists ("compression") &&
             (get<int>(keyValues, "compression") == 0))
         {
-            options.compression = rocksdb::kNoCompression;
+            m_options.compression = rocksdb::kNoCompression;
         }
 
         get_if_exists (keyValues, "block_size", table_options.block_size);
@@ -168,10 +168,10 @@ public:
         if (keyValues.exists ("universal_compaction") &&
             (get<int>(keyValues, "universal_compaction") != 0))
         {
-            options.compaction_style = rocksdb::kCompactionStyleUniversal;
-            options.min_write_buffer_number_to_merge = 2;
-            options.max_write_buffer_number = 6;
-            options.write_buffer_size = 6 * options.target_file_size_base;
+            m_options.compaction_style = rocksdb::kCompactionStyleUniversal;
+            m_options.min_write_buffer_number_to_merge = 2;
+            m_options.max_write_buffer_number = 6;
+            m_options.write_buffer_size = 6 * m_options.target_file_size_base;
         }
 
         if (keyValues.exists("bbt_options"))
@@ -185,28 +185,20 @@ public:
                     std::string("Unable to set RocksDB bbt_options: ") + s.ToString());
         }
 
-        options.table_factory.reset(NewBlockBasedTableFactory(table_options));
+        m_options.table_factory.reset(NewBlockBasedTableFactory(table_options));
 
         if (keyValues.exists("options"))
         {
             auto const s = rocksdb::GetOptionsFromString(
-                options, get<std::string>(keyValues, "options"), &options);
+                m_options, get<std::string>(keyValues, "options"), &m_options);
             if (! s.ok())
                 Throw<std::runtime_error> (
                     std::string("Unable to set RocksDB options: ") + s.ToString());
         }
 
-        rocksdb::DB* db = nullptr;
-        rocksdb::Status status = rocksdb::DB::Open (options, m_name, &db);
-        if (! status.ok () || ! db)
-            Throw<std::runtime_error> (
-                std::string("Unable to open/create RocksDB: ") + status.ToString());
-
-        m_db.reset (db);
-
         std::string s1, s2;
-        rocksdb::GetStringFromDBOptions(&s1, options, "; ");
-        rocksdb::GetStringFromColumnFamilyOptions(&s2, options, "; ");
+        rocksdb::GetStringFromDBOptions(&s1, m_options, "; ");
+        rocksdb::GetStringFromColumnFamilyOptions(&s2, m_options, "; ");
         JLOG(m_journal.debug()) << "RocksDB DBOptions: " << s1;
         JLOG(m_journal.debug()) << "RocksDB CFOptions: " << s2;
     }
@@ -214,6 +206,25 @@ public:
     ~RocksDBBackend ()
     {
         close();
+    }
+
+    void
+    open() override
+    {
+        if (m_db)
+        {
+            assert(false);
+            JLOG(m_journal.error()) <<
+                "database is already open";
+            return;
+        }
+        rocksdb::DB* db = nullptr;
+        rocksdb::Status status = rocksdb::DB::Open(m_options, m_name, &db);
+        if (!status.ok() || !db)
+            Throw<std::runtime_error>(
+                std::string("Unable to open/create RocksDB: ") +
+                status.ToString());
+        m_db.reset(db);
     }
 
     void
@@ -241,6 +252,7 @@ public:
     Status
     fetch (void const* key, std::shared_ptr<NodeObject>* pObject) override
     {
+        assert(m_db);
         pObject->reset ();
 
         Status status (ok);
@@ -310,6 +322,7 @@ public:
     void
     storeBatch (Batch const& batch) override
     {
+        assert(m_db);
         rocksdb::WriteBatch wb;
 
         EncodedBlob encoded;
@@ -336,6 +349,7 @@ public:
     void
     for_each (std::function <void(std::shared_ptr<NodeObject>)> f) override
     {
+        assert(m_db);
         rocksdb::ReadOptions const options;
 
         std::unique_ptr <rocksdb::Iterator> it (m_db->NewIterator (options));

@@ -50,6 +50,11 @@ public:
     */
     virtual std::string getName() = 0;
 
+    /** Open the backend.
+        This allows the caller to catch exceptions.
+    */
+    virtual void open() = 0;
+
     /** Close the backend.
         This allows the caller to catch exceptions.
     */

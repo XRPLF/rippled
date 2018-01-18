@@ -29,6 +29,7 @@
 #include <ripple/ledger/CachedSLEs.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/nodestore/Database.h>
+#include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
@@ -124,6 +125,24 @@ Json::Value doGetCounts (RPC::Context& context)
     ret[jss::node_reads_hit] = context.app.getNodeStore().getFetchHitCount();
     ret[jss::node_written_bytes] = context.app.getNodeStore().getStoreSize();
     ret[jss::node_read_bytes] = context.app.getNodeStore().getFetchSize();
+
+    if (auto shardStore = context.app.getShardStore())
+    {
+        Json::Value& jv = (ret[jss::shards] = Json::objectValue);
+        jv[jss::fullbelow_size] =
+            static_cast<int>(context.app.shardFamily()->fullbelow().size());
+        jv[jss::treenode_cache_size] =
+            context.app.shardFamily()->treecache().getCacheSize();
+        jv[jss::treenode_track_size] =
+            context.app.shardFamily()->treecache().getTrackSize();
+        ret[jss::write_load] = shardStore->getWriteLoad();
+        ret[jss::node_hit_rate] = shardStore->getCacheHitRate();
+        jv[jss::node_writes] = shardStore->getStoreCount();
+        jv[jss::node_reads_total] = shardStore->getFetchTotalCount();
+        jv[jss::node_reads_hit] = shardStore->getFetchHitCount();
+        jv[jss::node_written_bytes] = shardStore->getStoreSize();
+        jv[jss::node_read_bytes] = shardStore->getFetchSize();
+    }
 
     return ret;
 }

@@ -178,6 +178,7 @@ message TMStatusChange
     optional uint64 networkTime         = 6;
     optional uint32 firstSeq            = 7;
     optional uint32 lastSeq             = 8;
+    optional string shardSeqs           = 9;
 }
 
 
@@ -249,7 +250,7 @@ message TMEndpoint
 message TMEndpoints
 {
     // This field is used to allow the TMEndpoints message format to be
-    // modified as necessary in the future. 
+    // modified as necessary in the future.
     required uint32         version = 1;
 
     repeated TMEndpoint     endpoints = 2;

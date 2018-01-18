@@ -50,6 +50,9 @@ enum TxType
     ttPAYCHAN_CREATE    = 13,
     ttPAYCHAN_FUND      = 14,
     ttPAYCHAN_CLAIM     = 15,
+    ttCHECK_CREATE      = 16,
+    ttCHECK_CASH        = 17,
+    ttCHECK_CANCEL      = 18,
 
     ttTRUST_SET         = 20,
 

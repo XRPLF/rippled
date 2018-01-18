@@ -79,6 +79,7 @@ private:
     TreeNodeCache treecache_;
     FullBelowCache fullbelow_;
     NodeStore::Database& db_;
+    bool const shardBacked_;
     beast::Journal j_;
 
     // missing node handler
@@ -97,7 +98,9 @@ private:
                 "Missing node in " << to_string (hash);
 
             app_.getInboundLedgers ().acquire (
-                hash, seq, InboundLedger::fcGENERIC);
+                hash, seq, shardBacked_ ?
+                InboundLedger::Reason::SHARD :
+                InboundLedger::Reason::GENERIC);
         }
     }
 
@@ -114,6 +117,8 @@ public:
             collectorManager.collector(),
                 fullBelowTargetSize, fullBelowExpirationSeconds)
         , db_ (db)
+        , shardBacked_ (
+            dynamic_cast<NodeStore::DatabaseShard*>(&db) != nullptr)
         , j_ (app.journal("SHAMap"))
     {
     }
@@ -160,6 +165,12 @@ public:
         return db_;
     }
 
+    bool
+    isShardBacked() const override
+    {
+        return shardBacked_;
+    }
+
     void
     missing_node (std::uint32_t seq) override
     {
@@ -200,9 +211,20 @@ public:
     }
 
     void
-    missing_node (uint256 const& hash) override
+    missing_node (uint256 const& hash, std::uint32_t seq) override
     {
-        acquire (hash, 0);
+        acquire (hash, seq);
+    }
+
+    void
+    reset () override
+    {
+        {
+            std::lock_guard<std::mutex> l(maxSeqLock);
+            maxSeq = 0;
+        }
+        fullbelow_.reset();
+        treecache_.reset();
     }
 };
 
@@ -308,7 +330,9 @@ public:
     // These are Stoppable-related
     std::unique_ptr <JobQueue> m_jobQueue;
     std::unique_ptr <NodeStore::Database> m_nodeStore;
+    std::unique_ptr <NodeStore::DatabaseShard> shardStore_;
     detail::AppFamily family_;
+    std::unique_ptr <detail::AppFamily> sFamily_;
     // VFALCO TODO Make OrderBookDB abstract
     OrderBookDB m_orderBookDB;
     std::unique_ptr <PathRequests> m_pathRequests;
@@ -381,9 +405,8 @@ public:
         , m_nodeStoreScheduler (*this)
 
         , m_shaMapStore (make_SHAMapStore (*this, setup_SHAMapStore (*config_),
-            *this, m_nodeStoreScheduler,
-            logs_->journal ("SHAMapStore"), logs_->journal ("NodeObject"),
-            m_txMaster, *config_))
+            *this, m_nodeStoreScheduler, logs_->journal("SHAMapStore"),
+            logs_->journal("NodeObject"), m_txMaster, *config_))
 
         , accountIDCache_(128000)
 
@@ -410,6 +433,9 @@ public:
         //
         , m_nodeStore (
             m_shaMapStore->makeDatabase ("NodeStore.main", 4, *m_jobQueue))
+
+        , shardStore_ (
+            m_shaMapStore->makeDatabaseShard ("ShardStore", 4, *m_jobQueue))
 
         , family_ (*this, *m_nodeStore, *m_collectorManager)
 
@@ -493,6 +519,9 @@ public:
         , m_io_latency_sampler (m_collectorManager->collector()->make_event ("ios_latency"),
             logs_->journal("Application"), std::chrono::milliseconds (100), get_io_service())
     {
+        if (shardStore_)
+            sFamily_ = std::make_unique<detail::AppFamily>(
+                *this, *shardStore_, *m_collectorManager);
         add (m_resourceManager.get ());
 
         //
@@ -546,10 +575,14 @@ public:
         return *m_collectorManager;
     }
 
-    Family&
-    family() override
+    Family& family() override
     {
         return family_;
+    }
+
+    Family* shardFamily() override
+    {
+        return sFamily_.get();
     }
 
     TimeKeeper&
@@ -630,6 +663,11 @@ public:
     NodeStore::Database& getNodeStore () override
     {
         return *m_nodeStore;
+    }
+
+    NodeStore::DatabaseShard* getShardStore () override
+    {
+        return shardStore_.get();
     }
 
     Application::MutexType& getMasterMutex () override
@@ -988,15 +1026,21 @@ public:
         // VFALCO TODO fix the dependency inversion using an observer,
         //         have listeners register for "onSweep ()" notification.
 
-        family().fullbelow().sweep ();
+        family().fullbelow().sweep();
+        if (sFamily_)
+            sFamily_->fullbelow().sweep();
         getMasterTransaction().sweep();
         getNodeStore().sweep();
+        if (shardStore_)
+            shardStore_->sweep();
         getLedgerMaster().sweep();
         getTempNodeCache().sweep();
         getValidations().expire();
         getInboundLedgers().sweep();
         m_acceptedLedgerCache.sweep();
         family().treecache().sweep();
+        if (sFamily_)
+            sFamily_->treecache().sweep();
         cachedSLEs_.expire();
 
         // Set timer to do another sweep later.
@@ -1017,6 +1061,7 @@ private:
     void addTxnSeqField();
     void addValidationSeqFields();
     bool updateTables ();
+    bool validateShards ();
     void startGenesisLedger ();
 
     std::shared_ptr<Ledger>
@@ -1199,6 +1244,13 @@ bool ApplicationImp::setup()
     m_ledgerMaster->tune (config_->getSize (siLedgerSize), config_->getSize (siLedgerAge));
     family().treecache().setTargetSize (config_->getSize (siTreeCacheSize));
     family().treecache().setTargetAge (config_->getSize (siTreeCacheAge));
+    if (shardStore_)
+    {
+        shardStore_->tune(config_->getSize(siNodeCacheSize),
+            config_->getSize(siNodeCacheAge));
+        sFamily_->treecache().setTargetSize(config_->getSize(siTreeCacheSize));
+        sFamily_->treecache().setTargetAge(config_->getSize(siTreeCacheAge));
+    }
 
     //----------------------------------------------------------------------
     //
@@ -1215,6 +1267,9 @@ bool ApplicationImp::setup()
         *serverHandler_, *m_resourceManager, *m_resolver, get_io_service(),
         *config_);
     add (*m_overlay); // add to PropertyStream
+
+    if (config_->valShards && !validateShards())
+        return false;
 
     validatorSites_->start ();
 
@@ -1624,7 +1679,7 @@ bool ApplicationImp::loadOldLedger (
                 {
                     // Try to build the ledger from the back end
                     auto il = std::make_shared <InboundLedger> (
-                        *this, hash, 0, InboundLedger::fcGENERIC,
+                        *this, hash, 0, InboundLedger::Reason::GENERIC,
                         stopwatch());
                     if (il->checkLocal ())
                         loadLedger = il->getLedger ();
@@ -1664,7 +1719,7 @@ bool ApplicationImp::loadOldLedger (
                 // Try to build the ledger from the back end
                 auto il = std::make_shared <InboundLedger> (
                     *this, replayLedger->info().parentHash,
-                    0, InboundLedger::fcGENERIC, stopwatch());
+                    0, InboundLedger::Reason::GENERIC, stopwatch());
 
                 if (il->checkLocal ())
                     loadLedger = il->getLedger ();
@@ -2005,6 +2060,32 @@ bool ApplicationImp::updateTables ()
         getNodeStore().import (*source);
     }
 
+    return true;
+}
+
+bool ApplicationImp::validateShards()
+{
+    if (!m_overlay)
+        Throw<std::runtime_error>("no overlay");
+    if(config_->standalone())
+    {
+        JLOG(m_journal.fatal()) <<
+            "Shard validation cannot be run in standalone";
+        return false;
+    }
+    if (config_->section(ConfigSection::shardDatabase()).empty())
+    {
+        JLOG (m_journal.fatal()) <<
+            "The [shard_db] configuration setting must be set";
+        return false;
+    }
+    if (!shardStore_)
+    {
+        JLOG(m_journal.fatal()) <<
+            "Invalid [shard_db] configuration";
+        return false;
+    }
+    shardStore_->validate();
     return true;
 }
 

@@ -28,6 +28,7 @@ namespace ripple {
 struct ConfigSection
 {
     static std::string nodeDatabase ()       { return "node_db"; }
+    static std::string shardDatabase ()      { return "shard_db"; }
     static std::string importNodeDatabase () { return "import_db"; }
 };
 

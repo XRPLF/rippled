@@ -21,31 +21,32 @@
 #define RIPPLE_APP_LEDGER_ACCOUNTSTATESF_H_INCLUDED
 
 #include <ripple/app/ledger/AbstractFetchPackContainer.h>
+#include <ripple/nodestore/Database.h>
 #include <ripple/shamap/SHAMapSyncFilter.h>
-#include <ripple/shamap/Family.h>
 
 namespace ripple {
 
 // This class is only needed on add functions
 // sync filter for account state nodes during ledger sync
-class AccountStateSF
-    : public SHAMapSyncFilter
+class AccountStateSF : public SHAMapSyncFilter
 {
-private:
-    Family& f_;
-    AbstractFetchPackContainer& fp_;
-
 public:
-    AccountStateSF(Family&, AbstractFetchPackContainer&);
+    AccountStateSF(NodeStore::Database& db, AbstractFetchPackContainer& fp)
+        : db_(db)
+        , fp_(fp)
+    {}
 
-    // Note that the nodeData is overwritten by this call
-    void gotNode (bool fromFilter,
-                  SHAMapHash const& nodeHash,
-                  Blob&& nodeData,
-                  SHAMapTreeNode::TNType) const override;
+    void
+    gotNode(bool fromFilter, SHAMapHash const& nodeHash,
+        std::uint32_t ledgerSeq, Blob&& nodeData,
+            SHAMapTreeNode::TNType type) const override;
 
     boost::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const override;
+
+private:
+    NodeStore::Database& db_;
+    AbstractFetchPackContainer& fp_;
 };
 
 } // ripple

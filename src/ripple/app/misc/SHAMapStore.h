@@ -48,6 +48,7 @@ public:
         std::uint32_t deleteBatch = 100;
         std::uint32_t backOff = 100;
         std::int32_t ageThreshold = 60;
+        Section shardDatabase;
     };
 
     SHAMapStore (Stoppable& parent) : Stoppable ("SHAMapStore", parent) {}
@@ -62,6 +63,10 @@ public:
     virtual std::unique_ptr <NodeStore::Database> makeDatabase (
             std::string const& name,
             std::int32_t readThreads, Stoppable& parent) = 0;
+
+    virtual std::unique_ptr <NodeStore::DatabaseShard> makeDatabaseShard(
+        std::string const& name, std::int32_t readThreads,
+            Stoppable& parent) = 0;
 
     /** Highest ledger that may be deleted. */
     virtual LedgerIndex setCanDelete (LedgerIndex canDelete) = 0;

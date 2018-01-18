@@ -344,7 +344,8 @@ Value::~Value ()
 
     case arrayValue:
     case objectValue:
-        delete value_.map_;
+        if (value_.map_)
+            delete value_.map_;
         break;
 
     default:

@@ -36,6 +36,7 @@
 #include <ripple/basics/make_lock.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/consensus/LedgerTiming.h>
+#include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/Feature.h>
@@ -106,7 +107,7 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& ledger)
             app_.getJobQueue().addJob(
                 jtADVANCE, "getConsensusLedger", [app, hash](Job&) {
                     app->getInboundLedgers().acquire(
-                        hash, 0, InboundLedger::fcCONSENSUS);
+                        hash, 0, InboundLedger::Reason::CONSENSUS);
                 });
         }
         return boost::none;
@@ -625,9 +626,16 @@ RCLConsensus::Adaptor::notify(
     }
     s.set_firstseq(uMin);
     s.set_lastseq(uMax);
-    app_.overlay().foreach (
-        send_always(std::make_shared<Message>(s, protocol::mtSTATUS_CHANGE)));
-    JLOG(j_.trace()) << "send status change to peer";
+    if (auto shardStore = app_.getShardStore())
+    {
+        auto shards = shardStore->getCompleteShards();
+        if (! shards.empty())
+            s.set_shardseqs(shards);
+    }
+    app_.overlay ().foreach (send_always (
+        std::make_shared <Message> (
+            s, protocol::mtSTATUS_CHANGE)));
+    JLOG (j_.trace()) << "send status change to peer";
 }
 
 /** Apply a set of transactions to a ledger.

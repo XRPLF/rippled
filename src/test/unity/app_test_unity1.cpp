@@ -20,6 +20,7 @@
 
 #include <test/app/AccountTxPaging_test.cpp>
 #include <test/app/AmendmentTable_test.cpp>
+#include <test/app/Check_test.cpp>
 #include <test/app/CrossingLimits_test.cpp>
 #include <test/app/DeliverMin_test.cpp>
 #include <test/app/DepositAuth_test.cpp>
