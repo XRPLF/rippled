@@ -193,7 +193,6 @@
 #include <ripple/beast/core/CurrentThreadName.cpp>
 #include <ripple/beast/core/SemanticVersion.cpp>
 #include <ripple/beast/core/SystemStats.cpp>
-#include <ripple/beast/core/Time.cpp>
 #include <ripple/beast/core/WaitableEvent.cpp>
 
 #ifdef _CRTDBG_MAP_ALLOC
