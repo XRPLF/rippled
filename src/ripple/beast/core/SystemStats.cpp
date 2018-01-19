@@ -21,6 +21,8 @@
 */
 //==============================================================================
 
+#include <ripple/beast/core/SystemStats.h>
+
 #include <cstdlib>
 #include <iterator>
 #include <memory>

@@ -21,6 +21,8 @@
 #ifndef BEAST_HASH_SIPHASH_H_INCLUDED
 #define BEAST_HASH_SIPHASH_H_INCLUDED
 
+#include <ripple/beast/hash/endian.h>
+
 #include <cstddef>
 #include <cstdint>
 
