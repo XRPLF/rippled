@@ -139,7 +139,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const & hash)
         app_.getJobQueue().addJob(
             jtADVANCE, "getConsensusLedger", [pApp, hash](Job&) {
                 pApp ->getInboundLedgers().acquire(
-                    hash, 0, InboundLedger::fcVALIDATION);
+                    hash, 0, InboundLedger::Reason::CONSENSUS);
             });
         return boost::none;
     }
@@ -316,10 +316,10 @@ handleNewValidation(Application& app,
         if(j.debug())
             dmp(j.debug(), to_string(outcome));
 
-        if(outcome == ValStatus::badFullSeq && j.warn())
+        if(outcome == ValStatus::badSeq && j.warn())
         {
             auto const seq = val->getFieldU32(sfLedgerSequence);
-            dmp(j.warn(), " already fully validated sequence past " + to_string(seq));
+            dmp(j.warn(), " already validated sequence past " + to_string(seq));
         }
 
         if (val->isTrusted() && outcome == ValStatus::current)

@@ -318,7 +318,7 @@ class Validations_test : public beast::unit_test::suite
 
             // Re-adding violates the increasing seq requirement for full
             // validations
-            BEAST_EXPECT(ValStatus::badFullSeq == harness.add(v));
+            BEAST_EXPECT(ValStatus::badSeq == harness.add(v));
 
             harness.clock().advance(1s);
             // Replace with a new validation and ensure the old one is stale
@@ -346,10 +346,10 @@ class Validations_test : public beast::unit_test::suite
 
             // Cannot re-do the same full validation sequence
             BEAST_EXPECT(
-                ValStatus::badFullSeq == harness.add(n.validate(ledgerAB)));
-            // Can send a new partial validation
+                ValStatus::badSeq == harness.add(n.validate(ledgerAB)));
+            // Cannot send the same partial validation sequence
             BEAST_EXPECT(
-                ValStatus::current == harness.add(n.partial(ledgerAB)));
+                ValStatus::badSeq == harness.add(n.partial(ledgerAB)));
 
             // Now trusts the newest ledger too
             harness.clock().advance(1s);
@@ -417,25 +417,32 @@ class Validations_test : public beast::unit_test::suite
         }
 
         {
-            // Test partials for older sequence numbers
-            TestHarness harness(h.oracle);
-            Node n = harness.makeNode();
-            BEAST_EXPECT(
-                ValStatus::current == harness.add(n.validate(ledgerABC)));
-            harness.clock().advance(1s);
-            BEAST_EXPECT(ledgerAB.seq() < ledgerABC.seq());
-            BEAST_EXPECT(
-                ValStatus::badFullSeq == harness.add(n.validate(ledgerAB)));
-            BEAST_EXPECT(
-                ValStatus::current == harness.add(n.partial(ledgerAB)));
-            // If we advance far enough for AB to expire, we can fully validate
-            // that sequence number again
-            BEAST_EXPECT(
-                ValStatus::badFullSeq == harness.add(n.validate(ledgerAZ)));
-            harness.clock().advance(
-                harness.parms().validationSET_EXPIRES + 1ms);
-            BEAST_EXPECT(
-                ValStatus::current == harness.add(n.validate(ledgerAZ)));
+            // Test that full or partials cannot be sent for older sequence
+            // numbers, unless time-out has happened
+            for (bool doFull : {true, false})
+            {
+                TestHarness harness(h.oracle);
+                Node n = harness.makeNode();
+
+                auto process = [&](Ledger & lgr)
+                {
+                    if(doFull)
+                        return harness.add(n.validate(lgr));
+                    return harness.add(n.partial(lgr));
+                };
+
+                BEAST_EXPECT(ValStatus::current == process(ledgerABC));
+                harness.clock().advance(1s);
+                BEAST_EXPECT(ledgerAB.seq() < ledgerABC.seq());
+                BEAST_EXPECT(ValStatus::badSeq == process(ledgerAB));
+
+                // If we advance far enough for AB to expire, we can fully
+                // validate or partially validate that sequence number again
+                BEAST_EXPECT(ValStatus::badSeq == process(ledgerAZ));
+                harness.clock().advance(
+                    harness.parms().validationSET_EXPIRES + 1ms);
+                BEAST_EXPECT(ValStatus::current == process(ledgerAZ));
+            }
         }
     }
 
@@ -731,9 +738,9 @@ class Validations_test : public beast::unit_test::suite
             if (val.trusted())
                 trustedValidations[val.ledgerID()].emplace_back(val);
         }
-        // d now thinks ledger 1, but had to issue a partial to switch
+        // d now thinks ledger 1, but cannot re-issue a previously used seq
         {
-            BEAST_EXPECT(ValStatus::current == harness.add(d.partial(ledgerA)));
+            BEAST_EXPECT(ValStatus::badSeq == harness.add(d.partial(ledgerA)));
         }
         // e only issues partials
         {
@@ -962,20 +969,20 @@ class Validations_test : public beast::unit_test::suite
 
         // Create a validation that is not available
         harness.clock().advance(5s);
-        Validation val2 = a.validate(ID{5}, Seq{5}, 0s, 0s, true);
+        Validation val2 = a.validate(ID{4}, Seq{4}, 0s, 0s, true);
         BEAST_EXPECT(ValStatus::current == harness.add(val2));
-        BEAST_EXPECT(harness.vals().numTrustedForLedger(ID{5}) == 1);
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ID{4}) == 1);
         BEAST_EXPECT(
             harness.vals().getPreferred(genesisLedger) ==
             std::make_pair(ledgerAB.seq(), ledgerAB.id()));
 
         // Switch to validation that is available
         harness.clock().advance(5s);
-        Ledger ledgerABC = h["abc"];
-        BEAST_EXPECT(ValStatus::current == harness.add(a.partial(ledgerABC)));
+        Ledger ledgerABCDE = h["abcde"];
+        BEAST_EXPECT(ValStatus::current == harness.add(a.partial(ledgerABCDE)));
         BEAST_EXPECT(
             harness.vals().getPreferred(genesisLedger) ==
-            std::make_pair(ledgerABC.seq(), ledgerABC.id()));
+            std::make_pair(ledgerABCDE.seq(), ledgerABCDE.id()));
     }
 
     void
@@ -996,14 +1003,14 @@ class Validations_test : public beast::unit_test::suite
     }
 
     void
-    testFullSeqEnforcer()
+    testSeqEnforcer()
     {
-        testcase("FullSeqEnforcer");
+        testcase("SeqEnforcer");
         using Seq = Ledger::Seq;
         using namespace std::chrono;
 
         beast::manual_clock<steady_clock> clock;
-        FullSeqEnforcer<Seq> enforcer;
+        SeqEnforcer<Seq> enforcer;
 
         ValidationParms p;
 
@@ -1032,7 +1039,7 @@ class Validations_test : public beast::unit_test::suite
         testGetPreferredLCL();
         testAcquireValidatedLedger();
         testNumTrustedForLedger();
-        testFullSeqEnforcer();
+        testSeqEnforcer();
     }
 };
 

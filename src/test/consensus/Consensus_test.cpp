@@ -981,7 +981,7 @@ public:
             // New approach will not fork and will resync once the fast node
             // reconnects for a few rounds
             network.connect(groupCfast, fDelay);
-            sim.run(2);
+            sim.run(4);
             BEAST_EXPECT(sim.synchronized());
             BEAST_EXPECT(sim.branches() == 1);
 

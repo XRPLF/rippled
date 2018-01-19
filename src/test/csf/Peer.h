@@ -226,6 +226,7 @@ struct Peer
 
     //! The number of ledgers this peer has completed
     int completedLedgers = 0;
+
     //! The number of ledgers this peer should complete before stopping to run
     int targetLedgers = std::numeric_limits<int>::max();
 
@@ -238,8 +239,8 @@ struct Peer
     //! Whether to simulate running as validator or a tracking node
     bool runAsValidator = true;
 
-    //! Enforce invariants on full validation sequence numbers
-    FullSeqEnforcer<Ledger::Seq> fullSeqEnforcer;
+    //! Enforce invariants on validation sequence numbers
+    SeqEnforcer<Ledger::Seq> seqEnforcer;
 
     //TODO: Consider removing these two, they are only a convenience for tests
     // Number of proposers in the prior round
@@ -572,13 +573,12 @@ struct Peer
             bool const isCompatible =
                 newLedger.isAncestor(fullyValidatedLedger);
 
-            if (runAsValidator && isCompatible && !consensusFail)
+            // Can only send one validated ledger per seq
+            if (runAsValidator && isCompatible && !consensusFail &&
+                seqEnforcer(
+                    scheduler.now(), newLedger.seq(), validations.parms()))
             {
-                // Can only send one fully validated ledger per seq
-                bool isFull =
-                    proposing &&
-                    fullSeqEnforcer(
-                        scheduler.now(), newLedger.seq(), validations.parms());
+                bool isFull = proposing;
 
                 Validation v{newLedger.id(),
                              newLedger.seq(),

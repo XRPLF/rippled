@@ -446,7 +446,8 @@ RCLConsensus::Adaptor::doAccept(
             app_.journal("LedgerConsensus").warn(),
             "Not validating");
 
-    if (validating_ && !consensusFail)
+    if (validating_ && !consensusFail &&
+        app_.getValidations().canValidateSeq(sharedLCL.seq()))
     {
         validate(sharedLCL, proposing);
         JLOG(j_.info()) << "CNF Val " << newLCLHash;
@@ -831,16 +832,12 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, bool proposing)
         validationTime = lastValidationTime_ + 1s;
     lastValidationTime_ = validationTime;
 
-    // Can only fully validate if proposed and increasing full sequence invariant
-    // satisfied
-    const bool isFull =
-        proposing &&
-        fullSeqEnforcer_(
-            stopwatch().now(), ledger.seq(), app_.getValidations().parms());
-
     // Build validation
     auto v = std::make_shared<STValidation>(
-        ledger.id(), validationTime, valPublic_, isFull);
+        ledger.id(),
+        validationTime,
+        valPublic_,
+        proposing /* full if proposed */);
     v->setFieldU32(sfLedgerSequence, ledger.seq());
 
     // Add our load fee to the validation
