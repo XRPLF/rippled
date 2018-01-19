@@ -21,10 +21,11 @@
 */
 //==============================================================================
 
+#include <ripple/beast/core/SystemStats.h>
+
 #include <cstdlib>
 #include <iterator>
 #include <memory>
-#include <vector>
 
 // Some basic tests, to keep an eye on things and make sure these types work ok
 // on all platforms.
