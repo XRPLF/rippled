@@ -2283,12 +2283,6 @@
     <ClInclude Include="..\..\src\ripple\beast\core\SystemStats.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\beast\core\Time.cpp">
-      <Filter>ripple\beast\core</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\beast\core\Time.h">
-      <Filter>ripple\beast\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\core\WaitableEvent.cpp">
       <Filter>ripple\beast\core</Filter>
     </ClCompile>
