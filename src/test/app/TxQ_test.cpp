@@ -1092,8 +1092,6 @@ public:
 
         auto alice = Account("alice");
 
-        auto queued = ter(terQUEUED);
-
         BEAST_EXPECT(env.current()->fees().base == 10);
 
         checkMetrics(env, 0, boost::none, 0, 1, 256);
@@ -1133,7 +1131,6 @@ public:
                     {"maximum_txn_in_ledger", "5"} }));
 
         auto alice = Account("alice");
-        auto queued = ter(terQUEUED);
 
         checkMetrics(env, 0, boost::none, 0, 2, 256);
 

@@ -24,7 +24,7 @@
 #include <ripple/beast/container/detail/aged_associative_container.h>
 #include <ripple/beast/container/aged_container.h>
 #include <ripple/beast/clock/abstract_clock.h>
-#include <beast/core/detail/empty_base_optimization.hpp>
+#include <boost/beast/core/detail/empty_base_optimization.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
 #include <boost/version.hpp>
@@ -163,7 +163,7 @@ private:
 
     // VFALCO TODO This should only be enabled for maps.
     class pair_value_compare
-        : private empty_base_optimization <Compare>
+        : public boost::beast::detail::empty_base_optimization <Compare>
         , public std::binary_function <value_type, value_type, bool>
     {
     public:
@@ -177,7 +177,7 @@ private:
         }
 
         pair_value_compare (pair_value_compare const& other)
-            : empty_base_optimization <Compare> (other)
+            : boost::beast::detail::empty_base_optimization <Compare> (other)
         {
         }
 
@@ -185,7 +185,7 @@ private:
         friend aged_ordered_container;
 
         pair_value_compare (Compare const& compare)
-            : empty_base_optimization <Compare> (compare)
+            : boost::beast::detail::empty_base_optimization <Compare> (compare)
         {
         }
     };
@@ -193,14 +193,14 @@ private:
     // Compares value_type against element, used in insert_check
     // VFALCO TODO hoist to remove template argument dependencies
     class KeyValueCompare
-        : private empty_base_optimization <Compare>
+        : public boost::beast::detail::empty_base_optimization <Compare>
         , public std::binary_function <Key, element, bool>
     {
     public:
         KeyValueCompare () = default;
 
         KeyValueCompare (Compare const& compare)
-            : empty_base_optimization <Compare> (compare)
+            : boost::beast::detail::empty_base_optimization <Compare> (compare)
         {
         }
 
@@ -237,12 +237,12 @@ private:
 
         Compare& compare()
         {
-            return empty_base_optimization <Compare>::member();
+            return boost::beast::detail::empty_base_optimization <Compare>::member();
         }
 
         Compare const& compare() const
         {
-            return empty_base_optimization <Compare>::member();
+            return boost::beast::detail::empty_base_optimization <Compare>::member();
         }
     };
 
@@ -268,7 +268,7 @@ private:
 
     class config_t
         : private KeyValueCompare
-        , private empty_base_optimization <ElementAllocator>
+        , public boost::beast::detail::empty_base_optimization <ElementAllocator>
     {
     public:
         explicit config_t (
@@ -288,7 +288,7 @@ private:
         config_t (
             clock_type& clock_,
             Allocator const& alloc_)
-            : empty_base_optimization <ElementAllocator> (alloc_)
+            : boost::beast::detail::empty_base_optimization <ElementAllocator> (alloc_)
             , clock (clock_)
         {
         }
@@ -298,14 +298,14 @@ private:
             Compare const& comp,
             Allocator const& alloc_)
             : KeyValueCompare (comp)
-            , empty_base_optimization <ElementAllocator> (alloc_)
+            , boost::beast::detail::empty_base_optimization <ElementAllocator> (alloc_)
             , clock (clock_)
         {
         }
 
         config_t (config_t const& other)
             : KeyValueCompare (other.key_compare())
-            , empty_base_optimization <ElementAllocator> (
+            , boost::beast::detail::empty_base_optimization <ElementAllocator> (
                 ElementAllocatorTraits::
                     select_on_container_copy_construction (
                         other.alloc()))
@@ -315,14 +315,14 @@ private:
 
         config_t (config_t const& other, Allocator const& alloc)
             : KeyValueCompare (other.key_compare())
-            , empty_base_optimization <ElementAllocator> (alloc)
+            , boost::beast::detail::empty_base_optimization <ElementAllocator> (alloc)
             , clock (other.clock)
         {
         }
 
         config_t (config_t&& other)
             : KeyValueCompare (std::move (other.key_compare()))
-            , empty_base_optimization <ElementAllocator> (
+            , boost::beast::detail::empty_base_optimization <ElementAllocator> (
                 std::move (other))
             , clock (other.clock)
         {
@@ -330,7 +330,7 @@ private:
 
         config_t (config_t&& other, Allocator const& alloc)
             : KeyValueCompare (std::move (other.key_compare()))
-            , empty_base_optimization <ElementAllocator> (alloc)
+            , boost::beast::detail::empty_base_optimization <ElementAllocator> (alloc)
             , clock (other.clock)
         {
         }
@@ -376,13 +376,13 @@ private:
 
         ElementAllocator& alloc()
         {
-            return empty_base_optimization <
+            return boost::beast::detail::empty_base_optimization <
                 ElementAllocator>::member();
         }
 
         ElementAllocator const& alloc() const
         {
-            return empty_base_optimization <
+            return boost::beast::detail::empty_base_optimization <
                 ElementAllocator>::member();
         }
 

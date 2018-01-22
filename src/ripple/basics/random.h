@@ -22,7 +22,7 @@
 
 #include <ripple/basics/win32_workaround.h>
 #include <ripple/beast/xor_shift_engine.h>
-#include <beast/core/detail/type_traits.hpp>
+#include <boost/beast/core/detail/type_traits.hpp>
 #include <boost/thread/tss.hpp>
 #include <cassert>
 #include <cstddef>
@@ -52,7 +52,7 @@ namespace detail {
 // Determines if a type can be called like an Engine
 template <class Engine, class Result = typename Engine::result_type>
 using is_engine =
-    beast::detail::is_invocable<Engine, Result()>;
+    boost::beast::detail::is_invocable<Engine, Result()>;
 }
 
 /** Return the default random engine.

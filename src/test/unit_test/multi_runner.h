@@ -20,7 +20,7 @@
 #ifndef TEST_UNIT_TEST_MULTI_RUNNER_H
 #define TEST_UNIT_TEST_MULTI_RUNNER_H
 
-#include <beast/include/beast/core/static_string.hpp>
+#include <boost/beast/core/static_string.hpp>
 #include <beast/unit_test/global_suites.hpp>
 #include <beast/unit_test/runner.hpp>
 
@@ -78,7 +78,7 @@ struct suite_results
 
 struct results
 {
-    using static_string = beast::static_string<256>;
+    using static_string = boost::beast::static_string<256>;
     // results may be stored in shared memory. Use `static_string` to ensure
     // pointers from different memory spaces do not co-mingle
     using run_time = std::pair<static_string, typename clock_type::duration>;
