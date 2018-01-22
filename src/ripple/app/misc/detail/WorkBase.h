@@ -22,10 +22,10 @@
 
 #include <ripple/app/misc/detail/Work.h>
 #include <ripple/protocol/BuildInfo.h>
-#include <beast/core/multi_buffer.hpp>
-#include <beast/http/empty_body.hpp>
-#include <beast/http/read.hpp>
-#include <beast/http/write.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
+#include <boost/beast/http/empty_body.hpp>
+#include <boost/beast/http/read.hpp>
+#include <boost/beast/http/write.hpp>
 #include <boost/asio.hpp>
 
 namespace ripple {
@@ -48,7 +48,7 @@ protected:
     using resolver_type = boost::asio::ip::tcp::resolver;
     using query_type = resolver_type::query;
     using request_type =
-        beast::http::request<beast::http::empty_body>;
+        boost::beast::http::request<boost::beast::http::empty_body>;
 
     std::string host_;
     std::string path_;
@@ -60,7 +60,7 @@ protected:
     socket_type socket_;
     request_type req_;
     response_type res_;
-    beast::multi_buffer read_buf_;
+    boost::beast::multi_buffer read_buf_;
 
 public:
     WorkBase(
@@ -177,14 +177,14 @@ template<class Impl>
 void
 WorkBase<Impl>::onStart()
 {
-    req_.method(beast::http::verb::get);
+    req_.method(boost::beast::http::verb::get);
     req_.target(path_.empty() ? "/" : path_);
-    req_.version = 11;
+    req_.version(11);
     req_.set (
         "Host", host_ + ":" + port_);
     req_.set ("User-Agent", BuildInfo::getFullVersionString());
     req_.prepare_payload();
-    beast::http::async_write(impl().stream(), req_,
+    boost::beast::http::async_write(impl().stream(), req_,
         strand_.wrap (std::bind (&WorkBase::onRequest,
             impl().shared_from_this(), std::placeholders::_1)));
 }
@@ -196,7 +196,7 @@ WorkBase<Impl>::onRequest(error_code const& ec)
     if (ec)
         return fail(ec);
 
-    beast::http::async_read (impl().stream(), read_buf_, res_,
+    boost::beast::http::async_read (impl().stream(), read_buf_, res_,
         strand_.wrap (std::bind (&WorkBase::onResponse,
             impl().shared_from_this(), std::placeholders::_1)));
 }
