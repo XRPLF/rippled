@@ -160,7 +160,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     if (isGlobalFrozen(ctx.view, uPaysIssuerID) ||
         isGlobalFrozen(ctx.view, uGetsIssuerID))
     {
-        JLOG(ctx.j.warn()) <<
+        JLOG(ctx.j.info()) <<
             "Offer involves frozen asset";
 
         return tecFROZEN;
