@@ -1,7 +1,0 @@
-bin/
-bin64/
-
-# Because of CMake and VS2017
-Win32/
-x64/
-
