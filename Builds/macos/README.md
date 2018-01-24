@@ -45,8 +45,8 @@ Open a terminal and type:
 ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
-For more info, see "Step 3: Install Homebrew"
-[here](http://www.moncefbelyamani.com/how-to-install-xcode-homebrew-git-rvm-ruby-on-mac)
+For more info, see "Step 2: Install Homebrew"
+[here](http://www.moncefbelyamani.com/how-to-install-xcode-homebrew-git-rvm-ruby-on-mac#step-2)
 
 ### Install Dependencies Using Homebrew
 
