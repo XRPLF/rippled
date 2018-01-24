@@ -121,6 +121,20 @@ class LedgerRPC_test : public beast::unit_test::suite
             checkErrorValue(jrr, "invalidParams", "Invalid parameters.");
         }
 
+        {
+            // Request a ledger with a very large (double) sequence.
+            auto const ret = env.rpc (
+                "json", "ledger", "{ \"ledger_index\" : 2e15 }");
+            BEAST_EXPECT (RPC::contains_error(ret));
+            BEAST_EXPECT (ret[jss::error_message] == "Invalid parameters.");
+        }
+
+        {
+            // Request a ledger with very large (integer) sequence.
+            auto const ret = env.rpc (
+                "json", "ledger", "{ \"ledger_index\" : 1000000000000000 }");
+            checkErrorValue(ret, "invalidParams", "Invalid parameters.");
+        }
     }
 
     void testLedgerCurrent()
