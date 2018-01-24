@@ -644,8 +644,10 @@ public:
         ID preferredID{0};
 
         ScopedLock lock{mutex_};
-        std::tie(preferredSeq, preferredID) = withTrie(
-            lock, [](LedgerTrie<Ledger>& trie) { return trie.getPreferred(); });
+        std::tie(preferredSeq, preferredID) =
+            withTrie(lock, [this](LedgerTrie<Ledger>& trie) {
+                return trie.getPreferred(localSeqEnforcer_.largest());
+            });
 
         // No trusted validations to determine branch
         if (preferredSeq == Seq{0})
@@ -672,8 +674,7 @@ public:
         if (preferredSeq > currSeq)
             return std::make_pair(preferredSeq, preferredID);
 
-        // Only switch to earlier sequence numbers if it is a different
-        // chain to avoid jumping backward unnecessarily
+        // Only switch to earlier sequence numbers if it is a different chain.
         if (currLedger[preferredSeq] != preferredID)
             return std::make_pair(preferredSeq, preferredID);
 

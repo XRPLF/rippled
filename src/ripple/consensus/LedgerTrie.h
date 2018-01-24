@@ -61,6 +61,12 @@ public:
     operator=(Span&&) = default;
 
     Seq
+    start() const
+    {
+        return start_;
+    }
+
+    Seq
     end() const
     {
         return end_;
@@ -304,6 +310,9 @@ class LedgerTrie
     // invariant.
     std::unique_ptr<Node> root;
 
+    // Count of the tip support for each sequence number
+    std::map<Seq, std::uint32_t> seqSupport;
+
     /** Find the node in the trie that represents the longest common ancestry
         with the given ledger.
 
@@ -447,6 +456,8 @@ public:
             incNode->branchSupport += count;
             incNode = incNode->parent;
         }
+
+        seqSupport[ledger.seq()] += count;
     }
 
     /** Decrease support for a ledger, removing and compressing if possible.
@@ -472,6 +483,12 @@ public:
             {
                 count = std::min(count, loc->tipSupport);
                 loc->tipSupport -= count;
+
+                auto const it = seqSupport.find(ledger.seq());
+                assert(it != seqSupport.end() && it->second >= count);
+                it->second -= count;
+                if(it->second == 0)
+                    seqSupport.erase(it->first);
 
                 Node* decNode = loc;
                 while (decNode)
@@ -567,7 +584,6 @@ public:
         support. We call this the preferred ledger.  Intuitively, the idea is to
         be conservative and only switch to a different branch when you see
         enough peer validations to *know* another branch won't have preferred
-        support. This ensures the preferred branch has monotonically increasing
         support.
 
         The preferred ledger is found by walking this tree of validated ledgers
@@ -583,39 +599,81 @@ public:
              tip support of D plus the tip support of E; the branch support of
              C is just the tip support of C.
            - The number of validators that have yet to validate a ledger
-             with this sequence number (prefixSupport).
+             with this sequence number (uncommitted support). Uncommitted
+             includes all validators whose last sequence number is smaller than
+             our last issued sequence number, since due to asynchrony, we may
+             not have heard from those nodes yet.
 
         The preferred ledger for this sequence number is then the ledger
-        with relative majority of support, where prefixSupport can be given to
-        ANY ledger at that sequence number (including one not yet known). If no
-        such preferred ledger exists, then prior sequence preferred ledger is
-        the overall preferred ledger.
+        with relative majority of support, where uncommited support
+        can be given to ANY ledger at that sequence number
+        (including one not yet known). If no such preferred ledger exists, then
+        the prior sequence preferred ledger is the overall preferred ledger.
 
         In this example, for D to be preferred, the number of validators
         supporting it or a descendant must exceed the number of validators
-        supporting C _plus_ the current prefix support. This is because if all
-        the prefix support validators end up validating C, that new support must
+        supporting C _plus_ the current uncommitted support. This is because if
+        all uncommitted validators end up validating C, that new support must
         be less than that for D to be preferred.
 
         If a preferred ledger does exist, then we continue with the next
-        sequence but increase prefixSupport with the non-preferred tip support
-        this round, e.g. if C were preferred over D, then prefixSupport would
-        increase by the support of D and E, since if those validators are
-        following the protocol, they will switch to the C branch, but might
-        initially support a different descendant.
+        sequence using that ledger as the root.
+
+        @param largestIssued The sequence number of the largest validation
+                             issued by this node.
+        @return Pair with the seqeuence number and ID of the preferred ledger
     */
     std::pair<Seq,ID>
-    getPreferred() const
+    getPreferred(Seq const largestIssued) const
     {
         Node* curr = root.get();
 
         bool done = false;
-        std::uint32_t prefixSupport = curr->tipSupport;
+
+        std::uint32_t uncommitted = 0;
+        auto uncommittedIt = seqSupport.begin();
+
         while (curr && !done)
         {
+            // Within a single span, the preferred by branch strategy is simply
+            // to continue along the span as long as the branch support of
+            // the next ledger exceeds the uncommited support for that ledger.
+            {
+                // Add any initial uncommited support prior for ledgers
+                // earlier than nextSeq or earlier than largestIssued
+                Seq nextSeq = curr->span.start() + Seq{1};
+                while (uncommittedIt != seqSupport.end() &&
+                       uncommittedIt->first < std::max(nextSeq, largestIssued))
+                {
+                    uncommitted += uncommittedIt->second;
+                    uncommittedIt++;
+                }
+
+                // Advance nextSeq along the span
+                while (nextSeq < curr->span.end() &&
+                       curr->branchSupport > uncommitted)
+                {
+                    // Jump to the next seqSupport change
+                    if (uncommittedIt != seqSupport.end() &&
+                        uncommittedIt->first < curr->span.end())
+                    {
+                        nextSeq = uncommittedIt->first + Seq{1};
+                        uncommitted += uncommittedIt->second;
+                        uncommittedIt++;
+                    }
+                    else // otherwise we jump to the end of the span
+                        nextSeq = curr->span.end();
+                }
+                // We did not consume the entire span, so we have found the
+                // preferred ledger
+                if (nextSeq < curr->span.end())
+                    return curr->span.before(nextSeq)->tip();
+            }
+
+            // We have reached the end of the current span, so we need to
+            // find the best child
             Node* best = nullptr;
             std::uint32_t margin = 0;
-
             if (curr->children.size() == 1)
             {
                 best = curr->children[0].get();
@@ -646,37 +704,10 @@ public:
                     margin++;
             }
 
-            // If the best child has margin exceeding the prefix support,
+            // If the best child has margin exceeding the uncommited support,
             // continue from that child, otherwise we are done
-            if (best && ((margin > prefixSupport) || (prefixSupport == 0)))
-            {
-                // Prefix support is all the support not on the branch we
-                // are moving to
-                //       curr
-                //    _/  |  \_
-                //    A   B  best
-                // At curr, the prefix support already includes the tip support
-                // of curr and its ancestors, along with the branch support of
-                // any of its siblings that are inconsistent.
-                //
-                // The additional prefix support that is carried to best is
-                //   A->branchSupport + B->branchSupport + best->tipSupport
-                // This is the amount of support that has not yet voted
-                // on a descendant of best, or has voted on a conflicting
-                // descendant and will switch to best in the future. This means
-                // that they may support an arbitrary descendant of best.
-                //
-                // The calculation is simplified using
-                //     A->branchSupport+B->branchSupport
-                //               =  curr->branchSupport - best->branchSupport
-                //                                      - curr->tipSupport
-                //
-                // This will not overflow by definition of the above quantities
-                prefixSupport += (curr->branchSupport - best->branchSupport
-                                 - curr->tipSupport) + best->tipSupport;
-
+            if (best && ((margin > uncommitted) || (uncommitted == 0)))
                 curr = best;
-            }
             else  // current is the best
                 done = true;
         }
@@ -704,6 +735,8 @@ public:
     bool
     checkInvariants() const
     {
+        std::map<Seq, std::uint32_t> expectedSeqSupport;
+
         std::stack<Node const*> nodes;
         nodes.push(root.get());
         while (!nodes.empty())
@@ -721,6 +754,10 @@ public:
 
             // branchSupport = tipSupport + sum(child->branchSupport)
             std::size_t support = curr->tipSupport;
+            if (curr->tipSupport != 0)
+                expectedSeqSupport[curr->span.end() - Seq{1}] +=
+                    curr->tipSupport;
+
             for (auto const& child : curr->children)
             {
                 if(child->parent != curr)
@@ -732,7 +769,7 @@ public:
             if (support != curr->branchSupport)
                 return false;
         }
-        return true;
+        return expectedSeqSupport == seqSupport;
     }
 };
 

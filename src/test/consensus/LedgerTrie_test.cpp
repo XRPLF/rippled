@@ -294,13 +294,17 @@ class LedgerTrie_test : public beast::unit_test::suite
     }
 
     void
-    testTipAndBranchSupport()
+    testSupport()
     {
         using namespace csf;
+        using Seq = Ledger::Seq;
+
+
         LedgerTrie<Ledger> t;
         LedgerHistoryHelper h;
         BEAST_EXPECT(t.tipSupport(h["a"]) == 0);
         BEAST_EXPECT(t.tipSupport(h["axy"]) == 0);
+
         BEAST_EXPECT(t.branchSupport(h["a"]) == 0);
         BEAST_EXPECT(t.branchSupport(h["axy"]) == 0);
 
@@ -309,6 +313,7 @@ class LedgerTrie_test : public beast::unit_test::suite
         BEAST_EXPECT(t.tipSupport(h["ab"]) == 0);
         BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
         BEAST_EXPECT(t.tipSupport(h["abcd"]) == 0);
+
         BEAST_EXPECT(t.branchSupport(h["a"]) == 1);
         BEAST_EXPECT(t.branchSupport(h["ab"]) == 1);
         BEAST_EXPECT(t.branchSupport(h["abc"]) == 1);
@@ -324,24 +329,38 @@ class LedgerTrie_test : public beast::unit_test::suite
         BEAST_EXPECT(t.branchSupport(h["ab"]) == 2);
         BEAST_EXPECT(t.branchSupport(h["abc"]) == 1);
         BEAST_EXPECT(t.branchSupport(h["abe"]) == 1);
+
+        t.remove(h["abc"]);
+        BEAST_EXPECT(t.tipSupport(h["a"]) == 0);
+        BEAST_EXPECT(t.tipSupport(h["ab"]) == 0);
+        BEAST_EXPECT(t.tipSupport(h["abc"]) == 0);
+        BEAST_EXPECT(t.tipSupport(h["abe"]) == 1);
+
+        BEAST_EXPECT(t.branchSupport(h["a"]) == 1);
+        BEAST_EXPECT(t.branchSupport(h["ab"]) == 1);
+        BEAST_EXPECT(t.branchSupport(h["abc"]) == 0);
+        BEAST_EXPECT(t.branchSupport(h["abe"]) == 1);
+
     }
 
     void
     testGetPreferred()
     {
         using namespace csf;
+        using Seq = Ledger::Seq;
         // Empty
         {
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
-            BEAST_EXPECT(t.getPreferred().second == Ledger::ID{0});
+            BEAST_EXPECT(t.getPreferred(Seq{0}).second == h[""].id());
+            BEAST_EXPECT(t.getPreferred(Seq{2}).second == h[""].id());
         }
         // Single node no children
         {
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["abc"]);
-            BEAST_EXPECT(t.getPreferred().second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["abc"].id());
         }
         // Single node smaller child support
         {
@@ -349,10 +368,8 @@ class LedgerTrie_test : public beast::unit_test::suite
             LedgerHistoryHelper h;
             t.insert(h["abc"]);
             t.insert(h["abcd"]);
-            BEAST_EXPECT(t.getPreferred().second == h["abc"].id());
-
-            t.insert(h["abc"]);
-            BEAST_EXPECT(t.getPreferred().second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["abc"].id());
         }
         // Single node larger child
         {
@@ -360,7 +377,8 @@ class LedgerTrie_test : public beast::unit_test::suite
             LedgerHistoryHelper h;
             t.insert(h["abc"]);
             t.insert(h["abcd"],2);
-            BEAST_EXPECT(t.getPreferred().second == h["abcd"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["abcd"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["abcd"].id());
         }
         // Single node smaller children support
         {
@@ -369,10 +387,12 @@ class LedgerTrie_test : public beast::unit_test::suite
             t.insert(h["abc"]);
             t.insert(h["abcd"]);
             t.insert(h["abce"]);
-            BEAST_EXPECT(t.getPreferred().second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["abc"].id());
 
             t.insert(h["abc"]);
-            BEAST_EXPECT(t.getPreferred().second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["abc"].id());
         }
         // Single node larger children
         {
@@ -381,9 +401,12 @@ class LedgerTrie_test : public beast::unit_test::suite
             t.insert(h["abc"]);
             t.insert(h["abcd"],2);
             t.insert(h["abce"]);
-            BEAST_EXPECT(t.getPreferred().second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["abc"].id());
+
             t.insert(h["abcd"]);
-            BEAST_EXPECT(t.getPreferred().second == h["abcd"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["abcd"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["abcd"].id());
         }
         // Tie-breaker by id
         {
@@ -393,11 +416,11 @@ class LedgerTrie_test : public beast::unit_test::suite
             t.insert(h["abce"],2);
 
             BEAST_EXPECT(h["abce"].id() > h["abcd"].id());
-            BEAST_EXPECT(t.getPreferred().second == h["abce"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["abce"].id());
 
             t.insert(h["abcd"]);
             BEAST_EXPECT(h["abce"].id() > h["abcd"].id());
-            BEAST_EXPECT(t.getPreferred().second == h["abcd"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["abcd"].id());
         }
 
         // Tie-breaker not needed
@@ -409,12 +432,14 @@ class LedgerTrie_test : public beast::unit_test::suite
             t.insert(h["abce"],2);
             // abce only has a margin of 1, but it owns the tie-breaker
             BEAST_EXPECT(h["abce"].id() > h["abcd"].id());
-            BEAST_EXPECT(t.getPreferred().second == h["abce"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["abce"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["abce"].id());
 
             // Switch support from abce to abcd, tie-breaker now needed
             t.remove(h["abce"]);
             t.insert(h["abcd"]);
-            BEAST_EXPECT(t.getPreferred().second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["abc"].id());
         }
 
         // Single node larger grand child
@@ -424,7 +449,9 @@ class LedgerTrie_test : public beast::unit_test::suite
             t.insert(h["abc"]);
             t.insert(h["abcd"],2);
             t.insert(h["abcde"],4);
-            BEAST_EXPECT(t.getPreferred().second == h["abcde"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["abcde"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["abcde"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{5}).second == h["abcde"].id());
         }
 
         // Too much prefix support from competing branches
@@ -435,20 +462,90 @@ class LedgerTrie_test : public beast::unit_test::suite
             t.insert(h["abcde"],2);
             t.insert(h["abcfg"],2);
             // 'de' and 'fg' are tied without 'abc' vote
-            BEAST_EXPECT(t.getPreferred().second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["abc"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{5}).second == h["abc"].id());
+
             t.remove(h["abc"]);
             t.insert(h["abcd"]);
-            // 'de' branch has 3 votes to 2, but not enough suport for 'e'
-            // since the node on 'd' and the 2 on 'fg' could go in a
-            // different direction
-            BEAST_EXPECT(t.getPreferred().second == h["abcd"].id());
+
+            // 'de' branch has 3 votes to 2, so earlier sequences see it as
+            // preferred
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["abcde"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["abcde"].id());
+
+            // However, if you validated a ledger with Seq 5, potentially on
+            // a different branch, you do not yet know if they chose abcd
+            // or abcf because of you, so abc remains preferred
+            BEAST_EXPECT(t.getPreferred(Seq{5}).second == h["abc"].id());
         }
+
+        // Changing largestSeq perspective changes preferred branch
+        {
+            /** Build the tree below with tip support annotated
+                   A
+                  / \
+               B(1)  C(1)
+              /  |   |
+             H   D   F(1)
+                 |
+                 E(2)
+                 |
+                 G
+            */
+            LedgerTrie<Ledger> t;
+            LedgerHistoryHelper h;
+            t.insert(h["ab"]);
+            t.insert(h["ac"]);
+            t.insert(h["acf"]);
+            t.insert(h["abde"],2);
+
+            // B has more branch support
+            BEAST_EXPECT(t.getPreferred(Seq{1}).second == h["ab"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{2}).second == h["ab"].id());
+            // But if you last validated D,F or E, you do not yet know
+            // if someone used that validation to commit to B or C
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["a"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["a"].id());
+
+            // One of E advancing to G doesn't change anything
+            t.remove(h["abde"]);
+            t.insert(h["abdeg"]);
+
+            BEAST_EXPECT(t.getPreferred(Seq{1}).second == h["ab"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{2}).second == h["ab"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["a"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["a"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{5}).second == h["a"].id());
+
+            // C advancing to H does advance the seq 3 preferred ledger
+            t.remove(h["ac"]);
+            t.insert(h["abh"]);
+            BEAST_EXPECT(t.getPreferred(Seq{1}).second == h["ab"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{2}).second == h["ab"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["ab"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["a"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{5}).second == h["a"].id());
+
+            // F advancing to E also moves the preferred ledger forward
+            t.remove(h["acf"]);
+            t.insert(h["abde"]);
+            BEAST_EXPECT(t.getPreferred(Seq{1}).second == h["abde"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{2}).second == h["abde"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{3}).second == h["abde"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{4}).second == h["ab"].id());
+            BEAST_EXPECT(t.getPreferred(Seq{5}).second == h["ab"].id());
+
+        }
+
+
     }
 
     void
     testRootRelated()
     {
         using namespace csf;
+        using Seq = Ledger::Seq;
         // Since the root is a special node that breaks the no-single child
         // invariant, do some tests that exercise it.
 
@@ -524,7 +621,7 @@ class LedgerTrie_test : public beast::unit_test::suite
     {
         testInsert();
         testRemove();
-        testTipAndBranchSupport();
+        testSupport();
         testGetPreferred();
         testRootRelated();
         testStress();

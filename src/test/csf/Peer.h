@@ -613,9 +613,7 @@ struct Peer
     Ledger::Seq
     earliestAllowedSeq() const
     {
-        if (lastClosedLedger.seq() > Ledger::Seq{20})
-            return lastClosedLedger.seq() - Ledger::Seq{20};
-        return Ledger::Seq{0};
+        return fullyValidatedLedger.seq();
     }
 
     Ledger::ID

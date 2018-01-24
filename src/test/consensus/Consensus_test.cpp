@@ -974,17 +974,10 @@ public:
 
         // Disruptor will reconnect all but the fastC node
         sim.run(1);
-        BEAST_EXPECT(!sim.synchronized());
 
         if(BEAST_EXPECT(sim.branches() == 1))
         {
-            // New approach will not fork and will resync once the fast node
-            // reconnects for a few rounds
-            network.connect(groupCfast, fDelay);
-            sim.run(4);
             BEAST_EXPECT(sim.synchronized());
-            BEAST_EXPECT(sim.branches() == 1);
-
         }
         else // old approach caused a fork
         {

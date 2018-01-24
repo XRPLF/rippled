@@ -870,10 +870,11 @@ class Validations_test : public beast::unit_test::suite
         for (auto const& node : {a, b, c, d})
             BEAST_EXPECT(
                 ValStatus::current == harness.add(node.validate(ledgerAC)));
+        // Parent of preferred stays put
         BEAST_EXPECT(harness.vals().getPreferred(ledgerA) == pref(ledgerA));
         // Earlier different chain, switch
         BEAST_EXPECT(harness.vals().getPreferred(ledgerB) == pref(ledgerAC));
-        // Earlier same chain stays where it is
+        // Later on chain, stays where it is
         BEAST_EXPECT(harness.vals().getPreferred(ledgerACD) == pref(ledgerACD));
 
         // Any later grandchild or different chain is preferred
