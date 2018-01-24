@@ -371,7 +371,7 @@ if (WIN32 OR is_xcode)
     docs/
     source.dox)
 
-  file(GLOB_RECURSE other_docs doc/*.md)
+  file(GLOB_RECURSE other_docs docs/*.md)
   list(APPEND doc_srcs "${other_docs}")
   set_property(
     SOURCE ${doc_srcs}
@@ -498,6 +498,9 @@ if(TARGET Doxygen::doxygen)
 else()
     message(WARNING
         "doxygen executable not found. docs target will not be buildable")
+    if(${CMAKE_VERSION} VERSION_LESS "3.9.0")
+        message("...consider updating to CMake 3.9.0 or greater for better doxygen support")
+    endif()
 endif()
 
 set_startup_project(rippled)

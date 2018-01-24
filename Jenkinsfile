@@ -74,11 +74,11 @@ try {
 
                 if (! collab_found) {
                     manager.addShortText(
-                        "Author of this change is not a collaborator!",
-                        "Crimson",
-                        "white",
-                        "0px",
-                        "white")
+                        'Author of this change is not a collaborator!',
+                        'Crimson',
+                        'white',
+                        '0px',
+                        'white')
                     all_status['startup'] =
                         [false, 'Author Check', "$CHANGE_AUTHOR is not a collaborator!"]
                     error "$CHANGE_AUTHOR does not appear to be a collaborator...bailing on this build"
@@ -91,16 +91,23 @@ try {
         String[][] variants = [
             ['coverage'],
             ['docs'],
+            ['msvc.debug'],
+            // This one does not currently build (TBD):
+            //['msvc.debug.nounity'],
+            ['msvc.debug', '', 'PROJECT_NAME=rippled_classic'],
+            ['msvc.release'],
             ['clang.debug.unity'],
+            ['clang.debug.unity', '', 'PARALLEL_TESTS=false'],
             ['clang.debug.nounity'],
             ['gcc.debug.unity'],
             ['gcc.debug.nounity'],
             ['clang.release.unity'],
             ['gcc.release.unity'],
             // add a static build just to make sure it works
-            ['gcc.debug.unity', "-Dstatic=true"],
-            // TODO - san run currently fails
-            //['gcc.debug.nounity'  ,  '-Dsan=address'],
+            ['gcc.debug.unity', '-Dstatic=true'],
+            // TODO - sanitizer runs currently fail
+            //['gcc.debug.nounity' , '-Dsan=address', 'PARALLEL_TESTS=false'],
+            //['gcc.debug.nounity' , '-Dsan=thread',  'PARALLEL_TESTS=false'],
         ]
 
         // create a map of all builds
@@ -111,102 +118,225 @@ try {
             def bldtype = variants[index][0]
             def cmake_extra = variants[index].size() > 1 ? variants[index][1] : ''
             def bldlabel = bldtype + cmake_extra
+            def extra_env = variants[index].size() > 2 ? variants[index][2..-1] : []
+            for (int j = 0; j < extra_env.size(); j++) {
+                bldlabel += "_" + extra_env[j]
+            }
             bldlabel = bldlabel.replace('-', '_')
             bldlabel = bldlabel.replace(' ', '')
             bldlabel = bldlabel.replace('=', '_')
+
+            def compiler = getFirstPart(bldtype)
+            def target = getSecondPart(bldtype)
+            def config = getFirstPart(target)
+            if (compiler == 'coverage' || compiler == 'docs') {
+                compiler = 'gcc'
+            }
+            def cc =
+                (compiler == 'clang') ? '/opt/llvm-5.0.1/bin/clang' : 'gcc'
+            def cxx =
+                (compiler == 'clang') ? '/opt/llvm-5.0.1/bin/clang++' : 'g++'
+            def ucc = isNoUnity(target) ? 'true' : 'false'
+            def node_type =
+                (compiler == 'msvc') ? 'rippled-win' : 'rippled-dev'
+            // the default disposition for parallel test..disabled
+            // for coverage, enabled otherwise. Can still be overridden
+            // by explicitly setting with extra env settings above.
+            def pt = (compiler == 'coverage') ? 'false' : 'true'
+
+            def env_vars = [
+                "TARGET=${target}",
+                "CONFIG_TYPE=${config}",
+                "COMPILER=${compiler}",
+                "PARALLEL_TESTS=${pt}",
+                'BUILD=cmake',
+                "BUILD_DIR=${bldlabel}",
+                "CMAKE_EXTRA_ARGS=${cmake_extra}",
+                'VERBOSE_BUILD=true']
+
             builds[bldlabel] = {
-                node('rippled-dev') {
+                node(node_type) {
                     checkout scm
                     dir ('build') {
                         deleteDir()
                     }
                     def cdir = upDir(pwd())
                     echo "BASEDIR: ${cdir}"
-                    def compiler = getCompiler(bldtype)
-                    def target = getTarget(bldtype)
-                    if (compiler == "coverage" || compiler == "docs") {
-                        compiler = 'gcc'
-                    }
                     echo "COMPILER: ${compiler}"
                     echo "TARGET: ${target}"
-                    def clang_cc  =
-                        (compiler == "clang") ? "${LLVM_ROOT}/bin/clang" : ''
-                    def clang_cxx =
-                        (compiler == "clang") ? "${LLVM_ROOT}/bin/clang++" : ''
-                    def ucc = isNoUnity(target) ? 'true' : 'false'
+                    echo "CONFIG: ${config}"
                     echo "USE_CC: ${ucc}"
-                    withEnv(["CCACHE_BASEDIR=${cdir}",
-                             "CCACHE_NOHASHDIR=true",
-                             'LCOV_ROOT=""',
-                             "TARGET=${target}",
-                             "CC=${compiler}",
-                             'BUILD=cmake',
-                             "CMAKE_EXTRA_ARGS=${cmake_extra}",
-                             'VERBOSE_BUILD=true',
-                             "CLANG_CC=${clang_cc}",
-                             "CLANG_CXX=${clang_cxx}",
-                             "USE_CCACHE=${ucc}"])
+                    if (compiler == 'msvc') {
+                        env_vars.addAll([
+                            'BOOST_ROOT=c:\\lib\\boost_1_66',
+                            'PROJECT_NAME=rippled',
+                            'MSBUILDDISABLENODEREUSE=1',  // this ENV setting is probably redundant since we also pass /nr:false to msbuild
+                            'OPENSSL_ROOT=c:\\OpenSSL-Win64'])
+                    }
+                    else {
+                        env_vars.addAll([
+                            'NINJA_BUILD=false',
+                            "CCACHE_BASEDIR=${cdir}",
+                            'PLANTUML_JAR=/opt/plantuml/plantuml.jar',
+                            'CCACHE_NOHASHDIR=true',
+                            "CC=${cc}",
+                            "CXX=${cxx}",
+                            'LCOV_ROOT=""',
+                            'PATH+CMAKE_BIN=/opt/local/cmake',
+                            'GDB_ROOT=/opt/local/gdb',
+                            'BOOST_ROOT=/opt/local/boost_1_66_0',
+                            "USE_CCACHE=${ucc}"])
+                    }
+
+                    if (extra_env.size() > 0) {
+                        env_vars.addAll(extra_env)
+                    }
+
+                    withCredentials(
+                        [string(
+                            credentialsId: 'RIPPLED_CODECOV_TOKEN',
+                            variable: 'CODECOV_TOKEN')])
                     {
-                        myStage(bldlabel)
-                        try {
-                            sh "rm -fv ${bldlabel}.txt"
-                            if (bldtype == "docs") {
-                                sh '''#!/bin/bash
+                        withEnv(env_vars) {
+                            myStage(bldlabel)
+                            try {
+                                if (compiler == 'msvc') {
+                                    powershell "Remove-Item -Path \"${bldlabel}.txt\" -Force -ErrorAction Ignore"
+                                    // we capture stdout to variable because I could
+                                    // not figure out how to make powershell redirect internally
+                                    output = powershell (
+                                            returnStdout: true,
+                                            script: '''
+# Enable streams 3-6
+$WarningPreference = 'Continue'
+$VerbosePreference = 'Continue'
+$DebugPreference = 'Continue'
+$InformationPreference = 'Continue'
+
+Invoke-BatchFile "${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat" x86_amd64
+Get-ChildItem env:* | Sort-Object name
+cl
+cmake --version
+New-Item -ItemType Directory -Force -Path "build/$env:BUILD_DIR" -ErrorAction Stop
+$sw = [Diagnostics.Stopwatch]::StartNew()
+try {
+    Push-Location "build/$env:BUILD_DIR"
+    if ($env:NINJA_BUILD -eq "true") {
+        cmake -G"Ninja" -Dtarget="$env:COMPILER.$env:TARGET" -DCMAKE_VERBOSE_MAKEFILE=ON ../..
+    }
+    else {
+        cmake -G"Visual Studio 15 2017 Win64" -Dtarget="$env:COMPILER.$env:TARGET" -DCMAKE_VERBOSE_MAKEFILE=ON ../..
+    }
+    if ($LastExitCode -ne 0) { throw "CMake failed" }
+
+    ## as of 01/2018, DO NOT USE cmake to run the actual build step. for some
+    ## reason, cmake spawning the build under jenkins causes MSBUILD/ninja to
+    ## get stuck at the end of the build. Perhaps cmake is spawning
+    ## incorrectly or failing to pass certain params
+
+    if ($env:NINJA_BUILD -eq "true") {
+        ninja -j $env:NUMBER_OF_PROCESSORS -v
+    }
+    else {
+        msbuild /fl /m /nr:false /p:Configuration="$env:CONFIG_TYPE" /p:Platform=x64 /p:GenerateFullPaths=True /v:normal /nologo /clp:"ShowCommandLine;DisableConsoleColor" "$env:PROJECT_NAME.vcxproj"
+    }
+    if ($LastExitCode -ne 0) { throw "CMake build failed" }
+
+    $exe = "./$env:CONFIG_TYPE/$env:PROJECT_NAME"
+    if ($env:NINJA_BUILD -eq "true") {
+        $exe = "./$env:PROJECT_NAME"
+    }
+    "Exe is at $exe"
+    $params = '--unittest', '--quiet', '--unittest-log'
+    if ($env:PARALLEL_TESTS -eq "true") {
+        $params = $params += "--unittest-jobs=$env:NUMBER_OF_PROCESSORS"
+    }
+    & $exe $params
+    if ($LastExitCode -ne 0) { throw "Unit tests failed" }
+}
+catch {
+    throw
+}
+finally {
+    $sw.Stop()
+    $sw.Elapsed
+    Pop-Location
+}
+''')
+                                    // if the powershell command fails (has nonzero exit)
+                                    // then the command above throws, we don't get our output,
+                                    // and we never create this output file.
+                                    //  SEE https://issues.jenkins-ci.org/browse/JENKINS-44930
+                                    // Alternatively, figure out how to reliably redirect
+                                    // all output above to a file (Start/Stop transcript does not work)
+                                    writeFile(
+                                        file: "${bldlabel}.txt",
+                                        text: output)
+                                }
+                                else {
+                                    sh "rm -fv ${bldlabel}.txt"
+                                    // execute the bld command in a redirecting shell
+                                    // to capture output
+                                    sh '''\
+#!/bin/bash
 set -ex
 log_file=''' + "${bldlabel}.txt" + '''
 exec 3>&1 1>>${log_file} 2>&1
-cd docs
-rm -rf html_doc
-/usr/bin/time -p doxygen source.dox
-echo "0 tests total, 0 failures"
+ccache -s
+source /opt/rh/devtoolset-6/enable
+/usr/bin/time -p ./bin/ci/ubuntu/build-and-test.sh 2>&1
+ccache -s
 '''
+                                }
                             }
-                            else {
-                                sh "ccache -s > ${bldlabel}.txt"
-                                // the devtoolset from SCL gives us a recent gcc. It's
-                                // not strictly needed when we are building with clang,
-                                // but it doesn't seem to interfere either
-                                sh "source /opt/rh/devtoolset-6/enable && " +
-                                   "(/usr/bin/time -p ./bin/ci/ubuntu/build-and-test.sh 2>&1) 2>&1 " +
-                                   ">> ${bldlabel}.txt"
-                                sh "ccache -s >> ${bldlabel}.txt"
-                            }
-                        }
-                        finally {
-                            def outstr = readFile("${bldlabel}.txt")
-                            def st = getResults(outstr)
-                            def time = getTime(outstr)
-                            def fail_count = getFailures(outstr)
-                            outstr = null
-                            def txtcolor =
-                                fail_count == 0 ? "DarkGreen" : "Crimson"
-                            def shortbld = bldlabel
-                            shortbld = shortbld.replace('debug', 'dbg')
-                            shortbld = shortbld.replace('release', 'rel')
-                            shortbld = shortbld.replace('unity', 'un')
-                            manager.addShortText(
-                                "${shortbld}: ${st}, t: ${time}",
-                                txtcolor,
-                                "white",
-                                "0px",
-                                "white")
-                            archive("${bldlabel}.txt")
-                            if (bldtype == "docs") {
-                                publishHTML(
-                                    reportName: 'Doxygen',
-                                    reportDir: 'docs/html_doc',
-                                    reportFiles: 'index.html')
-                            }
-                            lock('rippled_dev_status') {
-                                all_status[bldlabel] =
-                                    [fail_count == 0, bldtype + " " + cmake_extra, "${st}, t: ${time}"]
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                            finally {
+                                def outstr = ""
+                                def loglink = '[console](' + env.BUILD_URL + '/console)'
+                                def logfile = "${bldlabel}.txt"
+                                if (fileExists(logfile)) {
+                                    outstr = readFile(logfile)
+                                    loglink = "[logfile](" + env.BUILD_URL + "/artifact/${logfile})"
+                                }
+                                def st = getResults(outstr, bldlabel)
+                                def time = getTime(outstr, bldlabel)
+                                def fail_count = getFailures(outstr, bldlabel)
+                                outstr = null
+                                def txtcolor =
+                                    fail_count == 0 ? 'DarkGreen' : 'Crimson'
+                                def shortbld = bldlabel
+                                shortbld = shortbld.replace('debug', 'dbg')
+                                shortbld = shortbld.replace('release', 'rel')
+                                shortbld = shortbld.replace('unity', 'un')
+                                manager.addShortText(
+                                    "${shortbld}: ${st}, t: ${time}",
+                                    txtcolor,
+                                    'white',
+                                    '0px',
+                                    'white')
+                                archive("${bldlabel}.txt")
+                                if (bldtype == 'docs') {
+                                    publishHTML(
+                                        reportName:  'Doxygen',
+                                        reportDir:   'build/docs/html_doc',
+                                        reportFiles: 'index.html')
+                                }
+                                def envs = ''
+                                for (int j = 0; j < extra_env.size(); j++) {
+                                    envs += ', ' + extra_env[j]
+                                }
+                                lock('rippled_dev_status') {
+                                    all_status[bldlabel] =
+                                        [fail_count == 0, bldtype + " " + cmake_extra + envs, "${st}, t: ${time}", loglink]
+                                }
+                            } //try-catch-finally
+                        } //withEnv
+                    } //withCredentials
+                } //node
+            } //builds item
+        } //for variants
 
+        // this actually executes all the builds we just defined
+        // above, in parallel as slaves are available
         parallel builds
     }
 }
@@ -215,7 +345,7 @@ finally {
     stage ('Final Status') {
         node {
             def start_time = new Date()
-            def sdf = new SimpleDateFormat("yyyyMMdd - HH:mm:ss")
+            def sdf = new SimpleDateFormat('yyyyMMdd - HH:mm:ss')
             def datestamp = sdf.format(start_time)
 
             def results = """
@@ -227,19 +357,19 @@ Built at __${datestamp}__
 
 ### Test Results
 
-Build Type | Result | Status
----------- | ------ | ------
+Build Type | Log | Result | Status
+---------- | --- | ------ | ------
 """
             for ( e in all_status) {
-                results += e.value[1] + " | " + e.value[2] + " | " +
-                    (e.value[0] ? "PASS :white_check_mark: " : "FAIL :red_circle: ") + "\n"
+                results += e.value[1] + ' | ' + e.value[3] + ' | ' + e.value[2] + ' | ' +
+                    (e.value[0] ? 'PASS :white_check_mark: ' : 'FAIL :red_circle: ') + '\n'
             }
-            results += "\n"
-            echo "FINAL BUILD RESULTS"
+            results += '\n'
+            echo 'FINAL BUILD RESULTS'
             echo results
 
             try {
-                def url_comment = ""
+                def url_comment = ''
                 if (env.CHANGE_ID && env.CHANGE_ID ==~ /\d+/) {
                     //
                     // CHANGE_ID indicates we are building a PR
@@ -283,7 +413,7 @@ Build Type | Result | Status
                 }
 
                 if (comment_id == 0) {
-                    echo "no existing status comment found"
+                    echo 'no existing status comment found'
                 }
 
                 def body = JsonOutput.toJson([
@@ -299,7 +429,7 @@ Build Type | Result | Status
                     requestBody: body)
             }
             catch (e) {
-                echo "had a problem interacting with github...status is probably not updated"
+                echo 'had a problem interacting with github...status is probably not updated'
             }
         }
     }
@@ -327,24 +457,54 @@ ${log}
 }
 
 @NonCPS
-def getResults(text) {
+def getResults(text, label) {
     // example:
-    /// 194.5s, 154 suites, 948 cases, 360485 tests total, 0 failures
-    def matcher = text =~ /(\d+) cases, (\d+) tests total, (\d+) (failure(s?))/
-    matcher ? matcher[0][1] + " cases, " + matcher[0][3] + " failed" : "no test results"
+    ///   194.5s, 154 suites, 948 cases, 360485 tests total, 0 failures
+    // or build log format:
+    //    [msvc.release] 71.3s, 162 suites, 995 cases, 318901 tests total, 1 failure
+    def matcher =
+        text == "" ?
+        manager.getLogMatcher(/\[${label}\].+?(\d+) case[s]?, (\d+) test[s]? total, (\d+) (failure(s?))/) :
+        text =~ /(\d+) case[s]?, (\d+) test[s]? total, (\d+) (failure(s?))/
+    matcher ? matcher[0][1] + ' cases, ' + matcher[0][3] + ' failed' : 'no test results'
 }
 
-def getFailures(text) {
-    // example:
-    /// 194.5s, 154 suites, 948 cases, 360485 tests total, 0 failures
-    def matcher = text =~ /(\d+) tests total, (\d+) (failure(s?))/
+def getFailures(text, label) {
+    // [see above for format]
+    def matcher =
+        text == "" ?
+        manager.getLogMatcher(/\[${label}\].+?(\d+) test[s]? total, (\d+) (failure(s?))/) :
+        text =~ /(\d+) test[s]? total, (\d+) (failure(s?))/
     // if we didn't match, then return 1 since something is
     // probably wrong, e.g. maybe the build failed...
     matcher ? matcher[0][2] as Integer : 1i
 }
 
 @NonCPS
-def getCompiler(bld) {
+def getTime(text, label) {
+    // look for text following a label 'real' for
+    // wallclock time. Some `time`s report fractional
+    // seconds and we can omit those in what we report
+    def matcher =
+        text == "" ?
+        manager.getLogMatcher(/(?m)^\[${label}\]\s+real\s+(.+)\.(\d+?)[s]?/) :
+        text =~ /(?m)^real\s+(.+)\.(\d+?)[s]?/
+    if (matcher) {
+        return matcher[0][1] + 's'
+    }
+
+    // alternatively, look for powershell elapsed time
+    // format, e.g. :
+    //    TotalSeconds      : 523.2140529
+    def matcher2 =
+        text == "" ?
+        manager.getLogMatcher(/(?m)^\[${label}\]\s+TotalSeconds\s+:\s+(\d+)\.(\d+?)?/) :
+        text =~ /(?m)^TotalSeconds\s+:\s+(\d+)\.(\d+?)?/
+    matcher2 ? matcher2[0][1] + 's' : 'n/a'
+}
+
+@NonCPS
+def getFirstPart(bld) {
     def matcher = bld =~ /^(.+?)\.(.+)$/
     matcher ? matcher[0][1] : bld
 }
@@ -356,7 +516,7 @@ def isNoUnity(bld) {
 }
 
 @NonCPS
-def getTarget(bld) {
+def getSecondPart(bld) {
     def matcher = bld =~ /^(.+?)\.(.+)$/
     matcher ? matcher[0][2] : bld
 }
@@ -369,12 +529,4 @@ def upDir(path) {
     matcher ? matcher[0][1] : path
 }
 
-@NonCPS
-def getTime(text) {
-    // look for text following a label 'real' for
-    // wallclock time. Some `time`s report fractional
-    // seconds and we can omit those in what we report
-    def matcher = text =~ /(?m)^real\s+(.+)\.(\d+?)[s]?/
-    matcher ? matcher[0][1] + "s" : "n/a"
-}
 

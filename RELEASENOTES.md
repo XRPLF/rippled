@@ -1,6 +1,6 @@
 # Release Notes
 
-![Ripple](/images/ripple.png)
+![Ripple](docs/images/ripple.png)
 
 This document contains the release notes for `rippled`, the reference server implementation of the Ripple protocol. To learn more about how to build and run a `rippled` server, visit https://ripple.com/build/rippled-setup/
 
