@@ -13,7 +13,7 @@
       "variables": [
         {
           "name": "BOOST_ROOT",
-          "value": "C:\\lib\\boost_1_66_0"
+          "value": "C:\\lib\\boost"
         },
         {
           "name": "OPENSSL_ROOT",
@@ -33,7 +33,7 @@
       "variables": [
         {
           "name": "BOOST_ROOT",
-          "value": "C:\\lib\\boost_1_66_0"
+          "value": "C:\\lib\\boost"
         },
         {
           "name": "OPENSSL_ROOT",

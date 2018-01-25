@@ -10,16 +10,18 @@ testing, and support. Additionally, 32-bit Windows versions are not supported.
 
 To clone the source code repository, create branches for inspection or
 modification, build rippled under Visual Studio, and run the unit tests you will
-need these software components:
+need these software components
 
-* [Visual Studio 2017](README.md#install-visual-studio-2017)
-* [Git for Windows](README.md#install-git-for-windows)
-* [Google Protocol Buffers
-  Compiler](README.md#install-google-protocol-buffers-compiler)
-* [OpenSSL Library](README.md#install-openssl)
-* [Boost library](README.md#build-boost)
-* (Optional) [Cmake for Windows](README.md#optional-install-cmake-for-windows) -
-  Only needed if not using the integrated CMake in VS 2017.
+| Component | Minimum Recommended Version |
+|-----------|-----------------------|
+|[Visual Studio 2017](README.md#install-visual-studio-2017)| 15.5.4 |
+| [Git for Windows](README.md#install-git-for-windows)| 2.16.1|
+| [Google Protocol Buffers Compiler](README.md#install-google-protocol-buffers-compiler) | 2.5.1|
+| [OpenSSL Library](README.md#install-openssl) | 1.0.2n |
+| [Boost library](README.md#build-boost) | 1.66.0 |
+|  [Cmake for Windows](README.md#optional-install-cmake-for-windows)* | 3.10.2 |
+
+\* Only needed if not using the integrated CMake in VS 2017.
 
 ## Install Software
 
@@ -34,11 +36,8 @@ page, run the installer, and follow the directions. **You may need to choose the
 Any version of Visual Studio 2017 may be used to build rippled. The **Visual
 Studio 2017 Community** edition is available free of charge (see [the product
 page](https://www.visualstudio.com/products/visual-studio-community-vs) for
-licensing details), while paid editions may be used for an free initial trial
+licensing details), while paid editions may be used for an initial free-trial
 period.
-
-As of this writing, the latest version of Visual Studio 2017 for Windows is
-15.5.4.
 
 ### Install Git for Windows
 
@@ -50,13 +49,12 @@ Windows](https://git-scm.com/) since it provides a Unix-like command line
 environment useful for running shell scripts. Use of the bash shell under
 Windows is mandatory for running the unit tests.
 
-As of this writing, the latest version of Git for Windows is 2.16.1.
-
 ### Install Google Protocol Buffers Compiler
 
-Building rippled requires **protoc.exe** version 2.5.1 or later. At your option
-you may build it yourself from the sources in the [Google Protocol
-Buffers](https://github.com/google/protobuf) repository, or you may download a
+Building rippled requires **protoc.exe** version 2. Version 3 is not currently
+supported.. At your option you may build it yourself from the sources in the
+[Google Protocol Buffers](https://github.com/google/protobuf) repository, or you
+may download a
 [protoc.exe](https://ripple.github.io/Downloads/protoc/2.5.1/protoc.exe)
 ([alternate
 link](https://github.com/ripple/Downloads/raw/gh-pages/protoc/2.5.1/protoc.exe))
@@ -74,12 +72,16 @@ standard location that is in your command line `%PATH%`.
 ### Install OpenSSL
 
 [Download OpenSSL.](http://slproweb.com/products/Win32OpenSSL.html) There will
-be four variants available:
+four `Win64` bit variants available, you want the non-light `v1.0` line. As of
+this writing, you **should** select
 
-1. 64-bit. Use this if you are running 64-bit windows. As of this writing, the
-   link is called: "Win64 OpenSSL v1.0.2n".
-2. 64-bit light - Don't use this. It is missing files needed to build rippled.
-   As of this writing, the link is called: "Win64 OpenSSL v1.0.2n Light"
+* Win64 OpenSSL v1.0.2n. 
+
+and should **not** select
+
+* Win64 OpenSSL v1.0.2n light
+* Win64 OpenSSL v1.1.0g
+* Win64 OpenSSL v1.1.0g light
 
 Run the installer, and choose an appropriate location for your OpenSSL
 installation. In this guide we use `C:\lib\OpenSSL-Win64` as the destination
@@ -98,15 +100,15 @@ to get the correct 32-/64-bit variant.
 ### Build Boost
 
 After [downloading boost](http://www.boost.org/users/download/) and unpacking it
-to `c:\lib\`, open a **Developer Command Prompt** for Visual Studio, change to
-the directory containing boost, then bootstrap the build tools:
+to `c:\lib`. As of this writing, the most recent version of boost is 1.66.0,
+which will unpack into a directory named `boost_1_66_0`. We recommended either
+renaming this directory to `boost`, or creating a junction link `mklink /J boost
+boost_1_66_0`, so that you can more easily switch between versions.
 
-(As of this writing, the most recent version of boost is 1.66.0, which will
-unpack into a directory named `boost_1_66_0`. For higher versions of boost,
-adjust the directories provided in these examples as appropriate.)
+Next, open **Developer Command Prompt** and type the following commands
 
 ```powershell
-cd C:\lib\boost_1_66_0
+cd C:\lib\boost
 bootstrap
 ```
 
