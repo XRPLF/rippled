@@ -316,10 +316,225 @@ public:
         }
     }
 
+    void testObjectTypes()
+    {
+        testcase ("object types");
+
+        // Give gw a bunch of ledger objects and make sure we can retrieve
+        // them by type.
+        using namespace jtx;
+
+        Account const alice { "alice" };
+        Account const gw{ "gateway" };
+        auto const USD = gw["USD"];
+
+        // Test for ticket account objects when they are supported.
+        Env env(*this, supported_amendments().set(featureTickets));
+
+        // Make a lambda we can use to get "account_objects" easily.
+        auto acct_objs = [&env] (Account const& acct, char const* type)
+        {
+            Json::Value params;
+            params[jss::account] = acct.human();
+            params[jss::type] = type;
+            params[jss::ledger_index] = "validated";
+            return env.rpc("json", "account_objects", to_string(params));
+        };
+
+        // Make a lambda that easily identifies empty account objects.
+        auto acct_objs_is_empty =
+            [&env, &acct_objs] (Account const& acct, char const* type)
+        {
+            Json::Value const resp = acct_objs (acct, type);
+
+            bool const isArray = resp["result"]["account_objects"].isArray();
+            return isArray && (resp["result"]["account_objects"].size() == 0);
+        };
+
+        env.fund(XRP(10000), gw, alice);
+        env.close();
+
+        // Since the account is empty now, all account objects should come
+        // back null or empty.
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::account));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::amendments));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::check));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::directory));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::escrow));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::fee));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::hashes));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::offer));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::payment_channel));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::signer_list));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::state));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::ticket));
+
+        // Set up a trust line so we can find it.
+        env.trust(USD(1000), alice);
+        env.close();
+        env(pay(gw, alice, USD(5)));
+        env.close();
+        {
+            // Find the trustline and make sure it's the right one.
+            Json::Value const resp = acct_objs (gw, jss::state);
+
+            BEAST_EXPECT (resp["result"]["account_objects"].isArray());
+            BEAST_EXPECT (resp["result"]["account_objects"].size() == 1);
+
+            auto const& state = resp["result"]["account_objects"][0u];
+            BEAST_EXPECT (state["Balance"]["value"].asInt() == -5);
+            BEAST_EXPECT (state["HighLimit"]["value"].asInt() == 1000);
+        }
+        {
+            // gw writes a check for USD(10) to alice.
+            Json::Value jvCheck;
+            jvCheck[sfAccount.jsonName] = gw.human();
+            jvCheck[sfSendMax.jsonName] = USD(10).value().getJson(0);
+            jvCheck[sfDestination.jsonName] = alice.human();
+            jvCheck[sfTransactionType.jsonName] = "CheckCreate";
+            jvCheck[sfFlags.jsonName] = tfUniversal;
+            env (jvCheck);
+            env.close();
+        }
+        {
+            // Find the check.
+            Json::Value const resp = acct_objs (gw, jss::check);
+
+            BEAST_EXPECT (resp["result"]["account_objects"].isArray());
+            BEAST_EXPECT (resp["result"]["account_objects"].size() == 1);
+
+            auto const& check = resp["result"]["account_objects"][0u];
+            BEAST_EXPECT (check["Account"] == gw.human());
+            BEAST_EXPECT (check["Destination"] == alice.human());
+            BEAST_EXPECT (check["SendMax"]["value"].asInt() == 10);
+        }
+        {
+            // gw creates an escrow that we can look for in the ledger.
+            Json::Value jvEscrow;
+            jvEscrow[jss::TransactionType] = "EscrowCreate";
+            jvEscrow[jss::Flags] = tfUniversal;
+            jvEscrow[jss::Account] = gw.human();
+            jvEscrow[jss::Destination] = gw.human();
+            jvEscrow[jss::Amount] = XRP(100).value().getJson(0);
+            jvEscrow["FinishAfter"] =
+                env.now().time_since_epoch().count() + 1;
+            env (jvEscrow);
+            env.close();
+        }
+        {
+            // Find the escrow.
+            Json::Value const resp = acct_objs (gw, jss::escrow);
+
+            BEAST_EXPECT (resp["result"]["account_objects"].isArray());
+            BEAST_EXPECT (resp["result"]["account_objects"].size() == 1);
+
+            auto const& escrow = resp["result"]["account_objects"][0u];
+            BEAST_EXPECT (escrow["Account"] == gw.human());
+            BEAST_EXPECT (escrow["Destination"] == gw.human());
+            BEAST_EXPECT (escrow["Amount"].asInt() == 100'000'000);
+        }
+        // gw creates an offer that we can look for in the ledger.
+        env (offer (gw, USD (7), XRP (14)));
+        env.close();
+        {
+            // Find the offer.
+            Json::Value const resp = acct_objs (gw, jss::offer);
+
+            BEAST_EXPECT (resp["result"]["account_objects"].isArray());
+            BEAST_EXPECT (resp["result"]["account_objects"].size() == 1);
+
+            auto const& offer = resp["result"]["account_objects"][0u];
+            BEAST_EXPECT (offer["Account"] == gw.human());
+            BEAST_EXPECT (offer["TakerGets"].asInt() == 14'000'000);
+            BEAST_EXPECT (offer["TakerPays"]["value"].asInt() == 7);
+        }
+        {
+            // Create a payment channel from qw to alice that we can look for.
+            Json::Value jvPayChan;
+            jvPayChan[jss::TransactionType] = "PaymentChannelCreate";
+            jvPayChan[jss::Flags] = tfUniversal;
+            jvPayChan[jss::Account] = gw.human ();
+            jvPayChan[jss::Destination] = alice.human ();
+            jvPayChan[jss::Amount] = XRP (300).value().getJson (0);
+            jvPayChan["SettleDelay"] = 24 * 60 * 60;
+            jvPayChan["PublicKey"] = strHex (gw.pk().slice ());
+            env (jvPayChan);
+            env.close();
+        }
+        {
+            // Find the payment channel.
+            Json::Value const resp = acct_objs (gw, jss::payment_channel);
+
+            BEAST_EXPECT (resp["result"]["account_objects"].isArray());
+            BEAST_EXPECT (resp["result"]["account_objects"].size() == 1);
+
+            auto const& payChan = resp["result"]["account_objects"][0u];
+            BEAST_EXPECT (payChan["Account"] == gw.human());
+            BEAST_EXPECT (payChan["Amount"].asInt() == 300'000'000);
+            BEAST_EXPECT (payChan["SettleDelay"].asInt() == 24 * 60 * 60);
+        }
+        // Make gw multisigning by adding a signerList.
+        env (signers (gw, 6, { { alice, 7} }));
+        env.close();
+        {
+            // Find the signer list.
+            Json::Value const resp = acct_objs (gw, jss::signer_list);
+
+            BEAST_EXPECT (resp["result"]["account_objects"].isArray());
+            BEAST_EXPECT (resp["result"]["account_objects"].size() == 1);
+
+            auto const& signerList = resp["result"]["account_objects"][0u];
+            BEAST_EXPECT (signerList["SignerQuorum"] == 6);
+            auto const& entry = signerList["SignerEntries"][0u]["SignerEntry"];
+            BEAST_EXPECT (entry["Account"] == alice.human());
+            BEAST_EXPECT (entry["SignerWeight"].asInt() == 7);
+        }
+        // Create a Ticket for gw.
+        env (ticket::create (gw, gw));
+        env.close();
+        {
+            // Find the ticket.
+            Json::Value const resp = acct_objs (gw, jss::ticket);
+
+            BEAST_EXPECT (resp["result"]["account_objects"].isArray());
+            BEAST_EXPECT (resp["result"]["account_objects"].size() == 1);
+
+            auto const& ticket = resp["result"]["account_objects"][0u];
+            BEAST_EXPECT (ticket["Account"] == gw.human());
+            BEAST_EXPECT (ticket["LedgerEntryType"] == "Ticket");
+            BEAST_EXPECT (ticket["Sequence"].asInt() == 8);
+        }
+        // Run up the number of directory entries so gw has two
+        // directory nodes.
+        for (int d = 1'000'032; d >= 1'000'000; d -= 1)
+        {
+            env (offer (gw, USD (1), drops (d)));
+            env.close();
+        }
+
+        // Make a lambda that easily identifies null account objects.
+        auto acct_objs_is_null =
+            [&env, &acct_objs] (Account const& acct, char const* type)
+        {
+            Json::Value const resp = acct_objs (acct, type);
+            return resp["result"]["account_objects"].isNull();
+        };
+
+        // Verify that the non-returning types still don't return anything.
+        // Note that, interestingly, they now return a null object rather
+        // than an empty array.  Not sure what triggers that...
+        BEAST_EXPECT (acct_objs_is_null (gw, jss::account));
+        BEAST_EXPECT (acct_objs_is_null (gw, jss::amendments));
+        BEAST_EXPECT (acct_objs_is_null (gw, jss::directory));
+        BEAST_EXPECT (acct_objs_is_null (gw, jss::fee));
+        BEAST_EXPECT (acct_objs_is_null (gw, jss::hashes));
+    }
+
     void run() override
     {
         testErrors();
         testUnsteppedThenStepped();
+        testObjectTypes();
     }
 };
 

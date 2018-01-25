@@ -104,6 +104,7 @@ JSS ( cancel_after );               // out: AccountChannels
 JSS ( can_delete );                 // out: CanDelete
 JSS ( channel_id );                 // out: AccountChannels
 JSS ( channels );                   // out: AccountChannels
+JSS ( check );                      // in: AccountObjects
 JSS ( check_nodes );                // in: LedgerCleaner
 JSS ( clear );                      // in/out: FetchInfo
 JSS ( close_flags );                // out: LedgerToJson
