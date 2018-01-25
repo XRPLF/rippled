@@ -14,14 +14,14 @@ need these software components
 
 | Component | Minimum Recommended Version |
 |-----------|-----------------------|
-|[Visual Studio 2017](README.md#install-visual-studio-2017)| 15.5.4 |
+| [Visual Studio 2017](README.md#install-visual-studio-2017)| 15.5.4 |
 | [Git for Windows](README.md#install-git-for-windows)| 2.16.1|
 | [Google Protocol Buffers Compiler](README.md#install-google-protocol-buffers-compiler) | 2.5.1|
 | [OpenSSL Library](README.md#install-openssl) | 1.0.2n |
 | [Boost library](README.md#build-boost) | 1.66.0 |
-|  [Cmake for Windows](README.md#optional-install-cmake-for-windows)* | 3.10.2 |
+| [CMake for Windows](README.md#optional-install-cmake-for-windows)* | 3.10.2 |
 
-\* Only needed if not using the integrated CMake in VS 2017.
+\* Only needed if not using the integrated CMake in VS 2017 and prefer generating dedicated project/solution files.
 
 ## Install Software
 
