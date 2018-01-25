@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2004-2008 Maciej Sobczak, Stephen Hutton
+// Copyright (C) 2004-2016 Maciej Sobczak, Stephen Hutton
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -27,6 +27,7 @@ void standard_use_type::bind(statement_impl & st, int & position)
     {
         backEnd_ = st.make_use_type_backend();
     }
+    
     if (name_.empty())
     {
         backEnd_->bind_by_pos(position, data_, type_, readOnly_);
@@ -100,11 +101,24 @@ void standard_use_type::dump_value(std::ostream& os) const
         case x_blob:
             os << "<blob>";
             return;
+
+        case x_xmltype:
+            os << "<xml>";
+            return;
+
+        case x_longstring:
+            os << "<long string>";
+            return;
     }
 
     // This is normally unreachable, but avoid throwing from here as we're
     // typically called from an exception handler.
     os << "<unknown>";
+}
+
+void standard_use_type::pre_exec(int num)
+{
+    backEnd_->pre_exec(num);
 }
 
 void standard_use_type::pre_use()
@@ -148,13 +162,28 @@ void vector_use_type::bind(statement_impl & st, int & position)
     {
         backEnd_ = st.make_vector_use_type_backend();
     }
+    
     if (name_.empty())
     {
-        backEnd_->bind_by_pos(position, data_, type_);
+        if (end_ != NULL)
+        {
+            backEnd_->bind_by_pos_bulk(position, data_, type_, begin_, end_);
+        }
+        else
+        {
+            backEnd_->bind_by_pos(position, data_, type_);
+        }
     }
     else
     {
-        backEnd_->bind_by_name(name_, data_, type_);
+        if (end_ != NULL)
+        {
+            backEnd_->bind_by_name_bulk(name_, data_, type_, begin_, end_);
+        }
+        else
+        {
+            backEnd_->bind_by_name(name_, data_, type_);
+        }
     }
 }
 
@@ -162,6 +191,11 @@ void vector_use_type::dump_value(std::ostream& os) const
 {
     // TODO: Provide more information.
     os << "<vector>";
+}
+
+void vector_use_type::pre_exec(int num)
+{
+    backEnd_->pre_exec(num);
 }
 
 void vector_use_type::pre_use()

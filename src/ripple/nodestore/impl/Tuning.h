@@ -35,6 +35,9 @@ enum
     ,asyncDivider = 8
 };
 
+auto constexpr shardCacheSz = 16384;
+auto constexpr shardCacheSeconds = 60;
+
 }
 }
 

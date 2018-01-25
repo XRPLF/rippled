@@ -59,7 +59,7 @@ public:
    void testSignerLists()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice"};
         env.fund(XRP(1000), alice);
 
@@ -165,7 +165,7 @@ public:
    void testSignerListsV2()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice"};
         env.fund(XRP(1000), alice);
 
@@ -174,17 +174,17 @@ public:
             "\"ripplerpc\": \"2.0\", "
             "\"id\": 5, "
             "\"method\": \"account_info\", "
-            "\"params\": [{ "
-            "\"account\": \"" + alice.human() + "\"}]}";
+            "\"params\": { "
+            "\"account\": \"" + alice.human() + "\"}}";
 
         auto const withSigners = std::string ("{ ") +
             "\"jsonrpc\": \"2.0\", "
             "\"ripplerpc\": \"2.0\", "
-            "\"id\": 5, "
+            "\"id\": 6, "
             "\"method\": \"account_info\", "
-            "\"params\": [{ "
+            "\"params\": { "
             "\"account\": \"" + alice.human() + "\", " +
-            "\"signer_lists\": true }]}";
+            "\"signer_lists\": true }}";
         // Alice has no SignerList yet.
         {
             // account_info without the "signer_lists" argument.
@@ -209,7 +209,30 @@ public:
             BEAST_EXPECT(signerLists.size() == 0);
             BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 5);
+            BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 6);
+        }
+        {
+            // Do both of the above as a batch job
+            auto const info = env.rpc ("json2", '[' + withoutSigners + ", "
+                                                    + withSigners + ']');
+            BEAST_EXPECT(info[0u].isMember(jss::result) &&
+                info[0u][jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(! info[0u][jss::result][jss::account_data].
+                isMember (jss::signer_lists));
+            BEAST_EXPECT(info[0u].isMember(jss::jsonrpc) && info[0u][jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(info[0u].isMember(jss::ripplerpc) && info[0u][jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(info[0u].isMember(jss::id) && info[0u][jss::id] == 5);
+
+            BEAST_EXPECT(info[1u].isMember(jss::result) &&
+                info[1u][jss::result].isMember(jss::account_data));
+            auto const& data = info[1u][jss::result][jss::account_data];
+            BEAST_EXPECT(data.isMember (jss::signer_lists));
+            auto const& signerLists = data[jss::signer_lists];
+            BEAST_EXPECT(signerLists.isArray());
+            BEAST_EXPECT(signerLists.size() == 0);
+            BEAST_EXPECT(info[1u].isMember(jss::jsonrpc) && info[1u][jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(info[1u].isMember(jss::ripplerpc) && info[1u][jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(info[1u].isMember(jss::id) && info[1u][jss::id] == 6);
         }
 
         // Give alice a SignerList.
@@ -247,7 +270,7 @@ public:
             BEAST_EXPECT(entry0[sfSignerWeight.jsonName] == 3);
             BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 5);
+            BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 6);
         }
 
         // Give alice a big signer list
@@ -287,7 +310,7 @@ public:
             }
             BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 5);
+            BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 6);
         }
     }
 

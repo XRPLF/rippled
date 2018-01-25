@@ -1,19 +1,27 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
-//  This source code is licensed under the BSD-style license found in the
-//  LICENSE file in the root directory of this source tree. An additional grant
-//  of patent rights can be found in the PATENTS file in the same directory.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 //
 #include "db/memtable_list.h"
 
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+
+#include <inttypes.h>
+#include <limits>
 #include <string>
-#include "rocksdb/db.h"
 #include "db/memtable.h"
 #include "db/version_set.h"
+#include "monitoring/thread_status_util.h"
+#include "rocksdb/db.h"
 #include "rocksdb/env.h"
 #include "rocksdb/iterator.h"
-#include "table/merger.h"
+#include "table/merging_iterator.h"
 #include "util/coding.h"
 #include "util/log_buffer.h"
+#include "util/sync_point.h"
 
 namespace rocksdb {
 
@@ -21,18 +29,48 @@ class InternalKeyComparator;
 class Mutex;
 class VersionSet;
 
-MemTableListVersion::MemTableListVersion(MemTableListVersion* old) {
+void MemTableListVersion::AddMemTable(MemTable* m) {
+  memlist_.push_front(m);
+  *parent_memtable_list_memory_usage_ += m->ApproximateMemoryUsage();
+}
+
+void MemTableListVersion::UnrefMemTable(autovector<MemTable*>* to_delete,
+                                        MemTable* m) {
+  if (m->Unref()) {
+    to_delete->push_back(m);
+    assert(*parent_memtable_list_memory_usage_ >= m->ApproximateMemoryUsage());
+    *parent_memtable_list_memory_usage_ -= m->ApproximateMemoryUsage();
+  } else {
+  }
+}
+
+MemTableListVersion::MemTableListVersion(
+    size_t* parent_memtable_list_memory_usage, MemTableListVersion* old)
+    : max_write_buffer_number_to_maintain_(
+          old->max_write_buffer_number_to_maintain_),
+      parent_memtable_list_memory_usage_(parent_memtable_list_memory_usage) {
   if (old != nullptr) {
     memlist_ = old->memlist_;
-    size_ = old->size_;
     for (auto& m : memlist_) {
+      m->Ref();
+    }
+
+    memlist_history_ = old->memlist_history_;
+    for (auto& m : memlist_history_) {
       m->Ref();
     }
   }
 }
 
+MemTableListVersion::MemTableListVersion(
+    size_t* parent_memtable_list_memory_usage,
+    int max_write_buffer_number_to_maintain)
+    : max_write_buffer_number_to_maintain_(max_write_buffer_number_to_maintain),
+      parent_memtable_list_memory_usage_(parent_memtable_list_memory_usage) {}
+
 void MemTableListVersion::Ref() { ++refs_; }
 
+// called by superversion::clean()
 void MemTableListVersion::Unref(autovector<MemTable*>* to_delete) {
   assert(refs_ >= 1);
   --refs_;
@@ -41,41 +79,107 @@ void MemTableListVersion::Unref(autovector<MemTable*>* to_delete) {
     // that refs_ will not be zero
     assert(to_delete != nullptr);
     for (const auto& m : memlist_) {
-      MemTable* x = m->Unref();
-      if (x != nullptr) {
-        to_delete->push_back(x);
-      }
+      UnrefMemTable(to_delete, m);
+    }
+    for (const auto& m : memlist_history_) {
+      UnrefMemTable(to_delete, m);
     }
     delete this;
   }
 }
 
-int MemTableListVersion::size() const { return size_; }
+int MemTableList::NumNotFlushed() const {
+  int size = static_cast<int>(current_->memlist_.size());
+  assert(num_flush_not_started_ <= size);
+  return size;
+}
 
-// Returns the total number of memtables in the list
-int MemTableList::size() const {
-  assert(num_flush_not_started_ <= current_->size_);
-  return current_->size_;
+int MemTableList::NumFlushed() const {
+  return static_cast<int>(current_->memlist_history_.size());
 }
 
 // Search all the memtables starting from the most recent one.
 // Return the most recent value found, if any.
 // Operands stores the list of merge operations to apply, so far.
 bool MemTableListVersion::Get(const LookupKey& key, std::string* value,
-                              Status* s, MergeContext& merge_context,
-                              const Options& options) {
-  for (auto& memtable : memlist_) {
-    if (memtable->Get(key, value, s, merge_context, options)) {
+                              Status* s, MergeContext* merge_context,
+                              RangeDelAggregator* range_del_agg,
+                              SequenceNumber* seq, const ReadOptions& read_opts,
+                              bool* is_blob_index) {
+  return GetFromList(&memlist_, key, value, s, merge_context, range_del_agg,
+                     seq, read_opts, is_blob_index);
+}
+
+bool MemTableListVersion::GetFromHistory(
+    const LookupKey& key, std::string* value, Status* s,
+    MergeContext* merge_context, RangeDelAggregator* range_del_agg,
+    SequenceNumber* seq, const ReadOptions& read_opts, bool* is_blob_index) {
+  return GetFromList(&memlist_history_, key, value, s, merge_context,
+                     range_del_agg, seq, read_opts, is_blob_index);
+}
+
+bool MemTableListVersion::GetFromList(
+    std::list<MemTable*>* list, const LookupKey& key, std::string* value,
+    Status* s, MergeContext* merge_context, RangeDelAggregator* range_del_agg,
+    SequenceNumber* seq, const ReadOptions& read_opts, bool* is_blob_index) {
+  *seq = kMaxSequenceNumber;
+
+  for (auto& memtable : *list) {
+    SequenceNumber current_seq = kMaxSequenceNumber;
+
+    bool done = memtable->Get(key, value, s, merge_context, range_del_agg,
+                              &current_seq, read_opts, is_blob_index);
+    if (*seq == kMaxSequenceNumber) {
+      // Store the most recent sequence number of any operation on this key.
+      // Since we only care about the most recent change, we only need to
+      // return the first operation found when searching memtables in
+      // reverse-chronological order.
+      *seq = current_seq;
+    }
+
+    if (done) {
+      assert(*seq != kMaxSequenceNumber);
       return true;
+    }
+    if (!done && !s->ok() && !s->IsMergeInProgress() && !s->IsNotFound()) {
+      return false;
     }
   }
   return false;
 }
 
-void MemTableListVersion::AddIterators(const ReadOptions& options,
-                                       std::vector<Iterator*>* iterator_list) {
+Status MemTableListVersion::AddRangeTombstoneIterators(
+    const ReadOptions& read_opts, Arena* arena,
+    RangeDelAggregator* range_del_agg) {
+  assert(range_del_agg != nullptr);
   for (auto& m : memlist_) {
-    iterator_list->push_back(m->NewIterator(options));
+    std::unique_ptr<InternalIterator> range_del_iter(
+        m->NewRangeTombstoneIterator(read_opts));
+    Status s = range_del_agg->AddTombstones(std::move(range_del_iter));
+    if (!s.ok()) {
+      return s;
+    }
+  }
+  return Status::OK();
+}
+
+Status MemTableListVersion::AddRangeTombstoneIterators(
+    const ReadOptions& read_opts,
+    std::vector<InternalIterator*>* range_del_iters) {
+  for (auto& m : memlist_) {
+    auto* range_del_iter = m->NewRangeTombstoneIterator(read_opts);
+    if (range_del_iter != nullptr) {
+      range_del_iters->push_back(range_del_iter);
+    }
+  }
+  return Status::OK();
+}
+
+void MemTableListVersion::AddIterators(
+    const ReadOptions& options, std::vector<InternalIterator*>* iterator_list,
+    Arena* arena) {
+  for (auto& m : memlist_) {
+    iterator_list->push_back(m->NewIterator(options, arena));
   }
 }
 
@@ -90,23 +194,73 @@ void MemTableListVersion::AddIterators(
 uint64_t MemTableListVersion::GetTotalNumEntries() const {
   uint64_t total_num = 0;
   for (auto& m : memlist_) {
-    total_num += m->GetNumEntries();
+    total_num += m->num_entries();
   }
   return total_num;
 }
 
-// caller is responsible for referencing m
-void MemTableListVersion::Add(MemTable* m) {
-  assert(refs_ == 1);  // only when refs_ == 1 is MemTableListVersion mutable
-  memlist_.push_front(m);
-  ++size_;
+MemTable::MemTableStats MemTableListVersion::ApproximateStats(
+    const Slice& start_ikey, const Slice& end_ikey) {
+  MemTable::MemTableStats total_stats = {0, 0};
+  for (auto& m : memlist_) {
+    auto mStats = m->ApproximateStats(start_ikey, end_ikey);
+    total_stats.size += mStats.size;
+    total_stats.count += mStats.count;
+  }
+  return total_stats;
 }
 
-// caller is responsible for unreferencing m
-void MemTableListVersion::Remove(MemTable* m) {
+uint64_t MemTableListVersion::GetTotalNumDeletes() const {
+  uint64_t total_num = 0;
+  for (auto& m : memlist_) {
+    total_num += m->num_deletes();
+  }
+  return total_num;
+}
+
+SequenceNumber MemTableListVersion::GetEarliestSequenceNumber(
+    bool include_history) const {
+  if (include_history && !memlist_history_.empty()) {
+    return memlist_history_.back()->GetEarliestSequenceNumber();
+  } else if (!memlist_.empty()) {
+    return memlist_.back()->GetEarliestSequenceNumber();
+  } else {
+    return kMaxSequenceNumber;
+  }
+}
+
+// caller is responsible for referencing m
+void MemTableListVersion::Add(MemTable* m, autovector<MemTable*>* to_delete) {
+  assert(refs_ == 1);  // only when refs_ == 1 is MemTableListVersion mutable
+  AddMemTable(m);
+
+  TrimHistory(to_delete);
+}
+
+// Removes m from list of memtables not flushed.  Caller should NOT Unref m.
+void MemTableListVersion::Remove(MemTable* m,
+                                 autovector<MemTable*>* to_delete) {
   assert(refs_ == 1);  // only when refs_ == 1 is MemTableListVersion mutable
   memlist_.remove(m);
-  --size_;
+
+  if (max_write_buffer_number_to_maintain_ > 0) {
+    memlist_history_.push_front(m);
+    TrimHistory(to_delete);
+  } else {
+    UnrefMemTable(to_delete, m);
+  }
+}
+
+// Make sure we don't use up too much space in history
+void MemTableListVersion::TrimHistory(autovector<MemTable*>* to_delete) {
+  while (memlist_.size() + memlist_history_.size() >
+             static_cast<size_t>(max_write_buffer_number_to_maintain_) &&
+         !memlist_history_.empty()) {
+    MemTable* x = memlist_history_.back();
+    memlist_history_.pop_back();
+
+    UnrefMemTable(to_delete, x);
+  }
 }
 
 // Returns true if there is at least one memtable on which flush has
@@ -114,7 +268,7 @@ void MemTableListVersion::Remove(MemTable* m) {
 bool MemTableList::IsFlushPending() const {
   if ((flush_requested_ && num_flush_not_started_ >= 1) ||
       (num_flush_not_started_ >= min_write_buffer_number_to_merge_)) {
-    assert(imm_flush_needed.NoBarrier_Load() != nullptr);
+    assert(imm_flush_needed.load(std::memory_order_relaxed));
     return true;
   }
   return false;
@@ -122,6 +276,8 @@ bool MemTableList::IsFlushPending() const {
 
 // Returns the memtables that need to be flushed.
 void MemTableList::PickMemtablesToFlush(autovector<MemTable*>* ret) {
+  AutoThreadOperationStageUpdater stage_updater(
+      ThreadStatus::STAGE_PICK_MEMTABLES_TO_FLUSH);
   const auto& memlist = current_->memlist_;
   for (auto it = memlist.rbegin(); it != memlist.rend(); ++it) {
     MemTable* m = *it;
@@ -129,7 +285,7 @@ void MemTableList::PickMemtablesToFlush(autovector<MemTable*>* ret) {
       assert(!m->flush_completed_);
       num_flush_not_started_--;
       if (num_flush_not_started_ == 0) {
-        imm_flush_needed.Release_Store(nullptr);
+        imm_flush_needed.store(false, std::memory_order_release);
       }
       m->flush_in_progress_ = true;  // flushing will start very soon
       ret->push_back(m);
@@ -139,12 +295,13 @@ void MemTableList::PickMemtablesToFlush(autovector<MemTable*>* ret) {
 }
 
 void MemTableList::RollbackMemtableFlush(const autovector<MemTable*>& mems,
-                                         uint64_t file_number,
-                                         FileNumToPathIdMap* pending_outputs) {
+                                         uint64_t file_number) {
+  AutoThreadOperationStageUpdater stage_updater(
+      ThreadStatus::STAGE_MEMTABLE_ROLLBACK);
   assert(!mems.empty());
 
   // If the flush was not successful, then just reset state.
-  // Maybe a suceeding attempt to flush will be successful.
+  // Maybe a succeeding attempt to flush will be successful.
   for (MemTable* m : mems) {
     assert(m->flush_in_progress_);
     assert(m->file_number_ == 0);
@@ -154,19 +311,20 @@ void MemTableList::RollbackMemtableFlush(const autovector<MemTable*>& mems,
     m->edit_.Clear();
     num_flush_not_started_++;
   }
-  pending_outputs->erase(file_number);
-  imm_flush_needed.Release_Store(reinterpret_cast<void *>(1));
+  imm_flush_needed.store(true, std::memory_order_release);
 }
 
 // Record a successful flush in the manifest file
 Status MemTableList::InstallMemtableFlushResults(
-    ColumnFamilyData* cfd, const autovector<MemTable*>& mems, VersionSet* vset,
-    port::Mutex* mu, Logger* info_log, uint64_t file_number,
-    FileNumToPathIdMap* pending_outputs, autovector<MemTable*>* to_delete,
+    ColumnFamilyData* cfd, const MutableCFOptions& mutable_cf_options,
+    const autovector<MemTable*>& mems, VersionSet* vset, InstrumentedMutex* mu,
+    uint64_t file_number, autovector<MemTable*>* to_delete,
     Directory* db_directory, LogBuffer* log_buffer) {
+  AutoThreadOperationStageUpdater stage_updater(
+      ThreadStatus::STAGE_MEMTABLE_INSTALL_FLUSH_RESULTS);
   mu->AssertHeld();
 
-  // flush was sucessful
+  // flush was successful
   for (size_t i = 0; i < mems.size(); ++i) {
     // All the edits are associated with the first memtable of this batch.
     assert(i == 0 || mems[i]->GetEdits()->NumEntries() == 0);
@@ -175,100 +333,122 @@ Status MemTableList::InstallMemtableFlushResults(
     mems[i]->file_number_ = file_number;
   }
 
-  // if some other thread is already commiting, then return
+  // if some other thread is already committing, then return
   Status s;
   if (commit_in_progress_) {
+    TEST_SYNC_POINT("MemTableList::InstallMemtableFlushResults:InProgress");
     return s;
   }
 
   // Only a single thread can be executing this piece of code
   commit_in_progress_ = true;
 
-  // scan all memtables from the earliest, and commit those
-  // (in that order) that have finished flushing. Memetables
-  // are always committed in the order that they were created.
-  while (!current_->memlist_.empty() && s.ok()) {
-    MemTable* m = current_->memlist_.back();  // get the last element
-    if (!m->flush_completed_) {
+  // Retry until all completed flushes are committed. New flushes can finish
+  // while the current thread is writing manifest where mutex is released.
+  while (s.ok()) {
+    auto& memlist = current_->memlist_;
+    if (memlist.empty() || !memlist.back()->flush_completed_) {
       break;
     }
+    // scan all memtables from the earliest, and commit those
+    // (in that order) that have finished flushing. Memetables
+    // are always committed in the order that they were created.
+    uint64_t batch_file_number = 0;
+    size_t batch_count = 0;
+    autovector<VersionEdit*> edit_list;
+    // enumerate from the last (earliest) element to see how many batch finished
+    for (auto it = memlist.rbegin(); it != memlist.rend(); ++it) {
+      MemTable* m = *it;
+      if (!m->flush_completed_) {
+        break;
+      }
+      if (it == memlist.rbegin() || batch_file_number != m->file_number_) {
+        batch_file_number = m->file_number_;
+        ROCKS_LOG_BUFFER(log_buffer,
+                         "[%s] Level-0 commit table #%" PRIu64 " started",
+                         cfd->GetName().c_str(), m->file_number_);
+        edit_list.push_back(&m->edit_);
+      }
+      batch_count++;
+    }
 
-    LogToBuffer(log_buffer, "[%s] Level-0 commit table #%lu started",
-                cfd->GetName().c_str(), (unsigned long)m->file_number_);
+    if (batch_count > 0) {
+      // this can release and reacquire the mutex.
+      s = vset->LogAndApply(cfd, mutable_cf_options, edit_list, mu,
+                            db_directory);
 
-    // this can release and reacquire the mutex.
-    s = vset->LogAndApply(cfd, &m->edit_, mu, db_directory);
+      // we will be changing the version in the next code path,
+      // so we better create a new one, since versions are immutable
+      InstallNewVersion();
 
-    // we will be changing the version in the next code path,
-    // so we better create a new one, since versions are immutable
-    InstallNewVersion();
-
-    // All the later memtables that have the same filenum
-    // are part of the same batch. They can be committed now.
-    uint64_t mem_id = 1;  // how many memtables has been flushed.
-    do {
-      if (s.ok()) { // commit new state
-        LogToBuffer(log_buffer,
-                    "[%s] Level-0 commit table #%lu: memtable #%lu done",
-                    cfd->GetName().c_str(), (unsigned long)m->file_number_,
-                    (unsigned long)mem_id);
-        current_->Remove(m);
-        assert(m->file_number_ > 0);
-
-        // pending_outputs can be cleared only after the newly created file
-        // has been written to a committed version so that other concurrently
-        // executing compaction threads do not mistakenly assume that this
-        // file is not live.
-        pending_outputs->erase(m->file_number_);
-        if (m->Unref() != nullptr) {
-          to_delete->push_back(m);
+      // All the later memtables that have the same filenum
+      // are part of the same batch. They can be committed now.
+      uint64_t mem_id = 1;  // how many memtables have been flushed.
+      if (s.ok()) {         // commit new state
+        while (batch_count-- > 0) {
+          MemTable* m = current_->memlist_.back();
+          ROCKS_LOG_BUFFER(log_buffer, "[%s] Level-0 commit table #%" PRIu64
+                                       ": memtable #%" PRIu64 " done",
+                           cfd->GetName().c_str(), m->file_number_, mem_id);
+          assert(m->file_number_ > 0);
+          current_->Remove(m, to_delete);
+          ++mem_id;
         }
       } else {
-        //commit failed. setup state so that we can flush again.
-        Log(info_log,
-            "Level-0 commit table #%lu: memtable #%lu failed",
-            (unsigned long)m->file_number_,
-            (unsigned long)mem_id);
-        m->flush_completed_ = false;
-        m->flush_in_progress_ = false;
-        m->edit_.Clear();
-        num_flush_not_started_++;
-        pending_outputs->erase(m->file_number_);
-        m->file_number_ = 0;
-        imm_flush_needed.Release_Store((void *)1);
+        for (auto it = current_->memlist_.rbegin(); batch_count-- > 0; it++) {
+          MemTable* m = *it;
+          // commit failed. setup state so that we can flush again.
+          ROCKS_LOG_BUFFER(log_buffer, "Level-0 commit table #%" PRIu64
+                                       ": memtable #%" PRIu64 " failed",
+                           m->file_number_, mem_id);
+          m->flush_completed_ = false;
+          m->flush_in_progress_ = false;
+          m->edit_.Clear();
+          num_flush_not_started_++;
+          m->file_number_ = 0;
+          imm_flush_needed.store(true, std::memory_order_release);
+          ++mem_id;
+        }
       }
-      ++mem_id;
-    } while (!current_->memlist_.empty() && (m = current_->memlist_.back()) &&
-             m->file_number_ == file_number);
+    }
   }
   commit_in_progress_ = false;
   return s;
 }
 
 // New memtables are inserted at the front of the list.
-void MemTableList::Add(MemTable* m) {
-  assert(current_->size_ >= num_flush_not_started_);
+void MemTableList::Add(MemTable* m, autovector<MemTable*>* to_delete) {
+  assert(static_cast<int>(current_->memlist_.size()) >= num_flush_not_started_);
   InstallNewVersion();
   // this method is used to move mutable memtable into an immutable list.
   // since mutable memtable is already refcounted by the DBImpl,
   // and when moving to the imutable list we don't unref it,
   // we don't have to ref the memtable here. we just take over the
   // reference from the DBImpl.
-  current_->Add(m);
+  current_->Add(m, to_delete);
   m->MarkImmutable();
   num_flush_not_started_++;
   if (num_flush_not_started_ == 1) {
-    imm_flush_needed.Release_Store((void *)1);
+    imm_flush_needed.store(true, std::memory_order_release);
   }
 }
 
 // Returns an estimate of the number of bytes of data in use.
-size_t MemTableList::ApproximateMemoryUsage() {
-  size_t size = 0;
+size_t MemTableList::ApproximateUnflushedMemTablesMemoryUsage() {
+  size_t total_size = 0;
   for (auto& memtable : current_->memlist_) {
-    size += memtable->ApproximateMemoryUsage();
+    total_size += memtable->ApproximateMemoryUsage();
   }
-  return size;
+  return total_size;
+}
+
+size_t MemTableList::ApproximateMemoryUsage() { return current_memory_usage_; }
+
+uint64_t MemTableList::ApproximateOldestKeyTime() const {
+  if (!current_->memlist_.empty()) {
+    return current_->memlist_.back()->ApproximateOldestKeyTime();
+  }
+  return std::numeric_limits<uint64_t>::max();
 }
 
 void MemTableList::InstallNewVersion() {
@@ -277,10 +457,30 @@ void MemTableList::InstallNewVersion() {
   } else {
     // somebody else holds the current version, we need to create new one
     MemTableListVersion* version = current_;
-    current_ = new MemTableListVersion(current_);
+    current_ = new MemTableListVersion(&current_memory_usage_, current_);
     current_->Ref();
     version->Unref();
   }
+}
+
+uint64_t MemTableList::GetMinLogContainingPrepSection() {
+  uint64_t min_log = 0;
+
+  for (auto& m : current_->memlist_) {
+    // this mem has been flushed it no longer
+    // needs to hold on the its prep section
+    if (m->flush_completed_) {
+      continue;
+    }
+
+    auto log = m->GetMinLogContainingPrepSection();
+
+    if (log > 0 && (min_log == 0 || log < min_log)) {
+      min_log = log;
+    }
+  }
+
+  return min_log;
 }
 
 }  // namespace rocksdb

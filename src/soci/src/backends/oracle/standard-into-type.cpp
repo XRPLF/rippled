@@ -143,6 +143,23 @@ void oracle_standard_into_type_backend::define_by_pos(
             data = &bbe->lobp_;
         }
         break;
+
+    case x_xmltype:
+    case x_longstring:
+        {
+            oracleType = SQLT_CLOB;
+
+            // lazy initialization of the temporary LOB object,
+            // actual creation of this object is in pre_exec, which
+            // is called right before statement's execute
+            
+            OCILobLocator * lobp = NULL;
+
+            size = sizeof(lobp);
+            data = &ociData_;
+            ociData_ = lobp;
+        }
+        break;
     }
 
     sword res = OCIDefineByPos(statement_.stmtp_, &defnp_,
@@ -156,6 +173,33 @@ void oracle_standard_into_type_backend::define_by_pos(
     }
 }
 
+void oracle_standard_into_type_backend::pre_exec(int /* num */)
+{
+    if (type_ == x_xmltype || type_ == x_longstring)
+    {
+        // lazy initialization of the temporary LOB object
+        
+        OCILobLocator * lobp;
+        sword res = OCIDescriptorAlloc(statement_.session_.envhp_,
+            reinterpret_cast<dvoid**>(&lobp), OCI_DTYPE_LOB, 0, 0);
+        if (res != OCI_SUCCESS)
+        {
+            throw_oracle_soci_error(res, statement_.session_.errhp_);
+        }
+        
+        res = OCILobCreateTemporary(statement_.session_.svchp_,
+            statement_.session_.errhp_,
+            lobp, 0, SQLCS_IMPLICIT,
+            OCI_TEMP_CLOB, OCI_ATTR_NOCACHE, OCI_DURATION_SESSION);
+        if (res != OCI_SUCCESS)
+        {
+            throw_oracle_soci_error(res, statement_.session_.errhp_);
+        }
+
+        ociData_ = lobp;
+    }
+}
+
 void oracle_standard_into_type_backend::pre_fetch()
 {
     // nothing to do except with Statement into objects
@@ -165,6 +209,36 @@ void oracle_standard_into_type_backend::pre_fetch()
         statement *st = static_cast<statement *>(data_);
         st->undefine_and_bind();
     }
+}
+
+void oracle_standard_into_type_backend::read_from_lob(OCILobLocator * lobp, std::string & value)
+{
+    ub4 len;
+
+    sword res = OCILobGetLength(statement_.session_.svchp_, statement_.session_.errhp_,
+        lobp, &len);
+    if (res != OCI_SUCCESS)
+    {
+        throw_oracle_soci_error(res, statement_.session_.errhp_);
+    }
+
+    std::vector<char> buf(len);
+
+    if (len != 0)
+    {
+        ub4 offset = 1;
+
+        res = OCILobRead(statement_.session_.svchp_, statement_.session_.errhp_,
+            lobp, &len,
+            offset, reinterpret_cast<dvoid*>(&buf[0]),
+            len, 0, 0, 0, 0);
+        if (res != OCI_SUCCESS)
+        {
+            throw_oracle_soci_error(res, statement_.session_.errhp_);
+        }
+    }
+    
+    value.assign(buf.begin(), buf.end());
 }
 
 void oracle_standard_into_type_backend::post_fetch(
@@ -218,6 +292,24 @@ void oracle_standard_into_type_backend::post_fetch(
             statement *st = static_cast<statement *>(data_);
             st->define_and_bind();
         }
+        else if (type_ == x_xmltype)
+        {
+            if (indOCIHolder_ != -1)
+            {
+                OCILobLocator * lobp = static_cast<OCILobLocator *>(ociData_);
+
+                read_from_lob(lobp, exchange_type_cast<x_xmltype>(data_).value);
+            }
+        }
+        else if (type_ == x_longstring)
+        {
+            if (indOCIHolder_ != -1)
+            {
+                OCILobLocator * lobp = static_cast<OCILobLocator *>(ociData_);
+
+                read_from_lob(lobp, exchange_type_cast<x_longstring>(data_).value);
+            }
+        }
     }
 
     // then - deal with indicators
@@ -257,6 +349,15 @@ void oracle_standard_into_type_backend::post_fetch(
 
 void oracle_standard_into_type_backend::clean_up()
 {
+    if (type_ == x_xmltype || type_ == x_longstring)
+    {
+        OCILobLocator * lobp = static_cast<OCILobLocator *>(ociData_);
+
+        // ignore errors from this call
+        (void) OCILobFreeTemporary(statement_.session_.svchp_, statement_.session_.errhp_,
+            lobp);
+    }
+    
     if (defnp_ != NULL)
     {
         OCIHandleFree(defnp_, OCI_HTYPE_DEFINE);

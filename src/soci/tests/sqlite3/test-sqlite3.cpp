@@ -237,6 +237,19 @@ TEST_CASE("SQLite vector long long", "[sqlite][vector][longlong]")
     CHECK(v2[4] == 1000000000000LL);
 }
 
+TEST_CASE("SQLite DDL wrappers", "[sqlite][ddl]")
+{
+    soci::session sql(backEnd, connectString);
+
+    int i = -1;
+    sql << "select length(" + sql.empty_blob() + ")", into(i);
+    CHECK(i == 0);
+    sql << "select " + sql.nvl() + "(1, 2)", into(i);
+    CHECK(i == 1);
+    sql << "select " + sql.nvl() + "(NULL, 2)", into(i);
+    CHECK(i == 2);
+}
+
 struct table_creator_for_get_last_insert_id : table_creator_base
 {
     table_creator_for_get_last_insert_id(soci::session & sql)
@@ -318,32 +331,32 @@ public:
                 std::string const &connectString)
         : test_context_base(backEnd, connectString) {}
 
-    table_creator_base* table_creator_1(soci::session& s) const
+    table_creator_base* table_creator_1(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_one(s);
     }
 
-    table_creator_base* table_creator_2(soci::session& s) const
+    table_creator_base* table_creator_2(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_two(s);
     }
 
-    table_creator_base* table_creator_3(soci::session& s) const
+    table_creator_base* table_creator_3(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_three(s);
     }
 
-    table_creator_base* table_creator_4(soci::session& s) const
+    table_creator_base* table_creator_4(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_for_get_affected_rows(s);
     }
 
-    std::string to_date_time(std::string const &datdt_string) const
+    std::string to_date_time(std::string const &datdt_string) const SOCI_OVERRIDE
     {
         return "datetime(\'" + datdt_string + "\')";
     }
 
-    virtual bool has_fp_bug() const
+    bool has_fp_bug() const SOCI_OVERRIDE
     {
         /*
             SQLite seems to be buggy when using text conversion, e.g.:
@@ -361,10 +374,15 @@ public:
         return true;
     }
 
-    virtual bool enable_std_char_padding(soci::session& s) const
+    bool enable_std_char_padding(soci::session&) const SOCI_OVERRIDE
     {
         // SQLite does not support right padded char type.
         return false;
+    }
+
+    std::string sql_length(std::string const& s) const SOCI_OVERRIDE
+    {
+        return "length(" + s + ")";
     }
 };
 

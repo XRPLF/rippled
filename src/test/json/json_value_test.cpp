@@ -20,8 +20,11 @@
 #include <BeastConfig.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/json/json_writer.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/type_name.h>
+
+#include <algorithm>
 
 namespace ripple {
 
@@ -222,6 +225,78 @@ struct json_value_test : beast::unit_test::suite
         testGreaterThan ("big");
     }
 
+    void test_compact ()
+    {
+        Json::Value j;
+        Json::Reader r;
+        char const* s ("{\"array\":[{\"12\":23},{},null,false,0.5]}");
+
+        auto countLines = [](std::string const & s)
+        {
+            return 1 + std::count_if(s.begin(), s.end(), [](char c){
+                return c == '\n';
+            });
+        };
+
+        BEAST_EXPECT(r.parse(s,j));
+        {
+            std::stringstream ss;
+            ss << j;
+            BEAST_EXPECT(countLines(ss.str()) > 1);
+        }
+        {
+            std::stringstream ss;
+            ss << Json::Compact(std::move(j));
+            BEAST_EXPECT(countLines(ss.str()) == 1);
+        }
+    }
+
+    void test_nest_limits ()
+    {
+        Json::Reader r;
+        {
+            auto nest = [](std::uint32_t depth)->std::string {
+                    std::string s = "{";
+                    for (std::uint32_t i{1}; i <= depth; ++i)
+                        s += "\"obj\":{";
+                    for (std::uint32_t i{1}; i <= depth; ++i)
+                        s += "}";
+                    s += "}";
+                    return s;
+                };
+
+            {
+                // Within object nest limit
+                auto json{nest(std::min(10u, Json::Reader::nest_limit))};
+                Json::Value j;
+                BEAST_EXPECT(r.parse(json, j));
+            }
+
+            {
+                // Exceed object nest limit
+                auto json{nest(Json::Reader::nest_limit + 1)};
+                Json::Value j;
+                BEAST_EXPECT(!r.parse(json, j));
+            }
+        }
+
+        auto nest = [](std::uint32_t depth)->std::string {
+            std::string s = "{";
+                for (std::uint32_t i{1}; i <= depth; ++i)
+                    s += "\"array\":[{";
+                for (std::uint32_t i{1}; i <= depth; ++i)
+                    s += "]}";
+                s += "}";
+                return s;
+            };
+        {
+            // Exceed array nest limit
+            auto json{nest(Json::Reader::nest_limit + 1)};
+            Json::Value j;
+            BEAST_EXPECT(!r.parse(json, j));
+        }
+    }
+
     void run ()
     {
         test_bool ();
@@ -230,6 +305,8 @@ struct json_value_test : beast::unit_test::suite
         test_copy ();
         test_move ();
         test_comparisons ();
+        test_compact ();
+        test_nest_limits ();
     }
 };
 

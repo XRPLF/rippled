@@ -32,6 +32,8 @@ public:
 private:
     struct connection_pool_impl;
     connection_pool_impl * pimpl_;
+
+    SOCI_NOT_COPYABLE(connection_pool)
 };
 
 }

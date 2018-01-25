@@ -61,16 +61,22 @@ namespace soci
 
     static const std::size_t maxBuffer =  1024 * 1024 * 1024; //CLI limit is about 3 GB, but 1GB should be enough
 
-class db2_soci_error : public soci_error {
+class SOCI_DB2_DECL db2_soci_error : public soci_error {
 public:
     db2_soci_error(std::string const & msg, SQLRETURN rc) : soci_error(msg),errorCode(rc) {};
-    ~db2_soci_error() throw() { };
+    ~db2_soci_error() throw() SOCI_OVERRIDE { };
 
     //We have to extract error information before exception throwing, cause CLI handles could be broken at the construction time
     static const std::string sqlState(std::string const & msg,const SQLSMALLINT htype,const SQLHANDLE hndl);
 
     SQLRETURN errorCode;
 };
+
+// Option allowing to specify the "driver completion" parameter of
+// SQLDriverConnect(). Its possible values are the same as the allowed values
+// for this parameter in the official DB2 CLI, i.e. one of SQL_DRIVER_XXX
+// (in string form as all options are strings currently).
+extern SOCI_DB2_DECL char const * db2_option_driver_complete;
 
 struct db2_statement_backend;
 
@@ -80,12 +86,12 @@ struct SOCI_DB2_DECL db2_standard_into_type_backend : details::standard_into_typ
         : statement_(st),buf(NULL)
     {}
 
-    void define_by_pos(int& position, void* data, details::exchange_type type);
+    void define_by_pos(int& position, void* data, details::exchange_type type) SOCI_OVERRIDE;
 
-    void pre_fetch();
-    void post_fetch(bool gotData, bool calledFromFetch, indicator* ind);
+    void pre_fetch() SOCI_OVERRIDE;
+    void post_fetch(bool gotData, bool calledFromFetch, indicator* ind) SOCI_OVERRIDE;
 
-    void clean_up();
+    void clean_up() SOCI_OVERRIDE;
 
     db2_statement_backend& statement_;
 
@@ -103,15 +109,15 @@ struct SOCI_DB2_DECL db2_vector_into_type_backend : details::vector_into_type_ba
         : statement_(st),buf(NULL)
     {}
 
-    void define_by_pos(int& position, void* data, details::exchange_type type);
+    void define_by_pos(int& position, void* data, details::exchange_type type) SOCI_OVERRIDE;
 
-    void pre_fetch();
-    void post_fetch(bool gotData, indicator* ind);
+    void pre_fetch() SOCI_OVERRIDE;
+    void post_fetch(bool gotData, indicator* ind) SOCI_OVERRIDE;
 
-    void resize(std::size_t sz);
-    std::size_t size();
+    void resize(std::size_t sz) SOCI_OVERRIDE;
+    std::size_t size() SOCI_OVERRIDE;
 
-    void clean_up();
+    void clean_up() SOCI_OVERRIDE;
 
     db2_statement_backend& statement_;
 
@@ -133,13 +139,13 @@ struct SOCI_DB2_DECL db2_standard_use_type_backend : details::standard_use_type_
         : statement_(st),buf(NULL),ind(0)
     {}
 
-    void bind_by_pos(int& position, void* data, details::exchange_type type, bool readOnly);
-    void bind_by_name(std::string const& name, void* data, details::exchange_type type, bool readOnly);
+    void bind_by_pos(int& position, void* data, details::exchange_type type, bool readOnly) SOCI_OVERRIDE;
+    void bind_by_name(std::string const& name, void* data, details::exchange_type type, bool readOnly) SOCI_OVERRIDE;
 
-    void pre_use(indicator const* ind);
-    void post_use(bool gotData, indicator* ind);
+    void pre_use(indicator const* ind) SOCI_OVERRIDE;
+    void post_use(bool gotData, indicator* ind) SOCI_OVERRIDE;
 
-    void clean_up();
+    void clean_up() SOCI_OVERRIDE;
 
     db2_statement_backend& statement_;
 
@@ -158,14 +164,14 @@ struct SOCI_DB2_DECL db2_vector_use_type_backend : details::vector_use_type_back
     db2_vector_use_type_backend(db2_statement_backend &st)
         : statement_(st),buf(NULL) {}
 
-    void bind_by_pos(int& position, void* data, details::exchange_type type);
-    void bind_by_name(std::string const& name, void* data, details::exchange_type type);
+    void bind_by_pos(int& position, void* data, details::exchange_type type) SOCI_OVERRIDE;
+    void bind_by_name(std::string const& name, void* data, details::exchange_type type) SOCI_OVERRIDE;
 
-    void pre_use(indicator const* ind);
+    void pre_use(indicator const* ind) SOCI_OVERRIDE;
 
-    std::size_t size();
+    std::size_t size() SOCI_OVERRIDE;
 
-    void clean_up();
+    void clean_up() SOCI_OVERRIDE;
 
     db2_statement_backend& statement_;
 
@@ -186,27 +192,27 @@ struct SOCI_DB2_DECL db2_statement_backend : details::statement_backend
 {
     db2_statement_backend(db2_session_backend &session);
 
-    void alloc();
-    void clean_up();
-    void prepare(std::string const& query, details::statement_type eType);
+    void alloc() SOCI_OVERRIDE;
+    void clean_up() SOCI_OVERRIDE;
+    void prepare(std::string const& query, details::statement_type eType) SOCI_OVERRIDE;
 
-    exec_fetch_result execute(int number);
-    exec_fetch_result fetch(int number);
+    exec_fetch_result execute(int number) SOCI_OVERRIDE;
+    exec_fetch_result fetch(int number) SOCI_OVERRIDE;
 
-    long long get_affected_rows();
-    int get_number_of_rows();
-    std::string get_parameter_name(int index) const;
+    long long get_affected_rows() SOCI_OVERRIDE;
+    int get_number_of_rows() SOCI_OVERRIDE;
+    std::string get_parameter_name(int index) const SOCI_OVERRIDE;
 
-    std::string rewrite_for_procedure_call(std::string const& query);
+    std::string rewrite_for_procedure_call(std::string const& query) SOCI_OVERRIDE;
 
-    int prepare_for_describe();
-    void describe_column(int colNum, data_type& dtype, std::string& columnName);
+    int prepare_for_describe() SOCI_OVERRIDE;
+    void describe_column(int colNum, data_type& dtype, std::string& columnName) SOCI_OVERRIDE;
     size_t column_size(int col);
 
-    db2_standard_into_type_backend* make_into_type_backend();
-    db2_standard_use_type_backend* make_use_type_backend();
-    db2_vector_into_type_backend* make_vector_into_type_backend();
-    db2_vector_use_type_backend* make_vector_use_type_backend();
+    db2_standard_into_type_backend* make_into_type_backend() SOCI_OVERRIDE;
+    db2_standard_use_type_backend* make_use_type_backend() SOCI_OVERRIDE;
+    db2_vector_into_type_backend* make_vector_into_type_backend() SOCI_OVERRIDE;
+    db2_vector_use_type_backend* make_vector_use_type_backend() SOCI_OVERRIDE;
 
     db2_session_backend& session_;
 
@@ -222,20 +228,20 @@ struct db2_rowid_backend : details::rowid_backend
 {
     db2_rowid_backend(db2_session_backend &session);
 
-    ~db2_rowid_backend();
+    ~db2_rowid_backend() SOCI_OVERRIDE;
 };
 
 struct db2_blob_backend : details::blob_backend
 {
     db2_blob_backend(db2_session_backend& session);
 
-    ~db2_blob_backend();
+    ~db2_blob_backend() SOCI_OVERRIDE;
 
-    std::size_t get_len();
-    std::size_t read(std::size_t offset, char* buf, std::size_t toRead);
-    std::size_t write(std::size_t offset, char const* buf, std::size_t toWrite);
-    std::size_t append(char const* buf, std::size_t toWrite);
-    void trim(std::size_t newLen);
+    std::size_t get_len() SOCI_OVERRIDE;
+    std::size_t read(std::size_t offset, char* buf, std::size_t toRead) SOCI_OVERRIDE;
+    std::size_t write(std::size_t offset, char const* buf, std::size_t toWrite) SOCI_OVERRIDE;
+    std::size_t append(char const* buf, std::size_t toWrite) SOCI_OVERRIDE;
+    void trim(std::size_t newLen) SOCI_OVERRIDE;
 
     db2_session_backend& session_;
 };
@@ -244,26 +250,26 @@ struct db2_session_backend : details::session_backend
 {
     db2_session_backend(connection_parameters const& parameters);
 
-    ~db2_session_backend();
+    ~db2_session_backend() SOCI_OVERRIDE;
 
-    void begin();
-    void commit();
-    void rollback();
+    void begin() SOCI_OVERRIDE;
+    void commit() SOCI_OVERRIDE;
+    void rollback() SOCI_OVERRIDE;
 
-    std::string get_backend_name() const { return "DB2"; }
+    std::string get_dummy_from_table() const SOCI_OVERRIDE { return "sysibm.sysdummy1"; }
+
+    std::string get_backend_name() const SOCI_OVERRIDE { return "DB2"; }
 
     void clean_up();
 
-    db2_statement_backend* make_statement_backend();
-    db2_rowid_backend* make_rowid_backend();
-    db2_blob_backend* make_blob_backend();
+    db2_statement_backend* make_statement_backend() SOCI_OVERRIDE;
+    db2_rowid_backend* make_rowid_backend() SOCI_OVERRIDE;
+    db2_blob_backend* make_blob_backend() SOCI_OVERRIDE;
 
     void parseConnectString(std::string const &);
     void parseKeyVal(std::string const &);
 
-    std::string dsn;
-    std::string username;
-    std::string password;
+    std::string connection_string_;
     bool autocommit;
     bool in_transaction;
 
@@ -275,7 +281,7 @@ struct SOCI_DB2_DECL db2_backend_factory : backend_factory
 {
     db2_backend_factory() {}
     db2_session_backend* make_session(
-        connection_parameters const & parameters) const;
+        connection_parameters const & parameters) const SOCI_OVERRIDE;
 };
 
 extern SOCI_DB2_DECL db2_backend_factory const db2;

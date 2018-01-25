@@ -39,10 +39,6 @@ namespace test {
 class Server_test : public beast::unit_test::suite
 {
 public:
-    enum
-    {
-        testPort = 40000
-    };
 
     class TestThread
     {
@@ -91,7 +87,7 @@ public:
             if (level < threshold())
                 return;
 
-            suite_.log << text;
+            suite_.log << text << std::endl;
         }
     };
 
@@ -156,12 +152,10 @@ public:
     // Connect to an address
     template <class Socket>
     bool
-    connect (Socket& s, std::string const& addr, int port)
+    connect (Socket& s, typename Socket::endpoint_type const& ep)
     {
         try
         {
-            typename Socket::endpoint_type ep (
-                boost::asio::ip::address::from_string (addr), port);
             s.connect (ep);
             pass();
             return true;
@@ -222,13 +216,13 @@ public:
     }
 
     void
-    test_request()
+    test_request(boost::asio::ip::tcp::endpoint const& ep)
     {
         boost::asio::io_service ios;
         using socket = boost::asio::ip::tcp::socket;
         socket s (ios);
 
-        if (! connect (s, "127.0.0.1", testPort))
+        if (! connect (s, ep))
             return;
 
         if (! write (s,
@@ -247,13 +241,13 @@ public:
     }
 
     void
-    test_keepalive()
+    test_keepalive(boost::asio::ip::tcp::endpoint const& ep)
     {
         boost::asio::io_service ios;
         using socket = boost::asio::ip::tcp::socket;
         socket s (ios);
 
-        if (! connect (s, "127.0.0.1", testPort))
+        if (! connect (s, ep))
             return;
 
         if (! write (s,
@@ -280,6 +274,7 @@ public:
 
     void basicTests()
     {
+        testcase("Basic client/server");
         TestSink sink {*this};
         TestThread thread;
         sink.threshold (beast::severities::Severity::kAll);
@@ -287,24 +282,23 @@ public:
         TestHandler handler;
         auto s = make_Server (handler,
             thread.get_io_service(), journal);
-        std::vector<Port> list;
-        list.resize(1);
-        list.back().port = testPort;
-        list.back().ip = boost::asio::ip::address::from_string (
-            "127.0.0.1");
-        list.back().protocol.insert("http");
-        s->ports (list);
-
-        test_request();
-        //test_keepalive();
+        std::vector<Port> serverPort(1);
+        serverPort.back().ip =
+            boost::asio::ip::address::from_string ("127.0.0.1"),
+        serverPort.back().port = 0;
+        serverPort.back().protocol.insert("http");
+        auto eps = s->ports (serverPort);
+        log << "server listening on port " << eps[0].port() << std::endl;
+        test_request(eps[0]);
+        test_keepalive(eps[0]);
         //s->close();
         s = nullptr;
-
         pass();
     }
 
     void stressTest()
     {
+        testcase("stress test");
         struct NullHandler
         {
             bool
@@ -360,14 +354,14 @@ public:
             TestThread thread;
             auto s = make_Server(h,
                 thread.get_io_service(), {});
-            std::vector<Port> list;
-            list.resize(1);
-            list.back().port = testPort;
-            list.back().ip = boost::asio::ip::address::from_string (
-                "127.0.0.1");
-            list.back().protocol.insert("http");
-            s->ports (list);
+            std::vector<Port> serverPort(1);
+            serverPort.back().ip =
+                boost::asio::ip::address::from_string ("127.0.0.1"),
+            serverPort.back().port = 0;
+            serverPort.back().protocol.insert("http");
+            s->ports (serverPort);
         }
+        pass();
     }
 
     /**

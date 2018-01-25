@@ -286,7 +286,7 @@ class LedgerRPC_test : public beast::unit_test::suite
     void testLookupLedger()
     {
         using namespace test::jtx;
-        Env env {*this, no_features}; // hashes requested below assume
+        Env env {*this, FeatureBitset{}}; // hashes requested below assume
                                      //no amendments
         env.fund(XRP(10000), "alice");
         env.close();
@@ -476,8 +476,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 cfg->section("transaction_queue")
                     .set("minimum_txn_in_ledger_standalone", "3");
                 return cfg;
-            }),
-            with_features(featureFeeEscalation)};
+            })};
 
         Json::Value jv;
         jv[jss::ledger_index] = "current";

@@ -91,7 +91,8 @@ Json::Value doAccountTx (RPC::Context& context)
         if (uLedgerMax < uLedgerMin)
             return rpcError (rpcLGR_IDXS_INVALID);
     }
-    else
+    else if(params.isMember (jss::ledger_hash) ||
+            params.isMember (jss::ledger_index))
     {
         std::shared_ptr<ReadView const> ledger;
         auto ret = RPC::lookupLedger (ledger, context);
@@ -107,6 +108,11 @@ Json::Value doAccountTx (RPC::Context& context)
         }
 
         uLedgerMin = uLedgerMax = ledger->info().seq;
+    }
+    else
+    {
+        uLedgerMin = uValidatedMin;
+        uLedgerMax = uValidatedMax;
     }
 
     Json::Value resumeToken;

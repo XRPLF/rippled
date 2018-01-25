@@ -33,6 +33,10 @@
 #include <sqlext.h> // ODBC
 #include <string.h> // strcpy()
 
+#ifndef SQL_SS_LENGTH_UNLIMITED
+#define SQL_SS_LENGTH_UNLIMITED 0
+#endif
+
 namespace soci
 {
 
@@ -40,6 +44,10 @@ namespace details
 {
     // TODO: Do we want to make it a part of public interface? --mloskot
     std::size_t const odbc_max_buffer_length = 100 * 1024 * 1024;
+
+    // select max size from following MSDN article
+    // https://msdn.microsoft.com/en-us/library/ms130896.aspx
+    SQLLEN const ODBC_MAX_COL_SIZE = 8000;
 
     // This cast is only used to avoid compiler warnings when passing strings
     // to ODBC functions, the returned string may *not* be really modified.
@@ -88,14 +96,14 @@ struct odbc_standard_into_type_backend : details::standard_into_type_backend,
         : odbc_standard_type_backend_base(st), buf_(0)
     {}
 
-    virtual void define_by_pos(int &position,
-        void *data, details::exchange_type type);
+    void define_by_pos(int &position,
+        void *data, details::exchange_type type) SOCI_OVERRIDE;
 
-    virtual void pre_fetch();
-    virtual void post_fetch(bool gotData, bool calledFromFetch,
-        indicator *ind);
+    void pre_fetch() SOCI_OVERRIDE;
+    void post_fetch(bool gotData, bool calledFromFetch,
+        indicator *ind) SOCI_OVERRIDE;
 
-    virtual void clean_up();
+    void clean_up() SOCI_OVERRIDE;
 
     char *buf_;        // generic buffer
     void *data_;
@@ -114,16 +122,16 @@ struct odbc_vector_into_type_backend : details::vector_into_type_backend,
         : odbc_standard_type_backend_base(st), indHolders_(NULL),
           data_(NULL), buf_(NULL) {}
 
-    virtual void define_by_pos(int &position,
-        void *data, details::exchange_type type);
+    void define_by_pos(int &position,
+        void *data, details::exchange_type type) SOCI_OVERRIDE;
 
-    virtual void pre_fetch();
-    virtual void post_fetch(bool gotData, indicator *ind);
+    void pre_fetch() SOCI_OVERRIDE;
+    void post_fetch(bool gotData, indicator *ind) SOCI_OVERRIDE;
 
-    virtual void resize(std::size_t sz);
-    virtual std::size_t size();
+    void resize(std::size_t sz) SOCI_OVERRIDE;
+    std::size_t size() SOCI_OVERRIDE;
 
-    virtual void clean_up();
+    void clean_up() SOCI_OVERRIDE;
 
     // helper function for preparing indicators
     // (as part of the define_by_pos)
@@ -146,15 +154,15 @@ struct odbc_standard_use_type_backend : details::standard_use_type_backend,
         : odbc_standard_type_backend_base(st),
           position_(-1), data_(0), buf_(0), indHolder_(0) {}
 
-    virtual void bind_by_pos(int &position,
-        void *data, details::exchange_type type, bool readOnly);
-    virtual void bind_by_name(std::string const &name,
-        void *data, details::exchange_type type, bool readOnly);
+    void bind_by_pos(int &position,
+        void *data, details::exchange_type type, bool readOnly) SOCI_OVERRIDE;
+    void bind_by_name(std::string const &name,
+        void *data, details::exchange_type type, bool readOnly) SOCI_OVERRIDE;
 
-    virtual void pre_use(indicator const *ind);
-    virtual void post_use(bool gotData, indicator *ind);
+    void pre_use(indicator const *ind) SOCI_OVERRIDE;
+    void post_use(bool gotData, indicator *ind) SOCI_OVERRIDE;
 
-    virtual void clean_up();
+    void clean_up() SOCI_OVERRIDE;
 
     // Return the pointer to the buffer containing data to be used by ODBC.
     // This can be either data_ itself or buf_, that is allocated by this
@@ -169,6 +177,15 @@ struct odbc_standard_use_type_backend : details::standard_use_type_backend,
     details::exchange_type type_;
     char *buf_;
     SQLLEN indHolder_;
+
+private:
+    // Copy string data to buf_ and set size, sqlType and cType to the values
+    // appropriate for strings.
+    void copy_from_string(std::string const& s,
+                          SQLLEN& size,
+                          SQLSMALLINT& sqlType,
+                          SQLSMALLINT& cType);
+
 };
 
 struct odbc_vector_use_type_backend : details::vector_use_type_backend,
@@ -187,16 +204,16 @@ struct odbc_vector_use_type_backend : details::vector_use_type_backend,
     void bind_helper(int &position,
         void *data, details::exchange_type type);
 
-    virtual void bind_by_pos(int &position,
-        void *data, details::exchange_type type);
-    virtual void bind_by_name(std::string const &name,
-        void *data, details::exchange_type type);
+    void bind_by_pos(int &position,
+        void *data, details::exchange_type type) SOCI_OVERRIDE;
+    void bind_by_name(std::string const &name,
+        void *data, details::exchange_type type) SOCI_OVERRIDE;
 
-    virtual void pre_use(indicator const *ind);
+    void pre_use(indicator const *ind) SOCI_OVERRIDE;
 
-    virtual std::size_t size();
+    std::size_t size() SOCI_OVERRIDE;
 
-    virtual void clean_up();
+    void clean_up() SOCI_OVERRIDE;
 
 
     SQLLEN *indHolders_;
@@ -214,31 +231,31 @@ struct odbc_statement_backend : details::statement_backend
 {
     odbc_statement_backend(odbc_session_backend &session);
 
-    virtual void alloc();
-    virtual void clean_up();
-    virtual void prepare(std::string const &query,
-        details::statement_type eType);
+    void alloc() SOCI_OVERRIDE;
+    void clean_up() SOCI_OVERRIDE;
+    void prepare(std::string const &query,
+        details::statement_type eType) SOCI_OVERRIDE;
 
-    virtual exec_fetch_result execute(int number);
-    virtual exec_fetch_result fetch(int number);
+    exec_fetch_result execute(int number) SOCI_OVERRIDE;
+    exec_fetch_result fetch(int number) SOCI_OVERRIDE;
 
-    virtual long long get_affected_rows();
-    virtual int get_number_of_rows();
-    virtual std::string get_parameter_name(int index) const;
+    long long get_affected_rows() SOCI_OVERRIDE;
+    int get_number_of_rows() SOCI_OVERRIDE;
+    std::string get_parameter_name(int index) const SOCI_OVERRIDE;
 
-    virtual std::string rewrite_for_procedure_call(std::string const &query);
+    std::string rewrite_for_procedure_call(std::string const &query) SOCI_OVERRIDE;
 
-    virtual int prepare_for_describe();
-    virtual void describe_column(int colNum, data_type &dtype,
-        std::string &columnName);
+    int prepare_for_describe() SOCI_OVERRIDE;
+    void describe_column(int colNum, data_type &dtype,
+        std::string &columnName) SOCI_OVERRIDE;
 
     // helper for defining into vector<string>
     std::size_t column_size(int position);
 
-    virtual odbc_standard_into_type_backend * make_into_type_backend();
-    virtual odbc_standard_use_type_backend * make_use_type_backend();
-    virtual odbc_vector_into_type_backend * make_vector_into_type_backend();
-    virtual odbc_vector_use_type_backend * make_vector_use_type_backend();
+    odbc_standard_into_type_backend * make_into_type_backend() SOCI_OVERRIDE;
+    odbc_standard_use_type_backend * make_use_type_backend() SOCI_OVERRIDE;
+    odbc_vector_into_type_backend * make_vector_into_type_backend() SOCI_OVERRIDE;
+    odbc_vector_use_type_backend * make_vector_use_type_backend() SOCI_OVERRIDE;
 
     odbc_session_backend &session_;
     SQLHSTMT hstmt_;
@@ -258,22 +275,22 @@ struct odbc_rowid_backend : details::rowid_backend
 {
     odbc_rowid_backend(odbc_session_backend &session);
 
-    ~odbc_rowid_backend();
+    ~odbc_rowid_backend() SOCI_OVERRIDE;
 };
 
 struct odbc_blob_backend : details::blob_backend
 {
     odbc_blob_backend(odbc_session_backend &session);
 
-    ~odbc_blob_backend();
+    ~odbc_blob_backend() SOCI_OVERRIDE;
 
-    virtual std::size_t get_len();
-    virtual std::size_t read(std::size_t offset, char *buf,
-        std::size_t toRead);
-    virtual std::size_t write(std::size_t offset, char const *buf,
-        std::size_t toWrite);
-    virtual std::size_t append(char const *buf, std::size_t toWrite);
-    virtual void trim(std::size_t newLen);
+    std::size_t get_len() SOCI_OVERRIDE;
+    std::size_t read(std::size_t offset, char *buf,
+        std::size_t toRead) SOCI_OVERRIDE;
+    std::size_t write(std::size_t offset, char const *buf,
+        std::size_t toWrite) SOCI_OVERRIDE;
+    std::size_t append(char const *buf, std::size_t toWrite) SOCI_OVERRIDE;
+    void trim(std::size_t newLen) SOCI_OVERRIDE;
 
     odbc_session_backend &session_;
 };
@@ -282,27 +299,29 @@ struct odbc_session_backend : details::session_backend
 {
     odbc_session_backend(connection_parameters const & parameters);
 
-    ~odbc_session_backend();
+    ~odbc_session_backend() SOCI_OVERRIDE;
 
-    virtual void begin();
-    virtual void commit();
-    virtual void rollback();
+    void begin() SOCI_OVERRIDE;
+    void commit() SOCI_OVERRIDE;
+    void rollback() SOCI_OVERRIDE;
 
-    virtual bool get_next_sequence_value(session & s,
-        std::string const & sequence, long & value);
-    virtual bool get_last_insert_id(session & s,
-        std::string const & table, long & value);
+    bool get_next_sequence_value(session & s,
+        std::string const & sequence, long & value) SOCI_OVERRIDE;
+    bool get_last_insert_id(session & s,
+        std::string const & table, long & value) SOCI_OVERRIDE;
 
-    virtual std::string get_backend_name() const { return "odbc"; }
+    std::string get_dummy_from_table() const SOCI_OVERRIDE;
+
+    std::string get_backend_name() const SOCI_OVERRIDE { return "odbc"; }
 
     void configure_connection();
     void reset_transaction();
 
     void clean_up();
 
-    virtual odbc_statement_backend * make_statement_backend();
-    virtual odbc_rowid_backend * make_rowid_backend();
-    virtual odbc_blob_backend * make_blob_backend();
+    odbc_statement_backend * make_statement_backend() SOCI_OVERRIDE;
+    odbc_rowid_backend * make_rowid_backend() SOCI_OVERRIDE;
+    odbc_blob_backend * make_blob_backend() SOCI_OVERRIDE;
 
     enum database_product
     {
@@ -317,7 +336,7 @@ struct odbc_session_backend : details::session_backend
     };
 
     // Determine the type of the database we're connected to.
-    database_product get_database_product();
+    database_product get_database_product() const;
 
     // Return full ODBC connection string.
     std::string get_connection_string() const { return connection_string_; }
@@ -326,7 +345,9 @@ struct odbc_session_backend : details::session_backend
     SQLHDBC hdbc_;
 
     std::string connection_string_;
-    database_product product_;
+
+private:
+    mutable database_product product_;
 };
 
 class SOCI_ODBC_DECL odbc_soci_error : public soci_error
@@ -435,8 +456,8 @@ inline bool odbc_standard_type_backend_base::use_string_for_bigint() const
 struct odbc_backend_factory : backend_factory
 {
     odbc_backend_factory() {}
-    virtual odbc_session_backend * make_session(
-        connection_parameters const & parameters) const;
+    odbc_session_backend * make_session(
+        connection_parameters const & parameters) const SOCI_OVERRIDE;
 };
 
 extern SOCI_ODBC_DECL odbc_backend_factory const odbc;

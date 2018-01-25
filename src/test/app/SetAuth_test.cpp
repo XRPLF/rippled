@@ -46,19 +46,23 @@ struct SetAuth_test : public beast::unit_test::suite
         return jv;
     }
 
-    void testAuth(std::initializer_list<uint256> fs)
+    void testAuth(FeatureBitset features)
     {
+        // featureTrustSetAuth should always be reset by the caller.
+        BEAST_EXPECT(!features[featureTrustSetAuth]);
+
         using namespace jtx;
         auto const gw = Account("gw");
         auto const USD = gw["USD"];
         {
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
             env.fund(XRP(100000), "alice", gw);
             env(fset(gw, asfRequireAuth));
             env(auth(gw, "alice", "USD"),       ter(tecNO_LINE_REDUNDANT));
         }
         {
-            Env env(*this, with_features(featureTrustSetAuth));
+            Env env(*this, features | featureTrustSetAuth);
+
             env.fund(XRP(100000), "alice", "bob", gw);
             env(fset(gw, asfRequireAuth));
             env(auth(gw, "alice", "USD"));
@@ -75,10 +79,12 @@ struct SetAuth_test : public beast::unit_test::suite
 
     void run() override
     {
-        testAuth({});
-        testAuth({featureFlow});
-        testAuth({featureFlow, fix1373});
-        testAuth({featureFlow, fix1373, featureFlowCross});
+        using namespace jtx;
+        auto const sa = supported_amendments();
+        testAuth(sa - featureTrustSetAuth - featureFlow - fix1373 - featureFlowCross);
+        testAuth(sa - featureTrustSetAuth - fix1373 - featureFlowCross);
+        testAuth(sa - featureTrustSetAuth - featureFlowCross);
+        testAuth(sa - featureTrustSetAuth);
     }
 };
 

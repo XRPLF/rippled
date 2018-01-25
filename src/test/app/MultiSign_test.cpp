@@ -39,7 +39,7 @@ public:
     void test_noReserve()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice", KeyType::secp256k1};
 
         // Pay alice enough to meet the initial reserve, but not enough to
@@ -87,7 +87,7 @@ public:
     void test_signerListSet()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
 
@@ -132,7 +132,7 @@ public:
     void test_phantomSigners()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
         env.close();
@@ -191,7 +191,7 @@ public:
     test_enablement()
     {
         using namespace jtx;
-        Env env(*this, no_features);
+        Env env(*this, FeatureBitset{});
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
         env.close();
@@ -233,7 +233,7 @@ public:
     void test_fee ()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
         env.close();
@@ -283,7 +283,7 @@ public:
     void test_misorderedSigners()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
         env.close();
@@ -305,7 +305,7 @@ public:
     void test_masterSigners()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice", KeyType::ed25519};
         Account const becky {"becky", KeyType::secp256k1};
         Account const cheri {"cheri", KeyType::ed25519};
@@ -357,7 +357,7 @@ public:
     void test_regularSigners()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice", KeyType::secp256k1};
         Account const becky {"becky", KeyType::ed25519};
         Account const cheri {"cheri", KeyType::secp256k1};
@@ -415,7 +415,7 @@ public:
     void test_regularSignersUsingSubmitMulti()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice", KeyType::secp256k1};
         Account const becky {"becky", KeyType::ed25519};
         Account const cheri {"cheri", KeyType::secp256k1};
@@ -618,7 +618,7 @@ public:
     void test_heterogeneousSigners()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice", KeyType::secp256k1};
         Account const becky {"becky", KeyType::ed25519};
         Account const cheri {"cheri", KeyType::secp256k1};
@@ -733,7 +733,7 @@ public:
     void test_keyDisable()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
 
@@ -773,7 +773,7 @@ public:
         // R1: The regular key can be removed if there's a signer list.
         env(regkey (alice, disabled), sig(alie));
 
-        // L0; A lone signer list cannot be removed.
+        // L0: A lone signer list cannot be removed.
         auto const baseFee = env.current()->fees().base;
         env(signers(alice, jtx::none), msig(bogie),
             fee(2 * baseFee), ter(tecNO_ALTERNATIVE_KEY));
@@ -808,7 +808,7 @@ public:
     void test_regKey()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice", KeyType::secp256k1};
         env.fund(XRP(1000), alice);
 
@@ -840,7 +840,7 @@ public:
     void test_txTypes()
     {
         using namespace jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice {"alice", KeyType::secp256k1};
         Account const becky {"becky", KeyType::ed25519};
         Account const zelda {"zelda", KeyType::secp256k1};
@@ -924,7 +924,7 @@ public:
         // Verify that the text returned for signature failures is correct.
         using namespace jtx;
 
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
 
         // lambda that submits an STTx and returns the resulting JSON.
         auto submitSTTx = [&env] (STTx const& stx)
@@ -1058,7 +1058,7 @@ public:
     void test_noMultiSigners()
     {
         using namespace jtx;
-        Env env {*this, with_features(featureMultiSign)};
+        Env env {*this};
         Account const alice {"alice", KeyType::ed25519};
         Account const becky {"becky", KeyType::secp256k1};
         env.fund(XRP(1000), alice, becky);
@@ -1068,6 +1068,71 @@ public:
         env(noop(alice), msig(becky, demon), fee(3 * baseFee), ter(tefNOT_MULTI_SIGNING));
     }
 
+    void test_multisigningMultisigner()
+    {
+        // Set up a signer list where one of the signers has both the
+        // master disabled and no regular key (because that signer is
+        // exclusively multisigning).  That signer should no longer be
+        // able to successfully sign the signer list.
+
+        using namespace jtx;
+        Env env (*this);
+        Account const alice {"alice", KeyType::ed25519};
+        Account const becky {"becky", KeyType::secp256k1};
+        env.fund (XRP(1000), alice, becky);
+        env.close();
+
+        // alice sets up a signer list with becky as a signer.
+        env (signers (alice, 1, {{becky, 1}}));
+        env.close();
+
+        // becky sets up her signer list.
+        env (signers (becky, 1, {{bogie, 1}, {demon, 1}}));
+        env.close();
+
+        // Because becky has not (yet) disabled her master key, she can
+        // multisign a transaction for alice.
+        auto const baseFee = env.current()->fees().base;
+        env (noop (alice), msig (becky), fee (2 * baseFee));
+        env.close();
+
+        // Now becky disables her master key.
+        env (fset (becky, asfDisableMaster));
+        env.close();
+
+        // Since becky's master key is disabled she can no longer
+        // multisign for alice.
+        env (noop (alice), msig (becky), fee (2 * baseFee),
+            ter (tefMASTER_DISABLED));
+        env.close();
+
+        // Becky cannot 2-level multisign for alice.  2-level multisigning
+        // is not supported.
+        env (noop (alice), msig (msig::Reg {becky, bogie}), fee (2 * baseFee),
+            ter (tefBAD_SIGNATURE));
+        env.close();
+
+        // Verify that becky cannot sign with a regular key that she has
+        // not yet enabled.
+        Account const beck {"beck", KeyType::ed25519};
+        env (noop (alice), msig (msig::Reg {becky, beck}), fee (2 * baseFee),
+            ter (tefBAD_SIGNATURE));
+        env.close();
+
+        // Once becky gives herself the regular key, she can sign for alice
+        // using that regular key.
+        env (regkey (becky, beck), msig (demon), fee (2 * baseFee));
+        env.close();
+
+        env (noop (alice), msig (msig::Reg {becky, beck}), fee (2 * baseFee));
+        env.close();
+
+        // The presence of becky's regular key does not influence whether she
+        // can 2-level multisign; it still won't work.
+        env (noop (alice), msig (msig::Reg {becky, demon}), fee (2 * baseFee),
+            ter (tefBAD_SIGNATURE));
+        env.close();
+    }
 
     void run() override
     {
@@ -1086,6 +1151,7 @@ public:
         test_txTypes();
         test_badSignatureText();
         test_noMultiSigners();
+        test_multisigningMultisigner();
     }
 };
 

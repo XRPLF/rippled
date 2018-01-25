@@ -67,6 +67,7 @@ public:
 
     virtual ~STBase() = default;
 
+    STBase(const STBase& t) = default;
     STBase& operator= (const STBase& t);
 
     bool operator== (const STBase& t) const;

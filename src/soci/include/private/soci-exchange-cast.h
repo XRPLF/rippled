@@ -9,6 +9,7 @@
 #define SOCI_EXCHANGE_CAST_H_INCLUDED
 
 #include "soci/soci-backend.h"
+#include "soci/type-wrappers.h"
 
 #include <ctime>
 
@@ -67,6 +68,18 @@ template <>
 struct exchange_type_traits<x_stdtm>
 {
   typedef std::tm value_type;
+};
+
+template <>
+struct exchange_type_traits<x_longstring>
+{
+  typedef long_string value_type;
+};
+
+template <>
+struct exchange_type_traits<x_xmltype>
+{
+  typedef xml_type value_type;
 };
 
 // exchange_type_traits not defined for x_statement, x_rowid and x_blob here.

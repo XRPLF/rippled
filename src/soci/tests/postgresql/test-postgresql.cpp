@@ -195,41 +195,82 @@ struct blob_table_creator : public table_creator_base
 
 TEST_CASE("PostgreSQL blob", "[postgresql][blob]")
 {
-    soci::session sql(backEnd, connectString);
-
-    blob_table_creator tableCreator(sql);
-
-    char buf[] = "abcdefghijklmnopqrstuvwxyz";
-
-    sql << "insert into soci_test(id, img) values(7, lo_creat(-1))";
-
-    // in PostgreSQL, BLOB operations must be within transaction block
-    transaction tr(sql);
-
     {
-        blob b(sql);
+        soci::session sql(backEnd, connectString);
 
-        sql << "select img from soci_test where id = 7", into(b);
-        CHECK(b.get_len() == 0);
+        blob_table_creator tableCreator(sql);
 
-        b.write(0, buf, sizeof(buf));
-        CHECK(b.get_len() == sizeof(buf));
+        char buf[] = "abcdefghijklmnopqrstuvwxyz";
 
-        b.append(buf, sizeof(buf));
-        CHECK(b.get_len() == 2 * sizeof(buf));
+        sql << "insert into soci_test(id, img) values(7, lo_creat(-1))";
+
+        // in PostgreSQL, BLOB operations must be within transaction block
+        transaction tr(sql);
+
+        {
+            blob b(sql);
+
+            sql << "select img from soci_test where id = 7", into(b);
+            CHECK(b.get_len() == 0);
+
+            b.write(0, buf, sizeof(buf));
+            CHECK(b.get_len() == sizeof(buf));
+
+            b.append(buf, sizeof(buf));
+            CHECK(b.get_len() == 2 * sizeof(buf));
+        }
+        {
+            blob b(sql);
+            sql << "select img from soci_test where id = 7", into(b);
+            CHECK(b.get_len() == 2 * sizeof(buf));
+            char buf2[100];
+            b.read(0, buf2, 10);
+            CHECK(std::strncmp(buf2, "abcdefghij", 10) == 0);
+        }
+
+        unsigned long oid;
+        sql << "select img from soci_test where id = 7", into(oid);
+        sql << "select lo_unlink(" << oid << ")";
     }
+
+    // additional sibling test for read_from_start and write_from_start
     {
-        blob b(sql);
-        sql << "select img from soci_test where id = 7", into(b);
-        CHECK(b.get_len() == 2 * sizeof(buf));
-        char buf2[100];
-        b.read(0, buf2, 10);
-        CHECK(std::strncmp(buf2, "abcdefghij", 10) == 0);
-    }
+        soci::session sql(backEnd, connectString);
 
-    unsigned long oid;
-    sql << "select img from soci_test where id = 7", into(oid);
-    sql << "select lo_unlink(" << oid << ")";
+        blob_table_creator tableCreator(sql);
+
+        char buf[] = "abcdefghijklmnopqrstuvwxyz";
+
+        sql << "insert into soci_test(id, img) values(7, lo_creat(-1))";
+
+        // in PostgreSQL, BLOB operations must be within transaction block
+        transaction tr(sql);
+
+        {
+            blob b(sql);
+
+            sql << "select img from soci_test where id = 7", into(b);
+            CHECK(b.get_len() == 0);
+
+            b.write_from_start(buf, sizeof(buf));
+            CHECK(b.get_len() == sizeof(buf));
+
+            b.append(buf, sizeof(buf));
+            CHECK(b.get_len() == 2 * sizeof(buf));
+        }
+        {
+            blob b(sql);
+            sql << "select img from soci_test where id = 7", into(b);
+            CHECK(b.get_len() == 2 * sizeof(buf));
+            char buf2[100];
+            b.read_from_start(buf2, 10);
+            CHECK(std::strncmp(buf2, "abcdefghij", 10) == 0);
+        }
+
+        unsigned long oid;
+        sql << "select img from soci_test where id = 7", into(oid);
+        sql << "select lo_unlink(" << oid << ")";
+    }
 }
 
 struct longlong_table_creator : table_creator_base
@@ -329,6 +370,31 @@ TEST_CASE("PostgreSQL boolean", "[postgresql][boolean]")
     CHECK(i2 == 1);
 }
 
+struct uuid_table_creator : table_creator_base
+{
+    uuid_table_creator(soci::session & sql)
+        : table_creator_base(sql)
+    {
+        sql << "create table soci_test(val uuid)";
+    }
+};
+
+// uuid test
+TEST_CASE("PostgreSQL uuid", "[postgresql][uuid]")
+{
+    soci::session sql(backEnd, connectString);
+
+    uuid_table_creator tableCreator(sql);
+
+    std::string v1("cd2dcb78-3817-442e-b12a-17c7e42669a0");
+    sql << "insert into soci_test(val) values(:val)", use(v1);
+
+    std::string v2;
+    sql << "select val from soci_test", into(v2);
+
+    CHECK(v2 == v1);
+}
+
 // dynamic backend test -- currently skipped by default
 TEST_CASE("PostgreSQL dynamic backend", "[postgresql][backend][.]")
 {
@@ -410,7 +476,7 @@ TEST_CASE("PostgreSQL datetime", "[postgresql][datetime]")
     soci::session sql(backEnd, connectString);
 
     std::string someDate = "2009-06-17 22:51:03.123";
-    std::tm t1, t2, t3;
+    std::tm t1 = std::tm(), t2 = std::tm(), t3 = std::tm();
 
     sql << "select :sd::date, :sd::time, :sd::timestamp",
         use(someDate, "sd"), into(t1), into(t2), into(t3);
@@ -662,6 +728,316 @@ TEST_CASE("PostgreSQL ORM cast", "[postgresql][orm]")
     sql << "select :a::int", use(v); // Must not throw an exception!
 }
 
+// Test the DDL and metadata functionality
+TEST_CASE("PostgreSQL DDL with metadata", "[postgresql][ddl]")
+{
+    soci::session sql(backEnd, connectString);
+
+    // note: prepare_column_descriptions expects l-value
+    std::string ddl_t1 = "ddl_t1";
+    std::string ddl_t2 = "ddl_t2";
+    std::string ddl_t3 = "ddl_t3";
+
+    // single-expression variant:
+    sql.create_table(ddl_t1).column("i", soci::dt_integer).column("j", soci::dt_integer);
+
+    // check whether this table was created:
+
+    bool ddl_t1_found = false;
+    bool ddl_t2_found = false;
+    bool ddl_t3_found = false;
+    std::string table_name;
+    soci::statement st = (sql.prepare_table_names(), into(table_name));
+    st.execute();
+    while (st.fetch())
+    {
+        if (table_name == ddl_t1) { ddl_t1_found = true; }
+        if (table_name == ddl_t2) { ddl_t2_found = true; }
+        if (table_name == ddl_t3) { ddl_t3_found = true; }
+    }
+
+    CHECK(ddl_t1_found);
+    CHECK(ddl_t2_found == false);
+    CHECK(ddl_t3_found == false);
+
+    // check whether ddl_t1 has the right structure:
+
+    bool i_found = false;
+    bool j_found = false;
+    bool other_found = false;
+    soci::column_info ci;
+    soci::statement st1 = (sql.prepare_column_descriptions(ddl_t1), into(ci));
+    st1.execute();
+    while (st1.fetch())
+    {
+        if (ci.name == "i")
+        {
+            CHECK(ci.type == soci::dt_integer);
+            CHECK(ci.nullable);
+            i_found = true;
+        }
+        else if (ci.name == "j")
+        {
+            CHECK(ci.type == soci::dt_integer);
+            CHECK(ci.nullable);
+            j_found = true;
+        }
+        else
+        {
+            other_found = true;
+        }
+    }
+
+    CHECK(i_found);
+    CHECK(j_found);
+    CHECK(other_found == false);
+
+    // two more tables:
+
+    // separately defined columns:
+    // (note: statement is executed when ddl object goes out of scope)
+    {
+        soci::ddl_type ddl = sql.create_table(ddl_t2);
+        ddl.column("i", soci::dt_integer);
+        ddl.column("j", soci::dt_integer);
+        ddl.column("k", soci::dt_integer)("not null");
+        ddl.primary_key("t2_pk", "j");
+    }
+
+    sql.add_column(ddl_t1, "k", soci::dt_integer);
+    sql.add_column(ddl_t1, "big", soci::dt_string, 0); // "unlimited" length -> text
+    sql.drop_column(ddl_t1, "i");
+
+    // or with constraint as in t2:
+    sql.add_column(ddl_t2, "m", soci::dt_integer)("not null");
+
+    // third table with a foreign key to the second one
+    {
+        soci::ddl_type ddl = sql.create_table(ddl_t3);
+        ddl.column("x", soci::dt_integer);
+        ddl.column("y", soci::dt_integer);
+        ddl.foreign_key("t3_fk", "x", ddl_t2, "j");
+    }
+
+    // check if all tables were created:
+
+    ddl_t1_found = false;
+    ddl_t2_found = false;
+    ddl_t3_found = false;
+    soci::statement st2 = (sql.prepare_table_names(), into(table_name));
+    st2.execute();
+    while (st2.fetch())
+    {
+        if (table_name == ddl_t1) { ddl_t1_found = true; }
+        if (table_name == ddl_t2) { ddl_t2_found = true; }
+        if (table_name == ddl_t3) { ddl_t3_found = true; }
+    }
+
+    CHECK(ddl_t1_found);
+    CHECK(ddl_t2_found);
+    CHECK(ddl_t3_found);
+
+    // check if ddl_t1 has the right structure (it was altered):
+
+    i_found = false;
+    j_found = false;
+    bool k_found = false;
+    bool big_found = false;
+    other_found = false;
+    soci::statement st3 = (sql.prepare_column_descriptions(ddl_t1), into(ci));
+    st3.execute();
+    while (st3.fetch())
+    {
+        if (ci.name == "j")
+        {
+            CHECK(ci.type == soci::dt_integer);
+            CHECK(ci.nullable);
+            j_found = true;
+        }
+        else if (ci.name == "k")
+        {
+            CHECK(ci.type == soci::dt_integer);
+            CHECK(ci.nullable);
+            k_found = true;
+        }
+        else if (ci.name == "big")
+        {
+            CHECK(ci.type == soci::dt_string);
+            CHECK(ci.precision == 0); // "unlimited" for strings
+            big_found = true;
+        }
+        else
+        {
+            other_found = true;
+        }
+    }
+
+    CHECK(i_found == false);
+    CHECK(j_found);
+    CHECK(k_found);
+    CHECK(big_found);
+    CHECK(other_found == false);
+
+    // check if ddl_t2 has the right structure:
+
+    i_found = false;
+    j_found = false;
+    k_found = false;
+    bool m_found = false;
+    other_found = false;
+    soci::statement st4 = (sql.prepare_column_descriptions(ddl_t2), into(ci));
+    st4.execute();
+    while (st4.fetch())
+    {
+        if (ci.name == "i")
+        {
+            CHECK(ci.type == soci::dt_integer);
+            CHECK(ci.nullable);
+            i_found = true;
+        }
+        else if (ci.name == "j")
+        {
+            CHECK(ci.type == soci::dt_integer);
+            CHECK(ci.nullable == false); // primary key
+            j_found = true;
+        }
+        else if (ci.name == "k")
+        {
+            CHECK(ci.type == soci::dt_integer);
+            CHECK(ci.nullable == false);
+            k_found = true;
+        }
+        else if (ci.name == "m")
+        {
+            CHECK(ci.type == soci::dt_integer);
+            CHECK(ci.nullable == false);
+            m_found = true;
+        }
+        else
+        {
+            other_found = true;
+        }
+    }
+
+    CHECK(i_found);
+    CHECK(j_found);
+    CHECK(k_found);
+    CHECK(m_found);
+    CHECK(other_found == false);
+
+    sql.drop_table(ddl_t1);
+    sql.drop_table(ddl_t3); // note: this must be dropped before ddl_t2
+    sql.drop_table(ddl_t2);
+
+    // check if all tables were dropped:
+
+    ddl_t1_found = false;
+    ddl_t2_found = false;
+    ddl_t3_found = false;
+    st2 = (sql.prepare_table_names(), into(table_name));
+    st2.execute();
+    while (st2.fetch())
+    {
+        if (table_name == ddl_t1) { ddl_t1_found = true; }
+        if (table_name == ddl_t2) { ddl_t2_found = true; }
+        if (table_name == ddl_t3) { ddl_t3_found = true; }
+    }
+
+    CHECK(ddl_t1_found == false);
+    CHECK(ddl_t2_found == false);
+    CHECK(ddl_t3_found == false);
+
+    int i = -1;
+    sql << "select lo_unlink(" + sql.empty_blob() + ")", into(i);
+    CHECK(i == 1);
+    sql << "select " + sql.nvl() + "(1, 2)", into(i);
+    CHECK(i == 1);
+    sql << "select " + sql.nvl() + "(NULL, 2)", into(i);
+    CHECK(i == 2);
+}
+
+// Test the bulk iterators functionality
+TEST_CASE("Bulk iterators", "[postgresql][bulkiters]")
+{
+    soci::session sql(backEnd, connectString);
+
+    sql << "create table t (i integer)";
+
+    // test bulk iterators with basic types
+    {
+        std::vector<int> v;
+        v.push_back(10);
+        v.push_back(20);
+        v.push_back(30);
+        v.push_back(40);
+        v.push_back(50);
+
+        std::size_t begin = 2;
+        std::size_t end = 5;
+        sql << "insert into t (i) values (:v)", soci::use(v, begin, end);
+
+        v.clear();
+        v.resize(20);
+        begin = 5;
+        end = 20;
+        sql << "select i from t", soci::into(v, begin, end);
+
+        CHECK(end == 8);
+        for (std::size_t i = 0; i != 5; ++i)
+        {
+            CHECK(v[i] == 0);
+        }
+        CHECK(v[5] == 30);
+        CHECK(v[6] == 40);
+        CHECK(v[7] == 50);
+        for (std::size_t i = end; i != 20; ++i)
+        {
+            CHECK(v[i] == 0);
+        }
+    }
+
+    sql << "delete from t";
+
+    // test bulk iterators with user types
+    {
+        std::vector<MyInt> v;
+        v.push_back(MyInt(10));
+        v.push_back(MyInt(20));
+        v.push_back(MyInt(30));
+        v.push_back(MyInt(40));
+        v.push_back(MyInt(50));
+
+        std::size_t begin = 2;
+        std::size_t end = 5;
+        sql << "insert into t (i) values (:v)", soci::use(v, begin, end);
+
+        v.clear();
+        for (std::size_t i = 0; i != 20; ++i)
+        {
+            v.push_back(MyInt(-1));
+        }
+
+        begin = 5;
+        end = 20;
+        sql << "select i from t", soci::into(v, begin, end);
+
+        CHECK(end == 8);
+        for (std::size_t i = 0; i != 5; ++i)
+        {
+            CHECK(v[i].get() == -1);
+        }
+        CHECK(v[5].get() == 30);
+        CHECK(v[6].get() == 40);
+        CHECK(v[7].get() == 50);
+        for (std::size_t i = end; i != 20; ++i)
+        {
+            CHECK(v[i].get() == -1);
+        }
+    }
+
+    sql << "drop table t";
+}
+
 //
 // Support for soci Common Tests
 //
@@ -709,6 +1085,24 @@ struct table_creator_for_get_affected_rows : table_creator_base
     }
 };
 
+struct table_creator_for_xml : table_creator_base
+{
+    table_creator_for_xml(soci::session& sql)
+        : table_creator_base(sql)
+    {
+        sql << "create table soci_test(id integer, x xml)";
+    }
+};
+
+struct table_creator_for_clob : table_creator_base
+{
+    table_creator_for_clob(soci::session& sql)
+        : table_creator_base(sql)
+    {
+        sql << "create table soci_test(id integer, s text)";
+    }
+};
+
 // Common tests context
 class test_context : public test_context_base
 {
@@ -717,34 +1111,54 @@ public:
         : test_context_base(backEnd, connectString)
     {}
 
-    table_creator_base* table_creator_1(soci::session& s) const
+    table_creator_base* table_creator_1(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_one(s);
     }
 
-    table_creator_base* table_creator_2(soci::session& s) const
+    table_creator_base* table_creator_2(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_two(s);
     }
 
-    table_creator_base* table_creator_3(soci::session& s) const
+    table_creator_base* table_creator_3(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_three(s);
     }
 
-    table_creator_base* table_creator_4(soci::session& s) const
+    table_creator_base* table_creator_4(soci::session& s) const SOCI_OVERRIDE
     {
         return new table_creator_for_get_affected_rows(s);
     }
 
-    std::string to_date_time(std::string const &datdt_string) const
+    table_creator_base* table_creator_xml(soci::session& s) const SOCI_OVERRIDE
+    {
+        return new table_creator_for_xml(s);
+    }
+
+    table_creator_base* table_creator_clob(soci::session& s) const SOCI_OVERRIDE
+    {
+        return new table_creator_for_clob(s);
+    }
+
+    bool has_real_xml_support() const SOCI_OVERRIDE
+    {
+        return true;
+    }
+
+    std::string to_date_time(std::string const &datdt_string) const SOCI_OVERRIDE
     {
         return "timestamptz(\'" + datdt_string + "\')";
     }
 
-    virtual bool has_fp_bug() const
+    bool has_fp_bug() const SOCI_OVERRIDE
     {
         return false;
+    }
+
+    std::string sql_length(std::string const& s) const SOCI_OVERRIDE
+    {
+        return "char_length(" + s + ")";
     }
 };
 

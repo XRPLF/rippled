@@ -150,7 +150,7 @@ public:
     void testEvolution()
     {
         using namespace test::jtx;
-        Env env {*this, no_features}; //the hashes being checked below assume
+        Env env {*this, FeatureBitset{}}; //the hashes being checked below assume
                                      //no amendments
         Account const gw { "gateway" };
         auto const USD = gw["USD"];

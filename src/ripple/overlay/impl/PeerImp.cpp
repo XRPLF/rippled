@@ -32,11 +32,14 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/random.h>
 #include <ripple/basics/UptimeTimer.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/core/SemanticVersion.h>
+#include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string.hpp>
 #include <algorithm>
 #include <memory>
 #include <sstream>
@@ -222,6 +225,7 @@ PeerImp::charge (Resource::Charge const& fee)
         usage_.disconnect() && strand_.running_in_this_thread())
     {
         // Sever the connection
+        overlay_.incPeerDisconnectCharges();
         fail("charge: Resources");
     }
 }
@@ -297,8 +301,8 @@ PeerImp::json()
     ledgerRange(minSeq, maxSeq);
 
     if ((minSeq != 0) || (maxSeq != 0))
-        ret[jss::complete_ledgers] = boost::lexical_cast<std::string>(minSeq) +
-            " - " + boost::lexical_cast<std::string>(maxSeq);
+        ret[jss::complete_ledgers] = std::to_string(minSeq) +
+            " - " + std::to_string(maxSeq);
 
     if (closedLedgerHash_ != zero)
         ret[jss::ledger] = to_string (closedLedgerHash_);
@@ -361,8 +365,11 @@ PeerImp::hasLedger (uint256 const& hash, std::uint32_t seq) const
     if ((seq != 0) && (seq >= minLedger_) && (seq <= maxLedger_) &&
             (sanity_.load() == Sanity::sane))
         return true;
-    return std::find (recentLedgers_.begin(),
-        recentLedgers_.end(), hash) != recentLedgers_.end();
+    if (std::find(recentLedgers_.begin(),
+            recentLedgers_.end(), hash) != recentLedgers_.end())
+        return true;
+    return seq != 0 && boost::icl::contains(
+        shards_, NodeStore::DatabaseShard::seqToShardIndex(seq));
 }
 
 void
@@ -373,6 +380,24 @@ PeerImp::ledgerRange (std::uint32_t& minSeq,
 
     minSeq = minLedger_;
     maxSeq = maxLedger_;
+}
+
+bool
+PeerImp::hasShard (std::uint32_t shardIndex) const
+{
+    std::lock_guard<std::mutex> sl(recentLock_);
+    return boost::icl::contains(shards_, shardIndex);
+}
+
+std::string
+PeerImp::getShards () const
+{
+    {
+        std::lock_guard<std::mutex> sl(recentLock_);
+        if (!shards_.empty())
+            return to_string(shards_);
+    }
+    return {};
 }
 
 bool
@@ -414,6 +439,7 @@ PeerImp::close()
         error_code ec;
         timer_.cancel(ec);
         socket_.close(ec);
+        overlay_.incPeerDisconnect();
         if(m_inbound)
         {
             JLOG(journal_.debug()) << "Closed";
@@ -1054,10 +1080,10 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
         uint256 txID = stx->getTransactionID ();
 
         int flags;
-
         constexpr std::chrono::seconds tx_interval = 10s;
-        if (! app_.getHashRouter ().shouldProcess (
-            txID, id_, flags, clock_type::now(), tx_interval))
+
+        if (! app_.getHashRouter ().shouldProcess (txID, id_, flags,
+            tx_interval))
         {
             // we have seen this transaction recently
             if (flags & SF_BAD)
@@ -1094,6 +1120,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
         constexpr int max_transactions = 250;
         if (app_.getJobQueue().getJobCount(jtTRANSACTION) > max_transactions)
         {
+            overlay_.incJqTransOverflow();
             JLOG(p_journal_.info()) << "Transaction queue is full";
         }
         else if (app_.getLedgerMaster().getValidatedLedgerAge() > 4min)
@@ -1263,7 +1290,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
             return;
         }
 
-        if (app_.getFeeTrack ().isLoadedLocal ())
+        if (! cluster() && app_.getFeeTrack ().isLoadedLocal())
         {
             JLOG(p_journal_.debug()) << "Proposal: Dropping UNTRUSTED (load)";
             return;
@@ -1352,6 +1379,25 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
             minLedger_ = 0;
     }
 
+    if (m->has_shardseqs())
+    {
+        shards_.clear();
+        std::vector<std::string> tokens;
+        boost::split(tokens, m->shardseqs(), boost::algorithm::is_any_of(","));
+        for (auto const& t : tokens)
+        {
+            std::vector<std::string> seqs;
+            boost::split(seqs, t, boost::algorithm::is_any_of("-"));
+            if (seqs.size() == 1)
+                shards_.insert(
+                    beast::lexicalCastThrow<std::uint32_t>(seqs.front()));
+            else if (seqs.size() == 2)
+                shards_.insert(range(
+                    beast::lexicalCastThrow<std::uint32_t>(seqs.front()),
+                        beast::lexicalCastThrow<std::uint32_t>(seqs.back())));
+        }
+    }
+
     if (m->has_ledgerseq() &&
         app_.getLedgerMaster().getValidatedLedgerAge() < 2min)
     {
@@ -1426,6 +1472,9 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
                 j[jss::ledger_index_max] =
                     Json::UInt (m->lastseq ());
             }
+
+            if (m->has_shardseqs())
+                j[jss::complete_shards] = m->shardseqs();
 
             return j;
         });
@@ -1591,7 +1640,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
             JLOG(p_journal_.debug()) <<
                 "Validation: dropping untrusted from insane peer";
         }
-        if (isTrusted || !app_.getFeeTrack ().isLoadedLocal ())
+        if (isTrusted || cluster() ||
+            ! app_.getFeeTrack ().isLoadedLocal ())
         {
             std::weak_ptr<PeerImp> weak = shared_from_this();
             app_.getJobQueue ().addJob (
@@ -1634,7 +1684,6 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
             return;
         }
 
-
         if (packet.type () == protocol::TMGetObjectByHash::otFETCH_PACK)
         {
             doFetchPack (m);
@@ -1647,8 +1696,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
 
         reply.set_query (false);
 
-        if (packet.has_seq ())
-            reply.set_seq (packet.seq ());
+        if (packet.has_seq())
+            reply.set_seq(packet.seq());
 
         reply.set_type (packet.type ());
 
@@ -1658,17 +1707,20 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
         // This is a very minimal implementation
         for (int i = 0; i < packet.objects_size (); ++i)
         {
-            uint256 hash;
-            const protocol::TMIndexedObject& obj = packet.objects (i);
-
+            auto const& obj = packet.objects (i);
             if (obj.has_hash () && (obj.hash ().size () == (256 / 8)))
             {
+                uint256 hash;
                 memcpy (hash.begin (), obj.hash ().data (), 256 / 8);
                 // VFALCO TODO Move this someplace more sensible so we dont
                 //             need to inject the NodeStore interfaces.
-                std::shared_ptr<NodeObject> hObj =
-                    app_.getNodeStore ().fetch (hash);
-
+                std::uint32_t seq {obj.has_ledgerseq() ? obj.ledgerseq() : 0};
+                auto hObj {app_.getNodeStore ().fetch (hash, seq)};
+                if (!hObj && seq >= NodeStore::genesisSeq)
+                {
+                    if (auto shardStore = app_.getShardStore())
+                        hObj = shardStore->fetch(hash, seq);
+                }
                 if (hObj)
                 {
                     protocol::TMIndexedObject& newObj = *reply.add_objects ();
@@ -1678,6 +1730,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
 
                     if (obj.has_nodeid ())
                         newObj.set_index (obj.nodeid ());
+                    if (obj.has_ledgerseq())
+                        newObj.set_ledgerseq(obj.ledgerseq());
 
                     // VFALCO NOTE "seq" in the message is obsolete
                 }
@@ -1904,7 +1958,8 @@ PeerImp::checkPropose (Job& job,
     }
     else
     {
-        if (app_.getOPs().getConsensusLCL() == peerPos.proposal().prevLedger())
+        if (cluster() ||
+            (app_.getOPs().getConsensusLCL() == peerPos.proposal().prevLedger()))
         {
             // relay untrusted proposal
             JLOG(p_journal_.trace()) <<
@@ -1935,9 +1990,11 @@ PeerImp::checkValidation (STValidation::pointer val,
             return;
         }
 
-        if (app_.getOPs ().recvValidation(
-                val, std::to_string(id())))
+        if (app_.getOPs ().recvValidation(val, std::to_string(id())) ||
+            cluster())
+        {
             overlay_.relay(*packet, signingHash);
+        }
     }
     catch (std::exception const&)
     {
@@ -2012,6 +2069,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
     SHAMap const* map = nullptr;
     protocol::TMLedgerData reply;
     bool fatLeaves = true;
+    std::shared_ptr<Ledger const> ledger;
 
     if (packet.has_requestcookie ())
         reply.set_requestcookie (packet.requestcookie ());
@@ -2082,7 +2140,6 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
 
         // Figure out what ledger they want
         JLOG(p_journal_.trace()) << "GetLedger: Received";
-        std::shared_ptr<Ledger const> ledger;
 
         if (packet.has_ledgerhash ())
         {
@@ -2109,23 +2166,31 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                 !packet.has_requestcookie ()))
             {
                 std::uint32_t seq = 0;
-
-                if (packet.has_ledgerseq ())
-                    seq = packet.ledgerseq ();
-
-                auto const v = getPeerWithLedger(
-                    overlay_, ledgerhash, seq, this);
-                if (! v)
+                if (packet.has_ledgerseq())
                 {
-                    JLOG(p_journal_.trace()) << "GetLedger: Cannot route";
+                    seq = packet.ledgerseq();
+                    if (seq >= NodeStore::genesisSeq)
+                    {
+                        if (auto shardStore = app_.getShardStore())
+                            ledger = shardStore->fetchLedger(ledgerhash, seq);
+                    }
+                }
+                if (! ledger)
+                {
+                    auto const v = getPeerWithLedger(
+                        overlay_, ledgerhash, seq, this);
+                    if (! v)
+                    {
+                        JLOG(p_journal_.trace()) << "GetLedger: Cannot route";
+                        return;
+                    }
+
+                    packet.set_requestcookie (id ());
+                    v->send (std::make_shared<Message>(
+                        packet, protocol::mtGET_LEDGER));
+                    JLOG(p_journal_.debug()) << "GetLedger: Request routed";
                     return;
                 }
-
-                packet.set_requestcookie (id ());
-                v->send (std::make_shared<Message>(
-                    packet, protocol::mtGET_LEDGER));
-                JLOG(p_journal_.debug()) << "GetLedger: Request routed";
-                return;
             }
         }
         else if (packet.has_ledgerseq ())
@@ -2277,9 +2342,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
 
         try
         {
-            // We are guaranteed that map is non-null, but we need to check
-            // to keep the compiler happy.
-            if (map && map->getNodeFat (mn, nodeIDs, rawNodes, fatLeaves, depth))
+            if (map->getNodeFat(mn, nodeIDs, rawNodes, fatLeaves, depth))
             {
                 assert (nodeIDs.size () == rawNodes.size ());
                 JLOG(p_journal_.trace()) <<
@@ -2301,8 +2364,10 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                 }
             }
             else
+            {
                 JLOG(p_journal_.warn()) <<
                     "GetLedger: getNodeFat returns false";
+            }
         }
         catch (std::exception&)
         {

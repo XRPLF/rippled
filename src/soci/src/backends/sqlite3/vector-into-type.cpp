@@ -9,6 +9,7 @@
 #pragma warning(disable : 4512)
 #endif
 
+#define SOCI_SQLITE3_SOURCE
 #include "soci-dtocstr.h"
 #include "soci-exchange-cast.h"
 #include "soci/blob.h"
@@ -16,6 +17,7 @@
 #include "soci/soci-platform.h"
 #include "soci/sqlite3/soci-sqlite3.h"
 #include "soci-cstrtod.h"
+#include "soci-mktime.h"
 #include "common.h"
 // std
 #include <cstddef>
@@ -77,6 +79,9 @@ void set_number_in_vector(void *p, int idx, const sqlite3_column &col)
         case dt_unsigned_long_long:
             set_in_vector(p, idx, static_cast<T>(col.int64_));
             break;
+
+        case dt_xml:
+            throw soci_error("XML data type is not supported");
     };
 }
 
@@ -147,6 +152,9 @@ void sqlite3_vector_into_type_backend::post_fetch(bool gotData, indicator * ind)
                         set_in_vector(data_, i, ss.str()[0]);
                         break;
                     }
+
+                    case dt_xml:
+                        throw soci_error("XML data type is not supported");
                 };
                 break;
             } // x_char
@@ -181,6 +189,9 @@ void sqlite3_vector_into_type_backend::post_fetch(bool gotData, indicator * ind)
                         set_in_vector(data_, i, ss.str());
                         break;
                     }
+
+                    case dt_xml:
+                        throw soci_error("XML data type is not supported");
                 };
                 break;
             } // x_stdstring
@@ -214,7 +225,7 @@ void sqlite3_vector_into_type_backend::post_fetch(bool gotData, indicator * ind)
                     case dt_blob:
                     {
                         // attempt to parse the string and convert to std::tm
-                        std::tm t;
+                        std::tm t = std::tm();
                         parse_std_tm(col.buffer_.constData_, t);
 
                         set_in_vector(data_, i, t);
@@ -226,6 +237,9 @@ void sqlite3_vector_into_type_backend::post_fetch(bool gotData, indicator * ind)
                     case dt_long_long:
                     case dt_unsigned_long_long:
                         throw soci_error("Into element used with non-convertible type.");
+
+                    case dt_xml:
+                        throw soci_error("XML data type is not supported");
                 };
                 break;
             }
@@ -249,6 +263,9 @@ void sqlite3_vector_into_type_backend::post_fetch(bool gotData, indicator * ind)
             case dt_long_long:
             case dt_unsigned_long_long:
                 break;
+
+            case dt_xml:
+                throw soci_error("XML data type is not supported");
         }
     }
 }

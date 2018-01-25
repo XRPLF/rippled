@@ -144,7 +144,7 @@ db2_statement_backend::execute(int  number )
     }
 
     cliRC = SQLExecute(hStmt);
-    if (cliRC != SQL_SUCCESS && cliRC != SQL_SUCCESS_WITH_INFO)
+    if (cliRC != SQL_SUCCESS && cliRC != SQL_SUCCESS_WITH_INFO && cliRC != SQL_NO_DATA)
     {
         throw db2_soci_error(db2_soci_error::sqlState("Statement execution error",SQL_HANDLE_STMT,hStmt),cliRC);
     }

@@ -83,6 +83,8 @@ enum LedgerEntryType
     // Simple unidirection xrp channel
     ltPAYCHAN           = 'x',
 
+    ltCHECK             = 'C',
+
     // No longer used or supported. Left here to prevent accidental
     // reassignment of the ledger type.
     ltNICKNAME          = 'n',
@@ -111,6 +113,7 @@ enum LedgerNameSpace
     spaceTicket         = 'T',
     spaceSignerList     = 'S',
     spaceXRPUChannel    = 'x',
+    spaceCheck          = 'C',
 
     // No longer used or supported. Left here to reserve the space and
     // avoid accidental reuse of the space.
@@ -131,6 +134,7 @@ enum LedgerSpecificFlags
     lsfNoFreeze         = 0x00200000,   // True, cannot freeze ripple states
     lsfGlobalFreeze     = 0x00400000,   // True, all assets frozen
     lsfDefaultRipple    = 0x00800000,   // True, trust lines allow rippling by default
+    lsfDepositAuth      = 0x01000000,   // True, all deposits require authorization
 
     // ltOFFER
     lsfPassive          = 0x00010000,

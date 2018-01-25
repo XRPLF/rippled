@@ -122,6 +122,7 @@ JSS ( code );                       // out: errors
 JSS ( command );                    // in: RPCHandler
 JSS ( complete );                   // out: NetworkOPs, InboundLedger
 JSS ( complete_ledgers );           // out: NetworkOPs, PeerImp
+JSS ( complete_shards );            // out: OverlayImpl, PeerImp
 JSS ( consensus );                  // out: NetworkOPs, LedgerConsensus
 JSS ( converge_time );              // out: NetworkOPs
 JSS ( converge_time_s );            // out: NetworkOPs
@@ -215,6 +216,7 @@ JSS ( issuer );                     // in: RipplePathFind, Subscribe,
                                     //     Unsubscribe, BookOffers
                                     // out: paths/Node, STPathSet, STAmount
 JSS ( jsonrpc );                    // json version
+JSS ( jq_trans_overflow );          // JobQueue transaction limit overflow.
 JSS ( key );                        // out: WalletSeed
 JSS ( key_type );                   // in/out: WalletPropose, TransactionSign
 JSS ( latency );                    // out: PeerImp
@@ -326,6 +328,9 @@ JSS ( peer );                       // in: AccountLines
 JSS ( peer_authorized );            // out: AccountLines
 JSS ( peer_id );                    // out: RCLCxPeerPos
 JSS ( peers );                      // out: InboundLedger, handlers/Peers, Overlay
+JSS ( peer_disconnects );           // Severed peer connection counter.
+JSS ( peer_disconnects_resources ); // Severed peer connections because of
+                                    // excess resource consumption.
 JSS ( port );                       // in: Connect
 JSS ( previous_ledger );            // out: LedgerPropose
 JSS ( proof );                      // in: BookOffers
@@ -380,6 +385,7 @@ JSS ( server_state );               // out: NetworkOPs
 JSS ( server_status );              // out: NetworkOPs
 JSS ( settle_delay );               // out: AccountChannels
 JSS ( severity );                   // in: LogLevel
+JSS ( shards );                     // out: GetCounts
 JSS ( signature );                  // out: NetworkOPs, ChannelAuthorize
 JSS ( signature_verified );         // out: ChannelVerify
 JSS ( signing_key );                // out: NetworkOPs

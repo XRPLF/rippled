@@ -96,6 +96,7 @@ public:
     std::string m_name;
     std::unique_ptr <rocksdb::DB> m_db;
     int fdlimit_ = 2048;
+    rocksdb::Options m_options;
 
     RocksDBQuickBackend (int keyBytes, Section const& keyValues,
         Scheduler& scheduler, beast::Journal journal, RocksDBQuickEnv* env)
@@ -118,26 +119,25 @@ public:
         get_if_exists (keyValues, "threads", threads);
 
         // Set options
-        rocksdb::Options options;
-        options.create_if_missing = true;
-        options.env = env;
+        m_options.create_if_missing = true;
+        m_options.env = env;
 
         if (style == "level")
-            options.OptimizeLevelStyleCompaction(budget);
+            m_options.OptimizeLevelStyleCompaction(budget);
 
         if (style == "universal")
-            options.OptimizeUniversalStyleCompaction(budget);
+            m_options.OptimizeUniversalStyleCompaction(budget);
 
         if (style == "point")
-            options.OptimizeForPointLookup(budget / 1024 / 1024);  // In MB
+            m_options.OptimizeForPointLookup(budget / 1024 / 1024);  // In MB
 
-        options.IncreaseParallelism(threads);
+        m_options.IncreaseParallelism(threads);
 
         // Allows hash indexes in blocks
-        options.prefix_extractor.reset(rocksdb::NewNoopTransform());
+        m_options.prefix_extractor.reset(rocksdb::NewNoopTransform());
 
         // overrride OptimizeLevelStyleCompaction
-        options.min_write_buffer_number_to_merge = 1;
+        m_options.min_write_buffer_number_to_merge = 1;
 
         rocksdb::BlockBasedTableOptions table_options;
         // Use hash index
@@ -145,7 +145,7 @@ public:
             rocksdb::BlockBasedTableOptions::kHashSearch;
         table_options.filter_policy.reset(
             rocksdb::NewBloomFilterPolicy(10));
-        options.table_factory.reset(
+        m_options.table_factory.reset(
             NewBlockBasedTableFactory(table_options));
 
         // Higher values make reads slower
@@ -155,27 +155,17 @@ public:
         // table_options.block_cache =
         //     rocksdb::NewLRUCache(64 * 1024 * 1024);
 
-        options.memtable_factory.reset(rocksdb::NewHashSkipListRepFactory());
+        m_options.memtable_factory.reset(rocksdb::NewHashSkipListRepFactory());
         // Alternative:
-        // options.memtable_factory.reset(
-        //     rocksdb::NewHashCuckooRepFactory(options.write_buffer_size));
+        // m_options.memtable_factory.reset(
+        //     rocksdb::NewHashCuckooRepFactory(m_options.write_buffer_size));
 
-        if (get_if_exists (keyValues, "open_files", options.max_open_files))
-            fdlimit_ = options.max_open_files;
+        if (get_if_exists (keyValues, "open_files", m_options.max_open_files))
+            fdlimit_ = m_options.max_open_files;
 
         if (keyValues.exists ("compression") &&
             (get<int>(keyValues, "compression") == 0))
-            options.compression = rocksdb::kNoCompression;
-
-        rocksdb::DB* db = nullptr;
-
-        rocksdb::Status status = rocksdb::DB::Open (options, m_name, &db);
-        if (! status.ok () || ! db)
-            Throw<std::runtime_error> (
-                std::string("Unable to open/create RocksDBQuick: ") +
-                    status.ToString());
-
-        m_db.reset (db);
+            m_options.compression = rocksdb::kNoCompression;
     }
 
     ~RocksDBQuickBackend ()
@@ -187,6 +177,25 @@ public:
     getName() override
     {
         return m_name;
+    }
+
+    void
+    open() override
+    {
+        if (m_db)
+        {
+            assert(false);
+            JLOG(m_journal.error()) <<
+                "database is already open";
+            return;
+        }
+        rocksdb::DB* db = nullptr;
+        rocksdb::Status status = rocksdb::DB::Open(m_options, m_name, &db);
+        if (!status.ok() || !db)
+            Throw<std::runtime_error>(
+                std::string("Unable to open/create RocksDB: ") +
+                status.ToString());
+        m_db.reset(db);
     }
 
     void
@@ -208,6 +217,7 @@ public:
     Status
     fetch (void const* key, std::shared_ptr<NodeObject>* pObject) override
     {
+        assert(m_db);
         pObject->reset ();
 
         Status status (ok);
@@ -277,6 +287,7 @@ public:
     void
     storeBatch (Batch const& batch) override
     {
+        assert(m_db);
         rocksdb::WriteBatch wb;
 
         EncodedBlob encoded;
@@ -306,6 +317,7 @@ public:
     void
     for_each (std::function <void(std::shared_ptr<NodeObject>)> f) override
     {
+        assert(m_db);
         rocksdb::ReadOptions const options;
 
         std::unique_ptr <rocksdb::Iterator> it (m_db->NewIterator (options));

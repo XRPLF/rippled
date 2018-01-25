@@ -214,7 +214,8 @@ enum TER
     tecINTERNAL                 = 144,
     tecOVERSIZE                 = 145,
     tecCRYPTOCONDITION_ERROR    = 146,
-    tecINVARIANT_FAILED         = 147
+    tecINVARIANT_FAILED         = 147,
+    tecEXPIRED                  = 148
 };
 
 inline bool isTelLocal(TER x)

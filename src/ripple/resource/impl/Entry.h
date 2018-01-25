@@ -46,8 +46,8 @@ struct Entry
         : refcount (0)
         , local_balance (now)
         , remote_balance (0)
-        , lastWarningTime (0)
-        , whenExpires (0)
+        , lastWarningTime ()
+        , whenExpires ()
     {
     }
 
@@ -101,10 +101,10 @@ struct Entry
     int remote_balance;
 
     // Time of the last warning
-    clock_type::rep lastWarningTime;
+    clock_type::time_point lastWarningTime;
 
     // For inactive entries, time after which this entry will be erased
-    clock_type::rep whenExpires;
+    clock_type::time_point whenExpires;
 };
 
 inline std::ostream& operator<< (std::ostream& os, Entry const& v)

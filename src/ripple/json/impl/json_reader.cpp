@@ -29,6 +29,8 @@ namespace Json
 // Implementation of class Reader
 // ////////////////////////////////
 
+constexpr unsigned Reader::nest_limit;
+
 static
 std::string
 codePointToUTF8 (unsigned int cp)
@@ -118,8 +120,7 @@ Reader::parse ( const char* beginDoc, const char* endDoc,
         nodes_.pop ();
 
     nodes_.push ( &root );
-
-    bool successful = readValue ();
+    bool successful = readValue(0);
     Token token;
     skipCommentTokens ( token );
 
@@ -138,20 +139,22 @@ Reader::parse ( const char* beginDoc, const char* endDoc,
 }
 
 bool
-Reader::readValue ()
+Reader::readValue(unsigned depth)
 {
     Token token;
     skipCommentTokens ( token );
+    if (depth > nest_limit)
+        return addError("Syntax error: maximum nesting depth exceeded", token);
     bool successful = true;
 
     switch ( token.type_ )
     {
     case tokenObjectBegin:
-        successful = readObject ( token );
+        successful = readObject(token, depth);
         break;
 
     case tokenArrayBegin:
-        successful = readArray ( token );
+        successful = readArray(token, depth);
         break;
 
     case tokenInteger:
@@ -427,7 +430,7 @@ Reader::readString ()
 
 
 bool
-Reader::readObject ( Token& tokenStart )
+Reader::readObject(Token& tokenStart, unsigned depth)
 {
     Token tokenName;
     std::string name;
@@ -469,7 +472,7 @@ Reader::readObject ( Token& tokenStart )
 
         Value& value = currentValue ()[ name ];
         nodes_.push ( &value );
-        bool ok = readValue ();
+        bool ok = readValue(depth+1);
         nodes_.pop ();
 
         if ( !ok ) // error already set
@@ -504,7 +507,7 @@ Reader::readObject ( Token& tokenStart )
 
 
 bool
-Reader::readArray ( Token& tokenStart )
+Reader::readArray(Token& tokenStart, unsigned depth)
 {
     currentValue () = Value ( arrayValue );
     skipSpaces ();
@@ -522,7 +525,7 @@ Reader::readArray ( Token& tokenStart )
     {
         Value& value = currentValue ()[ index++ ];
         nodes_.push ( &value );
-        bool ok = readValue ();
+        bool ok = readValue(depth+1);
         nodes_.pop ();
 
         if ( !ok ) // error already set

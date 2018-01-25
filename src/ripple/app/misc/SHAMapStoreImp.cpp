@@ -19,11 +19,13 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/misc/SHAMapStoreImp.h>
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/core/ConfigSections.h>
+#include <ripple/app/misc/SHAMapStoreImp.h>
 #include <ripple/beast/core/CurrentThreadName.h>
+#include <ripple/core/ConfigSections.h>
+#include <ripple/nodestore/impl/DatabaseRotatingImp.h>
+#include <ripple/nodestore/impl/DatabaseShardImp.h>
 
 namespace ripple {
 void SHAMapStoreImp::SavedStateDB::init (BasicConfig const& config,
@@ -199,6 +201,41 @@ SHAMapStoreImp::SHAMapStoreImp (
 
         dbPaths();
     }
+    if (! setup_.shardDatabase.empty())
+    {
+        boost::filesystem::path dbPath =
+            get<std::string>(setup_.shardDatabase, "path");
+        if (dbPath.empty())
+            Throw<std::runtime_error>("shard path missing");
+        if (boost::filesystem::exists(dbPath))
+        {
+            if (! boost::filesystem::is_directory(dbPath))
+                Throw<std::runtime_error>("shard db path must be a directory.");
+        }
+        else
+            boost::filesystem::create_directories(dbPath);
+
+        auto const maxDiskSpace = get<std::uint64_t>(
+            setup_.shardDatabase, "max_size_gb", 0);
+        // Must be large enough for one shard
+        if (maxDiskSpace < 3)
+            Throw<std::runtime_error>("max_size_gb too small");
+        if ((maxDiskSpace << 30) < maxDiskSpace)
+            Throw<std::runtime_error>("overflow max_size_gb");
+
+        std::uint32_t lps;
+        if (get_if_exists<std::uint32_t>(
+                setup_.shardDatabase, "ledgers_per_shard", lps))
+        {
+            // ledgers_per_shard to be set only in standalone for testing
+            if (! setup_.standalone)
+                Throw<std::runtime_error>(
+                    "ledgers_per_shard only honored in stand alone");
+            if (lps == 0 || lps % 256 != 0)
+                Throw<std::runtime_error>(
+                    "ledgers_per_shard must be a multiple of 256");
+        }
+    }
 }
 
 std::unique_ptr <NodeStore::Database>
@@ -206,39 +243,51 @@ SHAMapStoreImp::makeDatabase (std::string const& name,
         std::int32_t readThreads, Stoppable& parent)
 {
     std::unique_ptr <NodeStore::Database> db;
-
     if (setup_.deleteInterval)
     {
         SavedState state = state_db_.getState();
-
-        std::shared_ptr <NodeStore::Backend> writableBackend (
-                makeBackendRotating (state.writableDb));
-        std::shared_ptr <NodeStore::Backend> archiveBackend (
-                makeBackendRotating (state.archiveDb));
-
-        fdlimit_ = writableBackend->fdlimit() + archiveBackend->fdlimit();
-
-        std::unique_ptr <NodeStore::DatabaseRotating> dbr =
-            makeDatabaseRotating (name, readThreads, parent,
-                writableBackend, archiveBackend);
-
-        if (!state.writableDb.size())
+        auto writableBackend = makeBackendRotating(state.writableDb);
+        auto archiveBackend = makeBackendRotating(state.archiveDb);
+        if (! state.writableDb.size())
         {
             state.writableDb = writableBackend->getName();
             state.archiveDb = archiveBackend->getName();
             state_db_.setState (state);
         }
 
-        database_ = dbr.get();
-        db.reset (dynamic_cast <NodeStore::Database*>(dbr.release()));
+        // Create NodeStore with two backends to allow online deletion of data
+        auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
+            "NodeStore.main", scheduler_, readThreads, parent,
+                std::move(writableBackend), std::move(archiveBackend),
+                    nodeStoreJournal_);
+        fdlimit_ += dbr->fdlimit();
+        dbRotating_ = dbr.get();
+        db.reset(dynamic_cast<NodeStore::Database*>(dbr.release()));
     }
     else
     {
         db = NodeStore::Manager::instance().make_Database (name, scheduler_,
             readThreads, parent, setup_.nodeDatabase, nodeStoreJournal_);
-        fdlimit_ = db->fdlimit();
+        fdlimit_ += db->fdlimit();
     }
+    return db;
+}
 
+std::unique_ptr<NodeStore::DatabaseShard>
+SHAMapStoreImp::makeDatabaseShard(std::string const& name,
+    std::int32_t readThreads, Stoppable& parent)
+{
+    std::unique_ptr<NodeStore::DatabaseShard> db;
+    if(! setup_.shardDatabase.empty())
+    {
+        db = std::make_unique<NodeStore::DatabaseShardImp>(
+            app_, name, parent, scheduler_, readThreads,
+                setup_.shardDatabase, app_.journal("ShardStore"));
+        if (db->init())
+            fdlimit_ += db->fdlimit();
+        else
+            db.reset();
+    }
     return db;
 }
 
@@ -277,15 +326,15 @@ bool
 SHAMapStoreImp::copyNode (std::uint64_t& nodeCount,
         SHAMapAbstractNode const& node)
 {
-    // Copy a single record from node to database_
-    database_->fetchNode (node.getNodeHash().as_uint256());
+    // Copy a single record from node to dbRotating_
+    dbRotating_->fetch(node.getNodeHash().as_uint256(), node.getSeq());
     if (! (++nodeCount % checkHealthInterval_))
     {
         if (health())
-            return true;
+            return false;
     }
 
-    return false;
+    return true;
 }
 
 void
@@ -399,11 +448,9 @@ SHAMapStoreImp::run()
                     ;
             }
 
-            std::shared_ptr <NodeStore::Backend> newBackend =
-                    makeBackendRotating();
+            auto newBackend = makeBackendRotating();
             JLOG(journal_.debug()) << validatedSeq << " new backend "
                     << newBackend->getName();
-            std::shared_ptr <NodeStore::Backend> oldBackend;
 
             clearCaches (validatedSeq);
             switch (health())
@@ -419,15 +466,17 @@ SHAMapStoreImp::run()
             }
 
             std::string nextArchiveDir =
-                    database_->getWritableBackend()->getName();
+                dbRotating_->getWritableBackend()->getName();
             lastRotated = validatedSeq;
+            std::unique_ptr<NodeStore::Backend> oldBackend;
             {
-                std::lock_guard <std::mutex> lock (database_->peekMutex());
+                std::lock_guard <std::mutex> lock (dbRotating_->peekMutex());
 
                 state_db_.setState (SavedState {newBackend->getName(),
                         nextArchiveDir, lastRotated});
                 clearCaches (validatedSeq);
-                oldBackend = database_->rotateBackends (newBackend);
+                oldBackend = dbRotating_->rotateBackends(
+                    std::move(newBackend));
             }
             JLOG(journal_.debug()) << "finished rotation " << validatedSeq;
 
@@ -498,7 +547,7 @@ SHAMapStoreImp::dbPaths()
     }
 }
 
-std::shared_ptr <NodeStore::Backend>
+std::unique_ptr <NodeStore::Backend>
 SHAMapStoreImp::makeBackendRotating (std::string path)
 {
     boost::filesystem::path newPath;
@@ -517,19 +566,10 @@ SHAMapStoreImp::makeBackendRotating (std::string path)
     }
     parameters.set("path", newPath.string());
 
-    return NodeStore::Manager::instance().make_Backend (parameters, scheduler_,
-            nodeStoreJournal_);
-}
-
-std::unique_ptr <NodeStore::DatabaseRotating>
-SHAMapStoreImp::makeDatabaseRotating (std::string const& name,
-        std::int32_t readThreads,  Stoppable& parent,
-        std::shared_ptr <NodeStore::Backend> writableBackend,
-        std::shared_ptr <NodeStore::Backend> archiveBackend) const
-{
-    return NodeStore::Manager::instance().make_DatabaseRotating (
-        name, scheduler_, readThreads, parent,
-        writableBackend, archiveBackend, nodeStoreJournal_);
+    auto backend {NodeStore::Manager::instance().make_Backend(
+        parameters, scheduler_, nodeStoreJournal_)};
+    backend->open();
+    return backend;
 }
 
 bool
@@ -583,7 +623,7 @@ SHAMapStoreImp::clearCaches (LedgerIndex validatedSeq)
 void
 SHAMapStoreImp::freshenCaches()
 {
-    if (freshenCache (database_->getPositiveCache()))
+    if (freshenCache (dbRotating_->getPositiveCache()))
         return;
     if (freshenCache (*treeNodeCache_))
         return;
@@ -825,12 +865,13 @@ setup_SHAMapStore (Config const& c)
     get_if_exists (setup.nodeDatabase, "backOff", setup.backOff);
     get_if_exists (setup.nodeDatabase, "age_threshold", setup.ageThreshold);
 
+    setup.shardDatabase = c.section(ConfigSection::shardDatabase());
     return setup;
 }
 
 std::unique_ptr<SHAMapStore>
 make_SHAMapStore (Application& app,
-        SHAMapStore::Setup const& s,
+        SHAMapStore::Setup const& setup,
         Stoppable& parent,
         NodeStore::Scheduler& scheduler,
         beast::Journal journal,
@@ -838,9 +879,8 @@ make_SHAMapStore (Application& app,
         TransactionMaster& transactionMaster,
         BasicConfig const& config)
 {
-    return std::make_unique<SHAMapStoreImp>(app, s, parent, scheduler,
-            journal, nodeStoreJournal, transactionMaster,
-            config);
+    return std::make_unique<SHAMapStoreImp>(app, setup, parent, scheduler,
+        journal, nodeStoreJournal, transactionMaster, config);
 }
 
 }

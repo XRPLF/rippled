@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
@@ -40,6 +39,7 @@
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/TimeKeeper.h>
+#include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/protocol/digest.h>
@@ -499,13 +499,16 @@ LedgerMaster::tryFill (
 /** Request a fetch pack to get to the specified ledger
 */
 void
-LedgerMaster::getFetchPack (LedgerHash missingHash, LedgerIndex missingIndex)
+LedgerMaster::getFetchPack (LedgerIndex missingIndex,
+    InboundLedger::Reason reason)
 {
-    auto haveHash = getLedgerHashForHistory (missingIndex + 1);
-
+    auto haveHash = getLedgerHashForHistory(
+        missingIndex + 1, reason);
     if (!haveHash)
     {
-        JLOG (m_journal.error()) << "No hash for fetch pack";
+        JLOG (m_journal.error()) <<
+            "No hash for fetch pack. Missing Index " <<
+            std::to_string(missingIndex);
         return;
     }
     assert(haveHash->isNonZero());
@@ -668,7 +671,7 @@ LedgerMaster::failedSave(std::uint32_t seq, uint256 const& hash)
 {
     clearLedger(seq);
     app_.getInboundLedgers().acquire(
-        hash, seq, InboundLedger::fcGENERIC);
+        hash, seq, InboundLedger::Reason::GENERIC);
 }
 
 // Check if the specified ledger can become the new last fully-validated
@@ -716,7 +719,7 @@ LedgerMaster::checkAccept (uint256 const& hash, std::uint32_t seq)
         // FIXME: We may not want to fetch a ledger with just one
         // trusted validation
         ledger = app_.getInboundLedgers().acquire(
-            hash, 0, InboundLedger::fcGENERIC);
+            hash, seq, InboundLedger::Reason::GENERIC);
     }
 
     if (ledger)
@@ -922,28 +925,25 @@ LedgerMaster::advanceThread()
 }
 
 boost::optional<LedgerHash>
-LedgerMaster::getLedgerHashForHistory (LedgerIndex index)
+LedgerMaster::getLedgerHashForHistory(
+    LedgerIndex index, InboundLedger::Reason reason)
 {
     // Try to get the hash of a ledger we need to fetch for history
     boost::optional<LedgerHash> ret;
+    auto const& l {reason == InboundLedger::Reason::SHARD ?
+        mShardLedger : mHistLedger};
 
-    if (mHistLedger && (mHistLedger->info().seq >= index))
+    if (l && l->info().seq >= index)
     {
-        ret = hashOfSeq(*mHistLedger, index, m_journal);
+        ret = hashOfSeq(*l, index, m_journal);
         if (! ret)
-            ret = walkHashBySeq (index, mHistLedger);
+            ret = walkHashBySeq (index, l);
     }
 
     if (! ret)
         ret = walkHashBySeq (index);
 
     return ret;
-}
-
-bool
-LedgerMaster::shouldFetchPack (std::uint32_t seq) const
-{
-    return (fetch_seq_ != seq);
 }
 
 std::vector<std::shared_ptr<Ledger const>>
@@ -1030,7 +1030,7 @@ LedgerMaster::findNewLedgersToPublish ()
             // Can we try to acquire the ledger we need?
             if (! ledger && (++acqCount < ledger_fetch_size_))
                 ledger = app_.getInboundLedgers ().acquire(
-                    *hash, seq, InboundLedger::fcGENERIC);
+                    *hash, seq, InboundLedger::Reason::GENERIC);
 
             // Did we acquire the next ledger we need to publish?
             if (ledger && (ledger->info().seq == pubSeq))
@@ -1171,7 +1171,7 @@ LedgerMaster::updatePaths (Job& job)
                 app_.getInboundLedgers().acquire(
                     lastLedger->info().parentHash,
                     lastLedger->info().seq - 1,
-                    InboundLedger::fcGENERIC);
+                    InboundLedger::Reason::GENERIC);
             }
             else
             {
@@ -1179,7 +1179,7 @@ LedgerMaster::updatePaths (Job& job)
                 app_.getInboundLedgers().acquire(
                     lastLedger->info().hash,
                     lastLedger->info().seq,
-                    InboundLedger::fcGENERIC);
+                    InboundLedger::Reason::GENERIC);
             }
         }
     }
@@ -1278,13 +1278,15 @@ boost::optional <NetClock::time_point>
 LedgerMaster::getCloseTimeBySeq (LedgerIndex ledgerIndex)
 {
     uint256 hash = getHashBySeq (ledgerIndex);
-    return hash.isNonZero() ? getCloseTimeByHash (hash) : boost::none;
+    return hash.isNonZero() ? getCloseTimeByHash(
+        hash, ledgerIndex) : boost::none;
 }
 
 boost::optional <NetClock::time_point>
-LedgerMaster::getCloseTimeByHash (LedgerHash const& ledgerHash)
+LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash,
+    std::uint32_t index)
 {
-    auto node = app_.getNodeStore().fetch (ledgerHash);
+    auto node = app_.getNodeStore().fetch(ledgerHash, index);
     if (node &&
         (node->getData().size() >= 120))
     {
@@ -1365,7 +1367,7 @@ LedgerMaster::walkHashBySeq (
         if (!ledger)
         {
             auto const ledger = app_.getInboundLedgers().acquire (
-                *refHash, refIndex, InboundLedger::fcGENERIC);
+                *refHash, refIndex, InboundLedger::Reason::GENERIC);
             if (ledger)
             {
                 ledgerHash = hashOfSeq(*ledger, index, m_journal);
@@ -1514,11 +1516,129 @@ LedgerMaster::shouldAcquire (
     return ret;
 }
 
+void
+LedgerMaster::fetchForHistory(
+    std::uint32_t missing,
+    bool& progress,
+    InboundLedger::Reason reason)
+{
+    ScopedUnlockType sl(m_mutex);
+    if (auto hash = getLedgerHashForHistory(missing, reason))
+    {
+        assert(hash->isNonZero());
+        auto ledger = getLedgerByHash(*hash);
+        if (! ledger)
+        {
+            if (!app_.getInboundLedgers().isFailure(*hash))
+            {
+                ledger = app_.getInboundLedgers().acquire(
+                    *hash, missing, reason);
+                if (!ledger &&
+                    missing > NodeStore::genesisSeq &&
+                    missing != fetch_seq_)
+                {
+                    JLOG(m_journal.trace())
+                        << "fetchForHistory want fetch pack " << missing;
+                    fetch_seq_ = missing;
+                    getFetchPack(missing, reason);
+                }
+                else
+                    JLOG(m_journal.trace())
+                        << "fetchForHistory no fetch pack for " << missing;
+            }
+            else
+                JLOG(m_journal.debug())
+                    << "fetchForHistory found failed acquire";
+        }
+        if (ledger)
+        {
+            auto seq = ledger->info().seq;
+            assert(seq == missing);
+            JLOG(m_journal.trace()) <<
+                "fetchForHistory acquired " << seq;
+            if (reason == InboundLedger::Reason::SHARD)
+            {
+                ledger->setFull();
+                {
+                    ScopedLockType lock(m_mutex);
+                    mShardLedger = ledger;
+                }
+                if (!ledger->stateMap().family().isShardBacked())
+                    app_.getShardStore()->copyLedger(ledger);
+            }
+            else
+            {
+                setFullLedger(ledger, false, false);
+                int fillInProgress;
+                {
+                    ScopedLockType lock(m_mutex);
+                    mHistLedger = ledger;
+                    fillInProgress = mFillInProgress;
+                }
+                if (fillInProgress == 0 &&
+                    getHashByIndex(seq - 1, app_) == ledger->info().parentHash)
+                {
+                    {
+                        // Previous ledger is in DB
+                        ScopedLockType lock(m_mutex);
+                        mFillInProgress = seq;
+                    }
+                    app_.getJobQueue().addJob(jtADVANCE, "tryFill",
+                        [this, ledger](Job& j) { tryFill(j, ledger); });
+                }
+            }
+            progress = true;
+        }
+        else
+        {
+            std::uint32_t fetchSz;
+            if (reason == InboundLedger::Reason::SHARD)
+                // Do not fetch ledger sequences lower
+                // than the shard's first ledger sequence
+                fetchSz = NodeStore::DatabaseShard::firstSeq(
+                    NodeStore::DatabaseShard::seqToShardIndex(missing));
+            else
+                // Do not fetch ledger sequences lower
+                // than the genesis ledger sequence
+                fetchSz = NodeStore::genesisSeq;
+            fetchSz = missing >= fetchSz ?
+                std::min(ledger_fetch_size_, (missing - fetchSz) + 1) : 0;
+            try
+            {
+                for (std::uint32_t i = 0; i < fetchSz; ++i)
+                {
+                    std::uint32_t seq = missing - i;
+                    if (auto h = getLedgerHashForHistory(seq, reason))
+                    {
+                        assert(h->isNonZero());
+                        app_.getInboundLedgers().acquire(*h, seq, reason);
+                    }
+                }
+            }
+            catch (std::exception const&)
+            {
+                JLOG(m_journal.warn()) << "Threw while prefetching";
+            }
+        }
+    }
+    else
+    {
+        JLOG(m_journal.fatal()) << "Can't find ledger following prevMissing "
+                                << missing;
+        JLOG(m_journal.fatal()) << "Pub:" << mPubLedgerSeq
+                                << " Val:" << mValidLedgerSeq;
+        JLOG(m_journal.fatal()) << "Ledgers: "
+                                << app_.getLedgerMaster().getCompleteLedgers();
+        JLOG(m_journal.fatal()) << "Acquire reason: "
+            << (reason == InboundLedger::Reason::HISTORY ? "HISTORY" : "SHARD");
+        clearLedger(missing + 1);
+        progress = true;
+    }
+}
+
 // Try to publish ledgers, acquire missing ledgers
 void LedgerMaster::doAdvance (ScopedLockType& sl)
 {
-    // TODO NIKB: simplify and unindent this a bit!
-
     do
     {
         mAdvanceWork = false; // If there's work to do, we'll make progress
@@ -1531,147 +1651,53 @@ void LedgerMaster::doAdvance (ScopedLockType& sl)
                 (app_.getJobQueue().getJobCount(jtPUBOLDLEDGER) < 10) &&
                 (mValidLedgerSeq == mPubLedgerSeq) &&
                 (getValidatedLedgerAge() < MAX_LEDGER_AGE_ACQUIRE))
-            { // We are in sync, so can acquire
-                boost::optional<std::uint32_t> maybeMissing;
+            {
+                // We are in sync, so can acquire
+                InboundLedger::Reason reason = InboundLedger::Reason::HISTORY;
+                boost::optional<std::uint32_t> missing;
                 {
-                    ScopedLockType sl (mCompleteLock);
-                    maybeMissing =
-                        prevMissing(mCompleteLedgers, mPubLedger->info().seq);
+                    ScopedLockType sl(mCompleteLock);
+                    missing = prevMissing(mCompleteLedgers,
+                        mPubLedger->info().seq, NodeStore::genesisSeq);
                 }
-                if (maybeMissing)
+                if (missing)
                 {
-                    std::uint32_t missing = *maybeMissing;
-                    JLOG(m_journal.trace())
-                        << "tryAdvance discovered missing " << missing;
-                    if ((missing > 0) &&
+                    JLOG(m_journal.trace()) <<
+                        "tryAdvance discovered missing " << *missing;
+                    if ((mFillInProgress == 0 || *missing > mFillInProgress) &&
                         shouldAcquire(mValidLedgerSeq, ledger_history_,
-                            app_.getSHAMapStore().getCanDelete(), missing) &&
-                            ((mFillInProgress == 0) || (missing > mFillInProgress)))
+                            app_.getSHAMapStore().getCanDelete(), *missing))
                     {
-                        JLOG(m_journal.trace())
-                            << "advanceThread should acquire";
-                        {
-                            ScopedUnlockType sl(m_mutex);
-                            auto hash = getLedgerHashForHistory(missing);
-                            if (hash)
-                            {
-                                assert(hash->isNonZero());
-                                auto ledger = getLedgerByHash(*hash);
-                                if (!ledger)
-                                {
-                                    if (!app_.getInboundLedgers().isFailure(
-                                        *hash))
-                                    {
-                                        ledger =
-                                            app_.getInboundLedgers().acquire(
-                                                *hash, missing,
-                                                InboundLedger::fcHISTORY);
-                                        if (!ledger && (missing > 32600) &&
-                                            shouldFetchPack(missing))
-                                        {
-                                            JLOG(m_journal.trace()) <<
-                                                "tryAdvance want fetch pack " <<
-                                                missing;
-                                            fetch_seq_ = missing;
-                                            getFetchPack(*hash, missing);
-                                        }
-                                        else
-                                            JLOG(m_journal.trace()) <<
-                                            "tryAdvance no fetch pack for " <<
-                                            missing;
-                                    }
-                                    else
-                                        JLOG(m_journal.debug()) <<
-                                        "tryAdvance found failed acquire";
-                                }
-                                if (ledger)
-                                {
-                                    auto seq = ledger->info().seq;
-                                    assert(seq == missing);
-                                    JLOG(m_journal.trace())
-                                        << "tryAdvance acquired "
-                                        << ledger->info().seq;
-                                    setFullLedger(
-                                        ledger,
-                                        false,
-                                        false);
-                                    auto const& parent = ledger->info().parentHash;
-
-                                    int fillInProgress;
-                                    {
-                                        ScopedLockType lock(m_mutex);
-                                        mHistLedger = ledger;
-                                        fillInProgress = mFillInProgress;
-                                    }
-
-                                    if (fillInProgress == 0 &&
-                                        getHashByIndex(seq - 1, app_) == parent)
-                                    {
-                                        {
-                                            // Previous ledger is in DB
-                                            ScopedLockType lock(m_mutex);
-                                            mFillInProgress = ledger->info().seq;
-                                        }
-
-                                        app_.getJobQueue().addJob(
-                                            jtADVANCE, "tryFill",
-                                            [this, ledger](Job& j) {
-                                            tryFill(j, ledger);
-                                        });
-                                    }
-
-                                    progress = true;
-                                }
-                                else
-                                {
-                                    try
-                                    {
-                                        for (int i = 0; i < ledger_fetch_size_; ++i)
-                                        {
-                                            std::uint32_t seq = missing - i;
-                                            auto hash2 =
-                                                getLedgerHashForHistory(seq);
-                                            if (hash2)
-                                            {
-                                                assert(hash2->isNonZero());
-                                                app_.getInboundLedgers().acquire
-                                                (*hash2, seq,
-                                                    InboundLedger::fcHISTORY);
-                                            }
-                                        }
-                                    }
-                                    catch (std::exception const&)
-                                    {
-                                        JLOG(m_journal.warn()) <<
-                                            "Threw while prefetching";
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                JLOG(m_journal.fatal()) <<
-                                    "Can't find ledger following prevMissing " <<
-                                    missing;
-                                JLOG(m_journal.fatal()) << "Pub:" <<
-                                    mPubLedgerSeq << " Val:" << mValidLedgerSeq;
-                                JLOG(m_journal.fatal()) << "Ledgers: " <<
-                                    app_.getLedgerMaster().getCompleteLedgers();
-                                clearLedger(missing + 1);
-                                progress = true;
-                            }
-                        }
-                        if (mValidLedgerSeq != mPubLedgerSeq)
-                        {
-                            JLOG(m_journal.debug()) <<
-                                "tryAdvance found last valid changed";
-                            progress = true;
-                        }
+                        JLOG(m_journal.trace()) <<
+                            "advanceThread should acquire";
+                    }
+                    else
+                        missing = boost::none;
+                }
+                if (! missing && mFillInProgress == 0)
+                {
+                    if (auto shardStore = app_.getShardStore())
+                    {
+                        missing = shardStore->prepare(mValidLedgerSeq);
+                        if (missing)
+                            reason = InboundLedger::Reason::SHARD;
+                    }
+                }
+                if(missing)
+                {
+                    fetchForHistory(*missing, progress, reason);
+                    if (mValidLedgerSeq != mPubLedgerSeq)
+                    {
+                        JLOG (m_journal.debug()) <<
+                            "tryAdvance found last valid changed";
+                        progress = true;
                     }
                 }
             }
             else
             {
                 mHistLedger.reset();
+                mShardLedger.reset();
                 JLOG (m_journal.trace()) <<
                     "tryAdvance not fetching history";
             }
@@ -1687,11 +1713,7 @@ void LedgerMaster::doAdvance (ScopedLockType& sl)
                     ScopedUnlockType sul (m_mutex);
                     JLOG (m_journal.debug()) <<
                         "tryAdvance publishing seq " << ledger->info().seq;
-
-                    setFullLedger(
-                        ledger,
-                        true,
-                        true);
+                    setFullLedger(ledger, true, true);
                 }
 
                 setPubLedger(ledger);

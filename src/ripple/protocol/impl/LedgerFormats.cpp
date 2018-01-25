@@ -87,19 +87,20 @@ LedgerFormats::LedgerFormats ()
             << SOElement (sfHighQualityOut,      SOE_OPTIONAL)
             ;
 
-    add ("Escrow", ltESCROW) <<
-        SOElement (sfAccount,           SOE_REQUIRED) <<
-        SOElement (sfDestination,       SOE_REQUIRED) <<
-        SOElement (sfAmount,            SOE_REQUIRED) <<
-        SOElement (sfCondition,         SOE_OPTIONAL) <<
-        SOElement (sfCancelAfter,       SOE_OPTIONAL) <<
-        SOElement (sfFinishAfter,       SOE_OPTIONAL) <<
-        SOElement (sfSourceTag,         SOE_OPTIONAL) <<
-        SOElement (sfDestinationTag,    SOE_OPTIONAL) <<
-        SOElement (sfOwnerNode,         SOE_REQUIRED) <<
-        SOElement (sfPreviousTxnID,     SOE_REQUIRED) <<
-        SOElement (sfPreviousTxnLgrSeq, SOE_REQUIRED) <<
-        SOElement (sfDestinationNode,   SOE_OPTIONAL);
+    add ("Escrow", ltESCROW)
+            << SOElement (sfAccount,             SOE_REQUIRED)
+            << SOElement (sfDestination,         SOE_REQUIRED)
+            << SOElement (sfAmount,              SOE_REQUIRED)
+            << SOElement (sfCondition,           SOE_OPTIONAL)
+            << SOElement (sfCancelAfter,         SOE_OPTIONAL)
+            << SOElement (sfFinishAfter,         SOE_OPTIONAL)
+            << SOElement (sfSourceTag,           SOE_OPTIONAL)
+            << SOElement (sfDestinationTag,      SOE_OPTIONAL)
+            << SOElement (sfOwnerNode,           SOE_REQUIRED)
+            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
+            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
+            << SOElement (sfDestinationNode,     SOE_OPTIONAL)
+            ;
 
     add ("LedgerHashes", ltLEDGER_HASHES)
             << SOElement (sfFirstLedgerSequence, SOE_OPTIONAL) // Remove if we do a ledger restart
@@ -139,19 +140,34 @@ LedgerFormats::LedgerFormats ()
             ;
 
     add ("PayChannel", ltPAYCHAN)
-            << SOElement (sfAccount,           SOE_REQUIRED)
-            << SOElement (sfDestination,       SOE_REQUIRED)
-            << SOElement (sfAmount,            SOE_REQUIRED)
-            << SOElement (sfBalance,           SOE_REQUIRED)
-            << SOElement (sfPublicKey,         SOE_REQUIRED)
-            << SOElement (sfSettleDelay,       SOE_REQUIRED)
-            << SOElement (sfExpiration,        SOE_OPTIONAL)
-            << SOElement (sfCancelAfter,       SOE_OPTIONAL)
-            << SOElement (sfSourceTag,         SOE_OPTIONAL)
-            << SOElement (sfDestinationTag,    SOE_OPTIONAL)
-            << SOElement (sfOwnerNode,         SOE_REQUIRED)
-            << SOElement (sfPreviousTxnID,     SOE_REQUIRED)
-            << SOElement (sfPreviousTxnLgrSeq, SOE_REQUIRED)
+            << SOElement (sfAccount,             SOE_REQUIRED)
+            << SOElement (sfDestination,         SOE_REQUIRED)
+            << SOElement (sfAmount,              SOE_REQUIRED)
+            << SOElement (sfBalance,             SOE_REQUIRED)
+            << SOElement (sfPublicKey,           SOE_REQUIRED)
+            << SOElement (sfSettleDelay,         SOE_REQUIRED)
+            << SOElement (sfExpiration,          SOE_OPTIONAL)
+            << SOElement (sfCancelAfter,         SOE_OPTIONAL)
+            << SOElement (sfSourceTag,           SOE_OPTIONAL)
+            << SOElement (sfDestinationTag,      SOE_OPTIONAL)
+            << SOElement (sfOwnerNode,           SOE_REQUIRED)
+            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
+            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
+            ;
+
+    add ("Check", ltCHECK)
+            << SOElement (sfAccount,             SOE_REQUIRED)
+            << SOElement (sfDestination,         SOE_REQUIRED)
+            << SOElement (sfSendMax,             SOE_REQUIRED)
+            << SOElement (sfSequence,            SOE_REQUIRED)
+            << SOElement (sfOwnerNode,           SOE_REQUIRED)
+            << SOElement (sfDestinationNode,     SOE_REQUIRED)
+            << SOElement (sfExpiration,          SOE_OPTIONAL)
+            << SOElement (sfInvoiceID,           SOE_OPTIONAL)
+            << SOElement (sfSourceTag,           SOE_OPTIONAL)
+            << SOElement (sfDestinationTag,      SOE_OPTIONAL)
+            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
+            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
             ;
 }
 

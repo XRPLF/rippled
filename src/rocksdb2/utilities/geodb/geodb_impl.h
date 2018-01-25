@@ -1,7 +1,7 @@
-//  Copyright (c) 2013, Facebook, Inc.  All rights reserved.
-//  This source code is licensed under the BSD-style license found in the
-//  LICENSE file in the root directory of this source tree. An additional grant
-//  of patent rights can be found in the PATENTS file in the same directory.
+//  Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+//  This source code is licensed under both the GPLv2 (found in the
+//  COPYING file in the root directory) and Apache 2.0 License
+//  (found in the LICENSE.Apache file in the root directory).
 //
 
 #ifndef ROCKSDB_LITE
@@ -30,27 +30,24 @@ class GeoDBImpl : public GeoDB {
 
   // Associate the GPS location with the identified by 'id'. The value
   // is a blob that is associated with this object.
-  virtual Status Insert(const GeoObject& object);
+  virtual Status Insert(const GeoObject& object) override;
 
   // Retrieve the value of the object located at the specified GPS
   // location and is identified by the 'id'.
-  virtual Status GetByPosition(const GeoPosition& pos,
-                               const Slice& id,
-                               std::string* value);
+  virtual Status GetByPosition(const GeoPosition& pos, const Slice& id,
+                               std::string* value) override;
 
   // Retrieve the value of the object identified by the 'id'. This method
   // could be potentially slower than GetByPosition
-  virtual Status GetById(const Slice& id, GeoObject* object);
+  virtual Status GetById(const Slice& id, GeoObject* object) override;
 
   // Delete the specified object
-  virtual Status Remove(const Slice& id);
+  virtual Status Remove(const Slice& id) override;
 
   // Returns a list of all items within a circular radius from the
   // specified gps location
-  virtual Status SearchRadial(const GeoPosition& pos,
-                              double radius,
-                              std::vector<GeoObject>* values,
-                              int number_of_values);
+  virtual GeoIterator* SearchRadial(const GeoPosition& pos, double radius,
+                                    int number_of_values) override;
 
  private:
   DB* db_;
@@ -58,8 +55,9 @@ class GeoDBImpl : public GeoDB {
   const WriteOptions woptions_;
   const ReadOptions roptions_;
 
+  // MSVC requires the definition for this static const to be in .CC file
   // The value of PI
-  static constexpr double PI = 3.141592653589793;
+  static const double PI;
 
   // convert degrees to radians
   static double radians(double x);
@@ -97,11 +95,12 @@ class GeoDBImpl : public GeoDB {
   // http://www.tuicool.com/articles/NBrE73
   //
   const int Detail = 23;
-  static constexpr double EarthRadius = 6378137;
-  static constexpr double MinLatitude = -85.05112878;
-  static constexpr double MaxLatitude = 85.05112878;
-  static constexpr double MinLongitude = -180;
-  static constexpr double MaxLongitude = 180;
+  // MSVC requires the definition for this static const to be in .CC file
+  static const double EarthRadius;
+  static const double MinLatitude;
+  static const double MaxLatitude;
+  static const double MinLongitude;
+  static const double MaxLongitude;
 
   // clips a number to the specified minimum and maximum values.
   static double clip(double n, double minValue, double maxValue) {
@@ -168,11 +167,6 @@ class GeoDBImpl : public GeoDB {
   Status searchQuadIds(const GeoPosition& position,
                        double radius,
                        std::vector<std::string>* quadKeys);
-
-  // splits a string into its components
-  static void StringSplit(std::vector<std::string>* tokens,
-                          const std::string &text,
-                          char sep);
 
   //
   // Create keys for accessing rocksdb table(s)

@@ -26,6 +26,8 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/beast/xor_shift_engine.h>
+#include <ripple/nodestore/Backend.h>
+#include <ripple/nodestore/Types.h>
 #include <boost/algorithm/string.hpp>
 #include <iomanip>
 
@@ -192,7 +194,8 @@ public:
 
             db.store (object->getType (),
                       std::move (data),
-                      object->getHash ());
+                      object->getHash (),
+                      NodeStore::genesisSeq);
         }
     }
 
@@ -206,7 +209,8 @@ public:
 
         for (int i = 0; i < batch.size (); ++i)
         {
-            std::shared_ptr<NodeObject> object = db.fetch (batch [i]->getHash ());
+            std::shared_ptr<NodeObject> object = db.fetch (
+                batch [i]->getHash (), 0);
 
             if (object != nullptr)
                 pCopy->push_back (object);

@@ -10,9 +10,19 @@
 ###############################################################################
 # General settings
 ###############################################################################
-cmake_minimum_required(VERSION 2.8.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 2.8.10 FATAL_ERROR)
 
 project(SOCI)
+
+###############################################################################
+# Build features and variants
+##############################################################################
+
+option(SOCI_SHARED "Enable build of shared libraries" ON)
+option(SOCI_STATIC "Enable build of static libraries" ON)
+option(SOCI_TESTS "Enable build of collection of SOCI tests" ON)
+option(SOCI_ASAN "Enable address sanitizer on GCC v4.8+/Clang v 3.1+" OFF)
+
 
 ###############################################################################
 # SOCI CMake modules
@@ -32,24 +42,20 @@ colormsg(_HIBLUE_ "Configuring SOCI:")
 ###############################################################################
 include(SociVersion)
 
-# The version here should be in sync with the one in include/soci/version.h.
-soci_version(MAJOR 4 MINOR 0 PATCH 0)
+soci_version()
 
 ###############################################################################
 # Build features and variants
 ##############################################################################
 
-option(SOCI_SHARED "Enable build of shared libraries" ON)
 boost_report_value(SOCI_SHARED)
-
-option(SOCI_STATIC "Enable build of static libraries" ON)
 boost_report_value(SOCI_STATIC)
-
-option(SOCI_TESTS "Enable build of collection of SOCI tests" ON)
 boost_report_value(SOCI_TESTS)
+boost_report_value(SOCI_ASAN)
 
 # from SociConfig.cmake
 boost_report_value(SOCI_CXX_C11)
+boost_report_value(LIB_SUFFIX)
 
 # Put the libaries and binaries that get built into directories at the
 # top of the build tree rather than in hard-to-find leaf
@@ -69,7 +75,7 @@ set(SOCI_CORE_DEPS_LIBS)
 
 include(SociDependencies)
 
-get_property(SOCI_INCLUDE_DIRS DIRECTORY ${CMAKE_SOURCE_DIR}
+get_property(SOCI_INCLUDE_DIRS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   PROPERTY INCLUDE_DIRECTORIES)
 
 if(Threads_FOUND)
@@ -86,21 +92,20 @@ if(NOT MSVC)
     set_directory_properties(PROPERTIES INCLUDE_DIRECTORIES ${DL_INCLUDE_DIR})
     add_definitions(-DHAVE_DL=1)
   endif()
-else() #MSVC
-  # This flag enables multi process compiling for Visual Studio 2005 and above
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 endif()
 
 if(Boost_FOUND)
   get_property(SOCI_COMPILE_DEFINITIONS
-    DIRECTORY ${CMAKE_SOURCE_DIR}
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     PROPERTY COMPILE_DEFINITIONS)
 
-  list(APPEND SOCI_COMPILE_DEFINITIONS "HAVE_BOOST=1")
+  set(SOCI_HAVE_BOOST ON)
+
+  list(APPEND SOCI_COMPILE_DEFINITIONS "BOOST_ALL_NO_LIB")
 
   if(Boost_DATE_TIME_FOUND)
     list(APPEND SOCI_CORE_DEPS_LIBS ${Boost_DATE_TIME_LIBRARY})
-    list(APPEND SOCI_COMPILE_DEFINITIONS "HAVE_BOOST_DATE_TIME=1")
+    set(SOCI_HAVE_BOOST_DATE_TIME ON)
   endif()
 
   list(APPEND SOCI_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
@@ -110,11 +115,17 @@ if(Boost_FOUND)
 
   set_property(DIRECTORY ${SOCI_SOURCE_DIR}
     PROPERTY COMPILE_DEFINITIONS "${SOCI_COMPILE_DEFINITIONS}")
+else()
+  set(SOCI_HAVE_BOOST OFF)
+  set(SOCI_HAVE_BOOST_DATE_TIME OFF)
 endif()
+
+set(SOCI_HAVE_BOOST ${SOCI_HAVE_BOOST} CACHE INTERNAL "Boost library")
+set(SOCI_HAVE_BOOST_DATE_TIME ${SOCI_HAVE_BOOST_DATE_TIME} CACHE INTERNAL "Boost date_time library")
 
 list(APPEND SOCI_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR})
 
-set_property(DIRECTORY ${CMAKE_SOURCE_DIR}
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   PROPERTY
   INCLUDE_DIRECTORIES ${SOCI_INCLUDE_DIRS})
 
@@ -136,24 +147,61 @@ set(DATADIR "share" CACHE PATH "The directory to install data files into.")
 set(INCLUDEDIR "include" CACHE PATH "The directory to install includes into.")
 
 ###############################################################################
-# Enable tests
+# Configuration files
 ###############################################################################
-enable_testing()
-# Configure for testing with dashboard submissions to CDash
-#include(CTest) # disabled as unused
+set(CONFIG_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
+install(DIRECTORY ${CONFIG_INCLUDE_DIR}/soci DESTINATION ${INCLUDEDIR})
+set(CONFIG_FILE_IN "include/soci/soci-config.h.in")
+set(CONFIG_FILE_OUT "${CONFIG_INCLUDE_DIR}/soci/soci-config.h")
 
-# Define "make check" as alias for "make test"
-add_custom_target(check COMMAND ctest)
+
 
 ###############################################################################
 # Build configured components
 ###############################################################################
 include(SociBackend)
 
-include_directories(${SOCI_SOURCE_DIR}/include)
-
+include_directories(${SOCI_SOURCE_DIR}/include ${CONFIG_INCLUDE_DIR})
 add_subdirectory(src)
-add_subdirectory(tests)
+
+if(SOCI_TESTS)
+  ###############################################################################
+  # Enable tests
+  ###############################################################################
+  enable_testing()
+
+  file(TO_NATIVE_PATH ${PROJECT_SOURCE_DIR} TEST_ACCESS_PATH)
+  configure_file(${PROJECT_SOURCE_DIR}/cmake/configs/test-access.cmake ${PROJECT_SOURCE_DIR}/tests/odbc/test-access.dsn @ONLY)
+
+  set(MYSQL_DRIVER_NAME "MySQL")
+  if(WIN32)
+    set(MYSQL_DRIVER_NAME "MySQL ODBC 5.3 ANSI Driver")
+  endif()
+  configure_file(${PROJECT_SOURCE_DIR}/cmake/configs/test-mysql.cmake ${PROJECT_SOURCE_DIR}/tests/odbc/test-mysql.dsn @ONLY)
+
+  # Define "make check" as alias for "make test"
+  add_custom_target(check COMMAND ctest)
+  add_subdirectory(tests)
+endif()
+
+###############################################################################
+# build config file
+###############################################################################
+
+get_cmake_property(ALL_VARIABLES CACHE_VARIABLES)
+set(CONFIGURED_VARIABLES)
+foreach(v ${ALL_VARIABLES})
+    if (v MATCHES "^SOCI_HAVE.*")
+	get_property(CACHE_HELPSTRING CACHE ${v} PROPERTY HELPSTRING)
+		set(CONFIGURED_VARIABLES "${CONFIGURED_VARIABLES}\n// ${CACHE_HELPSTRING}\n")
+        if (${${v}})
+            set(CONFIGURED_VARIABLES "${CONFIGURED_VARIABLES}#define ${v}\n")
+        else()
+            set(CONFIGURED_VARIABLES "${CONFIGURED_VARIABLES}/* #undef ${v} */\n")
+        endif()
+    endif()
+endforeach()
+configure_file("${CONFIG_FILE_IN}" "${CONFIG_FILE_OUT}")
 
 message(STATUS "")
 

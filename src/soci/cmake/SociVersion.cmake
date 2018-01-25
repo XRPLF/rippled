@@ -20,14 +20,19 @@
 #    MAJOR.MINOR version is used to set SOVERSION
 #
 macro(soci_version)
-  parse_arguments(THIS_VERSION "MAJOR;MINOR;PATCH;"
-    ""
-    ${ARGN})
+  # get version from soci/version.h
+  file(
+    STRINGS
+    "${PROJECT_SOURCE_DIR}/include/soci/version.h"
+    _VERSION
+    REGEX
+    "#define SOCI_VERSION ([0-9]+)"
+  )
+  string(REGEX MATCH "([0-9]+)" _VERSION "${_VERSION}")
 
-  # Set version components
-  set(${PROJECT_NAME}_VERSION_MAJOR ${THIS_VERSION_MAJOR})
-  set(${PROJECT_NAME}_VERSION_MINOR ${THIS_VERSION_MINOR})
-  set(${PROJECT_NAME}_VERSION_PATCH ${THIS_VERSION_PATCH})
+  math(EXPR ${PROJECT_NAME}_VERSION_MAJOR "${_VERSION} / 100000")
+  math(EXPR ${PROJECT_NAME}_VERSION_MINOR "${_VERSION} / 100 % 1000")
+  math(EXPR ${PROJECT_NAME}_VERSION_PATCH "${_VERSION} % 100")
 
   # Set VERSION string
   set(${PROJECT_NAME}_VERSION

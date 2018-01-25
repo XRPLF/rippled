@@ -155,6 +155,14 @@ public:
         m_map.clear ();
     }
 
+    void reset ()
+    {
+        lock_guard lock(m_mutex);
+        m_map.clear();
+        m_stats.hits = 0;
+        m_stats.misses = 0;
+    }
+
     void setTargetSize (size_type s)
     {
         lock_guard lock (m_mutex);
@@ -252,8 +260,8 @@ public:
         }
         else
         {
-            when_expire = now - clock_type::duration (
-                m_target_age.count() * m_target_size / m_map.size ());
+            when_expire = now -
+                m_target_age * m_target_size / m_map.size();
 
             clock_type::duration const minimumAge (
                 std::chrono::seconds (1));

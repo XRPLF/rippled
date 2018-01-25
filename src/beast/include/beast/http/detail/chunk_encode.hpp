@@ -70,6 +70,14 @@ public:
         copy(other);
     }
 
+    /// Copy assignment
+    chunk_header& operator=(chunk_header const& other)
+    {
+        if (this != &other)
+            copy(other);
+        return *this;
+    }
+
     /** Construct a chunk header
 
         @param n The number of octets in this chunk.

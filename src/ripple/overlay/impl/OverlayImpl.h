@@ -119,6 +119,9 @@ private:
     Resolver& m_resolver;
     std::atomic <Peer::id_t> next_id_;
     int timer_count_;
+    std::atomic <uint64_t> jqTransOverflow_ {0};
+    std::atomic <uint64_t> peerDisconnects_ {0};
+    std::atomic <uint64_t> peerDisconnectsCharges_ {0};
 
     //--------------------------------------------------------------------------
 
@@ -300,6 +303,42 @@ public:
         TrafficCount::category cat,
         bool isInbound,
         int bytes);
+
+    void
+    incJqTransOverflow() override
+    {
+        ++jqTransOverflow_;
+    }
+
+    std::uint64_t
+    getJqTransOverflow() const override
+    {
+        return jqTransOverflow_;
+    }
+
+    void
+    incPeerDisconnect() override
+    {
+        ++peerDisconnects_;
+    }
+
+    std::uint64_t
+    getPeerDisconnect() const override
+    {
+        return peerDisconnects_;
+    }
+
+    void
+    incPeerDisconnectCharges() override
+    {
+        ++peerDisconnectsCharges_;
+    }
+
+    std::uint64_t
+    getPeerDisconnectCharges() const override
+    {
+        return peerDisconnectsCharges_;
+    };
 
 private:
     std::shared_ptr<Writer>

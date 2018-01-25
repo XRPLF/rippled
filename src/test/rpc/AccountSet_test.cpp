@@ -42,24 +42,72 @@ public:
         BEAST_EXPECT((*env.le(alice))[ sfFlags ] == 0u);
     }
 
-    void testSetAndReset(unsigned int flag_val, std::string const& label)
+    void testMostFlags()
     {
         using namespace test::jtx;
-        Env env(*this);
         Account const alice ("alice");
+
+        // Test without DepositAuth enabled initially.
+        Env env(*this, supported_amendments() - featureDepositAuth);
         env.fund(XRP(10000), noripple(alice));
-        env.memoize("eric");
-        env(regkey(alice, "eric"));
 
-        unsigned int orig_flags = (*env.le(alice))[ sfFlags ];
+        // Give alice a regular key so she can legally set and clear
+        // her asfDisableMaster flag.
+        Account const alie {"alie", KeyType::secp256k1};
+        env(regkey (alice, alie));
+        env.close();
 
-        env.require(nflags(alice, flag_val));
-        env(fset(alice, flag_val), sig(alice));
-        env.require(flags(alice, flag_val));
-        env(fclear(alice, flag_val));
-        env.require(nflags(alice, flag_val));
-        uint32 now_flags = (*env.le(alice))[ sfFlags ];
-        BEAST_EXPECT(now_flags == orig_flags);
+        auto testFlags = [this, &alice, &alie, &env]
+            (std::initializer_list<std::uint32_t> goodFlags)
+        {
+            std::uint32_t const orig_flags = (*env.le(alice))[ sfFlags ];
+            for (std::uint32_t flag {1u};
+                 flag < std::numeric_limits<std::uint32_t>::digits; ++flag)
+            {
+                if (flag == asfNoFreeze)
+                {
+                    // The asfNoFreeze flag can't be cleared.  It is tested
+                    // elsewhere.
+                    continue;
+                }
+                else if (std::find (goodFlags.begin(), goodFlags.end(), flag) !=
+                    goodFlags.end())
+                {
+                    // Good flag
+                    env.require(nflags(alice, flag));
+                    env(fset(alice, flag), sig(alice));
+                    env.close();
+                    env.require(flags(alice, flag));
+                    env(fclear(alice, flag), sig(alie));
+                    env.close();
+                    env.require(nflags(alice, flag));
+                    std::uint32_t const now_flags = (*env.le(alice))[ sfFlags ];
+                    BEAST_EXPECT(now_flags == orig_flags);
+                }
+                else
+                {
+                    // Bad flag
+                    BEAST_EXPECT((*env.le(alice))[ sfFlags ] == orig_flags);
+                    env(fset(alice, flag), sig(alice));
+                    env.close();
+                    BEAST_EXPECT((*env.le(alice))[ sfFlags ] == orig_flags);
+                    env(fclear(alice, flag), sig(alie));
+                    env.close();
+                    BEAST_EXPECT((*env.le(alice))[ sfFlags ] == orig_flags);
+                }
+            }
+        };
+
+        // Test with featureDepositAuth disabled.
+        testFlags ({asfRequireDest, asfRequireAuth, asfDisallowXRP,
+            asfGlobalFreeze, asfDisableMaster, asfDefaultRipple});
+
+        // Enable featureDepositAuth and retest.
+        env.enableFeature (featureDepositAuth);
+        env.close();
+        testFlags ({asfRequireDest, asfRequireAuth, asfDisallowXRP,
+            asfGlobalFreeze, asfDisableMaster, asfDefaultRipple,
+            asfDepositAuth});
     }
 
     void testSetAndResetAccountTxnID()
@@ -69,7 +117,7 @@ public:
         Account const alice ("alice");
         env.fund(XRP(10000), noripple(alice));
 
-        unsigned int orig_flags = (*env.le(alice))[ sfFlags ];
+        std::uint32_t const orig_flags = (*env.le(alice))[ sfFlags ];
 
         // asfAccountTxnID is special and not actually set as a flag,
         // so we check the field presence instead
@@ -78,7 +126,7 @@ public:
         BEAST_EXPECT(env.le(alice)->isFieldPresent(sfAccountTxnID));
         env(fclear(alice, asfAccountTxnID));
         BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfAccountTxnID));
-        uint32 now_flags = (*env.le(alice))[ sfFlags ];
+        std::uint32_t const now_flags = (*env.le(alice))[ sfFlags ];
         BEAST_EXPECT(now_flags == orig_flags);
     }
 
@@ -237,7 +285,7 @@ public:
 
         {
             testcase ("Setting transfer rate (without fix1201)");
-            doTests (all_features_except(fix1201),
+            doTests (supported_amendments().reset(fix1201),
                 {
                     { 1.0, tesSUCCESS,              1.0 },
                     { 1.1, tesSUCCESS,              1.1 },
@@ -250,7 +298,7 @@ public:
 
         {
             testcase ("Setting transfer rate (with fix1201)");
-            doTests (all_amendments(),
+            doTests (supported_amendments(),
                 {
                     { 1.0, tesSUCCESS,              1.0 },
                     { 1.1, tesSUCCESS,              1.1 },
@@ -290,16 +338,17 @@ public:
         };
 
         // Test gateway with allowed transfer rates
-        runTest (Env{*this, all_features_except(fix1201)}, 1.02);
-        runTest (Env{*this, all_features_except(fix1201)}, 1);
-        runTest (Env{*this, all_features_except(fix1201)}, 2);
-        runTest (Env{*this, all_features_except(fix1201)}, 2.1);
-        runTest (Env{*this, all_amendments()}, 1.02);
-        runTest (Env{*this, all_amendments()}, 2);
+        auto const noFix1201 = supported_amendments().reset(fix1201);
+        runTest (Env{*this, noFix1201}, 1.02);
+        runTest (Env{*this, noFix1201}, 1);
+        runTest (Env{*this, noFix1201}, 2);
+        runTest (Env{*this, noFix1201}, 2.1);
+        runTest (Env{*this, supported_amendments()}, 1.02);
+        runTest (Env{*this, supported_amendments()}, 2);
 
         // Test gateway when amendment is set after transfer rate
         {
-            Env env (*this, all_features_except(fix1201));
+            Env env (*this, noFix1201);
             Account const alice ("alice");
             Account const bob ("bob");
             Account const gw ("gateway");
@@ -330,7 +379,7 @@ public:
     {
         using namespace test::jtx;
         std::unique_ptr<Env> penv {
-            withFeatures ?  new Env(*this) : new Env(*this, no_features)};
+            withFeatures ?  new Env(*this) : new Env(*this, FeatureBitset{})};
         Env& env = *penv;
         Account const alice ("alice");
         env.fund(XRP(10000), alice);
@@ -371,7 +420,7 @@ public:
     void testRequireAuthWithDir()
     {
         using namespace test::jtx;
-        Env env(*this, with_features(featureMultiSign));
+        Env env(*this);
         Account const alice ("alice");
         Account const bob ("bob");
 
@@ -392,17 +441,7 @@ public:
     void run()
     {
         testNullAccountSet();
-        for(auto const& flag_set : std::vector<std::pair<unsigned int, std::string>>({
-            {asfRequireDest,   "RequireDestTag"},
-            {asfRequireAuth,   "RequireAuth"},
-            {asfDisallowXRP,   "DisallowXRP"},
-            {asfGlobalFreeze,  "GlobalFreeze"},
-            {asfDisableMaster, "DisableMaster"},
-            {asfDefaultRipple, "DefaultRipple"}
-        }))
-        {
-            testSetAndReset(flag_set.first, flag_set.second);
-        }
+        testMostFlags();
         testSetAndResetAccountTxnID();
         testSetNoFreeze();
         testDomain();

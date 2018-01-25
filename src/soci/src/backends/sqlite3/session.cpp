@@ -5,7 +5,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //
 
-
+#define SOCI_SQLITE3_SOURCE
 #include "soci/sqlite3/soci-sqlite3.h"
 
 #include "soci/connection-parameters.h"
@@ -42,10 +42,10 @@ void check_sqlite_err(sqlite_api::sqlite3* conn, int res, char const* const errM
 {
     if (SQLITE_OK != res)
     {
-        sqlite3_close(conn);
         const char *zErrMsg = sqlite3_errmsg(conn);
         std::ostringstream ss;
         ss << errMsg << zErrMsg;
+        sqlite3_close(conn); // connection must be closed here
         throw sqlite3_soci_error(ss.str(), res);
     }
 }

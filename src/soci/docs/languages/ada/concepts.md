@@ -1,6 +1,4 @@
-# SOCI-Ada - manual
-
-## Concepts
+# Ada Concepts
 
 The SOCI-Ada library borrows its concepts and naming from the main SOCI project. They are shortly explained here in the bottom-up fashion.
 
@@ -11,7 +9,6 @@ There are two kinds of objects that can be managed by the SOCI-Ada library:
 * *Into elements*, which are data objects that are transferred from the database to the user program as a result of executing a query. There are single into elements for binding single rows of results and vector into elements for binding whole bunches of data corresponding to whole result sets or their subranges. The into elements are identified by their *position*.
 
 * *Use elements*, which are data objects that are transferred from the user program to the database as parameters of the query (and, if supported by the target database, that can be modified by the database server and transferred back to the user program). There are single use elements for binding parameters of single-row queries and vector use elements for binding whole bunches of data for transfer. The use elements are identified by their *name*.
-
 
 The user program can read the current value of into and use elements and assign new values to use elements. Elements are strongly typed and the following types are currently supported:
 

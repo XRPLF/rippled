@@ -60,9 +60,10 @@ public:
         {
         }
 
-        void gotNode (bool fromFilter,
-            SHAMapHash const& nodeHash,
-                Blob&& nodeData, SHAMapTreeNode::TNType type) const override
+        void
+        gotNode(bool fromFilter, SHAMapHash const& nodeHash,
+            std::uint32_t ledgerSeq, Blob&& nodeData,
+                SHAMapTreeNode::TNType type) const override
         {
         }
 

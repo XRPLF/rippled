@@ -67,12 +67,12 @@ public:
         }
     }
 
-    void testNegativeBalance(std::initializer_list<uint256> fs)
+    void testNegativeBalance(FeatureBitset features)
     {
         testcase("Set noripple on a line with negative balance");
 
         using namespace jtx;
-        Env env(*this, with_features(fs));
+        Env env(*this, features);
 
         auto const gw = Account("gateway");
         auto const alice = Account("alice");
@@ -113,12 +113,12 @@ public:
         BEAST_EXPECT(!lines[0u].isMember(jss::no_ripple));
     }
 
-    void testPairwise(std::initializer_list<uint256> fs)
+    void testPairwise(FeatureBitset features)
     {
         testcase("pairwise NoRipple");
 
         using namespace jtx;
-        Env env(*this, with_features(fs));
+        Env env(*this, features);
 
         auto const alice = Account("alice");
         auto const bob = Account("bob");
@@ -150,12 +150,12 @@ public:
         env(pay(alice, carol, bob["USD"](50)), ter(tecPATH_DRY));
     }
 
-    void testDefaultRipple(std::initializer_list<uint256> fs)
+    void testDefaultRipple(FeatureBitset features)
     {
         testcase("Set default ripple on an account and check new trustlines");
 
         using namespace jtx;
-        Env env(*this, with_features(fs));
+        Env env(*this, features);
 
         auto const gw = Account("gateway");
         auto const alice = Account("alice");
@@ -212,15 +212,17 @@ public:
     {
         testSetAndClear();
 
-        auto withFeatsTests = [this](std::initializer_list<uint256> fs) {
-            testNegativeBalance(fs);
-            testPairwise(fs);
-            testDefaultRipple(fs);
+        auto withFeatsTests = [this](FeatureBitset features) {
+            testNegativeBalance(features);
+            testPairwise(features);
+            testDefaultRipple(features);
         };
-        withFeatsTests({});
-        withFeatsTests({featureFlow});
-        withFeatsTests({featureFlow, fix1373});
-        withFeatsTests({featureFlow, fix1373, featureFlowCross});
+        using namespace jtx;
+        auto const sa = supported_amendments();
+        withFeatsTests(sa - featureFlow - fix1373 - featureFlowCross);
+        withFeatsTests(sa               - fix1373 - featureFlowCross);
+        withFeatsTests(sa                         - featureFlowCross);
+        withFeatsTests(sa);
     }
 };
 

@@ -396,7 +396,7 @@ struct ExistingElementPool
         currencyNames.clear();
         currencyNames.reserve(numCur);
 
-        constexpr size_t bufSize = 8;
+        constexpr size_t bufSize = 32;
         char buf[bufSize];
 
         for (size_t id = 0; id < numAct; ++id)
@@ -625,14 +625,14 @@ struct PayStrandAllPairs_test : public beast::unit_test::suite
 {
     // Test every combination of element type pairs on a path
     void
-    testAllPairs(std::initializer_list<uint256> fs)
+    testAllPairs(FeatureBitset features)
     {
         testcase("All pairs");
         using namespace jtx;
         using RippleCalc = ::ripple::path::RippleCalc;
 
         ExistingElementPool eep;
-        Env env(*this, with_features(fs));
+        Env env(*this, features);
 
         auto const closeTime = fix1298Time() +
             100 * env.closed()->info().closeTimeResolution;
@@ -847,8 +847,9 @@ struct PayStrandAllPairs_test : public beast::unit_test::suite
     void
     run() override
     {
-        testAllPairs({featureFlow, fix1373});
-        testAllPairs({featureFlow, fix1373, featureFlowCross});
+        auto const sa = jtx::supported_amendments();
+        testAllPairs(sa - featureFlowCross);
+        testAllPairs(sa);
     }
 };
 
@@ -856,15 +857,8 @@ BEAST_DEFINE_TESTSUITE_MANUAL(PayStrandAllPairs, app, ripple);
 
 struct PayStrand_test : public beast::unit_test::suite
 {
-    static bool hasFeature(uint256 const& feat, std::initializer_list<uint256> args)
-    {
-        for(auto const& f : args)
-            if (f == feat)
-                return true;
-        return false;
-    }
     void
-    testToStrand(std::initializer_list<uint256> fs)
+    testToStrand(FeatureBitset features)
     {
         testcase("To Strand");
 
@@ -910,7 +904,7 @@ struct PayStrand_test : public beast::unit_test::suite
         };
 
         {
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
             env.fund(XRP(10000), alice, bob, gw);
             env.trust(USD(1000), alice, bob);
             env.trust(EUR(1000), alice, bob);
@@ -951,7 +945,7 @@ struct PayStrand_test : public beast::unit_test::suite
         };
 
         {
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
             env.fund(XRP(10000), alice, bob, carol, gw);
 
             test(env, USD, boost::none, STPath(), terNO_LINE);
@@ -1134,7 +1128,7 @@ struct PayStrand_test : public beast::unit_test::suite
             // cannot have more than one offer with the same output issue
 
             using namespace jtx;
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(10000), alice, bob, carol);
@@ -1156,7 +1150,7 @@ struct PayStrand_test : public beast::unit_test::suite
         }
 
         {
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
             env.fund(XRP(10000), alice, bob, noripple(gw));
             env.trust(USD(1000), alice, bob);
             env(pay(gw, alice, USD(100)));
@@ -1165,7 +1159,7 @@ struct PayStrand_test : public beast::unit_test::suite
 
         {
             // check global freeze
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
             env.fund(XRP(10000), alice, bob, gw);
             env.trust(USD(1000), alice, bob);
             env(pay(gw, alice, USD(100)));
@@ -1190,7 +1184,7 @@ struct PayStrand_test : public beast::unit_test::suite
         }
         {
             // Freeze between gw and alice
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
             env.fund(XRP(10000), alice, bob, gw);
             env.trust(USD(1000), alice, bob);
             env(pay(gw, alice, USD(100)));
@@ -1203,7 +1197,7 @@ struct PayStrand_test : public beast::unit_test::suite
             // check no auth
             // An account may require authorization to receive IOUs from an
             // issuer
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
             env.fund(XRP(10000), alice, bob, gw);
             env(fset(gw, asfRequireAuth));
             env.trust(USD(1000), alice, bob);
@@ -1231,7 +1225,7 @@ struct PayStrand_test : public beast::unit_test::suite
         }
         {
             // Check path with sendMax and node with correct sendMax already set
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
             env.fund(XRP(10000), alice, bob, gw);
             env.trust(USD(1000), alice, bob);
             env.trust(EUR(1000), alice, bob);
@@ -1246,7 +1240,7 @@ struct PayStrand_test : public beast::unit_test::suite
 
         {
             // last step xrp from offer
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
             env.fund(XRP(10000), alice, bob, gw);
             env.trust(USD(1000), alice, bob);
             env(pay(gw, alice, USD(100)));
@@ -1273,7 +1267,7 @@ struct PayStrand_test : public beast::unit_test::suite
     }
 
     void
-    testRIPD1373(std::initializer_list<uint256> fs)
+    testRIPD1373(FeatureBitset features)
     {
         using namespace jtx;
         testcase("RIPD1373");
@@ -1285,9 +1279,9 @@ struct PayStrand_test : public beast::unit_test::suite
         auto const USD = gw["USD"];
         auto const EUR = gw["EUR"];
 
-        if (hasFeature(fix1373, fs))
+        if (features[fix1373])
         {
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
             env.fund(XRP(10000), alice, bob, gw);
 
             env.trust(USD(1000), alice, bob);
@@ -1319,7 +1313,7 @@ struct PayStrand_test : public beast::unit_test::suite
         }
 
         {
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(10000), alice, bob, carol);
@@ -1337,7 +1331,7 @@ struct PayStrand_test : public beast::unit_test::suite
         }
 
         {
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(10000), alice, bob, carol);
@@ -1357,7 +1351,7 @@ struct PayStrand_test : public beast::unit_test::suite
     }
 
     void
-    testLoop(std::initializer_list<uint256> fs)
+    testLoop(FeatureBitset features)
     {
         testcase("test loop");
         using namespace jtx;
@@ -1371,7 +1365,7 @@ struct PayStrand_test : public beast::unit_test::suite
         auto const CNY = gw["CNY"];
 
         {
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(10000), alice, bob, carol);
@@ -1383,8 +1377,7 @@ struct PayStrand_test : public beast::unit_test::suite
             env(offer(bob, USD(100), XRP(100)), txflags(tfPassive));
 
             auto const expectedResult = [&] {
-                if (hasFeature(featureFlow, fs) &&
-                    !hasFeature(fix1373, fs))
+                if (features[featureFlow] && !features[fix1373])
                     return tesSUCCESS;
                 return temBAD_PATH_LOOP;
             }();
@@ -1396,7 +1389,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 ter(expectedResult));
         }
         {
-            Env env(*this, with_features(fs));
+            Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(10000), alice, bob, carol);
@@ -1421,7 +1414,7 @@ struct PayStrand_test : public beast::unit_test::suite
     }
 
     void
-    testNoAccount(std::initializer_list<uint256> fs)
+    testNoAccount(FeatureBitset features)
     {
         testcase("test no account");
         using namespace jtx;
@@ -1431,7 +1424,7 @@ struct PayStrand_test : public beast::unit_test::suite
         auto const gw = Account("gw");
         auto const USD = gw["USD"];
 
-        Env env(*this, with_features(fs));
+        Env env(*this, features);
         env.fund(XRP(10000), alice, bob, gw);
 
         STAmount sendMax{USD.issue(), 100, 1};
@@ -1479,17 +1472,22 @@ struct PayStrand_test : public beast::unit_test::suite
     void
     run() override
     {
-        testToStrand({featureFlow});
-        testToStrand({featureFlow, fix1373});
-        testToStrand({featureFlow, fix1373, featureFlowCross});
-        testRIPD1373({});
-        testRIPD1373({featureFlow, fix1373});
-        testRIPD1373({featureFlow, fix1373, featureFlowCross});
-        testLoop({});
-        testLoop({featureFlow});
-        testLoop({featureFlow, fix1373});
-        testLoop({featureFlow, fix1373, featureFlowCross});
-        testNoAccount({featureFlow, fix1373});
+        using namespace jtx;
+        auto const sa = supported_amendments();
+        testToStrand(sa - fix1373 - featureFlowCross);
+        testToStrand(sa           - featureFlowCross);
+        testToStrand(sa);
+
+        testRIPD1373(sa - featureFlow - fix1373 - featureFlowCross);
+        testRIPD1373(sa                         - featureFlowCross);
+        testRIPD1373(sa);
+
+        testLoop(sa - featureFlow - fix1373 - featureFlowCross);
+        testLoop(sa               - fix1373 - featureFlowCross);
+        testLoop(sa                         - featureFlowCross);
+        testLoop(sa);
+
+        testNoAccount(sa);
     }
 };
 

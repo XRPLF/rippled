@@ -8,6 +8,7 @@
 
 #define SOCI_MYSQL_SOURCE
 #include "soci/mysql/soci-mysql.h"
+#include "soci-mktime.h"
 #include "common.h"
 #include "soci/soci-platform.h"
 #include <ciso646>
@@ -145,7 +146,7 @@ void mysql_vector_into_type_backend::post_fetch(bool gotData, indicator *ind)
             case x_stdtm:
                 {
                     // attempt to parse the string and convert to std::tm
-                    std::tm t;
+                    std::tm t = std::tm();
                     parse_std_tm(buf, t);
 
                     set_invector_(data_, i, t);

@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2004-2008 Maciej Sobczak, Stephen Hutton
+// Copyright (C) 2004-2016 Maciej Sobczak, Stephen Hutton
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -9,7 +9,9 @@
 #include "soci/soci-platform.h"
 #include "soci/postgresql/soci-postgresql.h"
 #include "soci-cstrtod.h"
+#include "soci-mktime.h"
 #include "common.h"
+#include "soci/type-wrappers.h"
 #include <libpq/libpq-fs.h> // libpq
 #include <cctype>
 #include <cstdio>
@@ -28,12 +30,17 @@ using namespace soci::details;
 using namespace soci::details::postgresql;
 
 
-void postgresql_vector_into_type_backend::define_by_pos(
-    int & position, void * data, exchange_type type)
+void postgresql_vector_into_type_backend::define_by_pos_bulk(
+    int & position, void * data, exchange_type type,
+    std::size_t begin, std::size_t * end)
 {
     data_ = data;
     type_ = type;
+    begin_ = begin;
+    end_ = end;
     position_ = position++;
+
+    end_var_ = full_size();
 }
 
 void postgresql_vector_into_type_backend::pre_fetch()
@@ -54,6 +61,16 @@ void set_invector_(void * p, int indx, T const & val)
     v[indx] = val;
 }
 
+template <typename T, typename V>
+void set_invector_wrappers_(void * p, int indx, V const & val)
+{
+    std::vector<T> * dest =
+        static_cast<std::vector<T> *>(p);
+
+    std::vector<T> & v = *dest;
+    v[indx].value = val;
+}
+
 } // namespace anonymous
 
 void postgresql_vector_into_type_backend::post_fetch(bool gotData, indicator * ind)
@@ -68,7 +85,7 @@ void postgresql_vector_into_type_backend::post_fetch(bool gotData, indicator * i
 
         int const endRow = statement_.currentRow_ + statement_.rowsToConsume_;
 
-        for (int curRow = statement_.currentRow_, i = 0;
+        for (int curRow = statement_.currentRow_, i = begin_;
              curRow != endRow; ++curRow, ++i)
         {
             // first, deal with indicators
@@ -138,11 +155,17 @@ void postgresql_vector_into_type_backend::post_fetch(bool gotData, indicator * i
             case x_stdtm:
                 {
                     // attempt to parse the string and convert to std::tm
-                    std::tm t;
+                    std::tm t = std::tm();
                     parse_std_tm(buf, t);
 
                     set_invector_(data_, i, t);
                 }
+                break;
+            case x_xmltype:
+                set_invector_wrappers_<xml_type, std::string>(data_, i, buf);
+                break;
+            case x_longstring:
+                set_invector_wrappers_<long_string, std::string>(data_, i, buf);
                 break;
 
             default:
@@ -170,39 +193,78 @@ void resizevector_(void * p, std::size_t sz)
 
 void postgresql_vector_into_type_backend::resize(std::size_t sz)
 {
-    switch (type_)
+    if (user_ranges_)
     {
-        // simple cases
-    case x_char:
-        resizevector_<char>(data_, sz);
-        break;
-    case x_short:
-        resizevector_<short>(data_, sz);
-        break;
-    case x_integer:
-        resizevector_<int>(data_, sz);
-        break;
-    case x_long_long:
-        resizevector_<long long>(data_, sz);
-        break;
-    case x_unsigned_long_long:
-        resizevector_<unsigned long long>(data_, sz);
-        break;
-    case x_double:
-        resizevector_<double>(data_, sz);
-        break;
-    case x_stdstring:
-        resizevector_<std::string>(data_, sz);
-        break;
-    case x_stdtm:
-        resizevector_<std::tm>(data_, sz);
-        break;
-    default:
-        throw soci_error("Into vector element used with non-supported type.");
+        // resize only in terms of user-provided ranges (below)
     }
+    else
+    {
+        switch (type_)
+        {
+            // simple cases
+        case x_char:
+            resizevector_<char>(data_, sz);
+            break;
+        case x_short:
+            resizevector_<short>(data_, sz);
+            break;
+        case x_integer:
+            resizevector_<int>(data_, sz);
+            break;
+        case x_long_long:
+            resizevector_<long long>(data_, sz);
+            break;
+        case x_unsigned_long_long:
+            resizevector_<unsigned long long>(data_, sz);
+            break;
+        case x_double:
+            resizevector_<double>(data_, sz);
+            break;
+        case x_stdstring:
+            resizevector_<std::string>(data_, sz);
+            break;
+        case x_stdtm:
+            resizevector_<std::tm>(data_, sz);
+            break;
+        case x_xmltype:
+            resizevector_<xml_type>(data_, sz);
+            break;
+        case x_longstring:
+            resizevector_<long_string>(data_, sz);
+            break;
+        default:
+            throw soci_error("Into vector element used with non-supported type.");
+        }
+
+        end_var_ = sz;
+    }
+
+    // resize ranges, either user-provided or internally managed
+    *end_ = begin_ + sz;
 }
 
 std::size_t postgresql_vector_into_type_backend::size()
+{
+    // as a special error-detection measure, check if the actual vector size
+    // was changed since the original bind (when it was stored in end_var_):
+    const std::size_t actual_size = full_size();
+    if (actual_size != end_var_)
+    {
+        // ... and in that case return the actual size
+        return actual_size;
+    }
+    
+    if (end_ != NULL && *end_ != 0)
+    {
+        return *end_ - begin_;
+    }
+    else
+    {
+        return end_var_;
+    }
+}
+
+std::size_t postgresql_vector_into_type_backend::full_size()
 {
     std::size_t sz = 0; // dummy initialization to please the compiler
     switch (type_)
@@ -231,6 +293,12 @@ std::size_t postgresql_vector_into_type_backend::size()
         break;
     case x_stdtm:
         sz = get_vector_size<std::tm>(data_);
+        break;
+    case x_xmltype:
+        sz = get_vector_size<xml_type>(data_);
+        break;
+    case x_longstring:
+        sz = get_vector_size<long_string>(data_);
         break;
     default:
         throw soci_error("Into vector element used with non-supported type.");

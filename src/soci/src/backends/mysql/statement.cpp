@@ -163,7 +163,7 @@ mysql_statement_backend::execute(int number)
                     "Binding for use elements must be either by position "
                     "or by name.");
             }
-            long long rowsAffectedBulkTemp = 0;
+            long long rowsAffectedBulkTemp = -1;
             for (int i = 0; i != numberOfExecutions; ++i)
             {
                 std::vector<char *> paramValues;
@@ -241,6 +241,10 @@ mysql_statement_backend::execute(int number)
                     }
                     else
                     {
+                        if(rowsAffectedBulkTemp == -1)
+                        {
+                            rowsAffectedBulkTemp = 0;
+                        }
                         rowsAffectedBulkTemp += static_cast<long long>(mysql_affected_rows(session_.conn_));
                     }
                     if (mysql_field_count(session_.conn_) != 0)

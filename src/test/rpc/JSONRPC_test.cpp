@@ -1840,6 +1840,17 @@ R"({
 class JSONRPC_test : public beast::unit_test::suite
 {
 public:
+    void testBadRpcCommand ()
+    {
+        test::jtx::Env env(*this);
+        Json::Value const result {
+            env.rpc ("bad_command", R"({"MakingThisUp": 0})")};
+
+        BEAST_EXPECT (result[jss::result][jss::error] == "unknownCmd");
+        BEAST_EXPECT (
+            result[jss::result][jss::request][jss::command] == "bad_command");
+    }
+
     void testAutoFillFees ()
     {
         test::jtx::Env env(*this);
@@ -1941,8 +1952,7 @@ public:
                 cfg->section("transaction_queue")
                     .set("minimum_txn_in_ledger_standalone", "3");
                 return cfg;
-            }),
-            with_features(featureFeeEscalation)};
+            })};
         LoadFeeTrack const& feeTrack = env.app().getFeeTrack();
 
         {
@@ -2254,7 +2264,7 @@ public:
         // "b" (not in the ledger) is rDg53Haik2475DJx8bjMDSDPj4VX7htaMd.
         // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
 
-        test::jtx::Env env(*this, test::jtx::with_features(featureMultiSign));
+        test::jtx::Env env(*this);
         env.fund(test::jtx::XRP(100000), a, ed, g);
         env.close();
 
@@ -2346,6 +2356,7 @@ public:
 
     void run ()
     {
+        testBadRpcCommand ();
         testAutoFillFees ();
         testAutoFillEscalatedFees ();
         testTransactionRPC ();

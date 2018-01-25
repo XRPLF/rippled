@@ -10,7 +10,7 @@
 
 #include "soci/soci.h"
 
-#ifdef HAVE_BOOST
+#ifdef SOCI_HAVE_BOOST
 // explicitly pull conversions for Boost's optional, tuple and fusion:
 #include <boost/version.hpp>
 #include "soci/boost-optional.h"
@@ -19,12 +19,17 @@
 #if defined(BOOST_VERSION) && BOOST_VERSION >= 103500
 #include "soci/boost-fusion.h"
 #endif // BOOST_VERSION
-#endif // HAVE_BOOST
+#endif // SOCI_HAVE_BOOST
 
 #include "soci-compiler.h"
 
 #define CATCH_CONFIG_RUNNER
 #include <catch.hpp>
+
+#if defined(_MSC_VER) && (_MSC_VER < 1500)
+#undef SECTION
+#define SECTION(name) INTERNAL_CATCH_SECTION(name, "dummy-for-vc8")
+#endif
 
 #include <algorithm>
 #include <cassert>
@@ -110,7 +115,7 @@ public:
 class MyInt
 {
 public:
-    MyInt() {}
+    MyInt() : i_() {}
     MyInt(int i) : i_(i) {}
     void set(int i) { i_ = i; }
     int get() const { return i_; }
@@ -326,6 +331,32 @@ public:
     virtual table_creator_base* table_creator_3(session&) const = 0;
     virtual table_creator_base* table_creator_4(session&) const = 0;
 
+    // Override this to return the table creator for a simple table containing
+    // an integer "id" column and CLOB "s" one.
+    //
+    // Returns null by default to indicate that CLOB is not supported.
+    virtual table_creator_base* table_creator_clob(session&) const { return NULL; }
+
+    // Override this to return the table creator for a simple table containing
+    // an integer "id" column and XML "x" one.
+    //
+    // Returns null by default to indicate that XML is not supported.
+    virtual table_creator_base* table_creator_xml(session&) const { return NULL; }
+
+    // Return the casts that must be used to convert the between the database
+    // XML type and the query parameters.
+    //
+    // By default no special casts are done.
+    virtual std::string to_xml(std::string const& x) const { return x; }
+    virtual std::string from_xml(std::string const& x) const { return x; }
+
+    // Override this if the backend not only supports working with XML values
+    // (and so returns a non-null value from table_creator_xml()), but the
+    // database itself has real XML support instead of just allowing to store
+    // and retrieve XML as text. "Real" support means at least preventing the
+    // application from storing malformed XML in the database.
+    virtual bool has_real_xml_support() const { return false; }
+
     // Override this if the backend doesn't handle floating point values
     // correctly, i.e. writing a value and reading it back doesn't return
     // *exactly* the same value.
@@ -351,6 +382,11 @@ public:
     // if it's impossible, i.e. if the database doesn't behave correctly
     // whatever we do.
     virtual bool enable_std_char_padding(session&) const { return true; }
+
+    // Return the SQL expression giving the length of the specified string,
+    // i.e. "char_length(s)" in standard SQL but often "len(s)" or "length(s)"
+    // in practice and sometimes even worse (thanks Oracle).
+    virtual std::string sql_length(std::string const& s) const = 0;
 
     virtual ~test_context_base()
     {
@@ -477,7 +513,7 @@ protected:
     SOCI_NOT_COPYABLE(common_tests)
 };
 
-typedef std::auto_ptr<table_creator_base> auto_table_creator;
+typedef cxx_details::auto_ptr<table_creator_base> auto_table_creator;
 
 // Define the test cases in their own namespace to avoid clashes with the test
 // cases defined in individual backend tests: as only line number is used for
@@ -506,7 +542,7 @@ TEST_CASE_METHOD(common_tests, "Exception on not connected", "[core][exception]"
     CHECK_THROWS_AS(sql.get_last_insert_id(s, l), soci_error);
 }
 
-TEST_CASE_METHOD(common_tests, "Basic functionality")
+TEST_CASE_METHOD(common_tests, "Basic functionality", "[core][basics]")
 {
     soci::session sql(backEndFactory_, connectString_);
 
@@ -518,6 +554,18 @@ TEST_CASE_METHOD(common_tests, "Basic functionality")
     int id;
     sql << "select id from soci_test", into(id);
     CHECK(id == 123);
+
+    sql << "insert into soci_test (id) values (" << 234 << ")";
+    sql << "insert into soci_test (id) values (" << 345 << ")";
+    // Test prepare, execute, fetch correctness
+    statement st = (sql.prepare << "select id from soci_test", into(id));
+    st.execute();
+    int count = 0;
+    while(st.fetch())
+        count++;
+    CHECK(count == 3 );
+    bool fetchEnd = st.fetch(); // All the data has been read here so additional fetch must return false
+    CHECK(fetchEnd == false);
 }
 
 // "into" tests, type conversions, etc.
@@ -582,7 +630,7 @@ TEST_CASE_METHOD(common_tests, "Use and into", "[core][into]")
 
     SECTION("Round trip works for date without time")
     {
-        std::tm nov15;
+        std::tm nov15 = std::tm();
         nov15.tm_year = 105;
         nov15.tm_mon = 10;
         nov15.tm_mday = 15;
@@ -592,7 +640,7 @@ TEST_CASE_METHOD(common_tests, "Use and into", "[core][into]")
 
         sql << "insert into soci_test(tm) values(:tm)", use(nov15);
 
-        std::tm t;
+        std::tm t = std::tm();
         sql << "select tm from soci_test", into(t);
         CHECK(t.tm_year == 105);
         CHECK(t.tm_mon  == 10);
@@ -604,7 +652,7 @@ TEST_CASE_METHOD(common_tests, "Use and into", "[core][into]")
 
     SECTION("Round trip works for date with time")
     {
-        std::tm nov15;
+        std::tm nov15 = std::tm();
         nov15.tm_year = 105;
         nov15.tm_mon = 10;
         nov15.tm_mday = 15;
@@ -614,7 +662,7 @@ TEST_CASE_METHOD(common_tests, "Use and into", "[core][into]")
 
         sql << "insert into soci_test(tm) values(:tm)", use(nov15);
 
-        std::tm t;
+        std::tm t = std::tm();
         sql << "select tm from soci_test", into(t);
         CHECK(t.tm_year == 105);
         CHECK(t.tm_mon  == 10);
@@ -646,7 +694,7 @@ TEST_CASE_METHOD(common_tests, "Use and into", "[core][into]")
         CHECK(ind == i_null);
 
         // additional test for NULL with std::tm
-        std::tm t;
+        std::tm t = std::tm();
         sql << "select tm from soci_test", into(t, ind);
         CHECK(ind == i_null);
 
@@ -905,9 +953,9 @@ TEST_CASE_METHOD(common_tests, "Repeated and bulk fetch", "[core][bulk]")
             st.execute();
             while (st.fetch())
             {
-                for (std::size_t i = 0; i != vec.size(); ++i)
+                for (std::size_t n = 0; n != vec.size(); ++n)
                 {
-                    CHECK(i2 == vec[i]);
+                    CHECK(i2 == vec[n]);
                     ++i2;
                 }
 
@@ -970,11 +1018,11 @@ TEST_CASE_METHOD(common_tests, "Repeated and bulk fetch", "[core][bulk]")
         int const rowsToTest = 100;
         double d = 0.0;
 
-        statement st = (sql.prepare <<
+        statement sti = (sql.prepare <<
             "insert into soci_test(d) values(:d)", use(d));
         for (int i = 0; i != rowsToTest; ++i)
         {
-            st.execute(true);
+            sti.execute(true);
             d += 0.6;
         }
 
@@ -1039,7 +1087,7 @@ TEST_CASE_METHOD(common_tests, "Repeated and bulk fetch", "[core][bulk]")
         CHECK(count == rowsToTest);
 
         {
-            std::tm t;
+            std::tm t = std::tm();
             int i = 0;
 
             statement st = (sql.prepare <<
@@ -1210,11 +1258,11 @@ TEST_CASE_METHOD(common_tests, "Indicators vector", "[core][indicator][vector]")
     // create and populate the test table
     auto_table_creator tableCreator(tc_.table_creator_1(sql));
     {
-        sql << "insert into soci_test(id, val) values(1, 10)";
-        sql << "insert into soci_test(id, val) values(2, 11)";
-        sql << "insert into soci_test(id, val) values(3, NULL)";
-        sql << "insert into soci_test(id, val) values(4, NULL)";
-        sql << "insert into soci_test(id, val) values(5, 12)";
+        sql << "insert into soci_test(id, str, val) values(1, 'ten', 10)";
+        sql << "insert into soci_test(id, str, val) values(2, 'elf', 11)";
+        sql << "insert into soci_test(id, str, val) values(3, NULL, NULL)";
+        sql << "insert into soci_test(id, str, val) values(4, NULL, NULL)";
+        sql << "insert into soci_test(id, str, val) values(5, 'xii', 12)";
 
         {
             std::vector<int> vals(4);
@@ -1231,6 +1279,15 @@ TEST_CASE_METHOD(common_tests, "Indicators vector", "[core][indicator][vector]")
             st.fetch();
             CHECK(vals.size() == 1);
             CHECK(inds.size() == 1);
+
+            std::vector<std::string> strs(5);
+            sql << "select str from soci_test order by id", into(strs, inds);
+            REQUIRE(inds.size() == 5);
+            CHECK(inds[0] == i_ok);
+            CHECK(inds[1] == i_ok);
+            CHECK(inds[2] == i_null);
+            CHECK(inds[3] == i_null);
+            CHECK(inds[4] == i_ok);
         }
     }
 
@@ -1314,7 +1371,7 @@ TEST_CASE_METHOD(common_tests, "Use type conversion", "[core][use]")
 
     SECTION("std::tm")
     {
-        std::tm t;
+        std::tm t = std::tm();
         t.tm_year = 105;
         t.tm_mon = 10;
         t.tm_mday = 19;
@@ -1323,7 +1380,7 @@ TEST_CASE_METHOD(common_tests, "Use type conversion", "[core][use]")
         t.tm_sec = 57;
         sql << "insert into soci_test(tm) values(:t)", use(t);
 
-        std::tm t2;
+        std::tm t2 = std::tm();
         t2.tm_year = 0;
         t2.tm_mon = 0;
         t2.tm_mday = 0;
@@ -1433,7 +1490,7 @@ TEST_CASE_METHOD(common_tests, "Use type conversion", "[core][use]")
 
     SECTION("const std::tm")
     {
-        std::tm t;
+        std::tm t = std::tm();
         t.tm_year = 105;
         t.tm_mon = 10;
         t.tm_mday = 19;
@@ -1443,7 +1500,7 @@ TEST_CASE_METHOD(common_tests, "Use type conversion", "[core][use]")
         std::tm const & ct = t;
         sql << "insert into soci_test(tm) values(:t)", use(ct);
 
-        std::tm t2;
+        std::tm t2 = std::tm();
         t2.tm_year = 0;
         t2.tm_mon = 0;
         t2.tm_mday = 0;
@@ -1685,7 +1742,7 @@ TEST_CASE_METHOD(common_tests, "Use vector", "[core][use][vector]")
     SECTION("std::tm")
     {
         std::vector<std::tm> v;
-        std::tm t;
+        std::tm t = std::tm();
         t.tm_year = 105;
         t.tm_mon  = 10;
         t.tm_mday = 26;
@@ -1896,6 +1953,18 @@ TEST_CASE_METHOD(common_tests, "Transactions", "[core][transaction]")
 
 #ifndef SOCI_POSTGRESQL_NOPARAMS
 
+std::tm  generate_tm()
+{
+    std::tm t = std::tm();
+    t.tm_year = 105;
+    t.tm_mon = 10;
+    t.tm_mday = 15;
+    t.tm_hour = 22;
+    t.tm_min = 14;
+    t.tm_sec = 17;
+    return t;
+}
+
 // test of use elements with indicators
 TEST_CASE_METHOD(common_tests, "Use with indicators", "[core][use][indicator]")
 {
@@ -1905,24 +1974,28 @@ TEST_CASE_METHOD(common_tests, "Use with indicators", "[core][use][indicator]")
 
     indicator ind1 = i_ok;
     indicator ind2 = i_ok;
+    indicator ind3 = i_ok;
 
     int id = 1;
     int val = 10;
-
-    sql << "insert into soci_test(id, val) values(:id, :val)",
-        use(id, ind1), use(val, ind2);
+    char const* insert = "insert into soci_test(id, val, tm) values(:id, :val, :tm)";
+    sql << insert, use(id, ind1), use(val, ind2), use(generate_tm(), ind3);
 
     id = 2;
     val = 11;
     ind2 = i_null;
-    sql << "insert into soci_test(id, val) values(:id, :val)",
-        use(id, ind1), use(val, ind2);
+    std::tm tm = std::tm();
+    ind3 = i_null;
+
+    sql << "insert into soci_test(id, val, tm) values(:id, :val, :tm)",
+        use(id, ind1), use(val, ind2), use(tm, ind3);
 
     sql << "select val from soci_test where id = 1", into(val, ind2);
     CHECK(ind2 == i_ok);
     CHECK(val == 10);
-    sql << "select val from soci_test where id = 2", into(val, ind2);
+    sql << "select val, tm from soci_test where id = 2", into(val, ind2), into(tm, ind3);
     CHECK(ind2 == i_null);
+    CHECK(ind3 == i_null);
 
     std::vector<int> ids;
     ids.push_back(3);
@@ -1985,7 +2058,6 @@ TEST_CASE_METHOD(common_tests, "Dynamic row binding", "[core][dynamic]")
 
     // select into a row
     {
-        row r;
         statement st = (sql.prepare <<
             "select * from soci_test", into(r));
         st.execute(true);
@@ -2011,9 +2083,7 @@ TEST_CASE_METHOD(common_tests, "Dynamic row binding", "[core][dynamic]")
         ASSERT_EQUAL_APPROX(r.get<double>(0), 3.14);
         CHECK(r.get<int>(1) == 123);
         CHECK(r.get<std::string>(2) == "Johny");
-        std::tm t = { 0 };
-        t = r.get<std::tm>(3);
-        CHECK(t.tm_year == 105);
+        CHECK(r.get<std::tm>(3).tm_year == 105);
 
         // again, type char is visible as string
         CHECK_EQUAL_PADDED(r.get<std::string>(4), "a");
@@ -2042,7 +2112,7 @@ TEST_CASE_METHOD(common_tests, "Dynamic row binding", "[core][dynamic]")
             double d;
             int i;
             std::string s;
-            std::tm t;
+            std::tm t = std::tm();
             std::string c;
 
             r >> d >> i >> s >> t >> c;
@@ -2063,7 +2133,6 @@ TEST_CASE_METHOD(common_tests, "Dynamic row binding", "[core][dynamic]")
     // additional test to check if the row object can be
     // reused between queries
     {
-        row r;
         sql << "select * from soci_test", into(r);
 
         CHECK(r.size() == 5);
@@ -2584,7 +2653,7 @@ TEST_CASE_METHOD(common_tests, "Reading rows from rowset", "[core][row][rowset]"
                 ASSERT_EQUAL_APPROX(r1.get<double>(0), 3.14);
                 CHECK(r1.get<int>(1) == 123);
                 CHECK(r1.get<std::string>(2) == "Johny");
-                std::tm t1 = { 0 };
+                std::tm t1 = std::tm();
                 t1 = r1.get<std::tm>(3);
                 CHECK(t1.tm_year == 105);
                 CHECK_EQUAL_PADDED(r1.get<std::string>(4), "a");
@@ -2783,13 +2852,26 @@ TEST_CASE_METHOD(common_tests, "Rowset expected exception", "[core][exception][r
     auto_table_creator tableCreator(tc_.table_creator_1(sql));
     sql << "insert into soci_test(str) values('abc')";
 
+    std::string troublemaker;
     CHECK_THROWS_AS(
-            std::string troublemaker;
-            rowset<std::string> rs1 = (sql.prepare << "select str from soci_test",
-                    into(troublemaker)),
-            soci_error
+        rowset<std::string>((sql.prepare << "select str from soci_test", into(troublemaker))),
+        soci_error
         );
 }
+
+// functor for next test
+struct THelper
+{
+    THelper()
+        : val_()
+    {
+    }
+    void operator()(int i)
+    {
+        val_ = i;
+    }
+    int val_;
+};
 
 // test for handling NULL values with expected exception:
 // "Null value fetched and no indicator defined."
@@ -2805,17 +2887,8 @@ TEST_CASE_METHOD(common_tests, "NULL expected exception", "[core][exception][nul
     sql << "insert into soci_test(val) values(3)";
 
     rowset<int> rs = (sql.prepare << "select val from soci_test order by val asc");
-    int tester = 0;
 
-    CHECK_THROWS_AS(
-        for (rowset<int>::const_iterator it = rs.begin(); it != rs.end(); ++it)
-        {
-            tester = *it;
-        },
-        soci_error
-    );
-
-    (void)tester;
+    CHECK_THROWS_AS( std::for_each(rs.begin(), rs.end(), THelper()), soci_error );
 }
 
 // This is like the first dynamic binding test but with rowset and iterators use
@@ -2861,7 +2934,7 @@ TEST_CASE_METHOD(common_tests, "Dynamic binding with rowset", "[core][dynamic][t
     }
 }
 
-#ifdef HAVE_BOOST
+#ifdef SOCI_HAVE_BOOST
 
 // test for handling NULL values with boost::optional
 // (both into and use)
@@ -3198,7 +3271,7 @@ TEST_CASE_METHOD(common_tests, "NULL with optional", "[core][boost][null]")
     }
 }
 
-#endif // HAVE_BOOST
+#endif // SOCI_HAVE_BOOST
 
 // connection and reconnection tests
 TEST_CASE_METHOD(common_tests, "Connection and reconnection", "[core][connect]")
@@ -3266,7 +3339,7 @@ TEST_CASE_METHOD(common_tests, "Connection and reconnection", "[core][connect]")
 
 }
 
-#ifdef HAVE_BOOST
+#ifdef SOCI_HAVE_BOOST
 
 TEST_CASE_METHOD(common_tests, "Boost tuple", "[core][boost][tuple]")
 {
@@ -3571,7 +3644,7 @@ TEST_CASE_METHOD(common_tests, "Boost date", "[core][boost][datetime]")
     {
         auto_table_creator tableCreator(tc_.table_creator_1(sql));
 
-        std::tm nov15;
+        std::tm nov15 = std::tm();
         nov15.tm_year = 105;
         nov15.tm_mon = 10;
         nov15.tm_mday = 15;
@@ -3608,7 +3681,7 @@ TEST_CASE_METHOD(common_tests, "Boost date", "[core][boost][datetime]")
 
         sql << "insert into soci_test(tm) values(:tm)", use(bgd);
 
-        std::tm t;
+        std::tm t = std::tm();
         sql << "select tm from soci_test", into(t);
 
         CHECK(t.tm_year == 108);
@@ -3618,7 +3691,7 @@ TEST_CASE_METHOD(common_tests, "Boost date", "[core][boost][datetime]")
 
 }
 
-#endif // HAVE_BOOST
+#endif // SOCI_HAVE_BOOST
 
 // connection pool - simple sequential test, no multiple threads
 TEST_CASE_METHOD(common_tests, "Connection pool", "[core][connection][pool]")
@@ -3804,28 +3877,39 @@ TEST_CASE_METHOD(common_tests, "Get affected rows", "[core][affected-rows]")
         return;
     }
 
+
     for (int i = 0; i != 10; i++)
     {
         sql << "insert into soci_test(val) values(:val)", use(i);
     }
 
+    int step = 2;
     statement st1 = (sql.prepare <<
-        "update soci_test set val = val + 1");
+        "update soci_test set val = val + :step where val = 5", use(step, "step"));
     st1.execute(true);
+    CHECK(st1.get_affected_rows() == 1);
 
-    CHECK(st1.get_affected_rows() == 10);
+    // attempts to run the query again, no rows should be affected
+    st1.execute(true);
+    CHECK(st1.get_affected_rows() == 0);
 
     statement st2 = (sql.prepare <<
-        "delete from soci_test where val <= 5");
+        "update soci_test set val = val + 1");
     st2.execute(true);
 
-    CHECK(st2.get_affected_rows() == 5);
+    CHECK(st2.get_affected_rows() == 10);
 
     statement st3 = (sql.prepare <<
-        "update soci_test set val = val + 1");
+        "delete from soci_test where val <= 5");
     st3.execute(true);
 
     CHECK(st3.get_affected_rows() == 5);
+
+    statement st4 = (sql.prepare <<
+        "update soci_test set val = val + 1");
+    st4.execute(true);
+
+    CHECK(st4.get_affected_rows() == 5);
 
     std::vector<int> v(5, 0);
     for (std::size_t i = 0; i < v.size(); ++i)
@@ -3834,17 +3918,17 @@ TEST_CASE_METHOD(common_tests, "Get affected rows", "[core][affected-rows]")
     }
 
     // test affected rows for bulk operations.
-    statement st4 = (sql.prepare <<
+    statement st5 = (sql.prepare <<
         "delete from soci_test where val = :v", use(v));
-    st4.execute(true);
+    st5.execute(true);
 
-    CHECK(st4.get_affected_rows() == 5);
+    CHECK(st5.get_affected_rows() == 5);
 
     std::vector<std::string> w(2, "1");
     w[1] = "a"; // this invalid value may cause an exception.
-    statement st5 = (sql.prepare <<
+    statement st6 = (sql.prepare <<
         "insert into soci_test(val) values(:val)", use(w));
-    try { st5.execute(true); }
+    try { st6.execute(true); }
     catch(...) {}
 
     // confirm the partial insertion.
@@ -3852,9 +3936,16 @@ TEST_CASE_METHOD(common_tests, "Get affected rows", "[core][affected-rows]")
     sql << "select count(val) from soci_test", into(val);
     if(val != 0)
     {
-        // test the preserved 'number of rows
-        // affected' after a potential failure.
-        CHECK(st5.get_affected_rows() != 0);
+        // Notice that some ODBC drivers don't return the number of updated
+        // rows at all in the case of partially executed statement like this
+        // one, while MySQL ODBC driver wrongly returns 2 affected rows even
+        // though only one was actually inserted.
+        //
+        // So we can't check for "get_affected_rows() == val" here, it would
+        // fail in too many cases -- just check that the backend doesn't lie to
+        // us about no rows being affected at all (even if it just honestly
+        // admits that it has no idea by returning -1).
+        CHECK(st6.get_affected_rows() != 0);
     }
 }
 
@@ -4043,6 +4134,22 @@ void check_for_exception_on_truncation(session& sql)
     }
 }
 
+// And another helper for the test below.
+void check_for_no_truncation(session& sql)
+{
+    const std::string str20 = "exactly of length 20";
+
+    sql << "delete from soci_test";
+
+    // Also check that there is no truncation when inserting a string of
+    // the same length as the column size.
+    CHECK_NOTHROW( (sql << "insert into soci_test(name) values(:s)", use(str20)) );
+
+    std::string s;
+    sql << "select name from soci_test", into(s);
+    CHECK( s == str20 );
+}
+
 } // anonymous namespace
 
 TEST_CASE_METHOD(common_tests, "Truncation error", "[core][insert][truncate][exception]")
@@ -4069,6 +4176,8 @@ TEST_CASE_METHOD(common_tests, "Truncation error", "[core][insert][truncate][exc
         tc_.on_after_ddl(sql);
 
         check_for_exception_on_truncation(sql);
+
+        check_for_no_truncation(sql);
     }
 
     SECTION("Error given for varchar column")
@@ -4077,6 +4186,8 @@ TEST_CASE_METHOD(common_tests, "Truncation error", "[core][insert][truncate][exc
         auto_table_creator tableCreator(tc_.table_creator_1(sql));
 
         check_for_exception_on_truncation(sql);
+
+        check_for_no_truncation(sql);
     }
 }
 
@@ -4126,6 +4237,184 @@ TEST_CASE_METHOD(common_tests, "Blank padding", "[core][insert][exception]")
     CHECK_EQUAL_PADDED(sc, singleChar);
     CHECK_EQUAL_PADDED(tchar, test1);
     CHECK(tvarchar == test1);
+}
+
+TEST_CASE_METHOD(common_tests, "Select without table", "[core][select][dummy_from]")
+{
+    soci::session sql(backEndFactory_, connectString_);
+
+    int plus17;
+    sql << ("select abs(-17)" + sql.get_dummy_from_clause()),
+           into(plus17);
+
+    CHECK(plus17 == 17);
+}
+
+TEST_CASE_METHOD(common_tests, "String length", "[core][string][length]")
+{
+    soci::session sql(backEndFactory_, connectString_);
+
+    auto_table_creator tableCreator(tc_.table_creator_1(sql));
+
+    std::string s("123");
+    REQUIRE_NOTHROW((
+        sql << "insert into soci_test(str) values(:s)", use(s)
+    ));
+
+    std::string sout;
+    size_t slen;
+    REQUIRE_NOTHROW((
+        sql << "select str," + tc_.sql_length("str") + " from soci_test",
+           into(sout), into(slen)
+    ));
+    CHECK(slen == 3);
+    CHECK(sout.length() == 3);
+    CHECK(sout == s);
+
+    sql << "delete from soci_test";
+
+
+    std::vector<std::string> v;
+    v.push_back("Hello");
+    v.push_back("");
+    v.push_back("whole of varchar(20)");
+
+    REQUIRE_NOTHROW((
+        sql << "insert into soci_test(str) values(:s)", use(v)
+    ));
+
+    std::vector<std::string> vout(10);
+    // Although none of the strings here is really null, Oracle handles the
+    // empty string as being null, so to avoid an error about not providing
+    // the indicator when retrieving a null value, we must provide it here.
+    std::vector<indicator> vind(10);
+    std::vector<unsigned int> vlen(10);
+
+    REQUIRE_NOTHROW((
+        sql << "select str," + tc_.sql_length("str") + " from soci_test"
+               " order by " + tc_.sql_length("str"),
+               into(vout, vind), into(vlen)
+    ));
+
+    REQUIRE(vout.size() == 3);
+    REQUIRE(vlen.size() == 3);
+
+    CHECK(vlen[0] == 0);
+    CHECK(vout[0].length() == 0);
+
+    CHECK(vlen[1] == 5);
+    CHECK(vout[1].length() == 5);
+
+    CHECK(vlen[2] == 20);
+    CHECK(vout[2].length() == 20);
+}
+
+// Helper function used in two tests below.
+static std::string make_long_xml_string()
+{
+    std::string s;
+    s.reserve(6 + 200*26 + 7);
+
+    s += "<file>";
+    for (int i = 0; i != 200; ++i)
+    {
+        s += "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    }
+    s += "</file>";
+
+    return s;
+}
+
+TEST_CASE_METHOD(common_tests, "CLOB", "[core][clob]")
+{
+    soci::session sql(backEndFactory_, connectString_);
+
+    auto_table_creator tableCreator(tc_.table_creator_clob(sql));
+    if (!tableCreator.get())
+    {
+        WARN("CLOB type not supported by the database, skipping the test.");
+        return;
+    }
+
+    long_string s1; // empty
+    sql << "insert into soci_test(id, s) values (1, :s)", use(s1);
+
+    long_string s2;
+    s2.value = "hello";
+    sql << "select s from soci_test where id = 1", into(s2);
+
+    CHECK(s2.value.size() == 0);
+
+    s1.value = make_long_xml_string();
+
+    sql << "update soci_test set s = :s where id = 1", use(s1);
+
+    sql << "select s from soci_test where id = 1", into(s2);
+
+    CHECK(s2.value == s1.value);
+}
+
+TEST_CASE_METHOD(common_tests, "XML", "[core][xml]")
+{
+    soci::session sql(backEndFactory_, connectString_);
+
+    auto_table_creator tableCreator(tc_.table_creator_xml(sql));
+    if (!tableCreator.get())
+    {
+        WARN("XML type not supported by the database, skipping the test.");
+        return;
+    }
+
+    int id = 1;
+    xml_type xml;
+    xml.value = make_long_xml_string();
+
+    sql << "insert into soci_test (id, x) values (:1, "
+        << tc_.to_xml(":2")
+        << ")",
+        use(id), use(xml);
+
+    xml_type xml2;
+
+    sql << "select "
+        << tc_.from_xml("x")
+        << " from soci_test where id = :1",
+        into(xml2), use(id);
+
+    // The returned value doesn't need to be identical to the original one as
+    // string, only structurally equal as XML. In particular, extra whitespace
+    // can be added and this does happen with Oracle, for example, which adds
+    // an extra new line, so remove it if it's present.
+    if (!xml2.value.empty() && *xml2.value.rbegin() == '\n')
+    {
+        xml2.value.resize(xml2.value.length() - 1);
+    }
+
+    CHECK(xml.value == xml2.value);
+
+    sql << "update soci_test set x = null where id = :1", use(id);
+
+    indicator ind;
+    sql << "select "
+        << tc_.from_xml("x")
+        << " from soci_test where id = :1",
+        into(xml2, ind), use(id);
+
+    CHECK(ind == i_null);
+
+    // Inserting malformed XML into an XML column must fail but some backends
+    // (e.g. Firebird) don't have real XML support, so exclude them from this
+    // test.
+    if (tc_.has_real_xml_support())
+    {
+        xml.value = "<foo></not_foo>";
+        CHECK_THROWS_AS(
+            (sql << "insert into soci_test(id, x) values (2, "
+                        + tc_.to_xml(":1") + ")",
+                    use(xml)
+            ), soci_error
+        );
+    }
 }
 
 } // namespace test_cases

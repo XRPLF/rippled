@@ -63,12 +63,19 @@ TEST_CASE("Dummy test", "[empty]")
     sql << "Do what I want.";
     sql << "Do what I want " << 123 << " times.";
 
-    std::string query = "some query";
+    char const* const query = "some query";
     sql << query;
+
+    {
+        std::string squery = "some query";
+        sql << squery;
+    }
 
     int i = 7;
     sql << "insert", use(i);
     sql << "select", into(i);
+    sql << query, use(i);
+    sql << query, into(i);
 
 #if defined (__LP64__) || ( __WORDSIZE == 64 )
     long int li = 9;
@@ -83,6 +90,8 @@ TEST_CASE("Dummy test", "[empty]")
     indicator ind = i_ok;
     sql << "insert", use(i, ind);
     sql << "select", into(i, ind);
+    sql << query, use(i, ind);
+    sql << query, use(i, ind);
 
     std::vector<int> numbers(100);
     sql << "insert", use(numbers);
@@ -98,7 +107,13 @@ TEST_CASE("Dummy test", "[empty]")
         st.fetch();
     }
     {
+        statement st = (sql.prepare << query, into(i));
+        st.execute();
+        st.fetch();
+    }
+    {
         statement st = (sql.prepare << "select", into(i, ind));
+        statement sq = (sql.prepare << query, into(i, ind));
     }
     {
         statement st = (sql.prepare << "select", into(numbers));
@@ -108,9 +123,11 @@ TEST_CASE("Dummy test", "[empty]")
     }
     {
         statement st = (sql.prepare << "insert", use(i));
+        statement sq = (sql.prepare << query, use(i));
     }
     {
         statement st = (sql.prepare << "insert", use(i, ind));
+        statement sq = (sql.prepare << query, use(i, ind));
     }
     {
         statement st = (sql.prepare << "insert", use(numbers));

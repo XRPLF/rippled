@@ -93,7 +93,7 @@ void firebird_vector_into_type_backend::exchangeData(std::size_t row)
         break;
     case x_stdtm:
         {
-            std::tm data;
+            std::tm data = std::tm();
             tmDecode(var->sqltype, buf_, &data);
             setIntoVector(data_, row, data);
         }

@@ -33,7 +33,7 @@ public:
 
 private:
     // special handling for Row
-    virtual void define(statement_impl & st, int & /* position */)
+    void define(statement_impl & st, int & /* position */) SOCI_OVERRIDE
     {
         st.set_row(&r_);
 
@@ -41,8 +41,9 @@ private:
         // as part of the statement execute
     }
 
-    virtual void pre_fetch() {}
-    virtual void post_fetch(bool gotData, bool /* calledFromFetch */)
+    void pre_exec(int /* num */) SOCI_OVERRIDE {}
+    void pre_fetch() SOCI_OVERRIDE {}
+    void post_fetch(bool gotData, bool /* calledFromFetch */) SOCI_OVERRIDE
     {
         r_.reset_get_counter();
 
@@ -55,9 +56,9 @@ private:
         }
     }
 
-    virtual void clean_up() {}
+    void clean_up() SOCI_OVERRIDE {}
 
-    virtual std::size_t size() const { return 1; }
+    std::size_t size() const SOCI_OVERRIDE { return 1; }
 
     virtual void convert_from_base() {}
 

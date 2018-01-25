@@ -337,7 +337,13 @@ macro(use_boost)
       set(BOOST_ROOT $ENV{CLANG_BOOST_ROOT})
     endif()
 
-    set(Boost_USE_STATIC_LIBS on)
+    # boost dynamic libraries don't trivially support @rpath
+    # linking right now (cmake's default), so just force
+    # static linking for macos, or if requested on linux
+    # by flag
+    if (static OR APPLE)
+      set(Boost_USE_STATIC_LIBS on)
+    endif()
     set(Boost_USE_MULTITHREADED on)
     set(Boost_USE_STATIC_RUNTIME off)
     if(MSVC)
@@ -566,7 +572,7 @@ macro(setup_build_boilerplate)
     #  An alternative to disabling would be to figure out all the settings
     #  required to make gold play nicely with jemalloc.
     if (("${LD_VERSION}" MATCHES "GNU gold") AND (NOT jemalloc))
-        append_flags(CMAKE_EXE_LINKER_FLAGS -fuse-ld=gold)
+        append_flags(CMAKE_EXE_LINKER_FLAGS -fuse-ld=gold -Wl,--no-as-needed)
     endif ()
     unset(LD_VERSION)
   endif()
@@ -606,7 +612,7 @@ macro(setup_build_boilerplate)
 
   if (NOT WIN32)
     add_definitions(-D_FILE_OFFSET_BITS=64)
-    append_flags(CMAKE_CXX_FLAGS -frtti -std=c++14 -Wno-invalid-offsetof
+    append_flags(CMAKE_CXX_FLAGS -frtti -std=c++14 -Wno-invalid-offsetof -Wdeprecated
       -DBOOST_COROUTINE_NO_DEPRECATION_WARNING -DBOOST_COROUTINES_NO_DEPRECATION_WARNING)
     add_compile_options(-Wall -Wno-sign-compare -Wno-char-subscripts -Wno-format
       -Wno-unused-local-typedefs -g)
@@ -634,7 +640,7 @@ macro(setup_build_boilerplate)
     if (APPLE)
       add_definitions(-DBEAST_COMPILE_OBJECTIVE_CPP=1)
       add_compile_options(
-        -Wno-deprecated -Wno-deprecated-declarations -Wno-unused-function)
+        -Wno-deprecated-declarations -Wno-unused-function)
     endif()
 
     if (is_gcc)

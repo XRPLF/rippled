@@ -32,6 +32,7 @@ public:
 
     // Retrieve the backend and the connection strings specified in the ctor.
     backend_factory const * get_factory() const { return factory_; }
+    void set_connect_string(const std::string & connectString) { connectString_ = connectString; }
     std::string const & get_connect_string() const { return connectString_; }
 
     // Set the value of the given option, overwriting any previous value.

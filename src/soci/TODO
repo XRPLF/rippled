@@ -1,4 +1,4 @@
-$Id: ideas.txt,v 1.8 2006/12/12 07:39:22 msobczak Exp $
+TODO
 
 This file contains a raw bunch of ideas for future releases.
 Not all of these ideas will necessarily make sense - they are here to get them together.
@@ -9,17 +9,6 @@ http://lists.boost.org/Archives/boost/2006/12/113961.php
 
 ---
 RAII for transactions.
-
----
-bjam
-Add JamFile files
-
----
-Refactoring of core, more fine-grained file structure.
-
----
-Session constructor overload that accepts map<string,string> for param=value pairs.
-This should rather be provided as a separate function?
 
 ---
 Query construction utilities (kind of Ultimate++) - can be easily incorporated into SOCI by just making them streamable.
@@ -51,13 +40,6 @@ Note: default is a reserved word.
 Provide statement-wide flag for eNoData case (because actually it *is* statement-wide, not field-wide). With this, boost.optional would handle the eNull case and the indicators could be dropped.
 
 ---
-Session sql("mysql://user:password@host/database");
-
-So that Session tries to find backend_mysql.(dll|so) if not yet registered.
----
-
-number of rows affected (insert/update + select?)
----
 
 query backend for supported featureset at runtime
 ---
@@ -65,9 +47,6 @@ query backend for supported featureset at runtime
 Rowset<tuple>
 ---
 
-boost::optional?
-
----
 Rowset<T>, including Rowset<tuple> - way to indicate nulls?
 Additional pair based val/indicator interface?
 
@@ -129,6 +108,3 @@ rowset<Row> rs = (s.prepare << "firstname='John' AND age > 28") // multi-fields 
 - very simple home-made SQL parser or SQL-like queries support (see OGR utils from http://www.gdal.org)
 
 ---
-Session::reconnect (should connect again with the same params).
-Why not also Session::open/close?
-

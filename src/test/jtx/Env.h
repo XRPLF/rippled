@@ -56,13 +56,6 @@
 
 
 namespace ripple {
-
-namespace detail {
-extern
-std::vector<std::string>
-supportedAmendments ();
-}
-
 namespace test {
 namespace jtx {
 
@@ -74,42 +67,9 @@ noripple (Account const& account, Args const&... args)
     return {{account, args...}};
 }
 
-/**
- * @brief create collection of features to pass to Env ctor
- *
- * The resulting collection will contain *only* the features
- * passed as arguments.
- *
- * @param key+args features to include in resulting collection
- */
-template <class... Args>
-FeatureBitset
-with_features (uint256 const& key, Args const&... args)
-{
-    return makeFeatureBitset(
-        std::array<uint256, 1 + sizeof...(args)>{{key, args...}});
-}
-
-/**
- * @brief create collection of features to pass to Env ctor
- *
- * The resulting collection will contain *only* the features
- * passed as arguments.
- *
- * @param keys features to include in resulting collection
- */
-template<class Col>
-FeatureBitset
-with_features (Col&& keys)
-{
-    return makeFeatureBitset(std::forward<Col>(keys));
-}
-
-constexpr FeatureBitset no_features = {};
-
 inline
 FeatureBitset
-all_amendments()
+supported_amendments()
 {
     static const FeatureBitset ids = []{
         auto const& sa = ripple::detail::supportedAmendments();
@@ -122,40 +82,9 @@ all_amendments()
             else
                 Throw<std::runtime_error> ("Unknown feature: " + s + "  in supportedAmendments.");
         }
-        return makeFeatureBitset(feats);
+        return FeatureBitset(feats);
     }();
     return ids;
-}
-
-/**
- * @brief create collection of features to pass to Env ctor
- *
- * The resulting collection will contain *all supported amendments* minus
- * the features passed as arguments.
- *
- * @param keys features to exclude from the resulting collection
- */
-template<class Col>
-FeatureBitset
-all_features_except (Col const& keys)
-{
-    return all_amendments() & ~makeFeatureBitset(keys);
-}
-
-/**
- *
- * @brief create collection of features to pass to Env ctor
- * The resulting collection will contain *all supported amendments* minus
- * the features passed as arguments.
- *
- * @param key+args features to exclude from the resulting collection
- */
-template <class... Args>
-FeatureBitset
-all_features_except (uint256 const& key, Args const&... args)
-{
-    return all_features_except(
-        std::array<uint256, 1 + sizeof...(args)>{{key, args...}});
 }
 
 class SuiteSink : public beast::Journal::Sink
@@ -250,8 +179,8 @@ public:
      * @param suite_ the current unit_test::suite
      * @param config The desired Config - ownership will be taken by moving
      * the pointer. See envconfig and related functions for common config tweaks.
-     * @param args with_features() to explicitly enable or all_features_except() to
-     * enable all and disable specific features
+     * @param args with_only_features() to explicitly enable or
+     * supported_features_except() to enable all and disable specific features.
      */
     // VFALCO Could wrap the suite::log in a Journal here
     Env (beast::unit_test::suite& suite_,
@@ -277,9 +206,9 @@ public:
      * features.
      *
      * This constructor will create an Env with the standard Env configuration
-     * (from envconfig()) and features explicitly specified. Use with_features(...)
-     * or all_features_except(...) to create a collection of features appropriate
-     * for passing here.
+     * (from envconfig()) and features explicitly specified. Use
+     * with_only_features(...) or supported_features_except(...) to create a
+     * collection of features appropriate for passing here.
      *
      * @param suite_ the current unit_test::suite
      * @param args collection of features
@@ -305,7 +234,8 @@ public:
     Env (beast::unit_test::suite& suite_,
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs = nullptr)
-        : Env(suite_, std::move(config), all_amendments(), std::move(logs))
+        : Env(suite_, std::move(config),
+            supported_amendments(), std::move(logs))
     {
     }
 

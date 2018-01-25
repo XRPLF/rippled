@@ -127,6 +127,12 @@ public:
         ++m_gen;
     }
 
+    void reset ()
+    {
+        m_cache.clear();
+        m_gen  = 1;
+    }
+
 private:
     KeyCache <Key> m_cache;
     std::atomic <std::uint32_t> m_gen;

@@ -48,6 +48,10 @@ enum Status
 
 /** A batch of NodeObjects to write at once. */
 using Batch = std::vector <std::shared_ptr<NodeObject>>;
+
+// System constant/invariant
+static constexpr std::uint32_t genesisSeq {32570u};
+
 }
 }
 

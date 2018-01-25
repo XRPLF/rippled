@@ -563,7 +563,8 @@ def config_env(toolchain, variant, env):
         env.Append(CXXFLAGS=[
             '-frtti',
             '-std=c++14',
-            '-Wno-invalid-offsetof'
+            '-Wno-invalid-offsetof',
+            '-Wdeprecated'
             ])
 
         env.Append(CPPDEFINES=['_FILE_OFFSET_BITS=64'])
@@ -576,7 +577,6 @@ def config_env(toolchain, variant, env):
         # These should be the same regardless of platform...
         if Beast.system.osx:
             env.Append(CCFLAGS=[
-                '-Wno-deprecated',
                 '-Wno-deprecated-declarations',
                 '-Wno-unused-function',
                 ])
@@ -613,7 +613,8 @@ def config_env(toolchain, variant, env):
             'boost_program_options',
             'boost_regex',
             'boost_system',
-            'boost_thread'
+            'boost_thread',
+            'boost_serialization'
         ]
         env.Append(LIBS=['dl'])
 
@@ -978,6 +979,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/test/shamap', '.cpp'))
     append_sources(result, *list_sources('src/test/jtx', '.cpp'))
     append_sources(result, *list_sources('src/test/csf', '.cpp'))
+    append_sources(result, *list_sources('src/test/unit_test', '.cpp'))
 
 
     if use_shp(toolchain):

@@ -63,7 +63,7 @@ std::string param_name(std::string::const_iterator *i,
     std::string val("");
     for (;;)
     {
-        if (*i == end or (not std::isalpha(**i) and **i != '_'))
+        if (*i == end || (!std::isalpha(**i) && **i != '_'))
         {
             break;
         }
@@ -113,7 +113,7 @@ string param_value(string::const_iterator *i,
                 throw soci_error(err);
             }
         }
-        if (not quot and std::isspace(**i))
+        if (!quot && std::isspace(**i))
         {
             break;
         }
@@ -137,7 +137,7 @@ bool valid_int(const string & s)
     const char *cstr = s.c_str();
     errno = 0;
     long n = std::strtol(cstr, &tail, 10);
-    if (errno != 0 or n > INT_MAX or n < INT_MIN)
+    if (errno != 0 || n > INT_MAX || n < INT_MIN)
     {
         return false;
     }
@@ -192,9 +192,9 @@ void parse_connect_string(const string & connectString,
         }
         skip_white(&i, end, false);
         string val = param_value(&i, end);
-        if (par == "port" and not *port_p)
+        if (par == "port" && !*port_p)
         {
-            if (not valid_int(val))
+            if (!valid_int(val))
             {
                 throw soci_error(err);
             }
@@ -205,60 +205,59 @@ void parse_connect_string(const string & connectString,
             }
             *port_p = true;
         }
-        else if (par == "host" and not *host_p)
+        else if (par == "host" && !*host_p)
         {
             *host = val;
             *host_p = true;
         }
-        else if (par == "user" and not *user_p)
+        else if (par == "user" && !*user_p)
         {
             *user = val;
             *user_p = true;
         }
-        else if ((par == "pass" or par == "password") and not *password_p)
+        else if ((par == "pass" || par == "password") && !*password_p)
         {
             *password = val;
             *password_p = true;
         }
-        else if ((par == "db" or par == "dbname" or par == "service") and
-                 not *db_p)
+        else if ((par == "db" || par == "dbname" || par == "service") and !*db_p)
         {
             *db = val;
             *db_p = true;
         }
-        else if (par == "unix_socket" and not *unix_socket_p)
+        else if (par == "unix_socket" && !*unix_socket_p)
         {
             *unix_socket = val;
             *unix_socket_p = true;
         }
-        else if (par == "sslca" and not *ssl_ca_p)
+        else if (par == "sslca" && !*ssl_ca_p)
         {
             *ssl_ca = val;
             *ssl_ca_p = true;
         }
-        else if (par == "sslcert" and not *ssl_cert_p)
+        else if (par == "sslcert" && !*ssl_cert_p)
         {
             *ssl_cert = val;
             *ssl_cert_p = true;
         }
-        else if (par == "sslkey" and not *ssl_key_p)
+        else if (par == "sslkey" && !*ssl_key_p)
         {
             *ssl_key = val;
             *ssl_key_p = true;
         }
-        else if (par == "local_infile" and not *local_infile_p)
+        else if (par == "local_infile" && !*local_infile_p)
         {
-            if (not valid_int(val))
+            if (!valid_int(val))
             {
                 throw soci_error(err);
             }
             *local_infile = std::atoi(val.c_str());
-            if (*local_infile != 0 and *local_infile != 1)
+            if (*local_infile != 0 && *local_infile != 1)
             {
                 throw soci_error(err);
             }
             *local_infile_p = true;
-        } else if (par == "charset" and not *charset_p)
+        } else if (par == "charset" && !*charset_p)
         {
             *charset = val;
             *charset_p = true;
@@ -278,7 +277,7 @@ void parse_connect_string(const string & connectString,
 #pragma clang diagnostic ignored "-Wuninitialized"
 #endif
 
-#if defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ > 6)
+#if defined(__GNUC__) && ( __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ > 6)))
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
@@ -314,9 +313,9 @@ mysql_session_backend::mysql_session_backend(
     {
         mysql_ssl_set(conn_, ssl_key_p ? ssl_key.c_str() : NULL,
                       ssl_cert_p ? ssl_cert.c_str() : NULL,
-                      ssl_ca_p ? ssl_ca.c_str() : NULL, 0, 0);
+                      ssl_ca.c_str(), 0, 0);
     }
-    if (local_infile_p and local_infile == 1)
+    if (local_infile_p && local_infile == 1)
     {
         if (0 != mysql_options(conn_, MYSQL_OPT_LOCAL_INFILE, NULL))
         {
@@ -345,7 +344,7 @@ mysql_session_backend::mysql_session_backend(
     }
 }
 
-#if defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ > 6)
+#if defined(__GNUC__) && ( __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ > 6)))
 #pragma GCC diagnostic pop
 #endif
 

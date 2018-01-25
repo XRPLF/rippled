@@ -34,46 +34,48 @@ public:
     using const_iterator = Map::const_iterator;
 
     JobTypes ()
-        : m_unknown (jtINVALID, "invalid", 0, true, 0, 0)
+        : m_unknown (jtINVALID, "invalid", 0, true, std::chrono::milliseconds{0},
+                                                    std::chrono::milliseconds{0})
     {
+        using namespace std::chrono_literals;
         int maxLimit = std::numeric_limits <int>::max ();
 
-add(    jtPACK,          "makeFetchPack",           1,        false, 0,     0);
-add(    jtPUBOLDLEDGER,  "publishAcqLedger",        2,        false, 10000, 15000);
-add(    jtVALIDATION_ut, "untrustedValidation",     maxLimit, false, 2000,  5000);
-add(    jtTRANSACTION_l, "localTransaction",        maxLimit, false, 100,   500);
-add(    jtLEDGER_REQ,    "ledgerRequest",           2,        false, 0,     0);
-add(    jtPROPOSAL_ut,   "untrustedProposal",       maxLimit, false, 500,   1250);
-add(    jtLEDGER_DATA,   "ledgerData",              2,        false, 0,     0);
-add(    jtCLIENT,        "clientCommand",           maxLimit, false, 2000,  5000);
-add(    jtRPC,           "RPC",                     maxLimit, false, 0,     0);
-add(    jtUPDATE_PF,     "updatePaths",             maxLimit, false, 0,     0);
-add(    jtTRANSACTION,   "transaction",             maxLimit, false, 250,   1000);
-add(    jtBATCH,         "batch",                   maxLimit, false, 250,   1000);
-add(    jtADVANCE,       "advanceLedger",           maxLimit, false, 0,     0);
-add(    jtPUBLEDGER,     "publishNewLedger",        maxLimit, false, 3000,  4500);
-add(    jtTXN_DATA,      "fetchTxnData",            1,        false, 0,     0);
-add(    jtWAL,           "writeAhead",              maxLimit, false, 1000,  2500);
-add(    jtVALIDATION_t,  "trustedValidation",       maxLimit, false, 500,  1500);
-add(    jtWRITE,         "writeObjects",            maxLimit, false, 1750,  2500);
-add(    jtACCEPT,        "acceptLedger",            maxLimit, false, 0,     0);
-add(    jtPROPOSAL_t,    "trustedProposal",         maxLimit, false, 100,   500);
-add(    jtSWEEP,         "sweep",                   maxLimit, false, 0,     0);
-add(    jtNETOP_CLUSTER, "clusterReport",           1,        false, 9999,  9999);
-add(    jtNETOP_TIMER,   "heartbeat",               1,        false, 999,   999);
-add(    jtADMIN,         "administration",          maxLimit, false, 0,     0);
+add(    jtPACK,          "makeFetchPack",           1,        false, 0ms,     0ms);
+add(    jtPUBOLDLEDGER,  "publishAcqLedger",        2,        false, 10000ms, 15000ms);
+add(    jtVALIDATION_ut, "untrustedValidation",     maxLimit, false, 2000ms,  5000ms);
+add(    jtTRANSACTION_l, "localTransaction",        maxLimit, false, 100ms,   500ms);
+add(    jtLEDGER_REQ,    "ledgerRequest",           2,        false, 0ms,     0ms);
+add(    jtPROPOSAL_ut,   "untrustedProposal",       maxLimit, false, 500ms,   1250ms);
+add(    jtLEDGER_DATA,   "ledgerData",              2,        false, 0ms,     0ms);
+add(    jtCLIENT,        "clientCommand",           maxLimit, false, 2000ms,  5000ms);
+add(    jtRPC,           "RPC",                     maxLimit, false, 0ms,     0ms);
+add(    jtUPDATE_PF,     "updatePaths",             maxLimit, false, 0ms,     0ms);
+add(    jtTRANSACTION,   "transaction",             maxLimit, false, 250ms,   1000ms);
+add(    jtBATCH,         "batch",                   maxLimit, false, 250ms,   1000ms);
+add(    jtADVANCE,       "advanceLedger",           maxLimit, false, 0ms,     0ms);
+add(    jtPUBLEDGER,     "publishNewLedger",        maxLimit, false, 3000ms,  4500ms);
+add(    jtTXN_DATA,      "fetchTxnData",            1,        false, 0ms,     0ms);
+add(    jtWAL,           "writeAhead",              maxLimit, false, 1000ms,  2500ms);
+add(    jtVALIDATION_t,  "trustedValidation",       maxLimit, false, 500ms,  1500ms);
+add(    jtWRITE,         "writeObjects",            maxLimit, false, 1750ms,  2500ms);
+add(    jtACCEPT,        "acceptLedger",            maxLimit, false, 0ms,     0ms);
+add(    jtPROPOSAL_t,    "trustedProposal",         maxLimit, false, 100ms,   500ms);
+add(    jtSWEEP,         "sweep",                   maxLimit, false, 0ms,     0ms);
+add(    jtNETOP_CLUSTER, "clusterReport",           1,        false, 9999ms,  9999ms);
+add(    jtNETOP_TIMER,   "heartbeat",               1,        false, 999ms,   999ms);
+add(    jtADMIN,         "administration",          maxLimit, false, 0ms,     0ms);
 
-add(    jtPEER,          "peerCommand",             0,        true,  200,   2500);
-add(    jtDISK,          "diskAccess",              0,        true,  500,   1000);
-add(    jtTXN_PROC,      "processTransaction",      0,        true,  0,     0);
-add(    jtOB_SETUP,      "orderBookSetup",          0,        true,  0,     0);
-add(    jtPATH_FIND,     "pathFind",                0,        true,  0,     0);
-add(    jtHO_READ,       "nodeRead",                0,        true,  0,     0);
-add(    jtHO_WRITE,      "nodeWrite",               0,        true,  0,     0);
-add(    jtGENERIC,       "generic",                 0,        true,  0,     0);
-add(    jtNS_SYNC_READ,  "SyncReadNode",            0,        true,  0,     0);
-add(    jtNS_ASYNC_READ, "AsyncReadNode",           0,        true,  0,     0);
-add(    jtNS_WRITE,      "WriteNode",               0,        true,  0,     0);
+add(    jtPEER,          "peerCommand",             0,        true,  200ms,   2500ms);
+add(    jtDISK,          "diskAccess",              0,        true,  500ms,   1000ms);
+add(    jtTXN_PROC,      "processTransaction",      0,        true,  0ms,     0ms);
+add(    jtOB_SETUP,      "orderBookSetup",          0,        true,  0ms,     0ms);
+add(    jtPATH_FIND,     "pathFind",                0,        true,  0ms,     0ms);
+add(    jtHO_READ,       "nodeRead",                0,        true,  0ms,     0ms);
+add(    jtHO_WRITE,      "nodeWrite",               0,        true,  0ms,     0ms);
+add(    jtGENERIC,       "generic",                 0,        true,  0ms,     0ms);
+add(    jtNS_SYNC_READ,  "SyncReadNode",            0,        true,  0ms,     0ms);
+add(    jtNS_ASYNC_READ, "AsyncReadNode",           0,        true,  0ms,     0ms);
+add(    jtNS_WRITE,      "WriteNode",               0,        true,  0ms,     0ms);
 
     }
 
@@ -115,7 +117,8 @@ add(    jtNS_WRITE,      "WriteNode",               0,        true,  0,     0);
 
 private:
     void add(JobType jt, std::string name, int limit,
-        bool special, std::uint64_t avgLatency, std::uint64_t peakLatency)
+        bool special, std::chrono::milliseconds avgLatency,
+        std::chrono::milliseconds peakLatency)
     {
         assert (m_map.find (jt) == m_map.end ());
 

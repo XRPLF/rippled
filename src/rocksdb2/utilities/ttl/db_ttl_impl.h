@@ -17,6 +17,12 @@
 #include "rocksdb/utilities/db_ttl.h"
 #include "db/db_impl.h"
 
+#ifdef _WIN32
+// Windows API macro interference
+#undef GetCurrentTime
+#endif
+
+
 namespace rocksdb {
 
 class DBWithTTLImpl : public DBWithTTL {
@@ -45,7 +51,7 @@ class DBWithTTLImpl : public DBWithTTL {
   using StackableDB::Get;
   virtual Status Get(const ReadOptions& options,
                      ColumnFamilyHandle* column_family, const Slice& key,
-                     std::string* value) override;
+                     PinnableSlice* value) override;
 
   using StackableDB::MultiGet;
   virtual std::vector<Status> MultiGet(
@@ -71,7 +77,7 @@ class DBWithTTLImpl : public DBWithTTL {
   virtual Iterator* NewIterator(const ReadOptions& opts,
                                 ColumnFamilyHandle* column_family) override;
 
-  virtual DB* GetBaseDB() { return db_; }
+  virtual DB* GetBaseDB() override { return db_; }
 
   static bool IsStale(const Slice& value, int32_t ttl, Env* env);
 
@@ -80,6 +86,8 @@ class DBWithTTLImpl : public DBWithTTL {
   static Status SanityCheckTimestamp(const Slice& str);
 
   static Status StripTS(std::string* str);
+
+  static Status StripTS(PinnableSlice* str);
 
   static const uint32_t kTSLength = sizeof(int32_t);  // size of timestamp
 
@@ -95,26 +103,28 @@ class TtlIterator : public Iterator {
 
   ~TtlIterator() { delete iter_; }
 
-  bool Valid() const { return iter_->Valid(); }
+  bool Valid() const override { return iter_->Valid(); }
 
-  void SeekToFirst() { iter_->SeekToFirst(); }
+  void SeekToFirst() override { iter_->SeekToFirst(); }
 
-  void SeekToLast() { iter_->SeekToLast(); }
+  void SeekToLast() override { iter_->SeekToLast(); }
 
-  void Seek(const Slice& target) { iter_->Seek(target); }
+  void Seek(const Slice& target) override { iter_->Seek(target); }
 
-  void Next() { iter_->Next(); }
+  void SeekForPrev(const Slice& target) override { iter_->SeekForPrev(target); }
 
-  void Prev() { iter_->Prev(); }
+  void Next() override { iter_->Next(); }
 
-  Slice key() const { return iter_->key(); }
+  void Prev() override { iter_->Prev(); }
+
+  Slice key() const override { return iter_->key(); }
 
   int32_t timestamp() const {
     return DecodeFixed32(iter_->value().data() + iter_->value().size() -
                          DBWithTTLImpl::kTSLength);
   }
 
-  Slice value() const {
+  Slice value() const override {
     // TODO: handle timestamp corruption like in general iterator semantics
     assert(DBWithTTLImpl::SanityCheckTimestamp(iter_->value()).ok());
     Slice trimmed_value = iter_->value();
@@ -122,7 +132,7 @@ class TtlIterator : public Iterator {
     return trimmed_value;
   }
 
-  Status status() const { return iter_->status(); }
+  Status status() const override { return iter_->status(); }
 
  private:
   Iterator* iter_;
@@ -187,10 +197,16 @@ class TtlCompactionFilterFactory : public CompactionFilterFactory {
       : ttl_(ttl), env_(env), user_comp_filter_factory_(comp_filter_factory) {}
 
   virtual std::unique_ptr<CompactionFilter> CreateCompactionFilter(
-      const CompactionFilter::Context& context) {
+      const CompactionFilter::Context& context) override {
+    std::unique_ptr<const CompactionFilter> user_comp_filter_from_factory =
+        nullptr;
+    if (user_comp_filter_factory_) {
+      user_comp_filter_from_factory =
+          user_comp_filter_factory_->CreateCompactionFilter(context);
+    }
+
     return std::unique_ptr<TtlCompactionFilter>(new TtlCompactionFilter(
-        ttl_, env_, nullptr,
-        std::move(user_comp_filter_factory_->CreateCompactionFilter(context))));
+        ttl_, env_, nullptr, std::move(user_comp_filter_from_factory)));
   }
 
   virtual const char* Name() const override {
@@ -206,43 +222,51 @@ class TtlCompactionFilterFactory : public CompactionFilterFactory {
 class TtlMergeOperator : public MergeOperator {
 
  public:
-  explicit TtlMergeOperator(const std::shared_ptr<MergeOperator> merge_op,
+  explicit TtlMergeOperator(const std::shared_ptr<MergeOperator>& merge_op,
                             Env* env)
       : user_merge_op_(merge_op), env_(env) {
     assert(merge_op);
     assert(env);
   }
 
-  virtual bool FullMerge(const Slice& key, const Slice* existing_value,
-                         const std::deque<std::string>& operands,
-                         std::string* new_value, Logger* logger) const
-      override {
+  virtual bool FullMergeV2(const MergeOperationInput& merge_in,
+                           MergeOperationOutput* merge_out) const override {
     const uint32_t ts_len = DBWithTTLImpl::kTSLength;
-    if (existing_value && existing_value->size() < ts_len) {
-      Log(logger, "Error: Could not remove timestamp from existing value.");
+    if (merge_in.existing_value && merge_in.existing_value->size() < ts_len) {
+      ROCKS_LOG_ERROR(merge_in.logger,
+                      "Error: Could not remove timestamp from existing value.");
       return false;
     }
 
     // Extract time-stamp from each operand to be passed to user_merge_op_
-    std::deque<std::string> operands_without_ts;
-    for (const auto& operand : operands) {
+    std::vector<Slice> operands_without_ts;
+    for (const auto& operand : merge_in.operand_list) {
       if (operand.size() < ts_len) {
-        Log(logger, "Error: Could not remove timestamp from operand value.");
+        ROCKS_LOG_ERROR(
+            merge_in.logger,
+            "Error: Could not remove timestamp from operand value.");
         return false;
       }
-      operands_without_ts.push_back(operand.substr(0, operand.size() - ts_len));
+      operands_without_ts.push_back(operand);
+      operands_without_ts.back().remove_suffix(ts_len);
     }
 
     // Apply the user merge operator (store result in *new_value)
     bool good = true;
-    if (existing_value) {
-      Slice existing_value_without_ts(existing_value->data(),
-                                      existing_value->size() - ts_len);
-      good = user_merge_op_->FullMerge(key, &existing_value_without_ts,
-                                       operands_without_ts, new_value, logger);
+    MergeOperationOutput user_merge_out(merge_out->new_value,
+                                        merge_out->existing_operand);
+    if (merge_in.existing_value) {
+      Slice existing_value_without_ts(merge_in.existing_value->data(),
+                                      merge_in.existing_value->size() - ts_len);
+      good = user_merge_op_->FullMergeV2(
+          MergeOperationInput(merge_in.key, &existing_value_without_ts,
+                              operands_without_ts, merge_in.logger),
+          &user_merge_out);
     } else {
-      good = user_merge_op_->FullMerge(key, nullptr, operands_without_ts,
-                                       new_value, logger);
+      good = user_merge_op_->FullMergeV2(
+          MergeOperationInput(merge_in.key, nullptr, operands_without_ts,
+                              merge_in.logger),
+          &user_merge_out);
     }
 
     // Return false if the user merge operator returned false
@@ -250,17 +274,24 @@ class TtlMergeOperator : public MergeOperator {
       return false;
     }
 
+    if (merge_out->existing_operand.data()) {
+      merge_out->new_value.assign(merge_out->existing_operand.data(),
+                                  merge_out->existing_operand.size());
+      merge_out->existing_operand = Slice(nullptr, 0);
+    }
+
     // Augment the *new_value with the ttl time-stamp
     int64_t curtime;
     if (!env_->GetCurrentTime(&curtime).ok()) {
-      Log(logger,
+      ROCKS_LOG_ERROR(
+          merge_in.logger,
           "Error: Could not get current time to be attached internally "
           "to the new value.");
       return false;
     } else {
       char ts_string[ts_len];
       EncodeFixed32(ts_string, (int32_t)curtime);
-      new_value->append(ts_string, ts_len);
+      merge_out->new_value.append(ts_string, ts_len);
       return true;
     }
   }
@@ -274,7 +305,8 @@ class TtlMergeOperator : public MergeOperator {
 
     for (const auto& operand : operand_list) {
       if (operand.size() < ts_len) {
-        Log(logger, "Error: Could not remove timestamp from value.");
+        ROCKS_LOG_ERROR(logger,
+                        "Error: Could not remove timestamp from value.");
         return false;
       }
 
@@ -292,7 +324,8 @@ class TtlMergeOperator : public MergeOperator {
     // Augment the *new_value with the ttl time-stamp
     int64_t curtime;
     if (!env_->GetCurrentTime(&curtime).ok()) {
-      Log(logger,
+      ROCKS_LOG_ERROR(
+          logger,
           "Error: Could not get current time to be attached internally "
           "to the new value.");
       return false;

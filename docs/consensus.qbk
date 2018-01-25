@@ -458,10 +458,12 @@ struct Ledger
 {
   using ID = ...;
 
+  using Seq = //std::uint32_t?...;
+
   ID const & id() const;
 
   // Sequence number that is 1 more than the parent ledger's seq()
-  std::size_t seq() const;
+  Seq seq() const;
 
   // Whether the ledger's close time was a non-trivial consensus result
   bool closeAgree() const;
@@ -633,14 +635,14 @@ struct Adaptor
     // Propose the position to peers.
     void propose(ConsensusProposal<...> const & pos);
 
-    // Relay a received peer proposal on to other peer's.
-    void relay(PeerPosition_t const & pos);
+    // Share a received peer proposal with other peers.
+    void share(PeerPosition_t const & pos);
 
-    // Relay a disputed transaction to peers
-    void relay(TxSet::Tx const & tx);
+    // Share a disputed transaction with peers
+    void share(TxSet::Tx const & tx);
 
-    // Realy given transaction set with peers
-    void relay(TxSet const &s);
+    // Share given transaction set with peers
+    void share(TxSet const &s);
 
     //... implementation specific
 };
@@ -649,9 +651,9 @@ struct Adaptor
 The implementing class hides many details of the peer communication
 model from the generic code.
 
-* The =relay= member functions are responsible for sharing the given type with a
+* The =share= member functions are responsible for sharing the given type with a
   node's peers, but are agnostic to the mechanism. Ideally, messages are delivered
-  faster than =LEDGER_GRANULARITY=.
+  faster than =LEDGER_GRANULARITY=. 
 * The generic code does not specify how transactions are submitted by clients,
   propagated through the network or stored in the open ledger. Indeed, the open
   ledger is only conceptual from the perspective of the generic code---the

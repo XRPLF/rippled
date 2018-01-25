@@ -38,14 +38,14 @@ matrix:
   include:
     # Default BUILD is "scons".
 
-    - compiler: gcc
-      env: GCC_VER=5 BUILD=cmake TARGET=debug.nounity PATH=$PWD/cmake/bin:$PATH
+    # - compiler: gcc
+    #   env: GCC_VER=5 TARGET=debug.nounity
 
     - compiler: gcc
-      env: GCC_VER=5 TARGET=coverage
+      env: GCC_VER=5 BUILD=cmake TARGET=coverage PATH=$PWD/cmake/bin:$PATH
 
     - compiler: clang
-      env: GCC_VER=5 TARGET=debug CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
+      env: GCC_VER=5 BUILD=cmake TARGET=debug CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PWD/cmake/bin:$PATH
       cache:
         directories:
           - $GDB_ROOT
