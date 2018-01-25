@@ -174,48 +174,78 @@ public:
         auto const USD = gw["USD"];
 
         env.fund (XRP (10000), alice, gw);
+        env.close();
         env.trust (USD (100), alice);
+        env.close();
 
         env (pay (gw, alice, USD (50)));
+        env.close();
 
-        auto const firstOfferSeq = env.seq (alice);
+        auto const offer1Seq = env.seq (alice);
 
         env (offer (alice, XRP (500), USD (100)),
             require (offers (alice, 1)));
+        env.close();
 
         BEAST_EXPECT(isOffer (env, alice, XRP (500), USD (100)));
 
         // cancel the offer above and replace it with a new offer
+        auto const offer2Seq = env.seq (alice);
+
         env (offer (alice, XRP (300), USD (100)),
-             json (jss::OfferSequence, firstOfferSeq),
+             json (jss::OfferSequence, offer1Seq),
              require (offers (alice, 1)));
+        env.close();
 
         BEAST_EXPECT(isOffer (env, alice, XRP (300), USD (100)) &&
             !isOffer (env, alice, XRP (500), USD (100)));
 
         // Test canceling non-existent offer.
+//      auto const offer3Seq = env.seq (alice);
+
         env (offer (alice, XRP (400), USD (200)),
-             json (jss::OfferSequence, firstOfferSeq),
+             json (jss::OfferSequence, offer1Seq),
              require (offers (alice, 2)));
+        env.close();
 
         BEAST_EXPECT(isOffer (env, alice, XRP (300), USD (100)) &&
             isOffer (env, alice, XRP (400), USD (200)));
 
         // Test cancellation now with OfferCancel tx
-        auto const nextOfferSeq = env.seq (alice);
+        auto const offer4Seq = env.seq (alice);
         env (offer (alice, XRP (222), USD (111)),
             require (offers (alice, 3)));
+        env.close();
 
         BEAST_EXPECT(isOffer (env, alice, XRP (222), USD (111)));
-
-        Json::Value cancelOffer;
-        cancelOffer[jss::Account] = alice.human();
-        cancelOffer[jss::OfferSequence] = nextOfferSeq;
-        cancelOffer[jss::TransactionType] = "OfferCancel";
-        env (cancelOffer);
-        BEAST_EXPECT(env.seq(alice) == nextOfferSeq + 2);
+        {
+            Json::Value cancelOffer;
+            cancelOffer[jss::Account] = alice.human();
+            cancelOffer[jss::OfferSequence] = offer4Seq;
+            cancelOffer[jss::TransactionType] = "OfferCancel";
+            env (cancelOffer);
+        }
+        env.close();
+        BEAST_EXPECT(env.seq(alice) == offer4Seq + 2);
 
         BEAST_EXPECT(!isOffer (env, alice, XRP (222), USD (111)));
+
+        // Create an offer that both fails with a tecEXPIRED code and removes
+        // an offer.  Show that the attempt to remove the offer fails.
+        env.require (offers (alice, 2));
+
+        // featureChecks changes the return code on an expired Offer.  Adapt
+        // to that.
+        bool const featChecks {features[featureChecks]};
+        env (offer (alice, XRP (5), USD (2)),
+            json (sfExpiration.fieldName, lastClose(env)),
+            json (jss::OfferSequence, offer2Seq),
+            ter (featChecks ? tecEXPIRED : tesSUCCESS));
+        env.close();
+
+        env.require (offers (alice, 2));
+        BEAST_EXPECT( isOffer (env, alice, XRP (300), USD (100))); // offer2
+        BEAST_EXPECT(!isOffer (env, alice, XRP   (5), USD   (2))); // expired
     }
 
     void testTinyPayment (FeatureBitset features)
@@ -859,10 +889,9 @@ public:
 
         // Offer with a bad expiration
         {
-            Json::StaticString const key {"Expiration"};
-
             env (offer (alice, USD (1000), XRP (1000)),
-                json (key, std::uint32_t (0)), ter(temBAD_EXPIRATION));
+                json (sfExpiration.fieldName, std::uint32_t (0)),
+                ter(temBAD_EXPIRATION));
             env.require (
                 owners (alice, 1),
                 offers (alice, 0));
@@ -905,8 +934,6 @@ public:
         auto const usdOffer = USD (1000);
         auto const xrpOffer = XRP (1000);
 
-        Json::StaticString const key ("Expiration");
-
         Env env {*this, features};
         auto const closeTime =
             fix1449Time () +
@@ -931,7 +958,8 @@ public:
         // The Checks amendment changes the return code; adapt to that.
         bool const featChecks {features[featureChecks]};
 
-        env (offer (alice, xrpOffer, usdOffer), json (key, lastClose(env)),
+        env (offer (alice, xrpOffer, usdOffer),
+            json (sfExpiration.fieldName, lastClose(env)),
             ter (featChecks ? tecEXPIRED : tesSUCCESS));
 
         env.require (
@@ -943,7 +971,8 @@ public:
 
         // Add an offer that expires before the next ledger close
         env (offer (alice, xrpOffer, usdOffer),
-            json (key, lastClose(env) + 1),         ter(tesSUCCESS));
+            json (sfExpiration.fieldName, lastClose(env) + 1),
+            ter(tesSUCCESS));
         env.require (
             balance (alice, startBalance - f - f - f),
             balance (alice, usdOffer),
