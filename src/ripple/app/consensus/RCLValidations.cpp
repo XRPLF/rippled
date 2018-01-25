@@ -105,7 +105,7 @@ mismatch(RCLValidatedLedger const& a, RCLValidatedLedger const& b)
     Seq const upper = std::min(a.seq(), b.seq());
 
     Seq curr = upper;
-    while (a[curr] != b[curr] && curr >= lower && curr != Seq{0})
+    while (curr != Seq{0} && a[curr] != b[curr] && curr >= lower)
         --curr;
 
     // If the searchable interval mismatches entirely, then we have to
