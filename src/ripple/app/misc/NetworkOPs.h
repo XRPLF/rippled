@@ -27,6 +27,7 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/protocol/STValidation.h>
+#include <boost/asio.hpp>
 #include <memory>
 #include <deque>
 #include <tuple>

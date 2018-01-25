@@ -24,10 +24,11 @@
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/crypto/csprng.h>
-#include <beast/websocket.hpp>
-#include <beast/core/multi_buffer.hpp>
-#include <beast/http/message.hpp>
+#include <boost/beast/websocket.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
+#include <boost/beast/http/message.hpp>
 #include <cassert>
+#include <functional>
 
 namespace ripple {
 
@@ -48,24 +49,24 @@ private:
     friend class BasePeer<Handler, Impl>;
 
     http_request_type request_;
-    beast::multi_buffer rb_;
-    beast::multi_buffer wb_;
+    boost::beast::multi_buffer rb_;
+    boost::beast::multi_buffer wb_;
     std::list<std::shared_ptr<WSMsg>> wq_;
     bool do_close_ = false;
-    beast::websocket::close_reason cr_;
+    boost::beast::websocket::close_reason cr_;
     waitable_timer timer_;
     bool close_on_timer_ = false;
     bool ping_active_ = false;
-    beast::websocket::ping_data payload_;
+    boost::beast::websocket::ping_data payload_;
     error_code ec_;
-
+    std::function<void (boost::beast::websocket::frame_type , boost::beast::string_view)> control_callback_;
 public:
     template<class Body, class Headers>
     BaseWSPeer(
         Port const& port,
         Handler& handler,
         endpoint_type remote_address,
-        beast::http::request<Body, Headers>&& request,
+        boost::beast::http::request<Body, Headers>&& request,
         boost::asio::io_service& io_service,
         beast::Journal journal);
 
@@ -141,8 +142,8 @@ protected:
     on_ping(error_code const& ec);
 
     void
-    on_ping_pong(beast::websocket::frame_type kind,
-        beast::string_view payload);
+    on_ping_pong(boost::beast::websocket::frame_type kind,
+        boost::beast::string_view payload);
 
     void
     on_timer(error_code ec);
@@ -161,7 +162,7 @@ BaseWSPeer(
     Port const& port,
     Handler& handler,
     endpoint_type remote_address,
-    beast::http::request<Body, Headers>&& request,
+    boost::beast::http::request<Body, Headers>&& request,
     boost::asio::io_service& io_service,
     beast::Journal journal)
     : BasePeer<Handler, Impl>(port, handler, remote_address,
@@ -180,15 +181,17 @@ run()
         return strand_.post(std::bind(
             &BaseWSPeer::run, impl().shared_from_this()));
     impl().ws_.set_option(port().pmd_options);
-    impl().ws_.control_callback(
-        std::bind(&BaseWSPeer::on_ping_pong, this,
-            std::placeholders::_1, std::placeholders::_2));
+    // Must manage the control callback memory outside of the `control_callback` function
+    control_callback_ = std::bind(
+        &BaseWSPeer::on_ping_pong,
+        this, std::placeholders::_1, std::placeholders::_2);
+    impl().ws_.control_callback(control_callback_);
     start_timer();
     close_on_timer_ = true;
     impl().ws_.async_accept_ex(request_,
         [](auto & res)
         {
-            res.set(beast::http::field::server,
+            res.set(boost::beast::http::field::server,
                 BuildInfo::getFullVersionString());
         },
         strand_.wrap(std::bind(&BaseWSPeer::on_ws_handshake,
@@ -210,7 +213,7 @@ send(std::shared_ptr<WSMsg> w)
     {
         JLOG(this->j_.info()) <<
             "closing slow client";
-        cr_.code = static_cast<beast::websocket::close_code>(4000);
+        cr_.code = static_cast<boost::beast::websocket::close_code>(4000);
         cr_.reason = "Client is too slow.";
         wq_.erase(std::next(wq_.begin()), wq_.end());
         close();
@@ -284,12 +287,12 @@ on_write(error_code const& ec)
         return;
     start_timer();
     if(! result.first)
-        impl().ws_.async_write_frame(
+        impl().ws_.async_write_some(
             result.first, result.second, strand_.wrap(std::bind(
                 &BaseWSPeer::on_write, impl().shared_from_this(),
                     std::placeholders::_1)));
     else
-        impl().ws_.async_write_frame(
+        impl().ws_.async_write_some(
             result.first, result.second, strand_.wrap(std::bind(
                 &BaseWSPeer::on_write_fin, impl().shared_from_this(),
                     std::placeholders::_1)));
@@ -329,7 +332,7 @@ void
 BaseWSPeer<Handler, Impl>::
 on_read(error_code const& ec)
 {
-    if(ec == beast::websocket::error::closed)
+    if(ec == boost::beast::websocket::error::closed)
         return on_close({});
     if(ec)
         return fail(ec, "read");
@@ -395,12 +398,12 @@ on_ping(error_code const& ec)
 template<class Handler, class Impl>
 void
 BaseWSPeer<Handler, Impl>::
-on_ping_pong(beast::websocket::frame_type kind,
-    beast::string_view payload)
+on_ping_pong(boost::beast::websocket::frame_type kind,
+    boost::beast::string_view payload)
 {
-    if(kind == beast::websocket::frame_type::pong)
+    if(kind == boost::beast::websocket::frame_type::pong)
     {
-        beast::string_view p(payload_.begin());
+        boost::beast::string_view p(payload_.begin());
         if(payload == p)
         {
             close_on_timer_ = false;
