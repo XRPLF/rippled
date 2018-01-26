@@ -3297,9 +3297,6 @@
     <ClInclude Include="..\..\src\ripple\rpc\handlers\WalletPropose.h">
       <Filter>ripple\rpc\handlers</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\WalletSeed.cpp">
-      <Filter>ripple\rpc\handlers</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Handler.cpp">
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
