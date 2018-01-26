@@ -71,7 +71,7 @@ public:
         Seq const diverge = history.size()/2;
         std::vector<std::shared_ptr<Ledger const>> altHistory(
             history.begin(), history.begin() + diverge);
-        // advance clock too get new ledgers
+        // advance clock to get new ledgers
         env.timeKeeper().set(env.timeKeeper().now() + 1200s);
         prev = altHistory.back();
         bool forceHash = true;
@@ -179,27 +179,24 @@ public:
         // Different chains, different seqs
         {
             // Compare around the divergence point
-            for(auto ledger : {history[diverge]})
+            RCLValidatedLedger a{history[diverge], j};
+            for(Seq offset = diverge/2; offset < 3*diverge/2; ++offset)
             {
-                RCLValidatedLedger a{ledger, j};
-                for(Seq offset = diverge/2; offset < 3*diverge/2; ++offset)
+                RCLValidatedLedger b{altHistory[offset-1], j};
+                if(offset <= diverge)
                 {
-                    RCLValidatedLedger b{altHistory[offset-1], j};
-                    if(offset <= diverge)
-                    {
-                        BEAST_EXPECT(mismatch(a,b) == b.seq() + 1);
-                    }
-                    else
-                    {
-                        BEAST_EXPECT(mismatch(a,b) == diverge + 1);
-                    }
+                    BEAST_EXPECT(mismatch(a,b) == b.seq() + 1);
+                }
+                else
+                {
+                    BEAST_EXPECT(mismatch(a,b) == diverge + 1);
                 }
             }
         }
 
 
     }
-};  // namespace test
+};
 
 BEAST_DEFINE_TESTSUITE(RCLValidations, app, ripple);
 

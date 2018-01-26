@@ -96,7 +96,7 @@ private:
         NetClock::time_point parentCloseTime;
 
         //! IDs of this ledgers ancestors. Since each ledger already has unique
-        //! ancestors based on the parentID, this member is not needed foor any
+        //! ancestors based on the parentID, this member is not needed for any
         //! of the operators below.
         std::vector<Ledger::ID> ancestors;
 
@@ -323,7 +323,7 @@ struct LedgerHistoryHelper
 
     /** Get or create the ledger with the given string history.
 
-        Creates an necessary intermediate ledgers, but asserts if
+        Creates any necessary intermediate ledgers, but asserts if
         a letter is re-used (e.g. "abc" then "adc" would assert)
     */
     Ledger const& operator[](std::string const& s)

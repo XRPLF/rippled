@@ -227,7 +227,7 @@ checkConsensus(
       // Number of proposers that have validated a ledger descended from the
       // given ledger; if prevLedger.id() != prevLedgerID, use prevLedgerID
       // for the determination
-      std::size_t proposersFinished(Ledger conost & prev,
+      std::size_t proposersFinished(Ledger const & prevLedger,
                                     Ledger::ID const & prevLedger) const;
 
       // Return the ID of the last closed (and validated) ledger that the

@@ -100,7 +100,7 @@ mismatch(RCLValidatedLedger const& a, RCLValidatedLedger const& b)
 {
     using Seq = RCLValidatedLedger::Seq;
 
-    // Find overlapping interval for known sequence for the the ledgers
+    // Find overlapping interval for known sequence for the ledgers
     Seq const lower = std::max(a.minSeq(), b.minSeq());
     Seq const upper = std::min(a.seq(), b.seq());
 
@@ -297,12 +297,7 @@ handleNewValidation(Application& app,
     RCLValidations& validations = app.getValidations();
     beast::Journal j = validations.adaptor().journal();
 
-    // masterKey is seated only if validator is trusted or listed
-    if (masterKey)
-    {
-        ValStatus const outcome = validations.add(*masterKey, val);
-
-        auto dmp = [&](beast::Journal::Stream s, std::string const& msg) {
+    auto dmp = [&](beast::Journal::Stream s, std::string const& msg) {
             s << "Val for " << hash
               << (val->isTrusted() ? " trusted/" : " UNtrusted/")
               << (val->isFull() ? " full" : "partial") << " from "
@@ -313,6 +308,20 @@ handleNewValidation(Application& app,
               << " src=" << source;
         };
 
+    if(!val->isFieldPresent(sfLedgerSequence))
+    {
+        if(j.error())
+            dmp(j.error(), " missing ledger seqeuence field");
+        return false;
+    }
+
+    // masterKey is seated only if validator is trusted or listed
+    if (masterKey)
+    {
+        ValStatus const outcome = validations.add(*masterKey, val);
+
+
+
         if(j.debug())
             dmp(j.debug(), to_string(outcome));
 
@@ -320,6 +329,13 @@ handleNewValidation(Application& app,
         {
             auto const seq = val->getFieldU32(sfLedgerSequence);
             dmp(j.warn(), " already validated sequence past " + to_string(seq));
+        }
+        else if(outcome == ValStatus::repeat && j.warn())
+        {
+            auto const seq = val->getFieldU32(sfLedgerSequence);
+            dmp(j.warn(),
+                " already validated ledger with same id but different seq "
+                "than" + to_string(seq));
         }
 
         if (val->isTrusted() && outcome == ValStatus::current)

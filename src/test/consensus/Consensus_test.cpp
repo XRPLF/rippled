@@ -869,7 +869,7 @@ public:
         on(csf::PeerID who, csf::SimTime, csf::AcceptLedger const& e)
         {
             // As soon as anyone generates a child of B or C, reconnect the
-            // network so those validation make it through
+            // network so those validations make it through
             if (!reconnected && e.ledger.seq() == csf::Ledger::Seq{3})
             {
                 reconnected = true;
@@ -902,12 +902,11 @@ public:
         // - All nodes generate the common ledger A
         // - 2 nodes generate B and 8 nodes generate C
         // - Only 1 of the C nodes sees all the C validations and fully
-        //   validates C. The rest of the C nodes disconnect split at just
-        //   the right time such that they never see any C validations but
-        //   their own.
+        //   validates C. The rest of the C nodes split at just the right time
+        //   such that they never see any C validations but their own.
         // - The C nodes continue and generate 8 different child ledgers.
         // - Meanwhile, the D nodes only saw 1 validation for C and 2 validations
-        //   for C.
+        //   for B.
         // - The network reconnects and the validations for generation 3 ledgers
         //   are observed (D and the 8 C's)
         // - In the old approach, 2 votes for D outweights 1 vote for each C'
@@ -938,7 +937,7 @@ public:
         // other nodes
         network.connect(groupCfast, fDelay);
         // The rest of the network is connected at the same speed
-        (network - groupCfast).connect(network - groupCfast, delay);
+        groupNotFastC.connect(groupNotFastC, delay);
 
         Disruptor dc(network, groupCfast, groupCsplit, delay);
         sim.collectors.add(dc);

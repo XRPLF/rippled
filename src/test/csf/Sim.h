@@ -141,26 +141,24 @@ public:
 
     /** Check whether all peers in the group are synchronized.
 
-        Nodes in the network are synchronized if they share the same last
+        Nodes in the group are synchronized if they share the same last
         fully validated and last generated ledger.
     */
     bool
-    synchronized(PeerGroup const & g) const;
-
+    synchronized(PeerGroup const& g) const;
 
     /** Check whether all peers in the network are synchronized
     */
     bool
     synchronized() const;
 
-
     /** Calculate the number of branches in the group.
 
-        A branch occurs if two peers have fullyValidatedLedgers that are not on
-        the same chain of ledgers.
+        A branch occurs if two nodes in the group have fullyValidatedLedgers
+       that are not on the same chain of ledgers.
     */
     std::size_t
-    branches(PeerGroup const & g) const;
+    branches(PeerGroup const& g) const;
 
     /** Calculate the number  of branches in the network
     */

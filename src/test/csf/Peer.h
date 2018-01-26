@@ -587,7 +587,7 @@ struct Peer
                              key,
                              id,
                              isFull};
-                // share thew new validation; it is trusted by the receiver
+                // share the new validation; it is trusted by the receiver
                 share(v);
                 // we trust ourselves
                 addTrustedValidation(v);

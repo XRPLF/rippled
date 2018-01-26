@@ -103,7 +103,7 @@ public:
     {
         if(now > (when_ + p.validationSET_EXPIRES))
             seq_ = Seq{0};
-        if(seq_ != Seq{0} && s <= seq_)
+        if(s <= seq_)
             return false;
         seq_ = s;
         when_ = now;
@@ -151,11 +151,11 @@ isCurrent(
 enum class ValStatus {
     /// This was a new validation and was added
     current,
-    /// Already had this exact same validation
+    /// Already had this validation for this ID but different seq
     repeat,
     /// Not current or was older than current from this node
     stale,
-    /// A validation was marked full but it violates increasing seq requirement
+    /// A validation violates the increasing seq requirement
     badSeq
 };
 
@@ -377,7 +377,7 @@ private:
         @param lock Existing lock of mutex_
         @param key The master public key identifying the validating node
         @param val The trusted validation issued by the node
-        @param priorID If not none, the ID of the last current validated ledger.
+        @param priorID If not none, the last current validated ledger from key
     */
     void
     updateTrie(
@@ -413,7 +413,7 @@ private:
         Accessing the trie through this helper ensures acquiring validations
         are checked and any stale validations are flushed from the trie.
 
-        @param lock Existing locked of mutex_
+        @param lock Existing lock of mutex_
         @param f Invokable with signature (LedgerTrie<Ledger> &)
 
         @warning The invokable `f` is expected to be a simple transformation of
@@ -551,7 +551,7 @@ public:
         Attempt to add a new validation.
 
         @param key The master key associated with this validation
-        @param val The validationo to store
+        @param val The validation to store
         @return The outcome
 
         @note The provided key may differ from the validations's  key()
@@ -568,13 +568,10 @@ public:
 
             // Check that validation sequence is greater than any non-expired
             // validations sequence from that validator
-            if (val.seq() != Seq{0})
-            {
-                auto const now = byLedger_.clock().now();
-                SeqEnforcer<Seq>& enforcer = seqEnforcers_[key];
-                if (!enforcer(now, val.seq(), parms_))
-                    return ValStatus::badSeq;
-            }
+            auto const now = byLedger_.clock().now();
+            SeqEnforcer<Seq>& enforcer = seqEnforcers_[key];
+            if (!enforcer(now, val.seq(), parms_))
+                return ValStatus::badSeq;
 
             // This validation is a repeat if we already have
             // one with the same id for this key
@@ -631,7 +628,7 @@ public:
         and is *not* an ancestor of the current working ledger; otherwise it
         remains the current working ledger.
 
-        @param currLedger The local nodes current working ledger
+        @param currLedger The local node's current working ledger
 
         @return The sequence and id of the preferred working ledger,
                 or Seq{0},ID{0} if no trusted validations are available to
@@ -674,7 +671,8 @@ public:
         if (preferredSeq > currSeq)
             return std::make_pair(preferredSeq, preferredID);
 
-        // Only switch to earlier sequence numbers if it is a different chain.
+        // Only switch to earlier or same sequence number
+        // if it is a different chain.
         if (currLedger[preferredSeq] != preferredID)
             return std::make_pair(preferredSeq, preferredID);
 

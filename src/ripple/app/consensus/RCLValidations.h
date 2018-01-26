@@ -63,9 +63,7 @@ public:
     std::uint32_t
     seq() const
     {
-        if(auto res = (*val_)[~sfLedgerSequence])
-            return *res;
-        return 0;
+        return val_->getFieldU32(sfLedgerSequence);
     }
 
     /// Validation's signing time

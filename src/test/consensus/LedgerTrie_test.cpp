@@ -73,13 +73,13 @@ class LedgerTrie_test : public beast::unit_test::suite
             BEAST_EXPECT(t.tipSupport(h["abce"]) == 1);
             BEAST_EXPECT(t.branchSupport(h["abce"]) == 1);
         }
-        // Prefix of existing node
+        // uncommitted of existing node
         {
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["abcd"]);
             BEAST_EXPECT(t.checkInvariants());
-            // prefix with no siblings
+            // uncommitted with no siblings
             t.insert(h["abcdf"]);
             BEAST_EXPECT(t.checkInvariants());
 
@@ -88,7 +88,7 @@ class LedgerTrie_test : public beast::unit_test::suite
             BEAST_EXPECT(t.tipSupport(h["abcdf"]) == 1);
             BEAST_EXPECT(t.branchSupport(h["abcdf"]) == 1);
 
-            // prefix with existing child
+            // uncommitted with existing child
             t.insert(h["abc"]);
             BEAST_EXPECT(t.checkInvariants());
 
@@ -99,7 +99,7 @@ class LedgerTrie_test : public beast::unit_test::suite
             BEAST_EXPECT(t.tipSupport(h["abcdf"]) == 1);
             BEAST_EXPECT(t.branchSupport(h["abcdf"]) == 1);
         }
-        // Suffix + prefix of existing node
+        // Suffix + uncommitted of existing node
         {
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
@@ -115,7 +115,7 @@ class LedgerTrie_test : public beast::unit_test::suite
             BEAST_EXPECT(t.tipSupport(h["abce"]) == 1);
             BEAST_EXPECT(t.branchSupport(h["abce"]) == 1);
         }
-        // Suffix + prefix with existing child
+        // Suffix + uncommitted with existing child
         {
             //  abcd : abcde, abcf
 
@@ -454,7 +454,7 @@ class LedgerTrie_test : public beast::unit_test::suite
             BEAST_EXPECT(t.getPreferred(Seq{5}).second == h["abcde"].id());
         }
 
-        // Too much prefix support from competing branches
+        // Too much uncommitted support from competing branches
         {
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;

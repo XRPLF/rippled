@@ -363,14 +363,14 @@ class Validations_test : public beast::unit_test::suite
             // Processing validations out of order should ignore the older
             // validation
             harness.clock().advance(2s);
-            auto const val3 = n.validate(ledgerABCDE);
+            auto const valABCDE = n.validate(ledgerABCDE);
 
             harness.clock().advance(4s);
-            auto const val4 = n.validate(ledgerABCD);
+            auto const valABCD = n.validate(ledgerABCD);
 
-            BEAST_EXPECT(ValStatus::current == harness.add(val4));
+            BEAST_EXPECT(ValStatus::current == harness.add(valABCD));
 
-            BEAST_EXPECT(ValStatus::stale == harness.add(val3));
+            BEAST_EXPECT(ValStatus::stale == harness.add(valABCDE));
         }
 
         {
@@ -388,7 +388,7 @@ class Validations_test : public beast::unit_test::suite
                 ValStatus::stale ==
                 harness.add(n.validate(ledgerAB, -1s, -1s)));
 
-            // Process a validation that has an "leter" seq and later sign
+            // Process a validation that has a later seq and later sign
             // time
             BEAST_EXPECT(
                 ValStatus::current ==
@@ -473,7 +473,7 @@ class Validations_test : public beast::unit_test::suite
 
             BEAST_EXPECT(
                 ValStatus::current == harness.add(n.validate(ledgerAB)));
-            harness.vals().currentTrusted();
+            trigger(harness.vals());
             BEAST_EXPECT(
                 harness.vals().getNodesAfter(ledgerA, ledgerA.id()) == 1);
             BEAST_EXPECT(
@@ -931,10 +931,16 @@ class Validations_test : public beast::unit_test::suite
         // Single trusted always wins over peer counts
         BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerA)));
         BEAST_EXPECT(
+            harness.vals().getPreferredLCL(ledgerA, Seq{0}, peerCounts) ==
+            ledgerA.id());
+        BEAST_EXPECT(
             harness.vals().getPreferredLCL(ledgerB, Seq{0}, peerCounts) ==
             ledgerA.id());
+        BEAST_EXPECT(
+            harness.vals().getPreferredLCL(ledgerC, Seq{0}, peerCounts) ==
+            ledgerA.id());
 
-        // Stick with current ledger if trusted validation ledger has to old
+        // Stick with current ledger if trusted validation ledger has too old
         // of a sequence
         BEAST_EXPECT(
             harness.vals().getPreferredLCL(ledgerB, Seq{2}, peerCounts) ==
@@ -1017,8 +1023,8 @@ class Validations_test : public beast::unit_test::suite
 
         BEAST_EXPECT(enforcer(clock.now(), Seq{1}, p));
         BEAST_EXPECT(enforcer(clock.now(), Seq{10}, p));
-        BEAST_EXPECT(!enforcer(clock.now(), Seq{9}, p));
         BEAST_EXPECT(!enforcer(clock.now(), Seq{5}, p));
+        BEAST_EXPECT(!enforcer(clock.now(), Seq{9}, p));
         clock.advance(p.validationSET_EXPIRES - 1ms);
         BEAST_EXPECT(!enforcer(clock.now(), Seq{1}, p));
         clock.advance(2ms);
