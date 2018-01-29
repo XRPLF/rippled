@@ -247,7 +247,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
     set(port.ssl_ciphers, "ssl_ciphers", section);
 
     port.pmd_options.server_enable =
-        section.value_or("permessage_deflate", false);
+        section.value_or("permessage_deflate", true);
     port.pmd_options.client_max_window_bits =
         section.value_or("client_max_window_bits", 15);
     port.pmd_options.server_max_window_bits =
@@ -257,7 +257,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
     port.pmd_options.server_no_context_takeover =
         section.value_or("server_no_context_takeover", false);
     port.pmd_options.compLevel =
-        section.value_or("compress_level", 3);
+        section.value_or("compress_level", 8);
     port.pmd_options.memLevel =
         section.value_or("memory_level", 4);
 }
