@@ -52,6 +52,9 @@ if [[ ${BUILD:-scons} == "cmake" ]]; then
 else
   export APP_PATH="$PWD/build/$CC.$TARGET/${APP}"
   echo "using APP_PATH: $APP_PATH"
+  # Make sure vcxproj is up to date
+  scons vcxproj
+  git diff --exit-code
   # $CC will be either `clang` or `gcc`
   # http://docs.travis-ci.com/user/migrating-from-legacy/?utm_source=legacy-notice&utm_medium=banner&utm_campaign=legacy-upgrade
   #   indicates that 2 cores are available to containers.
