@@ -130,7 +130,6 @@ check_gcc4_abi()
 include_directories(
   src
   src/beast
-  src/beast/include
   src/beast/extras
   src/nudb/include
   src/soci/src

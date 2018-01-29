@@ -26,10 +26,9 @@
 #include <ripple/core/Config.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/beast/utility/PropertyStream.h>
+#include <boost/asio.hpp>
 #include <memory>
 #include <mutex>
-
-namespace boost { namespace asio { class io_service; } }
 
 namespace ripple {
 
