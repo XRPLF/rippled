@@ -196,8 +196,9 @@ To begin, simply:
    cloned rippled folder.
 2. Right-click on `CMakeLists.txt` in the **Solution Explorer - Folder View** to
    generate a `CMakeSettings.json` file. A sample settings file is provided
-   here. Customize the settings for `BOOST_ROOT`, `OPENSSL_ROOT` to match the
-   install paths if they differ from those in the file.
+   [here](/Builds/VisualStudio2017/CMakeSettings-example.json). Customize the 
+   settings for `BOOST_ROOT`, `OPENSSL_ROOT` to match the install paths if they
+   differ from those in the file.
 4. Select either the `x64-Release` or `x64-Debug` configuration from the
    **Project Setings** drop-down. This should invoke the built-in CMake project
    generator. If not, you can right-click on the `CMakeLists.txt` file and
@@ -219,16 +220,16 @@ If using the provided `CMakeSettings.json` file, the executable will be in
 ```
 or
 ```
-.\build\x64-Debug\Debug\rippled.exe(_classic).exe
+.\build\x64-Debug\Debug\rippled(_classic).exe
 ```
 where these paths are relative to your cloned git repository.
 
 # Build using stand-alone CMake
 
-This requires having installed [Cmake for
+This requires having installed [CMake for
 Windows](README.md#optional-install-cmake-for-windows). We do not recommend
 mixing this method with the integrated CMake method for the same repository
-clone. Assuming you included to add the cmake executable folder to your path,
+clone. Assuming you included the cmake executable folder in your path,
 execute the following commands within your `rippled` cloned repository:
 
 ```
@@ -249,7 +250,7 @@ The executable will be in
 ```
  or
 ````
-.\build\cmake\Debug\rippled.exe(_classic)
+.\build\cmake\Debug\rippled(_classic).exe
 ````
 where these paths are relative to your cloned git repository.
 
