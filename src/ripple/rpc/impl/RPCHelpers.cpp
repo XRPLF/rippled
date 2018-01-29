@@ -97,7 +97,7 @@ getAccountObjects(ReadView const& ledger, AccountID const& account,
         return false;
 
     std::uint32_t i = 0;
-    auto& jvObjects = jvResult[jss::account_objects];
+    auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
     for (;;)
     {
         auto const& entries = dir->getFieldV256 (sfIndexes);

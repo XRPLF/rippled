@@ -512,22 +512,12 @@ public:
             env.close();
         }
 
-        // Make a lambda that easily identifies null account objects.
-        auto acct_objs_is_null =
-            [&env, &acct_objs] (Account const& acct, char const* type)
-        {
-            Json::Value const resp = acct_objs (acct, type);
-            return resp["result"]["account_objects"].isNull();
-        };
-
         // Verify that the non-returning types still don't return anything.
-        // Note that, interestingly, they now return a null object rather
-        // than an empty array.  Not sure what triggers that...
-        BEAST_EXPECT (acct_objs_is_null (gw, jss::account));
-        BEAST_EXPECT (acct_objs_is_null (gw, jss::amendments));
-        BEAST_EXPECT (acct_objs_is_null (gw, jss::directory));
-        BEAST_EXPECT (acct_objs_is_null (gw, jss::fee));
-        BEAST_EXPECT (acct_objs_is_null (gw, jss::hashes));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::account));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::amendments));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::directory));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::fee));
+        BEAST_EXPECT (acct_objs_is_empty (gw, jss::hashes));
     }
 
     void run() override
