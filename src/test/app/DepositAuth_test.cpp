@@ -282,11 +282,109 @@ struct DepositAuth_test : public beast::unit_test::suite
         BEAST_EXPECT (env.balance (bob, XRP) == reserve (env, 0) + drops(1));
     }
 
+    void testNoRipple()
+    {
+        // It its current incarnation the DepositAuth flag does not change
+        // any behaviors regarding rippling and the NoRipple flag.
+        // Demonstrate that.
+        testcase ("No Ripple");
+
+        using namespace jtx;
+        Account const gw1 ("gw1");
+        Account const gw2 ("gw2");
+        Account const alice ("alice");
+        Account const bob ("bob");
+
+        IOU const USD1 (gw1["USD"]);
+        IOU const USD2 (gw2["USD"]);
+
+        auto testIssuer = [&] (FeatureBitset const& features,
+            bool noRipplePrev,
+            bool noRippleNext,
+            bool withDepositAuth)
+        {
+            assert(!withDepositAuth || features[featureDepositAuth]);
+
+            Env env(*this, features);
+
+            env.fund(XRP(10000), gw1, alice, bob);
+            env (trust (gw1, alice["USD"](10), noRipplePrev ? tfSetNoRipple : 0));
+            env (trust (gw1, bob["USD"](10), noRippleNext ? tfSetNoRipple : 0));
+            env.trust(USD1 (10), alice, bob);
+
+            env(pay(gw1, alice, USD1(10)));
+
+            if (withDepositAuth)
+                env(fset(gw1, asfDepositAuth));
+
+            auto const result =
+                (noRippleNext && noRipplePrev) ? tecPATH_DRY : tesSUCCESS;
+            env (pay (alice, bob, USD1(10)), path (gw1), ter (result));
+        };
+
+        auto testNonIssuer = [&] (FeatureBitset const& features,
+            bool noRipplePrev,
+            bool noRippleNext,
+            bool withDepositAuth)
+        {
+            assert(!withDepositAuth || features[featureDepositAuth]);
+
+            Env env(*this, features);
+
+            env.fund(XRP(10000), gw1, gw2, alice);
+            env (trust (alice, USD1(10), noRipplePrev ? tfSetNoRipple : 0));
+            env (trust (alice, USD2(10), noRippleNext ? tfSetNoRipple : 0));
+            env(pay(gw2, alice, USD2(10)));
+
+            if (withDepositAuth)
+                env(fset(alice, asfDepositAuth));
+
+            auto const result =
+                (noRippleNext && noRipplePrev) ? tecPATH_DRY : tesSUCCESS;
+            env (pay (gw1, gw2, USD2 (10)),
+                path (alice), sendmax (USD1 (10)), ter (result));
+        };
+
+        // Test every combo of noRipplePrev, noRippleNext, and withDepositAuth
+        for (int i = 0; i < 8; ++i)
+        {
+            auto const noRipplePrev = i & 0x1;
+            auto const noRippleNext = i & 0x2;
+            auto const withDepositAuth = i & 0x4;
+            testIssuer(
+                supported_amendments() | featureDepositAuth,
+                noRipplePrev,
+                noRippleNext,
+                withDepositAuth);
+
+            if (!withDepositAuth)
+                testIssuer(
+                    supported_amendments() - featureDepositAuth,
+                    noRipplePrev,
+                    noRippleNext,
+                    withDepositAuth);
+
+            testNonIssuer(
+                supported_amendments() | featureDepositAuth,
+                noRipplePrev,
+                noRippleNext,
+                withDepositAuth);
+
+            if (!withDepositAuth)
+                testNonIssuer(
+                    supported_amendments() - featureDepositAuth,
+                    noRipplePrev,
+                    noRippleNext,
+                    withDepositAuth);
+        }
+    }
+
     void run() override
     {
         testEnable();
         testPayIOU();
         testPayXRP();
+        testNoRipple();
     }
 };
 
