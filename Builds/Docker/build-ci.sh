@@ -1,7 +1,7 @@
 set -e
 
 mkdir -p build/docker/
-cp doc/rippled-example.cfg build/clang.debug/rippled build/docker/
+cp cfg/rippled-example.cfg build/clang.debug/rippled build/docker/
 cp Builds/Docker/Dockerfile-testnet build/docker/Dockerfile
 mv build/docker/rippled-example.cfg build/docker/rippled.cfg
 strip build/docker/rippled

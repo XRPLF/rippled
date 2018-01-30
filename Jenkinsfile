@@ -88,22 +88,33 @@ try {
     }
 
     stage ('Parallel Build') {
-        def variants = [
-            'coverage',
-            'clang.debug.unity',
-            'clang.debug.nounity',
-            'gcc.debug.unity',
-            'gcc.debug.nounity',
-            'clang.release.unity',
-            'gcc.release.unity'] as String[]
+        String[][] variants = [
+            ['coverage'],
+            ['docs'],
+            ['clang.debug.unity'],
+            ['clang.debug.nounity'],
+            ['gcc.debug.unity'],
+            ['gcc.debug.nounity'],
+            ['clang.release.unity'],
+            ['gcc.release.unity'],
+            // add a static build just to make sure it works
+            ['gcc.debug.unity', "-Dstatic=true"],
+            // TODO - san run currently fails
+            //['gcc.debug.nounity'  ,  '-Dsan=address'],
+        ]
 
         // create a map of all builds
         // that we want to run. The map
         // is string keys and node{} object values
         def builds = [:]
         for (int index = 0; index < variants.size(); index++) {
-            def bldtype = variants[index]
-            builds[bldtype] = {
+            def bldtype = variants[index][0]
+            def cmake_extra = variants[index].size() > 1 ? variants[index][1] : ''
+            def bldlabel = bldtype + cmake_extra
+            bldlabel = bldlabel.replace('-', '_')
+            bldlabel = bldlabel.replace(' ', '')
+            bldlabel = bldlabel.replace('=', '_')
+            builds[bldlabel] = {
                 node('rippled-dev') {
                     checkout scm
                     dir ('build') {
@@ -113,7 +124,7 @@ try {
                     echo "BASEDIR: ${cdir}"
                     def compiler = getCompiler(bldtype)
                     def target = getTarget(bldtype)
-                    if (compiler == "coverage") {
+                    if (compiler == "coverage" || compiler == "docs") {
                         compiler = 'gcc'
                     }
                     echo "COMPILER: ${compiler}"
@@ -131,31 +142,46 @@ try {
                              "TARGET=${target}",
                              "CC=${compiler}",
                              'BUILD=cmake',
+                             "CMAKE_EXTRA_ARGS=${cmake_extra}",
                              'VERBOSE_BUILD=true',
                              "CLANG_CC=${clang_cc}",
                              "CLANG_CXX=${clang_cxx}",
                              "USE_CCACHE=${ucc}"])
                     {
-                        myStage(bldtype)
+                        myStage(bldlabel)
                         try {
-                            sh "ccache -s > ${bldtype}.txt"
-                            // the devtoolset from SCL gives us a recent gcc. It's
-                            // not strictly needed when we are building with clang,
-                            // but it doesn't seem to interfere either
-                            sh "source /opt/rh/devtoolset-6/enable && " +
-                               "(/usr/bin/time -p ./bin/ci/ubuntu/build-and-test.sh 2>&1) 2>&1 " +
-                               ">> ${bldtype}.txt"
-                            sh "ccache -s >> ${bldtype}.txt"
+                            sh "rm -fv ${bldlabel}.txt"
+                            if (bldtype == "docs") {
+                                sh '''#!/bin/bash
+set -ex
+log_file=''' + "${bldlabel}.txt" + '''
+exec 3>&1 1>>${log_file} 2>&1
+cd docs
+rm -rf html_doc
+/usr/bin/time -p doxygen source.dox
+echo "0 tests total, 0 failures"
+'''
+                            }
+                            else {
+                                sh "ccache -s > ${bldlabel}.txt"
+                                // the devtoolset from SCL gives us a recent gcc. It's
+                                // not strictly needed when we are building with clang,
+                                // but it doesn't seem to interfere either
+                                sh "source /opt/rh/devtoolset-6/enable && " +
+                                   "(/usr/bin/time -p ./bin/ci/ubuntu/build-and-test.sh 2>&1) 2>&1 " +
+                                   ">> ${bldlabel}.txt"
+                                sh "ccache -s >> ${bldlabel}.txt"
+                            }
                         }
                         finally {
-                            def outstr = readFile("${bldtype}.txt")
+                            def outstr = readFile("${bldlabel}.txt")
                             def st = getResults(outstr)
                             def time = getTime(outstr)
                             def fail_count = getFailures(outstr)
                             outstr = null
                             def txtcolor =
                                 fail_count == 0 ? "DarkGreen" : "Crimson"
-                            def shortbld = bldtype
+                            def shortbld = bldlabel
                             shortbld = shortbld.replace('debug', 'dbg')
                             shortbld = shortbld.replace('release', 'rel')
                             shortbld = shortbld.replace('unity', 'un')
@@ -165,10 +191,16 @@ try {
                                 "white",
                                 "0px",
                                 "white")
-                            archive("${bldtype}.txt")
+                            archive("${bldlabel}.txt")
+                            if (bldtype == "docs") {
+                                publishHTML(
+                                    reportName: 'Doxygen',
+                                    reportDir: 'docs/html_doc',
+                                    reportFiles: 'index.html')
+                            }
                             lock('rippled_dev_status') {
-                                all_status[bldtype] =
-                                    [fail_count == 0, bldtype, "${st}, t: ${time}"]
+                                all_status[bldlabel] =
+                                    [fail_count == 0, bldtype + " " + cmake_extra, "${st}, t: ${time}"]
                             }
                         }
                     }
@@ -267,7 +299,7 @@ Build Type | Result | Status
                     httpMode: mode,
                     requestBody: body)
             }
-            catch (any) {
+            catch (e) {
                 echo "had a problem interacting with github...status is probably not updated"
             }
         }
