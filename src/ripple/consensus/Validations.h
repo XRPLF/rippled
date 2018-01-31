@@ -152,7 +152,7 @@ enum class ValStatus {
     /// This was a new validation and was added
     current,
     /// Already had this validation for this ID but different seq
-    repeat,
+    repeatID,
     /// Not current or was older than current from this node
     stale,
     /// A validation violates the increasing seq requirement
@@ -166,8 +166,8 @@ to_string(ValStatus m)
     {
         case ValStatus::current:
             return "current";
-        case ValStatus::repeat:
-            return "repeat";
+        case ValStatus::repeatID:
+            return "repeatID";
         case ValStatus::stale:
             return "stale";
         case ValStatus::badSeq:
@@ -370,7 +370,7 @@ private:
     /** Process a new validation
 
         Process a new trusted validation from a validator. This will be
-        reflected only after the validated ledger is succesfully acquired by
+        reflected only after the validated ledger is successfully acquired by
         the local node. In the interim, the prior validated ledger from this
         node remains.
 
@@ -554,7 +554,7 @@ public:
         @param val The validation to store
         @return The outcome
 
-        @note The provided key may differ from the validations's  key()
+        @note The provided key may differ from the validation's  key()
               member if the validator is using ephemeral signing keys.
     */
     ValStatus
@@ -577,7 +577,7 @@ public:
             // one with the same id for this key
             auto const ret = byLedger_[val.ledgerID()].emplace(key, val);
             if (!ret.second && ret.first->second.key() == val.key())
-                return ValStatus::repeat;
+                return ValStatus::repeatID;
 
             auto const ins = current_.emplace(key, val);
             if (!ins.second)
@@ -667,7 +667,7 @@ public:
         }
 
         // A ledger ahead of us is preferred regardless of whether it is
-        // a descendent of our working ledger or it is on a different chain
+        // a descendant of our working ledger or it is on a different chain
         if (preferredSeq > currSeq)
             return std::make_pair(preferredSeq, preferredID);
 
@@ -795,7 +795,7 @@ public:
 
     /** Get the set of known public keys associated with current validations
 
-        @return The set of of knowns keys for current listed validators
+        @return The set of knows keys for current listed validators
     */
     hash_set<NodeKey>
     getCurrentPublicKeys()

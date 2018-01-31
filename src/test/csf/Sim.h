@@ -155,7 +155,7 @@ public:
     /** Calculate the number of branches in the group.
 
         A branch occurs if two nodes in the group have fullyValidatedLedgers
-       that are not on the same chain of ledgers.
+        that are not on the same chain of ledgers.
     */
     std::size_t
     branches(PeerGroup const& g) const;

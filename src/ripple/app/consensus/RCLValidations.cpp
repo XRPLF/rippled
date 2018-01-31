@@ -83,8 +83,7 @@ auto RCLValidatedLedger::operator[](Seq const& s) const -> ID
         if (s == seq())
             return ledgerID_;
         Seq const diff = seq() - s;
-        if (ancestors_.size() >= diff)
-            return ancestors_[ancestors_.size() - diff];
+        return ancestors_[ancestors_.size() - diff];
     }
 
     JLOG(j_.warn()) << "Unable to determine hash of ancestor seq=" << s
@@ -300,9 +299,9 @@ handleNewValidation(Application& app,
     auto dmp = [&](beast::Journal::Stream s, std::string const& msg) {
             s << "Val for " << hash
               << (val->isTrusted() ? " trusted/" : " UNtrusted/")
-              << (val->isFull() ? " full" : "partial") << " from "
+              << (val->isFull() ? "full" : "partial") << " from "
               << toBase58(TokenType::TOKEN_NODE_PUBLIC, *masterKey)
-              << "signing key "
+              << " signing key "
               << toBase58(TokenType::TOKEN_NODE_PUBLIC, signingKey) << " "
               << msg
               << " src=" << source;
@@ -311,7 +310,7 @@ handleNewValidation(Application& app,
     if(!val->isFieldPresent(sfLedgerSequence))
     {
         if(j.error())
-            dmp(j.error(), " missing ledger seqeuence field");
+            dmp(j.error(), "missing ledger sequence field");
         return false;
     }
 
@@ -328,13 +327,13 @@ handleNewValidation(Application& app,
         if(outcome == ValStatus::badSeq && j.warn())
         {
             auto const seq = val->getFieldU32(sfLedgerSequence);
-            dmp(j.warn(), " already validated sequence past " + to_string(seq));
+            dmp(j.warn(), "already validated sequence past " + to_string(seq));
         }
-        else if(outcome == ValStatus::repeat && j.warn())
+        else if(outcome == ValStatus::repeatID && j.warn())
         {
             auto const seq = val->getFieldU32(sfLedgerSequence);
             dmp(j.warn(),
-                " already validated ledger with same id but different seq "
+                "already validated ledger with same id but different seq "
                 "than" + to_string(seq));
         }
 

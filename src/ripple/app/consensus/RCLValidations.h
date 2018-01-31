@@ -101,11 +101,13 @@ public:
         return val_->isTrusted();
     }
 
+    /// Whether the validatioon is full (not-partial)
     bool
     full() const
     {
         return val_->isFull();
     }
+
     /// Get the load fee of the validation if it exists
     boost::optional<std::uint32_t>
     loadFee() const

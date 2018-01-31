@@ -605,7 +605,7 @@ public:
              not have heard from those nodes yet.
 
         The preferred ledger for this sequence number is then the ledger
-        with relative majority of support, where uncommited support
+        with relative majority of support, where uncommitted support
         can be given to ANY ledger at that sequence number
         (including one not yet known). If no such preferred ledger exists, then
         the prior sequence preferred ledger is the overall preferred ledger.
@@ -621,7 +621,7 @@ public:
 
         @param largestIssued The sequence number of the largest validation
                              issued by this node.
-        @return Pair with the seqeuence number and ID of the preferred ledger
+        @return Pair with the sequence number and ID of the preferred ledger
     */
     std::pair<Seq,ID>
     getPreferred(Seq const largestIssued) const
@@ -637,9 +637,9 @@ public:
         {
             // Within a single span, the preferred by branch strategy is simply
             // to continue along the span as long as the branch support of
-            // the next ledger exceeds the uncommited support for that ledger.
+            // the next ledger exceeds the uncommitted support for that ledger.
             {
-                // Add any initial uncommited support prior for ledgers
+                // Add any initial uncommitted support prior for ledgers
                 // earlier than nextSeq or earlier than largestIssued
                 Seq nextSeq = curr->span.start() + Seq{1};
                 while (uncommittedIt != seqSupport.end() &&
@@ -704,7 +704,7 @@ public:
                     margin++;
             }
 
-            // If the best child has margin exceeding the uncommited support,
+            // If the best child has margin exceeding the uncommitted support,
             // continue from that child, otherwise we are done
             if (best && ((margin > uncommitted) || (uncommitted == 0)))
                 curr = best;
