@@ -402,10 +402,19 @@ private:
 
         checkAcquired(lock);
 
-        if (boost::optional<Ledger> ledger = adaptor_.acquire(val.ledgerID()))
-            updateTrie(lock, key, *ledger);
+        auto it = acquiring_.find(val.ledgerID());
+        if(it != acquiring_.end())
+        {
+            it->second.insert(key);
+        }
         else
-            acquiring_[val.ledgerID()].insert(key);
+        {
+            if (boost::optional<Ledger> ledger = adaptor_.acquire(val.ledgerID()))
+                updateTrie(lock, key, *ledger);
+            else
+                acquiring_[val.ledgerID()].insert(key);
+        }
+
     }
 
     /** Use the trie for a calculation

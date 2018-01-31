@@ -956,6 +956,7 @@ class Validations_test : public beast::unit_test::suite
         LedgerHistoryHelper h;
         TestHarness harness(h.oracle);
         Node a = harness.makeNode();
+        Node b = harness.makeNode();
 
         using ID = Ledger::ID;
         using Seq = Ledger::Seq;
@@ -983,10 +984,19 @@ class Validations_test : public beast::unit_test::suite
             harness.vals().getPreferred(genesisLedger) ==
             std::make_pair(ledgerAB.seq(), ledgerAB.id()));
 
+        // Another node requesting that ledger still doesn't change things
+        Validation val3 = b.validate(ID{4}, Seq{4}, 0s, 0s, true);
+        BEAST_EXPECT(ValStatus::current == harness.add(val3));
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ID{4}) == 2);
+        BEAST_EXPECT(
+            harness.vals().getPreferred(genesisLedger) ==
+            std::make_pair(ledgerAB.seq(), ledgerAB.id()));
+
         // Switch to validation that is available
         harness.clock().advance(5s);
         Ledger ledgerABCDE = h["abcde"];
         BEAST_EXPECT(ValStatus::current == harness.add(a.partial(ledgerABCDE)));
+        BEAST_EXPECT(ValStatus::current == harness.add(b.partial(ledgerABCDE)));
         BEAST_EXPECT(
             harness.vals().getPreferred(genesisLedger) ==
             std::make_pair(ledgerABCDE.seq(), ledgerABCDE.id()));
