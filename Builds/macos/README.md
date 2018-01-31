@@ -62,7 +62,7 @@ brew install git cmake pkg-config protobuf openssl ninja
 
 We want to compile boost with clang/libc++
 
-Download [a release](https://sourceforge.net/projects/boost/files/boost/1.65.1/boost_1_65_1.tar.bz2)
+Download [a release](https://dl.bintray.com/boostorg/release/1.66.0/source/boost_1_66_0.tar.bz2)
 
 Extract it to a folder, making note of where, open a terminal, then:
 
@@ -118,11 +118,11 @@ If you didn't persistently set the `BOOST_ROOT` environment variable to the
 root of the extracted directory above, then you should set it temporarily.
 
 For example, assuming your username were `Abigail` and you extracted Boost
-1.65.1 in `/Users/Abigail/Downloads/boost_1_65_1`, you would do for any
+1.66.0 in `/Users/Abigail/Downloads/boost_1_66_0`, you would do for any
 shell in which you want to build:
 
 ```
-export BOOST_ROOT=/Users/Abigail/Downloads/boost_1_65_1
+export BOOST_ROOT=/Users/Abigail/Downloads/boost_1_66_0
 ```
 
 ### Generate and Build
