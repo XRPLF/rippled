@@ -28,7 +28,46 @@
 
 namespace ripple {
 
+/** The tip of a span of ledger ancestry
+*/
+template <class Ledger>
+class SpanTip
+{
+public:
+    using Seq = typename Ledger::Seq;
+    using ID = typename Ledger::ID;
+
+    SpanTip(Seq s, ID i, Ledger const lgr)
+        : seq{s}, id{i}, ledger{std::move(lgr)}
+    {
+    }
+
+    // The sequence number the tip ledger
+    Seq seq;
+    // The ID of the tip ledger
+    ID id;
+
+    /** Lookup the ID of an ancestor of the tip ledger
+
+        @param s The sequence number of the ancestor
+        @return The ID of the ancestor with that sequence number
+
+        @note s must be less than or equal to the sequence number of the
+              preferred ledger
+    */
+    ID
+    ancestor(Seq const& s) const
+    {
+        assert(s <= seq);
+        return ledger[s];
+    }
+
+private:
+    Ledger const ledger;
+};
+
 namespace ledger_trie_detail {
+
 // Represents a span of ancestry of a ledger
 template <class Ledger>
 class Span
@@ -101,12 +140,12 @@ public:
         return clamp(mismatch(ledger_, o));
     }
 
-    //  The Seq and ID of the end of the span
-    std::pair<Seq, ID>
+    //  The tip of this span
+    SpanTip<Ledger>
     tip() const
     {
         Seq tipSeq{end_ - Seq{1}};
-        return {tipSeq, ledger_[tipSeq]};
+        return SpanTip<Ledger>{tipSeq, ledger_[tipSeq], ledger_};
     }
 
 private:
@@ -137,7 +176,7 @@ private:
     friend std::ostream&
     operator<<(std::ostream& o, Span const& s)
     {
-        return o << s.tip().second << "[" << s.start_ << "," << s.end_ << ")";
+        return o << s.tip().id << "[" << s.start_ << "," << s.end_ << ")";
     }
 
     friend Span
@@ -203,8 +242,8 @@ struct Node
     getJson() const
     {
         Json::Value res;
-        res["id"] = to_string(span.tip().second);
-        res["seq"] = static_cast<std::uint32_t>(span.tip().first);
+        res["id"] = to_string(span.tip().id);
+        res["seq"] = static_cast<std::uint32_t>(span.tip().seq);
         res["tipSupport"] = tipSupport;
         res["branchSupport"] = branchSupport;
         if (!children.empty())
@@ -406,7 +445,6 @@ public:
         boost::optional<Span> prefix = loc->span.before(diffSeq);
         boost::optional<Span> oldSuffix = loc->span.from(diffSeq);
         boost::optional<Span> newSuffix = Span{ledger}.from(diffSeq);
-
 
         if (oldSuffix)
         {
@@ -623,7 +661,7 @@ public:
                              issued by this node.
         @return Pair with the sequence number and ID of the preferred ledger
     */
-    std::pair<Seq,ID>
+    SpanTip<Ledger>
     getPreferred(Seq const largestIssued) const
     {
         Node* curr = root.get();
