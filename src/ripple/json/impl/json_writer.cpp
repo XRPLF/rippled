@@ -426,7 +426,7 @@ StyledWriter::isMultineArray ( const Value& value )
     {
         const Value& childValue = value[index];
         isMultiLine = isMultiLine  ||
-                      ( (childValue.isArray ()  ||  childValue.isObject ())  &&
+                      ( (childValue.isArray()  ||  childValue.isObject())  &&
                         childValue.size () > 0 );
     }
 
@@ -660,7 +660,7 @@ StyledStreamWriter::isMultineArray ( const Value& value )
     {
         const Value& childValue = value[index];
         isMultiLine = isMultiLine  ||
-                      ( (childValue.isArray ()  ||  childValue.isObject ())  &&
+                      ( (childValue.isArray()  ||  childValue.isObject())  &&
                         childValue.size () > 0 );
     }
 

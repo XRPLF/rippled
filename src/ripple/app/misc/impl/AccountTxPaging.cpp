@@ -79,7 +79,7 @@ accountTxPage (
     bool bAdmin,
     std::uint32_t page_length)
 {
-    bool lookingForMarker =  !token.isNull() && token.isObject();
+    bool lookingForMarker = token.isObject();
 
     std::uint32_t numberOfResults;
 
