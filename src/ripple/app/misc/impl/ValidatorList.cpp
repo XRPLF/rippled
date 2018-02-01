@@ -223,7 +223,7 @@ ValidatorList::applyList (
     std::vector<std::string> manifests;
     for (auto const& val : newList)
     {
-        if (val.isObject () &&
+        if (val.isObject() &&
             val.isMember ("validation_public_key") &&
             val["validation_public_key"].isString ())
         {

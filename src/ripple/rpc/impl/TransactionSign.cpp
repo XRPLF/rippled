@@ -253,7 +253,7 @@ checkTxJsonFields (
 {
     std::pair<Json::Value, AccountID> ret;
 
-    if (! tx_json.isObject ())
+    if (!tx_json.isObject())
     {
         ret.first = RPC::object_field_error (jss::tx_json);
         return ret;

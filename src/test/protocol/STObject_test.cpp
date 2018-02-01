@@ -38,9 +38,7 @@ public:
     bool parseJSONString (std::string const& json, Json::Value& to)
     {
         Json::Reader reader;
-        return reader.parse(json, to) &&
-                bool (to) &&
-                to.isObject();
+        return reader.parse(json, to) && to.isObject();
     }
 
     void testParseJSONArrayWithInvalidChildrenObjects ()
