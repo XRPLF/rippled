@@ -188,12 +188,14 @@ public:
 
         // each hop bucket should contain the same items
         // before and after sort, albeit in different order
+        bool all_match = true;
         for (auto i = 0; i < before.size(); ++i)
         {
             BEAST_EXPECT(before[i].size() == after[i].size());
-            BEAST_EXPECT(before[i] != after[i]);
+            all_match = all_match && (before[i] == after[i]);
             BEAST_EXPECT(before_sorted[i] == after_sorted[i]);
         }
+        BEAST_EXPECT(! all_match);
     }
 
     void run () override

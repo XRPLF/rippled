@@ -66,7 +66,7 @@ public:
         : sock_(ios), acceptor_(ios)
     {
         endpoint_type const& ep {
-            address_type::from_string(ripple::test::ENV_LOCALHOST_ADDR),
+            boost::asio::ip::make_address(ripple::test::ENV_LOCALHOST_ADDR),
             0}; // 0 means let OS pick the port based on what's available
         std::string data = "{\"sequence\":" + std::to_string(sequence) +
             ",\"expiration\":" +

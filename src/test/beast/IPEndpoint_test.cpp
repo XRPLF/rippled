@@ -46,7 +46,7 @@ public:
         std::string const& normal = "")
     {
         boost::system::error_code ec;
-        Address const result {Address::from_string (s, ec)};
+        Address const result {boost::asio::ip::make_address (s, ec)};
         if (! BEAST_EXPECTS(! ec, ec.message()))
             return;
         if (! BEAST_EXPECTS(result.is_v4(), s + " not v4"))
@@ -61,7 +61,7 @@ public:
     void failParseAddr (std::string const& s)
     {
         boost::system::error_code ec;
-        auto a = Address::from_string (s, ec);
+        auto a = boost::asio::ip::make_address (s, ec);
         BEAST_EXPECTS(ec, s + " parses as " + a.to_string());
     }
 

@@ -68,7 +68,7 @@ private:
     endpoint_type
     endpoint()
     {
-        return endpoint_type(address_type::from_string(test::ENV_LOCALHOST_ADDR), 9000);
+        return endpoint_type(boost::asio::ip::make_address(test::ENV_LOCALHOST_ADDR), 9000);
     }
 
     template <class Streambuf>
@@ -191,7 +191,7 @@ private:
                 , server_(server)
                 , test_(server_.test_)
                 , acceptor_(test_.io_service_,
-                    endpoint_type(address_type::from_string(
+                    endpoint_type(boost::asio::ip::make_address(
                         test::ENV_LOCALHOST_ADDR), 0))
                 , socket_(test_.io_service_)
                 , strand_(socket_.get_io_service())

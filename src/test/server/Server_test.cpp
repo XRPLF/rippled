@@ -283,7 +283,7 @@ public:
             thread.get_io_service(), journal);
         std::vector<Port> serverPort(1);
         serverPort.back().ip =
-            boost::asio::ip::address::from_string (ENV_LOCALHOST_ADDR),
+            boost::asio::ip::make_address (ENV_LOCALHOST_ADDR),
         serverPort.back().port = 0;
         serverPort.back().protocol.insert("http");
         auto eps = s->ports (serverPort);
@@ -355,7 +355,7 @@ public:
                 thread.get_io_service(), {});
             std::vector<Port> serverPort(1);
             serverPort.back().ip =
-                boost::asio::ip::address::from_string (ENV_LOCALHOST_ADDR),
+                boost::asio::ip::make_address (ENV_LOCALHOST_ADDR),
             serverPort.back().port = 0;
             serverPort.back().protocol.insert("http");
             s->ports (serverPort);

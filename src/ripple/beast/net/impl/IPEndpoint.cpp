@@ -161,7 +161,7 @@ std::istream& operator>> (std::istream& is, Endpoint& endpoint)
     }
 
     boost::system::error_code ec;
-    auto addr = Address::from_string(addrStr, ec);
+    auto addr = boost::asio::ip::make_address(addrStr, ec);
     if (ec)
     {
         is.setstate (std::ios_base::failbit);

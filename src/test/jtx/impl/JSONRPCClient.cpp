@@ -49,9 +49,9 @@ class JSONRPCClient : public AbstractClient
             parse_Port(pp, cfg[name], log);
             if(pp.protocol.count("http") == 0)
                 continue;
-            using boost::asio::ip::address_v4;
-            if(*pp.ip == address_v4{0x00000000})
-                *pp.ip = address_v4{0x7f000001};
+            using namespace boost::asio::ip;
+            if(pp.ip && pp.ip->is_unspecified())
+               *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()} : address{address_v4::loopback()};
             return { *pp.ip, *pp.port };
         }
         Throw<std::runtime_error>("Missing HTTP port");
@@ -83,7 +83,7 @@ public:
         : ep_(getEndpoint(cfg))
         , stream_(ios_)
         , rpc_version_(rpc_version)
-    {   
+    {
         stream_.connect(ep_);
     }
 

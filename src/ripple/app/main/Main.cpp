@@ -553,37 +553,22 @@ int run (int argc, char** argv)
     // happen after the config file is loaded.
     if (vm.count ("rpc_ip"))
     {
-        try
-        {
-            config->rpc_ip.emplace (
-                boost::asio::ip::address_v4::from_string(
-                    vm["rpc_ip"].as<std::string>()));
-        }
-        catch(std::exception const&)
+        auto res = beast::IP::Endpoint::from_string_checked(
+            vm["rpc_ip"].as<std::string>());
+        if (! res.second)
         {
             std::cerr << "Invalid rpc_ip = " <<
                 vm["rpc_ip"].as<std::string>() << std::endl;
             return -1;
         }
-    }
 
-    // Override the RPC destination port number
-    //
-    if (vm.count ("rpc_port"))
-    {
-        try
+        if (res.first.port() == 0)
         {
-            config->rpc_port.emplace (
-                vm["rpc_port"].as<std::uint16_t>());
-
-            if (*config->rpc_port == 0)
-                throw std::domain_error("0");
-        }
-        catch(std::exception const& e)
-        {
-            std::cerr << "Invalid rpc_port = " << e.what() << "\n";
+            std::cerr << "No port specified in rpc_ip." << std::endl;
             return -1;
         }
+
+        config->rpc_ip = std::move(res.first);
     }
 
     if (vm.count ("quorum"))
