@@ -192,11 +192,11 @@ Json::Value doSubscribe (RPC::Context& context)
 
         for (auto& j: context.params[jss::books])
         {
-            if (!j.isObject ()
+            if (!j.isObjectorNull ()
                     || !j.isMember (jss::taker_pays)
                     || !j.isMember (jss::taker_gets)
-                    || !j[jss::taker_pays].isObject ()
-                    || !j[jss::taker_gets].isObject ())
+                    || !j[jss::taker_pays].isObjectorNull ()
+                    || !j[jss::taker_gets].isObjectorNull ())
                 return rpcError (rpcINVALID_PARAMS);
 
             Book book;

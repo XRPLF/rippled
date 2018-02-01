@@ -40,7 +40,7 @@ public:
         Json::Reader reader;
         return reader.parse(json, to) &&
                 bool (to) &&
-                to.isObject();
+                to.isObjectorNull();
     }
 
     void testParseJSONArrayWithInvalidChildrenObjects ()

@@ -115,7 +115,7 @@ public:
             BEAST_EXPECT(signerLists.isArrayorNull());
             BEAST_EXPECT(signerLists.size() == 1);
             auto const& signers = signerLists[0u];
-            BEAST_EXPECT(signers.isObject());
+            BEAST_EXPECT(signers.isObjectorNull());
             BEAST_EXPECT(signers[sfSignerQuorum.jsonName] == 2);
             auto const& signerEntries = signers[sfSignerEntries.jsonName];
             BEAST_EXPECT(signerEntries.size() == 1);
@@ -147,7 +147,7 @@ public:
             BEAST_EXPECT(signerLists.isArrayorNull());
             BEAST_EXPECT(signerLists.size() == 1);
             auto const& signers = signerLists[0u];
-            BEAST_EXPECT(signers.isObject());
+            BEAST_EXPECT(signers.isObjectorNull());
             BEAST_EXPECT(signers[sfSignerQuorum.jsonName] == 4);
             auto const& signerEntries = signers[sfSignerEntries.jsonName];
             BEAST_EXPECT(signerEntries.size() == 8);
@@ -262,7 +262,7 @@ public:
             BEAST_EXPECT(signerLists.isArrayorNull());
             BEAST_EXPECT(signerLists.size() == 1);
             auto const& signers = signerLists[0u];
-            BEAST_EXPECT(signers.isObject());
+            BEAST_EXPECT(signers.isObjectorNull());
             BEAST_EXPECT(signers[sfSignerQuorum.jsonName] == 2);
             auto const& signerEntries = signers[sfSignerEntries.jsonName];
             BEAST_EXPECT(signerEntries.size() == 1);
@@ -297,7 +297,7 @@ public:
             BEAST_EXPECT(signerLists.isArrayorNull());
             BEAST_EXPECT(signerLists.size() == 1);
             auto const& signers = signerLists[0u];
-            BEAST_EXPECT(signers.isObject());
+            BEAST_EXPECT(signers.isObjectorNull());
             BEAST_EXPECT(signers[sfSignerQuorum.jsonName] == 4);
             auto const& signerEntries = signers[sfSignerEntries.jsonName];
             BEAST_EXPECT(signerEntries.size() == 8);

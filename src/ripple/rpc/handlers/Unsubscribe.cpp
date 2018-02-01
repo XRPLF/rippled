@@ -136,11 +136,11 @@ Json::Value doUnsubscribe (RPC::Context& context)
 
         for (auto& jv: context.params[jss::books])
         {
-            if (! jv.isObject() ||
+            if (! jv.isObjectorNull() ||
                 ! jv.isMember(jss::taker_pays) ||
                 ! jv.isMember(jss::taker_gets) ||
-                ! jv[jss::taker_pays].isObject() ||
-                ! jv[jss::taker_gets].isObject())
+                ! jv[jss::taker_pays].isObjectorNull() ||
+                ! jv[jss::taker_gets].isObjectorNull())
             {
                 return rpcError(rpcINVALID_PARAMS);
             }

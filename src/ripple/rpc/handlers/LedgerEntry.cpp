@@ -64,7 +64,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
     }
     else if (context.params.isMember (jss::directory))
     {
-        if (!context.params[jss::directory].isObject ())
+        if (!context.params[jss::directory].isObjectorNull ())
         {
             uNodeIndex.SetHex (context.params[jss::directory].asString ());
         }
@@ -114,7 +114,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
     }
     else if (context.params.isMember (jss::offer))
     {
-        if (!context.params[jss::offer].isObject ())
+        if (!context.params[jss::offer].isObjectorNull ())
         {
             uNodeIndex.SetHex (context.params[jss::offer].asString ());
         }
@@ -140,7 +140,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
         Currency         uCurrency;
         Json::Value     jvRippleState   = context.params[jss::ripple_state];
 
-        if (!jvRippleState.isObject ()
+        if (!jvRippleState.isObjectorNull ()
             || !jvRippleState.isMember (jss::currency)
             || !jvRippleState.isMember (jss::accounts)
             || !jvRippleState[jss::accounts].isArrayorNull ()

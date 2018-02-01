@@ -1953,7 +1953,7 @@ public:
             auto const& result = info[jss::result];
             BEAST_EXPECT(result.isMember(jss::queue_data));
             auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
+            BEAST_EXPECT(queue_data.isObjectorNull());
             BEAST_EXPECT(queue_data.isMember(jss::txn_count));
             BEAST_EXPECT(queue_data[jss::txn_count] == 0);
             BEAST_EXPECT(!queue_data.isMember(jss::lowest_sequence));
@@ -1974,7 +1974,7 @@ public:
             auto const& result = info[jss::result];
             BEAST_EXPECT(result.isMember(jss::queue_data));
             auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
+            BEAST_EXPECT(queue_data.isObjectorNull());
             BEAST_EXPECT(queue_data.isMember(jss::txn_count));
             BEAST_EXPECT(queue_data[jss::txn_count] == 0);
             BEAST_EXPECT(!queue_data.isMember(jss::lowest_sequence));
@@ -1998,7 +1998,7 @@ public:
             auto const& data = result[jss::account_data];
             BEAST_EXPECT(result.isMember(jss::queue_data));
             auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
+            BEAST_EXPECT(queue_data.isObjectorNull());
             BEAST_EXPECT(queue_data.isMember(jss::txn_count));
             BEAST_EXPECT(queue_data[jss::txn_count] == 4);
             BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
@@ -2052,7 +2052,7 @@ public:
             auto const& data = result[jss::account_data];
             BEAST_EXPECT(result.isMember(jss::queue_data));
             auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
+            BEAST_EXPECT(queue_data.isObjectorNull());
             BEAST_EXPECT(queue_data.isMember(jss::txn_count));
             BEAST_EXPECT(queue_data[jss::txn_count] == 5);
             BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
@@ -2105,7 +2105,7 @@ public:
             auto const& data = result[jss::account_data];
             BEAST_EXPECT(result.isMember(jss::queue_data));
             auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
+            BEAST_EXPECT(queue_data.isObjectorNull());
             BEAST_EXPECT(queue_data.isMember(jss::txn_count));
             BEAST_EXPECT(queue_data[jss::txn_count] == 5);
             BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
@@ -2170,7 +2170,7 @@ public:
             auto const& result = info[jss::result];
             BEAST_EXPECT(result.isMember(jss::queue_data));
             auto const& queue_data = result[jss::queue_data];
-            BEAST_EXPECT(queue_data.isObject());
+            BEAST_EXPECT(queue_data.isObjectorNull());
             BEAST_EXPECT(queue_data.isMember(jss::txn_count));
             BEAST_EXPECT(queue_data[jss::txn_count] == 0);
             BEAST_EXPECT(!queue_data.isMember(jss::lowest_sequence));

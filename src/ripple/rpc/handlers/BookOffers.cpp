@@ -52,10 +52,10 @@ Json::Value doBookOffers (RPC::Context& context)
     if (!context.params.isMember (jss::taker_gets))
         return RPC::missing_field_error (jss::taker_gets);
 
-    if (!context.params[jss::taker_pays].isObject ())
+    if (!context.params[jss::taker_pays].isObjectorNull ())
         return RPC::object_field_error (jss::taker_pays);
 
-    if (!context.params[jss::taker_gets].isObject ())
+    if (!context.params[jss::taker_gets].isObjectorNull ())
         return RPC::object_field_error (jss::taker_gets);
 
     Json::Value const& taker_pays (context.params[jss::taker_pays]);

@@ -263,7 +263,7 @@ public:
     bool isNumeric () const;
     bool isString () const;
     bool isArrayorNull () const;
-    bool isObject () const;
+    bool isObjectorNull () const;
 
     bool isConvertibleTo ( ValueType other ) const;
 

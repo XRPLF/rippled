@@ -1599,7 +1599,7 @@ ApplicationImp::loadLedgerFromFile (
         {
             Json::Value& entry = ledger.get()[index];
 
-            if (!entry.isObject())
+            if (!entry.isObjectorNull())
             {
                 JLOG(m_journal.fatal())
                     << "Invalid entry in ledger";

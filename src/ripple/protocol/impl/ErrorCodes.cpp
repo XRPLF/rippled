@@ -174,7 +174,7 @@ Json::Value make_error (error_code_i code, std::string const& message)
 
 bool contains_error (Json::Value const& json)
 {
-    if (json.isObject() && json.isMember (jss::error))
+    if (json.isObjectorNull() && json.isMember (jss::error))
         return true;
     return false;
 }

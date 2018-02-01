@@ -782,7 +782,7 @@ Value::operator bool () const
         return s && strlen(s);
     }
 
-    return ! (isArrayorNull () || isObject ()) || size ();
+    return ! (isArrayorNull () || isObjectorNull ()) || size ();
 }
 
 void
@@ -1099,7 +1099,7 @@ Value::isArrayorNull () const
 
 
 bool
-Value::isObject () const
+Value::isObjectorNull () const
 {
     return type_ == nullValue  ||  type_ == objectValue;
 }

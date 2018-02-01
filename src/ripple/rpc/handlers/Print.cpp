@@ -29,7 +29,7 @@ namespace ripple {
 Json::Value doPrint (RPC::Context& context)
 {
     JsonPropertyStream stream;
-    if (context.params.isObject()
+    if (context.params.isObjectorNull()
         && context.params[jss::params].isArrayorNull()
         && context.params[jss::params][0u].isString ())
     {

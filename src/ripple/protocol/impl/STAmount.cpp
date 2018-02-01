@@ -806,7 +806,7 @@ amountFromJson (SField const& name, Json::Value const& v)
     Json::Value currency;
     Json::Value issuer;
 
-    if (v.isObject ())
+    if (v.isObjectorNull ())
     {
         value       = v[jss::value];
         currency    = v[jss::currency];
@@ -846,7 +846,7 @@ amountFromJson (SField const& name, Json::Value const& v)
 
     if (native)
     {
-        if (v.isObject ())
+        if (v.isObjectorNull ())
             Throw<std::runtime_error> ("XRP may not be specified as an object");
         issue = xrpIssue ();
     }
