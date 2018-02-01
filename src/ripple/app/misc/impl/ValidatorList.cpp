@@ -356,7 +356,7 @@ ValidatorList::verify (
 
     if (list.isMember("sequence") && list["sequence"].isInt() &&
         list.isMember("expiration") && list["expiration"].isInt() &&
-        list.isMember("validators") && list["validators"].isArray())
+        list.isMember("validators") && list["validators"].isArrayorNull())
     {
         auto const sequence = list["sequence"].asUInt();
         auto const expiration = TimeKeeper::time_point{

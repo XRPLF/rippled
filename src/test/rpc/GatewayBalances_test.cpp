@@ -104,7 +104,7 @@ public:
             expect (balances.size() == 1, "balances size is not 1");
 
             auto const& hwBalance = balances[hw.human()];
-            expect (hwBalance.isArray(), "hwBalance is not an array");
+            expect (hwBalance.isArrayorNull(), "hwBalance is not an array");
             expect (hwBalance.size() == 2);
             auto c1 = hwBalance[0u][jss::currency];
             auto c2 = hwBalance[1u][jss::currency];
@@ -120,7 +120,7 @@ public:
             expect (fBalances.size() == 1);
 
             auto const& fBal = fBalances[dave.human()];
-            expect (fBal.isArray());
+            expect (fBal.isArrayorNull());
             expect (fBal.size() == 1);
             expect (fBal[0u].isObject());
             expect (fBal[0u][jss::currency] == "CNY");
@@ -133,7 +133,7 @@ public:
             expect (assets.size() == 1, "assets size is not 1");
 
             auto const& cAssets = assets[charley.human()];
-            expect (cAssets.isArray());
+            expect (cAssets.isArrayorNull());
             expect (cAssets.size() == 1);
             expect (cAssets[0u][jss::currency] == "USD");
             expect (cAssets[0u][jss::value] == "10");

@@ -812,7 +812,7 @@ amountFromJson (SField const& name, Json::Value const& v)
         currency    = v[jss::currency];
         issuer      = v[jss::issuer];
     }
-    else if (v.isArray ())
+    else if (v.isArrayorNull ())
     {
         value = v.get (Json::UInt (0), 0);
         currency = v.get (Json::UInt (1), Json::nullValue);

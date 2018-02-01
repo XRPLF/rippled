@@ -115,7 +115,7 @@ class OwnerInfo_test : public beast::unit_test::suite
         if (! BEAST_EXPECT (result[jss::accepted].isMember(jss::ripple_lines)))
             return;
         auto lines = result[jss::accepted][jss::ripple_lines];
-        if (! BEAST_EXPECT (lines.isArray() && lines.size() == 2))
+        if (! BEAST_EXPECT (lines.isArrayorNull() && lines.size() == 2))
             return;
 
         BEAST_EXPECT (
@@ -143,7 +143,7 @@ class OwnerInfo_test : public beast::unit_test::suite
         if (! BEAST_EXPECT (result[jss::accepted].isMember(jss::offers)))
             return;
         auto offers = result[jss::accepted][jss::offers];
-        if (! BEAST_EXPECT (offers.isArray() && offers.size() == 1))
+        if (! BEAST_EXPECT (offers.isArrayorNull() && offers.size() == 1))
             return;
 
         BEAST_EXPECT (
@@ -158,7 +158,7 @@ class OwnerInfo_test : public beast::unit_test::suite
         if (! BEAST_EXPECT (result[jss::current].isMember(jss::ripple_lines)))
             return;
         lines = result[jss::current][jss::ripple_lines];
-        if (! BEAST_EXPECT (lines.isArray() && lines.size() == 2))
+        if (! BEAST_EXPECT (lines.isArrayorNull() && lines.size() == 2))
             return;
 
         BEAST_EXPECT (
@@ -187,7 +187,7 @@ class OwnerInfo_test : public beast::unit_test::suite
             return;
         offers = result[jss::current][jss::offers];
         // 1 additional offer in current, (2 total)
-        if (! BEAST_EXPECT (offers.isArray() && offers.size() == 2))
+        if (! BEAST_EXPECT (offers.isArrayorNull() && offers.size() == 2))
             return;
 
         BEAST_EXPECT (

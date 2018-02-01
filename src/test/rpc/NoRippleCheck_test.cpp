@@ -157,7 +157,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             boost::lexical_cast<std::string>(params)) [jss::result];
 
         auto const pa = result["problems"];
-        if (! BEAST_EXPECT (pa.isArray ()))
+        if (! BEAST_EXPECT (pa.isArrayorNull ()))
             return;
 
         if (problems)
@@ -194,7 +194,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         result = env.rpc ("json", "noripple_check",
             boost::lexical_cast<std::string>(params)) [jss::result];
-        if (! BEAST_EXPECT (result[jss::transactions].isArray ()))
+        if (! BEAST_EXPECT (result[jss::transactions].isArrayorNull ()))
             return;
 
         auto const txs = result[jss::transactions];

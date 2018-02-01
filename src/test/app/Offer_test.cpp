@@ -1120,11 +1120,11 @@ public:
         env (offer (account_to_test, USD (50), BTC (250)));
 
         auto jrr = getBookOffers(env, USD, BTC);
-        BEAST_EXPECT(jrr[jss::offers].isArray());
+        BEAST_EXPECT(jrr[jss::offers].isArrayorNull());
         BEAST_EXPECT(jrr[jss::offers].size() == 0);
 
         jrr = getBookOffers(env, BTC, XRP);
-        BEAST_EXPECT(jrr[jss::offers].isArray());
+        BEAST_EXPECT(jrr[jss::offers].isArrayorNull());
         BEAST_EXPECT(jrr[jss::offers].size() == 0);
 
         // NOTE :
@@ -1167,7 +1167,7 @@ public:
         BEAST_EXPECT(isOffer(env, account_to_test, BTC(250), USD(50)));
 
         jrr = getBookOffers(env, USD, BTC);
-        BEAST_EXPECT(jrr[jss::offers].isArray());
+        BEAST_EXPECT(jrr[jss::offers].isArrayorNull());
         BEAST_EXPECT(jrr[jss::offers].size() == 0);
 
         // this second offer would self-cross directly, so it causes the first
@@ -1178,7 +1178,7 @@ public:
         // validate that we now have just the second offer...the first
         // was removed
         jrr = getBookOffers(env, BTC, USD);
-        BEAST_EXPECT(jrr[jss::offers].isArray());
+        BEAST_EXPECT(jrr[jss::offers].isArrayorNull());
         BEAST_EXPECT(jrr[jss::offers].size() == 0);
 
         BEAST_EXPECT(isOffer(env, account_to_test, USD(50), BTC(250)));
@@ -4345,7 +4345,7 @@ public:
 
             BEAST_EXPECT(jrr[jss::status] == "success");
             BEAST_EXPECT(
-                jrr[jss::alternatives].isArray() &&
+                jrr[jss::alternatives].isArrayorNull() &&
                 jrr[jss::alternatives].size() > 0);
         }
         // Send the payment using the found path.

@@ -64,7 +64,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         pf_req[jss::destination_amount] = bob["USD"](20).value ().getJson (0);
         jr = wsc->invoke("path_find", pf_req) [jss::result];
         BEAST_EXPECT (jr.isMember (jss::alternatives) &&
-            jr[jss::alternatives].isArray () &&
+            jr[jss::alternatives].isArrayorNull () &&
             jr[jss::alternatives].size () == 1);
 
         // submit

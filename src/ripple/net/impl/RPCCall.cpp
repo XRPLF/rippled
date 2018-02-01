@@ -173,7 +173,7 @@ private:
     {
         Json::Value v (Json::objectValue);
 
-        if (jvParams.isArray () && (jvParams.size () > 0))
+        if (jvParams.isArrayorNull () && (jvParams.size () > 0))
             v[jss::params] = jvParams;
 
         return v;
@@ -526,7 +526,7 @@ private:
 
     bool isValidJson2(Json::Value const& jv)
     {
-        if (jv.isArray())
+        if (jv.isArrayorNull())
         {
             if (jv.size() == 0)
                 return false;
@@ -544,7 +544,7 @@ private:
                 jv.isMember(jss::id) && jv.isMember(jss::method))
             {
                 if (jv.isMember(jss::params) &&
-                      !(jv[jss::params].isArray() || jv[jss::params].isObject()))
+                      !(jv[jss::params].isArrayorNull() || jv[jss::params].isObject()))
                     return false;
                 return true;
             }
@@ -574,7 +574,7 @@ private:
                 jv1[jss::method] = jv[jss::method];
                 return jv1;
             }
-            // else jv.isArray()
+            // else jv.isArrayorNull()
             Json::Value jv1{Json::arrayValue};
             for (Json::UInt j = 0; j < jv.size(); ++j)
             {
@@ -1371,7 +1371,7 @@ rpcClient(std::vector<std::string> const& args,
 
             if (jvRequest.isObject())
                 jvParams.append (jvRequest);
-            else if (jvRequest.isArray())
+            else if (jvRequest.isArrayorNull())
             {
                 for (Json::UInt i = 0; i < jvRequest.size(); ++i)
                     jvParams.append(jvRequest[i]);
@@ -1388,7 +1388,7 @@ rpcClient(std::vector<std::string> const& args,
                     "",
                     jvRequest.isMember (jss::method)           // Allow parser to rewrite method.
                         ? jvRequest[jss::method].asString ()
-                        : jvRequest.isArray()
+                        : jvRequest.isArrayorNull()
                            ? "batch"
                            : args[0],
                     jvParams,                               // Parsed, execute.

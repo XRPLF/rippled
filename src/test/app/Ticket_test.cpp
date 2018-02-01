@@ -92,7 +92,7 @@ class Ticket_test : public beast::unit_test::suite
         }
 
         BEAST_EXPECT(jvm.isMember (sfAffectedNodes.fieldName));
-        BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].isArray());
+        BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].isArrayorNull());
         BEAST_EXPECT(
             jvm[sfAffectedNodes.fieldName].size() == expected_nodes.size());
 
@@ -323,7 +323,7 @@ class Ticket_test : public beast::unit_test::suite
         // one meta node entry returned
         auto const& jvm = env.meta ()->getJson (0);
         BEAST_EXPECT(jvm.isMember(sfAffectedNodes.fieldName));
-        BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].isArray());
+        BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].isArrayorNull());
         BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].size() == 1);
         BEAST_EXPECT(jvm[sfAffectedNodes.fieldName][0u].
             isMember(sfModifiedNode.fieldName));

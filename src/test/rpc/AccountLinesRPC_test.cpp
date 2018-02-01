@@ -68,7 +68,7 @@ public:
             // alice is funded but has no lines.  An empty array is returned.
             auto const lines = env.rpc ("json", "account_lines",
                 R"({"account": ")" + alice.human() + R"("})");
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 0);
         }
         {
@@ -146,14 +146,14 @@ public:
             auto const linesSeq = env.rpc ("json", "account_lines",
                 R"({"account": ")" + account.human() + R"(", )"
                 R"("ledger_index": )" + std::to_string(info.seq) + "}");
-            BEAST_EXPECT(linesSeq[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(linesSeq[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(linesSeq[jss::result][jss::lines].size() == count);
 
             // Get account_lines by ledger hash.
             auto const linesHash = env.rpc ("json", "account_lines",
                 R"({"account": ")" + account.human() + R"(", )"
                 R"("ledger_hash": ")" + to_string(info.hash) + R"("})");
-            BEAST_EXPECT(linesHash[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(linesHash[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(linesHash[jss::result][jss::lines].size() == count);
         };
 
@@ -173,14 +173,14 @@ public:
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("ledger_hash": ")" + to_string(ledger4Info.hash) + R"(", )"
                 R"("ledger_index": )" + std::to_string(ledger58Info.seq) + "}");
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
         }
         {
             // alice should have 52 trust lines in the current ledger.
             auto const lines = env.rpc ("json", "account_lines",
                 R"({"account": ")" + alice.human() + R"("})");
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 52);
         }
         {
@@ -188,7 +188,7 @@ public:
             auto const lines = env.rpc ("json", "account_lines",
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("peer": ")" + gw1.human() + R"("})");
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
         }
         {
@@ -213,7 +213,7 @@ public:
             auto const linesA = env.rpc ("json", "account_lines",
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("limit": 1})");
-            BEAST_EXPECT(linesA[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(linesA[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(linesA[jss::result][jss::lines].size() == 1);
 
             // Pick up from where the marker left off.  We should get 51.
@@ -221,7 +221,7 @@ public:
             auto const linesB = env.rpc ("json", "account_lines",
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("marker": ")" + marker + R"("})");
-            BEAST_EXPECT(linesB[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(linesB[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(linesB[jss::result][jss::lines].size() == 51);
 
             // Go again from where the marker left off, but set a limit of 3.
@@ -229,7 +229,7 @@ public:
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("limit": 3, )"
                 R"("marker": ")" + marker + R"("})");
-            BEAST_EXPECT(linesC[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(linesC[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(linesC[jss::result][jss::lines].size() == 3);
 
             // Mess with the marker so it becomes bad and check for the error.
@@ -278,7 +278,7 @@ public:
                 R"("limit": 25, )"
                 R"("marker": ")" + marker + R"(", )"
                 R"("peer": ")" + alice.human() + R"("})");
-            BEAST_EXPECT(linesB[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(linesB[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(linesB[jss::result][jss::lines].size() == 25);
             BEAST_EXPECT(! linesB[jss::result].isMember(jss::marker));
         }
@@ -426,7 +426,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" + alice.human() + R"("}})");
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 0);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -528,7 +528,7 @@ public:
                 R"("params": )"
                 R"({"account": ")" + account.human() + R"(", )"
                 R"("ledger_index": )" + std::to_string(info.seq) + "}}");
-            BEAST_EXPECT(linesSeq[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(linesSeq[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(linesSeq[jss::result][jss::lines].size() == count);
             BEAST_EXPECT(linesSeq.isMember(jss::jsonrpc) && linesSeq[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(linesSeq.isMember(jss::ripplerpc) && linesSeq[jss::ripplerpc] == "2.0");
@@ -543,7 +543,7 @@ public:
                 R"("params": )"
                 R"({"account": ")" + account.human() + R"(", )"
                 R"("ledger_hash": ")" + to_string(info.hash) + R"("}})");
-            BEAST_EXPECT(linesHash[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(linesHash[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(linesHash[jss::result][jss::lines].size() == count);
             BEAST_EXPECT(linesHash.isMember(jss::jsonrpc) && linesHash[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(linesHash.isMember(jss::ripplerpc) && linesHash[jss::ripplerpc] == "2.0");
@@ -571,7 +571,7 @@ public:
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("ledger_hash": ")" + to_string(ledger4Info.hash) + R"(", )"
                 R"("ledger_index": )" + std::to_string(ledger58Info.seq) + "}}");
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -586,7 +586,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" + alice.human() + R"("}})");
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 52);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -602,7 +602,7 @@ public:
                 R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("peer": ")" + gw1.human() + R"("}})");
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -651,7 +651,7 @@ public:
                 R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("limit": 1}})");
-            BEAST_EXPECT(linesA[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(linesA[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(linesA[jss::result][jss::lines].size() == 1);
             BEAST_EXPECT(linesA.isMember(jss::jsonrpc) && linesA[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(linesA.isMember(jss::ripplerpc) && linesA[jss::ripplerpc] == "2.0");
@@ -667,7 +667,7 @@ public:
                 R"("params": )"
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("marker": ")" + marker + R"("}})");
-            BEAST_EXPECT(linesB[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(linesB[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(linesB[jss::result][jss::lines].size() == 51);
             BEAST_EXPECT(linesB.isMember(jss::jsonrpc) && linesB[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(linesB.isMember(jss::ripplerpc) && linesB[jss::ripplerpc] == "2.0");
@@ -683,7 +683,7 @@ public:
                 R"({"account": ")" + alice.human() + R"(", )"
                 R"("limit": 3, )"
                 R"("marker": ")" + marker + R"("}})");
-            BEAST_EXPECT(linesC[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(linesC[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(linesC[jss::result][jss::lines].size() == 3);
             BEAST_EXPECT(linesC.isMember(jss::jsonrpc) && linesC[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(linesC.isMember(jss::ripplerpc) && linesC[jss::ripplerpc] == "2.0");
@@ -772,7 +772,7 @@ public:
                 R"("limit": 25, )"
                 R"("marker": ")" + marker + R"(", )"
                 R"("peer": ")" + alice.human() + R"("}})");
-            BEAST_EXPECT(linesB[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(linesB[jss::result][jss::lines].isArrayorNull());
             BEAST_EXPECT(linesB[jss::result][jss::lines].size() == 25);
             BEAST_EXPECT(! linesB[jss::result].isMember(jss::marker));
             BEAST_EXPECT(linesB.isMember(jss::jsonrpc) && linesB[jss::jsonrpc] == "2.0");

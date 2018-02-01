@@ -349,7 +349,7 @@ int PathRequest::parseJson (Json::Value const& jvParams)
     if (jvParams.isMember (jss::source_currencies))
     {
         Json::Value const& jvSrcCurrencies = jvParams[jss::source_currencies];
-        if (! jvSrcCurrencies.isArray() || jvSrcCurrencies.size() == 0 ||
+        if (! jvSrcCurrencies.isArrayorNull() || jvSrcCurrencies.size() == 0 ||
             jvSrcCurrencies.size() > RPC::Tuning::max_src_cur)
         {
             jvStatus = rpcError (rpcSRC_CUR_MALFORMED);

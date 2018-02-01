@@ -601,7 +601,7 @@ ServerHandlerImp::processRequest (Port const& port,
             required = RPC::roleRequired(jsonRPC[jss::method].asString());
 
         if (jsonRPC.isMember(jss::params) &&
-            jsonRPC[jss::params].isArray() &&
+            jsonRPC[jss::params].isArrayorNull() &&
             jsonRPC[jss::params].size() > 0 &&
             jsonRPC[jss::params][Json::UInt(0)].isObject())
         {
@@ -712,7 +712,7 @@ ServerHandlerImp::processRequest (Port const& port,
             if (! params)
                 params = Json::Value (Json::objectValue);
 
-            else if (!params.isArray () || params.size() != 1)
+            else if (!params.isArrayorNull () || params.size() != 1)
             {
                 usage.charge(Resource::feeInvalidRPC);
                 HTTPReply (400, "params unparseable", output, rpcJ);
