@@ -97,7 +97,7 @@ getAccountObjects(ReadView const& ledger, AccountID const& account,
         return false;
 
     std::uint32_t i = 0;
-    auto& jvObjects = jvResult[jss::account_objects];
+    auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
     for (;;)
     {
         auto const& entries = dir->getFieldV256 (sfIndexes);
@@ -671,19 +671,20 @@ chooseLedgerEntryType(Json::Value const& params)
     if (params.isMember(jss::type))
     {
         static
-            std::array<std::pair<char const *, LedgerEntryType>, 11> const types
+            std::array<std::pair<char const *, LedgerEntryType>, 12> const types
         { {
             { jss::account,         ltACCOUNT_ROOT },
             { jss::amendments,      ltAMENDMENTS },
+            { jss::check,           ltCHECK },
             { jss::directory,       ltDIR_NODE },
+            { jss::escrow,          ltESCROW },
             { jss::fee,             ltFEE_SETTINGS },
             { jss::hashes,          ltLEDGER_HASHES },
             { jss::offer,           ltOFFER },
+            { jss::payment_channel, ltPAYCHAN },
             { jss::signer_list,     ltSIGNER_LIST },
             { jss::state,           ltRIPPLE_STATE },
-            { jss::ticket,          ltTICKET },
-            { jss::escrow,          ltESCROW },
-            { jss::payment_channel, ltPAYCHAN }
+            { jss::ticket,          ltTICKET }
             } };
 
         auto const& p = params[jss::type];
