@@ -500,7 +500,6 @@ void LedgerHistory::clearLedgerCachePrior (LedgerIndex seq)
     for (LedgerHash it: m_ledgers_by_hash.getKeys())
     {
         auto const ledger = getLedgerByHash (it);
-        assert(ledger);
         if (!ledger || ledger->info().seq < seq)
             m_ledgers_by_hash.del (it, false);
     }
