@@ -42,7 +42,7 @@ public:
     {
     }
 
-    // The sequence number the tip ledger
+    // The sequence number of the tip ledger
     Seq seq;
     // The ID of the tip ledger
     ID id;
@@ -53,7 +53,7 @@ public:
         @return The ID of the ancestor with that sequence number
 
         @note s must be less than or equal to the sequence number of the
-              preferred ledger
+              tip ledger
     */
     ID
     ancestor(Seq const& s) const

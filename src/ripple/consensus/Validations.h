@@ -791,7 +791,7 @@ public:
 
     /** Get the set of known public keys associated with current validations
 
-        @return The set of knows keys for current listed validators
+        @return The set of known keys for current listed validators
     */
     hash_set<NodeKey>
     getCurrentPublicKeys()

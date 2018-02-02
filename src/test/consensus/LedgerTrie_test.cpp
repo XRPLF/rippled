@@ -482,7 +482,7 @@ class LedgerTrie_test : public beast::unit_test::suite
 
         // Changing largestSeq perspective changes preferred branch
         {
-            /** Build the tree below with tip support annotated
+            /** Build the tree below with initial tip support annotated
                    A
                   / \
                B(1)  C(1)
@@ -508,7 +508,17 @@ class LedgerTrie_test : public beast::unit_test::suite
             BEAST_EXPECT(t.getPreferred(Seq{3}).id == h["a"].id());
             BEAST_EXPECT(t.getPreferred(Seq{4}).id == h["a"].id());
 
-            // One of E advancing to G doesn't change anything
+            /** One of E advancing to G doesn't change anything
+                   A
+                  / \
+               B(1)  C(1)
+              /  |   |
+             H   D   F(1)
+                 |
+                 E(1)
+                 |
+                 G(1)
+            */
             t.remove(h["abde"]);
             t.insert(h["abdeg"]);
 
@@ -518,7 +528,17 @@ class LedgerTrie_test : public beast::unit_test::suite
             BEAST_EXPECT(t.getPreferred(Seq{4}).id == h["a"].id());
             BEAST_EXPECT(t.getPreferred(Seq{5}).id == h["a"].id());
 
-            // C advancing to H does advance the seq 3 preferred ledger
+            /** C advancing to H does advance the seq 3 preferred ledger
+                   A
+                  / \
+               B(1)  C
+              /  |   |
+             H(1)D   F(1)
+                 |
+                 E(1)
+                 |
+                 G(1)
+            */
             t.remove(h["ac"]);
             t.insert(h["abh"]);
             BEAST_EXPECT(t.getPreferred(Seq{1}).id == h["ab"].id());
@@ -527,7 +547,17 @@ class LedgerTrie_test : public beast::unit_test::suite
             BEAST_EXPECT(t.getPreferred(Seq{4}).id == h["a"].id());
             BEAST_EXPECT(t.getPreferred(Seq{5}).id == h["a"].id());
 
-            // F advancing to E also moves the preferred ledger forward
+            /** F advancing to E also moves the preferred ledger forward
+                   A
+                  / \
+               B(1)  C
+              /  |   |
+             H(1)D   F
+                 |
+                 E(2)
+                 |
+                 G(1)
+            */
             t.remove(h["acf"]);
             t.insert(h["abde"]);
             BEAST_EXPECT(t.getPreferred(Seq{1}).id == h["abde"].id());

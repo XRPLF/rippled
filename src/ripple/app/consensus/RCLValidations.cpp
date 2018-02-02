@@ -297,15 +297,15 @@ handleNewValidation(Application& app,
     beast::Journal j = validations.adaptor().journal();
 
     auto dmp = [&](beast::Journal::Stream s, std::string const& msg) {
-            s << "Val for " << hash
-              << (val->isTrusted() ? " trusted/" : " UNtrusted/")
-              << (val->isFull() ? "full" : "partial") << " from "
-              << toBase58(TokenType::TOKEN_NODE_PUBLIC, *masterKey)
-              << " signing key "
-              << toBase58(TokenType::TOKEN_NODE_PUBLIC, signingKey) << " "
-              << msg
-              << " src=" << source;
-        };
+        s << "Val for " << hash
+          << (val->isTrusted() ? " trusted/" : " UNtrusted/")
+          << (val->isFull() ? "full" : "partial") << " from "
+          << (masterKey ? toBase58(TokenType::TOKEN_NODE_PUBLIC, *masterKey)
+                        : "unknown")
+          << " signing key "
+          << toBase58(TokenType::TOKEN_NODE_PUBLIC, signingKey) << " " << msg
+          << " src=" << source;
+    };
 
     if(!val->isFieldPresent(sfLedgerSequence))
     {
@@ -318,16 +318,14 @@ handleNewValidation(Application& app,
     if (masterKey)
     {
         ValStatus const outcome = validations.add(*masterKey, val);
-
-
-
         if(j.debug())
             dmp(j.debug(), to_string(outcome));
 
         if(outcome == ValStatus::badSeq && j.warn())
         {
             auto const seq = val->getFieldU32(sfLedgerSequence);
-            dmp(j.warn(), "already validated sequence past " + to_string(seq));
+            dmp(j.warn(),
+                "already validated sequence at or past " + to_string(seq));
         }
         else if(outcome == ValStatus::repeatID && j.warn())
         {
@@ -341,7 +339,6 @@ handleNewValidation(Application& app,
         {
             app.getLedgerMaster().checkAccept(
                 hash, val->getFieldU32(sfLedgerSequence));
-
             shouldRelay = true;
         }
 

@@ -462,6 +462,7 @@ class Validations_test : public beast::unit_test::suite
 
         std::vector<Trigger> triggers = {
             [&](TestValidations& vals) { vals.currentTrusted(); },
+            [&](TestValidations& vals) { vals.getCurrentPublicKeys(); },
             [&](TestValidations& vals) { vals.getPreferred(genesisLedger); },
             [&](TestValidations& vals) {
                 vals.getNodesAfter(ledgerA, ledgerA.id());
@@ -516,7 +517,7 @@ class Validations_test : public beast::unit_test::suite
              c = harness.makeNode(), d = harness.makeNode();
         c.untrust();
 
-        // first round a,b,c agree, d has differing id
+        // first round a,b,c agree, d has is partial
         BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerA)));
         BEAST_EXPECT(ValStatus::current == harness.add(b.validate(ledgerA)));
         BEAST_EXPECT(ValStatus::current == harness.add(c.validate(ledgerA)));

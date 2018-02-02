@@ -178,7 +178,7 @@ private:
     beast::Journal j_;
 };
 
-/** Generic validations adaptor classs for RCL
+/** Generic validations adaptor class for RCL
 
     Manages storing and writing stale RCLValidations to the sqlite DB and
     acquiring validated ledgers from the network.
