@@ -504,14 +504,13 @@ LedgerMaster::getFetchPack (LedgerIndex missingIndex,
 {
     auto haveHash = getLedgerHashForHistory(
         missingIndex + 1, reason);
-    if (!haveHash)
+    if (!haveHash || haveHash->isZero())
     {
         JLOG (m_journal.error()) <<
             "No hash for fetch pack. Missing Index " <<
             std::to_string(missingIndex);
         return;
     }
-    assert(haveHash->isNonZero());
 
     // Select target Peer based on highest score.  The score is randomized
     // but biased in favor of Peers with low latency.
