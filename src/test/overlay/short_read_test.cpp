@@ -64,13 +64,6 @@ private:
     std::thread thread_;
     std::shared_ptr<boost::asio::ssl::context> context_;
 
-    static
-    endpoint_type
-    endpoint()
-    {
-        return endpoint_type(boost::asio::ip::make_address(test::ENV_LOCALHOST_ADDR), 9000);
-    }
-
     template <class Streambuf>
     static
     void

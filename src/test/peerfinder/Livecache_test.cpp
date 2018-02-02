@@ -122,8 +122,9 @@ public:
     void testHistogram ()
     {
         testcase ("Histogram");
+        constexpr auto num_eps = 40;
         Livecache <> c (m_clock, beast::Journal());
-        for (auto i = 0; i < 40; ++i)
+        for (auto i = 0; i < num_eps; ++i)
             add(
                 beast::IP::randomEP(true),
                 c,
@@ -133,8 +134,14 @@ public:
             return;
         std::vector <std::string> v;
         boost::split (v, h, boost::algorithm::is_any_of (","));
+        auto sum = 0;
         for (auto const& n : v)
-            BEAST_EXPECT(boost::lexical_cast<int>(boost::trim_copy(n)) >= 0);
+        {
+            auto val = boost::lexical_cast<int>(boost::trim_copy(n));
+            sum += val;
+            BEAST_EXPECT(val >= 0);
+        }
+        BEAST_EXPECT(sum == num_eps);
     }
 
 

@@ -29,9 +29,7 @@ namespace IP {
 bool is_private (AddressV6 const& addr)
 {
     return ((addr.to_bytes()[0] & 0xfd) || // TODO  fc00::/8 too ?
-            (addr.is_v4_mapped() &&
-               addr.is_v4_compatible() &&
-               is_public(addr.to_v4())) );
+            (addr.is_v4_mapped() && is_private(addr.to_v4())) );
 }
 
 bool is_public (AddressV6 const& addr)

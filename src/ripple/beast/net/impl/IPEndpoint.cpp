@@ -44,7 +44,7 @@ std::pair <Endpoint, bool> Endpoint::from_string_checked (std::string const& s)
     is >> endpoint;
     if (! is.fail() && is.rdbuf()->in_avail() == 0)
         return std::make_pair (endpoint, true);
-    return std::make_pair (Endpoint (), false);
+    return std::make_pair (Endpoint {}, false);
 }
 
 Endpoint Endpoint::from_string (std::string const& s)
@@ -53,14 +53,7 @@ Endpoint Endpoint::from_string (std::string const& s)
         from_string_checked (s));
     if (result.second)
         return result.first;
-    return Endpoint();
-}
-
-// VFALCO NOTE This was a hack to support legacy data format
-// MELLERY NOTE: our endpoint parsing supports space or colon now
-Endpoint Endpoint::from_string_altform (std::string const& s)
-{
-    return from_string(s);
+    return Endpoint {};
 }
 
 std::string Endpoint::to_string () const
@@ -116,6 +109,11 @@ std::istream& operator>> (std::istream& is, Endpoint& endpoint)
 
     while (is && is.rdbuf()->in_avail() > 0 && is.get(i))
     {
+        // NOTE: There is a legacy data format
+        // that allowed space to be used as address / port separator
+        // so we continue to honor that here by assuming we are at the end
+        // of the address portion if we hit a space (or the separator
+        // we were expecting to see)
         if (isspace(i) || (readTo && i == readTo))
             break;
 

@@ -48,7 +48,6 @@ public:
     */
     static std::pair <Endpoint, bool> from_string_checked (std::string const& s);
     static Endpoint from_string (std::string const& s);
-    static Endpoint from_string_altform (std::string const& s);
 
     /** Returns a string representing the endpoint. */
     std::string to_string () const;
