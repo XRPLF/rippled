@@ -303,7 +303,7 @@ class Validations
     hash_map<NodeKey, Ledger> lastLedger_;
 
     // Set of ledgers being acquired from the network
-    hash_map<ID, hash_set<NodeKey>> acquiring_;
+    hash_map<std::pair<Seq,ID>, hash_set<NodeKey>> acquiring_;
 
     // Parameters to determine validation staleness
     ValidationParms const parms_;
@@ -318,7 +318,7 @@ private:
     removeTrie(ScopedLock const&, NodeKey const& key, Validation const& val)
     {
         {
-            auto it = acquiring_.find(val.ledgerID());
+            auto it = acquiring_.find(std::make_pair(val.seq(), val.ledgerID()));
             if (it != acquiring_.end())
             {
                 it->second.erase(key);
@@ -342,7 +342,8 @@ private:
     {
         for (auto it = acquiring_.begin(); it != acquiring_.end();)
         {
-            if (boost::optional<Ledger> ledger = adaptor_.acquire(it->first))
+            if (boost::optional<Ledger> ledger =
+                    adaptor_.acquire(it->first.second))
             {
                 for (NodeKey const& key : it->second)
                     updateTrie(lock, key, *ledger);
@@ -377,21 +378,21 @@ private:
         @param lock Existing lock of mutex_
         @param key The master public key identifying the validating node
         @param val The trusted validation issued by the node
-        @param priorID If not none, the last current validated ledger from key
+        @param prior If not none, the last current validated ledger Seq,ID of key
     */
     void
     updateTrie(
         ScopedLock const& lock,
         NodeKey const& key,
         Validation const& val,
-        boost::optional<ID> priorID)
+        boost::optional<std::pair<Seq,ID>> prior)
     {
         assert(val.trusted());
 
         // Clear any prior acquiring ledger for this node
-        if (priorID)
+        if (prior)
         {
-            auto it = acquiring_.find(*priorID);
+            auto it = acquiring_.find(*prior);
             if (it != acquiring_.end())
             {
                 it->second.erase(key);
@@ -402,7 +403,8 @@ private:
 
         checkAcquired(lock);
 
-        auto it = acquiring_.find(val.ledgerID());
+        std::pair<Seq,ID> valPair{val.seq(),val.ledgerID()};
+        auto it = acquiring_.find(valPair);
         if(it != acquiring_.end())
         {
             it->second.insert(key);
@@ -412,7 +414,7 @@ private:
             if (boost::optional<Ledger> ledger = adaptor_.acquire(val.ledgerID()))
                 updateTrie(lock, key, *ledger);
             else
-                acquiring_[val.ledgerID()].insert(key);
+                acquiring_[valPair].insert(key);
         }
 
     }
@@ -595,11 +597,11 @@ public:
                 Validation& oldVal = ins.first->second;
                 if (val.signTime() > oldVal.signTime())
                 {
-                    ID oldID = oldVal.ledgerID();
+                    std::pair<Seq,ID> old(oldVal.seq(),oldVal.ledgerID());
                     adaptor_.onStale(std::move(oldVal));
                     ins.first->second = val;
                     if (val.trusted())
-                        updateTrie(lock, key, val, oldID);
+                        updateTrie(lock, key, val, old);
                 }
                 else
                     return ValStatus::stale;
