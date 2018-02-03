@@ -970,6 +970,20 @@ class Validations_test : public beast::unit_test::suite
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ID{2}) == 1);
         // but ledger based data is not
         BEAST_EXPECT(harness.vals().getNodesAfter(genesisLedger, ID{0}) == 0);
+        // Initial preferred branch falls back to the ledger we are trying to
+        // acquire
+        BEAST_EXPECT(
+            harness.vals().getPreferred(genesisLedger) ==
+            std::make_pair(Seq{2}, ID{2}));
+
+        // After adding another unavailable validation, the preferred ledger
+        // breaks ties via higher ID
+        BEAST_EXPECT(
+            ValStatus::current ==
+            harness.add(b.validate(ID{3}, Seq{2}, 0s, 0s, true)));
+        BEAST_EXPECT(
+            harness.vals().getPreferred(genesisLedger) ==
+            std::make_pair(Seq{2}, ID{3}));
 
         // Create the ledger
         Ledger ledgerAB = h["ab"];
