@@ -8,6 +8,14 @@
 # https://travis-ci.org/ripple/rippled/caches
 set -e
 
+if [ -x /usr/bin/time ] ; then
+  : ${TIME:="Duration: %E"}
+  export TIME
+  time=/usr/bin/time
+else
+  time=
+fi
+
 if [ ! -d "$BOOST_ROOT/lib" ]
 then
   wget $BOOST_URL -O /tmp/boost.tar.gz
@@ -15,9 +23,9 @@ then
   rm -fr ${BOOST_ROOT}
   tar xzf /tmp/boost.tar.gz
   cd $BOOST_ROOT && \
-    ./bootstrap.sh --prefix=$BOOST_ROOT && \
-    ./b2 -d1 define=_GLIBCXX_USE_CXX11_ABI=0 -j$((2*${NUM_PROCESSORS:-2})) &&\
-    ./b2 -d0 define=_GLIBCXX_USE_CXX11_ABI=0 install
+    $time ./bootstrap.sh --prefix=$BOOST_ROOT && \
+    $time ./b2 -d1 define=_GLIBCXX_USE_CXX11_ABI=0 -j$((2*${NUM_PROCESSORS:-2})) &&\
+    $time ./b2 -d0 define=_GLIBCXX_USE_CXX11_ABI=0 install
 else
   echo "Using cached boost at $BOOST_ROOT"
 fi
