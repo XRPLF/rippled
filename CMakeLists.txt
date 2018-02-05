@@ -182,6 +182,7 @@ prepend(beast_unity_srcs
 src/ripple/beast/unity/
 beast_insight_unity.cpp
 beast_net_unity.cpp
+beast_hash_unity.cpp
 beast_utility_unity.cpp)
 
 prepend(ripple_unity_srcs
@@ -207,6 +208,7 @@ overlay2.cpp
 peerfinder.cpp
 json.cpp
 protocol.cpp
+resource.cpp
 rpcx1.cpp
 rpcx2.cpp
 shamap.cpp
@@ -270,6 +272,7 @@ set(non_unity_srcs ${core_srcs})
 foreach(curdir
         beast/clock
         beast/container
+        beast/hash
         beast/insight
         beast/net
         beast/utility
@@ -285,6 +288,7 @@ foreach(curdir
         overlay
         peerfinder
         protocol
+        resource
         rpc
         server
         shamap)
@@ -292,6 +296,9 @@ foreach(curdir
     list(APPEND rippled_src_nonunity "${cursrcs}")
     list(APPEND non_unity_srcs "${cursrcs}")
 endforeach()
+
+list(APPEND rippled_src_nonunity src/ripple/beast/hash/impl/xxhash.c)
+set_source_files_properties(src/ripple/beast/hash/impl/xxhash.c PROPERTIES LANGUAGE CXX )
 
 file(GLOB_RECURSE nodestore_srcs src/ripple/nodestore/*.cpp
     src/test/nodestore/*.cpp)
@@ -346,9 +353,7 @@ if(WIN32 OR is_xcode)
             beast/core
             beast/crypto
             beast/cxx17
-            beast/hash
             proto
-            resource
             validators
             websocket)
         file(GLOB_RECURSE cursrcs src/ripple/${curdir}/*.cpp)
@@ -404,12 +409,10 @@ add_with_props(rippled_src_all src/ripple/unity/secp256k1.cpp
   )
 
 foreach(cursrc
-    src/ripple/beast/unity/beast_hash_unity.cpp
     src/ripple/unity/beast.cpp
     src/ripple/unity/lz4.c
     src/ripple/unity/protobuf.cpp
-    src/ripple/unity/ripple.proto.cpp
-    src/ripple/unity/resource.cpp)
+    src/ripple/unity/ripple.proto.cpp)
 
   add_with_props(rippled_src_all ${cursrc}
     ${rocks_db_system_header}
