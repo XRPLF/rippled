@@ -34,14 +34,6 @@ namespace beast
 /** Returns the host-name of the computer. */
 std::string getComputerName();
 
-//==============================================================================
-/** Returns a backtrace of the current call-stack.
-    The usefulness of the result will depend on the level of debug symbols
-    that are available in the executable.
-*/
-std::vector <std::string>
-getStackBacktrace();
-
 } // beast
 
 #endif   // BEAST_SYSTEMSTATS_H_INCLUDED
