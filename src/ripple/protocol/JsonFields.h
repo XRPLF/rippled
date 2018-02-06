@@ -32,7 +32,6 @@ namespace jss {
 /* The "StaticString" field names are used instead of string literals to
    optimize the performance of accessing members of Json::Value objects.
 */
-// VFALCO What are these nonsense in/out comments?
 
 JSS ( AL_hit_rate );                // out: GetCounts
 JSS ( Account );                    // in: TransactionSign; field.
@@ -128,7 +127,8 @@ JSS ( converge_time );              // out: NetworkOPs
 JSS ( converge_time_s );            // out: NetworkOPs
 JSS ( count );                      // in: AccountTx*, ValidatorList
 JSS ( currency );                   // in: paths/PathRequest, STAmount
-                                    // out: paths/Node, STPathSet, STAmount
+                                    // out: paths/Node, STPathSet, STAmount,
+                                    //      AccountLines
 JSS ( current );                    // out: OwnerInfo
 JSS ( current_ledger_size );        // out: TxQ
 JSS ( current_queue_size );         // out: TxQ
@@ -228,13 +228,15 @@ JSS ( ledger );                     // in: NetworkOPs, LedgerCleaner,
                                     //     RPCHelpers
                                     // out: NetworkOPs, PeerImp
 JSS ( ledger_current_index );       // out: NetworkOPs, RPCHelpers,
-                                    //      LedgerCurrent, LedgerAccept
+                                    //      LedgerCurrent, LedgerAccept,
+                                    //      AccountLines
 JSS ( ledger_data );                // out: LedgerHeader
 JSS ( ledger_hash );                // in: RPCHelpers, LedgerRequest,
                                     //     RipplePathFind, TransactionEntry,
                                     //     handlers/Ledger
                                     // out: NetworkOPs, RPCHelpers,
-                                    //      LedgerClosed, LedgerData
+                                    //      LedgerClosed, LedgerData,
+                                    //      AccountLines
 JSS ( ledger_hit_rate );            // out: GetCounts
 JSS ( ledger_index );               // in/out: many
 JSS ( ledger_index_max );           // in, out: AccountTx*
