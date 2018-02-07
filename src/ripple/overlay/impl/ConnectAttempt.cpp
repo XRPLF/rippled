@@ -317,7 +317,7 @@ ConnectAttempt::processResponse()
             if (json.isObject() && json.isMember("peer-ips"))
             {
                 Json::Value const& ips = json["peer-ips"];
-                if (ips.isArrayorNull())
+                if (ips.isArray())
                 {
                     std::vector<boost::asio::ip::tcp::endpoint> eps;
                     eps.reserve(ips.size());

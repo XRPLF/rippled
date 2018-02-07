@@ -495,7 +495,7 @@ static boost::optional<detail::STVar> parseLeaf (
         break;
 
     case STI_VECTOR256:
-        if (! value.isArrayorNull ())
+        if (! value.isArrayOrNull ())
         {
             error = array_expected (json_name, fieldName);
             return ret;
@@ -521,7 +521,7 @@ static boost::optional<detail::STVar> parseLeaf (
         break;
 
     case STI_PATHSET:
-        if (!value.isArrayorNull ())
+        if (!value.isArrayOrNull ())
         {
             error = array_expected (json_name, fieldName);
             return ret;
@@ -535,7 +535,7 @@ static boost::optional<detail::STVar> parseLeaf (
             {
                 STPath p;
 
-                if (!value[i].isArrayorNull ())
+                if (!value[i].isArrayOrNull ())
                 {
                     std::stringstream ss;
                     ss << fieldName << "[" << i << "]";
@@ -816,7 +816,7 @@ static boost::optional <detail::STVar> parseArray (
     int depth,
     Json::Value& error)
 {
-    if (! json.isArrayorNull ())
+    if (! json.isArrayOrNull ())
     {
         error = not_an_array (json_name);
         return boost::none;

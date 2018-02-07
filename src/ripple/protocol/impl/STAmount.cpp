@@ -806,7 +806,11 @@ amountFromJson (SField const& name, Json::Value const& v)
     Json::Value currency;
     Json::Value issuer;
 
-    if (v.isObjectOrNull ())
+    if (v.isNull())
+    {
+        Throw<std::runtime_error> ("XRP may not be specified with a null Json value");
+    }
+    else if (v.isObject())
     {
         value       = v[jss::value];
         currency    = v[jss::currency];

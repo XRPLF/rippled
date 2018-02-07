@@ -50,7 +50,7 @@ class Freeze_test : public beast::unit_test::suite
 
     static bool checkArraySize(Json::Value const& val, unsigned int size)
     {
-        return val.isArrayorNull() && val.size() == size;
+        return val.isArray() && val.size() == size;
     }
 
     void testRippleState(FeatureBitset features)

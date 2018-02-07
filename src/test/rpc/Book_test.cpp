@@ -1602,27 +1602,27 @@ public:
         jvParams[jss::taker_gets][jss::issuer] = gw.human();
         auto jrr =
             env.rpc("json", "book_offers", to_string(jvParams)) [jss::result];
-        BEAST_EXPECT(jrr[jss::offers].isArrayorNull());
+        BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? 1u : 0u));
         // NOTE - a marker field is not returned for this method
 
         jvParams[jss::limit] = 0u;
         jrr =
             env.rpc("json", "book_offers", to_string(jvParams)) [jss::result];
-        BEAST_EXPECT(jrr[jss::offers].isArrayorNull());
+        BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() == 0u);
 
         jvParams[jss::limit] = RPC::Tuning::bookOffers.rmax + 1;
         jrr =
             env.rpc("json", "book_offers", to_string(jvParams)) [jss::result];
-        BEAST_EXPECT(jrr[jss::offers].isArrayorNull());
+        BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() ==
                 (asAdmin ?  RPC::Tuning::bookOffers.rmax + 1 : 0u));
 
         jvParams[jss::limit] = Json::nullValue;
         jrr =
             env.rpc("json", "book_offers", to_string(jvParams)) [jss::result];
-        BEAST_EXPECT(jrr[jss::offers].isArrayorNull());
+        BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() ==
                 (asAdmin ?  RPC::Tuning::bookOffers.rdefault : 0u));
     }

@@ -68,7 +68,7 @@ public:
             // alice is funded but has no lines.  An empty array is returned.
             auto const lines = env.rpc ("json", "account_lines",
                 R"({"account": ")" + alice.human() + R"("})");
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArrayorNull());
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 0);
         }
         {
@@ -146,14 +146,14 @@ public:
             auto const linesSeq = env.rpc ("json", "account_lines",
                 R"({"account": ")" + account.human() + R"(", )"
                 R"("ledger_index": )" + std::to_string(info.seq) + "}");
-            BEAST_EXPECT(linesSeq[jss::result][jss::lines].isArrayorNull());
+            BEAST_EXPECT(linesSeq[jss::result][jss::lines].isArray());
             BEAST_EXPECT(linesSeq[jss::result][jss::lines].size() == count);
 
             // Get account_lines by ledger hash.
             auto const linesHash = env.rpc ("json", "account_lines",
                 R"({"account": ")" + account.human() + R"(", )"
                 R"("ledger_hash": ")" + to_string(info.hash) + R"("})");
-            BEAST_EXPECT(linesHash[jss::result][jss::lines].isArrayorNull());
+            BEAST_EXPECT(linesHash[jss::result][jss::lines].isArray());
             BEAST_EXPECT(linesHash[jss::result][jss::lines].size() == count);
         };
 
@@ -426,7 +426,7 @@ public:
                 R"("id" : 5,)"
                 R"("params": )"
                 R"({"account": ")" + alice.human() + R"("}})");
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArrayorNull());
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 0);
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -528,7 +528,7 @@ public:
                 R"("params": )"
                 R"({"account": ")" + account.human() + R"(", )"
                 R"("ledger_index": )" + std::to_string(info.seq) + "}}");
-            BEAST_EXPECT(linesSeq[jss::result][jss::lines].isArrayorNull());
+            BEAST_EXPECT(linesSeq[jss::result][jss::lines].isArray());
             BEAST_EXPECT(linesSeq[jss::result][jss::lines].size() == count);
             BEAST_EXPECT(linesSeq.isMember(jss::jsonrpc) && linesSeq[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(linesSeq.isMember(jss::ripplerpc) && linesSeq[jss::ripplerpc] == "2.0");
@@ -543,7 +543,7 @@ public:
                 R"("params": )"
                 R"({"account": ")" + account.human() + R"(", )"
                 R"("ledger_hash": ")" + to_string(info.hash) + R"("}})");
-            BEAST_EXPECT(linesHash[jss::result][jss::lines].isArrayorNull());
+            BEAST_EXPECT(linesHash[jss::result][jss::lines].isArray());
             BEAST_EXPECT(linesHash[jss::result][jss::lines].size() == count);
             BEAST_EXPECT(linesHash.isMember(jss::jsonrpc) && linesHash[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(linesHash.isMember(jss::ripplerpc) && linesHash[jss::ripplerpc] == "2.0");

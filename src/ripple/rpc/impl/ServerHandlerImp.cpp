@@ -565,12 +565,8 @@ ServerHandlerImp::processRequest (Port const& port,
         Json::Reader reader;
         if ((request.size () > RPC::Tuning::maxRequestSize) ||
             ! reader.parse (request, jsonOrig) ||
-<<<<<<< HEAD
             ! jsonOrig ||
             ! jsonOrig.isObject ())
-=======
-            ! (jsonOrig.isObject() || jsonOrig.isArray()))
->>>>>>> Introduce Json::Value::isArray and isObject
         {
             HTTPReply (400, "Unable to parse request: " +
                        reader.getFormatedErrorMessages(), output, rpcJ);

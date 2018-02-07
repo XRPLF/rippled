@@ -92,7 +92,7 @@ class Ticket_test : public beast::unit_test::suite
         }
 
         BEAST_EXPECT(jvm.isMember (sfAffectedNodes.fieldName));
-        BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].isArrayorNull());
+        BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].isArray());
         BEAST_EXPECT(
             jvm[sfAffectedNodes.fieldName].size() == expected_nodes.size());
 

@@ -123,7 +123,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
             {
                 bool stat =
                     result.isMember (fld) &&
-                    result[fld].isArrayorNull() &&
+                    result[fld].isArray() &&
                     result[fld].size() == expected.size();
                 for (size_t i = 0; stat && i < expected.size(); ++i)
                 {

@@ -87,7 +87,7 @@ public:
             auto const& data = info[jss::result][jss::account_data];
             BEAST_EXPECT(data.isMember (jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
-            BEAST_EXPECT(signerLists.isArrayorNull());
+            BEAST_EXPECT(signerLists.isArray());
             BEAST_EXPECT(signerLists.size() == 0);
         }
 
@@ -205,7 +205,7 @@ public:
             auto const& data = info[jss::result][jss::account_data];
             BEAST_EXPECT(data.isMember (jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
-            BEAST_EXPECT(signerLists.isArrayorNull());
+            BEAST_EXPECT(signerLists.isArray());
             BEAST_EXPECT(signerLists.size() == 0);
             BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
@@ -228,7 +228,7 @@ public:
             auto const& data = info[1u][jss::result][jss::account_data];
             BEAST_EXPECT(data.isMember (jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
-            BEAST_EXPECT(signerLists.isArrayorNull());
+            BEAST_EXPECT(signerLists.isArray());
             BEAST_EXPECT(signerLists.size() == 0);
             BEAST_EXPECT(info[1u].isMember(jss::jsonrpc) && info[1u][jss::jsonrpc] == "2.0");
             BEAST_EXPECT(info[1u].isMember(jss::ripplerpc) && info[1u][jss::ripplerpc] == "2.0");

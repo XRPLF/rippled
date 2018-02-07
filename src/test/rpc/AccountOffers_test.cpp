@@ -29,7 +29,7 @@ public:
     // test helper
     static bool checkArraySize(Json::Value const& val, unsigned int size)
     {
-        return val.isArrayorNull() &&
+        return val.isArray() &&
                val.size() == size;
     }
 

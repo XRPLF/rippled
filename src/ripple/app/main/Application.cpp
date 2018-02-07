@@ -1584,7 +1584,7 @@ ApplicationImp::loadLedgerFromFile (
             ledger = ledger.get()["accountState"];
         }
 
-        if (!ledger.get().isArrayorNull ())
+        if (!ledger.get().isArrayOrNull ())
         {
             JLOG(m_journal.fatal())
                << "State nodes must be an array";

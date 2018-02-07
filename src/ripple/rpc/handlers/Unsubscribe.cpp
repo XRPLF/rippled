@@ -60,7 +60,7 @@ Json::Value doUnsubscribe (RPC::Context& context)
 
     if (context.params.isMember (jss::streams))
     {
-        if (! context.params[jss::streams].isArrayorNull ())
+        if (! context.params[jss::streams].isArray())
             return rpcError (rpcINVALID_PARAMS);
 
         for (auto& it: context.params[jss::streams])
@@ -109,7 +109,7 @@ Json::Value doUnsubscribe (RPC::Context& context)
         ? jss::accounts_proposed : jss::rt_accounts;  // DEPRECATED
     if (context.params.isMember(accountsProposed))
     {
-        if (! context.params[accountsProposed].isArrayorNull())
+        if (! context.params[accountsProposed].isArrayOrNull())
             return rpcError(rpcINVALID_PARAMS);
 
         auto ids = RPC::parseAccountIds(context.params[accountsProposed]);
@@ -120,7 +120,7 @@ Json::Value doUnsubscribe (RPC::Context& context)
 
     if (context.params.isMember(jss::accounts))
     {
-        if (! context.params[jss::accounts].isArrayorNull())
+        if (! context.params[jss::accounts].isArrayOrNull())
             return rpcError(rpcINVALID_PARAMS);
 
         auto ids = RPC::parseAccountIds(context.params[jss::accounts]);
@@ -131,7 +131,7 @@ Json::Value doUnsubscribe (RPC::Context& context)
 
     if (context.params.isMember(jss::books))
     {
-        if (! context.params[jss::books].isArrayorNull())
+        if (! context.params[jss::books].isArrayOrNull())
             return rpcError(rpcINVALID_PARAMS);
 
         for (auto& jv: context.params[jss::books])
