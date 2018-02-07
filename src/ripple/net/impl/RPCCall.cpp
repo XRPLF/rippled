@@ -173,7 +173,7 @@ private:
     {
         Json::Value v (Json::objectValue);
 
-        if (jvParams.isArrayorNull () && (jvParams.size () > 0))
+        if (jvParams.isArray() && (jvParams.size () > 0))
             v[jss::params] = jvParams;
 
         return v;
@@ -526,7 +526,7 @@ private:
 
     bool isValidJson2(Json::Value const& jv)
     {
-        if (jv.isArrayorNull())
+        if (jv.isArray())
         {
             if (jv.size() == 0)
                 return false;
@@ -537,14 +537,15 @@ private:
             }
             return true;
         }
-        if (jv.isObjectorNull())
+        if (jv.isObject())
         {
             if (jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0" &&
                 jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0" &&
                 jv.isMember(jss::id) && jv.isMember(jss::method))
             {
                 if (jv.isMember(jss::params) &&
-                      !(jv[jss::params].isArrayorNull() || jv[jss::params].isObjectorNull()))
+                      !(jv[jss::params].isNull() || jv[jss::params].isArray() ||
+                                                    jv[jss::params].isObject()))
                     return false;
                 return true;
             }
@@ -559,7 +560,7 @@ private:
         bool valid_parse = reader.parse(jvParams[0u].asString(), jv);
         if (valid_parse && isValidJson2(jv))
         {
-            if (jv.isObjectorNull())
+            if (jv.isObject())
             {
                 Json::Value jv1{Json::objectValue};
                 if (jv.isMember(jss::params))
@@ -574,7 +575,7 @@ private:
                 jv1[jss::method] = jv[jss::method];
                 return jv1;
             }
-            // else jv.isArrayorNull()
+            // else jv.isArray()
             Json::Value jv1{Json::arrayValue};
             for (Json::UInt j = 0; j < jv.size(); ++j)
             {
@@ -1369,9 +1370,9 @@ rpcClient(std::vector<std::string> const& args,
             if (!setup.client.admin_password.empty ())
                 jvRequest["admin_password"] = setup.client.admin_password;
 
-            if (jvRequest.isObjectorNull())
+            if (jvRequest.isObject())
                 jvParams.append (jvRequest);
-            else if (jvRequest.isArrayorNull())
+            else if (jvRequest.isArray())
             {
                 for (Json::UInt i = 0; i < jvRequest.size(); ++i)
                     jvParams.append(jvRequest[i]);
@@ -1388,7 +1389,7 @@ rpcClient(std::vector<std::string> const& args,
                     "",
                     jvRequest.isMember (jss::method)           // Allow parser to rewrite method.
                         ? jvRequest[jss::method].asString ()
-                        : jvRequest.isArrayorNull()
+                        : jvRequest.isArray()
                            ? "batch"
                            : args[0],
                     jvParams,                               // Parsed, execute.

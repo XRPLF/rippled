@@ -100,11 +100,11 @@ public:
 
         {
             auto const& balances = result[jss::balances];
-            expect (balances.isObjectorNull(), "balances is not an object");
+            expect (balances.isObject(), "balances is not an object");
             expect (balances.size() == 1, "balances size is not 1");
 
             auto const& hwBalance = balances[hw.human()];
-            expect (hwBalance.isArrayorNull(), "hwBalance is not an array");
+            expect (hwBalance.isArray(), "hwBalance is not an array");
             expect (hwBalance.size() == 2);
             auto c1 = hwBalance[0u][jss::currency];
             auto c2 = hwBalance[1u][jss::currency];
@@ -116,24 +116,24 @@ public:
 
         {
             auto const& fBalances = result[jss::frozen_balances];
-            expect (fBalances.isObjectorNull());
+            expect (fBalances.isObject());
             expect (fBalances.size() == 1);
 
             auto const& fBal = fBalances[dave.human()];
-            expect (fBal.isArrayorNull());
+            expect (fBal.isArray());
             expect (fBal.size() == 1);
-            expect (fBal[0u].isObjectorNull());
+            expect (fBal[0u].isObject());
             expect (fBal[0u][jss::currency] == "CNY");
             expect (fBal[0u][jss::value] == "30");
         }
 
         {
             auto const& assets = result[jss::assets];
-            expect (assets.isObjectorNull(), "assets it not an object");
+            expect (assets.isObject(), "assets it not an object");
             expect (assets.size() == 1, "assets size is not 1");
 
             auto const& cAssets = assets[charley.human()];
-            expect (cAssets.isArrayorNull());
+            expect (cAssets.isArray());
             expect (cAssets.size() == 1);
             expect (cAssets[0u][jss::currency] == "USD");
             expect (cAssets[0u][jss::value] == "10");
@@ -141,7 +141,7 @@ public:
 
         {
             auto const& obligations = result[jss::obligations];
-            expect (obligations.isObjectorNull(), "obligations is not an object");
+            expect (obligations.isObject(), "obligations is not an object");
             expect (obligations.size() == 3);
             expect (obligations["CNY"] == "250");
             expect (obligations["JPY"] == "250");

@@ -124,7 +124,7 @@ Reader::parse ( const char* beginDoc, const char* endDoc,
     Token token;
     skipCommentTokens ( token );
 
-    if ( !root.isArrayorNull ()  &&  !root.isObjectorNull () )
+    if ( !root.isNull() && !root.isArray() && !root.isObject() )
     {
         // Set error location to start of doc, ideally should be first token found in doc
         token.type_ = tokenError;

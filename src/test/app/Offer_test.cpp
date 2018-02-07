@@ -4345,7 +4345,7 @@ public:
 
             BEAST_EXPECT(jrr[jss::status] == "success");
             BEAST_EXPECT(
-                jrr[jss::alternatives].isArrayorNull() &&
+                jrr[jss::alternatives].isArray() &&
                 jrr[jss::alternatives].size() > 0);
         }
         // Send the payment using the found path.

@@ -334,8 +334,7 @@ ServerHandlerImp::onWSMessage(
     auto const size = boost::asio::buffer_size(buffers);
     if (size > RPC::Tuning::maxRequestSize ||
         ! Json::Reader{}.parse(jv, buffers) ||
-        ! jv ||
-        ! jv.isObjectorNull())
+        ! jv.isObject())
     {
         Json::Value jvResult(Json::objectValue);
         jvResult[jss::type] = jss::error;
@@ -566,8 +565,12 @@ ServerHandlerImp::processRequest (Port const& port,
         Json::Reader reader;
         if ((request.size () > RPC::Tuning::maxRequestSize) ||
             ! reader.parse (request, jsonOrig) ||
+<<<<<<< HEAD
             ! jsonOrig ||
             ! jsonOrig.isObject ())
+=======
+            ! (jsonOrig.isObject() || jsonOrig.isArray()))
+>>>>>>> Introduce Json::Value::isArray and isObject
         {
             HTTPReply (400, "Unable to parse request: " +
                        reader.getFormatedErrorMessages(), output, rpcJ);
@@ -601,7 +604,7 @@ ServerHandlerImp::processRequest (Port const& port,
             required = RPC::roleRequired(jsonRPC[jss::method].asString());
 
         if (jsonRPC.isMember(jss::params) &&
-            jsonRPC[jss::params].isArrayorNull() &&
+            jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 &&
             jsonRPC[jss::params][Json::UInt(0)].isObjectorNull())
         {
@@ -712,7 +715,7 @@ ServerHandlerImp::processRequest (Port const& port,
             if (! params)
                 params = Json::Value (Json::objectValue);
 
-            else if (!params.isArrayorNull () || params.size() != 1)
+            else if (!params.isArray() || params.size() != 1)
             {
                 usage.charge(Resource::feeInvalidRPC);
                 HTTPReply (400, "params unparseable", output, rpcJ);

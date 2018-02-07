@@ -998,7 +998,7 @@ public:
         }
         auto jrr = jv[jss::result];
 
-        BEAST_EXPECT(jrr[jss::offers].isArrayorNull());
+        BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() == 1);
         auto const jrOffer = jrr[jss::offers][0u];
         BEAST_EXPECT(jrOffer[sfAccount.fieldName] == alice.human());
@@ -1046,7 +1046,7 @@ public:
         }
         jrr = jv[jss::result];
 
-        BEAST_EXPECT(jrr[jss::offers].isArrayorNull());
+        BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() == 2);
         auto const jrNextOffer = jrr[jss::offers][1u];
         BEAST_EXPECT(jrNextOffer[sfAccount.fieldName] == bob.human());

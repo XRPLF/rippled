@@ -555,7 +555,7 @@ static boost::optional<detail::STVar> parseLeaf (
 
                     Json::Value pathEl = value[i][j];
 
-                    if (!pathEl.isObjectorNull ())
+                    if (!pathEl.isObject())
                     {
                         error = not_an_object (element_name);
                         return ret;
@@ -839,6 +839,7 @@ static boost::optional <detail::STVar> parseArray (
 
             if (!isObjectorNull || !singleKey)
             {
+                // null values are !singleKey
                 error = singleton_expected (json_name, i);
                 return boost::none;
             }

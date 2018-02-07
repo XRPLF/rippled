@@ -192,7 +192,7 @@ Json::Value doSubscribe (RPC::Context& context)
 
         for (auto& j: context.params[jss::books])
         {
-            if (!j.isObjectorNull ()
+            if (!j.isObject()
                     || !j.isMember (jss::taker_pays)
                     || !j.isMember (jss::taker_gets)
                     || !j[jss::taker_pays].isObjectorNull ()

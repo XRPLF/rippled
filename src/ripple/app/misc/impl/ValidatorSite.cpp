@@ -223,7 +223,7 @@ ValidatorSite::onSiteFetch(
         Json::Reader r;
         Json::Value body;
         if (r.parse(res.body.data(), body) &&
-            body.isObjectorNull() &&
+            body.isObject() &&
             body.isMember("blob") && body["blob"].isString () &&
             body.isMember("manifest") && body["manifest"].isString () &&
             body.isMember("signature") && body["signature"].isString() &&

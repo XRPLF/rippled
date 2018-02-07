@@ -35,7 +35,7 @@ Json::Value rpcError (int iError, Json::Value jvResult)
 // VFALCO NOTE Deprecated function
 bool isRpcError (Json::Value jvResult)
 {
-    return jvResult.isObjectorNull () && jvResult.isMember (jss::error);
+    return jvResult.isObject() && jvResult.isMember (jss::error);
 }
 
 } // ripple

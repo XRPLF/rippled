@@ -314,7 +314,7 @@ ConnectAttempt::processResponse()
         auto const success = r.parse(s, json);
         if (success)
         {
-            if (json.isObjectorNull() && json.isMember("peer-ips"))
+            if (json.isObject() && json.isMember("peer-ips"))
             {
                 Json::Value const& ips = json["peer-ips"];
                 if (ips.isArrayorNull())

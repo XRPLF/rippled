@@ -140,10 +140,10 @@ Json::Value doLedgerEntry (RPC::Context& context)
         Currency         uCurrency;
         Json::Value     jvRippleState   = context.params[jss::ripple_state];
 
-        if (!jvRippleState.isObjectorNull ()
+        if (!jvRippleState.isObject()
             || !jvRippleState.isMember (jss::currency)
             || !jvRippleState.isMember (jss::accounts)
-            || !jvRippleState[jss::accounts].isArrayorNull ()
+            || !jvRippleState[jss::accounts].isArray()
             || 2 != jvRippleState[jss::accounts].size ()
             || !jvRippleState[jss::accounts][0u].isString ()
             || !jvRippleState[jss::accounts][1u].isString ()

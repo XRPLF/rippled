@@ -85,7 +85,7 @@ class TransactionHistory_test : public beast::unit_test::suite
             params[jss::start] = 0;
             auto result =
                 env.client().invoke("tx_history", params)[jss::result];
-            if(! BEAST_EXPECT(result[jss::txs].isArrayorNull() &&
+            if(! BEAST_EXPECT(result[jss::txs].isArray() &&
                     result[jss::txs].size() > 0))
                 return;
 
@@ -114,7 +114,7 @@ class TransactionHistory_test : public beast::unit_test::suite
             params[jss::start] = start;
             auto result =
                 env.client().invoke("tx_history", params)[jss::result];
-            if(! BEAST_EXPECT(result[jss::txs].isArrayorNull() &&
+            if(! BEAST_EXPECT(result[jss::txs].isArray() &&
                     result[jss::txs].size() > 0))
                 break;
             total += result[jss::txs].size();

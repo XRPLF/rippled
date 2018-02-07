@@ -136,7 +136,7 @@ Json::Value doUnsubscribe (RPC::Context& context)
 
         for (auto& jv: context.params[jss::books])
         {
-            if (! jv.isObjectorNull() ||
+            if (! jv.isObject() ||
                 ! jv.isMember(jss::taker_pays) ||
                 ! jv.isMember(jss::taker_gets) ||
                 ! jv[jss::taker_pays].isObjectorNull() ||

@@ -782,7 +782,7 @@ Value::operator bool () const
         return s && strlen(s);
     }
 
-    return ! (isArrayorNull () || isObjectorNull ()) || size ();
+    return ! (isArray() || isObject()) || size ();
 }
 
 void
@@ -1092,11 +1092,23 @@ Value::isString () const
 
 
 bool
+Value::isArray() const
+{
+    return type_ == arrayValue;
+}
+
+bool
 Value::isArrayorNull () const
 {
     return type_ == nullValue  ||  type_ == arrayValue;
 }
 
+
+bool
+Value::isObject() const
+{
+    return type_ == objectValue;
+}
 
 bool
 Value::isObjectorNull () const

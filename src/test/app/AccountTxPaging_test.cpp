@@ -107,7 +107,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
             // limit = 2, 3 batches giving the first 6 txs
             auto jrr = next(env, A3, 2, 5, 2, true);
             auto txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 2))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 3, 3));
             BEAST_EXPECT(checkTransaction (txs[1u], 1, 3));
@@ -116,7 +116,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
 
             jrr = next(env, A3, 2, 5, 2, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 2))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 2, 4));
             BEAST_EXPECT(checkTransaction (txs[1u], 2, 4));
@@ -125,7 +125,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
 
             jrr = next(env, A3, 2, 5, 2, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 2))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 2, 5));
             BEAST_EXPECT(checkTransaction (txs[1u], 3, 5));
@@ -136,7 +136,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
             // limit 1, 3 requests giving the first 3 txs
             auto jrr = next(env, A3, 3, 9, 1, true);
             auto txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 1))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 3, 3));
             if(! BEAST_EXPECT(jrr[jss::marker]))
@@ -144,7 +144,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
 
             jrr = next(env, A3, 3, 9, 1, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 1))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 1, 3));
             if(! BEAST_EXPECT(jrr[jss::marker]))
@@ -152,7 +152,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
 
             jrr = next(env, A3, 3, 9, 1, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 1))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 2, 4));
             if(! BEAST_EXPECT(jrr[jss::marker]))
@@ -161,7 +161,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
             // continue with limit 3, to end of all txs
             jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 3))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 2, 4));
             BEAST_EXPECT(checkTransaction (txs[1u], 2, 5));
@@ -171,7 +171,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
 
             jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 3))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 4, 6));
             BEAST_EXPECT(checkTransaction (txs[1u], 5, 6));
@@ -181,7 +181,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
 
             jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 3))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 7, 7));
             BEAST_EXPECT(checkTransaction (txs[1u], 8, 8));
@@ -191,7 +191,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
 
             jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 2))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 10, 9));
             BEAST_EXPECT(checkTransaction (txs[1u], 11, 9));
@@ -202,7 +202,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
             // limit 2, descending, 2 batches giving last 4 txs
             auto jrr = next(env, A3, 3, 9, 2, false);
             auto txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 2))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 11, 9));
             BEAST_EXPECT(checkTransaction (txs[1u], 10, 9));
@@ -211,7 +211,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
 
             jrr = next(env, A3, 3, 9, 2, false, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 2))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 9, 8));
             BEAST_EXPECT(checkTransaction (txs[1u], 8, 8));
@@ -221,7 +221,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
             // continue with limit 3 until all txs have been seen
             jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 3))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 7, 7));
             BEAST_EXPECT(checkTransaction (txs[1u], 6, 7));
@@ -231,7 +231,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
 
             jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 3))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 4, 6));
             BEAST_EXPECT(checkTransaction (txs[1u], 3, 5));
@@ -241,7 +241,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
 
             jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 3))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 2, 4));
             BEAST_EXPECT(checkTransaction (txs[1u], 2, 4));
@@ -251,7 +251,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
 
             jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArrayorNull() && txs.size() == 1))
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 3, 3));
             BEAST_EXPECT(! jrr[jss::marker]);

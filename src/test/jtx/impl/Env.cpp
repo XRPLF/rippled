@@ -277,7 +277,7 @@ std::pair<TER, bool>
 Env::parseResult(Json::Value const& jr)
 {
     TER ter;
-    if (jr.isObjectorNull() && jr.isMember(jss::result) &&
+    if (jr.isObject() && jr.isMember(jss::result) &&
         jr[jss::result].isMember(jss::engine_result_code))
         ter = static_cast<TER>(
             jr[jss::result][jss::engine_result_code].asInt());
@@ -330,7 +330,7 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
     {
         // Use the provided parameters, and go straight
         // to the (RPC) client.
-        assert(params.isObjectorNull());
+        assert(params.isObject());
         if (!params.isMember(jss::secret) &&
             !params.isMember(jss::key_type) &&
             !params.isMember(jss::seed) &&

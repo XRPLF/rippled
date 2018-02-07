@@ -189,7 +189,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         jvParams[jss::full] = true;
         auto const jrr = env.rpc ( "json", "ledger", to_string(jvParams) ) [jss::result];
         BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
-        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArrayorNull());
+        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
         BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 2u);
     }
 
@@ -222,7 +222,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         jvParams[jss::accounts] = true;
         auto const jrr = env.rpc ( "json", "ledger", to_string(jvParams) ) [jss::result];
         BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
-        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArrayorNull());
+        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
         BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 2u);
     }
 
@@ -682,7 +682,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         jvParams[jss::type] = "hashes";
         auto const jrr = env.rpc ( "json", "ledger", to_string(jvParams) ) [jss::result];
         BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
-        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArrayorNull());
+        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
         BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 1u);
         BEAST_EXPECT(jrr[jss::ledger][jss::accountState][0u]["LedgerEntryType"]
                                                           == "LedgerHashes");
@@ -696,7 +696,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         jvParams[jss::type] = "hashes";
         auto const jrr = env.rpc ( "json", "ledger", to_string(jvParams) ) [jss::result];
         BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
-        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArrayorNull());
+        BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
         BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 1u);
         BEAST_EXPECT(jrr[jss::ledger][jss::accountState][0u] == index);
         }

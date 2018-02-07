@@ -29,8 +29,8 @@ namespace ripple {
 Json::Value doPrint (RPC::Context& context)
 {
     JsonPropertyStream stream;
-    if (context.params.isObjectorNull()
-        && context.params[jss::params].isArrayorNull()
+    if (context.params.isObject()
+        && context.params[jss::params].isArray()
         && context.params[jss::params][0u].isString ())
     {
         context.app.write (stream, context.params[jss::params][0u].asString());

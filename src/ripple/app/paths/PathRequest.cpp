@@ -362,7 +362,7 @@ int PathRequest::parseJson (Json::Value const& jvParams)
         {
             // Mandatory currency
             Currency srcCurrencyID;
-            if (! c.isObjectorNull() ||
+            if (! c.isObject() ||
                 ! c.isMember(jss::currency) ||
                 ! to_currency(srcCurrencyID, c[jss::currency].asString()))
             {

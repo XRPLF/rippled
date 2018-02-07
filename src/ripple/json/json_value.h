@@ -262,7 +262,9 @@ public:
     bool isDouble () const;
     bool isNumeric () const;
     bool isString () const;
+    bool isArray() const;
     bool isArrayorNull () const;
+    bool isObject() const;
     bool isObjectorNull () const;
 
     bool isConvertibleTo ( ValueType other ) const;

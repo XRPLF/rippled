@@ -91,7 +91,7 @@ public:
             jv["account"] = creator.human();
             auto const lines = env.rpc("json","account_lines", to_string(jv));
             // Verify that all lines have 100 limit from creator
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArrayorNull());
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 3);
             for (auto const & line : lines[jss::result][jss::lines])
             {
@@ -187,7 +187,7 @@ public:
             jv["account"] = toAcct.human();
             auto const lines = env.rpc("json","account_lines", to_string(jv));
             auto quality = exists ? 1000 : 0;
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArrayorNull());
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 1);
             BEAST_EXPECT(lines[jss::result][jss::lines][0u][jss::quality_in]
                 == quality);
