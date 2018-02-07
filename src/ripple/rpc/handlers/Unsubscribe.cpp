@@ -139,8 +139,8 @@ Json::Value doUnsubscribe (RPC::Context& context)
             if (! jv.isObject() ||
                 ! jv.isMember(jss::taker_pays) ||
                 ! jv.isMember(jss::taker_gets) ||
-                ! jv[jss::taker_pays].isObjectorNull() ||
-                ! jv[jss::taker_gets].isObjectorNull())
+                ! jv[jss::taker_pays].isObjectOrNull() ||
+                ! jv[jss::taker_gets].isObjectOrNull())
             {
                 return rpcError(rpcINVALID_PARAMS);
             }

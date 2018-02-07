@@ -606,7 +606,7 @@ ServerHandlerImp::processRequest (Port const& port,
         if (jsonRPC.isMember(jss::params) &&
             jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 &&
-            jsonRPC[jss::params][Json::UInt(0)].isObjectorNull())
+            jsonRPC[jss::params][Json::UInt(0)].isObjectOrNull())
         {
             role = requestRole(
                 required,
@@ -724,7 +724,7 @@ ServerHandlerImp::processRequest (Port const& port,
             else
             {
                 params = std::move (params[0u]);
-                if (!params.isObjectorNull())
+                if (!params.isObjectOrNull())
                 {
                     usage.charge(Resource::feeInvalidRPC);
                     HTTPReply (400, "params unparseable", output, rpcJ);

@@ -253,7 +253,7 @@ checkTxJsonFields (
 {
     std::pair<Json::Value, AccountID> ret;
 
-    if (! tx_json.isObjectorNull ())
+    if (! tx_json.isObjectOrNull ())
     {
         ret.first = RPC::object_field_error (jss::tx_json);
         return ret;
@@ -844,7 +844,7 @@ static Json::Value checkMultiSignFields (Json::Value const& jvRequest)
 
     Json::Value const& tx_json (jvRequest [jss::tx_json]);
 
-    if (!tx_json.isObjectorNull())
+    if (!tx_json.isObjectOrNull())
         return RPC::invalid_field_message (jss::tx_json);
 
     // There are a couple of additional fields we need to check before
@@ -946,7 +946,7 @@ Json::Value transactionSignFor (
     {
         Json::Value& tx_json (jvRequest [jss::tx_json]);
 
-        if (!tx_json.isObjectorNull())
+        if (!tx_json.isObjectOrNull())
             return RPC::object_field_error (jss::tx_json);
 
         // If the tx_json.SigningPubKey field is missing,

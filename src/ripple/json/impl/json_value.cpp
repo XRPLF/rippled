@@ -1111,7 +1111,7 @@ Value::isObject() const
 }
 
 bool
-Value::isObjectorNull () const
+Value::isObjectOrNull () const
 {
     return type_ == nullValue  ||  type_ == objectValue;
 }

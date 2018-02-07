@@ -64,7 +64,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
     }
     else if (context.params.isMember (jss::directory))
     {
-        if (!context.params[jss::directory].isObjectorNull ())
+        if (!context.params[jss::directory].isObjectOrNull ())
         {
             uNodeIndex.SetHex (context.params[jss::directory].asString ());
         }
@@ -114,7 +114,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
     }
     else if (context.params.isMember (jss::offer))
     {
-        if (!context.params[jss::offer].isObjectorNull ())
+        if (!context.params[jss::offer].isObjectOrNull ())
         {
             uNodeIndex.SetHex (context.params[jss::offer].asString ());
         }

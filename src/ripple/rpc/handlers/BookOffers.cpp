@@ -55,10 +55,10 @@ Json::Value doBookOffers (RPC::Context& context)
     Json::Value const& taker_pays = context.params[jss::taker_pays];
     Json::Value const& taker_gets = context.params[jss::taker_gets];
 
-    if (!taker_pays.isObjectorNull ())
+    if (!taker_pays.isObjectOrNull ())
         return RPC::object_field_error (jss::taker_pays);
 
-    if (!taker_gets.isObjectorNull ())
+    if (!taker_gets.isObjectOrNull ())
         return RPC::object_field_error (jss::taker_gets);
 
     if (!taker_pays.isMember (jss::currency))

@@ -709,7 +709,7 @@ static boost::optional <STObject> parseObject (
     int depth,
     Json::Value& error)
 {
-    if (! json.isObjectorNull ())
+    if (! json.isObjectOrNull ())
     {
         error = not_an_object (json_name);
         return boost::none;
@@ -743,7 +743,7 @@ static boost::optional <STObject> parseObject (
         case STI_TRANSACTION:
         case STI_LEDGERENTRY:
         case STI_VALIDATION:
-            if (! value.isObjectorNull ())
+            if (! value.isObjectOrNull ())
             {
                 error = not_an_object (json_name, fieldName);
                 return boost::none;
@@ -834,10 +834,10 @@ static boost::optional <detail::STVar> parseArray (
 
         for (Json::UInt i = 0; json.isValidIndex (i); ++i)
         {
-            bool const isObjectorNull (json[i].isObjectorNull());
-            bool const singleKey (isObjectorNull ? json[i].size() == 1 : true);
+            bool const isObjectOrNull (json[i].isObjectOrNull());
+            bool const singleKey (isObjectOrNull ? json[i].size() == 1 : true);
 
-            if (!isObjectorNull || !singleKey)
+            if (!isObjectOrNull || !singleKey)
             {
                 // null values are !singleKey
                 error = singleton_expected (json_name, i);

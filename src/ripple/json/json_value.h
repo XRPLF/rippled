@@ -265,7 +265,7 @@ public:
     bool isArray() const;
     bool isArrayorNull () const;
     bool isObject() const;
-    bool isObjectorNull () const;
+    bool isObjectOrNull () const;
 
     bool isConvertibleTo ( ValueType other ) const;
 

@@ -513,7 +513,7 @@ private:
 
         if (reader.parse (jvParams[1u].asString (), jvRequest))
         {
-            if (!jvRequest.isObjectorNull ())
+            if (!jvRequest.isObjectOrNull ())
                 return rpcError (rpcINVALID_PARAMS);
 
             jvRequest[jss::method] = jvParams[0u];
