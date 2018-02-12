@@ -23,6 +23,8 @@
 #include <ripple/nodestore/impl/DatabaseShardImp.h>
 #include <ripple/nodestore/Manager.h>
 
+#include <fstream>
+
 namespace ripple {
 namespace NodeStore {
 
