@@ -143,7 +143,9 @@ save(Archive& ar,
     ripple::ClosedInterval<T> const& ci,
     const unsigned int version)
 {
-    ar << ci.lower() << ci.upper();
+    auto l = ci.lower();
+    auto u = ci.upper();
+    ar << l << u;
 }
 
 template <class Archive, class T>
@@ -168,7 +170,8 @@ template <class Archive, class T>
 void
 save(Archive& ar, ripple::RangeSet<T> const& rs, const unsigned int version)
 {
-    ar << rs.iterative_size();
+    auto s = rs.iterative_size();
+    ar << s;
     for (auto const& r : rs)
         ar << r;
 }

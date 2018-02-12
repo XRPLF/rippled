@@ -154,6 +154,7 @@ struct is_dynamic_buffer<T, detail::void_t<decltype(
 {
 };
 
+#if BOOST_VERSION < 106600
 // Special case for Boost.Asio which doesn't adhere to
 // net-ts but still provides a read_size_helper so things work
 template<class Allocator>
@@ -161,6 +162,9 @@ struct is_dynamic_buffer<
     boost::asio::basic_streambuf<Allocator>> : std::true_type
 {
 };
+#endif
+
+
 #endif
 
 //------------------------------------------------------------------------------
