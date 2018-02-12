@@ -22,7 +22,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/JsonFields.h>
-#include <boost/beast/core/detail/base64.hpp>
+#include <beast/core/detail/base64.hpp>
 #include <boost/regex.hpp>
 
 namespace ripple {
@@ -291,7 +291,7 @@ ValidatorList::applyList (
     for (auto const& valManifest : manifests)
     {
         auto m = Manifest::make_Manifest (
-            boost::beast::detail::base64_decode(valManifest));
+            beast::detail::base64_decode(valManifest));
 
         if (! m || ! keyListings_.count (m->masterKey))
         {
@@ -321,7 +321,7 @@ ValidatorList::verify (
     std::string const& blob,
     std::string const& signature)
 {
-    auto m = Manifest::make_Manifest (boost::beast::detail::base64_decode(manifest));
+    auto m = Manifest::make_Manifest (beast::detail::base64_decode(manifest));
 
     if (! m || ! publisherLists_.count (m->masterKey))
         return ListDisposition::untrusted;
@@ -342,7 +342,7 @@ ValidatorList::verify (
         return ListDisposition::untrusted;
 
     auto const sig = strUnHex(signature);
-    auto const data = boost::beast::detail::base64_decode (blob);
+    auto const data = beast::detail::base64_decode (blob);
     if (! sig.second ||
         ! ripple::verify (
             publisherManifests_.getSigningKey(pubKey),

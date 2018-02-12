@@ -22,7 +22,7 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/beast/net/IPAddressConversion.h>
-#include <boost/beast/core/bind_handler.hpp>
+#include <beast/core/bind_handler.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
@@ -177,7 +177,7 @@ public:
             // must be plain
             mSecure = false;
             mSocket->get_io_service ().post (
-                boost::beast::bind_handler (cbFunc, error_code()));
+                beast::bind_handler (cbFunc, error_code()));
         }
         else
         {
@@ -210,7 +210,7 @@ public:
                 ec = e.code();
             }
             mSocket->get_io_service ().post (
-                boost::beast::bind_handler (handler, ec));
+                beast::bind_handler (handler, ec));
         }
     }
 

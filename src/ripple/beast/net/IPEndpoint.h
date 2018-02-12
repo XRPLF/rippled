@@ -97,7 +97,7 @@ public:
     void
     hash_append (Hasher& h, Endpoint const& endpoint)
     {
-        using ::beast::hash_append;
+        using beast::hash_append;
         hash_append(h, endpoint.m_addr, endpoint.m_port);
     }
 
@@ -155,20 +155,20 @@ std::istream& operator>> (std::istream& is, Endpoint& endpoint);
 namespace std {
 /** std::hash support. */
 template <>
-struct hash <::beast::IP::Endpoint>
+struct hash <beast::IP::Endpoint>
 {
-    std::size_t operator() (::beast::IP::Endpoint const& endpoint) const
-        { return ::beast::uhash<>{} (endpoint); }
+    std::size_t operator() (beast::IP::Endpoint const& endpoint) const
+        { return beast::uhash<>{} (endpoint); }
 };
 }
 
 namespace boost {
 /** boost::hash support. */
 template <>
-struct hash <::beast::IP::Endpoint>
+struct hash <beast::IP::Endpoint>
 {
-    std::size_t operator() (::beast::IP::Endpoint const& endpoint) const
-        { return ::beast::uhash<>{} (endpoint); }
+    std::size_t operator() (beast::IP::Endpoint const& endpoint) const
+        { return beast::uhash<>{} (endpoint); }
 };
 }
 

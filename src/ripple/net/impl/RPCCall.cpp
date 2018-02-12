@@ -36,7 +36,7 @@
 #include <ripple/protocol/types.h>
 #include <ripple/rpc/ServerHandler.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <boost/beast/core/string.hpp>
+#include <beast/core/string.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/optional.hpp>
 #include <boost/regex.hpp>
@@ -452,9 +452,9 @@ private:
             // This may look reversed, but it's intentional: jss::vetoed
             // determines whether an amendment is vetoed - so "reject" means
             // that jss::vetoed is true.
-            if (boost::beast::detail::iequals(action, "reject"))
+            if (beast::detail::iequals(action, "reject"))
                 jvRequest[jss::vetoed] = Json::Value (true);
-            else if (boost::beast::detail::iequals(action, "accept"))
+            else if (beast::detail::iequals(action, "accept"))
                 jvRequest[jss::vetoed] = Json::Value (false);
             else
                 return rpcError (rpcINVALID_PARAMS);
@@ -1492,7 +1492,7 @@ void fromNetwork (
     }
 
     // HTTP basic authentication
-    auto const auth = boost::beast::detail::base64_encode(strUsername + ":" + strPassword);
+    auto const auth = beast::detail::base64_encode(strUsername + ":" + strPassword);
 
     std::map<std::string, std::string> mapRequestHeaders;
 

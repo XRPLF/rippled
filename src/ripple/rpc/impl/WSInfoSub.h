@@ -73,7 +73,7 @@ public:
         auto sp = ws_.lock();
         if(! sp)
             return;
-        boost::beast::multi_buffer sb;
+        beast::multi_buffer sb;
         Json::stream(jv,
             [&](void const* data, std::size_t n)
             {

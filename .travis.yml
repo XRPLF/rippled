@@ -11,8 +11,8 @@ env:
     # to boost's .tar.gz.
     - LCOV_ROOT=$HOME/lcov
     - GDB_ROOT=$HOME/gdb
-    - BOOST_ROOT=$HOME/boost_1_66_0
-    - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.66.0/boost_1_66_0.tar.gz'
+    - BOOST_ROOT=$HOME/boost_1_60_0
+    - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.60.0/boost_1_60_0.tar.gz'
 
 # Travis is timing out on Trusty.  So, for now, use Precise.  July 2017
 dist: precise

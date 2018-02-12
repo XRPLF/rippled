@@ -143,11 +143,11 @@ private:
     Resource::Consumer usage_;
     Resource::Charge fee_;
     PeerFinder::Slot::ptr slot_;
-    boost::beast::multi_buffer read_buffer_;
+    beast::multi_buffer read_buffer_;
     http_request_type request_;
     http_response_type response_;
-    boost::beast::http::fields const& headers_;
-    boost::beast::multi_buffer write_buffer_;
+    beast::http::fields const& headers_;
+    beast::multi_buffer write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;
     int large_sendq_ = 0;

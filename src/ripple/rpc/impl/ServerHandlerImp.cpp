@@ -40,9 +40,9 @@
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/server/SimpleWriter.h>
-#include <boost/beast/core/detail/base64.hpp>
-#include <boost/beast/http/fields.hpp>
-#include <boost/beast/http/string_body.hpp>
+#include <beast/core/detail/base64.hpp>
+#include <beast/http/fields.hpp>
+#include <beast/http/string_body.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/optional.hpp>
@@ -58,10 +58,10 @@ isStatusRequest(
     http_request_type const& request)
 {
     return
-        request.version() >= 11 &&
+        request.version >= 11 &&
         request.target() == "/" &&
-        request.body().size() == 0 &&
-        request.method() == boost::beast::http::verb::get;
+        request.body.size() == 0 &&
+        request.method() == beast::http::verb::get;
 }
 
 static
@@ -69,21 +69,21 @@ Handoff
 unauthorizedResponse(
     http_request_type const& request)
 {
-    using namespace boost::beast::http;
+    using namespace beast::http;
     Handoff handoff;
     response<string_body> msg;
-    msg.version(request.version());
-    msg.result(boost::beast::http::status::unauthorized);
+    msg.version = request.version;
+    msg.result(beast::http::status::unauthorized);
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Content-Type", "text/html");
     msg.insert("Connection", "close");
-    msg.body() = "Invalid protocol.";
+    msg.body = "Invalid protocol.";
     msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return handoff;
 }
 
-// VFALCO TODO Rewrite to use boost::beast::http::fields
+// VFALCO TODO Rewrite to use beast::http::fields
 static
 bool
 authorized (
@@ -98,7 +98,7 @@ authorized (
         return false;
     std::string strUserPass64 = it->second.substr (6);
     boost::trim (strUserPass64);
-    std::string strUserPass = boost::beast::detail::base64_decode (strUserPass64);
+    std::string strUserPass = beast::detail::base64_decode (strUserPass64);
     std::string::size_type nColon = strUserPass.find (":");
     if (nColon == std::string::npos)
         return false;
@@ -179,7 +179,7 @@ ServerHandlerImp::onHandoff (Session& session,
         (session.port().protocol.count("wss") > 0) ||
         (session.port().protocol.count("wss2") > 0);
 
-    if(boost::beast::websocket::is_upgrade(request))
+    if(beast::websocket::is_upgrade(request))
     {
         if(is_ws)
         {
@@ -219,7 +219,7 @@ ServerHandlerImp::onHandoff (Session& session,
             boost::asio::ip::tcp::endpoint remote_address) ->
     Handoff
 {
-    if(boost::beast::websocket::is_upgrade(request))
+    if(beast::websocket::is_upgrade(request))
     {
         if (session.port().protocol.count("ws2") > 0 ||
             session.port().protocol.count("ws") > 0)
@@ -251,7 +251,7 @@ ServerHandlerImp::onHandoff (Session& session,
 static inline
 Json::Output makeOutput (Session& session)
 {
-    return [&](boost::beast::string_view const& b)
+    return [&](beast::string_view const& b)
     {
         session.write (b.data(), b.size());
     };
@@ -260,7 +260,7 @@ Json::Output makeOutput (Session& session)
 // HACK!
 static
 std::map<std::string, std::string>
-build_map(boost::beast::http::fields const& h)
+build_map(beast::http::fields const& h)
 {
     std::map <std::string, std::string> c;
     for (auto const& e : h)
@@ -341,7 +341,7 @@ ServerHandlerImp::onWSMessage(
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";
         jvResult[jss::value] = buffers_to_string(buffers);
-        boost::beast::multi_buffer sb;
+        beast::multi_buffer sb;
         Json::stream(jvResult,
             [&sb](auto const p, auto const n)
             {
@@ -367,7 +367,7 @@ ServerHandlerImp::onWSMessage(
                 this->processSession(session, coro, jv);
             auto const s = to_string(jr);
             auto const n = s.length();
-            boost::beast::multi_buffer sb(n);
+            beast::multi_buffer sb(n);
             sb.commit(boost::asio::buffer_copy(
                 sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
             session->send(std::make_shared<
@@ -509,7 +509,7 @@ ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
 {
     processRequest (
         session->port(), buffers_to_string(
-            session->request().body().data()),
+            session->request().body.data()),
                 session->remoteAddress().at_port (0),
                     makeOutput (*session), coro,
         [&]
@@ -832,25 +832,25 @@ Handoff
 ServerHandlerImp::statusResponse(
     http_request_type const& request) const
 {
-    using namespace boost::beast::http;
+    using namespace beast::http;
     Handoff handoff;
     response<string_body> msg;
     std::string reason;
     if (app_.serverOkay(reason))
     {
-        msg.result(boost::beast::http::status::ok);
-        msg.body() = "<!DOCTYPE html><html><head><title>" + systemName() +
+        msg.result(beast::http::status::ok);
+        msg.body = "<!DOCTYPE html><html><head><title>" + systemName() +
             " Test page for rippled</title></head><body><h1>" +
                 systemName() + " Test</h1><p>This page shows rippled http(s) "
                     "connectivity is working.</p></body></html>";
     }
     else
     {
-        msg.result(boost::beast::http::status::internal_server_error);
-        msg.body() = "<HTML><BODY>Server cannot accept clients: " +
+        msg.result(beast::http::status::internal_server_error);
+        msg.body = "<HTML><BODY>Server cannot accept clients: " +
             reason + "</BODY></HTML>";
     }
-    msg.version(request.version());
+    msg.version = request.version;
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Content-Type", "text/html");
     msg.insert("Connection", "close");

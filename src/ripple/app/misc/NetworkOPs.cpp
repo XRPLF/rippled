@@ -56,7 +56,7 @@
 #include <ripple/beast/core/SystemStats.h>
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/basics/make_lock.h>
-#include <boost/beast/core/detail/base64.hpp>
+#include <beast/core/detail/base64.hpp>
 #include <boost/asio/steady_timer.hpp>
 
 namespace ripple {

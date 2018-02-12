@@ -25,10 +25,10 @@
 #include <ripple/server/impl/io_list.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/beast/asio/ssl_error.h> // for is_short_read?
-#include <boost/beast/http/read.hpp>
-#include <boost/beast/http/message.hpp>
-#include <boost/beast/http/parser.hpp>
-#include <boost/beast/http/dynamic_body.hpp>
+#include <beast/http/read.hpp>
+#include <beast/http/message.hpp>
+#include <beast/http/parser.hpp>
+#include <beast/http/dynamic_body.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/streambuf.hpp>
@@ -324,10 +324,10 @@ do_read(yield_context do_yield)
     complete_ = false;
     error_code ec;
     start_timer();
-    boost::beast::http::async_read(impl().stream_,
+    beast::http::async_read(impl().stream_,
         read_buf_, message_, do_yield[ec]);
     cancel_timer();
-    if(ec == boost::beast::http::error::end_of_stream)
+    if(ec == beast::http::error::end_of_stream)
         return do_close();
     if(ec)
         return fail(ec, "http::read");

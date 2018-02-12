@@ -1687,7 +1687,7 @@ bool ApplicationImp::loadOldLedger (
                 }
             }
         }
-        else if (ledgerID.empty () || boost::beast::detail::iequals(ledgerID, "latest"))
+        else if (ledgerID.empty () || beast::detail::iequals(ledgerID, "latest"))
         {
             loadLedger = getLastFullLedger ();
         }

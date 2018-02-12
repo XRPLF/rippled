@@ -4,7 +4,7 @@
 # This script builds boost with the correct ABI flags for ubuntu
 #
 
-version=66
+version=63
 patch=0
 
 if hash lsb_release 2>/dev/null; then

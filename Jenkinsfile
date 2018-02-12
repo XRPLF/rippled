@@ -127,7 +127,6 @@ try {
                     withEnv(["CCACHE_BASEDIR=${cdir}",
                              "CCACHE_NOHASHDIR=true",
                              'LCOV_ROOT=""',
-                             'BOOST_ROOT=/opt/local/boost_1_66_0',
                              "TARGET=${target}",
                              "CC=${compiler}",
                              'BUILD=cmake',

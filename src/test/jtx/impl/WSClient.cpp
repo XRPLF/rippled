@@ -24,8 +24,8 @@
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
-#include <boost/beast/core/multi_buffer.hpp>
-#include <boost/beast/websocket.hpp>
+#include <beast/core/multi_buffer.hpp>
+#include <beast/websocket.hpp>
 
 #include <condition_variable>
 
@@ -93,8 +93,8 @@ class WSClientImpl : public WSClient
     boost::asio::io_service::strand strand_;
     std::thread thread_;
     boost::asio::ip::tcp::socket stream_;
-    boost::beast::websocket::stream<boost::asio::ip::tcp::socket&> ws_;
-    boost::beast::multi_buffer rb_;
+    beast::websocket::stream<boost::asio::ip::tcp::socket&> ws_;
+    beast::multi_buffer rb_;
 
     bool peerClosed_ = false;
 
@@ -110,17 +110,13 @@ class WSClientImpl : public WSClient
 
     unsigned rpc_version_;
 
-    void
-    cleanup()
+    void cleanup()
     {
         ios_.post(strand_.wrap([this] {
             error_code ec;
             if (!peerClosed_)
-            {
-                ws_.async_close({}, strand_.wrap([&](error_code ec) {
-                    stream_.cancel(ec);
-                }));
-            }
+                ws_.close({}, ec);
+            stream_.close(ec);
         }));
         work_ = boost::none;
         thread_.join();
@@ -178,7 +174,7 @@ public:
             else
                 jp[jss::command] = cmd;
             auto const s = to_string(jp);
-            ws_.write_some(true, buffer(s));
+            ws_.write_frame(true, buffer(s));
         }
 
         auto jv = findMsg(5s,
@@ -264,7 +260,7 @@ private:
     {
         if(ec)
         {
-            if(ec == boost::beast::websocket::error::closed)
+            if(ec == beast::websocket::error::closed)
                peerClosed_ = true;
             return;
         }

@@ -25,7 +25,7 @@
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Sign.h>
-#include <boost/beast/core/detail/base64.hpp>
+#include <beast/core/detail/base64.hpp>
 #include <test/jtx.h>
 #include <test/jtx/TrustedPublisherServer.h>
 
@@ -76,7 +76,7 @@ class ValidatorRPC_test : public beast::unit_test::suite
         Serializer s;
         st.add(s);
 
-        return boost::beast::detail::base64_encode(
+        return beast::detail::base64_encode(
             std::string(static_cast<char const*>(s.data()), s.size()));
     }
 

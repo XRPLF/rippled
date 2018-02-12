@@ -807,6 +807,7 @@ config_base(base)
 base.Append(CPPPATH=[
     'src',
     os.path.join('src', 'beast'),
+    os.path.join('src', 'beast', 'include'),
     os.path.join('src', 'beast', 'extras'),
     os.path.join('src', 'nudb', 'include'),
     os.path.join(build_dir, 'proto'),

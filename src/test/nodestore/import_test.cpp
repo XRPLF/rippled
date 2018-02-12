@@ -27,7 +27,7 @@
 #include <nudb/create.hpp>
 #include <nudb/detail/format.hpp>
 #include <nudb/xxhasher.hpp>
-#include <boost/beast/core/string.hpp>
+#include <beast/core/string.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <chrono>
@@ -258,7 +258,7 @@ public:
     }
 };
 
-std::map <std::string, std::string, boost::beast::iless>
+std::map <std::string, std::string, beast::iless>
 parse_args(std::string const& s)
 {
     // <key> '=' <value>
@@ -274,7 +274,7 @@ parse_args(std::string const& s)
         , boost::regex_constants::optimize
     );
     std::map <std::string,
-        std::string, boost::beast::iless> map;
+        std::string, beast::iless> map;
     auto const v = beast::rfc2616::split(
         s.begin(), s.end(), ',');
     for (auto const& kv : v)

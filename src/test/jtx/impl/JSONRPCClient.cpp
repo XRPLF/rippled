@@ -22,11 +22,11 @@
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
-#include <boost/beast/http/message.hpp>
-#include <boost/beast/http/dynamic_body.hpp>
-#include <boost/beast/http/string_body.hpp>
-#include <boost/beast/http/read.hpp>
-#include <boost/beast/http/write.hpp>
+#include <beast/http/message.hpp>
+#include <beast/http/dynamic_body.hpp>
+#include <beast/http/string_body.hpp>
+#include <beast/http/read.hpp>
+#include <beast/http/write.hpp>
 #include <boost/asio.hpp>
 #include <string>
 
@@ -74,8 +74,8 @@ class JSONRPCClient : public AbstractClient
     boost::asio::ip::tcp::endpoint ep_;
     boost::asio::io_service ios_;
     boost::asio::ip::tcp::socket stream_;
-    boost::beast::multi_buffer bin_;
-    boost::beast::multi_buffer bout_;
+    beast::multi_buffer bin_;
+    beast::multi_buffer bout_;
     unsigned rpc_version_;
 
 public:
@@ -104,14 +104,14 @@ public:
     invoke(std::string const& cmd,
         Json::Value const& params) override
     {
-        using namespace boost::beast::http;
+        using namespace beast::http;
         using namespace boost::asio;
         using namespace std::string_literals;
 
         request<string_body> req;
-        req.method(boost::beast::http::verb::post);
+        req.method(beast::http::verb::post);
         req.target("/");
-        req.version(11);
+        req.version = 11;
         req.insert("Content-Type", "application/json; charset=UTF-8");
         req.insert("Host", ep_);
         {
@@ -128,7 +128,7 @@ public:
                 Json::Value& ja = jr[jss::params] = Json::arrayValue;
                 ja.append(params);
             }
-            req.body() = to_string(jr);
+            req.body = to_string(jr);
         }
         req.prepare_payload();
         write(stream_, req);
@@ -138,7 +138,7 @@ public:
 
         Json::Reader jr;
         Json::Value jv;
-        jr.parse(buffer_string(res.body().data()), jv);
+        jr.parse(buffer_string(res.body.data()), jv);
         if(jv["result"].isMember("error"))
             jv["error"] = jv["result"]["error"];
         if(jv["result"].isMember("status"))
