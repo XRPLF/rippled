@@ -1,0 +1,37 @@
+#
+# Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
+#
+# Distributed under the Boost Software License, Version 1.0. (See accompanying
+# file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+
+import os ;
+
+compile config.cpp :    <variant>coverage:<build>no
+                        <variant>ubasan:<build>no : ;
+
+compile core.cpp :      <variant>coverage:<build>no
+                        <variant>ubasan:<build>no : ;
+
+compile exemplars.cpp : <variant>coverage:<build>no
+                        <variant>ubasan:<build>no : ;
+
+compile http.cpp :      <variant>coverage:<build>no
+                        <variant>ubasan:<build>no : ;
+
+compile version.cpp :   <variant>coverage:<build>no
+                        <variant>ubasan:<build>no : ;
+
+compile websocket.cpp : <variant>coverage:<build>no
+                        <variant>ubasan:<build>no : ;
+
+compile zlib.cpp :      <variant>coverage:<build>no
+                        <variant>ubasan:<build>no : ;
+
+build-project benchmarks ;
+build-project common ;
+build-project core ;
+build-project http ;
+build-project server ;
+build-project websocket ;
+build-project zlib ;

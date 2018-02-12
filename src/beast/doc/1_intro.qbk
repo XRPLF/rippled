@@ -1,0 +1,96 @@
+[/
+    Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
+
+    Distributed under the Boost Software License, Version 1.0. (See accompanying
+    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+]
+
+[section:intro Introduction]
+
+Beast is a C++ header-only library serving as a foundation for writing
+interoperable networking libraries by providing [*low-level HTTP/1,
+WebSocket, and networking protocol] vocabulary types and algorithms
+using the consistent asynchronous model of __Asio__.
+
+This library is designed for:
+
+* [*Symmetry:] Algorithms are role-agnostic; build clients, servers, or both.
+
+* [*Ease of Use:] __Asio__ users will immediately understand Beast.
+
+* [*Flexibility:] Users make the important decisions such as buffer or
+  thread management.
+
+* [*Performance:] Build applications handling thousands of connections or more.
+
+* [*Basis for Further Abstraction.] Components are well-suited for building upon.
+
+Beast is not an HTTP client or HTTP server, but it can be used to build
+those things.
+
+[heading Motivation]
+
+Beast empowers users to create their own libraries, clients, and servers
+using HTTP/1 and WebSocket. Code will be easier and faster to implement,
+understand, and maintain, because Beast takes care of the low-level
+protocol details.
+The HTTP and WebSocket protocols drive most of the World Wide Web.
+Every web browser implements these protocols to load webpages and
+to enable client side programs (often written in JavaScript) to
+communicate interactively. C++ benefits greatly from having a
+standardized implementation of these protocols.
+
+[heading Requirements]
+
+[important
+    This library is for programmers familiar with __Asio__. Users who
+    wish to use asynchronous interfaces should already know how to
+    create concurrent network programs using callbacks or coroutines.
+]
+
+Beast requires:
+
+* [*C++11:] Robust support for most language features.
+* [*Boost:] Beast only works with Boost, not stand-alone Asio
+* [*OpenSSL:] Optional, for using TLS/Secure sockets.
+
+Supported compilers: msvc-14+, gcc 4.8+, clang 3.6+
+
+Sources are [*header-only]. To link a program using Beast successfully, add the
+[@http://www.boost.org/libs/system/doc/reference.html Boost.System]
+library to the list of linked libraries. If you use coroutines
+you'll also need the
+[@http://www.boost.org/libs/coroutine/doc/html/index.html Boost.Coroutine]
+library. Please visit the
+[@http://www.boost.org/doc/ Boost documentation]
+for instructions on how to do this for your particular build system.
+
+[heading Credits]
+
+Boost.Asio is the inspiration behind which all of the interfaces and
+implementation strategies are built. Some parts of the documentation are
+written to closely resemble the wording and presentation of Boost.Asio
+documentation. Credit goes to
+[@https://github.com/chriskohlhoff Christopher Kohlhoff]
+for his wonderful Asio library and the ideas in __N4588__ which power Beast.
+
+Beast would not be possible without the support of
+[@https://www.ripple.com Ripple]
+during the library's early development, or the ideas, time and patience
+contributed by
+[@https://github.com/JoelKatz David Schwartz],
+[@https://github.com/ximinez Edward Hennis],
+[@https://github.com/howardhinnant Howard Hinnant],
+[@https://github.com/miguelportilla Miguel Portilla],
+[@https://github.com/nbougalis Nik Bougalis],
+[@https://github.com/seelabs Scott Determan],
+[@https://github.com/scottschurr Scott Schurr],
+Many thanks to
+[@https://github.com/K-ballo Agustín Bergé],
+[@http://www.boost.org/users/people/glen_fernandes.html Glen Fernandes],
+and
+[@https://github.com/pdimov Peter Dimov]
+for tirelessly answering questions on
+[@https://cpplang.slack.com/ Cpplang-Slack].
+
+[endsect]

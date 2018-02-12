@@ -1,0 +1,115 @@
+#
+# Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+#
+# Distributed under the Boost Software License, Version 1.0. (See accompanying
+# file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+
+import os ;
+import feature ;
+import boost ;
+import modules ;
+import testing ;
+
+boost.use-project ;
+
+if [ os.name ] = SOLARIS
+{
+  lib socket ;
+  lib nsl ;
+}
+else if [ os.name ] = NT
+{
+  lib ws2_32 ;
+  lib mswsock ;
+}
+else if [ os.name ] = HPUX
+{
+  lib ipv6 ;
+}
+else if [ os.name ] = QNXNTO
+{
+  lib socket ;
+}
+else if [ os.name ] = HAIKU
+{
+  lib network ;
+}
+
+if [ os.name ] = NT
+{
+  lib ssl : : <name>ssleay32 ;
+  lib crypto : : <name>libeay32 ;
+}
+else
+{
+  lib ssl ;
+  lib crypto ;
+}
+
+if [ os.name ] = MACOSX
+{
+  using clang : : ;
+}
+
+variant coverage :
+    release
+    :
+    <cxxflags>"-msse4.2 -fprofile-arcs -ftest-coverage"
+    <linkflags>"-lgcov"
+    ;
+
+variant ubasan
+  :
+    release
+  :
+    <cxxflags>"-msse4.2 -funsigned-char -fno-omit-frame-pointer -fsanitize=address,undefined -fsanitize-blacklist=scripts/blacklist.supp"
+    <linkflags>"-fsanitize=address,undefined"
+  ;
+
+project beast
+  : requirements
+    <implicit-dependency>/boost//headers
+    <include>.
+    <include>./extras
+    <include>./include
+    #<use>/boost//headers
+    <library>/boost/system//boost_system
+    <library>/boost/coroutine//boost_coroutine
+    <library>/boost/filesystem//boost_filesystem
+    <library>/boost/program_options//boost_program_options
+    <define>BOOST_ALL_NO_LIB=1
+    <define>BOOST_COROUTINES_NO_DEPRECATION_WARNING=1
+    <threading>multi
+    <runtime-link>shared
+    <debug-symbols>on
+    <toolset>gcc:<cxxflags>-std=c++11
+    <toolset>gcc:<cxxflags>-Wno-unused-parameter
+    <toolset>gcc:<cxxflags>-Wno-unused-variable # Temporary until we can figure out -isystem
+    <toolset>clang:<cxxflags>-std=c++11
+    <toolset>clang:<cxxflags>-Wno-unused-parameter
+    <toolset>clang:<cxxflags>-Wno-unused-variable # Temporary until we can figure out -isystem
+    <toolset>clang:<cxxflags>-Wrange-loop-analysis
+    <toolset>msvc:<define>_SCL_SECURE_NO_WARNINGS=1
+    <toolset>msvc:<define>_CRT_SECURE_NO_WARNINGS=1
+    <toolset>msvc:<cxxflags>"/permissive- /bigobj"
+    <toolset>msvc:<variant>release:<cxxflags>"/Ob2 /Oi /Ot"
+    <os>LINUX:<define>_XOPEN_SOURCE=600
+    <os>LINUX:<define>_GNU_SOURCE=1
+    <os>SOLARIS:<define>_XOPEN_SOURCE=500
+    <os>SOLARIS:<define>__EXTENSIONS__
+    <os>SOLARIS:<library>socket
+    <os>SOLARIS:<library>nsl
+    <os>NT:<define>_WIN32_WINNT=0x0601
+    <os>NT,<toolset>cw:<library>ws2_32
+    <os>NT,<toolset>cw:<library>mswsock
+    <os>NT,<toolset>gcc:<library>ws2_32
+    <os>NT,<toolset>gcc:<library>mswsock
+    <os>NT,<toolset>gcc-cygwin:<define>__USE_W32_SOCKETS
+  : usage-requirements
+  :
+    build-dir bin
+  ;
+
+build-project test ;
+build-project example ;

@@ -1,0 +1,130 @@
+sudo: false
+language: cpp
+
+env:
+  global:
+    - LLVM_VERSION=3.8.0
+    # Maintenance note: to move to a new version
+    # of boost, update both BOOST_ROOT and BOOST_URL.
+    # Note that for simplicity, BOOST_ROOT's final
+    # namepart must match the folder name internal
+    # to boost's .tar.gz.
+    - LCOV_ROOT=$HOME/lcov
+    - VALGRIND_ROOT=$HOME/valgrind-install
+    - BOOST_ROOT=$HOME/boost_1_58_0
+    - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.gz'
+
+addons:
+  apt:
+    sources: &base_sources
+      - ubuntu-toolchain-r-test
+    packages: &base_packages
+      - python-software-properties
+      - libffi-dev
+      - libstdc++6
+      - binutils-gold
+      # Provides a backtrace if the unittests crash
+      - gdb
+      # Needed for installing valgrind
+      - subversion
+      - automake
+      - autotools-dev
+      - libc6-dbg
+
+matrix:
+  include:
+    # gcc coverage
+    - compiler: gcc
+      env:
+        - GCC_VER=6
+        - VARIANT=coverage
+        - ADDRESS_MODEL=64
+        - DO_VALGRIND=false
+        - BUILD_SYSTEM=cmake
+        - PATH=$PWD/cmake/bin:$PATH
+      addons:
+        apt:
+          packages:
+            - gcc-6
+            - g++-6
+            - libssl-dev
+            - *base_packages
+          sources:
+            - *base_sources
+
+    # older GCC, release
+    - compiler: gcc
+      env:
+        - GCC_VER=4.8
+        - VARIANT=release
+        - DO_VALGRIND=false
+        - ADDRESS_MODEL=64
+      addons:
+        apt:
+          packages:
+            - gcc-4.8
+            - g++-4.8
+            - *base_packages
+          sources:
+            - *base_sources
+
+    # later GCC
+    - compiler: gcc
+      env:
+        - GCC_VER=5
+        - VARIANT=release
+        - DO_VALGRIND=true
+        - ADDRESS_MODEL=64
+        - BUILD_SYSTEM=cmake
+        - PATH=$PWD/cmake/bin:$PATH
+      addons:
+        apt:
+          packages:
+            - gcc-5
+            - g++-5
+            - libssl-dev
+            - *base_packages
+          sources:
+            - *base_sources
+
+    # clang ubsan+asan
+    - compiler: clang
+      env:
+        - GCC_VER=5
+        - VARIANT=ubasan
+        - CLANG_VER=3.8
+        - DO_VALGRIND=false
+        - ADDRESS_MODEL=64
+        - UBSAN_OPTIONS='print_stacktrace=1'
+        - BUILD_SYSTEM=cmake
+        - PATH=$PWD/cmake/bin:$PATH
+        - PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
+      addons:
+        apt:
+          packages:
+            - gcc-5
+            - g++-5
+            - libssl-dev
+            - *base_packages
+          sources:
+            - *base_sources
+
+cache:
+  directories:
+  - $BOOST_ROOT
+  - $VALGRIND_ROOT
+  - llvm-$LLVM_VERSION
+  - cmake
+
+before_install: &base_before_install
+  - scripts/install-dependencies.sh
+
+script:
+  - travis_retry scripts/build-and-test.sh
+
+after_script:
+  - cat nohup.out || echo "nohup.out already deleted"
+
+notifications:
+  email:
+    false
