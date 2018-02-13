@@ -293,8 +293,7 @@ public:
     // Ledger proposal/close functions.
     void processTrustedProposal (
         RCLCxPeerPos proposal,
-        std::shared_ptr<protocol::TMProposeSet> set,
-        NodeID const &node) override;
+        std::shared_ptr<protocol::TMProposeSet> set) override;
 
     bool recvValidation (
         STValidation::ref val, std::string const& source) override;
@@ -1434,13 +1433,17 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
     assert (closingInfo.parentHash ==
             m_ledgerMaster.getClosedLedger()->info().hash);
 
-    app_.validators().onConsensusStart (
-        app_.getValidations().getCurrentPublicKeys ());
+    TrustChanges const changes = app_.validators().updateTrusted(
+        app_.getValidations().getCurrentNodeIDs());
 
-    mConsensus.startRound (
+    if (!changes.added.empty() || !changes.removed.empty())
+        app_.getValidations().trustChanged(changes.added, changes.removed);
+
+    mConsensus.startRound(
         app_.timeKeeper().closeTime(),
         networkClosed,
-        prevLedger);
+        prevLedger,
+        changes.removed);
 
     JLOG(m_journal.debug()) << "Initiating consensus engine";
     return true;
@@ -1453,8 +1456,7 @@ uint256 NetworkOPsImp::getConsensusLCL ()
 
 void NetworkOPsImp::processTrustedProposal (
     RCLCxPeerPos peerPos,
-    std::shared_ptr<protocol::TMProposeSet> set,
-    NodeID const& node)
+    std::shared_ptr<protocol::TMProposeSet> set)
 {
     if (mConsensus.peerProposal(
             app_.timeKeeper().closeTime(), peerPos))

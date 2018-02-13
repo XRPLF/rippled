@@ -20,90 +20,170 @@
 #ifndef RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
 #define RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
 
+#include <ripple/basics/Log.h>
 #include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/STObject.h>
+#include <ripple/protocol/SecretKey.h>
 #include <cstdint>
+#include <functional>
 #include <memory>
 
 namespace ripple {
 
 // Validation flags
-const std::uint32_t vfFullyCanonicalSig    = 0x80000000; // signature is fully canonical
+const std::uint32_t vfFullyCanonicalSig =
+    0x80000000;  // signature is fully canonical
 
-class STValidation final
-    : public STObject
-    , public CountedObject <STValidation>
+class STValidation final : public STObject, public CountedObject<STValidation>
 {
 public:
-    static char const* getCountedObjectName () { return "STValidation"; }
+    static char const*
+    getCountedObjectName()
+    {
+        return "STValidation";
+    }
 
     using pointer = std::shared_ptr<STValidation>;
-    using ref     = const std::shared_ptr<STValidation>&;
+    using ref = const std::shared_ptr<STValidation>&;
 
-    enum
+    enum { kFullFlag = 0x1 };
+
+    /** Construct a STValidation from a peer.
+
+        Construct a STValidation from serialized data previously shared by a
+        peer.
+
+        @param sit Iterator over serialized data
+        @param lookupNodeID Invocable with signature
+                               NodeID(PublicKey const&)
+                            used to find the Node ID based on the public key
+                            that signed the validation. For manifest based
+                            validators, this should be the NodeID of the master
+                            public key.
+        @param checkSignature Whether to verify the data was signed properly
+
+        @note Throws if the object is not valid
+    */
+    template <class LookupNodeID>
+    STValidation(
+        SerialIter& sit,
+        LookupNodeID&& lookupNodeID,
+        bool checkSignature)
+        : STObject(getFormat(), sit, sfValidation)
     {
-        kFullFlag = 0x1
-    };
+        mNodeID =
+            lookupNodeID(PublicKey(makeSlice(getFieldVL(sfSigningPubKey))));
+        assert(mNodeID.isNonZero());
 
-    // These throw if the object is not valid
-    STValidation (SerialIter & sit, bool checkSignature = true);
+        if (checkSignature && !isValid())
+        {
+            JLOG(debugLog().error()) << "Invalid validation" << getJson(0);
+            Throw<std::runtime_error>("Invalid validation");
+        }
+    }
 
-    // Does not sign the validation
-    STValidation (
+    /** Construct a new STValidation
+
+        Constructs a new STValidation issued by a node. The instance should be
+        signed before sharing with other nodes.
+
+        @param ledgerHash The hash of the validated ledger
+        @param signTime When the validation is signed
+        @param publicKey The current signing public key
+        @param nodeID ID corresponding to node's public master key
+        @param isFull Whether the validation is full or partial
+
+    */
+
+    STValidation(
         uint256 const& ledgerHash,
         NetClock::time_point signTime,
-        PublicKey const& raPub,
+        PublicKey const& publicKey,
+        NodeID const& nodeID,
         bool isFull);
 
     STBase*
-    copy (std::size_t n, void* buf) const override
+    copy(std::size_t n, void* buf) const override
     {
         return emplace(n, buf, *this);
     }
 
     STBase*
-    move (std::size_t n, void* buf) override
+    move(std::size_t n, void* buf) override
     {
         return emplace(n, buf, std::move(*this));
     }
 
-    uint256         getLedgerHash ()     const;
-    NetClock::time_point getSignTime ()  const;
-    NetClock::time_point getSeenTime ()  const;
-    std::uint32_t   getFlags ()          const;
-    PublicKey       getSignerPublic ()   const;
-    NodeID          getNodeID ()         const
+    uint256
+    getLedgerHash() const;
+
+    NetClock::time_point
+    getSignTime() const;
+
+    NetClock::time_point
+    getSeenTime() const;
+
+    std::uint32_t
+    getFlags() const;
+
+    PublicKey
+    getSignerPublic() const;
+
+    NodeID
+    getNodeID() const
     {
         return mNodeID;
     }
-    bool            isValid ()           const;
-    bool            isFull ()            const;
-    bool            isTrusted ()         const
+
+    bool
+    isValid() const;
+
+    bool
+    isFull() const;
+
+    bool
+    isTrusted() const
     {
         return mTrusted;
     }
-    uint256         getSigningHash ()    const;
-    bool            isValid (uint256 const& ) const;
 
-    void            setTrusted ()
+    uint256
+    getSigningHash() const;
+
+    bool
+    isValid(uint256 const&) const;
+
+    void
+    setTrusted()
     {
         mTrusted = true;
     }
-    void            setSeen (NetClock::time_point s)
+
+    void
+    setUntrusted()
+    {
+        mTrusted = false;
+    }
+
+    void
+    setSeen(NetClock::time_point s)
     {
         mSeen = s;
     }
-    Blob    getSerialized ()             const;
-    Blob    getSignature ()              const;
+
+    Blob
+    getSerialized() const;
+
+    Blob
+    getSignature() const;
 
     // Signs the validation and returns the signing hash
-    uint256 sign (SecretKey const& secretKey);
+    uint256
+    sign(SecretKey const& secretKey);
 
 private:
-    static SOTemplate const& getFormat ();
-
-    void setNode ();
+    static SOTemplate const&
+    getFormat();
 
     NodeID mNodeID;
     bool mTrusted = false;

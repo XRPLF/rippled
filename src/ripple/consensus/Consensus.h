@@ -337,6 +337,7 @@ public:
         @param now The network adjusted time
         @param prevLedgerID the ID of the last ledger
         @param prevLedger The last ledger
+        @param nowUntrusted ID of nodes that are newly untrusted this round
         @param proposing Whether we want to send proposals to peers this round.
 
         @note @b prevLedgerID is not required to the ID of @b prevLedger since
@@ -347,6 +348,7 @@ public:
         NetClock::time_point const& now,
         typename Ledger_t::ID const& prevLedgerID,
         Ledger_t prevLedger,
+        hash_set<NodeID_t> const & nowUntrusted,
         bool proposing);
 
     /** A peer has proposed a new position, adjust our tracking.
@@ -552,7 +554,7 @@ private:
     hash_map<NodeID_t, PeerPosition_t> currPeerPositions_;
 
     // Recently received peer positions, available when transitioning between
-    // ledgers or roundss
+    // ledgers or rounds
     hash_map<NodeID_t, std::deque<PeerPosition_t>> recentPeerPositions_;
 
     // The number of proposers who participated in the last consensus round
@@ -583,6 +585,7 @@ Consensus<Adaptor>::startRound(
     NetClock::time_point const& now,
     typename Ledger_t::ID const& prevLedgerID,
     Ledger_t prevLedger,
+    hash_set<NodeID_t> const& nowUntrusted,
     bool proposing)
 {
     if (firstRound_)
@@ -596,6 +599,9 @@ Consensus<Adaptor>::startRound(
     {
         prevCloseTime_ = rawCloseTimes_.self;
     }
+
+    for(NodeID_t const& n : nowUntrusted)
+        recentPeerPositions_.erase(n);
 
     ConsensusMode startMode =
         proposing ? ConsensusMode::proposing : ConsensusMode::observing;
