@@ -28,7 +28,7 @@ struct verify_info
         @li @b 0 Normal algorithm
         @li @b 1 Fast algorith
     */
-    int algorithm;                      // 0 = normal, 1 = fast
+    int algorithm{};                      // 0 = normal, 1 = fast
 
     /// The path to the data file
     path_type dat_path;

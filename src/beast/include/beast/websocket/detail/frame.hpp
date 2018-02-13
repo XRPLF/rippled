@@ -264,7 +264,7 @@ read(close_reason& cr,
     }
     consuming_buffers<Buffers> cb(bs);
     {
-        std::uint8_t b[2];
+        std::uint8_t b[2] = {0, 0};
         buffer_copy(buffer(b), cb);
         cr.code = big_uint16_to_native(&b[0]);
         cb.consume(2);

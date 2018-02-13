@@ -30,10 +30,10 @@ class buffer_cat_view<Bn...>::const_iterator
             "BufferSequence requirements not met");
 #endif
 
-    std::size_t n_;
+    std::size_t n_{};
     std::tuple<Bn...> const* bn_;
     std::array<char, detail::max_sizeof<
-        typename Bn::const_iterator...>()> buf_;
+        typename Bn::const_iterator...>()> buf_{};
 
     friend class buffer_cat_view<Bn...>;
 
