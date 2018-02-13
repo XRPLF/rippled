@@ -427,7 +427,8 @@ public:
     startRound(
         NetClock::time_point const& now,
         RCLCxLedger::ID const& prevLgrId,
-        RCLCxLedger const& prevLgr);
+        RCLCxLedger const& prevLgr,
+        hash_set<NodeID> const& nowUntrusted);
 
     //! @see Consensus::timerEntry
     void
