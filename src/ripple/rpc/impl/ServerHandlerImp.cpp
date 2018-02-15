@@ -576,12 +576,18 @@ ServerHandlerImp::processRequest (Port const& port,
     }
 
     bool batch = false;
+    unsigned size = 1;
     if (jsonOrig.isMember(jss::method) && jsonOrig[jss::method] == "batch")
+    {
         batch = true;
-    auto size = batch
-              ? jsonOrig.isMember(jss::params)
-                ? jsonOrig[jss::params].size() : 0
-              : 1;
+        if(!jsonOrig.isMember(jss::params) || !jsonOrig[jss::params].isArray())
+        {
+            HTTPReply (400, "Malformed batch request", output, rpcJ);
+            return;
+        }
+        size = jsonOrig[jss::params].size();
+    }
+
     Json::Value reply(batch ? Json::arrayValue : Json::objectValue);
     auto const start (std::chrono::high_resolution_clock::now ());
     for (unsigned i = 0; i < size; ++i)
@@ -591,7 +597,7 @@ ServerHandlerImp::processRequest (Port const& port,
         /* ------------------------------------------------------------------ */
         auto role = Role::FORBID;
         auto required = Role::FORBID;
-        if (jsonRPC.isMember(jss::method))
+        if (jsonRPC.isMember(jss::method) && jsonRPC[jss::method].isString())
             required = RPC::roleRequired(jsonRPC[jss::method].asString());
 
         if (jsonRPC.isMember(jss::params) &&
@@ -649,7 +655,7 @@ ServerHandlerImp::processRequest (Port const& port,
             continue;
         }
 
-        if (!jsonRPC.isMember(jss::method) || jsonRPC [jss::method].isNull())
+        if (!jsonRPC.isMember(jss::method) || jsonRPC[jss::method].isNull())
         {
             usage.charge(Resource::feeInvalidRPC);
             if (!batch)
@@ -663,7 +669,7 @@ ServerHandlerImp::processRequest (Port const& port,
             continue;
         }
 
-        Json::Value const& method = jsonRPC [jss::method];
+        Json::Value const& method = jsonRPC[jss::method];
         if (! method.isString ())
         {
             usage.charge(Resource::feeInvalidRPC);
