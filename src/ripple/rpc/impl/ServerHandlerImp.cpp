@@ -567,7 +567,7 @@ ServerHandlerImp::processRequest (Port const& port,
         if ((request.size () > RPC::Tuning::maxRequestSize) ||
             ! reader.parse (request, jsonOrig) ||
             ! jsonOrig ||
-            ! (jsonOrig.isObject () || jsonOrig.isArray()))
+            ! jsonOrig.isObject ())
         {
             HTTPReply (400, "Unable to parse request: " +
                        reader.getFormatedErrorMessages(), output, rpcJ);
@@ -576,27 +576,41 @@ ServerHandlerImp::processRequest (Port const& port,
     }
 
     bool batch = false;
+    unsigned size = 1;
     if (jsonOrig.isMember(jss::method) && jsonOrig[jss::method] == "batch")
+    {
         batch = true;
-    auto size = batch ? jsonOrig[jss::params].size() : 1;
+        if(!jsonOrig.isMember(jss::params) || !jsonOrig[jss::params].isArray())
+        {
+            HTTPReply (400, "Malformed batch request", output, rpcJ);
+            return;
+        }
+        size = jsonOrig[jss::params].size();
+    }
+
     Json::Value reply(batch ? Json::arrayValue : Json::objectValue);
     auto const start (std::chrono::high_resolution_clock::now ());
     for (unsigned i = 0; i < size; ++i)
     {
-        Json::Value const& jsonRPC = batch ? jsonOrig[jss::params][i] : jsonOrig;
-        /* ---------------------------------------------------------------------- */
-        // Determine role/usage so we can charge for invalid requests
-        Json::Value const& method = jsonRPC [jss::method];
-
+        Json::Value const& jsonRPC =
+            batch ? jsonOrig[jss::params][i] : jsonOrig;
+        /* ------------------------------------------------------------------ */
         auto role = Role::FORBID;
-        auto required = RPC::roleRequired(method.asString());
+        auto required = Role::FORBID;
+        if (jsonRPC.isMember(jss::method) && jsonRPC[jss::method].isString())
+            required = RPC::roleRequired(jsonRPC[jss::method].asString());
+
         if (jsonRPC.isMember(jss::params) &&
             jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 &&
             jsonRPC[jss::params][Json::UInt(0)].isObject())
         {
-            role = requestRole(required, port, jsonRPC[jss::params][Json::UInt(0)],
-                remoteIPAddress, user);
+            role = requestRole(
+                required,
+                port,
+                jsonRPC[jss::params][Json::UInt(0)],
+                remoteIPAddress,
+                user);
         }
         else
         {
@@ -641,7 +655,7 @@ ServerHandlerImp::processRequest (Port const& port,
             continue;
         }
 
-        if (method.isNull())
+        if (!jsonRPC.isMember(jss::method) || jsonRPC[jss::method].isNull())
         {
             usage.charge(Resource::feeInvalidRPC);
             if (!batch)
@@ -655,6 +669,7 @@ ServerHandlerImp::processRequest (Port const& port,
             continue;
         }
 
+        Json::Value const& method = jsonRPC[jss::method];
         if (! method.isString ())
         {
             usage.charge(Resource::feeInvalidRPC);

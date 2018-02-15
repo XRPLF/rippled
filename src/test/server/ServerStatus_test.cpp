@@ -896,6 +896,56 @@ class ServerStatus_test :
             BEAST_EXPECT(resp.body == "Unable to parse request: \r\n");
         }
 
+        {
+            beast::http::response<beast::http::string_body> resp;
+            Json::Value jv;
+            jv["invalid"] = 1;
+            doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == beast::http::status::bad_request);
+            BEAST_EXPECT(resp.body == "Null method\r\n");
+        }
+
+        {
+            beast::http::response<beast::http::string_body> resp;
+            Json::Value jv(Json::arrayValue);
+            jv.append("invalid");
+            doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == beast::http::status::bad_request);
+            BEAST_EXPECT(resp.body == "Unable to parse request: \r\n");
+        }
+
+        {
+            beast::http::response<beast::http::string_body> resp;
+            Json::Value jv(Json::arrayValue);
+            Json::Value j;
+            j["invalid"] = 1;
+            jv.append(j);
+            doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == beast::http::status::bad_request);
+            BEAST_EXPECT(resp.body == "Unable to parse request: \r\n");
+        }
+
+        {
+            beast::http::response<beast::http::string_body> resp;
+            Json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::params] = 2;
+            doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == beast::http::status::bad_request);
+            BEAST_EXPECT(resp.body == "Malformed batch request\r\n");
+        }
+
+        {
+            beast::http::response<beast::http::string_body> resp;
+            Json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::params] = Json::objectValue;
+            jv[jss::params]["invalid"] = 3;
+            doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == beast::http::status::bad_request);
+            BEAST_EXPECT(resp.body == "Malformed batch request\r\n");
+        }
+
         Json::Value jv;
         {
             beast::http::response<beast::http::string_body> resp;
