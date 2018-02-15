@@ -69,6 +69,8 @@
 #include <boost/process.hpp>
 #endif
 
+static_assert(BOOST_VERSION != 106600, "There are known bugs with rippled and boost 1.66");
+
 namespace po = boost::program_options;
 
 namespace ripple {
