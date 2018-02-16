@@ -462,11 +462,16 @@ public:
             BEAST_EXPECT(jr[jss::error_message] == "You don't have permission for this command.");
         }
 
+        std::initializer_list<Json::Value> const nonArrays {Json::nullValue,
+            Json::intValue, Json::uintValue, Json::realValue, "",
+            Json::booleanValue, Json::objectValue};
+
         for (auto const& f : {jss::accounts_proposed, jss::accounts})
         {
+            for (auto const& nonArray : nonArrays)
             {
                 Json::Value jv;
-                jv[f] = "";
+                jv[f] = nonArray;
                 auto jr = wsc->invoke(method, jv) [jss::result];
                 BEAST_EXPECT(jr[jss::error] == "invalidParams");
                 BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
@@ -481,9 +486,10 @@ public:
             }
         }
 
+        for (auto const& nonArray : nonArrays)
         {
             Json::Value jv;
-            jv[jss::books] = "";
+            jv[jss::books] = nonArray;
             auto jr = wsc->invoke(method, jv) [jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
@@ -608,9 +614,10 @@ public:
             BEAST_EXPECT(jr[jss::error_message] == "No such market.");
         }
 
+        for (auto const& nonArray : nonArrays)
         {
             Json::Value jv;
-            jv[jss::streams] = "";
+            jv[jss::streams] = nonArray;
             auto jr = wsc->invoke(method, jv) [jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");

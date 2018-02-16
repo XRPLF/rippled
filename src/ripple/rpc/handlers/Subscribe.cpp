@@ -108,7 +108,7 @@ Json::Value doSubscribe (RPC::Context& context)
 
     if (context.params.isMember (jss::streams))
     {
-        if (! context.params[jss::streams].isArrayOrNull ())
+        if (! context.params[jss::streams].isArray ())
         {
             JLOG (context.j.info())
                 << "doSubscribe: streams requires an array.";
@@ -164,7 +164,7 @@ Json::Value doSubscribe (RPC::Context& context)
         ? jss::accounts_proposed : jss::rt_accounts;  // DEPRECATED
     if (context.params.isMember(accountsProposed))
     {
-        if (! context.params[accountsProposed].isArrayOrNull())
+        if (! context.params[accountsProposed].isArray())
             return rpcError(rpcINVALID_PARAMS);
 
         auto ids = RPC::parseAccountIds(context.params[accountsProposed]);
@@ -175,7 +175,7 @@ Json::Value doSubscribe (RPC::Context& context)
 
     if (context.params.isMember(jss::accounts))
     {
-        if (! context.params[jss::accounts].isArrayOrNull())
+        if (! context.params[jss::accounts].isArray())
             return rpcError(rpcINVALID_PARAMS);
 
         auto ids = RPC::parseAccountIds(context.params[jss::accounts]);
@@ -187,7 +187,7 @@ Json::Value doSubscribe (RPC::Context& context)
 
     if (context.params.isMember(jss::books))
     {
-        if (! context.params[jss::books].isArrayOrNull())
+        if (! context.params[jss::books].isArray())
             return rpcError (rpcINVALID_PARAMS);
 
         for (auto& j: context.params[jss::books])
