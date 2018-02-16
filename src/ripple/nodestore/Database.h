@@ -27,6 +27,7 @@
 #include <ripple/nodestore/impl/Tuning.h>
 #include <ripple/nodestore/Scheduler.h>
 #include <ripple/nodestore/NodeObject.h>
+#include <ripple/protocol/SystemParameters.h>
 
 #include <thread>
 
@@ -63,7 +64,7 @@ public:
         @param journal Destination for logging output.
     */
     Database(std::string name, Stoppable& parent, Scheduler& scheduler,
-        int readThreads, beast::Journal j);
+        int readThreads, Section const& config, beast::Journal j);
 
     /** Destroy the node store.
         All pending operations are completed, pending writes flushed,
@@ -209,6 +210,14 @@ public:
     void
     onStop();
 
+    /** @return The earliest ledger sequence allowed
+    */
+    std::uint32_t
+    earliestSeq() const
+    {
+        return earliestSeq_;
+    }
+
 protected:
     beast::Journal j_;
     Scheduler& scheduler_;
@@ -264,6 +273,10 @@ private:
 
     // current read generation
     uint64_t readGen_ {0};
+
+    // The default is 32570 to match the XRP ledger network's earliest
+    // allowed sequence. Alternate networks may set this value.
+    std::uint32_t earliestSeq_ {XRP_LEDGER_EARLIEST_SEQ};
 
     virtual
     std::shared_ptr<NodeObject>

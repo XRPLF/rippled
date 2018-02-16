@@ -37,7 +37,7 @@ namespace NodeStore {
 using PCache = TaggedCache<uint256, NodeObject>;
 using NCache = KeyCache<uint256>;
 
-/* A range of historical ledgers backed by a nodestore.
+/* A range of historical ledgers backed by a node store.
    Shards are indexed and store `ledgersPerShard`.
    Shard `i` stores ledgers starting with sequence: `1 + (i * ledgersPerShard)`
    and ending with sequence: `(i + 1) * ledgersPerShard`.
@@ -46,9 +46,8 @@ using NCache = KeyCache<uint256>;
 class Shard
 {
 public:
-    Shard(std::uint32_t index, int cacheSz,
-        PCache::clock_type::rep cacheAge,
-        beast::Journal& j);
+    Shard(DatabaseShard const& db, std::uint32_t index, int cacheSz,
+        PCache::clock_type::rep cacheAge, beast::Journal& j);
 
     bool
     open(Section config, Scheduler& scheduler,
@@ -116,6 +115,11 @@ private:
 
     // Last ledger sequence in this shard
     std::uint32_t const lastSeq_;
+
+    // The maximum number of ledgers this shard can store
+    // The earliest shard may store less ledgers than
+    // subsequent shards
+    std::uint32_t const maxLedgers_;
 
     // Database positive cache
     std::shared_ptr<PCache> pCache_;

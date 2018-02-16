@@ -30,18 +30,24 @@
 namespace ripple {
 namespace NodeStore {
 
-std::uint32_t DatabaseShard::lps_ {16384u};
+constexpr std::uint32_t DatabaseShard::ledgersPerShardDefault;
 
 DatabaseShardImp::DatabaseShardImp(Application& app,
     std::string const& name, Stoppable& parent, Scheduler& scheduler,
-        int readThreads, Section const& config, beast::Journal j)
+    int readThreads, Section const& config, beast::Journal j)
     : DatabaseShard(name, parent, scheduler, readThreads, config, j)
     , app_(app)
     , config_(config)
     , dir_(get<std::string>(config, "path"))
     , maxDiskSpace_(get<std::uint64_t>(config, "max_size_gb") << 30)
-    , avgShardSz_(lps_ * (192 * 1024))
+    , ledgersPerShard_(get<std::uint32_t>(
+        config, "ledgers_per_shard", ledgersPerShardDefault))
+    , earliestShardIndex_(seqToShardIndex(earliestSeq()))
+    , avgShardSz_(ledgersPerShard() * (192 * 1024))
 {
+    if (ledgersPerShard_ == 0 || ledgersPerShard_ % 256 != 0)
+        Throw<std::runtime_error>(
+            "ledgers_per_shard must be a multiple of 256");
 }
 
 DatabaseShardImp::~DatabaseShardImp()
@@ -83,7 +89,6 @@ DatabaseShardImp::init()
         return true;
     }
 
-    auto const genesisShardIndex {seqToShardIndex(genesisSeq)};
     // Find shards
     for (auto const& d : directory_iterator(dir_))
     {
@@ -93,10 +98,15 @@ DatabaseShardImp::init()
         if (!std::all_of(dirName.begin(), dirName.end(), ::isdigit))
             continue;
         auto const shardIndex {std::stoul(dirName)};
-        if (shardIndex < genesisShardIndex)
-            continue;
+        if (shardIndex < earliestShardIndex())
+        {
+            JLOG(j_.fatal()) <<
+                "Invalid shard index " << shardIndex <<
+                ". Earliest shard index " << earliestShardIndex();
+            return false;
+        }
         auto shard = std::make_unique<Shard>(
-            shardIndex, cacheSz_, cacheAge_, j_);
+            *this, shardIndex, cacheSz_, cacheAge_, j_);
         if (!shard->open(config_, scheduler_, dir_))
             return false;
         usedDiskSpace_ += shard->fileSize();
@@ -106,7 +116,7 @@ DatabaseShardImp::init()
         {
             if (incomplete_)
             {
-                JLOG(j_.error()) <<
+                JLOG(j_.fatal()) <<
                     "More than one control file found";
                 return false;
             }
@@ -118,7 +128,7 @@ DatabaseShardImp::init()
         // New Shard Store, calculate file descriptor requirements
         if (maxDiskSpace_ > space(dir_).free)
         {
-            JLOG(j_.warn()) <<
+            JLOG(j_.error()) <<
                 "Insufficient disk space";
         }
         fdLimit_ = 1 + (fdLimit_ *
@@ -171,7 +181,7 @@ DatabaseShardImp::prepare(std::uint32_t validLedgerSeq)
     int const sz {std::max(shardCacheSz, cacheSz_ / std::max(
         1, static_cast<int>(complete_.size() + 1)))};
     incomplete_ = std::make_unique<Shard>(
-        *shardIndex, sz, cacheAge_, j_);
+        *this, *shardIndex, sz, cacheAge_, j_);
     if (!incomplete_->open(config_, scheduler_, dir_))
     {
         incomplete_.reset();
@@ -617,7 +627,7 @@ DatabaseShardImp::findShardIndexToAdd(
     std::uint32_t validLedgerSeq, std::lock_guard<std::mutex>&)
 {
     auto maxShardIndex {seqToShardIndex(validLedgerSeq)};
-    if (validLedgerSeq != lastSeq(maxShardIndex))
+    if (validLedgerSeq != lastLedgerSeq(maxShardIndex))
         --maxShardIndex;
 
     auto const numShards {complete_.size() + (incomplete_ ? 1 : 0)};
@@ -625,15 +635,13 @@ DatabaseShardImp::findShardIndexToAdd(
     if (numShards >= maxShardIndex + 1)
         return boost::none;
 
-    auto const genesisShardIndex {seqToShardIndex(genesisSeq)};
-
     if (maxShardIndex < 1024 || float(numShards) / maxShardIndex > 0.5f)
     {
         // Small or mostly full index space to sample
         // Find the available indexes and select one at random
         std::vector<std::uint32_t> available;
         available.reserve(maxShardIndex - numShards + 1);
-        for (std::uint32_t i = genesisShardIndex; i <= maxShardIndex; ++i)
+        for (std::uint32_t i = earliestShardIndex(); i <= maxShardIndex; ++i)
         {
             if (complete_.find(i) == complete_.end() &&
                 (!incomplete_ || incomplete_->index() != i))
@@ -649,7 +657,7 @@ DatabaseShardImp::findShardIndexToAdd(
     // chances of running more than 30 times is less than 1 in a billion
     for (int i = 0; i < 40; ++i)
     {
-        auto const r = rand_int(genesisShardIndex, maxShardIndex);
+        auto const r = rand_int(earliestShardIndex(), maxShardIndex);
         if (complete_.find(r) == complete_.end() &&
             (!incomplete_ || incomplete_->index() != r))
                 return r;
