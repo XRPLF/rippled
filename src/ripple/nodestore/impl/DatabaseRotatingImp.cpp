@@ -26,10 +26,15 @@ namespace ripple {
 namespace NodeStore {
 
 DatabaseRotatingImp::DatabaseRotatingImp(
-    std::string const& name, Scheduler& scheduler, int readThreads,
-        Stoppable& parent, std::unique_ptr<Backend> writableBackend,
-            std::unique_ptr<Backend> archiveBackend, beast::Journal j)
-    : DatabaseRotating(name, parent, scheduler, readThreads, j)
+    std::string const& name,
+    Scheduler& scheduler,
+    int readThreads,
+    Stoppable& parent,
+    std::unique_ptr<Backend> writableBackend,
+    std::unique_ptr<Backend> archiveBackend,
+    Section const& config,
+    beast::Journal j)
+    : DatabaseRotating(name, parent, scheduler, readThreads, config, j)
     , pCache_(std::make_shared<TaggedCache<uint256, NodeObject>>(
         name, cacheTargetSize, cacheTargetSeconds, stopwatch(), j))
     , nCache_(std::make_shared<KeyCache<uint256>>(

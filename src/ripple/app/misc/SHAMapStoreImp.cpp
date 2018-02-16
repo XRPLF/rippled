@@ -203,6 +203,20 @@ SHAMapStoreImp::SHAMapStoreImp (
     }
     if (! setup_.shardDatabase.empty())
     {
+        // The node and shard stores must use
+        // the same earliest ledger sequence
+        std::array<std::uint32_t, 2> seq;
+        if (get_if_exists<std::uint32_t>(
+            setup_.nodeDatabase, "earliest_seq", seq[0]))
+        {
+            if (get_if_exists<std::uint32_t>(
+                setup_.shardDatabase, "earliest_seq", seq[1]) &&
+                seq[0] != seq[1])
+            {
+                Throw<std::runtime_error>("earliest_seq set more than once");
+            }
+        }
+
         boost::filesystem::path dbPath =
             get<std::string>(setup_.shardDatabase, "path");
         if (dbPath.empty())
@@ -231,9 +245,6 @@ SHAMapStoreImp::SHAMapStoreImp (
             if (! setup_.standalone)
                 Throw<std::runtime_error>(
                     "ledgers_per_shard only honored in stand alone");
-            if (lps == 0 || lps % 256 != 0)
-                Throw<std::runtime_error>(
-                    "ledgers_per_shard must be a multiple of 256");
         }
     }
 }
@@ -259,7 +270,7 @@ SHAMapStoreImp::makeDatabase (std::string const& name,
         auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
             "NodeStore.main", scheduler_, readThreads, parent,
                 std::move(writableBackend), std::move(archiveBackend),
-                    nodeStoreJournal_);
+                    setup_.nodeDatabase, nodeStoreJournal_);
         fdlimit_ += dbr->fdlimit();
         dbRotating_ = dbr.get();
         db.reset(dynamic_cast<NodeStore::Database*>(dbr.release()));

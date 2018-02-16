@@ -368,8 +368,9 @@ PeerImp::hasLedger (uint256 const& hash, std::uint32_t seq) const
     if (std::find(recentLedgers_.begin(),
             recentLedgers_.end(), hash) != recentLedgers_.end())
         return true;
-    return seq != 0 && boost::icl::contains(
-        shards_, NodeStore::DatabaseShard::seqToShardIndex(seq));
+    return seq >= app_.getNodeStore().earliestSeq() &&
+        boost::icl::contains(shards_,
+            (seq - 1) / NodeStore::DatabaseShard::ledgersPerShardDefault);
 }
 
 void
@@ -1729,10 +1730,13 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
                 //             need to inject the NodeStore interfaces.
                 std::uint32_t seq {obj.has_ledgerseq() ? obj.ledgerseq() : 0};
                 auto hObj {app_.getNodeStore ().fetch (hash, seq)};
-                if (!hObj && seq >= NodeStore::genesisSeq)
+                if (!hObj)
                 {
                     if (auto shardStore = app_.getShardStore())
-                        hObj = shardStore->fetch(hash, seq);
+                    {
+                        if (seq >= shardStore->earliestSeq())
+                            hObj = shardStore->fetch(hash, seq);
+                    }
                 }
                 if (hObj)
                 {
@@ -2181,9 +2185,9 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                 if (packet.has_ledgerseq())
                 {
                     seq = packet.ledgerseq();
-                    if (seq >= NodeStore::genesisSeq)
+                    if (auto shardStore = app_.getShardStore())
                     {
-                        if (auto shardStore = app_.getShardStore())
+                        if (seq >= shardStore->earliestSeq())
                             ledger = shardStore->fetchLedger(ledgerhash, seq);
                     }
                 }
