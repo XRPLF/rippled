@@ -33,10 +33,15 @@ public:
     DatabaseNodeImp(DatabaseNodeImp const&) = delete;
     DatabaseNodeImp& operator=(DatabaseNodeImp const&) = delete;
 
-    DatabaseNodeImp(std::string const& name,
-        Scheduler& scheduler, int readThreads, Stoppable& parent,
-            std::unique_ptr<Backend> backend, beast::Journal j)
-        : Database(name, parent, scheduler, readThreads, j)
+    DatabaseNodeImp(
+        std::string const& name,
+        Scheduler& scheduler,
+        int readThreads,
+        Stoppable& parent,
+        std::unique_ptr<Backend> backend,
+        Section const& config,
+        beast::Journal j)
+        : Database(name, parent, scheduler, readThreads, config, j)
         , pCache_(std::make_shared<TaggedCache<uint256, NodeObject>>(
             name, cacheTargetSize, cacheTargetSeconds, stopwatch(), j))
         , nCache_(std::make_shared<KeyCache<uint256>>(

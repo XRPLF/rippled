@@ -60,6 +60,41 @@ public:
     void
     validate() override;
 
+    std::uint32_t
+    ledgersPerShard() const override
+    {
+        return ledgersPerShard_;
+    }
+
+    std::uint32_t
+    earliestShardIndex() const override
+    {
+        return earliestShardIndex_;
+    }
+
+    std::uint32_t
+    seqToShardIndex(std::uint32_t seq) const override
+    {
+        assert(seq >= earliestSeq());
+        return (seq - 1) / ledgersPerShard_;
+    }
+
+    std::uint32_t
+    firstLedgerSeq(std::uint32_t shardIndex) const override
+    {
+        assert(shardIndex >= earliestShardIndex_);
+        if (shardIndex <= earliestShardIndex_)
+            return earliestSeq();
+        return 1 + (shardIndex * ledgersPerShard_);
+    }
+
+    std::uint32_t
+    lastLedgerSeq(std::uint32_t shardIndex) const override
+    {
+        assert(shardIndex >= earliestShardIndex_);
+        return (shardIndex + 1) * ledgersPerShard_;
+    }
+
     std::string
     getName() const override
     {
@@ -124,6 +159,14 @@ private:
 
     // Disk space used to store the shards (in bytes)
     std::uint64_t usedDiskSpace_ {0};
+
+    // Each shard stores 16384 ledgers. The earliest shard may store
+    // less if the earliest ledger sequence truncates its beginning.
+    // The value should only be altered for unit tests.
+    std::uint32_t const ledgersPerShard_;
+
+    // The earliest shard index
+    std::uint32_t const earliestShardIndex_;
 
     // Average disk space a shard requires (in bytes)
     std::uint64_t avgShardSz_;

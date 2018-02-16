@@ -32,11 +32,15 @@ public:
     DatabaseRotatingImp(DatabaseRotatingImp const&) = delete;
     DatabaseRotatingImp& operator=(DatabaseRotatingImp const&) = delete;
 
-    DatabaseRotatingImp(std::string const& name,
-        Scheduler& scheduler, int readThreads, Stoppable& parent,
-            std::unique_ptr<Backend> writableBackend,
-                 std::unique_ptr<Backend> archiveBackend,
-                    beast::Journal j);
+    DatabaseRotatingImp(
+        std::string const& name,
+        Scheduler& scheduler,
+        int readThreads,
+        Stoppable& parent,
+        std::unique_ptr<Backend> writableBackend,
+        std::unique_ptr<Backend> archiveBackend,
+        Section const& config,
+        beast::Journal j);
 
     ~DatabaseRotatingImp() override
     {

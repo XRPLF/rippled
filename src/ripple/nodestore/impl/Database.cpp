@@ -25,12 +25,25 @@
 namespace ripple {
 namespace NodeStore {
 
-Database::Database(std::string name, Stoppable& parent,
-    Scheduler& scheduler, int readThreads, beast::Journal journal)
+Database::Database(
+    std::string name,
+    Stoppable& parent,
+    Scheduler& scheduler,
+    int readThreads,
+    Section const& config,
+    beast::Journal journal)
     : Stoppable(name, parent)
     , j_(journal)
     , scheduler_(scheduler)
 {
+    std::uint32_t seq;
+    if (get_if_exists<std::uint32_t>(config, "earliest_seq", seq))
+    {
+        if (seq < 1)
+            Throw<std::runtime_error>("Invalid earliest_seq");
+        earliestSeq_ = seq;
+    }
+
     while (readThreads-- > 0)
         readThreads_.emplace_back(&Database::threadEntry, this);
 }
