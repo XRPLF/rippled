@@ -11,6 +11,52 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 0.90.0
+
+The `rippled` 0.90.0 release introduces several features and enhancements that improve the reliability, scalability and security of the XRP Ledger.
+
+Highlights of this release include:
+
+- The `DepositAuth` amendment, which lets an account strictly reject any incoming money from transactions sent by other accounts.
+- The `Checks` amendment, which allows users to create deferred payments that can be cancelled or cashed by their intended recipients.
+- **History Sharding**, which allows `rippled` servers to distribute historical ledger data if they agree to dedicate storage for segments of ledger history.
+- New **Preferred Ledger by Branch** semantics which improve the logic that allow a server to decide which ledger it should base future ledgers on when there are multiple candidates.
+
+**New and Updated Features**
+
+- Add support for Deposit Authorization account root flag ([#2239](https://github.com/ripple/rippled/issues/2239))
+- Implement history shards ([#2258](https://github.com/ripple/rippled/issues/2258))
+- Preferred ledger by branch ([#2300](https://github.com/ripple/rippled/issues/2300))
+- Redesign Consensus Simulation Framework ([#2209](https://github.com/ripple/rippled/issues/2209))
+- Tune for higher transaction processing ([#2294](https://github.com/ripple/rippled/issues/2294))
+- Optimize queries for `account_tx` to work around SQLite query planner ([#2312](https://github.com/ripple/rippled/issues/2312))
+- Allow `Journal` to be copied/moved ([#2292](https://github.com/ripple/rippled/issues/2292))
+- Cleanly report invalid `[server]` settings ([#2305](https://github.com/ripple/rippled/issues/2305))
+- Improve log scrubbing ([#2358](https://github.com/ripple/rippled/issues/2358))
+- Update `rippled-example.cfg` ([#2307](https://github.com/ripple/rippled/issues/2307))
+- Force json commands to be objects ([#2319](https://github.com/ripple/rippled/issues/2319))
+- Fix cmake clang build for sanitizers ([#2325](https://github.com/ripple/rippled/issues/2325))
+- Allow `account_objects` RPC to filter by “check” ([#2356](https://github.com/ripple/rippled/issues/2356))
+- Limit nesting of json commands ([#2326](https://github.com/ripple/rippled/issues/2326))
+- Unit test that `sign_for` returns a correct hash ([#2333](https://github.com/ripple/rippled/issues/2333))
+- Update Visual Studio build instructions ([#2355](https://github.com/ripple/rippled/issues/2355))
+- Force boost static linking for MacOS builds ([#2334](https://github.com/ripple/rippled/issues/2334))
+- Update MacOS build instructions ([#2342](https://github.com/ripple/rippled/issues/2342))
+- Add dev docs generation to Jenkins ([#2343](https://github.com/ripple/rippled/issues/2343))
+- Poll if process is still alive in Test.py ([#2290](https://github.com/ripple/rippled/issues/2290))
+- Remove unused `beast::currentTimeMillis()` ([#2345](https://github.com/ripple/rippled/issues/2345))
+
+
+**Bug Fixes**
+- Improve error message on mistyped command ([#2283](https://github.com/ripple/rippled/issues/2283))
+- Add missing includes ([#2368](https://github.com/ripple/rippled/issues/2368))
+- Link boost statically only when requested ([#2291](https://github.com/ripple/rippled/issues/2291))
+- Unit test logging fixes ([#2293](https://github.com/ripple/rippled/issues/2293))
+- Fix Jenkins pipeline for branches ([#2289](https://github.com/ripple/rippled/issues/2289))
+- Avoid AppVeyor stack overflow ([#2344](https://github.com/ripple/rippled/issues/2344))
+- Reduce noise in log ([#2352](https://github.com/ripple/rippled/issues/2352))
+
+
 ## Version 0.81.0
 
 The `rippled` 0.81.0 release introduces changes that improve the scalability of the XRP Ledger and transitions the recommended validator configuration to a new hosted site, as described in Ripple's [Decentralization Strategy Update](https://ripple.com/dev-blog/decentralization-strategy-update/) post.
@@ -84,8 +130,6 @@ Highlights of this release include:
 
 - Fix an issue where `setAmendmentBlocked` is only called when processing the `EnableAmendment` transaction for the amendment ([#2137](https://github.com/ripple/rippled/issues/2137))
 - Track escrow in recipient's owner directory ([#2212](https://github.com/ripple/rippled/issues/2212))
-
-**New and Updated Features**
 
 ## Version 0.70.2
 
