@@ -290,7 +290,7 @@ ccache -s
                                 }
                             }
                             finally {
-                                def outstr = ""
+                                def outstr = ''
                                 def loglink = '[console](' + env.BUILD_URL + '/console)'
                                 def logfile = "${bldlabel}.txt"
                                 if (fileExists(logfile)) {
@@ -316,17 +316,24 @@ ccache -s
                                 archive("${bldlabel}.txt")
                                 if (bldtype == 'docs') {
                                     publishHTML(
+                                        allowMissing: true,
+                                        alwaysLinkToLastBuild: false,
+                                        keepAll: true,
                                         reportName:  'Doxygen',
                                         reportDir:   'build/docs/html_doc',
                                         reportFiles: 'index.html')
                                 }
                                 def envs = ''
                                 for (int j = 0; j < extra_env.size(); j++) {
-                                    envs += ', ' + extra_env[j]
+                                    envs += ", <br/>" + extra_env[j]
+                                }
+                                def cmake_txt = cmake_extra
+                                if (cmake_txt != '') {
+                                    cmake_txt = " <br/>" + cmake_txt
                                 }
                                 lock('rippled_dev_status') {
                                     all_status[bldlabel] =
-                                        [fail_count == 0, bldtype + " " + cmake_extra + envs, "${st}, t: ${time}", loglink]
+                                        [fail_count == 0, bldtype + cmake_txt + envs, "${st}, t: ${time}", loglink]
                                 }
                             } //try-catch-finally
                         } //withEnv
@@ -463,7 +470,7 @@ def getResults(text, label) {
     // or build log format:
     //    [msvc.release] 71.3s, 162 suites, 995 cases, 318901 tests total, 1 failure
     def matcher =
-        text == "" ?
+        text == '' ?
         manager.getLogMatcher(/\[${label}\].+?(\d+) case[s]?, (\d+) test[s]? total, (\d+) (failure(s?))/) :
         text =~ /(\d+) case[s]?, (\d+) test[s]? total, (\d+) (failure(s?))/
     matcher ? matcher[0][1] + ' cases, ' + matcher[0][3] + ' failed' : 'no test results'
@@ -472,7 +479,7 @@ def getResults(text, label) {
 def getFailures(text, label) {
     // [see above for format]
     def matcher =
-        text == "" ?
+        text == '' ?
         manager.getLogMatcher(/\[${label}\].+?(\d+) test[s]? total, (\d+) (failure(s?))/) :
         text =~ /(\d+) test[s]? total, (\d+) (failure(s?))/
     // if we didn't match, then return 1 since something is
@@ -486,7 +493,7 @@ def getTime(text, label) {
     // wallclock time. Some `time`s report fractional
     // seconds and we can omit those in what we report
     def matcher =
-        text == "" ?
+        text == '' ?
         manager.getLogMatcher(/(?m)^\[${label}\]\s+real\s+(.+)\.(\d+?)[s]?/) :
         text =~ /(?m)^real\s+(.+)\.(\d+?)[s]?/
     if (matcher) {
@@ -497,7 +504,7 @@ def getTime(text, label) {
     // format, e.g. :
     //    TotalSeconds      : 523.2140529
     def matcher2 =
-        text == "" ?
+        text == '' ?
         manager.getLogMatcher(/(?m)^\[${label}\]\s+TotalSeconds\s+:\s+(\d+)\.(\d+?)?/) :
         text =~ /(?m)^TotalSeconds\s+:\s+(\d+)\.(\d+?)?/
     matcher2 ? matcher2[0][1] + 's' : 'n/a'
