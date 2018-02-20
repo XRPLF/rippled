@@ -208,7 +208,7 @@ public:
             // Publisher site information
             using namespace std::string_literals;
             std::string siteURI =
-                "http://"s + ENV_LOCALHOST_ADDR + ":1234/validators";
+                "http://"s + getEnvLocalhostAddr() + ":1234/validators";
 
             Env env{
                 *this,

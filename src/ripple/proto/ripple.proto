@@ -257,8 +257,8 @@ message TMEndpoints
     required uint32         version = 1;
 
     repeated TMEndpoint     endpoints = 2;
-    
-    // An update to the Endpoint type that uses a string 
+
+    // An update to the Endpoint type that uses a string
     // to represent endpoints, thus allowing ipv6 or ipv4 addresses
     message TMEndpointv2
     {

@@ -73,10 +73,10 @@ class ServerStatus_test :
             // which requires an http endpoint to talk to. In the connection
             // failure test, this endpoint should never be used
             (*p)["server"].append("port_alt");
-            (*p)["port_alt"].set("ip", ENV_LOCALHOST_ADDR);
+            (*p)["port_alt"].set("ip", getEnvLocalhostAddr());
             (*p)["port_alt"].set("port", "8099");
             (*p)["port_alt"].set("protocol", "http");
-            (*p)["port_alt"].set("admin", ENV_LOCALHOST_ADDR);
+            (*p)["port_alt"].set("admin", getEnvLocalhostAddr());
         }
 
         return p;

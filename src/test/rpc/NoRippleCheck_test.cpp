@@ -266,7 +266,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
                 using namespace std::chrono;
                 using namespace beast::IP;
                 auto c = env.app().getResourceManager()
-                    .newInboundEndpoint (Endpoint::from_string (test::ENV_LOCALHOST_ADDR));
+                    .newInboundEndpoint (Endpoint::from_string (test::getEnvLocalhostAddr()));
                 if (dropThreshold - c.balance() <= 20)
                 {
                     using clock_type = beast::abstract_clock <steady_clock>;

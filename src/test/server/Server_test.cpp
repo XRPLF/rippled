@@ -283,7 +283,7 @@ public:
             thread.get_io_service(), journal);
         std::vector<Port> serverPort(1);
         serverPort.back().ip =
-            boost::asio::ip::make_address (ENV_LOCALHOST_ADDR),
+            boost::asio::ip::make_address (getEnvLocalhostAddr()),
         serverPort.back().port = 0;
         serverPort.back().protocol.insert("http");
         auto eps = s->ports (serverPort);
@@ -355,7 +355,7 @@ public:
                 thread.get_io_service(), {});
             std::vector<Port> serverPort(1);
             serverPort.back().ip =
-                boost::asio::ip::make_address (ENV_LOCALHOST_ADDR),
+                boost::asio::ip::make_address (getEnvLocalhostAddr()),
             serverPort.back().port = 0;
             serverPort.back().protocol.insert("http");
             s->ports (serverPort);
@@ -441,7 +441,7 @@ public:
             Env env {*this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
-                    (*cfg)["port_rpc"].set("ip", ENV_LOCALHOST_ADDR);
+                    (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
                     return cfg;
                 }),
                 std::make_unique<CaptureLogs>(messages)};
@@ -455,7 +455,7 @@ public:
             Env env {*this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
-                    (*cfg)["port_rpc"].set("ip", ENV_LOCALHOST_ADDR);
+                    (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
                     (*cfg)["port_rpc"].set("port", "0");
                     return cfg;
                 }),
@@ -470,7 +470,7 @@ public:
             Env env {*this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
-                    (*cfg)["port_rpc"].set("ip", ENV_LOCALHOST_ADDR);
+                    (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
                     (*cfg)["port_rpc"].set("port", "8081");
                     (*cfg)["port_rpc"].set("protocol", "");
                     return cfg;
@@ -495,17 +495,17 @@ public:
                         ConfigSection::importNodeDatabase ());
                     cfg->legacy("database_path", "");
                     cfg->setupControl(true, true, true);
-                    (*cfg)["port_peer"].set("ip", ENV_LOCALHOST_ADDR);
+                    (*cfg)["port_peer"].set("ip", getEnvLocalhostAddr());
                     (*cfg)["port_peer"].set("port", "8080");
                     (*cfg)["port_peer"].set("protocol", "peer");
-                    (*cfg)["port_rpc"].set("ip", ENV_LOCALHOST_ADDR);
+                    (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
                     (*cfg)["port_rpc"].set("port", "8081");
                     (*cfg)["port_rpc"].set("protocol", "http,ws2");
-                    (*cfg)["port_rpc"].set("admin", ENV_LOCALHOST_ADDR);
-                    (*cfg)["port_ws"].set("ip", ENV_LOCALHOST_ADDR);
+                    (*cfg)["port_rpc"].set("admin", getEnvLocalhostAddr());
+                    (*cfg)["port_ws"].set("ip", getEnvLocalhostAddr());
                     (*cfg)["port_ws"].set("port", "8082");
                     (*cfg)["port_ws"].set("protocol", "ws");
-                    (*cfg)["port_ws"].set("admin", ENV_LOCALHOST_ADDR);
+                    (*cfg)["port_ws"].set("admin", getEnvLocalhostAddr());
                     return cfg;
                 }),
                 std::make_unique<CaptureLogs>(messages)};
