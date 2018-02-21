@@ -64,7 +64,11 @@ Json::Value doLedgerEntry (RPC::Context& context)
     }
     else if (context.params.isMember (jss::directory))
     {
-        if (!context.params[jss::directory].isObject ())
+        if (context.params[jss::directory].isNull())
+        {
+            jvResult[jss::error]   = "malformedRequest";
+        }
+        else if (!context.params[jss::directory].isObject())
         {
             uNodeIndex.SetHex (context.params[jss::directory].asString ());
         }
@@ -114,7 +118,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
     }
     else if (context.params.isMember (jss::offer))
     {
-        if (!context.params[jss::offer].isObject ())
+        if (!context.params[jss::offer].isObject())
         {
             uNodeIndex.SetHex (context.params[jss::offer].asString ());
         }
@@ -140,10 +144,10 @@ Json::Value doLedgerEntry (RPC::Context& context)
         Currency         uCurrency;
         Json::Value     jvRippleState   = context.params[jss::ripple_state];
 
-        if (!jvRippleState.isObject ()
+        if (!jvRippleState.isObject()
             || !jvRippleState.isMember (jss::currency)
             || !jvRippleState.isMember (jss::accounts)
-            || !jvRippleState[jss::accounts].isArray ()
+            || !jvRippleState[jss::accounts].isArray()
             || 2 != jvRippleState[jss::accounts].size ()
             || !jvRippleState[jss::accounts][0u].isString ()
             || !jvRippleState[jss::accounts][1u].isString ()

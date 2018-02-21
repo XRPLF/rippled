@@ -116,7 +116,8 @@ Json::Value doGatewayBalances (RPC::Context& context)
         Json::Value const& hw = params[jss::hotwallet];
         bool valid = true;
 
-        if (hw.isArray())
+        // null is treated as a valid 0-sized array of hotwallet
+        if (hw.isArrayOrNull())
         {
             for (unsigned i = 0; i < hw.size(); ++i)
                 valid &= addHotWallet (hw[i]);

@@ -334,7 +334,6 @@ ServerHandlerImp::onWSMessage(
     auto const size = boost::asio::buffer_size(buffers);
     if (size > RPC::Tuning::maxRequestSize ||
         ! Json::Reader{}.parse(jv, buffers) ||
-        ! jv ||
         ! jv.isObject())
     {
         Json::Value jvResult(Json::objectValue);
@@ -603,7 +602,7 @@ ServerHandlerImp::processRequest (Port const& port,
         if (jsonRPC.isMember(jss::params) &&
             jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 &&
-            jsonRPC[jss::params][Json::UInt(0)].isObject())
+            jsonRPC[jss::params][Json::UInt(0)].isObjectOrNull())
         {
             role = requestRole(
                 required,
@@ -712,7 +711,7 @@ ServerHandlerImp::processRequest (Port const& port,
             if (! params)
                 params = Json::Value (Json::objectValue);
 
-            else if (!params.isArray () || params.size() != 1)
+            else if (!params.isArray() || params.size() != 1)
             {
                 usage.charge(Resource::feeInvalidRPC);
                 HTTPReply (400, "params unparseable", output, rpcJ);
@@ -721,7 +720,7 @@ ServerHandlerImp::processRequest (Port const& port,
             else
             {
                 params = std::move (params[0u]);
-                if (!params.isObject())
+                if (!params.isObjectOrNull())
                 {
                     usage.charge(Resource::feeInvalidRPC);
                     HTTPReply (400, "params unparseable", output, rpcJ);
