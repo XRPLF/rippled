@@ -22,6 +22,7 @@
 //==============================================================================
 
 #include <ripple/beast/core/WaitableEvent.h>
+#include <cerrno>
 
 #if BEAST_WINDOWS
 
@@ -70,6 +71,8 @@ bool WaitableEvent::wait (const int timeOutMs) const
 }
 
 #else
+
+#include <sys/time.h>
 
 namespace beast {
 
