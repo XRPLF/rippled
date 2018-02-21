@@ -300,6 +300,7 @@ def run_tests(args):
             print('Unit tests for', target)
             testflag = '--unittest'
             quiet = ''
+            testjobs = ''
             if ARGS.test:
                 testflag += ('=' + ARGS.test)
             if ARGS.quiet:
