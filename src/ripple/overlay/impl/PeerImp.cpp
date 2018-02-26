@@ -1388,9 +1388,10 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
 
     if (m->has_shardseqs())
     {
-        shards_.clear();
         std::vector<std::string> tokens;
         boost::split(tokens, m->shardseqs(), boost::algorithm::is_any_of(","));
+        std::lock_guard<std::mutex> sl(recentLock_);
+        shards_.clear();
         for (auto const& t : tokens)
         {
             std::vector<std::string> seqs;
