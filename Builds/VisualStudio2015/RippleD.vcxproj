@@ -1597,9 +1597,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\core\BasicNativeHeaders.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\beast\core\bsd_SystemStats.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\core\ByteOrder.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\core\CompilerConfig.h">
@@ -1618,9 +1615,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\core\LexicalCast.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\beast\core\linux_SystemStats.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\core\List.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\core\LockFreeStack.h">
@@ -1646,16 +1640,11 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\core\StandardIncludes.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\core\SystemStats.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\core\WaitableEvent.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\core\WaitableEvent.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\beast\core\win32_SystemStats.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\crypto\detail\mac_facade.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\crypto\detail\ripemd_context.h">
