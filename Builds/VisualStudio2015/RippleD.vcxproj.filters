@@ -2211,9 +2211,6 @@
     <ClInclude Include="..\..\src\ripple\beast\core\BasicNativeHeaders.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\beast\core\bsd_SystemStats.cpp">
-      <Filter>ripple\beast\core</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\core\ByteOrder.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>
@@ -2238,9 +2235,6 @@
     <ClInclude Include="..\..\src\ripple\beast\core\LexicalCast.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\beast\core\linux_SystemStats.cpp">
-      <Filter>ripple\beast\core</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\core\List.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>
@@ -2277,18 +2271,12 @@
     <ClInclude Include="..\..\src\ripple\beast\core\StandardIncludes.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\core\SystemStats.h">
-      <Filter>ripple\beast\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\core\WaitableEvent.cpp">
       <Filter>ripple\beast\core</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\core\WaitableEvent.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\beast\core\win32_SystemStats.cpp">
-      <Filter>ripple\beast\core</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\crypto\detail\mac_facade.h">
       <Filter>ripple\beast\crypto\detail</Filter>
     </ClInclude>

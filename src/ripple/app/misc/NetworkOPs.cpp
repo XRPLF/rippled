@@ -53,11 +53,11 @@
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <ripple/beast/core/SystemStats.h>
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/basics/make_lock.h>
 #include <beast/core/detail/base64.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/asio/ip/host_name.hpp>
 
 namespace ripple {
 
@@ -627,8 +627,10 @@ NetworkOPsImp::StateAccounting::states_ = {{
 std::string
 NetworkOPsImp::getHostId (bool forAdmin)
 {
+    static std::string const hostname = boost::asio::ip::host_name();
+
     if (forAdmin)
-        return beast::getComputerName ();
+        return hostname;
 
     // For non-admin uses hash the node public key into a
     // single RFC1751 word:
