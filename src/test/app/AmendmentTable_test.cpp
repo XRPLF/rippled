@@ -379,7 +379,7 @@ public:
         for (auto const& val : validators)
         {
             auto v = std::make_shared <STValidation> (
-                uint256(), roundTime, val, true);
+                uint256(), roundTime, val, calcNodeID(val), true);
 
             ++i;
             STVector256 field (sfAmendments);

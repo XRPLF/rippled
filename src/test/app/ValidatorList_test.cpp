@@ -125,6 +125,16 @@ private:
             keys.first, keys.second, makeSlice(data)));
     }
 
+    static hash_set<NodeID>
+    asNodeIDs(std::initializer_list<PublicKey> const& pks)
+    {
+        hash_set<NodeID> res;
+        res.reserve(pks.size());
+        for (auto const& pk : pks)
+            res.insert(calcNodeID(pk));
+        return res;
+    }
+
     void
     testGenesisQuorum ()
     {
@@ -509,9 +519,9 @@ private:
     }
 
     void
-    testUpdate ()
+    testUpdateTrusted ()
     {
-        testcase ("Update");
+        testcase ("Update trusted");
 
         PublicKey emptyLocalKey;
         ManifestCache manifests;
@@ -520,7 +530,8 @@ private:
             manifests, manifests, env.timeKeeper(), beast::Journal ());
 
         std::vector<std::string> cfgPublishers;
-        hash_set<PublicKey> activeValidators;
+        hash_set<NodeID> activeValidators;
+        hash_set<NodeID> secondAddedValidators;
 
         // BFT: n >= 3f+1
         std::size_t const n = 40;
@@ -535,15 +546,18 @@ private:
                 cfgKeys.push_back (toBase58(
                     TokenType::TOKEN_NODE_PUBLIC, valKey));
                 if (cfgKeys.size () <= n - 5)
-                    activeValidators.emplace (valKey);
+                    activeValidators.emplace (calcNodeID(valKey));
             }
 
             BEAST_EXPECT(trustedKeys->load (
                 emptyLocalKey, cfgKeys, cfgPublishers));
 
-            // onConsensusStart should make all available configured
+            // updateTrusted should make all available configured
             // validators trusted
-            trustedKeys->onConsensusStart (activeValidators);
+            TrustChanges changes =
+                trustedKeys->updateTrusted(activeValidators);
+            BEAST_EXPECT(changes.added == activeValidators);
+            BEAST_EXPECT(changes.removed.empty());
             // Add 1 to n because I'm not on a published list.
             BEAST_EXPECT(trustedKeys->quorum () == n + 1 - f);
             std::size_t i = 0;
@@ -564,11 +578,19 @@ private:
 
             {
                 // Quorum should be 80% with all listed validators active
-                hash_set<PublicKey> activeValidators;
+                hash_set<NodeID> activeValidatorsNew{activeValidators};
                 for (auto const valKey : cfgKeys)
-                    activeValidators.emplace (*parseBase58<PublicKey>(
-                        TokenType::TOKEN_NODE_PUBLIC, valKey));
-                trustedKeys->onConsensusStart (activeValidators);
+                {
+                    auto const ins = activeValidatorsNew.emplace(
+                        calcNodeID(*parseBase58<PublicKey>(
+                            TokenType::TOKEN_NODE_PUBLIC, valKey)));
+                    if(ins.second)
+                        secondAddedValidators.insert(*ins.first);
+                }
+                TrustChanges changes =
+                    trustedKeys->updateTrusted(activeValidatorsNew);
+                BEAST_EXPECT(changes.added == secondAddedValidators);
+                BEAST_EXPECT(changes.removed.empty());
                 BEAST_EXPECT(trustedKeys->quorum () == cfgKeys.size() * 4/5);
             }
         }
@@ -586,10 +608,13 @@ private:
 
             auto const signingKeys1 = randomKeyPair(KeyType::secp256k1);
             auto const signingPublic1 = signingKeys1.first;
-            activeValidators.emplace (masterPublic);
+            activeValidators.emplace (calcNodeID(masterPublic));
 
             // Should not trust ephemeral signing key if there is no manifest
-            trustedKeys->onConsensusStart (activeValidators);
+            TrustChanges changes =
+                trustedKeys->updateTrusted(activeValidators);
+            BEAST_EXPECT(changes.added == asNodeIDs({masterPublic}));
+            BEAST_EXPECT(changes.removed == secondAddedValidators);
             BEAST_EXPECT(trustedKeys->listed (masterPublic));
             BEAST_EXPECT(trustedKeys->trusted (masterPublic));
             BEAST_EXPECT(!trustedKeys->listed (signingPublic1));
@@ -603,7 +628,9 @@ private:
             BEAST_EXPECT(
                 manifests.applyManifest(std::move (*m1)) ==
                     ManifestDisposition::accepted);
-            trustedKeys->onConsensusStart (activeValidators);
+            changes = trustedKeys->updateTrusted(activeValidators);
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(changes.added.empty());
             BEAST_EXPECT(trustedKeys->quorum () == n + 2 - f);
             BEAST_EXPECT(trustedKeys->listed (masterPublic));
             BEAST_EXPECT(trustedKeys->trusted (masterPublic));
@@ -620,7 +647,9 @@ private:
             BEAST_EXPECT(
                 manifests.applyManifest(std::move (*m2)) ==
                     ManifestDisposition::accepted);
-            trustedKeys->onConsensusStart (activeValidators);
+            changes = trustedKeys->updateTrusted (activeValidators);
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(changes.added.empty());
             BEAST_EXPECT(trustedKeys->quorum () == n + 2 - f);
             BEAST_EXPECT(trustedKeys->listed (masterPublic));
             BEAST_EXPECT(trustedKeys->trusted (masterPublic));
@@ -632,7 +661,7 @@ private:
             // Should not trust keys from revoked master public key
             auto const signingKeysMax = randomKeyPair(KeyType::secp256k1);
             auto const signingPublicMax = signingKeysMax.first;
-            activeValidators.emplace (signingPublicMax);
+            activeValidators.emplace (calcNodeID(signingPublicMax));
             auto mMax = Manifest::make_Manifest (makeManifestString (
                 masterPublic, masterPrivate,
                 signingPublicMax, signingKeysMax.second,
@@ -644,7 +673,9 @@ private:
                     ManifestDisposition::accepted);
             BEAST_EXPECT(manifests.getSigningKey (masterPublic) == masterPublic);
             BEAST_EXPECT(manifests.revoked (masterPublic));
-            trustedKeys->onConsensusStart (activeValidators);
+            changes = trustedKeys->updateTrusted (activeValidators);
+            BEAST_EXPECT(changes.removed == asNodeIDs({masterPublic}));
+            BEAST_EXPECT(changes.added.empty());
             BEAST_EXPECT(trustedKeys->quorum () == n + 1 - f);
             BEAST_EXPECT(trustedKeys->listed (masterPublic));
             BEAST_EXPECT(!trustedKeys->trusted (masterPublic));
@@ -670,7 +701,10 @@ private:
             BEAST_EXPECT(trustedKeys->load (
                 emptyLocalKey, emptyCfgKeys, cfgPublishers));
 
-            trustedKeys->onConsensusStart (activeValidators);
+            TrustChanges changes =
+                trustedKeys->updateTrusted(activeValidators);
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(changes.added.empty());
             BEAST_EXPECT(trustedKeys->quorum () ==
                 std::numeric_limits<std::size_t>::max());
         }
@@ -680,7 +714,7 @@ private:
                 manifests, manifests, env.timeKeeper(), beast::Journal ());
 
             std::vector<PublicKey> keys ({ randomNode (), randomNode () });
-            hash_set<PublicKey> activeValidators;
+            hash_set<NodeID> activeValidators;
             std::vector<std::string> cfgKeys ({
                 toBase58 (TokenType::TOKEN_NODE_PUBLIC, keys[0]),
                 toBase58 (TokenType::TOKEN_NODE_PUBLIC, keys[1])});
@@ -688,7 +722,10 @@ private:
             BEAST_EXPECT(trustedKeys->load (
                 emptyLocalKey, cfgKeys, cfgPublishers));
 
-            trustedKeys->onConsensusStart (activeValidators);
+            TrustChanges changes =
+                trustedKeys->updateTrusted(activeValidators);
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(changes.added == asNodeIDs({keys[0], keys[1]}));
 
             BEAST_EXPECT(trustedKeys->quorum () == 2);
             for (auto const& key : keys)
@@ -704,16 +741,21 @@ private:
             auto const node = randomNode ();
             std::vector<std::string> cfgKeys ({
                 toBase58 (TokenType::TOKEN_NODE_PUBLIC, node)});
-            hash_set<PublicKey> activeValidators;
+            hash_set<NodeID> activeValidators;
 
             BEAST_EXPECT(trustedKeys->load (
                 emptyLocalKey, cfgKeys, cfgPublishers));
 
-            trustedKeys->onConsensusStart (activeValidators);
+            TrustChanges changes =
+                trustedKeys->updateTrusted(activeValidators);
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(changes.added == asNodeIDs({node}));
             BEAST_EXPECT(trustedKeys->quorum () == minQuorum);
 
-            activeValidators.emplace (node);
-            trustedKeys->onConsensusStart (activeValidators);
+            activeValidators.emplace (calcNodeID(node));
+            changes = trustedKeys->updateTrusted(activeValidators);
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(changes.added.empty());
             BEAST_EXPECT(trustedKeys->quorum () == 1);
         }
         {
@@ -722,7 +764,7 @@ private:
                 manifests, manifests, env.timeKeeper(), beast::Journal ());
 
             std::vector<PublicKey> keys ({ randomNode (), randomNode () });
-            hash_set<PublicKey> activeValidators ({ keys[0] });
+            hash_set<NodeID> activeValidators (asNodeIDs({ keys[0] }));
             std::vector<std::string> cfgKeys ({
                 toBase58 (TokenType::TOKEN_NODE_PUBLIC, keys[0]),
                 toBase58 (TokenType::TOKEN_NODE_PUBLIC, keys[1])});
@@ -731,7 +773,11 @@ private:
             BEAST_EXPECT(trustedKeys->load (
                 localKey, cfgKeys, cfgPublishers));
 
-            trustedKeys->onConsensusStart (activeValidators);
+            TrustChanges changes =
+                trustedKeys->updateTrusted(activeValidators);
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(
+                changes.added == asNodeIDs({keys[0], keys[1], localKey}));
             BEAST_EXPECT(trustedKeys->quorum () == 2);
 
             // local validator key is always trusted
@@ -758,7 +804,8 @@ private:
                 emptyLocalKey, emptyCfgKeys, cfgKeys));
 
             std::vector<Validator> list ({randomValidator(), randomValidator()});
-            hash_set<PublicKey> activeValidators ({ list[0].masterPublic, list[1].masterPublic });
+            hash_set<NodeID> activeValidators(
+                asNodeIDs({list[0].masterPublic, list[1].masterPublic}));
 
             // do not apply expired list
             auto const version = 1;
@@ -773,16 +820,21 @@ private:
                 trustedKeys->applyList (
                     manifest, blob, sig, version));
 
-            trustedKeys->onConsensusStart (activeValidators);
-			for(Validator const & val : list)
-	        {
-			    BEAST_EXPECT(trustedKeys->trusted (val.masterPublic));
-				BEAST_EXPECT(trustedKeys->trusted (val.signingPublic));
-			}
+            TrustChanges changes =
+                trustedKeys->updateTrusted(activeValidators);
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(changes.added == activeValidators);
+            for(Validator const & val : list)
+            {
+                BEAST_EXPECT(trustedKeys->trusted (val.masterPublic));
+                BEAST_EXPECT(trustedKeys->trusted (val.signingPublic));
+            }
             BEAST_EXPECT(trustedKeys->quorum () == 2);
 
             env.timeKeeper().set(expiration);
-            trustedKeys->onConsensusStart (activeValidators);
+            changes = trustedKeys->updateTrusted (activeValidators);
+            BEAST_EXPECT(changes.removed == activeValidators);
+            BEAST_EXPECT(changes.added.empty());
             BEAST_EXPECT(! trustedKeys->trusted (list[0].masterPublic));
             BEAST_EXPECT(! trustedKeys->trusted (list[1].masterPublic));
             BEAST_EXPECT(trustedKeys->quorum () ==
@@ -790,7 +842,7 @@ private:
 
             // (Re)trust validators from new valid list
             std::vector<Validator> list2 ({list[0], randomValidator()});
-            activeValidators.insert(list2[1].masterPublic);
+            activeValidators.insert(calcNodeID(list2[1].masterPublic));
             auto const sequence2 = 2;
             NetClock::time_point const expiration2 =
                 env.timeKeeper().now() + 60s;
@@ -802,14 +854,18 @@ private:
                 trustedKeys->applyList (
                     manifest, blob2, sig2, version));
 
-            trustedKeys->onConsensusStart (activeValidators);
-			for(Validator const & val : list2)
-	        {
-			    BEAST_EXPECT(trustedKeys->trusted (val.masterPublic));
-				BEAST_EXPECT(trustedKeys->trusted (val.signingPublic));
-			}
+            changes = trustedKeys->updateTrusted (activeValidators);
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(
+                changes.added ==
+                asNodeIDs({list2[0].masterPublic, list2[1].masterPublic}));
+            for(Validator const & val : list2)
+            {
+                BEAST_EXPECT(trustedKeys->trusted (val.masterPublic));
+                BEAST_EXPECT(trustedKeys->trusted (val.signingPublic));
+            }
             BEAST_EXPECT(! trustedKeys->trusted (list[1].masterPublic));
-			BEAST_EXPECT(! trustedKeys->trusted (list[1].signingPublic));
+            BEAST_EXPECT(! trustedKeys->trusted (list[1].signingPublic));
             BEAST_EXPECT(trustedKeys->quorum () == 2);
         }
         {
@@ -818,7 +874,8 @@ private:
                 manifests, manifests, env.timeKeeper(), beast::Journal ());
 
             std::vector<std::string> cfgPublishers;
-            hash_set<PublicKey> activeValidators;
+            hash_set<NodeID> activeValidators;
+            hash_set<PublicKey> activeKeys;
 
             std::vector<std::string> cfgKeys;
             cfgKeys.reserve(9);
@@ -828,15 +885,19 @@ private:
                 auto const valKey = randomNode();
                 cfgKeys.push_back (toBase58(
                     TokenType::TOKEN_NODE_PUBLIC, valKey));
-                activeValidators.emplace (valKey);
+                activeValidators.emplace (calcNodeID(valKey));
+                activeKeys.emplace(valKey);
 
                 BEAST_EXPECT(trustedKeys->load (
                     emptyLocalKey, cfgKeys, cfgPublishers));
-                trustedKeys->onConsensusStart (activeValidators);
+                TrustChanges changes =
+                    trustedKeys->updateTrusted(activeValidators);
+                BEAST_EXPECT(changes.removed.empty());
+                BEAST_EXPECT(changes.added == asNodeIDs({valKey}));
                 BEAST_EXPECT(trustedKeys->quorum () ==
                     ((cfgKeys.size() <= 6) ? cfgKeys.size()/2 + 1 :
                         cfgKeys.size() * 2/3 + 1));
-                for (auto const& key : activeValidators)
+                for (auto const& key : activeKeys)
                     BEAST_EXPECT(trustedKeys->trusted (key));
             }
         }
@@ -847,8 +908,8 @@ private:
 
             auto const localKey = randomNode();
             std::vector<std::string> cfgPublishers;
-            hash_set<PublicKey> activeValidators;
-
+            hash_set<NodeID> activeValidators;
+            hash_set<PublicKey> activeKeys;
             std::vector<std::string> cfgKeys {
                 toBase58(TokenType::TOKEN_NODE_PUBLIC, localKey)};
             cfgKeys.reserve(9);
@@ -858,17 +919,25 @@ private:
                 auto const valKey = randomNode();
                 cfgKeys.push_back (toBase58(
                     TokenType::TOKEN_NODE_PUBLIC, valKey));
-                activeValidators.emplace (valKey);
+                activeValidators.emplace (calcNodeID(valKey));
+                activeKeys.emplace(valKey);
 
                 BEAST_EXPECT(trustedKeys->load (
                     localKey, cfgKeys, cfgPublishers));
-                trustedKeys->onConsensusStart (activeValidators);
+                TrustChanges changes =
+                    trustedKeys->updateTrusted(activeValidators);
+                BEAST_EXPECT(changes.removed.empty());
+                if (cfgKeys.size() > 2)
+                    BEAST_EXPECT(changes.added == asNodeIDs({valKey}));
+                else
+                    BEAST_EXPECT(
+                        changes.added == asNodeIDs({localKey, valKey}));
 
                 BEAST_EXPECT(trustedKeys->quorum () ==
                     ((cfgKeys.size() <= 6) ? cfgKeys.size()/2 + 1 :
                         (cfgKeys.size() + 1) * 2/3 + 1));
 
-                for (auto const& key : activeValidators)
+                for (auto const& key : activeKeys)
                     BEAST_EXPECT(trustedKeys->trusted (key));
             }
         }
@@ -878,15 +947,15 @@ private:
             auto trustedKeys = std::make_unique <ValidatorList> (
                 manifests, manifests, env.timeKeeper(), beast::Journal ());
 
-            hash_set<PublicKey> activeValidators;
-
+            hash_set<NodeID> activeValidators;
             std::vector<Validator> valKeys;
             valKeys.reserve(n);
 
             while (valKeys.size () != n)
             {
                 valKeys.push_back (randomValidator());
-                activeValidators.emplace (valKeys.back().masterPublic);
+                activeValidators.emplace(
+                    calcNodeID(valKeys.back().masterPublic));
             }
 
             auto addPublishedList = [this, &env, &trustedKeys, &valKeys]()
@@ -923,17 +992,24 @@ private:
             for (auto i = 0; i < 3; ++i)
                 addPublishedList();
 
-            trustedKeys->onConsensusStart (activeValidators);
+            TrustChanges changes =
+                trustedKeys->updateTrusted(activeValidators);
 
             // Minimum quorum should be used
             BEAST_EXPECT(trustedKeys->quorum () == (valKeys.size() * 2/3 + 1));
 
+            hash_set<NodeID> added;
             std::size_t nTrusted = 0;
-            for (auto const& key : activeValidators)
+            for (auto const& val : valKeys)
             {
-                if (trustedKeys->trusted (key))
+                if (trustedKeys->trusted (val.masterPublic))
+                {
+                    added.insert(calcNodeID(val.masterPublic));
                     ++nTrusted;
+                }
             }
+            BEAST_EXPECT(changes.added == added);
+            BEAST_EXPECT(changes.removed.empty());
 
             // The number of trusted keys should be 125% of the minimum quorum
             BEAST_EXPECT(nTrusted ==
@@ -979,9 +1055,9 @@ private:
                 manifests, manifests, env.app().timeKeeper(), journal);
 
             std::vector<Validator> validators = {randomValidator()};
-            hash_set<PublicKey> activeKeys;
+            hash_set<NodeID> activeValidators;
             for(Validator const & val : validators)
-                activeKeys.insert(val.masterPublic);
+                activeValidators.insert(calcNodeID(val.masterPublic));
             // Store prepared list data to control when it is applied
             struct PreparedList
             {
@@ -1053,7 +1129,7 @@ private:
             // Advance past the first list's expiration, but it remains the
             // earliest expiration
             env.timeKeeper().set(prep1.expiration + 1s);
-            trustedKeys->onConsensusStart(activeKeys);
+            trustedKeys->updateTrusted(activeValidators);
             BEAST_EXPECT(
                 trustedKeys->expires() &&
                 trustedKeys->expires().get() == prep1.expiration);
@@ -1066,7 +1142,7 @@ public:
         testGenesisQuorum ();
         testConfigLoad ();
         testApplyList ();
-        testUpdate ();
+        testUpdateTrusted ();
         testExpires ();
     }
 };
