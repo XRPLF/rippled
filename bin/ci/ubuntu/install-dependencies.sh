@@ -30,14 +30,14 @@ if [[ -n ${CLANG_VER:-} ]]; then
     export LLVM_CONFIG="${TWD}/llvm-${LLVM_VERSION}/bin/llvm-config";
 fi
 
-if [[ ${BUILD:-} == cmake ]]; then
+if [[ ${BUILD:-cmake} == "cmake" ]]; then
     # There are cases where the directory exists, but the exe is not available.
     # Use this workaround for now.
     if [[ ! -x ${TWD}/cmake/bin/cmake && -d ${TWD}/cmake ]]; then
         rm -fr ${TWD}/cmake
     fi
     if [[ ! -d ${TWD}/cmake ]]; then
-      CMAKE_URL="https://www.cmake.org/files/v3.6/cmake-3.6.1-Linux-x86_64.tar.gz"
+      CMAKE_URL="https://www.cmake.org/files/v3.10/cmake-3.10.2-Linux-x86_64.tar.gz"
       wget --version
       # wget version 1.13.4 thinks this certificate is invalid, even though it's fine.
       # "ERROR: no certificate subject alternative name matches"
