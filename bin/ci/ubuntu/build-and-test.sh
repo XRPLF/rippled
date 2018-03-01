@@ -13,7 +13,17 @@ echo "using TARGET: $TARGET"
 echo "using APP: $APP"
 
 JOBS=${NUM_PROCESSORS:-2}
-JOBS=$((JOBS+1))
+if [[ ${TRAVIS:-false} != "true" ]]; then
+  JOBS=$((JOBS+1))
+fi
+
+if [ -x /usr/bin/time ] ; then
+  : ${TIME:="Duration: %E"}
+  export TIME
+  time=/usr/bin/time
+else
+  time=
+fi
 
 if [[ ${BUILD:-scons} == "cmake" ]]; then
   echo "cmake building ${APP}"
@@ -37,13 +47,13 @@ if [[ ${BUILD:-scons} == "cmake" ]]; then
   fi
   mkdir -p "build/${CMAKE_TARGET}"
   pushd "build/${CMAKE_TARGET}"
-  cmake ../.. -Dtarget=$CMAKE_TARGET ${CMAKE_EXTRA_ARGS}
-  cmake --build . -- $BUILDARGS
+  $time cmake ../.. -Dtarget=$CMAKE_TARGET ${CMAKE_EXTRA_ARGS}
+  $time cmake --build . -- $BUILDARGS
   if [[ ${BUILD_BOTH:-} == true ]]; then
     if [[ ${TARGET} == *.unity ]]; then
-      cmake --build . --target rippled_classic -- $BUILDARGS
+      $time cmake --build . --target rippled_classic -- $BUILDARGS
     else
-      cmake --build . --target rippled_unity -- $BUILDARGS
+      $time cmake --build . --target rippled_unity -- $BUILDARGS
     fi
   fi
   popd
@@ -53,12 +63,12 @@ else
   export APP_PATH="$PWD/build/$CC.$TARGET/${APP}"
   echo "using APP_PATH: $APP_PATH"
   # Make sure vcxproj is up to date
-  scons vcxproj
+  $time scons vcxproj
   git diff --exit-code
   # $CC will be either `clang` or `gcc`
   # http://docs.travis-ci.com/user/migrating-from-legacy/?utm_source=legacy-notice&utm_medium=banner&utm_campaign=legacy-upgrade
   #   indicates that 2 cores are available to containers.
-  scons -j${JOBS} $CC.$TARGET
+  $time scons -j${JOBS} $CC.$TARGET
 fi
 # We can be sure we're using the build/$CC.$TARGET variant
 # (-f so never err)
@@ -68,7 +78,7 @@ rm -f build/${APP}
 ldd $APP_PATH
 
 if [[ ${APP} == "rippled" ]]; then
-  export APP_ARGS="--unittest --quiet --unittest-log"
+  export APP_ARGS+=" --unittest --quiet --unittest-log"
   # Only report on src/ripple files
   export LCOV_FILES="*/src/ripple/*"
   # Nothing to explicitly exclude
@@ -92,7 +102,8 @@ if [[ ${SKIP_TESTS:-} == true ]]; then
   exit
 fi
 
-if [[ $TARGET == debug* ]]; then
+if [[ $TARGET == debug* && -v GDB_ROOT && -x $GDB_ROOT/bin/gdb ]]; then
+  $GDB_ROOT/bin/gdb -v
   # Execute unit tests under gdb, printing a call stack
   # if we get a crash.
   $GDB_ROOT/bin/gdb -return-child-result -quiet -batch \

@@ -3,23 +3,19 @@ language: cpp
 
 env:
   global:
-    - LLVM_VERSION=3.8.0
     # Maintenance note: to move to a new version
     # of boost, update both BOOST_ROOT and BOOST_URL.
     # Note that for simplicity, BOOST_ROOT's final
     # namepart must match the folder name internal
     # to boost's .tar.gz.
-    - LCOV_ROOT=$HOME/lcov
-    - GDB_ROOT=$HOME/gdb
-    - BOOST_ROOT=$HOME/boost_1_60_0
-    - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.60.0/boost_1_60_0.tar.gz'
-
-# Travis is timing out on Trusty.  So, for now, use Precise.  July 2017
-dist: precise
+    - BOOST_ROOT=$HOME/boost_1_65_1
+    - BOOST_URL='https://dl.bintray.com/boostorg/release/1.65.1/source/boost_1_65_1.tar.gz'
 
 addons:
   apt:
-    sources: ['ubuntu-toolchain-r-test']
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-5.0
     packages:
       - gcc-5
       - g++-5
@@ -29,43 +25,41 @@ addons:
       - libssl-dev
       - libstdc++6
       - binutils-gold
-      # Provides a backtrace if the unittests crash
-      - gdb
-      # needed to build gdb
-      - texinfo
+      - cmake
+      - lcov
+      - llvm-5.0
+      - clang-5.0
 
 matrix:
   include:
     # Default BUILD is "scons".
 
+    - compiler: gcc
+      env: GCC_VER=5 BUILD=cmake TARGET=debug
+      # - APP_ARGS="--unittest-jobs=2"
+
     # - compiler: gcc
     #   env: GCC_VER=5 TARGET=debug.nounity
 
-    - compiler: gcc
-      env: GCC_VER=5 BUILD=cmake TARGET=coverage PATH=$PWD/cmake/bin:$PATH
+    # - compiler: gcc
+    #   env: GCC_VER=5 BUILD=cmake TARGET=coverage PATH=$PWD/cmake/bin:$PATH
 
     - compiler: clang
-      env: GCC_VER=5 BUILD=cmake TARGET=debug CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PWD/cmake/bin:$PATH
-      cache:
-        directories:
-          - $GDB_ROOT
+      env: GCC_VER=5 BUILD=cmake TARGET=debug
 
-    - compiler: clang
-      env: GCC_VER=5 TARGET=debug.nounity CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
+    # - compiler: clang
+    #   env: GCC_VER=5 TARGET=debug.nounity
 
     # The clang cmake builds do not link.
     # - compiler: clang
-    #   env: GCC_VER=5 BUILD=cmake TARGET=debug CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PWD/cmake/bin:$PATH
+    #   env: GCC_VER=5 BUILD=cmake TARGET=debug
 
     # - compiler: clang
-    #   env: GCC_VER=5 BUILD=cmake TARGET=debug.nounity CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PWD/cmake/bin:$PATH
+    #   env: GCC_VER=5 BUILD=cmake TARGET=debug.nounity
 
 cache:
   directories:
   - $BOOST_ROOT
-  - llvm-$LLVM_VERSION
-  - cmake
-  - $GDB_ROOT
 
 before_install:
   - bin/ci/ubuntu/install-dependencies.sh
@@ -80,4 +74,3 @@ notifications:
     channels:
       - "chat.freenode.net#ripple-dev"
 
-dist: precise
