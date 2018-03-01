@@ -88,6 +88,7 @@ public:
         signed before sharing with other nodes.
 
         @param ledgerHash The hash of the validated ledger
+        @param consensusHash The hash of the consensus transaction set
         @param signTime When the validation is signed
         @param publicKey The current signing public key
         @param nodeID ID corresponding to node's public master key
@@ -97,6 +98,7 @@ public:
 
     STValidation(
         uint256 const& ledgerHash,
+        uint256 const& consensusHash,
         NetClock::time_point signTime,
         PublicKey const& publicKey,
         NodeID const& nodeID,
@@ -114,8 +116,13 @@ public:
         return emplace(n, buf, std::move(*this));
     }
 
+    // Hash of the validated ledger
     uint256
     getLedgerHash() const;
+
+    // Hash of consensus transaction set used to generate ledger
+    uint256
+    getConsensusHash() const;
 
     NetClock::time_point
     getSignTime() const;

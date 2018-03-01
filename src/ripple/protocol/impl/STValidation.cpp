@@ -28,6 +28,7 @@ namespace ripple {
 
 STValidation::STValidation(
     uint256 const& ledgerHash,
+    uint256 const& consensusHash,
     NetClock::time_point signTime,
     PublicKey const& publicKey,
     NodeID const& nodeID,
@@ -36,6 +37,7 @@ STValidation::STValidation(
 {
     // Does not sign
     setFieldH256 (sfLedgerHash, ledgerHash);
+    setFieldH256 (sfConsensusHash, consensusHash);
     setFieldU32 (sfSigningTime, signTime.time_since_epoch().count());
 
     setFieldVL (sfSigningPubKey, publicKey.slice());
@@ -63,6 +65,11 @@ uint256 STValidation::getSigningHash () const
 uint256 STValidation::getLedgerHash () const
 {
     return getFieldH256 (sfLedgerHash);
+}
+
+uint256 STValidation::getConsensusHash () const
+{
+    return getFieldH256 (sfConsensusHash);
 }
 
 NetClock::time_point

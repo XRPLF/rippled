@@ -5637,6 +5637,9 @@
     <ClCompile Include="..\..\src\test\app\HashRouter_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\app\LedgerHistory_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\app\LedgerLoad_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>

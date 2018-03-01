@@ -683,12 +683,10 @@ class Validations_test : public beast::unit_test::suite
                     sorted(harness.vals().getTrustedForLedger(id)) ==
                     sorted(expectedValidations));
 
-                std::vector<NetClock::time_point> expectedTimes;
                 std::uint32_t baseFee = 0;
                 std::vector<uint32_t> expectedFees;
                 for (auto const& val : expectedValidations)
                 {
-                    expectedTimes.push_back(val.signTime());
                     expectedFees.push_back(val.loadFee().value_or(baseFee));
                 }
 
@@ -696,9 +694,6 @@ class Validations_test : public beast::unit_test::suite
                     sorted(harness.vals().fees(id, baseFee)) ==
                     sorted(expectedFees));
 
-                BEAST_EXPECT(
-                    sorted(harness.vals().getTrustedValidationTimes(id)) ==
-                    sorted(expectedTimes));
             }
         };
 

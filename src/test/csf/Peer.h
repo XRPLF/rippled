@@ -549,7 +549,7 @@ struct Peer
             const bool proposing = mode == ConsensusMode::proposing;
             const bool consensusFail = result.state == ConsensusState::MovedOn;
 
-            TxSet const acceptedTxs = injectTxs(prevLedger, result.set);
+            TxSet const acceptedTxs = injectTxs(prevLedger, result.txns);
             Ledger const newLedger = oracle.accept(
                 prevLedger,
                 acceptedTxs.txs(),

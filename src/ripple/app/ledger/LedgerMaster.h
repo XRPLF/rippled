@@ -199,7 +199,11 @@ public:
 
     void checkAccept (std::shared_ptr<Ledger const> const& ledger);
     void checkAccept (uint256 const& hash, std::uint32_t seq);
-    void consensusBuilt (std::shared_ptr<Ledger const> const& ledger, Json::Value consensus);
+    void
+    consensusBuilt(
+        std::shared_ptr<Ledger const> const& ledger,
+        uint256 const& consensusHash,
+        Json::Value consensus);
 
     LedgerIndex getBuildingLedger ();
     void setBuildingLedger (LedgerIndex index);
