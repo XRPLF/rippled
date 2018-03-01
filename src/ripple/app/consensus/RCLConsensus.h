@@ -355,6 +355,7 @@ class RCLConsensus
         /** Validate the given ledger and share with peers as necessary
 
             @param ledger The ledger to validate
+            @param set The consensus transaction set
             @param proposing Whether we were proposing transactions while
                              generating this ledger.  If we are not proposing,
                              a validation can still be sent to inform peers that
@@ -362,7 +363,7 @@ class RCLConsensus
                              but are still around and trying to catch up.
         */
         void
-        validate(RCLCxLedger const& ledger, bool proposing);
+        validate(RCLCxLedger const& ledger, RCLTxSet const& set, bool proposing);
 
     };
 

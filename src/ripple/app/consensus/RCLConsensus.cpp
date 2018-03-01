@@ -449,7 +449,7 @@ RCLConsensus::Adaptor::doAccept(
     if (validating_ && !consensusFail &&
         app_.getValidations().canValidateSeq(sharedLCL.seq()))
     {
-        validate(sharedLCL, proposing);
+        validate(sharedLCL, result.set, proposing);
         JLOG(j_.info()) << "CNF Val " << newLCLHash;
     }
     else
@@ -825,7 +825,9 @@ RCLConsensus::Adaptor::buildLCL(
 }
 
 void
-RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, bool proposing)
+RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger,
+    RCLTxSet const& set,
+    bool proposing)
 {
     auto validationTime = app_.timeKeeper().closeTime();
     if (validationTime <= lastValidationTime_)
@@ -835,6 +837,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, bool proposing)
     // Build validation
     auto v = std::make_shared<STValidation>(
         ledger.id(),
+        set.id(),
         validationTime,
         valPublic_,
         nodeID_,
