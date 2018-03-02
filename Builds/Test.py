@@ -22,15 +22,10 @@ Invocation:
 
 The build must succeed without shell aliases for this to work.
 
-To pass flags to scons, put them at the very end of the command line, after
+To pass flags to cmake, put them at the very end of the command line, after
 the -- flag - like this:
 
-    ./Builds/Test.py -- -j4   # Pass -j4 to scons.
-
-To build with CMake, use the --cmake flag, or any of the specific configuration
-flags
-
-    ./Builds/Test.py --cmake -- -j4  # Pass -j4 to cmake --build
+    ./Builds/Test.py -- -j4  # Pass -j4 to cmake --build
 
 
 Common problems:
@@ -39,11 +34,7 @@ Common problems:
 
 2) OpenSSL not found. Solution: export OPENSSL_ROOT=[path to OpenSSL folder]
 
-3) scons is an alias. Solution: Create a script named "scons" somewhere in
-   your $PATH (eg. ~/bin/scons will often work).
-
-      #!/bin/sh
-      python /C/Python27/Scripts/scons.py "${@}"
+3) cmake is not found. Solution: Be sure cmake directory is on your $PATH
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -96,28 +87,6 @@ else:
     CMAKE_ALL_GENERATE_OPTIONS = list(set(
         [tuple(x) for x in powerset(['-GNinja', '-Dstatic=true', '-Dassert=true', '-Dsan=address'])] +
         [tuple(x) for x in powerset(['-GNinja', '-Dstatic=true', '-Dassert=true', '-Dsan=thread'])]))
-
-# Scons
-if IS_WINDOWS or IS_OS_X:
-    ALL_TARGETS = [('debug',), ('release',)]
-else:
-    ALL_TARGETS = [(cc + "." + target,)
-                   for cc in ['gcc', 'clang']
-                   for target in ['debug', 'release', 'coverage', 'profile',
-                                  'debug.nounity', 'release.nounity', 'coverage.nounity', 'profile.nounity']]
-
-# list of tuples of all possible options
-if IS_WINDOWS or IS_OS_X:
-    ALL_OPTIONS = [tuple(x) for x in powerset(['--ninja', '--assert'])]
-else:
-    ALL_OPTIONS = list(set(
-        [tuple(x) for x in powerset(['--ninja', '--static', '--assert', '--sanitize=address'])] +
-        [tuple(x) for x in powerset(['--ninja', '--static', '--assert', '--sanitize=thread'])]))
-
-# list of tuples of all possible options + all possible targets
-ALL_BUILDS = [options + target
-              for target in ALL_TARGETS
-              for options in ALL_OPTIONS]
 
 parser = argparse.ArgumentParser(
     description='Test.py - run ripple tests'
@@ -173,26 +142,11 @@ parser.add_argument(
     help='Reduce output where possible (unit tests)',
 )
 
-# Scons and CMake parameters are too different to run
-# both side-by-side
-pgroup = parser.add_mutually_exclusive_group()
-
-pgroup.add_argument(
-    '--cmake',
-    action='store_true',
-    help='Build using CMake.',
-)
-
-pgroup.add_argument(
-    '--scons',
-    action='store_true',
-    help='Build using Scons. Default behavior.')
-
 parser.add_argument(
     '--dir', '-d',
     default=(),
     nargs='*',
-    help='Specify one or more CMake dir names. Implies --cmake. '
+    help='Specify one or more CMake dir names. '
         'Will also be used as -Dtarget=<dir> running cmake.'
 )
 
@@ -200,7 +154,7 @@ parser.add_argument(
     '--target',
     default=(),
     nargs='*',
-    help='Specify one or more CMake build targets. Implies --cmake. '
+    help='Specify one or more CMake build targets. '
         'Will be used as --target <target> running cmake --build.'
     )
 
@@ -208,7 +162,7 @@ parser.add_argument(
     '--config',
     default=(),
     nargs='*',
-    help='Specify one or more CMake build configs. Implies --cmake. '
+    help='Specify one or more CMake build configs. '
         'Will be used as --config <config> running cmake --build.'
     )
 
@@ -216,14 +170,14 @@ parser.add_argument(
     '--generator_option',
     action='append',
     help='Specify a CMake generator option. Repeat for multiple options. '
-        'Implies --cmake. Will be passed to the cmake generator. '
+        'Will be passed to the cmake generator. '
         'Due to limits of the argument parser, arguments starting with \'-\' '
         'must be attached to this option. e.g. --generator_option=-GNinja.')
 
 parser.add_argument(
     '--build_option',
     action='append',
-    help='Specify a build option. Repeat for multiple options. Implies --cmake. '
+    help='Specify a build option. Repeat for multiple options. '
         'Will be passed to the build tool via cmake --build. '
         'Due to limits of the argument parser, arguments starting with \'-\' '
         'must be attached to this option. e.g. --build_option=-j8.')
@@ -253,7 +207,7 @@ def shell(cmd, args=(), silent=False):
 
     command = (cmd,) + args
 
-    # shell is needed in Windows to find scons in the path
+    # shell is needed in Windows to find executable in the path
     process = subprocess.Popen(
         command,
         stdin=subprocess.PIPE,
@@ -283,58 +237,6 @@ def shell(cmd, args=(), silent=False):
         print()
     process.wait()
     return process.returncode, lines
-
-
-def run_tests(args):
-    failed = []
-    if IS_WINDOWS:
-        binary_re = re.compile(r'build\\([^\\]+)\\rippled.exe')
-    else:
-        binary_re = re.compile(r'build/([^/]+)/rippled')
-    _, lines = shell('scons', ('-n', '--tree=derived',) + args, silent=True)
-    for line in lines:
-        match = binary_re.search(line)
-        if match:
-            executable, target = match.group(0, 1)
-
-            print('Unit tests for', target)
-            testflag = '--unittest'
-            quiet = ''
-            if ARGS.test:
-                testflag += ('=' + ARGS.test)
-            if ARGS.quiet:
-                quiet = '-q'
-            if ARGS.testjobs:
-                testjobs = ('--unittest-jobs=' + str(ARGS.testjobs))
-            resultcode, lines = shell(executable, (testflag, quiet, testjobs,))
-
-            if resultcode:
-                if not ARGS.verbose:
-                    print('ERROR:', *lines, sep='')
-                failed.append([target, 'unittest'])
-                if not ARGS.keep_going:
-                    break
-
-    return failed
-
-
-def run_build(args=None):
-    print('Building:', *args or ('(default)',))
-    resultcode, lines = shell('scons', args)
-
-    if resultcode:
-        print('Build FAILED:')
-        if not ARGS.verbose:
-            print(*lines, sep='')
-        sys.exit(1)
-    if '--ninja' in args:
-        resultcode, lines = shell('ninja')
-
-        if resultcode:
-            print('Ninja build FAILED:')
-            if not ARGS.verbose:
-                print(*lines, sep='')
-            sys.exit(1)
 
 def get_cmake_dir(cmake_dir):
     return os.path.join('build' , 'cmake' , cmake_dir)
@@ -407,92 +309,54 @@ def run_cmake_tests(directory, target, config):
 
 def main():
     all_failed = []
-
-    if ARGS.dir or ARGS.target or ARGS.config or ARGS.build_option or ARGS.generator_option:
-        ARGS.cmake=True
-
-    if not ARGS.cmake:
-        if ARGS.all:
-            to_build = ALL_BUILDS
-        else:
-            to_build = [tuple(ARGS.extra_args)]
-
-        for build in to_build:
-            args = ()
-            # additional arguments come first
-            for arg in list(ARGS.extra_args):
-                if arg not in build:
-                    args += (arg,)
-            args += build
-
-            run_build(args)
-            failed = run_tests(args)
-
-            if failed:
-                print('FAILED:', *(':'.join(f) for f in failed))
-                if not ARGS.keep_going:
-                    sys.exit(1)
-                else:
-                    all_failed.extend([','.join(build), ':'.join(f)]
-                        for f in failed)
-            else:
-                print('Success')
-
-            if ARGS.clean:
-                shutil.rmtree('build')
-                if '--ninja' in args:
-                    os.remove('build.ninja')
-                    os.remove('.ninja_deps')
-                    os.remove('.ninja_log')
+    if ARGS.all:
+        build_dir_targets = CMAKE_DIR_TARGETS
+        generator_options = CMAKE_ALL_GENERATE_OPTIONS
     else:
-        if ARGS.all:
-            build_dir_targets = CMAKE_DIR_TARGETS
-            generator_options = CMAKE_ALL_GENERATE_OPTIONS
+        build_dir_targets = { tuple(ARGS.dir) : [ARGS.target, ARGS.config] }
+        if ARGS.generator_option:
+            generator_options = [tuple(ARGS.generator_option)]
         else:
-            build_dir_targets = { tuple(ARGS.dir) : [ARGS.target, ARGS.config] }
-            if ARGS.generator_option:
-                generator_options = [tuple(ARGS.generator_option)]
-            else:
-                generator_options = [tuple()]
+            generator_options = [tuple()]
 
-        if not build_dir_targets:
-            # Let CMake choose the build tool.
-            build_dir_targets = { () : [] }
+    if not build_dir_targets:
+        # Let CMake choose the build tool.
+        build_dir_targets = { () : [] }
 
-        if ARGS.build_option:
-            ARGS.build_option = ARGS.build_option + list(ARGS.extra_args)
-        else:
-            ARGS.build_option = list(ARGS.extra_args)
+    if ARGS.build_option:
+        ARGS.build_option = ARGS.build_option + list(ARGS.extra_args)
+    else:
+        ARGS.build_option = list(ARGS.extra_args)
 
-        for args in generator_options:
-            for build_dirs, (build_targets, build_configs) in build_dir_targets.items():
-                if not build_dirs:
-                    build_dirs = ('default',)
-                if not build_targets:
-                    build_targets = ('rippled',)
-                if not build_configs:
-                    build_configs = ('',)
-                for cmake_dir in build_dirs:
-                    cmake_full_dir = get_cmake_dir(cmake_dir)
-                    run_cmake(cmake_full_dir, cmake_dir, args)
+    for args in generator_options:
+        for build_dirs, (build_targets, build_configs) in build_dir_targets.items():
+            if not build_dirs:
+                build_dirs = ('default',)
+            if not build_targets:
+                build_targets = ('rippled',)
+            if not build_configs:
+                build_configs = ('',)
+            for cmake_dir in build_dirs:
+                cmake_full_dir = get_cmake_dir(cmake_dir)
+                run_cmake(cmake_full_dir, cmake_dir, args)
 
-                    for target in build_targets:
-                        for config in build_configs:
-                            run_cmake_build(cmake_full_dir, target, config, ARGS.build_option)
-                            failed = run_cmake_tests(cmake_full_dir, target, config)
+                for target in build_targets:
+                    for config in build_configs:
+                        run_cmake_build(cmake_full_dir, target, config, ARGS.build_option)
+                        failed = run_cmake_tests(cmake_full_dir, target, config)
 
-                            if failed:
-                                print('FAILED:', *(':'.join(f) for f in failed))
-                                if not ARGS.keep_going:
-                                    sys.exit(1)
-                                else:
-                                    all_failed.extend([decodeString(cmake_dir +
-                                            "." + target + "." + config), ':'.join(f)]
-                                        for f in failed)
+                        if failed:
+                            print('FAILED:', *(':'.join(f) for f in failed))
+                            if not ARGS.keep_going:
+                                sys.exit(1)
                             else:
-                                print('Success')
-                    if ARGS.clean:
-                        shutil.rmtree(cmake_full_dir)
+                                all_failed.extend([decodeString(cmake_dir +
+                                        "." + target + "." + config), ':'.join(f)]
+                                    for f in failed)
+                        else:
+                            print('Success')
+                if ARGS.clean:
+                    shutil.rmtree(cmake_full_dir)
 
     if all_failed:
         if len(all_failed) > 1:

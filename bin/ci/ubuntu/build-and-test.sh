@@ -31,78 +31,67 @@ else
   time=
 fi
 
-if [[ ${BUILD:-cmake} == "cmake" ]]; then
-  echo "cmake building ${APP}"
-  : ${CMAKE_EXTRA_ARGS:=""}
-  if [[ ${NINJA_BUILD:-} == true ]]; then
-    CMAKE_EXTRA_ARGS+=" -G Ninja"
-  fi
-  CMAKE_TARGET=${COMPNAME}.${TARGET}
-  if [[ ${CI:-} == true ]]; then
-    CMAKE_TARGET=$CMAKE_TARGET.ci
-  fi
-  #
-  # allow explicit setting of the name of the build
-  # dir, otherwise default to the CMAKE_TARGET value
-  #
-  : "${BUILD_DIR:=$CMAKE_TARGET}"
-  BUILDARGS=" -j${JOBS}"
-  if [[ ${VERBOSE_BUILD:-} == true ]]; then
-    CMAKE_EXTRA_ARGS+=" -DCMAKE_VERBOSE_MAKEFILE=ON"
-
-    # TODO: if we use a different generator, this
-    # option to build verbose would need to change:
-    if [[ ${NINJA_BUILD:-} == true ]]; then
-      BUILDARGS+=" -v"
-    else
-      BUILDARGS+=" verbose=1"
-    fi
-  fi
-  if [[ ${USE_CCACHE:-} == true ]]; then
-    echo "using ccache with basedir [${CCACHE_BASEDIR:-}]"
-    CMAKE_EXTRA_ARGS+=" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
-  fi
-  if [ -d "build/${BUILD_DIR}" ]; then
-    rm -rf "build/${BUILD_DIR}"
-  fi
-
-  mkdir -p "build/${BUILD_DIR}"
-  pushd "build/${BUILD_DIR}"
-  $time cmake ../.. -Dtarget=$CMAKE_TARGET ${CMAKE_EXTRA_ARGS}
-  if [[ ${TARGET} == "docs" ]]; then
-    $time cmake --build . --target docs -- $BUILDARGS
-    ## mimic the standard test output for docs build
-    ## to make controlling processes like jenkins happy
-    if [ -f html_doc/index.html ]; then
-        echo "1 case, 1 test total, 0 failures"
-    else
-        echo "1 case, 1 test total, 1 failures"
-    fi
-    exit
-  else
-    $time cmake --build . -- $BUILDARGS
-    if [[ ${BUILD_BOTH:-} == true ]]; then
-      if [[ ${TARGET} == *.unity ]]; then
-        cmake --build . --target rippled_classic -- $BUILDARGS
-      else
-        cmake --build . --target rippled_unity -- $BUILDARGS
-      fi
-    fi
-  fi
-  popd
-  export APP_PATH="$PWD/build/${BUILD_DIR}/${APP}"
-  echo "using APP_PATH: $APP_PATH"
-else
-  export APP_PATH="$PWD/build/${COMPNAME}.${TARGET}/${APP}"
-  echo "using APP_PATH: $APP_PATH"
-  # Make sure vcxproj is up to date
-  $time scons vcxproj
-  git diff --exit-code
-  # $CC will be either `clang` or `gcc`
-  # http://docs.travis-ci.com/user/migrating-from-legacy/?utm_source=legacy-notice&utm_medium=banner&utm_campaign=legacy-upgrade
-  #   indicates that 2 cores are available to containers.
-  $time scons -j${JOBS} ${COMPNAME}.$TARGET
+echo "cmake building ${APP}"
+: ${CMAKE_EXTRA_ARGS:=""}
+if [[ ${NINJA_BUILD:-} == true ]]; then
+  CMAKE_EXTRA_ARGS+=" -G Ninja"
 fi
+CMAKE_TARGET=${COMPNAME}.${TARGET}
+if [[ ${CI:-} == true ]]; then
+  CMAKE_TARGET=$CMAKE_TARGET.ci
+fi
+#
+# allow explicit setting of the name of the build
+# dir, otherwise default to the CMAKE_TARGET value
+#
+: "${BUILD_DIR:=$CMAKE_TARGET}"
+BUILDARGS=" -j${JOBS}"
+if [[ ${VERBOSE_BUILD:-} == true ]]; then
+  CMAKE_EXTRA_ARGS+=" -DCMAKE_VERBOSE_MAKEFILE=ON"
+
+  # TODO: if we use a different generator, this
+  # option to build verbose would need to change:
+  if [[ ${NINJA_BUILD:-} == true ]]; then
+    BUILDARGS+=" -v"
+  else
+    BUILDARGS+=" verbose=1"
+  fi
+fi
+if [[ ${USE_CCACHE:-} == true ]]; then
+  echo "using ccache with basedir [${CCACHE_BASEDIR:-}]"
+  CMAKE_EXTRA_ARGS+=" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+fi
+if [ -d "build/${BUILD_DIR}" ]; then
+  rm -rf "build/${BUILD_DIR}"
+fi
+
+mkdir -p "build/${BUILD_DIR}"
+pushd "build/${BUILD_DIR}"
+$time cmake ../.. -Dtarget=$CMAKE_TARGET ${CMAKE_EXTRA_ARGS}
+if [[ ${TARGET} == "docs" ]]; then
+  $time cmake --build . --target docs -- $BUILDARGS
+  ## mimic the standard test output for docs build
+  ## to make controlling processes like jenkins happy
+  if [ -f html_doc/index.html ]; then
+      echo "1 case, 1 test total, 0 failures"
+  else
+      echo "1 case, 1 test total, 1 failures"
+  fi
+  exit
+else
+  $time cmake --build . -- $BUILDARGS
+  if [[ ${BUILD_BOTH:-} == true ]]; then
+    if [[ ${TARGET} == *.unity ]]; then
+      cmake --build . --target rippled_classic -- $BUILDARGS
+    else
+      cmake --build . --target rippled_unity -- $BUILDARGS
+    fi
+  fi
+fi
+popd
+export APP_PATH="$PWD/build/${BUILD_DIR}/${APP}"
+echo "using APP_PATH: $APP_PATH"
+
 
 # See what we've actually built
 ldd $APP_PATH

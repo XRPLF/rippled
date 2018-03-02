@@ -138,11 +138,6 @@ std::unique_ptr <Checkpointer> makeCheckpointer (soci::session&, JobQueue&, Logs
 
 } // ripple
 
-// Do not remove this dead code. It forces `scons vcxproj` to include version.h.
-#if 0
-#include "version.h"
-#endif
-
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif

@@ -34,27 +34,27 @@ matrix:
   include:
 
     - compiler: gcc
-      env: GCC_VER=5 BUILD=cmake TARGET=debug
+      env: GCC_VER=5 TARGET=debug
       # - APP_ARGS="--unittest-jobs=2"
 
     # - compiler: gcc
     #   env: GCC_VER=5 TARGET=debug.nounity
 
     # - compiler: gcc
-    #   env: GCC_VER=5 BUILD=cmake TARGET=coverage PATH=$PWD/cmake/bin:$PATH
+    #   env: GCC_VER=5 TARGET=coverage PATH=$PWD/cmake/bin:$PATH
 
     - compiler: clang
-      env: GCC_VER=5 BUILD=cmake TARGET=debug
+      env: GCC_VER=5 TARGET=debug
 
     # - compiler: clang
     #   env: GCC_VER=5 TARGET=debug.nounity
 
     # The clang cmake builds do not link.
     # - compiler: clang
-    #   env: GCC_VER=5 BUILD=cmake TARGET=debug
+    #   env: GCC_VER=5  TARGET=debug CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PWD/cmake/bin:$PATH
 
     # - compiler: clang
-    #   env: GCC_VER=5 BUILD=cmake TARGET=debug.nounity
+    #   env: GCC_VER=5 TARGET=debug.nounity CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PWD/cmake/bin:$PATH
 
 cache:
   directories:

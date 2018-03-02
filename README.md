@@ -68,7 +68,7 @@ ISC license. See the LICENSE file for more details.
 |---------|----------|
 | ./bin   | Scripts and data files for Ripple integrators. |
 | ./build | Intermediate and final build outputs.          |
-| ./Builds| Platform or IDE-specific project files.        |
+| ./Builds| Platform-specific guides for building rippled. |
 | ./docs  | Source documentation files and doxygen config. |
 | ./cfg   | Example configuration files.                   |
 | ./src   | Source code.                                   |
