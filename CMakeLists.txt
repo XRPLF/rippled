@@ -1,63 +1,58 @@
-# !!! The official build system is SConstruct !!!
-# This is an experimental cmake build file for rippled
+# cmake support for building rippled. The rippled specific settings
+# below can be set at the command line as `-D<setting>=<value>`.
 #
-# cmake support in rippled. Currently supports:
+# * `target` is a period separated tuple from the sets
+#    {gcc,clang,msvc} x {debug, release} x {unity, nounity} x {coverage} x {profile}
 #
-#  * unity/nounity debug/release
-#  * running protobuf
-#  * sanitizer builds
-#  * optional release build with assert turned on
-#  * `target` variable to easily set compiler/debug/unity
-#     (i.e. -Dtarget=gcc.debug.nounity)
-#  * gcc/clang/visual studio/xcode
-#  * linux/mac/win
-#  * gcc 4 ABI, when needed
-#  * ninja builds
-#  * check openssl version on linux
-#  * static builds (swd TBD: needs to be tested by building & deploying on different systems)
-#  * jemalloc enabled builds (linux and macos only)
-#  * perf builds (linux only) - which just sets recommended compiler flags
-#          for running perf on the executable
+#     Example, build gcc debug nonunity build
+#       -Dtarget=gcc.debug.nounity
+#     Example, clang release unity build
+#       -Dtarget=clang.release.unity
+#     Example, visual studio debug unity build
+#       -Dtarget=msvc.release.unity
+#     Example, build gcc release unity build suited for profiling with perf
+#       -Dtarget=gcc.release.unity.profile
+#     Example, build gcc debug unity build suited for measuring code coverage
+#     with gcov
+#       -Dtarget=gcc.release.unity.coverage
 #
-# Notes:
-#  * Use the -G"Visual Studio 14 2015 Win64" generator, or the "VS2015 x86 x64
-#    Cross Tools" Command Prompt on Windows. Without this a 32-bit project will be
-#    created. There is no way to set the generator or force a 64-bit build in
-#    CMakeLists.txt (setting CMAKE_GENERATOR_PLATFORM won't work). The best solution
-#    may be to wrap cmake with a script.
 #
-#  * Ninja command line builds seem to work under Windows, but only from within
-#    the "VS2015 x86 x64 Cross Tools" Command Prompt.
+#   The default is a unity debug build using gcc (linux), clang (osx), and
+#   msvc (windows).
 #
-#  * It is not possible to generate a visual studio project on linux or
-#    mac. The visual studio generator is only available on windows.
+#   Note the generated Visual Studio solution will always have two projects,
+#   one unity and one non-unity. If the `target` is unity, the default project
+#   will be named `rippled` and second non-default (non-unity) project
+#   will be called `rippled_classic`. Likewise, if the `target` is non-unity,
+#   the project will have a default project called `rippled` (now non-unity)
+#   and seeond non-default (unity) project `rippled_unity`. In either
+#   case, only the `rippled` build will be enabled by default.
 #
-#  * The Visual Studio solution will be generated with two projects, one
-#    unity, one non-unity. Which is default depends on the nounity flag in
-#    -Dtarget. Unity targets will create `rippled` and `rippled_classic`.
-#    Non-unity targets will create `rippled` and `rippled_unity`. In either
-#    case, only the `rippled` build will be enabled by default. It does
-#    not appear possible to include both unity and non-unity configs in one
-#    project and disable compilation based on configuration.
+# * `assert` whether to enable asserts in release build
 #
-#  * Language is _much_ worse than python, poor documentation and "quirky"
-#    language support (for example, generator expressions can only be used
-#    in limited contexts and seem to work differently based on
-#    context (set_property can set multiple values, add_compile_options
-#    can not/or is buggy)
+#      Example, enable asserts even in release builds
+#        -Dassert=True
 #
-#  * Could not call out to `sed` because cmake messed with the regular
-#    expression before calling the external command. I did not see a way
-#    around this.
+#    Default is not to enable asserts in release builds.
 #
-#  * Makefile generators want to be single target. It wants a separate
-#    directory for each target type. I saw some mentions on the web for
-#    ways around this bug haven't look into it. The visual studio project
-#    does support debug/release configurations in the same project (but
-#    not unity/non-unity).
-
-############################################################
-
+# * `san` enable clang sanitizers
+#
+#     Example, enable thread sanitizer
+#       -Dsan=thread
+#     Example, enable address sanitizer
+#       -Dsan=address
+#
+# * `static`, on linux, link protobuf, openssl, libc++, and boost
+#   statically.
+#
+#     Example, enable static linking
+#       -Dstatic=True
+#
+# * `jemalloc`, on linux, enables jemalloc for heap profiling.
+#
+#    Example, enable jemalloc
+#      -Djemallc=True
+#
 #########################################################
 # CMAKE_C_COMPILER and CMAKE_CXX_COMPILER must be defined
 # before the project statement; However, the project
