@@ -52,21 +52,20 @@ Json::Value doBookOffers (RPC::Context& context)
     if (!context.params.isMember (jss::taker_gets))
         return RPC::missing_field_error (jss::taker_gets);
 
-    if (!context.params[jss::taker_pays].isObject ())
+    Json::Value const& taker_pays = context.params[jss::taker_pays];
+    Json::Value const& taker_gets = context.params[jss::taker_gets];
+
+    if (!taker_pays.isObjectOrNull ())
         return RPC::object_field_error (jss::taker_pays);
 
-    if (!context.params[jss::taker_gets].isObject ())
+    if (!taker_gets.isObjectOrNull ())
         return RPC::object_field_error (jss::taker_gets);
-
-    Json::Value const& taker_pays (context.params[jss::taker_pays]);
 
     if (!taker_pays.isMember (jss::currency))
         return RPC::missing_field_error ("taker_pays.currency");
 
     if (! taker_pays [jss::currency].isString ())
         return RPC::expected_field_error ("taker_pays.currency", "string");
-
-    Json::Value const& taker_gets = context.params[jss::taker_gets];
 
     if (! taker_gets.isMember (jss::currency))
         return RPC::missing_field_error ("taker_gets.currency");

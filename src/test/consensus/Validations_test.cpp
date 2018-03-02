@@ -169,7 +169,7 @@ class Validations_test : public beast::unit_test::suite
     struct StaleData
     {
         std::vector<Validation> stale;
-        hash_map<PeerKey, Validation> flushed;
+        hash_map<PeerID, Validation> flushed;
     };
 
     // Generic Validations adaptor that saves stale/flushed data into
@@ -216,7 +216,7 @@ class Validations_test : public beast::unit_test::suite
         }
 
         void
-        flush(hash_map<PeerKey, Validation>&& remaining)
+        flush(hash_map<PeerID, Validation>&& remaining)
         {
             staleData_.flushed = std::move(remaining);
         }
@@ -250,8 +250,7 @@ class Validations_test : public beast::unit_test::suite
         ValStatus
         add(Validation const& v)
         {
-            PeerKey masterKey{v.nodeID(), 0};
-            return tv_.add(masterKey, v);
+            return tv_.add(v.nodeID(), v);
         }
 
         TestValidations&
@@ -284,7 +283,7 @@ class Validations_test : public beast::unit_test::suite
             return staleData_.stale;
         }
 
-        hash_map<PeerKey, Validation> const&
+        hash_map<PeerID, Validation> const&
         flushed() const
         {
             return staleData_.flushed;
@@ -462,7 +461,7 @@ class Validations_test : public beast::unit_test::suite
 
         std::vector<Trigger> triggers = {
             [&](TestValidations& vals) { vals.currentTrusted(); },
-            [&](TestValidations& vals) { vals.getCurrentPublicKeys(); },
+            [&](TestValidations& vals) { vals.getCurrentNodeIDs(); },
             [&](TestValidations& vals) { vals.getPreferred(genesisLedger); },
             [&](TestValidations& vals) {
                 vals.getNodesAfter(ledgerA, ledgerA.id());
@@ -610,9 +609,9 @@ class Validations_test : public beast::unit_test::suite
                 ValStatus::current == harness.add(node.validate(ledgerA)));
 
         {
-            hash_set<PeerKey> const expectedKeys = {a.masterKey(),
-                                                    b.masterKey()};
-            BEAST_EXPECT(harness.vals().getCurrentPublicKeys() == expectedKeys);
+            hash_set<PeerID> const expectedKeys = {a.nodeID(),
+                                                    b.nodeID()};
+            BEAST_EXPECT(harness.vals().getCurrentNodeIDs() == expectedKeys);
         }
 
         harness.clock().advance(3s);
@@ -626,14 +625,14 @@ class Validations_test : public beast::unit_test::suite
                 ValStatus::current == harness.add(node.partial(ledgerAC)));
 
         {
-            hash_set<PeerKey> const expectedKeys = {a.masterKey(),
-                                                    b.masterKey()};
-            BEAST_EXPECT(harness.vals().getCurrentPublicKeys() == expectedKeys);
+            hash_set<PeerID> const expectedKeys = {a.nodeID(),
+                                                    b.nodeID()};
+            BEAST_EXPECT(harness.vals().getCurrentNodeIDs() == expectedKeys);
         }
 
         // Pass enough time for them to go stale
         harness.clock().advance(harness.parms().validationCURRENT_LOCAL);
-        BEAST_EXPECT(harness.vals().getCurrentPublicKeys().empty());
+        BEAST_EXPECT(harness.vals().getCurrentNodeIDs().empty());
     }
 
     void
@@ -719,7 +718,7 @@ class Validations_test : public beast::unit_test::suite
             if (val.trusted())
                 trustedValidations[val.ledgerID()].emplace_back(val);
         }
-        // d diagrees
+        // d disagrees
         {
             auto const val = d.validate(ledgerB);
             BEAST_EXPECT(ValStatus::current == harness.add(val));
@@ -786,21 +785,21 @@ class Validations_test : public beast::unit_test::suite
         Ledger ledgerA = h["a"];
         Ledger ledgerAB = h["ab"];
 
-        hash_map<PeerKey, Validation> expected;
+        hash_map<PeerID, Validation> expected;
         for (auto const& node : {a, b, c})
         {
             auto const val = node.validate(ledgerA);
             BEAST_EXPECT(ValStatus::current == harness.add(val));
-            expected.emplace(node.masterKey(), val);
+            expected.emplace(node.nodeID(), val);
         }
-        Validation staleA = expected.find(a.masterKey())->second;
+        Validation staleA = expected.find(a.nodeID())->second;
 
         // Send in a new validation for a, saving the new one into the expected
         // map after setting the proper prior ledger ID it replaced
         harness.clock().advance(1s);
         auto newVal = a.validate(ledgerAB);
         BEAST_EXPECT(ValStatus::current == harness.add(newVal));
-        expected.find(a.masterKey())->second = newVal;
+        expected.find(a.nodeID())->second = newVal;
 
         // Now flush
         harness.vals().flush();
@@ -1057,6 +1056,97 @@ class Validations_test : public beast::unit_test::suite
     }
 
     void
+    testTrustChanged()
+    {
+        testcase("TrustChanged");
+        using namespace std::chrono;
+
+        auto checker = [this](
+                           TestValidations& vals,
+                           hash_set<PeerID> const& listed,
+                           std::vector<Validation> const& trustedVals) {
+            Ledger::ID testID = trustedVals.empty() ? this->genesisLedger.id()
+                                                    : trustedVals[0].ledgerID();
+            BEAST_EXPECT(vals.currentTrusted() == trustedVals);
+            BEAST_EXPECT(vals.getCurrentNodeIDs() == listed);
+            BEAST_EXPECT(
+                vals.getNodesAfter(this->genesisLedger, genesisLedger.id()) ==
+                trustedVals.size());
+            BEAST_EXPECT(
+                vals.getPreferred(this->genesisLedger).second == testID);
+            BEAST_EXPECT(vals.getTrustedForLedger(testID) == trustedVals);
+            BEAST_EXPECT(
+                vals.numTrustedForLedger(testID) == trustedVals.size());
+        };
+
+        {
+            // Trusted to untrusted
+            LedgerHistoryHelper h;
+            TestHarness harness(h.oracle);
+            Node a = harness.makeNode();
+            Ledger ledgerAB = h["ab"];
+            Validation v = a.validate(ledgerAB);
+            BEAST_EXPECT(ValStatus::current == harness.add(v));
+
+            hash_set<PeerID> listed({a.nodeID()});
+            std::vector<Validation> trustedVals({v});
+            checker(harness.vals(), listed, trustedVals);
+
+            trustedVals.clear();
+            harness.vals().trustChanged({}, {a.nodeID()});
+            checker(harness.vals(), listed, trustedVals);
+        }
+
+        {
+            // Untrusted to trusted
+            LedgerHistoryHelper h;
+            TestHarness harness(h.oracle);
+            Node a = harness.makeNode();
+            a.untrust();
+            Ledger ledgerAB = h["ab"];
+            Validation v = a.validate(ledgerAB);
+            BEAST_EXPECT(ValStatus::current == harness.add(v));
+
+            hash_set<PeerID> listed({a.nodeID()});
+            std::vector<Validation> trustedVals;
+            checker(harness.vals(), listed, trustedVals);
+
+            trustedVals.push_back(v);
+            harness.vals().trustChanged({a.nodeID()}, {});
+            checker(harness.vals(), listed, trustedVals);
+        }
+
+        {
+            // Trusted but not acquired -> untrusted
+            LedgerHistoryHelper h;
+            TestHarness harness(h.oracle);
+            Node a = harness.makeNode();
+            Validation v =
+                a.validate(Ledger::ID{2}, Ledger::Seq{2}, 0s, 0s, true);
+            BEAST_EXPECT(ValStatus::current == harness.add(v));
+
+            hash_set<PeerID> listed({a.nodeID()});
+            std::vector<Validation> trustedVals({v});
+            auto& vals = harness.vals();
+            BEAST_EXPECT(vals.currentTrusted() == trustedVals);
+            BEAST_EXPECT(
+                vals.getPreferred(genesisLedger).second == v.ledgerID());
+            BEAST_EXPECT(
+                vals.getNodesAfter(genesisLedger, genesisLedger.id()) == 0);
+
+            trustedVals.clear();
+            harness.vals().trustChanged({}, {a.nodeID()});
+            // make acquiring ledger available
+            h["ab"];
+            BEAST_EXPECT(vals.currentTrusted() == trustedVals);
+            BEAST_EXPECT(
+                vals.getPreferred(genesisLedger).second == genesisLedger.id());
+            BEAST_EXPECT(
+                vals.getNodesAfter(genesisLedger, genesisLedger.id()) == 0);
+        }
+    }
+
+    void
     run() override
     {
         testAddValidation();
@@ -1072,6 +1162,7 @@ class Validations_test : public beast::unit_test::suite
         testAcquireValidatedLedger();
         testNumTrustedForLedger();
         testSeqEnforcer();
+        testTrustChanged();
     }
 };
 

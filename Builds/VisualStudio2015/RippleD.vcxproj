@@ -1646,9 +1646,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\core\StandardIncludes.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\beast\core\SystemStats.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\core\SystemStats.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\core\WaitableEvent.cpp">

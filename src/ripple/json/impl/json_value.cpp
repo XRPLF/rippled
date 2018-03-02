@@ -779,10 +779,10 @@ Value::operator bool () const
     if (isString ())
     {
         auto s = asCString();
-        return s && strlen(s);
+        return s && s[0];
     }
 
-    return ! (isArray () || isObject ()) || size ();
+    return ! (isArray() || isObject()) || size ();
 }
 
 void
@@ -1092,14 +1092,26 @@ Value::isString () const
 
 
 bool
-Value::isArray () const
+Value::isArray() const
+{
+    return type_ == arrayValue;
+}
+
+bool
+Value::isArrayOrNull () const
 {
     return type_ == nullValue  ||  type_ == arrayValue;
 }
 
 
 bool
-Value::isObject () const
+Value::isObject() const
+{
+    return type_ == objectValue;
+}
+
+bool
+Value::isObjectOrNull () const
 {
     return type_ == nullValue  ||  type_ == objectValue;
 }

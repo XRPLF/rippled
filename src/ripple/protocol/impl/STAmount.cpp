@@ -806,13 +806,17 @@ amountFromJson (SField const& name, Json::Value const& v)
     Json::Value currency;
     Json::Value issuer;
 
-    if (v.isObject ())
+    if (v.isNull())
+    {
+        Throw<std::runtime_error> ("XRP may not be specified with a null Json value");
+    }
+    else if (v.isObject())
     {
         value       = v[jss::value];
         currency    = v[jss::currency];
         issuer      = v[jss::issuer];
     }
-    else if (v.isArray ())
+    else if (v.isArray())
     {
         value = v.get (Json::UInt (0), 0);
         currency = v.get (Json::UInt (1), Json::nullValue);
@@ -846,7 +850,7 @@ amountFromJson (SField const& name, Json::Value const& v)
 
     if (native)
     {
-        if (v.isObject ())
+        if (v.isObjectOrNull ())
             Throw<std::runtime_error> ("XRP may not be specified as an object");
         issue = xrpIssue ();
     }

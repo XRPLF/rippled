@@ -60,7 +60,7 @@ Json::Value doUnsubscribe (RPC::Context& context)
 
     if (context.params.isMember (jss::streams))
     {
-        if (! context.params[jss::streams].isArray ())
+        if (! context.params[jss::streams].isArray())
             return rpcError (rpcINVALID_PARAMS);
 
         for (auto& it: context.params[jss::streams])
@@ -139,8 +139,8 @@ Json::Value doUnsubscribe (RPC::Context& context)
             if (! jv.isObject() ||
                 ! jv.isMember(jss::taker_pays) ||
                 ! jv.isMember(jss::taker_gets) ||
-                ! jv[jss::taker_pays].isObject() ||
-                ! jv[jss::taker_gets].isObject())
+                ! jv[jss::taker_pays].isObjectOrNull() ||
+                ! jv[jss::taker_gets].isObjectOrNull())
             {
                 return rpcError(rpcINVALID_PARAMS);
             }

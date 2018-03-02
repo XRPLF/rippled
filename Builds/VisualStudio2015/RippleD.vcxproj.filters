@@ -2277,9 +2277,6 @@
     <ClInclude Include="..\..\src\ripple\beast\core\StandardIncludes.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\beast\core\SystemStats.cpp">
-      <Filter>ripple\beast\core</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\core\SystemStats.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>

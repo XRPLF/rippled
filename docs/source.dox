@@ -6,6 +6,7 @@ PROJECT_NAME           = "rippled"
 PROJECT_NUMBER         =
 PROJECT_BRIEF          = C++ Library
 PROJECT_LOGO           =
+PROJECT_LOGO           = images/LogoForDocumentation.png
 OUTPUT_DIRECTORY       =
 CREATE_SUBDIRS         = NO
 ALLOW_UNICODE_NAMES    = NO
@@ -125,6 +126,41 @@ INPUT                  = \
     ../src/ripple/app/tx/applySteps.h \
     ../src/ripple/app/tx/impl/InvariantCheck.h \
     ../src/ripple/app/consensus/RCLValidations.h \
+    ../src/README.md \
+    ../src/ripple/README.md \
+    ../README.md \
+    ../RELEASENOTES.md \
+    ../docs/CodingStyle.md \
+    ../docs/CheatSheet.md \
+    ../docs/README.md \
+    ../docs/sample_chart.doc \
+    ../docs/HeapProfiling.md \
+    ../docs/Docker.md \
+    ../docs/consensus.md \
+    ../Builds/XCode/README.md \
+    ../Builds/VisualStudio2015/README.md \
+    ../src/ripple/consensus/README.md \
+    ../src/ripple/app/consensus/README.md \
+    ../src/test/csf/README.md \
+    ../src/ripple/basics/README.md \
+    ../src/ripple/crypto/README.md \
+    ../src/ripple/peerfinder/README.md \
+    ../src/ripple/app/misc/README.md \
+    ../src/ripple/app/misc/FeeEscalation.md \
+    ../src/ripple/app/ledger/README.md \
+    ../src/ripple/app/paths/README.md \
+    ../src/ripple/app/tx/README.md \
+    ../src/ripple/proto/README.md \
+    ../src/ripple/shamap/README.md \
+    ../src/ripple/protocol/README.md \
+    ../src/ripple/json/README.md \
+    ../src/ripple/json/TODO.md \
+    ../src/ripple/resource/README.md \
+    ../src/ripple/rpc/README.md \
+    ../src/ripple/overlay/README.md \
+    ../src/ripple/nodestore/README.md \
+    ../src/ripple/nodestore/Benchmarks.md \
+
 
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          =
@@ -136,12 +172,16 @@ EXCLUDE_SYMBOLS        =
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
-IMAGE_PATH             =
+IMAGE_PATH             =  \
+     ./images/            \
+     ./images/consensus/  \
+     ../src/test/csf/     \
+
 INPUT_FILTER           =
 FILTER_PATTERNS        =
 FILTER_SOURCE_FILES    = NO
 FILTER_SOURCE_PATTERNS =
-USE_MDFILE_AS_MAINPAGE =
+USE_MDFILE_AS_MAINPAGE = ../src/README.md
 
 #---------------------------------------------------------------------------
 # Configuration options related to source browsing
@@ -168,8 +208,8 @@ IGNORE_PREFIX          =
 #---------------------------------------------------------------------------
 # Configuration options related to the HTML output
 #---------------------------------------------------------------------------
-GENERATE_HTML          = NO
-HTML_OUTPUT            = dhtm
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html_doc
 HTML_FILE_EXTENSION    = .html
 HTML_HEADER            =
 HTML_FOOTER            =
@@ -269,8 +309,8 @@ MAN_LINKS              = NO
 #---------------------------------------------------------------------------
 # Configuration options related to the XML output
 #---------------------------------------------------------------------------
-GENERATE_XML           = YES
-XML_OUTPUT             = temp/
+GENERATE_XML           = NO
+XML_OUTPUT             = temp
 XML_PROGRAMLISTING     = YES
 
 #---------------------------------------------------------------------------
@@ -346,7 +386,7 @@ DOT_PATH               =
 DOTFILE_DIRS           =
 MSCFILE_DIRS           =
 DIAFILE_DIRS           =
-PLANTUML_JAR_PATH      =
+PLANTUML_JAR_PATH      = $(PLANTUML_JAR)
 PLANTUML_INCLUDE_PATH  =
 DOT_GRAPH_MAX_NODES    = 50
 MAX_DOT_GRAPH_DEPTH    = 0
