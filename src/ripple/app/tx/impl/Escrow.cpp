@@ -41,98 +41,53 @@
 namespace ripple {
 
 /*
-    Escrow allows an account holder to sequester any amount
-    of XRP in its own ledger entry, until the escrow process
-    either finishes or is canceled.
+    Escrow
+    ======
 
-    If the escrow process finishes successfully, then the
-    destination account (which must exist) will receives the
-    sequestered XRP. If the escrow is, instead, canceled,
-    the account which created the escrow will receive the
-    sequestered XRP back instead.
+    Escrow is a feature of the XRP Ledger that allows you to send conditional
+    XRP payments. These conditional payments, called escrows, set aside XRP and
+    deliver it later when certain conditions are met. Conditions to successfully
+    finish an escrow include time-based unlocks and crypto-conditions. Escrows
+    can also be set to expire if not finished in time. Conditional held payments
+    are a key feature for full Interledger Protocol support, which enables
+    chains of payments to cross any number of ledgers.
 
-    EscrowCreate
+    The XRP set aside in an escrow is locked up. No one can use or destroy the
+    XRP until the escrow has been successfully finished or canceled. Before the
+    expiration time, only the intended receiver can get the XRP. After the
+    expiration time, the XRP can only be returned to the sender.
 
-        When an escrow is created, an optional condition may
-        be attached. If present, that condition must be
-        fulfilled for the escrow to successfully finish.
+    For more details on escrow, including examples, diagrams and more please
+    visit https://ripple.com/build/escrow/#escrow
 
-        At the time of creation, one or both of the fields
-        sfCancelAfter and sfFinishAfter may be provided. If
-        neither field is specified, the transaction is
-        malformed.
+    For details on specific transactors, including fields and validation rules
+    please see:
 
-        Since the escrow eventually becomes a payment, an
-        optional DestinationTag and an optional SourceTag
-        are supported in the EscrowCreate transaction.
+    `EscrowCreate`
+    --------------
+        See: https://ripple.com/build/transactions/#escrowcreate
 
-        Validation rules:
+    `EscrowFinish`
+    --------------
+        See: https://ripple.com/build/transactions/#escrowfinish
 
-            sfCondition
-                If present, specifies a condition; the same
-                condition along with its matching fulfillment
-                are required during EscrowFinish.
-
-            sfCancelAfter
-                If present, escrow may be canceled after the
-                specified time (seconds after the Ripple epoch).
-
-            sfFinishAfter
-                If present, must be prior to sfCancelAfter.
-                A EscrowFinish succeeds only in ledgers after
-                sfFinishAfter but before sfCancelAfter.
-
-                If absent, same as parentCloseTime
-
-            Malformed if both sfCancelAfter, sfFinishAfter
-            are absent.
-
-            Malformed if both sfFinishAfter, sfCancelAfter
-            specified and sfCancelAfter <= sfFinishAfter
-
-    EscrowFinish
-
-        Any account may submit a EscrowFinish. If the escrow
-        ledger entry specifies a condition, the EscrowFinish
-        must provide the same condition and its associated
-        fulfillment in the sfCondition and sfFulfillment
-        fields, or else the EscrowFinish will fail.
-
-        If the escrow ledger entry specifies sfFinishAfter, the
-        transaction will fail if parentCloseTime <= sfFinishAfter.
-
-        EscrowFinish transactions must be submitted before
-        the escrow's sfCancelAfter if present.
-
-        If the escrow ledger entry specifies sfCancelAfter, the
-        transaction will fail if sfCancelAfter <= parentCloseTime.
-
-        NOTE: The reason the condition must be specified again
-              is because it must always be possible to verify
-              the condition without retrieving the escrow
-              ledger entry.
-
-    EscrowCancel
-
-        Any account may submit a EscrowCancel transaction.
-
-        If the escrow ledger entry does not specify a
-        sfCancelAfter, the cancel transaction will fail.
-
-        If parentCloseTime <= sfCancelAfter, the transaction
-        will fail.
-
-        When a escrow is canceled, the funds are returned to
-        the source account.
-
-    By careful selection of fields in each transaction,
-    these operations may be achieved:
-
-        * Lock up XRP for a time period
-        * Execute a payment conditionally
+    `EscrowCancel`
+    --------------
+        See: https://ripple.com/build/transactions/#escrowcancel
 */
 
 //------------------------------------------------------------------------------
+
+/** Has the specified time passed?
+
+    @param now  the current time
+    @param mark the cutoff point
+    @return true if \a now refers to a time strictly after \a mark, false otherwise.
+*/
+static inline bool after (NetClock::time_point now, std::uint32_t mark)
+{
+    return now.time_since_epoch().count() > mark;
+}
 
 XRPAmount
 EscrowCreate::calculateMaxSpend(STTx const& tx)
@@ -156,13 +111,25 @@ EscrowCreate::preflight (PreflightContext const& ctx)
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 
-    if (! ctx.tx[~sfCancelAfter] &&
-            ! ctx.tx[~sfFinishAfter])
-        return temBAD_EXPIRATION;
+    // We must specify at least one timeout value
+    if (! ctx.tx[~sfCancelAfter] && ! ctx.tx[~sfFinishAfter])
+            return temBAD_EXPIRATION;
 
+    // If both finish and cancel times are specified then the cancel time must
+    // be strictly after the finish time.
     if (ctx.tx[~sfCancelAfter] && ctx.tx[~sfFinishAfter] &&
             ctx.tx[sfCancelAfter] <= ctx.tx[sfFinishAfter])
         return temBAD_EXPIRATION;
+
+    if (ctx.rules.enabled(fix1571))
+    {
+        // In the absence of a FinishAfter, the escrow can be finished
+        // immediately, which can be confusing. When creating an escrow,
+        // we want to ensure that either a FinishAfter time is explicitly
+        // specified or a completion condition is attached.
+        if (! ctx.tx[~sfFinishAfter] && ! ctx.tx[~sfCondition])
+            return temMALFORMED;
+    }
 
     if (auto const cb = ctx.tx[~sfCondition])
     {
@@ -193,20 +160,33 @@ EscrowCreate::doApply()
 {
     auto const closeTime = ctx_.view ().info ().parentCloseTime;
 
-    if (ctx_.tx[~sfCancelAfter])
+    if (ctx_.view ().rules().enabled(fix1571))
     {
-        auto const cancelAfter = ctx_.tx[sfCancelAfter];
+        // The cancel time must be strictly in the future
+        if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
+            return tecNO_PERMISSION;
 
-        if (closeTime.time_since_epoch().count() >= cancelAfter)
+        // The finish time must be strictly in the future
+        if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
             return tecNO_PERMISSION;
     }
-
-    if (ctx_.tx[~sfFinishAfter])
+    else
     {
-        auto const finishAfter = ctx_.tx[sfFinishAfter];
+        if (ctx_.tx[~sfCancelAfter])
+        {
+            auto const cancelAfter = ctx_.tx[sfCancelAfter];
 
-        if (closeTime.time_since_epoch().count() >= finishAfter)
-            return tecNO_PERMISSION;
+            if (closeTime.time_since_epoch().count() >= cancelAfter)
+                return tecNO_PERMISSION;
+        }
+
+        if (ctx_.tx[~sfFinishAfter])
+        {
+            auto const finishAfter = ctx_.tx[sfFinishAfter];
+
+            if (closeTime.time_since_epoch().count() >= finishAfter)
+                return tecNO_PERMISSION;
+        }
     }
 
     auto const account = ctx_.tx[sfAccount];
@@ -383,17 +363,32 @@ EscrowFinish::doApply()
     if (! slep)
         return tecNO_TARGET;
 
-    // Too soon?
-    if ((*slep)[~sfFinishAfter] &&
-        ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-            (*slep)[sfFinishAfter])
-        return tecNO_PERMISSION;
+    if (ctx_.view ().rules().enabled(fix1571))
+    {
+        auto const now = ctx_.view().info().parentCloseTime;
 
-    // Too late?
-    if ((*slep)[~sfCancelAfter] &&
-        (*slep)[sfCancelAfter] <=
-            ctx_.view().info().parentCloseTime.time_since_epoch().count())
-        return tecNO_PERMISSION;
+        // Too soon: can't execute before the finish time
+        if ((*slep)[~sfFinishAfter] && ! after(now, (*slep)[sfFinishAfter]))
+            return tecNO_PERMISSION;
+
+        // Too late: can't execute after the cancel time
+        if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
+            return tecNO_PERMISSION;
+    }
+    else
+    {
+        // Too soon?
+        if ((*slep)[~sfFinishAfter] &&
+            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
+            (*slep)[sfFinishAfter])
+            return tecNO_PERMISSION;
+
+        // Too late?
+        if ((*slep)[~sfCancelAfter] &&
+            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
+            (*slep)[sfCancelAfter])
+            return tecNO_PERMISSION;
+    }
 
     // Check cryptocondition fulfillment
     {
@@ -521,11 +516,27 @@ EscrowCancel::doApply()
     if (! slep)
         return tecNO_TARGET;
 
-    // Too soon?
-    if (! (*slep)[~sfCancelAfter] ||
-        ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
+    if (ctx_.view ().rules().enabled(fix1523))
+    {
+        auto const now = ctx_.view().info().parentCloseTime;
+
+        // No cancel time specified: can't execute at all.
+        if (!(*slep)[~sfCancelAfter])
+            return tecNO_PERMISSION;
+
+        // Too soon: can't execute before the cancel time.
+        if ((*slep)[~sfCancelAfter] && ! after(now, (*slep)[sfCancelAfter]))
+            return tecNO_PERMISSION;
+    }
+    else
+    {
+        // Too soon?
+        if (!(*slep)[~sfCancelAfter] ||
+            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
             (*slep)[sfCancelAfter])
-        return tecNO_PERMISSION;
+            return tecNO_PERMISSION;
+    }
+
     AccountID const account = (*slep)[sfAccount];
 
     // Remove escrow from owner directory
