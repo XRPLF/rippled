@@ -130,9 +130,6 @@ public:
         std::vector< Blob > gotNodes;
         std::vector<uint256> hashes;
 
-        std::vector<SHAMapNodeID>::iterator nodeIDIterator;
-        std::vector< Blob >::iterator rawNodeIterator;
-
         destination.setSynching ();
 
         {
