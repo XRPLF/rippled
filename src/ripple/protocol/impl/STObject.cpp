@@ -67,11 +67,13 @@ STObject::STObject (SOTemplate const& type,
     setType (type);
 }
 
-STObject::STObject (SerialIter& sit, SField const& name)
+STObject::STObject (SerialIter& sit, SField const& name, int depth)
     : STBase(name)
     , mType(nullptr)
 {
-    set(sit, 0);
+    if (depth > 10)
+        Throw<std::runtime_error> ("Maximum nesting depth of STObject exceeded");
+    set(sit, depth);
 }
 
 STObject&
@@ -206,7 +208,7 @@ bool STObject::set (SerialIter& sit, int depth)
             }
 
             // Unflatten the field
-            v_.emplace_back(sit, fn);
+            v_.emplace_back(sit, fn, depth+1);
 
             // If the object type has a known SOTemplate then set it.
             STObject* const obj = dynamic_cast <STObject*> (&(v_.back().get()));
