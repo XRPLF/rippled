@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+#include <errno.h>
+#include <sys/time.h>
+
 #include <ripple/beast/core/WaitableEvent.h>
 #include <cerrno>
 
