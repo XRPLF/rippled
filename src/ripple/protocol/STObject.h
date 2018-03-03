@@ -281,7 +281,7 @@ public:
     STObject(STObject const&) = default;
     STObject (const SOTemplate & type, SField const& name);
     STObject (const SOTemplate & type, SerialIter & sit, SField const& name);
-    STObject (SerialIter& sit, SField const& name);
+    STObject (SerialIter& sit, SField const& name, int depth = 0);
     STObject (SerialIter&& sit, SField const& name)
         : STObject(sit, name)
     {

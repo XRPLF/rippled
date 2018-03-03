@@ -721,92 +721,102 @@ static boost::optional <STObject> parseObject (
         return boost::none;
     }
 
-    STObject data (inName);
-
-    for (auto const& fieldName : json.getMemberNames ())
+    try
     {
-        Json::Value const& value = json [fieldName];
 
-        auto const& field = SField::getField (fieldName);
+        STObject data (inName);
 
-        if (field == sfInvalid)
+        for (auto const& fieldName : json.getMemberNames ())
         {
-            error = unknown_field (json_name, fieldName);
+            Json::Value const& value = json [fieldName];
+
+            auto const& field = SField::getField (fieldName);
+
+            if (field == sfInvalid)
+            {
+                error = unknown_field (json_name, fieldName);
+                return boost::none;
+            }
+
+            switch (field.fieldType)
+            {
+
+            // Object-style containers (which recurse).
+            case STI_OBJECT:
+            case STI_TRANSACTION:
+            case STI_LEDGERENTRY:
+            case STI_VALIDATION:
+                if (! value.isObject ())
+                {
+                    error = not_an_object (json_name, fieldName);
+                    return boost::none;
+                }
+
+                try
+                {
+                    auto ret = parseObject (json_name + "." + fieldName,
+                        value, field, depth + 1, error);
+                    if (! ret)
+                        return boost::none;
+                    data.emplace_back (std::move (*ret));
+                }
+                catch (std::exception const&)
+                {
+                    error = invalid_data (json_name, fieldName);
+                    return boost::none;
+                }
+
+                break;
+
+            // Array-style containers (which recurse).
+            case STI_ARRAY:
+                try
+                {
+                    auto array = parseArray (json_name + "." + fieldName,
+                        value, field, depth + 1, error);
+                    if (array == boost::none)
+                        return boost::none;
+                    data.emplace_back (std::move (*array));
+                }
+                catch (std::exception const&)
+                {
+                    error = invalid_data (json_name, fieldName);
+                    return boost::none;
+                }
+
+                break;
+
+            // Everything else (types that don't recurse).
+            default:
+                {
+                    auto leaf =
+                        parseLeaf (json_name, fieldName, &inName, value, error);
+
+                    if (!leaf)
+                        return boost::none;
+
+                    data.emplace_back (std::move (*leaf));
+                }
+
+                break;
+            }
+        }
+
+        // Some inner object types have templates.  Attempt to apply that.
+        if (data.setTypeFromSField (inName) == STObject::typeSetFail)
+        {
+            error = template_mismatch (inName);
             return boost::none;
         }
 
-        switch (field.fieldType)
-        {
+        return std::move (data);
 
-        // Object-style containers (which recurse).
-        case STI_OBJECT:
-        case STI_TRANSACTION:
-        case STI_LEDGERENTRY:
-        case STI_VALIDATION:
-            if (! value.isObject ())
-            {
-                error = not_an_object (json_name, fieldName);
-                return boost::none;
-            }
-
-            try
-            {
-                auto ret = parseObject (json_name + "." + fieldName,
-                    value, field, depth + 1, error);
-                if (! ret)
-                    return boost::none;
-                data.emplace_back (std::move (*ret));
-            }
-            catch (std::exception const&)
-            {
-                error = invalid_data (json_name, fieldName);
-                return boost::none;
-            }
-
-            break;
-
-        // Array-style containers (which recurse).
-        case STI_ARRAY:
-            try
-            {
-                auto array = parseArray (json_name + "." + fieldName,
-                    value, field, depth + 1, error);
-                if (array == boost::none)
-                    return boost::none;
-                data.emplace_back (std::move (*array));
-            }
-            catch (std::exception const&)
-            {
-                error = invalid_data (json_name, fieldName);
-                return boost::none;
-            }
-
-            break;
-
-        // Everything else (types that don't recurse).
-        default:
-            {
-                auto leaf =
-                    parseLeaf (json_name, fieldName, &inName, value, error);
-
-                if (!leaf)
-                    return boost::none;
-
-                data.emplace_back (std::move (*leaf));
-            }
-
-            break;
-        }
     }
-
-    // Some inner object types have templates.  Attempt to apply that.
-    if (data.setTypeFromSField (inName) == STObject::typeSetFail)
+    catch (std::exception const&)
     {
-        error = template_mismatch (inName);
+        error = invalid_data (json_name);
         return boost::none;
     }
-
-    return std::move (data);
 }
 
 static boost::optional <detail::STVar> parseArray (
