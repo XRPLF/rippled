@@ -292,9 +292,6 @@ foreach(curdir
     list(APPEND non_unity_srcs "${cursrcs}")
 endforeach()
 
-list(APPEND rippled_src_nonunity src/ripple/beast/hash/impl/xxhash.c)
-set_source_files_properties(src/ripple/beast/hash/impl/xxhash.c PROPERTIES LANGUAGE CXX )
-
 file(GLOB_RECURSE nodestore_srcs src/ripple/nodestore/*.cpp
     src/test/nodestore/*.cpp)
 
