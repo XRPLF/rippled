@@ -136,6 +136,7 @@ can be added to the cmake generation command as needed:
 * `-Djemalloc=ON` to enable jemalloc support for heap checking
 * `-Dsan=thread` to enable the thread sanitizer with clang
 * `-Dsan=address` to enable the address sanitizer with clang
+* `-Dstatic=ON` to enable static linking library dependencies
 
 ## Unit Tests (Recommended)
 

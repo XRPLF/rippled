@@ -8,7 +8,7 @@ environment:
   RIPPLED_DEPS_PATH: rippled_deps17.01
   RIPPLED_DEPS_URL: https://ripple.github.io/Downloads/appveyor/%RIPPLED_DEPS_PATH%.zip
 
-  # CMake honours these environment variables, setting the include/lib paths.
+  # CMake honors these environment variables, setting the include/lib paths.
   BOOST_ROOT: C:/%RIPPLED_DEPS_PATH%/boost
   OPENSSL_ROOT: C:/%RIPPLED_DEPS_PATH%/openssl
 

@@ -25,7 +25,7 @@
 #   will be named `rippled` and second non-default (non-unity) project
 #   will be called `rippled_classic`. Likewise, if the `target` is non-unity,
 #   the project will have a default project called `rippled` (now non-unity)
-#   and seeond non-default (unity) project `rippled_unity`. In either
+#   and second non-default (unity) project `rippled_unity`. In either
 #   case, only the `rippled` build will be enabled by default.
 #
 # * `assert` whether to enable asserts in release build
