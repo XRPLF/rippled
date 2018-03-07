@@ -918,27 +918,6 @@ public:
         return res;
     }
 
-    /** Return the sign times of all trusted full validations
-
-        @param ledgerID The identifier of ledger of interest
-        @return Vector of times
-    */
-    std::vector<NetClock::time_point>
-    getTrustedValidationTimes(ID const& ledgerID)
-    {
-        std::vector<NetClock::time_point> times;
-        ScopedLock lock{mutex_};
-        byLedger(
-            lock,
-            ledgerID,
-            [&](std::size_t numValidations) { times.reserve(numValidations); },
-            [&](NodeID const&, Validation const& v) {
-                if (v.trusted() && v.full())
-                    times.emplace_back(v.signTime());
-            });
-        return times;
-    }
-
     /** Returns fees reported by trusted full validators in the given ledger
 
         @param ledgerID The identifier of ledger of interest

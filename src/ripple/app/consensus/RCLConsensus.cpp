@@ -456,7 +456,8 @@ RCLConsensus::Adaptor::doAccept(
         JLOG(j_.info()) << "CNF buildLCL " << newLCLHash;
 
     // See if we can accept a ledger as fully-validated
-    ledgerMaster_.consensusBuilt(sharedLCL.ledger_, std::move(consensusJson));
+    ledgerMaster_.consensusBuilt(
+        sharedLCL.ledger_, result.set.id(), std::move(consensusJson));
 
     //-------------------------------------------------------------------------
     {
