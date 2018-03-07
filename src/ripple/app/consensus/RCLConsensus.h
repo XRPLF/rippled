@@ -218,10 +218,10 @@ class RCLConsensus
 
         /** Share the given tx set to peers.
 
-            @param set The TxSet to share.
+            @param txns The TxSet to share.
         */
         void
-        share(RCLTxSet const& set);
+        share(RCLTxSet const& txns);
 
         /** Get the ID of the previous ledger/last closed ledger(LCL) on the
            network
@@ -332,7 +332,7 @@ class RCLConsensus
             can be retried in the next round.
 
             @param previousLedger Prior ledger building upon
-            @param set The set of transactions to apply to the ledger
+            @param txns The set of transactions to apply to the ledger
             @param closeTime The the ledger closed
             @param closeTimeCorrect Whether consensus agreed on close time
             @param closeResolution Resolution used to determine consensus close
@@ -345,7 +345,7 @@ class RCLConsensus
         RCLCxLedger
         buildLCL(
             RCLCxLedger const& previousLedger,
-            RCLTxSet const& set,
+            RCLTxSet const& txns,
             NetClock::time_point closeTime,
             bool closeTimeCorrect,
             NetClock::duration closeResolution,
@@ -355,7 +355,7 @@ class RCLConsensus
         /** Validate the given ledger and share with peers as necessary
 
             @param ledger The ledger to validate
-            @param set The consensus transaction set
+            @param txns The consensus transaction set
             @param proposing Whether we were proposing transactions while
                              generating this ledger.  If we are not proposing,
                              a validation can still be sent to inform peers that
@@ -363,7 +363,7 @@ class RCLConsensus
                              but are still around and trying to catch up.
         */
         void
-        validate(RCLCxLedger const& ledger, RCLTxSet const& set, bool proposing);
+        validate(RCLCxLedger const& ledger, RCLTxSet const& txns, bool proposing);
 
     };
 

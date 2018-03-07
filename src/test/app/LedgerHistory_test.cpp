@@ -18,16 +18,16 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/beast/insight/NullCollector.h>
-#include <ripple/app/tx/apply.h>
 #include <ripple/app/ledger/LedgerHistory.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/tx/apply.h>
+#include <ripple/beast/insight/NullCollector.h>
+#include <ripple/beast/unit_test.h>
 #include <ripple/ledger/OpenView.h>
-#include <test/jtx.h>
 #include <chrono>
-#include <sstream>
 #include <memory>
+#include <sstream>
+#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
@@ -35,7 +35,6 @@ namespace test {
 class LedgerHistory_test : public beast::unit_test::suite
 {
 public:
-
     /** Log manager that searches for a specific message substring
      */
     class CheckMessageLogs : public Logs
@@ -45,9 +44,11 @@ public:
 
         class CheckMessageSink : public beast::Journal::Sink
         {
-            CheckMessageLogs & owner_;
+            CheckMessageLogs& owner_;
+
         public:
-            CheckMessageSink(beast::severities::Severity threshold,
+            CheckMessageSink(
+                beast::severities::Severity threshold,
                 CheckMessageLogs& owner)
                 : beast::Journal::Sink(threshold, false), owner_(owner)
             {
@@ -57,7 +58,7 @@ public:
             write(beast::severities::Severity level, std::string const& text)
                 override
             {
-                if(text.find(owner_.msg_) != std::string::npos)
+                if (text.find(owner_.msg_) != std::string::npos)
                     owner_.found_ = true;
             }
         };
@@ -70,13 +71,14 @@ public:
         */
         CheckMessageLogs(std::string msg, bool& found)
             : Logs{beast::severities::kDebug}
-            , msg_{msg}
+            , msg_{std::move(msg)}
             , found_{found}
         {
         }
 
         std::unique_ptr<beast::Journal::Sink>
-        makeSink(std::string const& partition,
+        makeSink(
+            std::string const& partition,
             beast::severities::Severity threshold) override
         {
             return std::make_unique<CheckMessageSink>(threshold, *this);
@@ -120,18 +122,16 @@ public:
         res->updateSkipList();
 
         {
-
-            res->stateMap().flushDirty(
-                hotACCOUNT_NODE, res->info().seq);
-            res->txMap().flushDirty(
-                hotTRANSACTION_NODE, res->info().seq);
-
+            res->stateMap().flushDirty(hotACCOUNT_NODE, res->info().seq);
+            res->txMap().flushDirty(hotTRANSACTION_NODE, res->info().seq);
         }
         res->unshare();
 
         // Accept ledger
-        res->setAccepted(res->info().closeTime,
-            res->info().closeTimeResolution, true /* close time correct*/,
+        res->setAccepted(
+            res->info().closeTime,
+            res->info().closeTimeResolution,
+            true /* close time correct*/,
             env.app().config());
         lh.insert(res, false);
         return res;
@@ -150,8 +150,7 @@ public:
             Env env{*this,
                     envconfig(),
                     std::make_unique<CheckMessageLogs>("MISMATCH ", found)};
-            LedgerHistory lh{beast::insight::NullCollector::New(),
-                                env.app()};
+            LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             uint256 const dummyTxHash{1};
             lh.builtLedger(genesis, dummyTxHash, {});
@@ -202,9 +201,9 @@ public:
 
         // Simulate a bug in which consensus may agree on transactions, but
         // somehow generate different ledgers
-        for (const bool txBug : {true, false})
+        for (bool const txBug : {true, false})
         {
-            const std::string msg = txBug
+            std::string const msg = txBug
                 ? "MISMATCH with same consensus transaction set"
                 : "MISMATCH on consensus transaction set";
             bool found = false;
@@ -247,8 +246,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerHistory,app,ripple);
+BEAST_DEFINE_TESTSUITE(LedgerHistory, app, ripple);
 
-} // test
-} // ripple
-
+}  // namespace test
+}  // namespace ripple

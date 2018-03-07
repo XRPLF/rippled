@@ -205,17 +205,17 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 }
 
 void
-RCLConsensus::Adaptor::share(RCLTxSet const& set)
+RCLConsensus::Adaptor::share(RCLTxSet const& txns)
 {
-    inboundTransactions_.giveSet(set.id(), set.map_, false);
+    inboundTransactions_.giveSet(txns.id(), txns.map_, false);
 }
 
 boost::optional<RCLTxSet>
 RCLConsensus::Adaptor::acquireTxSet(RCLTxSet::ID const& setId)
 {
-    if (auto set = inboundTransactions_.getSet(setId, true))
+    if (auto txns = inboundTransactions_.getSet(setId, true))
     {
-        return RCLTxSet{std::move(set)};
+        return RCLTxSet{std::move(txns)};
     }
     return boost::none;
 }
@@ -422,11 +422,11 @@ RCLConsensus::Adaptor::doAccept(
 
     //--------------------------------------------------------------------------
     // Put transactions into a deterministic, but unpredictable, order
-    CanonicalTXSet retriableTxs{result.set.id()};
+    CanonicalTXSet retriableTxs{result.txns.id()};
 
     auto sharedLCL = buildLCL(
         prevLedger,
-        result.set,
+        result.txns,
         consensusCloseTime,
         closeTimeCorrect,
         closeResolution,
@@ -449,7 +449,7 @@ RCLConsensus::Adaptor::doAccept(
     if (validating_ && !consensusFail &&
         app_.getValidations().canValidateSeq(sharedLCL.seq()))
     {
-        validate(sharedLCL, result.set, proposing);
+        validate(sharedLCL, result.txns, proposing);
         JLOG(j_.info()) << "CNF Val " << newLCLHash;
     }
     else
@@ -457,7 +457,7 @@ RCLConsensus::Adaptor::doAccept(
 
     // See if we can accept a ledger as fully-validated
     ledgerMaster_.consensusBuilt(
-        sharedLCL.ledger_, result.set.id(), std::move(consensusJson));
+        sharedLCL.ledger_, result.txns.id(), std::move(consensusJson));
 
     //-------------------------------------------------------------------------
     {
@@ -637,7 +637,7 @@ RCLConsensus::Adaptor::notify(
   Typically the txFilter is used to reject transactions
   that already accepted in the prior ledger.
 
-  @param set            set of transactions to apply
+  @param txns            set of transactions to apply
   @param view           ledger to apply to
   @param txFilter       callback, return false to reject txn
   @return               retriable transactions
@@ -646,13 +646,13 @@ RCLConsensus::Adaptor::notify(
 CanonicalTXSet
 applyTransactions(
     Application& app,
-    RCLTxSet const& cSet,
+    RCLTxSet const& txns,
     OpenView& view,
     std::function<bool(uint256 const&)> txFilter)
 {
     auto j = app.journal("LedgerConsensus");
 
-    auto& set = *(cSet.map_);
+    auto& set = *(txns.map_);
     CanonicalTXSet retriableTxs(set.getHash().as_uint256());
 
     for (auto const& item : set)
@@ -732,7 +732,7 @@ applyTransactions(
 RCLCxLedger
 RCLConsensus::Adaptor::buildLCL(
     RCLCxLedger const& previousLedger,
-    RCLTxSet const& set,
+    RCLTxSet const& txns,
     NetClock::time_point closeTime,
     bool closeTimeCorrect,
     NetClock::duration closeResolution,
@@ -747,7 +747,7 @@ RCLConsensus::Adaptor::buildLCL(
         closeTimeCorrect = ((replay->closeFlags_ & sLCF_NoConsensusTime) == 0);
     }
 
-    JLOG(j_.debug()) << "Report: TxSt = " << set.id() << ", close "
+    JLOG(j_.debug()) << "Report: TxSt = " << txns.id() << ", close "
                      << closeTime.time_since_epoch().count()
                      << (closeTimeCorrect ? "" : "X");
 
@@ -766,7 +766,7 @@ RCLConsensus::Adaptor::buildLCL(
 
     // Set up to write SHAMap changes to our database,
     //   perform updates, extract changes
-    JLOG(j_.debug()) << "Applying consensus set transactions to the"
+    JLOG(j_.debug()) << "Applying consensus txns transactions to the"
                      << " last closed ledger";
 
     {
@@ -783,7 +783,7 @@ RCLConsensus::Adaptor::buildLCL(
         {
             // Normal case, we are not replaying a ledger close
             retriableTxs = applyTransactions(
-                app_, set, accum, [&buildLCL](uint256 const& txID) {
+                app_, txns, accum, [&buildLCL](uint256 const& txID) {
                     return !buildLCL->txExists(txID);
                 });
         }
@@ -827,7 +827,7 @@ RCLConsensus::Adaptor::buildLCL(
 
 void
 RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger,
-    RCLTxSet const& set,
+    RCLTxSet const& txns,
     bool proposing)
 {
     auto validationTime = app_.timeKeeper().closeTime();
@@ -838,7 +838,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger,
     // Build validation
     auto v = std::make_shared<STValidation>(
         ledger.id(),
-        set.id(),
+        txns.id(),
         validationTime,
         valPublic_,
         nodeID_,
