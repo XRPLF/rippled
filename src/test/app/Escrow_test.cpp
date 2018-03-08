@@ -963,8 +963,6 @@ struct Escrow_test : public beast::unit_test::suite
         { // Test empty condition during creation and
           // empty condition & fulfillment during finish
             Env env(*this);
-            auto T = [&env](NetClock::duration const& d)
-                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
 
             env(escrow("alice", "carol", XRP(1000)), condition(Slice{}),

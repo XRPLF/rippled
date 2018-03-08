@@ -48,9 +48,7 @@ namespace ripple {
     XRP payments. These conditional payments, called escrows, set aside XRP and
     deliver it later when certain conditions are met. Conditions to successfully
     finish an escrow include time-based unlocks and crypto-conditions. Escrows
-    can also be set to expire if not finished in time. Conditional held payments
-    are a key feature for full Interledger Protocol support, which enables
-    chains of payments to cross any number of ledgers.
+    can also be set to expire if not finished in time.
 
     The XRP set aside in an escrow is locked up. No one can use or destroy the
     XRP until the escrow has been successfully finished or canceled. Before the
@@ -60,7 +58,7 @@ namespace ripple {
     For more details on escrow, including examples, diagrams and more please
     visit https://ripple.com/build/escrow/#escrow
 
-    For details on specific transactors, including fields and validation rules
+    For details on specific transactions, including fields and validation rules
     please see:
 
     `EscrowCreate`
@@ -160,13 +158,16 @@ EscrowCreate::doApply()
 {
     auto const closeTime = ctx_.view ().info ().parentCloseTime;
 
+    // Prior to fix1571, the cancel and finish times could be greater
+    // than or equal to the parent ledgers' close time.
+    //
+    // With fix1571, we require that they both be strictly greater
+    // than the parent ledgers' close time.
     if (ctx_.view ().rules().enabled(fix1571))
     {
-        // The cancel time must be strictly in the future
         if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
             return tecNO_PERMISSION;
 
-        // The finish time must be strictly in the future
         if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
             return tecNO_PERMISSION;
     }
@@ -363,6 +364,9 @@ EscrowFinish::doApply()
     if (! slep)
         return tecNO_TARGET;
 
+    // If a cancel time is present, a finish operation should only succeed prior
+    // to that time. fix1571 corrects a logic error in the check that would make
+    // a finish only succeed strictly after the cancel time.
     if (ctx_.view ().rules().enabled(fix1571))
     {
         auto const now = ctx_.view().info().parentCloseTime;
@@ -510,22 +514,21 @@ EscrowCancel::preflight (PreflightContext const& ctx)
 TER
 EscrowCancel::doApply()
 {
-    auto const k = keylet::escrow(
-        ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
+    auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
     auto const slep = ctx_.view().peek(k);
     if (! slep)
         return tecNO_TARGET;
 
-    if (ctx_.view ().rules().enabled(fix1523))
+    if (ctx_.view ().rules().enabled(fix1571))
     {
         auto const now = ctx_.view().info().parentCloseTime;
 
         // No cancel time specified: can't execute at all.
-        if (!(*slep)[~sfCancelAfter])
+        if (! (*slep)[~sfCancelAfter])
             return tecNO_PERMISSION;
 
         // Too soon: can't execute before the cancel time.
-        if ((*slep)[~sfCancelAfter] && ! after(now, (*slep)[sfCancelAfter]))
+        if (! after(now, (*slep)[sfCancelAfter]))
             return tecNO_PERMISSION;
     }
     else
