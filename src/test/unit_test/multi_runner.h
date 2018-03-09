@@ -163,7 +163,8 @@ class multi_runner_base
 protected:
     std::unique_ptr<boost::interprocess::message_queue> message_queue_;
 
-    void message_queue_send(std::string const& s);
+    enum class MessageType : std::uint8_t {test_start, test_end, log};
+    void message_queue_send(MessageType mt, std::string const& s);
 
 public:
     multi_runner_base();
@@ -208,7 +209,8 @@ private:
     std::ostream& os_;
     std::atomic<bool> continue_message_queue_{true};
     std::thread message_queue_thread_;
-
+    // track running suites so if a child crashes the culprit can be flagged
+    std::set<std::string> running_suites_;
 public:
     multi_runner_parent(multi_runner_parent const&) = delete;
     multi_runner_parent&
@@ -335,7 +337,7 @@ multi_runner_child::run_multi(Pred pred)
             // inform the parent
             std::stringstream s;
             s << job_index_ << ">  failed Unhandled exception in test.\n";
-            message_queue_send(s.str());
+            message_queue_send(MessageType::log, s.str());
             failed = true;
         }
     }

@@ -1,4 +1,3 @@
-
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -18,16 +17,30 @@
 */
 //==============================================================================
 
-#include <test/basics/base_uint_test.cpp>
-#include <test/basics/Buffer_test.cpp>
-#include <test/basics/CheckLibraryVersions_test.cpp>
-#include <test/basics/contract_test.cpp>
-#include <test/basics/DetectCrash_test.cpp>
-#include <test/basics/hardened_hash_test.cpp>
-#include <test/basics/KeyCache_test.cpp>
-#include <test/basics/mulDiv_test.cpp>
-#include <test/basics/RangeSet_test.cpp>
-#include <test/basics/Slice_test.cpp>
-#include <test/basics/StringUtilities_test.cpp>
-#include <test/basics/TaggedCache_test.cpp>
-#include <test/basics/tagged_integer_test.cpp>
+#include <BeastConfig.h>
+#include <beast/unit_test/suite.hpp>
+
+#include <exception>
+
+namespace ripple {
+namespace test {
+
+struct DetectCrash_test : public beast::unit_test::suite
+{
+    void testDetectCrash ()
+    {
+        testcase ("Detect Crash");
+        // Kill the process. This is used to test that the multi-process
+        // unit test will correctly report the crash.
+        std::terminate();
+    }
+    void run() override
+    {
+        testDetectCrash();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_MANUAL(DetectCrash,unit_test,beast);
+
+} // test
+} // ripple
