@@ -229,9 +229,17 @@ static int runUnitTests(
         int bad_child_exits = 0;
         for(auto& c : children)
         {
-            c.wait();
-            if (c.exit_code())
+            try
+            {
+                c.wait();
+                if (c.exit_code())
+                    ++bad_child_exits;
+            }
+            catch (...)
+            {
+                // wait throws if process was terminated with a signal
                 ++bad_child_exits;
+            }
         }
 
         if (parent_runner.any_failed() || bad_child_exits)

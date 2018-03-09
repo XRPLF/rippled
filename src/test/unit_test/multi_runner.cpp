@@ -338,14 +338,11 @@ multi_runner_base<IsParent>::print_results(S& s)
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::message_queue_send(std::string const& s)
+multi_runner_base<IsParent>::message_queue_send(MessageType mt, std::string const& s)
 {
-    // Even though the message queue does _not_ live in shared memory, child
-    // processes (the only ones using "send" need to protect access with a mutex
-    // on the OSX platform (access does not appear to need to be protection on
-    // linux or windows). This is likely due to the different back end implementation
-    // of message queue in boost, though that has not been confirmed.
+    // must use a mutex since the two "sends" must happen in order
     std::lock_guard<boost::interprocess::interprocess_mutex> l{inner_->m_};
+    message_queue_->send(&mt, sizeof(mt), /*priority*/ 0);
     message_queue_->send(s.c_str(), s.size(), /*priority*/ 0);
 }
 
@@ -383,16 +380,42 @@ multi_runner_parent::multi_runner_parent()
                 unsigned int priority = 0;
                 this->message_queue_->receive(
                     buf.data(), buf.size(), recvd_size, priority);
+                if (!recvd_size)
+                    continue;
+                assert (recvd_size == 1);
+                MessageType mt{*reinterpret_cast<MessageType*>(buf.data())};
+
+                this->message_queue_->receive(
+                    buf.data(), buf.size(), recvd_size, priority);
                 if (recvd_size)
                 {
                     std::string s{buf.data(), recvd_size};
-                    this->os_ << s;
-                    this->os_.flush();
+                    switch (mt)
+                    {
+                        case MessageType::log:
+                            this->os_ << s;
+                            this->os_.flush();
+                            break;
+                        case MessageType::test_start:
+                            running_suites_.insert(std::move(s));
+                            break;
+                        case MessageType::test_end:
+                            running_suites_.erase(s);
+                            break;
+                        default:
+                            assert(0);  // unknown message type
+                    }
                 }
+            }
+            catch (std::exception const& e)
+            {
+                std::cerr << "Error: " << e.what()
+                          << " reading unit test message queue.\n";
+                return;
             }
             catch (...)
             {
-                std::cerr << "Error reading unit test message queue.\n";
+                std::cerr << "Unknown error reading unit test message queue.\n";
                 return;
             }
         }
@@ -407,6 +430,12 @@ multi_runner_parent::~multi_runner_parent()
     message_queue_thread_.join();
 
     print_results(os_);
+
+    for (auto const& s : running_suites_)
+    {
+        os_ << "\nSuite: " << s
+            << " failed to complete. The child process may have crashed.\n";
+    }
 }
 
 bool
@@ -475,12 +504,14 @@ void
 multi_runner_child::on_suite_begin(beast::unit_test::suite_info const& info)
 {
     suite_results_ = detail::suite_results{info.full_name()};
+    message_queue_send(MessageType::test_start, suite_results_.name);
 }
 
 void
 multi_runner_child::on_suite_end()
 {
     results_.add(suite_results_);
+    message_queue_send(MessageType::test_end, suite_results_.name);
 }
 
 void
@@ -496,7 +527,7 @@ multi_runner_child::on_case_begin(std::string const& name)
         s << job_index_ << "> ";
     s << suite_results_.name
       << (case_results_.name.empty() ? "" : (" " + case_results_.name)) << '\n';
-    message_queue_send(s.str());
+    message_queue_send(MessageType::log, s.str());
 }
 
 void
@@ -521,7 +552,7 @@ multi_runner_child::on_fail(std::string const& reason)
         s << job_index_ << "> ";
     s << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ")
       << reason << '\n';
-    message_queue_send(s.str());
+    message_queue_send(MessageType::log, s.str());
 }
 
 void
@@ -534,7 +565,7 @@ multi_runner_child::on_log(std::string const& msg)
     if (num_jobs_ > 1)
         s << job_index_ << "> ";
     s << msg;
-    message_queue_send(s.str());
+    message_queue_send(MessageType::log, s.str());
 }
 
 namespace detail {
