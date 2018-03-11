@@ -51,7 +51,7 @@ public:
         return m_ledgers_by_hash.getHitRate ();
     }
 
-    /** Get a ledger given its squence number */
+    /** Get a ledger given its sequence number */
     std::shared_ptr<Ledger const>
     getLedgerBySeq (LedgerIndex ledgerIndex);
 
@@ -65,7 +65,7 @@ public:
     */
     LedgerHash getLedgerHash (LedgerIndex ledgerIndex);
 
-    /** Set the history cache's paramters
+    /** Set the history cache's parameters
         @param size The target size of the cache
         @param age The target age of the cache, in seconds
     */
@@ -82,11 +82,13 @@ public:
     /** Report that we have locally built a particular ledger */
     void builtLedger (
         std::shared_ptr<Ledger const> const&,
+        uint256 const& consensusHash,
         Json::Value);
 
     /** Report that we have validated a particular ledger */
     void validatedLedger (
-        std::shared_ptr<Ledger const> const&);
+        std::shared_ptr<Ledger const> const&,
+        boost::optional<uint256> const& consensusHash);
 
     /** Repair a hash to index mapping
         @param ledgerIndex The index whose mapping is to be repaired
@@ -103,9 +105,18 @@ private:
         validate a different one.
         @param built The hash of the ledger we built
         @param valid The hash of the ledger we deemed fully valid
+        @param builtConsensusHash The hash of the consensus transaction for the
+        ledger we built
+        @param validatedConsensusHash The hash of the validated ledger's
+        consensus transaction set
         @param consensus The status of the consensus round
     */
-    void handleMismatch (LedgerHash const& built, LedgerHash const& valid,
+    void
+    handleMismatch(
+        LedgerHash const& built,
+        LedgerHash const& valid,
+        boost::optional<uint256> const& builtConsensusHash,
+        boost::optional<uint256> const& validatedConsensusHash,
         Json::Value const& consensus);
 
     Application& app_;
@@ -120,8 +131,15 @@ private:
     // For debug and logging purposes
     struct cv_entry
     {
+        // Hash of locally built ledger
         boost::optional<LedgerHash> built;
+        // Hash of the validated ledger
         boost::optional<LedgerHash> validated;
+        // Hash of locally accepted consensus transaction set
+        boost::optional<uint256> builtConsensusHash;
+        // Hash of validated consensus transaction set
+        boost::optional<uint256> validatedConsensusHash;
+        // Consensus metadata of built ledger
         boost::optional<Json::Value> consensus;
     };
     using ConsensusValidated = TaggedCache <LedgerIndex, cv_entry>;
