@@ -365,15 +365,12 @@ LedgerHistory::handleMismatch(
         if (builtConsensusHash != validatedConsensusHash)
             JLOG(j_.error())
                 << "MISMATCH on consensus transaction set "
-                << " builtConsensusHash: " << to_string(*builtConsensusHash)
-                << " validatedConsensusHash: "
-                << to_string(*validatedConsensusHash);
+                << " built: " << to_string(*builtConsensusHash)
+                << " validated: " << to_string(*validatedConsensusHash);
         else
             JLOG(j_.error()) << "MISMATCH with same consensus transaction set: "
                              << to_string(*builtConsensusHash);
     }
-    else
-        JLOG(j_.error()) << "MISMATCH missing consensus transaction set hashes";
 
     // Find differences between built and valid ledgers
     auto const builtTx = leaves(builtLedger->txMap());

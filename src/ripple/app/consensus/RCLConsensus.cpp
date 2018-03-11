@@ -749,7 +749,7 @@ RCLConsensus::Adaptor::buildLCL(
 
     JLOG(j_.debug()) << "Report: TxSt = " << txns.id() << ", close "
                      << closeTime.time_since_epoch().count()
-                     << (closeTimeCorrect ? "" : "X");
+                     << (closeTimeCorrect ? "" : " (incorrect)");
 
     // Build the new last closed ledger
     auto buildLCL =

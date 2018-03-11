@@ -195,7 +195,6 @@ LedgerMaster::setValidLedger(
 
         if(!vals.empty())
             consensusHash = vals.front()->getConsensusHash();
-
     }
 
     NetClock::time_point signTime;
