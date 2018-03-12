@@ -106,15 +106,10 @@ public:
     // implementation. These APIs will merge when the view code
     // supports a full ledger API
 
-    void
-    doValidation (std::shared_ptr <ReadView const> const& lastClosedLedger,
-        STObject& baseValidation)
+    std::vector<uint256>
+    doValidation (std::shared_ptr <ReadView const> const& lastClosedLedger)
     {
-        auto ourAmendments =
-            doValidation (getEnabledAmendments(*lastClosedLedger));
-        if (! ourAmendments.empty())
-            baseValidation.setFieldV256 (sfAmendments,
-               STVector256 (sfAmendments, ourAmendments));
+        return doValidation (getEnabledAmendments(*lastClosedLedger));
     }
 
     void
