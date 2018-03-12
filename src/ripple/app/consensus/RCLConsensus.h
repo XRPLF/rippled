@@ -61,6 +61,7 @@ class RCLConsensus
         NodeID const nodeID_;
         PublicKey const valPublic_;
         SecretKey const valSecret_;
+        std::uint64_t const cookie_;
 
         // Ledger we most recently needed to acquire
         LedgerHash acquiringLedger_;

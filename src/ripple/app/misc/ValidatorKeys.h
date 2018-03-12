@@ -40,6 +40,10 @@ public:
     SecretKey secretKey;
     NodeID nodeID;
     std::string manifest;
+    std::uint64_t cookie; //< Randomly generated at startup to tag validations
+                          //< so nodes can identify unintentional configuration
+                          //< reuse
+
     ValidatorKeys(Config const& config, beast::Journal j);
 
     bool configInvalid() const

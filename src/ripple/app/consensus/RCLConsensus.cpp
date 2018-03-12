@@ -84,6 +84,7 @@ RCLConsensus::Adaptor::Adaptor(
         , nodeID_{validatorKeys.nodeID}
         , valPublic_{validatorKeys.publicKey}
         , valSecret_{validatorKeys.secretKey}
+        , cookie_{validatorKeys.cookie}
 {
 }
 
