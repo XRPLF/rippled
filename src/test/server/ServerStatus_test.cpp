@@ -640,7 +640,7 @@ class ServerStatus_test :
             ++readCount;
             // expect the reads to fail for the clients that connected at or
             // above the limit. If limit is 0, all reads should succeed
-            BEAST_EXPECT((limit == 0 || readCount < limit-1) ? (! ec) : ec);
+            BEAST_EXPECT((limit == 0 || readCount < limit-1) ? (! ec) : bool(ec));
         }
     }
 

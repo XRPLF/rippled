@@ -242,7 +242,7 @@ public:
 
         // If we get an error message back, we don't return any
         // results that we may have gotten.
-        if (ec == 0)
+        if (!ec)
         {
             while (iter != boost::asio::ip::tcp::resolver::iterator())
             {
