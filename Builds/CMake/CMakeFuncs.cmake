@@ -523,6 +523,11 @@ macro(use_protobuf)
     else()
       include_directories(${PROTOBUF_INCLUDE_DIRS})
     endif()
+
+    if (is_xcode)
+      append_flags(CMAKE_CXX_FLAGS --system-header-prefix="google/protobuf")
+    endif()
+
   endif()
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
