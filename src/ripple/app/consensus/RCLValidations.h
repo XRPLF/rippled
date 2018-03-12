@@ -134,6 +134,13 @@ public:
         return val_;
     }
 
+    // Get the validator cookie (or 0 if none set)
+    std::uint64_t
+    cookie() const
+    {
+        return val_->getFieldU64(sfCookie);
+    }
+
 };
 
 /** Wraps a ledger instance for use in generic Validations LedgerTrie.

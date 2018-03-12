@@ -26,40 +26,57 @@
 namespace ripple {
 
 STValidation::STValidation(
-        uint256 const& ledgerHash,
-        uint256 const& consensusHash,
-        NetClock::time_point signTime,
-        PublicKey const& publicKey,
-        NodeID const& nodeID,
-        bool isFull)
-    : STObject(getFormat(), sfValidation)
-    , mNodeID(nodeID)
-    , mSeen(signTime)
+    uint256 const& ledgerHash,
+    std::uint32_t ledgerSeq,
+    uint256 const& consensusHash,
+    NetClock::time_point signTime,
+    PublicKey const& publicKey,
+    SecretKey const& secretKey,
+    NodeID const& nodeID,
+    bool isFull,
+    FeeSettings const& fees,
+    std::vector<uint256> const& amendments,
+    boost::optional<std::uint64_t> const cookie)
+    : STObject(getFormat(), sfValidation), mNodeID(nodeID), mSeen(signTime)
 {
     // This is our own public key and it should always be valid.
     if (!publicKeyType(publicKey))
-        LogicError ("Invalid validation public key");
+        LogicError("Invalid validation public key");
+    assert(mNodeID.isNonZero());
+    setFieldH256(sfLedgerHash, ledgerHash);
+    setFieldH256(sfConsensusHash, consensusHash);
+    setFieldU32(sfSigningTime, signTime.time_since_epoch().count());
 
-    // Does not sign
-    setFieldH256 (sfLedgerHash, ledgerHash);
-    setFieldH256 (sfConsensusHash, consensusHash);
-    setFieldU32 (sfSigningTime, signTime.time_since_epoch().count());
-    setFieldVL (sfSigningPubKey, publicKey.slice());
-
-    assert (mNodeID.isNonZero ());
-
+    setFieldVL(sfSigningPubKey, publicKey.slice());
     if (isFull)
-        setFlag (kFullFlag);
-}
+        setFlag(kFullFlag);
 
-uint256 STValidation::sign (SecretKey const& secretKey)
-{
-    setFlag (vfFullyCanonicalSig);
+    setFieldU32(sfLedgerSequence, ledgerSeq);
 
+    if (fees.loadFee)
+        setFieldU32(sfLoadFee, *fees.loadFee);
+
+    if (fees.baseFee)
+        setFieldU64(sfBaseFee, *fees.baseFee);
+
+    if (fees.reserveBase)
+        setFieldU32(sfReserveBase, *fees.reserveBase);
+
+    if (fees.reserveIncrement)
+        setFieldU32(sfReserveIncrement, *fees.reserveIncrement);
+
+    if (!amendments.empty())
+        setFieldV256(sfAmendments, STVector256(sfAmendments, amendments));
+
+    setFlag(vfFullyCanonicalSig);
+
+    if(cookie != boost::none)
+        setFieldU64(sfCookie, *cookie);
     auto const signingHash = getSigningHash();
-    setFieldVL (sfSignature,
-        signDigest (getSignerPublic(), secretKey, signingHash));
-    return signingHash;
+    setFieldVL(
+        sfSignature, signDigest(getSignerPublic(), secretKey, signingHash));
+
+    setTrusted();
 }
 
 uint256 STValidation::getSigningHash () const
@@ -156,6 +173,8 @@ SOTemplate const& STValidation::getFormat ()
             format.push_back (SOElement (sfSigningPubKey,   SOE_REQUIRED));
             format.push_back (SOElement (sfSignature,       SOE_OPTIONAL));
             format.push_back (SOElement (sfConsensusHash,   SOE_OPTIONAL));
+            format.push_back (SOElement (sfCookie,          SOE_OPTIONAL));
+
         }
     };
 
