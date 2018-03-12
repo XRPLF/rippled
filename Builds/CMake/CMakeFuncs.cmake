@@ -372,7 +372,9 @@ macro(use_boost)
           include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
       endif()
 
-      link_directories(${Boost_LIBRARY_DIRS})
+      if(MSVC)
+          link_directories(${Boost_LIBRARY_DIRS})
+      endif()
     else()
       message(FATAL_ERROR "Boost not found")
     endif()
@@ -523,6 +525,11 @@ macro(use_protobuf)
     else()
       include_directories(${PROTOBUF_INCLUDE_DIRS})
     endif()
+
+    if (is_xcode)
+      append_flags(CMAKE_CXX_FLAGS --system-header-prefix="google/protobuf")
+    endif()
+
   endif()
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
