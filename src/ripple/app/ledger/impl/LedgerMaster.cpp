@@ -451,9 +451,10 @@ LedgerMaster::tryFill (
 
     std::map< std::uint32_t, std::pair<uint256, uint256> > ledgerHashes;
 
-    std::uint32_t minHas = ledger->info().seq;
-    std::uint32_t maxHas = ledger->info().seq;
+    std::uint32_t minHas = seq;
+    std::uint32_t maxHas = seq;
 
+    NodeStore::Database& nodeStore {app_.getNodeStore()};
     while (! job.shouldCancel() && seq > 0)
     {
         {
@@ -484,6 +485,16 @@ LedgerMaster::tryFill (
 
             if (it == ledgerHashes.end ())
                 break;
+
+            if (!nodeStore.fetch(ledgerHashes.begin()->second.first,
+                ledgerHashes.begin()->first))
+            {
+                // The ledger is not backed by the node store
+                JLOG(m_journal.warn()) <<
+                    "SQL DB ledger sequence " << seq <<
+                    " mismatches node store";
+                break;
+            }
         }
 
         if (it->second.first != prevHash)
