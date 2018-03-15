@@ -73,6 +73,7 @@ Handler const handlerArray[] {
     {   "connect",              byRef (&doConnect),             Role::ADMIN,   NO_CONDITION     },
     {   "consensus_info",       byRef (&doConsensusInfo),       Role::ADMIN,   NO_CONDITION     },
     {   "deposit_authorized",   byRef (&doDepositAuthorized),   Role::USER,  NO_CONDITION  },
+    {   "download_shard",       byRef (&doDownloadShard),       Role::ADMIN,   NO_CONDITION     },
     {   "gateway_balances",     byRef (&doGatewayBalances),     Role::USER,  NO_CONDITION  },
     {   "get_counts",           byRef (&doGetCounts),           Role::ADMIN,   NO_CONDITION     },
     {   "feature",              byRef (&doFeature),             Role::ADMIN,   NO_CONDITION     },
