@@ -1153,14 +1153,35 @@ class Validations_test : public beast::unit_test::suite
         LedgerHistoryHelper h;
         TestHarness harness(h.oracle);
         Node a = harness.makeNode();
+        Node aReuse{a.nodeID(), harness.clock()};
         Node b = harness.makeNode();
 
         BEAST_EXPECT(ValStatus::current == harness.add(a.validate(h["a"])));
         BEAST_EXPECT(ValStatus::current == harness.add(b.validate(h["b"])));
 
-        Node aReuse{a.nodeID(), harness.clock()};
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(h["a"].id()) == 1);
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(h["b"].id()) == 1);
+        BEAST_EXPECT(harness.vals().currentTrusted().size() == 2);
+        // Re-issuing for the same ledger gives badCookie status, but does not
+        // ignore that ledger
         BEAST_EXPECT(
             ValStatus::badCookie == harness.add(aReuse.validate(h["a"])));
+
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(h["a"].id()) == 1);
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(h["b"].id()) == 1);
+        BEAST_EXPECT(harness.vals().currentTrusted().size() == 2);
+
+        // Re-issuing for a different ledger gives badCookie status and ignores
+        // the prior validated ledger
+        BEAST_EXPECT(
+            ValStatus::badCookie == harness.add(aReuse.validate(h["b"])));
+
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(h["a"].id()) == 0);
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(h["b"].id()) == 1);
+        BEAST_EXPECT(harness.vals().currentTrusted().size() == 1);
+
+        BEAST_EXPECT(
+            ValStatus::badCookie == harness.add(aReuse.validate(h["b"])));
     }
 
     void

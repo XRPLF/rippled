@@ -604,7 +604,26 @@ public:
             if(!bySeqIt.second)
             {
                 if(bySeqIt.first->second.cookie() != val.cookie())
+                {
+                    // Remove prior validation if it was for a different ledger
+                    ID const priorID = bySeqIt.first->second.ledgerID();
+                    if (priorID != val.ledgerID())
+                    {
+                        auto const byLedgerIt = byLedger_.find(priorID);
+                        if (byLedgerIt != byLedger_.end())
+                            byLedger_[priorID].erase(nodeID);
+
+                        auto const currIt = current_.find(nodeID);
+                        if (currIt != current_.end() &&
+                            currIt->second.ledgerID() == priorID)
+                        {
+                            removeTrie(lock, currIt->first, currIt->second);
+                            adaptor_.onStale(std::move(currIt->second));
+                            current_.erase(currIt);
+                        }
+                    }
                     return ValStatus::badCookie;
+                }
             }
 
             // Check that validation sequence is greater than any non-expired
