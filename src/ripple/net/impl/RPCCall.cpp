@@ -151,6 +151,37 @@ private:
         return v;
     }
 
+    Json::Value parseDownloadShard(Json::Value const& jvParams)
+    {
+        Json::Value jvResult(Json::objectValue);
+        unsigned int sz {jvParams.size()};
+        unsigned int i {0};
+
+        // If odd number of params then 'novalidate' may have been specified
+        if (sz & 1)
+        {
+            using namespace boost::beast::detail;
+            if (iequals(jvParams[0u].asString(), "novalidate"))
+                ++i;
+            else if (!iequals(jvParams[--sz].asString(), "novalidate"))
+                return rpcError(rpcINVALID_PARAMS);
+            jvResult[jss::validate] = false;
+        }
+
+        // Create the 'shards' array
+        Json::Value shards(Json::arrayValue);
+        for (; i < sz; i += 2)
+        {
+            Json::Value shard(Json::objectValue);
+            shard[jss::index] = jvParams[i].asUInt();
+            shard[jss::url] = jvParams[i + 1].asString();
+            shards.append(std::move(shard));
+        }
+        jvResult[jss::shards] = std::move(shards);
+
+        return jvResult;
+    }
+
     Json::Value parseInternal (Json::Value const& jvParams)
     {
         Json::Value v (Json::objectValue);
@@ -1085,6 +1116,7 @@ public:
             {   "connect",              &RPCParser::parseConnect,               1,  2   },
             {   "consensus_info",       &RPCParser::parseAsIs,                  0,  0   },
             {   "deposit_authorized",   &RPCParser::parseDepositAuthorized,     2,  3   },
+            {   "download_shard",       &RPCParser::parseDownloadShard,         2,  -1  },
             {   "feature",              &RPCParser::parseFeature,               0,  2   },
             {   "fetch_info",           &RPCParser::parseFetchInfo,             0,  1   },
             {   "gateway_balances",     &RPCParser::parseGatewayBalances,       1, -1   },

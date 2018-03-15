@@ -144,7 +144,8 @@ void printHelp (const po::options_description& desc)
            "     channel_verify <public_key> <channel_id> <drops> <signature>\n"
            "     connect <ip> [<port>]\n"
            "     consensus_info\n"
-           "     deposit_authorized <source_account> <destination_account> [<ledger>]"
+           "     deposit_authorized <source_account> <destination_account> [<ledger>]\n"
+           "     download_shard [[<index> <url>]] <validate>\n"
            "     feature [<feature> [accept|reject]]\n"
            "     fetch_info [clear]\n"
            "     gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ <hotwallet> ]]\n"
@@ -579,7 +580,7 @@ int run (int argc, char** argv)
     if (vm.count("nodetoshard"))
         config->nodeToShard = true;
 
-    if (vm.count ("validateShards "))
+    if (vm.count ("validateShards"))
         config->validateShards = true;
 
     if (vm.count ("ledger"))

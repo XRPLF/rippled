@@ -92,6 +92,15 @@ struct parsedURL
     std::string domain;
     boost::optional<std::uint16_t> port;
     std::string path;
+
+    bool
+    operator == (parsedURL const& other) const
+    {
+        return scheme == other.scheme &&
+            domain == other.domain &&
+            port == other.port &&
+            path == other.path;
+    }
 };
 
 bool parseUrl (parsedURL& pUrl, std::string const& strUrl);

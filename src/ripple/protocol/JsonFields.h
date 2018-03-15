@@ -210,9 +210,9 @@ JSS ( ident );                      // in: AccountCurrencies, AccountInfo,
                                     //     OwnerInfo
 JSS ( inLedger );                   // out: tx/Transaction
 JSS ( inbound );                    // out: PeerImp
-JSS ( index );                      // in: LedgerEntry; out: PathState,
-                                    //     STLedgerEntry, LedgerEntry,
-                                    //     TxHistory, LedgerData;
+JSS ( index );                      // in: LedgerEntry, DownloadShard
+                                    // out: PathState, STLedgerEntry,
+                                    //      LedgerEntry, TxHistory, LedgerData
                                     // field
 JSS ( info );                       // out: ServerInfo, ConsensusInfo, FetchInfo
 JSS ( internal_command );           // in: Internal
@@ -401,7 +401,7 @@ JSS ( server_state );               // out: NetworkOPs
 JSS ( server_status );              // out: NetworkOPs
 JSS ( settle_delay );               // out: AccountChannels
 JSS ( severity );                   // in: LogLevel
-JSS ( shards );                     // out: GetCounts
+JSS ( shards );                     // in/out: GetCounts, DownloadShard
 JSS ( signature );                  // out: NetworkOPs, ChannelAuthorize
 JSS ( signature_verified );         // out: ChannelVerify
 JSS ( signing_key );                // out: NetworkOPs
@@ -477,6 +477,7 @@ JSS ( url_password );               // in: Subscribe
 JSS ( url_username );               // in: Subscribe
 JSS ( urlgravatar );                //
 JSS ( username );                   // in: Subscribe
+JSS ( validate );                   // in: DownloadShard
 JSS ( validated );                  // out: NetworkOPs, RPCHelpers, AccountTx*
                                     //      Tx
 JSS ( validator_list_expires );     // out: NetworkOps, ValidatorList
