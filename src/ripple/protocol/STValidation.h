@@ -116,7 +116,8 @@ public:
         @param nodeID ID corresponding to node's public master key
         @param isFull Whether the validation is full or partial
         @param fee FeeSettings to include in the validation
-        @param amendments If set, the amendments to include in this validation
+        @param amendments If not empty, the amendments to include in this validation
+        @param cookie If not none, the validation cookie to set
 
         @note The fee and amendment settings are only set if not boost::none.
               Typically, the amendments and fees are set for validations of flag
@@ -132,7 +133,8 @@ public:
         NodeID const& nodeID,
         bool isFull,
         FeeSettings const& fees,
-        std::vector<uint256> const& amendments);
+        std::vector<uint256> const& amendments,
+        boost::optional<std::uint64_t> const cookie);
 
     STBase*
     copy(std::size_t n, void* buf) const override

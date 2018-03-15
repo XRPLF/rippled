@@ -853,6 +853,11 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger,
         feeVote_->doValidation(ledger.ledger_, fees);
         amendments = app_.getAmendmentTable().doValidation(ledger.ledger_);
     }
+
+    boost::optional<std::uint64_t> maybeCookie;
+    if (ledgerMaster_.getValidatedRules().enabled(featureValidationCookies))
+        maybeCookie.emplace(cookie_);
+
     auto v = std::make_shared<STValidation>(
         ledger.id(),
         ledger.seq(),
@@ -863,7 +868,10 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger,
         nodeID_,
         proposing /* full if proposed */,
         fees,
-        amendments);
+        amendments,
+        maybeCookie);
+
+
 
     // suppress it if we receive it - FIXME: wrong suppression
     app_.getHashRouter().addSuppression(v->getSigningHash());

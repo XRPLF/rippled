@@ -46,7 +46,8 @@ class RCLValidations_test : public beast::unit_test::suite
             calcNodeID(keys.first),
             true,
             STValidation::FeeSettings{},
-            std::vector<uint256>{});
+            std::vector<uint256>{},
+            1001 /* cookie */);
 
         BEAST_EXPECT(v->isTrusted());
         v->setUntrusted();
