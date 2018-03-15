@@ -239,15 +239,21 @@ protected:
             std::shared_ptr<KeyCache<uint256>> const& nCache);
 
     std::shared_ptr<NodeObject>
-    fetchInternal(uint256 const& hash, Backend& backend);
+    fetchInternal(uint256 const& hash, Backend& srcBackend);
 
     void
-    importInternal(Database& source, Backend& dest);
+    importInternal(Backend& dstBackend, Database& srcDB);
 
     std::shared_ptr<NodeObject>
     doFetch(uint256 const& hash, std::uint32_t seq,
+        TaggedCache<uint256, NodeObject>& pCache,
+            KeyCache<uint256>& nCache, bool isAsync);
+
+    bool
+    copyLedger(Backend& dstBackend, Ledger const& srcLedger,
         std::shared_ptr<TaggedCache<uint256, NodeObject>> const& pCache,
-            std::shared_ptr<KeyCache<uint256>> const& nCache, bool isAsync);
+            std::shared_ptr<KeyCache<uint256>> const& nCache,
+                std::shared_ptr<Ledger const> const& srcNext);
 
 private:
     std::atomic<std::uint32_t> storeCount_ {0};

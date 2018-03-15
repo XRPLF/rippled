@@ -60,6 +60,9 @@ public:
     void
     validate() override;
 
+    void
+    importNodeStore() override;
+
     std::uint32_t
     ledgersPerShard() const override
     {
@@ -174,6 +177,9 @@ private:
     // Shard cache tuning
     int cacheSz_ {shardCacheSz};
     PCache::clock_type::rep cacheAge_ {shardCacheSeconds};
+
+    // File name used to mark shards being imported from node store
+    static constexpr auto importMarker_ = "import";
 
     std::shared_ptr<NodeObject>
     fetchFrom(uint256 const& hash, std::uint32_t seq) override;

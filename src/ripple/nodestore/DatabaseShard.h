@@ -123,6 +123,12 @@ public:
     void
     validate() = 0;
 
+    /** Import the node store into the shard store.
+    */
+    virtual
+    void
+    importNodeStore() = 0;
+
     /** @return The maximum number of ledgers stored in a shard
     */
     virtual

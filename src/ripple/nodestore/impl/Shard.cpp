@@ -140,7 +140,9 @@ Shard::setStored(std::shared_ptr<Ledger const> const& l)
         storedSeqs_.clear();
 
         JLOG(j_.debug()) <<
-            "shard " << index_ << " complete";
+            "shard " << index_ <<
+            " ledger seq " << l->info().seq <<
+            " stored. Shard complete";
     }
     else
     {
@@ -148,12 +150,12 @@ Shard::setStored(std::shared_ptr<Ledger const> const& l)
         lastStored_ = l;
         if (backend_->fdlimit() != 0 && !saveControl())
             return false;
-    }
 
-    JLOG(j_.debug()) <<
-        "shard " << index_ <<
-        " ledger seq " << l->info().seq <<
-        " stored";
+        JLOG(j_.debug()) <<
+            "shard " << index_ <<
+            " ledger seq " << l->info().seq <<
+            " stored";
+    }
 
     return true;
 }
@@ -186,7 +188,7 @@ Shard::validate(Application& app)
     {
         std::tie(l, seq, hash) = loadLedgerHelper(
             "WHERE LedgerSeq >= " + std::to_string(lastSeq_) +
-            " order by LedgerSeq desc limit 1", app);
+            " order by LedgerSeq desc limit 1", app, false);
         if (!l)
         {
             JLOG(j_.fatal()) <<

@@ -1074,6 +1074,7 @@ private:
     void addTxnSeqField();
     void addValidationSeqFields();
     bool updateTables ();
+    bool nodeToShards ();
     bool validateShards ();
     void startGenesisLedger ();
 
@@ -1281,8 +1282,15 @@ bool ApplicationImp::setup()
         *config_);
     add (*m_overlay); // add to PropertyStream
 
-    if (config_->valShards && !validateShards())
-        return false;
+    if (!config_->standalone())
+    {
+        // validation and node import require the sqlite db
+        if (config_->nodeToShard && !nodeToShards())
+            return false;
+
+        if (config_->validateShards && !validateShards())
+            return false;
+    }
 
     validatorSites_->start ();
 
@@ -2076,16 +2084,32 @@ bool ApplicationImp::updateTables ()
     return true;
 }
 
-bool ApplicationImp::validateShards()
+bool ApplicationImp::nodeToShards()
 {
-    if (!m_overlay)
-        Throw<std::runtime_error>("no overlay");
-    if(config_->standalone())
+    assert(m_overlay);
+    assert(!config_->standalone());
+
+    if (config_->section(ConfigSection::shardDatabase()).empty())
     {
-        JLOG(m_journal.fatal()) <<
-            "Shard validation cannot be run in standalone";
+        JLOG (m_journal.fatal()) <<
+            "The [shard_db] configuration setting must be set";
         return false;
     }
+    if (!shardStore_)
+    {
+        JLOG(m_journal.fatal()) <<
+            "Invalid [shard_db] configuration";
+        return false;
+    }
+    shardStore_->importNodeStore();
+    return true;
+}
+
+bool ApplicationImp::validateShards()
+{
+    assert(m_overlay);
+    assert(!config_->standalone());
+
     if (config_->section(ConfigSection::shardDatabase()).empty())
     {
         JLOG (m_journal.fatal()) <<

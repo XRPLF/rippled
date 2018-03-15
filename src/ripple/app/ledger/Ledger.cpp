@@ -216,6 +216,7 @@ Ledger::Ledger (
 Ledger::Ledger (
         LedgerInfo const& info,
         bool& loaded,
+        bool acquire,
         Config const& config,
         Family& family,
         beast::Journal j)
@@ -254,7 +255,8 @@ Ledger::Ledger (
     if (! loaded)
     {
         info_.hash = calculateLedgerHash(info_);
-        family.missing_node (info_.hash, info_.seq);
+        if (acquire)
+            family.missing_node (info_.hash, info_.seq);
     }
 }
 
@@ -1083,10 +1085,12 @@ Ledger::invariants() const
  *
  * @param sqlSuffix: Additional string to append to the sql query.
  *        (typically a where clause).
+ * @param acquire: Acquire the ledger if not found locally.
  * @return The ledger, ledger sequence, and ledger hash.
  */
 std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
-loadLedgerHelper(std::string const& sqlSuffix, Application& app)
+loadLedgerHelper(std::string const& sqlSuffix,
+    Application& app, bool acquire)
 {
     uint256 ledgerHash{};
     std::uint32_t ledgerSeq{0};
@@ -1155,11 +1159,11 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app)
     info.closeTimeResolution = duration{closeResolution.value_or(0)};
     info.seq = ledgerSeq;
 
-    bool loaded = false;
-
+    bool loaded;
     auto ledger = std::make_shared<Ledger>(
         info,
         loaded,
+        acquire,
         app.config(),
         app.family(),
         app.journal("Ledger"));
@@ -1188,14 +1192,15 @@ void finishLoadByIndexOrHash(
 }
 
 std::shared_ptr<Ledger>
-loadByIndex (std::uint32_t ledgerIndex, Application& app)
+loadByIndex (std::uint32_t ledgerIndex,
+    Application& app, bool acquire)
 {
     std::shared_ptr<Ledger> ledger;
     {
         std::ostringstream s;
         s << "WHERE LedgerSeq = " << ledgerIndex;
         std::tie (ledger, std::ignore, std::ignore) =
-            loadLedgerHelper (s.str (), app);
+            loadLedgerHelper (s.str (), app, acquire);
     }
 
     finishLoadByIndexOrHash (ledger, app.config(),
@@ -1204,14 +1209,15 @@ loadByIndex (std::uint32_t ledgerIndex, Application& app)
 }
 
 std::shared_ptr<Ledger>
-loadByHash (uint256 const& ledgerHash, Application& app)
+loadByHash (uint256 const& ledgerHash,
+    Application& app, bool acquire)
 {
     std::shared_ptr<Ledger> ledger;
     {
         std::ostringstream s;
         s << "WHERE LedgerHash = '" << ledgerHash << "'";
         std::tie (ledger, std::ignore, std::ignore) =
-            loadLedgerHelper (s.str (), app);
+            loadLedgerHelper (s.str (), app, acquire);
     }
 
     finishLoadByIndexOrHash (ledger, app.config(),
