@@ -36,6 +36,7 @@ namespace NodeStore {
 
 using PCache = TaggedCache<uint256, NodeObject>;
 using NCache = KeyCache<uint256>;
+class DatabaseShard;
 
 /* A range of historical ledgers backed by a node store.
    Shards are indexed and store `ledgersPerShard`.
