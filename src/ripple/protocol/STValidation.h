@@ -71,7 +71,6 @@ public:
     uint256         getLedgerHash ()     const;
     NetClock::time_point getSignTime ()  const;
     NetClock::time_point getSeenTime ()  const;
-    std::uint32_t   getFlags ()          const;
     PublicKey       getSignerPublic ()   const;
     NodeID          getNodeID ()         const
     {
@@ -102,8 +101,6 @@ public:
 
 private:
     static SOTemplate const& getFormat ();
-
-    void setNode ();
 
     NodeID mNodeID;
     bool mTrusted = false;

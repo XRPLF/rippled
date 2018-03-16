@@ -92,11 +92,6 @@ NetClock::time_point STValidation::getSeenTime () const
     return mSeen;
 }
 
-std::uint32_t STValidation::getFlags () const
-{
-    return getFieldU32 (sfFlags);
-}
-
 bool STValidation::isValid () const
 {
     return isValid (getSigningHash ());
