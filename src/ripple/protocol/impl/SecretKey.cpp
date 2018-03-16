@@ -87,10 +87,8 @@ public:
         std::memcpy(ui.data(), seed.data(), seed.size());
         auto gsk = generatePrivateDeterministicKey(gen_, ui, ordinal);
         auto gpk = generatePublicDeterministicKey(gen_, ordinal);
-        SecretKey const sk(Slice
-        { gsk.data(), gsk.size() });
-        PublicKey const pk(Slice
-        { gpk.data(), gpk.size() });
+        SecretKey const sk(Slice{ gsk.data(), gsk.size() });
+        PublicKey const pk(Slice{ gpk.data(), gpk.size() });
         beast::secure_erase(ui.data(), ui.size());
         beast::secure_erase(gsk.data(), gsk.size());
         return {pk, sk};
@@ -243,7 +241,7 @@ derivePublicKey (KeyType type, SecretKey const& sk)
             LogicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
 
         unsigned char pubkey[33];
-        size_t len = sizeof(pubkey);
+        std::size_t len = sizeof(pubkey);
         if(secp256k1_ec_pubkey_serialize(
                 secp256k1Context(),
                 pubkey,
@@ -252,8 +250,7 @@ derivePublicKey (KeyType type, SecretKey const& sk)
                 SECP256K1_EC_COMPRESSED) != 1)
             LogicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
 
-        return PublicKey{Slice{pubkey,
-            static_cast<std::size_t>(len)}};
+        return PublicKey{Slice{ pubkey, len }};
     }
     case KeyType::ed25519:
     {

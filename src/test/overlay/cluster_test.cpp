@@ -133,7 +133,7 @@ public:
 
         auto const node = randomNode ();
         auto const name = toBase58(
-            TokenType::TOKEN_NODE_PUBLIC,
+            TokenType::NodePublic,
             node);
         std::uint32_t load = 0;
         NetClock::time_point tick = {};
@@ -202,7 +202,7 @@ public:
             char const* comment = nullptr)
         {
             auto ret = toBase58(
-                TokenType::TOKEN_NODE_PUBLIC,
+                TokenType::NodePublic,
                 publicKey);
 
             if (comment)

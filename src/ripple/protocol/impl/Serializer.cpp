@@ -519,10 +519,16 @@ T SerialIter::getRawHelper (int size)
         Throw<std::runtime_error> (
             "invalid SerialIter getRaw");
     T result (size);
-    memcpy(result.data (), p_, size);
-    p_ += size;
-    used_ += size;
-    remain_ -= size;
+    if (size != 0)
+    {
+        // It's normally safe to call memcpy with size set to 0 (see the
+        // C99 standard 7.21.1/2). However, here this could mean that
+        // result.data would be null, which would trigger undefined behavior.
+        std::memcpy(result.data(), p_, size);
+        p_ += size;
+        used_ += size;
+        remain_ -= size;
+    }
     return result;
 }
 

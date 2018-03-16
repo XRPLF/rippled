@@ -172,7 +172,7 @@ private:
             PublicKey const &publicKey,
             char const* comment = nullptr)
         {
-            auto ret = toBase58 (TokenType::TOKEN_NODE_PUBLIC, publicKey);
+            auto ret = toBase58 (TokenType::NodePublic, publicKey);
 
             if (comment)
                 ret += comment;
@@ -271,7 +271,7 @@ private:
                 manifests, manifests, env.timeKeeper(), journal);
 
             auto const localSigningPublic = parseBase58<PublicKey> (
-                TokenType::TOKEN_NODE_PUBLIC, cfgKeys.front());
+                TokenType::NodePublic, cfgKeys.front());
 
             BEAST_EXPECT(trustedKeys->load (
                 *localSigningPublic, cfgKeys, emptyCfgPublishers));
@@ -330,7 +330,7 @@ private:
             badPublishers.clear();
             for (auto const& key : keys)
                 badPublishers.push_back (
-                    toBase58 (TokenType::TOKEN_NODE_PUBLIC, key));
+                    toBase58 (TokenType::NodePublic, key));
 
             BEAST_EXPECT(! trustedKeys->load (
                 emptyLocalKey, emptyCfgKeys, badPublishers));
@@ -533,7 +533,7 @@ private:
             {
                 auto const valKey = randomNode();
                 cfgKeys.push_back (toBase58(
-                    TokenType::TOKEN_NODE_PUBLIC, valKey));
+                    TokenType::NodePublic, valKey));
                 if (cfgKeys.size () <= n - 5)
                     activeValidators.emplace (valKey);
             }
@@ -550,7 +550,7 @@ private:
             for (auto const& val : cfgKeys)
             {
                 if (auto const valKey = parseBase58<PublicKey>(
-                    TokenType::TOKEN_NODE_PUBLIC, val))
+                    TokenType::NodePublic, val))
                 {
                     BEAST_EXPECT(trustedKeys->listed (*valKey));
                     if (i++ < activeValidators.size ())
@@ -567,7 +567,7 @@ private:
                 hash_set<PublicKey> activeValidators;
                 for (auto const valKey : cfgKeys)
                     activeValidators.emplace (*parseBase58<PublicKey>(
-                        TokenType::TOKEN_NODE_PUBLIC, valKey));
+                        TokenType::NodePublic, valKey));
                 trustedKeys->onConsensusStart (activeValidators);
                 BEAST_EXPECT(trustedKeys->quorum () == cfgKeys.size() * 4/5);
             }
@@ -579,7 +579,7 @@ private:
                 derivePublicKey(KeyType::ed25519, masterPrivate);
 
             std::vector<std::string> cfgKeys ({
-                toBase58 (TokenType::TOKEN_NODE_PUBLIC, masterPublic)});
+                toBase58 (TokenType::NodePublic, masterPublic)});
 
             BEAST_EXPECT(trustedKeys->load (
                 emptyLocalKey, cfgKeys, cfgPublishers));
@@ -682,8 +682,8 @@ private:
             std::vector<PublicKey> keys ({ randomNode (), randomNode () });
             hash_set<PublicKey> activeValidators;
             std::vector<std::string> cfgKeys ({
-                toBase58 (TokenType::TOKEN_NODE_PUBLIC, keys[0]),
-                toBase58 (TokenType::TOKEN_NODE_PUBLIC, keys[1])});
+                toBase58 (TokenType::NodePublic, keys[0]),
+                toBase58 (TokenType::NodePublic, keys[1])});
 
             BEAST_EXPECT(trustedKeys->load (
                 emptyLocalKey, cfgKeys, cfgPublishers));
@@ -703,7 +703,7 @@ private:
 
             auto const node = randomNode ();
             std::vector<std::string> cfgKeys ({
-                toBase58 (TokenType::TOKEN_NODE_PUBLIC, node)});
+                toBase58 (TokenType::NodePublic, node)});
             hash_set<PublicKey> activeValidators;
 
             BEAST_EXPECT(trustedKeys->load (
@@ -724,8 +724,8 @@ private:
             std::vector<PublicKey> keys ({ randomNode (), randomNode () });
             hash_set<PublicKey> activeValidators ({ keys[0] });
             std::vector<std::string> cfgKeys ({
-                toBase58 (TokenType::TOKEN_NODE_PUBLIC, keys[0]),
-                toBase58 (TokenType::TOKEN_NODE_PUBLIC, keys[1])});
+                toBase58 (TokenType::NodePublic, keys[0]),
+                toBase58 (TokenType::NodePublic, keys[1])});
 
             auto const localKey = randomNode ();
             BEAST_EXPECT(trustedKeys->load (
@@ -827,7 +827,7 @@ private:
             {
                 auto const valKey = randomNode();
                 cfgKeys.push_back (toBase58(
-                    TokenType::TOKEN_NODE_PUBLIC, valKey));
+                    TokenType::NodePublic, valKey));
                 activeValidators.emplace (valKey);
 
                 BEAST_EXPECT(trustedKeys->load (
@@ -850,14 +850,14 @@ private:
             hash_set<PublicKey> activeValidators;
 
             std::vector<std::string> cfgKeys {
-                toBase58(TokenType::TOKEN_NODE_PUBLIC, localKey)};
+                toBase58(TokenType::NodePublic, localKey)};
             cfgKeys.reserve(9);
 
             while (cfgKeys.size() < cfgKeys.capacity())
             {
                 auto const valKey = randomNode();
                 cfgKeys.push_back (toBase58(
-                    TokenType::TOKEN_NODE_PUBLIC, valKey));
+                    TokenType::NodePublic, valKey));
                 activeValidators.emplace (valKey);
 
                 BEAST_EXPECT(trustedKeys->load (
@@ -950,7 +950,7 @@ private:
         jtx::Env env(*this);
 
         auto toStr = [](PublicKey const& publicKey) {
-            return toBase58(TokenType::TOKEN_NODE_PUBLIC, publicKey);
+            return toBase58(TokenType::NodePublic, publicKey);
         };
 
         // Config listed keys

@@ -327,7 +327,7 @@ public:
             return;
 
         std::string const valPublicKey =
-            toBase58 (TokenType::TOKEN_NODE_PUBLIC,
+            toBase58 (TokenType::NodePublic,
                 derivePublicKey (KeyType::secp256k1,
                     generateSecretKey (KeyType::secp256k1, *parsedseed)));
 

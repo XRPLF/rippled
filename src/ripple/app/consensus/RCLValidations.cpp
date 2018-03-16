@@ -251,7 +251,7 @@ RCLValidationsAdaptor::doStaleWrite(ScopedLockType&)
                     auto const initialSeq = ledgerSeq.value_or(
                         app_.getLedgerMaster().getCurrentLedgerIndex());
                     auto const nodePubKey = toBase58(
-                        TokenType::TOKEN_NODE_PUBLIC, val->getSignerPublic());
+                        TokenType::NodePublic, val->getSignerPublic());
                     auto const signTime =
                         val->getSignTime().time_since_epoch().count();
 
@@ -300,10 +300,10 @@ handleNewValidation(Application& app,
         s << "Val for " << hash
           << (val->isTrusted() ? " trusted/" : " UNtrusted/")
           << (val->isFull() ? "full" : "partial") << " from "
-          << (masterKey ? toBase58(TokenType::TOKEN_NODE_PUBLIC, *masterKey)
+          << (masterKey ? toBase58(TokenType::NodePublic, *masterKey)
                         : "unknown")
           << " signing key "
-          << toBase58(TokenType::TOKEN_NODE_PUBLIC, signingKey) << " " << msg
+          << toBase58(TokenType::NodePublic, signingKey) << " " << msg
           << " src=" << source;
     };
 
@@ -346,7 +346,7 @@ handleNewValidation(Application& app,
     else
     {
         JLOG(j.debug()) << "Val for " << hash << " from "
-                    << toBase58(TokenType::TOKEN_NODE_PUBLIC, signingKey)
+                    << toBase58(TokenType::NodePublic, signingKey)
                     << " not added UNlisted";
     }
 

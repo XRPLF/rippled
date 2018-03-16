@@ -1065,8 +1065,21 @@ struct PayChan_test : public beast::unit_test::suite
         jv.removeMember("PublicKey");
         env (jv, ter(temMALFORMED));
 
-        jv["PublicKey"] = pkHex;
-        env (jv);
+        {
+            auto const txn = R"*(
+        {
+
+        "channel_id":"5DB01B7FFED6B67E6B0414DED11E051D2EE2B7619CE0EAA6286D67A3A4D5BDB3",
+                "signature":
+        "304402204EF0AFB78AC23ED1C472E74F4299C0C21F1B21D07EFC0A3838A420F76D783A400220154FB11B6F54320666E4C36CA7F686C16A3A0456800BBC43746F34AF50290064",
+                "public_key":
+        "aKijDDiC2q2gXjMpM7i4BUS6cmixgsEe18e7CjsUxwihKfuoFgS5",
+                "amount": "1000000"
+            }
+        )*";
+            auto const r = env.rpc("json", "channel_verify", txn);
+            BEAST_EXPECT(r["result"]["error"] == "publicMalformed");
+        }
     }
 
     void

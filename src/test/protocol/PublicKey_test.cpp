@@ -231,12 +231,12 @@ public:
     void testBase58 (KeyType keyType)
     {
         // Try converting short, long and malformed data
-        BEAST_EXPECT(!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, ""));
-        BEAST_EXPECT(!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, " "));
-        BEAST_EXPECT(!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, "!ty89234gh45"));
+        BEAST_EXPECT(!parseBase58<PublicKey> (TokenType::NodePublic, ""));
+        BEAST_EXPECT(!parseBase58<PublicKey> (TokenType::NodePublic, " "));
+        BEAST_EXPECT(!parseBase58<PublicKey> (TokenType::NodePublic, "!ty89234gh45"));
 
         auto const good = toBase58 (
-            TokenType::TOKEN_NODE_PUBLIC,
+            TokenType::NodePublic,
             derivePublicKey (
                 keyType,
                 randomSecretKey()));
@@ -251,7 +251,7 @@ public:
             while (!s.empty())
             {
                 s.erase (r(s) % s.size(), 1);
-                BEAST_EXPECT(!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, s));
+                BEAST_EXPECT(!parseBase58<PublicKey> (TokenType::NodePublic, s));
             }
         }
 
@@ -260,7 +260,7 @@ public:
         {
             auto s = good;
             s.resize (s.size() + i, s[i % s.size()]);
-            BEAST_EXPECT(!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, s));
+            BEAST_EXPECT(!parseBase58<PublicKey> (TokenType::NodePublic, s));
         }
 
         // Strings with invalid Base58 characters
@@ -270,7 +270,7 @@ public:
             {
                 auto s = good;
                 s[i % s.size()] = c;
-                BEAST_EXPECT(!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, s));
+                BEAST_EXPECT(!parseBase58<PublicKey> (TokenType::NodePublic, s));
             }
         }
 
@@ -281,7 +281,7 @@ public:
             for (auto c : std::string("apsrJqtv7"))
             {
                 s[0] = c;
-                BEAST_EXPECT(!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, s));
+                BEAST_EXPECT(!parseBase58<PublicKey> (TokenType::NodePublic, s));
             }
         }
 
@@ -294,12 +294,12 @@ public:
         for (std::size_t i = 0; i != keys.size(); ++i)
         {
             auto const si = toBase58 (
-                TokenType::TOKEN_NODE_PUBLIC,
+                TokenType::NodePublic,
                 keys[i]);
             BEAST_EXPECT(!si.empty());
 
             auto const ski = parseBase58<PublicKey> (
-                TOKEN_NODE_PUBLIC, si);
+                TokenType::NodePublic, si);
             BEAST_EXPECT(ski && (keys[i] == *ski));
 
             for (std::size_t j = i; j != keys.size(); ++j)
@@ -307,13 +307,13 @@ public:
                 BEAST_EXPECT((keys[i] == keys[j]) == (i == j));
 
                 auto const sj = toBase58 (
-                    TokenType::TOKEN_NODE_PUBLIC,
+                    TokenType::NodePublic,
                     keys[j]);
 
                 BEAST_EXPECT((si == sj) == (i == j));
 
                 auto const skj = parseBase58<PublicKey> (
-                    TOKEN_NODE_PUBLIC, sj);
+                    TokenType::NodePublic, sj);
                 BEAST_EXPECT(skj && (keys[j] == *skj));
 
                 BEAST_EXPECT((*ski == *skj) == (i == j));
@@ -333,7 +333,7 @@ public:
                     generateSeed ("masterpassphrase")));
 
             auto const pk2 = parseBase58<PublicKey> (
-                TOKEN_NODE_PUBLIC,
+                TokenType::NodePublic,
                 "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9");
             BEAST_EXPECT(pk2);
 
@@ -352,7 +352,7 @@ public:
                     generateSeed ("masterpassphrase")));
 
             auto const pk2 = parseBase58<PublicKey> (
-                TOKEN_NODE_PUBLIC,
+                TokenType::NodePublic,
                 "nHUeeJCSY2dM71oxM8Cgjouf5ekTuev2mwDpc374aLMxzDLXNmjf");
             BEAST_EXPECT(pk2);
 

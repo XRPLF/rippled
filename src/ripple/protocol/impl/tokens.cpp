@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/protocol/tokens.h>
 #include <ripple/protocol/digest.h>
+#include <boost/container/small_vector.hpp>
 #include <cassert>
 #include <cstring>
 #include <memory>
@@ -102,11 +103,12 @@ static
 std::string
 encodeBase58(
     void const* message, std::size_t size,
-        void *temp, char const* const alphabet)
+        void *temp, std::size_t temp_size,
+            char const* const alphabet)
 {
-    auto pbegin = reinterpret_cast<
-        unsigned char const*>(message);
+    auto pbegin = reinterpret_cast<unsigned char const*>(message);
     auto const pend = pbegin + size;
+
     // Skip & count leading zeroes.
     int zeroes = 0;
     while (pbegin != pend && *pbegin == 0)
@@ -114,12 +116,12 @@ encodeBase58(
         pbegin++;
         zeroes++;
     }
-    auto const b58begin = reinterpret_cast<
-        unsigned char*>(temp);
-    // log(256) / log(58), rounded up.
-    auto const b58end = b58begin +
-        size * (138 / 100 + 1);
+
+    auto const b58begin = reinterpret_cast<unsigned char*>(temp);
+    auto const b58end = b58begin + temp_size;
+
     std::fill(b58begin, b58end, 0);
+
     while (pbegin != pend)
     {
         int carry = *pbegin;
@@ -133,10 +135,12 @@ encodeBase58(
         assert(carry == 0);
         pbegin++;
     }
+
     // Skip leading zeroes in base58 result.
     auto iter = b58begin;
     while (iter != b58end && *iter == 0)
         ++iter;
+
     // Translate the result into a string.
     std::string str;
     str.reserve(zeroes + (b58end - iter));
@@ -148,48 +152,44 @@ encodeBase58(
 
 static
 std::string
-encodeToken (std::uint8_t type,
-    void const* token, std::size_t size, bool btc)
+encodeToken (TokenType type,
+    void const* token, std::size_t size, char const* const alphabet)
 {
-    char buf[1024];
-    // expanded token includes type + checksum
+    // expanded token includes type + 4 byte checksum
     auto const expanded = 1 + size + 4;
-    // add scratch, log(256) / log(58), rounded up.
-    auto const needed = expanded +
-        size * (138 / 100 + 1);
-    std::unique_ptr<
-        char[]> pbuf;
-    char* temp;
-    if (needed > sizeof(buf))
-    {
-        pbuf.reset(new char[needed]);
-        temp = pbuf.get();
-    }
-    else
-    {
-        temp = buf;
-    }
+
+    // We need expanded + expanded * (log(256) / log(58)) which is
+    // bounded by expanded + expanded * (138 / 100 + 1) which works
+    // out to expanded * 3:
+    auto const bufsize = expanded * 3;
+
+    boost::container::small_vector<std::uint8_t, 1024> buf (bufsize);
+
     // Lay the data out as
     //      <type><token><checksum>
-    temp[0] = type;
-    std::memcpy(temp + 1, token, size);
-    checksum(temp + 1 + size, temp, 1 + size);
-    return encodeBase58(temp, expanded,
-        temp + expanded, btc ? bitcoinAlphabet : rippleAlphabet);
+    buf[0] = static_cast<std::underlying_type_t <TokenType>>(type);
+    if (size)
+        std::memcpy(buf.data() + 1, token, size);
+    checksum(buf.data() + 1 + size, buf.data(), 1 + size);
+
+    return encodeBase58(
+        buf.data(), expanded,
+        buf.data() + expanded, bufsize - expanded,
+        alphabet);
 }
 
 std::string
-base58EncodeToken (std::uint8_t type,
+base58EncodeToken (TokenType type,
     void const* token, std::size_t size)
 {
-    return encodeToken(type, token, size, false);
+    return encodeToken(type, token, size, rippleAlphabet);
 }
 
 std::string
-base58EncodeTokenBitcoin (std::uint8_t type,
+base58EncodeTokenBitcoin (TokenType type,
     void const* token, std::size_t size)
 {
-    return encodeToken(type, token, size, true);
+    return encodeToken(type, token, size, bitcoinAlphabet);
 }
 
 //------------------------------------------------------------------------------
@@ -258,28 +258,26 @@ template <class InverseArray>
 static
 std::string
 decodeBase58Token (std::string const& s,
-    int type, InverseArray const& inv)
+    TokenType type, InverseArray const& inv)
 {
-    auto result = decodeBase58(s, inv);
-    if (result.empty())
-        return result;
+    auto ret = decodeBase58(s, inv);
+
     // Reject zero length tokens
-    if (result.size() < 6)
+    if (ret.size() < 6)
         return {};
-    if (result[0] != type)
+
+    // The type must match.
+    if (type != static_cast<TokenType>(ret[0]))
         return {};
+
+    // And the checksum must as well.
     std::array<char, 4> guard;
-    checksum(guard.data(),
-        result.data(), result.size() - 4);
-    if (std::memcmp(guard.data(),
-        result.data() +
-            result.size() - 4, 4) != 0)
+    checksum(guard.data(), ret.data(), ret.size() - guard.size());
+    if (!std::equal (guard.rbegin(), guard.rend(), ret.rbegin()))
         return {};
-    result.resize(result.size() - 4);
-    // Erase the type byte
-    // VFALCO This might cause problems later
-    result.erase(result.begin());
-    return result;
+
+    // Skip the leading type byte and the trailing checksum.
+    return ret.substr(1, ret.size() - 1 - guard.size());
 }
 
 //------------------------------------------------------------------------------
@@ -315,18 +313,16 @@ static InverseAlphabet bitcoinInverse(bitcoinAlphabet);
 
 std::string
 decodeBase58Token(
-    std::string const& s, int type)
+    std::string const& s, TokenType type)
 {
-    return decodeBase58Token(
-        s, type, rippleInverse);
+    return decodeBase58Token(s, type, rippleInverse);
 }
 
 std::string
 decodeBase58TokenBitcoin(
-    std::string const& s, int type)
+    std::string const& s, TokenType type)
 {
-    return decodeBase58Token(
-        s, type, bitcoinInverse);
+    return decodeBase58Token(s, type, bitcoinInverse);
 }
 
 } // ripple

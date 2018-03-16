@@ -784,7 +784,7 @@ void NetworkOPsImp::processClusterTimer ()
         {
             protocol::TMClusterNode& n = *cluster.add_clusternodes();
             n.set_publickey(toBase58 (
-                TokenType::TOKEN_NODE_PUBLIC,
+                TokenType::NodePublic,
                 node.identity()));
             n.set_reporttime(
                 node.getReportTime().time_since_epoch().count());
@@ -1556,9 +1556,9 @@ void NetworkOPsImp::pubManifest (Manifest const& mo)
 
         jvObj [jss::type]             = "manifestReceived";
         jvObj [jss::master_key]       = toBase58(
-            TokenType::TOKEN_NODE_PUBLIC, mo.masterKey);
+            TokenType::NodePublic, mo.masterKey);
         jvObj [jss::signing_key]      = toBase58(
-            TokenType::TOKEN_NODE_PUBLIC, mo.signingKey);
+            TokenType::NodePublic, mo.signingKey);
         jvObj [jss::seq]              = Json::UInt (mo.sequence);
         jvObj [jss::signature]        = strHex (mo.getSignature ());
         jvObj [jss::master_signature] = strHex (mo.getMasterSignature ());
@@ -1695,7 +1695,7 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
 
         jvObj [jss::type]                  = "validationReceived";
         jvObj [jss::validation_public_key] = toBase58(
-            TokenType::TOKEN_NODE_PUBLIC,
+            TokenType::NodePublic,
             val->getSignerPublic());
         jvObj [jss::ledger_hash]           = to_string (val->getLedgerHash ());
         jvObj [jss::signature]             = strHex (val->getSignature ());
@@ -2122,7 +2122,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         if (!app_.getValidationPublicKey().empty())
         {
             info[jss::pubkey_validator] = toBase58 (
-                TokenType::TOKEN_NODE_PUBLIC,
+                TokenType::NodePublic,
                 app_.validators().localPublicKey());
         }
         else
@@ -2132,7 +2132,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     }
 
     info[jss::pubkey_node] = toBase58 (
-        TokenType::TOKEN_NODE_PUBLIC,
+        TokenType::NodePublic,
         app_.nodeIdentity().first);
 
     info[jss::complete_ledgers] =
@@ -2820,7 +2820,7 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult,
     jvResult[jss::load_factor]     = feeTrack.getLoadFactor ();
     jvResult [jss::hostid]         = getHostId (admin);
     jvResult[jss::pubkey_node]     = toBase58 (
-        TokenType::TOKEN_NODE_PUBLIC,
+        TokenType::NodePublic,
         app_.nodeIdentity().first);
 
     ScopedLockType sl (mSubLock);

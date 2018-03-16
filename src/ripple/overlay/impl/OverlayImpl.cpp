@@ -424,7 +424,7 @@ OverlayImpl::add_active (std::shared_ptr<PeerImp> const& peer)
         "activated " << peer->getRemoteAddress() <<
         " (" << peer->id() << ":" <<
         toBase58 (
-            TokenType::TOKEN_NODE_PUBLIC,
+            TokenType::NodePublic,
             peer->getNodePublic()) << ")";
 
     // As we are not on the strand, run() must be called
@@ -610,7 +610,7 @@ OverlayImpl::activate (std::shared_ptr<PeerImp> const& peer)
         "activated " << peer->getRemoteAddress() <<
         " (" << peer->id() <<
         ":" << toBase58 (
-            TokenType::TOKEN_NODE_PUBLIC,
+            TokenType::NodePublic,
             peer->getNodePublic()) << ")";
 
     // We just accepted this peer so we have non-zero active peers

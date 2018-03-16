@@ -112,7 +112,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
           // parsing as a seed to fail
             Json::Value params;
             params[jss::account] =
-                toBase58 (TokenType::TOKEN_NODE_PRIVATE, alice.sk());
+                toBase58 (TokenType::NodePrivate, alice.sk());
             params[jss::role] = "user";
             params[jss::ledger] = "current";
             auto const result = env.rpc ("json", "noripple_check",

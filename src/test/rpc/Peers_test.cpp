@@ -58,7 +58,7 @@ class Peers_test : public beast::unit_test::suite
                 200,
                 env.timeKeeper().now() - 10s);
             nodes.insert( std::make_pair(
-                toBase58(TokenType::TOKEN_NODE_PUBLIC, kp.first), name));
+                toBase58(TokenType::NodePublic, kp.first), name));
         }
 
         // make request, verify nodes we created match

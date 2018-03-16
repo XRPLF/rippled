@@ -98,14 +98,14 @@ ValidatorList::load (
 
         auto const ret = strUnHex (key);
 
-        if (! ret.second || ! ret.first.size ())
+        if (! ret.second || ! publicKeyType(makeSlice(ret.first)))
         {
             JLOG (j_.error()) <<
                 "Invalid validator list publisher key: " << key;
             return false;
         }
 
-        auto id = PublicKey(Slice{ ret.first.data (), ret.first.size() });
+        auto id = PublicKey(makeSlice(ret.first));
 
         if (validatorManifests_.revoked (id))
         {
@@ -154,7 +154,7 @@ ValidatorList::load (
         }
 
         auto const id = parseBase58<PublicKey>(
-            TokenType::TOKEN_NODE_PUBLIC, match[1]);
+            TokenType::NodePublic, match[1]);
 
         if (!id)
         {
@@ -230,7 +230,7 @@ ValidatorList::applyList (
             std::pair<Blob, bool> ret (strUnHex (
                 val["validation_public_key"].asString ()));
 
-            if (! ret.second || ! ret.first.size ())
+            if (! ret.second || ! publicKeyType(makeSlice(ret.first)))
             {
                 JLOG (j_.error()) <<
                     "Invalid node identity: " <<
@@ -440,7 +440,7 @@ ValidatorList::removePublisherList (PublicKey const& publisherKey)
 
     JLOG (j_.debug()) <<
         "Removing validator list for revoked publisher " <<
-        toBase58(TokenType::TOKEN_NODE_PUBLIC, publisherKey);
+        toBase58(TokenType::NodePublic, publisherKey);
 
     for (auto const& val : iList->second.list)
     {
@@ -506,7 +506,7 @@ ValidatorList::getJson() const
     {
         for (auto const& key : it->second.list)
             jLocalStaticKeys.append(
-                toBase58(TokenType::TOKEN_NODE_PUBLIC, key));
+                toBase58(TokenType::NodePublic, key));
     }
 
     // Publisher lists
@@ -528,7 +528,7 @@ ValidatorList::getJson() const
         Json::Value& keys = (curr[jss::list] = Json::arrayValue);
         for (auto const& key : p.second.list)
         {
-            keys.append(toBase58(TokenType::TOKEN_NODE_PUBLIC, key));
+            keys.append(toBase58(TokenType::NodePublic, key));
         }
     }
 
@@ -537,7 +537,7 @@ ValidatorList::getJson() const
         (res[jss::trusted_validator_keys] = Json::arrayValue);
     for (auto const& k : trustedKeys_)
     {
-        jValidatorKeys.append(toBase58(TokenType::TOKEN_NODE_PUBLIC, k));
+        jValidatorKeys.append(toBase58(TokenType::NodePublic, k));
     }
 
     // signing keys
@@ -549,8 +549,8 @@ ValidatorList::getJson() const
             if (it != keyListings_.end())
             {
                 jSigningKeys[toBase58(
-                    TokenType::TOKEN_NODE_PUBLIC, manifest.masterKey)] =
-                    toBase58(TokenType::TOKEN_NODE_PUBLIC, manifest.signingKey);
+                    TokenType::NodePublic, manifest.masterKey)] =
+                    toBase58(TokenType::NodePublic, manifest.signingKey);
             }
         });
 

@@ -29,15 +29,23 @@ namespace ripple {
 STValidation::STValidation (SerialIter& sit, bool checkSignature)
     : STObject (getFormat (), sit, sfValidation)
 {
-    mNodeID = calcNodeID(
-        PublicKey(makeSlice (getFieldVL (sfSigningPubKey))));
+    auto const spk = getFieldVL(sfSigningPubKey);
+
+    if (publicKeyType(makeSlice(spk)) != KeyType::secp256k1)
+    {
+        JLOG (debugLog().error())
+            << "Invalid public key in validation" << getJson (0);
+        Throw<std::runtime_error> ("Invalid public key in validation");
+    }
+
+    mNodeID = calcNodeID(PublicKey(makeSlice(spk)));
     assert (mNodeID.isNonZero ());
 
     if  (checkSignature && !isValid ())
     {
         JLOG (debugLog().error())
-            << "Invalid validation" << getJson (0);
-        Throw<std::runtime_error> ("Invalid validation");
+            << "Invalid signature in validation" << getJson (0);
+        Throw<std::runtime_error> ("Invalid signature in validation");
     }
 }
 
@@ -49,11 +57,15 @@ STValidation::STValidation (
     : STObject (getFormat (), sfValidation)
     , mSeen (signTime)
 {
+    // This is our own public key and it should always be valid.
+    if (!publicKeyType(publicKey))
+        LogicError ("Invalid validation public key");
+
     // Does not sign
     setFieldH256 (sfLedgerHash, ledgerHash);
     setFieldU32 (sfSigningTime, signTime.time_since_epoch().count());
-
     setFieldVL (sfSigningPubKey, publicKey.slice());
+
     mNodeID = calcNodeID(publicKey);
     assert (mNodeID.isNonZero ());
 
@@ -101,6 +113,9 @@ bool STValidation::isValid (uint256 const& signingHash) const
 {
     try
     {
+        if (publicKeyType(getSignerPublic()) != KeyType::secp256k1)
+            return false;
+
         return verifyDigest (getSignerPublic(),
             signingHash,
             makeSlice(getFieldVL (sfSignature)),

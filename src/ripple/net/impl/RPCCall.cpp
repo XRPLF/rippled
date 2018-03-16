@@ -722,7 +722,7 @@ private:
         std::string const strPk = jvParams[0u].asString ();
 
         bool const validPublicKey = [&strPk]{
-            if (parseBase58<PublicKey> (TokenType::TOKEN_ACCOUNT_PUBLIC, strPk))
+            if (parseBase58<PublicKey> (TokenType::AccountPublic, strPk))
                 return true;
 
             std::pair<Blob, bool> pkHex(strUnHex (strPk));
@@ -775,7 +775,7 @@ private:
             if (i < 2)
             {
                 if (parseBase58<PublicKey> (
-                        TokenType::TOKEN_ACCOUNT_PUBLIC, strParam) ||
+                        TokenType::AccountPublic, strParam) ||
                     parseBase58<AccountID> (strParam) ||
                     parseGenericSeed (strParam))
                 {
@@ -810,7 +810,7 @@ private:
             --iCursor;
         }
 
-        if (! parseBase58<PublicKey>(TokenType::TOKEN_ACCOUNT_PUBLIC, strIdent) &&
+        if (! parseBase58<PublicKey>(TokenType::AccountPublic, strIdent) &&
             ! parseBase58<AccountID>(strIdent) &&
             ! parseGenericSeed(strIdent))
             return rpcError (rpcACT_MALFORMED);
