@@ -481,10 +481,6 @@ set_property(TARGET ${other_target} PROPERTY EXCLUDE_FROM_DEFAULT_BUILD true)
 
 find_package(Doxygen)
 if(TARGET Doxygen::doxygen)
-    if (NOT DEFINED ENV{PLANTUML_JAR})
-        message(WARNING
-            "PLANTUML_JAR not set - @startuml diagrams will not generate")
-    endif()
     # read the source config and make a modified one
     # that points the output files to our build directory
     FILE(READ "${CMAKE_SOURCE_DIR}/docs/source.dox" dox_content)
