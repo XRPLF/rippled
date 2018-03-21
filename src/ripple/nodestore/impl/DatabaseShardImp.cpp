@@ -95,7 +95,11 @@ DatabaseShardImp::init()
         if (!is_directory(d))
             continue;
         auto dirName = d.path().stem().string();
-        if (!std::all_of(dirName.begin(), dirName.end(), ::isdigit))
+        if (!std::all_of(dirName.begin(), dirName.end(),
+                         [](auto c)
+                         {
+                             return ::isdigit(static_cast<unsigned char>(c));
+                         }))
             continue;
         auto const shardIndex {std::stoul(dirName)};
         if (shardIndex < earliestShardIndex())

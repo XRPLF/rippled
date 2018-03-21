@@ -24,6 +24,7 @@
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/strHex.h>
 #include <boost/format.hpp>
+#include <boost/optional.hpp>
 #include <sstream>
 #include <string>
 
@@ -94,6 +95,8 @@ struct parsedURL
 bool parseUrl (parsedURL& pUrl, std::string const& strUrl);
 
 std::string trim_whitespace (std::string str);
+
+boost::optional<std::uint64_t> to_uint64(std::string const& s);
 
 } // ripple
 

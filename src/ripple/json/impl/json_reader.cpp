@@ -392,7 +392,7 @@ Reader::readNumber ()
 
         while ( current_ != end_ )
         {
-            if (!std::isdigit (*current_))
+            if (!std::isdigit (static_cast<unsigned char>(*current_)))
             {
                 auto ret = std::find (std::begin (extended_tokens),
                     std::end (extended_tokens), *current_);

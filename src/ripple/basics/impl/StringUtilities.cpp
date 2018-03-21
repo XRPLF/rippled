@@ -123,4 +123,13 @@ std::string trim_whitespace (std::string str)
     return str;
 }
 
+boost::optional<std::uint64_t>
+to_uint64(std::string const& s)
+{
+    std::uint64_t result;
+    if (beast::lexicalCastChecked (result, s))
+        return result;
+    return boost::none;
+}
+
 } // ripple

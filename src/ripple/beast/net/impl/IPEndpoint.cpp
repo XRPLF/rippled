@@ -86,7 +86,7 @@ Endpoint Endpoint::from_string_altform (std::string const& s)
             {
                 char c;
                 is.get(c);
-                if (!isspace (c))
+                if (!isspace (static_cast<unsigned char>(c)))
                 {
                     is.unget();
                     break;
