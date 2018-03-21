@@ -114,7 +114,7 @@ std::istream& operator>> (std::istream& is, Endpoint& endpoint)
         // so we continue to honor that here by assuming we are at the end
         // of the address portion if we hit a space (or the separator
         // we were expecting to see)
-        if (isspace(i) || (readTo && i == readTo))
+        if (isspace(static_cast<unsigned char>(i)) || (readTo && i == readTo))
             break;
 
         if ((i == '.') ||
@@ -150,7 +150,7 @@ std::istream& operator>> (std::istream& is, Endpoint& endpoint)
     if (readTo == ']' && is.rdbuf()->in_avail() > 0)
     {
         is.get(i);
-        if (! (isspace(i) || i == ':'))
+        if (! (isspace(static_cast<unsigned char>(i)) || i == ':'))
         {
             is.unget();
             is.setstate (std::ios_base::failbit);
