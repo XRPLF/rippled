@@ -49,7 +49,7 @@ template <typename InputStream>
 bool expect_whitespace (InputStream& is)
 {
     char c;
-    if (is.get(c) && isspace(c))
+    if (is.get(c) && isspace(static_cast<unsigned char>(c)))
         return true;
     is.unget();
     is.setstate (std::ios_base::failbit);

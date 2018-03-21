@@ -279,7 +279,7 @@ public:
         // Attempt to find the first and last valid port separators
         auto const find_port_separator = [](char const c) -> bool
         {
-            if (std::isspace (c))
+            if (std::isspace (static_cast<unsigned char>(c)))
                 return true;
 
             if (c == ':')

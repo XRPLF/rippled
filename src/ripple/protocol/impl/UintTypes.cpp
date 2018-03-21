@@ -78,7 +78,11 @@ bool to_currency(Currency& currency, std::string const& code)
     {
         Blob codeBlob (CURRENCY_CODE_LENGTH);
 
-        std::transform (code.begin (), code.end (), codeBlob.begin (), ::toupper);
+        std::transform (code.begin (), code.end (), codeBlob.begin (),
+                        [](auto c)
+                        {
+                            return ::toupper(static_cast<unsigned char>(c));
+                        });
 
         Serializer  s;
 

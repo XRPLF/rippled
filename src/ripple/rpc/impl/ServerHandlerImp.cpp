@@ -267,7 +267,11 @@ build_map(beast::http::fields const& h)
     {
         auto key (e.name_string().to_string());
         // TODO Replace with safe C++14 version
-        std::transform (key.begin(), key.end(), key.begin(), ::tolower);
+        std::transform (key.begin(), key.end(), key.begin(),
+                        [](auto c)
+                        {
+                            return ::tolower(static_cast<unsigned char>(c));
+                        });
         c [key] = e.value().to_string();
     }
     return c;

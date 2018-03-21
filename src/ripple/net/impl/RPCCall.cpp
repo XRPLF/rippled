@@ -93,7 +93,7 @@ to_uint64(std::string const& s)
 
     for (auto c : s)
     {
-        if (!isdigit(c))
+        if (!isdigit(static_cast<unsigned char>(c)))
             return boost::none;
     }
 

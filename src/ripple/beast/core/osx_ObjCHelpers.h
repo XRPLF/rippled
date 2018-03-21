@@ -42,7 +42,7 @@ namespace
         // in the range [0-127] is the identity. We are more
         // strict and require only printable characters.
         for (auto const& c : s)
-            assert (isprint(c));
+            assert (isprint(static_cast<unsigned char>(c)));
 #endif
 
         return [NSString stringWithUTF8String: s.c_str()];

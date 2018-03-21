@@ -356,11 +356,12 @@ public:
     {
         // skip leading spaces
         if (!bStrict)
-            while (isspace (*psz))
+            while (isspace (static_cast<unsigned char>(*psz)))
                 psz++;
 
         // skip 0x
-        if (!bStrict && psz[0] == '0' && tolower (psz[1]) == 'x')
+        if (!bStrict && psz[0] == '0' &&
+                tolower(static_cast<unsigned char>(psz[1])) == 'x')
             psz += 2;
 
         const unsigned char* pEnd   = reinterpret_cast<const unsigned char*> (psz);
