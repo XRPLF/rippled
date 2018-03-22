@@ -354,20 +354,19 @@ public:
     */
     bool SetHex (const char* psz, bool bStrict = false)
     {
+        // Find beginning.
+        auto pBegin = reinterpret_cast<const unsigned char*>(psz);
         // skip leading spaces
         if (!bStrict)
-            while (isspace (static_cast<unsigned char>(*psz)))
-                psz++;
+            while (isspace(*pBegin))
+                pBegin++;
 
         // skip 0x
-        if (!bStrict && psz[0] == '0' &&
-                tolower(static_cast<unsigned char>(psz[1])) == 'x')
-            psz += 2;
-
-        const unsigned char* pEnd   = reinterpret_cast<const unsigned char*> (psz);
-        const unsigned char* pBegin = pEnd;
+        if (!bStrict && pBegin[0] == '0' && tolower(pBegin[1]) == 'x')
+            pBegin += 2;
 
         // Find end.
+        auto pEnd = pBegin;
         while (charUnHex(*pEnd) != -1)
             pEnd++;
 

@@ -84,33 +84,6 @@ std::string createHTTPPost (
     return s.str ();
 }
 
-static
-boost::optional<std::uint64_t>
-to_uint64(std::string const& s)
-{
-    if (s.empty())
-        return boost::none;
-
-    for (auto c : s)
-    {
-        if (!isdigit(static_cast<unsigned char>(c)))
-            return boost::none;
-    }
-
-    try
-    {
-        std::size_t pos{};
-        auto const drops = std::stoul(s, &pos);
-        if (s.size() != pos)
-            return boost::none;
-        return drops;
-    }
-    catch (std::exception const&)
-    {
-        return boost::none;
-    }
-}
-
 class RPCParser
 {
 private:
