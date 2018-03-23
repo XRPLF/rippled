@@ -43,26 +43,33 @@ Json::Value doLedgerEntry (RPC::Context& context)
     if (!lpLedger)
         return jvResult;
 
-    uint256     uNodeIndex;
-    bool        bNodeBinary = false;
+    uint256         uNodeIndex;
+    bool            bNodeBinary = false;
+    LedgerEntryType expectedType = ltANY;
 
     if (context.params.isMember (jss::index))
     {
-        // XXX Needs to provide proof.
         uNodeIndex.SetHex (context.params[jss::index].asString ());
         bNodeBinary = true;
     }
     else if (context.params.isMember (jss::account_root))
     {
+        expectedType = ltACCOUNT_ROOT;
         auto const account = parseBase58<AccountID>(
             context.params[jss::account_root].asString());
         if (! account || account->isZero())
-            jvResult[jss::error]   = "malformedAddress";
+            jvResult[jss::error] = "malformedAddress";
         else
             uNodeIndex = keylet::account(*account).key;
     }
+    else if (context.params.isMember (jss::check))
+    {
+        expectedType = ltCHECK;
+        uNodeIndex.SetHex (context.params[jss::check].asString ());
+    }
     else if (context.params.isMember (jss::directory))
     {
+        expectedType = ltDIR_NODE;
         if (context.params[jss::directory].isNull())
         {
             jvResult[jss::error]   = "malformedRequest";
@@ -72,23 +79,31 @@ Json::Value doLedgerEntry (RPC::Context& context)
             uNodeIndex.SetHex (context.params[jss::directory].asString ());
         }
         else if (context.params[jss::directory].isMember (jss::sub_index)
-                 && !context.params[jss::directory][jss::sub_index].isIntegral ())
+            && !context.params[jss::directory][jss::sub_index].isIntegral ())
         {
-            jvResult[jss::error]   = "malformedRequest";
+            jvResult[jss::error] = "malformedRequest";
         }
         else
         {
             std::uint64_t  uSubIndex
-                    = context.params[jss::directory].isMember (jss::sub_index)
-                    ? context.params[jss::directory][jss::sub_index].asUInt () : 0;
+                = context.params[jss::directory].isMember (jss::sub_index)
+                ? context.params[jss::directory][jss::sub_index].asUInt () : 0;
 
             if (context.params[jss::directory].isMember (jss::dir_root))
             {
-                uint256 uDirRoot;
+                if (context.params[jss::directory].isMember (jss::owner))
+                {
+                    // May not specify both dir_root and owner.
+                    jvResult[jss::error] = "malformedRequest";
+                }
+                else
+                {
+                    uint256 uDirRoot;
+                    uDirRoot.SetHex (
+                        context.params[jss::directory][jss::dir_root].asString());
 
-                uDirRoot.SetHex (context.params[jss::dir_root].asString ());
-
-                uNodeIndex  = getDirNodeIndex (uDirRoot, uSubIndex);
+                    uNodeIndex = getDirNodeIndex (uDirRoot, uSubIndex);
+                }
             }
             else if (context.params[jss::directory].isMember (jss::owner))
             {
@@ -97,49 +112,80 @@ Json::Value doLedgerEntry (RPC::Context& context)
 
                 if (! ownerID)
                 {
-                    jvResult[jss::error]   = "malformedAddress";
+                    jvResult[jss::error] = "malformedAddress";
                 }
                 else
                 {
                     uint256 uDirRoot = getOwnerDirIndex (*ownerID);
-                    uNodeIndex  = getDirNodeIndex (uDirRoot, uSubIndex);
+                    uNodeIndex = getDirNodeIndex (uDirRoot, uSubIndex);
                 }
             }
             else
             {
-                jvResult[jss::error]   = "malformedRequest";
+                jvResult[jss::error] = "malformedRequest";
             }
+        }
+    }
+    else if (context.params.isMember (jss::escrow))
+    {
+        expectedType = ltESCROW;
+        if (!context.params[jss::escrow].isObject ())
+        {
+            uNodeIndex.SetHex (context.params[jss::escrow].asString ());
+        }
+        else if (!context.params[jss::escrow].isMember (jss::owner)
+            || !context.params[jss::escrow].isMember (jss::seq)
+            || !context.params[jss::escrow][jss::seq].isIntegral ())
+        {
+            jvResult[jss::error] = "malformedRequest";
+        }
+        else
+        {
+            auto const id = parseBase58<AccountID>(
+                context.params[jss::escrow][jss::owner].asString());
+            if (! id)
+                jvResult[jss::error] = "malformedOwner";
+            else
+                uNodeIndex = keylet::escrow (*id,
+                    context.params[jss::escrow][jss::seq].asUInt()).key;
         }
     }
     else if (context.params.isMember (jss::generator))
     {
-        jvResult[jss::error]   = "deprecatedFeature";
+        jvResult[jss::error] = "deprecatedFeature";
     }
     else if (context.params.isMember (jss::offer))
     {
+        expectedType = ltOFFER;
         if (!context.params[jss::offer].isObject())
         {
             uNodeIndex.SetHex (context.params[jss::offer].asString ());
         }
         else if (!context.params[jss::offer].isMember (jss::account)
-                 || !context.params[jss::offer].isMember (jss::seq)
-                 || !context.params[jss::offer][jss::seq].isIntegral ())
+            || !context.params[jss::offer].isMember (jss::seq)
+            || !context.params[jss::offer][jss::seq].isIntegral ())
         {
-            jvResult[jss::error]   = "malformedRequest";
+            jvResult[jss::error] = "malformedRequest";
         }
         else
         {
             auto const id = parseBase58<AccountID>(
                 context.params[jss::offer][jss::account].asString());
             if (! id)
-                jvResult[jss::error]   = "malformedAddress";
+                jvResult[jss::error] = "malformedAddress";
             else
-                uNodeIndex  = getOfferIndex (*id,
+                uNodeIndex = getOfferIndex (*id,
                     context.params[jss::offer][jss::seq].asUInt ());
         }
     }
+    else if (context.params.isMember (jss::payment_channel))
+    {
+        expectedType = ltPAYCHAN;
+        uNodeIndex.SetHex (context.params[jss::payment_channel].asString ());
+    }
     else if (context.params.isMember (jss::ripple_state))
     {
+        expectedType = ltRIPPLE_STATE;
         Currency         uCurrency;
         Json::Value     jvRippleState   = context.params[jss::ripple_state];
 
@@ -154,7 +200,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
                 == jvRippleState[jss::accounts][1u].asString ())
            )
         {
-            jvResult[jss::error]   = "malformedRequest";
+            jvResult[jss::error] = "malformedRequest";
         }
         else
         {
@@ -164,23 +210,23 @@ Json::Value doLedgerEntry (RPC::Context& context)
                 jvRippleState[jss::accounts][1u].asString());
             if (! id1 || ! id2)
             {
-                jvResult[jss::error]   = "malformedAddress";
+                jvResult[jss::error] = "malformedAddress";
             }
             else if (!to_currency (uCurrency,
                 jvRippleState[jss::currency].asString()))
             {
-                jvResult[jss::error]   = "malformedCurrency";
+                jvResult[jss::error] = "malformedCurrency";
             }
             else
             {
-                uNodeIndex  = getRippleStateIndex(
+                uNodeIndex = getRippleStateIndex(
                     *id1, *id2, uCurrency);
             }
         }
     }
     else
     {
-        jvResult[jss::error]   = "unknownOption";
+        jvResult[jss::error] = "unknownOption";
     }
 
     if (uNodeIndex.isNonZero ())
@@ -192,12 +238,15 @@ Json::Value doLedgerEntry (RPC::Context& context)
         if (!sleNode)
         {
             // Not found.
-            // XXX Should also provide proof.
-            jvResult[jss::error]       = "entryNotFound";
+            jvResult[jss::error] = "entryNotFound";
+        }
+        else if ((expectedType != ltANY) &&
+            (expectedType != sleNode->getType()))
+        {
+            jvResult[jss::error] = "malformedRequest";
         }
         else if (bNodeBinary)
         {
-            // XXX Should also provide proof.
             Serializer s;
 
             sleNode->add (s);
