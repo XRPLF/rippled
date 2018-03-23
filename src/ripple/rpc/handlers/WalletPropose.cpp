@@ -116,7 +116,7 @@ Json::Value walletPropose (Json::Value const& params)
     obj[jss::master_seed_hex] = seedHex;
     obj[jss::master_key] = seed1751;
     obj[jss::account_id] = toBase58(calcAccountID(publicKey));
-    obj[jss::public_key] = toBase58(TOKEN_ACCOUNT_PUBLIC, publicKey);
+    obj[jss::public_key] = toBase58(TokenType::AccountPublic, publicKey);
     obj[jss::key_type] = to_string (keyType);
     obj[jss::public_key_hex] = strHex (publicKey.data(), publicKey.size());
 

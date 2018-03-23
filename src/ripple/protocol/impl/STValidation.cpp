@@ -27,20 +27,26 @@
 namespace ripple {
 
 STValidation::STValidation(
-    uint256 const& ledgerHash,
-    uint256 const& consensusHash,
-    NetClock::time_point signTime,
-    PublicKey const& publicKey,
-    NodeID const& nodeID,
-    bool isFull)
-    : STObject(getFormat(), sfValidation), mNodeID(nodeID), mSeen(signTime)
+        uint256 const& ledgerHash,
+        uint256 const& consensusHash,
+        NetClock::time_point signTime,
+        PublicKey const& publicKey,
+        NodeID const& nodeID,
+        bool isFull)
+    : STObject(getFormat(), sfValidation)
+    , mNodeID(nodeID)
+    , mSeen(signTime)
 {
+    // This is our own public key and it should always be valid.
+    if (!publicKeyType(publicKey))
+        LogicError ("Invalid validation public key");
+
     // Does not sign
     setFieldH256 (sfLedgerHash, ledgerHash);
     setFieldH256 (sfConsensusHash, consensusHash);
     setFieldU32 (sfSigningTime, signTime.time_since_epoch().count());
-
     setFieldVL (sfSigningPubKey, publicKey.slice());
+
     assert (mNodeID.isNonZero ());
 
     if (isFull)
@@ -83,11 +89,6 @@ NetClock::time_point STValidation::getSeenTime () const
     return mSeen;
 }
 
-std::uint32_t STValidation::getFlags () const
-{
-    return getFieldU32 (sfFlags);
-}
-
 bool STValidation::isValid () const
 {
     return isValid (getSigningHash ());
@@ -97,6 +98,9 @@ bool STValidation::isValid (uint256 const& signingHash) const
 {
     try
     {
+        if (publicKeyType(getSignerPublic()) != KeyType::secp256k1)
+            return false;
+
         return verifyDigest (getSignerPublic(),
             signingHash,
             makeSlice(getFieldVL (sfSignature)),

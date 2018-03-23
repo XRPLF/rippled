@@ -71,15 +71,24 @@ public:
         bool checkSignature)
         : STObject(getFormat(), sit, sfValidation)
     {
-        mNodeID =
-            lookupNodeID(PublicKey(makeSlice(getFieldVL(sfSigningPubKey))));
-        assert(mNodeID.isNonZero());
+        auto const spk = getFieldVL(sfSigningPubKey);
 
-        if (checkSignature && !isValid())
+        if (publicKeyType(makeSlice(spk)) != KeyType::secp256k1)
         {
-            JLOG(debugLog().error()) << "Invalid validation" << getJson(0);
-            Throw<std::runtime_error>("Invalid validation");
+            JLOG (debugLog().error())
+                << "Invalid public key in validation" << getJson (0);
+            Throw<std::runtime_error> ("Invalid public key in validation");
         }
+
+        if  (checkSignature && !isValid ())
+        {
+            JLOG (debugLog().error())
+                << "Invalid signature in validation" << getJson (0);
+            Throw<std::runtime_error> ("Invalid signature in validation");
+        }
+
+        mNodeID = lookupNodeID(PublicKey(makeSlice(spk)));
+        assert(mNodeID.isNonZero());
     }
 
     /** Construct a new STValidation
@@ -129,9 +138,6 @@ public:
 
     NetClock::time_point
     getSeenTime() const;
-
-    std::uint32_t
-    getFlags() const;
 
     PublicKey
     getSignerPublic() const;

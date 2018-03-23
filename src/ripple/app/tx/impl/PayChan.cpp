@@ -348,7 +348,6 @@ PayChanClaim::preflight (PreflightContext const& ctx)
     if (! ctx.rules.enabled(featurePayChan))
         return temDISABLED;
 
-
     bool const noTecs = ctx.rules.enabled(fix1512);
 
     auto const ret = preflight1 (ctx);

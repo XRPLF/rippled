@@ -126,7 +126,7 @@ Json::Value doChannelVerify (RPC::Context& context)
     boost::optional<PublicKey> pk;
     {
         std::string const strPk = params[jss::public_key].asString();
-        pk = parseBase58<PublicKey>(TokenType::TOKEN_ACCOUNT_PUBLIC, strPk);
+        pk = parseBase58<PublicKey>(TokenType::AccountPublic, strPk);
 
         if (!pk)
         {

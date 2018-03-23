@@ -308,7 +308,7 @@ public:
             (keyType ? *keyType : "no key_type"));
 
         auto const publicKey = parseBase58<PublicKey>(
-            TokenType::TOKEN_ACCOUNT_PUBLIC, strings.public_key);
+            TokenType::AccountPublic, strings.public_key);
         BEAST_EXPECT(publicKey);
 
         if (!keyType)

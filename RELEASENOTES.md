@@ -14,6 +14,26 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 0.90.1
+
+The `rippled` 0.90.1 release includes fixes for issues reported by external security researchers. These issues, when exploited, could cause a rippled instance to restart or, in some circumstances, stop executing. While these issues can result in a denial of service attack, none affect the integrity of the XRP Ledger and no user funds, including XRP, are at risk.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- Address issues identified by external review:
+    - Verify serialized public keys more strictly before using them
+      (RIPD-1617, RIPD-1619, RIPD-1621)
+    - Eliminate a potential out-of-bounds memory access in the base58
+      encoding/decoding logic (RIPD-1618)
+    - Avoid invoking undefined behavior in memcpy (RIPD-1616)
+    - Limit STVar recursion during deserialization (RIPD-1603)
+- Use lock when creating a peer shard rangeset
+
+
 ## Version 0.90.0
 
 The `rippled` 0.90.0 release introduces several features and enhancements that improve the reliability, scalability and security of the XRP Ledger.

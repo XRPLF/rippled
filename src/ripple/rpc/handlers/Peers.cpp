@@ -52,7 +52,7 @@ Json::Value doPeers (RPC::Context& context)
 
                 Json::Value& json = cluster[
                     toBase58(
-                        TokenType::TOKEN_NODE_PUBLIC,
+                        TokenType::NodePublic,
                         node.identity())];
 
                 if (!node.name().empty())

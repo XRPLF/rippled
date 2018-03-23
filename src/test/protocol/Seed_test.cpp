@@ -136,9 +136,9 @@ public:
             auto const publicKey = derivePublicKey (
                 KeyType::secp256k1, secretKey);
 
-            BEAST_EXPECT(toBase58(TokenType::TOKEN_NODE_PUBLIC, publicKey) ==
+            BEAST_EXPECT(toBase58(TokenType::NodePublic, publicKey) ==
                 "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9");
-            BEAST_EXPECT(toBase58(TokenType::TOKEN_NODE_PRIVATE, secretKey) ==
+            BEAST_EXPECT(toBase58(TokenType::NodePrivate, secretKey) ==
                 "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe");
             BEAST_EXPECT(to_string(calcNodeID(publicKey)) ==
                 "7E59C17D50F5959C7B158FEC95C8F815BF653DC8");
@@ -179,9 +179,9 @@ public:
             auto const publicKey = derivePublicKey (
                 KeyType::ed25519, secretKey);
 
-            BEAST_EXPECT(toBase58(TokenType::TOKEN_NODE_PUBLIC, publicKey) ==
+            BEAST_EXPECT(toBase58(TokenType::NodePublic, publicKey) ==
                 "nHUeeJCSY2dM71oxM8Cgjouf5ekTuev2mwDpc374aLMxzDLXNmjf");
-            BEAST_EXPECT(toBase58(TokenType::TOKEN_NODE_PRIVATE, secretKey) ==
+            BEAST_EXPECT(toBase58(TokenType::NodePrivate, secretKey) ==
                 "paKv46LztLqK3GaKz1rG2nQGN6M4JLyRtxFBYFTw4wAVHtGys36");
             BEAST_EXPECT(to_string(calcNodeID(publicKey)) ==
                 "AA066C988C712815CC37AF71472B7CBBBD4E2A0A");
@@ -223,9 +223,9 @@ public:
 
             BEAST_EXPECT(toBase58(calcAccountID(keyPair.first)) ==
                 "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
-            BEAST_EXPECT(toBase58(TokenType::TOKEN_ACCOUNT_PUBLIC, keyPair.first) ==
+            BEAST_EXPECT(toBase58(TokenType::AccountPublic, keyPair.first) ==
                 "aBQG8RQAzjs1eTKFEAQXr2gS4utcDiEC9wmi7pfUPTi27VCahwgw");
-            BEAST_EXPECT(toBase58(TokenType::TOKEN_ACCOUNT_SECRET, keyPair.second) ==
+            BEAST_EXPECT(toBase58(TokenType::AccountSecret, keyPair.second) ==
                 "p9JfM6HHi64m6mvB6v5k7G2b1cXzGmYiCNJf6GHPKvFTWdeRVjh");
 
             auto sig = sign (keyPair.first, keyPair.second, makeSlice(message1));
@@ -263,9 +263,9 @@ public:
 
             BEAST_EXPECT(to_string(calcAccountID(keyPair.first)) ==
                 "rGWrZyQqhTp9Xu7G5Pkayo7bXjH4k4QYpf");
-            BEAST_EXPECT(toBase58(TokenType::TOKEN_ACCOUNT_PUBLIC, keyPair.first) ==
+            BEAST_EXPECT(toBase58(TokenType::AccountPublic, keyPair.first) ==
                 "aKGheSBjmCsKJVuLNKRAKpZXT6wpk2FCuEZAXJupXgdAxX5THCqR");
-            BEAST_EXPECT(toBase58(TokenType::TOKEN_ACCOUNT_SECRET, keyPair.second) ==
+            BEAST_EXPECT(toBase58(TokenType::AccountSecret, keyPair.second) ==
                 "pwDQjwEhbUBmPuEjFpEG75bFhv2obkCB7NxQsfFxM7xGHBMVPu9");
 
             auto sig = sign (keyPair.first, keyPair.second, makeSlice(message1));
@@ -305,16 +305,16 @@ public:
         auto const node1 = randomKeyPair(KeyType::secp256k1);
 
         BEAST_EXPECT(!parseGenericSeed (
-            toBase58 (TokenType::TOKEN_NODE_PUBLIC, node1.first)));
+            toBase58 (TokenType::NodePublic, node1.first)));
         BEAST_EXPECT(!parseGenericSeed (
-            toBase58 (TokenType::TOKEN_NODE_PRIVATE, node1.second)));
+            toBase58 (TokenType::NodePrivate, node1.second)));
 
         auto const node2 = randomKeyPair(KeyType::ed25519);
 
         BEAST_EXPECT(!parseGenericSeed (
-            toBase58 (TokenType::TOKEN_NODE_PUBLIC, node2.first)));
+            toBase58 (TokenType::NodePublic, node2.first)));
         BEAST_EXPECT(!parseGenericSeed (
-            toBase58 (TokenType::TOKEN_NODE_PRIVATE, node2.second)));
+            toBase58 (TokenType::NodePrivate, node2.second)));
 
         auto const account1 = generateKeyPair(
             KeyType::secp256k1, randomSeed ());
@@ -322,9 +322,9 @@ public:
         BEAST_EXPECT(!parseGenericSeed (
             toBase58(calcAccountID(account1.first))));
         BEAST_EXPECT(!parseGenericSeed (
-            toBase58(TokenType::TOKEN_ACCOUNT_PUBLIC, account1.first)));
+            toBase58(TokenType::AccountPublic, account1.first)));
         BEAST_EXPECT(!parseGenericSeed (
-            toBase58(TokenType::TOKEN_ACCOUNT_SECRET, account1.second)));
+            toBase58(TokenType::AccountSecret, account1.second)));
 
         auto const account2 = generateKeyPair(
             KeyType::ed25519, randomSeed ());
@@ -332,9 +332,9 @@ public:
         BEAST_EXPECT(!parseGenericSeed (
             toBase58(calcAccountID(account2.first))));
         BEAST_EXPECT(!parseGenericSeed (
-            toBase58(TokenType::TOKEN_ACCOUNT_PUBLIC, account2.first)));
+            toBase58(TokenType::AccountPublic, account2.first)));
         BEAST_EXPECT(!parseGenericSeed (
-            toBase58(TokenType::TOKEN_ACCOUNT_SECRET, account2.second)));
+            toBase58(TokenType::AccountSecret, account2.second)));
     }
 
     void run() override

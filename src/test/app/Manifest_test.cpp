@@ -251,7 +251,7 @@ public:
                 std::string cfgManifest;
                 for (auto const& man : inManifests)
                     s1.push_back (toBase58(
-                        TokenType::TOKEN_NODE_PUBLIC, man->masterKey));
+                        TokenType::NodePublic, man->masterKey));
                 unl->load (emptyLocalKey, s1, keys);
 
                 m.save (dbCon, "ValidatorManifests",
@@ -428,7 +428,7 @@ public:
 
         {
             auto const valSecret = parseBase58<SecretKey>(
-                TokenType::TOKEN_NODE_PRIVATE,
+                TokenType::NodePrivate,
                 "paQmjZ37pKKPMrgadBLsuf9ab7Y7EUNzh27LQrZqoexpAs31nJi");
 
             // Format token string to test trim()

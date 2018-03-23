@@ -43,7 +43,7 @@ void addChannel (Json::Value& jsonLines, SLE const& line)
     if (publicKeyType(line[sfPublicKey]))
     {
         PublicKey const pk (line[sfPublicKey]);
-        jDst[jss::public_key] = toBase58 (TokenType::TOKEN_ACCOUNT_PUBLIC, pk);
+        jDst[jss::public_key] = toBase58 (TokenType::AccountPublic, pk);
         jDst[jss::public_key_hex] = strHex (pk);
     }
     jDst[jss::settle_delay] = line[sfSettleDelay];

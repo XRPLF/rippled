@@ -256,7 +256,7 @@ PeerImp::json()
     Json::Value ret (Json::objectValue);
 
     ret[jss::public_key]   = toBase58 (
-        TokenType::TOKEN_NODE_PUBLIC, publicKey_);
+        TokenType::NodePublic, publicKey_);
     ret[jss::address]      = remote_address_.to_string();
 
     if (m_inbound)
@@ -629,7 +629,7 @@ void PeerImp::doAccept()
     JLOG(journal_.info()) << "Protocol: " << to_string(protocol);
     JLOG(journal_.info()) <<
         "Public Key: " << toBase58 (
-            TokenType::TOKEN_NODE_PUBLIC,
+            TokenType::NodePublic,
             publicKey_);
     if (auto member = app_.cluster().member(publicKey_))
     {
@@ -932,7 +932,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
             name = node.nodename();
 
         auto const publicKey = parseBase58<PublicKey>(
-            TokenType::TOKEN_NODE_PUBLIC, node.publickey());
+            TokenType::NodePublic, node.publickey());
 
         // NIKB NOTE We should drop the peer immediately if
         // they send us a public key we can't parse

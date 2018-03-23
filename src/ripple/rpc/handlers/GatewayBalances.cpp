@@ -93,7 +93,7 @@ Json::Value doGatewayBalances (RPC::Context& context)
             if (j.isString())
             {
                 auto const pk = parseBase58<PublicKey>(
-                    TokenType::TOKEN_ACCOUNT_PUBLIC,
+                    TokenType::AccountPublic,
                     j.asString ());
                 if (pk)
                 {

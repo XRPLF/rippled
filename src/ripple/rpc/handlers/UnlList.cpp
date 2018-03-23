@@ -39,7 +39,7 @@ Json::Value doUnlList (RPC::Context& context)
             Json::Value node (Json::objectValue);
 
             node[jss::pubkey_validator] = toBase58(
-                TokenType::TOKEN_NODE_PUBLIC, publicKey);
+                TokenType::NodePublic, publicKey);
             node[jss::trusted] = trusted;
 
             unl.append (node);

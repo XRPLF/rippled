@@ -83,10 +83,11 @@ public:
             derivePublicKey(KeyType::secp256k1, seedSecretKey);
         NodeID const seedNodeID = calcNodeID(seedPublicKey);
 
-        // Keys/ID when using [validation_token]
-        SecretKey const tokenSecretKey = *parseBase58<SecretKey>(
-            TokenType::TOKEN_NODE_PRIVATE, tokenSecretStr);
-        PublicKey const tokenPublicKey =
+        // Keys when using [validation_token]
+        auto const tokenSecretKey = *parseBase58<SecretKey>(
+            TokenType::NodePrivate, tokenSecretStr);
+
+        auto const tokenPublicKey =
             derivePublicKey(KeyType::secp256k1, tokenSecretKey);
 
         auto const m = Manifest::make_Manifest(

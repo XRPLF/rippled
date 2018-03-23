@@ -112,7 +112,7 @@ buildHello (
     h.set_nettime (app.timeKeeper().now().time_since_epoch().count());
     h.set_nodepublic (
         toBase58 (
-            TokenType::TOKEN_NODE_PUBLIC,
+            TokenType::NodePublic,
             app.nodeIdentity().first));
     h.set_nodeproof (sig.data(), sig.size());
     // h.set_ipv4port (portNumber); // ignored now
@@ -247,7 +247,7 @@ parseHello (bool request, beast::http::fields const& h, beast::Journal journal)
         if (iter == h.end())
             return boost::none;
         auto const pk = parseBase58<PublicKey>(
-            TokenType::TOKEN_NODE_PUBLIC, iter->value().to_string());
+            TokenType::NodePublic, iter->value().to_string());
         if (!pk)
             return boost::none;
         hello.set_nodepublic (iter->value().to_string());
@@ -381,12 +381,19 @@ verifyHello (protocol::TMHello const& h,
     }
 
     auto const publicKey = parseBase58<PublicKey>(
-        TokenType::TOKEN_NODE_PUBLIC, h.nodepublic());
+        TokenType::NodePublic, h.nodepublic());
 
     if (! publicKey)
     {
         JLOG(journal.info()) <<
             "Hello: Disconnect: Bad node public key.";
+        return boost::none;
+    }
+
+    if (publicKeyType(*publicKey) != KeyType::secp256k1)
+    {
+        JLOG(journal.info()) <<
+            "Hello: Disconnect: Unsupported public key type.";
         return boost::none;
     }
 
