@@ -109,7 +109,7 @@ public:
 
         @param ledgerHash The hash of the validated ledger
         @param ledgerIndex The index (sequence number) of the ledger
-                @param consensusHash The hash of the consensus transaction set
+        @param consensusHash The hash of the consensus transaction set
         @param signTime When the validation is signed
         @param publicKey The current signing public key
         @param secretKey The current signing secret key

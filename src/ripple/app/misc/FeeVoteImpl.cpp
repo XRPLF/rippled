@@ -99,7 +99,7 @@ public:
 
     void
     doValidation (std::shared_ptr<ReadView const> const& lastClosedLedger,
-        STValidation::FeeSettings & fees) override;
+        STValidation::FeeSettings& fees) override;
 
     void
     doVoting (std::shared_ptr<ReadView const> const& lastClosedLedger,
@@ -118,7 +118,7 @@ FeeVoteImpl::FeeVoteImpl (Setup const& setup, beast::Journal journal)
 void
 FeeVoteImpl::doValidation(
     std::shared_ptr<ReadView const> const& lastClosedLedger,
-        STValidation::FeeSettings & fees)
+        STValidation::FeeSettings& fees)
 {
     if (lastClosedLedger->fees().base != target_.reference_fee)
     {
@@ -131,7 +131,7 @@ FeeVoteImpl::doValidation(
     if (lastClosedLedger->fees().accountReserve(0) != target_.account_reserve)
     {
         JLOG(journal_.info()) <<
-            "Voting for base resrve of " << target_.account_reserve;
+            "Voting for base reserve of " << target_.account_reserve;
 
         fees.reserveBase = target_.account_reserve;
     }

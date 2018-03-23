@@ -844,14 +844,14 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger,
         std::max(feeTrack.getLocalFee(), feeTrack.getClusterFee());
 
     if (fee > feeTrack.getLoadBase())
-        fees.baseFee = fee;
+        fees.loadFee = fee;
 
     // next ledger is flag ledger
     if (((ledger.seq() + 1) % 256) == 0)
     {
         // Suggest fee changes and new features
         feeVote_->doValidation(ledger.ledger_, fees);
-        amendments = app_.getAmendmentTable().doValidation(ledger.ledger_);
+        amendments = app_.getAmendmentTable().doValidation (getEnabledAmendments(*ledger.ledger_));
     }
 
     boost::optional<std::uint64_t> maybeCookie;
