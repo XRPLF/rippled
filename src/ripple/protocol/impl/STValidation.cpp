@@ -28,7 +28,7 @@ namespace ripple {
 
 STValidation::STValidation(
     uint256 const& ledgerHash,
-    std::uint32_t ledgerIndex,
+    std::uint32_t ledgerSeq,
     uint256 const& consensusHash,
     NetClock::time_point signTime,
     PublicKey const& publicKey,
@@ -52,7 +52,7 @@ STValidation::STValidation(
     if (isFull)
         setFlag(kFullFlag);
 
-    setFieldU32(sfLedgerSequence, ledgerIndex);
+    setFieldU32(sfLedgerSequence, ledgerSeq);
 
     if (fees.loadFee)
         setFieldU32(sfLoadFee, *fees.loadFee);

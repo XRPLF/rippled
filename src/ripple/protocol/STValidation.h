@@ -108,7 +108,7 @@ public:
         Constructs, signs and trusts new STValidation issued by this node.
 
         @param ledgerHash The hash of the validated ledger
-        @param ledgerIndex The index (sequence number) of the ledger
+        @param ledgerSeq The sequence number (index) of the ledger
         @param consensusHash The hash of the consensus transaction set
         @param signTime When the validation is signed
         @param publicKey The current signing public key
@@ -125,7 +125,7 @@ public:
     */
     STValidation(
         uint256 const& ledgerHash,
-        std::uint32_t ledgerIndex,
+        std::uint32_t ledgerSeq,
         uint256 const& consensusHash,
         NetClock::time_point signTime,
         PublicKey const& publicKey,

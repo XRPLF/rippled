@@ -278,8 +278,8 @@ struct Peer
         Scheduler& s,
         LedgerOracle& o,
         BasicNetwork<Peer*>& n,
-        TrustGraph<Peer*> & tg,
-        CollectorRefs & c,
+        TrustGraph<Peer*>& tg,
+        CollectorRefs& c,
         beast::Journal jIn)
         : sink(jIn, "Peer " + to_string(i) + ": ")
         , j(sink)
@@ -294,7 +294,9 @@ struct Peer
         , validations{ValidationParms{}, s.clock(), *this}
         , fullyValidatedLedger{Ledger::MakeGenesis{}}
         , collectors{c}
-        , cookie{rand_int<std::uint64_t>()}
+        , cookie{rand_int<std::uint64_t>(
+              1,
+              std::numeric_limits<std::uint64_t>::max())}
     {
         // All peers start from the default constructed genesis ledger
         ledgers[lastClosedLedger.id()] = lastClosedLedger;

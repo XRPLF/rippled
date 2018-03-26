@@ -337,7 +337,7 @@ public:
         ret.reserve (num);
         for (int i = 0; i < num; ++i)
         {
-            ret.push_back(randomKeyPair(KeyType::secp256k1));
+            ret.emplace_back(randomKeyPair(KeyType::secp256k1));
         }
         return ret;
     }

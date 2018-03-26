@@ -61,7 +61,11 @@ class Validations_test : public beast::unit_test::suite
 
     public:
         Node(PeerID nodeID, clock_type const& c)
-            : c_(c), nodeID_(nodeID), cookie_(rand_int<std::uint64_t>())
+            : c_(c)
+            , nodeID_(nodeID)
+            , cookie_(rand_int<std::uint64_t>(
+                  1,
+                  std::numeric_limits<std::uint64_t>::max()))
         {
         }
 

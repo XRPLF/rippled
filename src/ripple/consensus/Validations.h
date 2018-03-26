@@ -691,12 +691,12 @@ public:
 
         for (auto& it : current_)
         {
-            if (added.count(it.first))
+            if (added.find(it.first) != added.end())
             {
                 it.second.setTrusted();
                 updateTrie(lock, it.first, it.second, boost::none);
             }
-            else if (removed.count(it.first))
+            else if (removed.find(it.first) != removed.end())
             {
                 it.second.setUntrusted();
                 removeTrie(lock, it.first, it.second);
@@ -707,11 +707,11 @@ public:
         {
             for (auto& nodeVal : it.second)
             {
-                if (added.count(nodeVal.first))
+                if (added.find(nodeVal.first) != added.end())
                 {
                     nodeVal.second.setTrusted();
                 }
-                else if (removed.count(nodeVal.first))
+                else if (removed.find(nodeVal.first) != removed.end())
                 {
                     nodeVal.second.setUntrusted();
                 }
@@ -722,11 +722,11 @@ public:
         {
             for (auto& nodeVal : it.second)
             {
-                if (added.count(nodeVal.first))
+                if (added.find(nodeVal.first) != added.end())
                 {
                     nodeVal.second.setTrusted();
                 }
-                else if (removed.count(nodeVal.first))
+                else if (removed.find(nodeVal.first) != removed.end())
                 {
                     nodeVal.second.setUntrusted();
                 }
