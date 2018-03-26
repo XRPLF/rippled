@@ -195,7 +195,7 @@ public:
             db.store (object->getType (),
                       std::move (data),
                       object->getHash (),
-                      NodeStore::genesisSeq);
+                      db.earliestSeq());
         }
     }
 

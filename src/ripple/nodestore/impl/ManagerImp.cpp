@@ -72,18 +72,18 @@ ManagerImp::make_Database (
     Scheduler& scheduler,
     int readThreads,
     Stoppable& parent,
-    Section const& backendParameters,
+    Section const& config,
     beast::Journal journal)
 {
-    auto backend {make_Backend(
-        backendParameters, scheduler, journal)};
+    auto backend {make_Backend(config, scheduler, journal)};
     backend->open();
-    return std::make_unique <DatabaseNodeImp> (
+    return std::make_unique <DatabaseNodeImp>(
         name,
         scheduler,
         readThreads,
         parent,
         std::move(backend),
+        config,
         journal);
 }
 

@@ -27,6 +27,7 @@
 #include <ripple/nodestore/impl/Tuning.h>
 #include <ripple/nodestore/Scheduler.h>
 #include <ripple/nodestore/NodeObject.h>
+#include <ripple/protocol/SystemParameters.h>
 
 #include <thread>
 
@@ -63,7 +64,7 @@ public:
         @param journal Destination for logging output.
     */
     Database(std::string name, Stoppable& parent, Scheduler& scheduler,
-        int readThreads, beast::Journal j);
+        int readThreads, Section const& config, beast::Journal j);
 
     /** Destroy the node store.
         All pending operations are completed, pending writes flushed,
@@ -209,6 +210,14 @@ public:
     void
     onStop();
 
+    /** @return The earliest ledger sequence allowed
+    */
+    std::uint32_t
+    earliestSeq() const
+    {
+        return earliestSeq_;
+    }
+
 protected:
     beast::Journal j_;
     Scheduler& scheduler_;
@@ -230,15 +239,21 @@ protected:
             std::shared_ptr<KeyCache<uint256>> const& nCache);
 
     std::shared_ptr<NodeObject>
-    fetchInternal(uint256 const& hash, Backend& backend);
+    fetchInternal(uint256 const& hash, Backend& srcBackend);
 
     void
-    importInternal(Database& source, Backend& dest);
+    importInternal(Backend& dstBackend, Database& srcDB);
 
     std::shared_ptr<NodeObject>
     doFetch(uint256 const& hash, std::uint32_t seq,
+        TaggedCache<uint256, NodeObject>& pCache,
+            KeyCache<uint256>& nCache, bool isAsync);
+
+    bool
+    copyLedger(Backend& dstBackend, Ledger const& srcLedger,
         std::shared_ptr<TaggedCache<uint256, NodeObject>> const& pCache,
-            std::shared_ptr<KeyCache<uint256>> const& nCache, bool isAsync);
+            std::shared_ptr<KeyCache<uint256>> const& nCache,
+                std::shared_ptr<Ledger const> const& srcNext);
 
 private:
     std::atomic<std::uint32_t> storeCount_ {0};
@@ -264,6 +279,10 @@ private:
 
     // current read generation
     uint64_t readGen_ {0};
+
+    // The default is 32570 to match the XRP ledger network's earliest
+    // allowed sequence. Alternate networks may set this value.
+    std::uint32_t earliestSeq_ {XRP_LEDGER_EARLIEST_SEQ};
 
     virtual
     std::shared_ptr<NodeObject>

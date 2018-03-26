@@ -368,8 +368,9 @@ PeerImp::hasLedger (uint256 const& hash, std::uint32_t seq) const
     if (std::find(recentLedgers_.begin(),
             recentLedgers_.end(), hash) != recentLedgers_.end())
         return true;
-    return seq != 0 && boost::icl::contains(
-        shards_, NodeStore::DatabaseShard::seqToShardIndex(seq));
+    return seq >= app_.getNodeStore().earliestSeq() &&
+        boost::icl::contains(shards_,
+            (seq - 1) / NodeStore::DatabaseShard::ledgersPerShardDefault);
 }
 
 void
@@ -1729,10 +1730,13 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
                 //             need to inject the NodeStore interfaces.
                 std::uint32_t seq {obj.has_ledgerseq() ? obj.ledgerseq() : 0};
                 auto hObj {app_.getNodeStore ().fetch (hash, seq)};
-                if (!hObj && seq >= NodeStore::genesisSeq)
+                if (!hObj)
                 {
                     if (auto shardStore = app_.getShardStore())
-                        hObj = shardStore->fetch(hash, seq);
+                    {
+                        if (seq >= shardStore->earliestSeq())
+                            hObj = shardStore->fetch(hash, seq);
+                    }
                 }
                 if (hObj)
                 {
@@ -2043,8 +2047,8 @@ getPeerWithTree (OverlayImpl& ov,
     return ret;
 }
 
-// Returns the set of peers that claim
-// to have the specified ledger.
+// Returns a random peer weighted by how likely to
+// have the ledger and how responsive it is.
 //
 static
 std::shared_ptr<PeerImp>
@@ -2169,40 +2173,40 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
             logMe += to_string (ledgerhash);
             ledger = app_.getLedgerMaster ().getLedgerByHash (ledgerhash);
 
+            if (!ledger && packet.has_ledgerseq())
+            {
+                if (auto shardStore = app_.getShardStore())
+                {
+                    auto seq = packet.ledgerseq();
+                    if (seq >= shardStore->earliestSeq())
+                        ledger = shardStore->fetchLedger(ledgerhash, seq);
+                }
+            }
+
             if (!ledger)
             {
                 JLOG(p_journal_.trace()) <<
                     "GetLedger: Don't have " << ledgerhash;
             }
+
             if (!ledger && (packet.has_querytype () &&
                 !packet.has_requestcookie ()))
             {
-                std::uint32_t seq = 0;
-                if (packet.has_ledgerseq())
+                // We don't have the requested ledger
+                // Search for a peer who might
+                auto const v = getPeerWithLedger(overlay_, ledgerhash,
+                    packet.has_ledgerseq() ? packet.ledgerseq() : 0, this);
+                if (!v)
                 {
-                    seq = packet.ledgerseq();
-                    if (seq >= NodeStore::genesisSeq)
-                    {
-                        if (auto shardStore = app_.getShardStore())
-                            ledger = shardStore->fetchLedger(ledgerhash, seq);
-                    }
-                }
-                if (! ledger)
-                {
-                    auto const v = getPeerWithLedger(
-                        overlay_, ledgerhash, seq, this);
-                    if (! v)
-                    {
-                        JLOG(p_journal_.trace()) << "GetLedger: Cannot route";
-                        return;
-                    }
-
-                    packet.set_requestcookie (id ());
-                    v->send (std::make_shared<Message>(
-                        packet, protocol::mtGET_LEDGER));
-                    JLOG(p_journal_.debug()) << "GetLedger: Request routed";
+                    JLOG(p_journal_.trace()) << "GetLedger: Cannot route";
                     return;
                 }
+
+                packet.set_requestcookie (id ());
+                v->send (std::make_shared<Message>(
+                    packet, protocol::mtGET_LEDGER));
+                JLOG(p_journal_.debug()) << "GetLedger: Request routed";
+                return;
             }
         }
         else if (packet.has_ledgerseq ())

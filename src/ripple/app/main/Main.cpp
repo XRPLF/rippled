@@ -320,7 +320,8 @@ int run (int argc, char** argv)
     ("debug", "Enable normally suppressed debug logging")
     ("fg", "Run in the foreground.")
     ("import", importText.c_str ())
-    ("shards", shardsText.c_str ())
+    ("nodetoshard", "Import node store into shards")
+    ("validateShards", shardsText.c_str ())
     ("version", "Display the build version.")
     ;
 
@@ -420,8 +421,11 @@ int run (int argc, char** argv)
     if (vm.count ("import"))
         config->doImport = true;
 
-    if (vm.count ("shards"))
-        config->valShards = true;
+    if (vm.count("nodetoshard"))
+        config->nodeToShard = true;
+
+    if (vm.count ("validateShards "))
+        config->validateShards = true;
 
     if (vm.count ("ledger"))
     {

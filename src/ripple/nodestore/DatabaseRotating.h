@@ -33,9 +33,14 @@ namespace NodeStore {
 class DatabaseRotating : public Database
 {
 public:
-    DatabaseRotating(std::string const& name, Stoppable& parent,
-        Scheduler& scheduler, int readThreads, beast::Journal journal)
-        : Database(name, parent, scheduler, readThreads, journal)
+    DatabaseRotating(
+        std::string const& name,
+        Stoppable& parent,
+        Scheduler& scheduler,
+        int readThreads,
+        Section const& config,
+        beast::Journal journal)
+        : Database(name, parent, scheduler, readThreads, config, journal)
     {}
 
     virtual

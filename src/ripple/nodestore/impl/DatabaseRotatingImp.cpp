@@ -26,10 +26,15 @@ namespace ripple {
 namespace NodeStore {
 
 DatabaseRotatingImp::DatabaseRotatingImp(
-    std::string const& name, Scheduler& scheduler, int readThreads,
-        Stoppable& parent, std::unique_ptr<Backend> writableBackend,
-            std::unique_ptr<Backend> archiveBackend, beast::Journal j)
-    : DatabaseRotating(name, parent, scheduler, readThreads, j)
+    std::string const& name,
+    Scheduler& scheduler,
+    int readThreads,
+    Stoppable& parent,
+    std::unique_ptr<Backend> writableBackend,
+    std::unique_ptr<Backend> archiveBackend,
+    Section const& config,
+    beast::Journal j)
+    : DatabaseRotating(name, parent, scheduler, readThreads, config, j)
     , pCache_(std::make_shared<TaggedCache<uint256, NodeObject>>(
         name, cacheTargetSize, cacheTargetSeconds, stopwatch(), j))
     , nCache_(std::make_shared<KeyCache<uint256>>(
@@ -79,85 +84,6 @@ DatabaseRotatingImp::asyncFetch(uint256 const& hash,
     // Otherwise post a read
     Database::asyncFetch(hash, seq, pCache_, nCache_);
     return false;
-}
-
-bool
-DatabaseRotatingImp::copyLedger(
-    std::shared_ptr<Ledger const> const& ledger)
-{
-    if (ledger->info().hash.isZero() ||
-        ledger->info().accountHash.isZero())
-    {
-        assert(false);
-        JLOG(j_.error()) <<
-            "Invalid ledger";
-        return false;
-    }
-    auto& srcDB = const_cast<Database&>(
-        ledger->stateMap().family().db());
-    if (&srcDB == this)
-    {
-        assert(false);
-        JLOG(j_.error()) <<
-            "Source and destination are the same";
-        return false;
-    }
-    Batch batch;
-    bool error = false;
-    auto f = [&](SHAMapAbstractNode& node) {
-        if (auto nObj = srcDB.fetch(
-            node.getNodeHash().as_uint256(), ledger->info().seq))
-                batch.emplace_back(std::move(nObj));
-        else
-            error = true;
-        return !error;
-    };
-    // Batch the ledger header
-    {
-        Serializer s(1024);
-        s.add32(HashPrefix::ledgerMaster);
-        addRaw(ledger->info(), s);
-        batch.emplace_back(NodeObject::createObject(hotLEDGER,
-            std::move(s.modData()), ledger->info().hash));
-    }
-    // Batch the state map
-    if (ledger->stateMap().getHash().isNonZero())
-    {
-        if (! ledger->stateMap().isValid())
-        {
-            JLOG(j_.error()) <<
-                "invalid state map";
-            return false;
-        }
-        ledger->stateMap().snapShot(false)->visitNodes(f);
-        if (error)
-            return false;
-    }
-    // Batch the transaction map
-    if (ledger->info().txHash.isNonZero())
-    {
-        if (! ledger->txMap().isValid())
-        {
-            JLOG(j_.error()) <<
-                "invalid transaction map";
-            return false;
-        }
-        ledger->txMap().snapShot(false)->visitNodes(f);
-        if (error)
-            return false;
-    }
-    // Store batch
-    for (auto& nObj : batch)
-    {
-#if RIPPLE_VERIFY_NODEOBJECT_KEYS
-        assert(nObj->getHash() == sha512Hash(makeSlice(nObj->getData())));
-#endif
-        pCache_->canonicalize(nObj->getHash(), nObj, true);
-        nCache_->erase(nObj->getHash());
-        storeStats(nObj->getData().size());
-    }
-    getWritableBackend()->storeBatch(batch);
-    return true;
 }
 
 void

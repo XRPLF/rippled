@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/nodestore/Database.h>
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -25,12 +26,25 @@
 namespace ripple {
 namespace NodeStore {
 
-Database::Database(std::string name, Stoppable& parent,
-    Scheduler& scheduler, int readThreads, beast::Journal journal)
+Database::Database(
+    std::string name,
+    Stoppable& parent,
+    Scheduler& scheduler,
+    int readThreads,
+    Section const& config,
+    beast::Journal journal)
     : Stoppable(name, parent)
     , j_(journal)
     , scheduler_(scheduler)
 {
+    std::uint32_t seq;
+    if (get_if_exists<std::uint32_t>(config, "earliest_seq", seq))
+    {
+        if (seq < 1)
+            Throw<std::runtime_error>("Invalid earliest_seq");
+        earliestSeq_ = seq;
+    }
+
     while (readThreads-- > 0)
         readThreads_.emplace_back(&Database::threadEntry, this);
 }
@@ -102,13 +116,13 @@ Database::asyncFetch(uint256 const& hash, std::uint32_t seq,
 }
 
 std::shared_ptr<NodeObject>
-Database::fetchInternal(uint256 const& hash, Backend& backend)
+Database::fetchInternal(uint256 const& hash, Backend& srcBackend)
 {
     std::shared_ptr<NodeObject> nObj;
     Status status;
     try
     {
-        status = backend.fetch(hash.begin(), &nObj);
+        status = srcBackend.fetch(hash.begin(), &nObj);
     }
     catch (std::exception const& e)
     {
@@ -140,11 +154,11 @@ Database::fetchInternal(uint256 const& hash, Backend& backend)
 }
 
 void
-Database::importInternal(Database& source, Backend& dest)
+Database::importInternal(Backend& dstBackend, Database& srcDB)
 {
     Batch b;
     b.reserve(batchWritePreallocationSize);
-    source.for_each(
+    srcDB.for_each(
         [&](std::shared_ptr<NodeObject> nObj)
         {
             assert(nObj);
@@ -157,20 +171,20 @@ Database::importInternal(Database& source, Backend& dest)
             b.push_back(nObj);
             if (b.size() >= batchWritePreallocationSize)
             {
-                dest.storeBatch(b);
+                dstBackend.storeBatch(b);
                 b.clear();
                 b.reserve(batchWritePreallocationSize);
             }
         });
     if (! b.empty())
-        dest.storeBatch(b);
+        dstBackend.storeBatch(b);
 }
 
 // Perform a fetch and report the time it took
 std::shared_ptr<NodeObject>
 Database::doFetch(uint256 const& hash, std::uint32_t seq,
-    std::shared_ptr<TaggedCache<uint256, NodeObject>> const& pCache,
-        std::shared_ptr<KeyCache<uint256>> const& nCache, bool isAsync)
+    TaggedCache<uint256, NodeObject>& pCache,
+        KeyCache<uint256>& nCache, bool isAsync)
 {
     FetchReport report;
     report.isAsync = isAsync;
@@ -180,8 +194,8 @@ Database::doFetch(uint256 const& hash, std::uint32_t seq,
     auto const before = steady_clock::now();
 
     // See if the object already exists in the cache
-    auto nObj = pCache->fetch(hash);
-    if (! nObj && ! nCache->touch_if_exists(hash))
+    auto nObj = pCache.fetch(hash);
+    if (! nObj && ! nCache.touch_if_exists(hash))
     {
         // Try the database(s)
         report.wentToDisk = true;
@@ -190,15 +204,15 @@ Database::doFetch(uint256 const& hash, std::uint32_t seq,
         if (! nObj)
         {
             // Just in case a write occurred
-            nObj = pCache->fetch(hash);
+            nObj = pCache.fetch(hash);
             if (! nObj)
                 // We give up
-                nCache->insert(hash);
+                nCache.insert(hash);
         }
         else
         {
             // Ensure all threads get the same object
-            pCache->canonicalize(hash, nObj);
+            pCache.canonicalize(hash, nObj);
 
             // Since this was a 'hard' fetch, we will log it.
             JLOG(j_.trace()) <<
@@ -210,6 +224,126 @@ Database::doFetch(uint256 const& hash, std::uint32_t seq,
         steady_clock::now() - before);
     scheduler_.onFetch(report);
     return nObj;
+}
+
+bool
+Database::copyLedger(Backend& dstBackend, Ledger const& srcLedger,
+    std::shared_ptr<TaggedCache<uint256, NodeObject>> const& pCache,
+        std::shared_ptr<KeyCache<uint256>> const& nCache,
+            std::shared_ptr<Ledger const> const& srcNext)
+{
+    assert(pCache && nCache || !(pCache && nCache));
+    if (srcLedger.info().hash.isZero() ||
+        srcLedger.info().accountHash.isZero())
+    {
+        assert(false);
+        JLOG(j_.error()) <<
+            "source ledger seq " << srcLedger.info().seq <<
+            " is invalid";
+        return false;
+    }
+    auto& srcDB = const_cast<Database&>(
+        srcLedger.stateMap().family().db());
+    if (&srcDB == this)
+    {
+        assert(false);
+        JLOG(j_.error()) <<
+            "source and destination databases are the same";
+        return false;
+    }
+
+    Batch batch;
+    batch.reserve(batchWritePreallocationSize);
+    auto storeBatch = [&]() {
+#if RIPPLE_VERIFY_NODEOBJECT_KEYS
+        for (auto& nObj : batch)
+        {
+            assert(nObj->getHash() ==
+                sha512Hash(makeSlice(nObj->getData())));
+            if (pCache && nCache)
+            {
+                pCache->canonicalize(nObj->getHash(), nObj, true);
+                nCache->erase(nObj->getHash());
+                storeStats(nObj->getData().size());
+            }
+        }
+#else
+        if (pCache && nCache)
+            for (auto& nObj : batch)
+            {
+                pCache->canonicalize(nObj->getHash(), nObj, true);
+                nCache->erase(nObj->getHash());
+                storeStats(nObj->getData().size());
+            }
+#endif
+        dstBackend.storeBatch(batch);
+        batch.clear();
+        batch.reserve(batchWritePreallocationSize);
+    };
+    bool error = false;
+    auto f = [&](SHAMapAbstractNode& node) {
+        if (auto nObj = srcDB.fetch(
+            node.getNodeHash().as_uint256(), srcLedger.info().seq))
+        {
+            batch.emplace_back(std::move(nObj));
+            if (batch.size() >= batchWritePreallocationSize)
+                storeBatch();
+        }
+        else
+            error = true;
+        return !error;
+    };
+
+    // Store ledger header
+    {
+        Serializer s(1024);
+        s.add32(HashPrefix::ledgerMaster);
+        addRaw(srcLedger.info(), s);
+        auto nObj = NodeObject::createObject(hotLEDGER,
+            std::move(s.modData()), srcLedger.info().hash);
+        batch.emplace_back(std::move(nObj));
+    }
+
+    // Store the state map
+    if (srcLedger.stateMap().getHash().isNonZero())
+    {
+        if (!srcLedger.stateMap().isValid())
+        {
+            JLOG(j_.error()) <<
+                "source ledger seq " << srcLedger.info().seq <<
+                " state map invalid";
+            return false;
+        }
+        if (srcNext && srcNext->info().parentHash == srcLedger.info().hash)
+        {
+            auto have = srcNext->stateMap().snapShot(false);
+            srcLedger.stateMap().snapShot(
+                false)->visitDifferences(&(*have), f);
+        }
+        else
+            srcLedger.stateMap().snapShot(false)->visitNodes(f);
+        if (error)
+            return false;
+    }
+
+    // Store the transaction map
+    if (srcLedger.info().txHash.isNonZero())
+    {
+        if (!srcLedger.txMap().isValid())
+        {
+            JLOG(j_.error()) <<
+                "source ledger seq " << srcLedger.info().seq <<
+                " transaction map invalid";
+            return false;
+        }
+        srcLedger.txMap().snapShot(false)->visitNodes(f);
+        if (error)
+            return false;
+    }
+
+    if (!batch.empty())
+        storeBatch();
+    return true;
 }
 
 // Entry point for async read threads
@@ -253,7 +387,7 @@ Database::threadEntry()
 
         // Perform the read
         if (lastPcache && lastPcache)
-            doFetch(lastHash, lastSeq, lastPcache, lastNcache, true);
+            doFetch(lastHash, lastSeq, *lastPcache, *lastNcache, true);
     }
 }
 

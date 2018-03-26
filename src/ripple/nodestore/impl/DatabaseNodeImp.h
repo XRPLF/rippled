@@ -33,10 +33,15 @@ public:
     DatabaseNodeImp(DatabaseNodeImp const&) = delete;
     DatabaseNodeImp& operator=(DatabaseNodeImp const&) = delete;
 
-    DatabaseNodeImp(std::string const& name,
-        Scheduler& scheduler, int readThreads, Stoppable& parent,
-            std::unique_ptr<Backend> backend, beast::Journal j)
-        : Database(name, parent, scheduler, readThreads, j)
+    DatabaseNodeImp(
+        std::string const& name,
+        Scheduler& scheduler,
+        int readThreads,
+        Stoppable& parent,
+        std::unique_ptr<Backend> backend,
+        Section const& config,
+        beast::Journal j)
+        : Database(name, parent, scheduler, readThreads, config, j)
         , pCache_(std::make_shared<TaggedCache<uint256, NodeObject>>(
             name, cacheTargetSize, cacheTargetSeconds, stopwatch(), j))
         , nCache_(std::make_shared<KeyCache<uint256>>(
@@ -67,7 +72,7 @@ public:
     void
     import(Database& source) override
     {
-        importInternal(source, *backend_.get());
+        importInternal(*backend_.get(), source);
     }
 
     void
@@ -77,7 +82,7 @@ public:
     std::shared_ptr<NodeObject>
     fetch(uint256 const& hash, std::uint32_t seq) override
     {
-        return doFetch(hash, seq, pCache_, nCache_, false);
+        return doFetch(hash, seq, *pCache_, *nCache_, false);
     }
 
     bool
@@ -85,7 +90,11 @@ public:
         std::shared_ptr<NodeObject>& object) override;
 
     bool
-    copyLedger(std::shared_ptr<Ledger const> const& ledger) override;
+    copyLedger(std::shared_ptr<Ledger const> const& ledger) override
+    {
+        return Database::copyLedger(
+            *backend_, *ledger, pCache_, nCache_, nullptr);
+    }
 
     int
     getDesiredAsyncReadCount(std::uint32_t seq) override

@@ -32,11 +32,15 @@ public:
     DatabaseRotatingImp(DatabaseRotatingImp const&) = delete;
     DatabaseRotatingImp& operator=(DatabaseRotatingImp const&) = delete;
 
-    DatabaseRotatingImp(std::string const& name,
-        Scheduler& scheduler, int readThreads, Stoppable& parent,
-            std::unique_ptr<Backend> writableBackend,
-                 std::unique_ptr<Backend> archiveBackend,
-                    beast::Journal j);
+    DatabaseRotatingImp(
+        std::string const& name,
+        Scheduler& scheduler,
+        int readThreads,
+        Stoppable& parent,
+        std::unique_ptr<Backend> writableBackend,
+        std::unique_ptr<Backend> archiveBackend,
+        Section const& config,
+        beast::Journal j);
 
     ~DatabaseRotatingImp() override
     {
@@ -71,7 +75,7 @@ public:
 
     void import (Database& source) override
     {
-        importInternal (source, *getWritableBackend());
+        importInternal (*getWritableBackend(), source);
     }
 
     void store(NodeObjectType type, Blob&& data,
@@ -80,7 +84,7 @@ public:
     std::shared_ptr<NodeObject>
     fetch(uint256 const& hash, std::uint32_t seq) override
     {
-        return doFetch(hash, seq, pCache_, nCache_, false);
+        return doFetch(hash, seq, *pCache_, *nCache_, false);
     }
 
     bool
@@ -88,7 +92,11 @@ public:
         std::shared_ptr<NodeObject>& object) override;
 
     bool
-    copyLedger(std::shared_ptr<Ledger const> const& ledger) override;
+    copyLedger(std::shared_ptr<Ledger const> const& ledger) override
+    {
+        return Database::copyLedger(
+            *getWritableBackend(), *ledger, pCache_, nCache_, nullptr);
+    }
 
     int
     getDesiredAsyncReadCount(std::uint32_t seq) override
