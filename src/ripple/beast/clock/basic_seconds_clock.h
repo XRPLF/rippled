@@ -20,7 +20,7 @@
 #ifndef BEAST_CHRONO_BASIC_SECONDS_CLOCK_H_INCLUDED
 #define BEAST_CHRONO_BASIC_SECONDS_CLOCK_H_INCLUDED
 
-#include <ripple/beast/clock/chrono_util.h>
+#include <ripple/basics/date.h>
 
 #include <algorithm>
 #include <chrono>
@@ -108,7 +108,7 @@ public:
 
             using namespace std::chrono;
             clock_type::time_point const when (
-                floor <seconds> (
+                date::floor <seconds> (
                     clock_type::now().time_since_epoch()) +
                         seconds (1));
 

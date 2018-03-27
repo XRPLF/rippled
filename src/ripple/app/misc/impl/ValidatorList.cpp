@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/basics/date.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/json_reader.h>
@@ -490,9 +491,13 @@ ValidatorList::getJson() const
     if (auto when = expires())
     {
         if (*when == TimeKeeper::time_point::max())
+        {
             res[jss::validator_list_expires] = "never";
+        }
         else
+        {
             res[jss::validator_list_expires] = to_string(*when);
+        }
     }
     else
         res[jss::validator_list_expires] = "unknown";

@@ -89,7 +89,9 @@ public:
 
 private:
     boost::filesystem::path CONFIG_FILE;
+public:
     boost::filesystem::path CONFIG_DIR;
+private:
     boost::filesystem::path DEBUG_LOGFILE;
 
     void load ();
