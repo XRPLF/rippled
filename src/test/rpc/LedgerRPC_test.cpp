@@ -52,11 +52,10 @@ class LedgerRPC_test : public beast::unit_test::suite
     // Corrupt a valid address by replacing the 10th character with '!'.
     // '!' is not part of the ripple alphabet.
     std::string
-    makeBadAddress (std::string const& good)
+    makeBadAddress (std::string good)
     {
-        std::string ret = good;
+        std::string ret = std::move (good);
         ret.replace (10, 1, 1, '!');
-        BEAST_EXPECT (good != ret);
         return ret;
     }
 
@@ -537,7 +536,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
             jv[jss::Amount] = amount.getJson(0);
-            jv[sfCancelAfter.jsonName] = cancelAfter.time_since_epoch().count();
+            jv[sfFinishAfter.jsonName] =
+                cancelAfter.time_since_epoch().count() + 2;
             return jv;
         };
 
@@ -554,7 +554,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::escrow][jss::seq] = env.seq (alice) - 1;
             Json::Value const jrr = env.rpc (
                 "json", "ledger_entry", to_string (jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::node][jss::Amount] == "333000000");
+            BEAST_EXPECT(
+                jrr[jss::node][jss::Amount] == XRP(333).value().getText());
             escrowIndex = jrr[jss::index].asString();
         }
         {
@@ -564,7 +565,9 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_hash] = ledgerHash;
             Json::Value const jrr = env.rpc (
                 "json", "ledger_entry", to_string (jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::node][jss::Amount] == "333000000");
+            BEAST_EXPECT(
+                jrr[jss::node][jss::Amount] == XRP(333).value().getText());
+
         }
         {
             // Malformed owner entry.
