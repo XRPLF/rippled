@@ -109,7 +109,8 @@ detail::supportedAmendments ()
         { "1D3463A5891F9E589C5AE839FFAC4A917CE96197098A1EF22304E1BC5B98A454 fix1528" },
         { "F64E1EABBE79D55B3BB82020516CEC2C582A98A6BFE20FBE9BB6A0D233418064 DepositAuth"},
         { "157D2D480E006395B76F948E3E07A45A05FE10230D88A7993C71F97AE4B1F2D1 Checks"},
-        { "7117E2EC2DBF119CA55181D69819F1999ECEE1A0225A7FD2B9ED47940968479C fix1571" }
+        { "7117E2EC2DBF119CA55181D69819F1999ECEE1A0225A7FD2B9ED47940968479C fix1571" },
+        { "8413364A1E27704241F7106789570A4B36EE2AFA14F94828E78BE942AB2F24BE ValidationCookies"}
     };
     return supported;
 }
@@ -160,5 +161,6 @@ uint256 const fix1528 = *getRegisteredFeature("fix1528");
 uint256 const featureDepositAuth = *getRegisteredFeature("DepositAuth");
 uint256 const featureChecks = *getRegisteredFeature("Checks");
 uint256 const fix1571 = *getRegisteredFeature("fix1571");
+uint256 const featureValidationCookies = *getRegisteredFeature("ValidationCookies");
 
 } // ripple

@@ -55,6 +55,7 @@ class Validation
     PeerID nodeID_{0};
     bool trusted_ = false;
     bool full_ = false;
+    std::uint64_t cookie_;
     boost::optional<std::uint32_t> loadFee_;
 
 public:
@@ -68,6 +69,7 @@ public:
         PeerKey key,
         PeerID nodeID,
         bool full,
+        std::uint64_t cookie,
         boost::optional<std::uint32_t> loadFee = boost::none)
         : ledgerID_{id}
         , seq_{seq}
@@ -76,6 +78,7 @@ public:
         , key_{key}
         , nodeID_{nodeID}
         , full_{full}
+        , cookie_{cookie}
         , loadFee_{loadFee}
     {
     }
@@ -142,6 +145,12 @@ public:
         // STValidation, the csf::Validation has no more specific type it
         // wraps, so csf::Validation unwraps to itself
         return *this;
+    }
+
+    std::uint64_t
+    cookie() const
+    {
+        return cookie_;
     }
 
     auto

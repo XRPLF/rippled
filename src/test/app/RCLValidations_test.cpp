@@ -35,12 +35,20 @@ class RCLValidations_test : public beast::unit_test::suite
     testChangeTrusted()
     {
         testcase("Change validation trusted status");
-        PublicKey key = derivePublicKey(KeyType::ed25519, randomSecretKey());
-        auto v = std::make_shared<STValidation>(uint256(), uint256(),
-            NetClock::time_point(), key, calcNodeID(key), true);
+        auto keys = randomKeyPair(KeyType::secp256k1);
+        auto v = std::make_shared<STValidation>(
+            uint256(),
+            1,
+            uint256(),
+            NetClock::time_point(),
+            keys.first,
+            keys.second,
+            calcNodeID(keys.first),
+            true,
+            STValidation::FeeSettings{},
+            std::vector<uint256>{},
+            1001 /* cookie */);
 
-        BEAST_EXPECT(!v->isTrusted());
-        v->setTrusted();
         BEAST_EXPECT(v->isTrusted());
         v->setUntrusted();
         BEAST_EXPECT(!v->isTrusted());

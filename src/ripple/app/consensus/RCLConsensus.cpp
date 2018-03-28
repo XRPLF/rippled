@@ -84,6 +84,7 @@ RCLConsensus::Adaptor::Adaptor(
         , nodeID_{validatorKeys.nodeID}
         , valPublic_{validatorKeys.publicKey}
         , valSecret_{validatorKeys.secretKey}
+        , cookie_{validatorKeys.cookie}
 {
 }
 
@@ -835,36 +836,45 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger,
         validationTime = lastValidationTime_ + 1s;
     lastValidationTime_ = validationTime;
 
-    // Build validation
-    auto v = std::make_shared<STValidation>(
-        ledger.id(),
-        txns.id(),
-        validationTime,
-        valPublic_,
-        nodeID_,
-        proposing /* full if proposed */);
-    v->setFieldU32(sfLedgerSequence, ledger.seq());
+    STValidation::FeeSettings fees;
+    std::vector<uint256> amendments;
 
-    // Add our load fee to the validation
     auto const& feeTrack = app_.getFeeTrack();
     std::uint32_t fee =
         std::max(feeTrack.getLocalFee(), feeTrack.getClusterFee());
 
     if (fee > feeTrack.getLoadBase())
-        v->setFieldU32(sfLoadFee, fee);
+        fees.loadFee = fee;
 
-    if (((ledger.seq() + 1) % 256) == 0)
     // next ledger is flag ledger
+    if (((ledger.seq() + 1) % 256) == 0)
     {
         // Suggest fee changes and new features
-        feeVote_->doValidation(ledger.ledger_, *v);
-        app_.getAmendmentTable().doValidation(ledger.ledger_, *v);
+        feeVote_->doValidation(ledger.ledger_, fees);
+        amendments = app_.getAmendmentTable().doValidation (getEnabledAmendments(*ledger.ledger_));
     }
 
-    auto const signingHash = v->sign(valSecret_);
-    v->setTrusted();
+    boost::optional<std::uint64_t> maybeCookie;
+    if (ledgerMaster_.getValidatedRules().enabled(featureValidationCookies))
+        maybeCookie.emplace(cookie_);
+
+    auto v = std::make_shared<STValidation>(
+        ledger.id(),
+        ledger.seq(),
+        txns.id(),
+        validationTime,
+        valPublic_,
+        valSecret_,
+        nodeID_,
+        proposing /* full if proposed */,
+        fees,
+        amendments,
+        maybeCookie);
+
+
+
     // suppress it if we receive it - FIXME: wrong suppression
-    app_.getHashRouter().addSuppression(signingHash);
+    app_.getHashRouter().addSuppression(v->getSigningHash());
     handleNewValidation(app_, v, "local");
     Blob validation = v->getSerialized();
     protocol::TMValidation val;
