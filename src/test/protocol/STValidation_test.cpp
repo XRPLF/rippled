@@ -68,7 +68,7 @@ public:
         {
             SerialIter sit{payload1, sizeof(payload1)};
             auto stx = std::make_shared<ripple::STValidation>(sit,
-                [this](PublicKey const& pk) {
+                [](PublicKey const& pk) {
                     return calcNodeID(pk);
                 }, false);
             fail("An exception should have been thrown");
@@ -82,7 +82,7 @@ public:
         {
             SerialIter sit{payload2, sizeof(payload2)};
             auto stx = std::make_shared<ripple::STValidation>(sit,
-                [this](PublicKey const& pk) {
+                [](PublicKey const& pk) {
                     return calcNodeID(pk);
                 }, false);
             fail("An exception should have been thrown");
@@ -96,7 +96,7 @@ public:
         {
             SerialIter sit{payload3, sizeof(payload3)};
             auto stx = std::make_shared<ripple::STValidation>(sit,
-                [this](PublicKey const& pk) {
+                [](PublicKey const& pk) {
                     return calcNodeID(pk);
                 }, false);
             fail("An exception should have been thrown");
