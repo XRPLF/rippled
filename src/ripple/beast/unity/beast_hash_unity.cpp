@@ -18,9 +18,4 @@
 //==============================================================================
 
 #include <ripple/beast/hash/xxhasher.h>
-#include <ripple/beast/hash/impl/spookyv2.cpp>
-
-#if ! BEAST_NO_XXHASH
 #include <ripple/beast/hash/impl/xxhash.c>
-#endif
-#include <ripple/beast/hash/impl/siphash.cpp>
