@@ -30,7 +30,6 @@
 #endif
 #endif
 
-#ifndef RIPPLE_ROCKSDB_AVAILABLE
 #if BEAST_WIN32
 # define ROCKSDB_PLATFORM_WINDOWS
 #else
@@ -44,6 +43,8 @@
 #  define OS_LINUX
 # endif
 #endif
+
+#ifndef RIPPLE_ROCKSDB_AVAILABLE
 # if BEAST_WIN32
 #  define RIPPLE_ROCKSDB_AVAILABLE 0
 # else

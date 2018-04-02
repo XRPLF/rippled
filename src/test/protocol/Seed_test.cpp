@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/random.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>

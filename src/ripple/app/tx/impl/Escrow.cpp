@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/Escrow.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/basics/chrono.h>

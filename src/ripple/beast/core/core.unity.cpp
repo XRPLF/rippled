@@ -22,14 +22,12 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
 #endif
 
 //==============================================================================
 
 #include <ripple/beast/core/BasicNativeHeaders.h>
 
-// TargetPlatform.h should not use anything from BeastConfig.h
 #include <ripple/beast/core/Config.h>
 
 #if BEAST_MSVC

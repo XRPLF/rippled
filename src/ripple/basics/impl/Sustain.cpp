@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <boost/format.hpp>

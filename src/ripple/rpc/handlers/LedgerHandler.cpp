@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/rpc/handlers/LedgerHandler.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/main/Application.h>

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/basics/BasicConfig.h>

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <boost/range/adaptor/transformed.hpp>
 

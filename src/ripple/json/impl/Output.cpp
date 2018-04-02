@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/json/Output.h>
 #include <ripple/json/Writer.h>
 

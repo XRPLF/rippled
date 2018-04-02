@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/main/NodeStoreScheduler.h>
 #include <cassert>
 

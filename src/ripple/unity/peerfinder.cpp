@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/peerfinder/impl/Bootcache.cpp>
 #include <ripple/peerfinder/impl/PeerfinderConfig.cpp>

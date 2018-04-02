@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/beast/clock/chrono_util.h>
 #include <ripple/basics/chrono.h>
 #include <iomanip>

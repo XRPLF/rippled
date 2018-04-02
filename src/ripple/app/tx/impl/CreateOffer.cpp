@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/paths/Flow.h>

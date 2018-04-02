@@ -749,6 +749,75 @@ macro(setup_build_boilerplate)
     # set_target_properties(ripple-libpp PROPERTIES LINK_SEARCH_START_STATIC 1)
     # set_target_properties(ripple-libpp PROPERTIES LINK_SEARCH_END_STATIC 1)
   endif()
+
+  ## The following options were migrated from the erstwhile BeastConfig.h
+  ## Some of these should be considered for removal in the future if
+  ## unused or unmaintained
+
+  # beast_no_unit_test_inline
+  #    Prevents unit test definitions from being inserted into a global table
+  if (beast_no_unit_test_inline)
+    add_definitions(-DBEAST_NO_UNIT_TEST_INLINE=1)
+  endif()
+
+  # beast_force_debug
+  #    Force BEAST_DEBUG behavior regardless of other compiler settings
+  if (beast_force_debug)
+    add_definitions(-DBEAST_FORCE_DEBUG=1)
+  endif()
+
+  # beast_check_mem_leaks
+  #    Force BEAST_CHECK_MEMORY_LEAKS to be ON.  Default is ON only for debug
+  #    builds. Only implemeted for windows builds.
+  if (beast_check_mem_leaks)
+    add_definitions(-DBEAST_CHECK_MEMORY_LEAKS=1)
+  elseif(DEFINED beast_check_mem_leaks)
+    add_definitions(-DBEAST_CHECK_MEMORY_LEAKS=0)
+  endif()
+
+  if (WIN32)
+    # beast_disable_auto_link
+    #    Disables autolinking of system library dependencies on windows
+    if (beast_disable_auto_link)
+      add_definitions(-DBEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES=1)
+    endif()
+  endif()
+
+  # dump_leaks_on_exit
+  #    Displays heap blocks and counted objects which were not disposed of
+  #    during exit. Only implemented for windows builds.
+  if (DEFINED dump_leaks_on_exit AND NOT dump_leaks_on_exit)
+    add_definitions(-DRIPPLE_DUMP_LEAKS_ON_EXIT=0)
+  else ()
+    add_definitions(-DRIPPLE_DUMP_LEAKS_ON_EXIT=1)
+  endif()
+
+  # NOTE - THIS OPTION CURRENTLY DOES NOT COMPILE !!
+  # verify_nodeobject_keys
+  #    This verifies that the hash of node objects matches the payload.
+  #    This check is expensive - use with caution.
+  if (verify_nodeobject_keys)
+    add_definitions(-DRIPPLE_VERIFY_NODEOBJECT_KEYS=1)
+  endif()
+
+  # single_io_service_thread
+  #    Restricts the number of threads calling io_service::run to one.
+  #    This can be useful when debugging."
+  if (single_io_service_thread)
+    add_definitions(-DRIPPLE_SINGLE_IO_SERVICE_THREAD=1)
+  endif()
+
+  # use_rocksdb
+  #    Controls whether or not the RocksDB database back-end is compiled into
+  #    rippled. RocksDB requires a relatively modern C++ compiler (tested with
+  #    gcc versions 4.8.1 and later) that supports some C++11 features. The
+  #    default is ON for modern unix compilers and OFF for everything else.
+  if (use_rocksdb)
+    add_definitions(-DRIPPLE_ROCKSDB_AVAILABLE=1)
+  elseif(DEFINED use_rocksdb)
+    add_definitions(-DRIPPLE_ROCKSDB_AVAILABLE=0)
+  endif()
+
 endmacro()
 
 ############################################################

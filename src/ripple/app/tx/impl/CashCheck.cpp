@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/CashCheck.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/paths/Flow.h>

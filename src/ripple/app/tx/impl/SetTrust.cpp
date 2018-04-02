@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/SetTrust.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Feature.h>

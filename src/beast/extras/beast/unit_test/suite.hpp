@@ -670,6 +670,7 @@ run(runner& r)
 
 #if BEAST_NO_UNIT_TEST_INLINE
 #define BEAST_DEFINE_TESTSUITE(Class,Module,Library)
+#define BEAST_DEFINE_TESTSUITE_MANUAL(Class,Module,Library)
 
 #else
 #include <beast/unit_test/global_suites.hpp>

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/core/impl/Config.cpp>
 #include <ripple/core/impl/DatabaseCon.cpp>

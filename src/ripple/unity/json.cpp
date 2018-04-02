@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <cassert>
 #include <cstdlib>

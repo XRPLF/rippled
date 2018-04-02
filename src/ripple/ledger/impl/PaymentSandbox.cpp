@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/paths/impl/AmountSpec.h>
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/ledger/View.h>

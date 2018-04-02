@@ -15,7 +15,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/Feature.h>

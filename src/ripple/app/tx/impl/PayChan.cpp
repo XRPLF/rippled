@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/PayChan.h>
 
 #include <ripple/basics/chrono.h>

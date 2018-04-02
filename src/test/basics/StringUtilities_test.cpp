@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/ToString.h>

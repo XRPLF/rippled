@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx/quality.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/Quality.h>

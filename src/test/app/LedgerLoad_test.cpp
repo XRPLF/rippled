@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/beast/unit_test.h>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>

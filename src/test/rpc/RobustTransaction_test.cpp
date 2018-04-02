@@ -15,7 +15,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/protocol/JsonFields.h>
 #include <test/jtx.h>

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/SetAccount.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>

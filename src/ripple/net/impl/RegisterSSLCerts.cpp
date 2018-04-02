@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <BeastConfig.h>
 #include <ripple/net/RegisterSSLCerts.h>
 #include <boost/predef.h>
 #if BOOST_OS_WINDOWS

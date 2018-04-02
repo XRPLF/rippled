@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/Seed.h>
 #include <ripple/basics/Buffer.h>
 #include <ripple/protocol/AccountID.h>

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/Taker.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>

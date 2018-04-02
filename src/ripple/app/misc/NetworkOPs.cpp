@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/consensus/Consensus.h>
 #include <ripple/app/consensus/RCLConsensus.h>

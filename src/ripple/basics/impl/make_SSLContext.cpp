@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/make_SSLContext.h>

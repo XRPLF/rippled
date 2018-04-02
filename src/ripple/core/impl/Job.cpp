@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/Job.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <cassert>

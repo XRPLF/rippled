@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/digest.h>

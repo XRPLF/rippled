@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/app/tx/impl/apply.cpp>
 #include <ripple/app/tx/impl/applySteps.cpp>

@@ -15,7 +15,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/protocol/STAccount.h>
 #include <string>

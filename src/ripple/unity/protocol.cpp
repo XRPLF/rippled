@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/protocol/impl/AccountID.cpp>
 #include <ripple/protocol/impl/Book.cpp>

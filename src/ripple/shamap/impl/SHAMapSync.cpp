@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/random.h>
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/nodestore/Database.h>

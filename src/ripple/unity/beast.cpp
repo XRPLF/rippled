@@ -18,6 +18,5 @@
 //==============================================================================
 
 // MUST come first!
-#include <BeastConfig.h>
 #include <ripple/beast/core/core.unity.cpp>
 

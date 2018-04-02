@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/basics/contract.h>
 

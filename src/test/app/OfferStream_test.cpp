@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/OfferStream.h>
 #include <ripple/beast/unit_test.h>
 

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/nodestore/impl/ManagerImp.h>
 #include <ripple/nodestore/impl/DatabaseNodeImp.h>
 

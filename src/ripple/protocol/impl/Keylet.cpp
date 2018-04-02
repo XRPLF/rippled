@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/Keylet.h>
 #include <ripple/protocol/STLedgerEntry.h>
 

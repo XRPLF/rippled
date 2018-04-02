@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/HashPrefix.h>

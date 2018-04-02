@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx.h>
 #include <ripple/app/tx/applySteps.h>
 #include <ripple/ledger/Directory.h>

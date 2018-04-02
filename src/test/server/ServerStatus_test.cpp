@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/rpc/ServerHandler.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/app/misc/LoadFeeTrack.h>

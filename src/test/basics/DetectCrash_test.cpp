@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <beast/unit_test/suite.hpp>
 
 #include <exception>

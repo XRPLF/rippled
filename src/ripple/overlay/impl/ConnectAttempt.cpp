@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/Cluster.h>

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>

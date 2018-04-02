@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/ledger/impl/ApplyStateTable.cpp>
 #include <ripple/ledger/impl/ApplyView.cpp>

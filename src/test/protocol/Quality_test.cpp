@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/beast/unit_test.h>
 #include <type_traits>

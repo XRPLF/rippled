@@ -16,6 +16,5 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <BeastConfig.h>
 
 #include <ripple/consensus/Consensus.cpp>

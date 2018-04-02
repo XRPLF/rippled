@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Fees.h>

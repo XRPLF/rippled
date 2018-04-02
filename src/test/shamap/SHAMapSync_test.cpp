@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/shamap/SHAMapItem.h>
 #include <test/shamap/common.h>

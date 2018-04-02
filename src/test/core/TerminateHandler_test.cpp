@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/TerminateHandler.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/unit_test.h>

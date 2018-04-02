@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 // This has to be included early to prevent an obscure MSVC compile error
 #include <boost/asio/deadline_timer.hpp>

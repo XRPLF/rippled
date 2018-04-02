@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/impl/CheckLibraryVersionsImpl.h>
 #include <ripple/beast/core/SemanticVersion.h>

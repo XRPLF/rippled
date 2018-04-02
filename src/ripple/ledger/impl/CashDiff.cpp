@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/ledger/CashDiff.h>
 #include <ripple/ledger/detail/ApplyStateTable.h>
 #include <ripple/protocol/st.h>

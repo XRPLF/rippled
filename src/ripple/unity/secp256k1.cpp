@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #define USE_NUM_NONE
 #define USE_FIELD_10X26
