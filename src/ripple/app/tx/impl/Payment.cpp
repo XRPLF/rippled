@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/Payment.h>
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/basics/Log.h>

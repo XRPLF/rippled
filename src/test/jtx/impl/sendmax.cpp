@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx/sendmax.h>
 #include <ripple/protocol/JsonFields.h>
 

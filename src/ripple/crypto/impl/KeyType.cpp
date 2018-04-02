@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/crypto/KeyType.h>
 
 namespace ripple {

@@ -20,7 +20,6 @@
 #ifndef RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 #define RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 
-#include <BeastConfig.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/AmountSpec.h>

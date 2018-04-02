@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/core/Config.h>
 #include <ripple/beast/unit_test.h>

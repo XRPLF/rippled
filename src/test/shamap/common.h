@@ -20,7 +20,6 @@
 #ifndef RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
 #define RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
 
-#include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/nodestore/DummyScheduler.h>

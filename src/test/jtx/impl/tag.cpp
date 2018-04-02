@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx/tag.h>
 #include <ripple/protocol/JsonFields.h>
 

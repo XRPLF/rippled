@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/beast/unit_test.h>
 #include <boost/archive/binary_iarchive.hpp>

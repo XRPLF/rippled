@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/core/impl/SNTPClock.h>

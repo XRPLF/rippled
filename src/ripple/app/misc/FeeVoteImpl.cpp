@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/st.h>
 #include <ripple/app/misc/FeeVote.h>
 #include <ripple/app/main/Application.h>

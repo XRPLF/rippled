@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/st.h>

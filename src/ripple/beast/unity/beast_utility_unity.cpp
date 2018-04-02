@@ -18,7 +18,6 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
 #endif
 
 #include <ripple/beast/utility/src/beast_Debug.cpp>

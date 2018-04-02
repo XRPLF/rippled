@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/app/ledger/impl/InboundLedger.cpp>
 #include <ripple/app/ledger/impl/InboundLedgers.cpp>

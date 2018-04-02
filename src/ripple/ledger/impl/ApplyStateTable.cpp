@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/ledger/detail/ApplyStateTable.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>

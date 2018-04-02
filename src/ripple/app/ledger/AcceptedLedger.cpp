@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>

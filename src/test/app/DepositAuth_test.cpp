@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/basics/contract.h>

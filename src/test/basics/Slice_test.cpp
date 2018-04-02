@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/beast/unit_test.h>
 #include <array>

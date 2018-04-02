@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/conditions/impl/Condition.cpp>
 #include <ripple/conditions/impl/Fulfillment.cpp>

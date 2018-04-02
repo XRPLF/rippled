@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/CheckLibraryVersions.h>
 #include <ripple/basics/impl/CheckLibraryVersionsImpl.h>
 #include <ripple/beast/unit_test.h>

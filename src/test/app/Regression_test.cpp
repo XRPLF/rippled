@@ -15,7 +15,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
 #include <ripple/app/tx/apply.h>

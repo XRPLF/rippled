@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/beast/unit_test.h>

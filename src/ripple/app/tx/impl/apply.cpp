@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/app/tx/applySteps.h>

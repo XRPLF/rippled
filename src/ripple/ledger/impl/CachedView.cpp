@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/ledger/CachedView.h>
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/Serializer.h>

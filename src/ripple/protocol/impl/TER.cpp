@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/TER.h>
 #include <boost/range/adaptor/transformed.hpp>
 #include <unordered_map>

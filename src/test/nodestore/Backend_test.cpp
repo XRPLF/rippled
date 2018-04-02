@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/unity/rocksdb.h>
 #include <test/nodestore/TestBase.h>
 #include <ripple/nodestore/DummyScheduler.h>

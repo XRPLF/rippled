@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/Log.h>
 #include <ripple/rpc/impl/Handler.h>

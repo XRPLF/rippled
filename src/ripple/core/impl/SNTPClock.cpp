@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/impl/SNTPClock.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/random.h>

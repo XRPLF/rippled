@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/beast/crypto/secure_erase.h>
 #include <ripple/crypto/GenerateDeterministicKey.h>

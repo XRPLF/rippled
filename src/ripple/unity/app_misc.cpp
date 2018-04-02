@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/app/misc/CanonicalTXSet.cpp>
 #include <ripple/app/misc/FeeVoteImpl.cpp>

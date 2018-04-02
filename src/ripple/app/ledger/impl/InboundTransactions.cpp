@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/impl/TransactionAcquire.h>

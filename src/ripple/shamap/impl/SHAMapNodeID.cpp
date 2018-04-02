@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/shamap/SHAMapNodeID.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/basics/Log.h>

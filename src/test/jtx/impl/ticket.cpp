@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx/ticket.h>
 #include <ripple/protocol/JsonFields.h>
 

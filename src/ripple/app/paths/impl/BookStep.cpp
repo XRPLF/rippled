@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/NodeDirectory.h>

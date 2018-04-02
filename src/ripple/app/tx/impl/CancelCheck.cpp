@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/Log.h>

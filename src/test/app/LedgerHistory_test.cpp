@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerHistory.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/tx/apply.h>

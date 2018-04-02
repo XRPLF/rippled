@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx.h>
 #include <ripple/json/json_reader.h>

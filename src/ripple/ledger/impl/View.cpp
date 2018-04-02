@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/ledger/BookDirs.h>
 #include <ripple/ledger/ReadView.h>

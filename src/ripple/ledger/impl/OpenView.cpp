@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/ledger/OpenView.h>
 #include <ripple/basics/contract.h>
 

@@ -18,7 +18,6 @@
 //==============================================================================
 
 
-#include <BeastConfig.h>
 #include <ripple/beast/unit_test.h>
 #include <test/csf/Histogram.h>
 

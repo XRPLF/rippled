@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <BeastConfig.h>
 #include <test/jtx/JSONRPCClient.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>

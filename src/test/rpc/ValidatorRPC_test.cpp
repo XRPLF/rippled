@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/main/BasicApp.h>
 #include <ripple/app/misc/ValidatorSite.h>
 #include <ripple/beast/unit_test.h>

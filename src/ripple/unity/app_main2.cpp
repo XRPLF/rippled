@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/app/main/LoadManager.cpp>
 #include <ripple/app/main/Main.cpp>

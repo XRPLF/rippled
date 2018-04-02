@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
 #include <cstring>
 

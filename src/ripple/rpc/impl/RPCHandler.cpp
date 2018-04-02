@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/impl/Tuning.h>

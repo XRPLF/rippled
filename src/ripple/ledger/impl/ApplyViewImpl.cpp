@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/ledger/ApplyViewImpl.h>
 #include <ripple/basics/contract.h>
 #include <cassert>

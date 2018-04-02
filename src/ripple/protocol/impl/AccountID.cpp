@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/digest.h>

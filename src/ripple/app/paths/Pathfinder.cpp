@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/Tuning.h>
 #include <ripple/app/paths/Pathfinder.h>

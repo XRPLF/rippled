@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/StringUtilities.h>
 #include <test/jtx/TestSuite.h>
 #include <ripple/json/json_value.h>

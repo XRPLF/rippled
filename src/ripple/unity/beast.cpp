@@ -20,7 +20,6 @@
 #if ! BEAST_COMPILE_OBJECTIVE_CPP
 
 // MUST come first!
-#include <BeastConfig.h>
 #include <ripple/beast/core/core.unity.cpp>
 
 #endif

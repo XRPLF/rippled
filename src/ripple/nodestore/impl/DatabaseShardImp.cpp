@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/nodestore/impl/DatabaseShardImp.h>
 #include <ripple/app/ledger/InboundLedgers.h>

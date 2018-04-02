@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/ledger/detail/ApplyViewBase.h>
 #include <ripple/basics/contract.h>
 #include <ripple/ledger/CashDiff.h>
