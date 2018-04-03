@@ -78,7 +78,8 @@ class FeatureCollections
         "Checks",
         "fix1571",
         "fix1543",
-        "ValidationCookies"
+        "ValidationCookies",
+        "fix1623"
     };
 
     std::vector<uint256> features;
@@ -363,6 +364,7 @@ extern uint256 const featureChecks;
 extern uint256 const fix1571;
 extern uint256 const fix1543;
 extern uint256 const featureValidationCookies;
+extern uint256 const fix1623;
 
 } // ripple
 

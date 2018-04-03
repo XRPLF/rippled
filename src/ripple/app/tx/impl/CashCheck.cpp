@@ -282,6 +282,8 @@ CashCheck::doApply ()
     // If it is not a check to self (as should be the case), then there's
     // work to do...
     auto viewJ = ctx_.app.journal ("View");
+    auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
+    bool const doFix1623 {ctx_.view().rules().enabled (fix1623)};
     if (srcId != account_)
     {
         STAmount const sendMax {sleCheck->getFieldAmount (sfSendMax)};
@@ -300,17 +302,9 @@ CashCheck::doApply ()
             STAmount const srcLiquid {xrpLiquid (psb, srcId, -1, viewJ)};
 
             // Now, how much do they need in order to be successful?
-            STAmount const xrpDeliver {
-                [&sendMax, &srcLiquid] (STTx const& tx)
-            {
-                // If the check cash specified Amount deliver exactly that.
-                auto const optDeliverMin = tx[~sfDeliverMin];
-                if (! optDeliverMin)
-                    return tx.getFieldAmount (sfAmount);
-
-                return (std::max (
-                    *optDeliverMin, std::min (sendMax, srcLiquid)));
-            }(ctx_.tx)};
+            STAmount const xrpDeliver {optDeliverMin ?
+                std::max (*optDeliverMin, std::min (sendMax, srcLiquid)) :
+                ctx_.tx.getFieldAmount (sfAmount)};
 
             if (srcLiquid < xrpDeliver)
             {
@@ -321,29 +315,27 @@ CashCheck::doApply ()
                     << " < " << xrpDeliver.getFullText();
                 return tecUNFUNDED_PAYMENT;
             }
-            else
-            {
-                // The source account has enough XRP so make the ledger change.
-                transferXRP (psb, srcId, account_, xrpDeliver, viewJ);
-            }
+
+            if (optDeliverMin && doFix1623)
+                // Set the DeliveredAmount metadata.
+                ctx_.deliver (xrpDeliver);
+
+            // The source account has enough XRP so make the ledger change.
+            transferXRP (psb, srcId, account_, xrpDeliver, viewJ);
         }
         else
         {
             // Let flow() do the heavy lifting on a check for an IOU.
-            auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
-            STAmount const flowDeliver {[&optDeliverMin] (STTx const& tx)
-            {
-                // If the check cash specified Amount deliver exactly that.
-                if (! optDeliverMin)
-                    return static_cast<STAmount>(tx[sfAmount]);
-
-                // We can't use the maximum possible currency here because
-                // there might be a gateway transfer rate to account for.
-                // Since the transfer rate cannot exceed 200%, we use 1/2
-                // maxValue for our limit.
-                return STAmount { optDeliverMin->issue(),
-                    STAmount::cMaxValue / 2, STAmount::cMaxOffset };
-            }(ctx_.tx)};
+            //
+            // Note that for DeliverMin we don't know exactly how much
+            // currency we want flow to deliver.  We can't ask for the
+            // maximum possible currency because there might be a gateway
+            // transfer rate to account for.  Since the transfer rate cannot
+            // exceed 200%, we use 1/2 maxValue as our limit.
+            STAmount const flowDeliver {optDeliverMin ?
+                STAmount { optDeliverMin->issue(),
+                    STAmount::cMaxValue / 2, STAmount::cMaxOffset } :
+                static_cast<STAmount>(ctx_.tx[sfAmount])};
 
             // Call the payment engine's flow() to do the actual work.
             auto const result = flow (psb, flowDeliver, srcId, account_,
@@ -364,10 +356,16 @@ CashCheck::doApply ()
             }
 
             // Make sure that deliverMin was satisfied.
-            if (optDeliverMin && result.actualAmountOut < *optDeliverMin)
+            if (optDeliverMin)
             {
-                JLOG(ctx_.journal.warn()) << "flow did not produce DeliverMin.";
-                return tecPATH_PARTIAL;
+                if (result.actualAmountOut < *optDeliverMin)
+                {
+                    JLOG(ctx_.journal.warn()) << "flow did not produce DeliverMin.";
+                    return tecPATH_PARTIAL;
+                }
+                if (doFix1623)
+                    // Set the delivered_amount metadata.
+                    ctx_.deliver (result.actualAmountOut);
             }
         }
     }

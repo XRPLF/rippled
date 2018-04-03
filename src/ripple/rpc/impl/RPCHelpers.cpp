@@ -18,10 +18,12 @@
 //==============================================================================
 
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/ledger/View.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/algorithm/string/case_conv.hpp>
@@ -400,9 +402,25 @@ addPaymentDeliveredAmount(Json::Value& meta, RPC::Context& context,
     if (! transaction)
         return;
 
-    auto serializedTx = transaction->getSTransaction ();
-    if (! serializedTx || serializedTx->getTxnType () != ttPAYMENT)
+    auto const serializedTx = transaction->getSTransaction ();
+    if (! serializedTx)
         return;
+
+    {
+        // Only include this field for Payment and CheckCash transactions.
+        TxType const tt {serializedTx->getTxnType()};
+        if ((tt != ttPAYMENT) && (tt != ttCHECK_CASH))
+            return;
+
+        // Only include this field for CheckCash transactions if the fix
+        // is enabled.
+        if (tt == ttCHECK_CASH)
+        {
+            auto const view = context.app.openLedger().current();
+            if (!view || !view->rules().enabled (fix1623))
+                return;
+        }
+    }
 
     if (transactionMeta)
     {
@@ -437,7 +455,7 @@ addPaymentDeliveredAmount(Json::Value& meta, RPC::Context& context,
     // then its absence indicates that the amount delivered is listed in the
     // Amount field. DeliveredAmount went live January 24, 2014.
     using namespace std::chrono_literals;
-    auto ct =
+    auto const ct =
         context.ledgerMaster.getCloseTimeBySeq (transaction->getLedger ());
     if (ct && (*ct > NetClock::time_point{446000000s}))
     {
