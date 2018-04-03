@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/Buffer.h>
 #include <ripple/beast/unit_test.h>
 #include <cstdint>

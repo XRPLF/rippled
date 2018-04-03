@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/basics/contract.h>
 #include <boost/multiprecision/cpp_int.hpp>

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/SociDB.h>

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/crypto/impl/ec_key.cpp>
 #include <ripple/crypto/impl/GenerateDeterministicKey.cpp>

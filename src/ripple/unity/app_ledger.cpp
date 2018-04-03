@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/app/ledger/AcceptedLedger.cpp>
 #include <ripple/app/ledger/AcceptedLedgerTx.cpp>

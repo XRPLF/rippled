@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/digest.h>
 #include <type_traits>
 #include <openssl/ripemd.h>

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/LoadEvent.h>
 #include <ripple/core/LoadMonitor.h>
 #include <cassert>

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>

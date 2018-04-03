@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <BeastConfig.h>
 
 #include <ripple/app/consensus/RCLConsensus.cpp>
 #include <ripple/app/consensus/RCLCxPeerPos.cpp>

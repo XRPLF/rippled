@@ -15,7 +15,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/JsonFields.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/JSONRPCClient.h>

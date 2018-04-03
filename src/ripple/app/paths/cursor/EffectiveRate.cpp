@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/paths/cursor/EffectiveRate.h>
 #include <ripple/basics/contract.h>
 

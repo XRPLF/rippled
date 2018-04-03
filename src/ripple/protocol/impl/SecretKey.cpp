@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/strHex.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/digest.h>

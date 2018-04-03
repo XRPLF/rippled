@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/STAccount.h>

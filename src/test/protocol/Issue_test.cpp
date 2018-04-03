@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/Book.h>
 #include <ripple/protocol/Issue.h>

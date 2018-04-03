@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx/fee.h>
 #include <ripple/protocol/JsonFields.h>
 

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/ledger/CashDiff.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/beast/unit_test.h>

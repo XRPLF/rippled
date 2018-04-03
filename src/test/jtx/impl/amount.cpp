@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 #include <cassert>

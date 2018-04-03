@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/ledger/BookDirs.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Indexes.h>

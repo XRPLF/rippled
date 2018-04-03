@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/JsonFields.h>

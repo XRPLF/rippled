@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/ledger/TxMeta.h>
 #include <ripple/basics/Log.h>

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/beast/unit_test.h>
 

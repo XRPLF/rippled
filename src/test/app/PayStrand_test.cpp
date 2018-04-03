@@ -15,7 +15,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/paths/impl/Steps.h>

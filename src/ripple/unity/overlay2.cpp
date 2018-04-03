@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/overlay/impl/PeerImp.cpp>
 #include <ripple/overlay/impl/PeerSet.cpp>

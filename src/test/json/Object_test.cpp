@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/json/Object.h>
 #include <test/json/TestOutputSuite.h>
 #include <ripple/beast/unit_test.h>

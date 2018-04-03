@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/server/Server.h>

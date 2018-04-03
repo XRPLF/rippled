@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/ErrorCodes.h>

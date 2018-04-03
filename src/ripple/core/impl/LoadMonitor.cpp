@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/beast/clock/chrono_util.h>

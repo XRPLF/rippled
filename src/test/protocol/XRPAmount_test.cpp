@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/XRPAmount.h>
 #include <ripple/beast/unit_test.h>
 
