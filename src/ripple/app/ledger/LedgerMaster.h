@@ -337,6 +337,8 @@ private:
     int     mPathFindThread {0};    // Pathfinder jobs dispatched
     bool    mPathFindNewRequest {false};
 
+    std::atomic_flag mGotFetchPackThread = ATOMIC_FLAG_INIT; // GotFetchPack jobs dispatched
+
     std::atomic <std::uint32_t> mPubLedgerClose {0};
     std::atomic <LedgerIndex> mPubLedgerSeq {0};
     std::atomic <std::uint32_t> mValidLedgerSign {0};
