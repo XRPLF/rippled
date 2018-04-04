@@ -53,6 +53,8 @@ namespace beast {
 // DEPRECATED
 struct IPAddressConversion
 {
+    explicit IPAddressConversion() = default;
+
     static IP::Endpoint from_asio (boost::asio::ip::address const& address)
         { return IP::from_asio (address); }
     static IP::Endpoint from_asio (boost::asio::ip::tcp::endpoint const& endpoint)

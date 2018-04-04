@@ -30,6 +30,8 @@ class cryptoconditions_error_category
     : public std::error_category
 {
 public:
+    explicit cryptoconditions_error_category() = default;
+
     const char*
     name() const noexcept override
     {

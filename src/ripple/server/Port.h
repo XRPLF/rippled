@@ -37,6 +37,8 @@ namespace ripple {
 /** Configuration information for a Server listening port. */
 struct Port
 {
+    explicit Port() = default;
+
     std::string name;
     boost::asio::ip::address ip;
     std::uint16_t port = 0;
@@ -78,6 +80,8 @@ operator<< (std::ostream& os, Port const& p);
 
 struct ParsedPort
 {
+    explicit ParsedPort() = default;
+
     std::string name;
     std::set<std::string, beast::iless> protocol;
     std::string user;

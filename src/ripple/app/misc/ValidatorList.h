@@ -64,6 +64,8 @@ to_string(ListDisposition disposition);
 */
 struct TrustChanges
 {
+    explicit TrustChanges() = default;
+
     hash_set<NodeID> added;
     hash_set<NodeID> removed;
 };
@@ -115,6 +117,8 @@ class ValidatorList
 {
     struct PublisherList
     {
+        explicit PublisherList() = default;
+
         bool available;
         std::vector<PublicKey> list;
         std::size_t sequence;

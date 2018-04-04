@@ -29,6 +29,8 @@ namespace std {
 template <>
 struct hash <ripple::error_code_i>
 {
+    explicit hash() = default;
+
     std::size_t operator() (ripple::error_code_i value) const
     {
         return value;

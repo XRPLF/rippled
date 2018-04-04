@@ -123,6 +123,8 @@ private:
         // need to see the container declaration.
         struct stashed
         {
+            explicit stashed() = default;
+
             using value_type = typename aged_unordered_container::value_type;
             using time_point = typename aged_unordered_container::time_point;
         };
@@ -2514,6 +2516,7 @@ struct is_aged_container <beast::detail::aged_unordered_container <
         IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>>
     : std::true_type
 {
+    explicit is_aged_container() = default;
 };
 
 // Free functions

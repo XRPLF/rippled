@@ -28,6 +28,8 @@ namespace ripple {
 
 struct AmountSpec
 {
+    explicit AmountSpec() = default;
+
     bool native;
     union
     {

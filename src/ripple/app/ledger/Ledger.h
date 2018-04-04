@@ -42,7 +42,10 @@ class TransactionMaster;
 
 class SqliteStatement;
 
-struct create_genesis_t {};
+struct create_genesis_t
+{
+    explicit create_genesis_t() = default;
+};
 extern create_genesis_t const create_genesis;
 
 /** Holds a ledger.

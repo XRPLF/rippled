@@ -335,6 +335,8 @@ namespace std {
 template <>
 struct hash <beast::IP::Address>
 {
+    explicit hash() = default;
+
     std::size_t
     operator() (beast::IP::Address const& addr) const
     {
@@ -347,6 +349,8 @@ namespace boost {
 template <>
 struct hash <beast::IP::Address>
 {
+    explicit hash() = default;
+
     std::size_t
     operator() (beast::IP::Address const& addr) const
     {

@@ -182,6 +182,7 @@ template <class HashAlgorithm>
 struct is_contiguously_hashable<IP::AddressV4, HashAlgorithm>
     : public std::integral_constant<bool, sizeof(IP::AddressV4) == sizeof(std::uint32_t)>
 {
+    explicit is_contiguously_hashable() = default;
 };
 
 }
@@ -193,6 +194,8 @@ namespace std {
 template <>
 struct hash <beast::IP::AddressV4>
 {
+    explicit hash() = default;
+
     std::size_t operator() (beast::IP::AddressV4 const& addr) const
         { return addr.value; }
 };

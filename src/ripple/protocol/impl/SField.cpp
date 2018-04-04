@@ -46,6 +46,8 @@ using StaticScopedLockType = std::lock_guard <std::mutex>;
 // Give this translation unit only, permission to construct SFields
 struct SField::make
 {
+    explicit make() = default;
+
     template <class ...Args>
     static SField one(SField const* p, Args&& ...args)
     {

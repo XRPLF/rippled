@@ -57,7 +57,7 @@ private:
 
         // Just instantiate without any logic in case online delete is not
         // configured
-        SavedStateDB() = default;
+        explicit SavedStateDB() = default;
 
         // opens database and, if necessary, creates & initializes its tables.
         void init (BasicConfig const& config, std::string const& dbName);

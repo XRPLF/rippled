@@ -86,6 +86,8 @@ std::pair<Blob, bool> strUnHex (std::string const& strSrc);
 
 struct parsedURL
 {
+    explicit parsedURL() = default;
+
     std::string scheme;
     std::string domain;
     boost::optional<std::uint16_t> port;

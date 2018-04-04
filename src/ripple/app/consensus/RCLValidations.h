@@ -152,6 +152,7 @@ public:
     using Seq = LedgerIndex;
     struct MakeGenesis
     {
+        explicit MakeGenesis() = default;
     };
 
     RCLValidatedLedger(MakeGenesis);

@@ -46,6 +46,8 @@ namespace detail {
 
 struct ci_equal_pred
 {
+    explicit ci_equal_pred() = default;
+
     bool operator()(char c1, char c2)
     {
         // VFALCO TODO Use a table lookup here

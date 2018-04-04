@@ -33,6 +33,8 @@ namespace IP {
 /** Represents a version 4 IP address. */
 struct AddressV6
 {
+    explicit AddressV6() = default;
+
     // VFALCO TODO
 
     /** Arithmetic comparison. */
@@ -100,6 +102,8 @@ namespace std {
 template <>
 struct hash <beast::IP::AddressV6>
 {
+    explicit hash() = default;
+
     std::size_t operator() (beast::IP::AddressV6 const& addr) const
         { assert(false); return 0; }
 };
