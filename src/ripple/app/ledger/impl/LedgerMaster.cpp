@@ -1778,13 +1778,16 @@ LedgerMaster::gotFetchPack (
     bool progress,
     std::uint32_t seq)
 {
-    // FIXME: Calling this function more than once will result in
-    // InboundLedgers::gotFetchPack being called more than once
-    // which is expensive. A flag should track whether we've already dispatched
-
-    app_.getJobQueue().addJob (
-        jtLEDGER_DATA, "gotFetchPack",
-        [&] (Job&) { app_.getInboundLedgers().gotFetchPack(); });
+    if (!mGotFetchPackThread.test_and_set(std::memory_order_acquire))
+    {
+        app_.getJobQueue().addJob (
+            jtLEDGER_DATA, "gotFetchPack",
+            [&] (Job&)
+            {
+                app_.getInboundLedgers().gotFetchPack();
+                mGotFetchPackThread.clear(std::memory_order_release);
+            });
+    }
 }
 
 void
