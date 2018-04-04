@@ -26,6 +26,9 @@ namespace detail {
 
 class NullHookImpl : public HookImpl
 {
+public:
+    explicit NullHookImpl() = default;
+
 private:
     NullHookImpl& operator= (NullHookImpl const&);
 };
@@ -35,6 +38,8 @@ private:
 class NullCounterImpl : public CounterImpl
 {
 public:
+    explicit NullCounterImpl() = default;
+
     void increment (value_type)
     {
     }
@@ -48,6 +53,8 @@ private:
 class NullEventImpl : public EventImpl
 {
 public:
+    explicit NullEventImpl() = default;
+
     void notify (value_type const&)
     {
     }
@@ -61,6 +68,8 @@ private:
 class NullGaugeImpl : public GaugeImpl
 {
 public:
+    explicit NullGaugeImpl() = default;
+
     void set (value_type)
     {
     }
@@ -78,6 +87,8 @@ private:
 class NullMeterImpl : public MeterImpl
 {
 public:
+    explicit NullMeterImpl() = default;
+
     void increment (value_type)
     {
     }

@@ -48,6 +48,8 @@ using weeks = std::chrono::duration
 class NetClock
 {
 public:
+    explicit NetClock() = default;
+
     using rep        = std::uint32_t;
     using period     = std::ratio<1>;
     using duration   = std::chrono::duration<rep, period>;

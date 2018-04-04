@@ -41,6 +41,8 @@ protected:
 template<>
 class TOfferBase<STAmount, STAmount>
 {
+public:
+    explicit TOfferBase() = default;
 };
 
 

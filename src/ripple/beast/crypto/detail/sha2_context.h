@@ -69,6 +69,8 @@ namespace detail {
 
 struct sha256_context
 {
+    explicit sha256_context() = default;
+
     static unsigned int const block_size = 64;
     static unsigned int const digest_size = 32;
 
@@ -80,6 +82,8 @@ struct sha256_context
 
 struct sha512_context
 {
+    explicit sha512_context() = default;
+
     static unsigned int const block_size = 128;
     static unsigned int const digest_size = 64;
 

@@ -37,12 +37,16 @@ namespace detail {
 template <typename T, typename U>
 struct CopyConst
 {
+    explicit CopyConst() = default;
+
     using type = typename std::remove_const <U>::type;
 };
 
 template <typename T, typename U>
 struct CopyConst <T const, U>
 {
+    explicit CopyConst() = default;
+
     using type = typename std::remove_const <U>::type const;
 };
 /** @} */

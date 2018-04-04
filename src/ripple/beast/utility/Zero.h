@@ -46,6 +46,7 @@ namespace beast {
 
 struct Zero
 {
+    explicit Zero() = default;
 };
 
 namespace {

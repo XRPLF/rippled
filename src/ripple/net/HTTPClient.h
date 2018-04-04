@@ -32,6 +32,8 @@ namespace ripple {
 class HTTPClient
 {
 public:
+    explicit HTTPClient() = default;
+
     enum
     {
         maxClientHeaderBytes = 32 * 1024

@@ -44,6 +44,8 @@ struct varint_traits;
 template <class T>
 struct varint_traits<T, true>
 {
+    explicit varint_traits() = default;
+
     static std::size_t constexpr max =
         (8 * sizeof(T) + 6) / 7;
 };

@@ -44,18 +44,24 @@ namespace detail {
 template <class It>
 struct is_boost_reverse_iterator
     : std::false_type
-{};
+{
+    explicit is_boost_reverse_iterator() = default;
+};
 
 #if BOOST_VERSION >= 105800
 template <class It>
 struct is_boost_reverse_iterator<boost::intrusive::reverse_iterator<It>>
     : std::true_type
-{};
+{
+    explicit is_boost_reverse_iterator() = default;
+};
 #else
 template <class It>
 struct is_boost_reverse_iterator<boost::intrusive::detail::reverse_iterator<It>>
     : std::true_type
-{};
+{
+    explicit is_boost_reverse_iterator() = default;
+};
 #endif
 
 /** Associative container where each element is also indexed by time.
@@ -125,6 +131,8 @@ private:
         // need to see the container declaration.
         struct stashed
         {
+            explicit stashed() = default;
+
             using value_type = typename aged_ordered_container::value_type;
             using time_point = typename aged_ordered_container::time_point;
         };
@@ -1927,6 +1935,7 @@ struct is_aged_container <beast::detail::aged_ordered_container <
         IsMulti, IsMap, Key, T, Clock, Compare, Allocator>>
     : std::true_type
 {
+    explicit is_aged_container() = default;
 };
 
 // Free functions

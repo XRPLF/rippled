@@ -173,6 +173,8 @@ public:
 */
 struct ConsensusCloseTimes
 {
+    explicit ConsensusCloseTimes() = default;
+
     //! Close time estimates, keep ordered for predictable traverse
     std::map<NetClock::time_point, int> peers;
 

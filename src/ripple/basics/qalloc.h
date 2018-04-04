@@ -111,6 +111,8 @@ public:
     template <class U>
     struct rebind
     {
+        explicit rebind() = default;
+
         using other = qalloc_type<U, ShareOnCopy>;
     };
 

@@ -228,6 +228,7 @@ template <class Int, class Tag, class HashAlgorithm>
 struct is_contiguously_hashable<ripple::tagged_integer<Int, Tag>, HashAlgorithm>
     : public is_contiguously_hashable<Int, HashAlgorithm>
 {
+    explicit is_contiguously_hashable() = default;
 };
 
 } // beast

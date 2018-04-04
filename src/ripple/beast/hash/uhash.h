@@ -30,6 +30,8 @@ namespace beast {
 template <class Hasher = xxhasher>
 struct uhash
 {
+    explicit uhash() = default;
+
     using result_type = typename Hasher::result_type;
 
     template <class T>

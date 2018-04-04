@@ -155,6 +155,8 @@ template <class Clock>
 class basic_seconds_clock
 {
 public:
+    explicit basic_seconds_clock() = default;
+
     using rep = typename Clock::rep;
     using period = typename Clock::period;
     using duration = typename Clock::duration;

@@ -55,6 +55,8 @@ public:
 
     struct Setup
     {
+        explicit Setup() = default;
+
         std::size_t ledgersInQueue = 20;
         std::size_t queueSizeMin = 2000;
         std::uint32_t retrySequencePercent = 25;
@@ -81,6 +83,8 @@ public:
 
     struct Metrics
     {
+        explicit Metrics() = default;
+
         std::size_t txCount;            // Transactions in the queue
         boost::optional<std::size_t> txQMaxSize;    // Max txns in queue
         std::size_t txInLedger;         // Amount currently in the ledger
@@ -93,6 +97,8 @@ public:
 
     struct AccountTxDetails
     {
+        explicit AccountTxDetails() = default;
+
         uint64_t feeLevel;
         boost::optional<LedgerIndex const> lastValid;
         boost::optional<TxConsequences const> consequences;
@@ -100,6 +106,8 @@ public:
 
     struct TxDetails : AccountTxDetails
     {
+        explicit TxDetails() = default;
+
         AccountID account;
         std::shared_ptr<STTx const> txn;
         int retriesRemaining;
@@ -333,6 +341,8 @@ private:
     class GreaterFee
     {
     public:
+        explicit GreaterFee() = default;
+
         bool operator()(const MaybeTx& lhs, const MaybeTx& rhs) const
         {
             return lhs.feeLevel > rhs.feeLevel;

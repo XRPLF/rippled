@@ -91,7 +91,7 @@ struct AmendmentState
     /** The name of this amendment, possibly empty. */
     std::string name;
 
-    AmendmentState () = default;
+    explicit AmendmentState () = default;
 };
 
 /** The status of all amendments requested in a given window. */

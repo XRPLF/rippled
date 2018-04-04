@@ -108,6 +108,8 @@ private:
         std::hash <ripple::AccountID>, 1>;
 
 public:
+    explicit hash() = default;
+
     using value_type = std::size_t;
     using argument_type = ripple::Issue;
 
@@ -132,6 +134,8 @@ private:
     hasher m_hasher;
 
 public:
+    explicit hash() = default;
+
     using value_type = std::size_t;
     using argument_type = ripple::Book;
 
@@ -153,6 +157,8 @@ template <>
 struct hash <ripple::Issue>
     : std::hash <ripple::Issue>
 {
+    explicit hash() = default;
+
     using Base = std::hash <ripple::Issue>;
     // VFALCO NOTE broken in vs2012
     //using Base::Base; // inherit ctors
@@ -162,6 +168,8 @@ template <>
 struct hash <ripple::Book>
     : std::hash <ripple::Book>
 {
+    explicit hash() = default;
+
     using Base = std::hash <ripple::Book>;
     // VFALCO NOTE broken in vs2012
     //using Base::Base; // inherit ctors

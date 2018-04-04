@@ -29,6 +29,8 @@ namespace insight {
 class NullCollector : public Collector
 {
 public:
+    explicit NullCollector() = default;
+
     static std::shared_ptr <Collector> New ();
 };
 

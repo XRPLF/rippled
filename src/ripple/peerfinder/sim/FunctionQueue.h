@@ -27,6 +27,9 @@ namespace Sim {
 /** Maintains a queue of functors that can be called later. */
 class FunctionQueue
 {
+public:
+    explicit FunctionQueue() = default;
+
 private:
     class BasicWork
     {
