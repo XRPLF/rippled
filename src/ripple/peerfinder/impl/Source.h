@@ -41,6 +41,8 @@ public:
     /** The results of a fetch. */
     struct Results
     {
+        explicit Results() = default;
+
         // error_code on a failure
         boost::system::error_code error;
 

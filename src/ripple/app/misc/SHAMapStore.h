@@ -39,6 +39,8 @@ class SHAMapStore
 public:
     struct Setup
     {
+        explicit Setup() = default;
+
         bool standalone = false;
         std::uint32_t deleteInterval = 0;
         bool advisoryDelete = false;

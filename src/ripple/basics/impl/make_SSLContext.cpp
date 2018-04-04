@@ -44,6 +44,8 @@ struct custom_delete;
 template <>
 struct custom_delete <RSA>
 {
+    explicit custom_delete() = default;
+
     void operator() (RSA* rsa) const
     {
         RSA_free (rsa);
@@ -53,6 +55,8 @@ struct custom_delete <RSA>
 template <>
 struct custom_delete <EVP_PKEY>
 {
+    explicit custom_delete() = default;
+
     void operator() (EVP_PKEY* evp_pkey) const
     {
         EVP_PKEY_free (evp_pkey);
@@ -62,6 +66,8 @@ struct custom_delete <EVP_PKEY>
 template <>
 struct custom_delete <X509>
 {
+    explicit custom_delete() = default;
+
     void operator() (X509* x509) const
     {
         X509_free (x509);
@@ -71,6 +77,8 @@ struct custom_delete <X509>
 template <>
 struct custom_delete <DH>
 {
+    explicit custom_delete() = default;
+
     void operator() (DH* dh) const
     {
         DH_free (dh);

@@ -39,6 +39,8 @@ namespace detail {
 
 class LivecacheBase
 {
+public:
+    explicit LivecacheBase() = default;
 protected:
     struct Element
         : boost::intrusive::list_base_hook <>
@@ -68,6 +70,8 @@ public:
         struct Transform
             : public std::unary_function <Element, Endpoint>
         {
+            explicit Transform() = default;
+
             Endpoint const& operator() (Element const& e) const
             {
                 return e.endpoint;
@@ -223,6 +227,8 @@ public:
             : public std::unary_function <
                 typename lists_type::value_type, Hop <IsConst>>
         {
+            explicit Transform() = default;
+
             Hop <IsConst> operator() (typename beast::maybe_const <
                 IsConst, typename lists_type::value_type>::type& list) const
             {

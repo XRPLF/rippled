@@ -204,6 +204,8 @@ namespace detail
 template <typename IntegralType>
 struct SwapBytes
 {
+    explicit SwapBytes() = default;
+
     inline IntegralType operator() (IntegralType value) const noexcept
     {
         return ByteOrder::swap (value);
@@ -215,6 +217,8 @@ struct SwapBytes
 template <>
 struct SwapBytes <std::int16_t>
 {
+    explicit SwapBytes() = default;
+
     inline std::int16_t operator() (std::int16_t value) const noexcept
     {
         return static_cast <std::int16_t> (ByteOrder::swap (static_cast <std::uint16_t> (value)));
@@ -224,6 +228,8 @@ struct SwapBytes <std::int16_t>
 template <>
 struct SwapBytes <std::int32_t>
 {
+    explicit SwapBytes() = default;
+
     inline std::int32_t operator() (std::int32_t value) const noexcept
     {
         return static_cast <std::int32_t> (ByteOrder::swap (static_cast <std::uint32_t> (value)));
@@ -233,6 +239,8 @@ struct SwapBytes <std::int32_t>
 template <>
 struct SwapBytes <std::int64_t>
 {
+    explicit SwapBytes() = default;
+
     inline std::int64_t operator() (std::int64_t value) const noexcept
     {
         return static_cast <std::int64_t> (ByteOrder::swap (static_cast <std::uint64_t> (value)));

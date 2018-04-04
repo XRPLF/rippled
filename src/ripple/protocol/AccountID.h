@@ -35,7 +35,11 @@ namespace ripple {
 
 namespace detail {
 
-class AccountIDTag { };
+class AccountIDTag
+{
+public:
+    explicit AccountIDTag() = default;
+};
 
 } // detail
 
@@ -183,6 +187,7 @@ namespace std {
 template <>
 struct hash <ripple::AccountID> : ripple::AccountID::hasher
 {
+    explicit hash() = default;
 };
 
 } // std

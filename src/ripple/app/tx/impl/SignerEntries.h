@@ -34,6 +34,8 @@ class STObject;
 class SignerEntries
 {
 public:
+    explicit SignerEntries() = default;
+
     struct SignerEntry
     {
         AccountID account;

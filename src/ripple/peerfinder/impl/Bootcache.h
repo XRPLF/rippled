@@ -88,6 +88,8 @@ private:
         map_type::right_map::const_iterator::value_type const&,
             beast::IP::Endpoint const&>
     {
+        explicit Transform() = default;
+
         beast::IP::Endpoint const& operator() (
             map_type::right_map::
                 const_iterator::value_type const& v) const

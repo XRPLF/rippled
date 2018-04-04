@@ -41,6 +41,8 @@ namespace ripple {
  */
 struct ValidationParms
 {
+    explicit ValidationParms() = default;
+
     /** The number of seconds a validation remains current after its ledger's
         close time.
 

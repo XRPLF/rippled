@@ -34,6 +34,7 @@ using namespace std::chrono_literals;
 */
 struct ConsensusParms
 {
+    explicit ConsensusParms() = default;
 
     //-------------------------------------------------------------------------
     // Validation and proposal durations are relative to NetClock times, so use

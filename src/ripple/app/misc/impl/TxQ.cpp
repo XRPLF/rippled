@@ -636,6 +636,8 @@ TxQ::apply(Application& app, OpenView& view,
 
     struct MultiTxn
     {
+        explicit MultiTxn() = default;
+
         boost::optional<ApplyViewImpl> applyView;
         boost::optional<OpenView> openView;
 

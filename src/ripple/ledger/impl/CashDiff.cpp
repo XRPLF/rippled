@@ -31,6 +31,8 @@ namespace detail {
 // Data structure that summarize cash changes in a single ApplyStateTable.
 struct CashSummary
 {
+    explicit CashSummary() = default;
+
     // Sorted vectors.  All of the vectors fill in for std::maps.
     std::vector<std::pair<
         AccountID, XRPAmount>> xrpChanges;

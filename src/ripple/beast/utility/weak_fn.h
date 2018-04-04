@@ -43,6 +43,8 @@ namespace beast {
 template <class V = void>
 struct throw_if_invalid
 {
+    explicit throw_if_invalid() = default;
+
     V operator()() const
     {
         throw std::bad_weak_ptr();
@@ -74,6 +76,8 @@ private:
 template <class V>
 struct ignore_if_invalid
 {
+    explicit ignore_if_invalid() = default;
+
     V operator()() const
     {
         return V();

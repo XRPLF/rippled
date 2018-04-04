@@ -31,6 +31,8 @@ namespace NodeStore {
 
 struct MemoryDB
 {
+    explicit MemoryDB() = default;
+
     std::mutex mutex;
     bool open = false;
     std::map <uint256 const, std::shared_ptr<NodeObject>> table;

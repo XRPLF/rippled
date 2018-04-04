@@ -251,6 +251,8 @@ private:
 
     struct Transform
     {
+        explicit Transform() = default;
+
         using argument_type = detail::STVar;
         using result_type = STBase;
 

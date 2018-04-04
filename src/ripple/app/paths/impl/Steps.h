@@ -375,6 +375,8 @@ toStrands (ReadView const& sb,
 template <class TIn, class TOut, class TDerived>
 struct StepImp : public Step
 {
+    explicit StepImp() = default;
+
     std::pair<EitherAmount, EitherAmount>
     rev (
         PaymentSandbox& sb,

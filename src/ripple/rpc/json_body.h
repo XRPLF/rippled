@@ -29,6 +29,8 @@ namespace ripple {
 /// Body that holds JSON
 struct json_body
 {
+    explicit json_body() = default;
+
     using value_type = Json::Value;
 
     class reader
