@@ -87,51 +87,37 @@ void setCurrentThreadNameImpl (std::string const& name)
 } // detail
 } // beast
 
-//------------------------------------------------------------------------------
+#elif BEAST_MAC
 
-#else
-
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <time.h>
-#if BEAST_BSD
- // ???
-#elif BEAST_MAC || BEAST_IOS
-#include <Foundation/NSThread.h>
-#include <Foundation/NSString.h>
-#import <objc/message.h>
-#include <ripple/beast/core/osx_ObjCHelpers.h>
-#include <ripple/beast/core/Memory.h>
-#else
-#include <sys/prctl.h>
-
-#endif
+#include <pthread.h>
 
 namespace beast {
 namespace detail {
 
 void setCurrentThreadNameImpl (std::string const& name)
 {
-   #if BEAST_IOS || (BEAST_MAC && defined (MAC_OS_X_VERSION_10_5) && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
-    BEAST_AUTORELEASEPOOL
-    {
-        [[NSThread currentThread] setName: stringToNS (name)];
-    }
-   #elif BEAST_LINUX
-    #if (__GLIBC__ * 1000 + __GLIBC_MINOR__) >= 2012
-     pthread_setname_np (pthread_self(), name.c_str ());
-    #else
-     prctl (PR_SET_NAME, name.c_str (), 0, 0, 0);
-    #endif
-   #endif
+    pthread_setname_np(name.c_str());
 }
 
 } // detail
 } // beast
 
-#endif
+#else  // BEAST_LINUX
+
+#include <pthread.h>
+
+namespace beast {
+namespace detail {
+
+void setCurrentThreadNameImpl (std::string const& name)
+{
+    pthread_setname_np(pthread_self(), name.c_str());
+}
+
+} // detail
+} // beast
+
+#endif  // BEAST_LINUX
 
 namespace beast {
 
