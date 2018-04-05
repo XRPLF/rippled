@@ -159,16 +159,6 @@
 #undef _aligned_msize
 #endif
 
-#include <ripple/beast/core/Memory.h>
-
-#if BEAST_MAC || BEAST_IOS
-#include <ripple/beast/core/osx_ObjCHelpers.h>
-#endif
-
-#if BEAST_MAC || BEAST_IOS
-#include <ripple/beast/core/mac_SystemStats.mm>
-#endif
-
 #include <ripple/beast/core/CurrentThreadName.cpp>
 #include <ripple/beast/core/SemanticVersion.cpp>
 #include <ripple/beast/core/WaitableEvent.cpp>
