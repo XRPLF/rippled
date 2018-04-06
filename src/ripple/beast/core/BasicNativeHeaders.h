@@ -32,18 +32,22 @@
 #if BEAST_MAC || BEAST_IOS
 
  #if BEAST_IOS
-  #import <Foundation/Foundation.h>
-  #import <UIKit/UIKit.h>
-  #import <CoreData/CoreData.h>
-  #import <MobileCoreServices/MobileCoreServices.h>
+  #ifdef __OBJC__
+    #import <Foundation/Foundation.h>
+    #import <UIKit/UIKit.h>
+    #import <CoreData/CoreData.h>
+    #import <MobileCoreServices/MobileCoreServices.h>
+  #endif
   #include <sys/fcntl.h>
  #else
-  #define Point CarbonDummyPointName
-  #define Component CarbonDummyCompName
-  #import <Cocoa/Cocoa.h>
-  #import <CoreAudio/HostTime.h>
-  #undef Point
-  #undef Component
+  #ifdef __OBJC__
+    #define Point CarbonDummyPointName
+    #define Component CarbonDummyCompName
+    #import <Cocoa/Cocoa.h>
+    #import <CoreAudio/HostTime.h>
+    #undef Point
+    #undef Component
+  #endif
   #include <sys/dir.h>
  #endif
 
