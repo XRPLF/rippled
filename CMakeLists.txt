@@ -444,10 +444,6 @@ add_with_props(rippled_src_all src/ripple/unity/snappy.cpp
   -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
   ${no_unused_w})
 
-if (APPLE AND is_clang)
-  list(APPEND rippled_src_all src/ripple/unity/beastobjc.mm)
-endif()
-
 list(APPEND rippled_src_unity "${rippled_src_all}")
 list(APPEND rippled_src_nonunity "${rippled_src_all}")
 

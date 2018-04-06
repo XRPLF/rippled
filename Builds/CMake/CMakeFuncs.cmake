@@ -660,7 +660,6 @@ macro(setup_build_boilerplate)
     endif()
 
     if (APPLE)
-      add_definitions(-DBEAST_COMPILE_OBJECTIVE_CPP=1)
       add_compile_options(
         -Wno-deprecated-declarations -Wno-unused-function)
     endif()
