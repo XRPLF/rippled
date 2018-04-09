@@ -1793,26 +1793,19 @@ bool ApplicationImp::loadOldLedger (
         {
             // inject transaction(s) from the replayLedger into our open ledger
             // and build replay structure
-            auto const& txns = replayLedger->txMap();
-            auto replayData = std::make_unique <LedgerReplay> ();
+            auto replayData =
+                std::make_unique<LedgerReplay>(loadLedger, replayLedger);
 
-            replayData->prevLedger_ = replayLedger;
-            replayData->closeTime_ = replayLedger->info().closeTime;
-            replayData->closeFlags_ = replayLedger->info().closeFlags;
-
-            for (auto const& item : txns)
+            for (auto const& it : replayData->orderedTxns())
             {
-                auto txID = item.key();
-                auto txPair = replayLedger->txRead (txID);
-                auto txIndex = (*txPair.second)[sfTransactionIndex];
+                std::shared_ptr<STTx const> const& tx = it.second;
+                auto txID = tx->getTransactionID();
 
                 auto s = std::make_shared <Serializer> ();
-                txPair.first->add(*s);
+                tx->add(*s);
 
                 forceValidity(getHashRouter(),
                     txID, Validity::SigGoodOnly);
-
-                replayData->txns_.emplace (txIndex, txPair.first);
 
                 openLedger_->modify(
                     [&txID, &s](OpenView& view, beast::Journal j)
