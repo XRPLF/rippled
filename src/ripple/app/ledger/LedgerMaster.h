@@ -27,6 +27,7 @@
 #include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/LedgerHistory.h>
 #include <ripple/app/ledger/LedgerHolder.h>
+#include <ripple/app/ledger/LedgerReplay.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/RangeSet.h>
@@ -47,13 +48,7 @@ namespace ripple {
 class Peer;
 class Transaction;
 
-struct LedgerReplay
-{
-    std::map< int, std::shared_ptr<STTx const> > txns_;
-    NetClock::time_point closeTime_;
-    int closeFlags_;
-    std::shared_ptr<Ledger const> prevLedger_;
-};
+
 
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history

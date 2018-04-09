@@ -1146,7 +1146,7 @@ TxQ::apply(Application& app, OpenView& view,
 */
 void
 TxQ::processClosedLedger(Application& app,
-    OpenView const& view, bool timeLeap)
+    ReadView const& view, bool timeLeap)
 {
     auto const allowEscalation =
         (view.rules().enabled(featureFeeEscalation));

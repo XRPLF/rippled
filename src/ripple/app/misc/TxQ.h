@@ -150,7 +150,7 @@ public:
     */
     void
     processClosedLedger(Application& app,
-        OpenView const& view, bool timeLeap);
+        ReadView const& view, bool timeLeap);
 
     /** Returns fee metrics in reference fee level units.
 

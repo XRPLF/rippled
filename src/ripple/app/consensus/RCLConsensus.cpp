@@ -19,6 +19,7 @@
 
 #include <ripple/app/consensus/RCLConsensus.h>
 #include <ripple/app/consensus/RCLValidations.h>
+#include <ripple/app/ledger/BuildLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/ledger/LedgerMaster.h>
@@ -31,7 +32,6 @@
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/app/misc/ValidatorList.h>
-#include <ripple/app/tx/apply.h>
 #include <ripple/basics/make_lock.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/consensus/LedgerTiming.h>
@@ -441,9 +441,7 @@ RCLConsensus::Adaptor::doAccept(
 
     if (validating_)
         validating_ = ledgerMaster_.isCompatible(
-            *sharedLCL.ledger_,
-            app_.journal("LedgerConsensus").warn(),
-            "Not validating");
+            *sharedLCL.ledger_, j_.warn(), "Not validating");
 
     if (validating_ && !consensusFail &&
         app_.getValidations().canValidateSeq(sharedLCL.seq()))
@@ -631,103 +629,6 @@ RCLConsensus::Adaptor::notify(
     JLOG (j_.trace()) << "send status change to peer";
 }
 
-/** Apply a set of transactions to a ledger.
-
-  Typically the txFilter is used to reject transactions
-  that already accepted in the prior ledger.
-
-  @param txns            set of transactions to apply
-  @param view           ledger to apply to
-  @param txFilter       callback, return false to reject txn
-  @return               retriable transactions
-*/
-
-CanonicalTXSet
-applyTransactions(
-    Application& app,
-    RCLTxSet const& txns,
-    OpenView& view,
-    std::function<bool(uint256 const&)> txFilter)
-{
-    auto j = app.journal("LedgerConsensus");
-
-    auto& set = *(txns.map_);
-    CanonicalTXSet retriableTxs(set.getHash().as_uint256());
-
-    for (auto const& item : set)
-    {
-        if (!txFilter(item.key()))
-            continue;
-
-        // The transaction wan't filtered
-        // Add it to the set to be tried in canonical order
-        JLOG(j.debug()) << "Processing candidate transaction: " << item.key();
-        try
-        {
-            retriableTxs.insert(
-                std::make_shared<STTx const>(SerialIter{item.slice()}));
-        }
-        catch (std::exception const&)
-        {
-            JLOG(j.warn()) << "Txn " << item.key() << " throws";
-        }
-    }
-
-    bool certainRetry = true;
-    // Attempt to apply all of the retriable transactions
-    for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
-    {
-        JLOG(j.debug()) << "Pass: " << pass << " Txns: " << retriableTxs.size()
-                        << (certainRetry ? " retriable" : " final");
-        int changes = 0;
-
-        auto it = retriableTxs.begin();
-
-        while (it != retriableTxs.end())
-        {
-            try
-            {
-                switch (applyTransaction(
-                    app, view, *it->second, certainRetry, tapNO_CHECK_SIGN, j))
-                {
-                    case ApplyResult::Success:
-                        it = retriableTxs.erase(it);
-                        ++changes;
-                        break;
-
-                    case ApplyResult::Fail:
-                        it = retriableTxs.erase(it);
-                        break;
-
-                    case ApplyResult::Retry:
-                        ++it;
-                }
-            }
-            catch (std::exception const&)
-            {
-                JLOG(j.warn()) << "Transaction throws";
-                it = retriableTxs.erase(it);
-            }
-        }
-
-        JLOG(j.debug()) << "Pass: " << pass << " finished " << changes
-                        << " changes";
-
-        // A non-retry pass made no changes
-        if (!changes && !certainRetry)
-            return retriableTxs;
-
-        // Stop retriable passes
-        if (!changes || (pass >= LEDGER_RETRY_PASSES))
-            certainRetry = false;
-    }
-
-    // If there are any transactions left, we must have
-    // tried them in at least one final pass
-    assert(retriableTxs.empty() || !certainRetry);
-    return retriableTxs;
-}
-
 RCLCxLedger
 RCLConsensus::Adaptor::buildLCL(
     RCLCxLedger const& previousLedger,
@@ -738,81 +639,26 @@ RCLConsensus::Adaptor::buildLCL(
     std::chrono::milliseconds roundTime,
     CanonicalTXSet& retriableTxs)
 {
-    auto replay = ledgerMaster_.releaseReplay();
-    if (replay)
-    {
-        // replaying, use the time the ledger we're replaying closed
-        closeTime = replay->closeTime_;
-        closeTimeCorrect = ((replay->closeFlags_ & sLCF_NoConsensusTime) == 0);
-    }
-
-    JLOG(j_.debug()) << "Report: TxSt = " << txns.id() << ", close "
-                     << closeTime.time_since_epoch().count()
-                     << (closeTimeCorrect ? "" : " (incorrect)");
-
-    // Build the new last closed ledger
-    auto buildLCL =
-        std::make_shared<Ledger>(*previousLedger.ledger_, closeTime);
-
-    auto const v2_enabled = buildLCL->rules().enabled(featureSHAMapV2);
-
-    auto v2_transition = false;
-    if (v2_enabled && !buildLCL->stateMap().is_v2())
-    {
-        buildLCL->make_v2();
-        v2_transition = true;
-    }
-
-    // Set up to write SHAMap changes to our database,
-    //   perform updates, extract changes
-    JLOG(j_.debug()) << "Applying consensus txns transactions to the"
-                     << " last closed ledger";
-
-    {
-        OpenView accum(&*buildLCL);
-        assert(!accum.open());
-        if (replay)
+    std::shared_ptr<Ledger> buildLCL = [&]() {
+        auto const replayData = ledgerMaster_.releaseReplay();
+        if (replayData)
         {
-            // Special case, we are replaying a ledger close
-            for (auto& tx : replay->txns_)
-                applyTransaction(
-                    app_, accum, *tx.second, false, tapNO_CHECK_SIGN, j_);
+            assert(replayData->parent()->info().hash == previousLedger.id());
+            return buildLedger(*replayData, tapNO_CHECK_SIGN, app_, j_);
         }
-        else
-        {
-            // Normal case, we are not replaying a ledger close
-            retriableTxs = applyTransactions(
-                app_, txns, accum, [&buildLCL](uint256 const& txID) {
-                    return !buildLCL->txExists(txID);
-                });
-        }
-        // Update fee computations.
-        app_.getTxQ().processClosedLedger(app_, accum, roundTime > 5s);
-        accum.apply(*buildLCL);
-    }
+        return buildLedger(
+            previousLedger.ledger_,
+            closeTime,
+            closeTimeCorrect,
+            closeResolution,
+            *txns.map_,
+            app_,
+            retriableTxs,
+            j_);
+    }();
 
-    // retriableTxs will include any transactions that
-    // made it into the consensus set but failed during application
-    // to the ledger.
-
-    buildLCL->updateSkipList();
-
-    {
-        // Write the final version of all modified SHAMap
-        // nodes to the node store to preserve the new LCL
-
-        int asf = buildLCL->stateMap().flushDirty(
-            hotACCOUNT_NODE, buildLCL->info().seq);
-        int tmf = buildLCL->txMap().flushDirty(
-            hotTRANSACTION_NODE, buildLCL->info().seq);
-        JLOG(j_.debug()) << "Flushed " << asf << " accounts and " << tmf
-                         << " transaction nodes";
-    }
-    buildLCL->unshare();
-
-    // Accept ledger
-    buildLCL->setAccepted(
-        closeTime, closeResolution, closeTimeCorrect, app_.config());
+    // Update fee computations based on accepted txs
+    app_.getTxQ().processClosedLedger(app_, *buildLCL, roundTime > 5s);
 
     // And stash the ledger in the ledger master
     if (ledgerMaster_.storeLedger(buildLCL))
