@@ -115,7 +115,8 @@ class PerfLog_test : public beast::unit_test::suite
         // Interfaces for PerfLog file management
         static path getPerfLogPath()
         {
-            return boost::filesystem::current_path () / "perf_log_test_dir";
+            using namespace boost::filesystem;
+            return temp_directory_path() / "perf_log_test_dir";
         }
 
         static path getPerfLogFileName()
@@ -279,14 +280,27 @@ public:
             if (! BEAST_EXPECT(! ec))
                 return;
 
-            std::ofstream woFile;
-            woFile.open (fullPath.c_str(), std::ios::out | std::ios::app);
-            if (! BEAST_EXPECT(woFile))
+            auto fileWriteable = [](boost::filesystem::path const& p) -> bool
+            {
+                return std::ofstream {
+                    p.c_str(), std::ios::out | std::ios::app}.is_open();
+            };
+
+            if (! BEAST_EXPECT(fileWriteable (fullPath)))
                 return;
-            woFile.close();
-            permissions (fullPath,
+
+            boost::filesystem::permissions (fullPath,
                 perms::remove_perms | perms::owner_write |
                 perms::others_write | perms::group_write);
+
+            // If the test is running as root, then the write protect may have
+            // no effect.  Make sure write protect worked before proceeding.
+            if (fileWriteable (fullPath))
+            {
+                log << "Unable to write protect file.  Test skipped."
+                    << std::endl;
+                return;
+            }
 
             // Now construct a PerfLog.  The PerfLog should attempt to shut
             // down the server because it can't open its file.
@@ -302,7 +316,7 @@ public:
             parent.doStop();
 
             // Fix file permissions so the file can be cleaned up.
-            permissions (fullPath,
+            boost::filesystem::permissions (fullPath,
                 perms::add_perms | perms::owner_write |
                 perms::others_write | perms::group_write);
         }
