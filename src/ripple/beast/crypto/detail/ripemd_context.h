@@ -373,7 +373,7 @@ void update (ripemd160_context& ctx,
     std::array<std::uint32_t, 16> X;
     ripemd_load(X, ctx.block);
     ripemd_compress(ctx, X);
-    for (int i = 0; i < block_nb; ++i)
+    for (std::uint32_t i = 0; i < block_nb; ++i)
     {
         ripemd_load(X, shifted_message +
             i * ripemd160_context::block_size);
@@ -397,7 +397,7 @@ void finish (ripemd160_context& ctx,
     // put leftovers into X
     auto p = &ctx.block[0];
     // uint8_t i goes into word X[i div 4] at pos.  8*(i mod 4)
-    for (int i = 0; i < ctx.len; ++i)
+    for (std::uint32_t i = 0; i < ctx.len; ++i)
       X[i >> 2] ^= (std::uint32_t) *p++ << (8 * (i & 3));
     ctx.tot_len += ctx.len;
     // append the bit m_n == 1
