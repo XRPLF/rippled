@@ -26,7 +26,7 @@
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/net/HTTPClient.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <beast/core/string.hpp>
+#include <boost/beast/core/string.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/regex.hpp>
@@ -324,15 +324,15 @@ void Config::loadFromString (std::string const& fileContents)
 
     if (getSingleSection (secConfig, SECTION_NODE_SIZE, strTemp, j_))
     {
-        if (beast::detail::iequals(strTemp, "tiny"))
+        if (boost::beast::detail::iequals(strTemp, "tiny"))
             NODE_SIZE = 0;
-        else if (beast::detail::iequals(strTemp, "small"))
+        else if (boost::beast::detail::iequals(strTemp, "small"))
             NODE_SIZE = 1;
-        else if (beast::detail::iequals(strTemp, "medium"))
+        else if (boost::beast::detail::iequals(strTemp, "medium"))
             NODE_SIZE = 2;
-        else if (beast::detail::iequals(strTemp, "large"))
+        else if (boost::beast::detail::iequals(strTemp, "large"))
             NODE_SIZE = 3;
-        else if (beast::detail::iequals(strTemp, "huge"))
+        else if (boost::beast::detail::iequals(strTemp, "huge"))
             NODE_SIZE = 4;
         else
         {
@@ -379,9 +379,9 @@ void Config::loadFromString (std::string const& fileContents)
 
     if (getSingleSection (secConfig, SECTION_LEDGER_HISTORY, strTemp, j_))
     {
-        if (beast::detail::iequals(strTemp, "full"))
+        if (boost::beast::detail::iequals(strTemp, "full"))
             LEDGER_HISTORY = 1000000000u;
-        else if (beast::detail::iequals(strTemp, "none"))
+        else if (boost::beast::detail::iequals(strTemp, "none"))
             LEDGER_HISTORY = 0;
         else
             LEDGER_HISTORY = beast::lexicalCastThrow <std::uint32_t> (strTemp);
@@ -389,9 +389,9 @@ void Config::loadFromString (std::string const& fileContents)
 
     if (getSingleSection (secConfig, SECTION_FETCH_DEPTH, strTemp, j_))
     {
-        if (beast::detail::iequals(strTemp, "none"))
+        if (boost::beast::detail::iequals(strTemp, "none"))
             FETCH_DEPTH = 0;
-        else if (beast::detail::iequals(strTemp, "full"))
+        else if (boost::beast::detail::iequals(strTemp, "full"))
             FETCH_DEPTH = 1000000000u;
         else
             FETCH_DEPTH = beast::lexicalCastThrow <std::uint32_t> (strTemp);

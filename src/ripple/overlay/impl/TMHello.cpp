@@ -23,7 +23,7 @@
 #include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/protocol/digest.h>
-#include <beast/core/detail/base64.hpp>
+#include <boost/beast/core/detail/base64.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
 
@@ -150,14 +150,14 @@ buildHello (
 }
 
 void
-appendHello (beast::http::fields& h,
+appendHello (boost::beast::http::fields& h,
     protocol::TMHello const& hello)
 {
     //h.append ("Protocol-Versions",...
 
     h.insert ("Public-Key", hello.nodepublic());
 
-    h.insert ("Session-Signature", beast::detail::base64_encode (
+    h.insert ("Session-Signature", boost::beast::detail::base64_encode (
         hello.nodeproof()));
 
     if (hello.has_nettime())
@@ -167,11 +167,11 @@ appendHello (beast::http::fields& h,
         h.insert ("Ledger", std::to_string (hello.ledgerindex()));
 
     if (hello.has_ledgerclosed())
-        h.insert ("Closed-Ledger", beast::detail::base64_encode (
+        h.insert ("Closed-Ledger", boost::beast::detail::base64_encode (
             hello.ledgerclosed()));
 
     if (hello.has_ledgerprevious())
-        h.insert ("Previous-Ledger", beast::detail::base64_encode (
+        h.insert ("Previous-Ledger", boost::beast::detail::base64_encode (
             hello.ledgerprevious()));
 
     if (hello.has_local_ip())
@@ -184,7 +184,7 @@ appendHello (beast::http::fields& h,
 }
 
 std::vector<ProtocolVersion>
-parse_ProtocolVersions(beast::string_view const& value)
+parse_ProtocolVersions(boost::beast::string_view const& value)
 {
     static boost::regex re (
         "^"                  // start of line
@@ -218,7 +218,7 @@ parse_ProtocolVersions(beast::string_view const& value)
 }
 
 boost::optional<protocol::TMHello>
-parseHello (bool request, beast::http::fields const& h, beast::Journal journal)
+parseHello (bool request, boost::beast::http::fields const& h, beast::Journal journal)
 {
     // protocol version in TMHello is obsolete,
     // it is supplanted by the values in the headers.
@@ -258,7 +258,7 @@ parseHello (bool request, beast::http::fields const& h, beast::Journal journal)
         if (iter == h.end())
             return boost::none;
         // TODO Security Review
-        hello.set_nodeproof (beast::detail::base64_decode (iter->value().to_string()));
+        hello.set_nodeproof (boost::beast::detail::base64_decode (iter->value().to_string()));
     }
 
     {
@@ -293,13 +293,13 @@ parseHello (bool request, beast::http::fields const& h, beast::Journal journal)
     {
         auto const iter = h.find ("Closed-Ledger");
         if (iter != h.end())
-            hello.set_ledgerclosed (beast::detail::base64_decode (iter->value().to_string()));
+            hello.set_ledgerclosed (boost::beast::detail::base64_decode (iter->value().to_string()));
     }
 
     {
         auto const iter = h.find ("Previous-Ledger");
         if (iter != h.end())
-            hello.set_ledgerprevious (beast::detail::base64_decode (iter->value().to_string()));
+            hello.set_ledgerprevious (boost::beast::detail::base64_decode (iter->value().to_string()));
     }
 
     {

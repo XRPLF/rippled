@@ -255,11 +255,11 @@ public:
     template<class Body>
     static
     bool
-    isPeerUpgrade (beast::http::response<Body> const& response)
+    isPeerUpgrade (boost::beast::http::response<Body> const& response)
     {
         if (! is_upgrade(response))
             return false;
-        if(response.result() != beast::http::status::switching_protocols)
+        if(response.result() != boost::beast::http::status::switching_protocols)
             return false;
         auto const versions = parse_ProtocolVersions(
             response["Upgrade"]);
@@ -271,13 +271,13 @@ public:
     template<class Fields>
     static
     bool
-    is_upgrade(beast::http::header<true, Fields> const& req)
+    is_upgrade(boost::beast::http::header<true, Fields> const& req)
     {
-        if(req.version < 11)
+        if(req.version() < 11)
             return false;
-        if(req.method() != beast::http::verb::get)
+        if(req.method() != boost::beast::http::verb::get)
             return false;
-        if(! beast::http::token_list{req["Connection"]}.exists("upgrade"))
+        if(! boost::beast::http::token_list{req["Connection"]}.exists("upgrade"))
             return false;
         return true;
     }
@@ -285,11 +285,11 @@ public:
     template<class Fields>
     static
     bool
-    is_upgrade(beast::http::header<false, Fields> const& req)
+    is_upgrade(boost::beast::http::header<false, Fields> const& req)
     {
-        if(req.version < 11)
+        if(req.version() < 11)
             return false;
-        if(! beast::http::token_list{req["Connection"]}.exists("upgrade"))
+        if(! boost::beast::http::token_list{req["Connection"]}.exists("upgrade"))
             return false;
         return true;
     }

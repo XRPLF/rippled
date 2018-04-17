@@ -18,7 +18,7 @@ need these software components
 | [Git for Windows](README.md#install-git-for-windows)| 2.16.1|
 | [Google Protocol Buffers Compiler](README.md#install-google-protocol-buffers-compiler) | 2.5.1|
 | [OpenSSL Library](README.md#install-openssl) | 1.0.2n |
-| [Boost library](README.md#build-boost) | 1.66.0 |
+| [Boost library](README.md#build-boost) | 1.67.0 |
 | [CMake for Windows](README.md#optional-install-cmake-for-windows)* | 3.10.2 |
 
 \* Only needed if not using the integrated CMake in VS 2017 and prefer generating dedicated project/solution files.
@@ -99,11 +99,13 @@ to get the correct 32-/64-bit variant.
 
 ### Build Boost
 
+Boost 1.67 or later is required.
+
 After [downloading boost](http://www.boost.org/users/download/) and unpacking it
-to `c:\lib`. As of this writing, the most recent version of boost is 1.66.0,
-which will unpack into a directory named `boost_1_66_0`. We recommended either
+to `c:\lib`. As of this writing, the most recent version of boost is 1.67.0,
+which will unpack into a directory named `boost_1_67_0`. We recommended either
 renaming this directory to `boost`, or creating a junction link `mklink /J boost
-boost_1_66_0`, so that you can more easily switch between versions.
+boost_1_67_0`, so that you can more easily switch between versions.
 
 Next, open **Developer Command Prompt** and type the following commands
 
@@ -235,7 +237,7 @@ execute the following commands within your `rippled` cloned repository:
 ```
 mkdir build\cmake
 cd build\cmake
-cmake ..\.. -G"Visual Studio 15 2017 Win64" -DBOOST_ROOT="C:\lib\boost_1_66_0" -DOPENSSL_ROOT="C:\lib\OpenSSL-Win64"
+cmake ..\.. -G"Visual Studio 15 2017 Win64" -DBOOST_ROOT="C:\lib\boost_1_67_0" -DOPENSSL_ROOT="C:\lib\OpenSSL-Win64"
 ```
 Now launch Visual Studio 2017 and select **File | Open | Project/Solution**.
 Navigate to the `build\cmake` folder created above and select the `rippled.sln`

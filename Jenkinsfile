@@ -168,7 +168,7 @@ try {
                     echo "USE_CC: ${ucc}"
                     if (compiler == 'msvc') {
                         env_vars.addAll([
-                            'BOOST_ROOT=c:\\lib\\boost_1_66',
+                            'BOOST_ROOT=c:\\lib\\boost_1_67',
                             'PROJECT_NAME=rippled',
                             'MSBUILDDISABLENODEREUSE=1',  // this ENV setting is probably redundant since we also pass /nr:false to msbuild
                             'OPENSSL_ROOT=c:\\OpenSSL-Win64'])
@@ -184,7 +184,7 @@ try {
                             'LCOV_ROOT=""',
                             'PATH+CMAKE_BIN=/opt/local/cmake',
                             'GDB_ROOT=/opt/local/gdb',
-                            'BOOST_ROOT=/opt/local/boost_1_66_0',
+                            'BOOST_ROOT=/opt/local/boost_1_67_0',
                             "USE_CCACHE=${ucc}"])
                     }
 

@@ -22,7 +22,7 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
-#include <beast/core/detail/base64.hpp>
+#include <boost/beast/core/detail/base64.hpp>
 #include <string>
 
 namespace ripple {
@@ -91,7 +91,7 @@ public:
             derivePublicKey(KeyType::secp256k1, tokenSecretKey);
 
         auto const m = Manifest::make_Manifest(
-                beast::detail::base64_decode(tokenManifest));
+            boost::beast::detail::base64_decode(tokenManifest));
         BEAST_EXPECT(m);
         NodeID const tokenNodeID = calcNodeID(m->masterKey);
 

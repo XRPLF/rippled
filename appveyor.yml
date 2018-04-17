@@ -5,7 +5,7 @@ environment:
   # that it's a small download. We also use appveyor's free cache, avoiding fees
   # downloading from S3 each time.
   # TODO: script to create this package.
-  RIPPLED_DEPS_PATH: rippled_deps17.01
+  RIPPLED_DEPS_PATH: rippled_deps17.03
   RIPPLED_DEPS_URL: https://ripple.github.io/Downloads/appveyor/%RIPPLED_DEPS_PATH%.zip
 
   # CMake honors these environment variables, setting the include/lib paths.
