@@ -316,8 +316,9 @@ struct DepositAuth_test : public beast::unit_test::suite
             if (withDepositAuth)
                 env(fset(gw1, asfDepositAuth));
 
-            auto const result =
-                (noRippleNext && noRipplePrev) ? tecPATH_DRY : tesSUCCESS;
+            TER const result = (noRippleNext && noRipplePrev)
+                ? TER {tecPATH_DRY}
+                : TER {tesSUCCESS};
             env (pay (alice, bob, USD1(10)), path (gw1), ter (result));
         };
 
@@ -338,8 +339,9 @@ struct DepositAuth_test : public beast::unit_test::suite
             if (withDepositAuth)
                 env(fset(alice, asfDepositAuth));
 
-            auto const result =
-                (noRippleNext && noRipplePrev) ? tecPATH_DRY : tesSUCCESS;
+            TER const result = (noRippleNext && noRipplePrev)
+                ? TER {tecPATH_DRY}
+                : TER {tesSUCCESS};
             env (pay (gw1, gw2, USD2 (10)),
                 path (alice), sendmax (USD1 (10)), ter (result));
         };

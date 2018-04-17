@@ -26,7 +26,7 @@
 
 namespace ripple {
 
-TER
+NotTEC
 CreateTicket::preflight (PreflightContext const& ctx)
 {
     if (! ctx.rules.enabled(featureTickets))

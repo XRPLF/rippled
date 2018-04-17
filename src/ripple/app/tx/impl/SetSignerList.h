@@ -61,7 +61,7 @@ public:
     }
 
     static
-    TER
+    NotTEC
     preflight (PreflightContext const& ctx);
 
     TER doApply () override;
@@ -69,14 +69,14 @@ public:
 
 private:
     static
-    std::tuple<TER, std::uint32_t,
+    std::tuple<NotTEC, std::uint32_t,
         std::vector<SignerEntries::SignerEntry>,
             Operation>
     determineOperation(STTx const& tx,
         ApplyFlags flags, beast::Journal j);
 
     static
-    TER validateQuorumAndSignerEntries (
+    NotTEC validateQuorumAndSignerEntries (
         std::uint32_t quorum,
             std::vector<SignerEntries::SignerEntry> const& signers,
                 AccountID const& account,
