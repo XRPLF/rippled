@@ -257,7 +257,7 @@ STObject TxMeta::getAsObject () const
 
 void TxMeta::addRaw (Serializer& s, TER result, std::uint32_t index)
 {
-    mResult = static_cast<int> (result);
+    mResult = TERtoInt (result);
     mIndex = index;
     assert ((mResult == 0) || ((mResult > 100) && (mResult <= 255)));
 

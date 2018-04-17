@@ -27,7 +27,7 @@
 
 namespace ripple {
 
-TER
+NotTEC
 Change::preflight (PreflightContext const& ctx)
 {
     auto const ret = preflight0(ctx);

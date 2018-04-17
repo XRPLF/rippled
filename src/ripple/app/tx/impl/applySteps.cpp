@@ -38,7 +38,7 @@
 namespace ripple {
 
 static
-TER
+NotTEC
 invoke_preflight (PreflightContext const& ctx)
 {
     switch(ctx.tx.getTxnType())

@@ -35,7 +35,7 @@
 namespace ripple {
 
 /** Performs early sanity checks on the txid */
-TER
+NotTEC
 preflight0(PreflightContext const& ctx)
 {
     auto const txID = ctx.tx.getTransactionID();
@@ -51,7 +51,7 @@ preflight0(PreflightContext const& ctx)
 }
 
 /** Performs early sanity checks on the account and fee fields */
-TER
+NotTEC
 preflight1 (PreflightContext const& ctx)
 {
     auto const ret = preflight0(ctx);
@@ -85,7 +85,7 @@ preflight1 (PreflightContext const& ctx)
 }
 
 /** Checks whether the signature appears valid */
-TER
+NotTEC
 preflight2 (PreflightContext const& ctx)
 {
     if(!( ctx.flags & tapNO_CHECK_SIGN))
@@ -226,7 +226,7 @@ TER Transactor::payFee ()
     return tesSUCCESS;
 }
 
-TER
+NotTEC
 Transactor::checkSeq (PreclaimContext const& ctx)
 {
     auto const id = ctx.tx.getAccountID(sfAccount);
@@ -327,7 +327,7 @@ TER Transactor::apply ()
     return doApply ();
 }
 
-TER
+NotTEC
 Transactor::checkSign (PreclaimContext const& ctx)
 {
     // Make sure multisigning is enabled before we check for multisignatures.
@@ -341,7 +341,7 @@ Transactor::checkSign (PreclaimContext const& ctx)
     return checkSingleSign (ctx);
 }
 
-TER
+NotTEC
 Transactor::checkSingleSign (PreclaimContext const& ctx)
 {
     auto const id = ctx.tx.getAccountID(sfAccount);
@@ -390,7 +390,8 @@ Transactor::checkSingleSign (PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER Transactor::checkMultiSign (PreclaimContext const& ctx)
+NotTEC
+Transactor::checkMultiSign (PreclaimContext const& ctx)
 {
     auto const id = ctx.tx.getAccountID(sfAccount);
     // Get mTxnAccountID's SignerList and Quorum.

@@ -154,7 +154,7 @@ closeChannel (
 
 //------------------------------------------------------------------------------
 
-TER
+NotTEC
 PayChanCreate::preflight (PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled (featurePayChan))
@@ -262,7 +262,7 @@ PayChanCreate::doApply()
 
 //------------------------------------------------------------------------------
 
-TER
+NotTEC
 PayChanFund::preflight (PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled (featurePayChan))
@@ -347,13 +347,17 @@ PayChanFund::doApply()
 
 //------------------------------------------------------------------------------
 
-TER
+NotTEC
 PayChanClaim::preflight (PreflightContext const& ctx)
 {
     if (! ctx.rules.enabled(featurePayChan))
         return temDISABLED;
 
-    bool const noTecs = ctx.rules.enabled(fix1512);
+    // A search through historic MainNet ledgers by the data team found no
+    // occurrences of a transaction with the error that fix1512 fixed.  That
+    // means there are no old transactions with that error that we might
+    // need to replay.  So the check for fix1512 is removed.  Apr 2018.
+//  bool const noTecs = ctx.rules.enabled(fix1512);
 
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))
@@ -368,12 +372,7 @@ PayChanClaim::preflight (PreflightContext const& ctx)
         return temBAD_AMOUNT;
 
     if (bal && amt && *bal > *amt)
-    {
-        if (noTecs)
-            return temBAD_AMOUNT;
-        else
-            return tecNO_PERMISSION;
-    }
+        return temBAD_AMOUNT;
 
     {
         auto const flags = ctx.tx.getFlags();
@@ -398,12 +397,7 @@ PayChanClaim::preflight (PreflightContext const& ctx)
         auto const authAmt = amt ? amt->xrp() : reqBalance;
 
         if (reqBalance > authAmt)
-        {
-            if (noTecs)
-                return temBAD_AMOUNT;
-            else
-                return tecNO_PERMISSION;
-        }
+            return temBAD_AMOUNT;
 
         Keylet const k (ltPAYCHAN, ctx.tx[sfPayChannel]);
         if (!publicKeyType(ctx.tx[sfPublicKey]))

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_TX_TRANSACTOR_H_INCLUDED
 #define RIPPLE_APP_TX_TRANSACTOR_H_INCLUDED
 
+#include <ripple/app/tx/applySteps.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
 #include <ripple/protocol/XRPAmount.h>
 #include <ripple/beast/utility/Journal.h>
@@ -116,7 +117,7 @@ public:
     */
 
     static
-    TER
+    NotTEC
     checkSeq (PreclaimContext const& ctx);
 
     static
@@ -124,7 +125,7 @@ public:
     checkFee (PreclaimContext const& ctx, std::uint64_t baseFee);
 
     static
-    TER
+    NotTEC
     checkSign (PreclaimContext const& ctx);
 
     // Returns the fee in fee units, not scaled for load.
@@ -173,20 +174,20 @@ private:
     void setSeq ();
     TER payFee ();
     void claimFee (XRPAmount& fee, TER terResult, std::vector<uint256> const& removedOffers);
-    static TER checkSingleSign (PreclaimContext const& ctx);
-    static TER checkMultiSign (PreclaimContext const& ctx);
+    static NotTEC checkSingleSign (PreclaimContext const& ctx);
+    static NotTEC checkMultiSign (PreclaimContext const& ctx);
 };
 
 /** Performs early sanity checks on the txid */
-TER
+NotTEC
 preflight0(PreflightContext const& ctx);
 
 /** Performs early sanity checks on the account and fee fields */
-TER
+NotTEC
 preflight1 (PreflightContext const& ctx);
 
 /** Checks whether the signature appears valid */
-TER
+NotTEC
 preflight2 (PreflightContext const& ctx);
 
 }

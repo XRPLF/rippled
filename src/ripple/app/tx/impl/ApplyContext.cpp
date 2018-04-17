@@ -104,8 +104,8 @@ ApplyContext::checkInvariantsHelper(TER terResult, std::index_sequence<Is...>)
                     [](auto const& b) { return b; }))
             {
                 terResult = (terResult == tecINVARIANT_FAILED) ?
-                    tefINVARIANT_FAILED :
-                    tecINVARIANT_FAILED ;
+                    TER {tefINVARIANT_FAILED} :
+                    TER {tecINVARIANT_FAILED} ;
                 JLOG(journal.fatal()) <<
                     "Transaction has failed one or more invariants: " <<
                     to_string(tx.getJson (0));
@@ -114,8 +114,8 @@ ApplyContext::checkInvariantsHelper(TER terResult, std::index_sequence<Is...>)
         catch(std::exception const& ex)
         {
             terResult = (terResult == tecINVARIANT_FAILED) ?
-                tefINVARIANT_FAILED :
-                tecINVARIANT_FAILED ;
+                TER {tefINVARIANT_FAILED} :
+                TER {tecINVARIANT_FAILED} ;
             JLOG(journal.fatal()) <<
                 "Transaction caused an exception in an invariant" <<
                 ", ex: " << ex.what() <<

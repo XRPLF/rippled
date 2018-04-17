@@ -94,15 +94,16 @@ class Invariants_test : public beast::unit_test::suite
 
         BEAST_EXPECT(precheck(A1, A2, ac));
 
-        auto tr = tesSUCCESS;
+        TER tr = tesSUCCESS;
         // invoke check twice to cover tec and tef cases
         for (auto i : {0,1})
         {
             tr = ac.checkInvariants(tr);
             if (enabled)
             {
-                BEAST_EXPECT(
-                    tr == (i == 0 ? tecINVARIANT_FAILED : tefINVARIANT_FAILED));
+                BEAST_EXPECT(tr == (i == 0
+                    ? TER {tecINVARIANT_FAILED}
+                    : TER {tefINVARIANT_FAILED}));
                 BEAST_EXPECT(
                     boost::starts_with(sink.strm_.str(), "Invariant failed:") ||
                     boost::starts_with(sink.strm_.str(),

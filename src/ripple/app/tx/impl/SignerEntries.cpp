@@ -25,11 +25,11 @@
 
 namespace ripple {
 
-std::pair<std::vector<SignerEntries::SignerEntry>, TER>
+std::pair<std::vector<SignerEntries::SignerEntry>, NotTEC>
 SignerEntries::deserialize (
     STObject const& obj, beast::Journal journal, std::string const& annotation)
 {
-    std::pair<std::vector<SignerEntry>, TER> s;
+    std::pair<std::vector<SignerEntry>, NotTEC> s;
 
     if (!obj.isFieldPresent (sfSignerEntries))
     {
