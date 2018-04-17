@@ -52,15 +52,21 @@ class Invariants_test : public beast::unit_test::suite
     // this is common setup/method for running a failing invariant check. The
     // precheck function is used to manipulate the ApplyContext with view
     // changes that will cause the check to fail.
+    using Precheck = std::function <
+        bool (
+            test::jtx::Account const& a,
+            test::jtx::Account const& b,
+            ApplyContext& ac)>;
+
+    using TXMod = std::function <
+        void (STTx& tx)>;
+
     void
     doInvariantCheck( bool enabled,
         std::vector<std::string> const& expect_logs,
-        std::function <
-            bool (
-                test::jtx::Account const& a,
-                test::jtx::Account const& b,
-                ApplyContext& ac)>
-            const& precheck )
+        Precheck const& precheck,
+        XRPAmount fee = XRPAmount{},
+        TXMod txmod = [](STTx&){})
     {
         using namespace test::jtx;
         Env env {*this};
@@ -79,6 +85,7 @@ class Invariants_test : public beast::unit_test::suite
 
         // dummy/empty tx to setup the AccountContext
         auto tx = STTx {ttACCOUNT_SET, [](STObject&){  } };
+        txmod(tx);
         OpenView ov {*env.current()};
         TestSink sink;
         beast::Journal jlog {sink};
@@ -98,7 +105,7 @@ class Invariants_test : public beast::unit_test::suite
         // invoke check twice to cover tec and tef cases
         for (auto i : {0,1})
         {
-            tr = ac.checkInvariants(tr, XRPAmount{});
+            tr = ac.checkInvariants(tr, fee);
             if (enabled)
             {
                 BEAST_EXPECT(
@@ -285,6 +292,37 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
+    testTransactionFeeCheck(bool enabled)
+    {
+        using namespace test::jtx;
+        using namespace std::string_literals;
+        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
+            " - Transaction fee checks";
+
+        doInvariantCheck (enabled,
+            {{ "fee paid was negative: -1" },
+             { "XRP net change of 0 doesn't match fee -1" }},
+            [](Account const&, Account const&, ApplyContext&) { return true; },
+            XRPAmount{-1});
+
+        doInvariantCheck (enabled,
+            {{ "fee paid exceeds system limit: "s +
+                std::to_string(SYSTEM_CURRENCY_START) },
+             { "XRP net change of 0 doesn't match fee "s +
+                std::to_string(SYSTEM_CURRENCY_START) }},
+            [](Account const&, Account const&, ApplyContext&) { return true; },
+            XRPAmount{SYSTEM_CURRENCY_START});
+
+         doInvariantCheck (enabled,
+            {{ "fee paid is 20 exceeds fee specified in transaction." },
+             { "XRP net change of 0 doesn't match fee 20" }},
+            [](Account const&, Account const&, ApplyContext&) { return true; },
+            XRPAmount{20},
+            [](STTx& tx) { tx.setFieldAmount(sfFee, XRPAmount{10}); } );
+    }
+
+
+    void
     testNoBadOffers(bool enabled)
     {
         using namespace test::jtx;
@@ -418,6 +456,7 @@ public:
             testTypesMatch (b);
             testNoXRPTrustLine (b);
             testXRPBalanceCheck (b);
+            testTransactionFeeCheck(b);
             testNoBadOffers (b);
             testNoZeroEscrow (b);
         }
