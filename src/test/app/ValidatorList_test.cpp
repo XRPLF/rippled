@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <beast/core/detail/base64.hpp>
+#include <boost/beast/core/detail/base64.hpp>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/strHex.h>
 #include <ripple/app/misc/ValidatorList.h>
@@ -89,7 +89,7 @@ private:
             derivePublicKey(KeyType::ed25519, secret);
         auto const signingKeys = randomKeyPair(KeyType::secp256k1);
         return { masterPublic, signingKeys.first,
-            beast::detail::base64_encode(makeManifestString (
+                 boost::beast::detail::base64_encode(makeManifestString (
             masterPublic, secret, signingKeys.first, signingKeys.second, 1)) };
     }
 
@@ -112,7 +112,7 @@ private:
 
         data.pop_back();
         data += "]}";
-        return beast::detail::base64_encode(data);
+        return boost::beast::detail::base64_encode(data);
     }
 
     std::string
@@ -120,7 +120,7 @@ private:
         std::string const& blob,
         std::pair<PublicKey, SecretKey> const& keys)
     {
-        auto const data = beast::detail::base64_decode (blob);
+        auto const data = boost::beast::detail::base64_decode (blob);
         return strHex(sign(
             keys.first, keys.second, makeSlice(data)));
     }
@@ -374,7 +374,7 @@ private:
         auto const publisherPublic =
             derivePublicKey(KeyType::ed25519, publisherSecret);
         auto const pubSigningKeys1 = randomKeyPair(KeyType::secp256k1);
-        auto const manifest1 = beast::detail::base64_encode(makeManifestString (
+        auto const manifest1 = boost::beast::detail::base64_encode(makeManifestString (
             publisherPublic, publisherSecret,
             pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
@@ -425,7 +425,7 @@ private:
         }
 
         // do not use list from untrusted publisher
-        auto const untrustedManifest = beast::detail::base64_encode(
+        auto const untrustedManifest = boost::beast::detail::base64_encode(
             makeManifestString (
                 randomMasterKey(), publisherSecret,
                 pubSigningKeys1.first, pubSigningKeys1.second, 1));
@@ -472,7 +472,7 @@ private:
 
         // apply list with new publisher key updated by manifest
         auto const pubSigningKeys2 = randomKeyPair(KeyType::secp256k1);
-        auto manifest2 = beast::detail::base64_encode(makeManifestString (
+        auto manifest2 = boost::beast::detail::base64_encode(makeManifestString (
             publisherPublic, publisherSecret,
             pubSigningKeys2.first, pubSigningKeys2.second, 2));
 
@@ -496,7 +496,7 @@ private:
         // do not apply list with revoked publisher key
         // applied list is removed due to revoked publisher key
         auto const signingKeysMax = randomKeyPair(KeyType::secp256k1);
-        auto maxManifest = beast::detail::base64_encode(makeManifestString (
+        auto maxManifest = boost::beast::detail::base64_encode(makeManifestString (
             publisherPublic, publisherSecret,
             pubSigningKeys2.first, pubSigningKeys2.second,
             std::numeric_limits<std::uint32_t>::max ()));
@@ -792,7 +792,7 @@ private:
             std::vector<std::string> emptyCfgKeys;
             auto const publisherKeys = randomKeyPair(KeyType::secp256k1);
             auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
-            auto const manifest = beast::detail::base64_encode (
+            auto const manifest = boost::beast::detail::base64_encode (
                 makeManifestString (
                     publisherKeys.first, publisherKeys.second,
                     pubSigningKeys.first, pubSigningKeys.second, 1));
@@ -963,7 +963,7 @@ private:
                 auto const publisherPublic =
                     derivePublicKey(KeyType::ed25519, publisherSecret);
                 auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
-                auto const manifest = beast::detail::base64_encode(makeManifestString (
+                auto const manifest = boost::beast::detail::base64_encode(makeManifestString (
                     publisherPublic, publisherSecret,
                     pubSigningKeys.first, pubSigningKeys.second, 1));
 
@@ -1073,7 +1073,7 @@ private:
                 auto const publisherPublic =
                     derivePublicKey(KeyType::ed25519, publisherSecret);
                 auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
-                auto const manifest = beast::detail::base64_encode(makeManifestString (
+                auto const manifest = boost::beast::detail::base64_encode(makeManifestString (
                     publisherPublic, publisherSecret,
                     pubSigningKeys.first, pubSigningKeys.second, 1));
 

@@ -44,7 +44,7 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
-#include <beast/core/detail/type_traits.hpp>
+#include <boost/beast/core/detail/type_traits.hpp>
 #include <ripple/beast/unit_test.h>
 #include <functional>
 #include <string>
@@ -713,7 +713,7 @@ protected:
         FN const&... fN)
     {
         maybe_invoke(stx, f,
-            beast::detail::is_invocable<F,
+            boost::beast::detail::is_invocable<F,
                 void(Env&, STTx const&)>());
         invoke(stx, fN...);
     }
@@ -747,7 +747,7 @@ protected:
         FN const&... fN)
     {
         maybe_invoke(jt, f,
-            beast::detail::is_invocable<F,
+            boost::beast::detail::is_invocable<F,
                 void(Env&, JTx&)>());
         invoke(jt, fN...);
     }
