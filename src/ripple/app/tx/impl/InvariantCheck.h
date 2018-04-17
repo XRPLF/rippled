@@ -25,7 +25,9 @@
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/beast/utility/Journal.h>
+#include <map>
 #include <tuple>
+#include <utility>
 #include <cstdint>
 
 namespace ripple {
@@ -65,6 +67,7 @@ public:
      *
      * @param tx the transaction being applied
      * @param tec the current TER result of the transaction
+     * @param fee the fee actually charged for this transaction
      * @param j journal for logging
      *
      * @return true if check passes, false if it fails
@@ -73,32 +76,44 @@ public:
     finalize(
         STTx const& tx,
         TER tec,
+        XRPAmount fee,
         beast::Journal const& j);
 };
 #endif
 
 /**
+ * @brief Invariant: We should never charge a transaction a negative fee or a
+ * fee that is larger than what the transaction itself specifies.
+ *
+ * We can, in some circumstances, charge less.
+ */
+class TransactionFeeCheck
+{
+public:
+    void
+    visitEntry(
+        uint256 const&,
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
+};
+
+/**
  * @brief Invariant: A transaction must not create XRP and should only destroy
- * XRP, up to the transaction fee.
+ * the XRP fee.
  *
- * For this check, we start with a signed 64-bit integer set to zero. As we go
- * through the ledger entries, look only at account roots, escrow payments,
- * and payment channels.  Remove from the total any previous XRP values and add
- * to the total any new XRP values. The net balance of a payment channel is
- * computed from two fields (amount and balance) and deletions are ignored
- * for paychan and escrow because the amount fields have not been adjusted for
- * those in the case of deletion.
- *
- * The final total must be less than or equal to zero and greater than or equal
- * to the negative of the tx fee.
- *
+ * We iterate through all account roots, payment channels and escrow entries
+ * that were modified and calculate the net change in XRP caused by the
+ * transactions.
  */
 class XRPNotCreated
 {
     std::int64_t drops_ = 0;
 
 public:
-
     void
     visitEntry(
         uint256 const&,
@@ -107,20 +122,21 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, beast::Journal const&);
+    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
 };
 
 /**
  * @brief Invariant: we cannot remove an account ledger entry
  *
- * an account root should never be the target of a delete
+ * We iterate all accounts roots that were modified, and ensure that any that
+ * were present before the transaction was applied continue to be present
+ * afterwards.
  */
 class AccountRootsNotDeleted
 {
     bool accountDeleted_ = false;
 
 public:
-
     void
     visitEntry(
         uint256 const&,
@@ -129,12 +145,15 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, beast::Journal const&);
+    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
 };
 
 /**
  * @brief Invariant: An account XRP balance must be in XRP and take a value
-                     between 0 and SYSTEM_CURRENCY_START drops, inclusive.
+ *                   between 0 and SYSTEM_CURRENCY_START drops, inclusive.
+ *
+ * We iterate all account roots modified by the transaction and ensure that
+ * their XRP balances are sane.
  */
 class XRPBalanceChecks
 {
@@ -149,7 +168,7 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, beast::Journal const&);
+    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
 };
 
 /**
@@ -162,7 +181,6 @@ class LedgerEntryTypesMatch
     bool invalidTypeAdded_ = false;
 
 public:
-
     void
     visitEntry(
         uint256 const&,
@@ -171,18 +189,20 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, beast::Journal const&);
+    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
 };
 
 /**
  * @brief Invariant: Trust lines using XRP are not allowed.
+ *
+ * We iterate all the trust lines created by this transaction and ensure
+ * that they are against a valid issuer.
  */
 class NoXRPTrustLines
 {
     bool xrpTrustLine_ = false;
 
 public:
-
     void
     visitEntry(
         uint256 const&,
@@ -191,19 +211,21 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, beast::Journal const&);
+    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
 };
 
 /**
  * @brief Invariant: offers should be for non-negative amounts and must not
  *                   be XRP to XRP.
+ *
+ * Examine all offers modified by the transaction and ensure that there are
+ * no offers which contain negative amounts or which exchange XRP for XRP.
  */
 class NoBadOffers
 {
     bool bad_ = false;
 
 public:
-
     void
     visitEntry(
         uint256 const&,
@@ -212,8 +234,8 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, beast::Journal const&);
-    
+    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
+
 };
 
 /**
@@ -225,7 +247,6 @@ class NoZeroEscrow
     bool bad_ = false;
 
 public:
-
     void
     visitEntry(
         uint256 const&,
@@ -234,13 +255,14 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, beast::Journal const&);
-    
+    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
+
 };
 
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
+    TransactionFeeCheck,
     AccountRootsNotDeleted,
     LedgerEntryTypesMatch,
     XRPBalanceChecks,
