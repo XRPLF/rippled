@@ -184,7 +184,7 @@ private:
                 , server_(server)
                 , test_(server_.test_)
                 , acceptor_(test_.io_service_,
-                    endpoint_type(boost::asio::ip::make_address(
+                    endpoint_type(beast::IP::Address::from_string(
                         test::getEnvLocalhostAddr()), 0))
                 , socket_(test_.io_service_)
                 , strand_(socket_.get_io_service())
