@@ -569,8 +569,8 @@ void removeUnfundedOffers (ApplyView& view, std::vector<uint256> const& offers, 
 }
 
 /** Reset the context, discarding any changes made and adjust the fee */
-void
-Transactor::reset(XRPAmount &fee)
+XRPAmount
+Transactor::reset(XRPAmount fee)
 {
     ctx_.discard();
 
@@ -593,6 +593,8 @@ Transactor::reset(XRPAmount &fee)
     txnAcct->setFieldU32 (sfSequence, ctx_.tx.getSequence() + 1);
 
     view().update (txnAcct);
+
+    return fee;
 }
 
 //------------------------------------------------------------------------------
@@ -667,7 +669,7 @@ Transactor::operator()()
         }
 
         // Reset the context, potentially adjusting the fee
-        reset(fee);
+        fee = reset(fee);
 
         // If necessary, remove any offers found unfunded during processing
         if (result == tecOVERSIZE)
@@ -686,7 +688,7 @@ Transactor::operator()()
         {
             // if invariants checking failed again, reset the context and
             // attempt to only claim a fee.
-            reset(fee);
+            fee = reset(fee);
 
             // Check invariants again to ensure the fee claiming doesn't
             // violate invariants.

@@ -170,7 +170,7 @@ protected:
     virtual TER doApply () = 0;
 
 private:
-    void reset(XRPAmount &fee);
+    XRPAmount reset(XRPAmount fee);
 
     void setSeq ();
     TER payFee ();
