@@ -198,7 +198,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
         //
         // The return code change is attached to featureChecks as a convenience.
         // The change is not big enough to deserve its own amendment.
-        return ctx.view.rules().enabled(featureChecks)
+        return ctx.view.rules().enabled(featureDepositPreauth)
             ? TER {tecEXPIRED}
             : TER {tesSUCCESS};
     }
@@ -237,10 +237,10 @@ CreateOffer::checkAcceptAsset(ReadView const& view,
             : TER {tecNO_ISSUER};
     }
 
-    // This code is attached to the FlowCross amendment as a matter of
+    // This code is attached to the DepositPreauth amendment as a matter of
     // convenience.  The change is not significant enough to deserve its
     // own amendment.
-    if (view.rules().enabled(featureFlowCross) && (issue.account == id))
+    if (view.rules().enabled(featureDepositPreauth) && (issue.account == id))
         // An account can always accept its own issuance.
         return tesSUCCESS;
 
@@ -1106,10 +1106,10 @@ CreateOffer::applyGuts (Sandbox& sb, Sandbox& sbCancel)
         // If the offer has expired, the transaction has successfully
         // done nothing, so short circuit from here.
         //
-        // The return code change is attached to featureChecks as a convenience.
-        // The change is not big enough to deserve its own amendment.
+        // The return code change is attached to featureDepositPreauth as a
+        // convenience.  The change is not big enough to deserve a fix code.
         TER const ter {ctx_.view().rules().enabled(
-            featureChecks) ? TER {tecEXPIRED} : TER {tesSUCCESS}};
+            featureDepositPreauth) ? TER {tecEXPIRED} : TER {tesSUCCESS}};
         return{ ter, true };
     }
 

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
+    Copyright (c) 2018 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,33 +17,32 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_CASHCHECK_H_INCLUDED
-#define RIPPLE_TX_CASHCHECK_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_DEPOSIT_H_INCLUDED
+#define RIPPLE_TEST_JTX_DEPOSIT_H_INCLUDED
 
-#include <ripple/app/tx/impl/Transactor.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/Account.h>
 
 namespace ripple {
+namespace test {
+namespace jtx {
 
-class CashCheck
-    : public Transactor
-{
-public:
-    explicit CashCheck (ApplyContext& ctx)
-        : Transactor (ctx)
-    {
-    }
+/** Deposit preauthorize operations */
+namespace deposit {
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+/** Preauthorize for deposit.  Invoke as deposit::auth. */
+Json::Value
+auth (Account const& account, Account const& auth);
 
-    static
-    TER
-    preclaim (PreclaimContext const& ctx);
+/** Remove preauthorization for deposit.  Invoke as deposit::unauth. */
+Json::Value
+unauth (Account const& account, Account const& unauth);
 
-    TER doApply () override;
-};
+} // deposit
 
-}
+} // jtx
+
+} // test
+} // ripple
 
 #endif

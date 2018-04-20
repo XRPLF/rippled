@@ -40,6 +40,7 @@ Json::Value doChannelAuthorize      (RPC::Context&);
 Json::Value doChannelVerify         (RPC::Context&);
 Json::Value doConnect               (RPC::Context&);
 Json::Value doConsensusInfo         (RPC::Context&);
+Json::Value doDepositAuthorized     (RPC::Context&);
 Json::Value doFeature               (RPC::Context&);
 Json::Value doFee                   (RPC::Context&);
 Json::Value doFetchInfo             (RPC::Context&);

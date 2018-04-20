@@ -355,6 +355,7 @@ public:
         BEAST_EXPECT (acct_objs_is_size (acct_objs (gw, jss::account), 0));
         BEAST_EXPECT (acct_objs_is_size (acct_objs (gw, jss::amendments), 0));
         BEAST_EXPECT (acct_objs_is_size (acct_objs (gw, jss::check), 0));
+        BEAST_EXPECT (acct_objs_is_size (acct_objs (gw, jss::deposit_preauth), 0));
         BEAST_EXPECT (acct_objs_is_size (acct_objs (gw, jss::directory), 0));
         BEAST_EXPECT (acct_objs_is_size (acct_objs (gw, jss::escrow), 0));
         BEAST_EXPECT (acct_objs_is_size (acct_objs (gw, jss::fee), 0));
@@ -399,6 +400,18 @@ public:
             BEAST_EXPECT (check[sfAccount.jsonName] == gw.human());
             BEAST_EXPECT (check[sfDestination.jsonName] == alice.human());
             BEAST_EXPECT (check[sfSendMax.jsonName][jss::value].asUInt() == 10);
+        }
+        // gw preauthorizes payments from alice.
+        env (deposit::auth (gw, alice));
+        env.close();
+        {
+            // Find the preauthorization.
+            Json::Value const resp = acct_objs (gw, jss::deposit_preauth);
+            BEAST_EXPECT (acct_objs_is_size (resp, 1));
+
+            auto const& preauth = resp[jss::result][jss::account_objects][0u];
+            BEAST_EXPECT (preauth[sfAccount.jsonName] == gw.human());
+            BEAST_EXPECT (preauth[sfAuthorize.jsonName] == alice.human());
         }
         {
             // gw creates an escrow that we can look for in the ledger.
@@ -485,7 +498,7 @@ public:
             auto const& ticket = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT (ticket[sfAccount.jsonName] == gw.human());
             BEAST_EXPECT (ticket[sfLedgerEntryType.jsonName] == "Ticket");
-            BEAST_EXPECT (ticket[sfSequence.jsonName].asUInt() == 8);
+            BEAST_EXPECT (ticket[sfSequence.jsonName].asUInt() == 9);
         }
         // Run up the number of directory entries so gw has two
         // directory nodes.

@@ -36,7 +36,7 @@ class CreateOffer
 {
 public:
     /** Construct a Transactor subclass that creates an offer in the ledger. */
-    CreateOffer (ApplyContext& ctx)
+    explicit CreateOffer (ApplyContext& ctx)
         : Transactor(ctx)
         , stepCounter_ (1000, j_)
     {

@@ -72,6 +72,7 @@ transResults()
         { tecCRYPTOCONDITION_ERROR,  { "tecCRYPTOCONDITION_ERROR", "Malformed, invalid, or mismatched conditional or fulfillment."                 } },
         { tecINVARIANT_FAILED,       { "tecINVARIANT_FAILED",      "One or more invariants for the transaction were not satisfied."                } },
         { tecEXPIRED,                { "tecEXPIRED",               "Expiration time is passed."                                                    } },
+        { tecDUPLICATE,              { "tecDUPLICATE",             "Ledger object already exists."                                                 } },
 
         { tefALREADY,                { "tefALREADY",               "The exact transaction was already in this ledger."                             } },
         { tefBAD_ADD_AUTH,           { "tefBAD_ADD_AUTH",          "Not authorized to add account."                                                } },
@@ -138,6 +139,8 @@ transResults()
         { temUNKNOWN,                { "temUNKNOWN",               "The transaction requires logic that is not implemented yet."                   } },
         { temDISABLED,               { "temDISABLED",              "The transaction requires logic that is currently disabled."                    } },
         { temBAD_TICK_SIZE,          { "temBAD_TICK_SIZE",         "Malformed: Tick size out of range."                                            } },
+        { temINVALID_ACCOUNT_ID,     { "temINVALID_ACCOUNT_ID",    "Malformed: A field contains an invalid account ID."                            } },
+        { temCANNOT_PREAUTH_SELF,    { "temCANNOT_PREAUTH_SELF",   "Malformed: An account may not preauthorize itself."                            } },
 
         { terRETRY,                  { "terRETRY",                 "Retry transaction."                                                            } },
         { terFUNDS_SPENT,            { "terFUNDS_SPENT",           "Can't set password, password set funds already spent."                         } },

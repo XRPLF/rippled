@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
+    Copyright (c) 2018 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,33 +17,39 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_CASHCHECK_H_INCLUDED
-#define RIPPLE_TX_CASHCHECK_H_INCLUDED
-
-#include <ripple/app/tx/impl/Transactor.h>
+#include <test/jtx/deposit.h>
+#include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
+namespace test {
+namespace jtx {
 
-class CashCheck
-    : public Transactor
+namespace deposit {
+
+// Add DepositPreauth.
+Json::Value
+auth (jtx::Account const& account, jtx::Account const& auth)
 {
-public:
-    explicit CashCheck (ApplyContext& ctx)
-        : Transactor (ctx)
-    {
-    }
-
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
-
-    static
-    TER
-    preclaim (PreclaimContext const& ctx);
-
-    TER doApply () override;
-};
-
+    Json::Value jv;
+    jv[sfAccount.jsonName] = account.human();
+    jv[sfAuthorize.jsonName] = auth.human();
+    jv[sfTransactionType.jsonName] = "DepositPreauth";
+    return jv;
 }
 
-#endif
+// Remove DepositPreauth.
+Json::Value
+unauth (jtx::Account const& account, jtx::Account const& unauth)
+{
+    Json::Value jv;
+    jv[sfAccount.jsonName] = account.human();
+    jv[sfUnauthorize.jsonName] = unauth.human();
+    jv[sfTransactionType.jsonName] = "DepositPreauth";
+    return jv;
+}
+
+} // deposit
+
+} // jtx
+} // test
+} // ripple

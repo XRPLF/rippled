@@ -220,6 +220,8 @@ SF_Account const sfAccount     = make::one<SF_Account::type>(&sfAccount,     STI
 SF_Account const sfOwner       = make::one<SF_Account::type>(&sfOwner,       STI_ACCOUNT, 2, "Owner");
 SF_Account const sfDestination = make::one<SF_Account::type>(&sfDestination, STI_ACCOUNT, 3, "Destination");
 SF_Account const sfIssuer      = make::one<SF_Account::type>(&sfIssuer,      STI_ACCOUNT, 4, "Issuer");
+SF_Account const sfAuthorize   = make::one<SF_Account::type>(&sfAuthorize,   STI_ACCOUNT, 5, "Authorize");
+SF_Account const sfUnauthorize = make::one<SF_Account::type>(&sfUnauthorize, STI_ACCOUNT, 6, "Unauthorize");
 SF_Account const sfTarget      = make::one<SF_Account::type>(&sfTarget,      STI_ACCOUNT, 7, "Target");
 SF_Account const sfRegularKey  = make::one<SF_Account::type>(&sfRegularKey,  STI_ACCOUNT, 8, "RegularKey");
 

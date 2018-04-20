@@ -49,7 +49,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
 
     if (context.params.isMember (jss::index))
     {
-        uNodeIndex.SetHex (context.params[jss::index].asString ());
+        uNodeIndex.SetHex (context.params[jss::index].asString());
         bNodeBinary = true;
     }
     else if (context.params.isMember (jss::account_root))
@@ -65,7 +65,44 @@ Json::Value doLedgerEntry (RPC::Context& context)
     else if (context.params.isMember (jss::check))
     {
         expectedType = ltCHECK;
-        uNodeIndex.SetHex (context.params[jss::check].asString ());
+        uNodeIndex.SetHex (context.params[jss::check].asString());
+    }
+    else if (context.params.isMember (jss::deposit_preauth))
+    {
+        expectedType = ltDEPOSIT_PREAUTH;
+
+        if (!context.params[jss::deposit_preauth].isObject())
+        {
+            if (! context.params[jss::deposit_preauth].isString() ||
+                ! uNodeIndex.SetHex (
+                    context.params[jss::deposit_preauth].asString()))
+            {
+                uNodeIndex = zero;
+                jvResult[jss::error] = "malformedRequest";
+            }
+        }
+        else if (!context.params[jss::deposit_preauth].isMember (jss::owner)
+            || !context.params[jss::deposit_preauth][jss::owner].isString()
+            || !context.params[jss::deposit_preauth].isMember (jss::authorized)
+            || !context.params[jss::deposit_preauth][jss::authorized].isString())
+        {
+            jvResult[jss::error] = "malformedRequest";
+        }
+        else
+        {
+            auto const owner = parseBase58<AccountID>(context.params[
+                jss::deposit_preauth][jss::owner].asString());
+
+            auto const authorized = parseBase58<AccountID>(context.params[
+                jss::deposit_preauth][jss::authorized].asString());
+
+            if (! owner)
+                jvResult[jss::error] = "malformedOwner";
+            else if (! authorized)
+                jvResult[jss::error] = "malformedAuthorized";
+            else
+                uNodeIndex = keylet::depositPreauth (*owner, *authorized).key;
+        }
     }
     else if (context.params.isMember (jss::directory))
     {

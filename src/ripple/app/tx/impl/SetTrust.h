@@ -32,7 +32,7 @@ class SetTrust
     : public Transactor
 {
 public:
-    SetTrust (ApplyContext& ctx)
+    explicit SetTrust (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }

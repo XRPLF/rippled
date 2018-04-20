@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_CASHCHECK_H_INCLUDED
-#define RIPPLE_TX_CASHCHECK_H_INCLUDED
+#ifndef RIPPLE_TX_DEPOSIT_PREAUTH_H_INCLUDED
+#define RIPPLE_TX_DEPOSIT_PREAUTH_H_INCLUDED
 
 #include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
 
-class CashCheck
+class DepositPreauth
     : public Transactor
 {
 public:
-    explicit CashCheck (ApplyContext& ctx)
-        : Transactor (ctx)
+    explicit DepositPreauth (ApplyContext& ctx)
+        : Transactor(ctx)
     {
     }
 
@@ -39,11 +39,12 @@ public:
 
     static
     TER
-    preclaim (PreclaimContext const& ctx);
+    preclaim(PreclaimContext const& ctx);
 
     TER doApply () override;
 };
 
-}
+} // ripple
 
 #endif
+

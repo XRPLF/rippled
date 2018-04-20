@@ -93,6 +93,9 @@ getSignerListIndex (AccountID const& account);
 uint256
 getCheckIndex (AccountID const& account, std::uint32_t uSequence);
 
+uint256
+getDepositPreauthIndex (AccountID const& owner, AccountID const& preauthorized);
+
 //------------------------------------------------------------------------------
 
 /* VFALCO TODO
@@ -252,6 +255,21 @@ struct check_t
     }
 };
 static check_t const check {};
+
+/** A DepositPreauth */
+struct depositPreauth_t
+{
+    explicit depositPreauth_t() = default;
+
+    Keylet operator()(AccountID const& owner,
+        AccountID const& preauthorized) const;
+
+    Keylet operator()(uint256 const& key) const
+    {
+        return { ltDEPOSIT_PREAUTH, key };
+    }
+};
+static depositPreauth_t const depositPreauth {};
 
 //------------------------------------------------------------------------------
 
