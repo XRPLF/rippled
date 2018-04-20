@@ -168,6 +168,14 @@ LedgerFormats::LedgerFormats ()
             << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
             << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
             ;
+
+    add ("DepositPreauth", ltDEPOSIT_PREAUTH)
+            << SOElement (sfAccount,             SOE_REQUIRED)
+            << SOElement (sfAuthorize,           SOE_REQUIRED)
+            << SOElement (sfOwnerNode,           SOE_REQUIRED)
+            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
+            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
+            ;
 }
 
 void LedgerFormats::addCommonFields (Item& item)

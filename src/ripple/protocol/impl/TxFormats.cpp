@@ -156,6 +156,11 @@ TxFormats::TxFormats ()
     add ("CheckCancel", ttCHECK_CANCEL)
         << SOElement (sfCheckID,             SOE_REQUIRED)
         ;
+
+    add ("DepositPreauth", ttDEPOSIT_PREAUTH)
+        << SOElement (sfAuthorize,           SOE_OPTIONAL)
+        << SOElement (sfUnauthorize,         SOE_OPTIONAL)
+        ;
 }
 
 void TxFormats::addCommonFields (Item& item)

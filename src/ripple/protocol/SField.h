@@ -464,6 +464,8 @@ extern SF_Account const sfAccount;
 extern SF_Account const sfOwner;
 extern SF_Account const sfDestination;
 extern SF_Account const sfIssuer;
+extern SF_Account const sfAuthorize;
+extern SF_Account const sfUnauthorize;
 extern SF_Account const sfTarget;
 extern SF_Account const sfRegularKey;
 

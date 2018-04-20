@@ -17,21 +17,38 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_TX_DEPOSIT_PREAUTH_H_INCLUDED
+#define RIPPLE_TX_DEPOSIT_PREAUTH_H_INCLUDED
 
-#include <test/jtx/Env_test.cpp>
-#include <test/jtx/WSClient_test.cpp>
+#include <ripple/protocol/Quality.h>
+#include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/basics/Log.h>
+#include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/TxFlags.h>
 
-#include <test/jtx/impl/Account.cpp>
-#include <test/jtx/impl/amount.cpp>
-#include <test/jtx/impl/balance.cpp>
-#include <test/jtx/impl/delivermin.cpp>
-#include <test/jtx/impl/deposit.cpp>
-#include <test/jtx/impl/Env.cpp>
-#include <test/jtx/impl/envconfig.cpp>
-#include <test/jtx/impl/fee.cpp>
-#include <test/jtx/impl/flags.cpp>
-#include <test/jtx/impl/JSONRPCClient.cpp>
-#include <test/jtx/impl/jtx_json.cpp>
-#include <test/jtx/impl/ManualTimeKeeper.cpp>
-#include <test/jtx/impl/memo.cpp>
-#include <test/jtx/impl/multisign.cpp>
+namespace ripple {
+
+class DepositPreauth
+    : public Transactor
+{
+public:
+    DepositPreauth (ApplyContext& ctx)
+        : Transactor(ctx)
+    {
+    }
+
+    static
+    TER
+    preflight (PreflightContext const& ctx);
+
+    static
+    TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER doApply () override;
+};
+
+} // ripple
+
+#endif
+

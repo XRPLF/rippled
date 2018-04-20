@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2018 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,21 +17,39 @@
 */
 //==============================================================================
 
+#include <test/jtx/deposit.h>
+#include <ripple/protocol/JsonFields.h>
 
-#include <test/jtx/Env_test.cpp>
-#include <test/jtx/WSClient_test.cpp>
+namespace ripple {
+namespace test {
+namespace jtx {
 
-#include <test/jtx/impl/Account.cpp>
-#include <test/jtx/impl/amount.cpp>
-#include <test/jtx/impl/balance.cpp>
-#include <test/jtx/impl/delivermin.cpp>
-#include <test/jtx/impl/deposit.cpp>
-#include <test/jtx/impl/Env.cpp>
-#include <test/jtx/impl/envconfig.cpp>
-#include <test/jtx/impl/fee.cpp>
-#include <test/jtx/impl/flags.cpp>
-#include <test/jtx/impl/JSONRPCClient.cpp>
-#include <test/jtx/impl/jtx_json.cpp>
-#include <test/jtx/impl/ManualTimeKeeper.cpp>
-#include <test/jtx/impl/memo.cpp>
-#include <test/jtx/impl/multisign.cpp>
+namespace deposit {
+
+// Add DepositPreauth.
+Json::Value
+auth (jtx::Account const& account, jtx::Account const& auth)
+{
+    Json::Value jv;
+    jv[sfAccount.jsonName] = account.human();
+    jv[sfAuthorize.jsonName] = auth.human();
+    jv[sfTransactionType.jsonName] = "DepositPreauth";
+    return jv;
+}
+
+// Remove DepositPreauth.
+Json::Value
+unauth (jtx::Account const& account, jtx::Account const& unauth)
+{
+    Json::Value jv;
+    jv[sfAccount.jsonName] = account.human();
+    jv[sfUnauthorize.jsonName] = unauth.human();
+    jv[sfTransactionType.jsonName] = "DepositPreauth";
+    return jv;
+}
+
+} // deposit
+
+} // jtx
+} // test
+} // ripple

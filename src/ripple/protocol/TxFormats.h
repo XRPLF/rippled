@@ -53,7 +53,7 @@ enum TxType
     ttCHECK_CREATE      = 16,
     ttCHECK_CASH        = 17,
     ttCHECK_CANCEL      = 18,
-
+    ttDEPOSIT_PREAUTH   = 19,
     ttTRUST_SET         = 20,
 
     ttAMENDMENT         = 100,
