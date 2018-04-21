@@ -17,9 +17,6 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#endif
-
 #include <ripple/beast/net/IPEndpoint.h>
 #include <boost/algorithm/string.hpp>
 

@@ -22,26 +22,6 @@
 
 #if RIPPLE_ROCKSDB_AVAILABLE
 
-#if BEAST_WIN32
-# define ROCKSDB_PLATFORM_WINDOWS
-#else
-# define ROCKSDB_PLATFORM_POSIX
-# if BEAST_MAC || BEAST_IOS
-#  define OS_MACOSX 1
-# elif BEAST_BSD
-#  define OS_FREEBSD
-# else
-#  define OS_LINUX
-# endif
-#endif
-
-#if BEAST_GCC
-# pragma GCC diagnostic push
-# pragma GCC diagnostic ignored "-Wreorder"
-# pragma GCC diagnostic ignored "-Wunused-variable"
-# pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-#endif
-
 // Compile RocksDB without debugging unless specifically requested
 #if !defined (NDEBUG) && !defined (RIPPLE_DEBUG_ROCKSDB)
 #define NDEBUG

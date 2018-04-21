@@ -7,12 +7,15 @@ set -ex
 __dirname=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 echo "using CC: $CC"
 "${CC}" --version
+export CC
 COMPNAME=$(basename $CC)
 echo "using CXX: ${CXX:-notset}"
 if [[ $CXX ]]; then
   "${CXX}" --version
+  export CXX
 fi
-echo "using TARGET: $TARGET"
+: ${BUILD_TYPE:=Debug}
+echo "BUILD TYPE: $BUILD_TYPE"
 
 # Ensure APP defaults to rippled if it's not set.
 : ${APP:=rippled}
@@ -36,15 +39,18 @@ echo "cmake building ${APP}"
 if [[ ${NINJA_BUILD:-} == true ]]; then
   CMAKE_EXTRA_ARGS+=" -G Ninja"
 fi
-CMAKE_TARGET=${COMPNAME}.${TARGET}
-if [[ ${CI:-} == true ]]; then
-  CMAKE_TARGET=$CMAKE_TARGET.ci
+
+coverage=false
+if [[ "${CMAKE_EXTRA_ARGS}" =~ -Dcoverage=((on)|(ON)) ]] ; then
+    echo "coverage option detected."
+    coverage=true
 fi
+
 #
 # allow explicit setting of the name of the build
-# dir, otherwise default to the CMAKE_TARGET value
+# dir, otherwise default to the compiler.build_type
 #
-: "${BUILD_DIR:=$CMAKE_TARGET}"
+: "${BUILD_DIR:=${COMPNAME}.${BUILD_TYPE}}"
 BUILDARGS=" -j${JOBS}"
 if [[ ${VERBOSE_BUILD:-} == true ]]; then
   CMAKE_EXTRA_ARGS+=" -DCMAKE_VERBOSE_MAKEFILE=ON"
@@ -67,8 +73,8 @@ fi
 
 mkdir -p "build/${BUILD_DIR}"
 pushd "build/${BUILD_DIR}"
-$time cmake ../.. -Dtarget=$CMAKE_TARGET ${CMAKE_EXTRA_ARGS}
-if [[ ${TARGET} == "docs" ]]; then
+$time cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS}
+if [[ ${BUILD_TYPE} == "docs" ]]; then
   $time cmake --build . --target docs -- $BUILDARGS
   ## mimic the standard test output for docs build
   ## to make controlling processes like jenkins happy
@@ -80,18 +86,10 @@ if [[ ${TARGET} == "docs" ]]; then
   exit
 else
   $time cmake --build . -- $BUILDARGS
-  if [[ ${BUILD_BOTH:-} == true ]]; then
-    if [[ ${TARGET} == *.unity ]]; then
-      cmake --build . --target rippled_classic -- $BUILDARGS
-    else
-      cmake --build . --target rippled_unity -- $BUILDARGS
-    fi
-  fi
 fi
 popd
 export APP_PATH="$PWD/build/${BUILD_DIR}/${APP}"
 echo "using APP_PATH: $APP_PATH"
-
 
 # See what we've actually built
 ldd $APP_PATH
@@ -129,7 +127,7 @@ if [[ ${APP} == "rippled" ]]; then
   export LCOV_FILES="*/src/ripple/*"
   # Nothing to explicitly exclude
   export LCOV_EXCLUDE_FILES="LCOV_NO_EXCLUDE"
-  if [[ $TARGET != "coverage" && ${PARALLEL_TESTS:-} == true ]]; then
+  if [[ ${coverage} == false && ${PARALLEL_TESTS:-} == true ]]; then
     APP_ARGS+=" --unittest-jobs ${JOBS}"
   fi
 else
@@ -138,7 +136,7 @@ else
   : ${LCOV_EXCLUDE_FILES:="LCOV_NO_EXCLUDE"}
 fi
 
-if [[ $TARGET == "coverage" ]]; then
+if [[ $coverage == true ]]; then
   export PATH=$PATH:$LCOV_ROOT/usr/bin
 
   # Create baseline coverage data file
@@ -146,16 +144,22 @@ if [[ $TARGET == "coverage" ]]; then
 fi
 
 if [[ ${SKIP_TESTS:-} == true ]]; then
-  echo "skipping tests for ${TARGET}"
+  echo "skipping tests."
   exit
 fi
 
-if [[ $TARGET == debug* && -v GDB_ROOT && -x $GDB_ROOT/bin/gdb ]]; then
+if [[ "${MAX_TIME:-}" == "" ]] ; then
+  tcmd=""
+else
+  tcmd="timeout ${MAX_TIME}"
+fi
+
+if [[ ${DEBUGGER:-true} == "true" && -v GDB_ROOT && -x $GDB_ROOT/bin/gdb ]]; then
   $GDB_ROOT/bin/gdb -v
   # Execute unit tests under gdb, printing a call stack
   # if we get a crash.
   export APP_ARGS
-  $GDB_ROOT/bin/gdb -return-child-result -quiet -batch \
+  $tcmd $GDB_ROOT/bin/gdb -return-child-result -quiet -batch \
                     -ex "set env MALLOC_CHECK_=3" \
                     -ex "set print thread-events off" \
                     -ex run \
@@ -163,10 +167,10 @@ if [[ $TARGET == debug* && -v GDB_ROOT && -x $GDB_ROOT/bin/gdb ]]; then
                     -ex "quit" \
                     --args $APP_PATH $APP_ARGS
 else
-  $APP_PATH $APP_ARGS
+  $tcmd $APP_PATH $APP_ARGS
 fi
 
-if [[ $TARGET == "coverage" ]]; then
+if [[ $coverage == true ]]; then
   # Create test coverage data file
   lcov --no-external -c -d . -o tests.info | grep -v "ignoring data for external file"
 
