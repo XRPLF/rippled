@@ -26,14 +26,11 @@ namespace ripple {
 
 namespace BuildInfo {
 
+//--------------------------------------------------------------------------
+//  The build version number. You must edit this for each release
+//  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
-char const* const versionString =
-
-    //--------------------------------------------------------------------------
-    //  The build version number. You must edit this for each release
-    //  and follow the format described at http://semver.org/
-    //
-        "1.1.0-b4"
+char const* const versionString = "1.1.0-b4"
 
 #if defined(DEBUG) || defined(SANITIZER)
        "+"

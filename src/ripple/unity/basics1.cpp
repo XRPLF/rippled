@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2014 Ripple Labs Inc.
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,25 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/beast/core/Config.h>
 
-#ifdef _MSC_VER
-#include <cstddef>
-namespace snappy {
-using ssize_t = std::ptrdiff_t;
-}
-#endif
+#include <ripple/basics/impl/contract.cpp>
+#include <ripple/basics/impl/CountedObject.cpp>
+#include <ripple/basics/impl/Log.cpp>
+#include <ripple/basics/impl/strHex.cpp>
+#include <ripple/basics/impl/StringUtilities.cpp>
 
-#if BEAST_CLANG
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-function"
-#pragma clang diagnostic ignored "-Wdeprecated"
-#endif
-
-#include <snappy/snappy/snappy.cc>
-#include <snappy/snappy/snappy-sinksource.cc>
-#include <snappy/snappy/snappy-stubs-internal.cc>
-
-#if BEAST_CLANG
-#pragma clang diagnostic pop
+#if DOXYGEN
+#include <ripple/basics/README.md>
 #endif

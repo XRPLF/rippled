@@ -110,26 +110,26 @@ try {
 
     stage ('Parallel Build') {
         String[][] variants = [
-            ['gcc.release.unity', '-Dassert=true', 'MANUAL_TESTS=true'],
-            ['coverage'],
-            ['docs'],
-            ['msvc.debug'],
-            // This one does not currently build (TBD):
-            //['msvc.debug.nounity'],
-            ['msvc.debug', '', 'PROJECT_NAME=rippled_classic'],
-            ['msvc.release'],
-            ['clang.debug.unity'],
-            ['clang.debug.unity', '', 'PARALLEL_TESTS=false'],
-            ['clang.debug.nounity'],
-            ['gcc.debug.unity'],
-            ['gcc.debug.nounity'],
-            ['clang.release.unity', '-Dassert=true'],
-            ['gcc.release.unity', '-Dassert=true'],
-            // add a static build just to make sure it works
-            ['gcc.debug.unity', '-Dstatic=true'],
-            // TODO - sanitizer runs currently fail
-            //['gcc.debug.nounity' , '-Dsan=address', 'PARALLEL_TESTS=false'],
-            //['gcc.debug.nounity' , '-Dsan=thread',  'PARALLEL_TESTS=false'],
+            ['gcc.Release'    ,'-Dassert=ON'     ,'MANUAL_TESTS=true'     ],
+            ['gcc.Debug'      ,'-Dcoverage=ON'                            ],
+            ['docs'                                                       ],
+            ['msvc.Debug'                                                 ],
+            ['msvc.Debug'     ,''                ,'NINJA_BUILD=true'      ],
+            ['msvc.Debug'     ,'-Dunity=OFF'                              ],
+            ['msvc.Release'                                               ],
+            ['clang.Debug'                                                ],
+            ['clang.Debug'    ,'-Dunity=OFF'                              ],
+            ['gcc.Debug'                                                  ],
+            ['gcc.Debug'      ,'-Dunity=OFF'                              ],
+            ['clang.Release'  ,'-Dassert=ON'                              ],
+            ['gcc.Release'    ,'-Dassert=ON'                              ],
+            ['gcc.Debug'      ,'-Dstatic=OFF'                             ],
+            ['gcc.Debug'      ,'-Dstatic=OFF -DBUILD_SHARED_LIBS=ON'      ],
+            ['gcc.Debug'      ,''                ,'NINJA_BUILD=true'      ],
+            ['clang.Debug'      ,'-Dunity=OFF -Dsan=address'   ,'PARALLEL_TESTS=false', 'DEBUGGER=false'],
+            ['clang.Debug'      ,'-Dunity=OFF -Dsan=undefined' ,'PARALLEL_TESTS=false'],
+            // TODO - tsan runs currently fail/hang
+            //['clang.Debug'      ,'-Dunity=OFF -Dsan=thread'    ,'PARALLEL_TESTS=false'],
         ]
 
         // create a map of all builds
@@ -149,31 +149,31 @@ try {
             bldlabel = bldlabel.replace('=', '_')
 
             def compiler = getFirstPart(bldtype)
-            def target = getSecondPart(bldtype)
-            def config = getFirstPart(target)
-            if (compiler == 'coverage' || compiler == 'docs') {
+            def config = getSecondPart(bldtype)
+            if (compiler == 'docs') {
                 compiler = 'gcc'
             }
             def cc =
                 (compiler == 'clang') ? '/opt/llvm-5.0.1/bin/clang' : 'gcc'
             def cxx =
                 (compiler == 'clang') ? '/opt/llvm-5.0.1/bin/clang++' : 'g++'
-            def ucc = isNoUnity(target) ? 'true' : 'false'
+            def ucc = isNoUnity(cmake_extra) ? 'true' : 'false'
             def node_type =
                 (compiler == 'msvc') ? 'rippled-win' : 'rippled-dev'
             // the default disposition for parallel test..disabled
             // for coverage, enabled otherwise. Can still be overridden
             // by explicitly setting with extra env settings above.
-            def pt = (compiler == 'coverage') ? 'false' : 'true'
+            def pt = isCoverage(cmake_extra) ? 'false' : 'true'
+            def max_minutes = 25
 
             def env_vars = [
-                "TARGET=${target}",
-                "CONFIG_TYPE=${config}",
+                "BUILD_TYPE=${config}",
                 "COMPILER=${compiler}",
                 "PARALLEL_TESTS=${pt}",
                 'BUILD=cmake',
+                "MAX_TIME=${max_minutes}m",
                 "BUILD_DIR=${bldlabel}",
-                "CMAKE_EXTRA_ARGS=${cmake_extra}",
+                "CMAKE_EXTRA_ARGS=-Werr=ON ${cmake_extra}",
                 'VERBOSE_BUILD=true']
 
             builds[bldlabel] = {
@@ -185,8 +185,7 @@ try {
                     def cdir = upDir(pwd())
                     echo "BASEDIR: ${cdir}"
                     echo "COMPILER: ${compiler}"
-                    echo "TARGET: ${target}"
-                    echo "CONFIG: ${config}"
+                    echo "BUILD_TYPE: ${config}"
                     echo "USE_CC: ${ucc}"
                     if (compiler == 'msvc') {
                         env_vars.addAll([
@@ -222,28 +221,33 @@ try {
                         withEnv(env_vars) {
                             myStage(bldlabel)
                             try {
-                                if (compiler == 'msvc') {
-                                    powershell "Remove-Item -Path \"${bldlabel}.txt\" -Force -ErrorAction Ignore"
-                                    // we capture stdout to variable because I could
-                                    // not figure out how to make powershell redirect internally
-                                    output = powershell (
-                                            returnStdout: true,
-                                            script: windowsBuildCmd())
-                                    // if the powershell command fails (has nonzero exit)
-                                    // then the command above throws, we don't get our output,
-                                    // and we never create this output file.
-                                    //  SEE https://issues.jenkins-ci.org/browse/JENKINS-44930
-                                    // Alternatively, figure out how to reliably redirect
-                                    // all output above to a file (Start/Stop transcript does not work)
-                                    writeFile(
-                                        file: "${bldlabel}.txt",
-                                        text: output)
-                                }
-                                else {
-                                    sh "rm -fv ${bldlabel}.txt"
-                                    // execute the bld command in a redirecting shell
-                                    // to capture output
-                                    sh redhatBuildCmd(bldlabel)
+                                timeout(
+                                  time: max_minutes * 2,
+                                  units: 'MINUTES')
+                                {
+                                    if (compiler == 'msvc') {
+                                        powershell "Remove-Item -Path \"${bldlabel}.txt\" -Force -ErrorAction Ignore"
+                                        // we capture stdout to variable because I could
+                                        // not figure out how to make powershell redirect internally
+                                        output = powershell (
+                                                returnStdout: true,
+                                                script: windowsBuildCmd())
+                                        // if the powershell command fails (has nonzero exit)
+                                        // then the command above throws, we don't get our output,
+                                        // and we never create this output file.
+                                        //  SEE https://issues.jenkins-ci.org/browse/JENKINS-44930
+                                        // Alternatively, figure out how to reliably redirect
+                                        // all output above to a file (Start/Stop transcript does not work)
+                                        writeFile(
+                                            file: "${bldlabel}.txt",
+                                            text: output)
+                                    }
+                                    else {
+                                        sh "rm -fv ${bldlabel}.txt"
+                                        // execute the bld command in a redirecting shell
+                                        // to capture output
+                                        sh redhatBuildCmd(bldlabel)
+                                    }
                                 }
                             }
                             finally {
@@ -517,7 +521,13 @@ def getFirstPart(bld) {
 
 @NonCPS
 def isNoUnity(bld) {
-    def matcher = bld =~ /\.nounity\s*$/
+    def matcher = bld =~ /-Dunity=(off|OFF)/
+    matcher ? true : false
+}
+
+@NonCPS
+def isCoverage(bld) {
+    def matcher = bld =~ /-Dcoverage=(on|ON)/
     matcher ? true : false
 }
 
@@ -543,7 +553,7 @@ set -ex
 log_file=''' + "${bldlabel}.txt" + '''
 exec 3>&1 1>>${log_file} 2>&1
 ccache -s
-source /opt/rh/devtoolset-6/enable
+source /opt/rh/devtoolset-7/enable
 /usr/bin/time -p ./bin/ci/ubuntu/build-and-test.sh 2>&1
 ccache -s
 '''
@@ -567,10 +577,10 @@ $sw = [Diagnostics.Stopwatch]::StartNew()
 try {
     Push-Location "build/$env:BUILD_DIR"
     if ($env:NINJA_BUILD -eq "true") {
-        cmake -G"Ninja" -Dtarget="$env:COMPILER.$env:TARGET" -DCMAKE_VERBOSE_MAKEFILE=ON ../..
+        Invoke-Expression "& cmake -G`"Ninja`" -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE -DCMAKE_VERBOSE_MAKEFILE=ON $env:CMAKE_EXTRA_ARGS ../.."
     }
     else {
-        cmake -G"Visual Studio 15 2017 Win64" -Dtarget="$env:COMPILER.$env:TARGET" -DCMAKE_VERBOSE_MAKEFILE=ON ../..
+        Invoke-Expression "& cmake -G`"Visual Studio 15 2017 Win64`" -DCMAKE_VERBOSE_MAKEFILE=ON $env:CMAKE_EXTRA_ARGS ../.."
     }
     if ($LastExitCode -ne 0) { throw "CMake failed" }
 
@@ -583,11 +593,11 @@ try {
         ninja -j $env:NUMBER_OF_PROCESSORS -v
     }
     else {
-        msbuild /fl /m /nr:false /p:Configuration="$env:CONFIG_TYPE" /p:Platform=x64 /p:GenerateFullPaths=True /v:normal /nologo /clp:"ShowCommandLine;DisableConsoleColor" "$env:PROJECT_NAME.vcxproj"
+        msbuild /fl /m /nr:false /p:Configuration="$env:BUILD_TYPE" /p:Platform=x64 /p:GenerateFullPaths=True /v:normal /nologo /clp:"ShowCommandLine;DisableConsoleColor" "$env:PROJECT_NAME.vcxproj"
     }
     if ($LastExitCode -ne 0) { throw "CMake build failed" }
 
-    $exe = "./$env:CONFIG_TYPE/$env:PROJECT_NAME"
+    $exe = "./$env:BUILD_TYPE/$env:PROJECT_NAME"
     if ($env:NINJA_BUILD -eq "true") {
         $exe = "./$env:PROJECT_NAME"
     }
@@ -710,9 +720,24 @@ def reportStatus(label, type, bldurl) {
     def txtcolor =
         fail_count == 0 ? 'DarkGreen' : 'Crimson'
     def shortbld = label
-    shortbld = shortbld.replace('debug', 'dbg')
-    shortbld = shortbld.replace('release', 'rel')
-    shortbld = shortbld.replace('unity', 'un')
+    // this is just an attempt to shorten the
+    // summary text label to the point of absurdity..
+    shortbld = shortbld.replace('Debug', 'dbg')
+    shortbld = shortbld.replace('Release', 'rel')
+    shortbld = shortbld.replace('true', 'Y')
+    shortbld = shortbld.replace('false', 'N')
+    shortbld = shortbld.replace('Dcoverage', 'cov')
+    shortbld = shortbld.replace('Dassert', 'asrt')
+    shortbld = shortbld.replace('Dunity', 'unty')
+    shortbld = shortbld.replace('Dsan=address', 'asan')
+    shortbld = shortbld.replace('Dsan=thread', 'tsan')
+    shortbld = shortbld.replace('Dsan=undefined', 'ubsan')
+    shortbld = shortbld.replace('PARALLEL_TEST', 'PL')
+    shortbld = shortbld.replace('MANUAL_TESTS', 'MAN')
+    shortbld = shortbld.replace('NINJA_BUILD', 'ninja')
+    shortbld = shortbld.replace('DEBUGGER', 'gdb')
+    shortbld = shortbld.replace('ON', 'Y')
+    shortbld = shortbld.replace('OFF', 'N')
     manager.addShortText(
         "${shortbld}: ${st}, t: ${time}",
         txtcolor,

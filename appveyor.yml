@@ -5,7 +5,7 @@ environment:
   # that it's a small download. We also use appveyor's free cache, avoiding fees
   # downloading from S3 each time.
   # TODO: script to create this package.
-  RIPPLED_DEPS_PATH: rippled_deps17.03
+  RIPPLED_DEPS_PATH: rippled_deps17.04
   RIPPLED_DEPS_URL: https://ripple.github.io/Downloads/appveyor/%RIPPLED_DEPS_PATH%.zip
 
   # CMake honors these environment variables, setting the include/lib paths.
@@ -72,7 +72,7 @@ build_script:
           "$cmake_target"
           New-Item -ItemType Directory -Force -Path "build/$cmake_target"
           Push-Location "build/$cmake_target"
-          cmake -G"Visual Studio 15 2017 Win64" -Dtarget="$cmake_target" ../..
+          cmake -G"Visual Studio 15 2017 Win64" ../..
           if ($LastExitCode -ne 0) { throw "CMake failed" }
           cmake --build . --config $env:buildconfig -- -m
           if ($LastExitCode -ne 0) { throw "CMake build failed" }

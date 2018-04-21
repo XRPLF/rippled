@@ -104,15 +104,16 @@ cd my_build
 followed by:
 
 ```
-cmake -Dtarget=gcc.debug.unity ..
+cmake -DCMAKE_BUILD_TYPE=Debug ..
 ```
 
-The target variable can be adjusted as needed for `gcc` vs `clang`, `debug` vs.
-`release` and `unity` vs. `nounity` builds. `unity` builds are faster to
-compile since they combine multiple sources into a single compiliation unit.
-`nounity` builds can be helpful for detecting include omissions or for finding
-other build-related issues, but aren't generally needed for testing and
-running.
+`CMAKE_BUILD_TYPE` can be changed as desired for `Debug` vs.
+`Release` builds (all four standard cmake build types are supported).
+
+To select a different compiler (most likely gcc will be found by default), pass 
+`-DCMAKE_C_COMPILER=<path/to/c-compiler>` and
+`-DCMAKE_CXX_COMPILER=</path/to/cxx-compiler>` when configuring. If you prefer, 
+you can instead set `CC` and `CXX` environment variables which cmake will honor.
 
 Once you have generated the build system, you can run the build via cmake:
 
@@ -130,14 +131,93 @@ properly configured) or to run unit tests.
 
 #### Options During Configuration:
 
-There are a number of config variables that our CMake files support. These
-can be added to the cmake generation command as needed:
+The CMake file defines a number of configure-time options which can be
+examined by running `cmake-gui` or `ccmake` to generated the build. In
+particular, the `unity` option allows you to select between the unity and
+non-unity builds. `unity` builds are faster to compile since they combine
+multiple sources into a single compiliation unit - this is the default if you
+don't specify. `nounity` builds can be helpful for detecting include omissions
+or for finding other build-related issues, but aren't generally needed for
+testing and running.
 
+* `-Dunity=ON` to enable/disable unity builds (defaults to ON)  
 * `-Dassert=ON` to enable asserts
 * `-Djemalloc=ON` to enable jemalloc support for heap checking
 * `-Dsan=thread` to enable the thread sanitizer with clang
 * `-Dsan=address` to enable the address sanitizer with clang
 * `-Dstatic=ON` to enable static linking library dependencies
+
+Several other infrequently used options are available - run `ccmake` or
+`cmake-gui` for a list of all options.
+
+#### Optional Installation
+
+The rippled cmake build supports an installation target that will install
+rippled as well as a support library that can be used to sign transactions. In
+order to build and install the files, specify the `install` target when
+building, e.g.:
+
+```
+cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/opt/local ..
+cmake --build . --target install -- -j <parallel jobs>
+```
+
+We recommend specifying `CMAKE_INSTALL_PREFIX` when configuring in order to
+explicitly control the install location for your files. Without this setting,
+cmake will typically install in `/usr/local`. It is also possible to "rehome"
+the installation by specifying the `DESTDIR` env variable during the install phase,
+e.g.:
+
+```
+DESTDIR=~/mylibs cmake --build . --target install -- -j <parallel jobs>
+```
+
+in which case, the files would be installed in the `CMAKE_INSTALL_PREFIX` within
+the specified `DESTDIR` path.
+
+#### Signing Library
+
+If you want to use the signing support library to create an application, there
+are two simple mechanisms with cmake + git that facilitate this.
+
+With either option below, you will have access to a library from the
+rippled project that you can link to in your own project's CMakeLists.txt, e.g.:
+
+```
+target_link_libraries (my-signing-app Ripple::xrpl_core)
+```
+
+##### Option 1: git submodules + add_subdirectory
+
+First, add the rippled repo as a submodule to your project repo:
+
+```
+git submodule add -b master https://github.com/ripple/rippled.git vendor/rippled
+```
+
+change the `vendor/rippled` path as desired for your repo layout. Furthermore,
+change the branch name if you want to track a different rippled branch, such
+as `develop`.
+   
+Second, to bring this submodule into your project, just add the rippled subdirectory:
+
+```
+add_subdirectory (vendor/rippled)
+```
+    
+##### Option 2: installed rippled + find_package
+
+First, follow the "Optional Installation" instructions above to
+build and install the desired version of rippled.
+
+To make use of the installed files, add the following to your CMakeLists.txt file:
+
+```
+set (CMAKE_MODULE_PATH /opt/local/lib/cmake/ripple ${CMAKE_MODULE_PATH})
+find_package(Ripple REQUIRED)
+```
+
+change the `/opt/local` module path above to match your chosen installation prefix.
 
 ## Unit Tests (Recommended)
 

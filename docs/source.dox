@@ -137,8 +137,9 @@ INPUT                  = \
     ../docs/HeapProfiling.md \
     ../docs/Docker.md \
     ../docs/consensus.md \
-    ../Builds/XCode/README.md \
-    ../Builds/VisualStudio2015/README.md \
+    ../Builds/macos/README.md \
+    ../Builds/linux/README.md \
+    ../Builds/VisualStudio2017/README.md \
     ../src/ripple/consensus/README.md \
     ../src/ripple/app/consensus/README.md \
     ../src/test/csf/README.md \
