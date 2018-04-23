@@ -42,16 +42,6 @@ class Application;
 */
 class LoadManager : public Stoppable
 {
-public:
-    // It would be better if the LoadManager constructor could be private
-    // with std::make_unique as a friend.  But Visual Studio can't currently
-    // swallow the following friend declaration (Microsoft (R) C/C++
-    // Optimizing Compiler Version 19.00.23026 for x64).  So we make the
-    // constructor public.
-//  template<class T, class... Args>
-//  friend std::unique_ptr<T> std::make_unique (Args&&... args);
-
-    // Should only be constructible by std::make_unique.
     LoadManager (Application& app, Stoppable& parent, beast::Journal journal);
 
 public:
@@ -105,9 +95,13 @@ private:
     std::thread thread_;
     std::mutex mutex_;          // Guards deadLock_, armed_, and stop_.
 
-    int deadLock_;              // Detect server deadlocks.
+    UptimeClock::time_point deadLock_;  // Detect server deadlocks.
     bool armed_;
     bool stop_;
+
+    friend
+    std::unique_ptr<LoadManager>
+    make_LoadManager(Application& app, Stoppable& parent, beast::Journal journal);
 };
 
 std::unique_ptr<LoadManager>

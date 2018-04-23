@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/Log.h>
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/date.h>
 #include <ripple/core/LoadMonitor.h>
 
@@ -52,7 +52,7 @@ LoadMonitor::LoadMonitor (beast::Journal j)
     , mLatencyMSPeak (0)
     , mTargetLatencyAvg (0)
     , mTargetLatencyPk (0)
-    , mLastUpdate (UptimeTimer::getInstance ().getElapsedSeconds ())
+    , mLastUpdate (UptimeClock::now())
     , j_ (j)
 {
 }
@@ -66,12 +66,12 @@ LoadMonitor::LoadMonitor (beast::Journal j)
 void LoadMonitor::update ()
 {
     using namespace std::chrono_literals;
-    int now = UptimeTimer::getInstance ().getElapsedSeconds ();
+    auto now = UptimeClock::now();
     if (now == mLastUpdate) // current
         return;
 
     // VFALCO TODO Why 8?
-    if ((now < mLastUpdate) || (now > (mLastUpdate + 8)))
+    if ((now < mLastUpdate) || (now > (mLastUpdate + 8s)))
     {
         // way out of date
         mCounts = 0;
@@ -93,7 +93,7 @@ void LoadMonitor::update ()
     */
     do
     {
-        ++mLastUpdate;
+        mLastUpdate += 1s;
         mCounts -= ((mCounts + 3) / 4);
         mLatencyEvents -= ((mLatencyEvents + 3) / 4);
         mLatencyMSAvg -= (mLatencyMSAvg / 4);

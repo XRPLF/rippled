@@ -41,7 +41,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/basics/PerfLog.h>
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/crypto/RFC1751.h>
@@ -2335,7 +2335,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin, bool counters)
     }
 
     info[jss::state_accounting] = accounting_.json();
-    info[jss::uptime] = UptimeTimer::getInstance ().getElapsedSeconds ();
+    info[jss::uptime] = UptimeClock::now().time_since_epoch().count();
     info[jss::jq_trans_overflow] = std::to_string(
         app_.overlay().getJqTransOverflow());
     info[jss::peer_disconnects] = std::to_string(

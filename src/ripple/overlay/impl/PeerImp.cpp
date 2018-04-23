@@ -30,7 +30,7 @@
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/random.h>
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/nodestore/DatabaseShard.h>
@@ -1864,7 +1864,7 @@ PeerImp::doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet
     memcpy (hash.begin (), packet->ledgerhash ().data (), 32);
 
     std::weak_ptr<PeerImp> weak = shared_from_this();
-    auto elapsed = UptimeTimer::getInstance().getElapsedSeconds();
+    auto elapsed = UptimeClock::now();
     auto const pap = &app_;
     app_.getJobQueue ().addJob (
         jtPACK, "MakeFetchPack",

@@ -22,7 +22,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/json/json_value.h>
 #include <ripple/ledger/CachedSLEs.h>
@@ -36,10 +36,11 @@
 namespace ripple {
 
 static
-void textTime (
-    std::string& text, int& seconds, const char* unitName, int unitVal)
+void
+textTime(std::string& text, UptimeClock::time_point& seconds,
+         const char* unitName, std::chrono::seconds unitVal)
 {
-    int i = seconds / unitVal;
+    auto i = seconds.time_since_epoch() / unitVal;
 
     if (i == 0)
         return;
@@ -111,12 +112,12 @@ Json::Value doGetCounts (RPC::Context& context)
     ret[jss::treenode_track_size] = context.app.family().treecache().getTrackSize();
 
     std::string uptime;
-    int s = UptimeTimer::getInstance ().getElapsedSeconds ();
-    textTime (uptime, s, "year", 365 * 24 * 60 * 60);
-    textTime (uptime, s, "day", 24 * 60 * 60);
-    textTime (uptime, s, "hour", 60 * 60);
-    textTime (uptime, s, "minute", 60);
-    textTime (uptime, s, "second", 1);
+    auto s = UptimeClock::now();
+    textTime (uptime, s, "year", 365 * 24h);
+    textTime (uptime, s, "day", 24h);
+    textTime (uptime, s, "hour", 1h);
+    textTime (uptime, s, "minute", 1min);
+    textTime (uptime, s, "second", 1s);
     ret[jss::uptime] = uptime;
 
     ret[jss::node_writes] = context.app.getNodeStore().getStoreCount();

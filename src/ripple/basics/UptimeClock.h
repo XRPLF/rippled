@@ -17,66 +17,52 @@
 */
 //==============================================================================
 
-#include <ripple/basics/UptimeTimer.h>
+#ifndef RIPPLE_BASICS_UPTIMETIMER_H_INCLUDED
+#define RIPPLE_BASICS_UPTIMETIMER_H_INCLUDED
 
 #include <atomic>
+#include <chrono>
+#include <ratio>
+#include <thread>
 
 namespace ripple {
 
-UptimeTimer::UptimeTimer ()
-    : m_elapsedTime (0)
-    , m_startTime (::time (0))
-    , m_isUpdatingManually (false)
-{
-}
+/** Tracks program uptime to seconds precision.
 
-UptimeTimer::~UptimeTimer ()
-{
-}
+    The timer caches the current time as a performance optimization.
+    This allows clients to query the current time thousands of times
+    per second.
+*/
 
-int UptimeTimer::getElapsedSeconds () const
+class UptimeClock
 {
-    int result;
+public:
+    using rep        = int;
+    using period     = std::ratio<1>;
+    using duration   = std::chrono::duration<rep, period>;
+    using time_point = std::chrono::time_point<UptimeClock>;
+    static constexpr bool is_steady = std::chrono::system_clock::is_steady;
 
-    if (m_isUpdatingManually)
+    explicit UptimeClock() = default;
+
+    static time_point now();  // seconds since rippled program start
+
+private:
+    static std::atomic<rep>  now_;
+    static std::atomic<bool> stop_;
+
+    struct update_thread
+        : private std::thread
     {
-        std::atomic_thread_fence (std::memory_order_seq_cst);
-        result = m_elapsedTime;
-    }
-    else
-    {
-        // VFALCO TODO use time_t instead of int return
-        result = static_cast <int> (::time (0) - m_startTime);
-    }
+        ~update_thread();
+        update_thread(update_thread&&) = default;
 
-    return result;
-}
+        using std::thread::thread;
+    };
 
-void UptimeTimer::beginManualUpdates ()
-{
-    //assert (!m_isUpdatingManually);
-
-    m_isUpdatingManually = true;
-}
-
-void UptimeTimer::endManualUpdates ()
-{
-    //assert (m_isUpdatingManually);
-
-    m_isUpdatingManually = false;
-}
-
-void UptimeTimer::incrementElapsedTime ()
-{
-    //assert (m_isUpdatingManually);
-    ++m_elapsedTime;
-}
-
-UptimeTimer& UptimeTimer::getInstance ()
-{
-    static UptimeTimer instance;
-
-    return instance;
-}
+    static update_thread start_clock();
+};
 
 } // ripple
+
+#endif
