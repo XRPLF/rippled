@@ -19,64 +19,53 @@
 
 #include <ripple/basics/UptimeTimer.h>
 
-#include <atomic>
-
 namespace ripple {
 
-UptimeTimer::UptimeTimer ()
-    : m_elapsedTime (0)
-    , m_startTime (::time (0))
-    , m_isUpdatingManually (false)
-{
-}
+std::atomic<UptimeClock::rep>  UptimeClock::now_{0};      // seconds since start
+std::atomic<bool>              UptimeClock::stop_{false}; // stop update thread
 
-UptimeTimer::~UptimeTimer ()
+// On rippled shutdown, cancel and wait for the update thread
+UptimeClock::update_thread::~update_thread()
 {
-}
-
-int UptimeTimer::getElapsedSeconds () const
-{
-    int result;
-
-    if (m_isUpdatingManually)
+    if (joinable())
     {
-        std::atomic_thread_fence (std::memory_order_seq_cst);
-        result = m_elapsedTime;
+        stop_ = true;
+        join();
     }
-    else
-    {
-        // VFALCO TODO use time_t instead of int return
-        result = static_cast <int> (::time (0) - m_startTime);
-    }
-
-    return result;
 }
 
-void UptimeTimer::beginManualUpdates ()
+// Launch the update thread
+UptimeClock::update_thread
+UptimeClock::start_clock()
 {
-    //assert (!m_isUpdatingManually);
+    return update_thread{[]
+                         {
+                             using namespace std;
+                             using namespace std::chrono;
 
-    m_isUpdatingManually = true;
+                             // Wake up every second and update now_
+                             auto next = system_clock::now() + 1s;
+                             while (!stop_)
+                             {
+                                 this_thread::sleep_until(next);
+                                 next += 1s;
+                                 ++now_;
+                             }
+                         }};
 }
 
-void UptimeTimer::endManualUpdates ()
+// This actually measures time since first use, instead of since rippled start.
+// However the difference between these two epochs is a small fraction of a second
+// and unimportant.
+
+UptimeClock::time_point
+UptimeClock::now()
 {
-    //assert (m_isUpdatingManually);
+    // start the update thread on first use
+    static const auto init = start_clock();
 
-    m_isUpdatingManually = false;
-}
-
-void UptimeTimer::incrementElapsedTime ()
-{
-    //assert (m_isUpdatingManually);
-    ++m_elapsedTime;
-}
-
-UptimeTimer& UptimeTimer::getInstance ()
-{
-    static UptimeTimer instance;
-
-    return instance;
+    // Return the number of seconds since rippled start
+    return time_point{duration{now_}};
 }
 
 } // ripple

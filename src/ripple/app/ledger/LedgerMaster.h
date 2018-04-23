@@ -243,7 +243,7 @@ public:
         std::weak_ptr<Peer> const& wPeer,
         std::shared_ptr<protocol::TMGetObjectByHash> const& request,
         uint256 haveLedgerHash,
-        std::uint32_t uUptime);
+        UptimeClock::time_point uUptime);
 
     std::size_t getFetchPackCacheSize () const;
 

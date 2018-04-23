@@ -226,10 +226,9 @@ public:
 
         @return `true` if we are stopping
     */
-    template <class Rep, class Period>
     bool
-    alertable_sleep_for(
-        std::chrono::duration<Rep, Period> const& d);
+    alertable_sleep_until(
+        std::chrono::system_clock::time_point const& t);
 
 protected:
     /** Called by derived classes to indicate that the stoppable has stopped. */
@@ -373,10 +372,9 @@ public:
 
         @return `true` if we are stopping
     */
-    template <class Rep, class Period>
     bool
-    alertable_sleep_for(
-        std::chrono::duration<Rep, Period> const& d);
+    alertable_sleep_until(
+        std::chrono::system_clock::time_point const& t);
 
 private:
     /*  Notify a root stoppable and children to stop, without waiting.
@@ -407,23 +405,23 @@ JobCounter& Stoppable::jobCounter ()
 
 //------------------------------------------------------------------------------
 
-template <class Rep, class Period>
+inline
 bool
-RootStoppable::alertable_sleep_for(
-    std::chrono::duration<Rep, Period> const& d)
+RootStoppable::alertable_sleep_until(
+    std::chrono::system_clock::time_point const& t)
 {
     std::unique_lock<std::mutex> lock(m_);
     if (m_calledStop)
         return true;
-    return c_.wait_for(lock, d, [this]{return m_calledStop.load();});
+    return c_.wait_until(lock, t, [this]{return m_calledStop.load();});
 }
 
-template <class Rep, class Period>
+inline
 bool
-Stoppable::alertable_sleep_for(
-    std::chrono::duration<Rep, Period> const& d)
+Stoppable::alertable_sleep_until(
+    std::chrono::system_clock::time_point const& t)
 {
-    return m_root.alertable_sleep_for(d);
+    return m_root.alertable_sleep_until(t);
 }
 
 } // ripple

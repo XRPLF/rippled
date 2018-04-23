@@ -20,6 +20,7 @@
 #ifndef RIPPLE_CORE_LOADMONITOR_H_INCLUDED
 #define RIPPLE_CORE_LOADMONITOR_H_INCLUDED
 
+#include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/LoadEvent.h>
 #include <ripple/beast/utility/Journal.h>
 #include <chrono>
@@ -73,7 +74,7 @@ private:
     std::chrono::milliseconds mLatencyMSPeak;
     std::chrono::milliseconds mTargetLatencyAvg;
     std::chrono::milliseconds mTargetLatencyPk;
-    int                       mLastUpdate;
+    UptimeClock::time_point   mLastUpdate;
     beast::Journal j_;
 };
 
