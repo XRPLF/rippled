@@ -71,7 +71,7 @@ ApplyContext::visit (std::function <void (
 }
 
 TER
-ApplyContext::failInvariantCheck (TER result)
+ApplyContext::failInvariantCheck (TER const result)
 {
     // If we already failed invariant checks before and we are now attempting to
     // only charge a fee, and even that fails the invariant checks something is
@@ -86,8 +86,8 @@ ApplyContext::failInvariantCheck (TER result)
 template<std::size_t... Is>
 TER
 ApplyContext::checkInvariantsHelper(
-    TER result,
-    XRPAmount fee,
+    TER const result,
+    XRPAmount const fee,
     std::index_sequence<Is...>)
 {
     if (view_->rules().enabled(featureEnforceInvariants))
@@ -123,7 +123,7 @@ ApplyContext::checkInvariantsHelper(
                     "Transaction has failed one or more invariants: " <<
                     to_string(tx.getJson (0));
 
-                result = failInvariantCheck (result);
+                return failInvariantCheck (result);
             }
         }
         catch(std::exception const& ex)
@@ -133,7 +133,7 @@ ApplyContext::checkInvariantsHelper(
                 ", ex: " << ex.what() <<
                 ", tx: " << to_string(tx.getJson (0));
 
-            result = failInvariantCheck (result);
+            return failInvariantCheck (result);
         }
     }
 
@@ -141,7 +141,7 @@ ApplyContext::checkInvariantsHelper(
 }
 
 TER
-ApplyContext::checkInvariants(TER result, XRPAmount fee)
+ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
 {
     assert (isTesSuccess(result) || isTecClaim(result));
 

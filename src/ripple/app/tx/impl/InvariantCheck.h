@@ -75,8 +75,8 @@ public:
     bool
     finalize(
         STTx const& tx,
-        TER tec,
-        XRPAmount fee,
+        TER const tec,
+        XRPAmount const fee,
         beast::Journal const& j);
 };
 #endif
@@ -98,7 +98,7 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, beast::Journal const&);
 };
 
 /**
@@ -122,7 +122,7 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, beast::Journal const&);
 };
 
 /**
@@ -145,7 +145,7 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, beast::Journal const&);
 };
 
 /**
@@ -168,7 +168,7 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, beast::Journal const&);
 };
 
 /**
@@ -189,7 +189,7 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, beast::Journal const&);
 };
 
 /**
@@ -211,7 +211,7 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, beast::Journal const&);
 };
 
 /**
@@ -234,7 +234,7 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, beast::Journal const&);
 
 };
 
@@ -255,7 +255,7 @@ public:
         std::shared_ptr<SLE const> const&);
 
     bool
-    finalize(STTx const&, TER, XRPAmount, beast::Journal const&);
+    finalize(STTx const&, TER const, XRPAmount const, beast::Journal const&);
 
 };
 

@@ -35,8 +35,8 @@ TransactionFeeCheck::visitEntry(
 bool
 TransactionFeeCheck::finalize(
     STTx const& tx,
-    TER result,
-    XRPAmount fee,
+    TER const result,
+    XRPAmount const fee,
     beast::Journal const& j)
 {
     // We should never charge a negative fee
@@ -124,8 +124,8 @@ XRPNotCreated::visitEntry(
 bool
 XRPNotCreated::finalize(
     STTx const& tx,
-    TER,
-    XRPAmount fee,
+    TER const,
+    XRPAmount const fee,
     beast::Journal const& j)
 {
     // The net change should never be positive, as this would mean that the
@@ -185,7 +185,7 @@ XRPBalanceChecks::visitEntry(
 }
 
 bool
-XRPBalanceChecks::finalize(STTx const&, TER, XRPAmount, beast::Journal const& j)
+XRPBalanceChecks::finalize(STTx const&, TER const, XRPAmount const, beast::Journal const& j)
 {
     if (bad_)
     {
@@ -226,7 +226,7 @@ NoBadOffers::visitEntry(
 }
 
 bool
-NoBadOffers::finalize(STTx const& tx, TER, XRPAmount, beast::Journal const& j)
+NoBadOffers::finalize(STTx const& tx, TER const, XRPAmount const, beast::Journal const& j)
 {
     if (bad_)
     {
@@ -268,7 +268,7 @@ NoZeroEscrow::visitEntry(
 }
 
 bool
-NoZeroEscrow::finalize(STTx const& tx, TER, XRPAmount, beast::Journal const& j)
+NoZeroEscrow::finalize(STTx const& tx, TER const, XRPAmount const, beast::Journal const& j)
 {
     if (bad_)
     {
@@ -293,7 +293,7 @@ AccountRootsNotDeleted::visitEntry(
 }
 
 bool
-AccountRootsNotDeleted::finalize(STTx const&, TER, XRPAmount, beast::Journal const& j)
+AccountRootsNotDeleted::finalize(STTx const&, TER const, XRPAmount const, beast::Journal const& j)
 {
     if (! accountDeleted_)
         return true;
@@ -339,7 +339,7 @@ LedgerEntryTypesMatch::visitEntry(
 }
 
 bool
-LedgerEntryTypesMatch::finalize(STTx const&, TER, XRPAmount, beast::Journal const& j)
+LedgerEntryTypesMatch::finalize(STTx const&, TER const, XRPAmount const, beast::Journal const& j)
 {
     if ((! typeMismatch_) && (! invalidTypeAdded_))
         return true;
@@ -378,7 +378,7 @@ NoXRPTrustLines::visitEntry(
 }
 
 bool
-NoXRPTrustLines::finalize(STTx const&, TER, XRPAmount, beast::Journal const& j)
+NoXRPTrustLines::finalize(STTx const&, TER const, XRPAmount const, beast::Journal const& j)
 {
     if (! xrpTrustLine_)
         return true;

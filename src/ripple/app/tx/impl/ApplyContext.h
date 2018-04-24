@@ -108,15 +108,15 @@ public:
         @return the result code that should be returned for this transaction.
      */
     TER
-    checkInvariants(TER result, XRPAmount fee);
+    checkInvariants(TER const result, XRPAmount const fee);
 
 private:
     TER
-    failInvariantCheck (TER result);
+    failInvariantCheck (TER const result);
 
     template<std::size_t... Is>
     TER
-    checkInvariantsHelper(TER result, XRPAmount fee, std::index_sequence<Is...>);
+    checkInvariantsHelper(TER const result, XRPAmount const fee, std::index_sequence<Is...>);
 
     OpenView& base_;
     ApplyFlags flags_;
