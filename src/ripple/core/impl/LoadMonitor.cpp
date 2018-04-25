@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/Log.h>
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/date.h>
 #include <ripple/core/LoadMonitor.h>
 

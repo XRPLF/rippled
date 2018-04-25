@@ -22,7 +22,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/json/json_value.h>
 #include <ripple/ledger/CachedSLEs.h>

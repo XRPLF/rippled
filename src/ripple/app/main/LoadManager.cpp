@@ -21,7 +21,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/json/to_string.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <memory>
@@ -106,7 +106,6 @@ void LoadManager::run ()
 
     using clock_type = std::chrono::system_clock;
 
-    // Initialize the clock to the current time.
     auto t = clock_type::now();
     bool stop = false;
 
@@ -121,12 +120,8 @@ void LoadManager::run ()
             sl.unlock();
 
             // Measure the amount of time we have been deadlocked, in seconds.
-            //
-            // VFALCO NOTE deadLock_ is a canary for detecting the condition.
             auto const timeSpentDeadlocked = UptimeClock::now() - deadLock;
 
-            // VFALCO NOTE I think that "armed" refers to the deadlock detector.
-            //
             auto const reportingIntervalSeconds = 10s;
             if (armed && (timeSpentDeadlocked >= reportingIntervalSeconds))
             {

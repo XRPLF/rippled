@@ -30,7 +30,7 @@
 #include <ripple/basics/impl/strHex.cpp>
 #include <ripple/basics/impl/StringUtilities.cpp>
 #include <ripple/basics/impl/Sustain.cpp>
-#include <ripple/basics/impl/UptimeTimer.cpp>
+#include <ripple/basics/impl/UptimeClock.cpp>
 
 #if DOXYGEN
 #include <ripple/basics/README.md>

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/UptimeClock.h>
 
 namespace ripple {
 
@@ -30,6 +30,8 @@ UptimeClock::update_thread::~update_thread()
     if (joinable())
     {
         stop_ = true;
+        // This join() may take up to a 1s, but happens only
+        // once at rippled shutdown.
         join();
     }
 }

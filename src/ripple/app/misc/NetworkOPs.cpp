@@ -41,7 +41,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/basics/PerfLog.h>
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/crypto/RFC1751.h>

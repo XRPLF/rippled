@@ -30,7 +30,7 @@
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/random.h>
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/nodestore/DatabaseShard.h>

@@ -36,7 +36,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/TaggedCache.h>
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
@@ -1792,9 +1792,9 @@ LedgerMaster::makeFetchPack (
     std::weak_ptr<Peer> const& wPeer,
     std::shared_ptr<protocol::TMGetObjectByHash> const& request,
     uint256 haveLedgerHash,
-     UptimeClock::time_point uUptime)
+     UptimeClock::time_point uptime)
 {
-    if (UptimeClock::now() > uUptime + 1s)
+    if (UptimeClock::now() > uptime + 1s)
     {
         JLOG(m_journal.info()) << "Fetch pack request got stale";
         return;
@@ -1916,7 +1916,7 @@ LedgerMaster::makeFetchPack (
             wantLedger = getLedgerByHash (haveLedger->info().parentHash);
         }
         while (wantLedger &&
-               UptimeClock::now() <= uUptime + 1s);
+               UptimeClock::now() <= uptime + 1s);
 
         JLOG(m_journal.info())
             << "Built fetch pack with " << reply.objects ().size () << " nodes";
