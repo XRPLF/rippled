@@ -377,6 +377,132 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
     }
 
+    void testLedgerEntryDepositPreauth()
+    {
+        testcase ("ledger_entry Request Directory");
+        using namespace test::jtx;
+        Env env {*this};
+        Account const alice {"alice"};
+        Account const becky {"becky"};
+
+        env.fund (XRP(10000), alice, becky);
+        env.close();
+
+        env (deposit::auth (alice, becky));
+        env.close();
+
+        std::string const ledgerHash {to_string (env.closed()->info().hash)};
+        std::string depositPreauthIndex;
+        {
+            // Request a depositPreauth by owner and authorized.
+            Json::Value jvParams;
+            jvParams[jss::deposit_preauth][jss::owner] = alice.human();
+            jvParams[jss::deposit_preauth][jss::authorized] = becky.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc (
+                "json", "ledger_entry", to_string (jvParams))[jss::result];
+
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == "DepositPreauth");
+            BEAST_EXPECT(jrr[jss::node][sfAccount.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfAuthorize.jsonName] == becky.human());
+            depositPreauthIndex = jrr[jss::node][jss::index].asString();
+        }
+        {
+            // Request a depositPreauth by index.
+            Json::Value jvParams;
+            jvParams[jss::deposit_preauth] = depositPreauthIndex;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc (
+                "json", "ledger_entry", to_string (jvParams))[jss::result];
+
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == "DepositPreauth");
+            BEAST_EXPECT(jrr[jss::node][sfAccount.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfAuthorize.jsonName] == becky.human());
+        }
+        {
+            // Malformed request: deposit_preauth neither object nor string.
+            Json::Value jvParams;
+            jvParams[jss::deposit_preauth] = -5;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc (
+                "json", "ledger_entry", to_string (jvParams))[jss::result];
+            checkErrorValue (jrr, "malformedRequest", "");
+        }
+        {
+            // Malformed request: deposit_preauth not hex string.
+            Json::Value jvParams;
+            jvParams[jss::deposit_preauth] = "0123456789ABCDEFG";
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc (
+                "json", "ledger_entry", to_string (jvParams))[jss::result];
+            checkErrorValue (jrr, "malformedRequest", "");
+        }
+        {
+            // Malformed request: missing [jss::deposit_preauth][jss::owner]
+            Json::Value jvParams;
+            jvParams[jss::deposit_preauth][jss::authorized] = becky.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc (
+                "json", "ledger_entry", to_string (jvParams))[jss::result];
+            checkErrorValue (jrr, "malformedRequest", "");
+        }
+        {
+            // Malformed request: [jss::deposit_preauth][jss::owner] not string.
+            Json::Value jvParams;
+            jvParams[jss::deposit_preauth][jss::owner] = 7;
+            jvParams[jss::deposit_preauth][jss::authorized] = becky.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc (
+                "json", "ledger_entry", to_string (jvParams))[jss::result];
+            checkErrorValue (jrr, "malformedRequest", "");
+        }
+        {
+            // Malformed: missing [jss::deposit_preauth][jss::authorized]
+            Json::Value jvParams;
+            jvParams[jss::deposit_preauth][jss::owner] = alice.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc (
+                "json", "ledger_entry", to_string (jvParams))[jss::result];
+            checkErrorValue (jrr, "malformedRequest", "");
+        }
+        {
+            // Malformed: [jss::deposit_preauth][jss::authorized] not string.
+            Json::Value jvParams;
+            jvParams[jss::deposit_preauth][jss::owner] = alice.human();
+            jvParams[jss::deposit_preauth][jss::authorized] = 47;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc (
+                "json", "ledger_entry", to_string (jvParams))[jss::result];
+            checkErrorValue (jrr, "malformedRequest", "");
+        }
+        {
+            // Malformed: [jss::deposit_preauth][jss::owner] is malformed.
+            Json::Value jvParams;
+            jvParams[jss::deposit_preauth][jss::owner] =
+                "rP6P9ypfAmc!pw8SZHNwM4nvZHFXDraQas";
+
+            jvParams[jss::deposit_preauth][jss::authorized] = becky.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc (
+                "json", "ledger_entry", to_string (jvParams))[jss::result];
+            checkErrorValue (jrr, "malformedOwner", "");
+        }
+        {
+            // Malformed: [jss::deposit_preauth][jss::authorized] is malformed.
+            Json::Value jvParams;
+            jvParams[jss::deposit_preauth][jss::owner] = alice.human();
+            jvParams[jss::deposit_preauth][jss::authorized] =
+                "rP6P9ypfAmc!pw8SZHNwM4nvZHFXDraQas";
+
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc (
+                "json", "ledger_entry", to_string (jvParams))[jss::result];
+            checkErrorValue (jrr, "malformedAuthorized", "");
+        }
+    }
+
     void testLedgerEntryDirectory()
     {
         testcase ("ledger_entry Request Directory");
@@ -1385,6 +1511,7 @@ public:
         testLedgerAccounts();
         testLedgerEntryAccountRoot();
         testLedgerEntryCheck();
+        testLedgerEntryDepositPreauth();
         testLedgerEntryDirectory();
         testLedgerEntryEscrow();
         testLedgerEntryGenerator();
