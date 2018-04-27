@@ -619,11 +619,16 @@ docker run --rm \
 cd rpm-out
 tar xvf rippled-*.tar.gz
 ls -la *.rpm
+#################################
+## for now we don't want the src
+## and debugsource rpms for testing
+## or archiving...
+#################################
+rm rippled-debugsource*.rpm
+rm *.src.rpm
 mkdir rpm-main
 cp *.rpm rpm-main
 cd rpm-main
-rm rippled-debugsource*.rpm
-rm *.src.rpm
 cd ../..
 
 cat > test_rpm.sh << "EOL"
@@ -634,15 +639,11 @@ function error {
   exit 1
 }
 
-yum groupinstall -y "Development Tools"
 yum install -y yum-utils
 rpm -i /opt/rippled-rpm/*.rpm
 rc=$?; if [[ $rc != 0 ]]; then
   error "error installing rpms"
 fi
-
-rpm -i rippled-*.src.rpm
-tar -zxf ~/rpmbuild/SOURCES/rippled.tar.gz -C ./
 
 /opt/ripple/bin/rippled --unittest
 rc=$?; if [[ $rc != 0 ]]; then
@@ -660,7 +661,7 @@ chmod +x test_rpm.sh
 
 echo "Running test container"
 
-sudo docker run --rm \
+docker run --rm \
 -v $PWD/rpm-out/rpm-main:/opt/rippled-rpm \
 -v $PWD:/opt/rippled --entrypoint /opt/rippled/test_rpm.sh \
 centos:latest
