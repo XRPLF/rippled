@@ -141,7 +141,8 @@ JSS ( dbKBTotal );                  // out: getCounts
 JSS ( dbKBTransaction );            // out: getCounts
 JSS ( debug_signing );              // in: TransactionSign
 JSS ( delivered_amount );           // out: addPaymentDeliveredAmount
-JSS ( deposit_preauth );            // in: AccountObjects, LedgerData,
+JSS ( deposit_authorized );         // out: deposit_authorized
+JSS ( deposit_preauth );            // in: AccountObjects, LedgerData
 JSS ( deprecated );                 // out
 JSS ( descending );                 // in: AccountTx*
 JSS ( destination_account );        // in: PathRequest, RipplePathFind, account_lines

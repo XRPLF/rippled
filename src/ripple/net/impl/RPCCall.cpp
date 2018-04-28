@@ -403,6 +403,19 @@ private:
         return jvRequest;
     }
 
+    // deposit_authorized <source_account> <destination_account> [<ledger>]
+    Json::Value parseDepositAuthorized (Json::Value const& jvParams)
+    {
+        Json::Value jvRequest (Json::objectValue);
+        jvRequest[jss::source_account] = jvParams[0u].asString ();
+        jvRequest[jss::destination_account] = jvParams[1u].asString ();
+
+        if (jvParams.size () == 3)
+            jvParseLedger (jvRequest, jvParams[2u].asString ());
+
+        return jvRequest;
+    }
+
     // Return an error for attemping to subscribe/unsubscribe via RPC.
     Json::Value parseEvented (Json::Value const& jvParams)
     {
@@ -1071,9 +1084,10 @@ public:
             {   "channel_verify",       &RPCParser::parseChannelVerify,         4,  4   },
             {   "connect",              &RPCParser::parseConnect,               1,  2   },
             {   "consensus_info",       &RPCParser::parseAsIs,                  0,  0   },
+            {   "deposit_authorized",   &RPCParser::parseDepositAuthorized,     2,  3   },
             {   "feature",              &RPCParser::parseFeature,               0,  2   },
             {   "fetch_info",           &RPCParser::parseFetchInfo,             0,  1   },
-            {   "gateway_balances",     &RPCParser::parseGatewayBalances  ,     1,  -1  },
+            {   "gateway_balances",     &RPCParser::parseGatewayBalances,       1, -1   },
             {   "get_counts",           &RPCParser::parseGetCounts,             0,  1   },
             {   "json",                 &RPCParser::parseJson,                  2,  2   },
             {   "json2",                &RPCParser::parseJson2,                 1,  1   },
@@ -1109,12 +1123,12 @@ public:
             {   "validation_seed",      &RPCParser::parseValidationSeed,        0,  1   },
             {   "version",              &RPCParser::parseAsIs,                  0,  0   },
             {   "wallet_propose",       &RPCParser::parseWalletPropose,         0,  1   },
-            {   "internal",             &RPCParser::parseInternal,              1,  -1  },
+            {   "internal",             &RPCParser::parseInternal,              1, -1   },
 
             // Evented methods
-            {   "path_find",            &RPCParser::parseEvented,               -1, -1  },
-            {   "subscribe",            &RPCParser::parseEvented,               -1, -1  },
-            {   "unsubscribe",          &RPCParser::parseEvented,               -1, -1  },
+            {   "path_find",            &RPCParser::parseEvented,              -1, -1   },
+            {   "subscribe",            &RPCParser::parseEvented,              -1, -1   },
+            {   "unsubscribe",          &RPCParser::parseEvented,              -1, -1   },
         };
 
         auto const count = jvParams.size ();
