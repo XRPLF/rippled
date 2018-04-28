@@ -153,7 +153,7 @@ public:
  *                   between 0 and SYSTEM_CURRENCY_START drops, inclusive.
  *
  * We iterate all account roots modified by the transaction and ensure that
- * their XRP balances are sane.
+ * their XRP balances are reasonable.
  */
 class XRPBalanceChecks
 {

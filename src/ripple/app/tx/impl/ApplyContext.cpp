@@ -78,7 +78,7 @@ ApplyContext::failInvariantCheck (TER result)
     // very wrong. We switch to tefINVARIANT_FAILED, which does NOT get included
     // in a ledger.
 
-    return (result == tecINVARIANT_FAILED)
+    return (result == tecINVARIANT_FAILED || result == tefINVARIANT_FAILED)
         ? tefINVARIANT_FAILED
         : tecINVARIANT_FAILED;
 }
