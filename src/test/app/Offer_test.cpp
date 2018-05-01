@@ -329,7 +329,7 @@ public:
         for (auto withFix : {false, true})
         {
             if (!withFix &&
-                features[featureFlow] && features[featureFeeEscalation])
+                (features[featureFlow] || features[featureFeeEscalation]))
                 continue;
 
             Env env {*this, features};
