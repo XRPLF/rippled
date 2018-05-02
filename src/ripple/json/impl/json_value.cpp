@@ -365,7 +365,8 @@ Value::Value ( Value&& other ) noexcept
     , type_ ( other.type_ )
     , allocated_ ( other.allocated_ )
 {
-    std::memset( &other, 0, sizeof(Value) );
+    other.type_ = nullValue;
+    other.allocated_ = 0;
 }
 
 Value&

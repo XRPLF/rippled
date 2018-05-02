@@ -420,9 +420,9 @@ add_with_props(rippled_src_all src/ripple/unity/ed25519_donna.c
   -I"${CMAKE_SOURCE_DIR}/"src/ed25519-donna)
 
 if (is_gcc)
-  set(no_init_w -Wno-maybe-uninitialized)
+  set(no_gcc_warnings -w)
 else()
-  unset(no_init_w)
+  unset(no_gcc_warnings)
 endif()
 
 add_with_props(rippled_src_all src/ripple/unity/rocksdb.cpp
@@ -430,7 +430,7 @@ add_with_props(rippled_src_all src/ripple/unity/rocksdb.cpp
   -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
   -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
   -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
-  ${no_init_w} ${rocks_db_system_header})
+  ${no_gcc_warnings} ${rocks_db_system_header})
 
 if (NOT is_msvc)
   set(no_unused_w -Wno-unused-function)
