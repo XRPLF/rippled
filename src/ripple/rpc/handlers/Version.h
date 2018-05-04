@@ -41,7 +41,7 @@ public:
         setVersion (obj);
     }
 
-    static const char* name()
+    static char const* name()
     {
         return "version";
     }

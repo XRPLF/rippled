@@ -55,7 +55,7 @@ public:
     template <class Object>
     void writeResult (Object&);
 
-    static const char* name()
+    static char const* name()
     {
         return "ledger";
     }
