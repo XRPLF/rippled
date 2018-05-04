@@ -19,7 +19,6 @@
 #ifndef RIPPLE_TEST_CSF_PEER_H_INCLUDED
 #define RIPPLE_TEST_CSF_PEER_H_INCLUDED
 
-#include <ripple/basics/random.h>
 #include <ripple/beast/utility/WrappedSink.h>
 #include <ripple/consensus/Consensus.h>
 #include <ripple/consensus/Validations.h>

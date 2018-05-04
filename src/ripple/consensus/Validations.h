@@ -156,7 +156,7 @@ enum class ValStatus {
     /// Not current or was older than current from this node
     stale,
     /// A validation violates the increasing seq requirement
-    badSeq,
+    badSeq
 };
 
 inline std::string

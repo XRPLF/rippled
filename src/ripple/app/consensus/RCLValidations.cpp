@@ -320,10 +320,9 @@ handleNewValidation(Application& app,
         if(j.debug())
             dmp(j.debug(), to_string(outcome));
 
-        auto const seq = val->getFieldU32(sfLedgerSequence);
-
         if (outcome == ValStatus::badSeq && j.warn())
         {
+            auto const seq = val->getFieldU32(sfLedgerSequence);
             dmp(j.warn(),
                 "already validated sequence at or past " + to_string(seq));
         }
