@@ -92,7 +92,7 @@ public:
     std::size_t attempts () const
     {
         return m_attempts;
-    };
+    }
 
     /** Returns the total number of outbound slots. */
     int out_max () const

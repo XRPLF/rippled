@@ -122,7 +122,7 @@ public:
             makeSection (m_set1),
             makeSection (m_set2),
             makeSection (m_set3));
-    };
+    }
 
     void testConstruct ()
     {
