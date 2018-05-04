@@ -22,6 +22,7 @@ bin/project-cache.jam
 # Ignore object files.
 *.o
 build
+.nih_c
 tags
 TAGS
 bin/rippled
