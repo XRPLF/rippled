@@ -259,9 +259,6 @@ struct Peer
     //! The collectors to report events to
     CollectorRefs & collectors;
 
-    //! Random cookie used to tag validations
-    std::uint64_t cookie;
-
     /** Constructor
 
         @param i Unique PeerID
@@ -294,9 +291,6 @@ struct Peer
         , validations{ValidationParms{}, s.clock(), *this}
         , fullyValidatedLedger{Ledger::MakeGenesis{}}
         , collectors{c}
-        , cookie{rand_int<std::uint64_t>(
-              1,
-              std::numeric_limits<std::uint64_t>::max())}
     {
         // All peers start from the default constructed genesis ledger
         ledgers[lastClosedLedger.id()] = lastClosedLedger;
@@ -593,8 +587,7 @@ struct Peer
                              now(),
                              key,
                              id,
-                             isFull,
-                             cookie};
+                             isFull};
                 // share the new validation; it is trusted by the receiver
                 share(v);
                 // we trust ourselves

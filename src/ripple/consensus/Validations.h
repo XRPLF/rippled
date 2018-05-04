@@ -157,8 +157,6 @@ enum class ValStatus {
     stale,
     /// A validation violates the increasing seq requirement
     badSeq,
-    /// A validation used an inconsistent cookie
-    badCookie
 };
 
 inline std::string
@@ -172,8 +170,6 @@ to_string(ValStatus m)
             return "stale";
         case ValStatus::badSeq:
             return "badSeq";
-        case ValStatus::badCookie:
-            return "badCookie";
         default:
             return "unknown";
     }
@@ -244,11 +240,6 @@ to_string(ValStatus m)
         implementation_specific_t
         unwrap() -> return the implementation-specific type being wrapped
 
-        // Randomly generated cookie for a validator instance used to detect
-        // if multiple validators are accidentally running with the same
-        // validator keys
-        std::uint64_t cookie() const;
-
         // ... implementation specific
     };
 
@@ -312,14 +303,6 @@ class Validations
         std::chrono::steady_clock,
         beast::uhash<>>
         byLedger_;
-
-    //! Validations from listed nodes indexed by ledger seq (partial and full)
-    beast::aged_unordered_map<
-        Seq,
-        hash_map<NodeID, Validation>,
-        std::chrono::steady_clock,
-        beast::uhash<>>
-        bySeq_;
 
     // Represents the ancestry of validated ledgers
     LedgerTrie<Ledger> trie_;
@@ -549,7 +532,7 @@ public:
         ValidationParms const& p,
         beast::abstract_clock<std::chrono::steady_clock>& c,
         Ts&&... ts)
-        : byLedger_(c), bySeq_(c), parms_(p), adaptor_(std::forward<Ts>(ts)...)
+        : byLedger_(c), parms_(p), adaptor_(std::forward<Ts>(ts)...)
     {
     }
 
@@ -600,34 +583,6 @@ public:
         {
             ScopedLock lock{mutex_};
 
-            // Check if a validator with this nodeID already issued a validation
-            // for this sequence using a different cookie
-            auto const bySeqIt = bySeq_[val.seq()].emplace(nodeID, val);
-            if(!bySeqIt.second)
-            {
-                if(bySeqIt.first->second.cookie() != val.cookie())
-                {
-                    // Remove prior validation if it was for a different ledger
-                    ID const priorID = bySeqIt.first->second.ledgerID();
-                    if (priorID != val.ledgerID())
-                    {
-                        auto const byLedgerIt = byLedger_.find(priorID);
-                        if (byLedgerIt != byLedger_.end())
-                            byLedger_[priorID].erase(nodeID);
-
-                        auto const currIt = current_.find(nodeID);
-                        if (currIt != current_.end() &&
-                            currIt->second.ledgerID() == priorID)
-                        {
-                            removeTrie(lock, currIt->first, currIt->second);
-                            adaptor_.onStale(std::move(currIt->second));
-                            current_.erase(currIt);
-                        }
-                    }
-                    return ValStatus::badCookie;
-                }
-            }
-
             // Check that validation sequence is greater than any non-expired
             // validations sequence from that validator
             auto const now = byLedger_.clock().now();
@@ -674,7 +629,6 @@ public:
     {
         ScopedLock lock{mutex_};
         beast::expire(byLedger_, parms_.validationSET_EXPIRES);
-        beast::expire(bySeq_, parms_.validationSET_EXPIRES);
     }
 
     /** Update trust status of validations
@@ -706,21 +660,6 @@ public:
         }
 
         for (auto& it : byLedger_)
-        {
-            for (auto& nodeVal : it.second)
-            {
-                if (added.find(nodeVal.first) != added.end())
-                {
-                    nodeVal.second.setTrusted();
-                }
-                else if (removed.find(nodeVal.first) != removed.end())
-                {
-                    nodeVal.second.setUntrusted();
-                }
-            }
-        }
-
-        for (auto& it : bySeq_)
         {
             for (auto& nodeVal : it.second)
             {

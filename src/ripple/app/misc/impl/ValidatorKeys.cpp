@@ -21,14 +21,12 @@
 
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/random.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
 #include <beast/core/detail/base64.hpp>
 
 namespace ripple {
 ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
-    : cookie{rand_int<std::uint64_t>(1, std::numeric_limits<std::uint64_t>::max())}
 {
     if (config.exists(SECTION_VALIDATOR_TOKEN) &&
         config.exists(SECTION_VALIDATION_SEED))

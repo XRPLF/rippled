@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/basics/random.h>
 #include <ripple/basics/tagged_integer.h>
 #include <ripple/beast/clock/manual_clock.h>
 #include <ripple/beast/unit_test.h>
@@ -57,15 +56,11 @@ class Validations_test : public beast::unit_test::suite
         bool trusted_ = true;
         std::size_t signIdx_ = 1;
         boost::optional<std::uint32_t> loadFee_;
-        std::uint64_t cookie_;
 
     public:
         Node(PeerID nodeID, clock_type const& c)
             : c_(c)
             , nodeID_(nodeID)
-            , cookie_(rand_int<std::uint64_t>(
-                  1,
-                  std::numeric_limits<std::uint64_t>::max()))
         {
         }
 
@@ -133,7 +128,6 @@ class Validations_test : public beast::unit_test::suite
                          currKey(),
                          nodeID_,
                          full,
-                         cookie_,
                          loadFee_};
             if (trusted_)
                 v.setTrusted();
@@ -1150,45 +1144,6 @@ class Validations_test : public beast::unit_test::suite
     }
 
     void
-    testCookie()
-    {
-        testcase("Bad cookie");
-
-        LedgerHistoryHelper h;
-        TestHarness harness(h.oracle);
-        Node a = harness.makeNode();
-        Node aReuse{a.nodeID(), harness.clock()};
-        Node b = harness.makeNode();
-
-        BEAST_EXPECT(ValStatus::current == harness.add(a.validate(h["a"])));
-        BEAST_EXPECT(ValStatus::current == harness.add(b.validate(h["b"])));
-
-        BEAST_EXPECT(harness.vals().numTrustedForLedger(h["a"].id()) == 1);
-        BEAST_EXPECT(harness.vals().numTrustedForLedger(h["b"].id()) == 1);
-        BEAST_EXPECT(harness.vals().currentTrusted().size() == 2);
-        // Re-issuing for the same ledger gives badCookie status, but does not
-        // ignore that ledger
-        BEAST_EXPECT(
-            ValStatus::badCookie == harness.add(aReuse.validate(h["a"])));
-
-        BEAST_EXPECT(harness.vals().numTrustedForLedger(h["a"].id()) == 1);
-        BEAST_EXPECT(harness.vals().numTrustedForLedger(h["b"].id()) == 1);
-        BEAST_EXPECT(harness.vals().currentTrusted().size() == 2);
-
-        // Re-issuing for a different ledger gives badCookie status and ignores
-        // the prior validated ledger
-        BEAST_EXPECT(
-            ValStatus::badCookie == harness.add(aReuse.validate(h["b"])));
-
-        BEAST_EXPECT(harness.vals().numTrustedForLedger(h["a"].id()) == 0);
-        BEAST_EXPECT(harness.vals().numTrustedForLedger(h["b"].id()) == 1);
-        BEAST_EXPECT(harness.vals().currentTrusted().size() == 1);
-
-        BEAST_EXPECT(
-            ValStatus::badCookie == harness.add(aReuse.validate(h["b"])));
-    }
-
-    void
     run() override
     {
         testAddValidation();
@@ -1205,7 +1160,6 @@ class Validations_test : public beast::unit_test::suite
         testNumTrustedForLedger();
         testSeqEnforcer();
         testTrustChanged();
-        testCookie();
     }
 };
 
