@@ -140,7 +140,7 @@ protected:
         else
             test_.log << "Expected " << toRm.string ()
                       << " to be an empty existing directory." << std::endl;
-    };
+    }
 
 public:
     ConfigGuard (beast::unit_test::suite& test, path subDir,

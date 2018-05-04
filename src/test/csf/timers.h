@@ -52,13 +52,13 @@ public:
               startRealTime_{RealClock::now()},
               startSimTime_{sched.now()}
     {
-    };
+    }
 
     void
     start()
     {
         scheduler_.in(interval_, [this](){beat(scheduler_.now());});
-    };
+    }
 
     void
     beat(SimTime when)

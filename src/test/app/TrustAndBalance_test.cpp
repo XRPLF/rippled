@@ -42,7 +42,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         jvParams[jss::ripple_state][jss::accounts].append(acct_a.human());
         jvParams[jss::ripple_state][jss::accounts].append(acct_b.human());
         return env.rpc ("json", "ledger_entry", to_string(jvParams))[jss::result];
-    };
+    }
 
     void
     testPayNonexistent (FeatureBitset features)

@@ -160,7 +160,7 @@ private:
     clamp(Seq val) const
     {
         return std::min(std::max(start_, val), end_);
-    };
+    }
 
     // Return a span of this over the half-open interval [from,to)
     boost::optional<Span>

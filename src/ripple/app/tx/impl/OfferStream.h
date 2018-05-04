@@ -65,7 +65,7 @@ public:
         std::uint32_t count() const
         {
             return count_;
-        };
+        }
     };
 
 protected:
@@ -181,7 +181,7 @@ public:
     boost::container::flat_set<uint256> const& permToRemove () const
     {
         return permToRemove_;
-    };
+    }
 };
 }
 
