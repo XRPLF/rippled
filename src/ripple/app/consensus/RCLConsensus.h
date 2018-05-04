@@ -364,6 +364,9 @@ class RCLConsensus
         void
         validate(RCLCxLedger const& ledger, RCLTxSet const& txns, bool proposing);
 
+        /** The index of the fully validated ledger */
+        LedgerIndex
+        fullyValidatedSeq() const;
     };
 
 public:
