@@ -256,9 +256,9 @@ class Validations_test : public beast::unit_test::suite
         }
 
         ValStatus
-        add(Validation const& v)
+        add(Validation const& v, bool checkCookie=false)
         {
-            return tv_.add(v.nodeID(), v);
+            return tv_.add(v.nodeID(), v, checkCookie);
         }
 
         TestValidations&
@@ -1160,8 +1160,12 @@ class Validations_test : public beast::unit_test::suite
         Node aReuse{a.nodeID(), harness.clock()};
         Node b = harness.makeNode();
 
-        BEAST_EXPECT(ValStatus::current == harness.add(a.validate(h["a"])));
-        BEAST_EXPECT(ValStatus::current == harness.add(b.validate(h["b"])));
+        BEAST_EXPECT(
+            ValStatus::current ==
+            harness.add(a.validate(h["a"]), true /* checkCookie */));
+        BEAST_EXPECT(
+            ValStatus::current ==
+            harness.add(b.validate(h["b"]), true /* checkCookie */));
 
         BEAST_EXPECT(harness.vals().numTrustedForLedger(h["a"].id()) == 1);
         BEAST_EXPECT(harness.vals().numTrustedForLedger(h["b"].id()) == 1);
@@ -1169,7 +1173,8 @@ class Validations_test : public beast::unit_test::suite
         // Re-issuing for the same ledger gives badCookie status, but does not
         // ignore that ledger
         BEAST_EXPECT(
-            ValStatus::badCookie == harness.add(aReuse.validate(h["a"])));
+            ValStatus::badCookie ==
+            harness.add(aReuse.validate(h["a"]), true /* checkCookie */));
 
         BEAST_EXPECT(harness.vals().numTrustedForLedger(h["a"].id()) == 1);
         BEAST_EXPECT(harness.vals().numTrustedForLedger(h["b"].id()) == 1);
@@ -1178,14 +1183,16 @@ class Validations_test : public beast::unit_test::suite
         // Re-issuing for a different ledger gives badCookie status and ignores
         // the prior validated ledger
         BEAST_EXPECT(
-            ValStatus::badCookie == harness.add(aReuse.validate(h["b"])));
+            ValStatus::badCookie ==
+            harness.add(aReuse.validate(h["b"]), true /* checkCookie */));
 
         BEAST_EXPECT(harness.vals().numTrustedForLedger(h["a"].id()) == 0);
         BEAST_EXPECT(harness.vals().numTrustedForLedger(h["b"].id()) == 1);
         BEAST_EXPECT(harness.vals().currentTrusted().size() == 1);
 
         BEAST_EXPECT(
-            ValStatus::badCookie == harness.add(aReuse.validate(h["b"])));
+            ValStatus::badCookie ==
+            harness.add(aReuse.validate(h["b"]), true /* checkCookie */));
     }
 
     void

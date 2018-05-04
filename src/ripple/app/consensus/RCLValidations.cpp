@@ -316,7 +316,11 @@ handleNewValidation(Application& app,
     // masterKey is seated only if validator is trusted or listed
     if (masterKey)
     {
-        ValStatus const outcome = validations.add(calcNodeID(*masterKey), val);
+        ValStatus const outcome = validations.add(
+            calcNodeID(*masterKey),
+            val,
+            app.getLedgerMaster().getValidatedRules().enabled(
+                featureValidationCookies));
         if(j.debug())
             dmp(j.debug(), to_string(outcome));
 

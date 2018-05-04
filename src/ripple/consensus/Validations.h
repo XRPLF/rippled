@@ -592,7 +592,7 @@ public:
         @return The outcome
     */
     ValStatus
-    add(NodeID const& nodeID, Validation const& val)
+    add(NodeID const& nodeID, Validation const& val, bool checkCookie=false)
     {
         if (!isCurrent(parms_, adaptor_.now(), val.signTime(), val.seenTime()))
             return ValStatus::stale;
@@ -602,8 +602,9 @@ public:
 
             // Check if a validator with this nodeID already issued a validation
             // for this sequence using a different cookie
+
             auto const bySeqIt = bySeq_[val.seq()].emplace(nodeID, val);
-            if(!bySeqIt.second)
+            if(!bySeqIt.second && checkCookie)
             {
                 if(bySeqIt.first->second.cookie() != val.cookie())
                 {
