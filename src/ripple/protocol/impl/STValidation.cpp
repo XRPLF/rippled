@@ -35,8 +35,7 @@ STValidation::STValidation(
     NodeID const& nodeID,
     bool isFull,
     FeeSettings const& fees,
-    std::vector<uint256> const& amendments,
-    boost::optional<std::uint64_t> const cookie)
+    std::vector<uint256> const& amendments)
     : STObject(getFormat(), sfValidation), mNodeID(nodeID), mSeen(signTime)
 {
     // This is our own public key and it should always be valid.
@@ -70,8 +69,6 @@ STValidation::STValidation(
 
     setFlag(vfFullyCanonicalSig);
 
-    if(cookie != boost::none)
-        setFieldU64(sfCookie, *cookie);
     auto const signingHash = getSigningHash();
     setFieldVL(
         sfSignature, signDigest(getSignerPublic(), secretKey, signingHash));
