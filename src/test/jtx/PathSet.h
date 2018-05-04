@@ -69,7 +69,7 @@ public:
     Path& push_back (STPathElement const& pe);
     Json::Value json () const;
  private:
-    Path& addHelper (){return *this;};
+    Path& addHelper (){return *this;}
     template <class First, class... Rest>
     Path& addHelper (First&& first, Rest&&... rest);
 };
@@ -133,7 +133,7 @@ private:
     PathSet& addHelper ()
     {
         return *this;
-    };
+    }
     template <class First, class... Rest>
     PathSet& addHelper (First first, Rest... rest)
     {

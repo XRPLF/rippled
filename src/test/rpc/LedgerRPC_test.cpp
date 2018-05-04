@@ -46,7 +46,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
         else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
             BEAST_EXPECT(jv[jss::error_message] == msg);
-    };
+    }
 
     // Corrupt a valid address by replacing the 10th character with '!'.
     // '!' is not part of the ripple alphabet.

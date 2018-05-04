@@ -67,7 +67,7 @@ public:
     AccountID const& acc () const
     {
         return acc_;
-    };
+    }
 
     boost::optional<std::pair<AccountID,AccountID>>
     directStepAccts () const override

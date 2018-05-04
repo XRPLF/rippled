@@ -45,7 +45,7 @@ struct DepositAuth_test : public beast::unit_test::suite
     static bool hasDepositAuth (jtx::Env const& env, jtx::Account const& acct)
     {
         return ((*env.le(acct))[sfFlags] & lsfDepositAuth) == lsfDepositAuth;
-    };
+    }
 
 
     void testEnable()

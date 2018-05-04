@@ -24,7 +24,7 @@ no_progress
     void
     operator()(std::uint64_t, std::uint64_t) const noexcept
     {
-    };
+    }
 };
 
 } // nudb

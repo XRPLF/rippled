@@ -252,7 +252,7 @@ public:
                 "orange",
             };
             return v;
-        };
+        }
 
     protected:
         static std::string name_map_part()
@@ -285,7 +285,7 @@ public:
                 std::make_pair ("orange", 5)
             };
             return v;
-        };
+        }
 
     protected:
         static std::string name_map_part()

@@ -46,7 +46,7 @@ class Offer_test : public beast::unit_test::suite
         using namespace jtx;
         auto feeDrops = env.current()->fees().base;
         return drops (dropsPerXRP<std::int64_t>::value * xrpAmount - feeDrops);
-    };
+    }
 
     static auto
     ledgerEntryState(jtx::Env & env, jtx::Account const& acct_a,
@@ -60,7 +60,7 @@ class Offer_test : public beast::unit_test::suite
         jvParams[jss::ripple_state][jss::accounts].append(acct_b.human());
         return env.rpc ("json", "ledger_entry",
             to_string(jvParams))[jss::result];
-    };
+    }
 
     static auto
     ledgerEntryRoot (jtx::Env & env, jtx::Account const& acct)
@@ -70,7 +70,7 @@ class Offer_test : public beast::unit_test::suite
         jvParams[jss::account_root] = acct.human();
         return env.rpc ("json", "ledger_entry",
             to_string(jvParams))[jss::result];
-    };
+    }
 
     static auto
     ledgerEntryOffer (jtx::Env & env,
@@ -81,7 +81,7 @@ class Offer_test : public beast::unit_test::suite
         jvParams[jss::offer][jss::seq] = offer_seq;
         return env.rpc ("json", "ledger_entry",
             to_string(jvParams))[jss::result];
-    };
+    }
 
     static auto
     getBookOffers(jtx::Env & env,

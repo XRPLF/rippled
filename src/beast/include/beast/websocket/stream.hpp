@@ -617,7 +617,7 @@ public:
             BOOST_THROW_EXCEPTION(std::invalid_argument{
                 "write buffer size underflow"});
         wr_buf_size_ = n;
-    };
+    }
 
     /// Returns the size of the write buffer.
     std::size_t

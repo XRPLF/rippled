@@ -142,18 +142,19 @@ public:
     hasIssuer () const
     {
         return getNodeType () & STPathElement::typeIssuer;
-    };
+    }
+
     bool
     hasCurrency () const
     {
         return getNodeType () & STPathElement::typeCurrency;
-    };
+    }
 
     bool
     isNone () const
     {
         return getNodeType () == STPathElement::typeNone;
-    };
+    }
 
     // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
     // class of offers.

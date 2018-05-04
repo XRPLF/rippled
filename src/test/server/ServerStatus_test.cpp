@@ -432,7 +432,7 @@ class ServerStatus_test :
                 return;
             BEAST_EXPECT(resp.result() == beast::http::status::ok);
         }
-    };
+    }
 
     void
     testTruncatedWSUpgrade(boost::asio::yield_context& yield)
@@ -481,7 +481,7 @@ class ServerStatus_test :
         // keep trying to read until it gives up (by timeout)
         async_read(sock, sb, resp, yield[ec]);
         BEAST_EXPECT(ec);
-    };
+    }
 
     void
     testCantConnect(
@@ -1049,7 +1049,7 @@ public:
             testStatusNotOkay (yield);
         });
 
-    };
+    }
 };
 
 BEAST_DEFINE_TESTSUITE(ServerStatus, server, ripple);
