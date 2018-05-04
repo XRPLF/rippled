@@ -224,7 +224,7 @@ public:
     virtual
     void adjustOwnerCountHook (AccountID const& account,
         std::uint32_t cur, std::uint32_t next)
-    {};
+    {}
 
     /** Append an entry to a directory
 

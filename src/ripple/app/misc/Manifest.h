@@ -176,7 +176,7 @@ public:
     ManifestCache (beast::Journal j = beast::Journal())
         : j_ (j)
     {
-    };
+    }
 
     /** Returns master key's current signing key.
 

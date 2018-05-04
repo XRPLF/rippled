@@ -338,7 +338,7 @@ public:
     getPeerDisconnectCharges() const override
     {
         return peerDisconnectsCharges_;
-    };
+    }
 
 private:
     std::shared_ptr<Writer>
