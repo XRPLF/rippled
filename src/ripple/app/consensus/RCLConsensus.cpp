@@ -797,6 +797,12 @@ RCLConsensus::peerProposal(
     return consensus_.peerProposal(now, newProposal);
 }
 
+LedgerIndex
+RCLConsensus::Adaptor::fullyValidatedSeq() const
+{
+    return ledgerMaster_.getValidLedgerIndex();
+}
+
 bool
 RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
 {

@@ -22,6 +22,21 @@
 
 namespace ripple {
 
+std::chrono::milliseconds
+minimumOpenInterval(
+    ConsensusParms const& parms,
+    bool haveLCL,
+    std::uint32_t ahead)
+{
+    std::chrono::milliseconds res = parms.ledgerMIN_CLOSE;
+    if (haveLCL && ahead > 2)
+    {
+        res += parms.ledgerMIN_CLOSE_ADJ * (ahead - 2) * (ahead - 2);
+    }
+
+    return res;
+}
+
 bool
 shouldCloseLedger(
     bool anyTransactions,
@@ -33,12 +48,12 @@ shouldCloseLedger(
         timeSincePrevClose,              // Time since last ledger's close time
     std::chrono::milliseconds openTime,  // Time waiting to close this ledger
     std::chrono::milliseconds idleInterval,
-    ConsensusParms const& parms,
+    std::chrono::milliseconds minOpenTime,
     beast::Journal j)
 {
-    using namespace std::chrono_literals;
+    using namespace std::chrono;
     if ((prevRoundTime < -1s) || (prevRoundTime > 10min) ||
-        (timeSincePrevClose > 10min))
+        (timeSincePrevClose > (minOpenTime + 10min)))
     {
         // These are unexpected cases, we just close the ledger
         JLOG(j.warn()) << "shouldCloseLedger Trans="
@@ -49,21 +64,24 @@ shouldCloseLedger(
         return true;
     }
 
-    if ((proposersClosed + proposersValidated) > (prevProposers / 2))
+    if (prevProposers >= 1)
     {
-        // If more than half of the network has closed, we close
-        JLOG(j.trace()) << "Others have closed";
-        return true;
+        if ((proposersClosed + proposersValidated) > (prevProposers / 2))
+        {
+            // If more than half of the network has closed, we close
+            JLOG(j.trace()) << "Others have closed";
+            return true;
+        }
     }
 
     if (!anyTransactions)
     {
-        // Only close at the end of the idle interval
-        return timeSincePrevClose >= idleInterval;  // normal idle
+        // Only close at the end of the idle interval when no txs
+        return timeSincePrevClose >= std::max(minOpenTime,idleInterval);
     }
 
     // Preserve minimum ledger open time
-    if (openTime < parms.ledgerMIN_CLOSE)
+    if (openTime < minOpenTime)
     {
         JLOG(j.debug()) << "Must wait minimum time before closing";
         return false;

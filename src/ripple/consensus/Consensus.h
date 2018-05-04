@@ -23,15 +23,33 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/utility/Journal.h>
-#include <ripple/consensus/ConsensusProposal.h>
 #include <ripple/consensus/ConsensusParms.h>
+#include <ripple/consensus/ConsensusProposal.h>
 #include <ripple/consensus/ConsensusTypes.h>
-#include <ripple/consensus/LedgerTiming.h>
 #include <ripple/consensus/DisputedTx.h>
+#include <ripple/consensus/LedgerTiming.h>
 #include <ripple/json/json_writer.h>
 
 namespace ripple {
 
+ /** Determine the minimum open interval before closing the ledger
+
+     The minimum open interval is extended if the local node believes it has
+     the correct last closed ledger, but is more than 2 ledgers ahead of the
+     last fully validated ledger. The extension scales quadratically with that
+     difference in sequence numbers.
+
+     @param parms Consensus constant parameters
+     @param haveLCL Whether the node is working on its view of the last closed
+                     ledger
+     @param ahead The number of ledgers ahead of the last fully validated ledger
+                  (or 0 if behind)
+ */
+std::chrono::milliseconds
+minimumOpenInterval(
+    ConsensusParms const& parms,
+    bool haveLCL,
+    std::uint32_t ahead);
 
 /** Determines whether the current ledger should close at this time.
 
@@ -44,11 +62,12 @@ namespace ripple {
     @param proposersValidated proposers who have validated the last closed
                               ledger
     @param prevRoundTime time for the previous ledger to reach consensus
-    @param timeSincePrevClose  time since the previous ledger's (possibly rounded)
-                        close time
+    @param timeSincePrevClose  time since the previous ledger's (possibly
+   rounded) close time
     @param openTime     duration this ledger has been open
     @param idleInterval the network's desired idle interval
-    @param parms        Consensus constant parameters
+    @param minOpenTime  Minimum duration of open phase, unless peers have moved
+   on
     @param j            journal for logging
 */
 bool
@@ -61,7 +80,7 @@ shouldCloseLedger(
     std::chrono::milliseconds timeSincePrevClose,
     std::chrono::milliseconds openTime,
     std::chrono::milliseconds idleInterval,
-    ConsensusParms const & parms,
+    std::chrono::milliseconds minOpenTime,
     beast::Journal j);
 
 /** Determine whether the network reached consensus and whether we joined.
@@ -86,7 +105,7 @@ checkConsensus(
     std::size_t currentFinished,
     std::chrono::milliseconds previousAgreeTime,
     std::chrono::milliseconds currentAgreeTime,
-    ConsensusParms const & parms,
+    ConsensusParms const& parms,
     bool proposing,
     beast::Journal j);
 
@@ -316,6 +335,7 @@ class Consensus
             mode_ = mode;
         }
     };
+
 public:
     //! Clock type for measuring time within the consensus code
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
@@ -348,7 +368,7 @@ public:
         NetClock::time_point const& now,
         typename Ledger_t::ID const& prevLedgerID,
         Ledger_t prevLedger,
-        hash_set<NodeID_t> const & nowUntrusted,
+        hash_set<NodeID_t> const& nowUntrusted,
         bool proposing);
 
     /** A peer has proposed a new position, adjust our tracking.
@@ -448,7 +468,7 @@ private:
     playbackProposals();
 
     /** Handle a replayed or a new peer proposal.
-    */
+     */
     bool
     peerProposalInternal(
         NetClock::time_point const& now,
@@ -572,9 +592,7 @@ Consensus<Adaptor>::Consensus(
     clock_type const& clock,
     Adaptor& adaptor,
     beast::Journal journal)
-    : adaptor_(adaptor)
-    , clock_(clock)
-    , j_{journal}
+    : adaptor_(adaptor), clock_(clock), j_{journal}
 {
     JLOG(j_.debug()) << "Creating consensus object";
 }
@@ -600,7 +618,7 @@ Consensus<Adaptor>::startRound(
         prevCloseTime_ = rawCloseTimes_.self;
     }
 
-    for(NodeID_t const& n : nowUntrusted)
+    for (NodeID_t const& n : nowUntrusted)
         recentPeerPositions_.erase(n);
 
     ConsensusMode startMode =
@@ -887,7 +905,8 @@ Consensus<Adaptor>::getJson(bool full) const
     if (mode_.get() != ConsensusMode::wrongLedger)
     {
         ret["synched"] = true;
-        ret["ledger_seq"] = static_cast<std::uint32_t>(previousLedger_.seq())+ 1;
+        ret["ledger_seq"] =
+            static_cast<std::uint32_t>(previousLedger_.seq()) + 1;
         ret["close_granularity"] = static_cast<Int>(closeResolution_.count());
     }
     else
@@ -1059,6 +1078,7 @@ void
 Consensus<Adaptor>::phaseOpen()
 {
     using namespace std::chrono;
+    using Seq = typename Ledger_t::Seq;
 
     // it is shortly before ledger close time
     bool anyTransactions = adaptor_.hasOpenTransactions();
@@ -1090,6 +1110,25 @@ Consensus<Adaptor>::phaseOpen()
         adaptor_.parms().ledgerIDLE_INTERVAL,
         2 * previousLedger_.closeTimeResolution());
 
+    std::uint32_t ahead = (previousLedger_.seq() > adaptor_.fullyValidatedSeq())
+        ? static_cast<std::uint32_t>(
+              previousLedger_.seq() - adaptor_.fullyValidatedSeq())
+        : 0;
+
+    // Note that the second argument here equates proposing or observing to
+    // having the correct LCL. This is as opposed to the previousCloseCorrect
+    // determination above, which allows a switchLCL state to indicate the
+    // correct LCL. For the open interval extension, if we switchedLCL, that
+    // indicates we heard from enough peers to change our view of the correct
+    // ledger, so we should *not* extend the open interval and instead try to
+    // catch up normally.
+
+    milliseconds const minOpenInterval = minimumOpenInterval(
+        adaptor_.parms(),
+        (mode_.get() == ConsensusMode::proposing ||
+         mode_.get() == ConsensusMode::observing),
+        ahead);
+
     // Decide if we should close the ledger
     if (shouldCloseLedger(
             anyTransactions,
@@ -1100,7 +1139,7 @@ Consensus<Adaptor>::phaseOpen()
             sinceClose,
             openTime_.read(),
             idleInterval,
-            adaptor_.parms(),
+            minOpenInterval,
             j_))
     {
         closeLedger();
@@ -1115,7 +1154,7 @@ Consensus<Adaptor>::phaseEstablish()
     assert(result_);
 
     using namespace std::chrono;
-    ConsensusParms const & parms = adaptor_.parms();
+    ConsensusParms const& parms = adaptor_.parms();
 
     result_->roundTime.tick(clock_.now());
     result_->proposers = currPeerPositions_.size();
@@ -1211,7 +1250,7 @@ Consensus<Adaptor>::updateOurPositions()
 {
     // We must have a position if we are updating it
     assert(result_);
-    ConsensusParms const & parms = adaptor_.parms();
+    ConsensusParms const& parms = adaptor_.parms();
 
     // Compute a cutoff time
     auto const peerCutoff = now_ - parms.proposeFRESHNESS;
@@ -1254,7 +1293,7 @@ Consensus<Adaptor>::updateOurPositions()
             //  time can change our position on a dispute
             if (it.second.updateVote(
                     convergePercent_,
-                    mode_.get()== ConsensusMode::proposing,
+                    mode_.get() == ConsensusMode::proposing,
                     parms))
             {
                 if (!mutableSet)
@@ -1505,8 +1544,11 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
 
         JLOG(j_.debug()) << "Transaction " << txID << " is disputed";
 
-        typename Result::Dispute_t dtx{tx, result_->txns.exists(txID),
-         std::max(prevProposers_, currPeerPositions_.size()), j_};
+        typename Result::Dispute_t dtx{
+            tx,
+            result_->txns.exists(txID),
+            std::max(prevProposers_, currPeerPositions_.size()),
+            j_};
 
         // Update all of the available peer's votes on the disputed transaction
         for (auto const& pit : currPeerPositions_)
