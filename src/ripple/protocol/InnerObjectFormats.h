@@ -32,6 +32,8 @@ private:
     void addCommonFields (Item& item);
 
 public:
+    virtual ~InnerObjectFormats () = default;
+
     /** Create the object.
         This will load the object will all the known inner object formats.
     */

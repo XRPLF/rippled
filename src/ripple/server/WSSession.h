@@ -110,6 +110,8 @@ struct WSSession
 {
     std::shared_ptr<void> appDefined;
 
+    virtual ~WSSession () = default;
+
     virtual
     void
     run() = 0;
