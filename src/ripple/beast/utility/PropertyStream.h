@@ -282,7 +282,7 @@ private:
 
 public:
     explicit Source (std::string const& name);
-    ~Source ();
+    virtual ~Source ();
 
     Source (Source const&) = delete;
     Source& operator= (Source const&) = delete;

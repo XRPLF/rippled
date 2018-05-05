@@ -43,6 +43,11 @@ public:
     /** This callback does the actual writing. */
     struct Callback
     {
+        virtual ~Callback () = default;
+        Callback() = default;
+        Callback(Callback const&) = delete;
+        Callback& operator=(Callback const&) = delete;
+
         virtual void writeBatch (Batch const& batch) = 0;
     };
 

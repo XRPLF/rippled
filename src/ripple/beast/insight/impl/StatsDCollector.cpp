@@ -53,6 +53,10 @@ class StatsDMetricBase : public List <StatsDMetricBase>::Node
 {
 public:
     virtual void do_process () = 0;
+    virtual ~StatsDMetricBase() = default;
+    StatsDMetricBase() = default;
+    StatsDMetricBase(StatsDMetricBase const&) = delete;
+    StatsDMetricBase& operator=(StatsDMetricBase const&) = delete;
 };
 
 //------------------------------------------------------------------------------
