@@ -73,7 +73,10 @@ SetRegularKey::doApply ()
     auto const sle = view().peek(
         keylet::account(account_));
 
-    if (mFeeDue == zero)
+	auto const feeDue = calculateFee(ctx_.app, ctx_.baseFee,
+		view().fees(), view().flags());
+
+	if (feeDue == zero)
         sle->setFlag (lsfPasswordSpent);
 
     if (ctx_.tx.isFieldPresent (sfRegularKey))

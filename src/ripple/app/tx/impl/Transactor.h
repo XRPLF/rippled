@@ -81,7 +81,6 @@ protected:
     beast::Journal j_;
 
     AccountID     account_;
-    XRPAmount     mFeeDue;
     XRPAmount     mPriorBalance;  // Balance before fees.
     XRPAmount     mSourceBalance; // Balance after fees.
 
@@ -169,6 +168,11 @@ protected:
     virtual void preCompute();
 
     virtual TER doApply () = 0;
+
+	static
+	XRPAmount
+	calculateFee(Application& app, std::uint64_t const baseFee,
+		Fees const& fees, ApplyFlags flags);
 
 private:
     XRPAmount reset(XRPAmount fee);

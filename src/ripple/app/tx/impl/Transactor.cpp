@@ -102,15 +102,6 @@ preflight2 (PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static
-XRPAmount
-calculateFee(Application& app, std::uint64_t const baseFee,
-    Fees const& fees, ApplyFlags flags)
-{
-    return scaleFeeLoad(baseFee, app.getFeeTrack(),
-        fees, flags & tapUNLIMITED);
-}
-
 //------------------------------------------------------------------------------
 
 PreflightContext::PreflightContext(Application& app_, STTx const& tx_,
@@ -159,6 +150,14 @@ Transactor::calculateFeePaid(STTx const& tx)
 }
 
 XRPAmount
+Transactor::calculateFee(Application& app, std::uint64_t const baseFee,
+	Fees const& fees, ApplyFlags flags)
+{
+	return scaleFeeLoad(baseFee, app.getFeeTrack(),
+		fees, flags & tapUNLIMITED);
+}
+
+XRPAmount
 Transactor::calculateMaxSpend(STTx const& tx)
 {
     return beast::zero;
@@ -171,7 +170,7 @@ Transactor::checkFee (PreclaimContext const& ctx, std::uint64_t baseFee)
     if (!isLegalAmount (feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
-    auto const feeDue = ripple::calculateFee(ctx.app,
+    auto const feeDue = calculateFee(ctx.app,
         baseFee, ctx.view.fees(), ctx.flags);
 
     // Only check fee is sufficient when the ledger is open.
@@ -306,9 +305,6 @@ TER Transactor::apply ()
     // sle must exist except for transactions
     // that allow zero account.
     assert(sle != nullptr || account_ == zero);
-
-    mFeeDue = calculateFee(ctx_.app, ctx_.baseFee,
-        view().fees(), view().flags());
 
     if (sle)
     {
