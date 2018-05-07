@@ -81,7 +81,6 @@ protected:
     beast::Journal j_;
 
     AccountID     account_;
-    XRPAmount     mFeeDue;
     XRPAmount     mPriorBalance;  // Balance before fees.
     XRPAmount     mSourceBalance; // Balance after fees.
 
@@ -132,7 +131,8 @@ public:
     static
     std::uint64_t
     calculateBaseFee (
-        PreclaimContext const& ctx);
+        ReadView const& view,
+        STTx const& tx);
 
     static
     bool
@@ -169,6 +169,20 @@ protected:
     virtual void preCompute();
 
     virtual TER doApply () = 0;
+
+    /** Compute the minimum fee required to process a transaction
+        with a given baseFee based on the current server load.
+
+        @param app The application hosting the server
+        @param baseFee The base fee of a candidate transaction
+            @see ripple::calculateBaseFee
+        @param fees Fee settings from the current ledger
+        @param flags Transaction processing fees
+     */
+    static
+    XRPAmount
+    minimumFee (Application& app, std::uint64_t baseFee,
+        Fees const& fees, ApplyFlags flags);
 
 private:
     XRPAmount reset(XRPAmount fee);

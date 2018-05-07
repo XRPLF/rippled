@@ -86,32 +86,20 @@ public:
 
     /// Intermediate transaction result
     TER const ter;
-    /// Transaction-specific base fee
-    std::uint64_t const baseFee;
     /// Success flag - whether the transaction is likely to
     /// claim a fee
     bool const likelyToClaimFee;
 
     /// Constructor
     template<class Context>
-    PreclaimResult(Context const& ctx_,
-        TER ter_, std::uint64_t const& baseFee_)
+    PreclaimResult(Context const& ctx_, TER ter_)
         : view(ctx_.view)
         , tx(ctx_.tx)
         , flags(ctx_.flags)
         , j(ctx_.j)
         , ter(ter_)
-        , baseFee(baseFee_)
         , likelyToClaimFee(ter == tesSUCCESS
             || isTecClaim(ter))
-    {
-    }
-
-    /// Constructor
-    template<class Context>
-    PreclaimResult(Context const& ctx_,
-        std::pair<TER, std::uint64_t> const& result)
-        : PreclaimResult(ctx_, result.first, result.second)
     {
     }
 
@@ -231,16 +219,14 @@ preclaim(PreflightResult const& preflightResult,
     Since none should be thrown, that will usually
     mean terminating.
 
-    @param app The current running `Application`.
     @param view The current open ledger.
     @param tx The transaction to be checked.
-    @param j A journal.
 
     @return The base fee.
 */
 std::uint64_t
-calculateBaseFee(Application& app, ReadView const& view,
-    STTx const& tx, beast::Journal j);
+calculateBaseFee(ReadView const& view,
+    STTx const& tx);
 
 /** Determine the XRP balance consequences if a transaction
     consumes the maximum XRP allowed.
