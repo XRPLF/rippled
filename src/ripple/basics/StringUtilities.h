@@ -22,6 +22,7 @@
 
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/strHex.h>
+#include <boost/endian/conversion.hpp>
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
 #include <sstream>
@@ -42,7 +43,7 @@ inline std::string strHex (Blob const& vucData)
 
 inline std::string strHex (const std::uint64_t uiHost)
 {
-    uint64_t    uBig    = htobe64 (uiHost);
+    uint64_t    uBig    = boost::endian::native_to_big (uiHost);
 
     return strHex ((unsigned char*) &uBig, sizeof (uBig));
 }
