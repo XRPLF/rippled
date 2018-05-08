@@ -233,13 +233,13 @@ public:
         // an offer.  Show that the attempt to remove the offer fails.
         env.require (offers (alice, 2));
 
-        // featureChecks changes the return code on an expired Offer.  Adapt
-        // to that.
-        bool const featChecks {features[featureChecks]};
+        // featureDepositPreauths changes the return code on an expired Offer.
+        // Adapt to that.
+        bool const featPreauth {features[featureDepositPreauth]};
         env (offer (alice, XRP (5), USD (2)),
             json (sfExpiration.fieldName, lastClose(env)),
             json (jss::OfferSequence, offer2Seq),
-            ter (featChecks ? tecEXPIRED : tesSUCCESS));
+            ter (featPreauth ? tecEXPIRED : tesSUCCESS));
         env.close();
 
         env.require (offers (alice, 2));
@@ -954,12 +954,12 @@ public:
             owners (alice, 1));
 
         // Place an offer that should have already expired.
-        // The Checks amendment changes the return code; adapt to that.
-        bool const featChecks {features[featureChecks]};
+        // The DepositPreauth amendment changes the return code; adapt to that.
+        bool const featPreauth {features[featureDepositPreauth]};
 
         env (offer (alice, xrpOffer, usdOffer),
             json (sfExpiration.fieldName, lastClose(env)),
-            ter (featChecks ? tecEXPIRED : tesSUCCESS));
+            ter (featPreauth ? tecEXPIRED : tesSUCCESS));
 
         env.require (
             balance (alice, startBalance - f - f),
@@ -4390,20 +4390,20 @@ public:
         env(fset (gw, asfRequireAuth));
         env.close();
 
-        // The test behaves differently with or without FlowCross.
-        bool const flowCross = features[featureFlowCross];
+        // The test behaves differently with or without DepositPreauth.
+        bool const preauth = features[featureDepositPreauth];
 
-        // Before FlowCross an account with lsfRequireAuth set could not
-        // create an offer to buy their own currency.  After FlowCross
+        // Before DepositPreauth an account with lsfRequireAuth set could not
+        // create an offer to buy their own currency.  After DepositPreauth
         // they can.
         env (offer (gw, gwUSD(40), XRP(4000)),
-            ter (flowCross ? tesSUCCESS : tecNO_LINE));
+            ter (preauth ? tesSUCCESS : tecNO_LINE));
         env.close();
 
-        env.require (offers (gw, flowCross ? 1 : 0));
+        env.require (offers (gw, preauth ? 1 : 0));
 
-        if (!flowCross)
-            // The rest of the test verifies FlowCross behavior.
+        if (!preauth)
+            // The rest of the test verifies DepositPreauth behavior.
             return;
 
         // Set up an authorized trust line and pay alice gwUSD 50.
