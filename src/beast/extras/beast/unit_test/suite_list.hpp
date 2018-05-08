@@ -39,7 +39,8 @@ public:
         char const* name,
         char const* module,
         char const* library,
-        bool manual);
+        bool manual,
+        int priority);
 };
 
 //------------------------------------------------------------------------------
@@ -50,7 +51,8 @@ suite_list::insert(
     char const* name,
     char const* module,
     char const* library,
-    bool manual)
+    bool manual,
+    int priority)
 {
 #ifndef NDEBUG
     {
@@ -67,7 +69,7 @@ suite_list::insert(
     }
 #endif
     cont().emplace(make_suite_info<Suite>(
-        name, module, library, manual));
+        name, module, library, manual, priority));
 }
 
 } // unit_test

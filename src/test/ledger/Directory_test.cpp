@@ -441,7 +441,7 @@ struct Directory_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Directory,ledger,ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(Directory,ledger,ripple,1);
 
 }
 }

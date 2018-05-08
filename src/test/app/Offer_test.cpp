@@ -4658,8 +4658,8 @@ class Offer_manual_test : public Offer_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE (Offer, tx, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL (Offer_manual, tx, ripple);
+BEAST_DEFINE_TESTSUITE_PRIO (Offer, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO (Offer_manual, tx, ripple, 20);
 
 }  // test
 }  // ripple

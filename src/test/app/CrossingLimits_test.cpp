@@ -274,7 +274,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(CrossingLimits,tx,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimits,tx,ripple,10);
 
 } // test
 } // ripple

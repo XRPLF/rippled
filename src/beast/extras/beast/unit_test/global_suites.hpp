@@ -28,10 +28,10 @@ template<class Suite>
 struct insert_suite
 {
     insert_suite(char const* name, char const* module,
-        char const* library, bool manual)
+        char const* library, bool manual, int priority)
     {
         global_suites().insert<Suite>(
-            name, module, library, manual);
+            name, module, library, manual, priority);
     }
 };
 

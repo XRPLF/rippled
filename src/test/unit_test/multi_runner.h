@@ -285,32 +285,6 @@ multi_runner_child::run_multi(Pred pred)
 {
     auto const& suite = beast::unit_test::global_suites();
     auto const num_tests = suite.size();
-    // actual order to run the tests. Use this to move longer running tests to
-    // the beginning to better take advantage of a multi process run.
-    std::vector<std::size_t> order(num_tests);
-    std::iota(order.begin(), order.end(), 0);
-    {
-        std::unordered_set<std::string> prioritize{
-            "ripple.app.Flow", "ripple.tx.Offer"};
-        std::vector<std::size_t> to_swap;
-        to_swap.reserve(prioritize.size());
-
-        size_t i = 0;
-        for (auto const& t : suite)
-        {
-            auto const full_name = t.full_name();
-            if (prioritize.count(full_name))
-            {
-                to_swap.push_back(i);
-                if (to_swap.size() == prioritize.size())
-                    break;
-            }
-            ++i;
-        }
-
-        for (std::size_t i = 0; i < to_swap.size(); ++i)
-            std::swap(order[to_swap[i]], order[i]);
-    }
     bool failed = false;
 
     auto get_test = [&]() -> beast::unit_test::suite_info const* {
@@ -318,7 +292,7 @@ multi_runner_child::run_multi(Pred pred)
         if (cur_test_index >= num_tests)
             return nullptr;
         auto iter = suite.begin();
-        std::advance(iter, order[cur_test_index]);
+        std::advance(iter, cur_test_index);
         return &*iter;
     };
     while (auto t = get_test())
