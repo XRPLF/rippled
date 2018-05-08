@@ -22,7 +22,6 @@
 
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/basics/Log.h>
-#include <ripple/beast/core/ByteOrder.h>
 #include <ripple/beast/utility/WrappedSink.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
@@ -32,6 +31,7 @@
 #include <ripple/protocol/STValidation.h>
 #include <ripple/resource/Fees.h>
 
+#include <boost/endian/conversion.hpp>
 #include <cstdint>
 #include <deque>
 #include <queue>
@@ -519,8 +519,8 @@ PeerImp::sendEndpoints (FwdIt first, FwdIt last)
         protocol::TMEndpoint& tme (*tm.add_endpoints());
         if (ep.address.is_v4())
             tme.mutable_ipv4()->set_ipv4(
-                beast::toNetworkByteOrder<std::uint32_t> (
-                    ep.address.to_v4().to_ulong()));
+                boost::endian::native_to_big(
+                    static_cast<std::uint32_t>(ep.address.to_v4().to_ulong())));
         else
             tme.mutable_ipv4()->set_ipv4(0);
         tme.mutable_ipv4()->set_ipv4port (ep.address.port());

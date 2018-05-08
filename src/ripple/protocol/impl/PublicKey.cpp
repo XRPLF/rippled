@@ -22,7 +22,6 @@
 #include <ripple/protocol/impl/secp256k1.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/strHex.h>
-#include <ripple/beast/core/ByteOrder.h>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <ed25519-donna/ed25519.h>
 #include <type_traits>

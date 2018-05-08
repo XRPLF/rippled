@@ -32,7 +32,7 @@
 #include <deque>
 #include <tuple>
 
-#include "ripple.pb.h"
+#include <ripple/protocol/messages.h>
 
 namespace ripple {
 

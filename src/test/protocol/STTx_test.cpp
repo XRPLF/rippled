@@ -24,7 +24,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/basics/Slice.h>
-#include "ripple.pb.h"
+#include <ripple/protocol/messages.h>
 
 namespace ripple {
 

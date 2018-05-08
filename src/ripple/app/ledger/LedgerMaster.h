@@ -41,7 +41,7 @@
 #include <ripple/beast/utility/PropertyStream.h>
 #include <mutex>
 
-#include "ripple.pb.h"
+#include <ripple/protocol/messages.h>
 
 namespace ripple {
 
