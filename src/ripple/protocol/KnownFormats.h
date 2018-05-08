@@ -87,17 +87,13 @@ public:
 
         Derived classes will load the object will all the known formats.
     */
-    KnownFormats ()
-    {
-    }
+    KnownFormats () = default;
 
     /** Destroy the known formats object.
 
         The defined formats are deleted.
     */
-    ~KnownFormats ()
-    {
-    }
+    virtual ~KnownFormats () = default;
 
     /** Retrieve the type for a format specified by name.
 

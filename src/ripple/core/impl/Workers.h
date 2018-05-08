@@ -44,6 +44,8 @@ public:
     /** Called to perform tasks as needed. */
     struct Callback
     {
+        virtual ~Callback () = default;
+
         /** Perform a task.
 
             The call is made on a thread owned by Workers. It is important
