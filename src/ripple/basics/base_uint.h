@@ -83,6 +83,7 @@ public:
     pointer data() { return reinterpret_cast<pointer>(pn); }
     const_pointer data() const { return reinterpret_cast<const_pointer>(pn); }
 
+
     iterator begin() { return data(); }
     iterator end()   { return data()+bytes; }
     const_iterator begin()  const { return data(); }
@@ -94,18 +95,6 @@ public:
         The seed prevents crafted inputs from causing degenerate parent containers.
     */
     using hasher = hardened_hash <>;
-
-    /** Container equality testing function. */
-    class key_equal
-    {
-    public:
-        explicit key_equal() = default;
-
-        bool operator() (base_uint const& lhs, base_uint const& rhs) const
-        {
-            return lhs == rhs;
-        }
-    };
 
     //--------------------------------------------------------------------------
 
@@ -241,22 +230,12 @@ public:
         return *this;
     }
 
-    static uint32_t bigendToHost (uint32_t x)
-    {
-        return boost::endian::big_to_native(x);
-    }
-
-    static uint32_t hostToBigend (uint32_t x)
-    {
-        return boost::endian::native_to_big(x);
-    }
-
     base_uint& operator++ ()
     {
         // prefix operator
         for (int i = WIDTH - 1; i >= 0; --i)
         {
-            pn[i] = hostToBigend (bigendToHost (pn[i]) + 1);
+            pn[i] = boost::endian::native_to_big (boost::endian::big_to_native(pn[i]) + 1);
 
             if (pn[i] != 0)
                 break;
@@ -279,7 +258,7 @@ public:
         for (int i = WIDTH - 1; i >= 0; --i)
         {
             auto prev = pn[i];
-            pn[i] = hostToBigend (bigendToHost (pn[i]) - 1);
+            pn[i] = boost::endian::native_to_big (boost::endian::big_to_native(pn[i]) - 1);
 
             if (prev != 0)
                 break;
@@ -303,10 +282,10 @@ public:
 
         for (int i = WIDTH; i--;)
         {
-            std::uint64_t n = carry + bigendToHost (pn[i]) +
-                    bigendToHost (b.pn[i]);
+            std::uint64_t n = carry + boost::endian::big_to_native(pn[i]) +
+                boost::endian::big_to_native(b.pn[i]);
 
-            pn[i] = hostToBigend (n & 0xffffffff);
+            pn[i] = boost::endian::native_to_big (n & 0xffffffff);
             carry = n >> 32;
         }
 
