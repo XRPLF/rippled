@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <test/jtx.h>
@@ -273,9 +274,20 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
                             {steady_clock::now()};
                 }
             }
+
+            auto& txq = env.app().getTxQ();
             auto const gw = Account {"gw" + std::to_string(i)};
-            env.fund (XRP (1000), gw);
-            env (trust (alice, gw["USD"](10)));
+            env.memoize(gw);
+            env (pay (env.master, gw, XRP(1000)),
+                seq (autofill),
+                fee (txq.getMetrics(*env.current())->expFeeLevel + 1),
+                sig (autofill));
+            env (fset (gw, asfDefaultRipple),
+                seq (autofill),
+                fee (txq.getMetrics(*env.current())->expFeeLevel + 1),
+                sig (autofill));
+            env (trust (alice, gw["USD"](10)),
+                fee (txq.getMetrics(*env.current())->expFeeLevel + 1));
             env.close();
         }
 
@@ -328,7 +340,7 @@ BEAST_DEFINE_TESTSUITE(NoRippleCheck, app, ripple);
 // offer/account setup, so making them manual -- the additional coverage provided
 // by them is minimal
 
-BEAST_DEFINE_TESTSUITE_MANUAL(NoRippleCheckLimits, app, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(NoRippleCheckLimits, app, ripple, 1);
 
 } // ripple
 

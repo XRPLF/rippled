@@ -852,7 +852,7 @@ struct PayStrandAllPairs_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(PayStrandAllPairs, app, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PayStrandAllPairs, app, ripple, 12);
 
 struct PayStrand_test : public beast::unit_test::suite
 {

@@ -89,6 +89,7 @@ try {
 
     stage ('Parallel Build') {
         String[][] variants = [
+            ['gcc.release.unity', '-Dassert=true', 'MANUAL_TESTS=true'],
             ['coverage'],
             ['docs'],
             ['msvc.debug'],
@@ -101,8 +102,8 @@ try {
             ['clang.debug.nounity'],
             ['gcc.debug.unity'],
             ['gcc.debug.nounity'],
-            ['clang.release.unity'],
-            ['gcc.release.unity'],
+            ['clang.release.unity', '-Dassert=true'],
+            ['gcc.release.unity', '-Dassert=true'],
             // add a static build just to make sure it works
             ['gcc.debug.unity', '-Dstatic=true'],
             // TODO - sanitizer runs currently fail
