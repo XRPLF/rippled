@@ -36,6 +36,9 @@ private:
         virtual void operator()(
             void* dest, std::size_t bytes) const = 0;
         virtual ~base() = default;
+        base() = default;
+        base(base const&) = delete;
+        base& operator=(base const&) = delete;
     };
 
     struct impl : base

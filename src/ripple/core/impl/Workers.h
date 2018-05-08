@@ -45,6 +45,9 @@ public:
     struct Callback
     {
         virtual ~Callback () = default;
+        Callback() = default;
+        Callback(Callback const&) = delete;
+        Callback& operator=(Callback const&) = delete;
 
         /** Perform a task.
 

@@ -38,6 +38,9 @@ class seconds_clock_worker
 public:
     virtual void sample () = 0;
     virtual ~seconds_clock_worker() = default;
+    seconds_clock_worker() = default;
+    seconds_clock_worker(seconds_clock_worker const&) = delete;
+    seconds_clock_worker& operator=(seconds_clock_worker const&) = delete;
 };
 
 //------------------------------------------------------------------------------

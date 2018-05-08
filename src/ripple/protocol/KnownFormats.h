@@ -94,6 +94,8 @@ public:
         The defined formats are deleted.
     */
     virtual ~KnownFormats () = default;
+    KnownFormats(KnownFormats const&) = delete;
+    KnownFormats& operator=(KnownFormats const&) = delete;
 
     /** Retrieve the type for a format specified by name.
 
@@ -176,9 +178,6 @@ protected:
     virtual void addCommonFields (Item& item) = 0;
 
 private:
-    KnownFormats(KnownFormats const&) = delete;
-    KnownFormats& operator=(KnownFormats const&) = delete;
-
     std::vector <std::unique_ptr <Item>> m_formats;
     NameMap m_names;
     TypeMap m_types;

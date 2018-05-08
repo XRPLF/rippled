@@ -111,6 +111,9 @@ struct WSSession
     std::shared_ptr<void> appDefined;
 
     virtual ~WSSession () = default;
+    WSSession() = default;
+    WSSession(WSSession const&) = delete;
+    WSSession& operator=(WSSession const&) = delete;
 
     virtual
     void

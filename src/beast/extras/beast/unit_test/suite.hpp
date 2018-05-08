@@ -184,6 +184,8 @@ public:
     }
 
     virtual ~suite() = default;
+    suite(suite const&) = delete;
+    suite& operator=(suite const&) = delete;
 
     /** Invokes the test using the specified runner.
 
