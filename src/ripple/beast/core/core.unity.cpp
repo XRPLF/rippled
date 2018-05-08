@@ -41,9 +41,6 @@
 
 //------------------------------------------------------------------------------
 
-// New header-only library modeled more closely according to boost
-#include <ripple/beast/core/ByteOrder.h>
-
 #include <ripple/beast/core/StandardIncludes.h>
 
 // Order matters, since headers don't have their own #include lines.

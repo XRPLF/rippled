@@ -20,7 +20,6 @@
 #ifndef RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
 #define RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
 
-#include <ripple/basics/ByteOrder.h>
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/strHex.h>
 #include <boost/format.hpp>
