@@ -37,6 +37,7 @@ class seconds_clock_worker
 {
 public:
     virtual void sample () = 0;
+    virtual ~seconds_clock_worker() = default;
 };
 
 //------------------------------------------------------------------------------

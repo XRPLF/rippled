@@ -35,6 +35,7 @@ private:
     {
         virtual void operator()(
             void* dest, std::size_t bytes) const = 0;
+        virtual ~base() = default;
     };
 
     struct impl : base

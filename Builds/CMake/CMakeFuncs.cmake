@@ -643,7 +643,7 @@ macro(setup_build_boilerplate)
     add_definitions(-D_FILE_OFFSET_BITS=64)
     append_flags(CMAKE_CXX_FLAGS -frtti -std=c++14 -Wno-invalid-offsetof -Wdeprecated
       -DBOOST_COROUTINE_NO_DEPRECATION_WARNING -DBOOST_COROUTINES_NO_DEPRECATION_WARNING)
-    add_compile_options(-Wall -Wno-sign-compare -Wno-char-subscripts -Wno-format
+    add_compile_options(-Wall -Wnon-virtual-dtor -Wno-sign-compare -Wno-char-subscripts -Wno-format
       -Wno-unused-local-typedefs -g)
     # There seems to be an issue using generator experssions with multiple values,
     # split the expression

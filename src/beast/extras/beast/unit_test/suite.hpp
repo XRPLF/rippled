@@ -183,6 +183,8 @@ public:
     {
     }
 
+    virtual ~suite() = default;
+
     /** Invokes the test using the specified runner.
 
         Data members are set up here instead of the constructor as a
