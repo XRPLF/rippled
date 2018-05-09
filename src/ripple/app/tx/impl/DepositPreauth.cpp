@@ -20,9 +20,9 @@
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Quality.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/st.h>
+#include <ripple/protocol/TxFlags.h>
 #include <ripple/ledger/View.h>
 
 namespace ripple {
@@ -47,9 +47,9 @@ DepositPreauth::preflight (PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    auto const auth = ctx.tx[~sfAuthorize];
-    auto const unauth = ctx.tx[~sfUnauthorize];
-    if (auth.is_initialized() == unauth.is_initialized())
+    auto const optAuth = ctx.tx[~sfAuthorize];
+    auto const optUnauth = ctx.tx[~sfUnauthorize];
+    if (static_cast<bool>(optAuth) == static_cast<bool>(optUnauth))
     {
         // Either both fields are present or neither field is present.  In
         // either case the transaction is malformed.
@@ -60,7 +60,7 @@ DepositPreauth::preflight (PreflightContext const& ctx)
     }
 
     // Make sure that the passed account is valid.
-    AccountID const target {auth.is_initialized() ? *auth : *unauth};
+    AccountID const target {optAuth ? *optAuth : *optUnauth};
     if (target == beast::zero)
     {
         JLOG(j.trace()) <<
@@ -69,7 +69,7 @@ DepositPreauth::preflight (PreflightContext const& ctx)
     }
 
     // An account may not preauthorize itself.
-    if (auth.is_initialized() && (target == ctx.tx[sfAccount]))
+    if (optAuth && (target == ctx.tx[sfAccount]))
     {
         JLOG(j.trace()) <<
             "Malformed transaction: Attempting to DepositPreauth self.";

@@ -356,7 +356,6 @@ Payment::doApply ()
 
     // If the destination has lsfDepositAuth set, then only direct XRP
     // payments (no intermediate steps) are allowed to the destination.
-    // This rule was refined when featureDepositPreauth was added.
     if (!depositPreauth && bRipple && reqDepositAuth)
         return tecNO_PERMISSION;
 

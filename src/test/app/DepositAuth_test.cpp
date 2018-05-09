@@ -691,7 +691,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         testEnable();
         testInvalid();
         testPayment (jtx::supported_amendments() - featureDepositPreauth);
-        testPayment (jtx::supported_amendments() | featureDepositPreauth);
+        testPayment (jtx::supported_amendments());
     }
 };
 

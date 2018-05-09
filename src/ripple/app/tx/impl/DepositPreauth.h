@@ -20,11 +20,7 @@
 #ifndef RIPPLE_TX_DEPOSIT_PREAUTH_H_INCLUDED
 #define RIPPLE_TX_DEPOSIT_PREAUTH_H_INCLUDED
 
-#include <ripple/protocol/Quality.h>
 #include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
 
