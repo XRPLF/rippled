@@ -7,6 +7,7 @@ all_status = [:]
 commit_id = ''
 git_fork = 'ripple'
 git_repo = 'rippled'
+collab_found = false;
 //
 // this is not the actual token, but an ID/key into the jenkins
 // credential store which httpRequest can access.
@@ -59,7 +60,6 @@ try {
                     url: "${github_api}/collaborators")
                 def collab_data = readJSON(
                     text: response.content)
-                collab_found = false;
                 for (collaborator in collab_data) {
                     if (collaborator['login'] == "$CHANGE_AUTHOR") {
                         echo "$CHANGE_AUTHOR is a collaborator!"
@@ -69,15 +69,40 @@ try {
                 }
 
                 if (! collab_found) {
-                    manager.addShortText(
-                        'Author of this change is not a collaborator!',
-                        'Crimson',
-                        'white',
-                        '0px',
-                        'white')
-                    all_status['startup'] =
-                        [false, 'Author Check', "$CHANGE_AUTHOR is not a collaborator!"]
-                    error "$CHANGE_AUTHOR does not appear to be a collaborator...bailing on this build"
+                    echo "$CHANGE_AUTHOR is not a collaborator - waiting for manual approval."
+                    try {
+                        response = httpRequest(
+                            timeout: 10,
+                            authentication: github_cred,
+                            url: getCommentURL(),
+                            contentType: 'APPLICATION_JSON',
+                            httpMode: 'POST',
+                            requestBody: JsonOutput.toJson([
+                                body: """
+**Thank you** for your submission. It will be reviewed soon and submitted for processing in CI.
+"""
+                            ])
+                        )
+                    }
+                    catch (e) {
+                        echo 'had a problem interacting with github...comments are probably not updated'
+                    }
+
+                    try {
+                        input (
+                            message: "User $CHANGE_AUTHOR has submitted PR #$CHANGE_ID. " +
+                                "**Please review** the changes for any CI/security concerns " +
+                                "and then decide whether to proceed with building.")
+                    }
+                    catch(e) {
+                        def user = e.getCauses()[0].getUser().toString()
+                        all_status['startup'] = [
+                            false,
+                            'Approval Check',
+                            "Build aborted by [${user}]",
+                            "[console](${env.BUILD_URL}/console)"]
+                        error "Aborted by: [${user}]"
+                    }
                 }
             }
         }
@@ -250,47 +275,49 @@ try {
         } //for variants
 
         // Also add a single build job for doing the RPM build
-        // on a docker node
-        builds['rpm'] = {
-            node('docker') {
-                def bldlabel = 'rpm'
-                configFileProvider (
-                    [configFile(
-                        fileId: 'rippled-commit-signer-public-keys.txt',
-                        variable: 'SIGNER_PUBLIC_KEYS')])
-                {
-                    def remote =
-                        (git_fork == 'ripple') ? 'origin' : git_fork
-
-                    withCredentials(
-                        [string(
-                            credentialsId: 'RIPPLED_RPM_ROLE_ID',
-                            variable: 'ROLE_ID')])
+        // on a docker node, but only for collaborators (approved committers)
+        if (collab_found) {
+            builds['rpm'] = {
+                node('docker') {
+                    def bldlabel = 'rpm'
+                    configFileProvider (
+                        [configFile(
+                            fileId: 'rippled-commit-signer-public-keys.txt',
+                            variable: 'SIGNER_PUBLIC_KEYS')])
                     {
-                        withEnv([
-                            'docker_image=artifactory.ops.ripple.com:6555/rippled-rpm-builder:latest',
-                            "git_commit=${commit_id}",
-                            "git_remote=${remote}",
-                            "rpm_release=${env.BUILD_ID}"])
+                        def remote =
+                            (git_fork == 'ripple') ? 'origin' : git_fork
+
+                        withCredentials(
+                            [string(
+                                credentialsId: 'RIPPLED_RPM_ROLE_ID',
+                                variable: 'ROLE_ID')])
                         {
-                            try {
-                                sh "rm -fv ${bldlabel}.txt"
-                                sh "if [ -d rpm-out ]; then rm -rf rpm-out; fi"
-                                sh rpmBuildCmd(bldlabel)
-                            }
-                            finally {
-                                def st = reportStatus(bldlabel, bldlabel, env.BUILD_URL)
-                                lock('rippled_dev_status') {
-                                    all_status[bldlabel] = st
+                            withEnv([
+                                'docker_image=artifactory.ops.ripple.com:6555/rippled-rpm-builder:latest',
+                                "git_commit=${commit_id}",
+                                "git_remote=${remote}",
+                                "rpm_release=${env.BUILD_ID}"])
+                            {
+                                try {
+                                    sh "rm -fv ${bldlabel}.txt"
+                                    sh "if [ -d rpm-out ]; then rm -rf rpm-out; fi"
+                                    sh rpmBuildCmd(bldlabel)
                                 }
-                                archiveArtifacts(
-                                    artifacts: 'rpm-out/*.rpm',
-                                    allowEmptyArchive: true)
-                            }
-                        } //withEnv
-                    } //withCredentials
-                } //configFile
-            } //node
+                                finally {
+                                    def st = reportStatus(bldlabel, bldlabel, env.BUILD_URL)
+                                    lock('rippled_dev_status') {
+                                        all_status[bldlabel] = st
+                                    }
+                                    archiveArtifacts(
+                                        artifacts: 'rpm-out/*.rpm',
+                                        allowEmptyArchive: true)
+                                }
+                            } //withEnv
+                        } //withCredentials
+                    } //configFile
+                } //node
+            }
         }
 
         // this actually executes all the builds we just defined
@@ -380,7 +407,7 @@ Build Type | Log | Result | Status
     results
 }
 
-def getCommentID () {
+def getCommentURL () {
     def url_c = ''
     if (env.CHANGE_ID && env.CHANGE_ID ==~ /\d+/) {
         //
@@ -404,6 +431,11 @@ def getCommentID () {
         url_c =
             "${github_api}/commits/${commit_id}/comments"
     }
+    url_c
+}
+
+def getCommentID () {
+    def url_c = getCommentURL()
     def response = httpRequest(
         timeout: 10,
         authentication: github_cred,
