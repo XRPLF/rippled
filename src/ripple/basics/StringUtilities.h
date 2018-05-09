@@ -28,6 +28,10 @@
 #include <sstream>
 #include <string>
 
+#ifdef __linux__
+#include <endian.h>
+#endif
+
 namespace ripple {
 
 // NIKB TODO Remove the need for all these overloads. Move them out of here.
