@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2018 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -40,9 +40,7 @@ DepositPreauth::preflight (PreflightContext const& ctx)
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
-    std::uint32_t const uTxFlags = tx.getFlags ();
-
-    if (uTxFlags & tfUniversalMask)
+    if (tx.getFlags() & tfUniversalMask)
     {
         JLOG(j.trace()) <<
             "Malformed transaction: Invalid flags set.";
@@ -51,7 +49,7 @@ DepositPreauth::preflight (PreflightContext const& ctx)
 
     auto const auth = ctx.tx[~sfAuthorize];
     auto const unauth = ctx.tx[~sfUnauthorize];
-    if ((auth.is_initialized()) == unauth.is_initialized())
+    if (auth.is_initialized() == unauth.is_initialized())
     {
         // Either both fields are present or neither field is present.  In
         // either case the transaction is malformed.
@@ -89,8 +87,7 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
     {
         // Verify that the Authorize account is present in the ledger.
         AccountID const auth {ctx.tx[sfAuthorize]};
-        auto const sleAuth = ctx.view.read (keylet::account (auth));
-        if (!sleAuth)
+        if (! ctx.view.exists (keylet::account (auth)))
             return tecNO_TARGET;
 
         // Verify that the Preauth entry they asked to add is not already
@@ -115,7 +112,6 @@ DepositPreauth::doApply ()
 {
     auto const sleOwner = view().peek (keylet::account (account_));
 
-    // Determine which operation we're performing: authorizing or unauthorizing.
     if (ctx_.tx.isFieldPresent (sfAuthorize))
     {
         // A preauth counts against the reserve of the issuing account, but we
@@ -132,17 +128,16 @@ DepositPreauth::doApply ()
         // Preclaim already verified that the Preauth entry does not yet exist.
         // Create and populate the Preauth entry.
         AccountID const auth {ctx_.tx[sfAuthorize]};
-        uint256 const preauthIndex {getDepositPreauthIndex (account_, auth)};
         auto slePreauth =
-            std::make_shared<SLE>(ltDEPOSIT_PREAUTH, preauthIndex);
+            std::make_shared<SLE>(keylet::depositPreauth (account_, auth));
 
         slePreauth->setAccountID (sfAccount, account_);
         slePreauth->setAccountID (sfAuthorize, auth);
         view().insert (slePreauth);
 
         auto viewJ = ctx_.app.journal ("View");
-        auto const page = dirAdd (view(), keylet::ownerDir (account_),
-            slePreauth->key(), false, describeOwnerDir (account_), viewJ);
+        auto const page = view().dirInsert (keylet::ownerDir (account_),
+            slePreauth->key(), describeOwnerDir (account_));
 
         JLOG(j_.trace())
             << "Adding DepositPreauth to owner directory "
@@ -174,12 +169,11 @@ DepositPreauth::doApply ()
 
         auto viewJ = ctx_.app.journal ("View");
         std::uint64_t const page {(*slePreauth)[sfOwnerNode]};
-        TER const ter {dirDelete (view(), true, page,
-            keylet::ownerDir (account_), preauthIndex, false, false, viewJ)};
-        if (! isTesSuccess (ter))
+        if (! view().dirRemove (
+            keylet::ownerDir (account_), page, preauthIndex, true))
         {
             JLOG(j_.warn()) << "Unable to delete DepositPreauth from owner.";
-            return ter;
+            return tefBAD_LEDGER;
         }
 
         // If we succeeded, update the DepositPreauth owner's reserve.
