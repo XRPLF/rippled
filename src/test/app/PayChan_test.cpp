@@ -644,7 +644,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             // Create a channel where dst disallows XRP.  Ignore that flag,
             // since it's just advisory.
-            Env env (*this,  supported_amendments() | featureDepositAuth);
+            Env env (*this,  supported_amendments());
             env.fund (XRP (10000), alice, bob);
             env (fset (bob, asfDisallowXRP));
             env (create (alice, bob, XRP (1000), 3600s, alice.pk()));
@@ -669,7 +669,7 @@ struct PayChan_test : public beast::unit_test::suite
             // Claim to a channel where dst disallows XRP (channel is
             // created before disallow xrp is set).  Ignore that flag
             // since it is just advisory.
-            Env env (*this, supported_amendments() | featureDepositAuth);
+            Env env (*this, supported_amendments());
             env.fund (XRP (10000), alice, bob);
             env (create (alice, bob, XRP (1000), 3600s, alice.pk()));
             auto const chan = channel (*env.current (), alice, bob);
