@@ -33,7 +33,7 @@ class Change
     : public Transactor
 {
 public:
-    Change (ApplyContext& ctx)
+    explicit Change (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }

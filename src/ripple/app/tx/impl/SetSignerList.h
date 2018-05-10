@@ -48,7 +48,7 @@ private:
     std::vector<SignerEntries::SignerEntry> signers_;
 
 public:
-    SetSignerList (ApplyContext& ctx)
+    explicit SetSignerList (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }

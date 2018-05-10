@@ -28,7 +28,7 @@ class DepositPreauth
     : public Transactor
 {
 public:
-    DepositPreauth (ApplyContext& ctx)
+    explicit DepositPreauth (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }

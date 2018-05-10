@@ -28,7 +28,7 @@ class CreateCheck
     : public Transactor
 {
 public:
-    CreateCheck (ApplyContext& ctx)
+    explicit CreateCheck (ApplyContext& ctx)
         : Transactor (ctx)
     {
     }
