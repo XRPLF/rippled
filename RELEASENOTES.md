@@ -14,6 +14,22 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 1.0.0.
+
+The `rippled` 1.0.0 release includes incremental improvements to several previously released features.
+
+**New and Updated Features**
+
+- The **history sharding** functionality has been improved. Instances can now use the shard store to satisfy ledger requests.
+- Change permessage-deflate and compress defaults (RIPD-506)
+- Update validations on UNL change (RIPD-1566)
+
+**Bug Fixes**
+
+- Add `check`, `escrow`, and `pay_chan` to `ledger_entry` (RIPD-1600)
+- Clarify Escrow semantics (RIPD-1571)
+
+
 ## Version 0.90.1
 
 The `rippled` 0.90.1 release includes fixes for issues reported by external security researchers. These issues, when exploited, could cause a rippled instance to restart or, in some circumstances, stop executing. While these issues can result in a denial of service attack, none affect the integrity of the XRP Ledger and no user funds, including XRP, are at risk.
