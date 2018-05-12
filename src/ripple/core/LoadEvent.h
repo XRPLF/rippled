@@ -55,8 +55,7 @@ public:
     std::chrono::steady_clock::duration
     runTime() const;
 
-    // VFALCO TODO rename this to setName () or setLabel ()
-    void reName (std::string const& name);
+    void setName (std::string const& name);
 
     // Start the measurement. If already started, then
     // restart, assigning the elapsed time to the "waiting"
