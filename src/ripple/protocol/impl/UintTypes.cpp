@@ -20,7 +20,7 @@
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 
 namespace ripple {
 

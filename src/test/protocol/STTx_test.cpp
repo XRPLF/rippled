@@ -20,7 +20,7 @@
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/STParsedJSON.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 #include <ripple/json/to_string.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/basics/Slice.h>

@@ -46,7 +46,7 @@
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/Feature.h>
 #include <memory>
 

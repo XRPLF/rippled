@@ -20,7 +20,6 @@
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/types.h>
 
 namespace ripple {
 
