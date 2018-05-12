@@ -240,7 +240,7 @@ std::string STTx::getMetaSQL (std::uint32_t inLedger,
 {
     Serializer s;
     add (s);
-    return getMetaSQL (s, inLedger, TXN_SQL_VALIDATED, escapedMetaData);
+    return getMetaSQL (s, inLedger, txnSqlValidated, escapedMetaData);
 }
 
 // VFALCO This could be a free function elsewhere
