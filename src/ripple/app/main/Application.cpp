@@ -1200,7 +1200,7 @@ bool ApplicationImp::setup()
     {
         // This should probably become the default once we have a stable network.
         if (!config_->standalone())
-            m_networkOPs->needNetworkLedger ();
+            m_networkOPs->setNeedNetworkLedger();
 
         startGenesisLedger ();
     }
