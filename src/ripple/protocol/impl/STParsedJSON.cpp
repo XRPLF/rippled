@@ -32,7 +32,7 @@
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFormats.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/impl/STVar.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <cassert>
