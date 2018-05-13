@@ -23,7 +23,7 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/STParsedJSON.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 #include <ripple/basics/contract.h>
 #include <cstring>
 

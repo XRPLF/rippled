@@ -32,7 +32,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/SystemParameters.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 #include <ripple/rpc/ServerHandler.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <beast/core/string.hpp>

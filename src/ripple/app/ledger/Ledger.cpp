@@ -45,7 +45,7 @@
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/optional.hpp>
 #include <cassert>

@@ -23,7 +23,7 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 #include <boost/format.hpp>
 #include <memory>
 

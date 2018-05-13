@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 #include <ripple/beast/unit_test.h>
 
 namespace ripple {
