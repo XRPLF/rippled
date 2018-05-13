@@ -66,7 +66,7 @@ public:
 
     std::shared_ptr<Ledger const>
     acquire(uint256 const& hash, std::uint32_t seq,
-        InboundLedger::Reason reason)
+        InboundLedger::Reason reason) override
     {
         assert(hash.isNonZero());
         assert(reason != InboundLedger::Reason::SHARD ||
@@ -125,7 +125,7 @@ public:
         return inbound->getLedger();
     }
 
-    std::shared_ptr<InboundLedger> find (uint256 const& hash)
+    std::shared_ptr<InboundLedger> find (uint256 const& hash) override
     {
         assert (hash.isNonZero ());
 
@@ -160,7 +160,7 @@ public:
     */
     bool gotLedgerData (LedgerHash const& hash,
             std::shared_ptr<Peer> peer,
-            std::shared_ptr<protocol::TMLedgerData> packet_ptr)
+            std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
     {
         protocol::TMLedgerData& packet = *packet_ptr;
 
@@ -196,7 +196,7 @@ public:
         return true;
     }
 
-    int getFetchCount (int& timeoutCount)
+    int getFetchCount (int& timeoutCount) override
     {
         timeoutCount = 0;
         int ret = 0;
@@ -224,14 +224,14 @@ public:
         return ret;
     }
 
-    void logFailure (uint256 const& h, std::uint32_t seq)
+    void logFailure (uint256 const& h, std::uint32_t seq) override
     {
         ScopedLockType sl (mLock);
 
         mRecentFailures.emplace(h, seq);
     }
 
-    bool isFailure (uint256 const& h)
+    bool isFailure (uint256 const& h) override
     {
         ScopedLockType sl (mLock);
 
@@ -239,7 +239,7 @@ public:
         return mRecentFailures.find (h) != mRecentFailures.end();
     }
 
-    void doLedgerData (LedgerHash hash)
+    void doLedgerData (LedgerHash hash) override
     {
         if (auto ledger = find (hash))
             ledger->runData ();
@@ -251,7 +251,7 @@ public:
         Nodes are received in wire format and must be stashed/hashed in prefix
         format
     */
-    void gotStaleData (std::shared_ptr<protocol::TMLedgerData> packet_ptr)
+    void gotStaleData (std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
     {
         const uint256 uZero;
         Serializer s;
@@ -287,7 +287,7 @@ public:
         }
     }
 
-    void clearFailures ()
+    void clearFailures () override
     {
         ScopedLockType sl (mLock);
 
@@ -295,7 +295,7 @@ public:
         mLedgers.clear();
     }
 
-    std::size_t fetchRate()
+    std::size_t fetchRate() override
     {
         std::lock_guard<
             std::mutex> lock(fetchRateMutex_);
@@ -305,13 +305,13 @@ public:
 
     // Should only be called with an inboundledger that has
     // a reason of history or shard
-    void onLedgerFetched()
+    void onLedgerFetched() override
     {
         std::lock_guard<std::mutex> lock(fetchRateMutex_);
         fetchRate_.add(1, m_clock.now());
     }
 
-    Json::Value getInfo()
+    Json::Value getInfo() override
     {
         Json::Value ret(Json::objectValue);
 
@@ -348,7 +348,7 @@ public:
         return ret;
     }
 
-    void gotFetchPack ()
+    void gotFetchPack () override
     {
         std::vector<std::shared_ptr<InboundLedger>> acquires;
         {
@@ -368,7 +368,7 @@ public:
         }
     }
 
-    void sweep ()
+    void sweep () override
     {
         clock_type::time_point const now (m_clock.now());
 
@@ -411,7 +411,7 @@ public:
             " out of " << total << " inbound ledgers.";
     }
 
-    void onStop ()
+    void onStop () override
     {
         ScopedLockType lock (mLock);
 

@@ -26,7 +26,7 @@ namespace beast {
 class error_test : public unit_test::suite
 {
 public:
-    void run()
+    void run() override
     {
         {
             boost::system::error_code ec =

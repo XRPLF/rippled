@@ -108,7 +108,7 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         using namespace jtx;
         auto const sa = supported_amendments();

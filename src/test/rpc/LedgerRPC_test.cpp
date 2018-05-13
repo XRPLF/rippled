@@ -1374,7 +1374,7 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
 public:
-    void run ()
+    void run () override
     {
         testLedgerRequest();
         testBadInput();

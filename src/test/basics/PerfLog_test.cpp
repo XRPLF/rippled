@@ -64,7 +64,7 @@ class PerfLog_test : public beast::unit_test::suite
         , j_ (j)
         { }
 
-        ~PerfLogParent()
+        ~PerfLogParent() override
         {
             doStop();
             cleanupPerfLogDir();
@@ -1067,7 +1067,7 @@ public:
         }
     }
 
-    void run()
+    void run() override
     {
         testFileCreation();
         testRPC (WithFile::no);

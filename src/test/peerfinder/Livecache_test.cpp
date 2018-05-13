@@ -61,7 +61,7 @@ public:
         pass();
     }
 
-    void run ()
+    void run () override
     {
         testFetch ();
     }

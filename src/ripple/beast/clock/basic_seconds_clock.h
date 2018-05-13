@@ -200,7 +200,7 @@ public:
                 return m_now;
             }
 
-            void sample()
+            void sample() override
             {
                 std::lock_guard<std::mutex> lock (mutex_);
                 m_now = Clock::now();

@@ -84,7 +84,7 @@ public:
         return true;
     }
 
-    void run()
+    void run() override
     {
         log << "Run, version 1\n" << std::endl;
         run(SHAMap::version{1});

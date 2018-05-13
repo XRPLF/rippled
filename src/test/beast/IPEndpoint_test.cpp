@@ -335,7 +335,7 @@ public:
         shouldFail <T> ("1.2.3:72131");
     }
 
-    void run ()
+    void run () override
     {
         testAddressV4 ();
         testAddressV4Proxy();

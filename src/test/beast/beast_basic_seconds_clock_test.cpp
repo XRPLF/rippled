@@ -27,7 +27,7 @@ class basic_seconds_clock_test : public unit_test::suite
 {
 public:
     void
-    run()
+    run() override
     {
         basic_seconds_clock <
             std::chrono::steady_clock>::now ();

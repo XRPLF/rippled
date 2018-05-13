@@ -208,7 +208,7 @@ public:
     fdlimit() const { return fdLimit_; }
 
     void
-    onStop();
+    onStop() override;
 
     /** @return The earliest ledger sequence allowed
     */
