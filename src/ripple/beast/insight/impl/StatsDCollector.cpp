@@ -70,9 +70,9 @@ public:
         HandlerType const& handler,
             std::shared_ptr <StatsDCollectorImp> const& impl);
 
-    ~StatsDHookImpl ();
+    ~StatsDHookImpl () override;
 
-    void do_process ();
+    void do_process () override;
 
 private:
     StatsDHookImpl& operator= (StatsDHookImpl const&);
@@ -91,13 +91,13 @@ public:
     StatsDCounterImpl (std::string const& name,
         std::shared_ptr <StatsDCollectorImp> const& impl);
 
-    ~StatsDCounterImpl ();
+    ~StatsDCounterImpl () override;
 
-    void increment (CounterImpl::value_type amount);
+    void increment (CounterImpl::value_type amount) override;
 
     void flush ();
     void do_increment (CounterImpl::value_type amount);
-    void do_process ();
+    void do_process () override;
 
 private:
     StatsDCounterImpl& operator= (StatsDCounterImpl const&);
@@ -117,9 +117,9 @@ public:
     StatsDEventImpl (std::string const& name,
         std::shared_ptr <StatsDCollectorImp> const& impl);
 
-    ~StatsDEventImpl ();
+    ~StatsDEventImpl () override;
 
-    void notify (EventImpl::value_type const& alue);
+    void notify (EventImpl::value_type const& alue) override;
 
     void do_notify (EventImpl::value_type const& value);
     void do_process ();
@@ -141,15 +141,15 @@ public:
     StatsDGaugeImpl (std::string const& name,
         std::shared_ptr <StatsDCollectorImp> const& impl);
 
-    ~StatsDGaugeImpl ();
+    ~StatsDGaugeImpl () override;
 
-    void set (GaugeImpl::value_type value);
-    void increment (GaugeImpl::difference_type amount);
+    void set (GaugeImpl::value_type value) override;
+    void increment (GaugeImpl::difference_type amount) override;
 
     void flush ();
     void do_set (GaugeImpl::value_type value);
     void do_increment (GaugeImpl::difference_type amount);
-    void do_process ();
+    void do_process () override;
 
 private:
     StatsDGaugeImpl& operator= (StatsDGaugeImpl const&);
@@ -171,13 +171,13 @@ public:
     explicit StatsDMeterImpl (std::string const& name,
         std::shared_ptr <StatsDCollectorImp> const& impl);
 
-    ~StatsDMeterImpl ();
+    ~StatsDMeterImpl () override;
 
-    void increment (MeterImpl::value_type amount);
+    void increment (MeterImpl::value_type amount) override;
 
     void flush ();
     void do_increment (MeterImpl::value_type amount);
-    void do_process ();
+    void do_process () override;
 
 private:
     StatsDMeterImpl& operator= (StatsDMeterImpl const&);
@@ -248,7 +248,7 @@ public:
     {
     }
 
-    ~StatsDCollectorImp ()
+    ~StatsDCollectorImp () override
     {
         boost::system::error_code ec;
         m_timer.cancel (ec);
@@ -257,31 +257,31 @@ public:
         m_thread.join ();
     }
 
-    Hook make_hook (HookImpl::HandlerType const& handler)
+    Hook make_hook (HookImpl::HandlerType const& handler) override
     {
         return Hook (std::make_shared <detail::StatsDHookImpl> (
             handler, shared_from_this ()));
     }
 
-    Counter make_counter (std::string const& name)
+    Counter make_counter (std::string const& name) override
     {
         return Counter (std::make_shared <detail::StatsDCounterImpl> (
             name, shared_from_this ()));
     }
 
-    Event make_event (std::string const& name)
+    Event make_event (std::string const& name) override
     {
         return Event (std::make_shared <detail::StatsDEventImpl> (
             name, shared_from_this ()));
     }
 
-    Gauge make_gauge (std::string const& name)
+    Gauge make_gauge (std::string const& name) override
     {
         return Gauge (std::make_shared <detail::StatsDGaugeImpl> (
             name, shared_from_this ()));
     }
 
-    Meter make_meter (std::string const& name)
+    Meter make_meter (std::string const& name) override
     {
         return Meter (std::make_shared <detail::StatsDMeterImpl> (
             name, shared_from_this ()));

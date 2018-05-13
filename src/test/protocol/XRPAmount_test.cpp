@@ -190,7 +190,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void run ()
+    void run () override
     {
         testSigNum ();
         testBeastZero ();

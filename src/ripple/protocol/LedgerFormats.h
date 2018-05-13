@@ -167,7 +167,7 @@ public:
     static LedgerFormats const& getInstance ();
 
 private:
-    void addCommonFields (Item& item);
+    void addCommonFields (Item& item) override;
 };
 
 } // ripple

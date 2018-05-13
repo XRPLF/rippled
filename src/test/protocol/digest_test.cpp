@@ -148,7 +148,7 @@ public:
         pass ();
     }
 
-    void run ()
+    void run () override
     {
         testSHA512 ();
         testSHA256 ();

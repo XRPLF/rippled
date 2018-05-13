@@ -227,7 +227,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
     }
 
 public:
-    void run ()
+    void run () override
     {
         testBadInput ();
         for (auto user : {true, false})
@@ -327,7 +327,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
     }
 
 public:
-    void run ()
+    void run () override
     {
         for (auto admin : {true, false})
             testLimits (admin);

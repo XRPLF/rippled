@@ -52,7 +52,7 @@ public:
         m_groups = beast::insight::make_Groups (m_collector);
     }
 
-    ~CollectorManagerImp ()
+    ~CollectorManagerImp () override
     {
     }
 

@@ -187,7 +187,7 @@ class Stoppable_test
             , test_(test)
             , stop_(running)
         {}
-        ~A()
+        ~A() override
         {
             while (stop_ != stopped)
                 ;
@@ -446,7 +446,7 @@ class Stoppable_test
     };
 
 public:
-    void run()
+    void run() override
     {
         {
             Root rt(*this);

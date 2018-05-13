@@ -117,7 +117,7 @@ public:
         return vuc;
     }
 
-    void run ()
+    void run () override
     {
         run (true,  SHAMap::version{1});
         run (false, SHAMap::version{1});

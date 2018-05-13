@@ -53,7 +53,7 @@ public:
     virtual ~FastWriter () {}
 
 public: // overridden from Writer
-    virtual std::string write ( const Value& root );
+    std::string write ( const Value& root ) override;
 
 private:
     void writeValue ( const Value& value );
@@ -90,7 +90,7 @@ public: // overridden from Writer
      * \param root Value to serialize.
      * \return String containing the JSON document that represents the root value.
      */
-    virtual std::string write ( const Value& root );
+    std::string write ( const Value& root ) override;
 
 private:
     void writeValue ( const Value& value );

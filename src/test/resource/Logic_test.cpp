@@ -243,7 +243,7 @@ public:
         pass();
     }
 
-    void run()
+    void run() override
     {
         beast::Journal j;
 

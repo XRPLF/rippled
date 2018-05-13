@@ -589,8 +589,13 @@ macro(setup_build_boilerplate)
     -DBOOST_ASIO_DISABLE_HANDLER_TYPE_REQUIREMENTS
     )
 
+  # `ripple.pb.h`, generated from protobuf triggers some warnings
+  # Set the directory that file lives in as SYSTEM
+  include_directories(SYSTEM ${CMAKE_BINARY_DIR})
+
   if (is_gcc)
     add_compile_options(-Wno-unused-but-set-variable -Wno-deprecated)
+    append_flags(CMAKE_CXX_FLAGS  -Wsuggest-override)
 
     # use gold linker if available
     execute_process(

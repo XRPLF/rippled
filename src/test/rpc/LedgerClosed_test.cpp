@@ -52,7 +52,7 @@ public:
         BEAST_EXPECT(lc_result[jss::ledger_index] == 3);
     }
 
-    void run()
+    void run() override
     {
         testMonitorRoot();
     }

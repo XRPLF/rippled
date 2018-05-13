@@ -115,7 +115,7 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         test();
     }
@@ -181,7 +181,7 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         auto const result = bfind(100, 9000,
             [&](std::size_t n) { return oversize(n); });

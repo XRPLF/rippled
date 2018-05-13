@@ -74,7 +74,7 @@ public:
     }
 
     void
-    StartThread (void (*f)(void*), void* a)
+    StartThread (void (*f)(void*), void* a) override
     {
         ThreadParams* const p (new ThreadParams (f, a));
         EnvWrapper::StartThread (&RocksDBQuickEnv::thread_entry, p);
@@ -167,7 +167,7 @@ public:
             m_options.compression = rocksdb::kNoCompression;
     }
 
-    ~RocksDBQuickBackend ()
+    ~RocksDBQuickBackend () override
     {
         close();
     }
@@ -396,13 +396,13 @@ public:
         Manager::instance().insert(*this);
     }
 
-    ~RocksDBQuickFactory()
+    ~RocksDBQuickFactory() override
     {
         Manager::instance().erase(*this);
     }
 
     std::string
-    getName () const
+    getName () const override
     {
         return "RocksDBQuick";
     }
@@ -412,7 +412,7 @@ public:
         size_t keyBytes,
         Section const& keyValues,
         Scheduler& scheduler,
-        beast::Journal journal)
+        beast::Journal journal) override
     {
         return std::make_unique <RocksDBQuickBackend> (
             keyBytes, keyValues, scheduler, journal, &m_env);
