@@ -68,7 +68,7 @@ class SHAMapV2_test : public beast::unit_test::suite
         BEAST_EXPECT(getEnabledAmendments(*ledger) == amendments);
     }
 
-    void run()
+    void run() override
     {
         testSHAMapV2();
     }

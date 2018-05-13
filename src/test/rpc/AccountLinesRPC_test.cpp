@@ -863,7 +863,7 @@ public:
         BEAST_EXPECT(linesEnd.isMember(jss::id) && linesEnd[jss::id] == 5);
     }
 
-    void run ()
+    void run () override
     {
         testAccountLines();
         testAccountLineDelete();

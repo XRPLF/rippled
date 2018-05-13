@@ -69,7 +69,7 @@ public:
                 "nodestore: Missing path in NuDB backend");
     }
 
-    ~NuDBBackend ()
+    ~NuDBBackend () override
     {
         close();
     }
@@ -296,13 +296,13 @@ public:
         Manager::instance().insert(*this);
     }
 
-    ~NuDBFactory()
+    ~NuDBFactory() override
     {
         Manager::instance().erase(*this);
     }
 
     std::string
-    getName() const
+    getName() const override
     {
         return "NuDB";
     }
@@ -312,7 +312,7 @@ public:
         size_t keyBytes,
         Section const& keyValues,
         Scheduler& scheduler,
-        beast::Journal journal)
+        beast::Journal journal) override
     {
         return std::make_unique <NuDBBackend> (
             keyBytes, keyValues, scheduler, journal);

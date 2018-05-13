@@ -103,7 +103,7 @@ private:
 
 
 public:
-    void run ()
+    void run () override
     {
         using TagInt = tagged_integer<std::int32_t, Tag1>;
 

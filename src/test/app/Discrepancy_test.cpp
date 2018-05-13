@@ -141,7 +141,7 @@ class Discrepancy_test : public beast::unit_test::suite
     }
 
 public:
-    void run ()
+    void run () override
     {
         using namespace test::jtx;
         auto const sa = supported_amendments();

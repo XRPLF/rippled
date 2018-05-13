@@ -126,7 +126,7 @@ public:
         }
     }
 
-    void run()
+    void run() override
     {
         Source a("a");
         Source b("b");

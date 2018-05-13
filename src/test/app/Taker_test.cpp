@@ -63,7 +63,7 @@ class Taker_test : public beast::unit_test::suite
         }
 
         STAmount
-        get_funds (AccountID const& owner, STAmount const& funds) const
+        get_funds (AccountID const& owner, STAmount const& funds) const override
         {
             if (owner == account ())
                 return funds_;
@@ -358,7 +358,7 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         test_xrp_to_iou ();
         test_iou_to_xrp ();

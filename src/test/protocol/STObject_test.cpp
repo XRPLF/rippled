@@ -632,7 +632,7 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         // Instantiate a jtx::Env so debugLog writes are exercised.
         test::jtx::Env env (*this);

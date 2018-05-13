@@ -246,7 +246,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void run ()
+    void run () override
     {
         testZero ();
         testSigNum ();
