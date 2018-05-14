@@ -65,7 +65,7 @@ enum TxType
 class TxFormats : public KnownFormats <TxType>
 {
 private:
-    void addCommonFields (Item& item);
+    void addCommonFields (Item& item) override;
 
 public:
     /** Create the object.

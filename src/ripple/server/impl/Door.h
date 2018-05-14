@@ -104,7 +104,7 @@ public:
         Thread Safety:
             May be called concurrently
     */
-    void close();
+    void close() override;
 
     endpoint_type get_endpoint() const
     {

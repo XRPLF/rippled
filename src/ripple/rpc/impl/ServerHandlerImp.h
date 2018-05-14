@@ -121,7 +121,7 @@ public:
     //
 
     void
-    onStop();
+    onStop() override;
 
     //
     // Handler
