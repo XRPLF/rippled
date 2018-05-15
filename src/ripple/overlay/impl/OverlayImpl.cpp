@@ -213,7 +213,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         if (std::find_if(types.begin(), types.end(),
                 [](std::string const& s)
                 {
-                    return beast::detail::iequals(s, "peer");
+                    return boost::beast::detail::iequals(s, "peer");
                 }) == types.end())
         {
             handoff.moved = false;
@@ -327,17 +327,17 @@ std::shared_ptr<Writer>
 OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
     http_request_type const& request, address_type remote_address)
 {
-    beast::http::response<json_body> msg;
-    msg.version = request.version;
-    msg.result(beast::http::status::service_unavailable);
+    boost::beast::http::response<json_body> msg;
+    msg.version(request.version());
+    msg.result(boost::beast::http::status::service_unavailable);
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Remote-Address", remote_address);
     msg.insert("Content-Type", "application/json");
-    msg.insert(beast::http::field::connection, "close");
-    msg.body = Json::objectValue;
+    msg.insert(boost::beast::http::field::connection, "close");
+    msg.body() = Json::objectValue;
     {
         auto const result = m_peerFinder->redirect(slot);
-        Json::Value& ips = (msg.body["peer-ips"] = Json::arrayValue);
+        Json::Value& ips = (msg.body()["peer-ips"] = Json::arrayValue);
         for (auto const& _ : m_peerFinder->redirect(slot))
             ips.append(_.address.to_string());
     }
@@ -351,13 +351,13 @@ OverlayImpl::makeErrorResponse (PeerFinder::Slot::ptr const& slot,
     address_type remote_address,
     std::string text)
 {
-    beast::http::response<beast::http::string_body> msg;
-    msg.version = request.version;
-    msg.result(beast::http::status::bad_request);
+    boost::beast::http::response<boost::beast::http::string_body> msg;
+    msg.version(request.version());
+    msg.result(boost::beast::http::status::bad_request);
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Remote-Address", remote_address.to_string());
-    msg.insert(beast::http::field::connection, "close");
-    msg.body = text;
+    msg.insert(boost::beast::http::field::connection, "close");
+    msg.body() = text;
     msg.prepare_payload();
     return std::make_shared<SimpleWriter>(msg);
 }
@@ -762,7 +762,7 @@ OverlayImpl::crawl()
     for_each ([&](std::shared_ptr<PeerImp>&& sp)
     {
         auto& pv = av.append(Json::Value(Json::objectValue));
-        pv[jss::public_key] = beast::detail::base64_encode(
+        pv[jss::public_key] = boost::beast::detail::base64_encode(
             sp->getNodePublic().data(),
                 sp->getNodePublic().size());
         pv[jss::type] = sp->slot()->inbound() ?
@@ -817,13 +817,13 @@ OverlayImpl::processRequest (http_request_type const& req,
     if (req.target() != "/crawl")
         return false;
 
-    beast::http::response<json_body> msg;
-    msg.version = req.version;
-    msg.result(beast::http::status::ok);
+    boost::beast::http::response<json_body> msg;
+    msg.version(req.version());
+    msg.result(boost::beast::http::status::ok);
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
-    msg.body["overlay"] = crawl();
+    msg.body()["overlay"] = crawl();
     msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return true;

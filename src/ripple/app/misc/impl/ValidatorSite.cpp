@@ -24,7 +24,7 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/JsonFields.h>
-#include <beast/core/detail/base64.hpp>
+#include <boost/beast/core/detail/base64.hpp>
 #include <boost/regex.hpp>
 
 namespace ripple {
@@ -207,7 +207,7 @@ ValidatorSite::onSiteFetch(
     detail::response_type&& res,
     std::size_t siteIdx)
 {
-    if (! ec && res.result() != beast::http::status::ok)
+    if (! ec && res.result() != boost::beast::http::status::ok)
     {
         std::lock_guard <std::mutex> lock{sites_mutex_};
         JLOG (j_.warn()) <<
@@ -222,8 +222,8 @@ ValidatorSite::onSiteFetch(
         std::lock_guard <std::mutex> lock{sites_mutex_};
         Json::Reader r;
         Json::Value body;
-        if (r.parse(res.body.data(), body) &&
-            body.isObject() &&
+        if (r.parse(res.body().data(), body) &&
+            body.isObject () &&
             body.isMember("blob") && body["blob"].isString () &&
             body.isMember("manifest") && body["manifest"].isString () &&
             body.isMember("signature") && body["signature"].isString() &&

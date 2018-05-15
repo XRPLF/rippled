@@ -237,7 +237,7 @@ PeerImp::crawl() const
     auto const iter = headers_.find("Crawl");
     if (iter == headers_.end())
         return false;
-    return beast::detail::iequals(iter->value(), "public");
+    return boost::beast::detail::iequals(iter->value(), "public");
 }
 
 std::string
@@ -621,7 +621,7 @@ void PeerImp::doAccept()
 
     // TODO Apply headers to connection state.
 
-    beast::ostream(write_buffer_) << makeResponse(
+    boost::beast::ostream(write_buffer_) << makeResponse(
         ! overlay_.peerFinder().config().peerPrivate,
             request_, remote_address_, *sharedValue);
 
@@ -669,8 +669,8 @@ PeerImp::makeResponse (bool crawl,
     uint256 const& sharedValue)
 {
     http_response_type resp;
-    resp.result(beast::http::status::switching_protocols);
-    resp.version = req.version;
+    resp.result(boost::beast::http::status::switching_protocols);
+    resp.version(req.version());
     resp.insert("Connection", "Upgrade");
     resp.insert("Upgrade", "RTXP/1.2");
     resp.insert("Connect-As", "Peer");

@@ -8,8 +8,10 @@ env:
     # Note that for simplicity, BOOST_ROOT's final
     # namepart must match the folder name internal
     # to boost's .tar.gz.
-    - BOOST_ROOT=$HOME/boost_1_65_1
-    - BOOST_URL='https://dl.bintray.com/boostorg/release/1.65.1/source/boost_1_65_1.tar.gz'
+    - LCOV_ROOT=$HOME/lcov
+    - GDB_ROOT=$HOME/gdb
+    - BOOST_ROOT=$HOME/boost_1_67_0
+    - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.67.0/boost_1_67_0.tar.gz'
 
 addons:
   apt:

@@ -347,14 +347,14 @@ struct hash <beast::IP::Address>
 
 namespace boost {
 template <>
-struct hash <beast::IP::Address>
+struct hash <::beast::IP::Address>
 {
     explicit hash() = default;
 
     std::size_t
-    operator() (beast::IP::Address const& addr) const
+    operator() (::beast::IP::Address const& addr) const
     {
-        return beast::uhash<>{} (addr);
+        return ::beast::uhash<>{} (addr);
     }
 };
 }

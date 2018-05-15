@@ -219,7 +219,7 @@ ConnectAttempt::onHandshake (error_code ec)
     appendHello (req_, hello);
 
     setTimer();
-    beast::http::async_write(stream_, req_,
+    boost::beast::http::async_write(stream_, req_,
         strand_.wrap (std::bind (&ConnectAttempt::onWrite,
             shared_from_this(), std::placeholders::_1)));
 }
@@ -234,7 +234,7 @@ ConnectAttempt::onWrite (error_code ec)
         return;
     if(ec)
         return fail("onWrite", ec);
-    beast::http::async_read(stream_, read_buf_, response_,
+    boost::beast::http::async_read(stream_, read_buf_, response_,
         strand_.wrap(std::bind(&ConnectAttempt::onRead,
             shared_from_this(), std::placeholders::_1)));
 }
@@ -285,9 +285,9 @@ ConnectAttempt::makeRequest (bool crawl,
         request_type
 {
     request_type m;
-    m.method(beast::http::verb::get);
+    m.method(boost::beast::http::verb::get);
     m.target("/");
-    m.version = 11;
+    m.version(11);
     m.insert ("User-Agent", BuildInfo::getFullVersionString());
     m.insert ("Upgrade", "RTXP/1.2");
         //std::string("RTXP/") + to_string (BuildInfo::getCurrentProtocol()));
@@ -300,13 +300,13 @@ ConnectAttempt::makeRequest (bool crawl,
 void
 ConnectAttempt::processResponse()
 {
-    if (response_.result() == beast::http::status::service_unavailable)
+    if (response_.result() == boost::beast::http::status::service_unavailable)
     {
         Json::Value json;
         Json::Reader r;
         std::string s;
-        s.reserve(boost::asio::buffer_size(response_.body.data()));
-        for(auto const& buffer : response_.body.data())
+        s.reserve(boost::asio::buffer_size(response_.body().data()));
+        for(auto const& buffer : response_.body().data())
             s.append(
                 boost::asio::buffer_cast<char const*>(buffer),
                 boost::asio::buffer_size(buffer));
