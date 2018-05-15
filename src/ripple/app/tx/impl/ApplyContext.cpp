@@ -70,9 +70,25 @@ ApplyContext::visit (std::function <void (
     view_->visit(base_, func);
 }
 
+TER
+ApplyContext::failInvariantCheck (TER const result)
+{
+    // If we already failed invariant checks before and we are now attempting to
+    // only charge a fee, and even that fails the invariant checks something is
+    // very wrong. We switch to tefINVARIANT_FAILED, which does NOT get included
+    // in a ledger.
+
+    return (result == tecINVARIANT_FAILED || result == tefINVARIANT_FAILED)
+        ? tefINVARIANT_FAILED
+        : tecINVARIANT_FAILED;
+}
+
 template<std::size_t... Is>
 TER
-ApplyContext::checkInvariantsHelper(TER terResult, std::index_sequence<Is...>)
+ApplyContext::checkInvariantsHelper(
+    TER const result,
+    XRPAmount const fee,
+    std::index_sequence<Is...>)
 {
     if (view_->rules().enabled(featureEnforceInvariants))
     {
@@ -97,40 +113,40 @@ ApplyContext::checkInvariantsHelper(TER terResult, std::index_sequence<Is...>)
             // Sean Parent for_each_argument trick (a fold expression with `&&`
             // would be really nice here when we move to C++-17)
             std::array<bool, sizeof...(Is)> finalizers {{
-                std::get<Is>(checkers).finalize(tx, terResult, journal)...}};
+                std::get<Is>(checkers).finalize(tx, result, fee, journal)...}};
 
             // call each check's finalizer to see that it passes
             if (! std::all_of( finalizers.cbegin(), finalizers.cend(),
                     [](auto const& b) { return b; }))
             {
-                terResult = (terResult == tecINVARIANT_FAILED) ?
-                    tefINVARIANT_FAILED :
-                    tecINVARIANT_FAILED ;
                 JLOG(journal.fatal()) <<
                     "Transaction has failed one or more invariants: " <<
                     to_string(tx.getJson (0));
+
+                return failInvariantCheck (result);
             }
         }
         catch(std::exception const& ex)
         {
-            terResult = (terResult == tecINVARIANT_FAILED) ?
-                tefINVARIANT_FAILED :
-                tecINVARIANT_FAILED ;
             JLOG(journal.fatal()) <<
                 "Transaction caused an exception in an invariant" <<
                 ", ex: " << ex.what() <<
                 ", tx: " << to_string(tx.getJson (0));
+
+            return failInvariantCheck (result);
         }
     }
 
-    return terResult;
+    return result;
 }
 
 TER
-ApplyContext::checkInvariants(TER terResult)
+ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
 {
-    return checkInvariantsHelper(
-        terResult, std::make_index_sequence<std::tuple_size<InvariantChecks>::value>{});
+    assert (isTesSuccess(result) || isTecClaim(result));
+
+    return checkInvariantsHelper(result, fee,
+        std::make_index_sequence<std::tuple_size<InvariantChecks>::value>{});
 }
 
 } // ripple

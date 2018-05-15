@@ -317,9 +317,10 @@ TER Transactor::apply ()
 
         setSeq();
 
-        auto terResult = payFee ();
+        auto result = payFee ();
 
-        if (terResult != tesSUCCESS) return terResult;
+        if (result  != tesSUCCESS)
+            return result;
 
         view().update (sle);
     }
@@ -350,8 +351,8 @@ Transactor::checkSingleSign (PreclaimContext const& ctx)
         keylet::account(id));
     auto const hasAuthKey     = sle->isFieldPresent (sfRegularKey);
 
-    // Consistency: Check signature
-    // Verify the transaction's signing public key is authorized for signing.
+    // Consistency: Check signature & verify the transaction's signing
+    // public key is authorized for signing.
     auto const spk = ctx.tx.getSigningPubKey();
     if (!publicKeyType (makeSlice (spk)))
     {
@@ -567,8 +568,9 @@ void removeUnfundedOffers (ApplyView& view, std::vector<uint256> const& offers, 
     }
 }
 
-void
-Transactor::claimFee (XRPAmount& fee, TER terResult, std::vector<uint256> const& removedOffers)
+/** Reset the context, discarding any changes made and adjust the fee */
+XRPAmount
+Transactor::reset(XRPAmount fee)
 {
     ctx_.discard();
 
@@ -577,33 +579,29 @@ Transactor::claimFee (XRPAmount& fee, TER terResult, std::vector<uint256> const&
 
     auto const balance = txnAcct->getFieldAmount (sfBalance).xrp ();
 
-    // balance should have already been
-    // checked in checkFee / preFlight.
+    // balance should have already been checked in checkFee / preFlight.
     assert(balance != zero && (!view().open() || balance >= fee));
-    // We retry/reject the transaction if the account
-    // balance is zero or we're applying against an open
-    // ledger and the balance is less than the fee
+
+    // We retry/reject the transaction if the account balance is zero or we're
+    // applying against an open ledger and the balance is less than the fee
     if (fee > balance)
         fee = balance;
+
+    // Since we reset the context, we need to charge the fee and update
+    // the account's sequence number again.
     txnAcct->setFieldAmount (sfBalance, balance - fee);
     txnAcct->setFieldU32 (sfSequence, ctx_.tx.getSequence() + 1);
 
-    if (terResult == tecOVERSIZE)
-        removeUnfundedOffers (view(), removedOffers, ctx_.app.journal ("View"));
-
     view().update (txnAcct);
+
+    return fee;
 }
 
 //------------------------------------------------------------------------------
 std::pair<TER, bool>
 Transactor::operator()()
 {
-    JLOG(j_.trace()) <<
-        "applyTransaction>";
-
-    auto const txID = ctx_.tx.getTransactionID ();
-
-    JLOG(j_.debug()) << "Transactor for id: " << txID;
+    JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID ();
 
 #ifdef BEAST_DEBUG
     {
@@ -623,42 +621,31 @@ Transactor::operator()()
     }
 #endif
 
-    auto terResult = ctx_.preclaimResult;
-    if (terResult == tesSUCCESS)
-        terResult = apply();
+    auto result = ctx_.preclaimResult;
+    if (result == tesSUCCESS)
+        result = apply();
 
     // No transaction can return temUNKNOWN from apply,
     // and it can't be passed in from a preclaim.
-    assert(terResult != temUNKNOWN);
+    assert(result != temUNKNOWN);
 
-    if (auto stream = j_.debug())
-    {
-        std::string strToken;
-        std::string strHuman;
+    if (auto stream = j_.trace())
+        stream << "preclaim result: " << transToken(result);
 
-        transResultInfo (terResult, strToken, strHuman);
-
-        stream <<
-            "applyTransaction: terResult=" << strToken <<
-            " : " << terResult <<
-            " : " << strHuman;
-    }
-
-    bool didApply = isTesSuccess (terResult);
+    bool applied = isTesSuccess (result);
     auto fee = ctx_.tx.getFieldAmount(sfFee).xrp ();
 
     if (ctx_.size() > oversizeMetaDataCap)
-        terResult = tecOVERSIZE;
+        result = tecOVERSIZE;
 
-    if ((terResult == tecOVERSIZE) ||
-        (isTecClaim (terResult) && !(view().flags() & tapRETRY)))
+    if ((result == tecOVERSIZE) ||
+        (isTecClaim (result) && !(view().flags() & tapRETRY)))
     {
-        // only claim the transaction fee
-        JLOG(j_.debug()) <<
-            "Reprocessing tx " << txID << " to only claim fee";
+        JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
         std::vector<uint256> removedOffers;
-        if (terResult == tecOVERSIZE)
+
+        if (result == tecOVERSIZE)
         {
             ctx_.visit (
                 [&removedOffers](
@@ -681,62 +668,64 @@ Transactor::operator()()
                 });
         }
 
-        claimFee(fee, terResult, removedOffers);
-        didApply = true;
+        // Reset the context, potentially adjusting the fee
+        fee = reset(fee);
+
+        // If necessary, remove any offers found unfunded during processing
+        if (result == tecOVERSIZE)
+            removeUnfundedOffers (view(), removedOffers, ctx_.app.journal ("View"));
+
+        applied = true;
     }
 
-    if (didApply)
+    if (applied)
     {
-        // Check invariants
-        // if `tecINVARIANT_FAILED` not returned, we can proceed to apply the tx
-        terResult = ctx_.checkInvariants(terResult);
-        if (terResult == tecINVARIANT_FAILED)
+        // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
+        // proceed to apply the tx
+        result = ctx_.checkInvariants(result, fee);
+
+        if (result == tecINVARIANT_FAILED)
         {
-            // if invariants failed, claim a fee still
-            claimFee(fee, terResult, {});
-            //Check invariants *again* to ensure the fee claiming doesn't
-            //violate invariants.
-            terResult = ctx_.checkInvariants(terResult);
-            didApply = isTecClaim(terResult);
-        }
-    }
+            // if invariants checking failed again, reset the context and
+            // attempt to only claim a fee.
+            fee = reset(fee);
 
-    if (didApply)
-    {
-        // Transaction succeeded fully or (retries are
-        // not allowed and the transaction could claim a fee)
-
-        if (!view().open())
-        {
-            // Charge whatever fee they specified.
-
-            // The transactor guarantees this will never trigger
-            if (fee < zero)
-            {
-                // VFALCO Log to journal here
-                // JLOG(journal.fatal()) << "invalid fee";
-                Throw<std::logic_error> ("amount is negative!");
-            }
-
-            if (fee != zero)
-                ctx_.destroyXRP (fee);
+            // Check invariants again to ensure the fee claiming doesn't
+            // violate invariants.
+            result = ctx_.checkInvariants(result, fee);
         }
 
-        ctx_.apply(terResult);
-        // since we called apply(), it is not okay to look
-        // at view() past this point.
+        // We ran through the invariant checker, which can, in some cases,
+        // return a tef error code. Don't apply the transaction in that case.
+        if (!isTecClaim(result) && !isTesSuccess(result))
+            applied = false;
     }
-    else
+
+    if (applied)
     {
-        JLOG(j_.debug()) << "Not applying transaction " << txID;
+        // Transaction succeeded fully or (retries are not allowed and the
+        // transaction could claim a fee)
+
+        // The transactor and invariant checkers guarantee that this will
+        // *never* trigger but if it, somehow, happens, don't allow a tx
+        // that charges a negative fee.
+        if (fee < zero)
+            Throw<std::logic_error> ("fee charged is negative!");
+
+        // Charge whatever fee they specified. The fee has already been
+        // deducted from the balance of the account that issued the
+        // transaction. We just need to account for it in the ledger
+        // header.
+        if (!view().open() && fee != zero)
+            ctx_.destroyXRP (fee);
+
+        // Once we call apply, we will no longer be able to look at view()
+        ctx_.apply(result);
     }
 
+    JLOG(j_.trace()) << (applied ? "applied" : "not applied") << transToken(result);
 
-    JLOG(j_.trace()) <<
-        "apply: " << transToken(terResult) <<
-        ", " << (didApply ? "true" : "false");
-
-    return { terResult, didApply };
+    return { result, applied };
 }
 
 }
