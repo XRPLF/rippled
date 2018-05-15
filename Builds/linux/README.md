@@ -108,10 +108,11 @@ cmake -Dtarget=gcc.debug.unity ..
 ```
 
 The target variable can be adjusted as needed for `gcc` vs `clang`, `debug` vs.
-`release` and `unity` vs. `nounity` builds. `unity` builds are typically faster 
-to compile but run the risk of ODR violations given that multiple compilation 
-units are merged together at compile time. `nounity` builds will take longer to
-compile but align more closely with language standards. 
+`release` and `unity` vs. `nounity` builds. `unity` builds are faster to
+compile since they combine multiple sources into a single compiliation unit.
+`nounity` builds can be helpful for detecting include omissions or for finding
+other build-related issues, but aren't generally needed for testing and
+running.
 
 Once you have generated the build system, you can run the build via cmake:
 
