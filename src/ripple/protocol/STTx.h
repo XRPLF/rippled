@@ -30,14 +30,14 @@
 
 namespace ripple {
 
-enum TXN
+enum TxnSql : char
 {
-    txnSQL_NEW = 'N',
-    txnSQL_CONFLICT = 'C',
-    txnSQL_HELD = 'H',
-    txnSQL_VALIDATED = 'V',
-    txnSQL_INCLUDED = 'I',
-    txnSQL_UNKNOWN = 'U'
+    txnSqlNew = 'N',
+    txnSqlConflict = 'C',
+    txnSqlHeld = 'H',
+    txnSqlValidated = 'V',
+    txnSqlIncluded = 'I',
+    txnSqlUnknown = 'U'
 };
 
 class STTx final

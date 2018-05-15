@@ -63,18 +63,18 @@ void Transaction::setStatus (TransStatus ts, std::uint32_t lseq)
 TransStatus Transaction::sqlTransactionStatus(
     boost::optional<std::string> const& status)
 {
-    char const c = (status) ? (*status)[0] : txnSQL_UNKNOWN;
+    char const c = (status) ? (*status)[0] : txnSqlUnknown;
 
     switch (c)
     {
-    case txnSQL_NEW:       return NEW;
-    case txnSQL_CONFLICT:  return CONFLICTED;
-    case txnSQL_HELD:      return HELD;
-    case txnSQL_VALIDATED: return COMMITTED;
-    case txnSQL_INCLUDED:  return INCLUDED;
+    case txnSqlNew:       return NEW;
+    case txnSqlConflict:  return CONFLICTED;
+    case txnSqlHeld:      return HELD;
+    case txnSqlValidated: return COMMITTED;
+    case txnSqlIncluded:  return INCLUDED;
     }
 
-    assert (c == txnSQL_UNKNOWN);
+    assert (c == txnSqlUnknown);
     return INVALID;
 }
 
