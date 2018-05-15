@@ -171,24 +171,34 @@ private:
             , m_repeat (repeat)
             , m_probe (probe)
         {
+            assert(m_probe);
             m_probe->addref();
         }
 
-        sample_op (sample_op const& other)
-            : m_handler (other.m_handler)
-            , m_start (other.m_start)
-            , m_probe (other.m_probe)
+        sample_op (sample_op&& from) noexcept
+            : m_handler (std::move(from.m_handler))
+            , m_start (from.m_start)
+            , m_repeat (from.m_repeat)
+            , m_probe (from.m_probe)
         {
-            m_probe->addref();
+            assert(m_probe);
+            from.m_probe = nullptr;
         }
+
+        sample_op (sample_op const&) = delete;
+        sample_op operator= (sample_op const&) = delete;
+        sample_op& operator= (sample_op&&) = delete;
 
         ~sample_op ()
         {
-            m_probe->release();
+            if(m_probe)
+                m_probe->release();
         }
 
         void operator() () const
         {
+            if (!m_probe)
+                return;
             typename Clock::time_point const now (Clock::now());
             typename Clock::duration const elapsed (now - m_start);
 
@@ -228,6 +238,8 @@ private:
 
         void operator () (boost::system::error_code const& ec)
         {
+            if (!m_probe)
+                return;
             typename Clock::time_point const now (Clock::now());
             m_probe->m_ios.post (sample_op <Handler> (
                 m_handler, now, m_repeat, m_probe));
