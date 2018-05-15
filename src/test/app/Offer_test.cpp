@@ -239,7 +239,7 @@ public:
         env (offer (alice, XRP (5), USD (2)),
             json (sfExpiration.fieldName, lastClose(env)),
             json (jss::OfferSequence, offer2Seq),
-            ter (featChecks ? tecEXPIRED : tesSUCCESS));
+            ter (featChecks ? TER {tecEXPIRED} : TER {tesSUCCESS}));
         env.close();
 
         env.require (offers (alice, 2));
@@ -289,8 +289,8 @@ public:
                 (hasFeature(env, featureFeeEscalation) &&
                     !hasFeature(env, fix1513));
             // Will fail without the underflow fix
-            auto expectedResult = *stAmountCalcSwitchover ?
-                tesSUCCESS : tecPATH_PARTIAL;
+            TER const expectedResult = *stAmountCalcSwitchover ?
+                TER {tesSUCCESS} : TER {tecPATH_PARTIAL};
             env (pay (alice, bob, EUR (epsilon)), path (~EUR),
                 sendmax (USD (100)), ter (expectedResult));
         }
@@ -959,7 +959,7 @@ public:
 
         env (offer (alice, xrpOffer, usdOffer),
             json (sfExpiration.fieldName, lastClose(env)),
-            ter (featChecks ? tecEXPIRED : tesSUCCESS));
+            ter (featChecks ? TER {tecEXPIRED} : TER {tesSUCCESS}));
 
         env.require (
             balance (alice, startBalance - f - f),
@@ -3422,7 +3422,7 @@ public:
 
             // Determine which TEC code we expect.
             TER const tecExpect =
-                features[featureFlow] ? temBAD_PATH : tecPATH_DRY;
+                features[featureFlow] ? TER {temBAD_PATH} : TER {tecPATH_DRY};
 
             // This payment caused the assert.
             env (pay (ann, ann, D_BUX(30)),
@@ -4397,7 +4397,7 @@ public:
         // create an offer to buy their own currency.  After FlowCross
         // they can.
         env (offer (gw, gwUSD(40), XRP(4000)),
-            ter (flowCross ? tesSUCCESS : tecNO_LINE));
+            ter (flowCross ? TER {tesSUCCESS} : TER {tecNO_LINE}));
         env.close();
 
         env.require (offers (gw, flowCross ? 1 : 0));

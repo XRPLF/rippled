@@ -87,7 +87,7 @@ public:
     }
     TER getResultTER () const
     {
-        return static_cast<TER> (mResult);
+        return TER::fromInt (mResult);
     }
     std::uint32_t getIndex () const
     {

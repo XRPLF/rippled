@@ -47,12 +47,12 @@ public:
     beast::Journal const j;
 
     /// Intermediate transaction result
-    TER const ter;
+    NotTEC const ter;
 
     /// Constructor
     template<class Context>
     PreflightResult(Context const& ctx_,
-        TER ter_)
+        NotTEC ter_)
         : tx(ctx_.tx)
         , rules(ctx_.rules)
         , flags(ctx_.flags)

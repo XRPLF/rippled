@@ -1581,8 +1581,8 @@ accountSend (ApplyView& view,
             // VFALCO Its laborious to have to mutate the
             //        TER based on params everywhere
             terResult = view.open()
-                ? telFAILED_PROCESSING
-                : tecFAILED_PROCESSING;
+                ? TER {telFAILED_PROCESSING}
+                : TER {tecFAILED_PROCESSING};
         }
         else
         {
@@ -1847,8 +1847,8 @@ transferXRP (ApplyView& view,
         //        mutating these TER everywhere
         // FIXME: this logic should be moved to callers maybe?
         return view.open()
-            ? telFAILED_PROCESSING
-            : tecFAILED_PROCESSING;
+            ? TER {telFAILED_PROCESSING}
+            : TER {tecFAILED_PROCESSING};
     }
 
     // Decrement XRP balance.

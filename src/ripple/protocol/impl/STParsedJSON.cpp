@@ -202,14 +202,16 @@ static boost::optional<detail::STVar> parseLeaf (
                     {
                         auto ter = transCode(strValue);
 
-                        if (!ter || *ter < minValue || *ter > maxValue)
+                        if (!ter ||
+                            TERtoInt (*ter) < minValue ||
+                            TERtoInt (*ter) > maxValue)
                         {
                             error = out_of_range(json_name, fieldName);
                             return ret;
                         }
 
                         ret = detail::make_stvar<STUInt8>(field,
-                            static_cast<std::uint8_t>(*ter));
+                            static_cast<std::uint8_t>(TERtoInt (*ter)));
                     }
                     else
                     {
