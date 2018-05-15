@@ -217,7 +217,7 @@ class LedgerLoad_test : public beast::unit_test::suite
     }
 
 public:
-    void run ()
+    void run () override
     {
         beast::temp_dir td;
         auto sd = setupLedger(td);

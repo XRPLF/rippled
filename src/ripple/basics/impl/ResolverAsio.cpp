@@ -145,7 +145,7 @@ public:
 
     }
 
-    ~ResolverAsioImpl ()
+    ~ResolverAsioImpl () override
     {
         assert (m_work.empty ());
         assert (m_stopped);
@@ -164,7 +164,7 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void start ()
+    void start () override
     {
         assert (m_stopped == true);
         assert (m_stop_called == false);
@@ -176,7 +176,7 @@ public:
         }
     }
 
-    void stop_async ()
+    void stop_async () override
     {
         if (m_stop_called.exchange (true) == false)
         {
@@ -188,7 +188,7 @@ public:
         }
     }
 
-    void stop ()
+    void stop () override
     {
         stop_async ();
 
@@ -199,7 +199,7 @@ public:
 
     void resolve (
         std::vector <std::string> const& names,
-        HandlerType const& handler)
+        HandlerType const& handler) override
     {
         assert (m_stop_called == false);
         assert (m_stopped == true);

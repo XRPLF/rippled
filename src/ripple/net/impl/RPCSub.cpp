@@ -68,11 +68,11 @@ public:
             " path='" << mPath << "'";
     }
 
-    ~RPCSubImp ()
+    ~RPCSubImp () override
     {
     }
 
-    void send (Json::Value const& jvObj, bool broadcast)
+    void send (Json::Value const& jvObj, bool broadcast) override
     {
         ScopedLockType sl (mLock);
 
@@ -101,14 +101,14 @@ public:
         }
     }
 
-    void setUsername (std::string const& strUsername)
+    void setUsername (std::string const& strUsername) override
     {
         ScopedLockType sl (mLock);
 
         mUsername = strUsername;
     }
 
-    void setPassword (std::string const& strPassword)
+    void setPassword (std::string const& strPassword) override
     {
         ScopedLockType sl (mLock);
 

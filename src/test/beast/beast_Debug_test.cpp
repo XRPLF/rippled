@@ -52,7 +52,7 @@ public:
 #endif
     }
 
-    void run()
+    void run() override
     {
         log <<
             "_DEBUG              = " << envDebug() << '\n' <<

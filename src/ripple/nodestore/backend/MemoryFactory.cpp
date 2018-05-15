@@ -45,17 +45,17 @@ private:
 
 public:
     MemoryFactory();
-    ~MemoryFactory();
+    ~MemoryFactory() override;
 
     std::string
-    getName() const;
+    getName() const override;
 
     std::unique_ptr <Backend>
     createInstance (
         size_t keyBytes,
         Section const& keyValues,
         Scheduler& scheduler,
-        beast::Journal journal);
+        beast::Journal journal) override;
 
     MemoryDB&
     open (std::string const& path)
@@ -93,7 +93,7 @@ public:
             Throw<std::runtime_error> ("Missing path in Memory backend");
     }
 
-    ~MemoryBackend ()
+    ~MemoryBackend () override
     {
         close();
     }

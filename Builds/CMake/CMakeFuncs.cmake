@@ -578,13 +578,18 @@ macro(setup_build_boilerplate)
     -DOPENSSL_NO_SSL2
     -DDEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER
     -DHAVE_USLEEP=1
-    -DSOCI_CXX_C11=1
+    -DSOCI_HAVE_CXX_C11=1
     -D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS
     -DBOOST_NO_AUTO_PTR
     )
 
+  # `ripple.pb.h`, generated from protobuf triggers some warnings
+  # Set the directory that file lives in as SYSTEM
+  include_directories(SYSTEM ${CMAKE_BINARY_DIR})
+
   if (is_gcc)
     add_compile_options(-Wno-unused-but-set-variable -Wno-deprecated)
+    append_flags(CMAKE_CXX_FLAGS  -Wsuggest-override)
 
     # use gold linker if available
     execute_process(

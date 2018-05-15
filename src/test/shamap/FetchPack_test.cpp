@@ -114,7 +114,7 @@ public:
         map.emplace (hash, blob);
     }
 
-    void run ()
+    void run () override
     {
         beast::Journal const j;                            // debug journal
         TestFamily f(j);

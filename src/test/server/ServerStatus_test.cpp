@@ -1013,7 +1013,7 @@ class ServerStatus_test :
 
 public:
     void
-    run()
+    run() override
     {
         for (auto it : {"http", "ws", "ws2"})
         {

@@ -31,16 +31,16 @@ public:
     {
     }
 
-    ~SourceStringsImp ()
+    ~SourceStringsImp () override
     {
     }
 
-    std::string const& name ()
+    std::string const& name () override
     {
         return m_name;
     }
 
-    void fetch (Results& results, beast::Journal journal)
+    void fetch (Results& results, beast::Journal journal) override
     {
         results.addresses.resize (0);
         results.addresses.reserve (m_strings.size());

@@ -51,7 +51,7 @@ struct base_uint_test : beast::unit_test::suite
 {
     using test96 = base_uint<96>;
 
-    void run()
+    void run() override
     {
         // used to verify set insertion (hashing required)
         std::unordered_set<test96, hardened_hash<>> uset;

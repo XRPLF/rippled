@@ -128,7 +128,7 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         test_lhs_zero ();
         test_rhs_zero ();

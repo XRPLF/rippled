@@ -31,7 +31,7 @@ namespace ripple {
 class STTx_test : public beast::unit_test::suite
 {
 public:
-    void run()
+    void run() override
     {
         testcase ("overly nested transactions");
         testDeepNesting();
@@ -1292,7 +1292,7 @@ public:
 class InnerObjectFormatsSerializer_test : public beast::unit_test::suite
 {
 public:
-    void run()
+    void run() override
     {
         auto const kp1 = randomKeyPair (KeyType::secp256k1);
         auto const id1 = calcAccountID(kp1.first);

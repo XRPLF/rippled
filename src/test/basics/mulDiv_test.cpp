@@ -25,7 +25,7 @@ namespace test {
 
 struct mulDiv_test : beast::unit_test::suite
 {
-    void run()
+    void run() override
     {
         const auto max = std::numeric_limits<std::uint64_t>::max();
         const std::uint64_t max32 = std::numeric_limits<std::uint32_t>::max();

@@ -347,7 +347,7 @@ public:
         BEAST_EXPECT(qa < qb);
     }
     void
-    run()
+    run() override
     {
         test_comparisons ();
         test_composition ();

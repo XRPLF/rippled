@@ -171,7 +171,7 @@ static TestJSONTxt const testArray[] =
 class InnerObjectFormatsParsedJSON_test : public beast::unit_test::suite
 {
 public:
-    void run()
+    void run() override
     {
         using namespace InnerObjectFormatsUnitTestDetail;
 

@@ -40,7 +40,7 @@ class NullCounterImpl : public CounterImpl
 public:
     explicit NullCounterImpl() = default;
 
-    void increment (value_type)
+    void increment (value_type) override
     {
     }
 
@@ -55,7 +55,7 @@ class NullEventImpl : public EventImpl
 public:
     explicit NullEventImpl() = default;
 
-    void notify (value_type const&)
+    void notify (value_type const&) override
     {
     }
 
@@ -70,11 +70,11 @@ class NullGaugeImpl : public GaugeImpl
 public:
     explicit NullGaugeImpl() = default;
 
-    void set (value_type)
+    void set (value_type) override
     {
     }
 
-    void increment (difference_type)
+    void increment (difference_type) override
     {
     }
 
@@ -89,7 +89,7 @@ class NullMeterImpl : public MeterImpl
 public:
     explicit NullMeterImpl() = default;
 
-    void increment (value_type)
+    void increment (value_type) override
     {
     }
 
@@ -107,31 +107,31 @@ public:
     {
     }
 
-    ~NullCollectorImp ()
+    ~NullCollectorImp () override
     {
     }
 
-    Hook make_hook (HookImpl::HandlerType const&)
+    Hook make_hook (HookImpl::HandlerType const&) override
     {
         return Hook (std::make_shared <detail::NullHookImpl> ());
     }
 
-    Counter make_counter (std::string const&)
+    Counter make_counter (std::string const&) override
     {
         return Counter (std::make_shared <detail::NullCounterImpl> ());
     }
 
-    Event make_event (std::string const&)
+    Event make_event (std::string const&) override
     {
         return Event (std::make_shared <detail::NullEventImpl> ());
     }
 
-    Gauge make_gauge (std::string const&)
+    Gauge make_gauge (std::string const&) override
     {
         return Gauge (std::make_shared <detail::NullGaugeImpl> ());
     }
 
-    Meter make_meter (std::string const&)
+    Meter make_meter (std::string const&) override
     {
         return Meter (std::make_shared <detail::NullMeterImpl> ());
     }
