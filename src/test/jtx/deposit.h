@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2018 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,52 +17,32 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_CHANGE_H_INCLUDED
-#define RIPPLE_TX_CHANGE_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_DEPOSIT_H_INCLUDED
+#define RIPPLE_TEST_JTX_DEPOSIT_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/AmendmentTable.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Indexes.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/Account.h>
 
 namespace ripple {
+namespace test {
+namespace jtx {
 
-class Change
-    : public Transactor
-{
-public:
-    explicit Change (ApplyContext& ctx)
-        : Transactor(ctx)
-    {
-    }
+/** Deposit preauthorize operations */
+namespace deposit {
 
-    static
-    TER
-    preflight (PreflightContext const& ctx);
+/** Preauthorize for deposit.  Invoke as deposit::auth. */
+Json::Value
+auth (Account const& account, Account const& auth);
 
-    TER doApply () override;
-    void preCompute() override;
+/** Remove preauthorization for deposit.  Invoke as deposit::unauth. */
+Json::Value
+unauth (Account const& account, Account const& unauth);
 
-    static
-    std::uint64_t
-    calculateBaseFee (
-        PreclaimContext const& ctx)
-    {
-        return 0;
-    }
+} // deposit
 
-    static
-    TER
-    preclaim(PreclaimContext const &ctx);
+} // jtx
 
-private:
-    TER applyAmendment ();
-
-    TER applyFee ();
-};
-
-}
+} // test
+} // ripple
 
 #endif

@@ -31,7 +31,7 @@ class CreateTicket
     : public Transactor
 {
 public:
-    CreateTicket (ApplyContext& ctx)
+    explicit CreateTicket (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }

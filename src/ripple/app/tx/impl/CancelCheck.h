@@ -28,7 +28,7 @@ class CancelCheck
     : public Transactor
 {
 public:
-    CancelCheck (ApplyContext& ctx)
+    explicit CancelCheck (ApplyContext& ctx)
         : Transactor (ctx)
     {
     }

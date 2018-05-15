@@ -17,23 +17,18 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_CHANGE_H_INCLUDED
-#define RIPPLE_TX_CHANGE_H_INCLUDED
+#ifndef RIPPLE_TX_DEPOSIT_PREAUTH_H_INCLUDED
+#define RIPPLE_TX_DEPOSIT_PREAUTH_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/AmendmentTable.h>
-#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Indexes.h>
 
 namespace ripple {
 
-class Change
+class DepositPreauth
     : public Transactor
 {
 public:
-    explicit Change (ApplyContext& ctx)
+    explicit DepositPreauth (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }
@@ -42,27 +37,14 @@ public:
     TER
     preflight (PreflightContext const& ctx);
 
-    TER doApply () override;
-    void preCompute() override;
-
-    static
-    std::uint64_t
-    calculateBaseFee (
-        PreclaimContext const& ctx)
-    {
-        return 0;
-    }
-
     static
     TER
-    preclaim(PreclaimContext const &ctx);
+    preclaim(PreclaimContext const& ctx);
 
-private:
-    TER applyAmendment ();
-
-    TER applyFee ();
+    TER doApply () override;
 };
 
-}
+} // ripple
 
 #endif
+

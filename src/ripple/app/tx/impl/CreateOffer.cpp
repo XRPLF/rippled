@@ -196,9 +196,10 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
         // Note that this will get checked again in applyGuts, but it saves
         // us a call to checkAcceptAsset and possible false negative.
         //
-        // The return code change is attached to featureChecks as a convenience.
-        // The change is not big enough to deserve its own amendment.
-        return ctx.view.rules().enabled(featureChecks) ? tecEXPIRED : tesSUCCESS;
+        // The return code change is attached to featureDepositPreauth as a
+        // convenience.  The change is not big enough to deserve a fix code.
+        return ctx.view.rules().enabled(
+            featureDepositPreauth) ? tecEXPIRED : tesSUCCESS;
     }
 
     // Make sure that we are authorized to hold what the taker will pay us.
@@ -235,10 +236,10 @@ CreateOffer::checkAcceptAsset(ReadView const& view,
             : tecNO_ISSUER;
     }
 
-    // This code is attached to the FlowCross amendment as a matter of
+    // This code is attached to the DepositPreauth amendment as a matter of
     // convenience.  The change is not significant enough to deserve its
     // own amendment.
-    if (view.rules().enabled(featureFlowCross) && (issue.account == id))
+    if (view.rules().enabled(featureDepositPreauth) && (issue.account == id))
         // An account can always accept its own issuance.
         return tesSUCCESS;
 
@@ -1104,10 +1105,10 @@ CreateOffer::applyGuts (Sandbox& sb, Sandbox& sbCancel)
         // If the offer has expired, the transaction has successfully
         // done nothing, so short circuit from here.
         //
-        // The return code change is attached to featureChecks as a convenience.
-        // The change is not big enough to deserve its own amendment.
+        // The return code change is attached to featureDepositPreauth as a
+        // convenience.  The change is not big enough to deserve a fix code.
         TER const ter {ctx_.view().rules().enabled(
-            featureChecks) ? tecEXPIRED : tesSUCCESS};
+            featureDepositPreauth) ? tecEXPIRED : tesSUCCESS};
         return{ ter, true };
     }
 

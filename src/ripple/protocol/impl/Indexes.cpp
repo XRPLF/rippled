@@ -198,6 +198,15 @@ getCheckIndex (AccountID const& account, std::uint32_t uSequence)
         std::uint32_t(uSequence));
 }
 
+uint256
+getDepositPreauthIndex (AccountID const& owner, AccountID const& preauthorized)
+{
+    return sha512Half(
+        std::uint16_t(spaceDepositPreauth),
+        owner,
+        preauthorized);
+}
+
 //------------------------------------------------------------------------------
 
 namespace keylet {
@@ -298,6 +307,13 @@ Keylet check_t::operator()(AccountID const& id,
 {
     return { ltCHECK,
         getCheckIndex(id, seq) };
+}
+
+Keylet depositPreauth_t::operator()(AccountID const& owner,
+    AccountID const& preauthorized) const
+{
+    return { ltDEPOSIT_PREAUTH,
+        getDepositPreauthIndex(owner, preauthorized) };
 }
 
 //------------------------------------------------------------------------------

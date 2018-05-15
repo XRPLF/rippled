@@ -31,7 +31,7 @@ class SetRegularKey
     : public Transactor
 {
 public:
-    SetRegularKey (ApplyContext& ctx)
+    explicit SetRegularKey (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }

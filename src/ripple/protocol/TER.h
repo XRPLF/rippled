@@ -92,6 +92,8 @@ enum TER
     temBAD_QUORUM,
     temBAD_WEIGHT,
     temBAD_TICK_SIZE,
+    temINVALID_ACCOUNT_ID,
+    temCANNOT_PREAUTH_SELF,
 
     // An intermediate result used internally, should never be returned.
     temUNCERTAIN,
@@ -215,7 +217,8 @@ enum TER
     tecOVERSIZE                 = 145,
     tecCRYPTOCONDITION_ERROR    = 146,
     tecINVARIANT_FAILED         = 147,
-    tecEXPIRED                  = 148
+    tecEXPIRED                  = 148,
+    tecDUPLICATE                = 149,
 };
 
 inline bool isTelLocal(TER x)

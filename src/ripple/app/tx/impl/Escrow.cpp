@@ -446,8 +446,9 @@ EscrowFinish::doApply()
             return tecCRYPTOCONDITION_ERROR;
     }
 
-    // NOTE: Escrow payments cannot be used to fund accounts
-    auto const sled = ctx_.view().peek(keylet::account((*slep)[sfDestination]));
+    // NOTE: Escrow payments cannot be used to fund accounts.
+    AccountID const destID = (*slep)[sfDestination];
+    auto const sled = ctx_.view().peek(keylet::account(destID));
     if (! sled)
         return tecNO_DST;
 
@@ -456,10 +457,15 @@ EscrowFinish::doApply()
         // Is EscrowFinished authorized?
         if (sled->getFlags() & lsfDepositAuth)
         {
-            // Authorized if Destination == Account, otherwise no permission.
-            AccountID const destID = (*slep)[sfDestination];
-            if (ctx_.tx[sfAccount] != destID)
-                return tecNO_PERMISSION;
+            // A destination account that requires authorization has two
+            // ways to get an EscrowFinished into the account:
+            //  1. If Account == Destination, or
+            //  2. If Account is deposit preauthorized by destination.
+            if (account_ != destID)
+            {
+                if (! view().exists (keylet::depositPreauth (destID, account_)))
+                    return tecNO_PERMISSION;
+            }
         }
     }
 
@@ -479,7 +485,7 @@ EscrowFinish::doApply()
     if (ctx_.view ().rules().enabled(fix1523) && (*slep)[~sfDestinationNode])
     {
         TER const ter = dirDelete(ctx_.view(), true,
-            (*slep)[sfDestinationNode], keylet::ownerDir((*slep)[sfDestination]),
+            (*slep)[sfDestinationNode], keylet::ownerDir(destID),
             k.key, false, false, ctx_.app.journal ("View"));
         if (! isTesSuccess(ter))
             return ter;

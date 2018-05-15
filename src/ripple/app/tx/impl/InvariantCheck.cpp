@@ -261,6 +261,7 @@ LedgerEntryTypesMatch::visitEntry(
         case ltESCROW:
         case ltPAYCHAN:
         case ltCHECK:
+        case ltDEPOSIT_PREAUTH:
             break;
         default:
             invalidTypeAdded_ = true;
