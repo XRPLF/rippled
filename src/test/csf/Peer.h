@@ -611,7 +611,7 @@ struct Peer
     // Earliest allowed sequence number when checking for ledgers with more
     // validations than our current ledger
     Ledger::Seq
-    earliestAllowedSeq() const
+    fullyValidatedSeq() const
     {
         return fullyValidatedLedger.seq();
     }
@@ -627,7 +627,7 @@ struct Peer
             return ledgerID;
 
         Ledger::ID const netLgr =
-            validations.getPreferred(ledger, earliestAllowedSeq());
+            validations.getPreferred(ledger, fullyValidatedSeq());
 
         if (netLgr != ledgerID)
         {
@@ -869,7 +869,7 @@ struct Peer
         // In the future, consider taking peer dominant ledger if no validations
         // yet
         Ledger::ID bestLCL =
-            validations.getPreferred(lastClosedLedger, earliestAllowedSeq());
+            validations.getPreferred(lastClosedLedger, fullyValidatedSeq());
         if(bestLCL == Ledger::ID{0})
             bestLCL = lastClosedLedger.id();
 
