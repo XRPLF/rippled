@@ -167,8 +167,7 @@ public:
     virtual void setStandAlone () = 0;
     virtual void setStateTimer () = 0;
 
-    // VFALCO TODO rename to setNeedNetworkLedger
-    virtual void needNetworkLedger () = 0;
+    virtual void setNeedNetworkLedger () = 0;
     virtual void clearNeedNetworkLedger () = 0;
     virtual bool isNeedNetworkLedger () = 0;
     virtual bool isFull () = 0;
