@@ -29,7 +29,7 @@
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/Protocol.h>
 
 namespace ripple {

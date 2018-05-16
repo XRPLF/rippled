@@ -26,7 +26,7 @@
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>

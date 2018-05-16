@@ -22,7 +22,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 
 namespace ripple {
 
