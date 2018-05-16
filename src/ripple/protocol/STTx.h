@@ -30,13 +30,15 @@
 
 namespace ripple {
 
-// VFALCO TODO replace these macros with language constants
-#define TXN_SQL_NEW         'N'
-#define TXN_SQL_CONFLICT    'C'
-#define TXN_SQL_HELD        'H'
-#define TXN_SQL_VALIDATED   'V'
-#define TXN_SQL_INCLUDED    'I'
-#define TXN_SQL_UNKNOWN     'U'
+enum TxnSql : char
+{
+    txnSqlNew = 'N',
+    txnSqlConflict = 'C',
+    txnSqlHeld = 'H',
+    txnSqlValidated = 'V',
+    txnSqlIncluded = 'I',
+    txnSqlUnknown = 'U'
+};
 
 class STTx final
     : public STObject
