@@ -1322,8 +1322,8 @@ struct Flow_manual_test : public Flow_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Flow,app,ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(Flow_manual,app,ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(Flow,app,ripple,2);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Flow_manual,app,ripple,4);
 
 } // test
 } // ripple

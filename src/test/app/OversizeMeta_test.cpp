@@ -62,7 +62,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(PlumpBook,tx,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PlumpBook,tx,ripple,5);
 
 //------------------------------------------------------------------------------
 
@@ -121,7 +121,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(OversizeMeta,tx,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta,tx,ripple,3);
 
 //------------------------------------------------------------------------------
 
@@ -189,7 +189,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(FindOversizeCross,tx,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross,tx,ripple,50);
 
 } // test
 } // ripple

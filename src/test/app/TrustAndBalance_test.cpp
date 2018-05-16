@@ -515,7 +515,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE (TrustAndBalance, app, ripple);
+BEAST_DEFINE_TESTSUITE_PRIO (TrustAndBalance, app, ripple, 1);
 
 }  // ripple
 

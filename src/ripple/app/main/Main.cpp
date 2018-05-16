@@ -182,6 +182,40 @@ void printHelp (const po::options_description& desc)
 
 //------------------------------------------------------------------------------
 
+/* simple unit test selector that allows a comma separated list
+ * of selectors
+ */
+class multi_selector
+{
+private:
+    std::vector<beast::unit_test::selector> selectors_;
+public:
+    explicit
+    multi_selector(std::string const& patterns = "")
+    {
+        std::vector<std::string> v;
+        boost::split (v, patterns, boost::algorithm::is_any_of (","));
+        selectors_.reserve(v.size());
+        std::for_each(v.begin(), v.end(),
+            [this](std::string s)
+            {
+                boost::trim (s);
+                if (selectors_.empty() || !s.empty())
+                    selectors_.emplace_back(
+                        beast::unit_test::selector::automatch, s);
+            });
+    }
+
+    bool
+    operator()(beast::unit_test::suite_info const& s)
+    {
+        for (auto& sel : selectors_)
+            if (sel(s))
+                return true;
+        return false;
+    }
+};
+
 static int runUnitTests(
     std::string const& pattern,
     std::string const& argument,
@@ -202,7 +236,8 @@ static int runUnitTests(
         multi_runner_parent parent_runner;
 
         multi_runner_child child_runner{num_jobs, quiet, log};
-        auto const any_failed = child_runner.run_multi(match_auto(pattern));
+        child_runner.arg(argument);
+        auto const any_failed = child_runner.run_multi(multi_selector(pattern));
 
         if (any_failed)
             return EXIT_FAILURE;
@@ -251,7 +286,8 @@ static int runUnitTests(
     {
         // child
         multi_runner_child runner{num_jobs, quiet, log};
-        auto const anyFailed = runner.run_multi(match_auto(pattern));
+        runner.arg(argument);
+        auto const anyFailed = runner.run_multi(multi_selector(pattern));
 
         if (anyFailed)
             return EXIT_FAILURE;
@@ -291,50 +327,99 @@ int run (int argc, char** argv)
 
     // Set up option parsing.
     //
-    po::options_description desc ("General Options");
-    desc.add_options ()
-    ("help,h", "Display this message.")
+    po::options_description gen ("General Options");
+    gen.add_options ()
     ("conf", po::value<std::string> (), "Specify the configuration file.")
-    ("rpc", "Perform rpc command (default).")
-    ("rpc_ip", po::value <std::string> (), "Specify the IP address for RPC command. Format: <ip-address>[':'<port-number>]")
-    ("rpc_port", po::value <std::uint16_t> (), "Specify the port number for RPC command.")
-    ("standalone,a", "Run with no peers.")
-    ("unittest,u", po::value <std::string> ()->implicit_value (""), "Perform unit tests.")
-    ("unittest-arg", po::value <std::string> ()->implicit_value (""), "Supplies argument to unit tests.")
-    ("unittest-log", po::value <std::string> ()->implicit_value (""), "Force unit test log output, even in quiet mode.")
-#if HAS_BOOST_PROCESS
-    ("unittest-jobs", po::value <std::size_t> (), "Number of unittest jobs to run.")
-    ("unittest-child", "For internal use only. Run the process as a unit test child process.")
-#endif
-    ("parameters", po::value< vector<string> > (), "Specify comma separated parameters.")
-    ("quiet,q", "Reduce diagnotics.")
-    ("quorum", po::value <std::size_t> (), "Override the minimum validation quorum.")
-    ("silent", "No output to the console after startup.")
-    ("verbose,v", "Verbose logging.")
-    ("load", "Load the current ledger from the local DB.")
-    ("valid", "Consider the initial ledger a valid network ledger.")
-    ("replay","Replay a ledger close.")
-    ("ledger", po::value<std::string> (), "Load the specified ledger and start from .")
-    ("ledgerfile", po::value<std::string> (), "Load the specified ledger file.")
-    ("start", "Start from a fresh Ledger.")
-    ("net", "Get the initial ledger from the network.")
     ("debug", "Enable normally suppressed debug logging")
     ("fg", "Run in the foreground.")
-    ("import", importText.c_str ())
-    ("nodetoshard", "Import node store into shards")
-    ("validateShards", shardsText.c_str ())
+    ("help,h", "Display this message.")
+    ("quorum", po::value <std::size_t> (),
+        "Override the minimum validation quorum.")
+    ("silent", "No output to the console after startup.")
+    ("standalone,a", "Run with no peers.")
+    ("verbose,v", "Verbose logging.")
     ("version", "Display the build version.")
+    ;
+
+    po::options_description data ("Ledger/Data Options");
+    data.add_options ()
+    ("import", importText.c_str ())
+    ("ledger", po::value<std::string> (),
+        "Load the specified ledger and start from the value given.")
+    ("ledgerfile", po::value<std::string> (), "Load the specified ledger file.")
+    ("load", "Load the current ledger from the local DB.")
+    ("net", "Get the initial ledger from the network.")
+    ("nodetoshard", "Import node store into shards")
+    ("replay","Replay a ledger close.")
+    ("start", "Start from a fresh Ledger.")
+    ("valid", "Consider the initial ledger a valid network ledger.")
+    ("validateShards", shardsText.c_str ())
+    ;
+
+    po::options_description rpc ("RPC Client Options");
+    rpc.add_options()
+    ("rpc",
+        "Perform rpc command - see below for available commands. "
+        "This is assumed if any positional parameters are provided.")
+    ("rpc_ip", po::value <std::string> (),
+        "Specify the IP address for RPC command. "
+        "Format: <ip-address>[':'<port-number>]")
+    ("rpc_port", po::value <std::uint16_t> (),
+        "Specify the port number for RPC command.")
+    ;
+
+    po::options_description test ("Unit Test Options");
+    test.add_options()
+    ("quiet,q",
+        "Suppress test suite messages, "
+        "including suite/case name (at start) and test log messages.")
+    ("unittest,u", po::value <std::string> ()->implicit_value (""),
+        "Perform unit tests. The optional argument specifies one or "
+        "more comma-separated selectors. Each selector specifies a suite name, "
+        "full-name (lib.module.suite), module, or library "
+        "(checked in that ""order).")
+    ("unittest-arg", po::value <std::string> ()->implicit_value (""),
+        "Supplies an argument string to unit tests. If provided, this argument "
+        "is made available to each suite that runs. Interpretation of the "
+        "argument is handled individually by any suite that accesses it -- "
+        "as such, it typically only make sense to provide this when running "
+        "a single suite.")
+    ("unittest-log",
+        "Force unit test log message output. Only useful in combination with "
+        "--quiet, in which case log messages will print but suite/case names "
+        "will not.")
+#if HAS_BOOST_PROCESS
+    ("unittest-jobs", po::value <std::size_t> (),
+        "Number of unittest jobs to run in parallel (child processes).")
+#endif
+    ;
+
+    // These are hidden options, not intended to be shown in the usage/help message
+    po::options_description hidden ("Hidden Options");
+    hidden.add_options()
+    ("parameters", po::value< vector<string> > (),
+        "Specify rpc command and parameters. This option must be repeated "
+        "for each command/param. Positional parameters also serve this purpose, "
+        "so this option is not needed for users")
+    ("unittest-child",
+        "For internal use only when spawning child unit test processes.")
     ;
 
     // Interpret positional arguments as --parameters.
     po::positional_options_description p;
     p.add ("parameters", -1);
 
+    po::options_description all;
+    all.add(gen).add(rpc).add(data).add(test).add(hidden);
+
+    po::options_description desc;
+    desc.add(gen).add(rpc).add(data).add(test);
+
     // Parse options, if no error.
     try
     {
         po::store (po::command_line_parser (argc, argv)
-            .options (desc)               // Parse options.
+            .options (all)                // Parse options.
             .positional (p)               // Remainder as --parameters.
             .run (),
             vm);

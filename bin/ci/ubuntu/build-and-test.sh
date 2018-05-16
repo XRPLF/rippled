@@ -96,8 +96,34 @@ echo "using APP_PATH: $APP_PATH"
 # See what we've actually built
 ldd $APP_PATH
 
+function join_by { local IFS="$1"; shift; echo "$*"; }
+
+# This is a list of manual tests
+# in rippled that we want to run
+declare -a manual_tests=(
+  "beast.chrono.abstract_clock"
+  "beast.unit_test.print"
+  "ripple.NodeStore.Timing"
+  "ripple.app.Flow_manual"
+  "ripple.app.NoRippleCheckLimits"
+  "ripple.app.PayStrandAllPairs"
+  "ripple.consensus.ByzantineFailureSim"
+  "ripple.consensus.DistributedValidators"
+  "ripple.consensus.ScaleFreeSim"
+  "ripple.ripple_data.digest"
+  "ripple.tx.CrossingLimits"
+  "ripple.tx.FindOversizeCross"
+  "ripple.tx.Offer_manual"
+  "ripple.tx.OversizeMeta"
+  "ripple.tx.PlumpBook"
+)
+
 if [[ ${APP} == "rippled" ]]; then
-  APP_ARGS+="--unittest --quiet --unittest-log"
+  if [[ ${MANUAL_TESTS:-} == true ]]; then
+    APP_ARGS+="--unittest=$(join_by , "${manual_tests[@]}")"
+  else
+    APP_ARGS+="--unittest --quiet --unittest-log"
+  fi
   # Only report on src/ripple files
   export LCOV_FILES="*/src/ripple/*"
   # Nothing to explicitly exclude
