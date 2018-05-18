@@ -145,7 +145,7 @@ public:
         BEAST_EXPECT(cb.count.load() == 0);
     }
 
-    void run()
+    void run() override
     {
         testThreads( 0, 0,  0);
         testThreads( 1, 0,  1);

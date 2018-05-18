@@ -71,7 +71,7 @@ public:
         pass ();
     }
 
-    void run ()
+    void run () override
     {
         test ("steady_clock", get_abstract_clock<
             std::chrono::steady_clock>());

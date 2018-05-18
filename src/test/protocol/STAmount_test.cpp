@@ -606,7 +606,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void run ()
+    void run () override
     {
         testSetValue ();
         testNativeCurrency ();

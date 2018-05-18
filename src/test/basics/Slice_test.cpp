@@ -27,7 +27,7 @@ namespace test {
 
 struct Slice_test : beast::unit_test::suite
 {
-    void run()
+    void run() override
     {
         std::uint8_t const data[] =
         {

@@ -608,7 +608,7 @@ public:
         return nodeIdentity_;
     }
 
-    virtual
+    
     PublicKey const &
     getValidationPublicKey() const override
     {

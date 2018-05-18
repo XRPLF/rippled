@@ -267,7 +267,7 @@ public:
 
     }
 
-    void run()
+    void run() override
     {
         testSequential(true);
         testSequential(false);

@@ -709,7 +709,7 @@ public:
         }
     }
 
-    void run()
+    void run() override
     {
         testKeyType (boost::none, secp256k1_strings);
         testKeyType (std::string("secp256k1"), secp256k1_strings);

@@ -2353,7 +2353,7 @@ public:
         }
     }
 
-    void run ()
+    void run () override
     {
         testBadRpcCommand ();
         testAutoFillFees ();

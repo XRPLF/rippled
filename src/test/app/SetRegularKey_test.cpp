@@ -92,7 +92,7 @@ public:
         env(jv, ter(temINVALID_FLAG));
     }
 
-    void run()
+    void run() override
     {
         testDisableMasterKey();
         testPasswordSpent();

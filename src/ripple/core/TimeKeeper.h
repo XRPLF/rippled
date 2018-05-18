@@ -58,7 +58,7 @@ public:
     */
     virtual
     time_point
-    now() const = 0;
+    now() const override = 0;
 
     /** Returns the close time, in network time.
 

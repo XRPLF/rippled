@@ -37,7 +37,7 @@ original object.
 class TaggedCache_test : public beast::unit_test::suite
 {
 public:
-    void run ()
+    void run () override
     {
         beast::Journal const j;
 

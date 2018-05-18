@@ -29,7 +29,7 @@ namespace ripple {
 class InnerObjectFormats : public KnownFormats <int>
 {
 private:
-    void addCommonFields (Item& item);
+    void addCommonFields (Item& item) override;
 
 public:
     virtual ~InnerObjectFormats () = default;

@@ -314,7 +314,7 @@ public:
         }
     }
 
-    void run()
+    void run() override
     {
         testErrors();
         testSignerLists();

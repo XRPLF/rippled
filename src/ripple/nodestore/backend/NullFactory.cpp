@@ -32,7 +32,7 @@ public:
     {
     }
 
-    ~NullBackend ()
+    ~NullBackend () override
     {
     }
 
@@ -122,13 +122,13 @@ public:
         Manager::instance().insert(*this);
     }
 
-    ~NullFactory()
+    ~NullFactory() override
     {
         Manager::instance().erase(*this);
     }
 
     std::string
-    getName () const
+    getName () const override
     {
         return "none";
     }
@@ -137,7 +137,7 @@ public:
     createInstance (
         size_t,
         Section const&,
-        Scheduler&, beast::Journal)
+        Scheduler&, beast::Journal) override
     {
         return std::make_unique <NullBackend> ();
     }

@@ -284,7 +284,7 @@ class HashRouter_test : public beast::unit_test::suite
 public:
 
     void
-    run()
+    run() override
     {
         testNonExpiration();
         testExpiration();

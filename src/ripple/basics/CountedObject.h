@@ -125,12 +125,12 @@ private:
     public:
         Counter () { }
 
-        char const* getName () const
+        char const* getName () const override
         {
             return Object::getCountedObjectName ();
         }
 
-        void checkPureVirtual () const { }
+        void checkPureVirtual () const override { }
     };
 
 private:

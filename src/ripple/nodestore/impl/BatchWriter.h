@@ -71,7 +71,7 @@ public:
     int getWriteLoad ();
 
 private:
-    void performScheduledTask ();
+    void performScheduledTask () override;
     void writeBatch ();
     void waitForWriting ();
 

@@ -20,7 +20,7 @@ class print_test : public suite
 {
 public:
     void
-    run()
+    run() override
     {
         std::size_t manual = 0;
         std::size_t total = 0;

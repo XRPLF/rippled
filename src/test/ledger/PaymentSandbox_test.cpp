@@ -367,7 +367,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
     }
 
 public:
-    void run ()
+    void run () override
     {
         auto testAll = [this](FeatureBitset features) {
             testSelfFunding(features);

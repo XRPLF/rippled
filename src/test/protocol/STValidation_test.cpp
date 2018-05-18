@@ -108,7 +108,7 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         testDeserialization();
     }

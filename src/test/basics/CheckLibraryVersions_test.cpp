@@ -40,7 +40,7 @@ struct CheckLibraryVersions_test : beast::unit_test::suite
         except ([&]{ checkBoost ("1.54.0"); });
     }
 
-    void run()
+    void run() override
     {
         unexcept ([&]{ checkLibraryVersions(); });
 
