@@ -441,28 +441,31 @@ addPaymentDeliveredAmount(Json::Value& meta, RPC::Context& context,
         return;
     }
 
-    // Ledger 4594095 is the first ledger in which the DeliveredAmount field
-    // was present when a partial payment was made and its absence indicates
-    // that the amount delivered is listed in the Amount field.
-    if (transaction->getLedger () >= 4594095)
+    if (serializedTx->isFieldPresent (sfAmount))
     {
-        meta[jss::delivered_amount] =
-            serializedTx->getFieldAmount (sfAmount).getJson (1);
-        return;
-    }
+        // Ledger 4594095 is the first ledger in which the DeliveredAmount field
+        // was present when a partial payment was made and its absence indicates
+        // that the amount delivered is listed in the Amount field.
+        if (transaction->getLedger () >= 4594095)
+        {
+            meta[jss::delivered_amount] =
+                serializedTx->getFieldAmount (sfAmount).getJson (1);
+            return;
+        }
 
-    // If the ledger closed long after the DeliveredAmount code was deployed
-    // then its absence indicates that the amount delivered is listed in the
-    // Amount field. DeliveredAmount went live January 24, 2014.
-    using namespace std::chrono_literals;
-    auto const ct =
-        context.ledgerMaster.getCloseTimeBySeq (transaction->getLedger ());
-    if (ct && (*ct > NetClock::time_point{446000000s}))
-    {
-        // 446000000 is in Feb 2014, well after DeliveredAmount went live
-        meta[jss::delivered_amount] =
-            serializedTx->getFieldAmount (sfAmount).getJson (1);
-        return;
+        // If the ledger closed long after the DeliveredAmount code was deployed
+        // then its absence indicates that the amount delivered is listed in the
+        // Amount field. DeliveredAmount went live January 24, 2014.
+        using namespace std::chrono_literals;
+        auto const ct =
+            context.ledgerMaster.getCloseTimeBySeq (transaction->getLedger ());
+        if (ct && (*ct > NetClock::time_point{446000000s}))
+        {
+            // 446000000 is in Feb 2014, well after DeliveredAmount went live
+            meta[jss::delivered_amount] =
+                serializedTx->getFieldAmount (sfAmount).getJson (1);
+            return;
+        }
     }
 
     // Otherwise we report "unavailable" which cannot be parsed into a
