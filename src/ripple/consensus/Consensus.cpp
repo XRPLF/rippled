@@ -69,7 +69,9 @@ shouldCloseLedger(
         if ((proposersClosed + proposersValidated) > (prevProposers / 2))
         {
             // If more than half of the network has closed, we close
-            JLOG(j.trace()) << "Others have closed";
+            JLOG(j.trace()) << "Others have closed"
+                            <<  " proposersClosed:  " << proposersClosed
+                            <<  " proposersValidated: " << proposersValidated;
             return true;
         }
     }
@@ -77,13 +79,19 @@ shouldCloseLedger(
     if (!anyTransactions)
     {
         // Only close at the end of the idle interval when no txs
+        JLOG(j.debug()) << "Checking idle interval (no txs)"
+                        << " timeSincePrevClose: " << timeSincePrevClose.count()
+                        << " minOpenTime: " << minOpenTime.count()
+                        << " idleInterval: " << idleInterval.count();
         return timeSincePrevClose >= std::max(minOpenTime,idleInterval);
     }
 
     // Preserve minimum ledger open time
     if (openTime < minOpenTime)
     {
-        JLOG(j.debug()) << "Must wait minimum time before closing";
+        JLOG(j.debug()) << "Must wait minimum time before closing"
+                        << " openTime: " << openTime.count()
+                        << " minOpenTime: " << minOpenTime.count();
         return false;
     }
 
@@ -92,7 +100,9 @@ shouldCloseLedger(
     // the network
     if (openTime < (prevRoundTime / 2))
     {
-        JLOG(j.debug()) << "Ledger has not been open long enough";
+        JLOG(j.debug()) << "Ledger has not been open long enough"
+                        << " openTime: " << openTime.count()
+                        << " prevRoundTime: " << prevRoundTime.count();
         return false;
     }
 
