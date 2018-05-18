@@ -26,3 +26,4 @@
 #include <ripple/net/impl/RPCErr.cpp>
 #include <ripple/net/impl/RPCSub.cpp>
 #include <ripple/net/impl/RegisterSSLCerts.cpp>
+#include <ripple/net/impl/SSLHTTPDownloader.cpp>
