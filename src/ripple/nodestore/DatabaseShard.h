@@ -22,6 +22,7 @@
 
 #include <ripple/nodestore/Database.h>
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/basics/RangeSet.h>
 #include <ripple/nodestore/Types.h>
 
 #include <boost/optional.hpp>
@@ -64,20 +65,58 @@ public:
     bool
     init() = 0;
 
-    /** Prepare to store a new ledger in the shard
+    /** Prepare to store a new ledger in the shard being acquired
 
-        @param validLedgerSeq the index of the maximum valid ledgers
-        @return if a ledger should be fetched and stored, then returns the ledger
+        @param validLedgerSeq The index of the maximum valid ledgers
+        @return If a ledger should be fetched and stored, then returns the ledger
                 index of the ledger to request. Otherwise returns boost::none.
-                Some reasons this may return boost::none are: this database does
-                not store shards, all shards are are stored and full, max allowed
-                disk space would be exceeded, or a ledger was recently requested
-                and not enough time has passed between requests.
+                Some reasons this may return boost::none are: all shards are
+                stored and full, max allowed disk space would be exceeded, or a
+                ledger was recently requested and not enough time has passed
+                between requests.
         @implNote adds a new writable shard if necessary
     */
     virtual
     boost::optional<std::uint32_t>
-    prepare(std::uint32_t validLedgerSeq) = 0;
+    prepareLedger(std::uint32_t validLedgerSeq) = 0;
+
+    /** Prepare a shard index to be imported into the database
+
+        @param shardIndex Shard index to be prepared for import
+        @return true if shard index successfully prepared for import
+    */
+    virtual
+    bool
+    prepareShard(std::uint32_t shardIndex) = 0;
+
+    /** Remove shard indexes from prepared import
+
+        @param indexes Shard indexes to be removed from import
+    */
+    virtual
+    void
+    removePreShard(std::uint32_t shardIndex) = 0;
+
+    /** Get shard indexes being imported
+
+        @return The number of shards prepared for import
+    */
+    virtual
+    std::uint32_t
+    getNumPreShard() = 0;
+
+    /** Import a shard into the shard database
+
+        @param shardIndex Shard index to import
+        @param srcDir The directory to import from
+        @param validate If true validate shard ledger data
+        @return true If the shard was successfully imported
+        @implNote if successful, srcDir is moved to the database directory
+    */
+    virtual
+    bool
+    importShard(std::uint32_t shardIndex,
+        boost::filesystem::path const& srcDir, bool validate) = 0;
 
     /** Fetch a ledger from the shard store
 
@@ -123,12 +162,6 @@ public:
     void
     validate() = 0;
 
-    /** Import the node store into the shard store.
-    */
-    virtual
-    void
-    importNodeStore() = 0;
-
     /** @return The maximum number of ledgers stored in a shard
     */
     virtual
@@ -167,6 +200,12 @@ public:
     virtual
     std::uint32_t
     lastLedgerSeq(std::uint32_t shardIndex) const = 0;
+
+    /** Returns the root database directory
+    */
+    virtual
+    boost::filesystem::path const&
+    getRootDir() const = 0;
 
     /** The number of ledgers in a shard */
     static constexpr std::uint32_t ledgersPerShardDefault {16384u};

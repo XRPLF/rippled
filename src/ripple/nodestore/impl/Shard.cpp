@@ -40,6 +40,8 @@ Shard::Shard(DatabaseShard const& db, std::uint32_t index,
     , nCache_(std::make_shared<NCache>(
         "shard " + std::to_string(index_),
         stopwatch(), cacheSz, cacheAge))
+    , dir_(db.getRootDir() / std::to_string(index_))
+    , control_(dir_ / controlFileName)
     , j_(j)
 {
     if (index_ < db.earliestShardIndex())
@@ -47,66 +49,64 @@ Shard::Shard(DatabaseShard const& db, std::uint32_t index,
 }
 
 bool
-Shard::open(Section config, Scheduler& scheduler,
-    boost::filesystem::path dir)
+Shard::open(Section config, Scheduler& scheduler)
 {
     assert(!backend_);
     using namespace boost::filesystem;
-    dir_ = dir / std::to_string(index_);
+    auto const newShard {!is_directory(dir_) || is_empty(dir_)};
+    auto fail = [&](std::string msg)
+    {
+        if (!msg.empty())
+        {
+            JLOG(j_.error()) << msg;
+        }
+        if (newShard)
+            this->remove(dir_);
+        return false;
+    };
+
     config.set("path", dir_.string());
-    auto newShard {!is_directory(dir_) || is_empty(dir_)};
     try
     {
         backend_ = Manager::instance().make_Backend(
             config, scheduler, j_);
-        backend_->open();
+        backend_->open(newShard);
     }
     catch (std::exception const& e)
     {
-        JLOG(j_.error()) <<
-            "shard " << index_ <<
-            " exception: " << e.what();
-        return false;
+        return fail("shard " + std::to_string(index_) +
+            ": Exception, " + e.what());
     }
 
     if (backend_->fdlimit() == 0)
         return true;
 
-    control_ = dir_ / controlFileName;
     if (newShard)
     {
         if (!saveControl())
-            return false;
+            return fail({});
     }
     else if (is_regular_file(control_))
     {
         std::ifstream ifs(control_.string());
         if (!ifs.is_open())
-        {
-            JLOG(j_.error()) <<
-                "shard " << index_ <<
-                " unable to open control file";
-            return false;
-        }
+            return fail("shard " + std::to_string(index_) +
+                ": Unable to open control file");
         boost::archive::text_iarchive ar(ifs);
         ar & storedSeqs_;
         if (!storedSeqs_.empty())
         {
             if (boost::icl::first(storedSeqs_) < firstSeq_ ||
                 boost::icl::last(storedSeqs_) > lastSeq_)
-            {
-                JLOG(j_.error()) <<
-                    "shard " << index_ <<
-                    " invalid control file";
-                return false;
-            }
+                return fail("shard " + std::to_string(index_) +
+                    ": Invalid control file");
             if (boost::icl::length(storedSeqs_) >= maxLedgers_)
             {
                 JLOG(j_.error()) <<
                     "shard " << index_ <<
                     " found control file for complete shard";
                 storedSeqs_.clear();
-                remove(control_);
+                this->remove(control_);
                 complete_ = true;
             }
         }
@@ -133,7 +133,8 @@ Shard::setStored(std::shared_ptr<Ledger const> const& l)
     {
         if (backend_->fdlimit() != 0)
         {
-            remove(control_);
+            if (!this->remove(control_))
+                return false;
             updateFileSize();
         }
         complete_ = true;
@@ -178,7 +179,7 @@ Shard::contains(std::uint32_t seq) const
     return boost::icl::contains(storedSeqs_, seq);
 }
 
-void
+bool
 Shard::validate(Application& app)
 {
     uint256 hash;
@@ -191,10 +192,10 @@ Shard::validate(Application& app)
             " order by LedgerSeq desc limit 1", app, false);
         if (!l)
         {
-            JLOG(j_.fatal()) <<
+            JLOG(j_.error()) <<
                 "shard " << index_ <<
                 " unable to validate. No lookup data";
-            return;
+            return false;
         }
         if (seq != lastSeq_)
         {
@@ -206,23 +207,23 @@ Shard::validate(Application& app)
             }
             catch (std::exception const& e)
             {
-                JLOG(j_.fatal()) <<
+                JLOG(j_.error()) <<
                     "exception: " << e.what();
-                return;
+                return false;
             }
             if (!h)
             {
-                JLOG(j_.fatal()) <<
+                JLOG(j_.error()) <<
                     "shard " << index_ <<
                     " No hash for last ledger seq " << lastSeq_;
-                return;
+                return false;
             }
             hash = *h;
             seq = lastSeq_;
         }
     }
 
-    JLOG(j_.fatal()) <<
+    JLOG(j_.debug()) <<
         "Validating shard " << index_ <<
         " ledgers " << firstSeq_ <<
         "-" << lastSeq_;
@@ -243,7 +244,7 @@ Shard::validate(Application& app)
                 true), app.config(), *app.shardFamily());
         if (l->info().hash != hash || l->info().seq != seq)
         {
-            JLOG(j_.fatal()) <<
+            JLOG(j_.error()) <<
                 "ledger seq " << seq <<
                 " hash " << hash <<
                 " cannot be a ledger";
@@ -255,7 +256,7 @@ Shard::validate(Application& app)
         if (!l->stateMap().fetchRoot(
             SHAMapHash {l->info().accountHash}, nullptr))
         {
-            JLOG(j_.fatal()) <<
+            JLOG(j_.error()) <<
                 "ledger seq " << seq <<
                 " missing Account State root";
             break;
@@ -265,7 +266,7 @@ Shard::validate(Application& app)
             if (!l->txMap().fetchRoot(
                 SHAMapHash {l->info().txHash}, nullptr))
             {
-                JLOG(j_.fatal()) <<
+                JLOG(j_.error()) <<
                     "ledger seq " << seq <<
                     " missing TX root";
                 break;
@@ -279,30 +280,25 @@ Shard::validate(Application& app)
         if (seq % 128 == 0)
             pCache_->sweep();
     }
-    if (seq < firstSeq_)
-    {
-        JLOG(j_.fatal()) <<
-            "shard " << index_ <<
-            " is complete.";
-    }
-    else if (complete_)
-    {
-        JLOG(j_.fatal()) <<
-            "shard " << index_ <<
-            " is invalid, failed on seq " << seq <<
-            " hash " << hash;
-    }
-    else
-    {
-        JLOG(j_.fatal()) <<
-            "shard " << index_ <<
-            " is incomplete, stopped at seq " << seq <<
-            " hash " << hash;
-    }
 
     pCache_->reset();
     nCache_->reset();
     pCache_->setTargetAge(savedAge);
+
+    if (seq >= firstSeq_)
+    {
+        JLOG(j_.error()) <<
+            "shard " << index_ <<
+            (complete_ ? " is invalid, failed" : " is incomplete, stopped") <<
+            " at seq " << seq <<
+            " hash " << hash;
+        return false;
+    }
+
+    JLOG(j_.debug()) <<
+        "shard " << index_ <<
+        " is complete.";
+    return true;
 }
 
 bool
@@ -311,7 +307,7 @@ Shard::valLedger(std::shared_ptr<Ledger const> const& l,
 {
     if (l->info().hash.isZero() || l->info().accountHash.isZero())
     {
-        JLOG(j_.fatal()) <<
+        JLOG(j_.error()) <<
             "invalid ledger";
         return false;
     }
@@ -339,7 +335,7 @@ Shard::valLedger(std::shared_ptr<Ledger const> const& l,
         }
         catch (std::exception const& e)
         {
-            JLOG(j_.fatal()) <<
+            JLOG(j_.error()) <<
                 "exception: " << e.what();
             return false;
         }
@@ -361,7 +357,7 @@ Shard::valLedger(std::shared_ptr<Ledger const> const& l,
         }
         catch (std::exception const& e)
         {
-            JLOG(j_.fatal()) <<
+            JLOG(j_.error()) <<
                 "exception: " << e.what();
             return false;
         }
@@ -384,26 +380,26 @@ Shard::valFetch(uint256 const& hash)
             break;
         case notFound:
         {
-            JLOG(j_.fatal()) <<
+            JLOG(j_.error()) <<
                 "NodeObject not found. hash " << hash;
             break;
         }
         case dataCorrupt:
         {
-            JLOG(j_.fatal()) <<
+            JLOG(j_.error()) <<
                 "NodeObject is corrupt. hash " << hash;
             break;
         }
         default:
         {
-            JLOG(j_.fatal()) <<
+            JLOG(j_.error()) <<
                 "unknown error. hash " << hash;
         }
         }
     }
     catch (std::exception const& e)
     {
-        JLOG(j_.fatal()) <<
+        JLOG(j_.error()) <<
             "exception: " << e.what();
     }
     return nObj;
@@ -432,6 +428,23 @@ Shard::saveControl()
     }
     boost::archive::text_oarchive ar(ofs);
     ar & storedSeqs_;
+    return true;
+}
+
+bool
+Shard::remove(boost::filesystem::path const& path)
+{
+    try
+    {
+        boost::filesystem::remove_all(path);
+    }
+    catch (const boost::filesystem::filesystem_error& e)
+    {
+        JLOG(j_.error()) <<
+            "remove_all " << path.string() <<
+            ": Exception, " << e.code().message();
+        return false;
+    }
     return true;
 }
 

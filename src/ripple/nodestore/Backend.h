@@ -51,9 +51,10 @@ public:
     virtual std::string getName() = 0;
 
     /** Open the backend.
+        @param createIfMissing Create the database files if necessary.
         This allows the caller to catch exceptions.
     */
-    virtual void open() = 0;
+    virtual void open(bool createIfMissing = true) = 0;
 
     /** Close the backend.
         This allows the caller to catch exceptions.

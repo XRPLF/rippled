@@ -51,8 +51,7 @@ public:
         std::chrono::seconds cacheAge, beast::Journal& j);
 
     bool
-    open(Section config, Scheduler& scheduler,
-        boost::filesystem::path dir);
+    open(Section config, Scheduler& scheduler);
 
     bool
     setStored(std::shared_ptr<Ledger const> const& l);
@@ -63,7 +62,7 @@ public:
     bool
     contains(std::uint32_t seq) const;
 
-    void
+    bool
     validate(Application& app);
 
     std::uint32_t
@@ -128,21 +127,21 @@ private:
     // Database negative cache
     std::shared_ptr<NCache> nCache_;
 
+    // Path to database files
+    boost::filesystem::path const dir_;
+
+    // Path to control file
+    boost::filesystem::path const control_;
+
     std::uint64_t fileSize_ {0};
     std::shared_ptr<Backend> backend_;
     beast::Journal j_;
-
-    // Path to database files
-    boost::filesystem::path dir_;
 
     // True if shard has its entire ledger range stored
     bool complete_ {false};
 
     // Sequences of ledgers stored with an incomplete shard
     RangeSet<std::uint32_t> storedSeqs_;
-
-    // Path to control file
-    boost::filesystem::path control_;
 
     // Used as an optimization for visitDifferences
     std::shared_ptr<Ledger const> lastStored_;
@@ -165,6 +164,10 @@ private:
     // Save the control file for an incomplete shard
     bool
     saveControl();
+
+    // Remove directory or file
+    bool
+    remove(boost::filesystem::path const& path);
 };
 
 } // NodeStore

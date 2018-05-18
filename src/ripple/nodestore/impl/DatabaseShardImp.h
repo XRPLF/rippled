@@ -43,7 +43,20 @@ public:
     init() override;
 
     boost::optional<std::uint32_t>
-    prepare(std::uint32_t validLedgerSeq) override;
+    prepareLedger(std::uint32_t validLedgerSeq) override;
+
+    bool
+    prepareShard(std::uint32_t shardIndex) override;
+
+    void
+    removePreShard(std::uint32_t shardIndex) override;
+
+    std::uint32_t
+    getNumPreShard() override;
+
+    bool
+    importShard(std::uint32_t shardIndex,
+        boost::filesystem::path const& srcDir, bool validate) override;
 
     std::shared_ptr<Ledger>
     fetchLedger(uint256 const& hash, std::uint32_t seq) override;
@@ -59,9 +72,6 @@ public:
 
     void
     validate() override;
-
-    void
-    importNodeStore() override;
 
     std::uint32_t
     ledgersPerShard() const override
@@ -98,17 +108,24 @@ public:
         return (shardIndex + 1) * ledgersPerShard_;
     }
 
+    boost::filesystem::path const&
+    getRootDir() const override
+    {
+        return dir_;
+    }
+
     std::string
     getName() const override
     {
-        return "shardstore";
+        return backendName_;
     }
 
+    /** Import the application local node store
+
+        @param source The application node store.
+    */
     void
-    import(Database& source) override
-    {
-        Throw<std::runtime_error>("Shard store import not supported");
-    }
+    import(Database& source) override;
 
     std::int32_t
     getWriteLoad() const override;
@@ -143,10 +160,18 @@ private:
     Application& app_;
     mutable std::mutex m_;
     bool init_ {false};
+
+    // Complete shards
     std::map<std::uint32_t, std::unique_ptr<Shard>> complete_;
+
+    // A shard being acquired from the peer network
     std::unique_ptr<Shard> incomplete_;
+
+    // Shards prepared for import
+    std::map<std::uint32_t, Shard*> preShards_;
+
     Section const config_;
-    boost::filesystem::path dir_;
+    boost::filesystem::path const dir_;
 
     // If new shards can be stored
     bool canAdd_ {true};
@@ -156,6 +181,9 @@ private:
 
     // If backend type uses permanent storage
     bool backed_;
+
+    // The name associated with the backend used with the shard store
+    std::string const backendName_;
 
     // Maximum disk space the DB can use (in bytes)
     std::uint64_t const maxDiskSpace_;
@@ -212,6 +240,9 @@ private:
         return std::max(shardCacheSz, cacheSz_ / std::max(
             1, static_cast<int>(complete_.size() + (incomplete_ ? 1 : 0))));
     }
+
+    bool
+    remove(boost::filesystem::path const& path);
 };
 
 } // NodeStore

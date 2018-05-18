@@ -105,7 +105,7 @@ public:
     }
 
     void
-    open() override
+    open(bool createIfMissing) override
     {
         db_ = &memoryFactory.open(name_);
     }
