@@ -1697,7 +1697,7 @@ void LedgerMaster::doAdvance (ScopedLockType& sl)
                 {
                     if (auto shardStore = app_.getShardStore())
                     {
-                        missing = shardStore->prepare(mValidLedgerSeq);
+                        missing = shardStore->prepareLedger(mValidLedgerSeq);
                         if (missing)
                             reason = InboundLedger::Reason::SHARD;
                     }

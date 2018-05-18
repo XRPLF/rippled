@@ -39,7 +39,7 @@ public:
     }
 
     void
-    open() override
+    open(bool createIfMissing) override
     {
     }
 

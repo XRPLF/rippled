@@ -2151,7 +2151,7 @@ bool ApplicationImp::nodeToShards()
             "Invalid [shard_db] configuration";
         return false;
     }
-    shardStore_->importNodeStore();
+    shardStore_->import(getNodeStore());
     return true;
 }
 

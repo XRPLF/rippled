@@ -81,8 +81,9 @@ public:
     }
 
     void
-    open() override
+    open(bool createIfMissing) override
     {
+        using namespace boost::filesystem;
         if (db_.is_open())
         {
             assert(false);
@@ -90,19 +91,22 @@ public:
                 "database is already open";
             return;
         }
-        auto const folder = boost::filesystem::path(name_);
-        boost::filesystem::create_directories (folder);
+        auto const folder = path(name_);
         auto const dp = (folder / "nudb.dat").string();
         auto const kp = (folder / "nudb.key").string();
         auto const lp = (folder / "nudb.log").string();
         nudb::error_code ec;
-        nudb::create<nudb::xxhasher>(dp, kp, lp,
-            currentType, nudb::make_salt(), keyBytes_,
-                nudb::block_size(kp), 0.50, ec);
-        if(ec == nudb::errc::file_exists)
-            ec = {};
-        if(ec)
-            Throw<nudb::system_error>(ec);
+        if (createIfMissing)
+        {
+            create_directories(folder);
+            nudb::create<nudb::xxhasher>(dp, kp, lp,
+                currentType, nudb::make_salt(), keyBytes_,
+                    nudb::block_size(kp), 0.50, ec);
+            if(ec == nudb::errc::file_exists)
+                ec = {};
+            if(ec)
+                Throw<nudb::system_error>(ec);
+        }
         db_.open (dp, kp, lp, ec);
         if(ec)
             Throw<nudb::system_error>(ec);
