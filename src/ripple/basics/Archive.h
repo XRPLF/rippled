@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012, 2018 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,13 +17,25 @@
 */
 //==============================================================================
 
-#include <ripple/basics/impl/BasicConfig.cpp>
-#include <ripple/basics/impl/make_SSLContext.cpp>
-#include <ripple/basics/impl/mulDiv.cpp>
-#include <ripple/basics/impl/PerfLogImp.cpp>
-#include <ripple/basics/impl/ResolverAsio.cpp>
-#include <ripple/basics/impl/Sustain.cpp>
-#include <ripple/basics/impl/UptimeClock.cpp>
-#include <ripple/basics/impl/Archive.cpp>
+#ifndef RIPPLE_BASICS_ARCHIVE_H_INCLUDED
+#define RIPPLE_BASICS_ARCHIVE_H_INCLUDED
 
+#include <boost/filesystem.hpp>
 
+namespace ripple {
+
+/** Extract a tar archive compressed with lz4
+
+    @param src the path of the archive to be extracted
+    @param dst the directory to extract to
+
+    @throws runtime_error
+*/
+void
+extractTarLz4(
+    boost::filesystem::path const& src,
+    boost::filesystem::path const& dst);
+
+} // ripple
+
+#endif
