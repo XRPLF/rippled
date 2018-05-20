@@ -49,8 +49,7 @@ class PerfLog_test : public beast::unit_test::suite
     beast::Journal j_ {env_.app().journal ("PerfLog_test")};
 
     // Use this to make calls to random_shuffle() less predictable.
-    std::random_device rd_;
-    std::default_random_engine shuffler_ {rd_()};
+    std::default_random_engine shuffler_ {std::random_device{}()};
 
     // A PerfLog needs a Parent that is a Stoppable and a function to
     // call if it wants to shutdown the system.  This class provides both.
@@ -158,6 +157,8 @@ class PerfLog_test : public beast::unit_test::suite
         }
     };
 
+//------------------------------------------------------------------------------
+
     // Convenience function to return a PerfLog
     std::unique_ptr<perf::PerfLog> getPerfLog (
         PerfLogParent& parent, WithFile withFile)
@@ -166,12 +167,16 @@ class PerfLog_test : public beast::unit_test::suite
             [&parent] () { return parent.signalStop(); });
     }
 
+//------------------------------------------------------------------------------
+
     // Convenience function to return a uint64 given a Json::Value containing
     // a string.
-    std::uint64_t jsonToUint64 (Json::Value const& jsonUintAsString)
+    static std::uint64_t jsonToUint64 (Json::Value const& jsonUintAsString)
     {
         return std::stoull (jsonUintAsString.asString());
     }
+
+//------------------------------------------------------------------------------
 
     // The PerfLog's current state is easier to sort by duration if the
     // duration is converted from string to integer.  The following struct
@@ -190,7 +195,7 @@ class PerfLog_test : public beast::unit_test::suite
     // A convenience function to convert JSON to Cur and sort.  The sort
     // goes from longest to shortest duration.  That way stuff that was started
     // earlier goes to the front.
-    std::vector<Cur> getSortedCurrent (Json::Value const& currentJson)
+    static std::vector<Cur> getSortedCurrent (Json::Value const& currentJson)
     {
         std::vector<Cur> currents;
         currents.reserve (currentJson.size());
@@ -213,6 +218,38 @@ class PerfLog_test : public beast::unit_test::suite
             });
         return currents;
     }
+
+//------------------------------------------------------------------------------
+
+    // Helper function that checks the size of the PerfLog file and then
+    // returns when the file gets bigger.  This indicates that the PerfLog
+    // has written new values to the file and _should_ have the latest
+    // update.
+    static void waitForFileUpdate (PerfLogParent const& parent)
+    {
+        using namespace boost::filesystem;
+
+        auto const path = parent.getPerfLogPath() / parent.getPerfLogFileName();
+        if (!exists (path))
+            return;
+
+        // We wait for the file to change size twice.  The first file size
+        // change may have been in process while we arrived.
+        std::uintmax_t const firstSize {file_size (path)};
+        std::uintmax_t secondSize {firstSize};
+        do
+        {
+            std::this_thread::sleep_for (parent.getLogInterval());
+            secondSize = file_size (path);
+        } while (firstSize >= secondSize);
+
+        do
+        {
+            std::this_thread::sleep_for (parent.getLogInterval());
+        } while (secondSize >= file_size (path));
+    }
+
+//------------------------------------------------------------------------------
 
 public:
     void testFileCreation()
@@ -259,7 +296,7 @@ public:
             // to not be able to write to its file.  That should cause no
             // problems.
             parent.doStart();
-            std::this_thread::sleep_for (parent.getLogInterval() * 3);
+            std::this_thread::sleep_for (parent.getLogInterval() * 10);
             parent.doStop();
 
             // Remove the file.
@@ -312,7 +349,7 @@ public:
             // to not be able to write to its file.  That should cause no
             // problems.
             parent.doStart();
-            std::this_thread::sleep_for (parent.getLogInterval() * 3);
+            std::this_thread::sleep_for (parent.getLogInterval() * 10);
             parent.doStop();
 
             // Fix file permissions so the file can be cleaned up.
@@ -483,7 +520,7 @@ public:
         validateFinalCurrent (perfLog->currentJson());
 
         // Give the PerfLog enough time to flush it's state to the file.
-        std::this_thread::sleep_for (parent.getLogInterval() * 3);
+        waitForFileUpdate (parent);
 
         // Politely stop the PerfLog.
         parent.doStop();
@@ -829,7 +866,7 @@ public:
         validateFinalCurrent (perfLog->currentJson());
 
         // Give the PerfLog enough time to flush it's state to the file.
-        std::this_thread::sleep_for (parent.getLogInterval() * 3);
+        waitForFileUpdate (parent);
 
         // Politely stop the PerfLog.
         parent.doStop();
@@ -929,7 +966,7 @@ public:
             }
         };
 
-        // Lambda to validate currentJson (always empty) fore this test.
+        // Lambda to validate currentJson (always empty) for this test.
         auto verifyEmptyCurrent = [this] (Json::Value const& currentJson)
         {
             BEAST_EXPECT(currentJson.isObject());
@@ -969,7 +1006,7 @@ public:
         verifyEmptyCurrent (perfLog->currentJson());
 
         // Give the PerfLog enough time to flush it's state to the file.
-        std::this_thread::sleep_for (parent.getLogInterval() * 3);
+        waitForFileUpdate (parent);
 
         // Politely stop the PerfLog.
         parent.doStop();
@@ -1038,7 +1075,7 @@ public:
         // Start PerfLog and wait long enough for PerfLog::report()
         // to write to its file.
         parent.doStart();
-        std::this_thread::sleep_for (parent.getLogInterval() * 3);
+        waitForFileUpdate (parent);
 
         decltype (file_size (fullPath)) firstFileSize {0};
         if (withFile == WithFile::no)
@@ -1053,7 +1090,7 @@ public:
 
         // Rotate and then wait to make sure more stuff is written to the file.
         perfLog->rotate();
-        std::this_thread::sleep_for (parent.getLogInterval() * 3);
+        waitForFileUpdate (parent);
 
         parent.doStop();
 
