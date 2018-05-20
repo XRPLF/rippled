@@ -32,13 +32,13 @@ STArray::STArray()
     //v_.reserve(reserveSize);
 }
 
-STArray::STArray (STArray&& other)
+STArray::STArray (STArray&& other) noexcept
     : STBase(other.getFName())
     , v_(std::move(other.v_))
 {
 }
 
-STArray& STArray::operator= (STArray&& other)
+STArray& STArray::operator= (STArray&& other) noexcept
 {
     setFName(other.getFName());
     v_ = std::move(other.v_);

@@ -93,7 +93,7 @@ private:
             ++counter_;
         }
 
-        Wrapper (Wrapper&& rhs)
+        Wrapper (Wrapper&& rhs) noexcept
         : counter_ (rhs.counter_)
         , closure_ (std::move (rhs.closure_))
         {

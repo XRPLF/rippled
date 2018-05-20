@@ -71,7 +71,7 @@ public:
     */
     SOTemplate () = default;
 
-    SOTemplate(SOTemplate&& other)
+    SOTemplate(SOTemplate&& other) noexcept
         : mTypes(std::move(other.mTypes))
         , mIndex(std::move(other.mIndex))
     {

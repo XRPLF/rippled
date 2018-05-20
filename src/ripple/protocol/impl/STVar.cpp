@@ -49,7 +49,7 @@ STVar::STVar (STVar const& other)
         p_ = other.p_->copy(max_size, &d_);
 }
 
-STVar::STVar (STVar&& other)
+STVar::STVar (STVar&& other) noexcept
 {
     if (other.on_heap())
     {
@@ -78,7 +78,7 @@ STVar::operator= (STVar const& rhs)
 }
 
 STVar&
-STVar::operator= (STVar&& rhs)
+STVar::operator= (STVar&& rhs) noexcept
 {
     if (&rhs != this)
     {

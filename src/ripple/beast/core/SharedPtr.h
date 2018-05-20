@@ -176,7 +176,7 @@ public:
     */
     /** @{ */
 #if BEAST_SHAREDPTR_PROVIDE_COMPILER_WORKAROUNDS
-    SharedPtr& operator= (SharedPtr && sp)
+    SharedPtr& operator= (SharedPtr && sp) noexcept
     {
         return assign (sp.swap <T> (nullptr));
     }

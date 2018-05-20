@@ -274,7 +274,7 @@ struct TypedField : SField
     {
     }
 
-    TypedField (TypedField&& u)
+    TypedField (TypedField&& u) noexcept
         : SField(std::move(u))
     {
     }

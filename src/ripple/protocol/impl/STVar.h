@@ -58,11 +58,11 @@ private:
 public:
     ~STVar();
     STVar (STVar const& other);
-    STVar (STVar&& other);
+    STVar (STVar&& other) noexcept;
     STVar& operator= (STVar const& rhs);
-    STVar& operator= (STVar&& rhs);
+    STVar& operator= (STVar&& rhs) noexcept;
 
-    STVar (STBase&& t)
+    STVar (STBase&& t) noexcept
     {
         p_ = t.move(max_size, &d_);
     }

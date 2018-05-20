@@ -92,7 +92,7 @@ public:
         iterator() = default;
 
         iterator (iterator const& other);
-        iterator (iterator&& other);
+        iterator (iterator&& other) noexcept;
 
         // Used by the implementation
         explicit
@@ -103,7 +103,7 @@ public:
         operator= (iterator const& other);
 
         iterator&
-        operator= (iterator&& other);
+        operator= (iterator&& other) noexcept;
 
         bool
         operator== (iterator const& other) const;
