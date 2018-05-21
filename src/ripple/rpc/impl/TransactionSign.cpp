@@ -327,7 +327,7 @@ struct transactionPreProcessResult
     , second ()
     { }
 
-    transactionPreProcessResult (std::shared_ptr<STTx>&& st)
+    explicit transactionPreProcessResult (std::shared_ptr<STTx>&& st)
     : first ()
     , second (std::move (st))
     { }

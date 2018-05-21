@@ -400,7 +400,7 @@ class Stoppable_test
         C c_;
         Stoppable_test& test_;
     public:
-        Root(Stoppable_test& test)
+        explicit Root(Stoppable_test& test)
             : RootStoppable("R")
             , a_(&A::run, std::make_unique<A>(*this, test))
             , b_(*this, test)

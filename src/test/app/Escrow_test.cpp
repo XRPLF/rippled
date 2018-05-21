@@ -127,7 +127,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
 
         template <size_t N>
-        condition (std::array<std::uint8_t, N> c)
+        explicit condition (std::array<std::uint8_t, N> c)
             : condition(makeSlice(c))
         {
         }
@@ -152,7 +152,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
 
         template <size_t N>
-        fulfillment (std::array<std::uint8_t, N> f)
+        explicit fulfillment (std::array<std::uint8_t, N> f)
             : fulfillment(makeSlice(f))
         {
         }
