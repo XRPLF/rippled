@@ -244,7 +244,7 @@ class Validations_test : public beast::unit_test::suite
         PeerID nextNodeId_{0};
 
     public:
-        TestHarness(LedgerOracle& o)
+        explicit TestHarness(LedgerOracle& o)
             : tv_(p_, clock_, staleData_, clock_, o)
         {
         }

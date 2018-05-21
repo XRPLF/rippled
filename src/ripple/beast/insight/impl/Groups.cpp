@@ -98,7 +98,7 @@ public:
     Collector::ptr m_collector;
     Items m_items;
 
-    GroupsImp (Collector::ptr const& collector)
+    explicit GroupsImp (Collector::ptr const& collector)
         : m_collector (collector)
     {
     }

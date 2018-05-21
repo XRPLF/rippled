@@ -49,7 +49,7 @@ create (jtx::Account const& account,
 struct DeliverMin
 {
     STAmount value;
-    DeliverMin (STAmount const& deliverMin)
+    explicit DeliverMin (STAmount const& deliverMin)
     : value (deliverMin) { }
 };
 
@@ -101,7 +101,7 @@ private:
     std::uint32_t const expry_;
 
 public:
-    expiration (NetClock::time_point const& expiry)
+    explicit expiration (NetClock::time_point const& expiry)
         : expry_{expiry.time_since_epoch().count()}
     {
     }
@@ -120,7 +120,7 @@ private:
     std::uint32_t const tag_;
 
 public:
-    source_tag (std::uint32_t tag)
+    explicit source_tag (std::uint32_t tag)
         : tag_{tag}
     {
     }
@@ -139,7 +139,7 @@ private:
     std::uint32_t const tag_;
 
 public:
-    dest_tag (std::uint32_t tag)
+    explicit dest_tag (std::uint32_t tag)
         : tag_{tag}
     {
     }
@@ -158,7 +158,7 @@ private:
     uint256 const id_;
 
 public:
-    invoice_id (uint256 const& id)
+    explicit invoice_id (uint256 const& id)
         : id_{id}
     {
     }
