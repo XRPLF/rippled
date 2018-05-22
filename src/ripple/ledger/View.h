@@ -236,17 +236,6 @@ dirAdd (ApplyView& view,
     std::function<void (SLE::ref)>      fDescriber,
     beast::Journal j);
 
-// deprecated
-TER
-dirDelete (ApplyView& view,
-    const bool           bKeepRoot,
-    std::uint64_t        uNodeDir,      // Node item is mentioned in.
-    Keylet const&        uRootIndex,
-    uint256 const&       uLedgerIndex,  // Item being deleted
-    const bool           bStable,
-    const bool           bSoft,
-    beast::Journal j);
-
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.
 //

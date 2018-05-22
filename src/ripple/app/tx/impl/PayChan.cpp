@@ -18,18 +18,18 @@
 //==============================================================================
 
 #include <ripple/app/tx/impl/PayChan.h>
-
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
+#include <ripple/ledger/ApplyView.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/digest.h>
-#include <ripple/protocol/st.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/PayChan.h>
 #include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/st.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/XRPAmount.h>
-#include <ripple/ledger/View.h>
 
 namespace ripple {
 
@@ -133,10 +133,10 @@ closeChannel (
     // Remove PayChan from owner directory
     {
         auto const page = (*slep)[sfOwnerNode];
-        TER const ter = dirDelete (view, true, page, keylet::ownerDir (src),
-            key, false, page == 0, j);
-        if (!isTesSuccess (ter))
-            return ter;
+        if (! view.dirRemove(keylet::ownerDir(src), page, key, true))
+        {
+            return tefBAD_LEDGER;
+        }
     }
 
     // Transfer amount back to owner, decrement owner count

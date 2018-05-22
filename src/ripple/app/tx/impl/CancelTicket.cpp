@@ -80,15 +80,18 @@ CancelTicket::doApply ()
 
     std::uint64_t const hint (sleTicket->getFieldU64 (sfOwnerNode));
 
-    auto viewJ = ctx_.app.journal ("View");
-    TER const result = dirDelete (ctx_.view (), false, hint,
-        keylet::ownerDir (ticket_owner), ticketId, false, (hint == 0), viewJ);
+    if (! ctx_.view().dirRemove(
+            keylet::ownerDir(ticket_owner), hint, ticketId, false))
+    {
+        return tefBAD_LEDGER;
+    }
 
+    auto viewJ = ctx_.app.journal ("View");
     adjustOwnerCount(view(), view().peek(
         keylet::account(ticket_owner)), -1, viewJ);
     ctx_.view ().erase (sleTicket);
 
-    return result;
+    return tesSUCCESS;
 }
 
 }
