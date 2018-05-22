@@ -658,7 +658,7 @@ struct LedgerCollector
     }
 };
 
-/** Write out stream of ledger accpet/validation activity
+/** Write out stream of ledger accept/validation activity
 
     Writes information about every accepted and fully-validated ledger to a
     provided std::ostream.

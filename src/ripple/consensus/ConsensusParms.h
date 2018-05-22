@@ -87,7 +87,7 @@ struct ConsensusParms
     /** Define the minimum open ledger duration before closing. Given by
 
         min_close = ledgerMIN_CLOSE + (max(diff - 2, 0)) ^2
-                                                    * ledgerMIN_CLOSE_ADJUST
+                                                    * ledgerMIN_CLOSE_ADJ
 
         where diff is the number of ledgers between the consensus parent ledger
         and the last fully validated ledger.
