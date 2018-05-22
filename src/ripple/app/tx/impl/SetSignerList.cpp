@@ -18,15 +18,17 @@
 //==============================================================================
 
 #include <ripple/app/tx/impl/SetSignerList.h>
+
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/STArray.h>
-#include <ripple/protocol/STTx.h>
-#include <ripple/protocol/Indexes.h>
 #include <ripple/basics/Log.h>
-#include <cstdint>
+#include <ripple/ledger/ApplyView.h>
+#include <ripple/protocol/Feature.h>
+#include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/STArray.h>
+#include <ripple/protocol/STObject.h>
+#include <ripple/protocol/STTx.h>
 #include <algorithm>
+#include <cstdint>
 
 namespace ripple {
 
@@ -287,17 +289,19 @@ SetSignerList::removeSignersFromLedger (Keylet const& accountKeylet,
     // Remove the node from the account directory.
     auto const hint = (*signers)[sfOwnerNode];
 
-    auto viewJ = ctx_.app.journal ("View");
-    TER const result  = dirDelete(ctx_.view(), false, hint,
-        ownerDirKeylet, signerListKeylet.key, false, (hint == 0), viewJ);
+    if (! ctx_.view().dirRemove(
+            ownerDirKeylet, hint, signerListKeylet.key, false))
+    {
+        return tefBAD_LEDGER;
+    }
 
-    if (result == tesSUCCESS)
-        adjustOwnerCount(view(),
-            view().peek(accountKeylet), removeFromOwnerCount, viewJ);
+    auto viewJ = ctx_.app.journal("View");
+    adjustOwnerCount(
+        view(), view().peek(accountKeylet), removeFromOwnerCount, viewJ);
 
     ctx_.view().erase (signers);
 
-    return result;
+    return tesSUCCESS;
 }
 
 void

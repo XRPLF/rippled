@@ -375,23 +375,21 @@ CashCheck::doApply ()
     if (srcId != account_)
     {
         std::uint64_t const page {(*sleCheck)[sfDestinationNode]};
-        TER const ter {dirDelete (psb, true, page,
-            keylet::ownerDir (account_), checkKey, false, false, viewJ)};
-        if (! isTesSuccess (ter))
+        if (! ctx_.view().dirRemove(
+                keylet::ownerDir(account_), page, checkKey, true))
         {
             JLOG(j_.warn()) << "Unable to delete check from destination.";
-            return ter;
+            return tefBAD_LEDGER;
         }
     }
     // Remove check from check owner's directory.
     {
         std::uint64_t const page {(*sleCheck)[sfOwnerNode]};
-        TER const ter {dirDelete (psb, true, page,
-            keylet::ownerDir (srcId), checkKey, false, false, viewJ)};
-        if (! isTesSuccess (ter))
+        if (! ctx_.view().dirRemove(
+                keylet::ownerDir(srcId), page, checkKey, true))
         {
             JLOG(j_.warn()) << "Unable to delete check from owner.";
-            return ter;
+            return tefBAD_LEDGER;
         }
     }
     // If we succeeded, update the check owner's reserve.

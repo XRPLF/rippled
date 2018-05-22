@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <ripple/app/tx/impl/CancelCheck.h>
+
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/Log.h>
+#include <ripple/ledger/ApplyView.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STAccount.h>
@@ -104,22 +106,18 @@ CancelCheck::doApply ()
     if (srcId != dstId)
     {
         std::uint64_t const page {(*sleCheck)[sfDestinationNode]};
-        TER const ter {dirDelete (view(), true, page,
-            keylet::ownerDir (dstId), checkId, false, false, viewJ)};
-        if (! isTesSuccess (ter))
+        if (! view().dirRemove (keylet::ownerDir(dstId), page, checkId, true))
         {
             JLOG(j_.warn()) << "Unable to delete check from destination.";
-            return ter;
+            return tefBAD_LEDGER;
         }
     }
     {
         std::uint64_t const page {(*sleCheck)[sfOwnerNode]};
-        TER const ter {dirDelete (view(), true, page,
-            keylet::ownerDir (srcId), checkId, false, false, viewJ)};
-        if (! isTesSuccess (ter))
+        if (! view().dirRemove (keylet::ownerDir(srcId), page, checkId, true))
         {
             JLOG(j_.warn()) << "Unable to delete check from owner.";
-            return ter;
+            return tefBAD_LEDGER;
         }
     }
 

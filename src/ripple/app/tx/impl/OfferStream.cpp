@@ -42,7 +42,7 @@ template<class TIn, class TOut>
 void
 TOfferStreamBase<TIn, TOut>::erase (ApplyView& view)
 {
-    // NIKB NOTE This should be using ApplyView::dirDelete, which would
+    // NIKB NOTE This should be using ApplyView::dirRemove, which would
     //           correctly remove the directory if its the last entry.
     //           Unfortunately this is a protocol breaking change.
 

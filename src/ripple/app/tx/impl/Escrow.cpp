@@ -18,18 +18,20 @@
 //==============================================================================
 
 #include <ripple/app/tx/impl/Escrow.h>
+
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
 #include <ripple/conditions/Condition.h>
 #include <ripple/conditions/Fulfillment.h>
+#include <ripple/ledger/ApplyView.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/XRPAmount.h>
-#include <ripple/ledger/View.h>
 
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
@@ -476,21 +478,21 @@ EscrowFinish::doApply()
     // Remove escrow from owner directory
     {
         auto const page = (*slep)[sfOwnerNode];
-        TER const ter = dirDelete(ctx_.view(), true,
-            page, keylet::ownerDir(account),
-                k.key, false, page == 0, ctx_.app.journal ("View"));
-        if (! isTesSuccess(ter))
-            return ter;
+        if (! ctx_.view().dirRemove(
+                keylet::ownerDir(account), page, k.key, true))
+        {
+            return tefBAD_LEDGER;
+        }
     }
 
     // Remove escrow from recipient's owner directory, if present.
     if (ctx_.view ().rules().enabled(fix1523) && (*slep)[~sfDestinationNode])
     {
-        TER const ter = dirDelete(ctx_.view(), true,
-            (*slep)[sfDestinationNode], keylet::ownerDir(destID),
-            k.key, false, false, ctx_.app.journal ("View"));
-        if (! isTesSuccess(ter))
-            return ter;
+        auto const page = (*slep)[sfDestinationNode];
+        if (! ctx_.view().dirRemove(keylet::ownerDir(destID), page, k.key, true))
+        {
+            return tefBAD_LEDGER;
+        }
     }
 
     // Transfer amount to destination
@@ -561,21 +563,22 @@ EscrowCancel::doApply()
     // Remove escrow from owner directory
     {
         auto const page = (*slep)[sfOwnerNode];
-        TER const ter = dirDelete(ctx_.view(), true,
-            page, keylet::ownerDir(account),
-                k.key, false, page == 0, ctx_.app.journal ("View"));
-        if (! isTesSuccess(ter))
-            return ter;
+        if (! ctx_.view().dirRemove(
+                keylet::ownerDir(account), page, k.key, true))
+        {
+            return tefBAD_LEDGER;
+        }
     }
 
     // Remove escrow from recipient's owner directory, if present.
     if (ctx_.view ().rules().enabled(fix1523) && (*slep)[~sfDestinationNode])
     {
-        TER const ter = dirDelete(ctx_.view(), true,
-            (*slep)[sfDestinationNode], keylet::ownerDir((*slep)[sfDestination]),
-            k.key, false, false, ctx_.app.journal ("View"));
-        if (! isTesSuccess(ter))
-            return ter;
+        auto const page = (*slep)[sfDestinationNode];
+        if (! ctx_.view().dirRemove(
+                keylet::ownerDir((*slep)[sfDestination]), page, k.key, true))
+        {
+            return tefBAD_LEDGER;
+        }
     }
 
     // Transfer amount back to owner, decrement owner count
