@@ -19,19 +19,20 @@
 #ifndef RIPPLE_TEST_CSF_EVENTS_H_INCLUDED
 #define RIPPLE_TEST_CSF_EVENTS_H_INCLUDED
 
+#include <ripple/beast/type_name.h>
+#include <chrono>
+#include <ostream>
+#include <test/csf/Proposal.h>
 #include <test/csf/Tx.h>
 #include <test/csf/Validation.h>
 #include <test/csf/ledgers.h>
-#include <test/csf/Proposal.h>
-#include <chrono>
-
 
 namespace ripple {
 namespace test {
 namespace csf {
 
 // Events are emitted by peers at a variety of points during the simulation.
-// Each event is emitted by a particlar peer at a particular time. Collectors
+// Each event is emitted by a particular peer at a particular time. Collectors
 // process these events, perhaps calculating statistics or storing events to
 // a log for post-processing.
 //
@@ -53,8 +54,6 @@ namespace csf {
 // CollectorRef.f defines a type-erased holder for arbitrary Collectors.  If
 // any new events are added, the interface there needs to be updated.
 
-
-
 /** A value to be flooded to all other peers starting from this peer.
  */
 template <class V>
@@ -62,6 +61,12 @@ struct Share
 {
     //! Event that is shared
     V val;
+
+    friend std::ostream&
+    operator<<(std::ostream& o, Share const& s)
+    {
+        return o << "Share( " << beast::type_name<V>() << " )";
+    }
 };
 
 /** A value relayed to another peer as part of flooding
@@ -74,6 +79,12 @@ struct Relay
 
     //! The value to relay
     V val;
+
+    friend std::ostream&
+    operator<<(std::ostream& o, Relay const& r)
+    {
+        return o << "Relay(to=" << r.to << "," << beast::type_name<V>() << " )";
+    }
 };
 
 /** A value received from another peer as part of flooding
@@ -86,6 +97,13 @@ struct Receive
 
     //! The received value
     V val;
+
+    friend std::ostream&
+    operator<<(std::ostream& o, Receive const& r)
+    {
+        return o << "Receive(from=" << r.from << "," << beast::type_name<V>()
+                 << " )";
+    }
 };
 
 /** A transaction submitted to a peer */
@@ -93,6 +111,12 @@ struct SubmitTx
 {
     //! The submitted transaction
     Tx tx;
+
+    friend std::ostream&
+    operator<<(std::ostream& o, SubmitTx const& s)
+    {
+        return o << "SubmitTx(id=" << s.tx << ")";
+    }
 };
 
 /** Peer starts a new consensus round
@@ -104,6 +128,14 @@ struct StartRound
 
     //! The prior ledger on hand
     Ledger prevLedger;
+
+    friend std::ostream&
+    operator<<(std::ostream& o, StartRound const& r)
+    {
+        return o << "StartRound(bestID=" << r.bestLedger
+                 << ",prevSeq=" << r.prevLedger.seq()
+                 << ", prevID=" << r.prevLedger.id() << " )";
+    }
 };
 
 /** Peer closed the open ledger
@@ -115,6 +147,14 @@ struct CloseLedger
 
     // Initial txs for including in ledger
     TxSetType txs;
+
+    friend std::ostream&
+    operator<<(std::ostream& o, CloseLedger const& r)
+    {
+        return o << "CloseLedger("
+                 << "prevSeq=" << r.prevLedger.seq()
+                 << ",prevID=" << r.prevLedger.id() << ",txs=" << r.txs << " )";
+    }
 };
 
 //! Peer accepted consensus results
@@ -125,6 +165,15 @@ struct AcceptLedger
 
     // The prior ledger (this is a jump if prior.id() != ledger.parentID())
     Ledger prior;
+
+    friend std::ostream&
+    operator<<(std::ostream& o, AcceptLedger const& r)
+    {
+        return o << "AcceptLedger(ledgerID=" << r.ledger.id()
+                 << ",ledgerSeq=" << r.ledger.seq()
+                 << ",priorSeq=" << r.prior.seq()
+                 << ", priorID=" << r.prior.id() << " )";
+    }
 };
 
 //! Peer detected a wrong prior ledger during consensus
@@ -134,6 +183,13 @@ struct WrongPrevLedger
     Ledger::ID wrong;
     // ID of what we think is the correct ledger
     Ledger::ID right;
+
+    friend std::ostream&
+    operator<<(std::ostream& o, WrongPrevLedger const& r)
+    {
+        return o << "WrongPrevLedger(wrong=" << r.wrong << ",right=" << r.right
+                 << " )";
+    }
 };
 
 //! Peer fully validated a new ledger
@@ -145,8 +201,16 @@ struct FullyValidateLedger
     //! The prior fully validated ledger
     //! This is a jump if prior.id() != ledger.parentID()
     Ledger prior;
-};
 
+    friend std::ostream&
+    operator<<(std::ostream& o, FullyValidateLedger const& r)
+    {
+        return o << "FullyValidateLedger(ledgerID=" << r.ledger.id()
+                 << ",ledgerSeq=" << r.ledger.seq()
+                 << ",priorSeq=" << r.prior.seq()
+                 << ", priorID=" << r.prior.id() << " )";
+    }
+};
 
 }  // namespace csf
 }  // namespace test

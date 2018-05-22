@@ -658,7 +658,7 @@ struct LedgerCollector
     }
 };
 
-/** Write out stream of ledger activity
+/** Write out stream of ledger accept/validation activity
 
     Writes information about every accepted and fully-validated ledger to a
     provided std::ostream.
@@ -689,6 +689,21 @@ struct StreamCollector
             << "\n";
     }
 };
+
+/** Write out stream of all event activity */
+struct AllStreamCollector
+{
+    std::ostream& out;
+
+    template <class E>
+    void
+    on(PeerID who, SimTime when, E const& e)
+    {
+        out << when.time_since_epoch().count() << ": Node " << who
+            << " " << e << "\n";
+    }
+};
+
 
 /** Saves information about Jumps for closed and fully validated ledgers. A
     jump occurs when a node closes/fully validates a new ledger that is not the

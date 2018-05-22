@@ -35,37 +35,50 @@ public:
         using namespace std::chrono_literals;
 
         // Use default parameters
-        ConsensusParms const p{};
+        ConsensusParms const parms{};
         beast::Journal j;
-
+        auto const mc = parms.ledgerMIN_CLOSE;
         // Bizarre times forcibly close
         BEAST_EXPECT(
-            shouldCloseLedger(true, 10, 10, 10, -10s, 10s, 1s, 1s, p, j));
+            shouldCloseLedger(true, 10, 10, 10, -10s, 10s, 1s, 1s, mc, j));
         BEAST_EXPECT(
-            shouldCloseLedger(true, 10, 10, 10, 100h, 10s, 1s, 1s, p, j));
+            shouldCloseLedger(true, 10, 10, 10, 100h, 10s, 1s, 1s, mc, j));
         BEAST_EXPECT(
-            shouldCloseLedger(true, 10, 10, 10, 10s, 100h, 1s, 1s, p, j));
+            shouldCloseLedger(true, 10, 10, 10, 10s, 100h, 1s, 1s, mc, j));
 
         // Rest of network has closed
         BEAST_EXPECT(
-            shouldCloseLedger(true, 10, 3, 5, 10s, 10s, 10s, 10s, p, j));
+            shouldCloseLedger(true, 10, 3, 5, 10s, 10s, 1s, 10s, mc, j));
 
-        // No transactions means wait until end of internval
+        // By ourselves
         BEAST_EXPECT(
-            !shouldCloseLedger(false, 10, 0, 0, 1s, 1s, 1s, 10s, p, j));
+            !shouldCloseLedger(true, 0, 0, 1, 10s, 10s, 1s, 10s, mc, j));
+
+        // No transactions means wait until end of interval
         BEAST_EXPECT(
-            shouldCloseLedger(false, 10, 0, 0, 1s, 10s, 1s, 10s, p, j));
+            !shouldCloseLedger(false, 10, 0, 0, 1s, 1s, 1s, 10s, mc, j));
+        BEAST_EXPECT(
+            shouldCloseLedger(false, 10, 0, 0, 1s, 10s, 1s, 10s, mc, j));
+
+        //  unless minimum open time exceeds open interval
+        BEAST_EXPECT(
+            !shouldCloseLedger(false, 10, 0, 0, 1s, 10s, 1s, 10s, 100 * mc, j));
 
         // Enforce minimum ledger open time
         BEAST_EXPECT(
-            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 1s, 10s, p, j));
+            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 1s, 10s, mc, j));
 
         // Don't go too much faster than last time
         BEAST_EXPECT(
-            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 3s, 10s, p, j));
+            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 3s, 10s, mc, j));
 
         BEAST_EXPECT(
-            shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 10s, 10s, p, j));
+            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 1s, 10s, mc, j));
+
+        BEAST_EXPECT(
+            shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 10s, 10s, mc, j));
+        BEAST_EXPECT(!shouldCloseLedger(
+            true, 10, 0, 0, 10s, 10s, 10s, 10s, 100 * mc, j));
     }
 
     void
@@ -118,7 +131,7 @@ public:
 
         Sim s;
         PeerGroup peers = s.createGroup(1);
-        Peer * peer = peers[0];
+        Peer* peer = peers[0];
         peer->targetLedgers = 1;
         peer->start();
         peer->submit(Tx{1});
@@ -149,7 +162,7 @@ public:
             peers, date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
         // everyone submits their own ID as a TX
-        for (Peer * p : peers)
+        for (Peer* p : peers)
             p->submit(Tx(static_cast<std::uint32_t>(p->id)));
 
         sim.run(1);
@@ -271,8 +284,8 @@ public:
                 if (BEAST_EXPECT(sim.synchronized()))
                 {
                     // Verify all peers have same LCL but are missing
-                    // transaction 0,1 which was not received by all peers before
-                    // the ledger closed
+                    // transaction 0,1 which was not received by all peers
+                    // before the ledger closed
                     for (Peer* peer : network)
                     {
                         // Closed ledger has all but transaction 0,1
@@ -334,7 +347,6 @@ public:
                         }
                     }
                 }
-
             }
         }
     }
@@ -497,15 +509,15 @@ public:
             // synchronized because nodes 0 and 1 are running one ledger behind
             if (BEAST_EXPECT(sim.branches() == 1))
             {
-                for(Peer const* peer : majority)
+                for (Peer const* peer : majority)
                 {
                     // No jumps for majority nodes
                     BEAST_EXPECT(jumps[peer->id].closeJumps.empty());
                     BEAST_EXPECT(jumps[peer->id].fullyValidatedJumps.empty());
                 }
-                for(Peer const* peer : minority)
+                for (Peer const* peer : minority)
                 {
-                    auto & peerJumps = jumps[peer->id];
+                    auto& peerJumps = jumps[peer->id];
                     // last closed ledger jump between chains
                     {
                         if (BEAST_EXPECT(peerJumps.closeJumps.size() == 1))
@@ -573,7 +585,7 @@ public:
             sim.run(2);
 
             // Check all peers recovered
-            for (Peer * p: network)
+            for (Peer* p : network)
                 BEAST_EXPECT(p->prevLedgerID() == network[0]->prevLedgerID());
         }
     }
@@ -809,7 +821,7 @@ public:
         center.trust(validators);
 
         SimDuration delay =
-                date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+            date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
         validators.connect(center, delay);
 
         center[0]->runAsValidator = false;
@@ -818,7 +830,7 @@ public:
         sim.run(1);
 
         // everyone submits their own ID as a TX and relay it to peers
-        for (Peer * p : validators)
+        for (Peer* p : validators)
             p->submit(Tx(static_cast<std::uint32_t>(p->id)));
 
         sim.run(1);
@@ -826,7 +838,6 @@ public:
         // All peers are in sync
         BEAST_EXPECT(sim.synchronized());
     }
-
 
     // Helper collector for testPreferredByBranch
     // Invasively disconnects network at bad times to cause splits
@@ -852,7 +863,6 @@ public:
         on(csf::PeerID, csf::SimTime, E const&)
         {
         }
-
 
         void
         on(csf::PeerID who, csf::SimTime, csf::FullyValidateLedger const& e)
@@ -880,8 +890,6 @@ public:
                 network.connect(groupCsplit, delay);
             }
         }
-
-
     };
 
     void
@@ -909,7 +917,8 @@ public:
         //   validates C. The rest of the C nodes split at just the right time
         //   such that they never see any C validations but their own.
         // - The C nodes continue and generate 8 different child ledgers.
-        // - Meanwhile, the D nodes only saw 1 validation for C and 2 validations
+        // - Meanwhile, the D nodes only saw 1 validation for C and 2
+        // validations
         //   for B.
         // - The network reconnects and the validations for generation 3 ledgers
         //   are observed (D and the 8 C's)
@@ -918,7 +927,6 @@ public:
         //   EVEN though C was fully validated by one node
         // - In the new approach, 2 votes for D are not enough to outweight the
         //   8 implicit votes for C, so nodes will avalanche to C instead
-
 
         ConsensusParms const parms{};
         Sim sim;
@@ -933,10 +941,10 @@ public:
         PeerGroup groupNotFastC = groupABD + groupCsplit;
         PeerGroup network = groupABD + groupCsplit + groupCfast;
 
-        SimDuration delay = date::round<milliseconds>(
-            0.2 * parms.ledgerGRANULARITY);
-        SimDuration fDelay = date::round<milliseconds>(
-            0.1 * parms.ledgerGRANULARITY);
+        SimDuration delay =
+            date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+        SimDuration fDelay =
+            date::round<milliseconds>(0.1 * parms.ledgerGRANULARITY);
 
         network.trust(network);
         // C must have a shorter delay to see all the validations before the
@@ -954,10 +962,9 @@ public:
 
         // Next round generates B and C
         // To force B, we inject an extra transaction in to those nodes
-        for(Peer * peer : groupABD)
+        for (Peer* peer : groupABD)
         {
-            peer->txInjections.emplace(
-                    peer->lastClosedLedger.seq(), Tx{42});
+            peer->txInjections.emplace(peer->lastClosedLedger.seq(), Tx{42});
         }
         // The Disruptor will ensure that nodes disconnect before the C
         // validations make it to all but the fastC node
@@ -969,7 +976,7 @@ public:
         BEAST_EXPECT(sim.branches() == 1);
 
         //  Run another round to generate the 8 different C' ledgers
-        for (Peer * p : network)
+        for (Peer* p : network)
             p->submit(Tx(static_cast<std::uint32_t>(p->id)));
         sim.run(1);
 
@@ -980,14 +987,153 @@ public:
         // Disruptor will reconnect all but the fastC node
         sim.run(1);
 
-        if(BEAST_EXPECT(sim.branches() == 1))
+        if (BEAST_EXPECT(sim.branches() == 1))
         {
             BEAST_EXPECT(sim.synchronized());
         }
-        else // old approach caused a fork
+        else  // old approach caused a fork
         {
             BEAST_EXPECT(sim.branches(groupNotFastC) == 1);
             BEAST_EXPECT(sim.synchronized(groupNotFastC) == 1);
+        }
+    }
+
+    // Collector for testMinOpenDuration
+    // Tracks the longest open phase duration by tracking delays between
+    // starting a round and closing a ledger
+    struct OpenDurationCollector
+    {
+        csf::Peer const& target;
+        boost::optional<csf::SimTime> lastStart;
+
+        csf::SimDuration maxOpenDuration{0};
+        std::uint32_t maxLedgerGap{0};
+
+        OpenDurationCollector(csf::Peer const& t) : target{t}
+        {
+        }
+
+        template <class E>
+        void
+        on(csf::PeerID, csf::SimTime, E const&)
+        {
+        }
+
+        void
+        on(csf::PeerID const& p,
+           csf::SimTime const&,
+           csf::WrongPrevLedger const&)
+        {
+            // ignore the next close
+            lastStart = boost::none;
+        }
+
+        void
+        on(csf::PeerID const& p,
+           csf::SimTime const& time,
+           csf::StartRound const&)
+        {
+            if (p == target.id)
+                lastStart = time;
+        }
+
+        void
+        on(csf::PeerID const& p,
+           csf::SimTime const& time,
+           csf::CloseLedger const& e)
+        {
+            if (p == target.id)
+            {
+                if (lastStart)
+                {
+                    auto const diff = time - *lastStart;
+                    if (diff > maxOpenDuration)
+                    {
+                        maxOpenDuration = diff;
+                        maxLedgerGap = static_cast<std::uint32_t>(
+                            e.prevLedger.seq() -
+                            target.fullyValidatedLedger.seq());
+                    }
+                }
+                lastStart = boost::none;
+            }
+        }
+    };
+
+    void
+    testMinOpenDuration()
+    {
+        using namespace csf;
+        using namespace std::chrono;
+
+        // Simulate extended open ledger durations that should occur for a peer
+        // that has lost connection to the rest of the network.
+        //
+        // When a node is not able to fully validate ledgers, it should slow
+        // down local forward progress by extending the duration of the open
+        // phase of consensus.
+        for (bool const enableDelay : {true, false})
+        {
+            Sim sim;
+            ConsensusParms parms;
+
+            if (!enableDelay)
+                parms.ledgerMIN_CLOSE_ADJ = 0ms;
+
+            PeerGroup alone = sim.createGroup(1);
+            PeerGroup group = sim.createGroup(4);
+            PeerGroup network = alone + group;
+
+            for (Peer* peer : network)
+                peer->consensusParms = parms;
+
+            OpenDurationCollector openDurCollector{*alone[0]};
+
+            auto const delay =
+                date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+            sim.collectors.add(openDurCollector);
+
+            // Fully connected trust graph
+            network.trustAndConnect(network, delay);
+
+            // Initial round to start the network
+            sim.run(1);
+
+            // Select random peer in network
+            auto peerSelector = makeSelector(
+                network.begin(),
+                network.end(),
+                std::vector<double>(network.size(), 1.),
+                sim.rng);
+
+            // Submit 1 tx/second to random peer
+            auto txSubmitter = makeSubmitter(
+                ConstantDistribution{Rate{10, 1000ms}.inv()},
+                sim.scheduler.now(),
+                sim.scheduler.now() + 10min,
+                peerSelector,
+                sim.scheduler,
+                sim.rng);
+
+            // Disconnect node 1
+            alone.disconnect(group);
+            sim.run(10min);
+
+            // No fork, but only the main group is synchronized
+            BEAST_EXPECT(sim.branches() == 1);
+            BEAST_EXPECT(!sim.synchronized());
+            BEAST_EXPECT(sim.synchronized(group));
+
+            // Reconnect node 1 and run long enough for it to reconnect
+            alone.connect(group, delay);
+            sim.run(1min);
+            BEAST_EXPECT(sim.synchronized());
+
+            // Verify minimum open interval was enforced on maximum ledger gap
+            BEAST_EXPECT(
+                openDurCollector.maxOpenDuration ==
+                minimumOpenInterval(
+                    parms, true, openDurCollector.maxLedgerGap));
         }
     }
 
@@ -1006,6 +1152,8 @@ public:
         testFork();
         testHubNetwork();
         testPreferredByBranch();
+
+        testMinOpenDuration();
     }
 };
 

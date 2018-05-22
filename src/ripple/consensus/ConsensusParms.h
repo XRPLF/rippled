@@ -77,14 +77,23 @@ struct ConsensusParms
     //! The percentage threshold above which we can declare consensus.
     std::size_t minCONSENSUS_PCT = 80;
 
-    //! The duration a ledger may remain idle before closing
+    //! The duration a ledger may remain idle before closing, assuming the node
+    //! is in sync with the network.
     std::chrono::milliseconds ledgerIDLE_INTERVAL = 15s;
 
     //! The number of seconds we wait minimum to ensure participation
     std::chrono::milliseconds ledgerMIN_CONSENSUS = 1950ms;
 
-    //! Minimum number of seconds to wait to ensure others have computed the LCL
+    /** Define the minimum open ledger duration before closing. Given by
+
+        min_close = ledgerMIN_CLOSE + (max(diff - 2, 0)) ^2
+                                                    * ledgerMIN_CLOSE_ADJ
+
+        where diff is the number of ledgers between the consensus parent ledger
+        and the last fully validated ledger.
+    */
     std::chrono::milliseconds ledgerMIN_CLOSE = 2s;
+    std::chrono::milliseconds ledgerMIN_CLOSE_ADJ = 10s;
 
     //! How often we check state or change positions
     std::chrono::milliseconds ledgerGRANULARITY = 1s;
