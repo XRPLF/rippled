@@ -150,10 +150,10 @@ Transactor::calculateFeePaid(STTx const& tx)
 }
 
 XRPAmount
-Transactor::calculateFee(Application& app, std::uint64_t const baseFee,
+Transactor::calculateFee (Application& app, std::uint64_t baseFee,
     Fees const& fees, ApplyFlags flags)
 {
-    return scaleFeeLoad(baseFee, app.getFeeTrack(),
+    return scaleFeeLoad (baseFee, app.getFeeTrack (),
         fees, flags & tapUNLIMITED);
 }
 

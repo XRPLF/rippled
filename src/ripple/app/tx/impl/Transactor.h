@@ -169,10 +169,10 @@ protected:
 
     virtual TER doApply () = 0;
 
-	static
-	XRPAmount
-	calculateFee(Application& app, std::uint64_t const baseFee,
-		Fees const& fees, ApplyFlags flags);
+    static
+    XRPAmount
+    calculateFee (Application& app, std::uint64_t baseFee,
+        Fees const& fees, ApplyFlags flags);
 
 private:
     XRPAmount reset(XRPAmount fee);

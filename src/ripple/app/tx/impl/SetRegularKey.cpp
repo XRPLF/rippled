@@ -70,13 +70,10 @@ SetRegularKey::preflight (PreflightContext const& ctx)
 TER
 SetRegularKey::doApply ()
 {
-    auto const sle = view().peek(
-        keylet::account(account_));
+    auto const sle = view ().peek (
+        keylet::account (account_));
 
-	auto const feeDue = calculateFee(ctx_.app, ctx_.baseFee,
-		view().fees(), view().flags());
-
-	if (feeDue == zero)
+    if (!calculateFee (ctx_.app, ctx_.baseFee, view ().fees (), view ().flags ()))
         sle->setFlag (lsfPasswordSpent);
 
     if (ctx_.tx.isFieldPresent (sfRegularKey))
