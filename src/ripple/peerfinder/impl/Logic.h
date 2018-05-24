@@ -20,24 +20,24 @@
 #ifndef RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 #define RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 
-#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/contract.h>
+#include <ripple/beast/container/aged_container_utility.h>
+#include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/impl/Bootcache.h>
 #include <ripple/peerfinder/impl/Counts.h>
 #include <ripple/peerfinder/impl/Fixed.h>
-#include <ripple/peerfinder/impl/iosformat.h>
 #include <ripple/peerfinder/impl/Handouts.h>
 #include <ripple/peerfinder/impl/Livecache.h>
 #include <ripple/peerfinder/impl/Reporting.h>
 #include <ripple/peerfinder/impl/SlotImp.h>
 #include <ripple/peerfinder/impl/Source.h>
 #include <ripple/peerfinder/impl/Store.h>
-#include <ripple/beast/net/IPAddressConversion.h>
-#include <ripple/beast/container/aged_container_utility.h>
-#include <ripple/beast/core/SharedPtr.h>
+#include <ripple/peerfinder/impl/iosformat.h>
 #include <functional>
 #include <map>
+#include <memory>
 #include <set>
 
 namespace ripple {
@@ -69,7 +69,7 @@ public:
 
     // The source we are currently fetching.
     // This is used to cancel I/O during program exit.
-    beast::SharedPtr <Source> fetchSource_;
+    std::shared_ptr <Source> fetchSource_;
 
     // Configuration settings
     Config config_;
@@ -98,7 +98,7 @@ public:
     std::set <PublicKey> keys_;
 
     // A list of dynamic sources to consult as a fallback
-    std::vector <beast::SharedPtr <Source>> m_sources;
+    std::vector <std::shared_ptr <Source>> m_sources;
 
     clock_type::time_point m_whenBroadcast;
 
@@ -964,13 +964,13 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    addStaticSource (beast::SharedPtr <Source> const& source)
+    addStaticSource (std::shared_ptr<Source> const& source)
     {
         fetch (source);
     }
 
     void
-    addSource (beast::SharedPtr <Source> const& source)
+    addSource (std::shared_ptr<Source> const& source)
     {
         m_sources.push_back (source);
     }
@@ -997,7 +997,8 @@ public:
     }
 
     // Fetch bootcache addresses from the specified source.
-    void fetch (beast::SharedPtr <Source> const& source)
+    void
+    fetch (std::shared_ptr<Source> const& source)
     {
         Source::Results results;
 
