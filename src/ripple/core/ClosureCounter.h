@@ -93,9 +93,9 @@ private:
             ++counter_;
         }
 
-        Wrapper (Wrapper&& rhs) noexcept
-        : counter_ (rhs.counter_)
-        , closure_ (std::move (rhs.closure_))
+        Wrapper(Wrapper&& rhs) noexcept(
+            std::is_nothrow_move_constructible<Closure>::value)
+            : counter_(rhs.counter_), closure_(std::move(rhs.closure_))
         {
             ++counter_;
         }
