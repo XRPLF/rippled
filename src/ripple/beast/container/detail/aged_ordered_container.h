@@ -328,7 +328,7 @@ private:
         {
         }
 
-        config_t (config_t&& other) noexcept
+        config_t (config_t&& other)
             : KeyValueCompare (std::move (other.key_compare()))
             , boost::beast::detail::empty_base_optimization <ElementAllocator> (
                 std::move (other))
@@ -354,7 +354,7 @@ private:
             return *this;
         }
 
-        config_t& operator= (config_t&& other) noexcept
+        config_t& operator= (config_t&& other)
         {
             compare() = std::move (other.compare());
             alloc() = std::move (other.alloc());
@@ -614,7 +614,7 @@ public:
     aged_ordered_container (aged_ordered_container const& other,
         Allocator const& alloc);
 
-    aged_ordered_container (aged_ordered_container&& other) noexcept;
+    aged_ordered_container (aged_ordered_container&& other);
 
     aged_ordered_container (aged_ordered_container&& other,
         Allocator const& alloc);
@@ -637,7 +637,7 @@ public:
     operator= (aged_ordered_container const& other);
 
     aged_ordered_container&
-    operator= (aged_ordered_container&& other) noexcept;
+    operator= (aged_ordered_container&& other);
 
     aged_ordered_container&
     operator= (std::initializer_list <value_type> init);
@@ -1365,7 +1365,7 @@ aged_ordered_container (aged_ordered_container const& other,
 template <bool IsMulti, bool IsMap, class Key, class T,
     class Clock, class Compare, class Allocator>
 aged_ordered_container <IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-aged_ordered_container (aged_ordered_container&& other) noexcept
+aged_ordered_container (aged_ordered_container&& other)
     : m_config (std::move (other.m_config))
     , m_cont (std::move (other.m_cont))
 {
@@ -1458,7 +1458,7 @@ template <bool IsMulti, bool IsMap, class Key, class T,
     class Clock, class Compare, class Allocator>
 auto
 aged_ordered_container <IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-operator= (aged_ordered_container&& other) noexcept ->
+operator= (aged_ordered_container&& other) ->
     aged_ordered_container&
 {
     clear();
