@@ -379,7 +379,7 @@ private:
         {
         }
 
-        config_t (config_t&& other) noexcept
+        config_t (config_t&& other)
             : ValueHash (std::move (other.hash_function()))
             , KeyValueEqual (std::move (other.key_eq()))
             , boost::beast::detail::empty_base_optimization <ElementAllocator> (
@@ -405,7 +405,7 @@ private:
             return *this;
         }
 
-        config_t& operator= (config_t&& other) noexcept
+        config_t& operator= (config_t&& other)
         {
             hash_function() = std::move (other.hash_function());
             key_eq() = std::move (other.key_eq());
@@ -813,7 +813,7 @@ public:
     aged_unordered_container (aged_unordered_container const& other,
         Allocator const& alloc);
 
-    aged_unordered_container (aged_unordered_container&& other) noexcept;
+    aged_unordered_container (aged_unordered_container&& other);
 
     aged_unordered_container (aged_unordered_container&& other,
         Allocator const& alloc);
@@ -847,7 +847,7 @@ public:
 
     aged_unordered_container& operator= (aged_unordered_container const& other);
 
-    aged_unordered_container& operator= (aged_unordered_container&& other) noexcept;
+    aged_unordered_container& operator= (aged_unordered_container&& other);
 
     aged_unordered_container& operator= (std::initializer_list <value_type> init);
 
@@ -1787,7 +1787,7 @@ template <bool IsMulti, bool IsMap, class Key, class T,
     class Clock, class Hash, class KeyEqual, class Allocator>
 aged_unordered_container <IsMulti, IsMap, Key, T, Clock,
     Hash, KeyEqual, Allocator>::
-aged_unordered_container (aged_unordered_container&& other) noexcept
+aged_unordered_container (aged_unordered_container&& other)
     : m_config (std::move (other.m_config))
     , m_buck (std::move (other.m_buck))
     , m_cont (std::move (other.m_cont))
@@ -1973,7 +1973,7 @@ template <bool IsMulti, bool IsMap, class Key, class T,
 auto
 aged_unordered_container <IsMulti, IsMap, Key, T, Clock,
     Hash, KeyEqual, Allocator>::
-operator= (aged_unordered_container&& other) noexcept ->
+operator= (aged_unordered_container&& other) ->
     aged_unordered_container&
 {
     size_type const n (other.size());
