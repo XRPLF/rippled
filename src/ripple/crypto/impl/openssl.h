@@ -85,6 +85,9 @@ public:
     void assign (uint8_t const* data, size_t size);
 };
 
+static_assert(std::is_nothrow_move_constructible<bignum>{}, "");
+static_assert(std::is_nothrow_move_assignable<bignum>{}, "");
+
 inline bool operator< (bignum const& a, bignum const& b)
 {
     return BN_cmp (a.get(), b.get()) < 0;
@@ -172,6 +175,8 @@ public:
     EC_POINT      * get()        { return ptr; }
     EC_POINT const* get() const  { return ptr; }
 };
+
+static_assert(std::is_nothrow_move_constructible<ec_point>{}, "");
 
 void add_to (EC_GROUP const* group,
              ec_point const& a,
