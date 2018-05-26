@@ -223,7 +223,7 @@ public:
     {
     }
 
-    ReadView (ReadView&& other) noexcept
+    ReadView (ReadView&& other)
         : sles(*this)
         , txs(*this)
     {
