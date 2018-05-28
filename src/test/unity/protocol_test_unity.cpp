@@ -27,6 +27,7 @@
 #include <test/protocol/Quality_test.cpp>
 #include <test/protocol/SecretKey_test.cpp>
 #include <test/protocol/Seed_test.cpp>
+#include <test/protocol/SOTemplate_test.cpp>
 #include <test/protocol/STAccount_test.cpp>
 #include <test/protocol/STAmount_test.cpp>
 #include <test/protocol/STObject_test.cpp>

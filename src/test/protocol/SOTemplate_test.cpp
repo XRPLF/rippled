@@ -29,10 +29,10 @@ struct SOTemplate_test : public beast::unit_test::suite
     testBasicProperties()
     {
         BEAST_EXPECT(std::is_default_constructible<SOTemplate>{});
-        BEAST_EXPECT(std::is_copy_constructible<SOTemplate>{});
-        BEAST_EXPECT(std::is_copy_assignable<SOTemplate>{});
+        BEAST_EXPECT(!std::is_copy_constructible<SOTemplate>{});
+        BEAST_EXPECT(!std::is_copy_assignable<SOTemplate>{});
         BEAST_EXPECT(std::is_nothrow_move_constructible<SOTemplate>{});
-        BEAST_EXPECT(std::is_nothrow_move_assignable<SOTemplate>{});
+        BEAST_EXPECT(!std::is_nothrow_move_assignable<SOTemplate>{});
     }
 
     void
