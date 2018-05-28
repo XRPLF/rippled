@@ -131,6 +131,9 @@ public:
         boost::optional<value_type> mutable cache_;
     };
 
+    static_assert(std::is_nothrow_move_constructible<iterator>{}, "");
+    static_assert(std::is_nothrow_move_assignable<iterator>{}, "");
+
     using const_iterator = iterator;
 
     using value_type = ValueType;
