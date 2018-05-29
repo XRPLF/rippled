@@ -171,13 +171,6 @@ public:
         return v_.empty ();
     }
 };
-
-static_assert(std::is_default_constructible<STArray>{}, "");
-static_assert(std::is_copy_constructible<STArray>{}, "");
-static_assert(std::is_copy_assignable<STArray>{}, "");
-static_assert(std::is_nothrow_move_constructible<STArray>{}, "");
-static_assert(std::is_nothrow_move_assignable<STArray>{}, "");
-
 } // ripple
 
 #endif
