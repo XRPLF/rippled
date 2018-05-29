@@ -113,12 +113,6 @@ private:
     }
 };
 
-static_assert(!std::is_default_constructible<STVar>{}, "");
-static_assert(std::is_copy_constructible<STVar>{}, "");
-static_assert(std::is_copy_assignable<STVar>{}, "");
-static_assert(std::is_nothrow_move_assignable<STVar>{}, "");
-static_assert(std::is_nothrow_move_constructible<STVar>{}, "");
-
 template <class T, class... Args>
 inline
 STVar

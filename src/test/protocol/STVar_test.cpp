@@ -1,8 +1,7 @@
-
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2018 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -18,23 +17,33 @@
 */
 //==============================================================================
 
-#include <test/protocol/BuildInfo_test.cpp>
-#include <test/protocol/IOUAmount_test.cpp>
-#include <test/protocol/InnerObjectFormats_test.cpp>
-#include <test/protocol/Issue_test.cpp>
-#include <test/protocol/PublicKey_test.cpp>
-#include <test/protocol/Quality_test.cpp>
-#include <test/protocol/SOTemplate_test.cpp>
-#include <test/protocol/STAccount_test.cpp>
-#include <test/protocol/STAmount_test.cpp>
-#include <test/protocol/STArray_test.cpp>
-#include <test/protocol/STObject_test.cpp>
-#include <test/protocol/STTx_test.cpp>
-#include <test/protocol/STValidation_test.cpp>
-#include <test/protocol/STVar_test.cpp>
-#include <test/protocol/SecretKey_test.cpp>
-#include <test/protocol/Seed_test.cpp>
-#include <test/protocol/TER_test.cpp>
-#include <test/protocol/XRPAmount_test.cpp>
-#include <test/protocol/digest_test.cpp>
-#include <test/protocol/types_test.cpp>
+#include <ripple/beast/unit_test.h>
+#include <ripple/protocol/impl/STVar.h>
+#include <type_traits>
+
+namespace ripple {
+
+struct STVar_test : public beast::unit_test::suite
+{
+    void
+    testBasicProperties()
+    {
+        using detail::STVar;
+
+        BEAST_EXPECT(!std::is_default_constructible<STVar>{});
+        BEAST_EXPECT(std::is_copy_constructible<STVar>{});
+        BEAST_EXPECT(std::is_copy_assignable<STVar>{});
+        BEAST_EXPECT(std::is_nothrow_move_constructible<STVar>{});
+        BEAST_EXPECT(std::is_nothrow_move_assignable<STVar>{});
+    }
+
+    void
+    run() override
+    {
+        testBasicProperties();
+    };
+};
+
+BEAST_DEFINE_TESTSUITE(STVar, protocol, ripple);
+
+}  // namespace ripple
