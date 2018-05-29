@@ -74,6 +74,11 @@ public:
     using iter_base =
         ReadViewFwdIter<ValueType>;
 
+    static_assert(
+        std::is_nothrow_move_constructible<ValueType>{},
+        "ReadViewFwdRange move and move assign constructors should be "
+        "noexcept");
+
     class iterator
     {
     public:
