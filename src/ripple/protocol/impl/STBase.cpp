@@ -29,7 +29,7 @@ STBase::STBase()
 {
 }
 
-STBase::STBase (SField const& n)
+STBase::STBase (SField const& n) noexcept
     : fName(&n)
 {
     assert(fName);

@@ -63,7 +63,7 @@ public:
     STBase();
 
     explicit
-    STBase (SField const& n);
+    STBase (SField const& n) noexcept;
 
     virtual ~STBase() = default;
 
