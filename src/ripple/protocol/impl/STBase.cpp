@@ -135,7 +135,7 @@ STBase::isDefault() const
 }
 
 void
-STBase::setFName (SField const& n)
+STBase::setFName (SField const& n) noexcept
 {
     fName = &n;
     assert (fName);

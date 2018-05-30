@@ -143,7 +143,7 @@ public:
         This sets the name.
     */
     void
-    setFName (SField const& n);
+    setFName (SField const& n) noexcept;
 
     SField const&
     getFName() const;
