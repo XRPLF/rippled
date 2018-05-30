@@ -51,6 +51,16 @@ STBase::operator= (const STBase& t)
     return *this;
 }
 
+STBase&
+STBase::operator=(STBase&& other) noexcept
+{
+    if (!fName->isUseful())
+    {
+        fName = std::move(other.fName);
+    }
+    return *this;
+}
+
 bool
 STBase::operator== (const STBase& t) const
 {

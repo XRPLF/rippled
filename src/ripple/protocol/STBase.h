@@ -70,6 +70,10 @@ public:
     STBase(const STBase& t) = default;
     STBase& operator= (const STBase& t);
 
+    STBase(STBase&& t) noexcept = default;
+    STBase&
+    operator=(STBase&& t) noexcept;
+
     bool operator== (const STBase& t) const;
     bool operator!= (const STBase& t) const;
 
