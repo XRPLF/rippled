@@ -34,8 +34,8 @@ public:
 
     using Strings = std::vector <std::string>;
 
-    static std::shared_ptr <Source>
-    New(std::string const& name, Strings const& strings);
+    static std::shared_ptr<Source>
+    New (std::string const& name, Strings const& strings);
 };
 
 }
