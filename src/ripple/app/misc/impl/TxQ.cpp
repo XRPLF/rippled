@@ -262,7 +262,7 @@ TxQ::MaybeTx::MaybeTx(
 }
 
 std::pair<TER, bool>
-TxQ::MaybeTx::apply(Application& app, OpenView& view)
+TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
 {
     boost::optional<STAmountSO> saved;
     if (view.rules().enabled(fix1513))
@@ -272,6 +272,10 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view)
     if (pfresult->rules != view.rules() ||
         pfresult->flags != flags)
     {
+        JLOG(j.debug()) << "Queued transaction " <<
+            txID << " rules or flags have changed. Flags from " <<
+            pfresult->flags << " to " << flags ;
+
         pfresult.emplace(
             preflight(app, view.rules(),
                 pfresult->tx,
@@ -504,7 +508,7 @@ TxQ::tryClearAccountQueue(Application& app, OpenView& view,
     // Attempt to apply the queued transactions.
     for (auto it = beginTxIter; it != endTxIter; ++it)
     {
-        auto txResult = it->second.apply(app, view);
+        auto txResult = it->second.apply(app, view, j);
         // Succeed or fail, use up a retry, because if the overall
         // process fails, we want the attempt to count. If it all
         // succeeds, the MaybeTx will be destructed, so it'll be
@@ -1009,7 +1013,7 @@ TxQ::apply(Application& app, OpenView& view,
 
         std::tie(txnResult, didApply) = doApply(pcresult, app, view);
 
-        JLOG(j_.trace()) << "Transaction " <<
+        JLOG(j_.trace()) << "New transaction " <<
             transactionID <<
                 (didApply ? " applied successfully with " :
                     " failed with ") <<
@@ -1111,6 +1115,16 @@ TxQ::apply(Application& app, OpenView& view,
         (void)created;
         assert(created);
     }
+    // If the transaction goes into the queue, future attempts need
+    // to be done:
+    // * without RETRY because this will look successful to the caller
+    // * without PREFER_QUEUE because we're already in the queue, so duh
+    // * with NO_CHECK_SIGN because the signature has been checked
+    //   at least once, so don't do it again.
+    // These changes _may_ cause an extra `preflight`, but since signature
+    // checking is the most expensive part of `preflight`, the cost should
+    // be minimal.
+    flags = (flags & ~tapRETRY & ~tapPREFER_QUEUE) | tapNO_CHECK_SIGN;
     auto& candidate = accountIter->second.add(
         { tx, transactionID, feeLevelPaid, flags, pfresult });
     /* Normally we defer figuring out the consequences until
@@ -1122,8 +1136,10 @@ TxQ::apply(Application& app, OpenView& view,
     // Then index it into the byFee lookup.
     byFee_.insert(candidate);
     JLOG(j_.debug()) << "Added transaction " << candidate.txID <<
+        " with result " << transToken(pfresult.ter) <<
         " from " << (accountExists ? "existing" : "new") <<
-            " account " << candidate.account << " to queue.";
+            " account " << candidate.account << " to queue." <<
+            " Flags: " << flags;
 
     return { terQUEUED, false };
 }
@@ -1278,14 +1294,15 @@ TxQ::accept(Application& app,
 
             TER txnResult;
             bool didApply;
-            std::tie(txnResult, didApply) = candidateIter->apply(app, view);
+            std::tie(txnResult, didApply) = candidateIter->apply(app, view, j_);
 
             if (didApply)
             {
                 // Remove the candidate from the queue
                 JLOG(j_.debug()) << "Queued transaction " <<
                     candidateIter->txID <<
-                    " applied successfully. Remove from queue.";
+                    " applied successfully with " <<
+                    transToken(txnResult) << ". Remove from queue.";
 
                 candidateIter = eraseAndAdvance(candidateIter);
                 ledgerChanged = true;
@@ -1304,9 +1321,12 @@ TxQ::accept(Application& app,
             }
             else
             {
-                JLOG(j_.debug()) << "Transaction " <<
+                JLOG(j_.debug()) << "Queued transaction " <<
                     candidateIter->txID << " failed with " <<
-                    transToken(txnResult) << ". Leave in queue.";
+                    transToken(txnResult) << ". Leave in queue." <<
+                    " Applied: " << didApply <<
+                    ". Flags: " <<
+                    candidateIter->flags;
                 if (account.retryPenalty &&
                         candidateIter->retriesRemaining > 2)
                     candidateIter->retriesRemaining = 1;

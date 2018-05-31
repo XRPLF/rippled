@@ -66,6 +66,14 @@ operator&(ApplyFlags const& lhs,
             static_cast<int>(rhs));
 }
 
+inline
+ApplyFlags
+operator~(ApplyFlags const& flags)
+{
+    return static_cast<ApplyFlags>(
+        ~static_cast<int>(flags));
+}
+
 //------------------------------------------------------------------------------
 
 /** Writeable view to a ledger, for applying a transaction.

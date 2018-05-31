@@ -28,6 +28,10 @@ namespace ripple {
 class Application;
 class STTx;
 
+/** Check if a tec fee can currently be claimed
+ */
+bool isTecClaimValid(TER ter, ApplyFlags flags);
+
 /** Describes the results of the `preflight` check
 
     @note All members are const to make it more difficult
@@ -99,7 +103,7 @@ public:
         , j(ctx_.j)
         , ter(ter_)
         , likelyToClaimFee(ter == tesSUCCESS
-            || isTecClaim(ter))
+            || isTecClaimValid(ter, flags))
     {
     }
 

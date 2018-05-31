@@ -354,4 +354,10 @@ doApply(PreclaimResult const& preclaimResult,
     }
 }
 
+bool
+isTecClaimValid(TER ter, ApplyFlags flags)
+{
+  return isTecClaim(ter) && !(flags & tapRETRY);
+}
+
 } // ripple

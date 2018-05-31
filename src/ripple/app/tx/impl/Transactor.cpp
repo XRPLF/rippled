@@ -638,7 +638,7 @@ Transactor::operator()()
         result = tecOVERSIZE;
 
     if ((result == tecOVERSIZE) ||
-        (isTecClaim (result) && !(view().flags() & tapRETRY)))
+        (isTecClaimValid (result, view().flags())))
     {
         JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 

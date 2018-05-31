@@ -344,6 +344,41 @@ public:
             256);
     }
 
+    void testTecResult()
+    {
+        using namespace jtx;
+
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }));
+
+        auto alice = Account("alice");
+        auto gw = Account("gw");
+        auto USD = gw["USD"];
+
+        checkMetrics(env, 0, boost::none, 0, 2, 256);
+
+        // Create accounts
+        env.fund(XRP(50000), noripple(alice, gw));
+        checkMetrics(env, 0, boost::none, 2, 2, 256);
+        env.close();
+        checkMetrics(env, 0, 4, 0, 2, 256);
+
+        // Alice creates an unfunded offer while the ledger is not full
+        env(offer(alice, XRP(1000), USD(1000)), ter(tecUNFUNDED_OFFER));
+        checkMetrics(env, 0, 4, 1, 2, 256);
+
+        fillQueue(env, alice);
+        checkMetrics(env, 0, 4, 3, 2, 256);
+
+        // Alice creates an unfunded offer that goes in the queue
+        env(offer(alice, XRP(1000), USD(1000)), ter(terQUEUED));
+        checkMetrics(env, 1, 4, 3, 2, 256);
+
+        // The offer comes out of the queue
+        env.close();
+        checkMetrics(env, 0, 6, 1, 3, 256);
+    }
+
     void testLocalTxRetry()
     {
         using namespace jtx;
