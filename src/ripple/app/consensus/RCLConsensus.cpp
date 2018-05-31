@@ -200,6 +200,16 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 
     prop.set_signature(sig.data(), sig.size());
 
+    auto const suppression = proposalUniqueId(
+        proposal.position(),
+        proposal.prevLedger(),
+        proposal.proposeSeq(),
+        proposal.closeTime(),
+        valPublic_,
+        sig);
+
+    app_.getHashRouter ().addSuppression (suppression);
+
     app_.overlay().send(prop);
 }
 
@@ -710,10 +720,9 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger,
         fees,
         amendments);
 
-
-
-    // suppress it if we receive it - FIXME: wrong suppression
-    app_.getHashRouter().addSuppression(v->getSigningHash());
+    // suppress it if we receive it
+    app_.getHashRouter().addSuppression(
+        sha512Half(makeSlice(v->getSerialized())));
     handleNewValidation(app_, v, "local");
     Blob validation = v->getSerialized();
     protocol::TMValidation val;
