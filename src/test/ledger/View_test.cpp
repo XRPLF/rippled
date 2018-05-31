@@ -363,25 +363,25 @@ class View_test
                 BEAST_EXPECT(v1.parentCloseTime() ==
                     v1.parentCloseTime());
 
-                ApplyViewImpl v2(&v1, tapNO_CHECK_SIGN);
+                ApplyViewImpl v2(&v1, tapRETRY);
                 BEAST_EXPECT(v2.parentCloseTime() ==
                     v1.parentCloseTime());
                 BEAST_EXPECT(v2.seq() == v1.seq());
-                BEAST_EXPECT(v2.flags() == tapNO_CHECK_SIGN);
+                BEAST_EXPECT(v2.flags() == tapRETRY);
 
                 Sandbox v3(&v2);
                 BEAST_EXPECT(v3.seq() == v2.seq());
                 BEAST_EXPECT(v3.parentCloseTime() ==
                     v2.parentCloseTime());
-                BEAST_EXPECT(v3.flags() == tapNO_CHECK_SIGN);
+                BEAST_EXPECT(v3.flags() == tapRETRY);
             }
             {
-                ApplyViewImpl v1(&v0, tapNO_CHECK_SIGN);
+                ApplyViewImpl v1(&v0, tapRETRY);
                 PaymentSandbox v2(&v1);
                 BEAST_EXPECT(v2.seq() == v0.seq());
                 BEAST_EXPECT(v2.parentCloseTime() ==
                     v0.parentCloseTime());
-                BEAST_EXPECT(v2.flags() == tapNO_CHECK_SIGN);
+                BEAST_EXPECT(v2.flags() == tapRETRY);
                 PaymentSandbox v3(&v2);
                 BEAST_EXPECT(v3.seq() == v2.seq());
                 BEAST_EXPECT(v3.parentCloseTime() ==

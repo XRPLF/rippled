@@ -1028,8 +1028,8 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             {
                 for (TransactionStatus& e : transactions)
                 {
-                    // we check before addingto the batch
-                    ApplyFlags flags = tapNO_CHECK_SIGN;
+                    // we check before adding to the batch
+                    ApplyFlags flags = tapNONE;
                     if (e.admin)
                         flags = flags | tapUNLIMITED;
 

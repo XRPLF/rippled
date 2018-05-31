@@ -139,7 +139,7 @@ applyTransactions(
             try
             {
                 switch (applyTransaction(
-                    app, view, *it->second, certainRetry, tapNO_CHECK_SIGN, j))
+                    app, view, *it->second, certainRetry, tapNONE, j))
                 {
                     case ApplyResult::Success:
                         it = retriableTxs.erase(it);

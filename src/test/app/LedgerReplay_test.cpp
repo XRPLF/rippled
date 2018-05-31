@@ -48,7 +48,7 @@ struct LedgerReplay_test : public beast::unit_test::suite
 
         auto const replayed = buildLedger(
             LedgerReplay(lastClosedParent,lastClosed),
-            tapNO_CHECK_SIGN,
+            tapNONE,
             env.app(),
             env.journal);
 
