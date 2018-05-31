@@ -19,8 +19,9 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
-#include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STArray.h>
+#include <ripple/protocol/STBase.h>
+#include <type_traits>
 
 namespace ripple {
 
@@ -36,6 +37,7 @@ STArray::STArray (STArray&& other) noexcept
     : STBase(other.getFName())
     , v_(std::move(other.v_))
 {
+    static_assert(std::is_nothrow_constructible<CountedObject<STArray>>{}, "");
 }
 
 STArray& STArray::operator= (STArray&& other) noexcept
