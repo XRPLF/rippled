@@ -62,7 +62,7 @@ public:
     }
 
     STBase*
-    move (std::size_t n, void* buf) override
+    move (std::size_t n, void* buf) noexcept override
     {
         return emplace(n, buf, std::move(*this));
     }

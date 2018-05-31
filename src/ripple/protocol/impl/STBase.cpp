@@ -24,7 +24,7 @@
 
 namespace ripple {
 
-STBase::STBase()
+STBase::STBase() noexcept
     : fName(&sfGeneric)
 {
 }
@@ -36,7 +36,7 @@ STBase::STBase (SField const& n) noexcept
 }
 
 STBase&
-STBase::operator= (const STBase& t)
+STBase::operator= (const STBase& t) noexcept
 {
     if ((t.fName != fName) && fName->isUseful() && t.fName->isUseful())
     {

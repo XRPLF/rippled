@@ -159,7 +159,7 @@ STVar::STVar (SerializedTypeID id, SField const& name)
 }
 
 void
-STVar::destroy()
+STVar::destroy() noexcept
 {
     if (on_heap())
         delete p_;
