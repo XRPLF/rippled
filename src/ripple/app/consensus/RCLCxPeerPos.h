@@ -51,7 +51,7 @@ public:
 
         @param publicKey Public key of the peer
         @param signature Signature provided with the proposal
-        @param suppress ????
+        @param suppress Unique id used for hash router suppression
         @param proposal The consensus proposal
     */
 
@@ -83,11 +83,11 @@ public:
         return data_->publicKey_;
     }
 
-    //! ?????
+    //! Unique id used by hash router to suppress duplicates
     uint256 const&
     suppressionID() const
     {
-        return data_->supression_;
+        return data_->suppression_;
     }
 
     Proposal const &
@@ -106,7 +106,7 @@ private:
     {
         PublicKey publicKey_;
         Buffer signature_;
-        uint256 supression_;
+        uint256 suppression_;
         Proposal proposal_;
 
         Data(
