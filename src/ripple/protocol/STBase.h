@@ -60,15 +60,19 @@ namespace ripple {
 class STBase
 {
 public:
-    STBase();
+    STBase() noexcept;
 
     explicit
-    STBase (SField const& n);
+    STBase (SField const& n) noexcept;
 
-    virtual ~STBase() = default;
+    virtual ~STBase() noexcept = default;
 
-    STBase(const STBase& t) = default;
-    STBase& operator= (const STBase& t);
+    STBase(const STBase& t) noexcept = default;
+    STBase& operator= (const STBase& t) noexcept;
+
+    STBase(STBase&& t) noexcept = default;
+    STBase&
+    operator=(STBase&& t) noexcept;
 
     bool operator== (const STBase& t) const;
     bool operator!= (const STBase& t) const;
@@ -82,7 +86,7 @@ public:
 
     virtual
     STBase*
-    move (std::size_t n, void* buf)
+    move (std::size_t n, void* buf) noexcept
     {
         return emplace(n, buf, std::move(*this));
     }
@@ -139,7 +143,7 @@ public:
         This sets the name.
     */
     void
-    setFName (SField const& n);
+    setFName (SField const& n) noexcept;
 
     SField const&
     getFName() const;
@@ -153,7 +157,7 @@ protected:
     template <class T>
     static
     STBase*
-    emplace(std::size_t n, void* buf, T&& val)
+    emplace(std::size_t n, void* buf, T&& val) noexcept
     {
         using U = std::decay_t<T>;
         if (sizeof(U) > n)

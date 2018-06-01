@@ -24,19 +24,19 @@
 
 namespace ripple {
 
-STBase::STBase()
+STBase::STBase() noexcept
     : fName(&sfGeneric)
 {
 }
 
-STBase::STBase (SField const& n)
+STBase::STBase (SField const& n) noexcept
     : fName(&n)
 {
     assert(fName);
 }
 
 STBase&
-STBase::operator= (const STBase& t)
+STBase::operator= (const STBase& t) noexcept
 {
     if ((t.fName != fName) && fName->isUseful() && t.fName->isUseful())
     {
@@ -48,6 +48,16 @@ STBase::operator= (const STBase& t)
     }
     if (!fName->isUseful())
         fName = t.fName;
+    return *this;
+}
+
+STBase&
+STBase::operator=(STBase&& other) noexcept
+{
+    if (!fName->isUseful())
+    {
+        fName = std::move(other.fName);
+    }
     return *this;
 }
 
@@ -125,7 +135,7 @@ STBase::isDefault() const
 }
 
 void
-STBase::setFName (SField const& n)
+STBase::setFName (SField const& n) noexcept
 {
     fName = &n;
     assert (fName);

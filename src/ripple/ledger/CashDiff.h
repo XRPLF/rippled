@@ -62,7 +62,7 @@ class CashDiff
 public:
     CashDiff() = delete;
     CashDiff (CashDiff const&) = delete;
-    CashDiff (CashDiff&& other);
+    CashDiff (CashDiff&& other) noexcept;
     CashDiff& operator= (CashDiff const&) = delete;
     ~CashDiff();
 

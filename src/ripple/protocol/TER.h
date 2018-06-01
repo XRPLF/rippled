@@ -298,7 +298,7 @@ public:
     // Constructors
     constexpr TERSubset() : code_ (tesSUCCESS) { }
     constexpr TERSubset (TERSubset const& rhs) = default;
-    constexpr TERSubset (TERSubset&& rhs) = default;
+    constexpr TERSubset (TERSubset&& rhs) noexcept = default;
 private:
     constexpr explicit TERSubset (int rhs) : code_ (rhs) { }
 public:
@@ -315,7 +315,7 @@ public:
 
     // Assignment
     constexpr TERSubset& operator=(TERSubset const& rhs) = default;
-    constexpr TERSubset& operator=(TERSubset&& rhs) = default;
+    constexpr TERSubset& operator=(TERSubset&& rhs) noexcept = default;
 
     // Trait tells enable_if which types are allowed for assignment.
     template <typename T>

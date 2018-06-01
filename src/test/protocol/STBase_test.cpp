@@ -1,8 +1,7 @@
-
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2018 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -18,18 +17,31 @@
 */
 //==============================================================================
 
-#include <test/basics/base_uint_test.cpp>
-#include <test/basics/Buffer_test.cpp>
-#include <test/basics/CheckLibraryVersions_test.cpp>
-#include <test/basics/contract_test.cpp>
-#include <test/basics/DetectCrash_test.cpp>
-#include <test/basics/hardened_hash_test.cpp>
-#include <test/basics/KeyCache_test.cpp>
-#include <test/basics/mulDiv_test.cpp>
-#include <test/basics/PerfLog_test.cpp>
-#include <test/basics/qalloc_test.cpp>
-#include <test/basics/RangeSet_test.cpp>
-#include <test/basics/Slice_test.cpp>
-#include <test/basics/StringUtilities_test.cpp>
-#include <test/basics/TaggedCache_test.cpp>
-#include <test/basics/tagged_integer_test.cpp>
+#include <ripple/beast/unit_test.h>
+#include <ripple/protocol/STBase.h>
+#include <type_traits>
+
+namespace ripple {
+
+struct STBase_test : public beast::unit_test::suite
+{
+    void
+    testBasicProperties()
+    {
+        BEAST_EXPECT(std::is_default_constructible<STBase>{});
+        BEAST_EXPECT(std::is_copy_constructible<STBase>{});
+        BEAST_EXPECT(std::is_copy_assignable<STBase>{});
+        BEAST_EXPECT(std::is_nothrow_move_constructible<STBase>{});
+        BEAST_EXPECT(std::is_nothrow_move_assignable<STBase>{});
+    }
+
+    void
+    run() override
+    {
+        testBasicProperties();
+    };
+};
+
+BEAST_DEFINE_TESTSUITE(STBase, protocol, ripple);
+
+}  // namespace ripple

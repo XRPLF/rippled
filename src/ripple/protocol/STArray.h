@@ -50,14 +50,14 @@ public:
     using const_iterator = list_type::const_iterator;
 
     STArray();
-    STArray (STArray&&);
+    STArray (STArray&&) noexcept;
     STArray (STArray const&) = default;
     STArray (SField const& f, int n);
     STArray (SerialIter& sit, SField const& f, int depth = 0);
     explicit STArray (int n);
     explicit STArray (SField const& f);
     STArray& operator= (STArray const&) = default;
-    STArray& operator= (STArray&&);
+    STArray& operator= (STArray&&) noexcept;
 
     STBase*
     copy (std::size_t n, void* buf) const override
@@ -66,7 +66,7 @@ public:
     }
 
     STBase*
-    move (std::size_t n, void* buf) override
+    move (std::size_t n, void* buf) noexcept override
     {
         return emplace(n, buf, std::move(*this));
     }
@@ -171,7 +171,6 @@ public:
         return v_.empty ();
     }
 };
-
 } // ripple
 
 #endif

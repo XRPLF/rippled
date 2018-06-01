@@ -40,6 +40,16 @@ public:
         return reader.parse(json, to) && to.isObject();
     }
 
+    void
+    testBasicProperties()
+    {
+        BEAST_EXPECT(!std::is_default_constructible<STObject>{});
+        BEAST_EXPECT(std::is_copy_constructible<STObject>{});
+        BEAST_EXPECT(std::is_copy_assignable<STObject>{});
+        BEAST_EXPECT(std::is_nothrow_move_constructible<STObject>{});
+        BEAST_EXPECT(std::is_nothrow_move_assignable<STObject>{});
+    }
+
     void testParseJSONArrayWithInvalidChildrenObjects ()
     {
         testcase ("parse json array invalid children");
@@ -637,6 +647,7 @@ public:
         // Instantiate a jtx::Env so debugLog writes are exercised.
         test::jtx::Env env (*this);
 
+        testBasicProperties();
         testFields();
         testSerialization();
         testParseJSONArray();

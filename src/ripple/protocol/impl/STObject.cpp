@@ -17,12 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/STObject.h>
+#include <ripple/basics/Log.h>
 #include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STBlob.h>
-#include <ripple/basics/Log.h>
+#include <ripple/protocol/STObject.h>
+#include <type_traits>
 
 namespace ripple {
 
@@ -35,11 +36,12 @@ STObject::~STObject()
 #endif
 }
 
-STObject::STObject(STObject&& other)
+STObject::STObject(STObject&& other) noexcept
     : STBase(other.getFName())
     , v_(std::move(other.v_))
     , mType(other.mType)
 {
+    static_assert(std::is_nothrow_constructible<CountedObject<STObject>>{}, "");
 }
 
 STObject::STObject (SField const& name)
@@ -76,7 +78,7 @@ STObject::STObject (SerialIter& sit, SField const& name, int depth)
 }
 
 STObject&
-STObject::operator= (STObject&& other)
+STObject::operator= (STObject&& other) noexcept
 {
     setFName(other.getFName());
     mType = other.mType;

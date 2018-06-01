@@ -279,7 +279,7 @@ public:
 
     static char const* getCountedObjectName () { return "STObject"; }
 
-    STObject(STObject&&);
+    STObject(STObject&&) noexcept;
     STObject(STObject const&) = default;
     STObject (const SOTemplate & type, SField const& name);
     STObject (const SOTemplate & type, SerialIter & sit, SField const& name);
@@ -289,7 +289,7 @@ public:
     {
     }
     STObject& operator= (STObject const&) = default;
-    STObject& operator= (STObject&& other);
+    STObject& operator= (STObject&& other) noexcept;
 
     explicit STObject (SField const& name);
 
@@ -302,7 +302,7 @@ public:
     }
 
     STBase*
-    move (std::size_t n, void* buf) override
+    move (std::size_t n, void* buf) noexcept override
     {
         return emplace(n, buf, std::move(*this));
     }
