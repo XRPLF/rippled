@@ -21,7 +21,6 @@
 #endif
 
 #include <ripple/beast/net/IPEndpoint.h>
-#include <ripple/beast/net/detail/Parse.h>
 
 namespace beast {
 namespace IP {
@@ -44,7 +43,7 @@ std::pair <Endpoint, bool> Endpoint::from_string_checked (std::string const& s)
     is >> endpoint;
     if (! is.fail() && is.rdbuf()->in_avail() == 0)
         return std::make_pair (endpoint, true);
-    return std::make_pair (Endpoint (), false);
+    return std::make_pair (Endpoint {}, false);
 }
 
 Endpoint Endpoint::from_string (std::string const& s)
@@ -53,69 +52,26 @@ Endpoint Endpoint::from_string (std::string const& s)
         from_string_checked (s));
     if (result.second)
         return result.first;
-    return Endpoint();
-}
-
-// VFALCO NOTE This is a hack to support legacy data format
-//
-Endpoint Endpoint::from_string_altform (std::string const& s)
-{
-    // Accept the regular form if it parses
-    {
-        Endpoint ep (Endpoint::from_string (s));
-        if (! is_unspecified (ep))
-            return ep;
-    }
-
-    // Now try the alt form
-    std::stringstream is (s);
-
-    AddressV4 v4;
-    is >> v4;
-    if (! is.fail())
-    {
-        Endpoint ep (v4);
-
-        if (is.rdbuf()->in_avail()>0)
-        {
-            if (! IP::detail::expect_whitespace (is))
-                return Endpoint();
-
-            while (is.rdbuf()->in_avail()>0)
-            {
-                char c;
-                is.get(c);
-                if (!isspace (static_cast<unsigned char>(c)))
-                {
-                    is.unget();
-                    break;
-                }
-            }
-
-            Port port;
-            is >> port;
-            if (is.fail())
-                return Endpoint();
-
-            return ep.at_port (port);
-        }
-        else
-        {
-            // Just an address with no port
-            return ep;
-        }
-    }
-
-    // Could be V6 here...
-
-    return Endpoint();
+    return Endpoint {};
 }
 
 std::string Endpoint::to_string () const
 {
-    std::string s (address ().to_string ());
-    if (port() != 0)
-        s = s + ":" + std::to_string (port());
+    std::string s;
+    s.reserve(
+        (address().is_v6() ? INET6_ADDRSTRLEN-1 : 15) +
+        (port() == 0 ? 0 : 6 + (address().is_v6() ? 2 : 0)));
+
+    if (port() != 0 && address().is_v6())
+        s += '[';
+    s += address ().to_string();
+    if (port())
+    {
+        if (address().is_v6())
+            s += ']';
+        s += ":" + std::to_string (port());
+    }
+
     return s;
 }
 
@@ -138,34 +94,88 @@ bool operator<  (Endpoint const& lhs, Endpoint const& rhs)
 
 std::istream& operator>> (std::istream& is, Endpoint& endpoint)
 {
-    // VFALCO TODO Support ipv6!
+    std::string addrStr;
+    // valid addresses only need INET6_ADDRSTRLEN-1 chars, but allow the extra
+    // char to check for invalid lengths
+    addrStr.reserve(INET6_ADDRSTRLEN);
+    char i {0};
+    char readTo {0};
+    is.get(i);
+    if (i == '[') // we are an IPv6 endpoint
+        readTo = ']';
+    else
+        addrStr+=i;
 
-    Address addr;
-    is >> addr;
-    if (is.fail())
-        return is;
-
-    if (is.rdbuf()->in_avail()>0)
+    while (is && is.rdbuf()->in_avail() > 0 && is.get(i))
     {
-        char c;
-        is.get(c);
-        if (c != ':')
+        // NOTE: There is a legacy data format
+        // that allowed space to be used as address / port separator
+        // so we continue to honor that here by assuming we are at the end
+        // of the address portion if we hit a space (or the separator
+        // we were expecting to see)
+        if (isspace(static_cast<unsigned char>(i)) || (readTo && i == readTo))
+            break;
+
+        if ((i == '.') ||
+            (i >= '0' && i <= ':') ||
+            (i >= 'a' && i <= 'f') ||
+            (i >= 'A' && i <= 'F'))
+        {
+            addrStr+=i;
+
+            // don't exceed a reasonable length...
+            if ( addrStr.size() == INET6_ADDRSTRLEN ||
+                (readTo && readTo == ':' && addrStr.size() > 15))
+            {
+                is.setstate (std::ios_base::failbit);
+                return is;
+            }
+
+            if (! readTo && (i == '.' || i == ':'))
+            {
+                // if we see a dot first, must be IPv4
+                // otherwise must be non-bracketed IPv6
+                readTo = (i == '.') ? ':' : ' ';
+            }
+        }
+        else // invalid char
         {
             is.unget();
-            endpoint = Endpoint (addr);
+            is.setstate (std::ios_base::failbit);
             return is;
         }
+    }
 
+    if (readTo == ']' && is.rdbuf()->in_avail() > 0)
+    {
+        is.get(i);
+        if (! (isspace(static_cast<unsigned char>(i)) || i == ':'))
+        {
+            is.unget();
+            is.setstate (std::ios_base::failbit);
+            return is;
+        }
+    }
+
+    boost::system::error_code ec;
+    auto addr = Address::from_string(addrStr, ec);
+    if (ec)
+    {
+        is.setstate (std::ios_base::failbit);
+        return is;
+    }
+
+    if (is.rdbuf()->in_avail() > 0)
+    {
         Port port;
         is >> port;
         if (is.fail())
             return is;
-
         endpoint = Endpoint (addr, port);
-        return is;
     }
+    else
+        endpoint = Endpoint (addr);
 
-    endpoint = Endpoint (addr);
     return is;
 }
 

@@ -217,19 +217,9 @@ private:
     std::thread m_thread;
 
     static boost::asio::ip::udp::endpoint to_endpoint (
-        IP::Endpoint const &address)
+        IP::Endpoint const &ep)
     {
-        if (address.is_v4 ())
-        {
-            return boost::asio::ip::udp::endpoint (
-                boost::asio::ip::address_v4 (
-                    address.to_v4().value), address.port ());
-        }
-
-        // VFALCO TODO IPv6 support
-        assert(false);
-        return boost::asio::ip::udp::endpoint (
-            boost::asio::ip::address_v6 (), 0);
+        return boost::asio::ip::udp::endpoint (ep.address(), ep.port());
     }
 
 public:

@@ -1048,11 +1048,9 @@ setup_Overlay (BasicConfig const& config)
     set (ip, "public_ip", section);
     if (! ip.empty ())
     {
-        bool valid;
-        std::tie (setup.public_ip, valid) =
-            beast::IP::Address::from_string (ip);
-        if (! valid || ! setup.public_ip.is_v4() ||
-                is_private (setup.public_ip))
+        boost::system::error_code ec;
+        setup.public_ip = beast::IP::Address::from_string (ip, ec);
+        if (ec || beast::IP::is_private (setup.public_ip))
             Throw<std::runtime_error> ("Configured public IP is invalid");
     }
     return setup;

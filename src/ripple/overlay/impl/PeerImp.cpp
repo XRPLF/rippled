@@ -1019,37 +1019,75 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMEndpoints> const& m)
 
     std::vector <PeerFinder::Endpoint> endpoints;
 
-    endpoints.reserve (m->endpoints().size());
-
-    for (int i = 0; i < m->endpoints ().size (); ++i)
+    if (m->endpoints_v2().size())
     {
-        PeerFinder::Endpoint endpoint;
-        protocol::TMEndpoint const& tm (m->endpoints(i));
-
-        // hops
-        endpoint.hops = tm.hops();
-
-        // ipv4
-        if (endpoint.hops > 0)
+        endpoints.reserve (m->endpoints_v2().size());
+        for (auto const& tm : m->endpoints_v2 ())
         {
-            in_addr addr;
-            addr.s_addr = tm.ipv4().ipv4();
-            beast::IP::AddressV4 v4 (ntohl (addr.s_addr));
-            endpoint.address = beast::IP::Endpoint (v4, tm.ipv4().ipv4port ());
-        }
-        else
-        {
-            // This Endpoint describes the peer we are connected to.
-            // We will take the remote address seen on the socket and
-            // store that in the IP::Endpoint. If this is the first time,
-            // then we'll verify that their listener can receive incoming
-            // by performing a connectivity test.
-            //
-            endpoint.address = remote_address_.at_port (
-                tm.ipv4().ipv4port ());
-        }
+            // these endpoint strings support ipv4 and ipv6
+            auto result = beast::IP::Endpoint::from_string_checked(tm.endpoint());
+            if (! result.second)
+            {
+                JLOG(p_journal_.error()) <<
+                    "failed to parse incoming endpoint: {" <<
+                    tm.endpoint() << "}";
+                continue;
+            }
 
-        endpoints.push_back (endpoint);
+            // If hops == 0, this Endpoint describes the peer we are connected
+            // to -- in that case, we take the remote address seen on the
+            // socket and store that in the IP::Endpoint. If this is the first
+            // time, then we'll verify that their listener can receive incoming
+            // by performing a connectivity test.  if hops > 0, then we just
+            // take the address/port we were given
+
+            endpoints.emplace_back(
+                tm.hops() > 0 ?
+                    result.first :
+                    remote_address_.at_port(result.first.port()),
+                tm.hops());
+            JLOG(p_journal_.trace()) <<
+                "got v2 EP: " << endpoints.back().address <<
+                ", hops = " << endpoints.back().hops;
+        }
+    }
+    else
+    {
+        // this branch can be removed once the entire network is operating with
+        // endpoint_v2() items (strings)
+        endpoints.reserve (m->endpoints().size());
+        for (int i = 0; i < m->endpoints ().size (); ++i)
+        {
+            PeerFinder::Endpoint endpoint;
+            protocol::TMEndpoint const& tm (m->endpoints(i));
+
+            // hops
+            endpoint.hops = tm.hops();
+
+            // ipv4
+            if (endpoint.hops > 0)
+            {
+                in_addr addr;
+                addr.s_addr = tm.ipv4().ipv4();
+                beast::IP::AddressV4 v4 (ntohl (addr.s_addr));
+                endpoint.address = beast::IP::Endpoint (v4, tm.ipv4().ipv4port ());
+            }
+            else
+            {
+                // This Endpoint describes the peer we are connected to.
+                // We will take the remote address seen on the socket and
+                // store that in the IP::Endpoint. If this is the first time,
+                // then we'll verify that their listener can receive incoming
+                // by performing a connectivity test.
+                //
+                endpoint.address = remote_address_.at_port (
+                    tm.ipv4().ipv4port ());
+            }
+            endpoints.push_back (endpoint);
+            JLOG(p_journal_.trace()) <<
+                "got v1 EP: " << endpoints.back().address <<
+                ", hops = " << endpoints.back().hops;
+        }
     }
 
     if (! endpoints.empty())

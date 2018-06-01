@@ -216,18 +216,24 @@ public:
     }
 };
 
+namespace test{ extern std::atomic<bool> envUseIPv4; }
+
 static int runUnitTests(
     std::string const& pattern,
     std::string const& argument,
     bool quiet,
     bool log,
     bool child,
+    bool ipv4,
     std::size_t num_jobs,
     int argc,
     char** argv)
 {
     using namespace beast::unit_test;
     using namespace ripple::test;
+
+    if (ipv4)
+        ripple::test::envUseIPv4 = true;
 
 #if HAS_BOOST_PROCESS
     if (!child && num_jobs == 1)
@@ -365,6 +371,7 @@ int run (int argc, char** argv)
         "Specify the IP address for RPC command. "
         "Format: <ip-address>[':'<port-number>]")
     ("rpc_port", po::value <std::uint16_t> (),
+        "DEPRECATED: include with rpc_ip instead. "
         "Specify the port number for RPC command.")
     ;
 
@@ -384,6 +391,7 @@ int run (int argc, char** argv)
         "argument is handled individually by any suite that accesses it -- "
         "as such, it typically only make sense to provide this when running "
         "a single suite.")
+    ("unittest-ipv4", "Use IPv4 localhost when running unittests (default is IPv6).")
     ("unittest-log",
         "Force unit test log message output. Only useful in combination with "
         "--quiet, in which case log messages will print but suite/case names "
@@ -468,6 +476,7 @@ int run (int argc, char** argv)
             bool (vm.count ("quiet")),
             bool (vm.count ("unittest-log")),
             unittestChild,
+            bool (vm.count ("unittest-ipv4")),
             numJobs,
             argc,
             argv);
@@ -553,37 +562,38 @@ int run (int argc, char** argv)
     // happen after the config file is loaded.
     if (vm.count ("rpc_ip"))
     {
-        try
-        {
-            config->rpc_ip.emplace (
-                boost::asio::ip::address_v4::from_string(
-                    vm["rpc_ip"].as<std::string>()));
-        }
-        catch(std::exception const&)
+        auto res = beast::IP::Endpoint::from_string_checked(
+            vm["rpc_ip"].as<std::string>());
+        if (! res.second)
         {
             std::cerr << "Invalid rpc_ip = " <<
-                vm["rpc_ip"].as<std::string>() << std::endl;
+                vm["rpc_ip"].as<std::string>() << "\n";
             return -1;
         }
-    }
 
-    // Override the RPC destination port number
-    //
-    if (vm.count ("rpc_port"))
-    {
-        try
+        if (res.first.port() == 0)
         {
-            config->rpc_port.emplace (
-                vm["rpc_port"].as<std::uint16_t>());
+            std::cerr << "No port specified in rpc_ip.\n";
+            if (vm.count ("rpc_port"))
+            {
+                std::cerr << "WARNING: using deprecated rpc_port param.\n";
+                try
+                {
+                    res.first.at_port(vm["rpc_port"].as<std::uint16_t>());
+                    if (res.first.port() == 0)
+                        throw std::domain_error("0");
+                }
+                catch(std::exception const& e)
+                {
+                    std::cerr << "Invalid rpc_port = " << e.what() << "\n";
+                    return -1;
+                }
+            }
+            else
+                return -1;
+        }
 
-            if (*config->rpc_port == 0)
-                throw std::domain_error("0");
-        }
-        catch(std::exception const& e)
-        {
-            std::cerr << "Invalid rpc_port = " << e.what() << "\n";
-            return -1;
-        }
+        config->rpc_ip = std::move(res.first);
     }
 
     if (vm.count ("quorum"))

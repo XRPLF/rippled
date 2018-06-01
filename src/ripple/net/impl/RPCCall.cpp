@@ -1355,9 +1355,10 @@ rpcClient(std::vector<std::string> const& args,
             }
 
             if (config.rpc_ip)
-                setup.client.ip = config.rpc_ip->to_string();
-            if (config.rpc_port)
-                setup.client.port = *config.rpc_port;
+            {
+                setup.client.ip = config.rpc_ip->address().to_string();
+                setup.client.port = config.rpc_ip->port();
+            }
 
             Json::Value jvParams (Json::arrayValue);
 

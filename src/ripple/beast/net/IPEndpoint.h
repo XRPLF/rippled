@@ -48,7 +48,6 @@ public:
     */
     static std::pair <Endpoint, bool> from_string_checked (std::string const& s);
     static Endpoint from_string (std::string const& s);
-    static Endpoint from_string_altform (std::string const& s);
 
     /** Returns a string representing the endpoint. */
     std::string to_string () const;
@@ -71,9 +70,9 @@ public:
         { return m_addr.is_v4(); }
     bool is_v6 () const
         { return m_addr.is_v6(); }
-    AddressV4 const& to_v4 () const
+    AddressV4 const to_v4 () const
         { return m_addr.to_v4 (); }
-    AddressV6 const& to_v6 () const
+    AddressV6 const to_v6 () const
         { return m_addr.to_v6 (); }
     /** @} */
 

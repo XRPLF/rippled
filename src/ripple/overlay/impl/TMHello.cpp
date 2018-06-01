@@ -114,19 +114,14 @@ buildHello (
             TokenType::NodePublic,
             app.nodeIdentity().first));
     h.set_nodeproof (sig.data(), sig.size());
-    // h.set_ipv4port (portNumber); // ignored now
     h.set_testnet (false);
 
-    if (remote.is_v4())
+    if (beast::IP::is_public (remote))
     {
-        auto addr = remote.to_v4 ();
-        if (is_public (addr))
-        {
-            // Connection is to a public IP
-            h.set_remote_ip (addr.value);
-            if (public_ip != beast::IP::Address())
-                h.set_local_ip (public_ip.to_v4().value);
-        }
+        // Connection is to a public IP
+        h.set_remote_ip_str (remote.to_string());
+        if (! public_ip.is_unspecified())
+            h.set_local_ip_str (public_ip.to_string());
     }
 
     // We always advertise ourselves as private in the HELLO message. This
@@ -174,13 +169,11 @@ appendHello (boost::beast::http::fields& h,
         h.insert ("Previous-Ledger", boost::beast::detail::base64_encode (
             hello.ledgerprevious()));
 
-    if (hello.has_local_ip())
-        h.insert ("Local-IP", beast::IP::to_string (
-            beast::IP::AddressV4(hello.local_ip())));
+    if (hello.has_local_ip_str())
+        h.insert ("Local-IP", hello.local_ip_str());
 
     if (hello.has_remote_ip())
-        h.insert ("Remote-IP", beast::IP::to_string (
-            beast::IP::AddressV4(hello.remote_ip())));
+        h.insert ("Remote-IP", hello.remote_ip_str());
 }
 
 std::vector<ProtocolVersion>
@@ -306,14 +299,16 @@ parseHello (bool request, boost::beast::http::fields const& h, beast::Journal jo
         auto const iter = h.find ("Local-IP");
         if (iter != h.end())
         {
-            bool valid;
-            beast::IP::Address address;
-            std::tie (address, valid) =
-                beast::IP::Address::from_string (iter->value().to_string());
-            if (!valid)
+            boost::system::error_code ec;
+            auto address =
+                beast::IP::Address::from_string (iter->value().to_string(), ec);
+            if (ec)
+            {
+                JLOG(journal.warn()) << "invalid Local-IP: "
+                    << iter->value().to_string();
                 return boost::none;
-            if (address.is_v4())
-                hello.set_local_ip(address.to_v4().value);
+            }
+            hello.set_local_ip_str(address.to_string());
         }
     }
 
@@ -321,14 +316,16 @@ parseHello (bool request, boost::beast::http::fields const& h, beast::Journal jo
         auto const iter = h.find ("Remote-IP");
         if (iter != h.end())
         {
-            bool valid;
-            beast::IP::Address address;
-            std::tie (address, valid) =
-                beast::IP::Address::from_string (iter->value().to_string());
-            if (!valid)
+            boost::system::error_code ec;
+            auto address =
+                beast::IP::Address::from_string (iter->value().to_string(), ec);
+            if (ec)
+            {
+                JLOG(journal.warn()) << "invalid Remote-IP: "
+                    << iter->value().to_string();
                 return boost::none;
-            if (address.is_v4())
-                hello.set_remote_ip(address.to_v4().value);
+            }
+            hello.set_remote_ip_str(address.to_string());
         }
     }
 
@@ -412,33 +409,50 @@ verifyHello (protocol::TMHello const& h,
         return boost::none;
     }
 
-    if (h.has_local_ip () &&
-        is_public (remote) &&
-        remote.is_v4 () &&
-        (remote.to_v4().value != h.local_ip ()))
+    if (h.has_local_ip_str () &&
+        is_public (remote))
     {
-        // Remote asked us to confirm connection is from
-        // correct IP
-        JLOG(journal.info()) <<
-            "Hello: Disconnect: Peer IP is " <<
-            beast::IP::to_string (remote.to_v4())
-            << " not " <<
-            beast::IP::to_string (beast::IP::AddressV4 (h.local_ip()));
-        return boost::none;
+        boost::system::error_code ec;
+        auto local_ip =
+            beast::IP::Address::from_string (h.local_ip_str(), ec);
+        if (ec)
+        {
+            JLOG(journal.warn()) << "invalid local-ip: " << h.local_ip_str();
+            return boost::none;
+        }
+
+        if (remote.address() != local_ip)
+        {
+            // Remote asked us to confirm connection is from correct IP
+            JLOG(journal.info()) <<
+                "Hello: Disconnect: Peer IP is " << remote.address().to_string()
+                << " not " << local_ip.to_string();
+            return boost::none;
+        }
     }
 
-    if (h.has_remote_ip() && is_public (remote) &&
-        (public_ip != beast::IP::Address()) &&
-        (h.remote_ip() != public_ip.to_v4().value))
+    if (h.has_remote_ip_str () &&
+        is_public (remote) &&
+        (! beast::IP::is_unspecified(public_ip)))
     {
-        // We know our public IP and peer reports connection
-        // from some other IP
-        JLOG(journal.info()) <<
-            "Hello: Disconnect: Our IP is " <<
-            beast::IP::to_string (public_ip.to_v4())
-            << " not " <<
-            beast::IP::to_string (beast::IP::AddressV4 (h.remote_ip()));
-        return boost::none;
+        boost::system::error_code ec;
+        auto remote_ip =
+            beast::IP::Address::from_string (h.remote_ip_str(), ec);
+        if (ec)
+        {
+            JLOG(journal.warn()) << "invalid remote-ip: " << h.remote_ip_str();
+            return boost::none;
+        }
+
+        if (remote_ip != public_ip)
+        {
+            // We know our public IP and peer reports connection from some
+            // other IP
+            JLOG(journal.info()) <<
+                "Hello: Disconnect: Our IP is " << public_ip.to_string()
+                << " not " << remote_ip.to_string();
+            return boost::none;
+        }
     }
 
     return publicKey;

@@ -172,21 +172,12 @@ private:
         while (list2.size () < listSize)
             list2.push_back (randomValidator());
 
-
-        using endpoint_type = boost::asio::ip::tcp::endpoint;
-        using address_type = boost::asio::ip::address;
-
-        // Use ports of 0 to allow OS selection
-        endpoint_type ep1{address_type::from_string("127.0.0.1"), 0};
-        endpoint_type ep2{address_type::from_string("127.0.0.1"), 0};
-
         auto const sequence = 1;
         auto const version = 1;
         NetClock::time_point const expiration =
             env.timeKeeper().now() + 3600s;
 
         TrustedPublisherServer server1(
-            ep1,
             env.app().getIOService(),
             pubSigningKeys1,
             manifest1,
@@ -196,7 +187,6 @@ private:
             list1);
 
         TrustedPublisherServer server2(
-            ep2,
             env.app().getIOService(),
             pubSigningKeys2,
             manifest2,
@@ -205,14 +195,13 @@ private:
             version,
             list2);
 
-        std::uint16_t const port1 = server1.local_endpoint().port();
-        std::uint16_t const port2 = server2.local_endpoint().port();
-
+        std::stringstream url1, url2;
+        url1 << "http://" << server1.local_endpoint() << "/validators";
+        url2 << "http://" << server2.local_endpoint() << "/validators";
 
         {
             // fetch single site
-            std::vector<std::string> cfgSites(
-            {"http://127.0.0.1:" + std::to_string(port1) + "/validators"});
+            std::vector<std::string> cfgSites({ url1.str() });
 
             auto sites = std::make_unique<ValidatorSite> (
                 env.app().getIOService(), env.app().validators(), journal);
@@ -229,9 +218,7 @@ private:
         }
         {
             // fetch multiple sites
-            std::vector<std::string> cfgSites({
-            "http://127.0.0.1:" + std::to_string(port1) + "/validators",
-            "http://127.0.0.1:" + std::to_string(port2) + "/validators"});
+            std::vector<std::string> cfgSites({ url1.str(), url2.str() });
 
             auto sites = std::make_unique<ValidatorSite> (
                 env.app().getIOService(), env.app().validators(), journal);

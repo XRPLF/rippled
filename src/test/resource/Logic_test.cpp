@@ -63,15 +63,16 @@ public:
 
     void createGossip (Gossip& gossip)
     {
-        int const v (10 + rand_int(9));
-        int const n (10 + rand_int(9));
+        std::uint8_t const v (10 + rand_int(9));
+        std::uint8_t const n (10 + rand_int(9));
         gossip.items.reserve (n);
-        for (int i = 0; i < n; ++i)
+        for (std::uint8_t i = 0; i < n; ++i)
         {
             Gossip::Item item;
             item.balance = 100 + rand_int(499);
-            item.address = beast::IP::Endpoint (
-                beast::IP::AddressV4 (192, 0, 2, v + i));
+            beast::IP::AddressV4::bytes_type d =
+                {{192,0,2,static_cast<std::uint8_t>(v + i)}};
+            item.address = beast::IP::Endpoint { beast::IP::AddressV4 {d} };
             gossip.items.push_back (item);
         }
     }
@@ -193,8 +194,8 @@ public:
         Gossip g;
         Gossip::Item item;
         item.balance = 100;
-        item.address = beast::IP::Endpoint (
-            beast::IP::AddressV4 (192, 0, 2, 1));
+        beast::IP::AddressV4::bytes_type d = {{192, 0, 2, 1}};
+        item.address = beast::IP::Endpoint { beast::IP::AddressV4 {d} };
         g.items.push_back (item);
 
         logic.importConsumers ("g", g);
