@@ -189,7 +189,8 @@ public:
     {
         return fieldCode == -1;
     }
-    bool isUseful () const
+    bool
+    isUseful() const noexcept
     {
         return fieldCode > 0;
     }
