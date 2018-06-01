@@ -31,6 +31,7 @@
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/beast/utility/Zero.h>
 #include <boost/functional/hash.hpp>
+#include <array>
 #include <functional>
 #include <type_traits>
 
@@ -51,13 +52,12 @@ class base_uint
         "The length of a base_uint in bits must be at least 64.");
 
 protected:
-    enum { WIDTH = Bits / 32 };
+    static constexpr std::size_t WIDTH = Bits / 32;
 
     // This is really big-endian in byte order.
     // We sometimes use std::uint32_t for speed.
 
-    // NIKB TODO: migrate to std::array
-    std::uint32_t pn[WIDTH];
+    std::array<std::uint32_t, WIDTH> pn;
 
 public:
     //--------------------------------------------------------------------------
@@ -65,7 +65,8 @@ public:
     // STL Container Interface
     //
 
-    static std::size_t const        bytes = Bits / 8;
+    static std::size_t constexpr bytes = Bits / 8;
+    static_assert(sizeof(pn) == bytes, "");
 
     using size_type              = std::size_t;
     using difference_type        = std::ptrdiff_t;
@@ -80,8 +81,8 @@ public:
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     using tag_type               = Tag;
 
-    pointer data() { return reinterpret_cast<pointer>(pn); }
-    const_pointer data() const { return reinterpret_cast<const_pointer>(pn); }
+    pointer data() { return reinterpret_cast<pointer>(pn.data ()); }
+    const_pointer data() const { return reinterpret_cast<const_pointer>(pn.data ()); }
 
     iterator begin() { return data(); }
     iterator end()   { return data()+bytes; }
@@ -124,7 +125,7 @@ private:
 
     explicit base_uint (void const* data, VoidHelper)
     {
-        memcpy (&pn [0], data, bytes);
+        memcpy (pn.data (), data, bytes);
     }
 
 public:
@@ -143,7 +144,7 @@ public:
         assert (vch.size () == size ());
 
         if (vch.size () == size ())
-            memcpy (pn, &vch[0], size ());
+            memcpy (pn.data (), vch.data (), size ());
         else
             *this = beast::zero;
     }
@@ -153,12 +154,10 @@ public:
         *this = b;
     }
 
-    base_uint (base_uint<Bits, Tag> const& other) = default;
-
     template <class OtherTag>
     void copyFrom (base_uint<Bits, OtherTag> const& other)
     {
-        memcpy (&pn [0], other.data(), bytes);
+        memcpy (pn.data (), other.data(), bytes);
     }
 
     /* Construct from a raw pointer.
@@ -192,14 +191,6 @@ public:
             ret.pn[i] = ~pn[i];
 
         return ret;
-    }
-
-    base_uint& operator= (const base_uint& b)
-    {
-        for (int i = 0; i < WIDTH; i++)
-            pn[i] = b.pn[i];
-
-        return *this;
     }
 
     base_uint& operator= (std::uint64_t uHost)
@@ -314,7 +305,7 @@ public:
         Hasher& h, base_uint const& a) noexcept
     {
         // Do not allow any endian transformations on this memory
-        h(a.pn, sizeof(a.pn));
+        h(a.pn.data (), sizeof(a.pn));
     }
 
     /** Parse a hex string into a base_uint
@@ -325,7 +316,6 @@ public:
     {
         unsigned char* pOut  = begin ();
 
-        assert(sizeof(pn) == bytes);
         for (int i = 0; i < sizeof (pn); ++i)
         {
             auto hi = charUnHex(*psz++);
@@ -419,7 +409,7 @@ public:
 
     base_uint<Bits, Tag>& operator=(Zero)
     {
-        memset (&pn[0], 0, sizeof (pn));
+        pn.fill(0);
         return *this;
     }
 
