@@ -61,10 +61,10 @@ private:
 
 //------------------------------------------------------------------------------
 
-beast::SharedPtr <Source>
+std::shared_ptr<Source>
 SourceStrings::New (std::string const& name, Strings const& strings)
 {
-    return new SourceStringsImp (name, strings);
+    return std::make_shared<SourceStringsImp> (name, strings);
 }
 
 }
