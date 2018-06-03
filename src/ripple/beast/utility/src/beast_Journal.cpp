@@ -78,9 +78,7 @@ Journal::Sink::Sink (Severity thresh, bool console)
 {
 }
 
-Journal::Sink::~Sink ()
-{
-}
+Journal::Sink::~Sink() = default;
 
 bool Journal::Sink::active (Severity level) const
 {

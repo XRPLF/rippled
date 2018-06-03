@@ -181,9 +181,6 @@ std::string valueToQuotedString ( const char* value )
 // Class FastWriter
 // //////////////////////////////////////////////////////////////////
 
-FastWriter::FastWriter ()
-{
-}
 
 std::string
 FastWriter::write ( const Value& root )

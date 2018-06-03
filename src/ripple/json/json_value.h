@@ -433,7 +433,7 @@ class ValueAllocator
 public:
     enum { unknown = (unsigned) - 1 };
 
-    virtual ~ValueAllocator ();
+    virtual ~ValueAllocator () = default;
 
     virtual char* makeMemberName ( const char* memberName ) = 0;
     virtual void releaseMemberName ( char* memberName ) = 0;
@@ -512,7 +512,7 @@ public:
     using pointer = const Value*;
     using SelfType = ValueConstIterator;
 
-    ValueConstIterator ();
+    ValueConstIterator () = default;
 private:
     /*! \internal Use by Value to create an iterator.
      */
@@ -565,7 +565,7 @@ public:
     using pointer = Value*;
     using SelfType = ValueIterator;
 
-    ValueIterator ();
+    ValueIterator () = default;
     ValueIterator ( const ValueConstIterator& other );
     ValueIterator ( const ValueIterator& other );
 private:

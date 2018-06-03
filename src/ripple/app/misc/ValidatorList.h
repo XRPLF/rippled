@@ -166,7 +166,7 @@ public:
         TimeKeeper& timeKeeper,
         beast::Journal j,
         boost::optional<std::size_t> minimumQuorum = boost::none);
-    ~ValidatorList ();
+    ~ValidatorList () = default;
 
     /** Load configured trusted keys.
 

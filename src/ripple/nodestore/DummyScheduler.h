@@ -29,8 +29,8 @@ namespace NodeStore {
 class DummyScheduler : public Scheduler
 {
 public:
-    DummyScheduler ();
-    ~DummyScheduler ();
+    DummyScheduler () = default;
+    ~DummyScheduler () = default;
     void scheduleTask (Task& task) override;
     void scheduledTasksStopped ();
     void onFetch (FetchReport const& report) override;

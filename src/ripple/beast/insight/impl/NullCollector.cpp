@@ -103,13 +103,9 @@ class NullCollectorImp : public NullCollector
 {
 private:
 public:
-    NullCollectorImp ()
-    {
-    }
+    NullCollectorImp() = default;
 
-    ~NullCollectorImp () override
-    {
-    }
+    ~NullCollectorImp() = default;
 
     Hook make_hook (HookImpl::HandlerType const&) override
     {

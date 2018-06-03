@@ -127,9 +127,7 @@ public:
         {
         }
 
-        AllocT (AllocT const&)
-        {
-        }
+        AllocT (AllocT const&) = default;
 
         template <class U>
         AllocT (AllocT <U> const&)
