@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/CanonicalTXSet.h>
+#include <ripple/app/misc/SortedTXSet.h>
 #include <boost/range/adaptor/transformed.hpp>
 
 namespace ripple {
 
-bool CanonicalTXSet::Key::operator< (Key const& rhs) const
+bool SortedTXSet::Key::operator< (Key const& rhs) const
 {
     if (mAccount < rhs.mAccount) return true;
 
@@ -35,7 +35,7 @@ bool CanonicalTXSet::Key::operator< (Key const& rhs) const
     return mTXid < rhs.mTXid;
 }
 
-bool CanonicalTXSet::Key::operator> (Key const& rhs) const
+bool SortedTXSet::Key::operator> (Key const& rhs) const
 {
     if (mAccount > rhs.mAccount) return true;
 
@@ -48,7 +48,7 @@ bool CanonicalTXSet::Key::operator> (Key const& rhs) const
     return mTXid > rhs.mTXid;
 }
 
-bool CanonicalTXSet::Key::operator<= (Key const& rhs) const
+bool SortedTXSet::Key::operator<= (Key const& rhs) const
 {
     if (mAccount < rhs.mAccount) return true;
 
@@ -61,7 +61,7 @@ bool CanonicalTXSet::Key::operator<= (Key const& rhs) const
     return mTXid <= rhs.mTXid;
 }
 
-bool CanonicalTXSet::Key::operator>= (Key const& rhs)const
+bool SortedTXSet::Key::operator>= (Key const& rhs)const
 {
     if (mAccount > rhs.mAccount) return true;
 
@@ -74,7 +74,7 @@ bool CanonicalTXSet::Key::operator>= (Key const& rhs)const
     return mTXid >= rhs.mTXid;
 }
 
-uint256 CanonicalTXSet::accountKey (AccountID const& account)
+uint256 SortedTXSet::accountKey (AccountID const& account)
 {
     uint256 ret = beast::zero;
     memcpy (
@@ -85,7 +85,7 @@ uint256 CanonicalTXSet::accountKey (AccountID const& account)
     return ret;
 }
 
-void CanonicalTXSet::insert (std::shared_ptr<STTx const> const& txn)
+void SortedTXSet::insert (std::shared_ptr<STTx const> const& txn)
 {
     mMap.insert (
         std::make_pair (
@@ -97,7 +97,7 @@ void CanonicalTXSet::insert (std::shared_ptr<STTx const> const& txn)
 }
 
 std::vector<std::shared_ptr<STTx const>>
-CanonicalTXSet::prune(AccountID const& account,
+SortedTXSet::prune(AccountID const& account,
     std::uint32_t const seq)
 {
     auto effectiveAccount = accountKey (account);
@@ -123,7 +123,7 @@ CanonicalTXSet::prune(AccountID const& account,
     return result;
 }
 
-CanonicalTXSet::iterator CanonicalTXSet::erase (iterator const& it)
+SortedTXSet::iterator SortedTXSet::erase (iterator const& it)
 {
     iterator tmp = it;
     ++tmp;

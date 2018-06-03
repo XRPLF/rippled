@@ -22,7 +22,7 @@
 #include <ripple/app/ledger/LedgerReplay.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/misc/CanonicalTXSet.h>
+#include <ripple/app/misc/SortedTXSet.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/protocol/Feature.h>
 
@@ -95,7 +95,7 @@ buildLedgerImpl(
   @return Any retriable transactions
 */
 
-CanonicalTXSet
+SortedTXSet
 applyTransactions(
     Application& app,
     SHAMap const& txns,
@@ -103,7 +103,7 @@ applyTransactions(
     std::shared_ptr<Ledger> const& buildLCL,
     beast::Journal j)
 {
-    CanonicalTXSet retriableTxs(txns.getHash().as_uint256());
+    SortedTXSet retriableTxs(txns.getHash().as_uint256());
 
     for (auto const& item : txns)
     {
@@ -188,7 +188,7 @@ buildLedger(
     NetClock::duration closeResolution,
     SHAMap const& txs,
     Application& app,
-    CanonicalTXSet& retriableTxs,
+    SortedTXSet& retriableTxs,
     beast::Journal j)
 {
     JLOG(j.debug()) << "Report: TxSt = " << txs.getHash().as_uint256()

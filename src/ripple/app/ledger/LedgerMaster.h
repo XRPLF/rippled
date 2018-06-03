@@ -28,7 +28,7 @@
 #include <ripple/app/ledger/LedgerHistory.h>
 #include <ripple/app/ledger/LedgerHolder.h>
 #include <ripple/app/ledger/LedgerReplay.h>
-#include <ripple/app/misc/CanonicalTXSet.h>
+#include <ripple/app/misc/SortedTXSet.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/basics/ScopedLock.h>
@@ -314,7 +314,7 @@ private:
 
     LedgerHistory mLedgerHistory;
 
-    CanonicalTXSet mHeldTransactions {uint256()};
+    SortedTXSet mHeldTransactions {uint256()};
 
     // A set of transactions to replay during the next close
     std::unique_ptr<LedgerReplay> replayData;
