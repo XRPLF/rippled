@@ -23,7 +23,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/ledger/CachedSLEs.h>
 #include <ripple/ledger/OpenView.h>
-#include <ripple/app/misc/CanonicalTXSet.h>
+#include <ripple/app/misc/SortedTXSet.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/core/Config.h>
@@ -41,7 +41,7 @@ namespace ripple {
 // make if the previous retry pass made changes
 #define LEDGER_RETRY_PASSES 1
 
-using OrderedTxs = CanonicalTXSet;
+using OrderedTxs = SortedTXSet;
 
 //------------------------------------------------------------------------------
 

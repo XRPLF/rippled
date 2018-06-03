@@ -314,7 +314,7 @@ LedgerMaster::applyHeldTransactions ()
             return any;
         });
 
-    // VFALCO TODO recreate the CanonicalTxSet object instead of resetting
+    // VFALCO TODO recreate the SortedTXSet object instead of resetting
     // it.
     // VFALCO NOTE The hash for an open ledger is undefined so we use
     // something that is a reasonable substitute.

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_LOCALTXS_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LOCALTXS_H_INCLUDED
 
-#include <ripple/app/misc/CanonicalTXSet.h>
+#include <ripple/app/misc/SortedTXSet.h>
 #include <ripple/ledger/ReadView.h>
 #include <memory>
 
@@ -39,7 +39,7 @@ public:
     virtual void push_back (LedgerIndex index, std::shared_ptr<STTx const> const& txn) = 0;
 
     // Return the set of local transactions to a new open ledger
-    virtual CanonicalTXSet getTxSet () = 0;
+    virtual SortedTXSet getTxSet () = 0;
 
     // Remove obsolete transactions based on a new fully-valid ledger
     virtual void sweep (ReadView const& view) = 0;

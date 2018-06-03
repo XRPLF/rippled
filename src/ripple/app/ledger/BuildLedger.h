@@ -29,7 +29,7 @@
 namespace ripple {
 
 class Application;
-class CanonicalTXSet;
+class SortedTXSet;
 class Ledger;
 class LedgerReplay;
 class SHAMap;
@@ -58,7 +58,7 @@ buildLedger(
     NetClock::duration closeResolution,
     SHAMap const& txs,
     Application& app,
-    CanonicalTXSet& retriableTxs,
+    SortedTXSet& retriableTxs,
     beast::Journal j);
 
 /** Build a new ledger by replaying transactions

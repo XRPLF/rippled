@@ -349,7 +349,7 @@ class RCLConsensus
             bool closeTimeCorrect,
             NetClock::duration closeResolution,
             std::chrono::milliseconds roundTime,
-            CanonicalTXSet& retriableTxs);
+            SortedTXSet& retriableTxs);
 
         /** Validate the given ledger and share with peers as necessary
 

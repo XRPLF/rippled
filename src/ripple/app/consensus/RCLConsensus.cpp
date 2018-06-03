@@ -421,7 +421,7 @@ RCLConsensus::Adaptor::doAccept(
 
     //--------------------------------------------------------------------------
     // Put transactions into a deterministic, but unpredictable, order
-    CanonicalTXSet retriableTxs{result.txns.id()};
+    SortedTXSet retriableTxs{result.txns.id()};
 
     auto sharedLCL = buildLCL(
         prevLedger,
@@ -637,7 +637,7 @@ RCLConsensus::Adaptor::buildLCL(
     bool closeTimeCorrect,
     NetClock::duration closeResolution,
     std::chrono::milliseconds roundTime,
-    CanonicalTXSet& retriableTxs)
+    SortedTXSet& retriableTxs)
 {
     std::shared_ptr<Ledger> buildLCL = [&]() {
         auto const replayData = ledgerMaster_.releaseReplay();

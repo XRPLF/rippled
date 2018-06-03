@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_CANONICALTXSET_H_INCLUDED
-#define RIPPLE_APP_MISC_CANONICALTXSET_H_INCLUDED
+#ifndef RIPPLE_APP_MISC_SORTEDTXSET_H_INCLUDED
+#define RIPPLE_APP_MISC_SORTEDTXSET_H_INCLUDED
 
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STTx.h>
@@ -27,13 +27,12 @@ namespace ripple {
 
 /** Holds transactions which were deferred to the next pass of consensus.
 
-    "Canonical" refers to the order in which transactions are applied.
+    "Sorted" refers to the order in which transactions are applied.
 
     - Puts transactions from the same account in sequence order
 
 */
-// VFALCO TODO rename to SortedTxSet
-class CanonicalTXSet
+class SortedTXSet
 {
 private:
     class Key
@@ -79,7 +78,7 @@ public:
     using const_iterator = std::map <Key, std::shared_ptr<STTx const>>::const_iterator;
 
 public:
-    explicit CanonicalTXSet (LedgerHash const& saltHash)
+    explicit SortedTXSet (LedgerHash const& saltHash)
         : mSetHash (saltHash)
     {
     }

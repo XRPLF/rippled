@@ -18,7 +18,7 @@
 //==============================================================================
 
 
-#include <ripple/app/misc/CanonicalTXSet.cpp>
+#include <ripple/app/misc/SortedTXSet.cpp>
 #include <ripple/app/misc/FeeVoteImpl.cpp>
 #include <ripple/app/misc/HashRouter.cpp>
 #include <ripple/app/misc/NetworkOPs.cpp>
