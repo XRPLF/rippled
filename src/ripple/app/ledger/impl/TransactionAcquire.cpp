@@ -51,9 +51,7 @@ TransactionAcquire::TransactionAcquire (Application& app, uint256 const& hash, c
     mMap->setUnbacked ();
 }
 
-TransactionAcquire::~TransactionAcquire ()
-{
-}
+TransactionAcquire::~TransactionAcquire() = default;
 
 void TransactionAcquire::execute ()
 {

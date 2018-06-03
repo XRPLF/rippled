@@ -64,9 +64,7 @@ ValidatorList::ValidatorList (
 {
 }
 
-ValidatorList::~ValidatorList()
-{
-}
+ValidatorList::~ValidatorList() = default;
 
 bool
 ValidatorList::load (

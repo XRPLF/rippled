@@ -68,9 +68,7 @@ public:
             " path='" << mPath << "'";
     }
 
-    ~RPCSubImp () override
-    {
-    }
+    ~RPCSubImp() = default;
 
     void send (Json::Value const& jvObj, bool broadcast) override
     {

@@ -30,16 +30,12 @@ const Int Value::minInt = Int ( ~ (UInt (-1) / 2) );
 const Int Value::maxInt = Int ( UInt (-1) / 2 );
 const UInt Value::maxUInt = UInt (-1);
 
-ValueAllocator::~ValueAllocator ()
-{
-}
+ValueAllocator::~ValueAllocator() = default;
 
 class DefaultValueAllocator : public ValueAllocator
 {
 public:
-    ~DefaultValueAllocator () override
-    {
-    }
+    virtual ~DefaultValueAllocator() = default;
 
     char* makeMemberName ( const char* memberName ) override
     {

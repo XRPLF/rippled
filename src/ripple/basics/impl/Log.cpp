@@ -54,9 +54,7 @@ Logs::File::File()
 {
 }
 
-Logs::File::~File()
-{
-}
+Logs::File::~File() = default;
 
 bool Logs::File::isOpen () const noexcept
 {

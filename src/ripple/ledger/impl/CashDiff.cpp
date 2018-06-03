@@ -596,9 +596,7 @@ CashDiff::CashDiff (CashDiff&& other)
 {
 }
 
-CashDiff::~CashDiff()
-{
-}
+CashDiff::~CashDiff() = default;
 
 CashDiff::CashDiff (ReadView const& view,
     CashFilter lhsFilter, detail::ApplyStateTable const& lhs,

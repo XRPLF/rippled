@@ -31,9 +31,7 @@ public:
     {
     }
 
-    ~SourceStringsImp () override
-    {
-    }
+    ~SourceStringsImp() = default;
 
     std::string const& name () override
     {

@@ -45,9 +45,7 @@ public:
     {
     }
 
-    ~GroupImp () override
-    {
-    }
+    ~GroupImp() = default;
 
     std::string const& name () const override
     {
@@ -103,9 +101,7 @@ public:
     {
     }
 
-    ~GroupsImp () override
-    {
-    }
+    ~GroupsImp() = default;
 
     Group::ptr const& get (std::string const& name) override
     {
@@ -122,9 +118,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-Groups::~Groups ()
-{
-}
+Groups::~Groups() = default;
 
 std::unique_ptr <Groups> make_Groups (Collector::ptr const& collector)
 {

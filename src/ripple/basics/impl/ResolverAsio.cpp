@@ -372,8 +372,5 @@ std::unique_ptr<ResolverAsio> ResolverAsio::New (
 }
 
 //-----------------------------------------------------------------------------
-Resolver::~Resolver ()
-{
-}
-
+Resolver::~Resolver() = default;
 }

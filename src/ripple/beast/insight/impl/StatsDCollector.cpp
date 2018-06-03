@@ -538,9 +538,7 @@ StatsDEventImpl::StatsDEventImpl (std::string const& name,
 {
 }
 
-StatsDEventImpl::~StatsDEventImpl ()
-{
-}
+StatsDEventImpl::~StatsDEventImpl() = default;
 
 void StatsDEventImpl::notify (EventImpl::value_type const& value)
 {

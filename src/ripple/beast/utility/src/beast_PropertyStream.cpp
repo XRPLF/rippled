@@ -375,13 +375,9 @@ void PropertyStream::Source::onWrite (Map&)
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::PropertyStream ()
-{
-}
+PropertyStream::PropertyStream() = default;
 
-PropertyStream::~PropertyStream ()
-{
-}
+PropertyStream::~PropertyStream() = default;
 
 void PropertyStream::add (std::string const& key, bool value)
 {

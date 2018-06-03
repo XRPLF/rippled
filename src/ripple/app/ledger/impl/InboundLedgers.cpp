@@ -440,9 +440,7 @@ private:
 decltype(InboundLedgersImp::kReacquireInterval)
 InboundLedgersImp::kReacquireInterval{5};
 
-InboundLedgers::~InboundLedgers()
-{
-}
+InboundLedgers::~InboundLedgers() = default;
 
 std::unique_ptr<InboundLedgers>
 make_InboundLedgers (Application& app,

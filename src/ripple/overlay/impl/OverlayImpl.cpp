@@ -44,8 +44,7 @@ struct get_peer_json
 
     Json::Value json;
 
-    get_peer_json ()
-    { }
+    get_peer_json() = default;
 
     void operator() (std::shared_ptr<Peer> const& peer)
     {

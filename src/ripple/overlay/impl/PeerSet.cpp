@@ -53,9 +53,7 @@ PeerSet::PeerSet (Application& app, uint256 const& hash,
     assert ((mTimerInterval > 10ms) && (mTimerInterval < 30s));
 }
 
-PeerSet::~PeerSet ()
-{
-}
+PeerSet::~PeerSet() = default;
 
 bool PeerSet::insert (std::shared_ptr<Peer> const& ptr)
 {

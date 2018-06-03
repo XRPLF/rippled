@@ -28,13 +28,9 @@ namespace NodeStore {
 class NullBackend : public Backend
 {
 public:
-    NullBackend ()
-    {
-    }
+    NullBackend() = default;
 
-    ~NullBackend () override
-    {
-    }
+    ~NullBackend() = default;
 
     std::string
     getName() override

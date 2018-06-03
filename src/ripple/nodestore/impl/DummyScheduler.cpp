@@ -22,13 +22,9 @@
 namespace ripple {
 namespace NodeStore {
 
-DummyScheduler::DummyScheduler ()
-{
-}
+DummyScheduler::DummyScheduler() = default;
 
-DummyScheduler::~DummyScheduler ()
-{
-}
+DummyScheduler::~DummyScheduler() = default;
 
 void
 DummyScheduler::scheduleTask (Task& task)

@@ -72,10 +72,7 @@ codePointToUTF8 (unsigned int cp)
 // Class Reader
 // //////////////////////////////////////////////////////////////////
 
-Reader::Reader ()
-{
-}
-
+Reader::Reader() = default;
 
 bool
 Reader::parse ( std::string const& document,
