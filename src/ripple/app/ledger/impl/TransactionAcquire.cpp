@@ -51,8 +51,6 @@ TransactionAcquire::TransactionAcquire (Application& app, uint256 const& hash, c
     mMap->setUnbacked ();
 }
 
-TransactionAcquire::~TransactionAcquire() = default;
-
 void TransactionAcquire::execute ()
 {
     app_.getJobQueue ().addJob (

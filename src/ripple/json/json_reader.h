@@ -42,7 +42,7 @@ public:
     /** \brief Constructs a Reader allowing all features
      * for parsing.
      */
-    Reader ();
+    Reader () = default;
 
     /** \brief Read a Value from a <a HREF="http://www.json.org">JSON</a> document.
      * \param document UTF-8 encoded string containing the document to read.

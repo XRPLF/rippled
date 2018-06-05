@@ -54,8 +54,6 @@ Logs::File::File()
 {
 }
 
-Logs::File::~File() = default;
-
 bool Logs::File::isOpen () const noexcept
 {
     return m_stream != nullptr;

@@ -82,7 +82,7 @@ public:
 
 private:
     CountedObjects ();
-    ~CountedObjects ();
+    ~CountedObjects () = default;
 
 private:
     std::atomic <int> m_count;

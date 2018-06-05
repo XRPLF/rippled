@@ -34,8 +34,6 @@ CountedObjects::CountedObjects ()
 {
 }
 
-CountedObjects::~CountedObjects() = default;
-
 CountedObjects::List CountedObjects::getCounts (int minimumThreshold) const
 {
     List counts;

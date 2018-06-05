@@ -86,7 +86,7 @@ private:
         /** Destroy the object.
             If a system file is associated, it will be flushed and closed.
         */
-        ~File ();
+        ~File () = default;
 
         /** Determine if a system file is associated with the log.
             @return `true` if a system file is associated and opened for

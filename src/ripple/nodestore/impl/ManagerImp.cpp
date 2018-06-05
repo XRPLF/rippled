@@ -39,10 +39,6 @@ ManagerImp::missing_backend()
         );
 }
 
-ManagerImp::ManagerImp() = default;
-
-ManagerImp::~ManagerImp() = default;
-
 std::unique_ptr <Backend>
 ManagerImp::make_Backend (
     Section const& parameters,
