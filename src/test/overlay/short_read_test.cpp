@@ -86,7 +86,7 @@ private:
             Base& base_;
 
         public:
-            Child(Base& base)
+            explicit Child(Base& base)
                 : base_(base)
             {
             }
@@ -178,7 +178,7 @@ private:
             socket_type socket_;
             strand_type strand_;
 
-            Acceptor(Server& server)
+            explicit Acceptor(Server& server)
                 : Child(server)
                 , server_(server)
                 , test_(server_.test_)
@@ -366,7 +366,7 @@ private:
         };
 
     public:
-        Server(short_read_test& test)
+        explicit Server(short_read_test& test)
             : test_(test)
         {
             auto const p = std::make_shared<Acceptor>(*this);
