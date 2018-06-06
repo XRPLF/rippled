@@ -86,8 +86,7 @@ TxQ::FeeMetrics::update(Application& app,
     feeLevels.reserve(txnsExpected_);
     for (auto const& tx : view.txs)
     {
-        auto const baseFee = calculateBaseFee(app, view,
-            *tx.first, j_);
+        auto const baseFee = calculateBaseFee(view, *tx.first);
         feeLevels.push_back(getFeeLevelPaid(*tx.first,
             baseLevel, baseFee, setup));
     }
@@ -660,7 +659,7 @@ TxQ::apply(Application& app, OpenView& view,
     // or transaction replacement, so just pull it up now.
     // TODO: Do we want to avoid doing it again during
     //   preclaim?
-    auto const baseFee = calculateBaseFee(app, view, *tx, j);
+    auto const baseFee = calculateBaseFee(view, *tx);
     auto const feeLevelPaid = getFeeLevelPaid(*tx,
         baseLevel, baseFee, setup_);
     auto const requiredFeeLevel = [&]()

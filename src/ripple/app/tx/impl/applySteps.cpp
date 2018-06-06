@@ -77,38 +77,38 @@ invoke_preflight (PreflightContext const& ctx)
 */
 template<class T>
 static
-std::pair<TER, std::uint64_t>
+TER
 invoke_preclaim(PreclaimContext const& ctx)
 {
     // If the transactor requires a valid account and the transaction doesn't
     // list one, preflight will have already a flagged a failure.
     auto const id = ctx.tx.getAccountID(sfAccount);
-    auto const baseFee = T::calculateBaseFee(ctx);
 
     if (id != zero)
     {
         TER result = T::checkSeq(ctx);
 
         if (result != tesSUCCESS)
-            return { result, baseFee };
+            return result;
 
-        result = T::checkFee(ctx, baseFee);
+        result = T::checkFee(ctx,
+            calculateBaseFee(ctx.view, ctx.tx));
 
         if (result != tesSUCCESS)
-            return { result, baseFee };
+            return result;
 
         result = T::checkSign(ctx);
 
         if (result != tesSUCCESS)
-            return { result, baseFee };
+            return result;
 
     }
 
-    return{ T::preclaim(ctx), baseFee };
+    return T::preclaim(ctx);
 }
 
 static
-std::pair<TER, std::uint64_t>
+TER
 invoke_preclaim (PreclaimContext const& ctx)
 {
     switch(ctx.tx.getTxnType())
@@ -136,37 +136,39 @@ invoke_preclaim (PreclaimContext const& ctx)
     case ttFEE:             return invoke_preclaim<Change>(ctx);
     default:
         assert(false);
-        return { temUNKNOWN, 0 };
+        return temUNKNOWN;
     }
 }
 
 static
 std::uint64_t
-invoke_calculateBaseFee(PreclaimContext const& ctx)
+invoke_calculateBaseFee(
+    ReadView const& view,
+    STTx const& tx)
 {
-    switch (ctx.tx.getTxnType())
+    switch (tx.getTxnType())
     {
-    case ttACCOUNT_SET:     return SetAccount::calculateBaseFee(ctx);
-    case ttCHECK_CANCEL:    return CancelCheck::calculateBaseFee(ctx);
-    case ttCHECK_CASH:      return CashCheck::calculateBaseFee(ctx);
-    case ttCHECK_CREATE:    return CreateCheck::calculateBaseFee(ctx);
-    case ttDEPOSIT_PREAUTH: return DepositPreauth::calculateBaseFee(ctx);
-    case ttOFFER_CANCEL:    return CancelOffer::calculateBaseFee(ctx);
-    case ttOFFER_CREATE:    return CreateOffer::calculateBaseFee(ctx);
-    case ttESCROW_CREATE:   return EscrowCreate::calculateBaseFee(ctx);
-    case ttESCROW_FINISH:   return EscrowFinish::calculateBaseFee(ctx);
-    case ttESCROW_CANCEL:   return EscrowCancel::calculateBaseFee(ctx);
-    case ttPAYCHAN_CLAIM:   return PayChanClaim::calculateBaseFee(ctx);
-    case ttPAYCHAN_CREATE:  return PayChanCreate::calculateBaseFee(ctx);
-    case ttPAYCHAN_FUND:    return PayChanFund::calculateBaseFee(ctx);
-    case ttPAYMENT:         return Payment::calculateBaseFee(ctx);
-    case ttREGULAR_KEY_SET: return SetRegularKey::calculateBaseFee(ctx);
-    case ttSIGNER_LIST_SET: return SetSignerList::calculateBaseFee(ctx);
-    case ttTICKET_CANCEL:   return CancelTicket::calculateBaseFee(ctx);
-    case ttTICKET_CREATE:   return CreateTicket::calculateBaseFee(ctx);
-    case ttTRUST_SET:       return SetTrust::calculateBaseFee(ctx);
+    case ttACCOUNT_SET:     return SetAccount::calculateBaseFee(view, tx);
+    case ttCHECK_CANCEL:    return CancelCheck::calculateBaseFee(view, tx);
+    case ttCHECK_CASH:      return CashCheck::calculateBaseFee(view, tx);
+    case ttCHECK_CREATE:    return CreateCheck::calculateBaseFee(view, tx);
+    case ttDEPOSIT_PREAUTH: return DepositPreauth::calculateBaseFee(view, tx);
+    case ttOFFER_CANCEL:    return CancelOffer::calculateBaseFee(view, tx);
+    case ttOFFER_CREATE:    return CreateOffer::calculateBaseFee(view, tx);
+    case ttESCROW_CREATE:   return EscrowCreate::calculateBaseFee(view, tx);
+    case ttESCROW_FINISH:   return EscrowFinish::calculateBaseFee(view, tx);
+    case ttESCROW_CANCEL:   return EscrowCancel::calculateBaseFee(view, tx);
+    case ttPAYCHAN_CLAIM:   return PayChanClaim::calculateBaseFee(view, tx);
+    case ttPAYCHAN_CREATE:  return PayChanCreate::calculateBaseFee(view, tx);
+    case ttPAYCHAN_FUND:    return PayChanFund::calculateBaseFee(view, tx);
+    case ttPAYMENT:         return Payment::calculateBaseFee(view, tx);
+    case ttREGULAR_KEY_SET: return SetRegularKey::calculateBaseFee(view, tx);
+    case ttSIGNER_LIST_SET: return SetSignerList::calculateBaseFee(view, tx);
+    case ttTICKET_CANCEL:   return CancelTicket::calculateBaseFee(view, tx);
+    case ttTICKET_CREATE:   return CreateTicket::calculateBaseFee(view, tx);
+    case ttTRUST_SET:       return SetTrust::calculateBaseFee(view, tx);
     case ttAMENDMENT:
-    case ttFEE:             return Change::calculateBaseFee(ctx);
+    case ttFEE:             return Change::calculateBaseFee(view, tx);
     default:
         assert(false);
         return 0;
@@ -295,26 +297,22 @@ preclaim (PreflightResult const& preflightResult,
     try
     {
         if (ctx->preflightResult != tesSUCCESS)
-            return { *ctx, ctx->preflightResult, 0 };
+            return { *ctx, ctx->preflightResult };
         return{ *ctx, invoke_preclaim(*ctx) };
     }
     catch (std::exception const& e)
     {
         JLOG(ctx->j.fatal()) <<
             "apply: " << e.what();
-        return{ *ctx, tefEXCEPTION, 0 };
+        return{ *ctx, tefEXCEPTION };
     }
 }
 
 std::uint64_t
-calculateBaseFee(Application& app, ReadView const& view,
-    STTx const& tx, beast::Journal j)
+calculateBaseFee(ReadView const& view,
+    STTx const& tx)
 {
-    PreclaimContext const ctx(
-        app, view, tesSUCCESS, tx,
-            tapNONE, j);
-
-    return invoke_calculateBaseFee(ctx);
+    return invoke_calculateBaseFee(view, tx);
 }
 
 TxConsequences
@@ -344,8 +342,8 @@ doApply(PreclaimResult const& preclaimResult,
             return{ preclaimResult.ter, false };
         ApplyContext ctx(app, view,
             preclaimResult.tx, preclaimResult.ter,
-                preclaimResult.baseFee, preclaimResult.flags,
-                    preclaimResult.j);
+                calculateBaseFee(view, preclaimResult.tx),
+                    preclaimResult.flags, preclaimResult.j);
         return invoke_apply(ctx);
     }
     catch (std::exception const& e)

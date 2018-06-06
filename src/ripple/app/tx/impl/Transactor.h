@@ -121,7 +121,7 @@ public:
 
     static
     TER
-    checkFee (PreclaimContext const& ctx, std::uint64_t baseFee);
+    checkFee (PreclaimContext const& ctxx, std::uint64_t baseFee);
 
     static
     NotTEC
@@ -131,7 +131,8 @@ public:
     static
     std::uint64_t
     calculateBaseFee (
-        PreclaimContext const& ctx);
+        ReadView const& view,
+        STTx const& tx);
 
     static
     bool
@@ -171,7 +172,7 @@ protected:
 
     static
     XRPAmount
-    calculateFee (Application& app, std::uint64_t baseFee,
+    minimumFee (Application& app, std::uint64_t baseFee,
         Fees const& fees, ApplyFlags flags);
 
 private:

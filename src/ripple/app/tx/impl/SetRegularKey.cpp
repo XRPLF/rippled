@@ -25,16 +25,17 @@ namespace ripple {
 
 std::uint64_t
 SetRegularKey::calculateBaseFee (
-    PreclaimContext const& ctx)
+    ReadView const& view,
+    STTx const& tx)
 {
-    auto const id = ctx.tx.getAccountID(sfAccount);
-    auto const spk = ctx.tx.getSigningPubKey();
+    auto const id = tx.getAccountID(sfAccount);
+    auto const spk = tx.getSigningPubKey();
 
     if (publicKeyType (makeSlice (spk)))
     {
         if (calcAccountID(PublicKey (makeSlice(spk))) == id)
         {
-            auto const sle = ctx.view.read(keylet::account(id));
+            auto const sle = view.read(keylet::account(id));
 
             if (sle && (! (sle->getFlags () & lsfPasswordSpent)))
             {
@@ -44,7 +45,7 @@ SetRegularKey::calculateBaseFee (
         }
     }
 
-    return Transactor::calculateBaseFee (ctx);
+    return Transactor::calculateBaseFee (view, tx);
 }
 
 NotTEC
@@ -73,7 +74,7 @@ SetRegularKey::doApply ()
     auto const sle = view ().peek (
         keylet::account (account_));
 
-    if (!calculateFee (ctx_.app, ctx_.baseFee, view ().fees (), view ().flags ()))
+    if (!minimumFee (ctx_.app, ctx_.baseFee, view ().fees (), view ().flags ()))
         sle->setFlag (lsfPasswordSpent);
 
     if (ctx_.tx.isFieldPresent (sfRegularKey))
