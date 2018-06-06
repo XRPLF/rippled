@@ -1,96 +1,61 @@
-# What is Ripple?
+# rippled - The XRP Ledger Server
 
-![Ripple](docs/images/ripple.png)
+The XRP Ledger is a decentralized cryptographic ledger powered by a network of peer-to-peer servers. The XRP Ledger uses a novel Byzantine Fault Tolerant consensus algorithm to settle and record transactions in a secure distributed database without a central operator. The server software that powers the XRP Ledger is called `rippled` and is available in this repository under the permissive [ISC open-source license](LICENSE). The XRP Ledger is the home of XRP, a digital asset designed to bridge the many different currencies in use worldwide.
 
-> **Do you work at a digital asset exchange or wallet provider?** 
->
-> Please [contact us](mailto:support@ripple.com). We can help guide your integration.
+[Ripple](https://ripple.com/) stewards the development of the XRP Ledger, and advances XRP as a key contribution to the Internet of Value: a world in which money moves the way information does today.
 
-Ripple is a network of computers which use the [Ripple consensus algorithm](https://www.youtube.com/watch?v=pj1QVb1vlC0) to atomically settle and record
-transactions on a secure distributed database, the Ripple Consensus Ledger
-(RCL). Because of its distributed nature, the RCL offers transaction immutability
-without a central operator. The RCL contains a built-in currency exchange and its
-path-finding algorithm finds competitive exchange rates across order books
-and currency pairs.
 
-### Key Features
-- **Distributed**
-  - Direct account-to-account settlement with no central operator
-  - Decentralized global market for competitive FX
-- **Secure**
-  - Transactions are cryptographically signed using ECDSA or Ed25519
-  - Multi-signing capabilities
-- **Scalable**
-  - Capacity to process the world’s cross-border payments volume
-  - Easy access to liquidity through a competitive FX marketplace
+## What is XRP?
 
-## Cross-border payments
-Ripple enables banks to settle cross-border payments in real-time, with
-end-to-end transparency, and at lower costs. Banks can provide liquidity
-for FX themselves or source it from third parties.
+XRP is the digital asset native to the XRP Ledger. XRP was originally created in 2012 by Arthur Britto, Jed McCaleb and David Schwartz. XRP is public, counterparty-less and traded on the open-market, available for anyone to access. 100 billion units of XRP were generated in 2012 at conception.
 
-As Ripple adoption grows, so do the number of currencies and counterparties.
-Liquidity providers need to maintain accounts with each counterparty for
-each currency – a capital- and time-intensive endeavor that spreads liquidity
-thin. Further, some transactions, such as exotic currency trades, will require
-multiple trading parties, who each layer costs to the transaction. Thin
-liquidity and many intermediary trading parties make competitive pricing
-challenging.
 
-![Flow - Direct](docs/images/flow1.png)
+## Key Features
 
-### XRP as a Bridge Currency
-Ripple can bridge even exotic currency pairs directly through XRP. Similar to
-USD in today’s currency market, XRP allows liquidity providers to focus on
-offering competitive FX rates on fewer pairs and adding depth to order books.
-Unlike USD, trading through XRP does not require bank accounts, service fees,
-counterparty risk, or additional operational costs. By using XRP, liquidity
-providers can specialize in certain currency corridors, reduce operational
-costs, and ultimately, offer more competitive FX pricing.
+- **[Censorship-Resistant Transaction Processing][]:** No single party decides which XRP transactions succeed or fail, and no one can "roll back" a transaction after it completes. As long as those who choose to participate in the network keep it healthy, they can send and receive XRP in seconds.
+- **[Fast, Efficient Consensus Algorithm][]:** The XRP Ledger's consensus algorithm settles transactions in 4 to 5 seconds, processing at a throughput of up to 1500 transactions per second. These properties put XRP at least an order of magnitude ahead of other top digital assets.
+- **[Finite XRP Supply][]:** When the XRP Ledger began, 100 billion XRP were created, and no more XRP will ever be created. (Each XRP is subdivisible down to 6 decimal places, for a grand total of 100 quintillion _drops_ of XRP.) The available supply of XRP decreases slowly over time as small amounts are destroyed to pay transaction costs.
+- **[Responsible Software Governance][]:** A team of full-time, world-class developers at Ripple maintain and continually improve the XRP Ledger's underlying software. Ripple acts as a steward for the technology and an advocate for its interests, and builds constructive relationships with governments and financial institutions worldwide.
+- **[Secure, Adaptable Cryptography][]:** The XRP Ledger relies on industry standard digital signature systems like ECDSA (the same scheme used by Bitcoin) but also supports modern, efficient algorithms like Ed25519. The extensible nature of the XRP Ledger's software makes it possible to add and disable algorithms as the state of the art in cryptography advances.
+- **[Modern Features for Smart Contracts][]:** Features like Escrow, Checks, and Payment Channels support cutting-edge financial applications including the [Interledger Protocol](https://interledger.org/). This toolbox of advanced features comes with safety features like a process for amending the network and separate checks against invariant constraints.
+- **[On-Ledger Decentralized Exchange][]:** In addition to all the features that make XRP useful on its own, the XRP Ledger also has a fully-functional accounting system for tracking and trading obligations denominated in any way users want, and an exchange built into the protocol. The XRP Ledger can settle long, cross-currency payment paths and exchanges of multiple currencies in atomic transactions, bridging gaps of trust with XRP.
 
-![Flow - Bridged over XRP](docs/images/flow2.png)
+[Censorship-Resistant Transaction Processing]: https://developers.ripple.com/xrp-ledger-overview.html#censorship-resistant-transaction-processing
+[Fast, Efficient Consensus Algorithm]: https://developers.ripple.com/xrp-ledger-overview.html#fast-efficient-consensus-algorithm
+[Finite XRP Supply]: https://developers.ripple.com/xrp-ledger-overview.html#finite-xrp-supply
+[Responsible Software Governance]: https://developers.ripple.com/xrp-ledger-overview.html#responsible-software-governance
+[Secure, Adaptable Cryptography]: https://developers.ripple.com/xrp-ledger-overview.html#secure-adaptable-cryptography
+[Modern Features for Smart Contracts]: https://developers.ripple.com/xrp-ledger-overview.html#modern-features-for-smart-contracts
+[On-Ledger Decentralized Exchange]: https://developers.ripple.com/xrp-ledger-overview.html#on-ledger-decentralized-exchange
 
-# rippled - Ripple server
-`rippled` is the reference server implementation of the Ripple
-protocol. To learn more about how to build and run a `rippled`
-server, visit https://ripple.com/build/rippled-setup/
 
+## Source Code
 [![travis-ci.org: Build Status](https://travis-ci.org/ripple/rippled.png?branch=develop)](https://travis-ci.org/ripple/rippled)
 [![codecov.io: Code Coverage](https://codecov.io/gh/ripple/rippled/branch/develop/graph/badge.svg)](https://codecov.io/gh/ripple/rippled)
 
-### License
-`rippled` is open source and permissively licensed under the
-ISC license. See the LICENSE file for more details.
+### Repository Contents
 
-#### Repository Contents
+| Folder     | Contents                                         |
+|:-----------|:-------------------------------------------------|
+| `./bin`    | Scripts and data files for Ripple integrators.   |
+| `./Builds` | Platform-specific guides for building `rippled`. |
+| `./docs`   | Source documentation files and doxygen config.   |
+| `./cfg`    | Example configuration files.                     |
+| `./src`    | Source code.                                     |
 
-| Folder  | Contents |
-|---------|----------|
-| ./bin   | Scripts and data files for Ripple integrators. |
-| ./build | Intermediate and final build outputs.          |
-| ./Builds| Platform-specific guides for building rippled. |
-| ./docs  | Source documentation files and doxygen config. |
-| ./cfg   | Example configuration files.                   |
-| ./src   | Source code.                                   |
+Some of the directories under `src` are external repositories included using
+git-subtree. See those directories' README files for more details.
 
-Some of the directories under `src` are external repositories inlined via
-git-subtree. See the corresponding README for more details.
 
-## For more information:
+## See Also
 
-* [Ripple Knowledge Center](https://ripple.com/learn/)
-* [Ripple Developer Center](https://ripple.com/build/)
-* Ripple Whitepapers & Reports
-  * [Ripple Consensus Whitepaper](https://ripple.com/files/ripple_consensus_whitepaper.pdf)
-  * [Ripple Solutions Guide](https://ripple.com/files/ripple_solutions_guide.pdf)
+* [XRP Ledger Dev Portal](https://developers.ripple.com/)
+* [XRP News](https://ripple.com/category/xrp/)
+* [Setup and Installation](https://developers.ripple.com/install-rippled.html)
 
-To learn about how Ripple is transforming global payments visit
-[https://ripple.com/contact/](https://ripple.com/contact/)
+To learn about how Ripple is transforming global payments, visit
+<https://ripple.com/contact/>.
 
-- - -
+---
 
-Copyright © 2017, Ripple Labs. All rights reserved.
-
-Portions of this document, including but not limited to the Ripple logo,
-images and image templates are the property of Ripple Labs and cannot be
-copied or used without permission.
+Copyright © 2018, Ripple Labs. All rights reserved.
