@@ -102,15 +102,6 @@ preflight2 (PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static
-XRPAmount
-calculateFee(Application& app, std::uint64_t const baseFee,
-    Fees const& fees, ApplyFlags flags)
-{
-    return scaleFeeLoad(baseFee, app.getFeeTrack(),
-        fees, flags & tapUNLIMITED);
-}
-
 //------------------------------------------------------------------------------
 
 PreflightContext::PreflightContext(Application& app_, STTx const& tx_,
@@ -134,20 +125,21 @@ Transactor::Transactor(
 }
 
 std::uint64_t Transactor::calculateBaseFee (
-    PreclaimContext const& ctx)
+    ReadView const& view,
+    STTx const& tx)
 {
     // Returns the fee in fee units.
 
     // The computation has two parts:
     //  * The base fee, which is the same for most transactions.
     //  * The additional cost of each multisignature on the transaction.
-    std::uint64_t baseFee = ctx.view.fees().units;
+    std::uint64_t baseFee = view.fees().units;
 
     // Each signer adds one more baseFee to the minimum required fee
     // for the transaction.
     std::uint32_t signerCount = 0;
-    if (ctx.tx.isFieldPresent (sfSigners))
-        signerCount = ctx.tx.getFieldArray (sfSigners).size();
+    if (tx.isFieldPresent (sfSigners))
+        signerCount = tx.getFieldArray (sfSigners).size();
 
     return baseFee + (signerCount * baseFee);
 }
@@ -159,19 +151,28 @@ Transactor::calculateFeePaid(STTx const& tx)
 }
 
 XRPAmount
+Transactor::minimumFee (Application& app, std::uint64_t baseFee,
+    Fees const& fees, ApplyFlags flags)
+{
+    return scaleFeeLoad (baseFee, app.getFeeTrack (),
+        fees, flags & tapUNLIMITED);
+}
+
+XRPAmount
 Transactor::calculateMaxSpend(STTx const& tx)
 {
     return beast::zero;
 }
 
 TER
-Transactor::checkFee (PreclaimContext const& ctx, std::uint64_t baseFee)
+Transactor::checkFee (PreclaimContext const& ctx,
+    std::uint64_t baseFee)
 {
     auto const feePaid = calculateFeePaid(ctx.tx);
     if (!isLegalAmount (feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
-    auto const feeDue = ripple::calculateFee(ctx.app,
+    auto const feeDue = minimumFee(ctx.app,
         baseFee, ctx.view.fees(), ctx.flags);
 
     // Only check fee is sufficient when the ledger is open.
@@ -306,9 +307,6 @@ TER Transactor::apply ()
     // sle must exist except for transactions
     // that allow zero account.
     assert(sle != nullptr || account_ == zero);
-
-    mFeeDue = calculateFee(ctx_.app, ctx_.baseFee,
-        view().fees(), view().flags());
 
     if (sle)
     {
