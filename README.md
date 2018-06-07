@@ -1,4 +1,4 @@
-# rippled - The XRP Ledger Server
+# `rippled` - The XRP Ledger Server
 
 The XRP Ledger is a decentralized cryptographic ledger powered by a network of peer-to-peer servers. The XRP Ledger uses a novel Byzantine Fault Tolerant consensus algorithm to settle and record transactions in a secure distributed database without a central operator. The server software that powers the XRP Ledger is called `rippled` and is available in this repository under the permissive [ISC open-source license](LICENSE). The XRP Ledger is the home of XRP, a digital asset designed to bridge the many different currencies in use worldwide.
 
