@@ -121,7 +121,7 @@ public:
 
     static
     TER
-    checkFee (PreclaimContext const& ctxx, std::uint64_t baseFee);
+    checkFee (PreclaimContext const& ctx, std::uint64_t baseFee);
 
     static
     NotTEC
@@ -170,6 +170,16 @@ protected:
 
     virtual TER doApply () = 0;
 
+    /** Compute the minimum fee required for to process a
+        transaction with a given baseFee based on the current
+        server load.
+
+        @param app The application hosting the server
+        @param baseFee The base fee of a candidate transaction
+            @see ripple::calculateBaseFee
+        @param fees Fee settings from the current ledger
+        @param flags Transaction processing fees
+     */
     static
     XRPAmount
     minimumFee (Application& app, std::uint64_t baseFee,
