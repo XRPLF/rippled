@@ -654,7 +654,7 @@ RCLConsensus::Adaptor::buildLCL(
         if (replayData)
         {
             assert(replayData->parent()->info().hash == previousLedger.id());
-            return buildLedger(*replayData, tapNO_CHECK_SIGN, app_, j_);
+            return buildLedger(*replayData, tapNONE, app_, j_);
         }
         return buildLedger(
             previousLedger.ledger_,

@@ -1115,16 +1115,17 @@ TxQ::apply(Application& app, OpenView& view,
         (void)created;
         assert(created);
     }
-    // If the transaction goes into the queue, future attempts need
-    // to be done:
-    // * without RETRY because this will look successful to the caller
-    // * without PREFER_QUEUE because we're already in the queue, so duh
-    // * with NO_CHECK_SIGN because the signature has been checked
-    //   at least once, so don't do it again.
-    // These changes _may_ cause an extra `preflight`, but since signature
-    // checking is the most expensive part of `preflight`, the cost should
-    // be minimal.
-    flags = (flags & ~tapRETRY & ~tapPREFER_QUEUE) | tapNO_CHECK_SIGN;
+    // Modify the flags for use when coming out of the queue.
+    // These changes _may_ cause an extra `preflight`, but as long as
+    // the `HashRouter` still knows about the transaction, the signature
+    // will not be checked again, so the cost should be minimal.
+
+    // Don't allow soft failures, which can lead to retries
+    flags &= ~tapRETRY;
+
+    // Don't queue because we're already in the queue
+    flags &= ~tapPREFER_QUEUE;
+
     auto& candidate = accountIter->second.add(
         { tx, transactionID, feeLevelPaid, flags, pfresult });
     /* Normally we defer figuring out the consequences until

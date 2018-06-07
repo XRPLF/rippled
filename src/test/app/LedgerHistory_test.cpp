@@ -115,7 +115,7 @@ public:
         {
             OpenView accum(&*res);
             applyTransaction(
-                env.app(), accum, *stx, false, tapNO_CHECK_SIGN, env.journal);
+                env.app(), accum, *stx, false, tapNONE, env.journal);
             accum.apply(*res);
         }
         res->updateSkipList();
