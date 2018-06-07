@@ -22,9 +22,6 @@
 
 #include <ripple/beast/core/CompilerConfig.h>
 
-// VS2013 SP1 fails with decltype return
-#define BEAST_NO_ZERO_AUTO_RETURN 1
-
 namespace beast {
 
 /** Zero allows classes to offer efficient comparisons to zero.
@@ -55,11 +52,7 @@ static constexpr Zero zero{};
 
 /** Default implementation of signum calls the method on the class. */
 template <typename T>
-#if BEAST_NO_ZERO_AUTO_RETURN
-int signum(T const& t)
-#else
-auto signum(T const& t) -> decltype(t.signum())
-#endif
+auto signum(T const& t)
 {
     return t.signum();
 }
@@ -70,11 +63,7 @@ namespace zero_helper {
 // For argument dependent lookup to function properly, calls to signum must
 // be made from a namespace that does not include overloads of the function..
 template <class T>
-#if BEAST_NO_ZERO_AUTO_RETURN
-int call_signum (T const& t)
-#else
-auto call_signum(T const& t) -> decltype(t.signum())
-#endif
+auto call_signum(T const& t)
 {
     return signum(t);
 }
