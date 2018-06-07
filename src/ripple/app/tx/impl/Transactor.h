@@ -170,9 +170,8 @@ protected:
 
     virtual TER doApply () = 0;
 
-    /** Compute the minimum fee required for to process a
-        transaction with a given baseFee based on the current
-        server load.
+    /** Compute the minimum fee required to process a transaction
+        with a given baseFee based on the current server load.
 
         @param app The application hosting the server
         @param baseFee The base fee of a candidate transaction
