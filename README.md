@@ -2,12 +2,7 @@
 
 The XRP Ledger is a decentralized cryptographic ledger powered by a network of peer-to-peer servers. The XRP Ledger uses a novel Byzantine Fault Tolerant consensus algorithm to settle and record transactions in a secure distributed database without a central operator. The server software that powers the XRP Ledger is called `rippled` and is available in this repository under the permissive [ISC open-source license](LICENSE). The XRP Ledger is the home of XRP, a digital asset designed to bridge the many different currencies in use worldwide.
 
-[Ripple](https://ripple.com/) stewards the development of the XRP Ledger, and advances XRP as a key contribution to the Internet of Value: a world in which money moves the way information does today.
-
-
-## What is XRP?
-
-XRP is the digital asset native to the XRP Ledger. XRP was originally created in 2012 by Arthur Britto, Jed McCaleb and David Schwartz. XRP is public, counterparty-less and traded on the open-market, available for anyone to access. 100 billion units of XRP were generated in 2012 at conception.
+The XRP Ledger was created in 2012 with a finite supply of 100 billion units of XRP. Its creators gifted 80 billion XRP to a company, now called [Ripple](https://ripple.com/), to develop the XRP Ledger and its ecosystem. XRP is public, counterparty-less and traded on the open-market, available for anyone to access. Ripple uses XRP as a key piece of its mission of building the Internet of Value: a world in which money moves the way information does today.
 
 
 ## Key Features
@@ -55,7 +50,3 @@ git-subtree. See those directories' README files for more details.
 
 To learn about how Ripple is transforming global payments, visit
 <https://ripple.com/contact/>.
-
----
-
-Copyright © 2018, Ripple Labs. All rights reserved.
