@@ -189,7 +189,17 @@ public:
     */
     virtual
     bool
-    dry (EitherAmount const& out) const = 0;
+    isZero (EitherAmount const& out) const = 0;
+
+    /**
+       Return true if the step should be considered inactive.
+       A strand that has additional liquidity may be marked inactive if a step
+       has consumed too many offers.
+     */
+    virtual
+    bool inactive() const{
+        return false;
+    }
 
     /**
        Return true if Out of lhs == Out of rhs.
@@ -404,7 +414,7 @@ struct StepImp : public Step
     }
 
     bool
-    dry (EitherAmount const& out) const override
+    isZero (EitherAmount const& out) const override
     {
         return get<TOut>(out) == beast::zero;
     }

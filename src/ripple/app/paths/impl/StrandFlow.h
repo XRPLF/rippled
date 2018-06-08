@@ -47,6 +47,8 @@ struct StrandResult
     TOutAmt out = beast::zero;                    ///< Currency amount out
     boost::optional<PaymentSandbox> sandbox;      ///< Resulting Sandbox state
     boost::container::flat_set<uint256> ofrsToRm; ///< Offers to remove
+    // strand can be inactive if there is no more liquidity or too many offers have been consumed
+    bool inactive = false; ///< Strand should not considered as a further source of liquidity (dry)
 
     /** Strand result constructor */
     StrandResult () = default;
@@ -54,12 +56,14 @@ struct StrandResult
     StrandResult (TInAmt const& in_,
         TOutAmt const& out_,
         PaymentSandbox&& sandbox_,
-        boost::container::flat_set<uint256> ofrsToRm_)
+        boost::container::flat_set<uint256> ofrsToRm_,
+        bool inactive_)
         : ter (tesSUCCESS)
         , in (in_)
         , out (out_)
         , sandbox (std::move (sandbox_))
         , ofrsToRm (std::move (ofrsToRm_))
+        , inactive(inactive_)
     {
     }
 
@@ -121,7 +125,7 @@ flow (
             for (auto i = s; i--;)
             {
                 auto r = strand[i]->rev (*sb, *afView, ofrsToRm, stepOut);
-                if (strand[i]->dry (r.second))
+                if (strand[i]->isZero (r.second))
                 {
                     JLOG (j.trace()) << "Strand found dry in rev";
                     return {tecPATH_DRY, std::move (ofrsToRm)};
@@ -139,7 +143,7 @@ flow (
                         *sb, *afView, ofrsToRm, EitherAmount (*maxIn));
                     limitStepOut = r.second;
 
-                    if (strand[i]->dry (r.second) ||
+                    if (strand[i]->isZero (r.second) ||
                         get<TInAmt> (r.first) != *maxIn)
                     {
                         // Something is very wrong
@@ -163,7 +167,7 @@ flow (
                     r = strand[i]->rev (*sb, *afView, ofrsToRm, stepOut);
                     limitStepOut = r.second;
 
-                    if (strand[i]->dry (r.second) ||
+                    if (strand[i]->isZero (r.second) ||
                         !strand[i]->equalOut (r.second, stepOut))
                     {
                         // Something is very wrong
@@ -185,7 +189,7 @@ flow (
             for (auto i = limitingStep + 1; i < s; ++i)
             {
                 auto const r = strand[i]->fwd (*sb, *afView, ofrsToRm, stepIn);
-                if (strand[i]->dry (r.second) ||
+                if (strand[i]->isZero (r.second) ||
                     !strand[i]->equalIn (r.first, stepIn))
                 {
                     // The limits should already have been found, so executing a strand forward
@@ -223,8 +227,17 @@ flow (
         }
 #endif
 
-        return Result (get<TInAmt> (strandIn), get<TOutAmt> (strandOut),
-            std::move (*sb), std::move (ofrsToRm));
+        bool const inactive = std::any_of(
+            strand.begin(),
+            strand.end(),
+            [](std::unique_ptr<Step> const& step) { return step->inactive(); });
+
+        return Result(
+            get<TInAmt>(strandIn),
+            get<TOutAmt>(strandOut),
+            std::move(*sb),
+            std::move(ofrsToRm),
+            inactive);
     }
     catch (FlowException const& e)
     {
@@ -339,6 +352,14 @@ public:
     auto size () const
     {
         return cur_.size ();
+    }
+
+    void
+    removeIndex(std::size_t i)
+    {
+        if (i >= next_.size())
+            return;
+        next_.erase(next_.begin() + i);
     }
 };
 /// @endcond
@@ -469,6 +490,9 @@ flow (PaymentSandbox const& baseView,
         boost::container::flat_set<uint256> ofrsToRm;
         boost::optional<BestStrand> best;
         if (flowDebugInfo) flowDebugInfo->newLiquidityPass();
+        // Index of strand to mark as inactive (remove from the active list) if the
+        // liquidity is used. This is used for strands that consume too many offers
+        boost::optional<std::size_t> markInactiveOnUse;
         for (auto strand : activeStrands)
         {
             if (offerCrossing && limitQuality)
@@ -514,13 +538,30 @@ flow (PaymentSandbox const& baseView,
 
             if (!best || best->quality < q ||
                 (best->quality == q && best->out < f.out))
-                best.emplace (f.in, f.out, std::move (*f.sandbox), *strand, q);
+            {
+                // If this strand is inactive (because it consumed too many
+                // offers) and ends up having the best quality, remove it from
+                // the activeStrands. If it doesn't end up having the best
+                // quality, keep it active.
+
+                if (f.inactive)
+                    markInactiveOnUse = activeStrands.size() - 1;
+                else
+                    markInactiveOnUse.reset();
+
+                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
+            }
         }
 
-        bool const shouldBreak = !bool(best);
+        bool const shouldBreak = !best;
 
         if (best)
         {
+            if (markInactiveOnUse)
+            {
+                activeStrands.removeIndex(*markInactiveOnUse);
+                markInactiveOnUse.reset();
+            }
             savedIns.insert (best->in);
             savedOuts.insert (best->out);
             remainingOut = outReq - sum (savedOuts);
