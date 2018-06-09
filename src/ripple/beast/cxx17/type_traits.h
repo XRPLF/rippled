@@ -28,9 +28,6 @@ namespace std {
 
 #ifndef _MSC_VER
 
-template<class...>
-using void_t = void;
-
 template<bool B>
 using bool_constant = std::integral_constant<bool, B>;
 
