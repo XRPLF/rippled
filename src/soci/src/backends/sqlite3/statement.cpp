@@ -9,6 +9,7 @@
 #include "soci/sqlite3/soci-sqlite3.h"
 // std
 #include <algorithm>
+#include <cctype>
 #include <functional>
 #include <sstream>
 #include <string>
@@ -492,7 +493,7 @@ void sqlite3_statement_backend::describe_column(int colNum, data_type & type,
     std::string dt = declType;
 
     // remove extra characters for example "(20)" in "varchar(20)"
-    std::string::iterator siter = std::find_if(dt.begin(), dt.end(), std::not1(std::ptr_fun(isalnum)));
+    std::string::iterator siter = std::find_if(dt.begin(), dt.end(), [](const auto c) { return std::isalnum(c); });
     if (siter != dt.end())
         dt.resize(siter - dt.begin());
 
