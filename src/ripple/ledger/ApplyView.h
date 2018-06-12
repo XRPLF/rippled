@@ -43,33 +43,46 @@ enum ApplyFlags
     tapUNLIMITED        = 0x400,
 };
 
-inline
+constexpr
 ApplyFlags
 operator|(ApplyFlags const& lhs,
     ApplyFlags const& rhs)
 {
     return static_cast<ApplyFlags>(
-        static_cast<int>(lhs) |
-            static_cast<int>(rhs));
+        static_cast<std::underlying_type_t<ApplyFlags>>(lhs) |
+            static_cast<std::underlying_type_t<ApplyFlags>>(rhs));
 }
 
-inline
+static_assert((tapPREFER_QUEUE | tapRETRY) == static_cast<ApplyFlags>(0x60),
+    "ApplyFlags operator |");
+static_assert((tapRETRY | tapPREFER_QUEUE) == static_cast<ApplyFlags>(0x60),
+    "ApplyFlags operator |");
+
+constexpr
 ApplyFlags
 operator&(ApplyFlags const& lhs,
     ApplyFlags const& rhs)
 {
     return static_cast<ApplyFlags>(
-        static_cast<int>(lhs) &
-            static_cast<int>(rhs));
+        static_cast<std::underlying_type_t<ApplyFlags>>(lhs) &
+            static_cast<std::underlying_type_t<ApplyFlags>>(rhs));
 }
 
-inline
+static_assert((tapPREFER_QUEUE & tapRETRY) == tapNONE,
+    "ApplyFlags operator &");
+static_assert((tapRETRY & tapPREFER_QUEUE) == tapNONE,
+    "ApplyFlags operator &");
+
+constexpr
 ApplyFlags
 operator~(ApplyFlags const& flags)
 {
     return static_cast<ApplyFlags>(
-        ~static_cast<int>(flags));
+        ~static_cast<std::underlying_type_t<ApplyFlags>>(flags));
 }
+
+static_assert(~tapRETRY == static_cast<ApplyFlags>(~0x20),
+    "ApplyFlags operator ~");
 
 inline
 ApplyFlags

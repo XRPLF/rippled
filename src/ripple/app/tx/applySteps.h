@@ -28,9 +28,15 @@ namespace ripple {
 class Application;
 class STTx;
 
-/** Check if a tec fee can currently be claimed
+/** Return true if the transaction can claim a fee (tec),
+    and the `ApplyFlags` do not allow soft failures.
  */
-bool isTecClaimValid(TER ter, ApplyFlags flags);
+inline
+bool
+isTecClaimHardFail(TER ter, ApplyFlags flags)
+{
+    return isTecClaim(ter) && !(flags & tapRETRY);
+}
 
 /** Describes the results of the `preflight` check
 
@@ -103,7 +109,7 @@ public:
         , j(ctx_.j)
         , ter(ter_)
         , likelyToClaimFee(ter == tesSUCCESS
-            || isTecClaimValid(ter, flags))
+            || isTecClaimHardFail(ter, flags))
     {
     }
 
