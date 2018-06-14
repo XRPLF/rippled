@@ -104,18 +104,12 @@ NetClock::time_point STValidation::getSeenTime () const
 
 bool STValidation::isValid () const
 {
-    return isValid (getSigningHash ());
-}
-
-bool STValidation::isValid (uint256 const& signingHash) const
-{
     try
     {
         if (publicKeyType(getSignerPublic()) != KeyType::secp256k1)
             return false;
 
-        return verifyDigest (getSignerPublic(),
-            signingHash,
+        return verifyDigest (getSignerPublic(), getSigningHash(),
             makeSlice(getFieldVL (sfSignature)),
             getFlags () & vfFullyCanonicalSig);
     }

@@ -472,7 +472,7 @@ private:
 
     void
     checkValidation (STValidation::pointer val,
-        bool isTrusted, std::shared_ptr<protocol::TMValidation> const& packet);
+        std::shared_ptr<protocol::TMValidation> const& packet);
 
     void
     getLedger (std::shared_ptr<protocol::TMGetLedger> const&packet);

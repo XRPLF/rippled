@@ -184,9 +184,6 @@ public:
     uint256
     getSigningHash() const;
 
-    bool
-    isValid(uint256 const&) const;
-
     void
     setTrusted()
     {

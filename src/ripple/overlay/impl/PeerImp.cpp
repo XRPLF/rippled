@@ -1917,13 +1917,10 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
             app_.getJobQueue ().addJob (
                 isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
                 "recvValidation->checkValidation",
-                [weak, val, isTrusted, m] (Job&)
+                [weak, val, m] (Job&)
                 {
                     if (auto peer = weak.lock())
-                        peer->checkValidation(
-                            val,
-                            isTrusted,
-                            m);
+                        peer->checkValidation(val, m);
                 });
         }
         else
@@ -2248,13 +2245,12 @@ PeerImp::checkPropose (Job& job,
 
 void
 PeerImp::checkValidation (STValidation::pointer val,
-    bool isTrusted, std::shared_ptr<protocol::TMValidation> const& packet)
+    std::shared_ptr<protocol::TMValidation> const& packet)
 {
     try
     {
         // VFALCO Which functions throw?
-        uint256 signingHash = val->getSigningHash();
-        if (! cluster() && !val->isValid (signingHash))
+        if (! cluster() && !val->isValid())
         {
             JLOG(p_journal_.warn()) <<
                 "Validation is invalid";
