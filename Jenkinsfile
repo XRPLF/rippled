@@ -105,6 +105,10 @@ try {
                     }
                 }
             }
+            else {
+                // normal branch..allow the RPM build
+                collab_found = true;
+            }
         }
     }
 
@@ -281,42 +285,36 @@ try {
             builds['rpm'] = {
                 node('docker') {
                     def bldlabel = 'rpm'
-                    configFileProvider (
-                        [configFile(
-                            fileId: 'rippled-commit-signer-public-keys.txt',
-                            variable: 'SIGNER_PUBLIC_KEYS')])
-                    {
-                        def remote =
-                            (git_fork == 'ripple') ? 'origin' : git_fork
+                    def remote =
+                        (git_fork == 'ripple') ? 'origin' : git_fork
 
-                        withCredentials(
-                            [string(
-                                credentialsId: 'RIPPLED_RPM_ROLE_ID',
-                                variable: 'ROLE_ID')])
+                    withCredentials(
+                        [string(
+                            credentialsId: 'RIPPLED_RPM_ROLE_ID',
+                            variable: 'ROLE_ID')])
+                    {
+                        withEnv([
+                            'docker_image=artifactory.ops.ripple.com:6555/rippled-rpm-builder:latest',
+                            "git_commit=${commit_id}",
+                            "git_remote=${remote}",
+                            "rpm_release=${env.BUILD_ID}"])
                         {
-                            withEnv([
-                                'docker_image=artifactory.ops.ripple.com:6555/rippled-rpm-builder:latest',
-                                "git_commit=${commit_id}",
-                                "git_remote=${remote}",
-                                "rpm_release=${env.BUILD_ID}"])
-                            {
-                                try {
-                                    sh "rm -fv ${bldlabel}.txt"
-                                    sh "if [ -d rpm-out ]; then rm -rf rpm-out; fi"
-                                    sh rpmBuildCmd(bldlabel)
+                            try {
+                                sh "rm -fv ${bldlabel}.txt"
+                                sh "if [ -d rpm-out ]; then rm -rf rpm-out; fi"
+                                sh rpmBuildCmd(bldlabel)
+                            }
+                            finally {
+                                def st = reportStatus(bldlabel, bldlabel, env.BUILD_URL)
+                                lock('rippled_dev_status') {
+                                    all_status[bldlabel] = st
                                 }
-                                finally {
-                                    def st = reportStatus(bldlabel, bldlabel, env.BUILD_URL)
-                                    lock('rippled_dev_status') {
-                                        all_status[bldlabel] = st
-                                    }
-                                    archiveArtifacts(
-                                        artifacts: 'rpm-out/*.rpm',
-                                        allowEmptyArchive: true)
-                                }
-                            } //withEnv
-                        } //withCredentials
-                    } //configFile
+                                archiveArtifacts(
+                                    artifacts: 'rpm-out/*.rpm',
+                                    allowEmptyArchive: true)
+                            }
+                        } //withEnv
+                    } //withCredentials
                 } //node
             }
         }
@@ -631,8 +629,6 @@ SECRET_ID=$(cat /.vault/rippled-build-role/secret-id)
 export VAULT_TOKEN=$(/usr/local/ripple/ops-toolbox/vault/vault_approle_auth -r ${ROLE_ID} -s ${SECRET_ID} -t)
 /usr/local/ripple/ops-toolbox/vault/vault_get_sts_token.py -r rippled-build-role
 
-head $SIGNER_PUBLIC_KEYS
-
 mkdir -p rpm-out
 
 docker pull "${docker_image}"
@@ -641,7 +637,6 @@ echo "Running build container"
 
 docker run --rm \
 -v $PWD/rpm-out:/opt/rippled-rpm/out \
--v $SIGNER_PUBLIC_KEYS:/opt/rippled-rpm/public-keys.txt \
 -e "GIT_COMMIT=$git_commit" \
 -e "GIT_REMOTE=$git_remote" \
 -e "RPM_RELEASE=$rpm_release" \
