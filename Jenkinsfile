@@ -7,7 +7,6 @@ all_status = [:]
 commit_id = ''
 git_fork = 'ripple'
 git_repo = 'rippled'
-collab_found = false;
 //
 // this is not the actual token, but an ID/key into the jenkins
 // credential store which httpRequest can access.
@@ -43,6 +42,7 @@ try {
             }
 
             if (env.CHANGE_AUTHOR) {
+                def collab_found = false;
                 //
                 // this means we have some sort of PR , so verify the author
                 //
@@ -104,10 +104,6 @@ try {
                         error "Aborted by: [${user}]"
                     }
                 }
-            }
-            else {
-                // normal branch..allow the RPM build
-                collab_found = true;
             }
         }
     }
@@ -280,43 +276,41 @@ try {
         } //for variants
 
         // Also add a single build job for doing the RPM build
-        // on a docker node, but only for collaborators (approved committers)
-        if (collab_found) {
-            builds['rpm'] = {
-                node('docker') {
-                    def bldlabel = 'rpm'
-                    def remote =
-                        (git_fork == 'ripple') ? 'origin' : git_fork
+        // on a docker node
+        builds['rpm'] = {
+            node('docker') {
+                def bldlabel = 'rpm'
+                def remote =
+                    (git_fork == 'ripple') ? 'origin' : git_fork
 
-                    withCredentials(
-                        [string(
-                            credentialsId: 'RIPPLED_RPM_ROLE_ID',
-                            variable: 'ROLE_ID')])
+                withCredentials(
+                    [string(
+                        credentialsId: 'RIPPLED_RPM_ROLE_ID',
+                        variable: 'ROLE_ID')])
+                {
+                    withEnv([
+                        'docker_image=artifactory.ops.ripple.com:6555/rippled-rpm-builder:latest',
+                        "git_commit=${commit_id}",
+                        "git_remote=${remote}",
+                        "rpm_release=${env.BUILD_ID}"])
                     {
-                        withEnv([
-                            'docker_image=artifactory.ops.ripple.com:6555/rippled-rpm-builder:latest',
-                            "git_commit=${commit_id}",
-                            "git_remote=${remote}",
-                            "rpm_release=${env.BUILD_ID}"])
-                        {
-                            try {
-                                sh "rm -fv ${bldlabel}.txt"
-                                sh "if [ -d rpm-out ]; then rm -rf rpm-out; fi"
-                                sh rpmBuildCmd(bldlabel)
+                        try {
+                            sh "rm -fv ${bldlabel}.txt"
+                            sh "if [ -d rpm-out ]; then rm -rf rpm-out; fi"
+                            sh rpmBuildCmd(bldlabel)
+                        }
+                        finally {
+                            def st = reportStatus(bldlabel, bldlabel, env.BUILD_URL)
+                            lock('rippled_dev_status') {
+                                all_status[bldlabel] = st
                             }
-                            finally {
-                                def st = reportStatus(bldlabel, bldlabel, env.BUILD_URL)
-                                lock('rippled_dev_status') {
-                                    all_status[bldlabel] = st
-                                }
-                                archiveArtifacts(
-                                    artifacts: 'rpm-out/*.rpm',
-                                    allowEmptyArchive: true)
-                            }
-                        } //withEnv
-                    } //withCredentials
-                } //node
-            }
+                            archiveArtifacts(
+                                artifacts: 'rpm-out/*.rpm',
+                                allowEmptyArchive: true)
+                        }
+                    } //withEnv
+                } //withCredentials
+            } //node
         }
 
         // this actually executes all the builds we just defined
