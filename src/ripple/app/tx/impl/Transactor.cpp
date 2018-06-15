@@ -634,14 +634,14 @@ Transactor::operator()()
     if (ctx_.size() > oversizeMetaDataCap)
         result = tecOVERSIZE;
 
-    if ((result == tecOVERSIZE) ||
+    if ((result == tecOVERSIZE) || (result == tecKILLED) ||
         (isTecClaimHardFail (result, view().flags())))
     {
         JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
         std::vector<uint256> removedOffers;
 
-        if (result == tecOVERSIZE)
+        if ((result == tecOVERSIZE) || (result == tecKILLED))
         {
             ctx_.visit (
                 [&removedOffers](
@@ -668,7 +668,7 @@ Transactor::operator()()
         fee = reset(fee);
 
         // If necessary, remove any offers found unfunded during processing
-        if (result == tecOVERSIZE)
+        if ((result == tecOVERSIZE) || (result == tecKILLED))
             removeUnfundedOffers (view(), removedOffers, ctx_.app.journal ("View"));
 
         applied = true;

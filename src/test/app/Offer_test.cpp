@@ -619,10 +619,16 @@ public:
         auto const bob = Account {"bob"};
         auto const USD = gw["USD"];
 
-        // Fill or Kill - unless we fully cross, just charge
-        // a fee and not place the offer on the books:
+        // Fill or Kill - unless we fully cross, just charge a fee and don't
+        // place the offer on the books.  But also clean up expired offers
+        // that are discovered along the way.
+        //
+        // fix1578 changes the return code.  Verify expected behavior
+        // without and with fix1578.
+        for (auto const tweakedFeatures :
+            {features - fix1578, features | fix1578})
         {
-            Env env {*this, features};
+            Env env {*this, tweakedFeatures};
             auto const closeTime =
                 fix1449Time () +
                     100 * env.closed ()->info ().closeTimeResolution;
@@ -631,20 +637,41 @@ public:
             auto const f = env.current ()->fees ().base;
 
             env.fund (startBalance, gw, alice, bob);
+
+            // bob creates an offer that expires before the next ledger close.
+            env (offer (bob, USD (500), XRP (500)),
+                json (sfExpiration.fieldName, lastClose(env) + 1),
+                ter(tesSUCCESS));
+
+            // The offer expires (it's not removed yet).
+            env.close ();
+            env.require (
+                owners (bob, 1),
+                offers (bob, 1));
+
+            // bob creates the offer that will be crossed.
             env (offer (bob, USD (500), XRP (500)), ter(tesSUCCESS));
+            env.close();
+            env.require (
+                owners (bob, 2),
+                offers (bob, 2));
+
             env (trust (alice, USD (1000)),         ter(tesSUCCESS));
             env (pay (gw, alice, USD (1000)),       ter(tesSUCCESS));
 
-            // Order that can't be filled:
-            env (offer (alice, XRP (1000), USD (1000)),
-                txflags (tfFillOrKill),              ter(tesSUCCESS));
-
+            // Order that can't be filled but will remove bob's expired offer:
+            {
+                TER const killedCode {tweakedFeatures[fix1578] ?
+                    TER {tecKILLED} : TER {tesSUCCESS}};
+                env (offer (alice, XRP (1000), USD (1000)),
+                    txflags (tfFillOrKill),         ter(killedCode));
+            }
             env.require (
-                balance (alice, startBalance - f - f),
+                balance (alice, startBalance - (f * 2)),
                 balance (alice, USD (1000)),
                 owners (alice, 1),
                 offers (alice, 0),
-                balance (bob, startBalance - f),
+                balance (bob, startBalance - (f * 2)),
                 balance (bob, USD (none)),
                 owners (bob, 1),
                 offers (bob, 1));
@@ -654,11 +681,11 @@ public:
                 txflags (tfFillOrKill),              ter(tesSUCCESS));
 
             env.require (
-                balance (alice, startBalance - f - f - f + XRP (500)),
+                balance (alice, startBalance - (f * 3) + XRP (500)),
                 balance (alice, USD (500)),
                 owners (alice, 1),
                 offers (alice, 0),
-                balance (bob, startBalance - f - XRP (500)),
+                balance (bob, startBalance - (f * 2) - XRP (500)),
                 balance (bob, USD (500)),
                 owners (bob, 1),
                 offers (bob, 0));
@@ -682,7 +709,7 @@ public:
 
             // No cross:
             env (offer (alice, XRP (1000), USD (1000)),
-                txflags (tfImmediateOrCancel),               ter(tesSUCCESS));
+                txflags (tfImmediateOrCancel),              ter(tesSUCCESS));
 
             env.require (
                 balance (alice, startBalance - f - f),
@@ -691,9 +718,9 @@ public:
                 offers (alice, 0));
 
             // Partially cross:
-            env (offer (bob, USD (50), XRP (50)),            ter(tesSUCCESS));
+            env (offer (bob, USD (50), XRP (50)),           ter(tesSUCCESS));
             env (offer (alice, XRP (1000), USD (1000)),
-                txflags (tfImmediateOrCancel),               ter(tesSUCCESS));
+                txflags (tfImmediateOrCancel),              ter(tesSUCCESS));
 
             env.require (
                 balance (alice, startBalance - f - f - f + XRP (50)),
@@ -706,9 +733,9 @@ public:
                 offers (bob, 0));
 
             // Fully cross:
-            env (offer (bob, USD (50), XRP (50)),            ter(tesSUCCESS));
+            env (offer (bob, USD (50), XRP (50)),           ter(tesSUCCESS));
             env (offer (alice, XRP (50), USD (50)),
-                txflags (tfImmediateOrCancel),               ter(tesSUCCESS));
+                txflags (tfImmediateOrCancel),              ter(tesSUCCESS));
 
             env.require (
                 balance (alice, startBalance - f - f - f - f + XRP (100)),
@@ -2739,6 +2766,10 @@ public:
 
         env.fund (XRP(10000000), gw, alice, bob);
 
+        // Code returned if an offer is killed.
+        TER const killedCode {
+            features[fix1578] ? TER {tecKILLED} : TER {tesSUCCESS}};
+
         // bob offers XRP for USD.
         env (trust(bob, USD(200)));
         env.close();
@@ -2748,8 +2779,8 @@ public:
         env.close();
         {
             // alice submits a tfSell | tfFillOrKill offer that does not cross.
-            // It's still a tesSUCCESS, since the offer was successfully killed.
-            env (offer(alice, USD(21), XRP(2100), tfSell | tfFillOrKill));
+            env (offer(alice, USD(21), XRP(2100),
+                tfSell | tfFillOrKill), ter (killedCode));
             env.close();
             env.require (balance (alice, USD(none)));
             env.require (offers (alice, 0));
@@ -2782,7 +2813,8 @@ public:
             // all of the offer is consumed.
 
             // We're using bob's left-over offer for XRP(500), USD(5)
-            env (offer(alice, USD(1), XRP(501), tfSell | tfFillOrKill));
+            env (offer(alice, USD(1), XRP(501),
+                tfSell | tfFillOrKill), ter (killedCode));
             env.close();
             env.require (balance (alice, USD(35)));
             env.require (offers (alice, 0));
