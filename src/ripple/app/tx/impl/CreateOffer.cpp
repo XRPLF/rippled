@@ -815,6 +815,7 @@ enum class SBoxCmp
     same,
     dustDiff,
     offerDelDiff,
+    xrpRound,
     diff
 };
 
@@ -828,6 +829,8 @@ static std::string to_string (SBoxCmp c)
         return "dust diffs";
     case SBoxCmp::offerDelDiff:
         return "offer del diffs";
+    case SBoxCmp::xrpRound:
+        return "XRP round to zero";
     case SBoxCmp::diff:
         return "different";
     }
@@ -846,6 +849,19 @@ static SBoxCmp compareSandboxes (char const* name, ApplyContext const& ctx,
     if (diff.hasDiff())
     {
         using namespace beast::severities;
+        // There is a special case of an offer with XRP on one side where
+        // the XRP gets rounded to zero.  It mostly looks like dust-level
+        // differences.  It is easier to detect if we look for it before
+        // removing the dust differences.
+        if (int const side = diff.xrpRoundToZero())
+        {
+            char const* const whichSide = side > 0 ? "; Flow" : "; Taker";
+            j.stream (kWarning) << "FlowCross: " << name << " different" <<
+                whichSide << " XRP rounded to zero.  tx: " <<
+                ctx.tx.getTransactionID();
+            return SBoxCmp::xrpRound;
+        }
+
         c = SBoxCmp::dustDiff;
         Severity s = kInfo;
         std::string diffDesc = ", but only dust.";
