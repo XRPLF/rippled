@@ -76,7 +76,7 @@ void checkVersion(std::string name, std::string required, std::string actual)
 
 void checkBoost(std::string version)
 {
-    const char* boostMinimal = "1.57.0";
+    const char* boostMinimal = "1.67.0";
     checkVersion("Boost", boostMinimal, version);
 }
 
