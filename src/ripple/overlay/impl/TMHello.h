@@ -20,7 +20,7 @@
 #ifndef RIPPLE_OVERLAY_TMHELLO_H_INCLUDED
 #define RIPPLE_OVERLAY_TMHELLO_H_INCLUDED
 
-#include "ripple.pb.h"
+#include <ripple/protocol/messages.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/BuildInfo.h>
