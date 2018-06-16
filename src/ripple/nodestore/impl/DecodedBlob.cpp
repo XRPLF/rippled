@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/nodestore/impl/DecodedBlob.h>
-#include <ripple/beast/core/ByteOrder.h>
 #include <algorithm>
 #include <cassert>
 
