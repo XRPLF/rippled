@@ -1282,14 +1282,15 @@ CreateOffer::applyGuts (Sandbox& sb, Sandbox& sbCancel)
     if (bFillOrKill)
     {
         JLOG (j_.trace()) << "Fill or Kill: offer killed";
-        return { tesSUCCESS, false };
+        return { sb.rules().enabled (fix1578) ?
+            TER {tecKILLED} : TER {tesSUCCESS}, false };
     }
 
     // For 'immediate or cancel' offers, the amount remaining doesn't get
-    // placed - it gets cancelled and the operation succeeds.
+    // placed - it gets canceled and the operation succeeds.
     if (bImmediateOrCancel)
     {
-        JLOG (j_.trace()) << "Immediate or cancel: offer cancelled";
+        JLOG (j_.trace()) << "Immediate or cancel: offer canceled";
         return { tesSUCCESS, true };
     }
 

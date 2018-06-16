@@ -620,9 +620,14 @@ public:
         auto const USD = gw["USD"];
 
         // Fill or Kill - unless we fully cross, just charge
-        // a fee and not place the offer on the books:
+        // a fee and not place the offer on the books.
+        //
+        // fix1578 changes the return code.  Verify expected behavior
+        // without and with fix1578.
+        for (auto const tweakedFeatures :
+            {features - fix1578, features | fix1578})
         {
-            Env env {*this, features};
+            Env env {*this, tweakedFeatures};
             auto const closeTime =
                 fix1449Time () +
                     100 * env.closed ()->info ().closeTimeResolution;
@@ -636,9 +641,12 @@ public:
             env (pay (gw, alice, USD (1000)),       ter(tesSUCCESS));
 
             // Order that can't be filled:
-            env (offer (alice, XRP (1000), USD (1000)),
-                txflags (tfFillOrKill),              ter(tesSUCCESS));
-
+            {
+                TER const killedCode {tweakedFeatures[fix1578] ?
+                    TER {tecKILLED} : TER {tesSUCCESS}};
+                env (offer (alice, XRP (1000), USD (1000)),
+                    txflags (tfFillOrKill),         ter(killedCode));
+            }
             env.require (
                 balance (alice, startBalance - f - f),
                 balance (alice, USD (1000)),
@@ -682,7 +690,7 @@ public:
 
             // No cross:
             env (offer (alice, XRP (1000), USD (1000)),
-                txflags (tfImmediateOrCancel),               ter(tesSUCCESS));
+                txflags (tfImmediateOrCancel),              ter(tesSUCCESS));
 
             env.require (
                 balance (alice, startBalance - f - f),
@@ -691,9 +699,9 @@ public:
                 offers (alice, 0));
 
             // Partially cross:
-            env (offer (bob, USD (50), XRP (50)),            ter(tesSUCCESS));
+            env (offer (bob, USD (50), XRP (50)),           ter(tesSUCCESS));
             env (offer (alice, XRP (1000), USD (1000)),
-                txflags (tfImmediateOrCancel),               ter(tesSUCCESS));
+                txflags (tfImmediateOrCancel),              ter(tesSUCCESS));
 
             env.require (
                 balance (alice, startBalance - f - f - f + XRP (50)),
@@ -706,9 +714,9 @@ public:
                 offers (bob, 0));
 
             // Fully cross:
-            env (offer (bob, USD (50), XRP (50)),            ter(tesSUCCESS));
+            env (offer (bob, USD (50), XRP (50)),           ter(tesSUCCESS));
             env (offer (alice, XRP (50), USD (50)),
-                txflags (tfImmediateOrCancel),               ter(tesSUCCESS));
+                txflags (tfImmediateOrCancel),              ter(tesSUCCESS));
 
             env.require (
                 balance (alice, startBalance - f - f - f - f + XRP (100)),
@@ -2739,6 +2747,10 @@ public:
 
         env.fund (XRP(10000000), gw, alice, bob);
 
+        // Code returned if an offer is killed.
+        TER const killedCode {
+            features[fix1578] ? TER {tecKILLED} : TER {tesSUCCESS}};
+
         // bob offers XRP for USD.
         env (trust(bob, USD(200)));
         env.close();
@@ -2748,8 +2760,8 @@ public:
         env.close();
         {
             // alice submits a tfSell | tfFillOrKill offer that does not cross.
-            // It's still a tesSUCCESS, since the offer was successfully killed.
-            env (offer(alice, USD(21), XRP(2100), tfSell | tfFillOrKill));
+            env (offer(alice, USD(21), XRP(2100),
+                tfSell | tfFillOrKill), ter (killedCode));
             env.close();
             env.require (balance (alice, USD(none)));
             env.require (offers (alice, 0));
@@ -2782,7 +2794,8 @@ public:
             // all of the offer is consumed.
 
             // We're using bob's left-over offer for XRP(500), USD(5)
-            env (offer(alice, USD(1), XRP(501), tfSell | tfFillOrKill));
+            env (offer(alice, USD(1), XRP(501),
+                tfSell | tfFillOrKill), ter (killedCode));
             env.close();
             env.require (balance (alice, USD(35)));
             env.require (offers (alice, 0));
