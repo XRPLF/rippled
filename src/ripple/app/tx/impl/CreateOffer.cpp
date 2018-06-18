@@ -1282,8 +1282,9 @@ CreateOffer::applyGuts (Sandbox& sb, Sandbox& sbCancel)
     if (bFillOrKill)
     {
         JLOG (j_.trace()) << "Fill or Kill: offer killed";
-        return { sb.rules().enabled (fix1578) ?
-            TER {tecKILLED} : TER {tesSUCCESS}, false };
+        if (sb.rules().enabled (fix1578))
+            return { tecKILLED, false };
+        return { tesSUCCESS, false };
     }
 
     // For 'immediate or cancel' offers, the amount remaining doesn't get
