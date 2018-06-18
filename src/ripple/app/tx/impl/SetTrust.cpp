@@ -317,9 +317,14 @@ SetTrust::doApply ()
         std::uint32_t const uFlagsIn (sleRippleState->getFieldU32 (sfFlags));
         std::uint32_t uFlagsOut (uFlagsIn);
 
-        if (bSetNoRipple && !bClearNoRipple && (bHigh ? saHighBalance : saLowBalance) >= beast::zero)
+        if (bSetNoRipple && !bClearNoRipple)
         {
-            uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
+            if ((bHigh ? saHighBalance : saLowBalance) >= beast::zero)
+                uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
+
+            else if (view().rules().enabled(fix1578))
+                // Cannot set noRipple on a negative balance.
+                return tecNEGATIVE_BALANCE;
         }
         else if (bClearNoRipple && !bSetNoRipple)
         {

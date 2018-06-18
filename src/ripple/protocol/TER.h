@@ -264,6 +264,7 @@ enum TECcodes : TERUnderlyingType
     tecEXPIRED                  = 148,
     tecDUPLICATE                = 149,
     tecKILLED                   = 150,
+    tecNEGATIVE_BALANCE         = 151
 };
 
 //------------------------------------------------------------------------------
