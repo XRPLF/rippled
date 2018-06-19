@@ -641,8 +641,10 @@ OverlayImpl::onManifests (
         if (auto mo = Manifest::make_Manifest (s))
         {
             uint256 const hash = mo->hash ();
-            if (!hashRouter.addSuppressionPeer (hash, from->id ()))
+            if (!hashRouter.addSuppressionPeer (hash, from->id ())) {
+                JLOG(journal.info()) << "Duplicate manifest #" << i + 1;
                 continue;
+            }
 
             if (! app_.validators().listed (mo->masterKey))
             {
@@ -685,7 +687,8 @@ OverlayImpl::onManifests (
             }
             else
             {
-                JLOG(journal.info()) << "Bad manifest #" << i + 1;
+                JLOG(journal.info()) << "Bad manifest #" << i + 1 <<
+                    ": " << to_string(result);
             }
         }
         else
