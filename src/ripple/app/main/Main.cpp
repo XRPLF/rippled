@@ -21,7 +21,6 @@
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/basics/CheckLibraryVersions.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/Sustain.h>
@@ -47,6 +46,7 @@
 
 #include <google/protobuf/stubs/common.h>
 
+#include <boost/process.hpp>
 #include <boost/program_options.hpp>
 #include <boost/version.hpp>
 
@@ -58,14 +58,6 @@
 #ifdef _MSC_VER
 #include <sys/types.h>
 #include <sys/timeb.h>
-#endif
-
-#if BOOST_VERSION >= 106400
-#define HAS_BOOST_PROCESS 1
-#endif
-
-#if HAS_BOOST_PROCESS
-#include <boost/process.hpp>
 #endif
 
 namespace po = boost::program_options;
@@ -229,9 +221,7 @@ static int runUnitTests(
     using namespace beast::unit_test;
     using namespace ripple::test;
 
-#if HAS_BOOST_PROCESS
     if (!child && num_jobs == 1)
-#endif
     {
         multi_runner_parent parent_runner;
 
@@ -243,7 +233,6 @@ static int runUnitTests(
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }
-#if HAS_BOOST_PROCESS
     if (!child)
     {
         multi_runner_parent parent_runner;
@@ -293,16 +282,12 @@ static int runUnitTests(
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }
-#endif
 }
 
 //------------------------------------------------------------------------------
 
 int run (int argc, char** argv)
 {
-    // Make sure that we have the right OpenSSL and Boost libraries.
-    version::checkLibraryVersions();
-
     using namespace std;
 
     beast::setCurrentThreadName ("rippled: main");
@@ -388,10 +373,8 @@ int run (int argc, char** argv)
         "Force unit test log message output. Only useful in combination with "
         "--quiet, in which case log messages will print but suite/case names "
         "will not.")
-#if HAS_BOOST_PROCESS
     ("unittest-jobs", po::value <std::size_t> (),
         "Number of unittest jobs to run in parallel (child processes).")
-#endif
     ;
 
     // These are hidden options, not intended to be shown in the usage/help message
@@ -457,11 +440,9 @@ int run (int argc, char** argv)
 
         std::size_t numJobs = 1;
         bool unittestChild = false;
-#if HAS_BOOST_PROCESS
         if (vm.count("unittest-jobs"))
             numJobs = std::max(numJobs, vm["unittest-jobs"].as<std::size_t>());
         unittestChild = bool (vm.count("unittest-child"));
-#endif
 
         return runUnitTests(
             vm["unittest"].as<std::string>(), argument,
@@ -474,7 +455,6 @@ int run (int argc, char** argv)
     }
     else
     {
-#if HAS_BOOST_PROCESS
         if (vm.count("unittest-jobs"))
         {
             // unittest jobs only makes sense with `unittest`
@@ -482,7 +462,6 @@ int run (int argc, char** argv)
             std::cerr << "To run the unit tests the '--unittest' option must be present.\n";
             return 1;
         }
-#endif
     }
 
     auto config = std::make_unique<Config>();
@@ -717,8 +696,8 @@ int main (int argc, char** argv)
         "GCC version 5.1.0 or later is required to compile rippled.");
 #endif
 
-    static_assert (BOOST_VERSION >= 105700,
-        "Boost version 1.57 or later is required to compile rippled");
+    static_assert (BOOST_VERSION >= 106700,
+        "Boost version 1.67 or later is required to compile rippled");
 
     //
     // These debug heap calls do nothing in release or non Visual Studio builds.
