@@ -19,7 +19,6 @@
 
 
 #include <ripple/basics/impl/BasicConfig.cpp>
-#include <ripple/basics/impl/CheckLibraryVersions.cpp>
 #include <ripple/basics/impl/contract.cpp>
 #include <ripple/basics/impl/CountedObject.cpp>
 #include <ripple/basics/impl/Log.cpp>

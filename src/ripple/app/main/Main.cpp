@@ -21,7 +21,6 @@
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/basics/CheckLibraryVersions.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/Sustain.h>
@@ -289,9 +288,6 @@ static int runUnitTests(
 
 int run (int argc, char** argv)
 {
-    // Make sure that we have the right OpenSSL and Boost libraries.
-    version::checkLibraryVersions();
-
     using namespace std;
 
     beast::setCurrentThreadName ("rippled: main");
