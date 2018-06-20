@@ -28,6 +28,7 @@
 #include <ripple/beast/utility/maybe_const.h>
 #include <boost/intrusive/list.hpp>
 #include <boost/iterator/transform_iterator.hpp>
+#include <random>
 
 namespace ripple {
 namespace PeerFinder {
@@ -482,7 +483,9 @@ Livecache <Allocator>::hops_t::shuffle()
         v.reserve (list.size());
         std::copy (list.begin(), list.end(),
             std::back_inserter (v));
-        std::random_shuffle (v.begin(), v.end());
+        std::random_device rng;
+        std::mt19937 urng{rng()};
+        std::shuffle (v.begin(), v.end(), urng);
         list.clear();
         for (auto& e : v)
             list.push_back (e);

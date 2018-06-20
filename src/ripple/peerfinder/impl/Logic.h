@@ -38,6 +38,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <random>
 #include <set>
 
 namespace ripple {
@@ -590,7 +591,9 @@ public:
                         if (value.second->state() == Slot::active)
                             slots.emplace_back (value.second);
                     });
-                std::random_shuffle (slots.begin(), slots.end());
+                std::random_device rng;
+                std::mt19937 urng{rng()};
+                std::shuffle (slots.begin(), slots.end(), urng);
 
                 // build target vector
                 targets.reserve (slots.size());
