@@ -706,9 +706,6 @@ int main (int argc, char** argv)
         "GCC version 5.1.0 or later is required to compile rippled.");
 #endif
 
-    static_assert (BOOST_VERSION >= 106700,
-        "Boost version 1.67 or later is required to compile rippled");
-
     //
     // These debug heap calls do nothing in release or non Visual Studio builds.
     //
