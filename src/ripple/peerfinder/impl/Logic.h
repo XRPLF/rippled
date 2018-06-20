@@ -21,6 +21,7 @@
 #define RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 
 #include <ripple/basics/Log.h>
+#include <ripple/basics/random.h>
 #include <ripple/basics/contract.h>
 #include <ripple/beast/container/aged_container_utility.h>
 #include <ripple/beast/net/IPAddressConversion.h>
@@ -35,10 +36,11 @@
 #include <ripple/peerfinder/impl/Source.h>
 #include <ripple/peerfinder/impl/Store.h>
 #include <ripple/peerfinder/impl/iosformat.h>
+
+#include <algorithm>
 #include <functional>
 #include <map>
 #include <memory>
-#include <random>
 #include <set>
 
 namespace ripple {
@@ -591,9 +593,7 @@ public:
                         if (value.second->state() == Slot::active)
                             slots.emplace_back (value.second);
                     });
-                std::random_device rng;
-                std::mt19937 urng{rng()};
-                std::shuffle (slots.begin(), slots.end(), urng);
+                std::shuffle (slots.begin(), slots.end(), default_prng());
 
                 // build target vector
                 targets.reserve (slots.size());
