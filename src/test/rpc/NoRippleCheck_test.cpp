@@ -254,27 +254,36 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
         env (fset (alice, asfDefaultRipple));
         env.close ();
 
+        auto checkBalance = [&env]()
+        {
+            // this is endpoint drop prevention. Non admin ports will drop
+            // requests if they are coming too fast, so we manipulate the
+            // resource manager here to reset the enpoint balance (for
+            // localhost) if we get too close to the drop limit. It would
+            // be better if we could add this functionality to Env somehow
+            // or otherwise disable endpoint charging for certain test
+            // cases.
+            using namespace ripple::Resource;
+            using namespace std::chrono;
+            using namespace beast::IP;
+            auto c = env.app ().getResourceManager ()
+                .newInboundEndpoint (
+                    Endpoint::from_string (test::getEnvLocalhostAddr()));
+
+            // if we go above the warning threshold, reset
+            if (c.balance() > warningThreshold)
+            {
+                using clock_type = beast::abstract_clock <steady_clock>;
+                c.entry().local_balance =
+                    DecayingSample <decayWindowSeconds, clock_type>
+                        {steady_clock::now()};
+            }
+        };
+
         for (auto i = 0; i < ripple::RPC::Tuning::noRippleCheck.rmax + 5; ++i)
         {
             if (! admin)
-            {
-                // endpoint drop prevention. Non admin ports will drop requests
-                // if they are coming too fast, so we manipulate the resource
-                // manager here to reset the enpoint balance (for localhost) if
-                // we get too close to the drop limit.
-                using namespace ripple::Resource;
-                using namespace std::chrono;
-                using namespace beast::IP;
-                auto c = env.app().getResourceManager()
-                    .newInboundEndpoint (Endpoint::from_string (test::getEnvLocalhostAddr()));
-                if (dropThreshold - c.balance() <= 20)
-                {
-                    using clock_type = beast::abstract_clock <steady_clock>;
-                    c.entry().local_balance =
-                        DecayingSample <decayWindowSeconds, clock_type>
-                            {steady_clock::now()};
-                }
-            }
+                checkBalance();
 
             auto& txq = env.app().getTxQ();
             auto const gw = Account {"gw" + std::to_string(i)};
