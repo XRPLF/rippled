@@ -28,25 +28,40 @@
 
 namespace ripple {
 
-/** Maintains a cache of keys with no associated data.
+namespace detail {
+    template<class Clock = beast::abstract_clock <std::chrono::steady_clock>>
+    struct Entry
+    {
+        using time_point_t = typename Clock::time_point;
+
+        explicit Entry (time_point_t const& last_access_) noexcept
+            : last_access (last_access_)
+        {
+        }
+
+        time_point_t last_access;
+    };
+}
+
+/* Maintains a cache of keys with no associated data.
 
     The cache has a target size and an expiration time. When cached items become
     older than the maximum age they are eligible for removal during a
     call to @ref sweep.
 */
-// VFALCO TODO Figure out how to pass through the allocator
 template <
     class Key,
     class Hash = hardened_hash <>,
     class KeyEqual = std::equal_to <Key>,
-    //class Allocator = std::allocator <std::pair <Key const, Entry>>,
+	class Clock = beast::abstract_clock <std::chrono::steady_clock>,
+    class Allocator = std::allocator <std::pair <Key const, detail::Entry<Clock>>>,
     class Mutex = std::mutex
 >
 class KeyCache
 {
 public:
     using key_type = Key;
-    using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
+    using clock_type = Clock;
 
 private:
     struct Stats
@@ -69,17 +84,9 @@ private:
         std::size_t misses;
     };
 
-    struct Entry
-    {
-        explicit Entry (clock_type::time_point const& last_access_)
-            : last_access (last_access_)
-        {
-        }
 
-        clock_type::time_point last_access;
-    };
 
-    using map_type = hardened_hash_map <key_type, Entry, Hash, KeyEqual>;
+    using map_type = hardened_hash_map <key_type, detail::Entry<clock_type>, Hash, KeyEqual, Allocator>;
     using iterator = typename map_type::iterator;
     using lock_guard = std::lock_guard <Mutex>;
 
@@ -93,7 +100,7 @@ private:
     clock_type& m_clock;
     std::string const m_name;
     size_type m_target_size;
-    clock_type::duration m_target_age;
+    typename clock_type::duration m_target_age;
 
 public:
     /** Construct with the specified name.
@@ -103,7 +110,7 @@ public:
     */
     KeyCache (std::string const& name, clock_type& clock,
         beast::insight::Collector::ptr const& collector, size_type target_size = 0,
-            clock_type::rep expiration_seconds = 120)
+            typename clock_type::rep expiration_seconds = 120)
         : m_stats (name,
             std::bind (&KeyCache::collect_metrics, this),
                 collector)
@@ -116,7 +123,8 @@ public:
 
     // VFALCO TODO Use a forwarding constructor call here
     KeyCache (std::string const& name, clock_type& clock,
-        size_type target_size = 0, clock_type::rep expiration_seconds = 120)
+        size_type target_size = 0,
+        typename clock_type::rep expiration_seconds = 120)
         : m_stats (name,
             std::bind (&KeyCache::collect_metrics, this),
                 beast::insight::NullCollector::New ())
@@ -199,7 +207,7 @@ public:
     bool insert (Key const& key)
     {
         lock_guard lock (m_mutex);
-        clock_type::time_point const now (m_clock.now ());
+        typename clock_type::time_point const now (m_clock.now ());
         std::pair <iterator, bool> result (m_map.emplace (
             std::piecewise_construct, std::forward_as_tuple (key),
                 std::forward_as_tuple (now)));
@@ -248,8 +256,8 @@ public:
     /** Remove stale entries from the cache. */
     void sweep ()
     {
-        clock_type::time_point const now (m_clock.now ());
-        clock_type::time_point when_expire;
+        typename clock_type::time_point const now (m_clock.now ());
+        typename clock_type::time_point when_expire;
 
         lock_guard lock (m_mutex);
 
@@ -263,7 +271,7 @@ public:
             when_expire = now -
                 m_target_age * m_target_size / m_map.size();
 
-            clock_type::duration const minimumAge (
+            typename clock_type::duration const minimumAge (
                 std::chrono::seconds (1));
             if (when_expire > (now - minimumAge))
                 when_expire = now - minimumAge;
