@@ -633,7 +633,7 @@ void CashDiff::Impl::findDiffs (
 //------------------------------------------------------------------------------
 
 // Locates differences between two ApplyStateTables.
-CashDiff::CashDiff (CashDiff&& other)
+CashDiff::CashDiff (CashDiff&& other) noexcept
 : impl_ (std::move (other.impl_))
 {
 }

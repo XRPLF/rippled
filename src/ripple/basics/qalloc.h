@@ -117,9 +117,9 @@ public:
     };
 
     qalloc_type (qalloc_type const&) = default;
-    qalloc_type (qalloc_type&& other) = default;
+    qalloc_type (qalloc_type&& other) noexcept = default;
     qalloc_type& operator= (qalloc_type const&) = default;
-    qalloc_type& operator= (qalloc_type&&) = default;
+    qalloc_type& operator= (qalloc_type&&) noexcept = default;
 
     qalloc_type();
 
