@@ -20,14 +20,20 @@
 #include <ripple/ledger/CashDiff.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/beast/unit_test.h>
+#include <type_traits>
 
 namespace ripple {
 namespace test {
 
 class CashDiff_test : public beast::unit_test::suite
 {
+    static_assert(!std::is_default_constructible<CashDiff>{}, "");
+    static_assert(!std::is_copy_constructible<CashDiff>{}, "");
+    static_assert(!std::is_copy_assignable<CashDiff>{}, "");
+    static_assert(std::is_nothrow_move_constructible<CashDiff>{}, "");
+    static_assert(!std::is_move_assignable<CashDiff>{}, "");
 
-    // Exercise diffIsDust (STAmount, STAmount)
+	// Exercise diffIsDust (STAmount, STAmount)
     void
     testDust ()
     {

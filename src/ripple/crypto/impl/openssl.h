@@ -61,12 +61,12 @@ public:
         assign_new (thing.data(), thing.size());
     }
 
-    bignum(bignum&& that) : ptr( that.ptr )
+    bignum(bignum&& that) noexcept : ptr( that.ptr )
     {
         that.ptr = nullptr;
     }
 
-    bignum& operator= (bignum&& that)
+    bignum& operator= (bignum&& that) noexcept
     {
         using std::swap;
 
@@ -163,7 +163,7 @@ public:
     ec_point           (ec_point const&) = delete;
     ec_point& operator=(ec_point const&) = delete;
 
-    ec_point(ec_point&& that)
+    ec_point(ec_point&& that) noexcept
     {
         ptr      = that.ptr;
         that.ptr = nullptr;

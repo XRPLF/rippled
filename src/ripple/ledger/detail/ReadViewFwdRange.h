@@ -74,6 +74,11 @@ public:
     using iter_base =
         ReadViewFwdIter<ValueType>;
 
+   static_assert(
+        std::is_nothrow_move_constructible<ValueType>{},
+        "ReadViewFwdRange move and move assign constructors should be "
+        "noexcept");
+
     class iterator
     {
     public:
@@ -92,7 +97,7 @@ public:
         iterator() = default;
 
         iterator (iterator const& other);
-        iterator (iterator&& other);
+        iterator (iterator&& other) noexcept;
 
         // Used by the implementation
         explicit
@@ -103,7 +108,7 @@ public:
         operator= (iterator const& other);
 
         iterator&
-        operator= (iterator&& other);
+        operator= (iterator&& other) noexcept;
 
         bool
         operator== (iterator const& other) const;
@@ -131,6 +136,9 @@ public:
         boost::optional<value_type> mutable cache_;
     };
 
+    static_assert(std::is_nothrow_move_constructible<iterator>{}, "");
+    static_assert(std::is_nothrow_move_assignable<iterator>{}, "");
+ 
     using const_iterator = iterator;
 
     using value_type = ValueType;
