@@ -492,9 +492,7 @@ LedgerCleaner::LedgerCleaner (Stoppable& parent)
 {
 }
 
-LedgerCleaner::~LedgerCleaner ()
-{
-}
+LedgerCleaner::~LedgerCleaner() = default;
 
 std::unique_ptr<LedgerCleaner>
 make_LedgerCleaner (Application& app,

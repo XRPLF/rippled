@@ -64,10 +64,6 @@ ValidatorList::ValidatorList (
 {
 }
 
-ValidatorList::~ValidatorList()
-{
-}
-
 bool
 ValidatorList::load (
     PublicKey const& localSigningKey,

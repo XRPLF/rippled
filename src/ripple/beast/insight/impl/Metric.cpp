@@ -27,29 +27,16 @@
 namespace beast {
 namespace insight {
 
-Base::~Base ()
-{
-}
+Base::~Base() = default;
 
-BaseImpl::~BaseImpl ()
-{
-}
+BaseImpl::~BaseImpl() = default;
 
-CounterImpl::~CounterImpl ()
-{
-}
+CounterImpl::~CounterImpl() = default;
 
-EventImpl::~EventImpl ()
-{
-}
+EventImpl::~EventImpl() = default;
 
-GaugeImpl::~GaugeImpl ()
-{
-}
+GaugeImpl::~GaugeImpl() = default;
 
-MeterImpl::~MeterImpl ()
-{
-}
-
+MeterImpl::~MeterImpl() = default;
 }
 }

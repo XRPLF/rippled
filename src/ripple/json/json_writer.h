@@ -49,7 +49,7 @@ public:
 class FastWriter : public WriterBase
 {
 public:
-    FastWriter ();
+    FastWriter () = default;
     virtual ~FastWriter () {}
 
 public: // overridden from Writer
