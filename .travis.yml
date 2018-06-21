@@ -36,8 +36,7 @@ matrix:
   include:
 
     - compiler: gcc
-      env: GCC_VER=5 TARGET=debug
-      # - APP_ARGS="--unittest-jobs=2"
+      env: GCC_VER=5 TARGET=debug APP_ARGS="--unittest-ipv4"
 
     # - compiler: gcc
     #   env: GCC_VER=5 TARGET=debug.nounity
@@ -46,7 +45,7 @@ matrix:
     #   env: GCC_VER=5 TARGET=coverage PATH=$PWD/cmake/bin:$PATH
 
     - compiler: clang
-      env: GCC_VER=5 TARGET=debug
+      env: GCC_VER=5 TARGET=debug APP_ARGS="--unittest-ipv4"
 
     # - compiler: clang
     #   env: GCC_VER=5 TARGET=debug.nounity

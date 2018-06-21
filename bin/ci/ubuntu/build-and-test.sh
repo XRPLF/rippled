@@ -118,11 +118,12 @@ declare -a manual_tests=(
   "ripple.tx.PlumpBook"
 )
 
+: ${APP_ARGS:=}
 if [[ ${APP} == "rippled" ]]; then
   if [[ ${MANUAL_TESTS:-} == true ]]; then
-    APP_ARGS+="--unittest=$(join_by , "${manual_tests[@]}")"
+    APP_ARGS+=" --unittest=$(join_by , "${manual_tests[@]}")"
   else
-    APP_ARGS+="--unittest --quiet --unittest-log"
+    APP_ARGS+=" --unittest --quiet --unittest-log"
   fi
   # Only report on src/ripple files
   export LCOV_FILES="*/src/ripple/*"
@@ -132,7 +133,6 @@ if [[ ${APP} == "rippled" ]]; then
     APP_ARGS+=" --unittest-jobs ${JOBS}"
   fi
 else
-  : ${APP_ARGS:=}
   : ${LCOV_FILES:="*/src/*"}
   # Don't exclude anything
   : ${LCOV_EXCLUDE_FILES:="LCOV_NO_EXCLUDE"}
