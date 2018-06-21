@@ -31,7 +31,7 @@ namespace ripple {
 class CountedObjects
 {
 public:
-    static CountedObjects& getInstance ();
+    static CountedObjects& getInstance () noexcept;
 
     using Entry = std::pair <std::string, int>;
     using List = std::vector <Entry>;
@@ -46,9 +46,9 @@ public:
     class CounterBase
     {
     public:
-        CounterBase ();
+        CounterBase () noexcept;
 
-        virtual ~CounterBase ();
+        virtual ~CounterBase () noexcept;
 
         int increment () noexcept
         {
@@ -81,8 +81,8 @@ public:
     };
 
 private:
-    CountedObjects ();
-    ~CountedObjects ();
+    CountedObjects () noexcept;
+    ~CountedObjects () noexcept;
 
 private:
     std::atomic <int> m_count;
@@ -102,19 +102,19 @@ template <class Object>
 class CountedObject
 {
 public:
-    CountedObject ()
+    CountedObject () noexcept
     {
         getCounter ().increment ();
     }
 
-    CountedObject (CountedObject const&)
+    CountedObject (CountedObject const&) noexcept
     {
         getCounter ().increment ();
     }
 
-    CountedObject& operator=(CountedObject const&) = default;
+    CountedObject& operator=(CountedObject const&) noexcept = default;
 
-    ~CountedObject ()
+    ~CountedObject () noexcept
     {
         getCounter ().decrement ();
     }
@@ -123,7 +123,7 @@ private:
     class Counter : public CountedObjects::CounterBase
     {
     public:
-        Counter () { }
+        Counter () noexcept { }
 
         char const* getName () const override
         {
@@ -134,8 +134,9 @@ private:
     };
 
 private:
-    static Counter& getCounter()
+    static Counter& getCounter() noexcept
     {
+        static_assert(std::is_nothrow_constructible<Counter>{}, "");
         static Counter c;
         return c;
     }
