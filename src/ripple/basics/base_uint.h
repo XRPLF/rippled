@@ -285,7 +285,7 @@ public:
             std::uint64_t n = carry + boost::endian::big_to_native(pn[i]) +
                 boost::endian::big_to_native(b.pn[i]);
 
-            pn[i] = boost::endian::native_to_big (n & 0xffffffff);
+            pn[i] = boost::endian::native_to_big (static_cast<std::uint32_t>(n));
             carry = n >> 32;
         }
 
