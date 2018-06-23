@@ -30,11 +30,11 @@ namespace ripple {
 
 namespace detail {
     template<class Clock = beast::abstract_clock <std::chrono::steady_clock>>
-    struct Entry
+    struct KeyCacheEntry
     {
         using time_point_t = typename Clock::time_point;
 
-        explicit Entry (time_point_t const& last_access_) noexcept
+        explicit KeyCacheEntry (time_point_t const& last_access_) noexcept
             : last_access (last_access_)
         {
         }
@@ -54,7 +54,7 @@ template <
     class Hash = hardened_hash <>,
     class KeyEqual = std::equal_to <Key>,
 	class Clock = beast::abstract_clock <std::chrono::steady_clock>,
-    class Allocator = std::allocator <std::pair <Key const, detail::Entry<Clock>>>,
+    class Allocator = std::allocator <std::pair <Key const, detail::KeyCacheEntry<Clock>>>,
     class Mutex = std::mutex
 >
 class KeyCache
@@ -86,7 +86,7 @@ private:
 
 
 
-    using map_type = hardened_hash_map <key_type, detail::Entry<clock_type>, Hash, KeyEqual, Allocator>;
+    using map_type = hardened_hash_map <key_type, detail::KeyCacheEntry<clock_type>, Hash, KeyEqual, Allocator>;
     using iterator = typename map_type::iterator;
     using lock_guard = std::lock_guard <Mutex>;
 
