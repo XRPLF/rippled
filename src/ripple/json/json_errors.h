@@ -17,13 +17,20 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_JSON_JSON_ASSERT_H_INCLUDED
-#define RIPPLE_JSON_JSON_ASSERT_H_INCLUDED
+#ifndef RIPPLE_JSON_JSON_ERRORS_H_INCLUDED
+#define RIPPLE_JSON_JSON_ERRORS_H_INCLUDED
 
-#include "ripple/json/json_errors.h"
+#include <stdexcept>
 
-#define JSON_ASSERT_UNREACHABLE assert( false )
-#define JSON_ASSERT( condition ) assert( condition );  // @todo <= change this into an exception throw
-#define JSON_ASSERT_MESSAGE( condition, message ) if (!( condition )) ripple::Throw<Json::error> ( message );
+namespace Json
+{
 
-#endif
+struct error : std::runtime_error
+{
+    using std::runtime_error::runtime_error;
+};
+
+} // namespace Json
+
+
+#endif // JSON_FORWARDS_H_INCLUDED

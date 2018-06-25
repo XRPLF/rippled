@@ -416,56 +416,68 @@ ServerHandlerImp::processSession(
 
     // Requests without "command" are invalid.
     Json::Value jr(Json::objectValue);
-    if ((!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
-        (jv.isMember(jss::command) && jv.isMember(jss::method) &&
-         jv[jss::command].asString() != jv[jss::method].asString()))
-    {
-        jr[jss::type] = jss::response;
-        jr[jss::status] = jss::error;
-        jr[jss::error] = jss::missingCommand;
-        jr[jss::request] = jv;
-        if (jv.isMember (jss::id))
-            jr[jss::id]  = jv[jss::id];
-        if (jv.isMember(jss::jsonrpc))
-            jr[jss::jsonrpc] = jv[jss::jsonrpc];
-        if (jv.isMember(jss::ripplerpc))
-            jr[jss::ripplerpc] = jv[jss::ripplerpc];
-
-        is->getConsumer().charge(Resource::feeInvalidRPC);
-        return jr;
-    }
-
     Resource::Charge loadType = Resource::feeReferenceRPC;
-    auto required = RPC::roleRequired(jv.isMember(jss::command) ?
-                                      jv[jss::command].asString() :
-                                      jv[jss::method].asString());
-    auto role = requestRole(
-        required,
-        session->port(),
-        jv,
-        beast::IP::from_asio(session->remote_endpoint().address()),
-        is->user());
-    if (Role::FORBID == role)
+    try
     {
-        loadType = Resource::feeInvalidRPC;
-        jr[jss::result] = rpcError (rpcFORBIDDEN);
-    }
-    else
-    {
-        RPC::Context context{
-            app_.journal("RPCHandler"),
+        if ((!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
+            (jv.isMember(jss::command) && !jv[jss::command].isString()) ||
+            (jv.isMember(jss::method) && !jv[jss::method].isString()) ||
+            (jv.isMember(jss::command) && jv.isMember(jss::method) &&
+             jv[jss::command].asString() != jv[jss::method].asString()))
+        {
+            jr[jss::type] = jss::response;
+            jr[jss::status] = jss::error;
+            jr[jss::error] = jss::missingCommand;
+            jr[jss::request] = jv;
+            if (jv.isMember (jss::id))
+                jr[jss::id]  = jv[jss::id];
+            if (jv.isMember(jss::jsonrpc))
+                jr[jss::jsonrpc] = jv[jss::jsonrpc];
+            if (jv.isMember(jss::ripplerpc))
+                jr[jss::ripplerpc] = jv[jss::ripplerpc];
+
+            is->getConsumer().charge(Resource::feeInvalidRPC);
+            return jr;
+        }
+
+        auto required = RPC::roleRequired(jv.isMember(jss::command) ?
+                                          jv[jss::command].asString() :
+                                          jv[jss::method].asString());
+        auto role = requestRole(
+            required,
+            session->port(),
             jv,
-            app_,
-            loadType,
-            app_.getOPs(),
-            app_.getLedgerMaster(),
-            is->getConsumer(),
-            role,
-            coro,
-            is,
-            {is->user(), is->forwarded_for()}
-            };
-        RPC::doCommand(context, jr[jss::result]);
+            beast::IP::from_asio(session->remote_endpoint().address()),
+            is->user());
+        if (Role::FORBID == role)
+        {
+            loadType = Resource::feeInvalidRPC;
+            jr[jss::result] = rpcError (rpcFORBIDDEN);
+        }
+        else
+        {
+            RPC::Context context{
+                app_.journal("RPCHandler"),
+                jv,
+                app_,
+                loadType,
+                app_.getOPs(),
+                app_.getLedgerMaster(),
+                is->getConsumer(),
+                role,
+                coro,
+                is,
+                {is->user(), is->forwarded_for()}
+                };
+            RPC::doCommand(context, jr[jss::result]);
+        }
+    }
+    catch (std::exception const& ex)
+    {
+        jr[jss::result] = RPC::make_error(rpcINTERNAL);
+        JLOG(m_journal.error())
+           << "Exception while processing WS: " << ex.what() << "\n"
+           << "Input JSON: " << Json::Compact{Json::Value{jv}};
     }
 
     is->getConsumer().charge(loadType);
@@ -482,7 +494,6 @@ ServerHandlerImp::processSession(
         jr = jr[jss::result];
         jr[jss::status] = jss::error;
         jr[jss::request] = jv;
-
     }
     else
     {
@@ -490,6 +501,7 @@ ServerHandlerImp::processSession(
 
         // For testing resource limits on this connection.
         if (is->getConsumer().isUnlimited() &&
+            jv[jss::command].isString() &&
             jv[jss::command].asString() == "ping")
                 jr[jss::unlimited] = true;
     }
