@@ -70,9 +70,8 @@ public:
     using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
 
 public:
-    // VFALCO TODO Change expiration_seconds to clock_type::duration
     TaggedCache (std::string const& name, int size,
-        clock_type::rep expiration_seconds, clock_type& clock, beast::Journal journal,
+        clock_type::duration expiration, clock_type& clock, beast::Journal journal,
             beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::New ())
         : m_journal (journal)
         , m_clock (clock)
@@ -81,7 +80,7 @@ public:
                 collector)
         , m_name (name)
         , m_target_size (size)
-        , m_target_age (std::chrono::seconds (expiration_seconds))
+        , m_target_age (expiration)
         , m_cache_count (0)
         , m_hits (0)
         , m_misses (0)
@@ -113,16 +112,16 @@ public:
             m_name << " target size set to " << s;
     }
 
-    clock_type::rep getTargetAge () const
+    clock_type::duration getTargetAge () const
     {
         lock_guard lock (m_mutex);
-        return m_target_age.count();
+        return m_target_age;
     }
 
-    void setTargetAge (clock_type::rep s)
+    void setTargetAge (clock_type::duration s)
     {
         lock_guard lock (m_mutex);
-        m_target_age = std::chrono::seconds (s);
+        m_target_age = s;
         JLOG(m_journal.debug()) <<
             m_name << " target age set to " << m_target_age.count();
     }
@@ -186,8 +185,7 @@ public:
             }
             else
             {
-                when_expire = now - clock_type::duration (
-                    m_target_age.count() * m_target_size / m_cache.size ());
+                when_expire = now - m_target_age*m_target_size/m_cache.size();
 
                 clock_type::duration const minimumAge (
                     std::chrono::seconds (1));

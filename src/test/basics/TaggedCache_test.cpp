@@ -39,6 +39,7 @@ class TaggedCache_test : public beast::unit_test::suite
 public:
     void run () override
     {
+        using namespace std::chrono_literals;
         beast::Journal const j;
 
         TestStopwatch clock;
@@ -48,7 +49,7 @@ public:
         using Value = std::string;
         using Cache = TaggedCache <Key, Value>;
 
-        Cache c ("test", 1, 1, clock, j);
+        Cache c ("test", 1, 1s, clock, j);
 
         // Insert an item, retrieve it, and age it so it gets purged.
         {

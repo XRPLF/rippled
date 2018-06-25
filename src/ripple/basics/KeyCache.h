@@ -102,27 +102,28 @@ public:
     */
     KeyCache (std::string const& name, clock_type& clock,
         beast::insight::Collector::ptr const& collector, size_type target_size = 0,
-            clock_type::rep expiration_seconds = 120)
+            std::chrono::seconds expiration = std::chrono::minutes{2})
         : m_stats (name,
             std::bind (&KeyCache::collect_metrics, this),
                 collector)
         , m_clock (clock)
         , m_name (name)
         , m_target_size (target_size)
-        , m_target_age (std::chrono::seconds (expiration_seconds))
+        , m_target_age (expiration)
     {
     }
 
     // VFALCO TODO Use a forwarding constructor call here
     KeyCache (std::string const& name, clock_type& clock,
-        size_type target_size = 0, clock_type::rep expiration_seconds = 120)
+        size_type target_size = 0,
+        std::chrono::seconds expiration = std::chrono::minutes{2})
         : m_stats (name,
             std::bind (&KeyCache::collect_metrics, this),
                 beast::insight::NullCollector::New ())
         , m_clock (clock)
         , m_name (name)
         , m_target_size (target_size)
-        , m_target_age (std::chrono::seconds (expiration_seconds))
+        , m_target_age (expiration)
     {
     }
 
@@ -168,10 +169,10 @@ public:
         m_target_size = s;
     }
 
-    void setTargetAge (size_type s)
+    void setTargetAge (std::chrono::seconds s)
     {
         lock_guard lock (m_mutex);
-        m_target_age = std::chrono::seconds (s);
+        m_target_age = s;
     }
 
     /** Returns `true` if the key was found.

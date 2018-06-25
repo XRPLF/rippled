@@ -28,15 +28,14 @@ enum
     // Target cache size of the TaggedCache used to hold nodes
     cacheTargetSize     = 16384
 
-    // Expiration time for cached nodes
-    ,cacheTargetSeconds = 300
-
     // Fraction of the cache one query source can take
     ,asyncDivider = 8
 };
 
+// Expiration time for cached nodes
+std::chrono::seconds constexpr cacheTargetAge = std::chrono::minutes{5};
 auto constexpr shardCacheSz = 16384;
-auto constexpr shardCacheSeconds = 60;
+std::chrono::seconds constexpr shardCacheAge = std::chrono::minutes{1};
 
 }
 }

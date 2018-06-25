@@ -111,11 +111,11 @@ public:
     AppFamily (Application& app, NodeStore::Database& db,
             CollectorManager& collectorManager)
         : app_ (app)
-        , treecache_ ("TreeNodeCache", 65536, 60, stopwatch(),
+        , treecache_ ("TreeNodeCache", 65536, 1min, stopwatch(),
             app.journal("TaggedCache"))
         , fullbelow_ ("full_below", stopwatch(),
             collectorManager.collector(),
-                fullBelowTargetSize, fullBelowExpirationSeconds)
+                fullBelowTargetSize, fullBelowExpiration)
         , db_ (db)
         , shardBacked_ (
             dynamic_cast<NodeStore::DatabaseShard*>(&db) != nullptr)
@@ -416,7 +416,7 @@ public:
 
         , accountIDCache_(128000)
 
-        , m_tempNodeCache ("NodeCache", 16384, 90, stopwatch(),
+        , m_tempNodeCache ("NodeCache", 16384, 90s, stopwatch(),
             logs_->journal("TaggedCache"))
 
         , m_collectorManager (CollectorManager::New (
@@ -470,7 +470,7 @@ public:
                 gotTXSet (set, fromAcquire);
             }))
 
-        , m_acceptedLedgerCache ("AcceptedLedger", 4, 60, stopwatch(),
+        , m_acceptedLedgerCache ("AcceptedLedger", 4, 1min, stopwatch(),
             logs_->journal("TaggedCache"))
 
         , m_networkOPs (make_NetworkOPs (*this, stopwatch(),
@@ -984,8 +984,9 @@ public:
                 }
             }))
         {
-            sweepTimer_.expires_from_now (
-                std::chrono::seconds {config_->getSize (siSweepInterval)});
+            using namespace std::chrono;
+            sweepTimer_.expires_from_now(
+                seconds{config_->getSize(siSweepInterval)});
             sweepTimer_.async_wait (std::move (*optionalCountedHandler));
         }
     }
@@ -1254,16 +1255,21 @@ bool ApplicationImp::setup()
         return false;
     }
 
-    m_nodeStore->tune (config_->getSize (siNodeCacheSize), config_->getSize (siNodeCacheAge));
-    m_ledgerMaster->tune (config_->getSize (siLedgerSize), config_->getSize (siLedgerAge));
-    family().treecache().setTargetSize (config_->getSize (siTreeCacheSize));
-    family().treecache().setTargetAge (config_->getSize (siTreeCacheAge));
+    using namespace std::chrono;
+    m_nodeStore->tune(config_->getSize(siNodeCacheSize),
+                      seconds{config_->getSize(siNodeCacheAge)});
+    m_ledgerMaster->tune(config_->getSize(siLedgerSize),
+                         seconds{config_->getSize(siLedgerAge)});
+    family().treecache().setTargetSize(config_->getSize (siTreeCacheSize));
+    family().treecache().setTargetAge(
+        seconds{config_->getSize(siTreeCacheAge)});
     if (shardStore_)
     {
         shardStore_->tune(config_->getSize(siNodeCacheSize),
-            config_->getSize(siNodeCacheAge));
+            seconds{config_->getSize(siNodeCacheAge)});
         sFamily_->treecache().setTargetSize(config_->getSize(siTreeCacheSize));
-        sFamily_->treecache().setTargetAge(config_->getSize(siTreeCacheAge));
+        sFamily_->treecache().setTargetAge(
+            seconds{config_->getSize(siTreeCacheAge)});
     }
 
     //----------------------------------------------------------------------
@@ -1586,7 +1592,8 @@ ApplicationImp::loadLedgerFromFile (
             }
             if (ledger.get().isMember ("close_time_resolution"))
             {
-                closeTimeResolution = std::chrono::seconds{
+                using namespace std::chrono;
+                closeTimeResolution = seconds{
                     ledger.get()["close_time_resolution"].asUInt()};
             }
             if (ledger.get().isMember ("close_time_estimated"))

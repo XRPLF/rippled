@@ -177,7 +177,7 @@ public:
     */
     virtual
     void
-    tune(int size, int age) = 0;
+    tune(int size, std::chrono::seconds age) = 0;
 
     /** Remove expired entries from the positive and negative caches. */
     virtual

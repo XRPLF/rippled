@@ -48,7 +48,7 @@ class Shard
 {
 public:
     Shard(DatabaseShard const& db, std::uint32_t index, int cacheSz,
-        PCache::clock_type::rep cacheAge, beast::Journal& j);
+        std::chrono::seconds cacheAge, beast::Journal& j);
 
     bool
     open(Section config, Scheduler& scheduler,

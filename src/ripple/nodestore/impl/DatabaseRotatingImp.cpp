@@ -35,9 +35,9 @@ DatabaseRotatingImp::DatabaseRotatingImp(
     beast::Journal j)
     : DatabaseRotating(name, parent, scheduler, readThreads, config, j)
     , pCache_(std::make_shared<TaggedCache<uint256, NodeObject>>(
-        name, cacheTargetSize, cacheTargetSeconds, stopwatch(), j))
+        name, cacheTargetSize, cacheTargetAge, stopwatch(), j))
     , nCache_(std::make_shared<KeyCache<uint256>>(
-        name, stopwatch(), cacheTargetSize, cacheTargetSeconds))
+        name, stopwatch(), cacheTargetSize, cacheTargetAge))
     , writableBackend_(std::move(writableBackend))
     , archiveBackend_(std::move(archiveBackend))
 {
@@ -86,7 +86,7 @@ DatabaseRotatingImp::asyncFetch(uint256 const& hash,
 }
 
 void
-DatabaseRotatingImp::tune(int size, int age)
+DatabaseRotatingImp::tune(int size, std::chrono::seconds age)
 {
     pCache_->setTargetSize(size);
     pCache_->setTargetAge(age);

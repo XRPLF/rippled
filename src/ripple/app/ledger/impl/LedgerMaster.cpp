@@ -73,7 +73,7 @@ LedgerMaster::LedgerMaster (Application& app, Stopwatch& stopwatch,
         app_.config().FETCH_DEPTH))
     , ledger_history_ (app_.config().LEDGER_HISTORY)
     , ledger_fetch_size_ (app_.config().getSize (siLedgerFetch))
-    , fetch_packs_ ("FetchPack", 65536, 45, stopwatch,
+    , fetch_packs_ ("FetchPack", 65536, 45s, stopwatch,
         app_.journal("TaggedCache"))
 {
 }
@@ -1459,7 +1459,7 @@ LedgerMaster::setLedgerRangePresent (std::uint32_t minV, std::uint32_t maxV)
 }
 
 void
-LedgerMaster::tune (int size, int age)
+LedgerMaster::tune (int size, std::chrono::seconds age)
 {
     mLedgerHistory.tune (size, age);
 }

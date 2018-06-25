@@ -134,7 +134,7 @@ public:
     getCacheHitRate() override;
 
     void
-    tune(int size, int age) override;
+    tune(int size, std::chrono::seconds age) override;
 
     void
     sweep() override;
@@ -176,7 +176,7 @@ private:
 
     // Shard cache tuning
     int cacheSz_ {shardCacheSz};
-    PCache::clock_type::rep cacheAge_ {shardCacheSeconds};
+    std::chrono::seconds cacheAge_ {shardCacheAge};
 
     // File name used to mark shards being imported from node store
     static constexpr auto importMarker_ = "import";

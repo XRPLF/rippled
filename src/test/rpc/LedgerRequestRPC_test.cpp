@@ -249,9 +249,10 @@ public:
     void testMoreThan256Closed()
     {
         using namespace test::jtx;
+        using namespace std::chrono_literals;
         Env env {*this};
         Account const gw {"gateway"};
-        env.app().getLedgerMaster().tune(0, 3600);
+        env.app().getLedgerMaster().tune(0, 1h);
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
 
