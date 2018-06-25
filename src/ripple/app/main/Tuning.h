@@ -25,8 +25,9 @@ namespace ripple {
 enum
 {
      fullBelowTargetSize = 524288
-    ,fullBelowExpirationSeconds = 600
 };
+
+constexpr std::chrono::seconds fullBelowExpiration = std::chrono::minutes{10};
 
 }
 

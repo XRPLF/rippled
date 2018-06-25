@@ -677,7 +677,7 @@ DatabaseShardImp::getCacheHitRate()
 }
 
 void
-DatabaseShardImp::tune(int size, int age)
+DatabaseShardImp::tune(int size, std::chrono::seconds age)
 {
     std::lock_guard<std::mutex> l(m_);
     assert(init_);

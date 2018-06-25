@@ -111,7 +111,7 @@ public:
     getCacheHitRate() override {return pCache_->getHitRate();}
 
     void
-    tune(int size, int age) override;
+    tune(int size, std::chrono::seconds age) override;
 
     void
     sweep() override;

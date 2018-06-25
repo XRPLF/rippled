@@ -24,6 +24,8 @@
 
 namespace ripple {
 
+using namespace std::chrono_literals;
+
 /*
 I guess you can put some items in, make sure they're still there. Let some
 time pass, make sure they're gone. Keep a strong pointer to one of them, make
@@ -48,7 +50,7 @@ public:
         using Value = std::string;
         using Cache = TaggedCache <Key, Value>;
 
-        Cache c ("test", 1, 1, clock, j);
+        Cache c ("test", 1, 1s, clock, j);
 
         // Insert an item, retrieve it, and age it so it gets purged.
         {

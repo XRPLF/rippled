@@ -52,7 +52,7 @@ DatabaseNodeImp::asyncFetch(uint256 const& hash,
 }
 
 void
-DatabaseNodeImp::tune(int size, int age)
+DatabaseNodeImp::tune(int size, std::chrono::seconds age)
 {
     pCache_->setTargetSize(size);
     pCache_->setTargetAge(age);

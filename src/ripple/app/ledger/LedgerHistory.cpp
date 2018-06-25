@@ -32,9 +32,9 @@ namespace ripple {
 #define CACHED_LEDGER_NUM 96
 #endif
 
-#ifndef CACHED_LEDGER_AGE
-#define CACHED_LEDGER_AGE 120
-#endif
+using namespace std::chrono;
+
+seconds constexpr CACHED_LEDGER_AGE = 2min;
 
 // FIXME: Need to clean up ledgers by index at some point
 
@@ -46,7 +46,7 @@ LedgerHistory::LedgerHistory (
     , mismatch_counter_ (collector->make_counter ("ledger.history", "mismatch"))
     , m_ledgers_by_hash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE,
         stopwatch(), app_.journal("TaggedCache"))
-    , m_consensus_validated ("ConsensusValidated", 64, 300,
+    , m_consensus_validated ("ConsensusValidated", 64, 5min,
         stopwatch(), app_.journal("TaggedCache"))
     , j_ (app.journal ("LedgerHistory"))
 {
@@ -517,7 +517,7 @@ bool LedgerHistory::fixIndex (
     return true;
 }
 
-void LedgerHistory::tune (int size, int age)
+void LedgerHistory::tune (int size, std::chrono::seconds age)
 {
     m_ledgers_by_hash.setTargetSize (size);
     m_ledgers_by_hash.setTargetAge (age);

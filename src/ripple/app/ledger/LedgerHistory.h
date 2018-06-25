@@ -69,7 +69,7 @@ public:
         @param size The target size of the cache
         @param age The target age of the cache, in seconds
     */
-    void tune (int size, int age);
+    void tune (int size, std::chrono::seconds age);
 
     /** Remove stale cache entries
     */

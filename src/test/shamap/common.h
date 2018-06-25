@@ -29,6 +29,8 @@
 namespace ripple {
 namespace tests {
 
+using namespace std::chrono_literals;
+
 class TestFamily : public Family
 {
 private:
@@ -43,7 +45,7 @@ private:
 
 public:
     TestFamily (beast::Journal j)
-        : treecache_ ("TreeNodeCache", 65536, 60, clock_, j)
+        : treecache_ ("TreeNodeCache", 65536, 1min, clock_, j)
         , fullbelow_ ("full_below", clock_)
         , parent_ ("TestRootStoppable")
         , j_ (j)

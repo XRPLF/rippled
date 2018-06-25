@@ -72,6 +72,8 @@ static int const MAJORITY_FRACTION (204);
 
 namespace detail {
 
+using namespace std::chrono_literals;
+
 class AppFamily : public Family
 {
 private:
@@ -111,11 +113,11 @@ public:
     AppFamily (Application& app, NodeStore::Database& db,
             CollectorManager& collectorManager)
         : app_ (app)
-        , treecache_ ("TreeNodeCache", 65536, 60, stopwatch(),
+        , treecache_ ("TreeNodeCache", 65536, 1min, stopwatch(),
             app.journal("TaggedCache"))
         , fullbelow_ ("full_below", stopwatch(),
             collectorManager.collector(),
-                fullBelowTargetSize, fullBelowExpirationSeconds)
+                fullBelowTargetSize, fullBelowExpiration)
         , db_ (db)
         , shardBacked_ (
             dynamic_cast<NodeStore::DatabaseShard*>(&db) != nullptr)
@@ -416,7 +418,7 @@ public:
 
         , accountIDCache_(128000)
 
-        , m_tempNodeCache ("NodeCache", 16384, 90, stopwatch(),
+        , m_tempNodeCache ("NodeCache", 16384, 90s, stopwatch(),
             logs_->journal("TaggedCache"))
 
         , m_collectorManager (CollectorManager::New (
@@ -470,7 +472,7 @@ public:
                 gotTXSet (set, fromAcquire);
             }))
 
-        , m_acceptedLedgerCache ("AcceptedLedger", 4, 60, stopwatch(),
+        , m_acceptedLedgerCache ("AcceptedLedger", 4, 1min, stopwatch(),
             logs_->journal("TaggedCache"))
 
         , m_networkOPs (make_NetworkOPs (*this, stopwatch(),
@@ -1254,16 +1256,20 @@ bool ApplicationImp::setup()
         return false;
     }
 
-    m_nodeStore->tune (config_->getSize (siNodeCacheSize), config_->getSize (siNodeCacheAge));
-    m_ledgerMaster->tune (config_->getSize (siLedgerSize), config_->getSize (siLedgerAge));
+    m_nodeStore->tune (config_->getSize (siNodeCacheSize),
+                       std::chrono::seconds{config_->getSize(siNodeCacheAge)});
+    m_ledgerMaster->tune (config_->getSize (siLedgerSize),
+                          std::chrono::seconds{config_->getSize(siLedgerAge)});
     family().treecache().setTargetSize (config_->getSize (siTreeCacheSize));
-    family().treecache().setTargetAge (config_->getSize (siTreeCacheAge));
+    family().treecache().setTargetAge(
+                       std::chrono::seconds{config_->getSize(siTreeCacheAge)});
     if (shardStore_)
     {
         shardStore_->tune(config_->getSize(siNodeCacheSize),
-            config_->getSize(siNodeCacheAge));
+            std::chrono::seconds{config_->getSize(siNodeCacheAge)});
         sFamily_->treecache().setTargetSize(config_->getSize(siTreeCacheSize));
-        sFamily_->treecache().setTargetAge(config_->getSize(siTreeCacheAge));
+        sFamily_->treecache().setTargetAge(
+                       std::chrono::seconds{config_->getSize(siTreeCacheAge)});
     }
 
     //----------------------------------------------------------------------
