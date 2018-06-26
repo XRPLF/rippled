@@ -176,7 +176,7 @@ private:
 
     // Shard cache tuning
     int cacheSz_ {shardCacheSz};
-    std::chrono::seconds cacheAge_ {shardCache};
+    std::chrono::seconds cacheAge_ {shardCacheAge};
 
     // File name used to mark shards being imported from node store
     static constexpr auto importMarker_ = "import";

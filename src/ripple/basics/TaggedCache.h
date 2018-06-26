@@ -70,7 +70,6 @@ public:
     using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
 
 public:
-    // VFALCO TODO Change expiration_seconds to clock_type::duration
     TaggedCache (std::string const& name, int size,
         clock_type::duration expiration, clock_type& clock, beast::Journal journal,
             beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::New ())

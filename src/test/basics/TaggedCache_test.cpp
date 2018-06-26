@@ -24,8 +24,6 @@
 
 namespace ripple {
 
-using namespace std::chrono_literals;
-
 /*
 I guess you can put some items in, make sure they're still there. Let some
 time pass, make sure they're gone. Keep a strong pointer to one of them, make
@@ -41,6 +39,7 @@ class TaggedCache_test : public beast::unit_test::suite
 public:
     void run () override
     {
+        using namespace std::chrono_literals;
         beast::Journal const j;
 
         TestStopwatch clock;

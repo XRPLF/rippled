@@ -26,8 +26,6 @@
 
 namespace ripple {
 
-using namespace std::chrono_literals;
-
 TransactionMaster::TransactionMaster (Application& app)
     : mApp (app)
     , mCache ("TransactionCache", 65536, 30min, stopwatch(),

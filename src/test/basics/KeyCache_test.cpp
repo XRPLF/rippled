@@ -24,13 +24,12 @@
 
 namespace ripple {
 
-using namespace std::chrono_literals;
-
 class KeyCache_test : public beast::unit_test::suite
 {
 public:
     void run () override
     {
+        using namespace std::chrono_literals;
         TestStopwatch clock;
         clock.set (0);
 

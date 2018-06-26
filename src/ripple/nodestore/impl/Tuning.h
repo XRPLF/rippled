@@ -33,9 +33,9 @@ enum
 };
 
 // Expiration time for cached nodes
-std::chrono::seconds constexpr cacheTarget = std::chrono::minutes{5};
+std::chrono::seconds constexpr cacheTargetAge = std::chrono::minutes{5};
 auto constexpr shardCacheSz = 16384;
-std::chrono::seconds constexpr shardCache = std::chrono::minutes{1};
+std::chrono::seconds constexpr shardCacheAge = std::chrono::minutes{1};
 
 }
 }

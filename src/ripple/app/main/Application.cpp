@@ -72,8 +72,6 @@ static int const MAJORITY_FRACTION (204);
 
 namespace detail {
 
-using namespace std::chrono_literals;
-
 class AppFamily : public Family
 {
 private:
@@ -986,8 +984,9 @@ public:
                 }
             }))
         {
-            sweepTimer_.expires_from_now (
-                std::chrono::seconds {config_->getSize (siSweepInterval)});
+            using namespace std::chrono;
+            sweepTimer_.expires_from_now(
+                                   seconds{config_->getSize(siSweepInterval)});
             sweepTimer_.async_wait (std::move (*optionalCountedHandler));
         }
     }
@@ -1256,20 +1255,21 @@ bool ApplicationImp::setup()
         return false;
     }
 
+    using namespace std::chrono;
     m_nodeStore->tune (config_->getSize (siNodeCacheSize),
-                       std::chrono::seconds{config_->getSize(siNodeCacheAge)});
+                       seconds{config_->getSize(siNodeCacheAge)});
     m_ledgerMaster->tune (config_->getSize (siLedgerSize),
-                          std::chrono::seconds{config_->getSize(siLedgerAge)});
+                          seconds{config_->getSize(siLedgerAge)});
     family().treecache().setTargetSize (config_->getSize (siTreeCacheSize));
     family().treecache().setTargetAge(
-                       std::chrono::seconds{config_->getSize(siTreeCacheAge)});
+                       seconds{config_->getSize(siTreeCacheAge)});
     if (shardStore_)
     {
         shardStore_->tune(config_->getSize(siNodeCacheSize),
-            std::chrono::seconds{config_->getSize(siNodeCacheAge)});
+            seconds{config_->getSize(siNodeCacheAge)});
         sFamily_->treecache().setTargetSize(config_->getSize(siTreeCacheSize));
         sFamily_->treecache().setTargetAge(
-                       std::chrono::seconds{config_->getSize(siTreeCacheAge)});
+                       seconds{config_->getSize(siTreeCacheAge)});
     }
 
     //----------------------------------------------------------------------
@@ -1592,7 +1592,8 @@ ApplicationImp::loadLedgerFromFile (
             }
             if (ledger.get().isMember ("close_time_resolution"))
             {
-                closeTimeResolution = std::chrono::seconds{
+                using namespace std::chrono;
+                closeTimeResolution = seconds{
                     ledger.get()["close_time_resolution"].asUInt()};
             }
             if (ledger.get().isMember ("close_time_estimated"))

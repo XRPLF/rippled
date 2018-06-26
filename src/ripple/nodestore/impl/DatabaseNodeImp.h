@@ -43,9 +43,9 @@ public:
         beast::Journal j)
         : Database(name, parent, scheduler, readThreads, config, j)
         , pCache_(std::make_shared<TaggedCache<uint256, NodeObject>>(
-            name, cacheTargetSize, cacheTarget, stopwatch(), j))
+            name, cacheTargetSize, cacheTargetAge, stopwatch(), j))
         , nCache_(std::make_shared<KeyCache<uint256>>(
-            name, stopwatch(), cacheTargetSize, cacheTarget))
+            name, stopwatch(), cacheTargetSize, cacheTargetAge))
         , backend_(std::move(backend))
     {
         assert(backend_);
