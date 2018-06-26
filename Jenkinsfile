@@ -200,6 +200,7 @@ try {
                             'NINJA_BUILD=false',
                             "CCACHE_BASEDIR=${cdir}",
                             'PLANTUML_JAR=/opt/plantuml/plantuml.jar',
+                            'APP_ARGS=--unittest-ipv6',
                             'CCACHE_NOHASHDIR=true',
                             "CC=${cc}",
                             "CXX=${cxx}",
