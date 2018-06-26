@@ -986,7 +986,7 @@ public:
         {
             using namespace std::chrono;
             sweepTimer_.expires_from_now(
-                                   seconds{config_->getSize(siSweepInterval)});
+                seconds{config_->getSize(siSweepInterval)});
             sweepTimer_.async_wait (std::move (*optionalCountedHandler));
         }
     }
@@ -1256,20 +1256,20 @@ bool ApplicationImp::setup()
     }
 
     using namespace std::chrono;
-    m_nodeStore->tune (config_->getSize (siNodeCacheSize),
-                       seconds{config_->getSize(siNodeCacheAge)});
-    m_ledgerMaster->tune (config_->getSize (siLedgerSize),
-                          seconds{config_->getSize(siLedgerAge)});
-    family().treecache().setTargetSize (config_->getSize (siTreeCacheSize));
+    m_nodeStore->tune(config_->getSize(siNodeCacheSize),
+                      seconds{config_->getSize(siNodeCacheAge)});
+    m_ledgerMaster->tune(config_->getSize(siLedgerSize),
+                         seconds{config_->getSize(siLedgerAge)});
+    family().treecache().setTargetSize(config_->getSize (siTreeCacheSize));
     family().treecache().setTargetAge(
-                       seconds{config_->getSize(siTreeCacheAge)});
+        seconds{config_->getSize(siTreeCacheAge)});
     if (shardStore_)
     {
         shardStore_->tune(config_->getSize(siNodeCacheSize),
             seconds{config_->getSize(siNodeCacheAge)});
         sFamily_->treecache().setTargetSize(config_->getSize(siTreeCacheSize));
         sFamily_->treecache().setTargetAge(
-                       seconds{config_->getSize(siTreeCacheAge)});
+            seconds{config_->getSize(siTreeCacheAge)});
     }
 
     //----------------------------------------------------------------------
