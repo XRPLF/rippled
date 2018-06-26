@@ -131,6 +131,12 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '--ipv6',
+    action='store_true',
+    help='Use IPv6 localhost when running unit tests.',
+)
+
+parser.add_argument(
     '--clean', '-c',
     action='store_true',
     help='delete all build artifacts after testing',
@@ -292,13 +298,16 @@ def run_cmake_tests(directory, target, config):
     testflag = '--unittest'
     quiet = ''
     testjobs = ''
+    ipv6 = ''
     if ARGS.test:
         testflag += ('=' + ARGS.test)
     if ARGS.quiet:
         quiet = '-q'
+    if ARGS.ipv6:
+        ipv6 = '--unittest-ipv6'
     if ARGS.testjobs:
         testjobs = ('--unittest-jobs=' + str(ARGS.testjobs))
-    resultcode, lines = shell(executable, (testflag, quiet, testjobs,))
+    resultcode, lines = shell(executable, (testflag, quiet, testjobs, ipv6))
 
     if resultcode:
         if not ARGS.verbose:
