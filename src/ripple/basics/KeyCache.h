@@ -34,7 +34,6 @@ namespace ripple {
     older than the maximum age they are eligible for removal during a
     call to @ref sweep.
 */
-// VFALCO TODO Figure out how to pass through the allocator
 template <
     class Key,
     class Hash = hardened_hash <>,
