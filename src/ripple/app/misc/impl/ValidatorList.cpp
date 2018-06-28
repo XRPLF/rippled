@@ -569,33 +569,39 @@ ValidatorList::for_each_listed (
 }
 
 std::size_t
-ValidatorList::calculateMinimumQuorum (
-    std::size_t nListedKeys, bool unlistedLocal)
+ValidatorList::calculateQuorum (std::size_t nTrustedKeys)
 {
-    // Only require 51% quorum for small number of validators to facilitate
-    // bootstrapping a network.
-    if (nListedKeys <= 6)
-        return nListedKeys/2 + 1;
-
-    // The number of listed validators is increased to preserve the safety
-    // guarantee for two unlisted validators using the same set of listed
-    // validators.
-    if (unlistedLocal)
-        ++nListedKeys;
-
-    // Guarantee safety with up to 1/3 listed validators being malicious.
-    // This prioritizes safety (Byzantine fault tolerance) over liveness.
-    // It takes at least as many malicious nodes to split/fork the network as
-    // to stall the network.
-    // At 67%, the overlap of two quorums is 34%
-    //   67 + 67 - 100 = 34
-    // So under certain conditions, 34% of validators could vote for two
-    // different ledgers and split the network.
-    // Similarly 34% could prevent quorum from being met (by not voting) and
-    // stall the network.
-    // If/when the quorum is subsequently raised to/towards 80%, it becomes
-    // harder to split the network (more safe) and easier to stall it (less live).
-    return nListedKeys * 2/3 + 1;
+    // Use an 80% quorum to balance fork safety, liveness, and required UNL
+    // overlap.
+    //
+    // Theorem 8 of the Analysis of the XRP Ledger Consensus Protocol
+    // (https://arxiv.org/abs/1802.07242) says:
+    //     XRP LCP guarantees fork safety if Oi,j > nj/2 + ni − qi + ti,j for
+    //     every pair of nodes Pi, Pj.
+    //
+    // ni: size of Pi's UNL
+    // nj: size of Pj's UNL
+    // Oi,j: number of validators in both UNLs
+    // qi: validation quorum for Pi's UNL
+    // ti, tj: maximum number of allowed Byzantine faults in Pi and Pj's UNLs
+    // ti,j: min{ti, tj, Oi,j}
+    //
+    // Assume ni < nj, meaning and ti,j = ti
+    //
+    // For qi = .8*ni, we make ti <= .2*ni
+    // (We could make ti lower and tolerate less UNL overlap. However in order
+    // to prioritize safety over liveness, we need ti >= ni - qi)
+    //
+    // An 80% quorum allows two UNLs to safely have < .2*ni unique validators
+    // between them:
+    //
+    // pi = ni - Oi,j
+    // pj = nj - Oi,j
+    //
+    // Oi,j > nj/2 + ni − qi + ti,j
+    // ni - pi > (ni - pi + pj)/2 + ni − .8*ni + .2*ni
+    // pi + pj < .2*ni
+    return std::ceil(nTrustedKeys * 0.8f);
 }
 
 TrustChanges
@@ -617,71 +623,31 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
             allListsAvailable = false;
     }
 
-    std::multimap<std::size_t, PublicKey> rankedKeys;
-    bool localKeyListed = false;
-
-    // "Iterate" the listed keys in random order so that the rank of multiple
-    // keys with the same number of listings is not deterministic
-    std::vector<std::size_t> indexes (keyListings_.size());
-    std::iota (indexes.begin(), indexes.end(), 0);
-    std::shuffle (indexes.begin(), indexes.end(), crypto_prng());
-
-    for (auto const& index : indexes)
+    TrustChanges trustChanges;
     {
-        auto const& val = std::next (keyListings_.begin(), index);
+        hash_set<PublicKey> newTrustedKeys;
 
-        if (validatorManifests_.revoked (val->first))
-            continue;
+        for (auto const& val : keyListings_)
+        {
+            if (validatorManifests_.revoked (val.first))
+                continue;
 
-        if (val->first == localPubKey_)
-        {
-            localKeyListed = val->second > 1;
-            rankedKeys.insert (
-                std::pair<std::size_t,PublicKey>(
-                    std::numeric_limits<std::size_t>::max(), localPubKey_));
+            newTrustedKeys.insert(val.first);
+            if (trustedKeys_.erase(val.first) == 0)
+                trustChanges.added.insert(calcNodeID(val.first));
         }
-        // If the total number of validators is too small, or
-        // no validations are being received, use all validators.
-        // Otherwise, do not use validators whose validations aren't
-        // being received.
-        else if (
-            keyListings_.size() < MINIMUM_RESIZEABLE_UNL ||
-            seenValidators.empty() ||
-            seenValidators.find(calcNodeID(val->first)) != seenValidators.end())
-        {
-            rankedKeys.insert (
-                std::pair<std::size_t,PublicKey>(val->second, val->first));
-        }
+
+        for (auto const& k : trustedKeys_)
+            trustChanges.removed.insert(calcNodeID(k));
+
+        trustedKeys_ = std::move(newTrustedKeys);
     }
 
-    // This minimum quorum guarantees safe overlap with the trusted sets of
-    // other nodes using the same set of published lists.
-    std::size_t quorum = calculateMinimumQuorum (keyListings_.size(),
-        localPubKey_.size() && !localKeyListed);
+    std::size_t quorum = calculateQuorum (trustedKeys_.size());
 
     JLOG (j_.debug()) <<
-        rankedKeys.size() << "  of " << keyListings_.size() <<
+        trustedKeys_.size() << "  of " << keyListings_.size() <<
         " listed validators eligible for inclusion in the trusted set";
-
-    auto size = rankedKeys.size();
-
-    // Require 80% quorum if there are lots of validators.
-    if (rankedKeys.size() > BYZANTINE_THRESHOLD)
-    {
-        // Use all eligible keys if there is only one trusted list
-        if (publisherLists_.size() == 1 ||
-                keyListings_.size() < MINIMUM_RESIZEABLE_UNL)
-        {
-            // Try to raise the quorum to at least 80% of the trusted set
-            quorum = std::max(quorum, size - size / 5);
-        }
-        else
-        {
-            // Reduce the trusted set size so that the quorum represents
-            // at least 80%
-            size = quorum * 1.25;
-        }
-    }
 
     if (minimumQuorum_ && seenValidators.size() < quorum)
     {
@@ -696,24 +662,6 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
     // publishers are available
     else if (! allListsAvailable)
         quorum = std::numeric_limits<std::size_t>::max();
-
-    TrustChanges trustChanges;
-    {
-        hash_set<PublicKey> newTrustedKeys;
-        for (auto const& val : boost::adaptors::reverse(rankedKeys))
-        {
-            if (size <= newTrustedKeys.size())
-                break;
-            newTrustedKeys.insert(val.second);
-
-            if (trustedKeys_.erase(val.second) == 0)
-                trustChanges.added.insert(calcNodeID(val.second));
-        }
-
-        for (auto const& k : trustedKeys_)
-            trustChanges.removed.insert(calcNodeID(k));
-        trustedKeys_ = std::move(newTrustedKeys);
-    }
 
     quorum_ = quorum;
 
