@@ -148,17 +148,6 @@ class ValidatorList
     // Currently supported version of publisher list format
     static constexpr std::uint32_t requiredListVersion = 1;
 
-    // The minimum number of listed validators required to allow removing
-    // non-communicative validators from the trusted set. In other words, if the
-    // number of listed validators is less, then use all of them in the
-    // trusted set.
-    std::size_t const MINIMUM_RESIZEABLE_UNL {25};
-    // The maximum size of a trusted set for which greater than Byzantine fault
-    // tolerance isn't needed.
-    std::size_t const BYZANTINE_THRESHOLD {32};
-
-
-
 public:
     ValidatorList (
         ManifestCache& validatorManifests,
@@ -393,15 +382,15 @@ private:
     bool
     removePublisherList (PublicKey const& publisherKey);
 
-    /** Return safe minimum quorum for listed validator set
+    /** Return quorum for trusted validator set
 
-        @param nListedKeys Number of list validator keys
+        @param trusted Number of trusted validator keys
 
-        @param unListedLocal Whether the local node is an unlisted validator
-    */
-    static std::size_t
-    calculateMinimumQuorum (
-        std::size_t nListedKeys, bool unlistedLocal=false);
+        @param seen Number of trusted validators that have signed
+        recently received validations */
+    std::size_t
+    calculateQuorum (
+        std::size_t trusted, std::size_t seen);
 };
 } // ripple
 
