@@ -46,17 +46,18 @@ public:
     }
 
     char* duplicateStringValue ( const char* value,
-                                         unsigned int length = unknown ) override
+        unsigned int length = unknown ) override
     {
-        //@todo invesgate this old optimization
+        //@todo investigate this old optimization
         //if ( !value  ||  value[0] == 0 )
         //   return 0;
 
         if ( length == unknown )
-            length = (unsigned int)strlen (value);
+            length = value ? (unsigned int)strlen ( value ) : 0;
 
         char* newString = static_cast<char*> ( malloc ( length + 1 ) );
-        memcpy ( newString, value, length );
+        if ( value )
+            memcpy ( newString, value, length );
         newString[length] = 0;
         return newString;
     }
