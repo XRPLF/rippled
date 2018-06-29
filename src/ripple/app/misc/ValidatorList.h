@@ -385,9 +385,13 @@ private:
     /** Return quorum for trusted validator set
 
         @param nTrustedKeys Number of trusted validator keys
+
+        @param nSeenValidators Number of trusted validators that have signed
+        recently received validations
     */
-    static std::size_t
-    calculateQuorum (std::size_t nTrustedKeys);
+    std::size_t
+    calculateQuorum (
+        std::size_t nTrustedKeys, std::size_t nSeenValidators);
 };
 } // ripple
 

@@ -569,8 +569,18 @@ ValidatorList::for_each_listed (
 }
 
 std::size_t
-ValidatorList::calculateQuorum (std::size_t nTrustedKeys)
+ValidatorList::calculateQuorum (
+    std::size_t nTrustedKeys, std::size_t nSeenValidators)
 {
+    // Check that lists from all configured publishers are available
+    for (auto const& list : publisherLists_)
+    {
+        // Do not use achievable quorum until lists from all configured
+        // publishers are available
+        if (! list.second.available)
+            return std::numeric_limits<std::size_t>::max();
+    }
+
     // Use an 80% quorum to balance fork safety, liveness, and required UNL
     // overlap.
     //
@@ -601,7 +611,21 @@ ValidatorList::calculateQuorum (std::size_t nTrustedKeys)
     // Oi,j > nj/2 + ni − qi + ti,j
     // ni - pi > (ni - pi + pj)/2 + ni − .8*ni + .2*ni
     // pi + pj < .2*ni
-    return std::ceil(nTrustedKeys * 0.8f);
+    std::size_t quorum = std::ceil(nTrustedKeys * 0.8f);
+
+    // Use lower quorum specified via command line if the normal quorum appears
+    // unreachable based on the number of recently received validations.
+    if (minimumQuorum_ && *minimumQuorum_ < quorum && nSeenValidators < quorum)
+    {
+        quorum = *minimumQuorum_;
+
+        JLOG (j_.warn())
+            << "Using unsafe quorum of "
+            << quorum
+            << " as specified in the command line";
+    }
+
+    return quorum;
 }
 
 TrustChanges
@@ -609,18 +633,12 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
 {
     boost::unique_lock<boost::shared_mutex> lock{mutex_};
 
-    // Check that lists from all configured publishers are available
-    bool allListsAvailable = true;
-
+    // Remove any expired published lists
     for (auto const& list : publisherLists_)
     {
-        // Remove any expired published lists
         if (TimeKeeper::time_point{} < list.second.expiration &&
             list.second.expiration <= timeKeeper_.now())
             removePublisherList(list.first);
-
-        if (! list.second.available)
-            allListsAvailable = false;
     }
 
     TrustChanges trustChanges;
@@ -643,28 +661,11 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
         trustedKeys_ = std::move(newTrustedKeys);
     }
 
-    std::size_t quorum = calculateQuorum (trustedKeys_.size());
-
     JLOG (j_.debug()) <<
         trustedKeys_.size() << "  of " << keyListings_.size() <<
         " listed validators eligible for inclusion in the trusted set";
 
-    if (minimumQuorum_ && seenValidators.size() < quorum)
-    {
-        quorum = *minimumQuorum_;
-        JLOG (j_.warn())
-            << "Using unsafe quorum of "
-            << quorum_
-            << " as specified in the command line";
-    }
-
-    // Do not use achievable quorum until lists from all configured
-    // publishers are available
-    else if (! allListsAvailable)
-        quorum = std::numeric_limits<std::size_t>::max();
-
-    quorum_ = quorum;
-
+    quorum_ = calculateQuorum (trustedKeys_.size(), seenValidators.size());
 
     JLOG(j_.debug()) << "Using quorum of " << quorum_ << " for new set of "
                      << trustedKeys_.size() << " trusted validators ("
