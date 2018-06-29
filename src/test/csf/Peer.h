@@ -858,7 +858,7 @@ struct Peer
         consensus.timerEntry(now());
         // only reschedule if not completed
         if (completedLedgers < targetLedgers)
-            scheduler.in(parms().ledgerGRANULARITY, [this]() { timerEntry(); });
+            scheduler.in(parms().ledgerGranularity, [this]() { timerEntry(); });
     }
 
     // Called to begin the next round
@@ -888,7 +888,7 @@ struct Peer
     {
         // TODO: Expire validations less frequently?
         validations.expire();
-        scheduler.in(parms().ledgerGRANULARITY, [&]() { timerEntry(); });
+        scheduler.in(parms().ledgerGranularity, [&]() { timerEntry(); });
         startRound();
     }
 

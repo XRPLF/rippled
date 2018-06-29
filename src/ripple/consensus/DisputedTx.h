@@ -213,20 +213,16 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
         // This is basically the percentage of nodes voting 'yes' (including us)
         weight = (yays_ * 100 + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
 
-        // VFALCO TODO Rename these macros and turn them into language
-        //             constructs.  consolidate them into a class that collects
-        //             all these related values.
-        //
         // To prevent avalanche stalls, we increase the needed weight slightly
         // over time.
-        if (percentTime < p.avMID_CONSENSUS_TIME)
-            newPosition = weight > p.avINIT_CONSENSUS_PCT;
-        else if (percentTime < p.avLATE_CONSENSUS_TIME)
-            newPosition = weight > p.avMID_CONSENSUS_PCT;
-        else if (percentTime < p.avSTUCK_CONSENSUS_TIME)
-            newPosition = weight > p.avLATE_CONSENSUS_PCT;
+        if (percentTime < p.avMidConsensusTime)
+            newPosition = weight > p.avInitConsensusPct;
+        else if (percentTime < p.avLateConsensusTime)
+            newPosition = weight > p.avMidConsensusPct;
+        else if (percentTime < p.avStuckConsensusTime)
+            newPosition = weight > p.avLateConsensusPct;
         else
-            newPosition = weight > p.avSTUCK_CONSENSUS_PCT;
+            newPosition = weight > p.avStuckConsensusPct;
     }
     else
     {

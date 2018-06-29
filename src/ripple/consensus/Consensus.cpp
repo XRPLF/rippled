@@ -63,7 +63,7 @@ shouldCloseLedger(
     }
 
     // Preserve minimum ledger open time
-    if (openTime < parms.ledgerMIN_CLOSE)
+    if (openTime < parms.ledgerMinClose)
     {
         JLOG(j.debug()) << "Must wait minimum time before closing";
         return false;
@@ -122,14 +122,14 @@ checkConsensus(
                     << " time=" << currentAgreeTime.count() << "/"
                     << previousAgreeTime.count();
 
-    if (currentAgreeTime <= parms.ledgerMIN_CONSENSUS)
+    if (currentAgreeTime <= parms.ledgerMinConsensus)
         return ConsensusState::No;
 
     if (currentProposers < (prevProposers * 3 / 4))
     {
         // Less than 3/4 of the last ledger's proposers are present; don't
         // rush: we may need more time.
-        if (currentAgreeTime < (previousAgreeTime + parms.ledgerMIN_CONSENSUS))
+        if (currentAgreeTime < (previousAgreeTime + parms.ledgerMinConsensus))
         {
             JLOG(j.trace()) << "too fast, not enough proposers";
             return ConsensusState::No;
@@ -139,7 +139,7 @@ checkConsensus(
     // Have we, together with the nodes on our UNL list, reached the threshold
     // to declare consensus?
     if (checkConsensusReached(
-            currentAgree, currentProposers, proposing, parms.minCONSENSUS_PCT))
+            currentAgree, currentProposers, proposing, parms.minConsensusPct))
     {
         JLOG(j.debug()) << "normal consensus";
         return ConsensusState::Yes;
@@ -148,7 +148,7 @@ checkConsensus(
     // Have sufficient nodes on our UNL list moved on and reached the threshold
     // to declare consensus?
     if (checkConsensusReached(
-            currentFinished, currentProposers, false, parms.minCONSENSUS_PCT))
+            currentFinished, currentProposers, false, parms.minConsensusPct))
     {
         JLOG(j.warn()) << "We see no consensus, but 80% of nodes have moved on";
         return ConsensusState::MovedOn;

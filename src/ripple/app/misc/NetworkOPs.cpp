@@ -680,7 +680,7 @@ void NetworkOPsImp::setHeartbeatTimer ()
         }))
     {
         heartbeatTimer_.expires_from_now (
-            mConsensus.parms().ledgerGRANULARITY);
+            mConsensus.parms().ledgerGranularity);
         heartbeatTimer_.async_wait (std::move (*optionalCountedHandler));
     }
 }
