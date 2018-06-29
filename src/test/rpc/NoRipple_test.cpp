@@ -97,7 +97,7 @@ public:
             env.close();
 
             TER const terNeg {tweakedFeatures[fix1578] ?
-                TER {tecNEGATIVE_BALANCE} : TER {tesSUCCESS}};
+                TER {tecNO_PERMISSION} : TER {tesSUCCESS}};
 
             env(trust(alice, bob["USD"](100), bob,   tfSetNoRipple), ter(terNeg));
             env(trust(bob, carol["USD"](100), carol, tfSetNoRipple), ter(terNeg));

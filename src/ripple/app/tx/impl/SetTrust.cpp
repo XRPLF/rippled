@@ -324,7 +324,7 @@ SetTrust::doApply ()
 
             else if (view().rules().enabled(fix1578))
                 // Cannot set noRipple on a negative balance.
-                return tecNEGATIVE_BALANCE;
+                return tecNO_PERMISSION;
         }
         else if (bClearNoRipple && !bSetNoRipple)
         {

@@ -74,7 +74,6 @@ transResults()
         { tecEXPIRED,                { "tecEXPIRED",               "Expiration time is passed."                                                    } },
         { tecDUPLICATE,              { "tecDUPLICATE",             "Ledger object already exists."                                                 } },
         { tecKILLED,                 { "tecKILLED",                "FillOrKill offer killed."                                                      } },
-        { tecNEGATIVE_BALANCE,       { "tecNEGATIVE_BALANCE",      "Operation not allowed with negative balance."                                  } },
 
         { tefALREADY,                { "tefALREADY",               "The exact transaction was already in this ledger."                             } },
         { tefBAD_ADD_AUTH,           { "tefBAD_ADD_AUTH",          "Not authorized to add account."                                                } },
