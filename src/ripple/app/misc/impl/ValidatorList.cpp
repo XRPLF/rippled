@@ -26,6 +26,8 @@
 #include <boost/beast/core/detail/base64.hpp>
 #include <boost/regex.hpp>
 
+#include <mutex>
+
 namespace ripple {
 
 std::string
@@ -82,7 +84,7 @@ ValidatorList::load (
         ")?"                      // end optional comment block
     );
 
-    boost::unique_lock<boost::shared_mutex> read_lock{mutex_};
+    std::unique_lock<boost::shared_mutex> read_lock{mutex_};
 
     JLOG (j_.debug()) <<
         "Loading configured trusted validator list publisher keys";
@@ -198,7 +200,7 @@ ValidatorList::applyList (
     if (version != requiredListVersion)
         return ListDisposition::unsupported_version;
 
-    boost::unique_lock<boost::shared_mutex> lock{mutex_};
+    std::unique_lock<boost::shared_mutex> lock{mutex_};
 
     Json::Value list;
     PublicKey pubKey;
@@ -601,7 +603,7 @@ ValidatorList::calculateMinimumQuorum (
 TrustChanges
 ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
 {
-    boost::unique_lock<boost::shared_mutex> lock{mutex_};
+    std::unique_lock<boost::shared_mutex> lock{mutex_};
 
     // Check that lists from all configured publishers are available
     bool allListsAvailable = true;
