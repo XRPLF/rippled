@@ -362,13 +362,6 @@ macro(use_boost)
         message(FATAL_ERROR "Boost version 1.67 or greater is required for boost::beast. Found version: ${Boost_VERSION}")
       endif()
 
-      if(MSVC14)
-        # VS2017 with boost <= 1.66.0 requires a flag to suppress warnings
-        if(NOT Boost_VERSION VERSION_GREATER 106600)
-          add_definitions(-DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
-        endif()
-      endif()
-
       if (is_xcode)
           include_directories(BEFORE ${Boost_INCLUDE_DIRS})
           append_flags(CMAKE_CXX_FLAGS --system-header-prefix="boost/")
