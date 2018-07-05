@@ -570,13 +570,12 @@ ValidatorList::for_each_listed (
 
 std::size_t
 ValidatorList::calculateQuorum (
-    std::size_t nTrustedKeys, std::size_t nSeenValidators)
+    std::size_t trusted, std::size_t seen)
 {
-    // Check that lists from all configured publishers are available
+    // Do not use achievable quorum until lists from all configured
+    // publishers are available
     for (auto const& list : publisherLists_)
     {
-        // Do not use achievable quorum until lists from all configured
-        // publishers are available
         if (! list.second.available)
             return std::numeric_limits<std::size_t>::max();
     }
@@ -611,11 +610,11 @@ ValidatorList::calculateQuorum (
     // Oi,j > nj/2 + ni − qi + ti,j
     // ni - pi > (ni - pi + pj)/2 + ni − .8*ni + .2*ni
     // pi + pj < .2*ni
-    std::size_t quorum = std::ceil(nTrustedKeys * 0.8f);
+    auto quorum = static_cast<std::size_t>(std::ceil(trusted * 0.8f));
 
     // Use lower quorum specified via command line if the normal quorum appears
     // unreachable based on the number of recently received validations.
-    if (minimumQuorum_ && *minimumQuorum_ < quorum && nSeenValidators < quorum)
+    if (minimumQuorum_ && *minimumQuorum_ < quorum && seen < quorum)
     {
         quorum = *minimumQuorum_;
 
