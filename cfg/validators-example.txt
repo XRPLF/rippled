@@ -47,6 +47,12 @@
 
 # The default validator list publishers that the rippled instance
 # trusts.
+#
+# WARNING: Changing these values can cause your rippled instance to see a
+#          validated ledger that contradicts other rippled instances'
+#          validated ledgers (aka a ledger fork) if your validator list(s)
+#          do not sufficiently overlap with the list(s) used by others.
+#          See: https://arxiv.org/pdf/1802.07242.pdf
 
 [validator_list_sites]
 https://vl.ripple.com
