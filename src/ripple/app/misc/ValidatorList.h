@@ -29,9 +29,8 @@
 #include <ripple/protocol/PublicKey.h>
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
-#include <boost/thread/locks.hpp>
-#include <boost/thread/shared_mutex.hpp>
 #include <mutex>
+#include <shared_mutex>
 #include <numeric>
 
 namespace ripple {
@@ -129,7 +128,7 @@ class ValidatorList
     ManifestCache& publisherManifests_;
     TimeKeeper& timeKeeper_;
     beast::Journal j_;
-    boost::shared_mutex mutable mutex_;
+    std::shared_timed_mutex mutable mutex_;
 
     std::atomic<std::size_t> quorum_;
     boost::optional<std::size_t> minimumQuorum_;
