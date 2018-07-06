@@ -640,23 +640,27 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
     }
 
     TrustChanges trustChanges;
+
+    auto it = trustedKeys_.cbegin();
+    while (it != trustedKeys_.cend())
     {
-        hash_set<PublicKey> newTrustedKeys;
-
-        for (auto const& val : keyListings_)
+        if (! keyListings_.count(*it) ||
+            validatorManifests_.revoked(*it))
         {
-            if (validatorManifests_.revoked (val.first))
-                continue;
-
-            newTrustedKeys.insert(val.first);
-            if (trustedKeys_.erase(val.first) == 0)
-                trustChanges.added.insert(calcNodeID(val.first));
+            trustChanges.removed.insert(calcNodeID(*it));
+            it = trustedKeys_.erase(it);
         }
+        else
+        {
+            ++it;
+        }
+    }
 
-        for (auto const& k : trustedKeys_)
-            trustChanges.removed.insert(calcNodeID(k));
-
-        trustedKeys_ = std::move(newTrustedKeys);
+    for (auto const& val : keyListings_)
+    {
+        if (! validatorManifests_.revoked(val.first) &&
+                trustedKeys_.emplace(val.first).second)
+            trustChanges.added.insert(calcNodeID(val.first));
     }
 
     JLOG (j_.debug()) <<
