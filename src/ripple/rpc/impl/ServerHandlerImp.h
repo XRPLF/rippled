@@ -132,15 +132,25 @@ public:
         boost::asio::ip::tcp::endpoint endpoint);
 
     Handoff
-    onHandoff (Session& session,
-        std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-            http_request_type&& request,
-                boost::asio::ip::tcp::endpoint remote_address);
+    onHandoff(
+        Session& session,
+        std::unique_ptr<beast::asio::ssl_bundle>&& bundle,
+        http_request_type&& request,
+        boost::asio::ip::tcp::endpoint const& remote_address);
 
     Handoff
-    onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
+    onHandoff(
+        Session& session,
         http_request_type&& request,
-            boost::asio::ip::tcp::endpoint remote_address);
+        boost::asio::ip::tcp::endpoint const& remote_address)
+    {
+        return onHandoff(
+            session,
+            {},
+            std::forward<http_request_type>(request),
+            remote_address);
+    }
+
     void
     onRequest (Session& session);
 
@@ -174,8 +184,6 @@ private:
 
     Handoff
     statusResponse(http_request_type const& request) const;
-
-
 };
 
 }
