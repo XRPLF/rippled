@@ -85,7 +85,7 @@ ValidatorList::load (
         ")?"                      // end optional comment block
     );
 
-    std::unique_lock<boost::shared_mutex> read_lock{mutex_};
+    std::unique_lock<std::shared_timed_mutex> read_lock{mutex_};
 
     JLOG (j_.debug()) <<
         "Loading configured trusted validator list publisher keys";
@@ -201,7 +201,7 @@ ValidatorList::applyList (
     if (version != requiredListVersion)
         return ListDisposition::unsupported_version;
 
-    std::unique_lock<boost::shared_mutex> lock{mutex_};
+    std::unique_lock<std::shared_timed_mutex> lock{mutex_};
 
     Json::Value list;
     PublicKey pubKey;
@@ -379,7 +379,7 @@ bool
 ValidatorList::listed (
     PublicKey const& identity) const
 {
-    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey (identity);
     return keyListings_.find (pubKey) != keyListings_.end ();
@@ -388,7 +388,7 @@ ValidatorList::listed (
 bool
 ValidatorList::trusted (PublicKey const& identity) const
 {
-    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey (identity);
     return trustedKeys_.find (pubKey) != trustedKeys_.end();
@@ -398,7 +398,7 @@ boost::optional<PublicKey>
 ValidatorList::getListedKey (
     PublicKey const& identity) const
 {
-    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey (identity);
     if (keyListings_.find (pubKey) != keyListings_.end ())
@@ -409,7 +409,7 @@ ValidatorList::getListedKey (
 boost::optional<PublicKey>
 ValidatorList::getTrustedKey (PublicKey const& identity) const
 {
-    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey (identity);
     if (trustedKeys_.find (pubKey) != trustedKeys_.end())
@@ -420,14 +420,14 @@ ValidatorList::getTrustedKey (PublicKey const& identity) const
 bool
 ValidatorList::trustedPublisher (PublicKey const& identity) const
 {
-    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
     return identity.size() && publisherLists_.count (identity);
 }
 
 PublicKey
 ValidatorList::localPublicKey () const
 {
-    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
     return localPubKey_;
 }
 
@@ -463,7 +463,7 @@ ValidatorList::removePublisherList (PublicKey const& publisherKey)
 boost::optional<TimeKeeper::time_point>
 ValidatorList::expires() const
 {
-    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
     boost::optional<TimeKeeper::time_point> res{boost::none};
     for (auto const& p : publisherLists_)
     {
@@ -483,7 +483,7 @@ ValidatorList::getJson() const
 {
     Json::Value res(Json::objectValue);
 
-    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
 
     res[jss::validation_quorum] = static_cast<Json::UInt>(quorum());
 
@@ -565,7 +565,7 @@ void
 ValidatorList::for_each_listed (
     std::function<void(PublicKey const&, bool)> func) const
 {
-    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
 
     for (auto const& v : keyListings_)
         func (v.first, trusted(v.first));
@@ -604,7 +604,7 @@ ValidatorList::calculateMinimumQuorum (
 TrustChanges
 ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
 {
-    std::unique_lock<boost::shared_mutex> lock{mutex_};
+    std::unique_lock<std::shared_timed_mutex> lock{mutex_};
 
     // Check that lists from all configured publishers are available
     bool allListsAvailable = true;
