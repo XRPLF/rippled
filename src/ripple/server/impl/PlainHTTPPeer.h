@@ -118,7 +118,7 @@ do_request()
 {
     ++this->request_count_;
     auto const what = this->handler_.onHandoff(this->session(),
-        std::move(stream_), std::move(this->message_), this->remote_address_);
+        std::move(this->message_), this->remote_address_);
     if (what.moved)
         return;
     boost::system::error_code ec;

@@ -65,14 +65,14 @@ isStatusRequest(
 
 static
 Handoff
-unauthorizedResponse(
-    http_request_type const& request)
+statusRequestResponse(
+    http_request_type const& request, boost::beast::http::status status)
 {
     using namespace boost::beast::http;
     Handoff handoff;
     response<string_body> msg;
     msg.version(request.version());
-    msg.result(boost::beast::http::status::unauthorized);
+    msg.result(status);
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Content-Type", "text/html");
     msg.insert("Connection", "close");
@@ -167,80 +167,56 @@ ServerHandlerImp::onAccept (Session& session,
     return true;
 }
 
-auto
-ServerHandlerImp::onHandoff (Session& session,
-    std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-        http_request_type&& request,
-            boost::asio::ip::tcp::endpoint remote_address) ->
-    Handoff
+Handoff
+ServerHandlerImp::onHandoff(
+    Session& session,
+    std::unique_ptr<beast::asio::ssl_bundle>&& bundle,
+    http_request_type&& request,
+    boost::asio::ip::tcp::endpoint const& remote_address)
 {
-    const bool is_ws =
-        (session.port().protocol.count("wss") > 0) ||
-        (session.port().protocol.count("wss2") > 0);
+    using namespace boost::beast;
+    auto const& p {session.port().protocol};
+    bool const is_ws {
+        p.count("ws") > 0 || p.count("ws2") > 0 ||
+        p.count("wss") > 0 || p.count("wss2") > 0};
 
-    if(boost::beast::websocket::is_upgrade(request))
+    if(websocket::is_upgrade(request))
     {
-        if(is_ws)
+        if (!is_ws)
+            return statusRequestResponse(request, http::status::unauthorized);
+
+        std::shared_ptr<WSSession> ws;
+        try
         {
-            Handoff handoff;
-            auto const ws = session.websocketUpgrade();
-            auto is = std::make_shared<WSInfoSub>(m_networkOPs, ws);
-            is->getConsumer() = requestInboundEndpoint(
-                m_resourceManager,
-                    beast::IPAddressConversion::from_asio(remote_address),
-                        session.port(), is->user());
-            ws->appDefined = std::move(is);
-            ws->run();
-            handoff.moved = true;
-            return handoff;
+            ws = session.websocketUpgrade();
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(m_journal.error())
+                << "Exception upgrading websocket: " << e.what() << "\n";
+            return statusRequestResponse(request,
+                http::status::internal_server_error);
         }
 
-        return unauthorizedResponse(request);
+        auto is {std::make_shared<WSInfoSub>(m_networkOPs, ws)};
+        is->getConsumer() = requestInboundEndpoint(
+            m_resourceManager,
+            beast::IPAddressConversion::from_asio(remote_address),
+            session.port(),
+            is->user());
+        ws->appDefined = std::move(is);
+        ws->run();
+
+        Handoff handoff;
+        handoff.moved = true;
+        return handoff;
     }
 
-    if(session.port().protocol.count("peer") > 0)
-    {
+    if (bundle && p.count("peer") > 0)
         return app_.overlay().onHandoff(std::move(bundle),
             std::move(request), remote_address);
-    }
 
     if (is_ws && isStatusRequest(request))
-        return statusResponse(request);
-
-    // Pass to legacy onRequest
-    return {};
-}
-
-auto
-ServerHandlerImp::onHandoff (Session& session,
-    boost::asio::ip::tcp::socket&& socket,
-        http_request_type&& request,
-            boost::asio::ip::tcp::endpoint remote_address) ->
-    Handoff
-{
-    if(boost::beast::websocket::is_upgrade(request))
-    {
-        if (session.port().protocol.count("ws2") > 0 ||
-            session.port().protocol.count("ws") > 0)
-        {
-            Handoff handoff;
-            auto const ws = session.websocketUpgrade();
-            auto is = std::make_shared<WSInfoSub>(m_networkOPs, ws);
-            is->getConsumer() = requestInboundEndpoint(
-                m_resourceManager, beast::IPAddressConversion::from_asio(
-                    remote_address), session.port(), is->user());
-            ws->appDefined = std::move(is);
-            ws->run();
-            handoff.moved = true;
-            return handoff;
-        }
-
-        return unauthorizedResponse(request);
-    }
-
-    if ((session.port().protocol.count("ws") > 0 ||
-         session.port().protocol.count("ws2") > 0) &&
-       isStatusRequest(request))
         return statusResponse(request);
 
     // Otherwise pass to legacy onRequest or websocket

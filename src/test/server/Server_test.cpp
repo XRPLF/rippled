@@ -111,9 +111,8 @@ public:
         }
 
         Handoff
-        onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
-            http_request_type&& request,
-                boost::asio::ip::tcp::endpoint remote_address)
+        onHandoff (Session& session, http_request_type&& request,
+            boost::asio::ip::tcp::endpoint remote_address)
         {
             return Handoff{};
         }
@@ -317,9 +316,8 @@ public:
             }
 
             Handoff
-            onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
-                http_request_type&& request,
-                    boost::asio::ip::tcp::endpoint remote_address)
+            onHandoff (Session& session, http_request_type&& request,
+                boost::asio::ip::tcp::endpoint remote_address)
             {
                 return Handoff{};
             }
