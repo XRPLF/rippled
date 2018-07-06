@@ -436,8 +436,7 @@ ValidatorList::removePublisherList (PublicKey const& publisherKey)
         return false;
 
     JLOG (j_.debug()) <<
-        "Removing validator list for revoked publisher " <<
-        toBase58(TokenType::NodePublic, publisherKey);
+        "Removing validator list for publisher " << strHex(publisherKey);
 
     for (auto const& val : iList->second.list)
     {
@@ -635,7 +634,7 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
     // Remove any expired published lists
     for (auto const& list : publisherLists_)
     {
-        if (TimeKeeper::time_point{} < list.second.expiration &&
+        if (list.second.available &&
             list.second.expiration <= timeKeeper_.now())
             removePublisherList(list.first);
     }
