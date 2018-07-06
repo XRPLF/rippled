@@ -27,6 +27,7 @@
 #include <boost/regex.hpp>
 
 #include <mutex>
+#include <shared_mutex>
 
 namespace ripple {
 
@@ -378,7 +379,7 @@ bool
 ValidatorList::listed (
     PublicKey const& identity) const
 {
-    boost::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey (identity);
     return keyListings_.find (pubKey) != keyListings_.end ();
@@ -387,7 +388,7 @@ ValidatorList::listed (
 bool
 ValidatorList::trusted (PublicKey const& identity) const
 {
-    boost::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey (identity);
     return trustedKeys_.find (pubKey) != trustedKeys_.end();
@@ -397,7 +398,7 @@ boost::optional<PublicKey>
 ValidatorList::getListedKey (
     PublicKey const& identity) const
 {
-    boost::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey (identity);
     if (keyListings_.find (pubKey) != keyListings_.end ())
@@ -408,7 +409,7 @@ ValidatorList::getListedKey (
 boost::optional<PublicKey>
 ValidatorList::getTrustedKey (PublicKey const& identity) const
 {
-    boost::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey (identity);
     if (trustedKeys_.find (pubKey) != trustedKeys_.end())
@@ -419,14 +420,14 @@ ValidatorList::getTrustedKey (PublicKey const& identity) const
 bool
 ValidatorList::trustedPublisher (PublicKey const& identity) const
 {
-    boost::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
     return identity.size() && publisherLists_.count (identity);
 }
 
 PublicKey
 ValidatorList::localPublicKey () const
 {
-    boost::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
     return localPubKey_;
 }
 
@@ -462,7 +463,7 @@ ValidatorList::removePublisherList (PublicKey const& publisherKey)
 boost::optional<TimeKeeper::time_point>
 ValidatorList::expires() const
 {
-    boost::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
     boost::optional<TimeKeeper::time_point> res{boost::none};
     for (auto const& p : publisherLists_)
     {
@@ -482,7 +483,7 @@ ValidatorList::getJson() const
 {
     Json::Value res(Json::objectValue);
 
-    boost::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
 
     res[jss::validation_quorum] = static_cast<Json::UInt>(quorum());
 
@@ -564,7 +565,7 @@ void
 ValidatorList::for_each_listed (
     std::function<void(PublicKey const&, bool)> func) const
 {
-    boost::shared_lock<boost::shared_mutex> read_lock{mutex_};
+    std::shared_lock<boost::shared_mutex> read_lock{mutex_};
 
     for (auto const& v : keyListings_)
         func (v.first, trusted(v.first));
