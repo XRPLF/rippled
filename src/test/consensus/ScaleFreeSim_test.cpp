@@ -57,7 +57,7 @@ class ScaleFreeSim_test : public beast::unit_test::suite
 
         // nodes with a trust line in either direction are network-connected
         network.connectFromTrust(
-            date::round<milliseconds>(0.2 * parms.ledgerGranularity));
+            date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
         // Initialize collectors to track statistics to report
         TxCollector txCollector;

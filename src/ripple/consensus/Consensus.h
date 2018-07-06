@@ -591,7 +591,7 @@ Consensus<Adaptor>::startRound(
     if (firstRound_)
     {
         // take our initial view of closeTime_ from the seed ledger
-        prevRoundTime_ = adaptor_.parms().ledgerIdleInterval;
+        prevRoundTime_ = adaptor_.parms().ledgerIDLE_INTERVAL;
         prevCloseTime_ = prevLedger.closeTime();
         firstRound_ = false;
     }
@@ -1087,7 +1087,7 @@ Consensus<Adaptor>::phaseOpen()
     }
 
     auto const idleInterval = std::max<milliseconds>(
-        adaptor_.parms().ledgerIdleInterval,
+        adaptor_.parms().ledgerIDLE_INTERVAL,
         2 * previousLedger_.closeTimeResolution());
 
     // Decide if we should close the ledger
@@ -1121,10 +1121,10 @@ Consensus<Adaptor>::phaseEstablish()
     result_->proposers = currPeerPositions_.size();
 
     convergePercent_ = result_->roundTime.read() * 100 /
-        std::max<milliseconds>(prevRoundTime_, parms.avMinConsensusTime);
+        std::max<milliseconds>(prevRoundTime_, parms.avMIN_CONSENSUS_TIME);
 
     // Give everyone a chance to take an initial position
-    if (result_->roundTime.read() < parms.ledgerMinConsensus)
+    if (result_->roundTime.read() < parms.ledgerMIN_CONSENSUS)
         return;
 
     updateOurPositions();
@@ -1214,8 +1214,8 @@ Consensus<Adaptor>::updateOurPositions()
     ConsensusParms const & parms = adaptor_.parms();
 
     // Compute a cutoff time
-    auto const peerCutoff = now_ - parms.proposeFreshness;
-    auto const ourCutoff = now_ - parms.proposeInterval;
+    auto const peerCutoff = now_ - parms.proposeFRESHNESS;
+    auto const ourCutoff = now_ - parms.proposeINTERVAL;
 
     // Verify freshness of peer positions and compute close times
     std::map<NetClock::time_point, int> closeTimeVotes;
@@ -1290,14 +1290,14 @@ Consensus<Adaptor>::updateOurPositions()
     {
         int neededWeight;
 
-        if (convergePercent_ < parms.avMidConsensusTime)
-            neededWeight = parms.avInitConsensusPct;
-        else if (convergePercent_ < parms.avLateConsensusTime)
-            neededWeight = parms.avMidConsensusPct;
-        else if (convergePercent_ < parms.avStuckConsensusTime)
-            neededWeight = parms.avLateConsensusPct;
+        if (convergePercent_ < parms.avMID_CONSENSUS_TIME)
+            neededWeight = parms.avINIT_CONSENSUS_PCT;
+        else if (convergePercent_ < parms.avLATE_CONSENSUS_TIME)
+            neededWeight = parms.avMID_CONSENSUS_PCT;
+        else if (convergePercent_ < parms.avSTUCK_CONSENSUS_TIME)
+            neededWeight = parms.avLATE_CONSENSUS_PCT;
         else
-            neededWeight = parms.avStuckConsensusPct;
+            neededWeight = parms.avSTUCK_CONSENSUS_PCT;
 
         int participants = currPeerPositions_.size();
         if (mode_.get() == ConsensusMode::proposing)
@@ -1311,7 +1311,7 @@ Consensus<Adaptor>::updateOurPositions()
 
         // Threshold to declare consensus
         int const threshConsensus =
-            participantsNeeded(participants, parms.avCtConsensusPct);
+            participantsNeeded(participants, parms.avCT_CONSENSUS_PCT);
 
         JLOG(j_.info()) << "Proposers:" << currPeerPositions_.size()
                         << " nw:" << neededWeight << " thrV:" << threshVote

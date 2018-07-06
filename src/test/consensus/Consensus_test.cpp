@@ -146,7 +146,7 @@ public:
 
         // Connected trust and network graphs with single fixed delay
         peers.trustAndConnect(
-            peers, date::round<milliseconds>(0.2 * parms.ledgerGranularity));
+            peers, date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
         // everyone submits their own ID as a TX
         for (Peer * p : peers)
@@ -194,11 +194,11 @@ public:
 
             // Fast and slow network connections
             fast.connect(
-                fast, date::round<milliseconds>(0.2 * parms.ledgerGranularity));
+                fast, date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
             slow.connect(
                 network,
-                date::round<milliseconds>(1.1 * parms.ledgerGranularity));
+                date::round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
 
             // All peers submit their own ID as a transaction
             for (Peer* peer : network)
@@ -252,11 +252,11 @@ public:
                 // Fast and slow network connections
                 fast.connect(
                     fast,
-                    date::round<milliseconds>(0.2 * parms.ledgerGranularity));
+                    date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
                 slow.connect(
                     network,
-                    date::round<milliseconds>(1.1 * parms.ledgerGranularity));
+                    date::round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
 
                 for (Peer* peer : slow)
                     peer->runAsValidator = isParticipant;
@@ -380,20 +380,20 @@ public:
 
         network.trust(network);
         network.connect(
-            network, date::round<milliseconds>(0.2 * parms.ledgerGranularity));
+            network, date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
         // Run consensus without skew until we have a short close time
         // resolution
         Peer* firstPeer = *groupA.begin();
         while (firstPeer->lastClosedLedger.closeTimeResolution() >=
-               parms.proposeFreshness)
+               parms.proposeFRESHNESS)
             sim.run(1);
 
         // Introduce a shift on the time of 2/3 of peers
         for (Peer* peer : groupA)
-            peer->clockSkew = parms.proposeFreshness / 2;
+            peer->clockSkew = parms.proposeFRESHNESS / 2;
         for (Peer* peer : groupB)
-            peer->clockSkew = parms.proposeFreshness;
+            peer->clockSkew = parms.proposeFRESHNESS;
 
         sim.run(1);
 
@@ -417,7 +417,7 @@ public:
 
         // Vary the time it takes to process validations to exercise detecting
         // the wrong LCL at different phases of consensus
-        for (auto validationDelay : {0ms, parms.ledgerMinClose})
+        for (auto validationDelay : {0ms, parms.ledgerMIN_CLOSE})
         {
             // Consider 10 peers:
             // 0 1         2 3 4       5 6 7 8 9
@@ -450,14 +450,14 @@ public:
             PeerGroup network = minority + majority;
 
             SimDuration delay =
-                date::round<milliseconds>(0.2 * parms.ledgerGranularity);
+                date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
             minority.trustAndConnect(minority + majorityA, delay);
             majority.trustAndConnect(majority, delay);
 
             CollectByNode<JumpCollector> jumps;
             sim.collectors.add(jumps);
 
-            BEAST_EXPECT(sim.trustGraph.canFork(parms.minConsensusPct / 100.));
+            BEAST_EXPECT(sim.trustGraph.canFork(parms.minCONSENSUS_PCT / 100.));
 
             // initial round to set prior state
             sim.run(1);
@@ -556,7 +556,7 @@ public:
             PeerGroup network = loner + clique;
             network.connect(
                 network,
-                date::round<milliseconds>(0.2 * parms.ledgerGranularity));
+                date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
             // initial round to set prior state
             sim.run(1);
@@ -567,7 +567,7 @@ public:
 
             // Delay validation processing
             for (Peer* peer : network)
-                peer->delays.recvValidation = parms.ledgerGranularity;
+                peer->delays.recvValidation = parms.ledgerGRANULARITY;
 
             // additional rounds to generate wrongLCL and recover
             sim.run(2);
@@ -610,10 +610,10 @@ public:
 
             // Fast and slow network connections
             fast.connect(
-                fast, date::round<milliseconds>(0.2 * parms.ledgerGranularity));
+                fast, date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
             slow.connect(
                 network,
-                date::round<milliseconds>(1.1 * parms.ledgerGranularity));
+                date::round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
 
             // Run to the ledger *prior* to decreasing the resolution
             sim.run(increaseLedgerTimeResolutionEvery - 2);
@@ -762,7 +762,7 @@ public:
             PeerGroup network = a + b;
 
             SimDuration delay =
-                date::round<milliseconds>(0.2 * parms.ledgerGranularity);
+                date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
             a.trustAndConnect(a, delay);
             b.trustAndConnect(b, delay);
 
@@ -809,7 +809,7 @@ public:
         center.trust(validators);
 
         SimDuration delay =
-                date::round<milliseconds>(0.2 * parms.ledgerGranularity);
+                date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
         validators.connect(center, delay);
 
         center[0]->runAsValidator = false;
@@ -934,9 +934,9 @@ public:
         PeerGroup network = groupABD + groupCsplit + groupCfast;
 
         SimDuration delay = date::round<milliseconds>(
-            0.2 * parms.ledgerGranularity);
+            0.2 * parms.ledgerGRANULARITY);
         SimDuration fDelay = date::round<milliseconds>(
-            0.1 * parms.ledgerGranularity);
+            0.1 * parms.ledgerGRANULARITY);
 
         network.trust(network);
         // C must have a shorter delay to see all the validations before the

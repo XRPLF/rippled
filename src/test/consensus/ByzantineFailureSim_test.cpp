@@ -40,7 +40,7 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         ConsensusParms const parms{};
 
         SimDuration const delay =
-            date::round<milliseconds>(0.2 * parms.ledgerGranularity);
+            date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
         PeerGroup a = sim.createGroup(1);
         PeerGroup b = sim.createGroup(1);
         PeerGroup c = sim.createGroup(1);

@@ -215,14 +215,14 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
 
         // To prevent avalanche stalls, we increase the needed weight slightly
         // over time.
-        if (percentTime < p.avMidConsensusTime)
-            newPosition = weight > p.avInitConsensusPct;
-        else if (percentTime < p.avLateConsensusTime)
-            newPosition = weight > p.avMidConsensusPct;
-        else if (percentTime < p.avStuckConsensusTime)
-            newPosition = weight > p.avLateConsensusPct;
+        if (percentTime < p.avMID_CONSENSUS_TIME)
+            newPosition = weight > p.avINIT_CONSENSUS_PCT;
+        else if (percentTime < p.avLATE_CONSENSUS_TIME)
+            newPosition = weight > p.avMID_CONSENSUS_PCT;
+        else if (percentTime < p.avSTUCK_CONSENSUS_TIME)
+            newPosition = weight > p.avLATE_CONSENSUS_PCT;
         else
-            newPosition = weight > p.avStuckConsensusPct;
+            newPosition = weight > p.avSTUCK_CONSENSUS_PCT;
     }
     else
     {

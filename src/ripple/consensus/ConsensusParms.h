@@ -45,7 +45,7 @@ struct ConsensusParms
         This is a safety to protect against very old validations and the time
         it takes to adjust the close time accuracy window.
     */
-    std::chrono::seconds validationValidWall = 5min;
+    std::chrono::seconds validationVALID_WALL = 5min;
 
     /** Duration a validation remains current after first observed.
 
@@ -53,39 +53,41 @@ struct ConsensusParms
        first saw it. This provides faster recovery in very rare cases where the
        number of validations produced by the network is lower than normal
     */
-    std::chrono::seconds validationValidLocal = 3min;
+    std::chrono::seconds validationVALID_LOCAL = 3min;
 
     /**  Duration pre-close in which validations are acceptable.
 
         The number of seconds before a close time that we consider a validation
         acceptable. This protects against extreme clock errors
     */
-    std::chrono::seconds validationValidEarly = 3min;
+    std::chrono::seconds validationVALID_EARLY = 3min;
+
 
     //! How long we consider a proposal fresh
-    std::chrono::seconds proposeFreshness = 20s;
+    std::chrono::seconds proposeFRESHNESS = 20s;
 
     //! How often we force generating a new proposal to keep ours fresh
-    std::chrono::seconds proposeInterval = 12s;
+    std::chrono::seconds proposeINTERVAL = 12s;
+
 
     //-------------------------------------------------------------------------
     // Consensus durations are relative to the internal Consenus clock and use
     // millisecond resolution.
 
     //! The percentage threshold above which we can declare consensus.
-    std::size_t minConsensusPct = 80;
+    std::size_t minCONSENSUS_PCT = 80;
 
     //! The duration a ledger may remain idle before closing
-    std::chrono::milliseconds ledgerIdleInterval = 15s;
+    std::chrono::milliseconds ledgerIDLE_INTERVAL = 15s;
 
     //! The number of seconds we wait minimum to ensure participation
-    std::chrono::milliseconds ledgerMinConsensus = 1950ms;
+    std::chrono::milliseconds ledgerMIN_CONSENSUS = 1950ms;
 
     //! Minimum number of seconds to wait to ensure others have computed the LCL
-    std::chrono::milliseconds ledgerMinClose = 2s;
+    std::chrono::milliseconds ledgerMIN_CLOSE = 2s;
 
     //! How often we check state or change positions
-    std::chrono::milliseconds ledgerGranularity = 1s;
+    std::chrono::milliseconds ledgerGRANULARITY = 1s;
 
     /** The minimum amount of time to consider the previous round
         to have taken.
@@ -97,7 +99,7 @@ struct ConsensusParms
         twice the interval between proposals (0.7s) divided by
         the interval between mid and late consensus ([85-50]/100).
     */
-     std::chrono::milliseconds avMinConsensusTime = 5s;
+    std::chrono::milliseconds avMIN_CONSENSUS_TIME = 5s;
 
     //------------------------------------------------------------------------------
     // Avalanche tuning
@@ -106,28 +108,28 @@ struct ConsensusParms
     // position.
 
     //! Percentage of nodes on our UNL that must vote yes
-    std::size_t avInitConsensusPct = 50;
+    std::size_t avINIT_CONSENSUS_PCT = 50;
 
     //! Percentage of previous round duration before we advance
-    std::size_t avMidConsensusTime = 50;
+    std::size_t avMID_CONSENSUS_TIME = 50;
 
     //! Percentage of nodes that most vote yes after advancing
-    std::size_t avMidConsensusPct = 65;
+    std::size_t avMID_CONSENSUS_PCT = 65;
 
     //! Percentage of previous round duration before we advance
-    std::size_t avLateConsensusTime = 85;
+    std::size_t avLATE_CONSENSUS_TIME = 85;
 
     //! Percentage of nodes that most vote yes after advancing
-    std::size_t avLateConsensusPct = 70;
+    std::size_t avLATE_CONSENSUS_PCT = 70;
 
     //! Percentage of previous round duration before we are stuck
-    std::size_t avStuckConsensusTime = 200;
+    std::size_t avSTUCK_CONSENSUS_TIME = 200;
 
     //! Percentage of nodes that must vote yes after we are stuck
-    std::size_t avStuckConsensusPct = 95;
+    std::size_t avSTUCK_CONSENSUS_PCT = 95;
 
     //! Percentage of nodes required to reach agreement on ledger close time
-    std::size_t avCtConsensusPct = 75;
+    std::size_t avCT_CONSENSUS_PCT = 75;
 
     //--------------------------------------------------------------------------
 
