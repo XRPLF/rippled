@@ -295,7 +295,7 @@ uint256 STObject::getHash (std::uint32_t prefix) const
 {
     Serializer s;
     s.add32 (prefix);
-    add (s, true);
+    add (s, withAllFields);
     return s.getSHA512Half ();
 }
 
@@ -303,7 +303,7 @@ uint256 STObject::getSigningHash (std::uint32_t prefix) const
 {
     Serializer s;
     s.add32 (prefix);
-    add (s, false);
+    add (s, omitSigningFields);
     return s.getSHA512Half ();
 }
 
@@ -694,67 +694,61 @@ bool STObject::operator== (const STObject& obj) const
     return true;
 }
 
-void STObject::add (Serializer& s, bool withSigningFields) const
+void STObject::add (Serializer& s, WhichFields whichFields) const
 {
-    std::map<int, STBase const*> fields;
-    for (auto const& e : v_)
-    {
-        // pick out the fields and sort them
-        if ((e->getSType() != STI_NOTPRESENT) &&
-            e->getFName().shouldInclude (withSigningFields))
-        {
-            fields.insert (std::make_pair (
-                e->getFName().fieldCode, &e.get()));
-        }
-    }
+    // Depending on whichFields, signing fields are either serialized or
+    // not.  Then fields are added to the Serializer sorted by fieldCode.
+    std::vector<STBase const*> const
+        fields {getSortedFields (*this, whichFields)};
 
     // insert sorted
-    for (auto const& e : fields)
+    for (STBase const* const field : fields)
     {
-        auto const field = e.second;
-
         // When we serialize an object inside another object,
         // the type associated by rule with this field name
         // must be OBJECT, or the object cannot be deserialized
-        assert ((field->getSType() != STI_OBJECT) ||
+        SerializedTypeID const sType {field->getSType()};
+        assert ((sType != STI_OBJECT) ||
             (field->getFName().fieldType == STI_OBJECT));
         field->addFieldID (s);
         field->add (s);
-        if (dynamic_cast<const STArray*> (field) != nullptr)
-            s.addFieldID (STI_ARRAY, 1);
-        else if (dynamic_cast<const STObject*> (field) != nullptr)
-            s.addFieldID (STI_OBJECT, 1);
+        if (sType == STI_ARRAY || sType == STI_OBJECT)
+            s.addFieldID (sType, 1);
     }
 }
 
 std::vector<STBase const*>
-STObject::getSortedFields (STObject const& objToSort)
+STObject::getSortedFields (
+    STObject const& objToSort, WhichFields whichFields)
 {
     std::vector<STBase const*> sf;
-    sf.reserve (objToSort.getCount ());
+    sf.reserve (objToSort.getCount());
 
     // Choose the fields that we need to sort.
     for (detail::STVar const& elem : objToSort.v_)
     {
-        // Pick out the fields and sort them.
         STBase const& base = elem.get();
-        if ((base.getSType () != STI_NOTPRESENT) &&
-            base.getFName ().shouldInclude (true))
+        if ((base.getSType() != STI_NOTPRESENT) &&
+            base.getFName().shouldInclude (whichFields))
         {
             sf.push_back (&base);
         }
     }
 
     // Sort the fields by fieldCode.
-    std::sort (sf.begin (), sf.end (),
-        [] (STBase const* a, STBase const* b) -> bool
+    std::sort (sf.begin(), sf.end(),
+        [] (STBase const* lhs, STBase const* rhs)
         {
-            return a->getFName ().fieldCode < b->getFName ().fieldCode;
+            return lhs->getFName().fieldCode < rhs->getFName().fieldCode;
         });
 
     // There should never be duplicate fields in an STObject. Verify that
     // in debug mode.
-    assert (std::adjacent_find (sf.cbegin (), sf.cend ()) == sf.cend ());
+    assert (std::adjacent_find (sf.cbegin(), sf.cend(),
+        [] (STBase const* lhs, STBase const* rhs)
+        {
+            return lhs->getFName().fieldCode == rhs->getFName().fieldCode;
+        }) == sf.cend());
 
     return sf;
 }
@@ -775,8 +769,8 @@ bool STObject::equivalentSTObjectSameTemplate (
 
 bool STObject::equivalentSTObject (STObject const& obj1, STObject const& obj2)
 {
-    auto sf1 = getSortedFields (obj1);
-    auto sf2 = getSortedFields (obj2);
+    auto sf1 = getSortedFields (obj1, withAllFields);
+    auto sf2 = getSortedFields (obj2, withAllFields);
 
     return std::equal (sf1.begin (), sf1.end (), sf2.begin (), sf2.end (),
         [] (STBase const* st1, STBase const* st2)
