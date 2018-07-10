@@ -123,6 +123,13 @@ private:
     std::atomic <uint64_t> peerDisconnects_ {0};
     std::atomic <uint64_t> peerDisconnectsCharges_ {0};
 
+    // Last time we crawled peers for shard info
+    std::atomic<std::chrono::seconds> csLast_{std::chrono::seconds{0}};
+    std::mutex csMutex_;
+    std::condition_variable csCV_;
+    // Peer IDs expecting to receive a last link notification
+    std::set<std::uint32_t> csIDs_;
+
     //--------------------------------------------------------------------------
 
 public:
@@ -221,15 +228,17 @@ public:
     void
     for_each (UnaryFunc&& f)
     {
-        std::lock_guard <decltype(mutex_)> lock (mutex_);
-
-        // Iterate over a copy of the peer list because peer
-        // destruction can invalidate iterators.
         std::vector<std::weak_ptr<PeerImp>> wp;
-        wp.reserve(ids_.size());
+        {
+            std::lock_guard<decltype(mutex_)> lock(mutex_);
 
-        for (auto& x : ids_)
-            wp.push_back(x.second);
+            // Iterate over a copy of the peer list because peer
+            // destruction can invalidate iterators.
+            wp.reserve(ids_.size());
+
+            for (auto& x : ids_)
+                wp.push_back(x.second);
+        }
 
         for (auto& w : wp)
         {
@@ -339,6 +348,17 @@ public:
     {
         return peerDisconnectsCharges_;
     }
+
+    Json::Value
+    crawlShards(bool pubKey, std::uint32_t hops) override;
+
+
+    /** Called when the last link from a peer chain is received.
+
+        @param id peer id that received the shard info.
+    */
+    void
+    lastLink(std::uint32_t id);
 
 private:
     std::shared_ptr<Writer>

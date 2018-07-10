@@ -100,7 +100,6 @@ public:
     virtual bool hasLedger (uint256 const& hash, std::uint32_t seq) const = 0;
     virtual void ledgerRange (std::uint32_t& minSeq, std::uint32_t& maxSeq) const = 0;
     virtual bool hasShard (std::uint32_t shardIndex) const = 0;
-    virtual std::string getShards() const = 0;
     virtual bool hasTxSet (uint256 const& hash) const = 0;
     virtual void cycleStatus () = 0;
     virtual bool supportsVersion (int version) = 0;

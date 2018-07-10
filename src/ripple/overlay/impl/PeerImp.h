@@ -22,19 +22,22 @@
 
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/basics/Log.h>
-#include <ripple/beast/utility/WrappedSink.h>
 #include <ripple/basics/RangeSet.h>
+#include <ripple/beast/utility/WrappedSink.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
+#include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/resource/Fees.h>
 
 #include <boost/endian/conversion.hpp>
+#include <boost/optional.hpp>
 #include <cstdint>
 #include <deque>
 #include <queue>
+
 
 namespace ripple {
 
@@ -77,6 +80,12 @@ public:
         ,sane
     };
 
+    struct ShardInfo
+    {
+        beast::IP::Endpoint endpoint;
+        RangeSet<std::uint32_t> shardIndexes;
+    };
+
     using ptr = std::shared_ptr <PeerImp>;
 
 private:
@@ -107,7 +116,7 @@ private:
 
     // Updated at each stage of the connection process to reflect
     // the current conditions as closely as possible.
-    beast::IP::Endpoint remote_address_;
+    beast::IP::Endpoint const remote_address_;
 
     // These are up here to prevent warnings about order of initializations
     //
@@ -126,7 +135,6 @@ private:
     //
     LedgerIndex minLedger_ = 0;
     LedgerIndex maxLedger_ = 0;
-    RangeSet<std::uint32_t> shards_;
     uint256 closedLedgerHash_;
     uint256 previousLedgerHash_;
     std::deque<uint256> recentLedgers_;
@@ -154,6 +162,9 @@ private:
     int no_ping_ = 0;
     std::unique_ptr <LoadEvent> load_event_;
     bool hopsAware_ = false;
+
+    std::mutex mutable shardInfoMutex_;
+    hash_map<PublicKey, ShardInfo> shardInfo_;
 
     friend class OverlayImpl;
 
@@ -235,6 +246,7 @@ public:
         return id_;
     }
 
+    /** Returns `true` if this connection will publicly share its IP address. */
     bool
     crawl() const;
 
@@ -301,9 +313,6 @@ public:
     bool
     hasShard (std::uint32_t shardIndex) const override;
 
-    std::string
-    getShards () const override;
-
     bool
     hasTxSet (uint256 const& hash) const override;
 
@@ -325,6 +334,14 @@ public:
 
     void
     fail(std::string const& reason);
+
+    /** Return a range set of known shard indexes from this peer. */
+    boost::optional<RangeSet<std::uint32_t>>
+    getShardIndexes() const;
+
+    /** Return any known shard info from this peer and its sub peers. */
+    boost::optional<hash_map<PublicKey, ShardInfo>>
+    getPeerShardInfo() const;
 
 private:
     void
@@ -412,6 +429,8 @@ public:
     void onMessage (std::shared_ptr <protocol::TMManifests> const& m);
     void onMessage (std::shared_ptr <protocol::TMPing> const& m);
     void onMessage (std::shared_ptr <protocol::TMCluster> const& m);
+    void onMessage (std::shared_ptr <protocol::TMGetShardInfo> const& m);
+    void onMessage (std::shared_ptr <protocol::TMShardInfo> const& m);
     void onMessage (std::shared_ptr <protocol::TMGetPeers> const& m);
     void onMessage (std::shared_ptr <protocol::TMPeers> const& m);
     void onMessage (std::shared_ptr <protocol::TMEndpoints> const& m);
