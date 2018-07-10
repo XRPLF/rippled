@@ -1927,6 +1927,7 @@ else ()
     src/ripple/rpc/handlers/CanDelete.cpp
     src/ripple/rpc/handlers/Connect.cpp
     src/ripple/rpc/handlers/ConsensusInfo.cpp
+    src/ripple/rpc/handlers/CrawlShards.cpp
     src/ripple/rpc/handlers/DepositAuthorized.cpp
     src/ripple/rpc/handlers/DownloadShard.cpp
     src/ripple/rpc/handlers/Feature1.cpp

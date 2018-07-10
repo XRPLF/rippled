@@ -46,6 +46,8 @@ protocolMessageName (int type)
     case protocol::mtPING:              return "ping";
     case protocol::mtPROOFOFWORK:       return "proof_of_work";
     case protocol::mtCLUSTER:           return "cluster";
+    case protocol::mtGET_SHARD_INFO:    return "get_shard_info";
+    case protocol::mtSHARD_INFO:        return "shard_info";
     case protocol::mtGET_PEERS:         return "get_peers";
     case protocol::mtPEERS:             return "peers";
     case protocol::mtENDPOINTS:         return "endpoints";
@@ -117,6 +119,8 @@ invokeProtocolMessage (Buffers const& buffers, Handler& handler)
     case protocol::mtMANIFESTS:     ec = detail::invoke<protocol::TMManifests> (type, buffers, handler); break;
     case protocol::mtPING:          ec = detail::invoke<protocol::TMPing> (type, buffers, handler); break;
     case protocol::mtCLUSTER:       ec = detail::invoke<protocol::TMCluster> (type, buffers, handler); break;
+    case protocol::mtGET_SHARD_INFO:ec = detail::invoke<protocol::TMGetShardInfo> (type, buffers, handler); break;
+    case protocol::mtSHARD_INFO:    ec = detail::invoke<protocol::TMShardInfo>(type, buffers, handler); break;
     case protocol::mtGET_PEERS:     ec = detail::invoke<protocol::TMGetPeers> (type, buffers, handler); break;
     case protocol::mtPEERS:         ec = detail::invoke<protocol::TMPeers> (type, buffers, handler); break;
     case protocol::mtENDPOINTS:     ec = detail::invoke<protocol::TMEndpoints> (type, buffers, handler); break;

@@ -19,6 +19,8 @@ enum MessageType
     mtHAVE_SET              = 35;
     mtVALIDATION            = 41;
     mtGET_OBJECTS           = 42;
+    mtGET_SHARD_INFO        = 50;
+    mtSHARD_INFO            = 51;
 
     // <available>          = 10;
     // <available>          = 11;
@@ -127,6 +129,23 @@ message TMCluster
     repeated TMLoadSource    loadSources     = 2;
 }
 
+// Request info on shards held
+message TMGetShardInfo
+{
+    required uint32 hops            = 1; // number of hops to travel
+    optional bool lastLink          = 2; // true if last link in the peer chain
+    repeated uint32 peerchain       = 3;
+}
+
+// Info about shards held
+message TMShardInfo
+{
+    required string shardIndexes    = 1; // rangeSet of shard indexes
+    optional bytes nodePubKey       = 2; // The node's public key
+    optional string endpoint        = 3; // ipv6 or ipv4 address
+    optional bool lastLink          = 4; // true if last link in the peer chain
+    repeated uint32 peerchain       = 5; // List of IDs used to route messages
+}
 
 // A transaction can have only one input and one output.
 // If you want to send an amount that is greater than any single address of yours
@@ -180,7 +199,6 @@ message TMStatusChange
     optional uint64 networkTime         = 6;
     optional uint32 firstSeq            = 7;
     optional uint32 lastSeq             = 8;
-    optional string shardSeqs           = 9;
 }
 
 

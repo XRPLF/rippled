@@ -64,6 +64,8 @@ TrafficCount::category TrafficCount::categorize (
 
     if ((type == protocol::mtMANIFESTS) ||
             (type == protocol::mtENDPOINTS) ||
+            (type == protocol::mtGET_SHARD_INFO) ||
+            (type == protocol::mtSHARD_INFO) ||
             (type == protocol::mtPEERS) ||
             (type == protocol::mtGET_PEERS))
         return TrafficCount::category::CT_overlay;
