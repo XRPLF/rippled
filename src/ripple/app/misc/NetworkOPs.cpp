@@ -203,7 +203,7 @@ public:
             ledgerMaster,
             *m_localTX,
             app.getInboundTransactions(),
-            stopwatch(),
+            beast::get_abstract_clock<std::chrono::steady_clock>(),
             validatorKeys,
             app_.logs().journal("LedgerConsensus"))
         , m_ledgerMaster (ledgerMaster)
