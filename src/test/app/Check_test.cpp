@@ -956,9 +956,16 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT (ownerCount (env, alice) == 1);
             BEAST_EXPECT (ownerCount (env, bob  ) == 1);
         }
+
+        // Use a regular key and also multisign to cash a check.
+        // featureMultiSign changes the reserve on a SignerList, so
+        // check both before and after.
+        FeatureBitset const allSupported {supported_amendments()};
+        for (auto const features :
+            {allSupported - featureMultiSignReserve,
+                allSupported | featureMultiSignReserve})
         {
-            // Use a regular key and also multisign to cash a check.
-            Env env {*this};
+            Env env {*this, features};
             auto const closeTime =
                 fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
             env.close (closeTime);
@@ -989,7 +996,11 @@ class Check_test : public beast::unit_test::suite
             Account const demon {"demon", KeyType::ed25519};
             env (signers (bob, 2, {{bogie, 1}, {demon, 1}}), sig (bobby));
             env.close();
-            BEAST_EXPECT (ownerCount (env, bob) == 5); // signerList -> 4 owners
+
+            // If featureMultiSignReserve is enabled then bob's signer list
+            // has an owner count of 1, otherwise it's 4.
+            int const signersCount {features[featureMultiSignReserve] ? 1 : 4};
+            BEAST_EXPECT (ownerCount (env, bob) == signersCount + 1);
 
             // bob uses his regular key to cash a check.
             env (check::cash (bob, chkId1, (USD(1))), sig (bobby));
@@ -999,7 +1010,7 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT (checksOnAccount (env, alice).size() == 1);
             BEAST_EXPECT (checksOnAccount (env, bob  ).size() == 1);
             BEAST_EXPECT (ownerCount (env, alice) == 2);
-            BEAST_EXPECT (ownerCount (env, bob  ) == 5);
+            BEAST_EXPECT (ownerCount (env, bob  ) == signersCount + 1);
 
             // bob uses multisigning to cash a check.
             std::uint64_t const baseFeeDrops {env.current()->fees().base};
@@ -1011,7 +1022,7 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT (checksOnAccount (env, alice).size() == 0);
             BEAST_EXPECT (checksOnAccount (env, bob  ).size() == 0);
             BEAST_EXPECT (ownerCount (env, alice) == 1);
-            BEAST_EXPECT (ownerCount (env, bob  ) == 5);
+            BEAST_EXPECT (ownerCount (env, bob  ) == signersCount + 1);
         }
     }
 
@@ -1596,147 +1607,160 @@ class Check_test : public beast::unit_test::suite
         Account const zoe {"zoe"};
         IOU const USD {gw["USD"]};
 
-        Env env {*this};
-        auto const closeTime =
-            fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
+        // featureMultiSign changes the reserve on a SignerList, so
+        // check both before and after.
+        FeatureBitset const allSupported {supported_amendments()};
+        for (auto const features :
+            {allSupported - featureMultiSignReserve,
+                allSupported | featureMultiSignReserve})
+        {
+            Env env {*this, features};
 
-        env.fund (XRP(1000), gw, alice, bob, zoe);
+            auto const closeTime =
+                fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
+            env.close (closeTime);
 
-        // alice creates her checks ahead of time.
-        // Three ordinary checks with no expiration.
-        uint256 const chkId1 {getCheckIndex (alice, env.seq (alice))};
-        env (check::create (alice, bob, USD(10)));
-        env.close();
+            env.fund (XRP(1000), gw, alice, bob, zoe);
 
-        uint256 const chkId2 {getCheckIndex (alice, env.seq (alice))};
-        env (check::create (alice, bob, XRP(10)));
-        env.close();
+            // alice creates her checks ahead of time.
+            // Three ordinary checks with no expiration.
+            uint256 const chkId1 {getCheckIndex (alice, env.seq (alice))};
+            env (check::create (alice, bob, USD(10)));
+            env.close();
 
-        uint256 const chkId3 {getCheckIndex (alice, env.seq (alice))};
-        env (check::create (alice, bob, USD(10)));
-        env.close();
+            uint256 const chkId2 {getCheckIndex (alice, env.seq (alice))};
+            env (check::create (alice, bob, XRP(10)));
+            env.close();
 
-        // Three checks that expire in 10 minutes.
-        using namespace std::chrono_literals;
-        uint256 const chkIdNotExp1 {getCheckIndex (alice, env.seq (alice))};
-        env (check::create (alice, bob, XRP(10)), expiration (env.now()+600s));
-        env.close();
+            uint256 const chkId3 {getCheckIndex (alice, env.seq (alice))};
+            env (check::create (alice, bob, USD(10)));
+            env.close();
 
-        uint256 const chkIdNotExp2 {getCheckIndex (alice, env.seq (alice))};
-        env (check::create (alice, bob, USD(10)), expiration (env.now()+600s));
-        env.close();
+            // Three checks that expire in 10 minutes.
+            using namespace std::chrono_literals;
+            uint256 const chkIdNotExp1 {getCheckIndex (alice, env.seq (alice))};
+            env (check::create (alice, bob, XRP(10)), expiration (env.now()+600s));
+            env.close();
 
-        uint256 const chkIdNotExp3 {getCheckIndex (alice, env.seq (alice))};
-        env (check::create (alice, bob, XRP(10)), expiration (env.now()+600s));
-        env.close();
+            uint256 const chkIdNotExp2 {getCheckIndex (alice, env.seq (alice))};
+            env (check::create (alice, bob, USD(10)), expiration (env.now()+600s));
+            env.close();
 
-        // Three checks that expire in one second.
-        uint256 const chkIdExp1 {getCheckIndex (alice, env.seq (alice))};
-        env (check::create (alice, bob, USD(10)), expiration (env.now()+1s));
-        env.close();
+            uint256 const chkIdNotExp3 {getCheckIndex (alice, env.seq (alice))};
+            env (check::create (alice, bob, XRP(10)), expiration (env.now()+600s));
+            env.close();
 
-        uint256 const chkIdExp2 {getCheckIndex (alice, env.seq (alice))};
-        env (check::create (alice, bob, XRP(10)), expiration (env.now()+1s));
-        env.close();
+            // Three checks that expire in one second.
+            uint256 const chkIdExp1 {getCheckIndex (alice, env.seq (alice))};
+            env (check::create (alice, bob, USD(10)), expiration (env.now()+1s));
+            env.close();
 
-        uint256 const chkIdExp3 {getCheckIndex (alice, env.seq (alice))};
-        env (check::create (alice, bob, USD(10)), expiration (env.now()+1s));
-        env.close();
+            uint256 const chkIdExp2 {getCheckIndex (alice, env.seq (alice))};
+            env (check::create (alice, bob, XRP(10)), expiration (env.now()+1s));
+            env.close();
 
-        // Two checks to cancel using a regular key and using multisigning.
-        uint256 const chkIdReg {getCheckIndex (alice, env.seq (alice))};
-        env (check::create (alice, bob, USD(10)));
-        env.close();
+            uint256 const chkIdExp3 {getCheckIndex (alice, env.seq (alice))};
+            env (check::create (alice, bob, USD(10)), expiration (env.now()+1s));
+            env.close();
 
-        uint256 const chkIdMSig {getCheckIndex (alice, env.seq (alice))};
-        env (check::create (alice, bob, XRP(10)));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 11);
-        BEAST_EXPECT (ownerCount (env, alice) == 11);
+            // Two checks to cancel using a regular key and using multisigning.
+            uint256 const chkIdReg {getCheckIndex (alice, env.seq (alice))};
+            env (check::create (alice, bob, USD(10)));
+            env.close();
 
-        // Creator, destination, and an outsider cancel the checks.
-        env (check::cancel (alice, chkId1));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 10);
-        BEAST_EXPECT (ownerCount (env, alice) == 10);
+            uint256 const chkIdMSig {getCheckIndex (alice, env.seq (alice))};
+            env (check::create (alice, bob, XRP(10)));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 11);
+            BEAST_EXPECT (ownerCount (env, alice) == 11);
 
-        env (check::cancel (bob, chkId2));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 9);
-        BEAST_EXPECT (ownerCount (env, alice) == 9);
+            // Creator, destination, and an outsider cancel the checks.
+            env (check::cancel (alice, chkId1));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 10);
+            BEAST_EXPECT (ownerCount (env, alice) == 10);
 
-        env (check::cancel (zoe, chkId3), ter (tecNO_PERMISSION));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 9);
-        BEAST_EXPECT (ownerCount (env, alice) == 9);
+            env (check::cancel (bob, chkId2));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 9);
+            BEAST_EXPECT (ownerCount (env, alice) == 9);
 
-        // Creator, destination, and an outsider cancel unexpired checks.
-        env (check::cancel (alice, chkIdNotExp1));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 8);
-        BEAST_EXPECT (ownerCount (env, alice) == 8);
+            env (check::cancel (zoe, chkId3), ter (tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 9);
+            BEAST_EXPECT (ownerCount (env, alice) == 9);
 
-        env (check::cancel (bob, chkIdNotExp2));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 7);
-        BEAST_EXPECT (ownerCount (env, alice) == 7);
+            // Creator, destination, and an outsider cancel unexpired checks.
+            env (check::cancel (alice, chkIdNotExp1));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 8);
+            BEAST_EXPECT (ownerCount (env, alice) == 8);
 
-        env (check::cancel (zoe, chkIdNotExp3), ter (tecNO_PERMISSION));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 7);
-        BEAST_EXPECT (ownerCount (env, alice) == 7);
+            env (check::cancel (bob, chkIdNotExp2));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 7);
+            BEAST_EXPECT (ownerCount (env, alice) == 7);
 
-        // Creator, destination, and an outsider cancel expired checks.
-        env (check::cancel (alice, chkIdExp1));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 6);
-        BEAST_EXPECT (ownerCount (env, alice) == 6);
+            env (check::cancel (zoe, chkIdNotExp3), ter (tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 7);
+            BEAST_EXPECT (ownerCount (env, alice) == 7);
 
-        env (check::cancel (bob, chkIdExp2));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 5);
-        BEAST_EXPECT (ownerCount (env, alice) == 5);
+            // Creator, destination, and an outsider cancel expired checks.
+            env (check::cancel (alice, chkIdExp1));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 6);
+            BEAST_EXPECT (ownerCount (env, alice) == 6);
 
-        env (check::cancel (zoe, chkIdExp3));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 4);
-        BEAST_EXPECT (ownerCount (env, alice) == 4);
+            env (check::cancel (bob, chkIdExp2));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 5);
+            BEAST_EXPECT (ownerCount (env, alice) == 5);
 
-        // Use a regular key and also multisign to cancel checks.
-        Account const alie {"alie", KeyType::ed25519};
-        env (regkey (alice, alie));
-        env.close();
+            env (check::cancel (zoe, chkIdExp3));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 4);
+            BEAST_EXPECT (ownerCount (env, alice) == 4);
 
-        Account const bogie {"bogie", KeyType::secp256k1};
-        Account const demon {"demon", KeyType::ed25519};
-        env (signers (alice, 2, {{bogie, 1}, {demon, 1}}), sig (alie));
-        env.close();
+            // Use a regular key and also multisign to cancel checks.
+            Account const alie {"alie", KeyType::ed25519};
+            env (regkey (alice, alie));
+            env.close();
 
-        // alice uses her regular key to cancel a check.
-        env (check::cancel (alice, chkIdReg), sig (alie));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 3);
-        BEAST_EXPECT (ownerCount (env, alice) == 7);
+            Account const bogie {"bogie", KeyType::secp256k1};
+            Account const demon {"demon", KeyType::ed25519};
+            env (signers (alice, 2, {{bogie, 1}, {demon, 1}}), sig (alie));
+            env.close();
 
-        // alice uses multisigning to cancel a check.
-        std::uint64_t const baseFeeDrops {env.current()->fees().base};
-        env (check::cancel (alice, chkIdMSig),
-            msig (bogie, demon), fee (3 * baseFeeDrops));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 2);
-        BEAST_EXPECT (ownerCount (env, alice) == 6);
+            // If featureMultiSignReserve is enabled then alices's signer list
+            // has an owner count of 1, otherwise it's 4.
+            int const signersCount {features[featureMultiSignReserve] ? 1 : 4};
 
-        // Creator and destination cancel the remaining unexpired checks.
-        env (check::cancel (alice, chkId3), sig (alice));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 1);
-        BEAST_EXPECT (ownerCount (env, alice) == 5);
+            // alice uses her regular key to cancel a check.
+            env (check::cancel (alice, chkIdReg), sig (alie));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 3);
+            BEAST_EXPECT (ownerCount (env, alice) == signersCount + 3);
 
-        env (check::cancel (bob, chkIdNotExp3));
-        env.close();
-        BEAST_EXPECT (checksOnAccount (env, alice).size() == 0);
-        BEAST_EXPECT (ownerCount (env, alice) == 4);
+            // alice uses multisigning to cancel a check.
+            std::uint64_t const baseFeeDrops {env.current()->fees().base};
+            env (check::cancel (alice, chkIdMSig),
+                msig (bogie, demon), fee (3 * baseFeeDrops));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 2);
+            BEAST_EXPECT (ownerCount (env, alice) == signersCount + 2);
+
+            // Creator and destination cancel the remaining unexpired checks.
+            env (check::cancel (alice, chkId3), sig (alice));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 1);
+            BEAST_EXPECT (ownerCount (env, alice) == signersCount + 1);
+
+            env (check::cancel (bob, chkIdNotExp3));
+            env.close();
+            BEAST_EXPECT (checksOnAccount (env, alice).size() == 0);
+            BEAST_EXPECT (ownerCount (env, alice) == signersCount + 0);
+        }
     }
 
     void testCancelInvalid()

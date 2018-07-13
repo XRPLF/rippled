@@ -87,9 +87,14 @@ private:
 
     TER removeSignersFromLedger (Keylet const& accountKeylet,
         Keylet const& ownerDirKeylet, Keylet const& signerListKeylet);
-    void writeSignersToSLE (SLE::pointer const& ledgerEntry) const;
+    void writeSignersToSLE (
+        SLE::pointer const& ledgerEntry, std::uint32_t flags) const;
 
-    static int ownerCountDelta (std::size_t entryCount);
+    // Way of computing owner count prior to featureMultiSignReserve.
+    // This needs to stay in the code base until no signerLists remain
+    // in the ledger that were created prior to acceptance of
+    // featureMultiSignReserve...  Effectively forever.
+    static int signerCountBasedOwnerCountDelta (std::size_t entryCount);
 };
 
 } // ripple
