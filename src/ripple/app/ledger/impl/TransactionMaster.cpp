@@ -99,7 +99,7 @@ void
 TransactionMaster::canonicalize(std::shared_ptr<Transaction>* pTransaction)
 {
     uint256 const tid = (*pTransaction)->getID();
-    if (tid != zero)
+    if (tid != beast::zero)
     {
         auto txn = *pTransaction;
         // VFALCO NOTE canonicalize can change the value of txn!

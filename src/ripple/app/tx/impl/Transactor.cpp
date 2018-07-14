@@ -59,7 +59,7 @@ preflight1 (PreflightContext const& ctx)
         return ret;
 
     auto const id = ctx.tx.getAccountID(sfAccount);
-    if (id == zero)
+    if (id == beast::zero)
     {
         JLOG(ctx.j.warn()) << "preflight1: bad account id";
         return temBAD_SRC_ACCOUNT;
@@ -180,7 +180,7 @@ Transactor::checkFee (PreclaimContext const& ctx,
         return telINSUF_FEE_P;
     }
 
-    if (feePaid == zero)
+    if (feePaid == beast::zero)
         return tesSUCCESS;
 
     auto const id = ctx.tx.getAccountID(sfAccount);
@@ -194,7 +194,7 @@ Transactor::checkFee (PreclaimContext const& ctx,
             " balance=" << to_string(balance) <<
             " paid=" << to_string(feePaid);
 
-        if ((balance > zero) && !ctx.view.open())
+        if ((balance > beast::zero) && !ctx.view.open())
         {
             // Closed ledger, non-zero balance, less than fee
             return tecINSUFF_FEE;
@@ -290,7 +290,7 @@ Transactor::setSeq ()
 void Transactor::preCompute ()
 {
     account_ = ctx_.tx.getAccountID(sfAccount);
-    assert(account_ != zero);
+    assert(account_ != beast::zero);
 }
 
 TER Transactor::apply ()
@@ -303,7 +303,7 @@ TER Transactor::apply ()
 
     // sle must exist except for transactions
     // that allow zero account.
-    assert(sle != nullptr || account_ == zero);
+    assert(sle != nullptr || account_ == beast::zero);
 
     if (sle)
     {
@@ -576,7 +576,7 @@ Transactor::reset(XRPAmount fee)
     auto const balance = txnAcct->getFieldAmount (sfBalance).xrp ();
 
     // balance should have already been checked in checkFee / preFlight.
-    assert(balance != zero && (!view().open() || balance >= fee));
+    assert(balance != beast::zero && (!view().open() || balance >= fee));
 
     // We retry/reject the transaction if the account balance is zero or we're
     // applying against an open ledger and the balance is less than the fee
@@ -705,14 +705,14 @@ Transactor::operator()()
         // The transactor and invariant checkers guarantee that this will
         // *never* trigger but if it, somehow, happens, don't allow a tx
         // that charges a negative fee.
-        if (fee < zero)
+        if (fee < beast::zero)
             Throw<std::logic_error> ("fee charged is negative!");
 
         // Charge whatever fee they specified. The fee has already been
         // deducted from the balance of the account that issued the
         // transaction. We just need to account for it in the ledger
         // header.
-        if (!view().open() && fee != zero)
+        if (!view().open() && fee != beast::zero)
             ctx_.destroyXRP (fee);
 
         // Once we call apply, we will no longer be able to look at view()

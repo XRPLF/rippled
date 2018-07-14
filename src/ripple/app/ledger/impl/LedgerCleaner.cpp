@@ -285,7 +285,7 @@ private:
                 ledger->info().hash, ledger->info().seq,
                 InboundLedger::Reason::GENERIC);
         }
-        return hash ? *hash : zero; // kludge
+        return hash ? *hash : beast::zero; // kludge
     }
 
     /** Process a single ledger

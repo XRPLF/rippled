@@ -182,7 +182,7 @@ Json::Value doBookOffers (RPC::Context& context)
     context.netOps.getBookPage (
         lpLedger,
         {{pay_currency, pay_issuer}, {get_currency, get_issuer}},
-        takerID ? *takerID : zero, bProof, limit, jvMarker, jvResult);
+        takerID ? *takerID : beast::zero, bProof, limit, jvMarker, jvResult);
 
     context.loadType = Resource::feeMediumBurdenRPC;
 

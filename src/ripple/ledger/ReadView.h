@@ -85,12 +85,12 @@ struct LedgerInfo
     //
 
     // Closed means "tx set already determined"
-    uint256 hash = zero;
-    uint256 txHash = zero;
-    uint256 accountHash = zero;
-    uint256 parentHash = zero;
+    uint256 hash = beast::zero;
+    uint256 txHash = beast::zero;
+    uint256 accountHash = beast::zero;
+    uint256 parentHash = beast::zero;
 
-    XRPAmount drops = zero;
+    XRPAmount drops = beast::zero;
 
     // If validated is false, it means "not yet validated."
     // Once validated is true, it will never be set false at a later time.

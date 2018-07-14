@@ -29,8 +29,6 @@
 #include <string>
 #include <type_traits>
 
-using beast::zero;
-
 namespace ripple {
 
 class XRPAmount

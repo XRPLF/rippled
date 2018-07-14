@@ -57,7 +57,7 @@ TER PathCursor::deliverNodeReverseImpl (
         << " saOutReq=" << saOutReq
         << " saPrvDlvReq=" << previousNode().saRevDeliver;
 
-    assert (saOutReq != zero);
+    assert (saOutReq != beast::zero);
 
     int loopCount = 0;
     auto viewJ = rippleCalc_.logs_.journal ("View");
@@ -244,13 +244,13 @@ TER PathCursor::deliverNodeReverseImpl (
                 node().offerOwnerAccount_,
                 saInPassReq,
                 saInPassAct,
-                saOutAct > zero);
+                saOutAct > beast::zero);
 
             if (fix1141(view().info().parentCloseTime))
             {
                 // The recursive call is dry this time, but we have liquidity
                 // from previous calls
-                if (resultCode == tecPATH_DRY && saOutAct > zero)
+                if (resultCode == tecPATH_DRY && saOutAct > beast::zero)
                 {
                     resultCode = tesSUCCESS;
                     break;
@@ -305,7 +305,7 @@ TER PathCursor::deliverNodeReverseImpl (
         STAmount saTakerGetsNew  = node().saTakerGets - saOutPassAct;
         STAmount saTakerPaysNew  = node().saTakerPays - saInPassAct;
 
-        if (saTakerPaysNew < zero || saTakerGetsNew < zero)
+        if (saTakerPaysNew < beast::zero || saTakerGetsNew < beast::zero)
         {
             JLOG (j_.warn())
                 << "deliverNodeReverse: NEGATIVE:"

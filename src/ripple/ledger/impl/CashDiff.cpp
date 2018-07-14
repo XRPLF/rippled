@@ -109,6 +109,8 @@ static bool treatZeroOfferAsDeletion (CashSummary& result, bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    using beast::zero;
+
     if (!before)
         return false;
 
@@ -695,7 +697,7 @@ bool diffIsDust (STAmount const& v1, STAmount const& v2, std::uint8_t e10)
 {
     // If one value is positive and the other negative then there's something
     // odd afoot.
-    if (v1 != zero && v2 != zero && (v1.negative() != v2.negative()))
+    if (v1 != beast::zero && v2 != beast::zero && (v1.negative() != v2.negative()))
         return false;
 
     // v1 and v2 must be the same Issue for their difference to make sense.
@@ -766,7 +768,7 @@ bool diffIsDust (STAmount const& v1, STAmount const& v2, std::uint8_t e10)
     // values are different, but their difference results in an STAmount
     // with an exponent less than -96.
     STAmount const diff = large - small;
-    if (diff == zero)
+    if (diff == beast::zero)
         return true;
 
     STAmount const ratio = divide (small, diff, v1.issue());

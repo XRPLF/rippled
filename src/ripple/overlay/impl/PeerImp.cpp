@@ -303,7 +303,7 @@ PeerImp::json()
         ret[jss::complete_ledgers] = std::to_string(minSeq) +
             " - " + std::to_string(maxSeq);
 
-    if (closedLedgerHash_ != zero)
+    if (closedLedgerHash_ != beast::zero)
         ret[jss::ledger] = to_string (closedLedgerHash_);
 
     switch (sanity_.load ())
@@ -2312,7 +2312,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                 nData.getDataPtr (), nData.getLength ());
 
             auto const& stateMap = ledger->stateMap ();
-            if (stateMap.getHash() != zero)
+            if (stateMap.getHash() != beast::zero)
             {
                 // return account state root node if possible
                 Serializer rootNode (768);
@@ -2321,11 +2321,11 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                     reply.add_nodes ()->set_nodedata (
                         rootNode.getDataPtr (), rootNode.getLength ());
 
-                    if (ledger->info().txHash != zero)
+                    if (ledger->info().txHash != beast::zero)
                     {
                         auto const& txMap = ledger->txMap ();
 
-                        if (txMap.getHash() != zero)
+                        if (txMap.getHash() != beast::zero)
                         {
                             rootNode.erase ();
 

@@ -46,6 +46,8 @@ public:
     {
         testcase ("beast::Zero Comparisons");
 
+        using beast::zero;
+
         for (auto i : { -1, 0, 1})
         {
             XRPAmount const x (i);
@@ -145,8 +147,8 @@ public:
             // tiny negative numbers
             XRPAmount tinyNeg (-1);
             // Round up should give zero
-            BEAST_EXPECT(zero == mulRatio (tinyNeg, 1, maxUInt32, true));
-            BEAST_EXPECT(zero == mulRatio (tinyNeg, maxUInt32 - 1, maxUInt32, true));
+            BEAST_EXPECT(beast::zero == mulRatio (tinyNeg, 1, maxUInt32, true));
+            BEAST_EXPECT(beast::zero == mulRatio (tinyNeg, maxUInt32 - 1, maxUInt32, true));
             // rounding down should be tiny
             BEAST_EXPECT(tinyNeg == mulRatio (tinyNeg, maxUInt32 - 1, maxUInt32, false));
         }

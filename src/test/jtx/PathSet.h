@@ -83,14 +83,14 @@ inline Path& Path::push_back (STPathElement const& pe)
 inline Path& Path::push_back (Issue const& iss)
 {
     path.emplace_back (STPathElement::typeCurrency | STPathElement::typeIssuer,
-        zero, iss.currency, iss.account);
+        beast::zero, iss.currency, iss.account);
     return *this;
 }
 
 inline
 Path& Path::push_back (jtx::Account const& account)
 {
-    path.emplace_back (account.id (), zero, zero);
+    path.emplace_back (account.id (), beast::zero, beast::zero);
     return *this;
 }
 

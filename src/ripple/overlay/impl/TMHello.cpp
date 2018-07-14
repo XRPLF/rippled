@@ -82,7 +82,7 @@ makeSharedValue (SSL* ssl, beast::Journal journal)
 
     // Both messages hash to the same value and the cookie
     // is 0. Don't allow this.
-    if (result == zero)
+    if (result == beast::zero)
     {
         JLOG(journal.error()) << "Cookie generation: identical finished messages";
         return boost::none;

@@ -427,7 +427,7 @@ Ledger::succ (uint256 const& key,
 std::shared_ptr<SLE const>
 Ledger::read (Keylet const& k) const
 {
-    if (k.key == zero)
+    if (k.key == beast::zero)
     {
         assert(false);
         return nullptr;

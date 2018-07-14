@@ -23,6 +23,7 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/protocol/AccountID.h>
+#include <ripple/beast/utility/Zero.h>
 
 namespace ripple {
 namespace detail {
@@ -69,7 +70,7 @@ Currency const& badCurrency();
 
 inline bool isXRP(Currency const& c)
 {
-    return c == zero;
+    return c == beast::zero;
 }
 
 /** Returns "", "XRP", or three letter ISO code. */

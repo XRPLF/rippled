@@ -84,7 +84,7 @@ invoke_preclaim(PreclaimContext const& ctx)
     // list one, preflight will have already a flagged a failure.
     auto const id = ctx.tx.getAccountID(sfAccount);
 
-    if (id != zero)
+    if (id != beast::zero)
     {
         TER result = T::checkSeq(ctx);
 

@@ -635,7 +635,7 @@ flow (PaymentSandbox const& baseView,
         // we're handling a FillOrKill offer.  In this case remainingIn must
         // be zero (all funds must be consumed) or else we kill the offer.
         assert (remainingIn);
-        if (remainingIn && *remainingIn != zero)
+        if (remainingIn && *remainingIn != beast::zero)
             return {tecPATH_PARTIAL,
                 actualIn, actualOut, std::move(ofrsToRmOnFail)};
     }

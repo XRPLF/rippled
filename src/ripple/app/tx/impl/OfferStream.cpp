@@ -175,7 +175,7 @@ TOfferStreamBase<TIn, TOut>::step ()
             offer_.issueOut (), fhZERO_IF_FROZEN, j_);
 
         // Check for unfunded offer
-        if (*ownerFunds_ <= zero)
+        if (*ownerFunds_ <= beast::zero)
         {
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the

@@ -211,9 +211,9 @@ public:
         unexpected (serializeAndDeserialize (hundred) != hundred, "STAmount fail");
         unexpected (!zeroSt.native (), "STAmount fail");
         unexpected (!hundred.native (), "STAmount fail");
-        unexpected (zeroSt != zero, "STAmount fail");
-        unexpected (one == zero, "STAmount fail");
-        unexpected (hundred == zero, "STAmount fail");
+        unexpected (zeroSt != beast::zero, "STAmount fail");
+        unexpected (one == beast::zero, "STAmount fail");
+        unexpected (hundred == beast::zero, "STAmount fail");
         unexpected ((zeroSt < zeroSt), "STAmount fail");
         unexpected (! (zeroSt < one), "STAmount fail");
         unexpected (! (zeroSt < hundred), "STAmount fail");
@@ -294,9 +294,9 @@ public:
         unexpected (serializeAndDeserialize (hundred) != hundred, "STAmount fail");
         unexpected (zeroSt.native (), "STAmount fail");
         unexpected (hundred.native (), "STAmount fail");
-        unexpected (zeroSt != zero, "STAmount fail");
-        unexpected (one == zero, "STAmount fail");
-        unexpected (hundred == zero, "STAmount fail");
+        unexpected (zeroSt != beast::zero, "STAmount fail");
+        unexpected (one == beast::zero, "STAmount fail");
+        unexpected (hundred == beast::zero, "STAmount fail");
         unexpected ((zeroSt < zeroSt), "STAmount fail");
         unexpected (! (zeroSt < one), "STAmount fail");
         unexpected (! (zeroSt < hundred), "STAmount fail");
@@ -460,21 +460,21 @@ public:
 
         STAmount smallXsmall = multiply (smallValue, smallValue, noIssue());
 
-        BEAST_EXPECT(smallXsmall == zero);
+        BEAST_EXPECT(smallXsmall == beast::zero);
 
         STAmount bigDsmall = divide (smallValue, bigValue, noIssue());
 
-        BEAST_EXPECT(bigDsmall == zero);
+        BEAST_EXPECT(bigDsmall == beast::zero);
 
-        BEAST_EXPECT(bigDsmall == zero);
+        BEAST_EXPECT(bigDsmall == beast::zero);
 
         bigDsmall = divide (smallValue, bigValue, xrpIssue ());
 
-        BEAST_EXPECT(bigDsmall == zero);
+        BEAST_EXPECT(bigDsmall == beast::zero);
 
         bigDsmall = divide (smallValue, bigNative, xrpIssue ());
 
-        BEAST_EXPECT(bigDsmall == zero);
+        BEAST_EXPECT(bigDsmall == beast::zero);
 
         // very bad offer
         std::uint64_t r = getRate (smallValue, bigValue);

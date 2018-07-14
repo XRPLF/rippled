@@ -26,8 +26,6 @@
 #include <string>
 #include <utility>
 
-using beast::zero;
-
 namespace ripple {
 
 /** Floating point representation of amounts with high dynamic range
@@ -64,7 +62,7 @@ public:
 
     IOUAmount (beast::Zero)
     {
-        *this = zero;
+        *this = beast::zero;
     }
 
     IOUAmount (std::int64_t mantissa, int exponent)
