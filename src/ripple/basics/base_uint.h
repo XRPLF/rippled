@@ -35,9 +35,6 @@
 #include <functional>
 #include <type_traits>
 
-using beast::zero;
-using beast::Zero;
-
 namespace ripple {
 
 // This class stores its values internally in big-endian form
@@ -392,7 +389,7 @@ public:
         return bytes;
     }
 
-    base_uint<Bits, Tag>& operator=(Zero)
+    base_uint<Bits, Tag>& operator=(beast::Zero)
     {
         pn.fill(0);
         return *this;
