@@ -34,6 +34,24 @@
 namespace ripple {
 namespace NodeStore {
 
+// Removes a path in its entirety
+inline static
+bool
+removeAll(boost::filesystem::path const& path, beast::Journal& j)
+{
+    try
+    {
+        boost::filesystem::remove_all(path);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j.error()) <<
+            "exception: " << e.what();
+        return false;
+    }
+    return true;
+}
+
 using PCache = TaggedCache<uint256, NodeObject>;
 using NCache = KeyCache<uint256>;
 class DatabaseShard;
@@ -164,10 +182,6 @@ private:
     // Save the control file for an incomplete shard
     bool
     saveControl();
-
-    // Remove directory or file
-    bool
-    remove(boost::filesystem::path const& path);
 };
 
 } // NodeStore

@@ -241,8 +241,9 @@ private:
             1, static_cast<int>(complete_.size() + (incomplete_ ? 1 : 0))));
     }
 
-    bool
-    remove(boost::filesystem::path const& path);
+    // Returns available storage space
+    std::uint64_t
+    available() const;
 };
 
 } // NodeStore
