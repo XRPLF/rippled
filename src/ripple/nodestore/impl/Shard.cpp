@@ -53,15 +53,47 @@ Shard::open(Section config, Scheduler& scheduler)
 {
     assert(!backend_);
     using namespace boost::filesystem;
-    auto const newShard {!is_directory(dir_) || is_empty(dir_)};
+
+    bool dirPreexist;
+    bool dirEmpty;
+    try
+    {
+        if (!exists(dir_))
+        {
+            dirPreexist = false;
+            dirEmpty = true;
+        }
+        else if (is_directory(dir_))
+        {
+            dirPreexist = true;
+            dirEmpty = is_empty(dir_);
+        }
+        else
+        {
+             JLOG(j_.error()) <<
+                "path exists as file: " << dir_.string();
+            return false;
+        }
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j_.error()) <<
+            "shard " + std::to_string(index_) + " exception: " + e.what();
+        return false;
+    }
+
     auto fail = [&](std::string msg)
     {
-        if (!msg.empty())
+        JLOG(j_.error()) <<
+            "shard " << std::to_string(index_) << " error: " << msg;
+
+        if (!dirPreexist)
+            removeAll(dir_, j_);
+        else if (dirEmpty)
         {
-            JLOG(j_.error()) << msg;
+            for (auto const& p : recursive_directory_iterator(dir_))
+                removeAll(p.path(), j_);
         }
-        if (newShard)
-            this->remove(dir_);
         return false;
     };
 
@@ -70,50 +102,64 @@ Shard::open(Section config, Scheduler& scheduler)
     {
         backend_ = Manager::instance().make_Backend(
             config, scheduler, j_);
-        backend_->open(newShard);
+        backend_->open(!dirPreexist || dirEmpty);
+
+        if (backend_->fdlimit() == 0)
+            return true;
+
+        if (!dirPreexist || dirEmpty)
+        {
+            // New shard, create a control file
+            if (!saveControl())
+                return fail("failure");
+        }
+        else if (is_regular_file(control_))
+        {
+            // Incomplete shard, inspect control file
+            std::ifstream ifs(control_.string());
+            if (!ifs.is_open())
+            {
+                return fail("shard " + std::to_string(index_) +
+                    ", unable to open control file");
+            }
+
+            boost::archive::text_iarchive ar(ifs);
+            ar & storedSeqs_;
+            if (!storedSeqs_.empty())
+            {
+                if (boost::icl::first(storedSeqs_) < firstSeq_ ||
+                    boost::icl::last(storedSeqs_) > lastSeq_)
+                {
+                    return fail("shard " + std::to_string(index_) +
+                        ": Invalid control file");
+                }
+
+                if (boost::icl::length(storedSeqs_) >= maxLedgers_)
+                {
+                    JLOG(j_.error()) <<
+                        "shard " << index_ <<
+                        " found control file for complete shard";
+                    storedSeqs_.clear();
+                    complete_ = true;
+                    remove_all(control_);
+                }
+            }
+        }
+        else
+            complete_ = true;
+
+        // Calculate file foot print of backend files
+        for (auto const& p : recursive_directory_iterator(dir_))
+            if (!is_directory(p))
+                fileSize_ += file_size(p);
     }
     catch (std::exception const& e)
     {
-        return fail("shard " + std::to_string(index_) +
-            ": Exception, " + e.what());
+        JLOG(j_.error()) <<
+            "shard " << std::to_string(index_) << " error: " << e.what();
+        return false;
     }
 
-    if (backend_->fdlimit() == 0)
-        return true;
-
-    if (newShard)
-    {
-        if (!saveControl())
-            return fail({});
-    }
-    else if (is_regular_file(control_))
-    {
-        std::ifstream ifs(control_.string());
-        if (!ifs.is_open())
-            return fail("shard " + std::to_string(index_) +
-                ": Unable to open control file");
-        boost::archive::text_iarchive ar(ifs);
-        ar & storedSeqs_;
-        if (!storedSeqs_.empty())
-        {
-            if (boost::icl::first(storedSeqs_) < firstSeq_ ||
-                boost::icl::last(storedSeqs_) > lastSeq_)
-                return fail("shard " + std::to_string(index_) +
-                    ": Invalid control file");
-            if (boost::icl::length(storedSeqs_) >= maxLedgers_)
-            {
-                JLOG(j_.error()) <<
-                    "shard " << index_ <<
-                    " found control file for complete shard";
-                storedSeqs_.clear();
-                this->remove(control_);
-                complete_ = true;
-            }
-        }
-    }
-    else
-        complete_ = true;
-    updateFileSize();
     return true;
 }
 
@@ -133,9 +179,26 @@ Shard::setStored(std::shared_ptr<Ledger const> const& l)
     {
         if (backend_->fdlimit() != 0)
         {
-            if (!this->remove(control_))
+            if (!removeAll(control_, j_))
                 return false;
-            updateFileSize();
+
+            // Update file foot print of backend files
+            using namespace boost::filesystem;
+            std::uint64_t sz {0};
+            try
+            {
+                for (auto const& p : recursive_directory_iterator(dir_))
+                    if (!is_directory(p))
+                        sz += file_size(p);
+            }
+            catch (const filesystem_error& e)
+            {
+                JLOG(j_.error()) <<
+                    "exception: " << e.what();
+                fileSize_ = std::max(fileSize_, sz);
+                return false;
+            }
+            fileSize_ = sz;
         }
         complete_ = true;
         storedSeqs_.clear();
@@ -405,16 +468,6 @@ Shard::valFetch(uint256 const& hash)
     return nObj;
 }
 
-void
-Shard::updateFileSize()
-{
-    fileSize_ = 0;
-    using namespace boost::filesystem;
-    for (auto const& d : directory_iterator(dir_))
-        if (is_regular_file(d))
-            fileSize_ += file_size(d);
-}
-
 bool
 Shard::saveControl()
 {
@@ -428,23 +481,6 @@ Shard::saveControl()
     }
     boost::archive::text_oarchive ar(ofs);
     ar & storedSeqs_;
-    return true;
-}
-
-bool
-Shard::remove(boost::filesystem::path const& path)
-{
-    try
-    {
-        boost::filesystem::remove_all(path);
-    }
-    catch (const boost::filesystem::filesystem_error& e)
-    {
-        JLOG(j_.error()) <<
-            "remove_all " << path.string() <<
-            ": Exception, " << e.code().message();
-        return false;
-    }
     return true;
 }
 

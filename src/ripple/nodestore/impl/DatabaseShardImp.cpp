@@ -92,67 +92,77 @@ DatabaseShardImp::init()
         return true;
     }
 
-    // Find shards
-    for (auto const& d : directory_iterator(dir_))
+    try
     {
-        if (!is_directory(d))
-            continue;
+        // Find shards
+        for (auto const& d : directory_iterator(dir_))
+        {
+            if (!is_directory(d))
+                continue;
 
-        // Validate shard directory name is numeric
-        auto dirName = d.path().stem().string();
-        if (!std::all_of(
-            dirName.begin(),
-            dirName.end(),
-            [](auto c){
+            // Validate shard directory name is numeric
+            auto dirName = d.path().stem().string();
+            if (!std::all_of(
+                dirName.begin(),
+                dirName.end(),
+                [](auto c) {
                 return ::isdigit(static_cast<unsigned char>(c));
             }))
-        {
-            continue;
-        }
+            {
+                continue;
+            }
 
-        auto const shardIndex {std::stoul(dirName)};
-        if (shardIndex < earliestShardIndex())
-        {
-            JLOG(j_.fatal()) <<
-                "Invalid shard index " << shardIndex <<
-                ". Earliest shard index " << earliestShardIndex();
-            return false;
-        }
-
-        // Check if a previous import failed
-        if (is_regular_file(dir_ / std::to_string(shardIndex) /
-            importMarker_))
-        {
-            JLOG(j_.warn()) <<
-                "shard " << shardIndex <<
-                " previously failed import, removing";
-            if (!this->remove(dir_ / std::to_string(shardIndex)))
-                return false;
-            continue;
-        }
-
-        auto shard = std::make_unique<Shard>(
-            *this, shardIndex, cacheSz_, cacheAge_, j_);
-        if (!shard->open(config_, scheduler_))
-            return false;
-        usedDiskSpace_ += shard->fileSize();
-        if (shard->complete())
-            complete_.emplace(shard->index(), std::move(shard));
-        else
-        {
-            if (incomplete_)
+            auto const shardIndex {std::stoul(dirName)};
+            if (shardIndex < earliestShardIndex())
             {
                 JLOG(j_.fatal()) <<
-                    "More than one control file found";
+                    "Invalid shard index " << shardIndex <<
+                    ". Earliest shard index " << earliestShardIndex();
                 return false;
             }
-            incomplete_ = std::move(shard);
+
+            // Check if a previous import failed
+            if (is_regular_file(
+                dir_ / std::to_string(shardIndex) / importMarker_))
+            {
+                JLOG(j_.warn()) <<
+                    "shard " << shardIndex <<
+                    " previously failed import, removing";
+                remove_all(dir_ / std::to_string(shardIndex));
+                continue;
+            }
+
+            auto shard {std::make_unique<Shard>(
+                *this, shardIndex, cacheSz_, cacheAge_, j_)};
+            if (!shard->open(config_, scheduler_))
+                return false;
+
+            usedDiskSpace_ += shard->fileSize();
+            if (shard->complete())
+                complete_.emplace(shard->index(), std::move(shard));
+            else
+            {
+                if (incomplete_)
+                {
+                    JLOG(j_.fatal()) <<
+                        "More than one control file found";
+                    return false;
+                }
+                incomplete_ = std::move(shard);
+            }
         }
     }
+    catch (std::exception const& e)
+    {
+        JLOG(j_.error()) <<
+            "exception: " << e.what();
+        return false;
+    }
+
     if (!incomplete_ && complete_.empty())
     {
         // New Shard Store, calculate file descriptor requirements
-        if (maxDiskSpace_ > space(dir_).free)
+        if (maxDiskSpace_ > available())
         {
             JLOG(j_.error()) <<
                 "Insufficient disk space";
@@ -185,7 +195,7 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
             canAdd_ = false;
             return boost::none;
         }
-        if (avgShardSz_ > boost::filesystem::space(dir_).free)
+        if (avgShardSz_ > available())
         {
             JLOG(j_.error()) <<
                 "Insufficient disk space";
@@ -211,9 +221,9 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
     if (!incomplete_->open(config_, scheduler_))
     {
         incomplete_.reset();
-        this->remove(dir_ / std::to_string(*shardIndex));
         return boost::none;
     }
+
     return incomplete_->prepare();
 }
 
@@ -254,6 +264,7 @@ DatabaseShardImp::prepareShard(std::uint32_t shardIndex)
     {
         return false;
     }
+
     if (complete_.find(shardIndex) != complete_.end())
     {
         JLOG(j_.debug()) <<
@@ -287,7 +298,7 @@ DatabaseShardImp::prepareShard(std::uint32_t shardIndex)
                 "Exceeds maximum size";
             return false;
         }
-        if (sz > space(dir_).free)
+        if (sz > available())
         {
             JLOG(j_.error()) <<
                 "Insufficient disk space";
@@ -321,10 +332,19 @@ DatabaseShardImp::importShard(std::uint32_t shardIndex,
     boost::filesystem::path const& srcDir, bool validate)
 {
     using namespace boost::filesystem;
-    if (!is_directory(srcDir) || is_empty(srcDir))
+    try
+    {
+        if (!is_directory(srcDir) || is_empty(srcDir))
+        {
+            JLOG(j_.error()) <<
+                "Invalid source directory " << srcDir.string();
+            return false;
+        }
+    }
+    catch (std::exception const& e)
     {
         JLOG(j_.error()) <<
-            "Invalid source directory " << srcDir.string();
+            "exception: " << e.what();
         return false;
     }
 
@@ -334,12 +354,10 @@ DatabaseShardImp::importShard(std::uint32_t shardIndex,
         {
             rename(src, dst);
         }
-        catch (const filesystem_error& e)
+        catch (std::exception const& e)
         {
             JLOG(j_.error()) <<
-                "rename " << src.string() <<
-                " to " << dst.string() <<
-                ": Exception, " << e.code().message();
+                "exception: " << e.what();
             return false;
         }
         return true;
@@ -367,27 +385,25 @@ DatabaseShardImp::importShard(std::uint32_t shardIndex,
         *this, shardIndex, cacheSz_, cacheAge_, j_)};
     auto fail = [&](std::string msg)
     {
-        if (!msg.empty())
-        {
-            JLOG(j_.error()) << msg;
-        }
+        JLOG(j_.error()) << msg;
         shard.release();
         move(dstDir, srcDir);
         return false;
     };
+
     if (!shard->open(config_, scheduler_))
-        return fail({});
+        return fail("Failure");
     if (!shard->complete())
         return fail("Incomplete shard");
 
-    // Verify database integrity
     try
     {
+        // Verify database integrity
         shard->getBackend()->verify();
     }
     catch (std::exception const& e)
     {
-        return fail(std::string("Verify: Exception, ") + e.what());
+        return fail(std::string("exception: ") + e.what());
     }
 
     // Validate shard ledgers
@@ -397,14 +413,14 @@ DatabaseShardImp::importShard(std::uint32_t shardIndex,
         // so the database can fetch data from it
         it->second = shard.get();
         l.unlock();
-        auto valid {shard->validate(app_)};
+        auto const valid {shard->validate(app_)};
         l.lock();
         if (!valid)
         {
             it = preShards_.find(shardIndex);
             if(it != preShards_.end())
                 it->second = nullptr;
-            return fail({});
+            return fail("failed validation");
         }
     }
 
@@ -634,7 +650,7 @@ DatabaseShardImp::import(Database& source)
             canAdd_ = false;
             break;
         }
-        if (avgShardSz_ > boost::filesystem::space(dir_).free)
+        if (avgShardSz_ > available())
         {
             JLOG(j_.error()) <<
                 "Insufficient disk space";
@@ -686,7 +702,6 @@ DatabaseShardImp::import(Database& source)
         if (!shard->open(config_, scheduler_))
         {
             shard.reset();
-            this->remove(shardDir);
             continue;
         }
 
@@ -699,7 +714,7 @@ DatabaseShardImp::import(Database& source)
                 "shard " << shardIndex <<
                 " unable to create temp marker file";
             shard.reset();
-            this->remove(shardDir);
+            removeAll(shardDir, j_);
             continue;
         }
         ofs.close();
@@ -727,7 +742,7 @@ DatabaseShardImp::import(Database& source)
                 JLOG(j_.debug()) <<
                     "shard " << shardIndex <<
                     " successfully imported";
-                this->remove(markerFile);
+                removeAll(markerFile, j_);
                 break;
             }
         }
@@ -738,7 +753,7 @@ DatabaseShardImp::import(Database& source)
                 "shard " << shardIndex <<
                 " failed to import";
             shard.reset();
-            this->remove(shardDir);
+            removeAll(shardDir, j_);
         }
     }
 
@@ -1070,7 +1085,7 @@ DatabaseShardImp::updateStats(std::lock_guard<std::mutex>&)
     else
     {
         auto const sz = maxDiskSpace_ - usedDiskSpace_;
-        if (sz > space(dir_).free)
+        if (sz > available())
         {
             JLOG(j_.warn()) <<
                 "Max Shard Store size exceeds "
@@ -1110,21 +1125,19 @@ DatabaseShardImp::selectCache(std::uint32_t seq)
     return {};
 }
 
-bool
-DatabaseShardImp::remove(boost::filesystem::path const& path)
+std::uint64_t
+DatabaseShardImp::available() const
 {
     try
     {
-        boost::filesystem::remove_all(path);
+        return boost::filesystem::space(dir_).available;
     }
-    catch (const boost::filesystem::filesystem_error& e)
+    catch (std::exception const& e)
     {
         JLOG(j_.error()) <<
-            "remove_all " << path.string() <<
-            ": Exception, " << e.code().message();
-        return false;
+            "exception: " << e.what();
+        return 0;
     }
-    return true;
 }
 
 } // NodeStore
