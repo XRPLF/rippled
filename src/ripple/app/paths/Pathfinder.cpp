@@ -172,7 +172,7 @@ Pathfinder::Pathfinder (
 
 bool Pathfinder::findPaths (int searchLevel)
 {
-    if (mDstAmount == zero)
+    if (mDstAmount == beast::zero)
     {
         // No need to send zero money.
         JLOG (j_.debug()) << "Destination amount was zero.";
@@ -665,7 +665,7 @@ Pathfinder::getBestPaths (
         }
     }
 
-    if (remaining > zero)
+    if (remaining > beast::zero)
     {
         assert (fullLiquidityPath.empty ());
         JLOG (j_.info()) <<
@@ -726,7 +726,7 @@ int Pathfinder::getPathsOut (
             if (currency != rspEntry->getLimit ().getCurrency ())
             {
             }
-            else if (rspEntry->getBalance () <= zero &&
+            else if (rspEntry->getBalance () <= beast::zero &&
                      (!rspEntry->getLimitPeer ()
                       || -rspEntry->getBalance () >= rspEntry->getLimitPeer ()
                       ||  (bAuthRequired && !rspEntry->getAuth ())))
@@ -969,7 +969,7 @@ void Pathfinder::addLink (
                         !currentPath.hasSeen (acct, uEndCurrency, acct))
                     {
                         // path is for correct currency and has not been seen
-                        if (rs->getBalance () <= zero
+                        if (rs->getBalance () <= beast::zero
                             && (!rs->getLimitPeer ()
                                 || -rs->getBalance () >= rs->getLimitPeer ()
                                 || (bRequireAuth && !rs->getAuth ())))

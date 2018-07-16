@@ -80,6 +80,8 @@ protected:
 
         bool sanity_check () const
         {
+            using beast::zero;
+
             if (isXRP (order.in) && isXRP (order.out))
                 return false;
 

@@ -77,7 +77,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
                 ! uNodeIndex.SetHex (
                     context.params[jss::deposit_preauth].asString()))
             {
-                uNodeIndex = zero;
+                uNodeIndex = beast::zero;
                 jvResult[jss::error] = "malformedRequest";
             }
         }

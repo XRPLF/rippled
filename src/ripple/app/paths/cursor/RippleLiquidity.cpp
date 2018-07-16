@@ -65,15 +65,15 @@ void rippleLiquidity (
         << " saPrvAct=" << saPrvAct
         << " saCurAct=" << saCurAct;
 
-    // saCurAct was once zero in a production server.
-    assert (saCurReq != zero);
-    assert (saCurReq > zero);
+    // saCurAct was once beast::zero in a production server.
+    assert (saCurReq != beast::zero);
+    assert (saCurReq > beast::zero);
 
     assert (saPrvReq.getCurrency () == saCurReq.getCurrency ());
     assert (saPrvReq.getCurrency () == saPrvAct.getCurrency ());
     assert (saPrvReq.getIssuer () == saPrvAct.getIssuer ());
 
-    const bool bPrvUnlimited = (saPrvReq < zero);  // -1 means unlimited.
+    const bool bPrvUnlimited = (saPrvReq < beast::zero);  // -1 means unlimited.
 
     // Unlimited stays unlimited - don't do calculations.
 
@@ -90,7 +90,7 @@ void rippleLiquidity (
         << " saCur=" << saCur;
 
     // If nothing can flow, we might as well not do any work.
-    if (saPrv == zero || saCur == zero)
+    if (saPrv == beast::zero || saCur == beast::zero)
         return;
 
     if (qualityIn >= qualityOut)

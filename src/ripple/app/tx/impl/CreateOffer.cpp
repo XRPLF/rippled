@@ -97,7 +97,7 @@ CreateOffer::preflight (PreflightContext const& ctx)
             "Malformed offer: redundant (XRP for XRP)";
         return temBAD_OFFER;
     }
-    if (saTakerPays <= zero || saTakerGets <= zero)
+    if (saTakerPays <= beast::zero || saTakerGets <= beast::zero)
     {
         JLOG(j.debug()) <<
             "Malformed offer: bad amount";
@@ -165,7 +165,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
         return tecFROZEN;
     }
     else if (accountFunds(ctx.view, id, saTakerGets,
-        fhZERO_IF_FROZEN, viewJ) <= zero)
+        fhZERO_IF_FROZEN, viewJ) <= beast::zero)
     {
         JLOG(ctx.j.debug()) <<
             "delay: Offers must be at least partially funded.";
@@ -285,7 +285,7 @@ CreateOffer::dry_offer (ApplyView& view, Offer const& offer)
         return true;
     auto const amount = accountFunds(view, offer.owner(),
         offer.amount().out, fhZERO_IF_FROZEN, ctx_.app.journal ("View"));
-    return (amount <= zero);
+    return (amount <= beast::zero);
 }
 
 std::pair<bool, Quality>
@@ -653,7 +653,7 @@ CreateOffer::flowCross (
         // below the reserve) so we check this case again.
         STAmount const inStartBalance = accountFunds (
             psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
-        if (inStartBalance <= zero)
+        if (inStartBalance <= beast::zero)
         {
             // The account balance can't cover even part of the offer.
             JLOG (j_.debug()) <<
@@ -745,7 +745,7 @@ CreateOffer::flowCross (
             STAmount const takerInBalance = accountFunds (
                 psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
 
-            if (takerInBalance <= zero)
+            if (takerInBalance <= beast::zero)
             {
                 // If offer crossing exhausted the account's funds don't
                 // create the offer.
@@ -776,7 +776,7 @@ CreateOffer::flowCross (
 
                     // It's possible that the divRound will cause our subtract
                     // to go slightly negative.  So limit afterCross.in to zero.
-                    if (afterCross.in < zero)
+                    if (afterCross.in < beast::zero)
                         // We should verify that the difference *is* small, but
                         // what is a good threshold to check?
                         afterCross.in.clear();
@@ -790,8 +790,8 @@ CreateOffer::flowCross (
                     // remaining output.  This too preserves the offer
                     // Quality.
                     afterCross.out -= result.actualAmountOut;
-                    assert (afterCross.out >= zero);
-                    if (afterCross.out < zero)
+                    assert (afterCross.out >= beast::zero);
+                    if (afterCross.out < beast::zero)
                         afterCross.out.clear();
                     afterCross.in = mulRound (afterCross.out,
                         rate, takerAmount.in.issue(), true);
@@ -913,6 +913,8 @@ CreateOffer::cross (
     Sandbox& sbCancel,
     Amounts const& takerAmount)
 {
+    using beast::zero;
+
     // There are features for Flow offer crossing and for comparing results
     // between Taker and Flow offer crossing.  Turn those into bools.
     bool const useFlowCross { sb.rules().enabled (featureFlowCross) };
@@ -1067,6 +1069,8 @@ CreateOffer::preCompute()
 std::pair<TER, bool>
 CreateOffer::applyGuts (Sandbox& sb, Sandbox& sbCancel)
 {
+    using beast::zero;
+
     std::uint32_t const uTxFlags = ctx_.tx.getFlags ();
 
     bool const bPassive (uTxFlags & tfPassive);

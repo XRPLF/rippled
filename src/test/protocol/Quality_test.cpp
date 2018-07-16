@@ -233,7 +233,7 @@ public:
                 raw (4131113916555555, -16));       // .4131113916555555
             Amounts const result (
                 q.ceil_out (value, limit));
-            BEAST_EXPECT(result.in != zero);
+            BEAST_EXPECT(result.in != beast::zero);
         }
     }
 

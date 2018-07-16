@@ -168,7 +168,7 @@ bool PathRequest::isValid (std::shared_ptr<RippleLineCache> const& crCache)
     if (! raSrcAccount || ! raDstAccount)
         return false;
 
-    if (! convert_all_ && (saSendMax || saDstAmount <= zero))
+    if (! convert_all_ && (saSendMax || saDstAmount <= beast::zero))
     {
         // If send max specified, dst amt must be -1.
         jvStatus = rpcError(rpcDST_AMT_MALFORMED);
@@ -316,7 +316,7 @@ int PathRequest::parseJson (Json::Value const& jvParams)
     if ((saDstAmount.getCurrency ().isZero () &&
             saDstAmount.getIssuer ().isNonZero ()) ||
         (saDstAmount.getCurrency () == badCurrency ()) ||
-        (! convert_all_ && saDstAmount <= zero))
+        (! convert_all_ && saDstAmount <= beast::zero))
     {
         jvStatus = rpcError (rpcDST_AMT_MALFORMED);
         return PFR_PJ_INVALID;
@@ -337,7 +337,7 @@ int PathRequest::parseJson (Json::Value const& jvParams)
             (saSendMax->getCurrency().isZero() &&
                 saSendMax->getIssuer().isNonZero()) ||
             (saSendMax->getCurrency() == badCurrency()) ||
-            (*saSendMax <= zero &&
+            (*saSendMax <= beast::zero &&
                 *saSendMax != STAmount(saSendMax->issue(), 1u, 0, true)))
         {
             jvStatus = rpcError(rpcSENDMAX_MALFORMED);

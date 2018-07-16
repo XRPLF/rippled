@@ -104,7 +104,7 @@ TER PathCursor::forwardLiquidityForAccount () const
             // available.
             node().saFwdRedeem = node().saRevRedeem;
 
-            if (pathState_.inReq() >= zero)
+            if (pathState_.inReq() >= beast::zero)
             {
                 // Limit by send max.
                 node().saFwdRedeem = std::min (
@@ -117,7 +117,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                 // Fully redeemed.
                 ? node().saRevIssue : STAmount (node().saRevIssue);
 
-            if (node().saFwdIssue && pathState_.inReq() >= zero)
+            if (node().saFwdIssue && pathState_.inReq() >= beast::zero)
             {
                 // Limit by send max.
                 node().saFwdIssue = std::min (
@@ -343,7 +343,7 @@ TER PathCursor::forwardLiquidityForAccount () const
             node().saFwdDeliver = node().saRevDeliver;
 
             // If limited, then limit by send max and available.
-            if (pathState_.inReq() >= zero)
+            if (pathState_.inReq() >= beast::zero)
             {
                 // Limit by send max.
                 node().saFwdDeliver = std::min (

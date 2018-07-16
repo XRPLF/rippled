@@ -381,7 +381,7 @@ TER RippleCalc::rippleCalculate (detail::FlowDebugInfo* flowDebugInfo)
 
                     ++iDry;
                 }
-                else if (pathState->outPass() == zero)
+                else if (pathState->outPass() == beast::zero)
                 {
                     // Path is not dry, but moved no funds
                     // This should never happen. Consider the path dry

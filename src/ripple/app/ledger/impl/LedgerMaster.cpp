@@ -1027,7 +1027,7 @@ LedgerMaster::findNewLedgersToPublish ()
             // VFALCO TODO Restructure this code so that zero is not
             // used.
             if (! hash)
-                hash = zero; // kludge
+                hash = beast::zero; // kludge
             if (seq == valSeq)
             {
                 // We need to publish the ledger we just fully validated

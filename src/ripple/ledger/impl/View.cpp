@@ -282,7 +282,7 @@ xrpLiquid (ReadView const& view, AccountID const& id,
 {
     auto const sle = view.read(keylet::account(id));
     if (sle == nullptr)
-        return zero;
+        return beast::zero;
 
     // Return balance minus reserve
     if (fix1141 (view.info ().parentCloseTime))
@@ -1181,9 +1181,9 @@ rippleCredit (ApplyView& view,
         bool bDelete = false;
 
         // YYY Could skip this if rippling in reverse.
-        if (saBefore > zero
+        if (saBefore > beast::zero
             // Sender balance was positive.
-            && saBalance <= zero
+            && saBalance <= beast::zero
             // Sender is zero or negative.
             && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
             // Sender reserve is set.
@@ -1327,7 +1327,7 @@ accountSend (ApplyView& view,
     AccountID const& uSenderID, AccountID const& uReceiverID,
     STAmount const& saAmount, beast::Journal j)
 {
-    assert (saAmount >= zero);
+    assert (saAmount >= beast::zero);
 
     /* If we aren't sending anything or if the sender is the same as the
      * receiver then we don't need to do anything.
@@ -1456,9 +1456,9 @@ updateTrustLine (
     assert (sle);
 
     // YYY Could skip this if rippling in reverse.
-    if (before > zero
+    if (before > beast::zero
         // Sender balance was positive.
-        && after <= zero
+        && after <= beast::zero
         // Sender is zero or negative.
         && (flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
         // Sender reserve is set.

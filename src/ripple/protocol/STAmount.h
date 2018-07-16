@@ -191,7 +191,7 @@ public:
 
     explicit operator bool() const noexcept
     {
-        return *this != zero;
+        return *this != beast::zero;
     }
 
     STAmount& operator+= (STAmount const&);
@@ -217,7 +217,7 @@ public:
 
     void negate()
     {
-        if (*this != zero)
+        if (*this != beast::zero)
             mIsNegative = !mIsNegative;
     }
 

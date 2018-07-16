@@ -181,7 +181,7 @@ Json::Value doGatewayBalances (RPC::Context& context)
                 {
                     // normal negative balance, obligation to customer
                     auto& bal = sums[rs->getBalance().getCurrency()];
-                    if (bal == zero)
+                    if (bal == beast::zero)
                     {
                         // This is needed to set the currency code correctly
                         bal = -rs->getBalance();
