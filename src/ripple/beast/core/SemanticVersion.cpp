@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <locale>
 
 namespace beast {
 

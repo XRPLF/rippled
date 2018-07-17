@@ -60,12 +60,12 @@ IS_OS_X = platform.system().lower() == 'darwin'
 # CMake
 if IS_WINDOWS:
     CMAKE_UNITY_CONFIGS = ['Debug', 'Release']
-    CMAKE_NONUNITY_CONFIGS = ['DebugClassic', 'ReleaseClassic']
+    CMAKE_NONUNITY_CONFIGS = ['Debug', 'Release']
 else:
     CMAKE_UNITY_CONFIGS = []
     CMAKE_NONUNITY_CONFIGS = []
-CMAKE_UNITY_COMBOS = { '' : [['rippled', 'rippled_classic'], CMAKE_UNITY_CONFIGS],
-    '.nounity' : [['rippled', 'rippled_unity'], CMAKE_NONUNITY_CONFIGS] }
+CMAKE_UNITY_COMBOS = { '' : [['rippled'], CMAKE_UNITY_CONFIGS],
+    '.nounity' : [['rippled'], CMAKE_NONUNITY_CONFIGS] }
 
 if IS_WINDOWS:
     CMAKE_DIR_TARGETS = { ('msvc' + unity,) : targets for unity, targets in
@@ -198,7 +198,7 @@ def decodeString(line):
     else:
         return line.decode()
 
-def shell(cmd, args=(), silent=False):
+def shell(cmd, args=(), silent=False, cust_env=None):
     """"Execute a shell command and return the output."""
     silent = ARGS.silent or silent
     verbose = not silent and ARGS.verbose
@@ -213,6 +213,7 @@ def shell(cmd, args=(), silent=False):
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+        env=cust_env,
         shell=IS_WINDOWS)
     lines = []
     count = 0
@@ -252,7 +253,25 @@ def run_cmake(directory, cmake_dir, args):
             args += ( '-GNinja', )
         else:
             args += ( '-GVisual Studio 14 2015 Win64', )
-    args += ( '-Dtarget=' + cmake_dir, os.path.join('..', '..', '..'), )
+    # hack to extract cmake options/args from the legacy target format
+    if re.search('\.unity', cmake_dir):
+        args += ( '-Dunity=ON', )
+    if re.search('\.nounity', cmake_dir):
+        args += ( '-Dunity=OFF', )
+    if re.search('coverage', cmake_dir):
+        args += ( '-Dcoverage=ON', )
+    if re.search('profile', cmake_dir):
+        args += ( '-Dprofile=ON', )
+    if re.search('debug', cmake_dir):
+        args += ( '-DCMAKE_BUILD_TYPE=Debug', )
+    if re.search('release', cmake_dir):
+        args += ( '-DCMAKE_BUILD_TYPE=Release', )
+    if re.search('gcc', cmake_dir):
+        args += ( '-DCMAKE_C_COMPILER=gcc', '-DCMAKE_CXX_COMPILER=g++', )
+    if re.search('clang', cmake_dir):
+        args += ( '-DCMAKE_C_COMPILER=clang', '-DCMAKE_CXX_COMPILER=clang++', )
+
+    args += ( os.path.join('..', '..', '..'), )
     resultcode, lines = shell('cmake', args)
 
     if resultcode:

@@ -19,9 +19,6 @@
 
 // MODULES: ../impl/IPEndpoint.cpp ../impl/IPAddressV4.cpp ../impl/IPAddressV6.cpp
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#endif
-
 #include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/basics/random.h>
