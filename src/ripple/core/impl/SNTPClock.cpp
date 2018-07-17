@@ -32,8 +32,6 @@
 
 namespace ripple {
 
-// #define SNTP_DEBUG
-
 static uint8_t SNTPQueryData[48] =
 { 0x1B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
