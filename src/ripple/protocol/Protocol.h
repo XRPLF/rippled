@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_PROTOCOL_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
+#include <ripple/basics/literals.h>
 #include <cstdint>
 
 namespace ripple {
@@ -38,7 +39,7 @@ namespace ripple {
 std::size_t constexpr txMinSizeBytes = 32;
 
 /** Largest legal byte size of a transaction. */
-std::size_t constexpr txMaxSizeBytes = 1024 * 1024;
+std::size_t constexpr txMaxSizeBytes = 1_mb;
 
 /** The maximum number of unfunded offers to delete at once */
 std::size_t constexpr unfundedOfferRemoveLimit = 1000;

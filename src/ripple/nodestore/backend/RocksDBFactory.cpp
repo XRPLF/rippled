@@ -23,6 +23,7 @@
 #if RIPPLE_ROCKSDB_AVAILABLE
 
 #include <ripple/basics/contract.h>
+#include <ripple/basics/literals.h>
 #include <ripple/core/Config.h> // VFALCO Bad dependency
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
@@ -118,7 +119,7 @@ public:
 
         if (keyValues.exists ("cache_mb"))
             table_options.block_cache = rocksdb::NewLRUCache (
-                get<int>(keyValues, "cache_mb") * 1024L * 1024L);
+                get<int>(keyValues, "cache_mb") * 1_mb);
 
         if (auto const v = get<int>(keyValues, "filter_bits"))
         {
@@ -132,7 +133,7 @@ public:
 
         if (keyValues.exists ("file_size_mb"))
         {
-            m_options.target_file_size_base = 1024 * 1024 * get<int>(keyValues,"file_size_mb");
+            m_options.target_file_size_base = 1_mb * get<int>(keyValues,"file_size_mb");
             m_options.max_bytes_for_level_base = 5 * m_options.target_file_size_base;
             m_options.write_buffer_size = 2 * m_options.target_file_size_base;
         }

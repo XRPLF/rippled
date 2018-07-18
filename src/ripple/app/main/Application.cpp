@@ -44,6 +44,7 @@
 #include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/basics/literals.h>
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/PerfLog.h>
@@ -608,7 +609,6 @@ public:
         return nodeIdentity_;
     }
 
-    
     PublicKey const &
     getValidationPublicKey() const override
     {
@@ -1026,8 +1026,7 @@ public:
             boost::filesystem::space_info space =
                 boost::filesystem::space (config_->legacy ("database_path"));
 
-            constexpr std::uintmax_t bytes512M = 512 * 1024 * 1024;
-            if (space.available < (bytes512M))
+            if (space.available < 512_mb)
             {
                 JLOG(m_journal.fatal())
                     << "Remaining free disk space is less than 512MB";
@@ -1143,11 +1142,11 @@ bool ApplicationImp::setup()
 
     getLedgerDB ().getSession ()
         << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                        (config_->getSize (siLgrDBCache) * 1024));
+                        (config_->getSize (siLgrDBCache) * 1_kb));
 
     getTxnDB ().getSession ()
             << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                            (config_->getSize (siTxnDBCache) * 1024));
+                            (config_->getSize (siTxnDBCache) * 1_kb));
 
     mTxnDB->setupCheckpointing (m_jobQueue.get(), logs());
     mLedgerDB->setupCheckpointing (m_jobQueue.get(), logs());
