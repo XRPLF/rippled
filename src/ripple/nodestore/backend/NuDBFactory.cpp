@@ -40,14 +40,10 @@ class NuDBBackend
     : public Backend
 {
 public:
-    enum
-    {
-        // This needs to be tuned for the
-        // distribution of data sizes.
-        arena_alloc_size = 16 * 1024 * 1024,
-
-        currentType = 1
-    };
+    // This needs to be tuned for the
+    // distribution of data sizes.
+    static constexpr std::size_t arena_alloc_size = megabytes(16);
+    static constexpr std::size_t currentType = 1;
 
     beast::Journal j_;
     size_t const keyBytes_;
