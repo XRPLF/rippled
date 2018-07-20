@@ -26,17 +26,24 @@ can get into an open ledger for that base fee level. The limit
 will vary based on the [health](#consensus-health) of the
 consensus process, but will be at least [5](#other-constants).
   * If consensus stays [healthy](#consensus-health), the limit will
-  be the max of the current limit or the number of transactions in
-  the validated ledger until it gets to [50](#other-constants), at
-  which point, the limit will be the largest number of transactions
+  be the max of the number of transactions in the validated ledger
+  plus [20%](#other-constants) or the current limit until it gets
+  to [50](#other-constants), at which point, the limit will be the
+  largest number of transactions plus [20%](#other-constants)
   in the last [20](#other-constants) validated ledgers which had
-  more than 50 transactions. Any time the limit decreases (ie. a
-  large ledger is no longer recent), the limit will decrease to the
-  new largest value by 10% each time the ledger has more than 50
-  transactions.
+  more than [50](#other-constants) transactions. Any time the limit
+  decreases (i.e. a large ledger is no longer recent), the limit will
+  decrease to the new largest value by 10% each time the ledger has
+  more than 50 transactions.
   * If consensus does not stay [healthy](#consensus-health),
-  the limit will clamp down to the smaller of [50](#other-constants)
-  or the number of transactions in the validated ledger.
+  the limit will clamp down to the smaller of the number of
+  transactions in the validated ledger minus [50%](#other-constants)
+  or the previous limit minus [50%](#other-constants).
+  * The intended effect of these mechanisms is to allow as many base fee
+  level transactions to get into the ledger as possible while the
+  network is [healthy](#consensus-health), but to respond quickly to
+  any condition that makes it [unhealthy](#consensus-health), including,
+  but not limited to, malicious attacks.
 3. Once there are more transactions in the open ledger than indicated
 by the limit, the required fee level jumps drastically.
   * The formula is `( lastLedgerMedianFeeLevel *
@@ -57,12 +64,12 @@ in the fee escalation formula for the next open ledger.
   * Continuing the example above, if ledger consensus completes with
   only those 20 transactions, and all of those transactions paid the
   minimum required fee at each step, the limit will be adjusted from
-  6 to 20, and the `lastLedgerMedianFeeLevel` will be about 322,000,
+  6 to 24, and the `lastLedgerMedianFeeLevel` will be about 322,000,
   which is 12,600 drops for a
   [reference transaction](#reference-transaction).
-  * This will cause the first 21 transactions only require 10
-  drops, but the 22nd transaction will require
-  a level of about 355,000 or about 13,800 drops.
+  * This will only require 10 drops for the first 25 transactions,
+  but the 26th transaction will require a level of about 349,150
+  or about 13,649 drops.
 
 * This example assumes a cold-start scenario, with a single, possibly
 malicious, user willing to pay arbitrary amounts to get transactions
@@ -99,8 +106,8 @@ external transactions, transactions are applied from the queue to the
 ledger from highest [fee level](#fee-level) to lowest. These transactions
 count against the open ledger limit, so the required [fee level](#fee-level)
 may start rising during this process.
-3. Once the queue is empty, or required the [fee level](#fee-level)
-jumps too high for the remaining transactions in the queue, the ledger
+3. Once the queue is empty, or the required [fee level](#fee-level)
+rises too high for the remaining transactions in the queue, the ledger
 is opened up for normal transaction processing.
 4. A transaction in the queue can stay there indefinitely in principle,
 but in practice, either
@@ -133,7 +140,7 @@ for the queue if it meets these additional criteria:
   * none of the prior queued transactions affect the ability of subsequent
   transactions to claim a fee.
 
-Currently, there is an additional restriction that the queue can not work with
+Currently, there is an additional restriction that the queue cannot work with
 transactions using the `sfPreviousTxnID` or `sfAccountTxnID` fields.
 `sfPreviousTxnID` is deprecated and shouldn't be used anyway. Future
 development will make the queue aware of `sfAccountTxnID` mechanisms.
@@ -195,6 +202,13 @@ unusable. The "target" value of 50 was chosen so the limit never gets large
 enough to invite abuse, but keeps up if the network stays healthy and
 active. These exact values were chosen experimentally, and can easily
 change in the future.
+* *Expected ledger size growth and reduction percentages*. The growth
+value of 20% was chosen to allow the limit to grow quickly as load
+increases, but not so quickly as to allow bad actors to run unrestricted.
+The reduction value of 50% was chosen to cause the limit to drop
+significantly, but not so drastically that the limit cannot quickly
+recover if the problem is temporary. These exact values were chosen
+experimentally, and can easily change in the future.
 * *Minimum `lastLedgerMedianFeeLevel`*. The value of 500 was chosen to
 ensure that the first escalated fee was more significant and noticable
 than what the default would allow. This exact value was chosen
@@ -223,7 +237,7 @@ the earlier ones fails or is otherwise removed from the queue without
 being applied to the open ledger. The value was chosen arbitrarily, and
 can easily change in the future.
 * *Minimum last ledger sequence buffer*. If a transaction has a
-`LastLedgerSequence` value, and can not be processed into the open
+`LastLedgerSequence` value, and cannot be processed into the open
 ledger, that `LastLedgerSequence` must be at least 2 more than the
 sequence number of the open ledger to be considered for the queue. The
 value was chosen to provide a balance between letting the user control
@@ -251,8 +265,8 @@ neccessary fees for other types of transactions. (E.g. multiply all drop
 values by 5 for a multi-signed transaction with 4 signatures.)
 
 The `fee` result is always instantanteous, and relates to the open
-ledger. Thus, it does not include any sequence number or IDs, and may
-not make sense if rippled is not synced to the network.
+ledger. It includes the sequence number of the current open ledger,
+but may not make sense if rippled is not synced to the network.
 
 Result format:
 ```
@@ -262,6 +276,7 @@ Result format:
       "current_queue_size" : "2", // number of transactions waiting in the queue
       "expected_ledger_size" : "15", // one less than the number of transactions that can get into the open ledger for the base fee.
       "max_queue_size" : "300", // number of transactions allowed into the queue
+      "ledger_current_index" : 123456789, // sequence number of the current open ledger
       "levels" : {
          "reference_level" : "256", // level of a reference transaction. Always 256.
          "minimum_level" : "256", // minimum fee level to get into the queue. If >256, indicates the queue is full.
