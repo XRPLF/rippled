@@ -104,7 +104,7 @@ public:
         std::int32_t multiTxnPercent = -90;
         /// Minimum value of the escalation multiplier, regardless
         /// of the prior ledger's median fee level.
-        std::uint32_t minimumEscalationMultiplier = baseLevel * 500;
+        std::uint64_t minimumEscalationMultiplier = baseLevel * 500;
         /// Minimum number of transactions to allow into the ledger
         /// before escalation, regardless of the prior ledger's size.
         std::uint32_t minimumTxnInLedger = 5;
@@ -125,6 +125,32 @@ public:
                 values. Can it be removed?
         */
         boost::optional<std::uint32_t> maximumTxnInLedger;
+        /** When the ledger has more transactions than "expected", and
+            performance is humming along nicely, the expected ledger size
+            is updated to the previous ledger size plus this percentage.
+
+            Calculations are subject to configured limits, and the recent
+            transactions counts buffer.
+
+            Example: If the "expectation" is for 500 transactions, and a
+            ledger is validated normally with 501 transactions, then the
+            expected ledger size will be updated to 601.
+        */
+        std::uint32_t normalConsensusIncreasePercent = 20;
+        /** When consensus takes longer than appropriate, the expected
+            ledger size is updated to the lesser of the previous ledger
+            size and the current expected ledger size minus this
+            percentage.
+
+            Calculations are subject to configured limits.
+
+            Example: If the ledger has 15000 transactions, and it is
+            validated slowly, then the expected ledger size will be
+            updated to 7500. If there are only 6 transactions, the
+            expected ledger size will be updated to 5, assuming the
+            default minimum.
+        */
+        std::uint32_t slowConsensusDecreasePercent = 50;
         /// Maximum number of transactions that can be queued by one account.
         std::uint32_t maximumTxnPerAccount = 10;
         /** Minimum difference between the current ledger sequence and a
@@ -135,7 +161,7 @@ public:
         */
         std::uint32_t minimumLastLedgerBuffer = 2;
         /** So we don't deal with "infinite" fee levels, treat
-            any transaction with a 0 base fee (ie SetRegularKey
+            any transaction with a 0 base fee (i.e. SetRegularKey
             password recovery) as having this fee level.
             Should the network behavior change in the future such
             that these transactions are unable to be processed,
@@ -347,8 +373,6 @@ private:
         /// Recent history of transaction counts that
         /// exceed the targetTxnCount_
         boost::circular_buffer<std::size_t> recentTxnCounts_;
-        /// Minimum value of escalationMultiplier.
-        std::uint64_t const minimumMultiplier_;
         /// Based on the median fee of the LCL. Used
         /// when fee escalation kicks in.
         std::uint64_t escalationMultiplier_;
@@ -369,8 +393,7 @@ private:
                         boost::optional<std::size_t>(boost::none))
             , txnsExpected_(minimumTxnCount_)
             , recentTxnCounts_(setup.ledgersInQueue)
-            , minimumMultiplier_(setup.minimumEscalationMultiplier)
-            , escalationMultiplier_(minimumMultiplier_)
+            , escalationMultiplier_(setup.minimumEscalationMultiplier)
             , j_(j)
         {
         }
@@ -469,7 +492,7 @@ private:
     };
 
     /**
-        Represents transactions in the queue which may be applied
+        Represents a transaction in the queue which may be applied
         later to the open ledger.
     */
     class MaybeTx
@@ -498,6 +521,8 @@ private:
         /// Expiration ledger for the transaction
         /// (`sfLastLedgerSequence` field).
         boost::optional<LedgerIndex> lastValid;
+        /// Transaction sequence number (`sfSequence` field).
+        TxSeq const sequence;
         /**
             A transaction at the front of the queue will be given
             several attempts to succeed before being dropped from
@@ -507,12 +532,16 @@ private:
             penalty.
         */
         int retriesRemaining;
-        /// Transaction sequence number (`sfSequence` field).
-        TxSeq const sequence;
         /// Flags provided to `apply`. If the transaction is later
         /// attempted with different flags, it will need to be
         /// `preflight`ed again.
         ApplyFlags const flags;
+        /** If the transactor attempted to apply the transaction to the open
+            ledger from the queue and *failed*, then this is the transactor
+            result from the last attempt. Should never be a `tec`, `tef`,
+            `tem`, or `tesSUCCESS`, because those results cause the
+            transaction to be removed from the queue.
+        */
         boost::optional<TER> lastResult;
         /** Cached result of the `preflight` operation. Because
             `preflight` is expensive, minimize the number of times

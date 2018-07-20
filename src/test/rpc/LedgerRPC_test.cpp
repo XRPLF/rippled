@@ -1283,8 +1283,9 @@ class LedgerRPC_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env { *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->section("transaction_queue")
-                    .set("minimum_txn_in_ledger_standalone", "3");
+                auto& section = cfg->section("transaction_queue");
+                section.set("minimum_txn_in_ledger_standalone", "3");
+                section.set("normal_consensus_increase_percent", "0");
                 return cfg;
             })};
 

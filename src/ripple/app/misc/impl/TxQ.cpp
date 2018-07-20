@@ -105,14 +105,19 @@ TxQ::FeeMetrics::update(Application& app,
     {
         // Ledgers are taking to long to process,
         // so clamp down on limits.
-        txnsExpected_ = boost::algorithm::clamp(feeLevels.size(),
-            minimumTxnCount_, targetTxnCount_);
+        auto const cutPct = 100 - setup.slowConsensusDecreasePercent;
+        txnsExpected_ = boost::algorithm::clamp(
+            mulDiv(size, cutPct, 100).second,
+            minimumTxnCount_,
+            mulDiv(txnsExpected_, cutPct, 100).second);
         recentTxnCounts_.clear();
     }
-    else if (feeLevels.size() > txnsExpected_ ||
-        feeLevels.size() > targetTxnCount_)
+    else if (size > txnsExpected_ ||
+        size > targetTxnCount_)
     {
-        recentTxnCounts_.push_back(feeLevels.size());
+        recentTxnCounts_.push_back(
+            mulDiv(size, 100 + setup.normalConsensusIncreasePercent,
+                100).second);
         auto const iter = std::max_element(recentTxnCounts_.begin(),
             recentTxnCounts_.end());
         BOOST_ASSERT(iter != recentTxnCounts_.end());
@@ -135,9 +140,9 @@ TxQ::FeeMetrics::update(Application& app,
             maximumTxnCount_.value_or(next));
     }
 
-    if (feeLevels.empty())
+    if (!size)
     {
-        escalationMultiplier_ = minimumMultiplier_;
+        escalationMultiplier_ = setup.minimumEscalationMultiplier;
     }
     else
     {
@@ -148,7 +153,7 @@ TxQ::FeeMetrics::update(Application& app,
         escalationMultiplier_ = (feeLevels[size / 2] +
             feeLevels[(size - 1) / 2] + 1) / 2;
         escalationMultiplier_ = std::max(escalationMultiplier_,
-            minimumMultiplier_);
+            setup.minimumEscalationMultiplier);
     }
     JLOG(j_.debug()) << "Expected transactions updated to " <<
         txnsExpected_ << " and multiplier updated to " <<
@@ -250,8 +255,8 @@ TxQ::MaybeTx::MaybeTx(
     , feeLevel(feeLevel_)
     , txID(txID_)
     , account(txn_->getAccountID(sfAccount))
-    , retriesRemaining(retriesAllowed)
     , sequence(txn_->getSequence())
+    , retriesRemaining(retriesAllowed)
     , flags(flags_)
     , pfresult(pfresult_)
 {
@@ -1545,6 +1550,27 @@ setup_TxQ(Config const& config)
     std::uint32_t max;
     if (set(max, "maximum_txn_in_ledger", section))
         setup.maximumTxnInLedger.emplace(max);
+
+    /* The math works as expected for any value up to and including
+       MAXINT, but put a reasonable limit on this percentage so that
+       the factor can't be configured to render escalation effectively
+       moot. (There are other ways to do that, including
+       minimum_txn_in_ledger.)
+    */
+    set(setup.normalConsensusIncreasePercent,
+        "normal_consensus_increase_percent", section);
+    setup.normalConsensusIncreasePercent = boost::algorithm::clamp(
+        setup.normalConsensusIncreasePercent, 0, 1000);
+
+    /* If this percentage is outside of the 0-100 range, the results
+       are nonsensical (uint overflows happen, so the limit grows
+       instead of shrinking). 0 is not recommended.
+    */
+    set(setup.slowConsensusDecreasePercent, "slow_consensus_decrease_percent",
+        section);
+    setup.slowConsensusDecreasePercent = boost::algorithm::clamp(
+        setup.slowConsensusDecreasePercent, 0, 100);
+
     set(setup.maximumTxnPerAccount, "maximum_txn_per_account", section);
     set(setup.minimumLastLedgerBuffer,
         "minimum_last_ledger_buffer", section);
