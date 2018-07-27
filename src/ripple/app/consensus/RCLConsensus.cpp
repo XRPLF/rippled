@@ -40,6 +40,7 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/digest.h>
+#include <algorithm>
 
 namespace ripple {
 
@@ -87,43 +88,41 @@ RCLConsensus::Adaptor::Adaptor(
 }
 
 boost::optional<RCLCxLedger>
-RCLConsensus::Adaptor::acquireLedger(LedgerHash const& ledger)
+RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
 {
     // we need to switch the ledger we're working from
-    auto buildLCL = ledgerMaster_.getLedgerByHash(ledger);
-    if (!buildLCL)
+    auto built = ledgerMaster_.getLedgerByHash(hash);
+    if (!built)
     {
-        if (acquiringLedger_ != ledger)
+        if (acquiringLedger_ != hash)
         {
             // need to start acquiring the correct consensus LCL
-            JLOG(j_.warn()) << "Need consensus ledger " << ledger;
+            JLOG(j_.warn()) << "Need consensus ledger " << hash;
 
             // Tell the ledger acquire system that we need the consensus ledger
-            acquiringLedger_ = ledger;
+            acquiringLedger_ = hash;
 
-            auto app = &app_;
-            auto hash = acquiringLedger_;
-            app_.getJobQueue().addJob(
-                jtADVANCE, "getConsensusLedger", [app, hash](Job&) {
-                    app->getInboundLedgers().acquire(
-                        hash, 0, InboundLedger::Reason::CONSENSUS);
+            app_.getJobQueue().addJob(jtADVANCE, "getConsensusLedger",
+                [id = hash, &app = app_](Job&)
+                {
+                    app.getInboundLedgers().acquire(id, 0,
+                        InboundLedger::Reason::CONSENSUS);
                 });
         }
         return boost::none;
     }
 
-    assert(!buildLCL->open() && buildLCL->isImmutable());
-    assert(buildLCL->info().hash == ledger);
+    assert(!built->open() && built->isImmutable());
+    assert(built->info().hash == hash);
 
     // Notify inbound transactions of the new ledger sequence number
-    inboundTransactions_.newRound(buildLCL->info().seq);
+    inboundTransactions_.newRound(built->info().seq);
 
     // Use the ledger timing rules of the acquired ledger
-    parms_.useRoundedCloseTime = buildLCL->rules().enabled(fix1528);
+    parms_.useRoundedCloseTime = built->rules().enabled(fix1528);
 
-    return RCLCxLedger(buildLCL);
+    return RCLCxLedger(built);
 }
-
 
 void
 RCLConsensus::Adaptor::share(RCLCxPeerPos const& peerPos)
@@ -328,7 +327,22 @@ RCLConsensus::Adaptor::onClose(
 
     // Now we need an immutable snapshot
     initialSet = initialSet->snapShot(false);
-    auto setHash = initialSet->getHash().as_uint256();
+
+    if (!wrongLCL)
+    {
+        std::vector<TxID> proposed;
+
+        initialSet->visitLeaves(
+            [&proposed](std::shared_ptr<SHAMapItem const> const& item)
+            {
+                proposed.push_back(item->key());
+            });
+
+        censorshipDetector_.propose(prevLedger->info().seq + 1, std::move(proposed));
+    }
+
+    // Needed because of the move below.
+    auto const setHash = initialSet->getHash().as_uint256();
 
     return Result{
         std::move(initialSet),
@@ -431,33 +445,95 @@ RCLConsensus::Adaptor::doAccept(
                      << prevLedger.seq();
 
     //--------------------------------------------------------------------------
-    // Put transactions into a deterministic, but unpredictable, order
-    CanonicalTXSet retriableTxs{result.txns.id()};
+    std::set<TxID> failed;
 
-    auto sharedLCL = buildLCL(
-        prevLedger,
-        result.txns,
-        consensusCloseTime,
-        closeTimeCorrect,
-        closeResolution,
-        result.roundTime.read(),
-        retriableTxs);
+    // We want to put transactions in an unpredictable but deterministic order:
+    // we use the hash of the set.
+    //
+    // FIXME: Use a std::vector and a custom sorter instead of CanonicalTXSet?
+    CanonicalTXSet retriableTxs{ result.txns.map_->getHash().as_uint256() };
 
-    auto const newLCLHash = sharedLCL.id();
-    JLOG(j_.debug()) << "Report: NewL  = " << newLCLHash << ":"
-                     << sharedLCL.seq();
+    JLOG(j_.debug()) << "Building canonical tx set: " << retriableTxs.key();
+
+    for (auto const& item : *result.txns.map_)
+    {
+        try
+        {
+            retriableTxs.insert(std::make_shared<STTx const>(SerialIter{item.slice()}));
+            JLOG(j_.debug()) << "    Tx: " << item.key();
+        }
+        catch (std::exception const&)
+        {
+            failed.insert(item.key());
+            JLOG(j_.warn()) << "    Tx: " << item.key() << " throws!";
+        }
+    }
+
+    auto built = buildLCL(prevLedger, retriableTxs, consensusCloseTime,
+        closeTimeCorrect, closeResolution, result.roundTime.read(), failed);
+
+    auto const newLCLHash = built.id();
+    JLOG(j_.debug()) << "Built ledger #" << built.seq() << ": " << newLCLHash;
 
     // Tell directly connected peers that we have a new LCL
-    notify(protocol::neACCEPTED_LEDGER, sharedLCL, haveCorrectLCL);
+    notify(protocol::neACCEPTED_LEDGER, built, haveCorrectLCL);
+
+    // As long as we're in sync with the network, attempt to detect attempts
+    // at censorship of transaction by tracking which ones don't make it in
+    // after a period of time.
+    if (haveCorrectLCL && result.state == ConsensusState::Yes)
+    {
+        std::vector<TxID> accepted;
+
+        result.txns.map_->visitLeaves (
+            [&accepted](std::shared_ptr<SHAMapItem const> const& item)
+            {
+                accepted.push_back(item->key());
+            });
+
+        // Track all the transactions which failed or were marked as retriable
+        for (auto const& r : retriableTxs)
+            failed.insert (r.first.getTXID());
+
+        censorshipDetector_.check(std::move(accepted),
+            [curr = built.seq(), j = app_.journal("CensorshipDetector"), &failed]
+            (uint256 const& id, LedgerIndex seq)
+            {
+                if (failed.count(id))
+                    return true;
+
+                auto const wait = curr - seq;
+
+                if (wait && (wait % censorshipWarnInternal == 0))
+                {
+                    std::ostringstream ss;
+                    ss << "Potential Censorship: Eligible tx " << id
+                       << ", which we are tracking track since ledger " << seq
+                       << " has not been included as of ledger " << curr
+                       << ".";
+
+                    if (wait / censorshipWarnInternal == censorshipMaxWarnings)
+                    {
+                        JLOG(j.error()) << ss.str() << " Additional warnings suppressed.";
+                    }
+                    else
+                    {
+                        JLOG(j.warn()) << ss.str();
+                    }
+                }
+
+                return false;
+            });
+    }
 
     if (validating_)
         validating_ = ledgerMaster_.isCompatible(
-            *sharedLCL.ledger_, j_.warn(), "Not validating");
+            *built.ledger_, j_.warn(), "Not validating");
 
     if (validating_ && !consensusFail &&
-        app_.getValidations().canValidateSeq(sharedLCL.seq()))
+        app_.getValidations().canValidateSeq(built.seq()))
     {
-        validate(sharedLCL, result.txns, proposing);
+        validate(built, result.txns, proposing);
         JLOG(j_.info()) << "CNF Val " << newLCLHash;
     }
     else
@@ -465,7 +541,7 @@ RCLConsensus::Adaptor::doAccept(
 
     // See if we can accept a ledger as fully-validated
     ledgerMaster_.consensusBuilt(
-        sharedLCL.ledger_, result.txns.id(), std::move(consensusJson));
+        built.ledger_, result.txns.id(), std::move(consensusJson));
 
     //-------------------------------------------------------------------------
     {
@@ -526,7 +602,7 @@ RCLConsensus::Adaptor::doAccept(
         app_.openLedger().accept(
             app_,
             *rules,
-            sharedLCL.ledger_,
+            built.ledger_,
             localTxs_.getTxSet(),
             anyDisputes,
             retriableTxs,
@@ -544,12 +620,12 @@ RCLConsensus::Adaptor::doAccept(
 
     //-------------------------------------------------------------------------
     {
-        ledgerMaster_.switchLCL(sharedLCL.ledger_);
+        ledgerMaster_.switchLCL(built.ledger_);
 
         // Do these need to exist?
-        assert(ledgerMaster_.getClosedLedger()->info().hash == sharedLCL.id());
+        assert(ledgerMaster_.getClosedLedger()->info().hash == built.id());
         assert(
-            app_.openLedger().current()->info().parentHash == sharedLCL.id());
+            app_.openLedger().current()->info().parentHash == built.id());
     }
 
     //-------------------------------------------------------------------------
@@ -637,43 +713,36 @@ RCLConsensus::Adaptor::notify(
 RCLCxLedger
 RCLConsensus::Adaptor::buildLCL(
     RCLCxLedger const& previousLedger,
-    RCLTxSet const& txns,
+    CanonicalTXSet& retriableTxs,
     NetClock::time_point closeTime,
     bool closeTimeCorrect,
     NetClock::duration closeResolution,
     std::chrono::milliseconds roundTime,
-    CanonicalTXSet& retriableTxs)
+    std::set<TxID>& failedTxs)
 {
-    std::shared_ptr<Ledger> buildLCL = [&]() {
-        auto const replayData = ledgerMaster_.releaseReplay();
-        if (replayData)
+    std::shared_ptr<Ledger> built = [&]()
+    {
+        if (auto const replayData = ledgerMaster_.releaseReplay())
         {
             assert(replayData->parent()->info().hash == previousLedger.id());
             return buildLedger(*replayData, tapNONE, app_, j_);
         }
-        return buildLedger(
-            previousLedger.ledger_,
-            closeTime,
-            closeTimeCorrect,
-            closeResolution,
-            *txns.map_,
-            app_,
-            retriableTxs,
-            j_);
+        return buildLedger(previousLedger.ledger_, closeTime, closeTimeCorrect,
+            closeResolution, app_, retriableTxs, failedTxs, j_);
     }();
 
     // Update fee computations based on accepted txs
     using namespace std::chrono_literals;
-    app_.getTxQ().processClosedLedger(app_, *buildLCL, roundTime > 5s);
+    app_.getTxQ().processClosedLedger(app_, *built, roundTime > 5s);
 
     // And stash the ledger in the ledger master
-    if (ledgerMaster_.storeLedger(buildLCL))
+    if (ledgerMaster_.storeLedger(built))
         JLOG(j_.debug()) << "Consensus built ledger we already had";
-    else if (app_.getInboundLedgers().find(buildLCL->info().hash))
+    else if (app_.getInboundLedgers().find(built->info().hash))
         JLOG(j_.debug()) << "Consensus built ledger we were acquiring";
     else
         JLOG(j_.debug()) << "Consensus built new ledger";
-    return RCLCxLedger{std::move(buildLCL)};
+    return RCLCxLedger{std::move(built)};
 }
 
 void
@@ -735,6 +804,12 @@ RCLConsensus::Adaptor::onModeChange(
 {
     JLOG(j_.info()) << "Consensus mode change before=" << to_string(before)
                     << ", after=" << to_string(after);
+
+    // If we were proposing but aren't any longer, we need to reset the
+    // censorship tracking to avoid bogus warnings.
+    if (before == ConsensusMode::proposing && before != after)
+        censorshipDetector_.reset();
+
     mode_ = after;
 }
 

@@ -81,13 +81,13 @@ uint256 CanonicalTXSet::accountKey (AccountID const& account)
         ret.begin (),
         account.begin (),
         account.size ());
-    ret ^= mSetHash;
+    ret ^= salt_;
     return ret;
 }
 
 void CanonicalTXSet::insert (std::shared_ptr<STTx const> const& txn)
 {
-    mMap.insert (
+    map_.insert (
         std::make_pair (
             Key (
                 accountKey (txn->getAccountID(sfAccount)),
@@ -106,29 +106,16 @@ CanonicalTXSet::prune(AccountID const& account,
     Key keyHigh(effectiveAccount, seq+1, beast::zero);
 
     auto range = boost::make_iterator_range(
-        mMap.lower_bound(keyLow),
-            mMap.lower_bound(keyHigh));
-    auto txRange = boost::adaptors::transform(
-        range,
-    [](auto const& p)
-    {
-        return p.second;
-    });
+        map_.lower_bound(keyLow),
+        map_.lower_bound(keyHigh));
+    auto txRange = boost::adaptors::transform(range,
+        [](auto const& p) { return p.second; });
 
     std::vector<std::shared_ptr<STTx const>> result(
         txRange.begin(), txRange.end());
 
-    mMap.erase(range.begin(), range.end());
-
+    map_.erase(range.begin(), range.end());
     return result;
-}
-
-CanonicalTXSet::iterator CanonicalTXSet::erase (iterator const& it)
-{
-    iterator tmp = it;
-    ++tmp;
-    mMap.erase (it);
-    return tmp;
 }
 
 } // ripple

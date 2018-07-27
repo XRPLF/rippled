@@ -2028,6 +2028,7 @@ else ()
     src/test/app/PayChan_test.cpp
     src/test/app/PayStrand_test.cpp
     src/test/app/PseudoTx_test.cpp
+    src/test/app/RCLCensorshipDetector_test.cpp
     src/test/app/RCLValidations_test.cpp
     src/test/app/Regression_test.cpp
     src/test/app/SHAMapStore_test.cpp

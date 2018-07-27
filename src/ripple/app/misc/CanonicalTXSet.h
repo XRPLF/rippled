@@ -75,12 +75,11 @@ private:
     uint256 accountKey (AccountID const& account);
 
 public:
-    using iterator = std::map <Key, std::shared_ptr<STTx const>>::iterator;
     using const_iterator = std::map <Key, std::shared_ptr<STTx const>>::const_iterator;
 
 public:
     explicit CanonicalTXSet (LedgerHash const& saltHash)
-        : mSetHash (saltHash)
+        : salt_ (saltHash)
     {
     }
 
@@ -90,45 +89,46 @@ public:
     prune(AccountID const& account, std::uint32_t const seq);
 
     // VFALCO TODO remove this function
-    void reset (LedgerHash const& saltHash)
+    void reset (LedgerHash const& salt)
     {
-        mSetHash = saltHash;
-
-        mMap.clear ();
+        salt_ = salt;
+        map_.clear ();
     }
 
-    iterator erase (iterator const& it);
+    const_iterator erase (const_iterator const& it)
+    {
+        return map_.erase(it);
+    }
 
-    iterator begin ()
+    const_iterator begin () const
     {
-        return mMap.begin ();
+        return map_.begin();
     }
-    iterator end ()
+
+    const_iterator end() const
     {
-        return mMap.end ();
+        return map_.end();
     }
-    const_iterator begin ()  const
-    {
-        return mMap.begin ();
-    }
-    const_iterator end () const
-    {
-        return mMap.end ();
-    }
+
     size_t size () const
     {
-        return mMap.size ();
+        return map_.size ();
     }
     bool empty () const
     {
-        return mMap.empty ();
+        return map_.empty ();
+    }
+
+    uint256 const& key() const
+    {
+        return salt_;
     }
 
 private:
-    // Used to salt the accounts so people can't mine for low account numbers
-    uint256 mSetHash;
+    std::map <Key, std::shared_ptr<STTx const>> map_;
 
-    std::map <Key, std::shared_ptr<STTx const>> mMap;
+    // Used to salt the accounts so people can't mine for low account numbers
+    uint256 salt_;
 };
 
 } // ripple

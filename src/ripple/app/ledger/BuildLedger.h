@@ -44,9 +44,10 @@ class SHAMap;
     @param closeTime The time the ledger closed
     @param closeTimeCorrect Whether consensus agreed on close time
     @param closeResolution Resolution used to determine consensus close time
-    @param txs The consensus transactions to attempt to apply
     @param app Handle to application instance
-    @param retriableTxs Populate with transactions to retry in next round
+    @param txs On entry, transactions to apply; on exit, transactions that must
+               be retried in next round.
+    @param failedTxs Populated with transactions that failed in this round
     @param j Journal to use for logging
     @return The newly built ledger
  */
@@ -56,9 +57,9 @@ buildLedger(
     NetClock::time_point closeTime,
     const bool closeTimeCorrect,
     NetClock::duration closeResolution,
-    SHAMap const& txs,
     Application& app,
-    CanonicalTXSet& retriableTxs,
+    CanonicalTXSet& txns,
+    std::set<TxID>& failedTxs,
     beast::Journal j);
 
 /** Build a new ledger by replaying transactions
