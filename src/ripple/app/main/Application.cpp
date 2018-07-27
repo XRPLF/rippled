@@ -58,6 +58,7 @@
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/system/error_code.hpp>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -824,7 +825,7 @@ public:
         assert (mWalletDB.get () == nullptr);
 
         DatabaseCon::Setup setup = setup_DatabaseCon (*config_);
-        mTxnDB = std::make_unique <DatabaseCon> (setup, "transaction.db",
+        mTxnDB = std::make_unique <DatabaseCon> (setup, TxnDBName,
                 TxnDBInit, TxnDBCount);
         mLedgerDB = std::make_unique <DatabaseCon> (setup, "ledger.db",
                 LedgerDBInit, LedgerDBCount);
@@ -1033,6 +1034,54 @@ public:
                 JLOG(m_journal.fatal())
                     << "Remaining free disk space is less than 512MB";
                 signalStop ();
+            }
+
+            DatabaseCon::Setup dbSetup = setup_DatabaseCon(*config_);
+            boost::filesystem::path dbPath = dbSetup.dataDir / TxnDBName;
+            boost::system::error_code ec;
+            std::uint64_t dbSize = boost::filesystem::file_size(dbPath, ec);
+            if (ec)
+            {
+                JLOG(m_journal.error())
+                    << "Error checking transaction db file size: "
+                    << ec.message();
+                return;
+            }
+
+            auto db = mTxnDB->checkoutDb();
+            static auto const pageSize = [&]{
+                std::uint32_t ps;
+                *db << "PRAGMA page_size;", soci::into(ps);
+                return ps;
+            }();
+            static auto const maxPages = [&]{
+                std::uint32_t mp;
+                *db << "PRAGMA max_page_count;" , soci::into(mp);
+                return mp;
+            }();
+            std::uint32_t pageCount;
+            *db << "PRAGMA page_count;", soci::into(pageCount);
+            std::uint32_t freePages = maxPages - pageCount;
+            std::uint64_t freeSpace =
+                static_cast<std::uint64_t>(freePages) * pageSize;
+            JLOG(m_journal.info())
+               << "Transaction DB pathname: " << dbPath.string()
+               << "; file size: " << dbSize << " bytes"
+               << "; SQLite page size: " << pageSize << " bytes"
+               << "; Free pages: " << freePages
+               << "; Free space: " << freeSpace << " bytes; "
+               << "Note that this does not take into account available disk "
+                  "space.";
+
+            if (freeSpace < bytes512M)
+            {
+                JLOG(m_journal.fatal())
+                    << "Free SQLite space for transaction db is less than "
+                       "512MB. To fix this, rippled must be executed with the "
+                       "vacuum <sqlitetmpdir> parameter before restarting. "
+                       "Note that this activity can take multiple days, "
+                       "depending on database size.";
+                signalStop();
             }
         }
 

@@ -23,8 +23,10 @@
 namespace ripple {
 
 // Transaction database holds transactions and public keys
+const char* TxnDBName = "transaction.db";
 const char* TxnDBInit[] =
 {
+    "PRAGMA page_size=4096;",
     "PRAGMA synchronous=NORMAL;",
     "PRAGMA journal_mode=WAL;",
     "PRAGMA journal_size_limit=1582080;",
