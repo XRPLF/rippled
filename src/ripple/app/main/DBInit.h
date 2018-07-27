@@ -23,6 +23,7 @@
 namespace ripple {
 
 // VFALCO TODO Tidy these up into a class with functions and return types.
+extern const char* TxnDBName;
 extern const char* TxnDBInit[];
 extern const char* LedgerDBInit[];
 extern const char* WalletDBInit[];
