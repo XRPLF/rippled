@@ -45,109 +45,97 @@ buildLedgerImpl(
     beast::Journal j,
     ApplyTxs&& applyTxs)
 {
-    auto buildLCL = std::make_shared<Ledger>(*parent, closeTime);
+    auto built = std::make_shared<Ledger>(*parent, closeTime);
 
-    if (buildLCL->rules().enabled(featureSHAMapV2) &&
-        !buildLCL->stateMap().is_v2())
-    {
-        buildLCL->make_v2();
-    }
+    if (built->rules().enabled(featureSHAMapV2) && !built->stateMap().is_v2())
+        built->make_v2();
 
     // Set up to write SHAMap changes to our database,
     //   perform updates, extract changes
 
     {
-        OpenView accum(&*buildLCL);
+        OpenView accum(&*built);
         assert(!accum.open());
-        applyTxs(accum, buildLCL);
-        accum.apply(*buildLCL);
+        applyTxs(accum, built);
+        accum.apply(*built);
     }
 
-    buildLCL->updateSkipList();
-
+    built->updateSkipList();
     {
         // Write the final version of all modified SHAMap
         // nodes to the node store to preserve the new LCL
 
-        int const asf = buildLCL->stateMap().flushDirty(
-            hotACCOUNT_NODE, buildLCL->info().seq);
-        int const tmf = buildLCL->txMap().flushDirty(
-            hotTRANSACTION_NODE, buildLCL->info().seq);
+        int const asf = built->stateMap().flushDirty(
+            hotACCOUNT_NODE, built->info().seq);
+        int const tmf = built->txMap().flushDirty(
+            hotTRANSACTION_NODE, built->info().seq);
         JLOG(j.debug()) << "Flushed " << asf << " accounts and " << tmf
                         << " transaction nodes";
     }
-    buildLCL->unshare();
+    built->unshare();
 
     // Accept ledger
-    buildLCL->setAccepted(
+    built->setAccepted(
         closeTime, closeResolution, closeTimeCorrect, app.config());
 
-    return buildLCL;
+    return built;
 }
 
 /** Apply a set of consensus transactions to a ledger.
 
   @param app Handle to application
-  @param txns Consensus transactions to apply
-  @param view Ledger to apply to
-  @param buildLCL Ledger to check if transaction already exists
+  @param txns the set of transactions to apply,
+  @param failed set of transactions that failed to apply
+  @param view ledger to apply to
   @param j Journal for logging
-  @return Any retriable transactions
+  @return number of transactions applied; transactions to retry left in txns
 */
 
-CanonicalTXSet
+std::size_t
 applyTransactions(
     Application& app,
-    SHAMap const& txns,
+    std::shared_ptr<Ledger const> const& built,
+    CanonicalTXSet& txns,
+    std::set<TxID>& failed,
     OpenView& view,
-    std::shared_ptr<Ledger> const& buildLCL,
     beast::Journal j)
 {
-    CanonicalTXSet retriableTxs(txns.getHash().as_uint256());
-
-    for (auto const& item : txns)
-    {
-        if (buildLCL->txExists(item.key()))
-            continue;
-
-        // The transaction wasn't filtered
-        // Add it to the set to be tried in canonical order
-        JLOG(j.debug()) << "Processing candidate transaction: " << item.key();
-        try
-        {
-            retriableTxs.insert(
-                std::make_shared<STTx const>(SerialIter{item.slice()}));
-        }
-        catch (std::exception const&)
-        {
-            JLOG(j.warn()) << "Txn " << item.key() << " throws";
-        }
-    }
-
     bool certainRetry = true;
+    std::size_t count = 0;
+
     // Attempt to apply all of the retriable transactions
     for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
     {
-        JLOG(j.debug()) << "Pass: " << pass << " Txns: " << retriableTxs.size()
-                        << (certainRetry ? " retriable" : " final");
+        JLOG(j.debug())
+            << (certainRetry ? "Pass: " : "Final pass: ") << pass
+            << " begins (" << txns.size() << " transactions)";
         int changes = 0;
 
-        auto it = retriableTxs.begin();
+        auto it = txns.begin();
 
-        while (it != retriableTxs.end())
+        while (it != txns.end())
         {
+            auto const txid = it->first.getTXID();
+
             try
             {
+                if (pass == 0 && built->txExists(txid))
+                {
+                    it = txns.erase(it);
+                    continue;
+                }
+
                 switch (applyTransaction(
                     app, view, *it->second, certainRetry, tapNONE, j))
                 {
                     case ApplyResult::Success:
-                        it = retriableTxs.erase(it);
+                        it = txns.erase(it);
                         ++changes;
                         break;
 
                     case ApplyResult::Fail:
-                        it = retriableTxs.erase(it);
+                        failed.insert(txid);
+                        it = txns.erase(it);
                         break;
 
                     case ApplyResult::Retry:
@@ -156,17 +144,19 @@ applyTransactions(
             }
             catch (std::exception const&)
             {
-                JLOG(j.warn()) << "Transaction throws";
-                it = retriableTxs.erase(it);
+                JLOG(j.warn()) << "Transaction " << txid << " throws";
+                failed.insert(txid);
+                it = txns.erase(it);
             }
         }
 
-        JLOG(j.debug()) << "Pass: " << pass << " finished " << changes
-                        << " changes";
+        JLOG(j.debug())
+            << (certainRetry ? "Pass: " : "Final pass: ") << pass
+            << " completed (" << changes << " changes)";
 
         // A non-retry pass made no changes
         if (!changes && !certainRetry)
-            return retriableTxs;
+            break;
 
         // Stop retriable passes
         if (!changes || (pass >= LEDGER_RETRY_PASSES))
@@ -175,8 +165,8 @@ applyTransactions(
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    assert(retriableTxs.empty() || !certainRetry);
-    return retriableTxs;
+    assert(txns.empty() || !certainRetry);
+    return count;
 }
 
 // Build a ledger from consensus transactions
@@ -186,24 +176,35 @@ buildLedger(
     NetClock::time_point closeTime,
     const bool closeTimeCorrect,
     NetClock::duration closeResolution,
-    SHAMap const& txs,
     Application& app,
-    CanonicalTXSet& retriableTxs,
+    CanonicalTXSet& txns,
+    std::set<TxID>& failedTxns,
     beast::Journal j)
 {
-    JLOG(j.debug()) << "Report: TxSt = " << txs.getHash().as_uint256()
+    JLOG(j.debug()) << "Report: Transaction Set = " << txns.key()
                     << ", close " << closeTime.time_since_epoch().count()
                     << (closeTimeCorrect ? "" : " (incorrect)");
 
-    return buildLedgerImpl(
-        parent,
-        closeTime,
-        closeTimeCorrect,
-        closeResolution,
-        app,
-        j,
-        [&](OpenView& accum, std::shared_ptr<Ledger> const& buildLCL) {
-            retriableTxs = applyTransactions(app, txs, accum, buildLCL, j);
+    return buildLedgerImpl(parent, closeTime, closeTimeCorrect,
+        closeResolution, app, j,
+        [&](OpenView& accum, std::shared_ptr<Ledger> const& built)
+        {
+            JLOG(j.debug())
+                << "Attempting to apply " << txns.size()
+                << " transactions";
+
+            auto const applied = applyTransactions(app, built, txns,
+                failedTxns, accum, j);
+
+            if (txns.size() || txns.size())
+                JLOG(j.debug())
+                    << "Applied " << applied << " transactions; "
+                    << failedTxns.size() << " failed and "
+                    << txns.size() << " will be retried.";
+            else
+                JLOG(j.debug())
+                    << "Applied " << applied
+                    << " transactions.";
         });
 }
 
@@ -226,7 +227,8 @@ buildLedger(
         replayLedger->info().closeTimeResolution,
         app,
         j,
-        [&](OpenView& accum, std::shared_ptr<Ledger> const& buildLCL) {
+        [&](OpenView& accum, std::shared_ptr<Ledger> const& built)
+        {
             for (auto& tx : replayData.orderedTxns())
                 applyTransaction(app, accum, *tx.second, false, applyFlags, j);
         });

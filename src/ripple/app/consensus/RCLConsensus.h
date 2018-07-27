@@ -23,6 +23,7 @@
 #include <ripple/app/consensus/RCLCxLedger.h>
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/app/consensus/RCLCxTx.h>
+#include <ripple/app/consensus/RCLCensorshipDetector.h>
 #include <ripple/app/misc/FeeVote.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
@@ -35,7 +36,7 @@
 #include <ripple/shamap/SHAMap.h>
 #include <atomic>
 #include <mutex>
-
+#include <set>
 namespace ripple {
 
 class InboundTransactions;
@@ -47,6 +48,12 @@ class ValidatorKeys;
 */
 class RCLConsensus
 {
+    /** Warn for transactions that haven't been included every so many ledgers. */
+    constexpr static unsigned int censorshipWarnInternal = 15;
+
+    /** Stop warning after several warnings. */
+    constexpr static unsigned int censorshipMaxWarnings = 5;
+
     // Implements the Adaptor template interface required by Consensus.
     class Adaptor
     {
@@ -75,6 +82,8 @@ class RCLConsensus
         std::atomic<std::chrono::milliseconds> prevRoundTime_{
             std::chrono::milliseconds{0}};
         std::atomic<ConsensusMode> mode_{ConsensusMode::observing};
+
+        RCLCensorshipDetector<TxID, LedgerIndex> censorshipDetector_;
 
     public:
         using Ledger_t = RCLCxLedger;
@@ -137,7 +146,7 @@ class RCLConsensus
         //---------------------------------------------------------------------
         // The following members implement the generic Consensus requirements
         // and are marked private to indicate ONLY Consensus<Adaptor> will call
-        // them (via friendship). Since they are callled only from Consenus<Adaptor>
+        // them (via friendship). Since they are called only from Consenus<Adaptor>
         // methods and since RCLConsensus::consensus_ should only be accessed
         // under lock, these will only be called under lock.
         //
@@ -151,11 +160,11 @@ class RCLConsensus
 
             If not available, asynchronously acquires from the network.
 
-            @param ledger The ID/hash of the ledger acquire
+            @param hash The ID/hash of the ledger acquire
             @return Optional ledger, will be seated if we locally had the ledger
         */
         boost::optional<RCLCxLedger>
-        acquireLedger(LedgerHash const& ledger);
+        acquireLedger(LedgerHash const& hash);
 
         /** Share the given proposal with all peers
 
@@ -331,27 +340,29 @@ class RCLConsensus
             can be retried in the next round.
 
             @param previousLedger Prior ledger building upon
-            @param txns The set of transactions to apply to the ledger
+            @param retriableTxs On entry, the set of transactions to apply to
+                                the ledger; on return, the set of transactions
+                                to retry in the next round.
             @param closeTime The time the ledger closed
             @param closeTimeCorrect Whether consensus agreed on close time
             @param closeResolution Resolution used to determine consensus close
                                    time
             @param roundTime Duration of this consensus rorund
-            @param retriableTxs Populate with transactions to retry in next
-                                round
+            @param failedTxs Populate with transactions that we could not
+                             successfully apply.
             @return The newly built ledger
       */
         RCLCxLedger
         buildLCL(
             RCLCxLedger const& previousLedger,
-            RCLTxSet const& txns,
+            CanonicalTXSet& retriableTxs,
             NetClock::time_point closeTime,
             bool closeTimeCorrect,
             NetClock::duration closeResolution,
             std::chrono::milliseconds roundTime,
-            CanonicalTXSet& retriableTxs);
+            std::set<TxID>& failedTxs);
 
-        /** Validate the given ledger and share with peers as necessary
+        /** Validate the given ledger and share with peers as necessary 
 
             @param ledger The ledger to validate
             @param txns The consensus transaction set
@@ -363,7 +374,6 @@ class RCLConsensus
         */
         void
         validate(RCLCxLedger const& ledger, RCLTxSet const& txns, bool proposing);
-
     };
 
 public:
