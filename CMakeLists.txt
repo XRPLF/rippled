@@ -259,7 +259,6 @@ else ()
         -frtti
         -Wnon-virtual-dtor
       >
-      -Wno-sign-compare
       -Wno-char-subscripts
       -Wno-format
       -Wno-unused-local-typedefs
