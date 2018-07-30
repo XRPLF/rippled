@@ -22,7 +22,6 @@
 #include <ripple/beast/insight/Insight.h>
 
 #include <ripple/beast/insight/impl/Collector.cpp>
-#include <ripple/beast/insight/impl/Group.cpp>
 #include <ripple/beast/insight/impl/Groups.cpp>
 #include <ripple/beast/insight/impl/Hook.cpp>
 #include <ripple/beast/insight/impl/Metric.cpp>
