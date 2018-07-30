@@ -945,7 +945,6 @@ add_library (xrpl_core
     src/ripple/beast/core/WaitableEvent.cpp
     src/ripple/beast/hash/impl/xxhash.cpp
     src/ripple/beast/insight/impl/Collector.cpp
-    src/ripple/beast/insight/impl/Group.cpp
     src/ripple/beast/insight/impl/Groups.cpp
     src/ripple/beast/insight/impl/Hook.cpp
     src/ripple/beast/insight/impl/Metric.cpp
