@@ -173,7 +173,7 @@ try {
                 'BUILD=cmake',
                 "MAX_TIME=${max_minutes}m",
                 "BUILD_DIR=${bldlabel}",
-                "CMAKE_EXTRA_ARGS=-Werr=ON ${cmake_extra}",
+                "CMAKE_EXTRA_ARGS=-Dwerr=ON ${cmake_extra}",
                 'VERBOSE_BUILD=true']
 
             builds[bldlabel] = {
