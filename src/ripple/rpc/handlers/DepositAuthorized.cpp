@@ -77,11 +77,18 @@ Json::Value doDepositAuthorized (RPC::Context& context)
     if (!ledger)
         return result;
 
+    // If source account is not in the ledger it can't be authorized.
+    if (! ledger->exists (keylet::account(srcAcct)))
+    {
+        RPC::inject_error (rpcSRC_ACT_NOT_FOUND, result);
+        return result;
+    }
+
     // If destination account is not in the ledger you can't deposit to it, eh?
     auto const sleDest = ledger->read (keylet::account(dstAcct));
     if (! sleDest)
     {
-        RPC::inject_error (rpcDST_ACT_MISSING, result);
+        RPC::inject_error (rpcDST_ACT_NOT_FOUND, result);
         return result;
     }
 
