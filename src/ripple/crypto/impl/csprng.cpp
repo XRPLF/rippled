@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/contract.h>
-#include <ripple/basics/literals.h>
+#include <ripple/basics/ByteUtilities.h>
 #include <ripple/crypto/csprng.h>
 #include <openssl/rand.h>
 #include <array>
@@ -56,7 +56,7 @@ csprng_engine::load_state (std::string const& file)
     if (!file.empty())
     {
         std::lock_guard<std::mutex> lock (mutex_);
-        RAND_load_file (file.c_str (), 1_kb);
+        RAND_load_file (file.c_str (), kilobytes(1));
         RAND_write_file (file.c_str ());
     }
 }

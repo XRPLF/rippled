@@ -17,18 +17,21 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_LITERALS_H_INCLUDED
-#define RIPPLE_BASICS_LITERALS_H_INCLUDED
+#ifndef RIPPLE_BASICS_BYTEUTILITIES_H_INCLUDED
+#define RIPPLE_BASICS_BYTEUTILITIES_H_INCLUDED
 
 namespace ripple {
-    constexpr auto operator""_kb(unsigned long long x) noexcept
+
+    template<class T>
+    constexpr auto kilobytes(T value) noexcept
     {
-        return 1024ull * x;
+        return value * 1024;
     }
 
-    constexpr auto operator""_mb(unsigned long long x) noexcept
+    template<class T>
+    constexpr auto megabytes(T value) noexcept
     {
-        return 1024ull * 1024ull * x;
+        return kilobytes(1) * kilobytes(1) * value;
     }
 }
 

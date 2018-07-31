@@ -19,7 +19,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/literals.h>
+#include <ripple/basics/ByteUtilities.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/basics/contract.h>
@@ -1502,7 +1502,7 @@ void fromNetwork (
 
     // Number of bytes to try to receive if no
     // Content-Length header received
-    constexpr auto RPC_REPLY_MAX_BYTES = 256_mb;
+    constexpr auto RPC_REPLY_MAX_BYTES = megabytes(256);
 
     using namespace std::chrono_literals;
     auto constexpr RPC_NOTIFY = 10min;

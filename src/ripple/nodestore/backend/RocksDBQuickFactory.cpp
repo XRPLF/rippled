@@ -23,7 +23,7 @@
 #if RIPPLE_ROCKSDB_AVAILABLE
 
 #include <ripple/basics/contract.h>
-#include <ripple/basics/literals.h>
+#include <ripple/basics/ByteUtilities.h>
 #include <ripple/core/Config.h> // VFALCO Bad dependency
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
@@ -110,7 +110,7 @@ public:
                 "Missing path in RocksDBQuickFactory backend");
 
         // Defaults
-        std::uint64_t budget = 512_mb;
+        std::uint64_t budget = megabytes(512);
         std::string style("level");
         std::uint64_t threads=4;
 
@@ -129,7 +129,7 @@ public:
             m_options.OptimizeUniversalStyleCompaction(budget);
 
         if (style == "point")
-            m_options.OptimizeForPointLookup(budget / 1_mb); // In MB
+            m_options.OptimizeForPointLookup(budget / megabytes(1)); // In MB
 
         m_options.IncreaseParallelism(threads);
 

@@ -21,7 +21,7 @@
 #define RIPPLE_BASICS_QALLOC_H_INCLUDED
 
 #include <ripple/basics/contract.h>
-#include <ripple/basics/literals.h>
+#include <ripple/basics/ByteUtilities.h>
 #include <boost/intrusive/list.hpp>
 #include <cstddef>
 #include <cstdint>
@@ -68,7 +68,7 @@ private:
     block* free_ = nullptr;
 
 public:
-    static constexpr auto block_size = 256_kb;
+    static constexpr auto block_size = kilobytes(256);
 
     qalloc_impl() = default;
     qalloc_impl (qalloc_impl const&) = delete;

@@ -42,7 +42,7 @@ class NuDBBackend
 public:
     // This needs to be tuned for the
     // distribution of data sizes.
-    static constexpr std::size_t arena_alloc_size = 16_mb;
+    static constexpr std::size_t arena_alloc_size = megabytes(16);
     static constexpr std::size_t currentType = 1;
 
     beast::Journal j_;

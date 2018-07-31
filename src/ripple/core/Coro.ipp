@@ -20,7 +20,7 @@
 #ifndef RIPPLE_CORE_COROINL_H_INCLUDED
 #define RIPPLE_CORE_COROINL_H_INCLUDED
 
-#include <ripple/basics/literals.h>
+#include <ripple/basics/ByteUtilities.h>
 
 namespace ripple {
 
@@ -42,7 +42,7 @@ Coro(Coro_create_t, JobQueue& jq, JobType type,
 #ifndef NDEBUG
             finished_ = true;
 #endif
-        }, boost::coroutines::attributes (1_mb))
+        }, boost::coroutines::attributes (megabytes(1)))
 {
 }
 

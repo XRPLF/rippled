@@ -44,7 +44,7 @@
 #include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/tx/apply.h>
-#include <ripple/basics/literals.h>
+#include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/PerfLog.h>
@@ -1026,7 +1026,7 @@ public:
             boost::filesystem::space_info space =
                 boost::filesystem::space (config_->legacy ("database_path"));
 
-            if (space.available < 512_mb)
+            if (space.available < megabytes(512))
             {
                 JLOG(m_journal.fatal())
                     << "Remaining free disk space is less than 512MB";
@@ -1142,11 +1142,11 @@ bool ApplicationImp::setup()
 
     getLedgerDB ().getSession ()
         << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                        (config_->getSize (siLgrDBCache) * 1_kb));
+                        (config_->getSize (siLgrDBCache) * kilobytes(1)));
 
     getTxnDB ().getSession ()
             << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                            (config_->getSize (siTxnDBCache) * 1_kb));
+                            (config_->getSize (siTxnDBCache) * kilobytes(1)));
 
     mTxnDB->setupCheckpointing (m_jobQueue.get(), logs());
     mLedgerDB->setupCheckpointing (m_jobQueue.get(), logs());
