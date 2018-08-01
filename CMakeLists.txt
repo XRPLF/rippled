@@ -21,6 +21,12 @@ if (is_multiconfig STREQUAL "NOTFOUND")
   endif ()
 endif ()
 
+if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+  set (is_root_project ON)
+else ()
+  set (is_root_project OFF)
+endif ()
+
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang") # both Clang and AppleClang
   set (is_clang TRUE)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -654,6 +660,7 @@ add_custom_command (TARGET lz4 POST_BUILD
     ${CMAKE_BINARY_DIR}/lz4/include
   COMMAND ${CMAKE_COMMAND} -E copy
     $<TARGET_FILE:lz4> ${CMAKE_BINARY_DIR}/lz4/lib)
+exclude_if_included (lz4)
 
 #[===================================================================[
    NIH dep: sqlite
@@ -709,6 +716,7 @@ add_custom_command (TARGET sqlite3 POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy
     $<TARGET_FILE:sqlite3> ${CMAKE_BINARY_DIR}/sqlite3/lib
   BYPRODUCTS ${CMAKE_BINARY_DIR}/sqlite3/include/sqlite3.h)
+exclude_if_included (sqlite3)
 
 #[===================================================================[
    NIH dep: soci
@@ -744,6 +752,7 @@ target_link_libraries (soci
   Ripple::boost)
 add_library (NIH::soci ALIAS soci)
 target_link_libraries (ripple_libs INTERFACE NIH::soci)
+exclude_if_included (soci)
 
 #[===================================================================[
    NIH dep: snappy
@@ -766,6 +775,7 @@ target_include_directories (snappy
     src/snappy/config)
 add_library (NIH::snappy ALIAS snappy)
 target_link_libraries (ripple_libs INTERFACE NIH::snappy)
+exclude_if_included (snappy)
 
 #[===================================================================[
    NIH dep: rocksdb
@@ -812,6 +822,7 @@ else ()
 endif ()
 add_library (NIH::rocksdb ALIAS rocksdb)
 target_link_libraries (ripple_libs INTERFACE NIH::rocksdb)
+exclude_if_included (rocksdb)
 
 #[===================================================================[
    NIH dep: nudb
@@ -916,6 +927,7 @@ target_compile_options (pbufs
     >)
 add_library (Ripple::pbufs ALIAS pbufs)
 target_link_libraries (ripple_libs INTERFACE Ripple::pbufs)
+exclude_if_included (pbufs)
 
 #[===================================================================[
    xrpl_core
@@ -1911,6 +1923,7 @@ target_link_libraries (rippled
   Ripple::libs
   Ripple::boost
   Ripple::xrpl_core)
+exclude_if_included (rippled)
 
 #[===================================================================[
    install stuff
@@ -1940,7 +1953,7 @@ write_basic_package_version_file (
   VERSION ${rippled_version}
   COMPATIBILITY SameMajorVersion)
 
-if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+if (is_root_project)
   install (TARGETS rippled RUNTIME DESTINATION bin)
   set_target_properties(rippled PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
   install (
@@ -1962,9 +1975,6 @@ if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/rippled-example.cfg\" etc rippled.cfg)
     copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/validators-example.txt\" etc validators.txt)
   ")
-else ()
-  set_target_properties (rippled PROPERTIES EXCLUDE_FROM_ALL ON)
-  set_target_properties (rippled PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD ON)
 endif ()
 
 #[===================================================================[
