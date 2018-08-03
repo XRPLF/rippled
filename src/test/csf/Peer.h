@@ -393,8 +393,6 @@ struct Peer
     Ledger const*
     acquireLedger(Ledger::ID const& ledgerID)
     {
-        using namespace std::chrono;
-
         auto it = ledgers.find(ledgerID);
         if (it != ledgers.end())
             return &(it->second);
@@ -411,7 +409,7 @@ struct Peer
                 return nullptr;
         }
 
-
+        using namespace std::chrono_literals;
         SimDuration minDuration{10s};
         for (auto const& link : net.links(this))
         {
@@ -457,6 +455,7 @@ struct Peer
                 return nullptr;
         }
 
+        using namespace std::chrono_literals;
         SimDuration minDuration{10s};
         for (auto const& link : net.links(this))
         {

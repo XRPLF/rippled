@@ -113,6 +113,7 @@ Json::Value doGetCounts (RPC::Context& context)
 
     std::string uptime;
     auto s = UptimeClock::now();
+    using namespace std::chrono_literals;
     textTime (uptime, s, "year", 365 * 24h);
     textTime (uptime, s, "day", 24h);
     textTime (uptime, s, "hour", 1h);

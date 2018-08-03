@@ -145,6 +145,7 @@ class TxQ_test : public beast::unit_test::suite
 
         // Close the ledger with a delay to force the TxQ stats
         // to stay at the default.
+        using namespace std::chrono_literals;
         env.close(env.now() + 5s, 10000ms);
         checkMetrics(env, 0,
             2 * (ripple::detail::supportedAmendments().size() + 1),
@@ -2463,6 +2464,7 @@ public:
         checkMetrics(env, 0, boost::none, 4, 3, 256);
 
         // First transaction establishes the messaging
+        using namespace std::chrono_literals;
         BEAST_EXPECT(wsc->findMsg(5s,
             [&](auto const& jv)
         {

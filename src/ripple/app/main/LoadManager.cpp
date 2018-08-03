@@ -104,6 +104,7 @@ void LoadManager::run ()
 {
     beast::setCurrentThreadName ("LoadManager");
 
+    using namespace std::chrono_literals;
     using clock_type = std::chrono::system_clock;
 
     auto t = clock_type::now();

@@ -360,6 +360,7 @@ public:
             env.close();
 
             // Check stream update
+            using namespace std::chrono_literals;
             BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {

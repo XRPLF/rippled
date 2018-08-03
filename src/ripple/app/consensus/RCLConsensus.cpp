@@ -411,6 +411,7 @@ RCLConsensus::Adaptor::doAccept(
     if (consensusCloseTime == NetClock::time_point{})
     {
         // We agreed to disagree on the close time
+        using namespace std::chrono_literals;
         consensusCloseTime = prevLedger.closeTime() + 1s;
         closeTimeCorrect = false;
     }
@@ -668,6 +669,7 @@ RCLConsensus::Adaptor::buildLCL(
     }();
 
     // Update fee computations based on accepted txs
+    using namespace std::chrono_literals;
     app_.getTxQ().processClosedLedger(app_, *buildLCL, roundTime > 5s);
 
     // And stash the ledger in the ledger master
@@ -685,6 +687,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger,
     RCLTxSet const& txns,
     bool proposing)
 {
+    using namespace std::chrono_literals;
     auto validationTime = app_.timeKeeper().closeTime();
     if (validationTime <= lastValidationTime_)
         validationTime = lastValidationTime_ + 1s;
