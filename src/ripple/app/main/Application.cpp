@@ -112,8 +112,8 @@ public:
     AppFamily (Application& app, NodeStore::Database& db,
             CollectorManager& collectorManager)
         : app_ (app)
-        , treecache_ ("TreeNodeCache", 65536, 1min, stopwatch(),
-            app.journal("TaggedCache"))
+        , treecache_ ("TreeNodeCache", 65536, std::chrono::minutes {1},
+            stopwatch(), app.journal("TaggedCache"))
         , fullbelow_ ("full_below", stopwatch(),
             collectorManager.collector(),
                 fullBelowTargetSize, fullBelowExpiration)
@@ -417,8 +417,8 @@ public:
 
         , accountIDCache_(128000)
 
-        , m_tempNodeCache ("NodeCache", 16384, 90s, stopwatch(),
-            logs_->journal("TaggedCache"))
+        , m_tempNodeCache ("NodeCache", 16384, std::chrono::seconds {90},
+            stopwatch(), logs_->journal("TaggedCache"))
 
         , m_collectorManager (CollectorManager::New (
             config_->section (SECTION_INSIGHT), logs_->journal("Collector")))
@@ -471,8 +471,8 @@ public:
                 gotTXSet (set, fromAcquire);
             }))
 
-        , m_acceptedLedgerCache ("AcceptedLedger", 4, 1min, stopwatch(),
-            logs_->journal("TaggedCache"))
+        , m_acceptedLedgerCache ("AcceptedLedger", 4, std::chrono::minutes {1},
+            stopwatch(), logs_->journal("TaggedCache"))
 
         , m_networkOPs (make_NetworkOPs (*this, stopwatch(),
             config_->standalone(), config_->NETWORK_QUORUM, config_->START_VALID,
@@ -609,7 +609,7 @@ public:
         return nodeIdentity_;
     }
 
-    
+
     PublicKey const &
     getValidationPublicKey() const override
     {
@@ -926,6 +926,7 @@ public:
         }
         // Make sure that any waitHandlers pending in our timers are done
         // before we declare ourselves stopped.
+        using namespace std::chrono_literals;
         waitHandlerCounter_.join("Application", 1s, m_journal);
 
         JLOG(m_journal.debug()) << "Flushing validations";

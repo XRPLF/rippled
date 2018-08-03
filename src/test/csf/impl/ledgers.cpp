@@ -101,6 +101,7 @@ LedgerOracle::accept(
     NetClock::duration closeTimeResolution,
     NetClock::time_point const& consensusCloseTime)
 {
+    using namespace std::chrono_literals;
     Ledger::Instance next(*parent.instance_);
     next.txs.insert(txs.begin(), txs.end());
     next.seq = parent.seq() + Ledger::Seq{1};

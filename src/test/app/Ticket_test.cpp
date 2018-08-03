@@ -277,6 +277,7 @@ class Ticket_test : public beast::unit_test::suite
         Env env {*this, supported_amendments().set(featureTickets)};
 
         // create and verify
+        using namespace std::chrono_literals;
         uint32_t expire =
             (env.timeKeeper ().closeTime () + 60s)
             .time_since_epoch ().count ();

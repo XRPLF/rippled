@@ -52,6 +52,7 @@ class Peers_test : public beast::unit_test::suite
 
             std::string name = "Node " + std::to_string(i);
 
+            using namespace std::chrono_literals;
             env.app().cluster().update(
                 kp.first,
                 name,

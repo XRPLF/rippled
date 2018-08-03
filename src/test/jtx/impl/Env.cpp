@@ -130,6 +130,7 @@ Env::close(NetClock::time_point closeTime,
     boost::optional<std::chrono::milliseconds> consensusDelay)
 {
     // Round up to next distinguishable value
+    using namespace std::chrono_literals;
     closeTime += closed()->info().closeTimeResolution - 1s;
     timeKeeper().set(closeTime);
     // Go through the rpc interface unless we need to simulate

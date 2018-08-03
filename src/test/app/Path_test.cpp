@@ -259,6 +259,7 @@ public:
                 g.signal();
             });
 
+        using namespace std::chrono_literals;
         BEAST_EXPECT(g.wait_for(5s));
         BEAST_EXPECT(! result.isMember(jss::error));
         return result;
