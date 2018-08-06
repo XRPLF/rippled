@@ -666,7 +666,7 @@ http_response_type
 PeerImp::makeResponse (bool crawl,
     http_request_type const& req,
     beast::IP::Endpoint remote,
-    uint256 const& sharedValue)
+    Blob const& sharedValue)
 {
     http_response_type resp;
     resp.result(boost::beast::http::status::switching_protocols);

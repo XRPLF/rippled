@@ -61,7 +61,7 @@ hashLastMessage (SSL const* ssl,
     return cookie;
 }
 
-boost::optional<uint256>
+boost::optional<Blob>
 makeSharedValue (SSL* ssl, beast::Journal journal)
 {
     auto const cookie1 = hashLastMessage(ssl, SSL_get_finished);
@@ -88,22 +88,22 @@ makeSharedValue (SSL* ssl, beast::Journal journal)
         return boost::none;
     }
 
-    return sha512Half (Slice (result.data(), result.size()));
+    return Blob (result.begin(), result.end());
 }
 
 protocol::TMHello
 buildHello (
-    uint256 const& sharedValue,
+    Blob const& sharedValue,
     beast::IP::Address public_ip,
     beast::IP::Endpoint remote,
     Application& app)
 {
     protocol::TMHello h;
 
-    auto const sig = signDigest (
+    auto const sig = sign (
         app.nodeIdentity().first,
         app.nodeIdentity().second,
-        sharedValue);
+        makeSlice(sharedValue));
 
     h.set_protoversion (to_packed (BuildInfo::getCurrentProtocol()));
     h.set_protoversionmin (to_packed (BuildInfo::getMinimumProtocol()));
@@ -334,7 +334,7 @@ parseHello (bool request, boost::beast::http::fields const& h, beast::Journal jo
 
 boost::optional<PublicKey>
 verifyHello (protocol::TMHello const& h,
-    uint256 const& sharedValue,
+    Blob const& sharedValue,
     beast::IP::Address public_ip,
     beast::IP::Endpoint remote,
     beast::Journal journal,
@@ -400,7 +400,7 @@ verifyHello (protocol::TMHello const& h,
         return boost::none;
     }
 
-    if (! verifyDigest (*publicKey, sharedValue,
+    if (! verify (*publicKey, makeSlice(sharedValue),
         makeSlice (h.nodeproof()), false))
     {
         // Unable to verify they have private key for claimed public key.

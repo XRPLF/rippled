@@ -45,12 +45,12 @@ enum
     If the shared value generation fails, the link MUST be dropped.
     @return A pair. Second will be false if shared value generation failed.
 */
-boost::optional<uint256>
+boost::optional<Blob>
 makeSharedValue (SSL* ssl, beast::Journal journal);
 
 /** Build a TMHello protocol message. */
 protocol::TMHello
-buildHello (uint256 const& sharedValue,
+buildHello (Blob const& sharedValue,
     beast::IP::Address public_ip,
     beast::IP::Endpoint remote, Application& app);
 
@@ -71,7 +71,7 @@ parseHello (bool request, boost::beast::http::fields const& h, beast::Journal jo
             optional if the check failed.
 */
 boost::optional<PublicKey>
-verifyHello (protocol::TMHello const& h, uint256 const& sharedValue,
+verifyHello (protocol::TMHello const& h, Blob const& sharedValue,
     beast::IP::Address public_ip,
     beast::IP::Endpoint remote,
     beast::Journal journal, Application& app);

@@ -120,7 +120,6 @@ private:
     // Node public key of peer.
     PublicKey publicKey_;
     std::string name_;
-    uint256 sharedValue_;
 
     // The indices of the smallest and largest ledgers this peer has available
     //
@@ -360,7 +359,7 @@ private:
     http_response_type
     makeResponse (bool crawl, http_request_type const& req,
         beast::IP::Endpoint remoteAddress,
-        uint256 const& sharedValue);
+        Blob const& sharedValue);
 
     void
     onWriteResponse (error_code ec, std::size_t bytes_transferred);
