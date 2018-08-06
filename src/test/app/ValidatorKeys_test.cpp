@@ -70,30 +70,28 @@ class ValidatorKeys_test : public beast::unit_test::suite
         "RFE9PSIsInZhbGlkYXRpb25fc2VjcmV0X2tleSI6IjkyRDhCNDBGMzYwMTc5MTkwMU\n",
         "MzQTUzMzI3NzBDMkUwMTA4MDI0NTZFOEM2QkI0NEQ0N0FFREQ0NzJGMDQ2RkYifQ==\n"};
 
+    const std::vector<std::string> tokenBlobEd25519 = {
+        "eyJtYW5pZmVzdCI6IkpBQUFBQUp4SWUzbWVnMnh1aTMxWWhyTDMvOHpCOHE3SWduaXJ2d2xQ\n",
+        "TTlqeDBoZy8zODV1bk1oN2ZYUUdaU0l6SjlLMGJFaFNlMjB4RjRrdTcvVFlFVXJTbkFlQnRp\n",
+        "ZitjVUhka0FXZFlJQU5xMTN4WUZ1blEvVElsSFhPeVRSZTgxc2gvbWVQV3pyU2djeFFMMlhI\n",
+        "S0VuKzFIdkJWcnRXZXZ1ay9hUUNqL0pMMnF0Z05KdFlwVkxIUndHY0JKQUM1aWpxMkJVREdi\n",
+        "dUxvRGZxZmRCUVpsMERQdTgzcElzNDlsUXNHKzI5eXZsZmxBcDhCVjd3UE9HK0hYMkF6d2gz\n",
+        "d3FzbXRodURlTENNM25WS1hOZkN3PT0iLCJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5RUQ0\n",
+        "NUY4NjYyNDFDQzE4QTI3NDdCNTQzODdDMDYyNTkwNzk3MkY0RTcxOTAyMzFGQUE5Mzc0NTdG\n",
+        "QTlEQUY2In0=\n"};
+
+    const std::string tokenManifestEd25519 =
+        "JAAAAAJxIe3meg2xui31YhrL3/8zB8q7IgnirvwlPM9jx0hg/385unMh7fXQGZSIzJ9K"
+        "0bEhSe20xF4ku7/TYEUrSnAeBtif+cUHdkAWdYIANq13xYFunQ/TIlHXOyTRe81sh/me"
+        "PWzrSgcxQL2XHKEn+1HvBVrtWevuk/aQCj/JL2qtgNJtYpVLHRwGcBJAC5ijq2BUDGbu"
+        "LoDfqfdBQZl0DPu83pIs49lQsG+29yvlflAp8BV7wPOG+HX2Azwh3wqsmthuDeLCM3nV"
+        "KXNfCw==";
+
 public:
     void
     run() override
     {
         beast::Journal j;
-
-        // Keys/ID when using [validation_seed]
-        SecretKey const seedSecretKey =
-            generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
-        PublicKey const seedPublicKey =
-            derivePublicKey(KeyType::secp256k1, seedSecretKey);
-        NodeID const seedNodeID = calcNodeID(seedPublicKey);
-
-        // Keys when using [validation_token]
-        auto const tokenSecretKey = *parseBase58<SecretKey>(
-            TokenType::NodePrivate, tokenSecretStr);
-
-        auto const tokenPublicKey =
-            derivePublicKey(KeyType::secp256k1, tokenSecretKey);
-
-        auto const m = Manifest::make_Manifest(
-            base64_decode(tokenManifest));
-        BEAST_EXPECT(m);
-        NodeID const tokenNodeID = calcNodeID(m->masterKey);
 
         {
             // No config -> no key but valid
@@ -106,6 +104,12 @@ public:
         }
         {
             // validation seed section -> empty manifest and valid seeds
+            SecretKey const seedSecretKey =
+                generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
+            PublicKey const seedPublicKey =
+                derivePublicKey(KeyType::secp256k1, seedSecretKey);
+            NodeID const seedNodeID = calcNodeID(seedPublicKey);
+
             Config c;
             c.section(SECTION_VALIDATION_SEED).append(seed);
 
@@ -128,8 +132,19 @@ public:
             BEAST_EXPECT(k.manifest.empty());
         }
 
+        auto const tokenSecretKey = *parseBase58<SecretKey>(
+            TokenType::NodePrivate, tokenSecretStr);
+
         {
             // validator token
+            auto const tokenPublicKey =
+                derivePublicKey(KeyType::secp256k1, tokenSecretKey);
+
+            auto const m = Manifest::make_Manifest(
+                boost::beast::detail::base64_decode(tokenManifest));
+            BEAST_EXPECT(m);
+            NodeID const tokenNodeID = calcNodeID(m->masterKey);
+
             Config c;
             c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
             ValidatorKeys k{c, j};
@@ -140,6 +155,27 @@ public:
             BEAST_EXPECT(k.manifest == tokenManifest);
             BEAST_EXPECT(!k.configInvalid());
         }
+
+        {
+            // validator token with ed25519 key
+            auto const tokenPublicKey =
+                derivePublicKey(KeyType::ed25519, tokenSecretKey);
+            auto const m = Manifest::make_Manifest(
+                boost::beast::detail::base64_decode(tokenManifestEd25519));
+            BEAST_EXPECT(m);
+            NodeID const tokenNodeID = calcNodeID(m->masterKey);
+
+            Config c;
+            c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlobEd25519);
+            ValidatorKeys k{c, j};
+
+            BEAST_EXPECT(k.publicKey == tokenPublicKey);
+            BEAST_EXPECT(k.secretKey == tokenSecretKey);
+            BEAST_EXPECT(k.nodeID == tokenNodeID);
+            BEAST_EXPECT(k.manifest == tokenManifestEd25519);
+            BEAST_EXPECT(!k.configInvalid());
+        }
+
         {
             // invalid validator token
             Config c;

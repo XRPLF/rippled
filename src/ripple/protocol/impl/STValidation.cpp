@@ -107,7 +107,7 @@ bool STValidation::isValid () const
 {
     try
     {
-        if (publicKeyType(getSignerPublic()) != KeyType::secp256k1)
+        if (! publicKeyType(getSignerPublic()))
             return false;
 
         return verify (getSignerPublic(),

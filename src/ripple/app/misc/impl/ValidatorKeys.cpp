@@ -42,12 +42,24 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         if (auto const token = ValidatorToken::make_ValidatorToken(
                 config.section(SECTION_VALIDATOR_TOKEN).lines()))
         {
-            auto const pk = derivePublicKey(
-                KeyType::secp256k1, token->validationSecret);
             auto const m = Manifest::make_Manifest(
                 base64_decode(token->manifest));
+            if (! m)
+            {
+                configInvalid_ = true;
+                JLOG(j.fatal())
+                    << "Invalid token specified in [" SECTION_VALIDATOR_TOKEN "]";
+                return;
+            }
 
-            if (! m || pk != m->signingKey)
+            auto const keyType = publicKeyType(m->signingKey);
+
+            // This is already checked in make_Manifest
+            assert(keyType);
+            auto const pk = derivePublicKey(
+                *keyType, token->validationSecret);
+
+            if (pk != m->signingKey)
             {
                 configInvalid_ = true;
                 JLOG(j.fatal())
