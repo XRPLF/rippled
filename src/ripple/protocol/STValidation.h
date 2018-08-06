@@ -181,11 +181,8 @@ public:
         return mTrusted;
     }
 
-    uint256
-    getSigningHash() const;
-
-    bool
-    isValid(uint256 const&) const;
+    Blob
+    getSigningData() const;
 
     void
     setTrusted()

@@ -61,11 +61,11 @@ public:
         uint256 const& suppress,
         Proposal&& proposal);
 
-    //! Create the signing hash for the proposal
-    uint256
-    signingHash() const;
+    //! Create the signing data for the proposal
+    Blob
+    signingData() const;
 
-    //! Verify the signing hash of the proposal
+    //! Verify the signing data of the proposal
     bool
     checkSign() const;
 

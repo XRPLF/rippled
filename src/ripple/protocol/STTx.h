@@ -93,7 +93,7 @@ public:
     // Outer transaction functions / signature functions.
     Blob getSignature () const;
 
-    uint256 getSigningHash () const;
+    Blob getSigningData () const;
 
     TxType getTxnType () const
     {

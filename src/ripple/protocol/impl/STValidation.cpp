@@ -69,16 +69,17 @@ STValidation::STValidation(
 
     setFlag(vfFullyCanonicalSig);
 
-    auto const signingHash = getSigningHash();
+    auto const signingData = getSigningData();
     setFieldVL(
-        sfSignature, signDigest(getSignerPublic(), secretKey, signingHash));
+        sfSignature,
+        sign(getSignerPublic(), secretKey, makeSlice(signingData)));
 
     setTrusted();
 }
 
-uint256 STValidation::getSigningHash () const
+Blob STValidation::getSigningData () const
 {
-    return STObject::getSigningHash (HashPrefix::validation);
+    return STObject::getSigningData (HashPrefix::validation);
 }
 
 uint256 STValidation::getLedgerHash () const
@@ -104,18 +105,13 @@ NetClock::time_point STValidation::getSeenTime () const
 
 bool STValidation::isValid () const
 {
-    return isValid (getSigningHash ());
-}
-
-bool STValidation::isValid (uint256 const& signingHash) const
-{
     try
     {
         if (publicKeyType(getSignerPublic()) != KeyType::secp256k1)
             return false;
 
-        return verifyDigest (getSignerPublic(),
-            signingHash,
+        return verify (getSignerPublic(),
+            makeSlice(getSigningData ()),
             makeSlice(getFieldVL (sfSignature)),
             getFlags () & vfFullyCanonicalSig);
     }

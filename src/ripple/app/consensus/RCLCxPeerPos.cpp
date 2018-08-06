@@ -22,7 +22,6 @@
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/digest.h>
 
 namespace ripple {
 
@@ -40,22 +39,23 @@ RCLCxPeerPos::RCLCxPeerPos(
 {
 }
 
-uint256
-RCLCxPeerPos::signingHash() const
+Blob
+RCLCxPeerPos::signingData() const
 {
-    return sha512Half(
-        HashPrefix::proposal,
-        std::uint32_t(proposal().proposeSeq()),
-        proposal().closeTime().time_since_epoch().count(),
-        proposal().prevLedger(),
-        proposal().position());
+    Serializer s;
+    s.add32(HashPrefix::proposal);
+    s.add32(std::uint32_t(proposal().proposeSeq()));
+    s.add32(proposal().closeTime().time_since_epoch().count());
+    s.add256(proposal().prevLedger());
+    s.add256(proposal().position());
+    return s.getData();
 }
 
 bool
 RCLCxPeerPos::checkSign() const
 {
-    return verifyDigest(
-        publicKey(), signingHash(), signature(), false);
+    return verify(
+        publicKey(), makeSlice(signingData()), signature(), false);
 }
 
 

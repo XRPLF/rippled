@@ -397,7 +397,7 @@ public:
     std::uint32_t getFlags () const;
 
     uint256 getHash (std::uint32_t prefix) const;
-    uint256 getSigningHash (std::uint32_t prefix) const;
+    Blob getSigningData (std::uint32_t prefix) const;
 
     const STBase& peekAtIndex (int offset) const
     {

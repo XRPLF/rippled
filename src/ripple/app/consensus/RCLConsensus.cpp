@@ -189,14 +189,14 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 
     prop.set_nodepubkey(valPublic_.data(), valPublic_.size());
 
-    auto signingHash = sha512Half(
-        HashPrefix::proposal,
-        std::uint32_t(proposal.proposeSeq()),
-        proposal.closeTime().time_since_epoch().count(),
-        proposal.prevLedger(),
-        proposal.position());
+    Serializer s;
+    s.add32(HashPrefix::proposal);
+    s.add32(std::uint32_t(proposal.proposeSeq()));
+    s.add32(proposal.closeTime().time_since_epoch().count());
+    s.add256(proposal.prevLedger());
+    s.add256(proposal.position());
 
-    auto sig = signDigest(valPublic_, valSecret_, signingHash);
+    auto sig = sign(valPublic_, valSecret_, makeSlice(s.getData()));
 
     prop.set_signature(sig.data(), sig.size());
 

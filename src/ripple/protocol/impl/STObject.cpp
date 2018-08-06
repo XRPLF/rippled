@@ -299,12 +299,12 @@ uint256 STObject::getHash (std::uint32_t prefix) const
     return s.getSHA512Half ();
 }
 
-uint256 STObject::getSigningHash (std::uint32_t prefix) const
+Blob STObject::getSigningData (std::uint32_t prefix) const
 {
     Serializer s;
     s.add32 (prefix);
     add (s, omitSigningFields);
-    return s.getSHA512Half ();
+    return s.getData();
 }
 
 int STObject::getFieldIndex (SField const& field) const

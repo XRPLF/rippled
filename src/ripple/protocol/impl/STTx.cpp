@@ -138,18 +138,10 @@ STTx::getMentionedAccounts () const
     return list;
 }
 
-static Blob getSigningData (STTx const& that)
+Blob
+STTx::getSigningData () const
 {
-    Serializer s;
-    s.add32 (HashPrefix::txSign);
-    that.addWithoutSigningFields (s);
-    return s.getData();
-}
-
-uint256
-STTx::getSigningHash () const
-{
-    return STObject::getSigningHash (HashPrefix::txSign);
+    return STObject::getSigningData (HashPrefix::txSign);
 }
 
 Blob STTx::getSignature () const
@@ -168,7 +160,7 @@ void STTx::sign (
     PublicKey const& publicKey,
     SecretKey const& secretKey)
 {
-    auto const data = getSigningData (*this);
+    auto const data = getSigningData ();
 
     auto const sig = ripple::sign (
         publicKey,
@@ -277,7 +269,7 @@ std::pair<bool, std::string> STTx::checkSingleSign () const
         if (publicKeyType (makeSlice(spk)))
         {
             Blob const signature = getFieldVL (sfTxnSignature);
-            Blob const data = getSigningData (*this);
+            Blob const data = getSigningData ();
 
             validSig = verify (
                 PublicKey (makeSlice(spk)),
