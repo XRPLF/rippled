@@ -275,7 +275,7 @@ SField::SField (SerializedTypeID tid, int fv, const char* fn,
     , fieldMeta (meta)
     , fieldNum (++num)
     , signingField (signing)
-    , jsonName (getName ())
+    , jsonName (fieldName.c_str())
 {
 }
 
@@ -286,7 +286,7 @@ SField::SField (int fc)
     , fieldMeta (sMD_Never)
     , fieldNum (++num)
     , signingField (IsSigning::yes)
-    , jsonName (getName ())
+    , jsonName (fieldName.c_str())
 {
 }
 
@@ -294,16 +294,29 @@ SField::SField (int fc)
 // This is naturally done with no extra expense
 // from getField(int code).
 SField::SField (SerializedTypeID tid, int fv)
-        : fieldCode (field_code (tid, fv))
-        , fieldType (tid)
-        , fieldValue (fv)
-        , fieldMeta (sMD_Default)
-        , fieldNum (++num)
-        , signingField (IsSigning::yes)
+    : fieldCode (field_code (tid, fv))
+    , fieldType (tid)
+    , fieldValue (fv)
+    , fieldName (std::to_string (tid) + '/' + std::to_string (fv))
+    , fieldMeta (sMD_Default)
+    , fieldNum (++num)
+    , signingField (IsSigning::yes)
+    , jsonName (fieldName.c_str())
 {
-    fieldName = std::to_string (tid) + '/' + std::to_string (fv);
-    jsonName = getName ();
     assert ((fv != 1) || ((tid != STI_ARRAY) && (tid != STI_OBJECT)));
+}
+
+// we can't use the default move constructor because
+// it could leave jsonName referencing a destroyed string
+SField::SField (SField &&s)
+    : fieldCode (s.fieldCode)
+    , fieldType (s.fieldType)
+    , fieldValue (s.fieldValue)
+    , fieldMeta (s.fieldMeta)
+    , fieldNum (s.fieldNum)
+    , signingField (s.signingField)
+    , jsonName (fieldName.c_str())
+{
 }
 
 SField const&
@@ -376,18 +389,6 @@ int SField::compare (SField const& f1, SField const& f2)
         return 1;
 
     return 0;
-}
-
-std::string SField::getName () const
-{
-    if (!fieldName.empty ())
-        return fieldName;
-
-    if (fieldValue == 0)
-        return "";
-
-    return std::to_string(safe_cast<int> (fieldType)) + "/" +
-            std::to_string(fieldValue);
 }
 
 SField const&
