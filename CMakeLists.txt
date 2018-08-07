@@ -1518,6 +1518,7 @@ target_sources (rippled PRIVATE
        nounity, main sources:
          subdir: basics (partial)
     #]===============================]
+    src/ripple/basics/impl/Archive.cpp
     src/ripple/basics/impl/BasicConfig.cpp
     src/ripple/basics/impl/PerfLogImp.cpp
     src/ripple/basics/impl/ResolverAsio.cpp
@@ -1583,6 +1584,7 @@ target_sources (rippled PRIVATE
     src/ripple/net/impl/RPCErr.cpp
     src/ripple/net/impl/RPCSub.cpp
     src/ripple/net/impl/RegisterSSLCerts.cpp
+    src/ripple/net/impl/SSLHTTPDownloader.cpp
     #[===============================[
        nounity, main sources:
          subdir: nodestore
@@ -1652,6 +1654,7 @@ target_sources (rippled PRIVATE
     src/ripple/rpc/handlers/Connect.cpp
     src/ripple/rpc/handlers/ConsensusInfo.cpp
     src/ripple/rpc/handlers/DepositAuthorized.cpp
+    src/ripple/rpc/handlers/DownloadShard.cpp
     src/ripple/rpc/handlers/Feature1.cpp
     src/ripple/rpc/handlers/Fee1.cpp
     src/ripple/rpc/handlers/FetchInfo.cpp
@@ -1701,6 +1704,7 @@ target_sources (rippled PRIVATE
     src/ripple/rpc/impl/RPCHelpers.cpp
     src/ripple/rpc/impl/Role.cpp
     src/ripple/rpc/impl/ServerHandlerImp.cpp
+    src/ripple/rpc/impl/ShardArchiveHandler.cpp
     src/ripple/rpc/impl/Status.cpp
     src/ripple/rpc/impl/TransactionSign.cpp
     #[===============================[
@@ -1778,6 +1782,7 @@ target_sources (rippled PRIVATE
     src/test/basics/contract_test.cpp
     src/test/basics/hardened_hash_test.cpp
     src/test/basics/mulDiv_test.cpp
+    src/test/basics/qalloc_test.cpp
     src/test/basics/tagged_integer_test.cpp
     #[===============================[
        nounity, test sources:
@@ -1795,6 +1800,7 @@ target_sources (rippled PRIVATE
     src/test/beast/beast_abstract_clock_test.cpp
     src/test/beast/beast_asio_error_test.cpp
     src/test/beast/beast_basic_seconds_clock_test.cpp
+    src/test/beast/beast_io_latency_probe_test.cpp
     src/test/beast/beast_weak_fn_test.cpp
     src/test/beast/define_print.cpp
     #[===============================[
