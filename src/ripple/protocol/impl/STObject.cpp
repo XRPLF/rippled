@@ -658,17 +658,10 @@ Json::Value STObject::getJson (int options) const
 {
     Json::Value ret (Json::objectValue);
 
-    // TODO(tom): this variable is never changed...?
-    int index = 1;
     for (auto const& elem : v_)
     {
         if (elem->getSType () != STI_NOTPRESENT)
-        {
-            auto const& n = elem->getFName ();
-            auto key = n.hasName () ? std::string(n.getJsonName ()) :
-                    std::to_string (index);
-            ret[key] = elem->getJson (options);
-        }
+            ret [elem->getFName().getJsonName()] = elem->getJson (options);
     }
     return ret;
 }
