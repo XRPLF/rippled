@@ -274,7 +274,7 @@ SField::SField (SerializedTypeID tid, int fv, const char* fn,
     , fieldMeta (meta)
     , fieldNum (++num)
     , signingField (signing)
-    , jsonName (getName ())
+    , jsonName (fieldName.c_str())
 {
 }
 
@@ -285,7 +285,7 @@ SField::SField (int fc)
     , fieldMeta (sMD_Never)
     , fieldNum (++num)
     , signingField (IsSigning::yes)
-    , jsonName (getName ())
+    , jsonName ("")
 {
 }
 
@@ -296,12 +296,12 @@ SField::SField (SerializedTypeID tid, int fv)
         : fieldCode (field_code (tid, fv))
         , fieldType (tid)
         , fieldValue (fv)
+        , fieldName (std::to_string (tid) + '/' + std::to_string (fv))
         , fieldMeta (sMD_Default)
         , fieldNum (++num)
         , signingField (IsSigning::yes)
+        , jsonName (fieldName.c_str())
 {
-    fieldName = std::to_string (tid) + '/' + std::to_string (fv);
-    jsonName = getName ();
     assert ((fv != 1) || ((tid != STI_ARRAY) && (tid != STI_OBJECT)));
 }
 
@@ -375,18 +375,6 @@ int SField::compare (SField const& f1, SField const& f2)
         return 1;
 
     return 0;
-}
-
-std::string SField::getName () const
-{
-    if (!fieldName.empty ())
-        return fieldName;
-
-    if (fieldValue == 0)
-        return "";
-
-    return std::to_string(static_cast<int> (fieldType)) + "/" +
-            std::to_string(fieldValue);
 }
 
 SField const&
