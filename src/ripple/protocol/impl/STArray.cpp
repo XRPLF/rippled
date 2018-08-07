@@ -141,16 +141,12 @@ std::string STArray::getText () const
 Json::Value STArray::getJson (int p) const
 {
     Json::Value v = Json::arrayValue;
-    int index = 1;
     for (auto const& object: v_)
     {
         if (object.getSType () != STI_NOTPRESENT)
         {
             Json::Value& inner = v.append (Json::objectValue);
-            auto const& fname = object.getFName ();
-            auto k = fname.hasName () ? fname.fieldName : std::to_string(index);
-            inner[k] = object.getJson (p);
-            index++;
+            inner [object.getFName().getJsonName()] = object.getJson (p);
         }
     }
     return v;
