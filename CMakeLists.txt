@@ -192,7 +192,7 @@ set_target_properties (common
 target_compile_features (common INTERFACE cxx_std_14)
 target_compile_definitions (common
   INTERFACE
-    $<$<CONFIG:Debug>:_DEBUG>
+    $<$<CONFIG:Debug>:DEBUG _DEBUG>
     $<$<AND:$<BOOL:profile>,$<NOT:$<BOOL:assert>>>:NDEBUG>)
 
 if (MSVC)
