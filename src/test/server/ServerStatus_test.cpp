@@ -96,9 +96,13 @@ class ServerStatus_test :
         req.insert("User-Agent", "test");
         req.method(boost::beast::http::verb::get);
         req.insert("Upgrade", "websocket");
-        boost::beast::websocket::detail::maskgen maskgen;
         boost::beast::websocket::detail::sec_ws_key_type key;
+#if BOOST_VERSION >= 106800
+        boost::beast::websocket::detail::make_sec_ws_key(key);
+#else
+        boost::beast::websocket::detail::maskgen maskgen;
         boost::beast::websocket::detail::make_sec_ws_key(key, maskgen);
+#endif
         req.insert("Sec-WebSocket-Key", key);
         req.insert("Sec-WebSocket-Version", "13");
         req.insert(boost::beast::http::field::connection, "upgrade");
