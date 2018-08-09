@@ -354,7 +354,6 @@ public:
         // Break up the array of strings into blocks
         // that each fit into one UDP packet.
         //
-        boost::system::error_code ec;
         std::vector <boost::asio::const_buffer> buffers;
         buffers.reserve (m_data.size ());
         std::size_t size (0);

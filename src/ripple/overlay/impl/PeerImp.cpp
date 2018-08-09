@@ -1632,7 +1632,6 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMHaveTransactionSet> const& m)
 void
 PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
 {
-    error_code ec;
     auto const closeTime = app_.timeKeeper().closeTime();
 
     if (m->has_hops() && ! slot_->cluster())

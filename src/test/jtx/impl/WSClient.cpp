@@ -113,7 +113,6 @@ class WSClientImpl : public WSClient
     cleanup()
     {
         ios_.post(strand_.wrap([this] {
-            error_code ec;
             if (!peerClosed_)
             {
                 ws_.async_close({}, strand_.wrap([&](error_code ec) {
