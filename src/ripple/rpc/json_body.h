@@ -38,7 +38,7 @@ struct json_body
     class reader
     {
         using dynamic_buffer_type = boost::beast::multi_buffer;
-            
+
         dynamic_buffer_type buffer_;
 
     public:
@@ -85,11 +85,12 @@ struct json_body
         using const_buffers_type =
             boost::asio::const_buffer;
 
-        template<bool isRequest, class Fields>
+        template <bool isRequest, class Fields>
         explicit
-        writer(boost::beast::http::message<isRequest,
-                json_body, Fields> const& msg)
-                : body_string_(to_string(msg.body()))
+        writer(
+            boost::beast::http::header<isRequest, Fields> const& fields,
+            value_type const& value)
+                : body_string_(to_string(value))
         {
         }
 
