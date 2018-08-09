@@ -48,21 +48,12 @@ struct is_boost_reverse_iterator
     explicit is_boost_reverse_iterator() = default;
 };
 
-#if BOOST_VERSION >= 105800
 template <class It>
 struct is_boost_reverse_iterator<boost::intrusive::reverse_iterator<It>>
     : std::true_type
 {
     explicit is_boost_reverse_iterator() = default;
 };
-#else
-template <class It>
-struct is_boost_reverse_iterator<boost::intrusive::detail::reverse_iterator<It>>
-    : std::true_type
-{
-    explicit is_boost_reverse_iterator() = default;
-};
-#endif
 
 /** Associative container where each element is also indexed by time.
 

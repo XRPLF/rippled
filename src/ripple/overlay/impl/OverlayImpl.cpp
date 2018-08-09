@@ -88,7 +88,6 @@ OverlayImpl::Timer::stop()
 void
 OverlayImpl::Timer::run()
 {
-    error_code ec;
     timer_.expires_from_now (std::chrono::seconds(1));
     timer_.async_wait(overlay_.strand_.wrap(
         std::bind(&Timer::on_timer, shared_from_this(),

@@ -64,7 +64,7 @@ Boost 1.67 or later is required.
 
 We want to compile boost with clang/libc++
 
-Download [a release](https://dl.bintray.com/boostorg/release/1.67.0/source/boost_1_67_0.tar.bz2)
+Download [a release](https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.bz2)
 
 Extract it to a folder, making note of where, open a terminal, then:
 
@@ -120,11 +120,11 @@ If you didn't persistently set the `BOOST_ROOT` environment variable to the
 root of the extracted directory above, then you should set it temporarily.
 
 For example, assuming your username were `Abigail` and you extracted Boost
-1.67.0 in `/Users/Abigail/Downloads/boost_1_67_0`, you would do for any
+1.68.0 in `/Users/Abigail/Downloads/boost_1_68_0`, you would do for any
 shell in which you want to build:
 
 ```
-export BOOST_ROOT=/Users/Abigail/Downloads/boost_1_67_0
+export BOOST_ROOT=/Users/Abigail/Downloads/boost_1_68_0
 ```
 
 ### Generate and Build

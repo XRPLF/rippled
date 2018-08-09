@@ -73,7 +73,6 @@ ConnectAttempt::stop()
 void
 ConnectAttempt::run()
 {
-    error_code ec;
     stream_.next_layer().async_connect (remote_endpoint_,
         strand_.wrap (std::bind (&ConnectAttempt::onConnect,
             shared_from_this(), std::placeholders::_1)));

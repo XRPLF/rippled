@@ -30,9 +30,9 @@ with the following process: After changing to the directory where
 you wish to download and compile boost, run
 
 ``` 
-$ wget https://dl.bintray.com/boostorg/release/1.67.0/source/boost_1_67_0.tar.gz
-$ tar -xzf boost_1_67_0.tar.gz
-$ cd boost_1_67_0
+$ wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
+$ tar -xzf boost_1_68_0.tar.gz
+$ cd boost_1_68_0
 $ ./bootstrap.sh
 $ ./b2 headers
 $ ./b2 -j<Num Parallel>
@@ -81,14 +81,14 @@ git checkout develop
 If you didn't persistently set the `BOOST_ROOT` environment variable to the
 directory in which you compiled boost, then you should set it temporarily.
 
-For example, you built Boost in your home directory `~/boost_1_67_0`, you
+For example, you built Boost in your home directory `~/boost_1_68_0`, you
 would do for any shell in which you want to build:
 
 ```
-export BOOST_ROOT=~/boost_1_67_0
+export BOOST_ROOT=~/boost_1_68_0
 ```
 
-Alternatively, you can add `DBOOST_ROOT=~/boost_1_67_0` to the command line when
+Alternatively, you can add `DBOOST_ROOT=~/boost_1_68_0` to the command line when
 invoking `cmake`.
 
 ### Generate and Build
