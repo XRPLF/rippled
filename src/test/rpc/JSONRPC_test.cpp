@@ -1948,6 +1948,7 @@ public:
         using namespace test::jtx;
         Env env {*this, envconfig([](std::unique_ptr<Config> cfg)
             {
+                cfg->loadFromString ("[" SECTION_SIGNING_SUPPORT "]\ntrue");
                 cfg->section("transaction_queue")
                     .set("minimum_txn_in_ledger_standalone", "3");
                 return cfg;

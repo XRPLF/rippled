@@ -107,6 +107,14 @@ private:
     */
     bool                        RUN_STANDALONE = false;
 
+    /** Determines if the server will sign a tx, given an account's secret seed.
+
+        In the past, this was allowed, but this functionality can have security
+        implications. The new default is to not allow this functionality, but
+        a config option is included to enable this.
+    */
+    bool signingEnabled_ = false;
+
 public:
     bool doImport = false;
     bool nodeToShard = false;
@@ -196,6 +204,8 @@ public:
     bool quiet() const { return QUIET; }
     bool silent() const { return SILENT; }
     bool standalone() const { return RUN_STANDALONE; }
+
+    bool canSign() const { return signingEnabled_; }
 };
 
 } // ripple

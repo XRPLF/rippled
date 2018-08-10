@@ -190,7 +190,12 @@ public:
     test_enablement()
     {
         using namespace jtx;
-        Env env(*this, FeatureBitset{});
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg)
+            {
+                cfg->loadFromString ("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                return cfg;
+            }), FeatureBitset{});
+
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
         env.close();
@@ -414,7 +419,11 @@ public:
     void test_regularSignersUsingSubmitMulti()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg)
+            {
+                cfg->loadFromString ("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                return cfg;
+            }));
         Account const alice {"alice", KeyType::secp256k1};
         Account const becky {"becky", KeyType::ed25519};
         Account const cheri {"cheri", KeyType::secp256k1};
@@ -1142,7 +1151,11 @@ public:
         using namespace jtx;
         Account const alice {"alice", KeyType::ed25519};
 
-        Env env(*this);
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg)
+            {
+                cfg->loadFromString ("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                return cfg;
+            }));
         env.fund (XRP(1000), alice);
         env.close();
 
