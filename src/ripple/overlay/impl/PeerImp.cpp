@@ -1267,10 +1267,6 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
     if (set.has_hops() && ! slot_->cluster())
         set.set_hops(set.hops() + 1);
 
-    // VFALCO Magic numbers are bad
-    if ((set.closetime() + 180) < app_.timeKeeper().closeTime().time_since_epoch().count())
-        return;
-
     auto const type = publicKeyType(
         makeSlice(set.nodepubkey()));
 
