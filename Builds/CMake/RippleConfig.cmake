@@ -27,19 +27,19 @@ find_dependency (Boost 1.67
 #[=========================================================[
   OpenSSL
 #]=========================================================]
-if (APPLE AND NOT DEFINED ENV{OPENSSL_ROOT_DIR})
-  find_program (HOMEBREW brew)
-  if (NOT HOMEBREW STREQUAL "HOMEBREW-NOTFOUND")
-    execute_process (COMMAND ${HOMEBREW} --prefix openssl
-      OUTPUT_VARIABLE OPENSSL_ROOT_DIR
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
+if (NOT DEFINED OPENSSL_ROOT_DIR)
+  if (DEFINED ENV{OPENSSL_ROOT})
+    set (OPENSSL_ROOT_DIR $ENV{OPENSSL_ROOT})
+  elseif (APPLE)
+    find_program (homebrew brew)
+    if (homebrew)
+      execute_process (COMMAND ${homebrew} --prefix openssl
+        OUTPUT_VARIABLE OPENSSL_ROOT_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    endif ()
   endif ()
+  file (TO_CMAKE_PATH "${OPENSSL_ROOT_DIR}" OPENSSL_ROOT_DIR)
 endif ()
-
-if ((NOT DEFINED OPENSSL_ROOT) AND (DEFINED ENV{OPENSSL_ROOT}))
-  set (OPENSSL_ROOT $ENV{OPENSSL_ROOT})
-endif ()
-file (TO_CMAKE_PATH "${OPENSSL_ROOT}" OPENSSL_ROOT)
 
 if (static OR APPLE OR MSVC)
   set (OPENSSL_USE_STATIC_LIBS ON)
