@@ -24,15 +24,9 @@
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/app/consensus/RCLCxTx.h>
 #include <ripple/app/misc/FeeVote.h>
-#include <ripple/basics/CountedObject.h>
-#include <ripple/basics/Log.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/consensus/Consensus.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/overlay/Message.h>
-#include <ripple/protocol/RippleLedgerHash.h>
-#include <ripple/protocol/STValidation.h>
-#include <ripple/shamap/SHAMap.h>
+#include <ripple/protocol/messages.h>
 #include <atomic>
 #include <mutex>
 

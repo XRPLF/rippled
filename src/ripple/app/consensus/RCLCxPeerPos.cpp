@@ -18,9 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/consensus/RCLCxPeerPos.h>
-#include <ripple/core/Config.h>
 #include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Serializer.h>
 
 namespace ripple {
@@ -39,23 +37,14 @@ RCLCxPeerPos::RCLCxPeerPos(
 {
 }
 
-Blob
-RCLCxPeerPos::signingData() const
-{
-    Serializer s;
-    s.add32(HashPrefix::proposal);
-    s.add32(std::uint32_t(proposal().proposeSeq()));
-    s.add32(proposal().closeTime().time_since_epoch().count());
-    s.add256(proposal().prevLedger());
-    s.add256(proposal().position());
-    return s.getData();
-}
-
 bool
 RCLCxPeerPos::checkSign() const
 {
     return verify(
-        publicKey(), makeSlice(signingData()), signature(), false);
+        publicKey(),
+        makeSlice(proposalSigningData(proposal())),
+        signature(),
+        false /* mustBeFullyCanonical */);
 }
 
 
@@ -88,6 +77,18 @@ proposalUniqueId(
     s.addVL(signature);
 
     return s.getSHA512Half();
+}
+
+Blob
+proposalSigningData(RCLCxPeerPos::Proposal const& proposal)
+{
+    Serializer s;
+    s.add32(HashPrefix::proposal);
+    s.add32(std::uint32_t(proposal.proposeSeq()));
+    s.add32(proposal.closeTime().time_since_epoch().count());
+    s.add256(proposal.prevLedger());
+    s.add256(proposal.position());
+    return s.getData();
 }
 
 RCLCxPeerPos::Data::Data(

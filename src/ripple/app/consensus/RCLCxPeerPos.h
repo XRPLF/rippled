@@ -22,15 +22,11 @@
 
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/base_uint.h>
-#include <ripple/beast/hash/hash_append.h>
 #include <ripple/consensus/ConsensusProposal.h>
 #include <ripple/json/json_value.h>
-#include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
 #include <chrono>
 #include <cstdint>
-#include <string>
 
 namespace ripple {
 
@@ -60,10 +56,6 @@ public:
         Slice const& signature,
         uint256 const& suppress,
         Proposal&& proposal);
-
-    //! Create the signing data for the proposal
-    Blob
-    signingData() const;
 
     //! Verify the signing data of the proposal
     bool
@@ -124,18 +116,6 @@ private:
 
     std::shared_ptr<Data> data_;
 
-    template <class Hasher>
-    void
-    hash_append(Hasher& h) const
-    {
-        using beast::hash_append;
-        hash_append(h, HashPrefix::proposal);
-        hash_append(h, std::uint32_t(proposal().proposeSeq()));
-        hash_append(h, proposal().closeTime());
-        hash_append(h, proposal().prevLedger());
-        hash_append(h, proposal().position());
-    }
-
 };
 
 /** Calculate a unique identifier for a signed proposal.
@@ -162,6 +142,11 @@ proposalUniqueId(
     NetClock::time_point closeTime,
     Slice const& publicKey,
     Slice const& signature);
+
+
+//! Create the signing data for the proposal
+Blob
+proposalSigningData(RCLCxPeerPos::Proposal const& proposal);
 
 }  // ripple
 
