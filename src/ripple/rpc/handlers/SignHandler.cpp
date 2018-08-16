@@ -31,7 +31,7 @@ namespace ripple {
 // }
 Json::Value doSign (RPC::Context& context)
 {
-    if (!context.app.config().canSign())
+    if (context.role != Role::ADMIN && !context.app.config().canSign())
     {
         return RPC::make_error (rpcNOT_SUPPORTED,
             "Signing is not supported by this server.");
