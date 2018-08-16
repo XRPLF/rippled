@@ -469,7 +469,22 @@ ServerHandlerImp::processSession(
     {
         jr = jr[jss::result];
         jr[jss::status] = jss::error;
-        jr[jss::request] = jv;
+
+        auto rq = jv;
+
+        if (rq.isObject())
+        {
+            if (rq.isMember(jss::passphrase.c_str()))
+                rq[jss::passphrase.c_str()] = "<masked>";
+            if (rq.isMember(jss::secret.c_str()))
+                rq[jss::secret.c_str()] = "<masked>";
+            if (rq.isMember(jss::seed.c_str()))
+                rq[jss::seed.c_str()] = "<masked>";
+            if (rq.isMember(jss::seed_hex.c_str()))
+                rq[jss::seed_hex.c_str()] = "<masked>";
+        }
+
+        jr[jss::request] = rq;
     }
     else
     {
@@ -780,8 +795,23 @@ ServerHandlerImp::processRequest (Port const& port,
             // Always report "status".  On an error report the request as received.
             if (result.isMember (jss::error))
             {
+                auto rq = params;
+
+                if (rq.isObject())
+                { // But mask potentially sensitive information.
+                    if (rq.isMember(jss::passphrase.c_str()))
+                        rq[jss::passphrase.c_str()] = "<masked>";
+                    if (rq.isMember(jss::secret.c_str()))
+                        rq[jss::secret.c_str()] = "<masked>";
+                    if (rq.isMember(jss::seed.c_str()))
+                        rq[jss::seed.c_str()] = "<masked>";
+                    if (rq.isMember(jss::seed_hex.c_str()))
+                        rq[jss::seed_hex.c_str()] = "<masked>";
+                }
+
                 result[jss::status] = jss::error;
-                result[jss::request] = params;
+                result[jss::request] = rq;
+
                 JLOG (m_journal.debug())  <<
                     "rpcError: " << result [jss::error] <<
                     ": " << result [jss::error_message];

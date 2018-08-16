@@ -1399,6 +1399,26 @@ bool ApplicationImp::setup()
         m_networkOPs->setStandAlone ();
     }
 
+    if (config_->canSign())
+    {
+        JLOG(m_journal.warn()) <<
+            "*** The server is configured to allow the 'sign' and 'sign_for'";
+        JLOG(m_journal.warn()) <<
+            "*** commands. These commands have security implications and have";
+        JLOG(m_journal.warn()) <<
+            "*** been deprecated. They will be removed in a future release of";
+        JLOG(m_journal.warn()) <<
+            "*** rippled.";
+        JLOG(m_journal.warn()) <<
+            "*** If you do not use them to sign transactions please edit your";
+        JLOG(m_journal.warn()) <<
+            "*** configuration file and remove the [enable_signing] stanza.";
+        JLOG(m_journal.warn()) <<
+            "*** If you do use them to sign transactions please migrate to a";
+        JLOG(m_journal.warn()) <<
+            "*** standalone signing solution as soon as possible.";
+    }
+
     //
     // Execute start up rpc commands.
     //
