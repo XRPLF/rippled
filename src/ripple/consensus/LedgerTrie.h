@@ -23,6 +23,7 @@
 #include <ripple/json/json_value.h>
 #include <boost/optional.hpp>
 #include <algorithm>
+#include <iomanip>
 #include <memory>
 #include <vector>
 
