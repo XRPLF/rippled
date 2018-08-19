@@ -75,9 +75,9 @@ public:
         {
             // Invalid token manifest
             const std::vector<std::string> invalidTokenBlob = {
-                "eyJtYW5pZmVzdCI6ImJhZG1hbmlmZXN0IiwidmFsaWRhdGlvbl9zZWNyZXR\n",
-                "fa2V5IjoiOTJEOEI0MEYzNjAxNzkxOTAxQzNBNTMzMjc3MEMyRTAxMDgwMj\n",
-                "Q1NkU4QzZCQjQ0RDQ3QUVERDQ3MkYwNDZGRiJ9\n"};
+                "eyJtYW5pZmVzdCI6IlltRmtiV0Z1YVdabGMzUT0iLCJ2YWxpZGF0aW9uX3N\n",
+                "lY3JldF9rZXkiOiI5MkQ4QjQwRjM2MDE3OTE5MDFDM0E1MzMyNzcwQzJFMD\n",
+                "EwODAyNDU2RThDNkJCNDRENDdBRURENDcyRjA0NkZGIn0="};
 
             testMakeValidatorKeys(
                 {{SECTION_VALIDATOR_TOKEN, {invalidTokenBlob}}},
