@@ -63,6 +63,8 @@ protected:
     std::uint8_t buf_[33]; // should be large enough
 
 public:
+    using const_iterator = std::uint8_t const*;
+
     PublicKey() = default;
     PublicKey (PublicKey const& other);
     PublicKey& operator= (PublicKey const& other);
@@ -85,6 +87,30 @@ public:
     size() const noexcept
     {
         return size_;
+    }
+
+    const_iterator
+    begin() const noexcept
+    {
+        return buf_;
+    }
+
+    const_iterator
+    cbegin() const noexcept
+    {
+        return buf_;
+    }
+
+    const_iterator
+    end() const noexcept
+    {
+        return buf_ + size_;
+    }
+
+    const_iterator
+    cend() const noexcept
+    {
+        return buf_ + size_;
     }
 
     bool

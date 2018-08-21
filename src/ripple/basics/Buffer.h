@@ -39,6 +39,8 @@ private:
     std::size_t size_ = 0;
 
 public:
+    using const_iterator = std::uint8_t const*;
+
     Buffer() = default;
 
     /** Create an uninitialized buffer with the given size. */
@@ -190,6 +192,30 @@ public:
     operator()(std::size_t n)
     {
         return alloc(n);
+    }
+
+    const_iterator
+    begin() const noexcept
+    {
+        return p_.get();
+    }
+
+    const_iterator
+    cbegin() const noexcept
+    {
+        return p_.get();
+    }
+
+    const_iterator
+    end() const noexcept
+    {
+        return p_.get() + size_;
+    }
+
+    const_iterator
+    cend() const noexcept
+    {
+        return p_.get() + size_;
     }
 };
 

@@ -510,7 +510,7 @@ inline const base_uint<Bits, Tag> operator+ (
 template <std::size_t Bits, class Tag>
 inline std::string to_string (base_uint<Bits, Tag> const& a)
 {
-    return strHex (a.begin (), a.size ());
+    return strHex (a.cbegin (), a.cend ());
 }
 
 // Function templates that return a base_uint given text in hexadecimal.

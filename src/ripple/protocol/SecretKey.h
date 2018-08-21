@@ -38,6 +38,8 @@ private:
     std::uint8_t buf_[32];
 
 public:
+    using const_iterator = std::uint8_t const*;
+
     SecretKey() = default;
     SecretKey (SecretKey const&) = default;
     SecretKey& operator= (SecretKey const&) = default;
@@ -66,6 +68,30 @@ public:
     */
     std::string
     to_string() const;
+
+    const_iterator
+    begin() const noexcept
+    {
+        return buf_;
+    }
+
+    const_iterator
+    cbegin() const noexcept
+    {
+        return buf_;
+    }
+
+    const_iterator
+    end() const noexcept
+    {
+        return buf_ + sizeof(buf_);
+    }
+
+    const_iterator
+    cend() const noexcept
+    {
+        return buf_ + sizeof(buf_);
+    }
 };
 
 inline

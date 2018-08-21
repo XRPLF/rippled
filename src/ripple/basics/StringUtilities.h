@@ -22,32 +22,13 @@
 
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/strHex.h>
-#include <boost/endian/conversion.hpp>
+
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
 #include <sstream>
 #include <string>
 
 namespace ripple {
-
-// NIKB TODO Remove the need for all these overloads. Move them out of here.
-inline const std::string strHex (std::string const& strSrc)
-{
-    return strHex (strSrc.begin (), strSrc.size ());
-}
-
-inline std::string strHex (Blob const& vucData)
-{
-    return strHex (vucData.begin (), vucData.size ());
-}
-
-inline std::string strHex (const std::uint64_t uiHost)
-{
-    uint64_t    uBig    = boost::endian::native_to_big (uiHost);
-
-    return strHex ((unsigned char*) &uBig, sizeof (uBig));
-}
-
 inline static std::string sqlEscape (std::string const& strSrc)
 {
     static boost::format f ("X'%s'");
