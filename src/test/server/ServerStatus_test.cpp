@@ -26,6 +26,7 @@
 #include <test/jtx/JSONRPCClient.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/basics/base64.h>
 #include <boost/beast/http.hpp>
 #include <beast/test/yield_to.hpp>
 #include <boost/beast/websocket/detail/mask.hpp>
@@ -553,7 +554,7 @@ class ServerStatus_test :
         doHTTPRequest(env, yield, secure, resp, ec, to_string(jr), auth);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::forbidden);
 
-        auth.set("Authorization", "Basic " + boost::beast::detail::base64_encode("me:badpass"));
+        auth.set("Authorization", "Basic " + base64_encode("me:badpass"));
         doHTTPRequest(env, yield, secure, resp, ec, to_string(jr), auth);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::forbidden);
 
@@ -569,7 +570,7 @@ class ServerStatus_test :
 
         // finally if we use the correct user/pass encoded, we should get a 200
         auth.set("Authorization", "Basic " +
-            boost::beast::detail::base64_encode(user + ":" + pass));
+            base64_encode(user + ":" + pass));
         doHTTPRequest(env, yield, secure, resp, ec, to_string(jr), auth);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
         BEAST_EXPECT(! resp.body().empty());

@@ -18,6 +18,7 @@
 */
 //==============================================================================
 
+#include <test/basics/base64_test.cpp>
 #include <test/basics/base_uint_test.cpp>
 #include <test/basics/Buffer_test.cpp>
 #include <test/basics/contract_test.cpp>

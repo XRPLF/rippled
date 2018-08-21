@@ -21,10 +21,10 @@
 #include <ripple/app/misc/ValidatorSite.h>
 #include <ripple/app/misc/detail/WorkPlain.h>
 #include <ripple/app/misc/detail/WorkSSL.h>
+#include <ripple/basics/base64.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/JsonFields.h>
-#include <boost/beast/core/detail/base64.hpp>
 #include <boost/regex.hpp>
 
 namespace ripple {

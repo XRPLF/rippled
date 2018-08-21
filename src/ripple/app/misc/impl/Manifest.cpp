@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/misc/Manifest.h>
+#include <ripple/basics/base64.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
@@ -26,7 +27,6 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Sign.h>
-#include <boost/beast/core/detail/base64.hpp>
 #include <boost/regex.hpp>
 #include <numeric>
 #include <stdexcept>
@@ -182,7 +182,7 @@ ValidatorToken::make_ValidatorToken(std::vector<std::string> const& tokenBlob)
         for (auto const& line : tokenBlob)
             tokenStr += beast::rfc2616::trim(line);
 
-        tokenStr = boost::beast::detail::base64_decode(tokenStr);
+        tokenStr = base64_decode(tokenStr);
 
         Json::Reader r;
         Json::Value token;
@@ -384,7 +384,7 @@ ManifestCache::load (
     if (! configManifest.empty())
     {
         auto mo = Manifest::make_Manifest (
-            boost::beast::detail::base64_decode(configManifest));
+            base64_decode(configManifest));
         if (! mo)
         {
             JLOG (j_.error()) << "Malformed validator_token in config";
@@ -419,7 +419,7 @@ ManifestCache::load (
             revocationStr += beast::rfc2616::trim(line);
 
         auto mo = Manifest::make_Manifest (
-            boost::beast::detail::base64_decode(revocationStr));
+            base64_decode(revocationStr));
 
         if (! mo || ! mo->revoked() ||
             applyManifest (std::move(*mo)) == ManifestDisposition::invalid)

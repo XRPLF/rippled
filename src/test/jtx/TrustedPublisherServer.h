@@ -22,10 +22,10 @@
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Sign.h>
+#include <ripple/basics/base64.h>
 #include <ripple/basics/strHex.h>
 #include <test/jtx/envconfig.h>
 #include <boost/asio.hpp>
-#include <boost/beast/core/detail/base64.hpp>
 #include <boost/beast/http.hpp>
 
 namespace ripple {
@@ -80,7 +80,7 @@ public:
         }
         data.pop_back();
         data += "]}";
-        std::string blob = boost::beast::detail::base64_encode(data);
+        std::string blob = base64_encode(data);
 
         list_ = "{\"blob\":\"" + blob + "\"";
 

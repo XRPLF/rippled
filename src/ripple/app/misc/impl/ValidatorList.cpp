@@ -18,12 +18,12 @@
 //==============================================================================
 
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/basics/base64.h>
 #include <ripple/basics/date.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/JsonFields.h>
-#include <boost/beast/core/detail/base64.hpp>
 #include <boost/regex.hpp>
 
 #include <mutex>
@@ -291,7 +291,7 @@ ValidatorList::applyList (
     for (auto const& valManifest : manifests)
     {
         auto m = Manifest::make_Manifest (
-            boost::beast::detail::base64_decode(valManifest));
+            base64_decode(valManifest));
 
         if (! m || ! keyListings_.count (m->masterKey))
         {
@@ -321,7 +321,7 @@ ValidatorList::verify (
     std::string const& blob,
     std::string const& signature)
 {
-    auto m = Manifest::make_Manifest (boost::beast::detail::base64_decode(manifest));
+    auto m = Manifest::make_Manifest (base64_decode(manifest));
 
     if (! m || ! publisherLists_.count (m->masterKey))
         return ListDisposition::untrusted;
@@ -342,7 +342,7 @@ ValidatorList::verify (
         return ListDisposition::untrusted;
 
     auto const sig = strUnHex(signature);
-    auto const data = boost::beast::detail::base64_decode (blob);
+    auto const data = base64_decode (blob);
     if (! sig.second ||
         ! ripple::verify (
             publisherManifests_.getSigningKey(pubKey),

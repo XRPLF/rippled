@@ -1082,6 +1082,7 @@ add_library (xrpl_core
        nounity, main sources:
          subdir: basics (partial)
     #]===============================]
+    src/ripple/basics/impl/base64.cpp
     src/ripple/basics/impl/contract.cpp
     src/ripple/basics/impl/CountedObject.cpp
     src/ripple/basics/impl/Log.cpp
@@ -1179,6 +1180,7 @@ target_link_libraries (xrpl_core
 #]=================================]
 install (
   FILES
+    src/ripple/basics/base64.h
     src/ripple/basics/Blob.h
     src/ripple/basics/Buffer.h
     src/ripple/basics/CountedObject.h
@@ -1790,6 +1792,7 @@ target_sources (rippled PRIVATE
     src/test/basics/Slice_test.cpp
     src/test/basics/StringUtilities_test.cpp
     src/test/basics/TaggedCache_test.cpp
+    src/test/basics/base64_test.cpp
     src/test/basics/base_uint_test.cpp
     src/test/basics/contract_test.cpp
     src/test/basics/hardened_hash_test.cpp

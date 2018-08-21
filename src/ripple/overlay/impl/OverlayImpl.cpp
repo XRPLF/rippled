@@ -21,6 +21,7 @@
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/basics/base64.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/DatabaseCon.h>
@@ -764,7 +765,7 @@ OverlayImpl::crawl()
     for_each ([&](std::shared_ptr<PeerImp>&& sp)
     {
         auto& pv = av.append(Json::Value(Json::objectValue));
-        pv[jss::public_key] = boost::beast::detail::base64_encode(
+        pv[jss::public_key] = base64_encode(
             sp->getNodePublic().data(),
                 sp->getNodePublic().size());
         pv[jss::type] = sp->slot()->inbound() ?
