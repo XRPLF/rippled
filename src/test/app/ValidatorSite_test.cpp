@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/misc/ValidatorSite.h>
+#include <ripple/basics/base64.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/strHex.h>
 #include <ripple/protocol/digest.h>
@@ -28,7 +29,6 @@
 #include <test/jtx.h>
 #include <test/jtx/TrustedPublisherServer.h>
 #include <boost/asio.hpp>
-#include <boost/beast/core/detail/base64.hpp>
 
 namespace ripple {
 namespace test {
@@ -67,7 +67,7 @@ private:
         Serializer s;
         st.add(s);
 
-        return boost::beast::detail::base64_encode (std::string(
+        return base64_encode (std::string(
             static_cast<char const*> (s.data()), s.size()));
     }
 
