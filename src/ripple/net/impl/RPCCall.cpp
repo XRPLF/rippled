@@ -21,6 +21,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/net/RPCErr.h>
+#include <ripple/basics/base64.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
@@ -1523,7 +1524,7 @@ void fromNetwork (
     }
 
     // HTTP basic authentication
-    auto const auth = boost::beast::detail::base64_encode(strUsername + ":" + strPassword);
+    auto const auth = base64_encode(strUsername + ":" + strPassword);
 
     std::map<std::string, std::string> mapRequestHeaders;
 

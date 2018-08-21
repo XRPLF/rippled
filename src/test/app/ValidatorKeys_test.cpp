@@ -19,10 +19,10 @@
 
 #include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/app/misc/Manifest.h>
+#include <ripple/basics/base64.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
-#include <boost/beast/core/detail/base64.hpp>
 #include <string>
 
 namespace ripple {
@@ -91,7 +91,7 @@ public:
             derivePublicKey(KeyType::secp256k1, tokenSecretKey);
 
         auto const m = Manifest::make_Manifest(
-            boost::beast::detail::base64_decode(tokenManifest));
+            base64_decode(tokenManifest));
         BEAST_EXPECT(m);
         NodeID const tokenNodeID = calcNodeID(m->masterKey);
 

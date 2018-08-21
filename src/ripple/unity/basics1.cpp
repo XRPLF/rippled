@@ -18,6 +18,7 @@
 //==============================================================================
 
 
+#include <ripple/basics/impl/base64.cpp>
 #include <ripple/basics/impl/contract.cpp>
 #include <ripple/basics/impl/CountedObject.cpp>
 #include <ripple/basics/impl/Log.cpp>
