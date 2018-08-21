@@ -20,6 +20,7 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/strHex.h>
 #include <algorithm>
+#include <string>
 
 namespace ripple {
 
@@ -54,7 +55,15 @@ int charUnHex (unsigned char c)
 std::string
 strHex(Slice const& slice)
 {
-    return strHex(slice.data(), slice.size());
+    const auto begin = slice.data();
+    const auto end = begin + slice.size();
+    return strHex(begin, end);
+}
+
+std::string
+strHex (Blob const& vucData)
+{
+    return strHex (std::cbegin(vucData), std::cend(vucData));
 }
 
 }

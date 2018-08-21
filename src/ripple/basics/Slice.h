@@ -192,9 +192,6 @@ makeSlice (std::basic_string<char, Traits, Alloc> const& s)
     return Slice(s.data(), s.size());
 }
 
-std::string
-strHex (Slice const& slice);
-
 } // ripple
 
 #endif

@@ -25,10 +25,15 @@
 #ifndef RIPPLE_BASICS_STRHEX_H_INCLUDED
 #define RIPPLE_BASICS_STRHEX_H_INCLUDED
 
+#include <ripple/basics/Blob.h>
 #include <cassert>
 #include <string>
 
+#include <boost/algorithm/hex.hpp>
+#include <boost/endian/conversion.hpp>
+
 namespace ripple {
+class Slice;
 
 /** Converts an integer to the corresponding hex digit
     @param iDigit 0-15 inclusive
@@ -62,22 +67,38 @@ charUnHex (char c)
 }
 /** @} */
 
-// NIKB TODO cleanup this function and reduce the need for the many overloads
-//           it has in various places.
-template<class FwdIt>
-std::string strHex (FwdIt first, int size)
+template<class InputIterator>
+std::string strHex(InputIterator begin, InputIterator end)
 {
-    std::string s;
-    s.resize (size * 2);
-    for (int i = 0; i < size; i++)
-    {
-        unsigned char c = *first++;
-        s[i * 2]     = charHex (c >> 4);
-        s[i * 2 + 1] = charHex (c & 15);
-    }
-    return s;
+    std::string result{};
+    boost::algorithm::hex (begin, end, std::back_inserter(result));
+    return result;
 }
 
+template<class InputIterator>
+std::string strHex (InputIterator first, int size)
+{
+    const auto last = first + size;
+    return strHex(first, last);
+}
+
+inline std::string strHex (std::string const& src)
+{
+    return boost::algorithm::hex (src);
+}
+
+std::string strHex (Blob const& vucData);
+
+std::string strHex (Slice const& slice);
+
+inline std::string strHex (const std::uint64_t uiHost)
+{
+    uint64_t uBig    = boost::endian::native_to_big (uiHost);
+
+    const auto begin = (unsigned char*) &uBig;
+    const auto end   = begin + sizeof(uBig);
+    return strHex(begin, end);
+}
 }
 
 #endif
