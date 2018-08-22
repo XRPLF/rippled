@@ -22,6 +22,7 @@
 
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/strHex.h>
+
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
 #include <sstream>

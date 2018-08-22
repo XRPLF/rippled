@@ -75,13 +75,6 @@ std::string strHex(InputIterator begin, InputIterator end)
     return result;
 }
 
-template<class InputIterator>
-std::string strHex (InputIterator first, int size)
-{
-    const auto last = first + size;
-    return strHex(first, last);
-}
-
 inline std::string strHex (std::string const& src)
 {
     return boost::algorithm::hex (src);

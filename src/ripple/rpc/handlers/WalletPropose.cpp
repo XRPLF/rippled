@@ -108,7 +108,7 @@ Json::Value walletPropose (Json::Value const& params)
     Json::Value obj (Json::objectValue);
 
     auto const seed1751 = seedAs1751 (*seed);
-    auto const seedHex = strHex (seed->data(), seed->size());
+    auto const seedHex = strHex (seed->data(), seed->data() + seed->size());
     auto const seedBase58 = toBase58 (*seed);
 
     obj[jss::master_seed] = seedBase58;
@@ -117,7 +117,7 @@ Json::Value walletPropose (Json::Value const& params)
     obj[jss::account_id] = toBase58(calcAccountID(publicKey));
     obj[jss::public_key] = toBase58(TokenType::AccountPublic, publicKey);
     obj[jss::key_type] = to_string (keyType);
-    obj[jss::public_key_hex] = strHex (publicKey.data(), publicKey.size());
+    obj[jss::public_key_hex] = strHex (publicKey.data(), publicKey.data() + publicKey.size());
 
     // If a passphrase was specified, and it was hashed and used as a seed
     // run a quick entropy check and add an appropriate warning, because
