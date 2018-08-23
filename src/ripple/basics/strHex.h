@@ -71,6 +71,7 @@ template<class InputIterator>
 std::string strHex(InputIterator begin, InputIterator end)
 {
     std::string result{};
+    result.reserve (std::distance(begin, end));
     boost::algorithm::hex (begin, end, std::back_inserter(result));
     return result;
 }
