@@ -107,9 +107,6 @@ bool STValidation::isValid () const
 {
     try
     {
-        if (! publicKeyType(getSignerPublic()))
-            return false;
-
         return verify (getSignerPublic(),
             makeSlice(getSigningData ()),
             makeSlice(getFieldVL (sfSignature)),

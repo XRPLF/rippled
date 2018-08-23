@@ -72,12 +72,12 @@ public:
     }
 
     static
-    uint256
+    Blob
     hex_to_digest(std::string const& s)
     {
         blob b;
         hex_to_binary (s.begin (), s.end (), b);
-        return uint256::fromVoid(b.data());
+        return b;
     }
 
     static
@@ -189,8 +189,8 @@ public:
         auto const digest = hex_to_digest("34C19028C80D21F3F48C9354895F8D5BF0D5EE7FF457647CF655F5530A3022A7");
         auto const pk = hex_to_pk("025096EB12D3E924234E7162369C11D8BF877EDA238778E7A31FF0AAC5D0DBCF37");
         auto const sk = hex_to_sk("AA921417E7E5C299DA4EEC16D1CAA92F19B19F2A68511F68EC73BBB2F5236F3D");
-        auto const sig = hex_to_sig("3045022100B49D07F0E934BA468C0EFC78117791408D1FB8B63A6492AD395AC2F360F246600220508739DB0A2EF81676E39F459C8BBB07A09C3E9F9BEB696294D524D479D62740");
-        auto const non = hex_to_sig("3046022100B49D07F0E934BA468C0EFC78117791408D1FB8B63A6492AD395AC2F360F24660022100AF78C624F5D107E9891C60BA637444F71A129E47135D36D92AFD39B856601A01");
+        auto const sig = hex_to_sig("3045022100C2EC8B76743C718241ABB81BDA4434C97FE62E1EC27B40A1BA42D3344EF59CBD022029E9722F18B302DBDB0D573CED8EB26094667F03ACEF0239B0AA712B525A93A6");
+        auto const non = hex_to_sig("3046022100C2EC8B76743C718241ABB81BDA4434C97FE62E1EC27B40A1BA42D3344EF59CBD022100D6168DD0E74CFD2424F2A8C312714D9E26485DE302599E020F27ED617DDBAD9B");
 
         {
             auto const canonicality = ecdsaCanonicality(sig);
@@ -204,56 +204,11 @@ public:
             BEAST_EXPECT(*canonicality != ECDSACanonicality::fullyCanonical);
         }
 
-        BEAST_EXPECT(verifyDigest(pk, digest, sig, false));
-        BEAST_EXPECT(verifyDigest(pk, digest, sig, true));
-        BEAST_EXPECT(verifyDigest(pk, digest, non, false));
-        BEAST_EXPECT(! verifyDigest(pk, digest, non, true));
+        BEAST_EXPECT(verify(pk, makeSlice(digest), sig, false));
+        BEAST_EXPECT(verify(pk, makeSlice(digest), sig, true));
+        BEAST_EXPECT(verify(pk, makeSlice(digest), non, false));
+        BEAST_EXPECT(! verify(pk, makeSlice(digest), non, true));
 #endif
-    }
-
-    void testDigestSigning()
-    {
-        testcase ("secp256k1 digest");
-
-        for (std::size_t i = 0; i < 32; i++)
-        {
-            auto const keypair = randomKeyPair (KeyType::secp256k1);
-
-            BEAST_EXPECT(keypair.first == derivePublicKey (KeyType::secp256k1, keypair.second));
-            BEAST_EXPECT(*publicKeyType (keypair.first) == KeyType::secp256k1);
-
-            for (std::size_t j = 0; j < 32; j++)
-            {
-                uint256 digest;
-                beast::rngfill (
-                    digest.data(),
-                    digest.size(),
-                    crypto_prng());
-
-                auto sig = signDigest (
-                    keypair.first, keypair.second, digest);
-
-                BEAST_EXPECT(sig.size() != 0);
-                BEAST_EXPECT(verifyDigest (keypair.first,
-                    digest, sig, true));
-
-                // Wrong digest:
-                BEAST_EXPECT(!verifyDigest (keypair.first,
-                    ~digest, sig, true));
-
-                // Slightly change the signature:
-                if (auto ptr = sig.data())
-                    ptr[j % sig.size()]++;
-
-                // Wrong signature:
-                BEAST_EXPECT(!verifyDigest (keypair.first,
-                    digest, sig, true));
-
-                // Wrong digest and signature:
-                BEAST_EXPECT(!verifyDigest (keypair.first,
-                    ~digest, sig, true));
-            }
-        }
     }
 
     void testSigning (KeyType type)
@@ -448,7 +403,6 @@ public:
     void run() override
     {
         testBase58();
-        testDigestSigning();
         testMiscOperations();
         testCanonicality();
 

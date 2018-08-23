@@ -227,13 +227,6 @@ publicKeyType (PublicKey const& publicKey)
 }
 /** @} */
 
-/** Verify a secp256k1 signature on the digest of a message. */
-bool
-verifyDigest (PublicKey const& publicKey,
-    uint256 const& digest,
-    Slice const& sig,
-    bool mustBeFullyCanonical = true);
-
 /** Verify a signature on a message.
     With secp256k1 signatures, the data is first hashed with
     SHA512-Half, and the resulting digest is signed.

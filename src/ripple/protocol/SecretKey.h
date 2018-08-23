@@ -128,25 +128,6 @@ generateKeyPair (KeyType type, Seed const& seed);
 std::pair<PublicKey, SecretKey>
 randomKeyPair (KeyType type);
 
-/** Generate a signature for a message digest.
-    This can only be used with secp256k1 since Ed25519's
-    security properties come, in part, from how the message
-    is hashed.
-*/
-/** @{ */
-Buffer
-signDigest (PublicKey const& pk, SecretKey const& sk,
-    uint256 const& digest);
-
-inline
-Buffer
-signDigest (KeyType type, SecretKey const& sk,
-    uint256 const& digest)
-{
-    return signDigest (derivePublicKey(type, sk), sk, digest);
-}
-/** @} */
-
 /** Generate a signature for a message.
     With secp256k1 signatures, the data is first hashed with
     SHA512-Half, and the resulting digest is signed.

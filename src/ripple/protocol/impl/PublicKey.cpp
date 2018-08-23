@@ -216,6 +216,8 @@ publicKeyType (Slice const& slice)
     return boost::none;
 }
 
+/** Verify a secp256k1 signature on the digest of a message. */
+static
 bool
 verifyDigest (PublicKey const& publicKey,
     uint256 const& digest,
