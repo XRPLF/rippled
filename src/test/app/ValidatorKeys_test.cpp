@@ -136,7 +136,7 @@ public:
                 derivePublicKey(keyType, tokenSecretKey);
 
             auto const m = Manifest::make_Manifest(
-                boost::beast::detail::base64_decode(tokenManifest));
+                base64_decode(tokenManifest));
             BEAST_EXPECT(m);
             NodeID const tokenNodeID = calcNodeID(m->masterKey);
 
