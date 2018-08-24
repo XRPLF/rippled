@@ -117,6 +117,7 @@ enum LedgerNameSpace
     spaceXRPUChannel    = 'x',
     spaceCheck          = 'C',
     spaceDepositPreauth = 'p',
+    spaceManifest       = 'M',
 
     // No longer used or supported. Left here to reserve the space and
     // avoid accidental reuse of the space.

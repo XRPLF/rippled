@@ -44,8 +44,7 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         {
             auto const pk = derivePublicKey(
                 KeyType::secp256k1, token->validationSecret);
-            auto const m = Manifest::make_Manifest(
-                base64_decode(token->manifest));
+            auto const m = deserializeManifest(base64_decode(token->manifest));
 
             if (! m || pk != m->signingKey)
             {

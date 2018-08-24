@@ -262,6 +262,17 @@ sha512_deprecatedMSVCWorkaround()
 }
 #endif
 
+/** Returns the SHA512 of a series of objects. */
+template <class... Args>
+sha512_hasher::result_type
+sha512 (Args const&... args)
+{
+    sha512_hasher h;
+    using beast::hash_append;
+    hash_append(h, args...);
+    return static_cast<typename sha512_hasher::result_type>(h);
+}
+
 /** Returns the SHA512-Half of a series of objects. */
 template <class... Args>
 sha512_half_hasher::result_type

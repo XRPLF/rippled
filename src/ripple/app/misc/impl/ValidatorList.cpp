@@ -291,8 +291,7 @@ ValidatorList::applyList (
 
     for (auto const& valManifest : manifests)
     {
-        auto m = Manifest::make_Manifest (
-            base64_decode(valManifest));
+        auto m = deserializeManifest(base64_decode(valManifest));
 
         if (! m || ! keyListings_.count (m->masterKey))
         {
@@ -322,7 +321,7 @@ ValidatorList::verify (
     std::string const& blob,
     std::string const& signature)
 {
-    auto m = Manifest::make_Manifest (base64_decode(manifest));
+    auto m = deserializeManifest(base64_decode(manifest));
 
     if (! m || ! publisherLists_.count (m->masterKey))
         return ListDisposition::untrusted;
