@@ -87,6 +87,8 @@ enum LedgerEntryType
 
     ltDEPOSIT_PREAUTH   = 'p',
 
+    ltMANIFEST          = 'M',
+
     // No longer used or supported. Left here to prevent accidental
     // reassignment of the ledger type.
     ltNICKNAME          = 'n',
@@ -117,6 +119,7 @@ enum LedgerNameSpace
     spaceXRPUChannel    = 'x',
     spaceCheck          = 'C',
     spaceDepositPreauth = 'p',
+    spaceManifest       = 'M',
 
     // No longer used or supported. Left here to reserve the space and
     // avoid accidental reuse of the space.

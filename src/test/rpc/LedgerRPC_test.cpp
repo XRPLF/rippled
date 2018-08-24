@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <ripple/app/misc/TxQ.h>
+#include <ripple/app/misc/Manifest.h>
+#include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
@@ -744,21 +746,6 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
     }
 
-    void testLedgerEntryGenerator()
-    {
-        testcase ("ledger_entry Request Generator");
-        using namespace test::jtx;
-        Env env {*this};
-
-        // All generator requests are deprecated.
-        Json::Value jvParams;
-        jvParams[jss::generator] = 5;
-        jvParams[jss::ledger_hash] = to_string (env.closed()->info().hash);
-        Json::Value const jrr = env.rpc (
-            "json", "ledger_entry", to_string (jvParams))[jss::result];
-        checkErrorValue (jrr, "deprecatedFeature", "");
-    }
-
     void testLedgerEntryOffer()
     {
         testcase ("ledger_entry Request Offer");
@@ -1072,6 +1059,54 @@ class LedgerRPC_test : public beast::unit_test::suite
                 "json", "ledger_entry", to_string (jvParams))[jss::result];
             checkErrorValue (jrr, "malformedCurrency", "");
         }
+    }
+
+    void testLedgerManifest()
+    {
+        testcase ("ledger_entry Manifest");
+
+        // sample manifest:
+        char const* md = "24000000017121ED7EDFB84BD52BC328E8B45B38AF7608BB3A"
+                         "F80626B5DF860F2F9EBF044CBA542B732103AB85BA658BD435"
+                         "21773F906645990633ED44F877273DAD3EDDD7E3349027E89B"
+                         "76463044022029B8806A362935950DF7125576EDE862B162CC"
+                         "2D84232C67834BF56CD3F283CB02207DB16A2903EEDEAE83F6"
+                         "0216821E2C24DF76EDB72B08958BFC2B04E5FFE6DD2577106E"
+                         "696B2E626F7567616C69732E6E6574701240DBF224741AAA4D"
+                         "12B4A5FBD01706D77FC568C08332669EC802C58E5AA4F80426"
+                         "9A26BF5AC0CF535BCED88B38F5BA78F65E75A5856A6E2691F3"
+                         "6A9F5C94200707";
+
+        // Sample manifest to use:
+        auto const data = strUnHex(md);
+        BEAST_EXPECT(data.second);
+
+        using namespace test::jtx;
+        Env env {*this};
+
+        env(createManifest(env.master, md), fee(env.current()->fees().reserve));
+
+        env.close();
+
+        auto test = [&](char const* name, const char* value)
+        {
+            Json::Value jvParams;
+            jvParams[name] = value;
+            jvParams[jss::ledger_index] = "current";
+
+            auto const jrr = env.rpc("json", "ledger_entry", to_string (jvParams))[jss::result];
+
+            BEAST_EXPECT(jrr[jss::status] == "success");
+
+            BEAST_EXPECT(jrr[jss::node]["LedgerEntryType"] == "Manifest");
+            BEAST_EXPECT(jrr[jss::node]["Domain"] == "6E696B2E626F7567616C69732E6E6574");
+            BEAST_EXPECT(jrr[jss::node]["Manifest"] == md);
+            BEAST_EXPECT(jrr[jss::node]["Sequence"] == 1);
+            BEAST_EXPECT(jrr[jss::node]["PublicKey"] == "ED7EDFB84BD52BC328E8B45B38AF7608BB3AF80626B5DF860F2F9EBF044CBA542B");
+        };
+
+        test (jss::index, "0FCFFC5D6F76D0EABC101A6A1C67F5D47D2C79D407C462B88D2B3B6AC33E48A8");
+        test (jss::manifest, "nHUKK9FJ3naJjLD6NKbTT7Yu71Mw2gjTPThsasHNtUSnzCwUGxxi");
     }
 
     void testLedgerEntryUnknownOption()
@@ -1516,11 +1551,11 @@ public:
         testLedgerEntryDepositPreauth();
         testLedgerEntryDirectory();
         testLedgerEntryEscrow();
-        testLedgerEntryGenerator();
         testLedgerEntryOffer();
         testLedgerEntryPayChan();
         testLedgerEntryRippleState();
         testLedgerEntryUnknownOption();
+        testLedgerManifest();
         testLookupLedger();
         testNoQueue();
         testQueue();

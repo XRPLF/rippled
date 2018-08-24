@@ -68,11 +68,32 @@ private:
         STObject st(sfGeneric);
         st[sfSequence] = seq;
         st[sfPublicKey] = pk;
-        st[sfSigningPubKey] = spk;
 
-        sign(st, HashPrefix::manifest, *publicKeyType(spk), ssk);
-        sign(st, HashPrefix::manifest, *publicKeyType(pk), sk,
-            sfMasterSignature);
+        if (seq != std::numeric_limits<std::uint32_t>::max())
+        {
+            st[sfSigningPubKey] = spk;
+            sign(st, HashPrefix::manifest, *publicKeyType(spk), ssk);
+        }
+
+        sign(st, HashPrefix::manifest, *publicKeyType(pk), sk, sfMasterSignature);
+
+        Serializer s;
+        st.add(s);
+
+        return std::string(static_cast<char const*> (s.data()), s.size());
+    }
+
+    static
+    std::string
+    makeRevocationString (
+        PublicKey const& pk,
+        SecretKey const& sk)
+    {
+        STObject st(sfGeneric);
+        st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
+        st[sfPublicKey] = pk;
+
+        sign(st, HashPrefix::manifest, *publicKeyType(pk), sk, sfMasterSignature);
 
         Serializer s;
         st.add(s);
@@ -162,8 +183,8 @@ private:
 
         jtx::Env env (*this);
         PublicKey emptyLocalKey;
-        std::vector<std::string> emptyCfgKeys;
-        std::vector<std::string> emptyCfgPublishers;
+        std::vector<std::string> const emptyCfgKeys;
+        std::vector<std::string> const emptyCfgPublishers;
 
         auto const localSigningKeys = randomKeyPair(KeyType::secp256k1);
         auto const localSigningPublic = localSigningKeys.first;
@@ -220,7 +241,7 @@ private:
                 localSigningPublic, emptyCfgKeys, emptyCfgPublishers));
             BEAST_EXPECT(trustedKeys->listed (localSigningPublic));
 
-            manifests.applyManifest (*Manifest::make_Manifest(cfgManifest));
+            manifests.applyManifest (*deserializeManifest(cfgManifest));
             BEAST_EXPECT(trustedKeys->load (
                 localSigningPublic, emptyCfgKeys, emptyCfgPublishers));
 
@@ -253,23 +274,16 @@ private:
             BEAST_EXPECT(trustedKeys->listed (masterNode2));
 
             // load should reject invalid config keys
-            std::vector<std::string> badKeys({"NotAPublicKey"});
-            BEAST_EXPECT(!trustedKeys->load (
-                emptyLocalKey, badKeys, emptyCfgPublishers));
-
-            badKeys[0] = format (randomNode(), "!");
-            BEAST_EXPECT(!trustedKeys->load (
-                emptyLocalKey, badKeys, emptyCfgPublishers));
-
-            badKeys[0] = format (randomNode(), "!  Comment");
-            BEAST_EXPECT(!trustedKeys->load (
-                emptyLocalKey, badKeys, emptyCfgPublishers));
+            BEAST_EXPECT(!trustedKeys->load (emptyLocalKey,
+                { "NotAPublicKey" }, emptyCfgPublishers));
+            BEAST_EXPECT(!trustedKeys->load (emptyLocalKey,
+                { format (randomNode(), "!") }, emptyCfgPublishers));
 
             // load terminates when encountering an invalid entry
             auto const goodKey = randomNode();
-            badKeys.push_back (format (goodKey));
-            BEAST_EXPECT(!trustedKeys->load (
-                emptyLocalKey, badKeys, emptyCfgPublishers));
+            BEAST_EXPECT(!trustedKeys->load (emptyLocalKey,
+                { format (randomNode(), "!"), format (goodKey) },
+                emptyCfgPublishers));
             BEAST_EXPECT(!trustedKeys->listed (goodKey));
         }
         {
@@ -310,7 +324,7 @@ private:
             auto trustedKeys = std::make_unique <ValidatorList> (
                 manifests, manifests, env.timeKeeper(), env.journal);
 
-            manifests.applyManifest (*Manifest::make_Manifest(cfgManifest));
+            manifests.applyManifest (*deserializeManifest(cfgManifest));
 
             BEAST_EXPECT(trustedKeys->load (
                 localSigningPublic, cfgKeys, emptyCfgPublishers));
@@ -369,7 +383,7 @@ private:
             auto const pubRevokedSigning = randomKeyPair(KeyType::secp256k1);
             // make this manifest revoked (seq num = max)
             //  -- thus should not be loaded
-            pubManifests.applyManifest (*Manifest::make_Manifest (
+            pubManifests.applyManifest (*deserializeManifest (
                 makeManifestString (
                     pubRevokedPublic,
                     pubRevokedSecret,
@@ -528,10 +542,8 @@ private:
         // do not apply list with revoked publisher key
         // applied list is removed due to revoked publisher key
         auto const signingKeysMax = randomKeyPair(KeyType::secp256k1);
-        auto maxManifest = base64_encode(makeManifestString (
-            publisherPublic, publisherSecret,
-            pubSigningKeys2.first, pubSigningKeys2.second,
-            std::numeric_limits<std::uint32_t>::max ()));
+        auto maxManifest = base64_encode(makeRevocationString (
+            publisherPublic, publisherSecret));
 
         auto const sequence5 = 5;
         auto const blob5 = makeList (
@@ -643,7 +655,7 @@ private:
             BEAST_EXPECT(!trustedKeys->trusted (signingPublic1));
 
             // Should trust the ephemeral signing key from the applied manifest
-            auto m1 = Manifest::make_Manifest (makeManifestString (
+            auto m1 = deserializeManifest(makeManifestString(
                 masterPublic, masterPrivate,
                 signingPublic1, signingKeys1.second, 1));
 
@@ -659,7 +671,7 @@ private:
             // from the newest applied manifest
             auto const signingKeys2 = randomKeyPair(KeyType::secp256k1);
             auto const signingPublic2 = signingKeys2.first;
-            auto m2 = Manifest::make_Manifest (makeManifestString (
+            auto m2 = deserializeManifest(makeManifestString(
                 masterPublic, masterPrivate,
                 signingPublic2, signingKeys2.second, 2));
             BEAST_EXPECT(
@@ -676,10 +688,8 @@ private:
             auto const signingKeysMax = randomKeyPair(KeyType::secp256k1);
             auto const signingPublicMax = signingKeysMax.first;
             activeValidators.emplace (calcNodeID(signingPublicMax));
-            auto mMax = Manifest::make_Manifest (makeManifestString (
-                masterPublic, masterPrivate,
-                signingPublicMax, signingKeysMax.second,
-                std::numeric_limits<std::uint32_t>::max ()));
+            auto mMax = deserializeManifest(makeRevocationString(
+                masterPublic, masterPrivate));
 
             BEAST_EXPECT(mMax->revoked ());
             BEAST_EXPECT(

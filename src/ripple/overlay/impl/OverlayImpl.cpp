@@ -637,7 +637,7 @@ OverlayImpl::onManifests (
     {
         auto& s = m->list ().Get (i).stobject ();
 
-        if (auto mo = Manifest::make_Manifest (s))
+        if (auto mo = deserializeManifest(s))
         {
             uint256 const hash = mo->hash ();
             if (!hashRouter.addSuppressionPeer (hash, from->id ())) {
@@ -659,8 +659,7 @@ OverlayImpl::onManifests (
 
             if (result == ManifestDisposition::accepted)
             {
-                app_.getOPs().pubManifest (
-                    *Manifest::make_Manifest(serialized));
+                app_.getOPs().pubManifest (*deserializeManifest(serialized));
             }
 
             if (result == ManifestDisposition::accepted)

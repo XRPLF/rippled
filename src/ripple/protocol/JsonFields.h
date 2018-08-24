@@ -194,7 +194,6 @@ JSS ( frozen_balances );            // out: GatewayBalances
 JSS ( full );                       // in: LedgerClearer, handlers/Ledger
 JSS ( full_reply );                 // out: PathFind
 JSS ( fullbelow_size );             // in: GetCounts
-JSS ( generator );                  // in: LedgerEntry
 JSS ( good );                       // out: RPCVersion
 JSS ( hash );                       // out: NetworkOPs, InboundLedger,
                                     //      LedgerToJson, STTx; field
@@ -277,6 +276,8 @@ JSS ( local_txs );                  // out: GetCounts
 JSS ( local_static_keys );          // out: ValidatorList
 JSS ( lowest_sequence );            // out: AccountInfo
 JSS ( majority );                   // out: RPC feature
+JSS ( manifest );                   // in: LedgerEntry
+JSS ( Manifest );                   //
 JSS ( marker );                     // in/out: AccountTx, AccountOffers,
                                     //         AccountLines, AccountObjects,
                                     //         LedgerData

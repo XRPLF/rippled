@@ -337,6 +337,9 @@ extern SF_U16 const sfLedgerEntryType;
 extern SF_U16 const sfTransactionType;
 extern SF_U16 const sfSignerWeight;
 
+// 16-bit integers (uncommon)
+extern SF_U16 const sfVersion;
+
 // 32-bit integers (common)
 extern SF_U32 const sfFlags;
 extern SF_U32 const sfSourceTag;
@@ -458,6 +461,7 @@ extern SF_Blob const sfMemoFormat;
 extern SF_Blob const sfFulfillment;
 extern SF_Blob const sfCondition;
 extern SF_Blob const sfMasterSignature;
+extern SF_Blob const sfManifest;
 
 // account
 extern SF_Account const sfAccount;

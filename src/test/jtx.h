@@ -34,6 +34,7 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/JTx.h>
+#include <test/jtx/manifest.h>
 #include <test/jtx/memo.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>

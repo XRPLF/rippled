@@ -32,6 +32,7 @@
 #include <ripple/app/tx/impl/DepositPreauth.cpp>
 #include <ripple/app/tx/impl/Escrow.cpp>
 #include <ripple/app/tx/impl/InvariantCheck.cpp>
+#include <ripple/app/tx/impl/LoadManifest.cpp>
 #include <ripple/app/tx/impl/OfferStream.cpp>
 #include <ripple/app/tx/impl/Payment.cpp>
 #include <ripple/app/tx/impl/PayChan.cpp>

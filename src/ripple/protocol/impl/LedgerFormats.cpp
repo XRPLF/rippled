@@ -46,6 +46,13 @@ LedgerFormats::LedgerFormats ()
             << SOElement (sfTickSize,            SOE_OPTIONAL)
             ;
 
+    add ("Manifest", ltMANIFEST)
+            << SOElement (sfPublicKey,           SOE_REQUIRED)
+            << SOElement (sfSequence,            SOE_DEFAULT)
+            << SOElement (sfManifest,            SOE_REQUIRED)
+            << SOElement (sfDomain,              SOE_OPTIONAL)
+            ;
+
     add ("DirectoryNode", ltDIR_NODE)
             << SOElement (sfOwner,               SOE_OPTIONAL)  // for owner directories
             << SOElement (sfTakerPaysCurrency,   SOE_OPTIONAL)  // for order book directories

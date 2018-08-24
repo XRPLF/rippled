@@ -77,6 +77,20 @@ public:
     {
     }
 
+    /** Create a template and pass it to the callback to be populated.
+
+        The callback will typically consist of one or more calls to the
+        @ref push_back member function on the object that it is passed.
+
+        @see push_back
+    */
+    SOTemplate(std::function<void(SOTemplate&)> callback)
+        : SOTemplate()
+    {
+        if (callback)
+            callback(*this);
+    }
+
     /* Provide for the enumeration of fields */
     iterator_range all () const
     {

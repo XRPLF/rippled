@@ -186,9 +186,18 @@ Json::Value doLedgerEntry (RPC::Context& context)
                     context.params[jss::escrow][jss::seq].asUInt()).key;
         }
     }
-    else if (context.params.isMember (jss::generator))
+    else if (context.params.isMember (jss::manifest))
     {
-        jvResult[jss::error] = "deprecatedFeature";
+        expectedType = ltMANIFEST;
+        if (!context.params[jss::manifest].isObject())
+        {
+            auto const npk = parseBase58<PublicKey>(
+                TokenType::NodePublic,
+                context.params[jss::manifest].asString());
+
+            if (npk)
+                uNodeIndex = keylet::manifest(*npk).key;
+        }
     }
     else if (context.params.isMember (jss::offer))
     {

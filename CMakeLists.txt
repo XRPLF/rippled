@@ -1803,6 +1803,7 @@ else ()
     src/ripple/app/tx/impl/DepositPreauth.cpp
     src/ripple/app/tx/impl/Escrow.cpp
     src/ripple/app/tx/impl/InvariantCheck.cpp
+    src/ripple/app/tx/impl/LoadManifest.cpp
     src/ripple/app/tx/impl/OfferStream.cpp
     src/ripple/app/tx/impl/PayChan.cpp
     src/ripple/app/tx/impl/Payment.cpp
@@ -2042,6 +2043,7 @@ else ()
     src/test/app/LedgerLoad_test.cpp
     src/test/app/LedgerReplay_test.cpp
     src/test/app/LoadFeeTrack_test.cpp
+    src/test/app/LoadManifest_test.cpp
     src/test/app/Manifest_test.cpp
     src/test/app/MultiSign_test.cpp
     src/test/app/OfferStream_test.cpp
@@ -2174,6 +2176,7 @@ else ()
     src/test/jtx/impl/fee.cpp
     src/test/jtx/impl/flags.cpp
     src/test/jtx/impl/jtx_json.cpp
+    src/test/jtx/impl/manifest.cpp
     src/test/jtx/impl/memo.cpp
     src/test/jtx/impl/multisign.cpp
     src/test/jtx/impl/offer.cpp

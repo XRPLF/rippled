@@ -34,6 +34,7 @@
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
 #include <ripple/app/tx/impl/SetTrust.h>
+#include <ripple/app/tx/impl/LoadManifest.h>
 #include <ripple/app/tx/impl/PayChan.h>
 
 namespace ripple {
@@ -44,27 +45,28 @@ invoke_preflight (PreflightContext const& ctx)
 {
     switch(ctx.tx.getTxnType())
     {
-    case ttACCOUNT_SET:     return SetAccount       ::preflight(ctx);
-    case ttCHECK_CANCEL:    return CancelCheck      ::preflight(ctx);
-    case ttCHECK_CASH:      return CashCheck        ::preflight(ctx);
-    case ttCHECK_CREATE:    return CreateCheck      ::preflight(ctx);
-    case ttDEPOSIT_PREAUTH: return DepositPreauth   ::preflight(ctx);
-    case ttOFFER_CANCEL:    return CancelOffer      ::preflight(ctx);
-    case ttOFFER_CREATE:    return CreateOffer      ::preflight(ctx);
-    case ttESCROW_CREATE:   return EscrowCreate     ::preflight(ctx);
-    case ttESCROW_FINISH:   return EscrowFinish     ::preflight(ctx);
-    case ttESCROW_CANCEL:   return EscrowCancel     ::preflight(ctx);
-    case ttPAYCHAN_CLAIM:   return PayChanClaim     ::preflight(ctx);
-    case ttPAYCHAN_CREATE:  return PayChanCreate    ::preflight(ctx);
-    case ttPAYCHAN_FUND:    return PayChanFund      ::preflight(ctx);
-    case ttPAYMENT:         return Payment          ::preflight(ctx);
-    case ttREGULAR_KEY_SET: return SetRegularKey    ::preflight(ctx);
-    case ttSIGNER_LIST_SET: return SetSignerList    ::preflight(ctx);
-    case ttTICKET_CANCEL:   return CancelTicket     ::preflight(ctx);
-    case ttTICKET_CREATE:   return CreateTicket     ::preflight(ctx);
-    case ttTRUST_SET:       return SetTrust         ::preflight(ctx);
+    case ttACCOUNT_SET:          return SetAccount        ::preflight(ctx);
+    case ttCHECK_CANCEL:         return CancelCheck       ::preflight(ctx);
+    case ttCHECK_CASH:           return CashCheck         ::preflight(ctx);
+    case ttCHECK_CREATE:         return CreateCheck       ::preflight(ctx);
+    case ttDEPOSIT_PREAUTH:      return DepositPreauth    ::preflight(ctx);
+    case ttOFFER_CANCEL:         return CancelOffer       ::preflight(ctx);
+    case ttOFFER_CREATE:         return CreateOffer       ::preflight(ctx);
+    case ttESCROW_CREATE:        return EscrowCreate      ::preflight(ctx);
+    case ttESCROW_FINISH:        return EscrowFinish      ::preflight(ctx);
+    case ttESCROW_CANCEL:        return EscrowCancel      ::preflight(ctx);
+    case ttPAYCHAN_CLAIM:        return PayChanClaim      ::preflight(ctx);
+    case ttPAYCHAN_CREATE:       return PayChanCreate     ::preflight(ctx);
+    case ttPAYCHAN_FUND:         return PayChanFund       ::preflight(ctx);
+    case ttPAYMENT:              return Payment           ::preflight(ctx);
+    case ttREGULAR_KEY_SET:      return SetRegularKey     ::preflight(ctx);
+    case ttSIGNER_LIST_SET:      return SetSignerList     ::preflight(ctx);
+    case ttTICKET_CANCEL:        return CancelTicket      ::preflight(ctx);
+    case ttTICKET_CREATE:        return CreateTicket      ::preflight(ctx);
+    case ttTRUST_SET:            return SetTrust          ::preflight(ctx);
+    case ttLOAD_MANIFEST:        return LoadManifest      ::preflight(ctx);
     case ttAMENDMENT:
-    case ttFEE:             return Change           ::preflight(ctx);
+    case ttFEE:                  return Change            ::preflight(ctx);
     default:
         assert(false);
         return temUNKNOWN;
@@ -113,27 +115,28 @@ invoke_preclaim (PreclaimContext const& ctx)
 {
     switch(ctx.tx.getTxnType())
     {
-    case ttACCOUNT_SET:     return invoke_preclaim<SetAccount>(ctx);
-    case ttCHECK_CANCEL:    return invoke_preclaim<CancelCheck>(ctx);
-    case ttCHECK_CASH:      return invoke_preclaim<CashCheck>(ctx);
-    case ttCHECK_CREATE:    return invoke_preclaim<CreateCheck>(ctx);
-    case ttDEPOSIT_PREAUTH: return invoke_preclaim<DepositPreauth>(ctx);
-    case ttOFFER_CANCEL:    return invoke_preclaim<CancelOffer>(ctx);
-    case ttOFFER_CREATE:    return invoke_preclaim<CreateOffer>(ctx);
-    case ttESCROW_CREATE:   return invoke_preclaim<EscrowCreate>(ctx);
-    case ttESCROW_FINISH:   return invoke_preclaim<EscrowFinish>(ctx);
-    case ttESCROW_CANCEL:   return invoke_preclaim<EscrowCancel>(ctx);
-    case ttPAYCHAN_CLAIM:   return invoke_preclaim<PayChanClaim>(ctx);
-    case ttPAYCHAN_CREATE:  return invoke_preclaim<PayChanCreate>(ctx);
-    case ttPAYCHAN_FUND:    return invoke_preclaim<PayChanFund>(ctx);
-    case ttPAYMENT:         return invoke_preclaim<Payment>(ctx);
-    case ttREGULAR_KEY_SET: return invoke_preclaim<SetRegularKey>(ctx);
-    case ttSIGNER_LIST_SET: return invoke_preclaim<SetSignerList>(ctx);
-    case ttTICKET_CANCEL:   return invoke_preclaim<CancelTicket>(ctx);
-    case ttTICKET_CREATE:   return invoke_preclaim<CreateTicket>(ctx);
-    case ttTRUST_SET:       return invoke_preclaim<SetTrust>(ctx);
+    case ttACCOUNT_SET:          return invoke_preclaim<SetAccount>(ctx);
+    case ttCHECK_CANCEL:         return invoke_preclaim<CancelCheck>(ctx);
+    case ttCHECK_CASH:           return invoke_preclaim<CashCheck>(ctx);
+    case ttCHECK_CREATE:         return invoke_preclaim<CreateCheck>(ctx);
+    case ttDEPOSIT_PREAUTH:      return invoke_preclaim<DepositPreauth>(ctx);
+    case ttOFFER_CANCEL:         return invoke_preclaim<CancelOffer>(ctx);
+    case ttOFFER_CREATE:         return invoke_preclaim<CreateOffer>(ctx);
+    case ttESCROW_CREATE:        return invoke_preclaim<EscrowCreate>(ctx);
+    case ttESCROW_FINISH:        return invoke_preclaim<EscrowFinish>(ctx);
+    case ttESCROW_CANCEL:        return invoke_preclaim<EscrowCancel>(ctx);
+    case ttPAYCHAN_CLAIM:        return invoke_preclaim<PayChanClaim>(ctx);
+    case ttPAYCHAN_CREATE:       return invoke_preclaim<PayChanCreate>(ctx);
+    case ttPAYCHAN_FUND:         return invoke_preclaim<PayChanFund>(ctx);
+    case ttPAYMENT:              return invoke_preclaim<Payment>(ctx);
+    case ttREGULAR_KEY_SET:      return invoke_preclaim<SetRegularKey>(ctx);
+    case ttSIGNER_LIST_SET:      return invoke_preclaim<SetSignerList>(ctx);
+    case ttTICKET_CANCEL:        return invoke_preclaim<CancelTicket>(ctx);
+    case ttTICKET_CREATE:        return invoke_preclaim<CreateTicket>(ctx);
+    case ttTRUST_SET:            return invoke_preclaim<SetTrust>(ctx);
+    case ttLOAD_MANIFEST:        return invoke_preclaim<LoadManifest>(ctx);
     case ttAMENDMENT:
-    case ttFEE:             return invoke_preclaim<Change>(ctx);
+    case ttFEE:                  return invoke_preclaim<Change>(ctx);
     default:
         assert(false);
         return temUNKNOWN;
@@ -148,27 +151,28 @@ invoke_calculateBaseFee(
 {
     switch (tx.getTxnType())
     {
-    case ttACCOUNT_SET:     return SetAccount::calculateBaseFee(view, tx);
-    case ttCHECK_CANCEL:    return CancelCheck::calculateBaseFee(view, tx);
-    case ttCHECK_CASH:      return CashCheck::calculateBaseFee(view, tx);
-    case ttCHECK_CREATE:    return CreateCheck::calculateBaseFee(view, tx);
-    case ttDEPOSIT_PREAUTH: return DepositPreauth::calculateBaseFee(view, tx);
-    case ttOFFER_CANCEL:    return CancelOffer::calculateBaseFee(view, tx);
-    case ttOFFER_CREATE:    return CreateOffer::calculateBaseFee(view, tx);
-    case ttESCROW_CREATE:   return EscrowCreate::calculateBaseFee(view, tx);
-    case ttESCROW_FINISH:   return EscrowFinish::calculateBaseFee(view, tx);
-    case ttESCROW_CANCEL:   return EscrowCancel::calculateBaseFee(view, tx);
-    case ttPAYCHAN_CLAIM:   return PayChanClaim::calculateBaseFee(view, tx);
-    case ttPAYCHAN_CREATE:  return PayChanCreate::calculateBaseFee(view, tx);
-    case ttPAYCHAN_FUND:    return PayChanFund::calculateBaseFee(view, tx);
-    case ttPAYMENT:         return Payment::calculateBaseFee(view, tx);
-    case ttREGULAR_KEY_SET: return SetRegularKey::calculateBaseFee(view, tx);
-    case ttSIGNER_LIST_SET: return SetSignerList::calculateBaseFee(view, tx);
-    case ttTICKET_CANCEL:   return CancelTicket::calculateBaseFee(view, tx);
-    case ttTICKET_CREATE:   return CreateTicket::calculateBaseFee(view, tx);
-    case ttTRUST_SET:       return SetTrust::calculateBaseFee(view, tx);
+    case ttACCOUNT_SET:          return SetAccount::calculateBaseFee(view, tx);
+    case ttCHECK_CANCEL:         return CancelCheck::calculateBaseFee(view, tx);
+    case ttCHECK_CASH:           return CashCheck::calculateBaseFee(view, tx);
+    case ttCHECK_CREATE:         return CreateCheck::calculateBaseFee(view, tx);
+    case ttDEPOSIT_PREAUTH:      return DepositPreauth::calculateBaseFee(view, tx);
+    case ttOFFER_CANCEL:         return CancelOffer::calculateBaseFee(view, tx);
+    case ttOFFER_CREATE:         return CreateOffer::calculateBaseFee(view, tx);
+    case ttESCROW_CREATE:        return EscrowCreate::calculateBaseFee(view, tx);
+    case ttESCROW_FINISH:        return EscrowFinish::calculateBaseFee(view, tx);
+    case ttESCROW_CANCEL:        return EscrowCancel::calculateBaseFee(view, tx);
+    case ttPAYCHAN_CLAIM:        return PayChanClaim::calculateBaseFee(view, tx);
+    case ttPAYCHAN_CREATE:       return PayChanCreate::calculateBaseFee(view, tx);
+    case ttPAYCHAN_FUND:         return PayChanFund::calculateBaseFee(view, tx);
+    case ttPAYMENT:              return Payment::calculateBaseFee(view, tx);
+    case ttREGULAR_KEY_SET:      return SetRegularKey::calculateBaseFee(view, tx);
+    case ttSIGNER_LIST_SET:      return SetSignerList::calculateBaseFee(view, tx);
+    case ttTICKET_CANCEL:        return CancelTicket::calculateBaseFee(view, tx);
+    case ttTICKET_CREATE:        return CreateTicket::calculateBaseFee(view, tx);
+    case ttTRUST_SET:            return SetTrust::calculateBaseFee(view, tx);
+    case ttLOAD_MANIFEST:        return LoadManifest::calculateBaseFee(view, tx);
     case ttAMENDMENT:
-    case ttFEE:             return Change::calculateBaseFee(view, tx);
+    case ttFEE:                  return Change::calculateBaseFee(view, tx);
     default:
         assert(false);
         return 0;
@@ -194,25 +198,26 @@ invoke_calculateConsequences(STTx const& tx)
 {
     switch (tx.getTxnType())
     {
-    case ttACCOUNT_SET:     return invoke_calculateConsequences<SetAccount>(tx);
-    case ttCHECK_CANCEL:    return invoke_calculateConsequences<CancelCheck>(tx);
-    case ttCHECK_CASH:      return invoke_calculateConsequences<CashCheck>(tx);
-    case ttCHECK_CREATE:    return invoke_calculateConsequences<CreateCheck>(tx);
-    case ttDEPOSIT_PREAUTH: return invoke_calculateConsequences<DepositPreauth>(tx);
-    case ttOFFER_CANCEL:    return invoke_calculateConsequences<CancelOffer>(tx);
-    case ttOFFER_CREATE:    return invoke_calculateConsequences<CreateOffer>(tx);
-    case ttESCROW_CREATE:   return invoke_calculateConsequences<EscrowCreate>(tx);
-    case ttESCROW_FINISH:   return invoke_calculateConsequences<EscrowFinish>(tx);
-    case ttESCROW_CANCEL:   return invoke_calculateConsequences<EscrowCancel>(tx);
-    case ttPAYCHAN_CLAIM:   return invoke_calculateConsequences<PayChanClaim>(tx);
-    case ttPAYCHAN_CREATE:  return invoke_calculateConsequences<PayChanCreate>(tx);
-    case ttPAYCHAN_FUND:    return invoke_calculateConsequences<PayChanFund>(tx);
-    case ttPAYMENT:         return invoke_calculateConsequences<Payment>(tx);
-    case ttREGULAR_KEY_SET: return invoke_calculateConsequences<SetRegularKey>(tx);
-    case ttSIGNER_LIST_SET: return invoke_calculateConsequences<SetSignerList>(tx);
-    case ttTICKET_CANCEL:   return invoke_calculateConsequences<CancelTicket>(tx);
-    case ttTICKET_CREATE:   return invoke_calculateConsequences<CreateTicket>(tx);
-    case ttTRUST_SET:       return invoke_calculateConsequences<SetTrust>(tx);
+    case ttACCOUNT_SET:          return invoke_calculateConsequences<SetAccount>(tx);
+    case ttCHECK_CANCEL:         return invoke_calculateConsequences<CancelCheck>(tx);
+    case ttCHECK_CASH:           return invoke_calculateConsequences<CashCheck>(tx);
+    case ttCHECK_CREATE:         return invoke_calculateConsequences<CreateCheck>(tx);
+    case ttDEPOSIT_PREAUTH:      return invoke_calculateConsequences<DepositPreauth>(tx);
+    case ttOFFER_CANCEL:         return invoke_calculateConsequences<CancelOffer>(tx);
+    case ttOFFER_CREATE:         return invoke_calculateConsequences<CreateOffer>(tx);
+    case ttESCROW_CREATE:        return invoke_calculateConsequences<EscrowCreate>(tx);
+    case ttESCROW_FINISH:        return invoke_calculateConsequences<EscrowFinish>(tx);
+    case ttESCROW_CANCEL:        return invoke_calculateConsequences<EscrowCancel>(tx);
+    case ttPAYCHAN_CLAIM:        return invoke_calculateConsequences<PayChanClaim>(tx);
+    case ttPAYCHAN_CREATE:       return invoke_calculateConsequences<PayChanCreate>(tx);
+    case ttPAYCHAN_FUND:         return invoke_calculateConsequences<PayChanFund>(tx);
+    case ttPAYMENT:              return invoke_calculateConsequences<Payment>(tx);
+    case ttREGULAR_KEY_SET:      return invoke_calculateConsequences<SetRegularKey>(tx);
+    case ttSIGNER_LIST_SET:      return invoke_calculateConsequences<SetSignerList>(tx);
+    case ttTICKET_CANCEL:        return invoke_calculateConsequences<CancelTicket>(tx);
+    case ttTICKET_CREATE:        return invoke_calculateConsequences<CreateTicket>(tx);
+    case ttTRUST_SET:            return invoke_calculateConsequences<SetTrust>(tx);
+    case ttLOAD_MANIFEST:        return invoke_calculateConsequences<LoadManifest>(tx);
     case ttAMENDMENT:
     case ttFEE:
         // fall through to default
@@ -229,27 +234,28 @@ invoke_apply (ApplyContext& ctx)
 {
     switch(ctx.tx.getTxnType())
     {
-    case ttACCOUNT_SET:     { SetAccount     p(ctx); return p(); }
-    case ttCHECK_CANCEL:    { CancelCheck    p(ctx); return p(); }
-    case ttCHECK_CASH:      { CashCheck      p(ctx); return p(); }
-    case ttCHECK_CREATE:    { CreateCheck    p(ctx); return p(); }
-    case ttDEPOSIT_PREAUTH: { DepositPreauth p(ctx); return p(); }
-    case ttOFFER_CANCEL:    { CancelOffer    p(ctx); return p(); }
-    case ttOFFER_CREATE:    { CreateOffer    p(ctx); return p(); }
-    case ttESCROW_CREATE:   { EscrowCreate   p(ctx); return p(); }
-    case ttESCROW_FINISH:   { EscrowFinish   p(ctx); return p(); }
-    case ttESCROW_CANCEL:   { EscrowCancel   p(ctx); return p(); }
-    case ttPAYCHAN_CLAIM:   { PayChanClaim   p(ctx); return p(); }
-    case ttPAYCHAN_CREATE:  { PayChanCreate  p(ctx); return p(); }
-    case ttPAYCHAN_FUND:    { PayChanFund    p(ctx); return p(); }
-    case ttPAYMENT:         { Payment        p(ctx); return p(); }
-    case ttREGULAR_KEY_SET: { SetRegularKey  p(ctx); return p(); }
-    case ttSIGNER_LIST_SET: { SetSignerList  p(ctx); return p(); }
-    case ttTICKET_CANCEL:   { CancelTicket   p(ctx); return p(); }
-    case ttTICKET_CREATE:   { CreateTicket   p(ctx); return p(); }
-    case ttTRUST_SET:       { SetTrust       p(ctx); return p(); }
+    case ttACCOUNT_SET:          { SetAccount         p(ctx); return p(); }
+    case ttCHECK_CANCEL:         { CancelCheck        p(ctx); return p(); }
+    case ttCHECK_CASH:           { CashCheck          p(ctx); return p(); }
+    case ttCHECK_CREATE:         { CreateCheck        p(ctx); return p(); }
+    case ttDEPOSIT_PREAUTH:      { DepositPreauth     p(ctx); return p(); }
+    case ttOFFER_CANCEL:         { CancelOffer        p(ctx); return p(); }
+    case ttOFFER_CREATE:         { CreateOffer        p(ctx); return p(); }
+    case ttESCROW_CREATE:        { EscrowCreate       p(ctx); return p(); }
+    case ttESCROW_FINISH:        { EscrowFinish       p(ctx); return p(); }
+    case ttESCROW_CANCEL:        { EscrowCancel       p(ctx); return p(); }
+    case ttPAYCHAN_CLAIM:        { PayChanClaim       p(ctx); return p(); }
+    case ttPAYCHAN_CREATE:       { PayChanCreate      p(ctx); return p(); }
+    case ttPAYCHAN_FUND:         { PayChanFund        p(ctx); return p(); }
+    case ttPAYMENT:              { Payment            p(ctx); return p(); }
+    case ttREGULAR_KEY_SET :     { SetRegularKey      p(ctx); return p(); }
+    case ttSIGNER_LIST_SET :     { SetSignerList      p(ctx); return p(); }
+    case ttTICKET_CANCEL:        { CancelTicket       p(ctx); return p(); }
+    case ttTICKET_CREATE:        { CreateTicket       p(ctx); return p(); }
+    case ttTRUST_SET:            { SetTrust           p(ctx); return p(); }
+    case ttLOAD_MANIFEST:        { LoadManifest       p(ctx); return p(); }
     case ttAMENDMENT:
-    case ttFEE:             { Change         p(ctx); return p(); }
+    case ttFEE:                { Change           p(ctx); return p(); }
     default:
         assert(false);
         return { temUNKNOWN, false };

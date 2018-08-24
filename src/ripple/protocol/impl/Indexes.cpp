@@ -317,6 +317,12 @@ Keylet depositPreauth_t::operator()(AccountID const& owner,
         getDepositPreauthIndex(owner, preauthorized) };
 }
 
+Keylet manifest_t::operator()(
+    PublicKey const& identity) const
+{
+    return { ltMANIFEST,
+        sha512Half(std::uint16_t(spaceManifest), identity) };
+}
 //------------------------------------------------------------------------------
 
 Keylet unchecked (uint256 const& key)

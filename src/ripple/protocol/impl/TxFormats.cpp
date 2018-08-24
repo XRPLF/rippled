@@ -161,6 +161,10 @@ TxFormats::TxFormats ()
         << SOElement (sfAuthorize,           SOE_OPTIONAL)
         << SOElement (sfUnauthorize,         SOE_OPTIONAL)
         ;
+
+    add ("LoadManifest", ttLOAD_MANIFEST)
+        << SOElement (sfManifest,            SOE_REQUIRED)
+        ;
 }
 
 void TxFormats::addCommonFields (Item& item)

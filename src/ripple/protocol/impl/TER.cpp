@@ -74,6 +74,9 @@ transResults()
         { tecEXPIRED,                { "tecEXPIRED",               "Expiration time is passed."                                                    } },
         { tecDUPLICATE,              { "tecDUPLICATE",             "Ledger object already exists."                                                 } },
         { tecKILLED,                 { "tecKILLED",                "FillOrKill offer killed."                                                      } },
+        { tecMANIFEST_BAD_SIGNATURE, { "tecMANIFEST_BAD_SIGNATURE","The specified manifest is malformed and cannot be parsed."                     } },
+        { tecMANIFEST_BAD_SEQUENCE,  { "tecMANIFEST_BAD_SEQUENCE", "The specified manifest is not newer than than the manifest presently stored."  } },
+        { tecMANIFEST_BAD_DOMAIN,    { "tecMANIFEST_BAD_DOMAIN",   "The specified manifest contains a malformed or invalid domain."                } },
 
         { tefALREADY,                { "tefALREADY",               "The exact transaction was already in this ledger."                             } },
         { tefBAD_ADD_AUTH,           { "tefBAD_ADD_AUTH",          "Not authorized to add account."                                                } },

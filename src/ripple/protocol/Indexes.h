@@ -271,6 +271,15 @@ struct depositPreauth_t
 };
 static depositPreauth_t const depositPreauth {};
 
+/** A ValidatorInfo */
+struct manifest_t
+{
+    explicit manifest_t() = default;
+
+    Keylet operator()(PublicKey const& identity) const;
+};
+static manifest_t const manifest {};
+
 //------------------------------------------------------------------------------
 
 /** Any ledger entry */

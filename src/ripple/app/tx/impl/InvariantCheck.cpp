@@ -331,6 +331,7 @@ LedgerEntryTypesMatch::visitEntry(
         case ltPAYCHAN:
         case ltCHECK:
         case ltDEPOSIT_PREAUTH:
+        case ltMANIFEST:
             break;
         default:
             invalidTypeAdded_ = true;

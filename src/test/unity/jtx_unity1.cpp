@@ -33,5 +33,6 @@
 #include <test/jtx/impl/JSONRPCClient.cpp>
 #include <test/jtx/impl/jtx_json.cpp>
 #include <test/jtx/impl/ManualTimeKeeper.cpp>
+#include <test/jtx/impl/manifest.cpp>
 #include <test/jtx/impl/memo.cpp>
 #include <test/jtx/impl/multisign.cpp>

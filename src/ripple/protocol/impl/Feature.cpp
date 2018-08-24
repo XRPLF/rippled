@@ -116,7 +116,8 @@ detail::supportedAmendments ()
         "fix1515",
         "fix1578",
         "MultiSignReserve",
-        "fixTakerDryOfferRemoval"
+        "fixTakerDryOfferRemoval",
+        "OnLedgerManifests",
     };
     return supported;
 }
@@ -173,5 +174,6 @@ uint256 const fix1515 = *getRegisteredFeature("fix1515");
 uint256 const fix1578 = *getRegisteredFeature("fix1578");
 uint256 const featureMultiSignReserve = *getRegisteredFeature("MultiSignReserve");
 uint256 const fixTakerDryOfferRemoval = *getRegisteredFeature("fixTakerDryOfferRemoval");
+uint256 const featureOnLedgerManifests = *getRegisteredFeature("OnLedgerManifests");
 
 } // ripple

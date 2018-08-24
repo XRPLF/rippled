@@ -103,6 +103,10 @@ const std::uint32_t tfRenew                = 0x00010000;
 const std::uint32_t tfClose                = 0x00020000;
 const std::uint32_t tfPayChanClaimMask     = ~ (tfUniversal | tfRenew | tfClose);
 
+// LoadManifest flags:
+const std::uint32_t tfPayReserve           = 0x00010000;
+const std::uint32_t tfLoadManifestMask     = ~ (tfUniversal | tfPayReserve);
+
 } // ripple
 
 #endif
