@@ -28,7 +28,7 @@
 #include <ripple/nodestore/impl/varint.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/protocol/HashPrefix.h>
-#include <lz4/lib/lz4.h>
+#include <lz4.h>
 #include <cstddef>
 #include <cstring>
 #include <string>

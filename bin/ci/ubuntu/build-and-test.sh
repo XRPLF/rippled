@@ -17,6 +17,9 @@ fi
 : ${BUILD_TYPE:=Debug}
 echo "BUILD TYPE: $BUILD_TYPE"
 
+: ${TARGET:=install}
+echo "BUILD TARGET: $TARGET"
+
 # Ensure APP defaults to rippled if it's not set.
 : ${APP:=rippled}
 echo "using APP: $APP"
@@ -73,9 +76,11 @@ fi
 
 mkdir -p "build/${BUILD_DIR}"
 pushd "build/${BUILD_DIR}"
+# generate
 $time cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS}
-if [[ ${BUILD_TYPE} == "docs" ]]; then
-  $time cmake --build . --target docs -- $BUILDARGS
+# build
+time DESTDIR=$(pwd)/_INSTALLED_ cmake --build . --target ${TARGET} -- $BUILDARGS
+if [[ ${TARGET} == "docs" ]]; then
   ## mimic the standard test output for docs build
   ## to make controlling processes like jenkins happy
   if [ -f html_doc/index.html ]; then
@@ -84,8 +89,6 @@ if [[ ${BUILD_TYPE} == "docs" ]]; then
       echo "1 case, 1 test total, 1 failures"
   fi
   exit
-else
-  $time cmake --build . -- $BUILDARGS
 fi
 popd
 export APP_PATH="$PWD/build/${BUILD_DIR}/${APP}"
