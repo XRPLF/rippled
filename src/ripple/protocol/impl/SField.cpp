@@ -88,9 +88,12 @@ SF_U8 const sfTransactionResult = make::one<SF_U8::type>(&sfTransactionResult, S
 SF_U8 const sfTickSize          = make::one<SF_U8::type>(&sfTickSize,          STI_UINT8, 16, "TickSize");
 
 // 16-bit integers
-SF_U16 const sfLedgerEntryType = make::one<SF_U16::type>(&sfLedgerEntryType, STI_UINT16, 1, "LedgerEntryType", SField::sMD_Never);
-SF_U16 const sfTransactionType = make::one<SF_U16::type>(&sfTransactionType, STI_UINT16, 2, "TransactionType");
-SF_U16 const sfSignerWeight    = make::one<SF_U16::type>(&sfSignerWeight,    STI_UINT16, 3, "SignerWeight");
+SF_U16 const sfLedgerEntryType = make::one<SF_U16::type>(&sfLedgerEntryType, STI_UINT16,  1, "LedgerEntryType", SField::sMD_Never);
+SF_U16 const sfTransactionType = make::one<SF_U16::type>(&sfTransactionType, STI_UINT16,  2, "TransactionType");
+SF_U16 const sfSignerWeight    = make::one<SF_U16::type>(&sfSignerWeight,    STI_UINT16,  3, "SignerWeight");
+
+// 16-bit integers (uncommon)
+SF_U16 const sfVersion         = make::one<SF_U16::type>(&sfVersion,         STI_UINT16, 16, "Version");
 
 // 32-bit integers (common)
 SF_U32 const sfFlags             = make::one<SF_U32::type>(&sfFlags,             STI_UINT32,  2, "Flags");
@@ -196,10 +199,10 @@ SF_Amount const sfDeliveredAmount = make::one<SF_Amount::type>(&sfDeliveredAmoun
 
 // variable length (common)
 SF_Blob const sfPublicKey       = make::one<SF_Blob::type>(&sfPublicKey,     STI_VL,  1, "PublicKey");
-SF_Blob const sfSigningPubKey   = make::one<SF_Blob::type>(&sfSigningPubKey, STI_VL,  3, "SigningPubKey");
-SF_Blob const sfSignature       = make::one<SF_Blob::type>(&sfSignature,     STI_VL,  6, "Signature", SField::sMD_Default, SField::notSigning);
 SF_Blob const sfMessageKey      = make::one<SF_Blob::type>(&sfMessageKey,    STI_VL,  2, "MessageKey");
+SF_Blob const sfSigningPubKey   = make::one<SF_Blob::type>(&sfSigningPubKey, STI_VL,  3, "SigningPubKey");
 SF_Blob const sfTxnSignature    = make::one<SF_Blob::type>(&sfTxnSignature,  STI_VL,  4, "TxnSignature", SField::sMD_Default, SField::notSigning);
+SF_Blob const sfSignature       = make::one<SF_Blob::type>(&sfSignature,     STI_VL,  6, "Signature", SField::sMD_Default, SField::notSigning);
 SF_Blob const sfDomain          = make::one<SF_Blob::type>(&sfDomain,        STI_VL,  7, "Domain");
 SF_Blob const sfFundCode        = make::one<SF_Blob::type>(&sfFundCode,      STI_VL,  8, "FundCode");
 SF_Blob const sfRemoveCode      = make::one<SF_Blob::type>(&sfRemoveCode,    STI_VL,  9, "RemoveCode");
@@ -214,7 +217,6 @@ SF_Blob const sfMemoFormat      = make::one<SF_Blob::type>(&sfMemoFormat,    STI
 SF_Blob const sfFulfillment     = make::one<SF_Blob::type>(&sfFulfillment,     STI_VL, 16, "Fulfillment");
 SF_Blob const sfCondition       = make::one<SF_Blob::type>(&sfCondition,       STI_VL, 17, "Condition");
 SF_Blob const sfMasterSignature = make::one<SF_Blob::type>(&sfMasterSignature, STI_VL, 18, "MasterSignature", SField::sMD_Default, SField::notSigning);
-
 
 // account
 SF_Account const sfAccount     = make::one<SF_Account::type>(&sfAccount,     STI_ACCOUNT, 1, "Account");

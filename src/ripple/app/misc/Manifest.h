@@ -77,39 +77,26 @@ namespace ripple {
 
 struct Manifest
 {
+    /// The manifest in serialized form.
     std::string serialized;
+
+    /// The master key associated with this manifest.
     PublicKey masterKey;
+
+    /// The ephemeral key associated with this manifest.
     PublicKey signingKey;
-    std::uint32_t sequence;
 
-    Manifest(std::string s, PublicKey pk, PublicKey spk, std::uint32_t seq);
+    /// The sequence number of this manifest.
+    std::uint32_t sequence = 0;
 
+    /// The domain, if one was specified in the manifest; empty otherwise.
+    std::string domain;
+
+    Manifest() = default;
+    Manifest(Manifest const& other) = delete;
+    Manifest& operator=(Manifest const& other) = delete;
     Manifest(Manifest&& other) = default;
     Manifest& operator=(Manifest&& other) = default;
-
-    inline bool
-    operator==(Manifest const& rhs) const
-    {
-        return sequence == rhs.sequence && masterKey == rhs.masterKey &&
-               signingKey == rhs.signingKey && serialized == rhs.serialized;
-    }
-
-    inline bool
-    operator!=(Manifest const& rhs) const
-    {
-        return !(*this == rhs);
-    }
-
-    /** Constructs Manifest from serialized string
-
-        @param s Serialized manifest string
-
-        @return `boost::none` if string is invalid
-
-        @note This does not verify manifest signatures.
-              `Manifest::verify` should be called after constructing manifest.
-    */
-    static boost::optional<Manifest> make_Manifest(std::string s);
 
     /// Returns `true` if manifest signature is valid
     bool verify () const;
@@ -126,6 +113,55 @@ struct Manifest
     /// Returns manifest master key signature
     Blob getMasterSignature () const;
 };
+
+/** Constructs Manifest from serialized string
+
+    @param s Serialized manifest string
+
+    @return `boost::none` if string is invalid
+
+    @note This does not verify manifest signatures.
+          `Manifest::verify` should be called after constructing manifest.
+*/
+/** @{ */
+boost::optional<Manifest>
+deserializeManifest(Slice s);
+
+inline
+boost::optional<Manifest>
+deserializeManifest(std::string const& s)
+{
+    return deserializeManifest(makeSlice(s));
+}
+
+template <class T, class = std::enable_if_t<
+    std::is_same<T, char>::value || std::is_same<T, unsigned char>::value>>
+boost::optional<Manifest>
+deserializeManifest(std::vector<T> const& v)
+{
+    return deserializeManifest(makeSlice(v));
+}
+/** @} */
+
+inline
+bool
+operator==(Manifest const& lhs, Manifest const& rhs)
+{
+    // In theory, comparing the two serialized strings should be
+    // sufficient.
+    return lhs.sequence == rhs.sequence &&
+        lhs.masterKey == rhs.masterKey &&
+        lhs.signingKey == rhs.signingKey &&
+        lhs.domain == rhs.domain &&
+        lhs.serialized == rhs.serialized;
+}
+
+inline
+bool
+operator!=(Manifest const& lhs, Manifest const& rhs)
+{
+    return !(lhs == rhs);
+}
 
 struct ValidatorToken
 {

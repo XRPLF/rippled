@@ -186,10 +186,6 @@ Json::Value doLedgerEntry (RPC::Context& context)
                     context.params[jss::escrow][jss::seq].asUInt()).key;
         }
     }
-    else if (context.params.isMember (jss::generator))
-    {
-        jvResult[jss::error] = "deprecatedFeature";
-    }
     else if (context.params.isMember (jss::offer))
     {
         expectedType = ltOFFER;

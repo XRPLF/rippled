@@ -188,14 +188,16 @@ PublicKey::PublicKey (Slice const& slice)
 PublicKey::PublicKey (PublicKey const& other)
     : size_ (other.size_)
 {
-    std::memcpy(buf_, other.buf_, size_);
+    if (size_)
+        std::memcpy(buf_, other.buf_, size_);
 };
 
 PublicKey&
 PublicKey::operator=(PublicKey const& other)
 {
     size_ = other.size_;
-    std::memcpy(buf_, other.buf_, size_);
+    if (size_)
+        std::memcpy(buf_, other.buf_, size_);
     return *this;
 }
 
