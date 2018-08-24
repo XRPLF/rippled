@@ -40,7 +40,8 @@ XRPNotCreated::visitEntry(
             drops_ -= ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
             break;
         case ltESCROW:
-            drops_ -= (*before)[sfAmount].xrp().drops();
+			if (isXRP((*before)[sfAmount]))
+				drops_ -= (*before)[sfAmount].xrp().drops();
             break;
         default:
             break;
@@ -59,8 +60,9 @@ XRPNotCreated::visitEntry(
                 drops_ += ((*after)[sfAmount] - (*after)[sfBalance]).xrp().drops();
             break;
         case ltESCROW:
-            if (! isDelete)
-                drops_ += (*after)[sfAmount].xrp().drops();
+			if (!isDelete)
+				if (isXRP((*after)[sfAmount]))
+					drops_ += (*after)[sfAmount].xrp().drops();
             break;
         default:
             break;
@@ -179,14 +181,17 @@ NoZeroEscrow::visitEntry(
 {
     auto isBad = [](STAmount const& amount)
     {
-        if (!amount.native())
-            return true;
+		if (isXRP(amount))
+		{
+			if (!amount.native())
+				return true;
 
-        if (amount.xrp().drops() <= 0)
-            return true;
+			if (amount.xrp().drops() <= 0)
+				return true;
 
-        if (amount.xrp().drops() >= SYSTEM_CURRENCY_START)
-            return true;
+			if (amount.xrp().drops() >= SYSTEM_CURRENCY_START)
+				return true;
+		}
 
         return false;
     };

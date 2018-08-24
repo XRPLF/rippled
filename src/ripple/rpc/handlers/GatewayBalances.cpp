@@ -142,12 +142,34 @@ Json::Value doGatewayBalances (RPC::Context& context)
     std::map <AccountID, std::vector <STAmount>> hotBalances;
     std::map <AccountID, std::vector <STAmount>> assets;
     std::map <AccountID, std::vector <STAmount>> frozenBalances;
+	std::map <AccountID, std::vector <STAmount>> escrows;
 
     // Traverse the cold wallet's trust lines
     {
         forEachItem(*ledger, accountID,
             [&](std::shared_ptr<SLE const> const& sle)
             {
+				//for escrow
+				if (sle->getType() == ltESCROW)
+				{
+					auto amount = (*sle)[sfAmount];
+					if (amount.getIssuer() == accountID)
+					{
+						//obligation to customer
+						auto& bal = sums[amount.getCurrency()];
+						if (bal == zero)
+						{
+							// This is needed to set the currency code correctly
+							bal = amount;
+						}
+						else
+							bal += amount;
+						auto const& from = sle->getAccountID(sfAccount);
+						escrows[from].push_back(amount);
+					}
+					return;
+				}
+
                 auto rs = RippleState::makeItem (accountID, sle);
 
                 if (!rs)
@@ -229,6 +251,7 @@ Json::Value doGatewayBalances (RPC::Context& context)
     populate (hotBalances, result, jss::balances);
     populate (frozenBalances, result, jss::frozen_balances);
     populate (assets, result, jss::assets);
+	populate(escrows, result, jss::escrows);
 
     return result;
 }

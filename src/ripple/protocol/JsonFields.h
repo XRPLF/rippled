@@ -161,6 +161,7 @@ JSS ( error_code );                 // out: error
 JSS ( error_exception );            // out: Submit
 JSS ( error_message );              // out: error
 JSS ( escrow );                     // in: LedgerEntry
+JSS ( escrows );					// out: GatewayBalances
 JSS ( expand );                     // in: handler/Ledger
 JSS ( expected_ledger_size );       // out: TxQ
 JSS ( expiration );                 // out: AccountOffers, AccountChannels,
