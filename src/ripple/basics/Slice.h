@@ -159,7 +159,7 @@ operator< (Slice const& lhs, Slice const& rhs) noexcept
 template <class Stream>
 Stream& operator<<(Stream& s, Slice const& v)
 {
-    s << strHex(v.data(), v.data() + v.size());
+    s << strHex(v);
     return s;
 }
 

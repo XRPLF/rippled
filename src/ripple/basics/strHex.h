@@ -76,14 +76,46 @@ std::string strHex(InputIterator begin, InputIterator end)
     return result;
 }
 
+template<class T>
+class check_has_bytes
+{
+    // has data() method
+    template<class U, class R = decltype(
+        std::declval<U>().data(),
+            std::true_type{})>
+    static R check1(int);
+    template<class>
+    static std::false_type check1(...);
+    using type1 = decltype(check1<T>(0));
+
+    // has size() method
+    template<class U, class R = decltype(
+        std::declval<U>().size(),
+            std::true_type{})>
+    static R check2(int);
+    template<class>
+    static std::false_type check2(...);
+    using type2 = decltype(check2<T>(0));
+
+public:
+    using type = std::integral_constant<bool,
+        type1::value && type2::value>;
+};
+template<class T>
+using is_Bytes = typename check_has_bytes<T>::type;
+
+template <class T, class = std::enable_if_t <is_Bytes<T>::value>>
+std::string
+strHex(T const& bobj)
+{
+    const auto begin = bobj.data();
+    return strHex(begin, begin + bobj.size());
+}
+
 inline std::string strHex (std::string const& src)
 {
     return boost::algorithm::hex (src);
 }
-
-std::string strHex (Blob const& vucData);
-
-std::string strHex (Slice const& slice);
 
 inline std::string strHex (const std::uint64_t uiHost)
 {

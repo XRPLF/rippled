@@ -52,18 +52,4 @@ int charUnHex (unsigned char c)
     return xtab[c];
 }
 
-std::string
-strHex(Slice const& slice)
-{
-    const auto begin = slice.data();
-    const auto end = begin + slice.size();
-    return strHex(begin, end);
-}
-
-std::string
-strHex (Blob const& vucData)
-{
-    return strHex (std::cbegin(vucData), std::cend(vucData));
-}
-
 }

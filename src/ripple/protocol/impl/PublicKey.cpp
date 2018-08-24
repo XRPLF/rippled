@@ -31,7 +31,7 @@ namespace ripple {
 std::ostream&
 operator<<(std::ostream& os, PublicKey const& pk)
 {
-    os << strHex(pk.data(), pk.data() + pk.size());
+    os << strHex(pk);
     return os;
 }
 

@@ -51,7 +51,7 @@ SecretKey::SecretKey (Slice const& slice)
 std::string
 SecretKey::to_string() const
 {
-    return strHex(data(), data() + size());
+    return strHex(*this);
 }
 
 //------------------------------------------------------------------------------
