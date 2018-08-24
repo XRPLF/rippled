@@ -11,6 +11,7 @@ environment:
   # CMake honors these environment variables, setting the include/lib paths.
   BOOST_ROOT: C:/%RIPPLED_DEPS_PATH%/boost
   OPENSSL_ROOT: C:/%RIPPLED_DEPS_PATH%/openssl
+  NIH_CACHE_ROOT: C:/%RIPPLED_DEPS_PATH%/
 
   # We've had trouble with AppVeyor apparently not having a stack as large
   # as the *nix CI platforms.  AppVeyor support suggested that we try
@@ -74,7 +75,7 @@ build_script:
           Push-Location "build/$cmake_target"
           cmake -G"Visual Studio 15 2017 Win64" ../..
           if ($LastExitCode -ne 0) { throw "CMake failed" }
-          cmake --build . --config $env:buildconfig -- -m
+          cmake --build . --config $env:buildconfig --parallel 3
           if ($LastExitCode -ne 0) { throw "CMake build failed" }
           Pop-Location
 
@@ -87,7 +88,7 @@ test_script:
   - ps: |
         & {
           # Run the rippled unit tests
-          & $exe --unittest --unittest-log
+          & $exe --unittest --unittest-log --unittest-jobs 2
           # https://connect.microsoft.com/PowerShell/feedback/details/751703/option-to-stop-script-if-command-line-exe-fails
           if ($LastExitCode -ne 0) { throw "Unit tests failed" }
         }

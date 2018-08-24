@@ -1,9 +1,13 @@
 
 cmake_minimum_required (VERSION 3.9.0)
 set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake ${CMAKE_MODULE_PATH})
-include (CMakeFuncs)
 include (CheckCXXCompilerFlag)
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
+  include (FetchContent)
+endif ()
 include (ExternalProject)
+include (CMakeFuncs) # must come *after* ExternalProject b/c it overrides one function in EP
+include (ProcessorCount)
 if (target)
   message (WARNING
     "The target option is deprecated and will be removed in a future release")
@@ -15,10 +19,23 @@ project (rippled)
    convenience variables and sanity checks
 #]===================================================================]
 
+ProcessorCount(num_procs)
 get_property (is_multiconfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if (is_multiconfig STREQUAL "NOTFOUND")
   if (${CMAKE_GENERATOR} STREQUAL "Xcode" OR ${CMAKE_GENERATOR} MATCHES "^Visual Studio")
     set (is_multiconfig TRUE)
+  endif ()
+endif ()
+
+set (CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
+if (NOT is_multiconfig)
+  if (NOT CMAKE_BUILD_TYPE)
+    message (STATUS "Build type not specified - defaulting to Release")
+    set (CMAKE_BUILD_TYPE Release CACHE STRING "build type" FORCE)
+  elseif (NOT (CMAKE_BUILD_TYPE STREQUAL Debug OR CMAKE_BUILD_TYPE STREQUAL Release))
+    # for simplicity, these are the only two config types we care about. Limiting
+    # the build types simplifies dealing with external project builds especially
+    message (FATAL_ERROR " *** Only Debug or Release build types are currently supported ***")
   endif ()
 endif ()
 
@@ -36,7 +53,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     message (FATAL_ERROR "This project requires GCC 5.1 or later")
   endif ()
 endif ()
-if (${CMAKE_GENERATOR} STREQUAL "Xcode")
+if (CMAKE_GENERATOR STREQUAL "Xcode")
   set (is_xcode TRUE)
 endif ()
 
@@ -44,11 +61,6 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set (is_linux TRUE)
 else ()
   set (is_linux FALSE)
-endif ()
-
-if (NOT is_multiconfig AND NOT CMAKE_BUILD_TYPE)
-  message (STATUS "Build type not specified - defaulting to Release")
-  set (CMAKE_BUILD_TYPE Release CACHE STRING "build type" FORCE)
 endif ()
 
 # check for in-source build and fail
@@ -178,7 +190,7 @@ else ()
 endif ()
 if (coverage)
   message (STATUS "coverage build requested - forcing Debug build")
-  set (CMAKE_BUILD_TYPE Debug)
+  set (CMAKE_BUILD_TYPE Debug CACHE STRING "build type" FORCE)
 endif ()
 
 #[===================================================================[
@@ -213,9 +225,7 @@ if (MSVC)
   # also remove dynamic runtime
   foreach (var_
       CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-      CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
-      CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-      CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+      CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE)
     string (REGEX REPLACE "[-/]MD[d]*" " " ${var_} "${${var_}}")
   endforeach ()
 
@@ -337,13 +347,7 @@ if (is_clang)
 endif()
 
 if (assert)
-  foreach (var_
-      CMAKE_C_FLAGS_RELEASE
-      CMAKE_C_FLAGS_MINSIZEREL
-      CMAKE_C_FLAGS_RELWITHDEBINFO
-      CMAKE_CXX_FLAGS_RELEASE
-      CMAKE_CXX_FLAGS_MINSIZEREL
-      CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+  foreach (var_ CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_RELEASE)
     STRING (REGEX REPLACE "[-/]DNDEBUG" "" ${var_} "${${var_}}")
   endforeach ()
 endif ()
@@ -451,6 +455,40 @@ endif ()
 add_library (ripple_libs INTERFACE)
 add_library (Ripple::libs ALIAS ripple_libs)
 target_link_libraries (ripple_libs INTERFACE Ripple::syslibs)
+
+#[===================================================================[
+   NIH prefix path..this is where we will download
+   and build any ExternalProjects, and they will hopefully
+   survive across build directory deletion (manual cleans)
+#]===================================================================]
+
+string (REGEX REPLACE "[ \\/%]+" "_" gen_for_path ${CMAKE_GENERATOR})
+string (TOLOWER ${gen_for_path} gen_for_path)
+# HACK: trying to shorten paths for windows CI (which hits 260 MAXPATH easily)
+# @see:  https://issues.jenkins-ci.org/browse/JENKINS-38706?focusedCommentId=339847
+string (REPLACE "visual_studio" "vs" gen_for_path ${gen_for_path})
+if (NOT DEFINED NIH_CACHE_ROOT)
+  if (DEFINED ENV{NIH_CACHE_ROOT})
+    set (NIH_CACHE_ROOT $ENV{NIH_CACHE_ROOT})
+  else ()
+    set (NIH_CACHE_ROOT ${CMAKE_SOURCE_DIR})
+  endif ()
+endif ()
+set (nih_cache_path
+  "${NIH_CACHE_ROOT}/.nih_c/${gen_for_path}/${CMAKE_CXX_COMPILER_ID}_${CMAKE_CXX_COMPILER_VERSION}")
+if (NOT is_multiconfig)
+  set (nih_cache_path "${nih_cache_path}/${CMAKE_BUILD_TYPE}")
+endif ()
+file(TO_CMAKE_PATH "${nih_cache_path}" nih_cache_path)
+message (STATUS "NIH-EP cache path: ${nih_cache_path}")
+## two convenience variables:
+set (ep_lib_prefix ${CMAKE_STATIC_LIBRARY_PREFIX})
+set (ep_lib_suffix ${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+# this is a setting for FetchContent and needs to be
+# a cache variable
+# https://cmake.org/cmake/help/latest/module/FetchContent.html#populating-the-content
+set (FETCHCONTENT_BASE_DIR ${nih_cache_path} CACHE STRING "" FORCE)
 
 #[===================================================================[
    NIH dep: boost
@@ -650,51 +688,72 @@ install (
    NIH dep: lz4
 #]===================================================================]
 
-add_library (lz4 STATIC
-  src/lz4/lib/lz4.c
-  src/lz4/lib/lz4hc.c
-  src/lz4/lib/lz4frame.c
-  src/lz4/lib/xxhash.c)
-target_compile_definitions (lz4
-  PRIVATE XXH_NAMESPACE=LZ4_)
-add_library (NIH::lz4 ALIAS lz4)
-target_link_libraries (ripple_libs INTERFACE NIH::lz4)
-## pseudo-install our files so that dependent builds can find them
-file (MAKE_DIRECTORY
-    ${CMAKE_BINARY_DIR}/lz4/include
-    ${CMAKE_BINARY_DIR}/lz4/lib)
-target_include_directories (lz4 PUBLIC ${CMAKE_BINARY_DIR}/lz4/include)
-add_custom_command (TARGET lz4 POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/lz4/lib/lz4.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/lz4/lib/lz4frame.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/lz4/lib/lz4hc.h
-    ${CMAKE_BINARY_DIR}/lz4/include
-  COMMAND ${CMAKE_COMMAND} -E copy
-    $<TARGET_FILE:lz4> ${CMAKE_BINARY_DIR}/lz4/lib)
+ExternalProject_Add (lz4
+  PREFIX ${nih_cache_path}
+  GIT_REPOSITORY https://github.com/lz4/lz4.git
+  GIT_TAG v1.8.2
+  SOURCE_SUBDIR contrib/cmake_unofficial
+  CMAKE_ARGS
+    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+    $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:-DCMAKE_VERBOSE_MAKEFILE=ON>
+    -DCMAKE_DEBUG_POSTFIX=_d
+    $<$<NOT:$<BOOL:${is_multiconfig}>>:-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}>
+    -DBUILD_STATIC_LIBS=ON
+    -DBUILD_SHARED_LIBS=OFF
+    $<$<BOOL:${MSVC}>:
+      "-DCMAKE_C_FLAGS=-GR -Gd -fp:precise -FS -MP"
+      "-DCMAKE_C_FLAGS_DEBUG=-MTd"
+      "-DCMAKE_C_FLAGS_RELEASE=-MT"
+    >
+  LOG_BUILD ON
+  LOG_CONFIGURE ON
+  BUILD_COMMAND
+    ${CMAKE_COMMAND}
+    --build .
+    --config $<CONFIG>
+    --target lz4_static
+    $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel$<$<BOOL:${is_xcode}>: ${num_procs}>>
+    $<$<BOOL:${is_multiconfig}>:
+      COMMAND
+        ${CMAKE_COMMAND} -E copy
+        <BINARY_DIR>/$<CONFIG>/${ep_lib_prefix}lz4$<$<CONFIG:Debug>:_d>${ep_lib_suffix}
+        <BINARY_DIR>
+      >
+  TEST_COMMAND ""
+  INSTALL_COMMAND ""
+  BUILD_BYPRODUCTS
+    <BINARY_DIR>/${ep_lib_prefix}lz4${ep_lib_suffix}
+    <BINARY_DIR>/${ep_lib_prefix}lz4_d${ep_lib_suffix}
+)
+ExternalProject_Get_Property (lz4 BINARY_DIR)
+ExternalProject_Get_Property (lz4 SOURCE_DIR)
+ExternalProject_Get_Property (lz4 STAMP_DIR)
+if (CMAKE_VERBOSE_MAKEFILE)
+  print_ep_logs (lz4)
+endif ()
+add_library (lz4_lib STATIC IMPORTED GLOBAL)
+file (MAKE_DIRECTORY ${SOURCE_DIR}/lz4)
+set_target_properties (lz4_lib PROPERTIES
+  IMPORTED_LOCATION_DEBUG
+    ${BINARY_DIR}/${ep_lib_prefix}lz4_d${ep_lib_suffix}
+  IMPORTED_LOCATION_RELEASE
+    ${BINARY_DIR}/${ep_lib_prefix}lz4${ep_lib_suffix}
+  INTERFACE_INCLUDE_DIRECTORIES
+    ${SOURCE_DIR}/lib)
+add_dependencies (lz4_lib lz4)
+target_link_libraries (ripple_libs INTERFACE lz4_lib)
 exclude_if_included (lz4)
+exclude_if_included (lz4_lib)
 
 #[===================================================================[
-   NIH dep: libarchive (via external project)
+   NIH dep: libarchive
 #]===================================================================]
-set (la_root_suffix)
+
+set (lib_post "")
 if (MSVC)
-  set (la_root_suffix "_static")
+  set (lib_post "_static")
 endif ()
-string (REGEX REPLACE "[ \\/%]+" "_" gen_for_path ${CMAKE_GENERATOR})
-string (TOLOWER ${gen_for_path} gen_for_path)
-# hack: trying to shorten paths for windows CI (hits 260 MAXPATH easily)
-string (REPLACE "visual_studio" "vs" gen_for_path ${gen_for_path})
-set (nih_cache_path
-  ${CMAKE_SOURCE_DIR}/.nih_c/${gen_for_path}/${CMAKE_CXX_COMPILER_ID}_${CMAKE_CXX_COMPILER_VERSION})
-if (NOT is_multiconfig)
-  if (CMAKE_BUILD_TYPE STREQUAL Debug)
-    set (nih_cache_path "${nih_cache_path}/Debug")
-  else ()
-    set (nih_cache_path "${nih_cache_path}/Release")
-  endif ()
-endif ()
-message (STATUS "NIH-EP cache path: ${nih_cache_path}")
 ExternalProject_Add (libarchive
   PREFIX ${nih_cache_path}
   # TODO: switch back to official repo once they allow ENABLE_WERROR option in
@@ -708,11 +767,18 @@ ExternalProject_Add (libarchive
     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
     $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:-DCMAKE_VERBOSE_MAKEFILE=ON>
-    -DCMAKE_PREFIX_PATH=${CMAKE_BINARY_DIR}/lz4
     -DCMAKE_DEBUG_POSTFIX=_d
-    -DCMAKE_BUILD_TYPE=$<IF:$<CONFIG:Debug>,Debug,Release>
+    $<$<NOT:$<BOOL:${is_multiconfig}>>:-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}>
     -DENABLE_LZ4=ON
     -ULZ4_*
+    -DLZ4_INCLUDE_DIR=$<TARGET_PROPERTY:lz4_lib,INTERFACE_INCLUDE_DIRECTORIES>
+    # because we are building a static lib, this lz4 library doesn't
+    # actually matter since you can't generally link static libs to other static
+    # libs. The include files are needed, but the library itself is not (until
+    # we link our application, at which point we use the lz4 we built above).
+    # nonetheless, we need to provide a library to libarchive else it will
+    # NOT include lz4 support when configuring
+    -DLZ4_LIBRARY=$<IF:$<CONFIG:Debug>,$<TARGET_PROPERTY:lz4_lib,IMPORTED_LOCATION_DEBUG>,$<TARGET_PROPERTY:lz4_lib,IMPORTED_LOCATION_RELEASE>>
     -DENABLE_WERROR=OFF
     -DENABLE_TAR=OFF
     -DENABLE_TAR_SHARED=OFF
@@ -741,8 +807,6 @@ ExternalProject_Add (libarchive
       "-DCMAKE_C_FLAGS=-GR -Gd -fp:precise -FS -MP"
       "-DCMAKE_C_FLAGS_DEBUG=-MTd"
       "-DCMAKE_C_FLAGS_RELEASE=-MT"
-      "-DCMAKE_C_FLAGS_RELWITHDEBINFO=-MT"
-      "-DCMAKE_C_FLAGS_MINSIZEREL=-MT"
     >
   LOG_BUILD ON
   LOG_CONFIGURE ON
@@ -751,148 +815,285 @@ ExternalProject_Add (libarchive
     --build .
     --config $<CONFIG>
     --target archive_static
+    $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel$<$<BOOL:${is_xcode}>: ${num_procs}>>
     $<$<BOOL:${is_multiconfig}>:
       COMMAND
         ${CMAKE_COMMAND} -E copy
-       <BINARY_DIR>/libarchive/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}archive${la_root_suffix}$<$<CONFIG:Debug>:_d>${CMAKE_STATIC_LIBRARY_SUFFIX}
-        <BINARY_DIR>/libarchive
+          <BINARY_DIR>/libarchive/$<CONFIG>/${ep_lib_prefix}archive${lib_post}$<$<CONFIG:Debug>:_d>${ep_lib_suffix}
+          <BINARY_DIR>/libarchive
       >
   TEST_COMMAND ""
   INSTALL_COMMAND ""
   DEPENDS lz4
   BUILD_BYPRODUCTS
-    <BINARY_DIR>/libarchive/${CMAKE_STATIC_LIBRARY_PREFIX}archive${la_root_suffix}${CMAKE_STATIC_LIBRARY_SUFFIX}
-    <BINARY_DIR>/libarchive/${CMAKE_STATIC_LIBRARY_PREFIX}archive${la_root_suffix}_d${CMAKE_STATIC_LIBRARY_SUFFIX}
+    <BINARY_DIR>/libarchive/${ep_lib_prefix}archive${lib_post}${ep_lib_suffix}
+    <BINARY_DIR>/libarchive/${ep_lib_prefix}archive${lib_post}_d${ep_lib_suffix}
 )
 ExternalProject_Get_Property (libarchive BINARY_DIR)
 ExternalProject_Get_Property (libarchive SOURCE_DIR)
+ExternalProject_Get_Property (libarchive STAMP_DIR)
+if (CMAKE_VERBOSE_MAKEFILE)
+  print_ep_logs (libarchive)
+endif ()
 add_library (archive_lib STATIC IMPORTED GLOBAL)
 file (MAKE_DIRECTORY ${SOURCE_DIR}/libarchive)
 set_target_properties (archive_lib PROPERTIES
   IMPORTED_LOCATION_DEBUG
-    ${BINARY_DIR}/libarchive/${CMAKE_STATIC_LIBRARY_PREFIX}archive${la_root_suffix}_d${CMAKE_STATIC_LIBRARY_SUFFIX}
+    ${BINARY_DIR}/libarchive/${ep_lib_prefix}archive${lib_post}_d${ep_lib_suffix}
   IMPORTED_LOCATION_RELEASE
-    ${BINARY_DIR}/libarchive/${CMAKE_STATIC_LIBRARY_PREFIX}archive${la_root_suffix}${CMAKE_STATIC_LIBRARY_SUFFIX}
-  INTERFACE_INCLUDE_DIRECTORIES ${SOURCE_DIR}/libarchive
-  INTERFACE_COMPILE_DEFINITIONS LIBARCHIVE_STATIC)
+    ${BINARY_DIR}/libarchive/${ep_lib_prefix}archive${lib_post}${ep_lib_suffix}
+  INTERFACE_INCLUDE_DIRECTORIES
+    ${SOURCE_DIR}/libarchive
+  INTERFACE_COMPILE_DEFINITIONS
+    LIBARCHIVE_STATIC)
 add_dependencies (archive_lib libarchive)
-target_link_libraries (archive_lib INTERFACE NIH::lz4)
+target_link_libraries (archive_lib INTERFACE lz4_lib)
 target_link_libraries (ripple_libs INTERFACE archive_lib)
+exclude_if_included (libarchive)
+exclude_if_included (archive_lib)
 
 #[===================================================================[
    NIH dep: sqlite
 #]===================================================================]
 
-add_library (sqlite3 STATIC
-  src/sqlite/sqlite/sqlite3.c)
-#[=========================================================[
-   When compiled with SQLITE_THREADSAFE=1, SQLite operates
-   in serialized mode. In this mode, SQLite can be safely
-   used by multiple threads with no restriction.
-
-   VFALCO NOTE: This implies a global mutex!
-
-   When compiled with SQLITE_THREADSAFE=2, SQLite can be
-   used in a multithreaded program so long as no two
-   threads attempt to use the same database connection at
-   the same time.
-
-   VFALCO NOTE: This is the preferred threading model.
-#]=========================================================]
-target_compile_definitions (sqlite3
-  PRIVATE
-    SQLITE_THREADSAFE=1
-    HAVE_USLEEP=1)
-target_compile_options (sqlite3
-  PRIVATE
+ExternalProject_Add (sqlite3
+  PREFIX ${nih_cache_path}
+  # sqlite doesn't use git, but it provides versioned tarballs
+  URL https://www.sqlite.org/2018/sqlite-amalgamation-3240000.zip
+  # ^^^ version is apparent in the URL:  3240000 => 3.24.0
+  URL_HASH SHA256=ad68c1216c3a474cf360c7581a4001e952515b3649342100f2d7ca7c8e313da6
+  # we wrote a very simple CMake file to build sqlite
+  # so that's what we copy here so that we can build with
+  # CMake. sqlite doesn't generally provided a build system
+  # for the single amalgamation source file.
+  PATCH_COMMAND
+    ${CMAKE_COMMAND} -E copy_if_different
+    ${CMAKE_SOURCE_DIR}/Builds/CMake/CMake_sqlite3.txt
+    <SOURCE_DIR>/CMakeLists.txt
+  CMAKE_ARGS
+    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+    $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:-DCMAKE_VERBOSE_MAKEFILE=ON>
+    -DCMAKE_DEBUG_POSTFIX=_d
+    $<$<NOT:$<BOOL:${is_multiconfig}>>:-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}>
     $<$<BOOL:${MSVC}>:
-      -wd4100
-      -wd4127
-      -wd4232
-      -wd4244
-      -wd4701
-      -wd4706
-      -wd4996
+      "-DCMAKE_C_FLAGS=-GR -Gd -fp:precise -FS -MP"
+      "-DCMAKE_C_FLAGS_DEBUG=-MTd"
+      "-DCMAKE_C_FLAGS_RELEASE=-MT"
     >
-    $<$<NOT:$<BOOL:${MSVC}>>:-Wno-array-bounds>)
-add_library (NIH::sqlite3 ALIAS sqlite3)
-target_link_libraries (sqlite3 PUBLIC $<$<NOT:$<BOOL:${MSVC}>>:dl>)
-target_link_libraries (ripple_libs INTERFACE NIH::sqlite3)
-file (MAKE_DIRECTORY
-    ${CMAKE_BINARY_DIR}/sqlite3/include
-    ${CMAKE_BINARY_DIR}/sqlite3/lib)
-target_include_directories (sqlite3
-  PRIVATE
-    src/sqlite
-    src/sqlite/sqlite
-  INTERFACE
-    ${CMAKE_BINARY_DIR}/sqlite3/include)
-add_custom_command (TARGET sqlite3 POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/sqlite/sqlite ${CMAKE_BINARY_DIR}/sqlite3/include
-  COMMAND ${CMAKE_COMMAND} -E copy
-    $<TARGET_FILE:sqlite3> ${CMAKE_BINARY_DIR}/sqlite3/lib
-  BYPRODUCTS ${CMAKE_BINARY_DIR}/sqlite3/include/sqlite3.h)
+  LOG_BUILD ON
+  LOG_CONFIGURE ON
+  BUILD_COMMAND
+    ${CMAKE_COMMAND}
+    --build .
+    --config $<CONFIG>
+    $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel$<$<BOOL:${is_xcode}>: ${num_procs}>>
+    $<$<BOOL:${is_multiconfig}>:
+      COMMAND
+        ${CMAKE_COMMAND} -E copy
+          <BINARY_DIR>/$<CONFIG>/${ep_lib_prefix}sqlite3$<$<CONFIG:Debug>:_d>${ep_lib_suffix}
+          <BINARY_DIR>
+      >
+  TEST_COMMAND ""
+  INSTALL_COMMAND ""
+  BUILD_BYPRODUCTS
+    <BINARY_DIR>/${ep_lib_prefix}sqlite3${ep_lib_suffix}
+    <BINARY_DIR>/${ep_lib_prefix}sqlite3_d${ep_lib_suffix}
+)
+ExternalProject_Get_Property (sqlite3 BINARY_DIR)
+ExternalProject_Get_Property (sqlite3 SOURCE_DIR)
+ExternalProject_Get_Property (sqlite3 STAMP_DIR)
+if (CMAKE_VERBOSE_MAKEFILE)
+  print_ep_logs (sqlite3)
+endif ()
+add_library (sqlite STATIC IMPORTED GLOBAL)
+set_target_properties (sqlite PROPERTIES
+  IMPORTED_LOCATION_DEBUG
+    ${BINARY_DIR}/${ep_lib_prefix}sqlite3_d${ep_lib_suffix}
+  IMPORTED_LOCATION_RELEASE
+    ${BINARY_DIR}/${ep_lib_prefix}sqlite3${ep_lib_suffix}
+  INTERFACE_INCLUDE_DIRECTORIES
+    ${SOURCE_DIR})
+add_dependencies (sqlite sqlite3)
+target_link_libraries (sqlite INTERFACE $<$<NOT:$<BOOL:${MSVC}>>:dl>)
+target_link_libraries (ripple_libs INTERFACE sqlite)
 exclude_if_included (sqlite3)
+exclude_if_included (sqlite)
+set(sqlite_BINARY_DIR ${BINARY_DIR})
 
 #[===================================================================[
    NIH dep: soci
 #]===================================================================]
 
-add_library (soci STATIC
-  #[=========================================================[
-     this unity file is our interpretation of
-     what sources constitute soci-lib.
-  #]=========================================================]
-  src/ripple/unity/soci.cpp
-  # this header is here to create dependency on the sqlite post-build step
-  ${CMAKE_BINARY_DIR}/sqlite3/include/sqlite3.h)
-target_compile_definitions (soci PUBLIC SOCI_HAVE_CXX_C11=1)
-target_include_directories (soci
-  PUBLIC
-    src/soci/src
-    src/soci/include
-    #[=========================================================[
-       HACK for ninja..which doesn't properly see
-       the POST_BUILD dependency on sqlite (TODO: diagnose)
-       so we must include the original source dir
-    #]=========================================================]
-    $<$<STREQUAL:${CMAKE_GENERATOR},Ninja>:
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sqlite
+set (lib_pre ${ep_lib_prefix})
+set (lib_post "")
+if (WIN32)
+  # for some reason soci on windows still prepends lib (non-standard)
+  set (lib_pre lib)
+  # this version in the name might change if/when we change versions of soci
+  set (lib_post "_4_0")
+endif ()
+ExternalProject_Add (soci
+  PREFIX ${nih_cache_path}
+  GIT_REPOSITORY https://github.com/SOCI/soci.git
+  GIT_TAG 3a1f602b3021b925d38828e3ff95f9e7f8887ff7
+  # We had an issue with soci integer range checking for boost::optional
+  # and needed to remove the exception that SOCI throws in this case.
+  # This is *probably* a bug in SOCI, but has never been investigated more
+  # nor reported to the maintainers.
+  # This cmake script comments out the lines in question.
+  # This patch process is likely fragile and should be reviewed carefully
+  # whenever we update the GIT_TAG above.
+  PATCH_COMMAND
+    ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/Builds/CMake/soci_patch.cmake
+  CMAKE_ARGS
+    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+    $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:-DCMAKE_VERBOSE_MAKEFILE=ON>
+    -DCMAKE_PREFIX_PATH=${CMAKE_BINARY_DIR}/sqlite3
+    -DCMAKE_INCLUDE_PATH=$<TARGET_PROPERTY:sqlite,INTERFACE_INCLUDE_DIRECTORIES>
+    -DCMAKE_LIBRARY_PATH=${sqlite_BINARY_DIR}
+    -DCMAKE_DEBUG_POSTFIX=_d
+    $<$<NOT:$<BOOL:${is_multiconfig}>>:-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}>
+    -DSOCI_CXX_C11=ON
+    -DSOCI_STATIC=ON
+    -DSOCI_LIBDIR=lib
+    -DSOCI_SHARED=OFF
+    -DSOCI_TESTS=OFF
+    -DBOOST_ROOT=${Boost_DIR}
+    -DWITH_BOOST=ON
+    -DSOCI_DB2=OFF
+    -DSOCI_FIREBIRD=OFF
+    -DSOCI_MYSQL=OFF
+    -DSOCI_ODBC=OFF
+    -DSOCI_ORACLE=OFF
+    -DSOCI_POSTGRESQL=OFF
+    -DSOCI_SQLITE3=ON
+    -DSQLITE3_INCLUDE_DIR=$<TARGET_PROPERTY:sqlite,INTERFACE_INCLUDE_DIRECTORIES>
+    -DSQLITE3_LIBRARY=$<IF:$<CONFIG:Debug>,$<TARGET_PROPERTY:sqlite,IMPORTED_LOCATION_DEBUG>,$<TARGET_PROPERTY:sqlite,IMPORTED_LOCATION_RELEASE>>
+    $<$<BOOL:${APPLE}>:-DCMAKE_FIND_FRAMEWORK=LAST>
+    $<$<BOOL:${MSVC}>:
+      "-DCMAKE_CXX_FLAGS=-GR -Gd -fp:precise -FS -EHa -MP"
+      "-DCMAKE_CXX_FLAGS_DEBUG=-MTd"
+      "-DCMAKE_CXX_FLAGS_RELEASE=-MT"
     >
-  PRIVATE
-    src
-    src/soci/src/core
-    src/soci/include/private)
-target_link_libraries (soci
-  NIH::sqlite3
-  Ripple::boost)
-add_library (NIH::soci ALIAS soci)
-target_link_libraries (ripple_libs INTERFACE NIH::soci)
+    $<$<NOT:$<BOOL:${MSVC}>>:
+      "-DCMAKE_CXX_FLAGS=-Wno-deprecated-declarations"
+    >
+    # SEE: https://github.com/SOCI/soci/issues/640
+    $<$<AND:$<BOOL:${is_gcc}>,$<VERSION_GREATER_EQUAL:${CMAKE_CXX_COMPILER_VERSION},8>>:
+      "-DCMAKE_CXX_FLAGS=-Wno-deprecated-declarations -Wno-error=format-overflow -Wno-format-overflow -Wno-error=format-truncation"
+    >
+  LOG_BUILD ON
+  LOG_CONFIGURE ON
+  BUILD_COMMAND
+    ${CMAKE_COMMAND}
+    --build .
+    --config $<CONFIG>
+    $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel$<$<BOOL:${is_xcode}>: ${num_procs}>>
+    $<$<BOOL:${is_multiconfig}>:
+      COMMAND
+        ${CMAKE_COMMAND} -E copy
+        <BINARY_DIR>/lib/$<CONFIG>/${lib_pre}soci_core${lib_post}$<$<CONFIG:Debug>:_d>${ep_lib_suffix}
+        <BINARY_DIR>/lib/$<CONFIG>/${lib_pre}soci_empty${lib_post}$<$<CONFIG:Debug>:_d>${ep_lib_suffix}
+        <BINARY_DIR>/lib/$<CONFIG>/${lib_pre}soci_sqlite3${lib_post}$<$<CONFIG:Debug>:_d>${ep_lib_suffix}
+        <BINARY_DIR>/lib
+      >
+  TEST_COMMAND ""
+  INSTALL_COMMAND ""
+  DEPENDS sqlite3
+  BUILD_BYPRODUCTS
+    <BINARY_DIR>/lib/${lib_pre}soci_core${lib_post}${ep_lib_suffix}
+    <BINARY_DIR>/lib/${lib_pre}soci_core${lib_post}_d${ep_lib_suffix}
+    <BINARY_DIR>/lib/${lib_pre}soci_empty${lib_post}${ep_lib_suffix}
+    <BINARY_DIR>/lib/${lib_pre}soci_empty${lib_post}_d${ep_lib_suffix}
+    <BINARY_DIR>/lib/${lib_pre}soci_sqlite3${lib_post}${ep_lib_suffix}
+    <BINARY_DIR>/lib/${lib_pre}soci_sqlite3${lib_post}_d${ep_lib_suffix}
+)
+ExternalProject_Get_Property (soci BINARY_DIR)
+ExternalProject_Get_Property (soci SOURCE_DIR)
+if (CMAKE_VERBOSE_MAKEFILE)
+  print_ep_logs (soci)
+endif ()
+file (MAKE_DIRECTORY ${SOURCE_DIR}/include)
+file (MAKE_DIRECTORY ${BINARY_DIR}/include)
+foreach (_comp core empty sqlite3)
+  add_library ("soci_${_comp}" STATIC IMPORTED GLOBAL)
+  set_target_properties ("soci_${_comp}" PROPERTIES
+    IMPORTED_LOCATION_DEBUG
+      ${BINARY_DIR}/lib/${lib_pre}soci_${_comp}${lib_post}_d${ep_lib_suffix}
+    IMPORTED_LOCATION_RELEASE
+      ${BINARY_DIR}/lib/${lib_pre}soci_${_comp}${lib_post}${ep_lib_suffix}
+    INTERFACE_INCLUDE_DIRECTORIES
+      "${SOURCE_DIR}/include;${BINARY_DIR}/include")
+  add_dependencies ("soci_${_comp}" soci) # something has to depend on the ExternalProject to trigger it
+  target_link_libraries (ripple_libs INTERFACE "soci_${_comp}")
+  if (NOT _comp STREQUAL "core")
+    target_link_libraries ("soci_${_comp}" INTERFACE soci_core)
+  endif ()
+  exclude_if_included ("soci_${_comp}")
+endforeach ()
 exclude_if_included (soci)
 
 #[===================================================================[
    NIH dep: snappy
 #]===================================================================]
 
-add_library (snappy STATIC
-  src/snappy/snappy/snappy.cc
-  src/snappy/snappy/snappy-sinksource.cc
-  src/snappy/snappy/snappy-stubs-internal.cc)
-target_compile_options (snappy
-  PRIVATE
-    $<$<NOT:$<BOOL:${MSVC}>>:
-      -Wno-deprecated
-      -Wno-unused-function
+ExternalProject_Add (snappy
+  PREFIX ${nih_cache_path}
+  GIT_REPOSITORY https://github.com/google/snappy.git
+  GIT_TAG 1.1.7
+  CMAKE_ARGS
+    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+    $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:-DCMAKE_VERBOSE_MAKEFILE=ON>
+    -DCMAKE_DEBUG_POSTFIX=_d
+    $<$<NOT:$<BOOL:${is_multiconfig}>>:-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}>
+    -DBUILD_SHARED_LIBS=OFF
+    -DSNAPPY_BUILD_TESTS=OFF
+    $<$<BOOL:${MSVC}>:
+      "-DCMAKE_C_FLAGS=-GR -Gd -fp:precise -FS -MP"
+      "-DCMAKE_C_FLAGS_DEBUG=-MTd"
+      "-DCMAKE_C_FLAGS_RELEASE=-MT"
     >
-    $<$<BOOL:${is_gcc}>:-Wno-nonnull-compare>)
-target_include_directories (snappy
-  PUBLIC
-    src/snappy/snappy
-    src/snappy/config)
-add_library (NIH::snappy ALIAS snappy)
-target_link_libraries (ripple_libs INTERFACE NIH::snappy)
+  LOG_BUILD ON
+  LOG_CONFIGURE ON
+  BUILD_COMMAND
+    ${CMAKE_COMMAND}
+    --build .
+    --config $<CONFIG>
+    $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel$<$<BOOL:${is_xcode}>: ${num_procs}>>
+    $<$<BOOL:${is_multiconfig}>:
+      COMMAND
+        ${CMAKE_COMMAND} -E copy
+        <BINARY_DIR>/$<CONFIG>/${ep_lib_prefix}snappy$<$<CONFIG:Debug>:_d>${ep_lib_suffix}
+        <BINARY_DIR>
+      >
+  TEST_COMMAND ""
+  INSTALL_COMMAND ""
+  BUILD_BYPRODUCTS
+    <BINARY_DIR>/${ep_lib_prefix}snappy${ep_lib_suffix}
+    <BINARY_DIR>/${ep_lib_prefix}snappy_d${ep_lib_suffix}
+)
+ExternalProject_Get_Property (snappy BINARY_DIR)
+ExternalProject_Get_Property (snappy SOURCE_DIR)
+ExternalProject_Get_Property (snappy STAMP_DIR)
+if (CMAKE_VERBOSE_MAKEFILE)
+  print_ep_logs (snappy)
+endif ()
+add_library (snappy_lib STATIC IMPORTED GLOBAL)
+file (MAKE_DIRECTORY ${SOURCE_DIR}/snappy)
+set_target_properties (snappy_lib PROPERTIES
+  IMPORTED_LOCATION_DEBUG
+    ${BINARY_DIR}/${ep_lib_prefix}snappy_d${ep_lib_suffix}
+  IMPORTED_LOCATION_RELEASE
+    ${BINARY_DIR}/${ep_lib_prefix}snappy${ep_lib_suffix}
+  INTERFACE_INCLUDE_DIRECTORIES
+    "${SOURCE_DIR};${BINARY_DIR}")
+add_dependencies (snappy_lib snappy)
+target_link_libraries (ripple_libs INTERFACE snappy_lib)
 exclude_if_included (snappy)
+exclude_if_included (snappy_lib)
 
 #[===================================================================[
    NIH dep: rocksdb
@@ -909,7 +1110,7 @@ if (NOT MSVC)
     PRIVATE
       $<$<BOOL:${is_gcc}>:-w>
     PUBLIC
-      $<$<AND:$<CXX_COMPILER_ID:Clang>,$<VERSION_GREATER_EQUAL:CMAKE_CXX_COMPILER_VERSION,7>>:
+      $<$<AND:$<CXX_COMPILER_ID:Clang>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,7>>:
         -Wno-inconsistent-missing-override
         -Wno-uninitialized
       >
@@ -932,25 +1133,53 @@ if (NOT MSVC)
       $<$<BOOL:${APPLE}>:OS_MACOSX=1>
       $<$<PLATFORM_ID:Linux>:OS_LINUX>
     )
-  target_link_libraries (rocksdb NIH::snappy)
+  target_link_libraries (rocksdb snappy_lib)
+  exclude_if_included (rocksdb)
 else ()
   add_library (rocksdb INTERFACE)
   target_compile_definitions (rocksdb INTERFACE RIPPLE_ROCKSDB_AVAILABLE=0)
 endif ()
 add_library (NIH::rocksdb ALIAS rocksdb)
 target_link_libraries (ripple_libs INTERFACE NIH::rocksdb)
-exclude_if_included (rocksdb)
 
 #[===================================================================[
    NIH dep: nudb
 
    NuDB is header-only, thus is an INTERFACE lib in CMake.
-   TODO: move this into NuDB repo, add proper targets and
-   export/install
+   TODO: move the library definition into NuDB repo and add
+   proper targets and export/install
 #]===================================================================]
 
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
+  FetchContent_Declare(
+    nudb_src
+    GIT_REPOSITORY https://github.com/vinniefalco/NuDB.git
+    GIT_TAG        1.0.0
+  )
+  FetchContent_GetProperties(nudb_src)
+  if(NOT nudb_src_POPULATED)
+    message (STATUS "Pausing to download NuDB...")
+    FetchContent_Populate(nudb_src)
+  endif()
+else ()
+  ExternalProject_Add (nudb_src
+    PREFIX ${nih_cache_path}
+    GIT_REPOSITORY https://github.com/vinniefalco/NuDB.git
+    GIT_TAG 1.0.0
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    TEST_COMMAND ""
+    INSTALL_COMMAND ""
+  )
+  ExternalProject_Get_Property (nudb_src SOURCE_DIR)
+  set (nudb_src_SOURCE_DIR "${SOURCE_DIR}")
+  file (MAKE_DIRECTORY ${nudb_src_SOURCE_DIR}/include)
+endif ()
+
 add_library (nudb INTERFACE)
-target_include_directories (nudb INTERFACE src/nudb/include)
+file(TO_CMAKE_PATH "${nudb_src_SOURCE_DIR}" nudb_src_SOURCE_DIR)
+# specify as system includes so as to avoid warnings
+target_include_directories (nudb SYSTEM INTERFACE ${nudb_src_SOURCE_DIR}/include)
 target_link_libraries (nudb
   INTERFACE
     Boost::thread
@@ -1574,7 +1803,6 @@ target_sources (rippled PRIVATE
     #]===============================]
     src/ripple/core/impl/Config.cpp
     src/ripple/core/impl/DatabaseCon.cpp
-    src/ripple/core/impl/DummySociDynamicBackend.cpp
     src/ripple/core/impl/Job.cpp
     src/ripple/core/impl/JobQueue.cpp
     src/ripple/core/impl/LoadEvent.cpp
@@ -2158,3 +2386,4 @@ if (TARGET Doxygen::doxygen)
 else ()
   message (STATUS "doxygen executable not found -- skipping docs target")
 endif ()
+

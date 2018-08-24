@@ -150,8 +150,11 @@ try {
 
             def compiler = getFirstPart(bldtype)
             def config = getSecondPart(bldtype)
+            def target = 'install' // currently ignored for windows builds
             if (compiler == 'docs') {
                 compiler = 'gcc'
+                config = 'Release'
+                target = 'docs'
             }
             def cc =
                 (compiler == 'clang') ? '/opt/llvm-5.0.1/bin/clang' : 'gcc'
@@ -167,6 +170,7 @@ try {
             def max_minutes = 25
 
             def env_vars = [
+                "TARGET=${target}",
                 "BUILD_TYPE=${config}",
                 "COMPILER=${compiler}",
                 "PARALLEL_TESTS=${pt}",
@@ -187,6 +191,8 @@ try {
                     echo "COMPILER: ${compiler}"
                     echo "BUILD_TYPE: ${config}"
                     echo "USE_CC: ${ucc}"
+                    env_vars.addAll([
+                        "NIH_CACHE_ROOT=${cdir}"])
                     if (compiler == 'msvc') {
                         env_vars.addAll([
                             'BOOST_ROOT=c:\\lib\\boost_1_67',
@@ -542,7 +548,7 @@ def getSecondPart(bld) {
 // functions in groovy....
 @NonCPS
 def upDir(path) {
-    def matcher = path =~ /^(.+)\/(.+?)/
+    def matcher = path =~ /^(.+)[\/\\](.+?)/
     matcher ? matcher[0][1] : path
 }
 
