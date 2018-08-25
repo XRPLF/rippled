@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Slice.h>
 #include <ripple/basics/strHex.h>
 #include <algorithm>
 #include <string>

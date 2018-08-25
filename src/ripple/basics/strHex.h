@@ -25,7 +25,7 @@
 #ifndef RIPPLE_BASICS_STRHEX_H_INCLUDED
 #define RIPPLE_BASICS_STRHEX_H_INCLUDED
 
-#include <ripple/basics/Blob.h>
+#include <beast/cxx17/type_traits.h>
 #include <cassert>
 #include <string>
 
@@ -33,7 +33,6 @@
 #include <boost/endian/conversion.hpp>
 
 namespace ripple {
-class Slice;
 
 /** Converts an integer to the corresponding hex digit
     @param iDigit 0-15 inclusive
@@ -75,41 +74,35 @@ std::string strHex(InputIterator begin, InputIterator end)
     boost::algorithm::hex (begin, end, std::back_inserter(result));
     return result;
 }
-
-template<class T>
-class check_has_bytes
+namespace
 {
-    // has data() method
-    template<class U, class R = decltype(
-        std::declval<U>().data(),
-            std::true_type{})>
-    static R check1(int);
-    template<class>
-    static std::false_type check1(...);
-    using type1 = decltype(check1<T>(0));
+    // Using void_t since beast/cxx17/type_traits.h hijacked it into
+    // namespace std
+    template<class T, class = void>
+    struct has_data : std::false_type{};
 
-    // has size() method
-    template<class U, class R = decltype(
-        std::declval<U>().size(),
-            std::true_type{})>
-    static R check2(int);
-    template<class>
-    static std::false_type check2(...);
-    using type2 = decltype(check2<T>(0));
+    template<class T>
+    struct has_data<T, std::void_t<decltype(std::declval<T>().data())>>
+    : std::true_type{};
 
-public:
-    using type = std::integral_constant<bool,
-        type1::value && type2::value>;
-};
-template<class T>
-using is_Bytes = typename check_has_bytes<T>::type;
+    template<class T, class = void>
+    struct has_size : std::false_type{};
 
-template <class T, class = std::enable_if_t <is_Bytes<T>::value>>
+    template<class T>
+    struct has_size<T, std::void_t<decltype(std::declval<T>().size())>>
+    : std::true_type{};
+
+    template<class T>
+    using has_bytes = std::bool_constant<has_size<T>::value &&
+                                         has_data<T>::value>;
+}
+
+template <class T, std::enable_if_t<has_bytes<T>::value>* = nullptr>
 std::string
-strHex(T const& bobj)
+strHex(T const& blob)
 {
-    const auto begin = bobj.data();
-    return strHex(begin, begin + bobj.size());
+    const auto begin = blob.data();
+    return strHex(begin, begin + blob.size());
 }
 
 inline std::string strHex (std::string const& src)
