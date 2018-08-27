@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/misc/HashRouter.h>
 
 namespace ripple {
@@ -69,6 +68,18 @@ bool HashRouter::addSuppressionPeer (uint256 const& key, PeerShortID peer, int& 
     s.addPeer (peer);
     flags = s.getFlags ();
     return result.second;
+}
+
+bool HashRouter::shouldProcess (uint256 const& key, PeerShortID peer,
+    int& flags, std::chrono::seconds tx_interval)
+{
+    std::lock_guard <std::mutex> lock (mutex_);
+
+    auto result = emplace(key);
+    auto& s = result.first;
+    s.addPeer (peer);
+    flags = s.getFlags ();
+    return s.shouldProcess (suppressionMap_.clock().now(), tx_interval);
 }
 
 int HashRouter::getFlags (uint256 const& key)

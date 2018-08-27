@@ -19,6 +19,7 @@
 
 #include <ripple/app/misc/Manifest.h>
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/basics/base64.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
 #include <test/jtx.h>
@@ -27,7 +28,6 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/STExchange.h>
-#include <beast/core/detail/base64.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -123,7 +123,7 @@ public:
         Serializer s;
         st.add(s);
 
-        return beast::detail::base64_encode (std::string(
+        return base64_encode (std::string(
             static_cast<char const*> (s.data()), s.size()));
     }
 
@@ -176,7 +176,7 @@ public:
         Serializer s;
         st.add(s);
 
-        return beast::detail::base64_encode (std::string(
+        return base64_encode (std::string(
             static_cast<char const*> (s.data()), s.size()));
     }
 
@@ -251,7 +251,7 @@ public:
                 std::string cfgManifest;
                 for (auto const& man : inManifests)
                     s1.push_back (toBase58(
-                        TokenType::TOKEN_NODE_PUBLIC, man->masterKey));
+                        TokenType::NodePublic, man->masterKey));
                 unl->load (emptyLocalKey, s1, keys);
 
                 m.save (dbCon, "ValidatorManifests",
@@ -428,7 +428,7 @@ public:
 
         {
             auto const valSecret = parseBase58<SecretKey>(
-                TokenType::TOKEN_NODE_PRIVATE,
+                TokenType::NodePrivate,
                 "paQmjZ37pKKPMrgadBLsuf9ab7Y7EUNzh27LQrZqoexpAs31nJi");
 
             // Format token string to test trim()

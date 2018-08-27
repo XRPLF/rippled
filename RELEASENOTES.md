@@ -1,15 +1,128 @@
-![Ripple](/images/ripple.png)
+# Release Notes
+
+![Ripple](docs/images/ripple.png)
 
 This document contains the release notes for `rippled`, the reference server implementation of the Ripple protocol. To learn more about how to build and run a `rippled` server, visit https://ripple.com/build/rippled-setup/
 
-**Do you work at a digital asset exchange or wallet provider?** 
-
-Please [contact us](mailto:support@ripple.com). We can help guide your integration.
+> **Do you work at a digital asset exchange or wallet provider?** 
+> 
+> Please [contact us](mailto:support@ripple.com). We can help guide your integration.
 
 ## Updating `rippled`
+
 If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `yum`](https://ripple.com/build/rippled-setup/#updating-rippled). For other platforms, please [compile from source](https://wiki.ripple.com/Rippled_build_instructions).
 
 # Releases
+
+## Version 1.0.0.
+
+The `rippled` 1.0.0 release includes incremental improvements to several previously released features.
+
+**New and Updated Features**
+
+- The **history sharding** functionality has been improved. Instances can now use the shard store to satisfy ledger requests.
+- Change permessage-deflate and compress defaults (RIPD-506)
+- Update validations on UNL change (RIPD-1566)
+
+**Bug Fixes**
+
+- Add `check`, `escrow`, and `pay_chan` to `ledger_entry` (RIPD-1600)
+- Clarify Escrow semantics (RIPD-1571)
+
+
+## Version 0.90.1
+
+The `rippled` 0.90.1 release includes fixes for issues reported by external security researchers. These issues, when exploited, could cause a rippled instance to restart or, in some circumstances, stop executing. While these issues can result in a denial of service attack, none affect the integrity of the XRP Ledger and no user funds, including XRP, are at risk.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- Address issues identified by external review:
+    - Verify serialized public keys more strictly before using them
+      (RIPD-1617, RIPD-1619, RIPD-1621)
+    - Eliminate a potential out-of-bounds memory access in the base58
+      encoding/decoding logic (RIPD-1618)
+    - Avoid invoking undefined behavior in memcpy (RIPD-1616)
+    - Limit STVar recursion during deserialization (RIPD-1603)
+- Use lock when creating a peer shard rangeset
+
+
+## Version 0.90.0
+
+The `rippled` 0.90.0 release introduces several features and enhancements that improve the reliability, scalability and security of the XRP Ledger.
+
+Highlights of this release include:
+
+- The `DepositAuth` amendment, which lets an account strictly reject any incoming money from transactions sent by other accounts.
+- The `Checks` amendment, which allows users to create deferred payments that can be cancelled or cashed by their intended recipients.
+- **History Sharding**, which allows `rippled` servers to distribute historical ledger data if they agree to dedicate storage for segments of ledger history.
+- New **Preferred Ledger by Branch** semantics which improve the logic that allow a server to decide which ledger it should base future ledgers on when there are multiple candidates.
+
+**New and Updated Features**
+
+- Add support for Deposit Authorization account root flag ([#2239](https://github.com/ripple/rippled/issues/2239))
+- Implement history shards ([#2258](https://github.com/ripple/rippled/issues/2258))
+- Preferred ledger by branch ([#2300](https://github.com/ripple/rippled/issues/2300))
+- Redesign Consensus Simulation Framework ([#2209](https://github.com/ripple/rippled/issues/2209))
+- Tune for higher transaction processing ([#2294](https://github.com/ripple/rippled/issues/2294))
+- Optimize queries for `account_tx` to work around SQLite query planner ([#2312](https://github.com/ripple/rippled/issues/2312))
+- Allow `Journal` to be copied/moved ([#2292](https://github.com/ripple/rippled/issues/2292))
+- Cleanly report invalid `[server]` settings ([#2305](https://github.com/ripple/rippled/issues/2305))
+- Improve log scrubbing ([#2358](https://github.com/ripple/rippled/issues/2358))
+- Update `rippled-example.cfg` ([#2307](https://github.com/ripple/rippled/issues/2307))
+- Force json commands to be objects ([#2319](https://github.com/ripple/rippled/issues/2319))
+- Fix cmake clang build for sanitizers ([#2325](https://github.com/ripple/rippled/issues/2325))
+- Allow `account_objects` RPC to filter by “check” ([#2356](https://github.com/ripple/rippled/issues/2356))
+- Limit nesting of json commands ([#2326](https://github.com/ripple/rippled/issues/2326))
+- Unit test that `sign_for` returns a correct hash ([#2333](https://github.com/ripple/rippled/issues/2333))
+- Update Visual Studio build instructions ([#2355](https://github.com/ripple/rippled/issues/2355))
+- Force boost static linking for MacOS builds ([#2334](https://github.com/ripple/rippled/issues/2334))
+- Update MacOS build instructions ([#2342](https://github.com/ripple/rippled/issues/2342))
+- Add dev docs generation to Jenkins ([#2343](https://github.com/ripple/rippled/issues/2343))
+- Poll if process is still alive in Test.py ([#2290](https://github.com/ripple/rippled/issues/2290))
+- Remove unused `beast::currentTimeMillis()` ([#2345](https://github.com/ripple/rippled/issues/2345))
+
+
+**Bug Fixes**
+- Improve error message on mistyped command ([#2283](https://github.com/ripple/rippled/issues/2283))
+- Add missing includes ([#2368](https://github.com/ripple/rippled/issues/2368))
+- Link boost statically only when requested ([#2291](https://github.com/ripple/rippled/issues/2291))
+- Unit test logging fixes ([#2293](https://github.com/ripple/rippled/issues/2293))
+- Fix Jenkins pipeline for branches ([#2289](https://github.com/ripple/rippled/issues/2289))
+- Avoid AppVeyor stack overflow ([#2344](https://github.com/ripple/rippled/issues/2344))
+- Reduce noise in log ([#2352](https://github.com/ripple/rippled/issues/2352))
+
+
+## Version 0.81.0
+
+The `rippled` 0.81.0 release introduces changes that improve the scalability of the XRP Ledger and transitions the recommended validator configuration to a new hosted site, as described in Ripple's [Decentralization Strategy Update](https://ripple.com/dev-blog/decentralization-strategy-update/) post.
+
+**New and Updated Features**
+
+- New hosted validator configuration.
+
+
+**Bug Fixes**
+
+- Optimize queries for account_tx to work around SQLite query planner ([#2312](https://github.com/ripple/rippled/issues/2312))
+
+
+## Version 0.80.2
+
+The `rippled` 0.80.2 release introduces changes that improve the scalability of the XRP Ledger.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- Do not dispatch a transaction received from a peer for processing if it has already been dispatched within the past ten seconds.
+- Increase the number of transaction handlers that can be in flight in the job queue and decrease the relative cost for peers to share transaction and ledger data.
+- Make better use of resources by adjusting the number of threads we initialize, by reverting commit [#68b8ffd](https://github.com/ripple/rippled/commit/68b8ffdb638d07937f841f7217edeb25efdb3b5d).
 
 ## Version 0.80.1
 
@@ -56,8 +169,6 @@ Highlights of this release include:
 
 - Fix an issue where `setAmendmentBlocked` is only called when processing the `EnableAmendment` transaction for the amendment ([#2137](https://github.com/ripple/rippled/issues/2137))
 - Track escrow in recipient's owner directory ([#2212](https://github.com/ripple/rippled/issues/2212))
-
-**New and Updated Features**
 
 ## Version 0.70.2
 

@@ -1,16 +1,6 @@
 // Unity build file for libprotobuf by Vinnie Falco <vinnie.falco@gmail.com>
 //
 
-#ifdef _MSC_VER
-
-#ifdef _MSC_VER // MSVC
-# pragma warning (push)
-# pragma warning (disable: 4018) // signed/unsigned mismatch
-# pragma warning (disable: 4244) // conversion, possible loss of data
-# pragma warning (disable: 4800) // forcing value to bool
-# pragma warning (disable: 4996) // deprecated POSIX name
-#endif
-
 #include "google/protobuf/descriptor.cc"
 #include "google/protobuf/descriptor.pb.cc"
 #include "google/protobuf/descriptor_database.cc"
@@ -50,8 +40,3 @@
 #include "google/protobuf/stubs/atomicops_internals_x86_msvc.cc"
 #endif
 
-#ifdef _MSC_VER // MSVC
-# pragma warning (pop)
-#endif
-
-#endif

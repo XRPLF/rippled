@@ -145,6 +145,7 @@ class TxQ_test : public beast::unit_test::suite
 
         // Close the ledger with a delay to force the TxQ stats
         // to stay at the default.
+        using namespace std::chrono_literals;
         env.close(env.now() + 5s, 10000ms);
         checkMetrics(env, 0,
             2 * (ripple::detail::supportedAmendments().size() + 1),
@@ -342,6 +343,41 @@ public:
             metrics->txQMaxSize, metrics->txPerLedger + 1,
             metrics->txPerLedger,
             256);
+    }
+
+    void testTecResult()
+    {
+        using namespace jtx;
+
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }));
+
+        auto alice = Account("alice");
+        auto gw = Account("gw");
+        auto USD = gw["USD"];
+
+        checkMetrics(env, 0, boost::none, 0, 2, 256);
+
+        // Create accounts
+        env.fund(XRP(50000), noripple(alice, gw));
+        checkMetrics(env, 0, boost::none, 2, 2, 256);
+        env.close();
+        checkMetrics(env, 0, 4, 0, 2, 256);
+
+        // Alice creates an unfunded offer while the ledger is not full
+        env(offer(alice, XRP(1000), USD(1000)), ter(tecUNFUNDED_OFFER));
+        checkMetrics(env, 0, 4, 1, 2, 256);
+
+        fillQueue(env, alice);
+        checkMetrics(env, 0, 4, 3, 2, 256);
+
+        // Alice creates an unfunded offer that goes in the queue
+        env(offer(alice, XRP(1000), USD(1000)), ter(terQUEUED));
+        checkMetrics(env, 1, 4, 3, 2, 256);
+
+        // The offer comes out of the queue
+        env.close();
+        checkMetrics(env, 0, 6, 1, 3, 256);
     }
 
     void testLocalTxRetry()
@@ -1092,8 +1128,6 @@ public:
 
         auto alice = Account("alice");
 
-        auto queued = ter(terQUEUED);
-
         BEAST_EXPECT(env.current()->fees().base == 10);
 
         checkMetrics(env, 0, boost::none, 0, 1, 256);
@@ -1133,7 +1167,6 @@ public:
                     {"maximum_txn_in_ledger", "5"} }));
 
         auto alice = Account("alice");
-        auto queued = ter(terQUEUED);
 
         checkMetrics(env, 0, boost::none, 0, 2, 256);
 
@@ -2431,6 +2464,7 @@ public:
         checkMetrics(env, 0, boost::none, 4, 3, 256);
 
         // First transaction establishes the messaging
+        using namespace std::chrono_literals;
         BEAST_EXPECT(wsc->findMsg(5s,
             [&](auto const& jv)
         {
@@ -2777,7 +2811,7 @@ public:
         }
     }
 
-    void run()
+    void run() override
     {
         testQueue();
         testLocalTxRetry();
@@ -2804,7 +2838,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TxQ,app,ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(TxQ,app,ripple,1);
 
 }
 }

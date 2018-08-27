@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/beast/unit_test.h>
 #include <set>
 #include <test/csf/BasicNetwork.h>

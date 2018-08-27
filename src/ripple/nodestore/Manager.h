@@ -22,6 +22,7 @@
 
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/DatabaseRotating.h>
+#include <ripple/nodestore/DatabaseShard.h>
 
 namespace ripple {
 namespace NodeStore {
@@ -30,6 +31,11 @@ namespace NodeStore {
 class Manager
 {
 public:
+    virtual ~Manager () = default;
+    Manager() = default;
+    Manager(Manager const&) = delete;
+    Manager& operator=(Manager const&) = delete;
+
     /** Returns the instance of the manager singleton. */
     static
     Manager&
@@ -49,7 +55,9 @@ public:
         @param  name The name to match, performed case-insensitive.
         @return `nullptr` if a match was not found.
     */
-    //virtual Factory* find (std::string const& name) const = 0;
+    virtual
+    Factory*
+    find(std::string const& name) = 0;
 
     /** Create a backend. */
     virtual
@@ -87,15 +95,6 @@ public:
         int readThreads, Stoppable& parent,
             Section const& backendParameters,
                 beast::Journal journal) = 0;
-
-    virtual
-    std::unique_ptr <DatabaseRotating>
-    make_DatabaseRotating (std::string const& name,
-        Scheduler& scheduler, std::int32_t readThreads,
-            Stoppable& parent,
-                std::shared_ptr <Backend> writableBackend,
-                    std::shared_ptr <Backend> archiveBackend,
-                        beast::Journal journal) = 0;
 };
 
 //------------------------------------------------------------------------------

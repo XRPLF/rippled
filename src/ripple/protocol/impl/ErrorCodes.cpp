@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <cassert>
@@ -29,6 +28,8 @@ namespace std {
 template <>
 struct hash <ripple::error_code_i>
 {
+    explicit hash() = default;
+
     std::size_t operator() (ripple::error_code_i value) const
     {
         return value;
@@ -66,7 +67,8 @@ public:
         add (rpcCHANNEL_AMT_MALFORMED, "channelAmtMalformed","Payment channel amount is malformed.");
         add (rpcCOMMAND_MISSING,       "commandMissing",    "Missing command entry.");
         add (rpcDST_ACT_MALFORMED,     "dstActMalformed",   "Destination account is malformed.");
-        add (rpcDST_ACT_MISSING,       "dstActMissing",     "Destination account does not exist.");
+        add (rpcDST_ACT_MISSING,       "dstActMissing",     "Destination account not provided.");
+        add (rpcDST_ACT_NOT_FOUND,     "dstActNotFound",    "Destination account not found.");
         add (rpcDST_AMT_MALFORMED,     "dstAmtMalformed",   "Destination amount/currency/issuer is malformed.");
         add (rpcDST_ISR_MALFORMED,     "dstIsrMalformed",   "Destination issuer is malformed.");
         add (rpcFORBIDDEN,             "forbidden",         "Bad credentials.");

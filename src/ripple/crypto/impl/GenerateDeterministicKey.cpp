@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/beast/crypto/secure_erase.h>
 #include <ripple/crypto/GenerateDeterministicKey.h>
@@ -50,7 +49,11 @@ struct secp256k1_data
     }
 };
 
-static secp256k1_data const secp256k1curve;
+static secp256k1_data const& secp256k1curve()
+{
+    static secp256k1_data const curve {};
+    return curve;
+}
 
 }  // namespace openssl
 
@@ -97,7 +100,7 @@ static bignum generateRootDeterministicKey (uint128 const& seed)
         privKey.assign (root.data(), root.size());
         beast::secure_erase(root.data(), root.size());
     }
-    while (privKey.is_zero() || privKey >= secp256k1curve.order);
+    while (privKey.is_zero() || privKey >= secp256k1curve().order);
     beast::secure_erase(&seq, sizeof(seq));
     return privKey;
 }
@@ -111,7 +114,7 @@ Blob generateRootDeterministicPublicKey (uint128 const& seed)
     bignum privKey = generateRootDeterministicKey (seed);
 
     // compute the corresponding public key point
-    ec_point pubKey = multiply (secp256k1curve.group, privKey, ctx);
+    ec_point pubKey = multiply (secp256k1curve().group, privKey, ctx);
 
     privKey.clear();  // security erase
 
@@ -130,7 +133,7 @@ uint256 generateRootDeterministicPrivateKey (uint128 const& seed)
 // <-- root public generator in EC format
 static ec_point generateRootPubKey (bignum&& pubGenerator)
 {
-    ec_point pubPoint = bn2point (secp256k1curve.group, pubGenerator.get());
+    ec_point pubPoint = bn2point (secp256k1curve().group, pubGenerator.get());
 
     return pubPoint;
 }
@@ -170,13 +173,13 @@ Blob generatePublicDeterministicKey (Blob const& pubGen, int seq)
     bn_ctx ctx;
 
     // Calculate the private additional key.
-    bignum hash = makeHash (pubGen, seq, secp256k1curve.order);
+    bignum hash = makeHash (pubGen, seq, secp256k1curve().order);
 
     // Calculate the corresponding public key.
-    ec_point newPoint = multiply (secp256k1curve.group, hash, ctx);
+    ec_point newPoint = multiply (secp256k1curve().group, hash, ctx);
 
     // Add the master public key and set.
-    add_to (secp256k1curve.group, rootPubKey, newPoint, ctx);
+    add_to (secp256k1curve().group, rootPubKey, newPoint, ctx);
 
     return serialize_ec_point (newPoint);
 }
@@ -191,10 +194,10 @@ uint256 generatePrivateDeterministicKey (
     bn_ctx ctx;
 
     // calculate the private additional key
-    bignum privKey = makeHash (pubGen, seq, secp256k1curve.order);
+    bignum privKey = makeHash (pubGen, seq, secp256k1curve().order);
 
     // calculate the final private key
-    add_to (rootPrivKey, privKey, secp256k1curve.order, ctx);
+    add_to (rootPrivKey, privKey, secp256k1curve().order, ctx);
 
     rootPrivKey.clear();  // security erase
 

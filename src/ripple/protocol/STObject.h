@@ -251,6 +251,8 @@ private:
 
     struct Transform
     {
+        explicit Transform() = default;
+
         using argument_type = detail::STVar;
         using result_type = STBase;
 
@@ -281,7 +283,7 @@ public:
     STObject(STObject const&) = default;
     STObject (const SOTemplate & type, SField const& name);
     STObject (const SOTemplate & type, SerialIter & sit, SField const& name);
-    STObject (SerialIter& sit, SField const& name);
+    STObject (SerialIter& sit, SField const& name, int depth = 0);
     STObject (SerialIter&& sit, SField const& name)
         : STObject(sit, name)
     {
@@ -352,12 +354,12 @@ public:
 
     virtual void add (Serializer & s) const override
     {
-        add (s, true);    // just inner elements
+        add (s, withAllFields);    // just inner elements
     }
 
     void addWithoutSigningFields (Serializer & s) const
     {
-        add (s, false);
+        add (s, omitSigningFields);
     }
 
     // VFALCO NOTE does this return an expensive copy of an object with a
@@ -366,7 +368,7 @@ public:
     Serializer getSerializer () const
     {
         Serializer s;
-        add (s, true);
+        add (s, withAllFields);
         return s;
     }
 
@@ -536,13 +538,22 @@ public:
     }
 
 private:
-    void add (Serializer & s, bool withSigningFields) const;
+    enum WhichFields : bool
+    {
+        // These values are carefully chosen to do the right thing if passed
+        // to SField::shouldInclude (bool)
+        omitSigningFields = false,
+        withAllFields = true
+    };
+
+    void add (Serializer & s, WhichFields whichFields) const;
 
     // Sort the entries in an STObject into the order that they will be
     // serialized.  Note: they are not sorted into pointer value order, they
     // are sorted by SField::fieldCode.
     static std::vector<STBase const*>
-    getSortedFields (STObject const& objToSort);
+    getSortedFields (
+        STObject const& objToSort, WhichFields whichFields);
 
     // Two different ways to compare STObjects.
     //

@@ -20,7 +20,6 @@
 #ifndef RIPPLE_OVERLAY_CLUSTER_H_INCLUDED
 #define RIPPLE_OVERLAY_CLUSTER_H_INCLUDED
 
-#include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/BasicConfig.h>
@@ -41,6 +40,8 @@ class Cluster
 private:
     struct Comparator
     {
+        explicit Comparator() = default;
+
         using is_transparent = std::true_type;
 
         bool

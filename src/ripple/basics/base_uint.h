@@ -25,17 +25,15 @@
 #ifndef RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 #define RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 
-#include <ripple/basics/ByteOrder.h>
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/strHex.h>
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/beast/utility/Zero.h>
+#include <boost/endian/conversion.hpp>
 #include <boost/functional/hash.hpp>
+#include <array>
 #include <functional>
 #include <type_traits>
-
-using beast::zero;
-using beast::Zero;
 
 namespace ripple {
 
@@ -51,13 +49,13 @@ class base_uint
         "The length of a base_uint in bits must be at least 64.");
 
 protected:
-    enum { WIDTH = Bits / 32 };
+    static constexpr std::size_t WIDTH = Bits / 32;
 
     // This is really big-endian in byte order.
     // We sometimes use std::uint32_t for speed.
 
-    // NIKB TODO: migrate to std::array
-    std::uint32_t pn[WIDTH];
+    using array_type = std::array<std::uint32_t, WIDTH>;
+    array_type pn;
 
 public:
     //--------------------------------------------------------------------------
@@ -65,7 +63,8 @@ public:
     // STL Container Interface
     //
 
-    static std::size_t const        bytes = Bits / 8;
+    static std::size_t constexpr bytes = Bits / 8;
+    static_assert(sizeof(array_type) == bytes, "");
 
     using size_type              = std::size_t;
     using difference_type        = std::ptrdiff_t;
@@ -80,8 +79,9 @@ public:
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     using tag_type               = Tag;
 
-    pointer data() { return reinterpret_cast<pointer>(pn); }
-    const_pointer data() const { return reinterpret_cast<const_pointer>(pn); }
+    pointer data() { return reinterpret_cast<pointer>(pn.data ()); }
+    const_pointer data() const { return reinterpret_cast<const_pointer>(pn.data ()); }
+
 
     iterator begin() { return data(); }
     iterator end()   { return data()+bytes; }
@@ -95,16 +95,6 @@ public:
     */
     using hasher = hardened_hash <>;
 
-    /** Container equality testing function. */
-    class key_equal
-    {
-    public:
-        bool operator() (base_uint const& lhs, base_uint const& rhs) const
-        {
-            return lhs == rhs;
-        }
-    };
-
     //--------------------------------------------------------------------------
 
 private:
@@ -115,11 +105,14 @@ private:
               constructor: something like base_uint(0) is ambiguous.
     */
     // NIKB TODO Remove the need for this constructor.
-    struct VoidHelper {};
+    struct VoidHelper
+    {
+        explicit VoidHelper() = default;
+    };
 
     explicit base_uint (void const* data, VoidHelper)
     {
-        memcpy (&pn [0], data, bytes);
+        memcpy (pn.data (), data, bytes);
     }
 
 public:
@@ -138,7 +131,7 @@ public:
         assert (vch.size () == size ());
 
         if (vch.size () == size ())
-            memcpy (pn, &vch[0], size ());
+            memcpy (pn.data (), vch.data (), size ());
         else
             *this = beast::zero;
     }
@@ -148,12 +141,10 @@ public:
         *this = b;
     }
 
-    base_uint (base_uint<Bits, Tag> const& other) = default;
-
     template <class OtherTag>
     void copyFrom (base_uint<Bits, OtherTag> const& other)
     {
-        memcpy (&pn [0], other.data(), bytes);
+        memcpy (pn.data (), other.data(), bytes);
     }
 
     /* Construct from a raw pointer.
@@ -189,14 +180,6 @@ public:
         return ret;
     }
 
-    base_uint& operator= (const base_uint& b)
-    {
-        for (int i = 0; i < WIDTH; i++)
-            pn[i] = b.pn[i];
-
-        return *this;
-    }
-
     base_uint& operator= (std::uint64_t uHost)
     {
         *this = beast::zero;
@@ -206,7 +189,7 @@ public:
             std::uint64_t ul;
         };
         // Put in least significant bits.
-        ul = htobe64 (uHost);
+        ul = boost::endian::native_to_big(uHost);
         pn[WIDTH-2] = u[0];
         pn[WIDTH-1] = u[1];
         return *this;
@@ -236,17 +219,12 @@ public:
         return *this;
     }
 
-    // be32toh and htobe32 are macros that somehow cause shadowing
-    // warnings in this header file, so we hide them...
-    static uint32_t bigendToHost (uint32_t x) { return be32toh(x); }
-    static uint32_t hostToBigend (uint32_t x) { return htobe32(x); }
-
     base_uint& operator++ ()
     {
         // prefix operator
         for (int i = WIDTH - 1; i >= 0; --i)
         {
-            pn[i] = hostToBigend (bigendToHost (pn[i]) + 1);
+            pn[i] = boost::endian::native_to_big (boost::endian::big_to_native(pn[i]) + 1);
 
             if (pn[i] != 0)
                 break;
@@ -269,7 +247,7 @@ public:
         for (int i = WIDTH - 1; i >= 0; --i)
         {
             auto prev = pn[i];
-            pn[i] = hostToBigend (bigendToHost (pn[i]) - 1);
+            pn[i] = boost::endian::native_to_big (boost::endian::big_to_native(pn[i]) - 1);
 
             if (prev != 0)
                 break;
@@ -293,10 +271,10 @@ public:
 
         for (int i = WIDTH; i--;)
         {
-            std::uint64_t n = carry + bigendToHost (pn[i]) +
-                    bigendToHost (b.pn[i]);
+            std::uint64_t n = carry + boost::endian::big_to_native(pn[i]) +
+                boost::endian::big_to_native(b.pn[i]);
 
-            pn[i] = hostToBigend (n & 0xffffffff);
+            pn[i] = boost::endian::native_to_big (static_cast<std::uint32_t>(n));
             carry = n >> 32;
         }
 
@@ -309,7 +287,7 @@ public:
         Hasher& h, base_uint const& a) noexcept
     {
         // Do not allow any endian transformations on this memory
-        h(a.pn, sizeof(a.pn));
+        h(a.pn.data (), sizeof(a.pn));
     }
 
     /** Parse a hex string into a base_uint
@@ -320,7 +298,6 @@ public:
     {
         unsigned char* pOut  = begin ();
 
-        assert(sizeof(pn) == bytes);
         for (int i = 0; i < sizeof (pn); ++i)
         {
             auto hi = charUnHex(*psz++);
@@ -354,19 +331,19 @@ public:
     */
     bool SetHex (const char* psz, bool bStrict = false)
     {
+        // Find beginning.
+        auto pBegin = reinterpret_cast<const unsigned char*>(psz);
         // skip leading spaces
         if (!bStrict)
-            while (isspace (*psz))
-                psz++;
+            while (isspace(*pBegin))
+                pBegin++;
 
         // skip 0x
-        if (!bStrict && psz[0] == '0' && tolower (psz[1]) == 'x')
-            psz += 2;
-
-        const unsigned char* pEnd   = reinterpret_cast<const unsigned char*> (psz);
-        const unsigned char* pBegin = pEnd;
+        if (!bStrict && pBegin[0] == '0' && tolower(pBegin[1]) == 'x')
+            pBegin += 2;
 
         // Find end.
+        auto pEnd = pBegin;
         while (charUnHex(*pEnd) != -1)
             pEnd++;
 
@@ -412,9 +389,9 @@ public:
         return bytes;
     }
 
-    base_uint<Bits, Tag>& operator=(Zero)
+    base_uint<Bits, Tag>& operator=(beast::Zero)
     {
-        memset (&pn[0], 0, sizeof (pn));
+        pn.fill(0);
         return *this;
     }
 
@@ -578,7 +555,9 @@ namespace beast
 template <std::size_t Bits, class Tag>
 struct is_uniquely_represented<ripple::base_uint<Bits, Tag>>
     : public std::true_type
-    {};
+    {
+        explicit is_uniquely_represented() = default;
+    };
 
 }  // beast
 

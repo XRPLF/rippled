@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/Job.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <cassert>
@@ -79,7 +78,7 @@ void Job::doJob ()
 {
     beast::setCurrentThreadName ("doJob: " + mName);
     m_loadEvent->start ();
-    m_loadEvent->reName (mName);
+    m_loadEvent->setName (mName);
 
     mJob (*this);
 

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/AmountConversions.h>
 #include <ripple/protocol/STAmount.h>

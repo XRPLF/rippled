@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/TxFormats.h>
 
 namespace ripple {
@@ -67,23 +66,26 @@ TxFormats::TxFormats ()
         << SOElement (sfDeliverMin,          SOE_OPTIONAL)
         ;
 
-    add ("EscrowCreate", ttESCROW_CREATE) <<
-        SOElement (sfDestination,       SOE_REQUIRED) <<
-        SOElement (sfAmount,            SOE_REQUIRED) <<
-        SOElement (sfCondition,         SOE_OPTIONAL) <<
-        SOElement (sfCancelAfter,       SOE_OPTIONAL) <<
-        SOElement (sfFinishAfter,       SOE_OPTIONAL) <<
-        SOElement (sfDestinationTag,    SOE_OPTIONAL);
+    add ("EscrowCreate", ttESCROW_CREATE)
+        << SOElement (sfDestination,         SOE_REQUIRED)
+        << SOElement (sfAmount,              SOE_REQUIRED)
+        << SOElement (sfCondition,           SOE_OPTIONAL)
+        << SOElement (sfCancelAfter,         SOE_OPTIONAL)
+        << SOElement (sfFinishAfter,         SOE_OPTIONAL)
+        << SOElement (sfDestinationTag,      SOE_OPTIONAL)
+        ;
 
-    add ("EscrowFinish", ttESCROW_FINISH) <<
-        SOElement (sfOwner,               SOE_REQUIRED) <<
-        SOElement (sfOfferSequence,       SOE_REQUIRED) <<
-        SOElement (sfFulfillment,         SOE_OPTIONAL) <<
-        SOElement (sfCondition,           SOE_OPTIONAL);
+    add ("EscrowFinish", ttESCROW_FINISH)
+        << SOElement (sfOwner,               SOE_REQUIRED)
+        << SOElement (sfOfferSequence,       SOE_REQUIRED)
+        << SOElement (sfFulfillment,         SOE_OPTIONAL)
+        << SOElement (sfCondition,           SOE_OPTIONAL)
+        ;
 
-    add ("EscrowCancel", ttESCROW_CANCEL) <<
-        SOElement (sfOwner,               SOE_REQUIRED) <<
-        SOElement (sfOfferSequence,       SOE_REQUIRED);
+    add ("EscrowCancel", ttESCROW_CANCEL)
+        << SOElement (sfOwner,               SOE_REQUIRED)
+        << SOElement (sfOfferSequence,       SOE_REQUIRED)
+        ;
 
     add ("EnableAmendment", ttAMENDMENT)
         << SOElement (sfLedgerSequence,      SOE_REQUIRED)
@@ -114,44 +116,70 @@ TxFormats::TxFormats ()
         << SOElement (sfSignerEntries,       SOE_OPTIONAL)
         ;
 
-    add ("PaymentChannelCreate", ttPAYCHAN_CREATE) <<
-            SOElement (sfDestination,       SOE_REQUIRED) <<
-            SOElement (sfAmount,            SOE_REQUIRED) <<
-            SOElement (sfSettleDelay,       SOE_REQUIRED) <<
-            SOElement (sfPublicKey,         SOE_REQUIRED) <<
-            SOElement (sfCancelAfter,       SOE_OPTIONAL) <<
-            SOElement (sfDestinationTag,    SOE_OPTIONAL);
+    add ("PaymentChannelCreate", ttPAYCHAN_CREATE)
+        << SOElement (sfDestination,         SOE_REQUIRED)
+        << SOElement (sfAmount,              SOE_REQUIRED)
+        << SOElement (sfSettleDelay,         SOE_REQUIRED)
+        << SOElement (sfPublicKey,           SOE_REQUIRED)
+        << SOElement (sfCancelAfter,         SOE_OPTIONAL)
+        << SOElement (sfDestinationTag,      SOE_OPTIONAL)
+        ;
 
-    add ("PaymentChannelFund", ttPAYCHAN_FUND) <<
-            SOElement (sfPayChannel,        SOE_REQUIRED) <<
-            SOElement (sfAmount,            SOE_REQUIRED) <<
-            SOElement (sfExpiration,        SOE_OPTIONAL);
+    add ("PaymentChannelFund", ttPAYCHAN_FUND)
+        << SOElement (sfPayChannel,          SOE_REQUIRED)
+        << SOElement (sfAmount,              SOE_REQUIRED)
+        << SOElement (sfExpiration,          SOE_OPTIONAL)
+        ;
 
-    add ("PaymentChannelClaim", ttPAYCHAN_CLAIM) <<
-            SOElement (sfPayChannel,        SOE_REQUIRED) <<
-            SOElement (sfAmount,            SOE_OPTIONAL) <<
-            SOElement (sfBalance,           SOE_OPTIONAL) <<
-            SOElement (sfSignature,         SOE_OPTIONAL) <<
-            SOElement (sfPublicKey,         SOE_OPTIONAL);
+    add ("PaymentChannelClaim", ttPAYCHAN_CLAIM)
+        << SOElement (sfPayChannel,          SOE_REQUIRED)
+        << SOElement (sfAmount,              SOE_OPTIONAL)
+        << SOElement (sfBalance,             SOE_OPTIONAL)
+        << SOElement (sfSignature,           SOE_OPTIONAL)
+        << SOElement (sfPublicKey,           SOE_OPTIONAL)
+        ;
+
+    add ("CheckCreate", ttCHECK_CREATE)
+        << SOElement (sfDestination,         SOE_REQUIRED)
+        << SOElement (sfSendMax,             SOE_REQUIRED)
+        << SOElement (sfExpiration,          SOE_OPTIONAL)
+        << SOElement (sfDestinationTag,      SOE_OPTIONAL)
+        << SOElement (sfInvoiceID,           SOE_OPTIONAL)
+        ;
+
+    add ("CheckCash", ttCHECK_CASH)
+        << SOElement (sfCheckID,             SOE_REQUIRED)
+        << SOElement (sfAmount,              SOE_OPTIONAL)
+        << SOElement (sfDeliverMin,          SOE_OPTIONAL)
+        ;
+
+    add ("CheckCancel", ttCHECK_CANCEL)
+        << SOElement (sfCheckID,             SOE_REQUIRED)
+        ;
+
+    add ("DepositPreauth", ttDEPOSIT_PREAUTH)
+        << SOElement (sfAuthorize,           SOE_OPTIONAL)
+        << SOElement (sfUnauthorize,         SOE_OPTIONAL)
+        ;
 }
 
 void TxFormats::addCommonFields (Item& item)
 {
     item
-        << SOElement(sfTransactionType,     SOE_REQUIRED)
-        << SOElement(sfFlags,               SOE_OPTIONAL)
-        << SOElement(sfSourceTag,           SOE_OPTIONAL)
-        << SOElement(sfAccount,             SOE_REQUIRED)
-        << SOElement(sfSequence,            SOE_REQUIRED)
-        << SOElement(sfPreviousTxnID,       SOE_OPTIONAL) // emulate027
-        << SOElement(sfLastLedgerSequence,  SOE_OPTIONAL)
-        << SOElement(sfAccountTxnID,        SOE_OPTIONAL)
-        << SOElement(sfFee,                 SOE_REQUIRED)
-        << SOElement(sfOperationLimit,      SOE_OPTIONAL)
-        << SOElement(sfMemos,               SOE_OPTIONAL)
-        << SOElement(sfSigningPubKey,       SOE_REQUIRED)
-        << SOElement(sfTxnSignature,        SOE_OPTIONAL)
-        << SOElement(sfSigners,             SOE_OPTIONAL) // submit_multisigned
+        << SOElement(sfTransactionType,      SOE_REQUIRED)
+        << SOElement(sfFlags,                SOE_OPTIONAL)
+        << SOElement(sfSourceTag,            SOE_OPTIONAL)
+        << SOElement(sfAccount,              SOE_REQUIRED)
+        << SOElement(sfSequence,             SOE_REQUIRED)
+        << SOElement(sfPreviousTxnID,        SOE_OPTIONAL) // emulate027
+        << SOElement(sfLastLedgerSequence,   SOE_OPTIONAL)
+        << SOElement(sfAccountTxnID,         SOE_OPTIONAL)
+        << SOElement(sfFee,                  SOE_REQUIRED)
+        << SOElement(sfOperationLimit,       SOE_OPTIONAL)
+        << SOElement(sfMemos,                SOE_OPTIONAL)
+        << SOElement(sfSigningPubKey,        SOE_REQUIRED)
+        << SOElement(sfTxnSignature,         SOE_OPTIONAL)
+        << SOElement(sfSigners,              SOE_OPTIONAL) // submit_multisigned
         ;
 }
 

@@ -29,6 +29,8 @@ namespace detail {
 template <bool maybe_map>
 struct aged_associative_container_extract_t
 {
+    explicit aged_associative_container_extract_t() = default;
+
     template <class Value>
     decltype (Value::first) const&
     operator() (Value const& value) const
@@ -40,6 +42,8 @@ struct aged_associative_container_extract_t
 template <>
 struct aged_associative_container_extract_t <false>
 {
+    explicit aged_associative_container_extract_t() = default;
+
     template <class Value>
     Value const&
     operator() (Value const& value) const

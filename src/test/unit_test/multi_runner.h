@@ -20,7 +20,7 @@
 #ifndef TEST_UNIT_TEST_MULTI_RUNNER_H
 #define TEST_UNIT_TEST_MULTI_RUNNER_H
 
-#include <beast/include/beast/core/static_string.hpp>
+#include <boost/beast/core/static_string.hpp>
 #include <beast/unit_test/global_suites.hpp>
 #include <beast/unit_test/runner.hpp>
 
@@ -78,7 +78,7 @@ struct suite_results
 
 struct results
 {
-    using static_string = beast::static_string<256>;
+    using static_string = boost::beast::static_string<256>;
     // results may be stored in shared memory. Use `static_string` to ensure
     // pointers from different memory spaces do not co-mingle
     using run_time = std::pair<static_string, typename clock_type::duration>;
@@ -163,7 +163,8 @@ class multi_runner_base
 protected:
     std::unique_ptr<boost::interprocess::message_queue> message_queue_;
 
-    void message_queue_send(std::string const& s);
+    enum class MessageType : std::uint8_t {test_start, test_end, log};
+    void message_queue_send(MessageType mt, std::string const& s);
 
 public:
     multi_runner_base();
@@ -208,7 +209,8 @@ private:
     std::ostream& os_;
     std::atomic<bool> continue_message_queue_{true};
     std::thread message_queue_thread_;
-
+    // track running suites so if a child crashes the culprit can be flagged
+    std::set<std::string> running_suites_;
 public:
     multi_runner_parent(multi_runner_parent const&) = delete;
     multi_runner_parent&
@@ -283,32 +285,6 @@ multi_runner_child::run_multi(Pred pred)
 {
     auto const& suite = beast::unit_test::global_suites();
     auto const num_tests = suite.size();
-    // actual order to run the tests. Use this to move longer running tests to
-    // the beginning to better take advantage of a multi process run.
-    std::vector<std::size_t> order(num_tests);
-    std::iota(order.begin(), order.end(), 0);
-    {
-        std::unordered_set<std::string> prioritize{
-            "ripple.app.Flow", "ripple.tx.Offer"};
-        std::vector<std::size_t> to_swap;
-        to_swap.reserve(prioritize.size());
-
-        size_t i = 0;
-        for (auto const& t : suite)
-        {
-            auto const full_name = t.full_name();
-            if (prioritize.count(full_name))
-            {
-                to_swap.push_back(i);
-                if (to_swap.size() == prioritize.size())
-                    break;
-            }
-            ++i;
-        }
-
-        for (std::size_t i = 0; i < to_swap.size(); ++i)
-            std::swap(order[to_swap[i]], order[i]);
-    }
     bool failed = false;
 
     auto get_test = [&]() -> beast::unit_test::suite_info const* {
@@ -316,7 +292,7 @@ multi_runner_child::run_multi(Pred pred)
         if (cur_test_index >= num_tests)
             return nullptr;
         auto iter = suite.begin();
-        std::advance(iter, order[cur_test_index]);
+        std::advance(iter, cur_test_index);
         return &*iter;
     };
     while (auto t = get_test())
@@ -335,7 +311,7 @@ multi_runner_child::run_multi(Pred pred)
             // inform the parent
             std::stringstream s;
             s << job_index_ << ">  failed Unhandled exception in test.\n";
-            message_queue_send(s.str());
+            message_queue_send(MessageType::log, s.str());
             failed = true;
         }
     }

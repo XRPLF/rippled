@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/nodestore/TestBase.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
@@ -84,14 +83,16 @@ private:
 
     beast::xor_shift_engine gen_;
     std::uint8_t prefix_;
-    std::uniform_int_distribution<std::uint32_t> d_type_;
+    std::discrete_distribution<std::uint32_t> d_type_;
     std::uniform_int_distribution<std::uint32_t> d_size_;
 
 public:
     explicit
     Sequence(std::uint8_t prefix)
         : prefix_ (prefix)
-        , d_type_ (hotLEDGER, hotTRANSACTION_NODE)
+        // uniform distribution over hotLEDGER - hotTRANSACTION_NODE
+        // but exclude  hotTRANSACTION = 2 (removed)
+        , d_type_ ({1, 1, 0, 1, 1})
         , d_size_ (minSize, maxSize)
     {
     }
@@ -276,6 +277,7 @@ public:
         DummyScheduler scheduler;
         auto backend = make_Backend (config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
+        backend->open();
 
         class Body
         {
@@ -330,6 +332,7 @@ public:
         DummyScheduler scheduler;
         auto backend = make_Backend (config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
+        backend->open();
 
         class Body
         {
@@ -391,6 +394,7 @@ public:
         DummyScheduler scheduler;
         auto backend = make_Backend (config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
+        backend->open();
 
         class Body
         {
@@ -454,6 +458,7 @@ public:
         DummyScheduler scheduler;
         auto backend = make_Backend (config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
+        backend->open();
 
         class Body
         {
@@ -535,8 +540,9 @@ public:
         beast::Journal journal;
         DummyScheduler scheduler;
         auto backend = make_Backend (config, scheduler, journal);
-        backend->setDeletePath();
         BEAST_EXPECT(backend != nullptr);
+        backend->setDeletePath();
+        backend->open();
 
         class Body
         {
@@ -740,7 +746,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(Timing,NodeStore,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing,NodeStore,ripple,1);
 
 }
 }

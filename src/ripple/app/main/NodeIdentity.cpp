@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/NodeIdentity.h>
@@ -66,9 +65,9 @@ loadNodeIdentity (Application& app)
         while (st.fetch ())
         {
             auto const sk = parseBase58<SecretKey>(
-                TOKEN_NODE_PRIVATE, priKO.value_or(""));
+                TokenType::NodePrivate, priKO.value_or(""));
             auto const pk = parseBase58<PublicKey>(
-                TOKEN_NODE_PUBLIC, pubKO.value_or(""));
+                TokenType::NodePublic, pubKO.value_or(""));
 
             // Only use if the public and secret keys are a pair
             if (sk && pk && (*pk == derivePublicKey (KeyType::secp256k1, *sk)))
@@ -86,8 +85,8 @@ loadNodeIdentity (Application& app)
 
         *db << str (boost::format (
             "INSERT INTO NodeIdentity (PublicKey,PrivateKey) VALUES ('%s','%s');")
-                % toBase58 (TokenType::TOKEN_NODE_PUBLIC, *publicKey)
-                % toBase58 (TokenType::TOKEN_NODE_PRIVATE, *secretKey));
+                % toBase58 (TokenType::NodePublic, *publicKey)
+                % toBase58 (TokenType::NodePrivate, *secretKey));
     }
 
     return { *publicKey, *secretKey };

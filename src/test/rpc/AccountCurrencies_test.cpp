@@ -69,7 +69,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         { // strict mode, using properly formatted bitcoin token
             Json::Value params;
             params[jss::account] = base58EncodeTokenBitcoin (
-                TOKEN_ACCOUNT_ID, alice.id().data(), alice.id().size());
+                TokenType::AccountID, alice.id().data(), alice.id().size());
             params[jss::strict] = true;
             auto const result = env.rpc ("json", "account_currencies",
                 boost::lexical_cast<std::string>(params)) [jss::result];
@@ -184,7 +184,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
     }
 
 public:
-    void run ()
+    void run () override
     {
         testBadInput ();
         testBasic ();

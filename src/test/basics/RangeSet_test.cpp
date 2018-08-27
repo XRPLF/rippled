@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/beast/unit_test.h>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 
 namespace ripple
 {
@@ -75,11 +76,41 @@ public:
         set.erase(range(4u, 5u));
         BEAST_EXPECT(to_string(set) == "1-2,6");
     }
+
     void
-    run()
+    testSerialization()
+    {
+
+        auto works = [](RangeSet<std::uint32_t> const & orig)
+        {
+            std::stringstream ss;
+            boost::archive::binary_oarchive oa(ss);
+            oa << orig;
+
+            boost::archive::binary_iarchive ia(ss);
+            RangeSet<std::uint32_t> deser;
+            ia >> deser;
+
+            return orig == deser;
+        };
+
+        RangeSet<std::uint32_t> rs;
+
+        BEAST_EXPECT(works(rs));
+
+        rs.insert(3);
+        BEAST_EXPECT(works(rs));
+
+        rs.insert(range(7u, 10u));
+        BEAST_EXPECT(works(rs));
+
+    }
+    void
+    run() override
     {
         testPrevMissing();
         testToString();
+        testSerialization();
     }
 };
 

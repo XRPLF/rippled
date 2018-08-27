@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_STBITSTRING_H_INCLUDED
 
 #include <ripple/protocol/STBase.h>
+#include <ripple/beast/utility/Zero.h>
 
 namespace ripple {
 
@@ -118,7 +119,7 @@ public:
     bool
     isDefault () const override
     {
-        return value_ == zero;
+        return value_ == beast::zero;
     }
 
 private:

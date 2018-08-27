@@ -17,14 +17,13 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/misc/ValidatorKeys.h>
 
 #include <ripple/app/misc/Manifest.h>
+#include <ripple/basics/base64.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
-#include <beast/core/detail/base64.hpp>
 
 namespace ripple {
 ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
@@ -46,7 +45,7 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
             auto const pk = derivePublicKey(
                 KeyType::secp256k1, token->validationSecret);
             auto const m = Manifest::make_Manifest(
-                beast::detail::base64_decode(token->manifest));
+                base64_decode(token->manifest));
 
             if (! m || pk != m->signingKey)
             {
@@ -58,6 +57,7 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
             {
                 secretKey = token->validationSecret;
                 publicKey = pk;
+                nodeID = calcNodeID(m->masterKey);
                 manifest = std::move(token->manifest);
             }
         }
@@ -82,6 +82,7 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         {
             secretKey = generateSecretKey(KeyType::secp256k1, *seed);
             publicKey = derivePublicKey(KeyType::secp256k1, secretKey);
+            nodeID = calcNodeID(publicKey);
         }
     }
 }

@@ -20,43 +20,7 @@
 #ifndef RIPPLE_UNITY_ROCKSDB_H_INCLUDED
 #define RIPPLE_UNITY_ROCKSDB_H_INCLUDED
 
-#include <ripple/beast/core/Config.h>
-
-#ifdef __clang_major__
-#if __clang_major__ >= 7
-# pragma clang diagnostic push
-# pragma clang diagnostic ignored "-Winconsistent-missing-override"
-# pragma clang diagnostic ignored "-Wuninitialized"
-#endif
-#endif
-
-#ifndef RIPPLE_ROCKSDB_AVAILABLE
-#if BEAST_WIN32
-# define ROCKSDB_PLATFORM_WINDOWS
-#else
-# define ROCKSDB_PLATFORM_POSIX
-# define ROCKSDB_LIB_IO_POSIX
-# if BEAST_MAC || BEAST_IOS
-#  define OS_MACOSX 1
-# elif BEAST_BSD
-#  define OS_FREEBSD
-# else
-#  define OS_LINUX
-# endif
-#endif
-# if BEAST_WIN32
-#  define RIPPLE_ROCKSDB_AVAILABLE 0
-# else
-#  if __cplusplus >= 201103L
-#   define RIPPLE_ROCKSDB_AVAILABLE 1
-#  else
-#   define RIPPLE_ROCKSDB_AVAILABLE 0
-#  endif
-# endif
-#endif
-
 #if RIPPLE_ROCKSDB_AVAILABLE
-#define SNAPPY
 //#include <rocksdb2/port/port_posix.h>
 #include <rocksdb2/include/rocksdb/cache.h>
 #include <rocksdb2/include/rocksdb/compaction_filter.h>

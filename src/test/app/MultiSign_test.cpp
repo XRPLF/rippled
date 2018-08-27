@@ -15,7 +15,7 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/JsonFields.h>     // jss:: definitions
 #include <ripple/protocol/Feature.h>
 #include <test/jtx.h>
@@ -191,7 +191,12 @@ public:
     test_enablement()
     {
         using namespace jtx;
-        Env env(*this, FeatureBitset{});
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg)
+            {
+                cfg->loadFromString ("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                return cfg;
+            }), FeatureBitset{});
+
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
         env.close();
@@ -415,7 +420,11 @@ public:
     void test_regularSignersUsingSubmitMulti()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg)
+            {
+                cfg->loadFromString ("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                return cfg;
+            }));
         Account const alice {"alice", KeyType::secp256k1};
         Account const becky {"becky", KeyType::ed25519};
         Account const cheri {"cheri", KeyType::secp256k1};
@@ -1134,6 +1143,84 @@ public:
         env.close();
     }
 
+    void test_signForHash()
+    {
+        // Make sure that the "hash" field returned by the "sign_for" RPC
+        // command matches the hash returned when that command is sent
+        // through "submit_multisigned".  Make sure that hash also locates
+        // the transaction in the ledger.
+        using namespace jtx;
+        Account const alice {"alice", KeyType::ed25519};
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg)
+            {
+                cfg->loadFromString ("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                return cfg;
+            }));
+        env.fund (XRP(1000), alice);
+        env.close();
+
+        env (signers (alice, 2, {{bogie, 1}, {ghost, 1}}));
+        env.close();
+
+        // Use sign_for to sign a transaction where alice pays 10 XRP to
+        // masterpassphrase.
+        std::uint32_t baseFee = env.current()->fees().base;
+        Json::Value jvSig1;
+        jvSig1[jss::account] = bogie.human();
+        jvSig1[jss::secret]  = bogie.name();
+        jvSig1[jss::tx_json][jss::Account]         = alice.human();
+        jvSig1[jss::tx_json][jss::Amount]          = 10000000;
+        jvSig1[jss::tx_json][jss::Destination]     = env.master.human();
+        jvSig1[jss::tx_json][jss::Fee]             = 3 * baseFee;
+        jvSig1[jss::tx_json][jss::Sequence]        = env.seq(alice);
+        jvSig1[jss::tx_json][jss::TransactionType] = "Payment";
+
+        Json::Value jvSig2 = env.rpc (
+            "json", "sign_for", to_string (jvSig1));
+        BEAST_EXPECT (
+            jvSig2[jss::result][jss::status].asString() == "success");
+
+        // Save the hash with one signature for use later.
+        std::string const hash1 =
+            jvSig2[jss::result][jss::tx_json][jss::hash].asString();
+
+        // Add the next signature and sign again.
+        jvSig2[jss::result][jss::account] = ghost.human();
+        jvSig2[jss::result][jss::secret]  = ghost.name();
+        Json::Value jvSubmit = env.rpc (
+            "json", "sign_for", to_string (jvSig2[jss::result]));
+        BEAST_EXPECT (
+            jvSubmit[jss::result][jss::status].asString() == "success");
+
+        // Save the hash with two signatures for use later.
+        std::string const hash2 =
+            jvSubmit[jss::result][jss::tx_json][jss::hash].asString();
+        BEAST_EXPECT (hash1 != hash2);
+
+        // Submit the result of the two signatures.
+        Json::Value jvResult = env.rpc (
+            "json", "submit_multisigned", to_string (jvSubmit[jss::result]));
+        BEAST_EXPECT (
+            jvResult[jss::result][jss::status].asString() == "success");
+        BEAST_EXPECT (jvResult[jss::result]
+            [jss::engine_result].asString() == "tesSUCCESS");
+
+        // The hash from the submit should be the same as the hash from the
+        // second signing.
+        BEAST_EXPECT (
+            hash2 == jvResult[jss::result][jss::tx_json][jss::hash].asString());
+        env.close();
+
+        // The transaction we just submitted should now be available and
+        // validated.
+        Json::Value jvTx = env.rpc ("tx", hash2);
+        BEAST_EXPECT (jvTx[jss::result][jss::status].asString() == "success");
+        BEAST_EXPECT (jvTx[jss::result][jss::validated].asString() == "true");
+        BEAST_EXPECT (jvTx[jss::result][jss::meta]
+            [sfTransactionResult.jsonName].asString() == "tesSUCCESS");
+    }
+
     void run() override
     {
         test_noReserve();
@@ -1152,6 +1239,7 @@ public:
         test_badSignatureText();
         test_noMultiSigners();
         test_multisigningMultisigner();
+        test_signForHash();
     }
 };
 

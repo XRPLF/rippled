@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/impl/codec.h>
 #include <ripple/beast/clock/basic_seconds_clock.h>
@@ -27,7 +26,7 @@
 #include <nudb/create.hpp>
 #include <nudb/detail/format.hpp>
 #include <nudb/xxhasher.hpp>
-#include <beast/core/string.hpp>
+#include <boost/beast/core/string.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <chrono>
@@ -105,7 +104,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << round<nanoseconds>(d).count();
+            os << date::round<nanoseconds>(d).count();
         }
         os << "ns";
     }
@@ -121,7 +120,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << round<microseconds>(d).count();
+            os << date::round<microseconds>(d).count();
         }
         os << "us";
     }
@@ -137,7 +136,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << round<milliseconds>(d).count();
+            os << date::round<milliseconds>(d).count();
         }
         os << "ms";
     }
@@ -153,7 +152,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << round<seconds>(d).count();
+            os << date::round<seconds>(d).count();
         }
         os << "s";
     }
@@ -169,7 +168,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << round<minutes>(d).count();
+            os << date::round<minutes>(d).count();
         }
         os << "min";
     }
@@ -258,7 +257,7 @@ public:
     }
 };
 
-std::map <std::string, std::string, beast::iless>
+std::map <std::string, std::string, boost::beast::iless>
 parse_args(std::string const& s)
 {
     // <key> '=' <value>
@@ -274,7 +273,7 @@ parse_args(std::string const& s)
         , boost::regex_constants::optimize
     );
     std::map <std::string,
-        std::string, beast::iless> map;
+        std::string, boost::beast::iless> map;
     auto const v = beast::rfc2616::split(
         s.begin(), s.end(), ',');
     for (auto const& kv : v)
@@ -586,7 +585,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(import,NodeStore,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(import,NodeStore,ripple);
 
 #endif
 

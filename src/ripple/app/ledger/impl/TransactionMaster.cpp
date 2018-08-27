@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/main/Application.h>
@@ -29,7 +28,7 @@ namespace ripple {
 
 TransactionMaster::TransactionMaster (Application& app)
     : mApp (app)
-    , mCache ("TransactionCache", 65536, 1800, stopwatch(),
+    , mCache ("TransactionCache", 65536, std::chrono::minutes {30}, stopwatch(),
         mApp.journal("TaggedCache"))
 {
 }
@@ -100,7 +99,7 @@ void
 TransactionMaster::canonicalize(std::shared_ptr<Transaction>* pTransaction)
 {
     uint256 const tid = (*pTransaction)->getID();
-    if (tid != zero)
+    if (tid != beast::zero)
     {
         auto txn = *pTransaction;
         // VFALCO NOTE canonicalize can change the value of txn!

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 // This has to be included early to prevent an obscure MSVC compile error
 #include <boost/asio/deadline_timer.hpp>
@@ -51,7 +50,6 @@
 #include <ripple/rpc/handlers/Validators.cpp>
 #include <ripple/rpc/handlers/ValidatorListSites.cpp>
 #include <ripple/rpc/handlers/WalletPropose.cpp>
-#include <ripple/rpc/handlers/WalletSeed.cpp>
 
 #include <ripple/rpc/impl/Handler.cpp>
 #include <ripple/rpc/impl/LegacyPathFind.cpp>
@@ -59,6 +57,7 @@
 #include <ripple/rpc/impl/RPCHandler.cpp>
 #include <ripple/rpc/impl/RPCHelpers.cpp>
 #include <ripple/rpc/impl/ServerHandlerImp.cpp>
+#include <ripple/rpc/impl/ShardArchiveHandler.cpp>
 #include <ripple/rpc/impl/Status.cpp>
 #include <ripple/rpc/impl/TransactionSign.cpp>
 

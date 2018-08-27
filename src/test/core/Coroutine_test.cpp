@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/JobQueue.h>
 #include <test/jtx.h>
 #include <chrono>
@@ -171,7 +170,7 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         correct_order();
         incorrect_order();

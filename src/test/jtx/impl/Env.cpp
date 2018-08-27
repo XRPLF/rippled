@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/fee.h>
@@ -47,7 +46,7 @@
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/Feature.h>
 #include <memory>
 
@@ -131,6 +130,7 @@ Env::close(NetClock::time_point closeTime,
     boost::optional<std::chrono::milliseconds> consensusDelay)
 {
     // Round up to next distinguishable value
+    using namespace std::chrono_literals;
     closeTime += closed()->info().closeTimeResolution - 1s;
     timeKeeper().set(closeTime);
     // Go through the rpc interface unless we need to simulate
@@ -279,8 +279,7 @@ Env::parseResult(Json::Value const& jr)
     TER ter;
     if (jr.isObject() && jr.isMember(jss::result) &&
         jr[jss::result].isMember(jss::engine_result_code))
-        ter = static_cast<TER>(
-            jr[jss::result][jss::engine_result_code].asInt());
+        ter = TER::fromInt (jr[jss::result][jss::engine_result_code].asInt());
     else
         ter = temINVALID;
     return std::make_pair(ter,

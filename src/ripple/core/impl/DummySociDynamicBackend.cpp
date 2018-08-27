@@ -29,7 +29,6 @@
 #pragma clang diagnostic ignored "-Wdeprecated"
 #endif
 
-#include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/SociDB.h>
 #include <soci/sqlite3/soci-sqlite3.h>

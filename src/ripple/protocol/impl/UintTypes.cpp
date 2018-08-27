@@ -17,11 +17,10 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/types.h>
+#include <ripple/beast/utility/Zero.h>
 
 namespace ripple {
 
@@ -35,7 +34,7 @@ std::string to_string(Currency const& currency)
         "0123456789"
         "<>(){}[]|?!@#$%^&*";
 
-    if (currency == zero)
+    if (currency == beast::zero)
         return systemCurrencyCode();
 
     if (currency == noCurrency())
@@ -69,7 +68,7 @@ bool to_currency(Currency& currency, std::string const& code)
 {
     if (code.empty () || !code.compare (systemCurrencyCode()))
     {
-        currency = zero;
+        currency = beast::zero;
         return true;
     }
 
@@ -78,7 +77,11 @@ bool to_currency(Currency& currency, std::string const& code)
     {
         Blob codeBlob (CURRENCY_CODE_LENGTH);
 
-        std::transform (code.begin (), code.end (), codeBlob.begin (), ::toupper);
+        std::transform (code.begin (), code.end (), codeBlob.begin (),
+                        [](auto c)
+                        {
+                            return ::toupper(static_cast<unsigned char>(c));
+                        });
 
         Serializer  s;
 

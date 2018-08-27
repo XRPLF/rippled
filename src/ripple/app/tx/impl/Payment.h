@@ -39,7 +39,7 @@ class Payment
     static std::size_t const MaxPathLength = 8;
 
 public:
-    Payment (ApplyContext& ctx)
+    explicit Payment (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }
@@ -49,7 +49,7 @@ public:
     calculateMaxSpend(STTx const& tx);
 
     static
-    TER
+    NotTEC
     preflight (PreflightContext const& ctx);
 
     static

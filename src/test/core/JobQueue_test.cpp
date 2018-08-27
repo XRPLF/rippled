@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/beast/unit_test.h>
 #include <test/jtx/Env.h>
@@ -141,7 +140,7 @@ class JobQueue_test : public beast::unit_test::suite
     }
 
 public:
-    void run()
+    void run() override
     {
         testAddJob();
         testPostCoro();

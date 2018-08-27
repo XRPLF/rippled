@@ -17,13 +17,15 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/Escrow.h>
+
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
 #include <ripple/conditions/Condition.h>
 #include <ripple/conditions/Fulfillment.h>
+#include <ripple/ledger/ApplyView.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/Feature.h>
@@ -43,98 +45,51 @@
 namespace ripple {
 
 /*
-    Escrow allows an account holder to sequester any amount
-    of XRP in its own ledger entry, until the escrow process
-    either finishes or is canceled.
+    Escrow
+    ======
 
-    If the escrow process finishes successfully, then the
-    destination account (which must exist) will receives the
-    sequestered XRP. If the escrow is, instead, canceled,
-    the account which created the escrow will receive the
-    sequestered XRP back instead.
+    Escrow is a feature of the XRP Ledger that allows you to send conditional
+    XRP payments. These conditional payments, called escrows, set aside XRP and
+    deliver it later when certain conditions are met. Conditions to successfully
+    finish an escrow include time-based unlocks and crypto-conditions. Escrows
+    can also be set to expire if not finished in time.
 
-    EscrowCreate
+    The XRP set aside in an escrow is locked up. No one can use or destroy the
+    XRP until the escrow has been successfully finished or canceled. Before the
+    expiration time, only the intended receiver can get the XRP. After the
+    expiration time, the XRP can only be returned to the sender.
 
-        When an escrow is created, an optional condition may
-        be attached. If present, that condition must be
-        fulfilled for the escrow to successfully finish.
+    For more details on escrow, including examples, diagrams and more please
+    visit https://ripple.com/build/escrow/#escrow
 
-        At the time of creation, one or both of the fields
-        sfCancelAfter and sfFinishAfter may be provided. If
-        neither field is specified, the transaction is
-        malformed.
+    For details on specific transactions, including fields and validation rules
+    please see:
 
-        Since the escrow eventually becomes a payment, an
-        optional DestinationTag and an optional SourceTag
-        are supported in the EscrowCreate transaction.
+    `EscrowCreate`
+    --------------
+        See: https://ripple.com/build/transactions/#escrowcreate
 
-        Validation rules:
+    `EscrowFinish`
+    --------------
+        See: https://ripple.com/build/transactions/#escrowfinish
 
-            sfCondition
-                If present, specifies a condition; the same
-                condition along with its matching fulfillment
-                are required during EscrowFinish.
-
-            sfCancelAfter
-                If present, escrow may be canceled after the
-                specified time (seconds after the Ripple epoch).
-
-            sfFinishAfter
-                If present, must be prior to sfCancelAfter.
-                A EscrowFinish succeeds only in ledgers after
-                sfFinishAfter but before sfCancelAfter.
-
-                If absent, same as parentCloseTime
-
-            Malformed if both sfCancelAfter, sfFinishAfter
-            are absent.
-
-            Malformed if both sfFinishAfter, sfCancelAfter
-            specified and sfCancelAfter <= sfFinishAfter
-
-    EscrowFinish
-
-        Any account may submit a EscrowFinish. If the escrow
-        ledger entry specifies a condition, the EscrowFinish
-        must provide the same condition and its associated
-        fulfillment in the sfCondition and sfFulfillment
-        fields, or else the EscrowFinish will fail.
-
-        If the escrow ledger entry specifies sfFinishAfter, the
-        transaction will fail if parentCloseTime <= sfFinishAfter.
-
-        EscrowFinish transactions must be submitted before
-        the escrow's sfCancelAfter if present.
-
-        If the escrow ledger entry specifies sfCancelAfter, the
-        transaction will fail if sfCancelAfter <= parentCloseTime.
-
-        NOTE: The reason the condition must be specified again
-              is because it must always be possible to verify
-              the condition without retrieving the escrow
-              ledger entry.
-
-    EscrowCancel
-
-        Any account may submit a EscrowCancel transaction.
-
-        If the escrow ledger entry does not specify a
-        sfCancelAfter, the cancel transaction will fail.
-
-        If parentCloseTime <= sfCancelAfter, the transaction
-        will fail.
-
-        When a escrow is canceled, the funds are returned to
-        the source account.
-
-    By careful selection of fields in each transaction,
-    these operations may be achieved:
-
-        * Lock up XRP for a time period
-        * Execute a payment conditionally
+    `EscrowCancel`
+    --------------
+        See: https://ripple.com/build/transactions/#escrowcancel
 */
 
 //------------------------------------------------------------------------------
+
+/** Has the specified time passed?
+
+    @param now  the current time
+    @param mark the cutoff point
+    @return true if \a now refers to a time strictly after \a mark, false otherwise.
+*/
+static inline bool after (NetClock::time_point now, std::uint32_t mark)
+{
+    return now.time_since_epoch().count() > mark;
+}
 
 XRPAmount
 EscrowCreate::calculateMaxSpend(STTx const& tx)
@@ -142,11 +97,14 @@ EscrowCreate::calculateMaxSpend(STTx const& tx)
     return tx[sfAmount].xrp();
 }
 
-TER
+NotTEC
 EscrowCreate::preflight (PreflightContext const& ctx)
 {
     if (! ctx.rules.enabled(featureEscrow))
         return temDISABLED;
+
+    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
+        return temINVALID_FLAG;
 
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))
@@ -158,13 +116,25 @@ EscrowCreate::preflight (PreflightContext const& ctx)
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 
-    if (! ctx.tx[~sfCancelAfter] &&
-            ! ctx.tx[~sfFinishAfter])
-        return temBAD_EXPIRATION;
+    // We must specify at least one timeout value
+    if (! ctx.tx[~sfCancelAfter] && ! ctx.tx[~sfFinishAfter])
+            return temBAD_EXPIRATION;
 
+    // If both finish and cancel times are specified then the cancel time must
+    // be strictly after the finish time.
     if (ctx.tx[~sfCancelAfter] && ctx.tx[~sfFinishAfter] &&
             ctx.tx[sfCancelAfter] <= ctx.tx[sfFinishAfter])
         return temBAD_EXPIRATION;
+
+    if (ctx.rules.enabled(fix1571))
+    {
+        // In the absence of a FinishAfter, the escrow can be finished
+        // immediately, which can be confusing. When creating an escrow,
+        // we want to ensure that either a FinishAfter time is explicitly
+        // specified or a completion condition is attached.
+        if (! ctx.tx[~sfFinishAfter] && ! ctx.tx[~sfCondition])
+            return temMALFORMED;
+    }
 
     if (auto const cb = ctx.tx[~sfCondition])
     {
@@ -195,20 +165,36 @@ EscrowCreate::doApply()
 {
     auto const closeTime = ctx_.view ().info ().parentCloseTime;
 
-    if (ctx_.tx[~sfCancelAfter])
+    // Prior to fix1571, the cancel and finish times could be greater
+    // than or equal to the parent ledgers' close time.
+    //
+    // With fix1571, we require that they both be strictly greater
+    // than the parent ledgers' close time.
+    if (ctx_.view ().rules().enabled(fix1571))
     {
-        auto const cancelAfter = ctx_.tx[sfCancelAfter];
+        if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
+            return tecNO_PERMISSION;
 
-        if (closeTime.time_since_epoch().count() >= cancelAfter)
+        if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
             return tecNO_PERMISSION;
     }
-
-    if (ctx_.tx[~sfFinishAfter])
+    else
     {
-        auto const finishAfter = ctx_.tx[sfFinishAfter];
+        if (ctx_.tx[~sfCancelAfter])
+        {
+            auto const cancelAfter = ctx_.tx[sfCancelAfter];
 
-        if (closeTime.time_since_epoch().count() >= finishAfter)
-            return tecNO_PERMISSION;
+            if (closeTime.time_since_epoch().count() >= cancelAfter)
+                return tecNO_PERMISSION;
+        }
+
+        if (ctx_.tx[~sfFinishAfter])
+        {
+            auto const finishAfter = ctx_.tx[sfFinishAfter];
+
+            if (closeTime.time_since_epoch().count() >= finishAfter)
+                return tecNO_PERMISSION;
+        }
     }
 
     auto const account = ctx_.tx[sfAccount];
@@ -263,6 +249,7 @@ EscrowCreate::doApply()
         if (((*sled)[sfFlags] & lsfRequireDestTag) &&
                 ! ctx_.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
+
 		if (isXrp)
 		{
 			if ((*sled)[sfFlags] & lsfDisallowXRP)
@@ -279,6 +266,7 @@ EscrowCreate::doApply()
 			if (limit < amount)
 				return temBAD_PATH;
 		}
+
     }
 
     // Create escrow in ledger
@@ -374,11 +362,14 @@ checkCondition (Slice f, Slice c)
     return validate (*fulfillment, *condition);
 }
 
-TER
+NotTEC
 EscrowFinish::preflight (PreflightContext const& ctx)
 {
     if (! ctx.rules.enabled(featureEscrow))
         return temDISABLED;
+
+    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
+        return temINVALID_FLAG;
 
     {
         auto const ret = preflight1 (ctx);
@@ -425,17 +416,19 @@ EscrowFinish::preflight (PreflightContext const& ctx)
 }
 
 std::uint64_t
-EscrowFinish::calculateBaseFee (PreclaimContext const& ctx)
+EscrowFinish::calculateBaseFee (
+    ReadView const& view,
+    STTx const& tx)
 {
     std::uint64_t extraFee = 0;
 
-    if (auto const fb = ctx.tx[~sfFulfillment])
+    if (auto const fb = tx[~sfFulfillment])
     {
-        extraFee += ctx.view.fees().units *
+        extraFee += view.fees().units *
             (32 + static_cast<std::uint64_t> (fb->size() / 16));
     }
 
-    return Transactor::calculateBaseFee (ctx) + extraFee;
+    return Transactor::calculateBaseFee (view, tx) + extraFee;
 }
 
 TER
@@ -447,17 +440,35 @@ EscrowFinish::doApply()
     if (! slep)
         return tecNO_TARGET;
 
-    // Too soon?
-    if ((*slep)[~sfFinishAfter] &&
-        ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-            (*slep)[sfFinishAfter])
-        return tecNO_PERMISSION;
+    // If a cancel time is present, a finish operation should only succeed prior
+    // to that time. fix1571 corrects a logic error in the check that would make
+    // a finish only succeed strictly after the cancel time.
+    if (ctx_.view ().rules().enabled(fix1571))
+    {
+        auto const now = ctx_.view().info().parentCloseTime;
 
-    // Too late?
-    if ((*slep)[~sfCancelAfter] &&
-        (*slep)[sfCancelAfter] <=
-            ctx_.view().info().parentCloseTime.time_since_epoch().count())
-        return tecNO_PERMISSION;
+        // Too soon: can't execute before the finish time
+        if ((*slep)[~sfFinishAfter] && ! after(now, (*slep)[sfFinishAfter]))
+            return tecNO_PERMISSION;
+
+        // Too late: can't execute after the cancel time
+        if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
+            return tecNO_PERMISSION;
+    }
+    else
+    {
+        // Too soon?
+        if ((*slep)[~sfFinishAfter] &&
+            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
+            (*slep)[sfFinishAfter])
+            return tecNO_PERMISSION;
+
+        // Too late?
+        if ((*slep)[~sfCancelAfter] &&
+            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
+            (*slep)[sfCancelAfter])
+            return tecNO_PERMISSION;
+    }
 
     // Check cryptocondition fulfillment
     {
@@ -506,27 +517,50 @@ EscrowFinish::doApply()
             return tecCRYPTOCONDITION_ERROR;
     }
 
+    // NOTE: Escrow payments cannot be used to fund accounts.
+    AccountID const destID = (*slep)[sfDestination];
+    auto const sled = ctx_.view().peek(keylet::account(destID));
+    if (! sled)
+        return tecNO_DST;
+
+    if (ctx_.view().rules().enabled(featureDepositAuth))
+    {
+        // Is EscrowFinished authorized?
+        if (sled->getFlags() & lsfDepositAuth)
+        {
+            // A destination account that requires authorization has two
+            // ways to get an EscrowFinished into the account:
+            //  1. If Account == Destination, or
+            //  2. If Account is deposit preauthorized by destination.
+            if (account_ != destID)
+            {
+                if (! view().exists (keylet::depositPreauth (destID, account_)))
+                    return tecNO_PERMISSION;
+            }
+        }
+    }
+
     AccountID const account = (*slep)[sfAccount];
 	STAmount const& amount = (*slep)[sfAmount];
 
     // Remove escrow from owner directory
     {
         auto const page = (*slep)[sfOwnerNode];
-        TER const ter = dirDelete(ctx_.view(), true,
-            page, keylet::ownerDir(account),
-                k.key, false, page == 0, ctx_.app.journal ("View"));
-        if (! isTesSuccess(ter))
-            return ter;
+        if (! ctx_.view().dirRemove(
+                keylet::ownerDir(account), page, k.key, true))
+        {
+            return tefBAD_LEDGER;
+        }
     }
 
     // Remove escrow from recipient's owner directory, if present.
     if (ctx_.view ().rules().enabled(fix1523) && (*slep)[~sfDestinationNode])
     {
-        TER const ter = dirDelete(ctx_.view(), true,
-            (*slep)[sfDestinationNode], keylet::ownerDir((*slep)[sfDestination]),
-            k.key, false, false, ctx_.app.journal ("View"));
-        if (! isTesSuccess(ter))
-            return ter;
+        auto const page = (*slep)[sfDestinationNode];
+        if (! ctx_.view().dirRemove(keylet::ownerDir(destID), page, k.key, true))
+        {
+            return tefBAD_LEDGER;
+        }
     }
 
 	//Remove escrow from issuer's owner directory
@@ -599,11 +633,14 @@ EscrowFinish::doApply()
 
 //------------------------------------------------------------------------------
 
-TER
+NotTEC
 EscrowCancel::preflight (PreflightContext const& ctx)
 {
     if (! ctx.rules.enabled(featureEscrow))
         return temDISABLED;
+
+    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
+        return temINVALID_FLAG;
 
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))
@@ -615,38 +652,54 @@ EscrowCancel::preflight (PreflightContext const& ctx)
 TER
 EscrowCancel::doApply()
 {
-    auto const k = keylet::escrow(
-        ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
+    auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
     auto const slep = ctx_.view().peek(k);
     if (! slep)
         return tecNO_TARGET;
 
-    // Too soon?
-    if (! (*slep)[~sfCancelAfter] ||
-        ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
+    if (ctx_.view ().rules().enabled(fix1571))
+    {
+        auto const now = ctx_.view().info().parentCloseTime;
+
+        // No cancel time specified: can't execute at all.
+        if (! (*slep)[~sfCancelAfter])
+            return tecNO_PERMISSION;
+
+        // Too soon: can't execute before the cancel time.
+        if (! after(now, (*slep)[sfCancelAfter]))
+            return tecNO_PERMISSION;
+    }
+    else
+    {
+        // Too soon?
+        if (!(*slep)[~sfCancelAfter] ||
+            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
             (*slep)[sfCancelAfter])
-        return tecNO_PERMISSION;
+            return tecNO_PERMISSION;
+    }
+
     AccountID const account = (*slep)[sfAccount];
 	STAmount const& amount = (*slep)[sfAmount];
 
     // Remove escrow from owner directory
     {
         auto const page = (*slep)[sfOwnerNode];
-        TER const ter = dirDelete(ctx_.view(), true,
-            page, keylet::ownerDir(account),
-                k.key, false, page == 0, ctx_.app.journal ("View"));
-        if (! isTesSuccess(ter))
-            return ter;
+        if (! ctx_.view().dirRemove(
+                keylet::ownerDir(account), page, k.key, true))
+        {
+            return tefBAD_LEDGER;
+        }
     }
 
     // Remove escrow from recipient's owner directory, if present.
     if (ctx_.view ().rules().enabled(fix1523) && (*slep)[~sfDestinationNode])
     {
-        TER const ter = dirDelete(ctx_.view(), true,
-            (*slep)[sfDestinationNode], keylet::ownerDir((*slep)[sfDestination]),
-            k.key, false, false, ctx_.app.journal ("View"));
-        if (! isTesSuccess(ter))
-            return ter;
+        auto const page = (*slep)[sfDestinationNode];
+        if (! ctx_.view().dirRemove(
+                keylet::ownerDir((*slep)[sfDestination]), page, k.key, true))
+        {
+            return tefBAD_LEDGER;
+        }
     }
 
 	//Remove escrow from issuer's owner directory

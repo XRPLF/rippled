@@ -22,7 +22,7 @@
 
 #include <ripple/server/Writer.h>
 #include <ripple/server/WSSession.h>
-#include <beast/http/message.hpp>
+#include <boost/beast/http/message.hpp>
 #include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/beast/utility/Journal.h>
 #include <functional>
@@ -42,6 +42,8 @@ class Session
 public:
     Session() = default;
     Session (Session const&) = delete;
+    Session& operator=(Session const&) = delete;
+    virtual ~Session () = default;
 
     /** A user-definable pointer.
         The initial value is always zero.

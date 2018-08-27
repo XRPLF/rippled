@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/json/Object.h>
 #include <cassert>
@@ -196,7 +195,7 @@ namespace {
 template <class Object>
 void doCopyFrom (Object& to, Json::Value const& from)
 {
-    assert (from.isObject());
+    assert (from.isObjectOrNull());
     auto members = from.getMemberNames();
     for (auto& m: members)
         to[m] = from[m];

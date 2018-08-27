@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <ripple/app/misc/ValidatorKeys.h>
+#include <ripple/app/misc/Manifest.h>
+#include <ripple/basics/base64.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
@@ -74,18 +76,24 @@ public:
     {
         beast::Journal j;
 
-        // Keys when using [validation_seed]
-        auto const seedSecretKey =
+        // Keys/ID when using [validation_seed]
+        SecretKey const seedSecretKey =
             generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
-        auto const seedPublicKey =
+        PublicKey const seedPublicKey =
             derivePublicKey(KeyType::secp256k1, seedSecretKey);
+        NodeID const seedNodeID = calcNodeID(seedPublicKey);
 
         // Keys when using [validation_token]
         auto const tokenSecretKey = *parseBase58<SecretKey>(
-            TokenType::TOKEN_NODE_PRIVATE, tokenSecretStr);
+            TokenType::NodePrivate, tokenSecretStr);
 
         auto const tokenPublicKey =
             derivePublicKey(KeyType::secp256k1, tokenSecretKey);
+
+        auto const m = Manifest::make_Manifest(
+            base64_decode(tokenManifest));
+        BEAST_EXPECT(m);
+        NodeID const tokenNodeID = calcNodeID(m->masterKey);
 
         {
             // No config -> no key but valid
@@ -104,6 +112,7 @@ public:
             ValidatorKeys k{c, j};
             BEAST_EXPECT(k.publicKey == seedPublicKey);
             BEAST_EXPECT(k.secretKey == seedSecretKey);
+            BEAST_EXPECT(k.nodeID == seedNodeID);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
         }
@@ -127,6 +136,7 @@ public:
 
             BEAST_EXPECT(k.publicKey == tokenPublicKey);
             BEAST_EXPECT(k.secretKey == tokenSecretKey);
+            BEAST_EXPECT(k.nodeID == tokenNodeID);
             BEAST_EXPECT(k.manifest == tokenManifest);
             BEAST_EXPECT(!k.configInvalid());
         }

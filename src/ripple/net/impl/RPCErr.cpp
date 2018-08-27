@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 
@@ -35,7 +34,7 @@ Json::Value rpcError (int iError, Json::Value jvResult)
 // VFALCO NOTE Deprecated function
 bool isRpcError (Json::Value jvResult)
 {
-    return jvResult.isObject () && jvResult.isMember (jss::error);
+    return jvResult.isObject() && jvResult.isMember (jss::error);
 }
 
 } // ripple

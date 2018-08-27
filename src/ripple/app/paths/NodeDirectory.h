@@ -31,6 +31,8 @@ namespace ripple {
 class NodeDirectory
 {
 public:
+    explicit NodeDirectory() = default;
+
     // Current directory - the last 64 bits of this are the quality.
     uint256 current;
 
@@ -56,7 +58,7 @@ public:
 
     bool initialize (Book const& book, ApplyView& view)
     {
-        if (current != zero)
+        if (current != beast::zero)
             return false;
 
         current.copyFrom (getBookBase (book));
@@ -103,7 +105,7 @@ public:
         advanceNeeded  = false;
         restartNeeded  = false;
 
-        if (current == zero)
+        if (current == beast::zero)
             return END_ADVANCE;
 
         ledgerEntry = view.peek (keylet::page(current));

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/shamap/SHAMap.h>
 #include <test/shamap/common.h>
 #include <ripple/protocol/digest.h>
@@ -60,9 +59,10 @@ public:
         {
         }
 
-        void gotNode (bool fromFilter,
-            SHAMapHash const& nodeHash,
-                Blob&& nodeData, SHAMapTreeNode::TNType type) const override
+        void
+        gotNode(bool fromFilter, SHAMapHash const& nodeHash,
+            std::uint32_t ledgerSeq, Blob&& nodeData,
+                SHAMapTreeNode::TNType type) const override
         {
         }
 
@@ -114,7 +114,7 @@ public:
         map.emplace (hash, blob);
     }
 
-    void run ()
+    void run () override
     {
         beast::Journal const j;                            // debug journal
         TestFamily f(j);

@@ -43,7 +43,6 @@ public:
     enum
     {
          defaultCacheTargetSize = 0
-        ,defaultCacheExpirationSeconds = 120
     };
 
     using key_type   = Key;
@@ -61,9 +60,9 @@ public:
         beast::insight::Collector::ptr const& collector =
             beast::insight::NullCollector::New (),
         std::size_t target_size = defaultCacheTargetSize,
-        std::size_t expiration_seconds = defaultCacheExpirationSeconds)
+        std::chrono::seconds expiration = std::chrono::minutes{2})
         : m_cache (name, clock, collector, target_size,
-            expiration_seconds)
+            expiration)
         , m_gen (1)
     {
     }
@@ -125,6 +124,12 @@ public:
     {
         m_cache.clear ();
         ++m_gen;
+    }
+
+    void reset ()
+    {
+        m_cache.clear();
+        m_gen  = 1;
     }
 
 private:

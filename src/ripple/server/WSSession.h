@@ -23,7 +23,7 @@
 #include <ripple/server/Handoff.h>
 #include <ripple/server/Port.h>
 #include <ripple/server/Writer.h>
-#include <beast/core/buffer_prefix.hpp>
+#include <boost/beast/core/buffers_prefix.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/logic/tribool.hpp>
@@ -98,7 +98,7 @@ public:
             n_ = sb_.size();
             done = true;
         }
-        auto const pb = beast::buffer_prefix(n_, sb_.data());
+        auto const pb = boost::beast::buffers_prefix(n_, sb_.data());
         std::vector<boost::asio::const_buffer> vb (
             std::distance(pb.begin(), pb.end()));
         std::copy(pb.begin(), pb.end(), std::back_inserter(vb));
@@ -109,6 +109,11 @@ public:
 struct WSSession
 {
     std::shared_ptr<void> appDefined;
+
+    virtual ~WSSession () = default;
+    WSSession() = default;
+    WSSession(WSSession const&) = delete;
+    WSSession& operator=(WSSession const&) = delete;
 
     virtual
     void

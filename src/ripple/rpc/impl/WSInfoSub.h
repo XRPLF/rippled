@@ -68,12 +68,12 @@ public:
     }
 
     void
-    send(Json::Value const& jv, bool)
+    send(Json::Value const& jv, bool) override
     {
         auto sp = ws_.lock();
         if(! sp)
             return;
-        beast::multi_buffer sb;
+        boost::beast::multi_buffer sb;
         Json::stream(jv,
             [&](void const* data, std::size_t n)
             {

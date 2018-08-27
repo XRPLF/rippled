@@ -53,7 +53,7 @@ public:
     STArray (STArray&&);
     STArray (STArray const&) = default;
     STArray (SField const& f, int n);
-    STArray (SerialIter& sit, SField const& f);
+    STArray (SerialIter& sit, SField const& f, int depth = 0);
     explicit STArray (int n);
     explicit STArray (SField const& f);
     STArray& operator= (STArray const&) = default;

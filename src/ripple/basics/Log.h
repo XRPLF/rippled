@@ -21,7 +21,7 @@
 #define RIPPLE_BASICS_LOG_H_INCLUDED
 
 #include <ripple/basics/UnorderedContainers.h>
-#include <beast/core/string.hpp>
+#include <boost/beast/core/string.hpp>
 #include <ripple/beast/utility/Journal.h>
 #include <boost/filesystem.hpp>
 #include <map>
@@ -86,7 +86,7 @@ private:
         /** Destroy the object.
             If a system file is associated, it will be flushed and closed.
         */
-        ~File ();
+        ~File () = default;
 
         /** Determine if a system file is associated with the log.
             @return `true` if a system file is associated and opened for
@@ -148,7 +148,7 @@ private:
     std::mutex mutable mutex_;
     std::map <std::string,
         std::unique_ptr<beast::Journal::Sink>,
-            beast::iless> sinks_;
+            boost::beast::iless> sinks_;
     beast::severities::Severity thresh_;
     File file_;
     bool silent_ = false;
@@ -229,10 +229,6 @@ private:
         // If the message exceeds this length it will be truncated with elipses.
         maximumMessageCharacters = 12 * 1024
     };
-
-    static
-    std::string
-    scrub (std::string s);
 
     static
     void

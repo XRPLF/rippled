@@ -78,7 +78,10 @@ public:
     //--------------------------------------------------------------------------
     STAmount(SerialIter& sit, SField const& name);
 
-    struct unchecked { };
+    struct unchecked
+    {
+        explicit unchecked() = default;
+    };
 
     // Do not call canonicalize
     STAmount (SField const& name, Issue const& issue,
@@ -188,7 +191,7 @@ public:
 
     explicit operator bool() const noexcept
     {
-        return *this != zero;
+        return *this != beast::zero;
     }
 
     STAmount& operator+= (STAmount const&);
@@ -214,7 +217,7 @@ public:
 
     void negate()
     {
-        if (*this != zero)
+        if (*this != beast::zero)
             mIsNegative = !mIsNegative;
     }
 

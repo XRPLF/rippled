@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/impl/Tuning.h>
@@ -27,6 +26,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/PerfLog.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/json/Object.h>
@@ -37,6 +37,8 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/resource/Fees.h>
+#include <atomic>
+#include <chrono>
 
 namespace ripple {
 namespace RPC {
@@ -198,14 +200,22 @@ template <class Object, class Method>
 Status callMethod (
     Context& context, Method method, std::string const& name, Object& result)
 {
+    static std::atomic<std::uint64_t> requestId {0};
+    auto& perfLog = context.app.getPerfLog();
+    std::uint64_t const curId = ++requestId;
     try
     {
+        perfLog.rpcStart(name, curId);
         auto v = context.app.getJobQueue().makeLoadEvent(
             jtGENERIC, "cmd:" + name);
-        return method (context, result);
+
+        auto ret = method (context, result);
+        perfLog.rpcFinish(name, curId);
+        return ret;
     }
     catch (std::exception& e)
     {
+        perfLog.rpcError(name, curId);
         JLOG (context.j.info()) << "Caught throw: " << e.what ();
 
         if (context.loadType == Resource::feeReferenceRPC)
@@ -225,7 +235,22 @@ void getResult (
     {
         JLOG (context.j.debug()) << "rpcError: " << status.toString();
         result[jss::status] = jss::error;
-        result[jss::request] = context.params;
+
+        auto rq = context.params;
+
+        if (rq.isObject())
+        {
+            if (rq.isMember(jss::passphrase.c_str()))
+                rq[jss::passphrase.c_str()] = "<masked>";
+            if (rq.isMember(jss::secret.c_str()))
+                rq[jss::secret.c_str()] = "<masked>";
+            if (rq.isMember(jss::seed.c_str()))
+                rq[jss::seed.c_str()] = "<masked>";
+            if (rq.isMember(jss::seed_hex.c_str()))
+                rq[jss::seed_hex.c_str()] = "<masked>";
+        }
+
+        result[jss::request] = rq;
     }
     else
     {

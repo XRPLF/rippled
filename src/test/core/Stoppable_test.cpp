@@ -187,7 +187,7 @@ class Stoppable_test
             , test_(test)
             , stop_(running)
         {}
-        ~A()
+        ~A() override
         {
             while (stop_ != stopped)
                 ;
@@ -400,7 +400,7 @@ class Stoppable_test
         C c_;
         Stoppable_test& test_;
     public:
-        Root(Stoppable_test& test)
+        explicit Root(Stoppable_test& test)
             : RootStoppable("R")
             , a_(&A::run, std::make_unique<A>(*this, test))
             , b_(*this, test)
@@ -446,7 +446,7 @@ class Stoppable_test
     };
 
 public:
-    void run()
+    void run() override
     {
         {
             Root rt(*this);

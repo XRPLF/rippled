@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/paths/AccountCurrencies.h>
 
 namespace ripple {
@@ -46,7 +45,7 @@ hash_set<Currency> accountSourceCurrencies (
         auto& saBalance = rspEntry->getBalance ();
 
         // Filter out non
-        if (saBalance > zero
+        if (saBalance > beast::zero
             // Have IOUs to send.
             || (rspEntry->getLimitPeer ()
                 // Peer extends credit.

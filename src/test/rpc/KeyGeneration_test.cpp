@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/StringUtilities.h>
 #include <test/jtx/TestSuite.h>
 #include <ripple/json/json_value.h>
@@ -308,7 +307,7 @@ public:
             (keyType ? *keyType : "no key_type"));
 
         auto const publicKey = parseBase58<PublicKey>(
-            TokenType::TOKEN_ACCOUNT_PUBLIC, strings.public_key);
+            TokenType::AccountPublic, strings.public_key);
         BEAST_EXPECT(publicKey);
 
         if (!keyType)
@@ -710,7 +709,7 @@ public:
         }
     }
 
-    void run()
+    void run() override
     {
         testKeyType (boost::none, secp256k1_strings);
         testKeyType (std::string("secp256k1"), secp256k1_strings);

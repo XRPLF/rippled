@@ -21,111 +21,9 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
-
-//==============================================================================
-
 #include <ripple/beast/core/BasicNativeHeaders.h>
-
-// TargetPlatform.h should not use anything from BeastConfig.h
 #include <ripple/beast/core/Config.h>
-
-#if BEAST_MSVC
-# pragma warning (disable: 4251) // (DLL build warning, must be disabled before pushing the warning state)
-# pragma warning (push)
-# pragma warning (disable: 4786) // (long class name warning)
-# ifdef __INTEL_COMPILER
-#  pragma warning (disable: 1125)
-# endif
-#endif
-
-//------------------------------------------------------------------------------
-
-// New header-only library modeled more closely according to boost
-#include <ripple/beast/core/ByteOrder.h>
-
 #include <ripple/beast/core/StandardIncludes.h>
-
-// Order matters, since headers don't have their own #include lines.
-// Add new includes to the bottom.
-
-#include <ripple/beast/core/LexicalCast.h>
-
-#include <ripple/beast/core/SystemStats.h>
-#include <ripple/beast/core/SemanticVersion.h>
-
-#if BEAST_MSVC
-#pragma warning (pop)
-#endif
-
-#include <locale>
-#include <cctype>
-
-#if ! BEAST_BSD
- #include <sys/timeb.h>
-#endif
-
-#if ! BEAST_ANDROID
- #include <cwctype>
-#endif
-
-#if BEAST_WINDOWS
- #include <ctime>
- #include <winsock2.h>
- #include <ws2tcpip.h>
-
- #if ! BEAST_MINGW
-  #pragma warning ( push )
-  #pragma warning ( disable: 4091 )
-  #include <Dbghelp.h>
-  #pragma warning ( pop )
-
-  #if ! BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES
-   #pragma comment (lib, "DbgHelp.lib")
-  #endif
- #endif
-
- #if BEAST_MINGW
-  #include <ws2spi.h>
- #endif
-
-#else
- #if BEAST_LINUX || BEAST_ANDROID
-  #include <sys/types.h>
-  #include <sys/socket.h>
-  #include <sys/errno.h>
-  #include <unistd.h>
-  #include <netinet/in.h>
- #endif
-
- #if BEAST_LINUX
-  #include <langinfo.h>
- #endif
-
- #include <pwd.h>
- #include <fcntl.h>
- #include <netdb.h>
- #include <arpa/inet.h>
- #include <netinet/tcp.h>
- #include <sys/time.h>
- #include <net/if.h>
- #include <sys/ioctl.h>
-
- #if ! BEAST_ANDROID && ! BEAST_BSD
-  #include <execinfo.h>
- #endif
-#endif
-
-#if BEAST_MAC || BEAST_IOS
- #include <xlocale.h>
- #include <mach/mach.h>
-#endif
-
-#if BEAST_ANDROID
- #include <android/log.h>
-#endif
 
 //------------------------------------------------------------------------------
 
@@ -160,40 +58,8 @@
 #undef _aligned_msize
 #endif
 
-#include <ripple/beast/core/Memory.h>
-
-#if BEAST_MAC || BEAST_IOS
-#include <ripple/beast/core/osx_ObjCHelpers.h>
-#endif
-
-#if BEAST_ANDROID
-#include "native/android_JNIHelpers.h"
-#endif
-
-#if BEAST_MAC || BEAST_IOS
-#include <ripple/beast/core/mac_SystemStats.mm>
-
-#elif BEAST_WINDOWS
-#include <ripple/beast/core/win32_SystemStats.cpp>
-
-#elif BEAST_LINUX
-#include <ripple/beast/core/linux_SystemStats.cpp>
-
-#elif BEAST_BSD
-#include <ripple/beast/core/bsd_SystemStats.cpp>
-
-#elif BEAST_ANDROID
-#include "native/android_Files.cpp"
-#include "native/android_Misc.cpp"
-#include "native/android_SystemStats.cpp"
-#include "native/android_Threads.cpp"
-
-#endif
-
 #include <ripple/beast/core/CurrentThreadName.cpp>
 #include <ripple/beast/core/SemanticVersion.cpp>
-#include <ripple/beast/core/SystemStats.cpp>
-#include <ripple/beast/core/Time.cpp>
 #include <ripple/beast/core/WaitableEvent.cpp>
 
 #ifdef _CRTDBG_MAP_ALLOC

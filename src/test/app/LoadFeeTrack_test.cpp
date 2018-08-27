@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/core/Config.h>
 #include <ripple/beast/unit_test.h>
@@ -28,7 +27,7 @@ namespace ripple {
 class LoadFeeTrack_test : public beast::unit_test::suite
 {
 public:
-    void run ()
+    void run () override
     {
         Config d; // get a default configuration object
         LoadFeeTrack l;

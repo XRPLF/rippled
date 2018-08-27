@@ -17,14 +17,13 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 #include <boost/format.hpp>
 #include <memory>
 
@@ -79,7 +78,7 @@ accountTxPage (
     bool bAdmin,
     std::uint32_t page_length)
 {
-    bool lookingForMarker =  !token.isNull() && token.isObject();
+    bool lookingForMarker = token.isObject();
 
     std::uint32_t numberOfResults;
 
@@ -142,19 +141,27 @@ accountTxPage (
     }
     else if (forward && (findLedger != 0))
     {
+        auto b58acct = idCache.toBase58(account);
         sql = boost::str (boost::format(
-            prefix +
-            (R"(
-            AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u' OR
-            ( AccountTransactions.LedgerSeq = '%u' AND
-              AccountTransactions.TxnSeq >= '%u' )
+            (R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
+            Status,RawTxn,TxnMeta
+            FROM AccountTransactions, Transactions WHERE
+            (AccountTransactions.TransID = Transactions.TransID AND
+            AccountTransactions.Account = '%s' AND
+            AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u')
+            OR
+            (AccountTransactions.TransID = Transactions.TransID AND
+            AccountTransactions.Account = '%s' AND
+            AccountTransactions.LedgerSeq = '%u' AND
+            AccountTransactions.TxnSeq >= '%u')
             ORDER BY AccountTransactions.LedgerSeq ASC,
             AccountTransactions.TxnSeq ASC
             LIMIT %u;
             )"))
-        % idCache.toBase58(account)
+        % b58acct
         % (findLedger + 1)
         % maxLedger
+        % b58acct
         % findLedger
         % findSeq
         % queryLimit);
@@ -174,17 +181,27 @@ accountTxPage (
     }
     else if (!forward && (findLedger != 0))
     {
+        auto b58acct = idCache.toBase58(account);
         sql = boost::str (boost::format(
-            prefix +
-            (R"(AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u' OR
-             (AccountTransactions.LedgerSeq = '%u' AND
-              AccountTransactions.TxnSeq <= '%u')
-             ORDER BY AccountTransactions.LedgerSeq DESC,
-             AccountTransactions.TxnSeq DESC
-             LIMIT %u;)"))
-            % idCache.toBase58(account)
+            (R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
+            Status,RawTxn,TxnMeta
+            FROM AccountTransactions, Transactions WHERE
+            (AccountTransactions.TransID = Transactions.TransID AND
+            AccountTransactions.Account = '%s' AND
+            AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u')
+            OR
+            (AccountTransactions.TransID = Transactions.TransID AND
+            AccountTransactions.Account = '%s' AND
+            AccountTransactions.LedgerSeq = '%u' AND
+            AccountTransactions.TxnSeq <= '%u')
+            ORDER BY AccountTransactions.LedgerSeq DESC,
+            AccountTransactions.TxnSeq DESC
+            LIMIT %u;
+            )"))
+            % b58acct
             % minLedger
             % (findLedger - 1)
+            % b58acct
             % findLedger
             % findSeq
             % queryLimit);

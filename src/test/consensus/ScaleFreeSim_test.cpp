@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <BeastConfig.h>
 #include <ripple/beast/clock/manual_clock.h>
 #include <ripple/beast/unit_test.h>
 #include <test/csf.h>
@@ -58,7 +57,7 @@ class ScaleFreeSim_test : public beast::unit_test::suite
 
         // nodes with a trust line in either direction are network-connected
         network.connectFromTrust(
-            round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
+            date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
         // Initialize collectors to track statistics to report
         TxCollector txCollector;
@@ -117,7 +116,7 @@ class ScaleFreeSim_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(ScaleFreeSim, consensus, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(ScaleFreeSim, consensus, ripple, 80);
 
 }  // namespace test
 }  // namespace ripple

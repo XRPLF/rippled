@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/Change.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
@@ -28,7 +27,7 @@
 
 namespace ripple {
 
-TER
+NotTEC
 Change::preflight (PreflightContext const& ctx)
 {
     auto const ret = preflight0(ctx);
@@ -36,7 +35,7 @@ Change::preflight (PreflightContext const& ctx)
         return ret;
 
     auto account = ctx.tx.getAccountID(sfAccount);
-    if (account != zero)
+    if (account != beast::zero)
     {
         JLOG(ctx.j.warn()) << "Change: Bad source id";
         return temBAD_SRC_ACCOUNT;
@@ -100,7 +99,7 @@ void
 Change::preCompute()
 {
     account_ = ctx_.tx.getAccountID(sfAccount);
-    assert(account_ == zero);
+    assert(account_ == beast::zero);
 }
 
 TER

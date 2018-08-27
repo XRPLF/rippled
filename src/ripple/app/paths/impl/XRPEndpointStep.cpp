@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/impl/AmountSpec.h>
 #include <ripple/app/paths/impl/Steps.h>
@@ -68,7 +67,7 @@ public:
     AccountID const& acc () const
     {
         return acc_;
-    };
+    }
 
     boost::optional<std::pair<AccountID,AccountID>>
     directStepAccts () const override
@@ -167,6 +166,8 @@ private:
 class XRPEndpointPaymentStep : public XRPEndpointStep<XRPEndpointPaymentStep>
 {
 public:
+    explicit XRPEndpointPaymentStep() = default;
+
     using XRPEndpointStep<XRPEndpointPaymentStep>::XRPEndpointStep;
 
     XRPAmount

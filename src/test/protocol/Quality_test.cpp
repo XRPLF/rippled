@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/beast/unit_test.h>
 #include <type_traits>
@@ -234,7 +233,7 @@ public:
                 raw (4131113916555555, -16));       // .4131113916555555
             Amounts const result (
                 q.ceil_out (value, limit));
-            BEAST_EXPECT(result.in != zero);
+            BEAST_EXPECT(result.in != beast::zero);
         }
     }
 
@@ -348,7 +347,7 @@ public:
         BEAST_EXPECT(qa < qb);
     }
     void
-    run()
+    run() override
     {
         test_comparisons ();
         test_composition ();

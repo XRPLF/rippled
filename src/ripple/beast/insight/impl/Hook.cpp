@@ -22,9 +22,6 @@
 namespace beast {
 namespace insight {
 
-HookImpl::~HookImpl ()
-{
-}
-
+HookImpl::~HookImpl() = default;
 }
 }

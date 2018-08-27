@@ -31,6 +31,11 @@
 
 namespace ripple {
 
+namespace perf
+{
+    class PerfLog;
+}
+
 /** A group of threads that process tasks.
 */
 class Workers
@@ -39,15 +44,22 @@ public:
     /** Called to perform tasks as needed. */
     struct Callback
     {
+        virtual ~Callback () = default;
+        Callback() = default;
+        Callback(Callback const&) = delete;
+        Callback& operator=(Callback const&) = delete;
+
         /** Perform a task.
 
             The call is made on a thread owned by Workers. It is important
             that you only process one task from inside your callback. Each
             call to addTask will result in exactly one call to processTask.
 
+            @param instance The worker thread instance.
+
             @see Workers::addTask
         */
-        virtual void processTask () = 0;
+        virtual void processTask (int instance) = 0;
     };
 
     /** Create the object.
@@ -58,6 +70,7 @@ public:
         @param threadNames The name given to each created worker thread.
     */
     explicit Workers (Callback& callback,
+                      perf::PerfLog& perfLog,
                       std::string const& threadNames = "Worker",
                       int numberOfThreads =
                          static_cast<int>(std::thread::hardware_concurrency()));
@@ -108,7 +121,10 @@ public:
     //--------------------------------------------------------------------------
 
 private:
-    struct PausedTag { };
+    struct PausedTag
+    {
+        explicit PausedTag() = default;
+    };
 
     /*  A Worker executes tasks on its provided thread.
 
@@ -123,7 +139,9 @@ private:
         , public beast::LockFreeStack <Worker, PausedTag>::Node
     {
     public:
-        Worker (Workers& workers, std::string const& threadName);
+        Worker (Workers& workers,
+            std::string const& threadName,
+            int const instance);
 
         ~Worker ();
 
@@ -135,6 +153,7 @@ private:
     private:
         Workers& m_workers;
         std::string const threadName_;
+        int const instance_;
 
         std::thread thread_;
         std::mutex mutex_;
@@ -148,6 +167,7 @@ private:
 
 private:
     Callback& m_callback;
+    perf::PerfLog& perfLog_;
     std::string m_threadNames;                   // The name to give each thread
     beast::WaitableEvent m_allPaused;            // signaled when all threads paused
     semaphore m_semaphore;                       // each pending task is 1 resource

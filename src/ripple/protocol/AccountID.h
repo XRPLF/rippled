@@ -35,7 +35,11 @@ namespace ripple {
 
 namespace detail {
 
-class AccountIDTag { };
+class AccountIDTag
+{
+public:
+    explicit AccountIDTag() = default;
+};
 
 } // detail
 
@@ -116,7 +120,7 @@ inline
 bool
 isXRP(AccountID const& c)
 {
-    return c == zero;
+    return c == beast::zero;
 }
 
 // DEPRECATED
@@ -183,6 +187,7 @@ namespace std {
 template <>
 struct hash <ripple::AccountID> : ripple::AccountID::hasher
 {
+    explicit hash() = default;
 };
 
 } // std

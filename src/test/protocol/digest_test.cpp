@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/beast/xor_shift_engine.h>
@@ -149,7 +148,7 @@ public:
         pass ();
     }
 
-    void run ()
+    void run () override
     {
         testSHA512 ();
         testSHA256 ();
@@ -157,6 +156,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(digest,ripple_data,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(digest,ripple_data,ripple,20);
 
 } // ripple

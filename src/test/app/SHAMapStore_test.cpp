@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/core/ConfigSections.h>
@@ -624,7 +623,7 @@ public:
         lastRotated = ledgerSeq - 1;
     }
 
-    void run()
+    void run() override
     {
         testClear();
         testAutomatic();

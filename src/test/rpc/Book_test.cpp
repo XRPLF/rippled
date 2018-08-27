@@ -15,7 +15,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Indexes.h>
 #include <test/jtx/WSClient.h>
@@ -1014,6 +1013,7 @@ public:
         BEAST_EXPECT(jrOffer[jss::owner_funds] == "100");
         BEAST_EXPECT(jrOffer[jss::quality] == "400000000");
 
+        using namespace std::chrono_literals;
         BEAST_EXPECT(wsc->findMsg(5s,
             [&](auto const& jv)
             {
@@ -1095,7 +1095,7 @@ public:
             return false;
         // Make sure no other message is waiting
         return wsc->getMsg(timeout) == boost::none;
-    };
+    }
 
     void
     testCrossingSingleBookOffer()
@@ -1157,6 +1157,7 @@ public:
         env(offer(charlie, USD(1000), XRP(1000)));
         env.close();
         env.require(offers(alice, 0), offers(bob, 0), offers(charlie, 0));
+        using namespace std::chrono_literals;
         BEAST_EXPECT(offerOnlyOnceInStream(wsc, 1s, XRP(1000), USD(1000)));
 
         // RPC unsubscribe
@@ -1239,6 +1240,7 @@ public:
         // Charlies places an on offer for EUR -> USD that should auto-bridge
         env(offer(charlie, USD(1), EUR(1)));
         env.close();
+        using namespace std::chrono_literals;
         BEAST_EXPECT(offerOnlyOnceInStream(wsc, 1s, EUR(1), USD(1)));
 
         // RPC unsubscribe
@@ -1648,7 +1650,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Book,app,ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(Book,app,ripple,1);
 
 } // test
 } // ripple

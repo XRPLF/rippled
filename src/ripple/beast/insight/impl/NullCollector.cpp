@@ -26,6 +26,9 @@ namespace detail {
 
 class NullHookImpl : public HookImpl
 {
+public:
+    explicit NullHookImpl() = default;
+
 private:
     NullHookImpl& operator= (NullHookImpl const&);
 };
@@ -35,7 +38,9 @@ private:
 class NullCounterImpl : public CounterImpl
 {
 public:
-    void increment (value_type)
+    explicit NullCounterImpl() = default;
+
+    void increment (value_type) override
     {
     }
 
@@ -48,7 +53,9 @@ private:
 class NullEventImpl : public EventImpl
 {
 public:
-    void notify (value_type const&)
+    explicit NullEventImpl() = default;
+
+    void notify (value_type const&) override
     {
     }
 
@@ -61,11 +68,13 @@ private:
 class NullGaugeImpl : public GaugeImpl
 {
 public:
-    void set (value_type)
+    explicit NullGaugeImpl() = default;
+
+    void set (value_type) override
     {
     }
 
-    void increment (difference_type)
+    void increment (difference_type) override
     {
     }
 
@@ -78,7 +87,9 @@ private:
 class NullMeterImpl : public MeterImpl
 {
 public:
-    void increment (value_type)
+    explicit NullMeterImpl() = default;
+
+    void increment (value_type) override
     {
     }
 
@@ -92,35 +103,31 @@ class NullCollectorImp : public NullCollector
 {
 private:
 public:
-    NullCollectorImp ()
-    {
-    }
+    NullCollectorImp() = default;
 
-    ~NullCollectorImp ()
-    {
-    }
+    ~NullCollectorImp() = default;
 
-    Hook make_hook (HookImpl::HandlerType const&)
+    Hook make_hook (HookImpl::HandlerType const&) override
     {
         return Hook (std::make_shared <detail::NullHookImpl> ());
     }
 
-    Counter make_counter (std::string const&)
+    Counter make_counter (std::string const&) override
     {
         return Counter (std::make_shared <detail::NullCounterImpl> ());
     }
 
-    Event make_event (std::string const&)
+    Event make_event (std::string const&) override
     {
         return Event (std::make_shared <detail::NullEventImpl> ());
     }
 
-    Gauge make_gauge (std::string const&)
+    Gauge make_gauge (std::string const&) override
     {
         return Gauge (std::make_shared <detail::NullGaugeImpl> ());
     }
 
-    Meter make_meter (std::string const&)
+    Meter make_meter (std::string const&) override
     {
         return Meter (std::make_shared <detail::NullMeterImpl> ());
     }

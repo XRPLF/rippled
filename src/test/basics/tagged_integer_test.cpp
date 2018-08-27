@@ -18,7 +18,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/tagged_integer.h>
 #include <ripple/beast/unit_test.h>
 #include <type_traits>
@@ -104,7 +103,7 @@ private:
 
 
 public:
-    void run ()
+    void run () override
     {
         using TagInt = tagged_integer<std::int32_t, Tag1>;
 

@@ -20,9 +20,10 @@
 #ifndef RIPPLE_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
 #define RIPPLE_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
 
-#include <ripple/protocol/STTx.h>      // STTx::maxMultiSigners
-#include <ripple/protocol/UintTypes.h> // AccountID
-#include <ripple/protocol/TER.h>       // temMALFORMED
+#include <ripple/app/tx/impl/Transactor.h>    // NotTEC
+#include <ripple/protocol/STTx.h>             // STTx::maxMultiSigners
+#include <ripple/protocol/UintTypes.h>        // AccountID
+#include <ripple/protocol/TER.h>              // temMALFORMED
 #include <ripple/beast/utility/Journal.h>     // beast::Journal
 
 namespace ripple {
@@ -34,6 +35,8 @@ class STObject;
 class SignerEntries
 {
 public:
+    explicit SignerEntries() = default;
+
     struct SignerEntry
     {
         AccountID account;
@@ -58,7 +61,7 @@ public:
 
     // Deserialize a SignerEntries array from the network or from the ledger.
     static
-    std::pair<std::vector<SignerEntry>, TER>
+    std::pair<std::vector<SignerEntry>, NotTEC>
     deserialize (
         STObject const& obj,
         beast::Journal journal,

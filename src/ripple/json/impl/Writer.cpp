@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/json/Output.h>
 #include <ripple/json/Writer.h>
 #include <stack>
@@ -93,13 +92,13 @@ public:
         stack_.top().type = ct;
     }
 
-    void output (beast::string_view const& bytes)
+    void output (boost::beast::string_view const& bytes)
     {
         markStarted ();
         output_ (bytes);
     }
 
-    void stringOutput (beast::string_view const& bytes)
+    void stringOutput (boost::beast::string_view const& bytes)
     {
         markStarted ();
         std::size_t position = 0, writtenUntil = 0;
@@ -189,6 +188,8 @@ private:
     // JSON collections are either arrrays, or objects.
     struct Collection
     {
+        explicit Collection() = default;
+
         /** What type of collection are we in? */
         Writer::CollectionType type;
 

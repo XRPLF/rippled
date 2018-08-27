@@ -20,7 +20,7 @@
 #ifndef BEAST_CHRONO_BASIC_SECONDS_CLOCK_H_INCLUDED
 #define BEAST_CHRONO_BASIC_SECONDS_CLOCK_H_INCLUDED
 
-#include <ripple/beast/clock/chrono_util.h>
+#include <ripple/basics/date.h>
 
 #include <algorithm>
 #include <chrono>
@@ -37,6 +37,10 @@ class seconds_clock_worker
 {
 public:
     virtual void sample () = 0;
+    virtual ~seconds_clock_worker() = default;
+    seconds_clock_worker() = default;
+    seconds_clock_worker(seconds_clock_worker const&) = delete;
+    seconds_clock_worker& operator=(seconds_clock_worker const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -108,7 +112,7 @@ public:
 
             using namespace std::chrono;
             clock_type::time_point const when (
-                floor <seconds> (
+                date::floor <seconds> (
                     clock_type::now().time_since_epoch()) +
                         seconds (1));
 
@@ -155,6 +159,8 @@ template <class Clock>
 class basic_seconds_clock
 {
 public:
+    explicit basic_seconds_clock() = default;
+
     using rep = typename Clock::rep;
     using period = typename Clock::period;
     using duration = typename Clock::duration;
@@ -198,7 +204,7 @@ public:
                 return m_now;
             }
 
-            void sample()
+            void sample() override
             {
                 std::lock_guard<std::mutex> lock (mutex_);
                 m_now = Clock::now();

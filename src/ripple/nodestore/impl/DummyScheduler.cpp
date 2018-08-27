@@ -17,19 +17,10 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/nodestore/DummyScheduler.h>
 
 namespace ripple {
 namespace NodeStore {
-
-DummyScheduler::DummyScheduler ()
-{
-}
-
-DummyScheduler::~DummyScheduler ()
-{
-}
 
 void
 DummyScheduler::scheduleTask (Task& task)

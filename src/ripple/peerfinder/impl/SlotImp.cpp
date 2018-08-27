@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/peerfinder/impl/SlotImp.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/impl/Tuning.h>
@@ -90,9 +89,7 @@ SlotImp::activate (clock_type::time_point const& now)
 
 //------------------------------------------------------------------------------
 
-Slot::~Slot ()
-{
-}
+Slot::~Slot() = default;
 
 //------------------------------------------------------------------------------
 

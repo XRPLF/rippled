@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/shamap/SHAMap.h>
 #include <test/shamap/common.h>
 #include <ripple/basics/Blob.h>
@@ -118,7 +117,7 @@ public:
         return vuc;
     }
 
-    void run ()
+    void run () override
     {
         run (true,  SHAMap::version{1});
         run (false, SHAMap::version{1});
@@ -251,7 +250,7 @@ public:
             if (! backed)
                 map.setUnbacked ();
 
-            BEAST_EXPECT(map.getHash() == zero);
+            BEAST_EXPECT(map.getHash() == beast::zero);
             for (int k = 0; k < keys.size(); ++k)
             {
                 SHAMapItem item (keys[k], IntToVUC (k));
@@ -283,7 +282,7 @@ public:
                 BEAST_EXPECT(map.delItem (keys[k]));
                 map.invariants();
             }
-            BEAST_EXPECT(map.getHash() == zero);
+            BEAST_EXPECT(map.getHash() == beast::zero);
         }
 
         if (backed)

@@ -19,14 +19,14 @@
 #ifndef RIPPLE_TEST_TRUSTED_PUBLISHER_SERVER_H_INCLUDED
 #define RIPPLE_TEST_TRUSTED_PUBLISHER_SERVER_H_INCLUDED
 
-#include <beast/core/detail/base64.hpp>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Sign.h>
+#include <ripple/basics/base64.h>
 #include <ripple/basics/strHex.h>
+#include <test/jtx/envconfig.h>
 #include <boost/asio.hpp>
-#include <beast/core/detail/base64.hpp>
-#include <beast/http.hpp>
+#include <boost/beast/http.hpp>
 
 namespace ripple {
 namespace test {
@@ -37,8 +37,8 @@ class TrustedPublisherServer
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;
 
-    using req_type = beast::http::request<beast::http::string_body>;
-    using resp_type = beast::http::response<beast::http::string_body>;
+    using req_type = boost::beast::http::request<boost::beast::http::string_body>;
+    using resp_type = boost::beast::http::response<boost::beast::http::string_body>;
     using error_code = boost::system::error_code;
 
     socket_type sock_;
@@ -56,7 +56,6 @@ public:
     };
 
     TrustedPublisherServer(
-        endpoint_type const& ep,
         boost::asio::io_service& ios,
         std::pair<PublicKey, SecretKey> keys,
         std::string const& manifest,
@@ -66,6 +65,9 @@ public:
         std::vector<Validator> const& validators)
         : sock_(ios), acceptor_(ios)
     {
+        endpoint_type const& ep {
+            beast::IP::Address::from_string (ripple::test::getEnvLocalhostAddr()),
+            0}; // 0 means let OS pick the port based on what's available
         std::string data = "{\"sequence\":" + std::to_string(sequence) +
             ",\"expiration\":" +
             std::to_string(expiration.time_since_epoch().count()) +
@@ -78,7 +80,7 @@ public:
         }
         data.pop_back();
         data += "]}";
-        std::string blob = beast::detail::base64_encode(data);
+        std::string blob = base64_encode(data);
 
         list_ = "{\"blob\":\"" + blob + "\"";
 
@@ -155,35 +157,35 @@ private:
     do_peer(int id, socket_type&& sock0)
     {
         socket_type sock(std::move(sock0));
-        beast::multi_buffer sb;
+        boost::beast::multi_buffer sb;
         error_code ec;
         for (;;)
         {
             req_type req;
-            beast::http::read(sock, sb, req, ec);
+            boost::beast::http::read(sock, sb, req, ec);
             if (ec)
                 break;
             auto path = req.target().to_string();
             if (path != "/validators")
             {
                 resp_type res;
-                res.result(beast::http::status::not_found);
-                res.version = req.version;
+                res.result(boost::beast::http::status::not_found);
+                res.version(req.version());
                 res.insert("Server", "TrustedPublisherServer");
                 res.insert("Content-Type", "text/html");
-                res.body = "The file '" + path + "' was not found";
+                res.body() = "The file '" + path + "' was not found";
                 res.prepare_payload();
                 write(sock, res, ec);
                 if (ec)
                     break;
             }
             resp_type res;
-            res.result(beast::http::status::ok);
-            res.version = req.version;
+            res.result(boost::beast::http::status::ok);
+            res.version(req.version());
             res.insert("Server", "TrustedPublisherServer");
             res.insert("Content-Type", "application/json");
 
-            res.body = list_;
+            res.body() = list_;
             try
             {
                 res.prepare_payload();
@@ -191,11 +193,11 @@ private:
             catch (std::exception const& e)
             {
                 res = {};
-                res.result(beast::http::status::internal_server_error);
-                res.version = req.version;
+                res.result(boost::beast::http::status::internal_server_error);
+                res.version(req.version());
                 res.insert("Server", "TrustedPublisherServer");
                 res.insert("Content-Type", "text/html");
-                res.body = std::string{"An internal error occurred"} + e.what();
+                res.body() = std::string{"An internal error occurred"} + e.what();
                 res.prepare_payload();
             }
             write(sock, res, ec);

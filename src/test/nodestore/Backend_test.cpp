@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/unity/rocksdb.h>
 #include <test/nodestore/TestBase.h>
 #include <ripple/nodestore/DummyScheduler.h>
@@ -59,6 +58,7 @@ public:
             // Open the backend
             std::unique_ptr <Backend> backend =
                 Manager::instance().make_Backend (params, scheduler, j);
+            backend->open();
 
             // Write the batch
             storeBatch (*backend, batch);
@@ -86,6 +86,7 @@ public:
             // Re-open the backend
             std::unique_ptr <Backend> backend = Manager::instance().make_Backend (
                 params, scheduler, j);
+            backend->open();
 
             // Read it back in
             Batch copy;
@@ -99,7 +100,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void run ()
+    void run () override
     {
         std::uint64_t const seedValue = 50;
 

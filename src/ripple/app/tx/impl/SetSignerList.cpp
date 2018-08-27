@@ -17,17 +17,18 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
+
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/STArray.h>
-#include <ripple/protocol/STTx.h>
-#include <ripple/protocol/Indexes.h>
 #include <ripple/basics/Log.h>
-#include <cstdint>
+#include <ripple/ledger/ApplyView.h>
+#include <ripple/protocol/Feature.h>
+#include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/STArray.h>
+#include <ripple/protocol/STObject.h>
+#include <ripple/protocol/STTx.h>
 #include <algorithm>
+#include <cstdint>
 
 namespace ripple {
 
@@ -36,7 +37,7 @@ namespace ripple {
 // setting the sfSignerListID to zero in all cases.
 static std::uint32_t const defaultSignerListID_ = 0;
 
-std::tuple<TER, std::uint32_t,
+std::tuple<NotTEC, std::uint32_t,
     std::vector<SignerEntries::SignerEntry>,
         SetSignerList::Operation>
 SetSignerList::determineOperation(STTx const& tx,
@@ -70,7 +71,7 @@ SetSignerList::determineOperation(STTx const& tx,
     return std::make_tuple(tesSUCCESS, quorum, sign, op);
 }
 
-TER
+NotTEC
 SetSignerList::preflight (PreflightContext const& ctx)
 {
     if (! ctx.rules.enabled(featureMultiSign))
@@ -96,7 +97,7 @@ SetSignerList::preflight (PreflightContext const& ctx)
     {
         // Validate our settings.
         auto const account = ctx.tx.getAccountID(sfAccount);
-        TER const ter =
+        NotTEC const ter =
             validateQuorumAndSignerEntries(std::get<1>(result),
                 std::get<2>(result), account, ctx.j);
         if (ter != tesSUCCESS)
@@ -142,7 +143,7 @@ SetSignerList::preCompute()
     return Transactor::preCompute();
 }
 
-TER
+NotTEC
 SetSignerList::validateQuorumAndSignerEntries (
     std::uint32_t quorum,
         std::vector<SignerEntries::SignerEntry> const& signers,
@@ -288,17 +289,19 @@ SetSignerList::removeSignersFromLedger (Keylet const& accountKeylet,
     // Remove the node from the account directory.
     auto const hint = (*signers)[sfOwnerNode];
 
-    auto viewJ = ctx_.app.journal ("View");
-    TER const result  = dirDelete(ctx_.view(), false, hint,
-        ownerDirKeylet, signerListKeylet.key, false, (hint == 0), viewJ);
+    if (! ctx_.view().dirRemove(
+            ownerDirKeylet, hint, signerListKeylet.key, false))
+    {
+        return tefBAD_LEDGER;
+    }
 
-    if (result == tesSUCCESS)
-        adjustOwnerCount(view(),
-            view().peek(accountKeylet), removeFromOwnerCount, viewJ);
+    auto viewJ = ctx_.app.journal("View");
+    adjustOwnerCount(
+        view(), view().peek(accountKeylet), removeFromOwnerCount, viewJ);
 
     ctx_.view().erase (signers);
 
-    return result;
+    return tesSUCCESS;
 }
 
 void

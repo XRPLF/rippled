@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/ErrorCodes.h>          // RPC::containsError
@@ -172,7 +171,7 @@ static TestJSONTxt const testArray[] =
 class InnerObjectFormatsParsedJSON_test : public beast::unit_test::suite
 {
 public:
-    void run()
+    void run() override
     {
         using namespace InnerObjectFormatsUnitTestDetail;
 

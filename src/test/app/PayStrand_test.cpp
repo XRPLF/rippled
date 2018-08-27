@@ -15,7 +15,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/paths/impl/Steps.h>
@@ -364,7 +363,7 @@ struct ExistingElementPool
         ExistingElementPool& p_;
         ResetState state_;
 
-        StateGuard(ExistingElementPool& p) : p_{p}, state_{p.getResetState()}
+        explicit StateGuard(ExistingElementPool& p) : p_{p}, state_{p.getResetState()}
         {
         }
         ~StateGuard()
@@ -853,7 +852,7 @@ struct PayStrandAllPairs_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(PayStrandAllPairs, app, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PayStrandAllPairs, app, ripple, 12);
 
 struct PayStrand_test : public beast::unit_test::suite
 {
@@ -1376,7 +1375,7 @@ struct PayStrand_test : public beast::unit_test::suite
             env(offer(bob, XRP(100), USD(100)), txflags(tfPassive));
             env(offer(bob, USD(100), XRP(100)), txflags(tfPassive));
 
-            auto const expectedResult = [&] {
+            auto const expectedResult = [&] () -> TER {
                 if (features[featureFlow] && !features[fix1373])
                     return tesSUCCESS;
                 return temBAD_PATH_LOOP;

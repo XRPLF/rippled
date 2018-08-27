@@ -17,20 +17,23 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/CancelTicket.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/TxFlags.h>
 #include <ripple/ledger/View.h>
 
 namespace ripple {
 
-TER
+NotTEC
 CancelTicket::preflight (PreflightContext const& ctx)
 {
     if (! ctx.rules.enabled(featureTickets))
         return temDISABLED;
+
+    if (ctx.tx.getFlags() & tfUniversalMask)
+        return temINVALID_FLAG;
 
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))
@@ -77,15 +80,18 @@ CancelTicket::doApply ()
 
     std::uint64_t const hint (sleTicket->getFieldU64 (sfOwnerNode));
 
-    auto viewJ = ctx_.app.journal ("View");
-    TER const result = dirDelete (ctx_.view (), false, hint,
-        keylet::ownerDir (ticket_owner), ticketId, false, (hint == 0), viewJ);
+    if (! ctx_.view().dirRemove(
+            keylet::ownerDir(ticket_owner), hint, ticketId, false))
+    {
+        return tefBAD_LEDGER;
+    }
 
+    auto viewJ = ctx_.app.journal ("View");
     adjustOwnerCount(view(), view().peek(
         keylet::account(ticket_owner)), -1, viewJ);
     ctx_.view ().erase (sleTicket);
 
-    return result;
+    return tesSUCCESS;
 }
 
 }

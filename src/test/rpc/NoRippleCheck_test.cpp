@@ -17,9 +17,11 @@
 */
 //==============================================================================
 
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <test/jtx.h>
+#include <test/jtx/envconfig.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/resource/ResourceManager.h>
@@ -112,7 +114,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
           // parsing as a seed to fail
             Json::Value params;
             params[jss::account] =
-                toBase58 (TokenType::TOKEN_NODE_PRIVATE, alice.sk());
+                toBase58 (TokenType::NodePrivate, alice.sk());
             params[jss::role] = "user";
             params[jss::ledger] = "current";
             auto const result = env.rpc ("json", "noripple_check",
@@ -226,7 +228,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
     }
 
 public:
-    void run ()
+    void run () override
     {
         testBadInput ();
         for (auto user : {true, false})
@@ -252,30 +254,50 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
         env (fset (alice, asfDefaultRipple));
         env.close ();
 
+        auto checkBalance = [&env]()
+        {
+            // this is endpoint drop prevention. Non admin ports will drop
+            // requests if they are coming too fast, so we manipulate the
+            // resource manager here to reset the enpoint balance (for
+            // localhost) if we get too close to the drop limit. It would
+            // be better if we could add this functionality to Env somehow
+            // or otherwise disable endpoint charging for certain test
+            // cases.
+            using namespace ripple::Resource;
+            using namespace std::chrono;
+            using namespace beast::IP;
+            auto c = env.app ().getResourceManager ()
+                .newInboundEndpoint (
+                    Endpoint::from_string (test::getEnvLocalhostAddr()));
+
+            // if we go above the warning threshold, reset
+            if (c.balance() > warningThreshold)
+            {
+                using clock_type = beast::abstract_clock <steady_clock>;
+                c.entry().local_balance =
+                    DecayingSample <decayWindowSeconds, clock_type>
+                        {steady_clock::now()};
+            }
+        };
+
         for (auto i = 0; i < ripple::RPC::Tuning::noRippleCheck.rmax + 5; ++i)
         {
             if (! admin)
-            {
-                // endpoint drop prevention. Non admin ports will drop requests
-                // if they are coming too fast, so we manipulate the resource
-                // manager here to reset the enpoint balance (for localhost) if
-                // we get too close to the drop limit.
-                using namespace ripple::Resource;
-                using namespace std::chrono;
-                using namespace beast::IP;
-                auto c = env.app().getResourceManager()
-                    .newInboundEndpoint (Endpoint::from_string ("127.0.0.1"));
-                if (dropThreshold - c.balance() <= 20)
-                {
-                    using clock_type = beast::abstract_clock <steady_clock>;
-                    c.entry().local_balance =
-                        DecayingSample <decayWindowSeconds, clock_type>
-                            {steady_clock::now()};
-                }
-            }
+                checkBalance();
+
+            auto& txq = env.app().getTxQ();
             auto const gw = Account {"gw" + std::to_string(i)};
-            env.fund (XRP (1000), gw);
-            env (trust (alice, gw["USD"](10)));
+            env.memoize(gw);
+            env (pay (env.master, gw, XRP(1000)),
+                seq (autofill),
+                fee (txq.getMetrics(*env.current())->expFeeLevel + 1),
+                sig (autofill));
+            env (fset (gw, asfDefaultRipple),
+                seq (autofill),
+                fee (txq.getMetrics(*env.current())->expFeeLevel + 1),
+                sig (autofill));
+            env (trust (alice, gw["USD"](10)),
+                fee (txq.getMetrics(*env.current())->expFeeLevel + 1));
             env.close();
         }
 
@@ -315,7 +337,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
     }
 
 public:
-    void run ()
+    void run () override
     {
         for (auto admin : {true, false})
             testLimits (admin);
@@ -328,7 +350,7 @@ BEAST_DEFINE_TESTSUITE(NoRippleCheck, app, ripple);
 // offer/account setup, so making them manual -- the additional coverage provided
 // by them is minimal
 
-BEAST_DEFINE_TESTSUITE_MANUAL(NoRippleCheckLimits, app, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(NoRippleCheckLimits, app, ripple, 1);
 
 } // ripple
 

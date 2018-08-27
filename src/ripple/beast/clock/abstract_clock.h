@@ -81,6 +81,8 @@ template <class Facade, class Clock>
 struct abstract_clock_wrapper
     : public abstract_clock<Facade>
 {
+    explicit abstract_clock_wrapper() = default;
+
     using typename abstract_clock<Facade>::duration;
     using typename abstract_clock<Facade>::time_point;
 

@@ -66,7 +66,8 @@ private:
     // Severity level / threshold of a Journal message.
     using Severity = severities::Severity;
 
-    Sink& m_sink;
+    // Invariant: m_sink always points to a valid Sink
+    Sink* m_sink;
 
 public:
     //--------------------------------------------------------------------------
@@ -259,30 +260,19 @@ static_assert(std::is_nothrow_destructible<Stream>::value == true, "");
 
     /** Create a journal that writes to the specified sink. */
     explicit Journal (Sink& sink)
-    : m_sink (sink)
+    : m_sink (&sink)
     { }
-
-    /** Create a journal from another journal. */
-    Journal (Journal const& other)
-    : Journal (other.m_sink)
-    { }
-
-    // Disallowed.
-    Journal& operator= (Journal const& other) = delete;
-
-    /** Destroy the journal. */
-    ~Journal () = default;
 
     /** Returns the Sink associated with this Journal. */
     Sink& sink() const
     {
-        return m_sink;
+        return *m_sink;
     }
 
     /** Returns a stream for this sink, with the specified severity level. */
     Stream stream (Severity level) const
     {
-        return Stream (m_sink, level);
+        return Stream (*m_sink, level);
     }
 
     /** Returns `true` if any message would be logged at this severity level.
@@ -291,39 +281,39 @@ static_assert(std::is_nothrow_destructible<Stream>::value == true, "");
     */
     bool active (Severity level) const
     {
-        return m_sink.active (level);
+        return m_sink->active (level);
     }
 
     /** Severity stream access functions. */
     /** @{ */
     Stream trace() const
     {
-        return { m_sink, severities::kTrace };
+        return { *m_sink, severities::kTrace };
     }
 
     Stream debug() const
     {
-        return { m_sink, severities::kDebug };
+        return { *m_sink, severities::kDebug };
     }
 
     Stream info() const
     {
-        return { m_sink, severities::kInfo };
+        return { *m_sink, severities::kInfo };
     }
 
     Stream warn() const
     {
-        return { m_sink, severities::kWarning };
+        return { *m_sink, severities::kWarning };
     }
 
     Stream error() const
     {
-        return { m_sink, severities::kError };
+        return { *m_sink, severities::kError };
     }
 
     Stream fatal() const
     {
-        return { m_sink, severities::kFatal };
+        return { *m_sink, severities::kFatal };
     }
     /** @} */
 };
@@ -332,8 +322,8 @@ static_assert(std::is_nothrow_destructible<Stream>::value == true, "");
 static_assert(std::is_default_constructible<Journal>::value == true, "");
 static_assert(std::is_copy_constructible<Journal>::value == true, "");
 static_assert(std::is_move_constructible<Journal>::value == true, "");
-static_assert(std::is_copy_assignable<Journal>::value == false, "");
-static_assert(std::is_move_assignable<Journal>::value == false, "");
+static_assert(std::is_copy_assignable<Journal>::value == true, "");
+static_assert(std::is_move_assignable<Journal>::value == true, "");
 static_assert(std::is_nothrow_destructible<Journal>::value == true, "");
 #endif
 

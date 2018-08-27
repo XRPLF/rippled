@@ -77,6 +77,8 @@ struct Key
 
     struct key_equal
     {
+        explicit key_equal() = default;
+
         bool operator() (Key const& lhs, Key const& rhs) const
         {
             if (lhs.kind != rhs.kind)

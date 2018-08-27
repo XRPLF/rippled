@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/impl/SNTPClock.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/random.h>
@@ -32,8 +31,6 @@
 #include <thread>
 
 namespace ripple {
-
-// #define SNTP_DEBUG
 
 static uint8_t SNTPQueryData[48] =
 { 0x1B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -83,7 +80,7 @@ private:
         sys_seconds sent;
         std::uint32_t nonce;
 
-        Query (sys_seconds j = sys_seconds::max())
+        explicit Query (sys_seconds j = sys_seconds::max())
             : replied (false)
             , sent (j)
         {
@@ -124,7 +121,7 @@ public:
     {
     }
 
-    ~SNTPClientImp ()
+    ~SNTPClientImp () override
     {
         if (thread_.joinable())
         {

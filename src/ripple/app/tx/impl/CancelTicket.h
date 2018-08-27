@@ -30,13 +30,13 @@ class CancelTicket
     : public Transactor
 {
 public:
-    CancelTicket (ApplyContext& ctx)
+    explicit CancelTicket (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }
 
     static
-    TER
+    NotTEC
     preflight (PreflightContext const& ctx);
 
     TER doApply () override;

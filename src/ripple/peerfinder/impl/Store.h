@@ -36,6 +36,8 @@ public:
     // save the bootstrap cache
     struct Entry
     {
+        explicit Entry() = default;
+
         beast::IP::Endpoint endpoint;
         int valence;
     };

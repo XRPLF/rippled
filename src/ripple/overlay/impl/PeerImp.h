@@ -22,8 +22,8 @@
 
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/basics/Log.h>
-#include <ripple/beast/core/ByteOrder.h>
 #include <ripple/beast/utility/WrappedSink.h>
+#include <ripple/basics/RangeSet.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/protocol/Protocol.h>
@@ -31,6 +31,7 @@
 #include <ripple/protocol/STValidation.h>
 #include <ripple/resource/Fees.h>
 
+#include <boost/endian/conversion.hpp>
 #include <cstdint>
 #include <deque>
 #include <queue>
@@ -125,6 +126,7 @@ private:
     //
     LedgerIndex minLedger_ = 0;
     LedgerIndex maxLedger_ = 0;
+    RangeSet<std::uint32_t> shards_;
     uint256 closedLedgerHash_;
     uint256 previousLedgerHash_;
     std::deque<uint256> recentLedgers_;
@@ -141,11 +143,11 @@ private:
     Resource::Consumer usage_;
     Resource::Charge fee_;
     PeerFinder::Slot::ptr slot_;
-    beast::multi_buffer read_buffer_;
+    boost::beast::multi_buffer read_buffer_;
     http_request_type request_;
     http_response_type response_;
-    beast::http::fields const& headers_;
-    beast::multi_buffer write_buffer_;
+    boost::beast::http::fields const& headers_;
+    boost::beast::multi_buffer write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;
     int large_sendq_ = 0;
@@ -295,6 +297,12 @@ public:
 
     void
     ledgerRange (std::uint32_t& minSeq, std::uint32_t& maxSeq) const override;
+
+    bool
+    hasShard (std::uint32_t shardIndex) const override;
+
+    std::string
+    getShards () const override;
 
     bool
     hasTxSet (uint256 const& hash) const override;
@@ -506,16 +514,24 @@ PeerImp::sendEndpoints (FwdIt first, FwdIt last)
     for (;first != last; ++first)
     {
         auto const& ep = *first;
+        // eventually remove endpoints and just keep endpoints_v2
+        // (once we are sure the entire network understands endpoints_v2)
         protocol::TMEndpoint& tme (*tm.add_endpoints());
         if (ep.address.is_v4())
             tme.mutable_ipv4()->set_ipv4(
-                beast::toNetworkByteOrder (ep.address.to_v4().value));
+                boost::endian::native_to_big(
+                    static_cast<std::uint32_t>(ep.address.to_v4().to_ulong())));
         else
             tme.mutable_ipv4()->set_ipv4(0);
         tme.mutable_ipv4()->set_ipv4port (ep.address.port());
         tme.set_hops (ep.hops);
+
+        // add v2 endpoints (strings)
+        auto& tme2 (*tm.add_endpoints_v2());
+        tme2.set_endpoint(ep.address.to_string());
+        tme2.set_hops (ep.hops);
     }
-    tm.set_version (1);
+    tm.set_version (2);
 
     send (std::make_shared <Message> (tm, protocol::mtENDPOINTS));
 }

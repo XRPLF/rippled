@@ -16,8 +16,8 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <BeastConfig.h>
 #include <test/csf/ledgers.h>
+#include <algorithm>
 
 #include <sstream>
 
@@ -34,6 +34,53 @@ Ledger::getJson() const
     res["id"] = static_cast<ID::value_type>(id());
     res["seq"] = static_cast<Seq::value_type>(seq());
     return res;
+}
+
+bool
+Ledger::isAncestor(Ledger const& ancestor) const
+{
+    if (ancestor.seq() < seq())
+        return operator[](ancestor.seq()) == ancestor.id();
+    return false;
+}
+
+Ledger::ID
+Ledger::operator[](Seq s) const
+{
+    if(s > seq())
+        return {};
+    if(s== seq())
+        return id();
+    return instance_->ancestors[static_cast<Seq::value_type>(s)];
+
+}
+
+Ledger::Seq
+mismatch(Ledger const& a, Ledger const& b)
+{
+    using Seq = Ledger::Seq;
+
+    // end is 1 past end of range
+    Seq start{0};
+    Seq end = std::min(a.seq() + Seq{1}, b.seq() + Seq{1});
+
+    // Find mismatch in [start,end)
+    // Binary search
+    Seq count = end - start;
+    while(count > Seq{0})
+    {
+        Seq step = count/Seq{2};
+        Seq curr = start + step;
+        if(a[curr] == b[curr])
+        {
+            // go to second half
+            start = ++curr;
+            count -= step + Seq{1};
+        }
+        else
+            count = step;
+    }
+    return start;
 }
 
 LedgerOracle::LedgerOracle()
@@ -54,6 +101,7 @@ LedgerOracle::accept(
     NetClock::duration closeTimeResolution,
     NetClock::time_point const& consensusCloseTime)
 {
+    using namespace std::chrono_literals;
     Ledger::Instance next(*parent.instance_);
     next.txs.insert(txs.begin(), txs.end());
     next.seq = parent.seq() + Ledger::Seq{1};
@@ -67,6 +115,8 @@ LedgerOracle::accept(
 
     next.parentCloseTime = parent.closeTime();
     next.parentID = parent.id();
+    next.ancestors.push_back(parent.id());
+
     auto it = instances_.left.find(next);
     if (it == instances_.left.end())
     {
@@ -88,19 +138,6 @@ LedgerOracle::lookup(Ledger::ID const & id) const
 }
 
 
-bool
-LedgerOracle::isAncestor(Ledger const & ancestor, Ledger const& descendant) const
-{
-    // The ancestor must have an earlier sequence number than the descendent
-    if(ancestor.seq() >= descendant.seq())
-        return false;
-
-    boost::optional<Ledger> current{descendant};
-    while(current && current->seq() > ancestor.seq())
-        current = lookup(current->parentID());
-    return current && (current->id() == ancestor.id());
-}
-
 std::size_t
 LedgerOracle::branches(std::set<Ledger> const & ledgers) const
 {
@@ -121,7 +158,7 @@ LedgerOracle::branches(std::set<Ledger> const & ledgers) const
             bool const idxEarlier = tips[idx].seq() < ledger.seq();
             Ledger const & earlier = idxEarlier ? tips[idx] : ledger;
             Ledger const & later = idxEarlier ? ledger : tips[idx] ;
-            if (isAncestor(earlier, later))
+            if (later.isAncestor(earlier))
             {
                 tips[idx] = later;
                 found = true;

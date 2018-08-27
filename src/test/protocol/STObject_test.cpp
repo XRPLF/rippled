@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/SecretKey.h>
@@ -38,9 +37,7 @@ public:
     bool parseJSONString (std::string const& json, Json::Value& to)
     {
         Json::Reader reader;
-        return reader.parse(json, to) &&
-                bool (to) &&
-                to.isObject();
+        return reader.parse(json, to) && to.isObject();
     }
 
     void testParseJSONArrayWithInvalidChildrenObjects ()
@@ -635,7 +632,7 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         // Instantiate a jtx::Env so debugLog writes are exercised.
         test::jtx::Env env (*this);

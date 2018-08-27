@@ -17,12 +17,10 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/protocol/impl/AccountID.cpp>
 #include <ripple/protocol/impl/Book.cpp>
 #include <ripple/protocol/impl/BuildInfo.cpp>
-#include <ripple/protocol/impl/ByteOrder.cpp>
 #include <ripple/protocol/impl/digest.cpp>
 #include <ripple/protocol/impl/ErrorCodes.cpp>
 #include <ripple/protocol/impl/Feature.cpp>

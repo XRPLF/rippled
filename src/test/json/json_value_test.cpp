@@ -17,12 +17,13 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/type_name.h>
+
+#include <algorithm>
 
 namespace ripple {
 
@@ -249,7 +250,53 @@ struct json_value_test : beast::unit_test::suite
         }
     }
 
-    void run ()
+    void test_nest_limits ()
+    {
+        Json::Reader r;
+        {
+            auto nest = [](std::uint32_t depth)->std::string {
+                    std::string s = "{";
+                    for (std::uint32_t i{1}; i <= depth; ++i)
+                        s += "\"obj\":{";
+                    for (std::uint32_t i{1}; i <= depth; ++i)
+                        s += "}";
+                    s += "}";
+                    return s;
+                };
+
+            {
+                // Within object nest limit
+                auto json{nest(std::min(10u, Json::Reader::nest_limit))};
+                Json::Value j;
+                BEAST_EXPECT(r.parse(json, j));
+            }
+
+            {
+                // Exceed object nest limit
+                auto json{nest(Json::Reader::nest_limit + 1)};
+                Json::Value j;
+                BEAST_EXPECT(!r.parse(json, j));
+            }
+        }
+
+        auto nest = [](std::uint32_t depth)->std::string {
+            std::string s = "{";
+                for (std::uint32_t i{1}; i <= depth; ++i)
+                    s += "\"array\":[{";
+                for (std::uint32_t i{1}; i <= depth; ++i)
+                    s += "]}";
+                s += "}";
+                return s;
+            };
+        {
+            // Exceed array nest limit
+            auto json{nest(Json::Reader::nest_limit + 1)};
+            Json::Value j;
+            BEAST_EXPECT(!r.parse(json, j));
+        }
+    }
+
+    void run () override
     {
         test_bool ();
         test_bad_json ();
@@ -258,6 +305,7 @@ struct json_value_test : beast::unit_test::suite
         test_move ();
         test_comparisons ();
         test_compact ();
+        test_nest_limits ();
     }
 };
 

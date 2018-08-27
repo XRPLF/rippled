@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/beast/unit_test.h>
 #include <array>
@@ -28,7 +27,7 @@ namespace test {
 
 struct Slice_test : beast::unit_test::suite
 {
-    void run()
+    void run() override
     {
         std::uint8_t const data[] =
         {

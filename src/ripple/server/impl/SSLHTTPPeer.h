@@ -179,6 +179,16 @@ SSLHTTPPeer<Handler>::
 on_shutdown(error_code ec)
 {
     this->cancel_timer();
+
+    if (ec == boost::asio::error::operation_aborted)
+        return;
+    if (ec)
+    {
+        JLOG(this->journal_.debug()) <<
+            "on_shutdown: " << ec.message();
+    }
+
+    // Close socket now in case this->destructor is delayed
     stream_.lowest_layer().close(ec);
 }
 

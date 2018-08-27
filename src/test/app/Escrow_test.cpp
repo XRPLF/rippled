@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx.h>
 #include <ripple/app/tx/applySteps.h>
 #include <ripple/ledger/Directory.h>
@@ -75,11 +74,100 @@ struct Escrow_test : public beast::unit_test::suite
         0x81, 0x01, 0x04
     }};
 
+    /** Set the "FinishAfter" time tag on a JTx */
+    struct finish_time
+    {
+    private:
+        NetClock::time_point value_;
+
+    public:
+        explicit
+        finish_time (NetClock::time_point const& value)
+            : value_ (value)
+        {
+        }
+
+        void
+        operator()(jtx::Env&, jtx::JTx& jt) const
+        {
+            jt.jv[sfFinishAfter.jsonName] = value_.time_since_epoch().count();
+        }
+    };
+
+    /** Set the "CancelAfter" time tag on a JTx */
+    struct cancel_time
+    {
+    private:
+        NetClock::time_point value_;
+
+    public:
+        explicit
+        cancel_time (NetClock::time_point const& value)
+            : value_ (value)
+        {
+        }
+
+        void
+        operator()(jtx::Env&, jtx::JTx& jt) const
+        {
+            jt.jv[sfCancelAfter.jsonName] = value_.time_since_epoch().count();
+        }
+    };
+
+    struct condition
+    {
+    private:
+        std::string value_;
+
+    public:
+        explicit
+        condition (Slice condition)
+            : value_ (strHex(condition))
+        {
+        }
+
+        template <size_t N>
+        explicit condition (std::array<std::uint8_t, N> c)
+            : condition(makeSlice(c))
+        {
+        }
+
+        void
+        operator()(jtx::Env&, jtx::JTx& jt) const
+        {
+            jt.jv[sfCondition.jsonName] = value_;
+        }
+    };
+
+    struct fulfillment
+    {
+    private:
+        std::string value_;
+
+    public:
+        explicit
+        fulfillment (Slice condition)
+            : value_ (strHex(condition))
+        {
+        }
+
+        template <size_t N>
+        explicit fulfillment (std::array<std::uint8_t, N> f)
+            : fulfillment(makeSlice(f))
+        {
+        }
+
+        void
+        operator()(jtx::Env&, jtx::JTx& jt) const
+        {
+            jt.jv[sfFulfillment.jsonName] = value_;
+        }
+    };
+
     static
     Json::Value
-    condpay (jtx::Account const& account, jtx::Account const& to,
-        STAmount const& amount, Slice condition,
-            NetClock::time_point const& cancelAfter)
+    escrow (
+        jtx::Account const& account, jtx::Account const& to, STAmount const& amount)
     {
         using namespace jtx;
         Json::Value jv;
@@ -88,68 +176,6 @@ struct Escrow_test : public beast::unit_test::suite
         jv[jss::Account] = account.human();
         jv[jss::Destination] = to.human();
         jv[jss::Amount] = amount.getJson(0);
-        jv["CancelAfter"] =
-            cancelAfter.time_since_epoch().count();
-        jv["Condition"] = strHex(condition);
-        return jv;
-    }
-
-    static
-    Json::Value
-    condpay (jtx::Account const& account, jtx::Account const& to,
-        STAmount const& amount, Slice condition,
-            NetClock::time_point const& cancelAfter,
-                NetClock::time_point const& finishAfter)
-    {
-        auto jv = condpay (account, to, amount, condition, cancelAfter);
-        jv ["FinishAfter"] = finishAfter.time_since_epoch().count();
-        return jv;
-    }
-
-    static
-    Json::Value
-    lockup (jtx::Account const& account, jtx::Account const& to,
-        STAmount const& amount, NetClock::time_point const& expiry)
-    {
-        using namespace jtx;
-        Json::Value jv;
-        jv[jss::TransactionType] = "EscrowCreate";
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv[jss::Destination] = to.human();
-        jv[jss::Amount] = amount.getJson(0);
-        jv["FinishAfter"] =
-            expiry.time_since_epoch().count();
-        return jv;
-    }
-
-    static
-    Json::Value
-    lockup (jtx::Account const& account, jtx::Account const& to,
-        STAmount const& amount, NetClock::time_point const& expiry,
-            NetClock::time_point const& cancel)
-    {
-        Json::Value jv = lockup (account, to, amount, expiry);
-        jv["CancelAfter"] = cancel.time_since_epoch().count();
-        return jv;
-    }
-
-    static
-    Json::Value
-    lockup (jtx::Account const& account, jtx::Account const& to,
-        STAmount const& amount, Slice condition,
-            NetClock::time_point const& expiry)
-    {
-        using namespace jtx;
-        Json::Value jv;
-        jv[jss::TransactionType] = "EscrowCreate";
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv[jss::Destination] = to.human();
-        jv[jss::Amount] = amount.getJson(0);
-        jv["FinishAfter"] =
-            expiry.time_since_epoch().count();
-        jv["Condition"] = strHex(condition);
         return jv;
     }
 
@@ -162,25 +188,8 @@ struct Escrow_test : public beast::unit_test::suite
         jv[jss::TransactionType] = "EscrowFinish";
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human();
-        jv["Owner"] = from.human();
-        jv["OfferSequence"] = seq;
-        return jv;
-    }
-
-    static
-    Json::Value
-    finish (jtx::Account const& account,
-        jtx::Account const& from, std::uint32_t seq,
-            Slice condition, Slice fulfillment)
-    {
-        Json::Value jv;
-        jv[jss::TransactionType] = "EscrowFinish";
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv["Owner"] = from.human();
-        jv["OfferSequence"] = seq;
-        jv["Condition"] = strHex(condition);
-        jv["Fulfillment"] = strHex(fulfillment);
+        jv[sfOwner.jsonName] = from.human();
+        jv[sfOfferSequence.jsonName] = seq;
         return jv;
     }
 
@@ -193,8 +202,8 @@ struct Escrow_test : public beast::unit_test::suite
         jv[jss::TransactionType] = "EscrowCancel";
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human();
-        jv["Owner"] = from.human();
-        jv["OfferSequence"] = seq;
+        jv[sfOwner.jsonName] = from.human();
+        jv[sfOfferSequence.jsonName] = seq;
         return jv;
     }
 
@@ -209,23 +218,146 @@ struct Escrow_test : public beast::unit_test::suite
         { // Escrow not enabled
             Env env(*this, supported_amendments() - featureEscrow);
             env.fund(XRP(5000), "alice", "bob");
-            env(lockup("alice", "bob", XRP(1000), env.now() + 1s), ter(temDISABLED));
-            env(finish("bob", "alice", 1),                         ter(temDISABLED));
-            env(cancel("bob", "alice", 1),                         ter(temDISABLED));
+            env(escrow("alice", "bob", XRP(1000)),
+                finish_time(env.now() + 1s),        ter(temDISABLED));
+            env(finish("bob", "alice", 1),          ter(temDISABLED));
+            env(cancel("bob", "alice", 1),          ter(temDISABLED));
         }
 
         { // Escrow enabled
             Env env(*this);
             env.fund(XRP(5000), "alice", "bob");
-            env(lockup("alice", "bob", XRP(1000), env.now() + 1s));
+            env(escrow("alice", "bob", XRP(1000)), finish_time(env.now() + 1s));
             env.close();
 
-            auto const seq = env.seq("alice");
+            auto const seq1 = env.seq("alice");
 
-            env(condpay("alice", "bob", XRP(1000),
-                makeSlice (cb1), env.now() + 1s), fee(1500));
-            env(finish("bob", "alice", seq,
-                makeSlice(cb1), makeSlice(fb1)), fee(1500));
+            env(escrow("alice", "bob", XRP(1000)), condition (cb1),
+                finish_time(env.now() + 1s), fee(1500));
+            env.close();
+            env(finish("bob", "alice", seq1),
+                condition(cb1), fulfillment(fb1), fee(1500));
+
+            auto const seq2 = env.seq("alice");
+
+            env(escrow("alice", "bob", XRP(1000)), condition(cb2),
+                finish_time(env.now() + 1s), cancel_time(env.now() + 2s), fee(1500));
+            env.close();
+            env(cancel("bob", "alice", seq2), fee(1500));
+        }
+    }
+
+    void
+    testTiming()
+    {
+        using namespace jtx;
+        using namespace std::chrono;
+
+        {
+            testcase("Timing: Finish Only");
+            Env env(*this);
+            env.fund(XRP(5000), "alice", "bob");
+            env.close();
+
+            // We create an escrow that can be finished in the future
+            auto const ts = env.now() + 97s;
+
+            auto const seq = env.seq("alice");
+            env(escrow("alice", "bob", XRP(1000)), finish_time(ts));
+
+            // Advance the ledger, verifying that the finish won't complete
+            // prematurely.
+            for ( ; env.now() < ts; env.close())
+                env(finish("bob", "alice", seq), fee(1500), ter(tecNO_PERMISSION));
+
+            env(finish("bob", "alice", seq), fee(1500));
+        }
+
+        {
+            testcase("Timing: Cancel Only");
+            Env env(*this);
+            env.fund(XRP(5000), "alice", "bob");
+            env.close();
+
+            // We create an escrow that can be cancelled in the future
+            auto const ts = env.now() + 117s;
+
+            auto const seq = env.seq("alice");
+            env(escrow("alice", "bob", XRP(1000)), condition(cb1), cancel_time(ts));
+
+            // Advance the ledger, verifying that the cancel won't complete
+            // prematurely.
+            for ( ; env.now() < ts; env.close())
+                env(cancel("bob", "alice", seq), fee(1500), ter(tecNO_PERMISSION));
+
+            // Verify that a finish won't work anymore.
+            env(finish("bob", "alice", seq), condition(cb1),
+                fulfillment(fb1), fee(1500), ter(tecNO_PERMISSION));
+
+            // Verify that the cancel will succeed
+            env(cancel("bob", "alice", seq), fee(1500));
+        }
+
+        {
+            testcase("Timing: Finish and Cancel -> Finish");
+            Env env(*this);
+            env.fund(XRP(5000), "alice", "bob");
+            env.close();
+
+            // We create an escrow that can be cancelled in the future
+            auto const fts = env.now() + 117s;
+            auto const cts = env.now() + 192s;
+
+            auto const seq = env.seq("alice");
+            env(escrow("alice", "bob", XRP(1000)), finish_time(fts), cancel_time(cts));
+
+            // Advance the ledger, verifying that the finish and cancel won't
+            // complete prematurely.
+            for ( ; env.now() < fts; env.close())
+            {
+                env(finish("bob", "alice", seq), fee(1500), ter(tecNO_PERMISSION));
+                env(cancel("bob", "alice", seq), fee(1500), ter(tecNO_PERMISSION));
+            }
+
+            // Verify that a cancel still won't work
+            env(cancel("bob", "alice", seq), fee(1500), ter(tecNO_PERMISSION));
+
+            // And verify that a finish will
+            env(finish("bob", "alice", seq), fee(1500));
+        }
+
+        {
+            testcase("Timing: Finish and Cancel -> Cancel");
+            Env env(*this);
+            env.fund(XRP(5000), "alice", "bob");
+            env.close();
+
+            // We create an escrow that can be cancelled in the future
+            auto const fts = env.now() + 109s;
+            auto const cts = env.now() + 184s;
+
+            auto const seq = env.seq("alice");
+            env(escrow("alice", "bob", XRP(1000)), finish_time(fts), cancel_time(cts));
+
+            // Advance the ledger, verifying that the finish and cancel won't
+            // complete prematurely.
+            for ( ; env.now() < fts; env.close())
+            {
+                env(finish("bob", "alice", seq), fee(1500), ter(tecNO_PERMISSION));
+                env(cancel("bob", "alice", seq), fee(1500), ter(tecNO_PERMISSION));
+            }
+
+            // Continue advancing, verifying that the cancel won't complete
+            // prematurely. At this point a finish would succeed.
+            for ( ; env.now() < cts; env.close())
+                env(cancel("bob", "alice", seq), fee(1500), ter(tecNO_PERMISSION));
+
+            // Verify that finish will no longer work, since we are past the
+            // cancel activation time.
+            env(finish("bob", "alice", seq), fee(1500), ter(tecNO_PERMISSION));
+
+            // And verify that a cancel will succeed.
+            env(cancel("bob", "alice", seq), fee(1500));
         }
     }
 
@@ -240,17 +372,108 @@ struct Escrow_test : public beast::unit_test::suite
         Env env(*this);
 
         auto const alice = Account("alice");
-        env.fund(XRP(5000), alice, "bob");
+        auto const bob = Account("bob");
 
-        auto const seq = env.seq(alice);
+        env.fund(XRP(5000), alice, bob);
+
+        // Check to make sure that we correctly detect if tags are really
+        // required:
+        env(fset(bob, asfRequireDest));
+        env(escrow(alice, bob, XRP(1000)), finish_time(env.now() + 1s), ter(tecDST_TAG_NEEDED));
+
         // set source and dest tags
-        env(condpay(alice, "bob", XRP(1000),
-                makeSlice (cb1), env.now() + 1s),
-            stag(1), dtag(2));
+        auto const seq = env.seq(alice);
+
+        env(escrow(alice, bob, XRP(1000)), finish_time(env.now() + 1s), stag(1), dtag(2));
+
         auto const sle = env.le(keylet::escrow(alice.id(), seq));
         BEAST_EXPECT(sle);
         BEAST_EXPECT((*sle)[sfSourceTag] == 1);
         BEAST_EXPECT((*sle)[sfDestinationTag] == 2);
+    }
+
+    void
+    testDisallowXRP()
+    {
+        testcase ("Disallow XRP");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        {
+            // Respect the "asfDisallowXRP" account flag:
+            Env env(*this, supported_amendments() - featureDepositAuth);
+
+            env.fund(XRP(5000), "bob", "george");
+            env(fset("george", asfDisallowXRP));
+            env(escrow("bob", "george", XRP(10)), finish_time(env.now() + 1s),
+                ter (tecNO_TARGET));
+        }
+        {
+            // Ignore the "asfDisallowXRP" account flag, which we should
+            // have been doing before.
+            Env env(*this);
+
+            env.fund(XRP(5000), "bob", "george");
+            env(fset("george", asfDisallowXRP));
+            env(escrow("bob", "george", XRP(10)), finish_time(env.now() + 1s));
+        }
+    }
+
+    void
+    test1571()
+    {
+        using namespace jtx;
+        using namespace std::chrono;
+
+        {
+            testcase ("Implied Finish Time (without fix1571)");
+
+            Env env(*this, supported_amendments() - fix1571);
+            env.fund(XRP(5000), "alice", "bob", "carol");
+            env.close();
+
+            // Creating an escrow without a finish time and finishing it
+            // is allowed without fix1571:
+            auto const seq1 = env.seq("alice");
+            env(escrow("alice", "bob", XRP(100)), cancel_time(env.now() + 1s), fee(1500));
+            env.close();
+            env(finish("carol", "alice", seq1), fee(1500));
+            BEAST_EXPECT (env.balance ("bob") == XRP(5100));
+
+            env.close();
+
+            // Creating an escrow without a finish time and a condition is
+            // also allowed without fix1571:
+            auto const seq2 = env.seq("alice");
+            env(escrow("alice", "bob", XRP(100)), cancel_time(env.now() + 1s),
+                condition(cb1), fee(1500));
+            env.close();
+            env(finish("carol", "alice", seq2), condition(cb1),
+                fulfillment(fb1), fee(1500));
+            BEAST_EXPECT (env.balance ("bob") == XRP(5200));
+        }
+
+        {
+            testcase ("Implied Finish Time (with fix1571)");
+
+            Env env(*this);
+            env.fund(XRP(5000), "alice", "bob", "carol");
+            env.close();
+
+            // Creating an escrow with only a cancel time is not allowed:
+            env (escrow("alice", "bob", XRP(100)), cancel_time(env.now() + 90s),
+                fee(1500), ter(temMALFORMED));
+
+            // Creating an escrow with only a cancel time and a condition is allowed:
+            auto const seq = env.seq("alice");
+            env (escrow("alice", "bob", XRP(100)), cancel_time(env.now() + 90s),
+                condition(cb1), fee(1500));
+            env.close();
+            env (finish("carol", "alice", seq), condition(cb1),
+                fulfillment(fb1), fee(1500));
+            BEAST_EXPECT (env.balance ("bob") == XRP(5100));
+        }
     }
 
     void
@@ -265,93 +488,94 @@ struct Escrow_test : public beast::unit_test::suite
         env.fund(XRP(5000), "alice", "bob");
         env.close();
 
-        // Expiration in the past
-        env(condpay("alice", "bob", XRP(1000),
-            makeSlice(cb1), env.now() - 1s),            ter(tecNO_PERMISSION));
+        // Finish time is in the past
+        env(escrow("alice", "bob", XRP(1000)),
+            finish_time(env.now() - 5s), ter(tecNO_PERMISSION));
+
+        // Cancel time is in the past
+        env(escrow("alice", "bob", XRP(1000)), condition(cb1),
+            cancel_time(env.now() - 5s), ter(tecNO_PERMISSION));
 
         // no destination account
-        env(condpay("alice", "carol", XRP(1000),
-            makeSlice(cb1), env.now() + 1s),            ter(tecNO_DST));
+        env(escrow("alice", "carol", XRP(1000)),
+            finish_time(env.now() + 1s), ter(tecNO_DST));
 
         env.fund(XRP(5000), "carol");
-        env(condpay("alice", "carol", XRP(1000),
-            makeSlice(cb1), env.now() + 1s), stag(2));
-        env(condpay("alice", "carol", XRP(1000),
-            makeSlice(cb1), env.now() + 1s), stag(3), dtag(4));
+
+        // Using non-XRP:
+        env (escrow("alice", "carol", Account("alice")["USD"](500)),
+            finish_time(env.now() + 1s), ter(temBAD_AMOUNT));
+
+        // Sending zero or no XRP:
+        env (escrow("alice", "carol", XRP(0)),
+            finish_time(env.now() + 1s), ter(temBAD_AMOUNT));
+        env (escrow("alice", "carol", XRP(-1000)),
+            finish_time(env.now() + 1s), ter(temBAD_AMOUNT));
+
+        // Fail if neither CancelAfter nor FinishAfter are specified:
+        env (escrow("alice", "carol", XRP(1)), ter(temBAD_EXPIRATION));
+
+        // Fail if neither a FinishTime nor a condition are attached:
+        env (escrow("alice", "carol", XRP(1)),
+            cancel_time(env.now() + 1s), ter(temMALFORMED));
+
+        // Fail if FinishAfter has already passed:
+        env (escrow("alice", "carol", XRP(1)),
+            finish_time(env.now() - 1s), ter(tecNO_PERMISSION));
+
+        // If both CancelAfter and FinishAfter are set, then CancelAfter must
+        // be strictly later than FinishAfter.
+        env(escrow("alice", "carol", XRP(1)), condition(cb1),
+            finish_time(env.now() + 10s), cancel_time(env.now() + 10s), ter(temBAD_EXPIRATION));
+
+        env(escrow("alice", "carol", XRP(1)), condition(cb1),
+            finish_time(env.now() + 10s), cancel_time(env.now() + 5s), ter(temBAD_EXPIRATION));
+
+        // Carol now requires the use of a destination tag
         env(fset("carol", asfRequireDest));
 
         // missing destination tag
-        env(condpay("alice", "carol", XRP(1000),
-            makeSlice(cb1), env.now() + 1s),            ter(tecDST_TAG_NEEDED));
-        env(condpay("alice", "carol", XRP(1000),
-            makeSlice(cb1), env.now() + 1s), dtag(1));
+        env(escrow("alice", "carol", XRP(1)),
+            condition(cb1), cancel_time(env.now() + 1s), ter(tecDST_TAG_NEEDED));
 
-        // Using non-XRP:
-        env (lockup("alice", "carol", Account("alice")["USD"](500),
-            env.now() + 1s),                            ter(temBAD_AMOUNT));
+        // Success!
+        env(escrow("alice", "carol", XRP(1)),
+            condition(cb1), cancel_time(env.now() + 1s), dtag(1));
 
-        // Sending zero or no XRP:
-        env (lockup("alice", "carol", XRP(0),
-            env.now() + 1s),                            ter(temBAD_AMOUNT));
-        env (lockup("alice", "carol", XRP(-1000),
-            env.now() + 1s),                            ter(temBAD_AMOUNT));
+        { // Fail if the sender wants to send more than he has:
+            auto const accountReserve = drops(env.current()->fees().reserve);
+            auto const accountIncrement = drops(env.current()->fees().increment);
 
-        // Fail if neither CancelAfter nor FinishAfter are specified:
-        {
-            auto j1 = lockup("alice", "carol", XRP(1), env.now() + 1s);
-            j1.removeMember ("FinishAfter");
-            env (j1, ter(temBAD_EXPIRATION));
+            env.fund (accountReserve + accountIncrement + XRP(50), "daniel");
+            env(escrow("daniel", "bob", XRP(51)),
+                finish_time(env.now() + 1s), ter(tecUNFUNDED));
 
-            auto j2 = condpay("alice", "carol", XRP(1), makeSlice(cb1), env.now() + 1s);
-            j2.removeMember ("CancelAfter");
-            env (j2, ter(temBAD_EXPIRATION));
+            env.fund (accountReserve + accountIncrement + XRP(50), "evan");
+            env(escrow("evan", "bob", XRP(50)),
+                finish_time(env.now() + 1s), ter(tecUNFUNDED));
+
+            env.fund (accountReserve, "frank");
+            env(escrow("frank", "bob", XRP(1)),
+                finish_time(env.now() + 1s), ter(tecINSUFFICIENT_RESERVE));
         }
-
-        // Fail if FinishAfter has already passed:
-        env (lockup("alice", "carol", XRP(1), env.now() - 1s), ter (tecNO_PERMISSION));
-
-        // Both CancelAfter and FinishAfter
-        env(condpay("alice", "carol", XRP(1), makeSlice(cb1),
-            env.now() + 10s, env.now() + 10s), ter (temBAD_EXPIRATION));
-        env(condpay("alice", "carol", XRP(1), makeSlice(cb1),
-            env.now() + 10s, env.now() + 15s), ter (temBAD_EXPIRATION));
-
-        // Fail if the sender wants to send more than he has:
-        auto const accountReserve =
-            drops(env.current()->fees().reserve);
-        auto const accountIncrement =
-            drops(env.current()->fees().increment);
-
-        env.fund (accountReserve + accountIncrement + XRP(50), "daniel");
-        env(lockup("daniel", "bob", XRP(51), env.now() + 1s), ter (tecUNFUNDED));
-
-        env.fund (accountReserve + accountIncrement + XRP(50), "evan");
-        env(lockup("evan", "bob", XRP(50), env.now() + 1s),   ter (tecUNFUNDED));
-
-        env.fund (accountReserve, "frank");
-        env(lockup("frank", "bob", XRP(1), env.now() + 1s),   ter (tecINSUFFICIENT_RESERVE));
-
-        // Respect the "asfDisallowXRP" account flag:
-        env.fund (accountReserve + accountIncrement, "george");
-        env(fset("george", asfDisallowXRP));
-        env(lockup("bob", "george", XRP(10), env.now() + 1s),  ter (tecNO_TARGET));
 
         { // Specify incorrect sequence number
             env.fund (XRP(5000), "hannah");
             auto const seq = env.seq("hannah");
-            env(lockup("hannah", "hannah", XRP(10), env.now() + 1s));
-            env(finish ("hannah", "hannah", seq + 7),         ter (tecNO_TARGET));
+            env(escrow("hannah", "hannah", XRP(10)),
+                finish_time(env.now() + 1s), fee(1500));
+            env.close();
+            env(finish ("hannah", "hannah", seq + 7), fee(1500), ter(tecNO_TARGET));
         }
 
         { // Try to specify a condition for a non-conditional payment
             env.fund (XRP(5000), "ivan");
             auto const seq = env.seq("ivan");
 
-            auto j = lockup("ivan", "ivan", XRP(10), env.now() + 1s);
-            j["CancelAfter"] = j.removeMember ("FinishAfter");
-            env (j);
-            env(finish("ivan", "ivan", seq,
-                makeSlice(cb1), makeSlice(fb1)), fee(1500),   ter (tecCRYPTOCONDITION_ERROR));
+            env(escrow("ivan", "ivan", XRP(10)), finish_time(env.now() + 1s));
+            env.close();
+            env(finish("ivan", "ivan", seq), condition(cb1), fulfillment(fb1),
+                fee(1500), ter(tecCRYPTOCONDITION_ERROR));
         }
     }
 
@@ -363,108 +587,277 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
 
-        { // Unconditional
+        {
+            // Unconditional
             Env env(*this);
             env.fund(XRP(5000), "alice", "bob");
             auto const seq = env.seq("alice");
-            env(lockup("alice", "alice", XRP(1000), env.now() + 1s));
+            env(escrow("alice", "alice", XRP(1000)), finish_time(env.now() + 5s));
             env.require(balance("alice", XRP(4000) - drops(10)));
 
+            // Not enough time has elapsed for a finish and canceling isn't
+            // possible.
             env(cancel("bob", "alice", seq),                ter(tecNO_PERMISSION));
             env(finish("bob", "alice", seq),                ter(tecNO_PERMISSION));
             env.close();
 
+            // Cancel continues to not be possible
             env(cancel("bob", "alice", seq),                ter(tecNO_PERMISSION));
+
+            // Finish should succeed. Verify funds.
             env(finish("bob", "alice", seq));
+            env.require(balance("alice", XRP(5000) - drops(10)));
         }
+        {
+            // Unconditionally pay from Alice to Bob.  Zelda (neither source nor
+            // destination) signs all cancels and finishes.  This shows that
+            // Escrow will make a payment to Bob with no intervention from Bob.
+            Env env(*this);
+            env.fund(XRP(5000), "alice", "bob", "zelda");
+            auto const seq = env.seq("alice");
+            env(escrow("alice", "bob", XRP(1000)), finish_time(env.now() + 5s));
+            env.require(balance("alice", XRP(4000) - drops(10)));
 
-        { // Conditional
+            // Not enough time has elapsed for a finish and canceling isn't
+            // possible.
+            env(cancel("zelda", "alice", seq),               ter(tecNO_PERMISSION));
+            env(finish("zelda", "alice", seq),               ter(tecNO_PERMISSION));
+            env.close();
+
+            // Cancel continues to not be possible
+            env(cancel("zelda", "alice", seq),               ter(tecNO_PERMISSION));
+
+            // Finish should succeed. Verify funds.
+            env(finish("zelda", "alice", seq));
+            env.close();
+
+            env.require(balance("alice", XRP(4000) - drops(10)));
+            env.require(balance("bob", XRP(6000)));
+            env.require(balance("zelda", XRP(5000) - drops(40)));
+        }
+        {
+            // Bob sets DepositAuth so only Bob can finish the escrow.
+            Env env(*this);
+
+            env.fund(XRP(5000), "alice", "bob", "zelda");
+            env(fset ("bob", asfDepositAuth));
+            env.close();
+
+            auto const seq = env.seq("alice");
+            env(escrow("alice", "bob", XRP(1000)), finish_time(env.now() + 5s));
+            env.require(balance("alice", XRP(4000) - drops(10)));
+
+            // Not enough time has elapsed for a finish and canceling isn't
+            // possible.
+            env(cancel("zelda", "alice", seq),               ter(tecNO_PERMISSION));
+            env(cancel("alice", "alice", seq),               ter(tecNO_PERMISSION));
+            env(cancel("bob", "alice", seq),                 ter(tecNO_PERMISSION));
+            env(finish("zelda", "alice", seq),               ter(tecNO_PERMISSION));
+            env(finish("alice", "alice", seq),               ter(tecNO_PERMISSION));
+            env(finish("bob", "alice", seq),                 ter(tecNO_PERMISSION));
+            env.close();
+
+            // Cancel continues to not be possible. Finish will only succeed for
+            // Bob, because of DepositAuth.
+            env(cancel("zelda", "alice", seq),               ter(tecNO_PERMISSION));
+            env(cancel("alice", "alice", seq),               ter(tecNO_PERMISSION));
+            env(cancel("bob", "alice", seq),                 ter(tecNO_PERMISSION));
+            env(finish("zelda", "alice", seq),               ter(tecNO_PERMISSION));
+            env(finish("alice", "alice", seq),               ter(tecNO_PERMISSION));
+            env(finish("bob", "alice", seq));
+            env.close();
+
+            auto const baseFee = env.current()->fees().base;
+            env.require(balance("alice", XRP(4000) - (baseFee * 5)));
+            env.require(balance("bob", XRP(6000) - (baseFee * 5)));
+            env.require(balance("zelda", XRP(5000) - (baseFee * 4)));
+        }
+        {
+            // Bob sets DepositAuth but preauthorizes Zelda, so Zelda can
+            // finish the escrow.
+            Env env(*this);
+
+            env.fund(XRP(5000), "alice", "bob", "zelda");
+            env(fset ("bob", asfDepositAuth));
+            env.close();
+            env(deposit::auth ("bob", "zelda"));
+            env.close();
+
+            auto const seq = env.seq("alice");
+            env(escrow("alice", "bob", XRP(1000)), finish_time(env.now() + 5s));
+            env.require(balance("alice", XRP(4000) - drops(10)));
+            env.close();
+
+            // DepositPreauth allows Finish to succeed for either Zelda or
+            // Bob. But Finish won't succeed for Alice since she is not
+            // preauthorized.
+            env(finish("alice", "alice", seq),               ter(tecNO_PERMISSION));
+            env(finish("zelda", "alice", seq));
+            env.close();
+
+            auto const baseFee = env.current()->fees().base;
+            env.require(balance("alice", XRP(4000) - (baseFee * 2)));
+            env.require(balance("bob", XRP(6000) - (baseFee * 2)));
+            env.require(balance("zelda", XRP(5000) - (baseFee * 1)));
+        }
+        {
+            // Conditional
             Env env(*this);
             env.fund(XRP(5000), "alice", "bob");
             auto const seq = env.seq("alice");
-            env(lockup("alice", "alice", XRP(1000), makeSlice(cb2), env.now() + 1s));
+            env(escrow("alice", "alice", XRP(1000)), condition(cb2), finish_time(env.now() + 5s));
             env.require(balance("alice", XRP(4000) - drops(10)));
 
-            env(cancel("bob", "alice", seq),                ter(tecNO_PERMISSION));
-            env(finish("bob", "alice", seq),                ter(tecNO_PERMISSION));
-            env(finish("bob", "alice", seq,
-                makeSlice(cb2), makeSlice(fb2)), fee(1500), ter(tecNO_PERMISSION));
+            // Not enough time has elapsed for a finish and canceling isn't
+            // possible.
+            env(cancel("alice", "alice", seq),               ter(tecNO_PERMISSION));
+            env(cancel("bob", "alice", seq),                 ter(tecNO_PERMISSION));
+            env(finish("alice", "alice", seq),               ter(tecNO_PERMISSION));
+            env(finish("alice", "alice", seq),
+                condition(cb2), fulfillment(fb2), fee(1500), ter(tecNO_PERMISSION));
+            env(finish("bob", "alice", seq),                 ter(tecNO_PERMISSION));
+            env(finish("bob", "alice", seq),
+                condition(cb2), fulfillment(fb2), fee(1500), ter(tecNO_PERMISSION));
             env.close();
 
-            env(cancel("bob", "alice", seq),                ter(tecNO_PERMISSION));
-            env(finish("bob", "alice", seq),                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),                ter(tecCRYPTOCONDITION_ERROR));
+            // Cancel continues to not be possible. Finish is possible but
+            // requires the fulfillment associated with the escrow.
+            env(cancel("alice", "alice", seq),               ter(tecNO_PERMISSION));
+            env(cancel("bob", "alice", seq),                 ter(tecNO_PERMISSION));
+            env(finish("bob", "alice", seq),                 ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("alice", "alice", seq),               ter(tecCRYPTOCONDITION_ERROR));
             env.close();
 
-            env(finish("bob", "alice", seq,
-                makeSlice(cb2), makeSlice(fb2)), fee(1500));
+            env(finish("bob", "alice", seq),
+                condition(cb2), fulfillment(fb2), fee(1500));
+        }
+        {
+            // Self-escrowed conditional with DepositAuth.
+            Env env(*this);
+
+            env.fund(XRP(5000), "alice", "bob");
+            auto const seq = env.seq("alice");
+            env(escrow("alice", "alice", XRP(1000)), condition(cb3), finish_time(env.now() + 5s));
+            env.require(balance("alice", XRP(4000) - drops(10)));
+            env.close();
+
+            // Finish is now possible but requires the cryptocondition.
+            env(finish("bob", "alice", seq),                ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("alice", "alice", seq),              ter(tecCRYPTOCONDITION_ERROR));
+
+            // Enable deposit authorization. After this only Alice can finish
+            // the escrow.
+            env(fset ("alice", asfDepositAuth));
+            env.close();
+
+            env(finish("alice", "alice", seq), condition(cb2),
+                fulfillment(fb2), fee(1500),                ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq),   condition(cb3),
+                fulfillment(fb3), fee(1500),                ter(tecNO_PERMISSION));
+            env(finish("alice", "alice", seq), condition(cb3),
+                fulfillment(fb3), fee(1500));
+        }
+        {
+            // Self-escrowed conditional with DepositAuth and DepositPreauth.
+            Env env(*this);
+
+            env.fund(XRP(5000), "alice", "bob", "zelda");
+            auto const seq = env.seq("alice");
+            env(escrow("alice", "alice", XRP(1000)), condition(cb3), finish_time(env.now() + 5s));
+            env.require(balance("alice", XRP(4000) - drops(10)));
+            env.close();
+
+            // Alice preauthorizes Zelda for deposit, even though Alice has not
+            // set the lsfDepositAuth flag (yet).
+            env(deposit::auth("alice", "zelda"));
+            env.close();
+
+            // Finish is now possible but requires the cryptocondition.
+            env(finish("alice", "alice", seq),              ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq),                ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("zelda", "alice", seq),              ter(tecCRYPTOCONDITION_ERROR));
+
+            // Alice enables deposit authorization. After this only Alice or
+            // Zelda (because Zelda is preauthorized) can finish the escrow.
+            env(fset ("alice", asfDepositAuth));
+            env.close();
+
+            env(finish("alice", "alice", seq), condition(cb2),
+                fulfillment(fb2), fee(1500),                ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq),   condition(cb3),
+                fulfillment(fb3), fee(1500),                ter(tecNO_PERMISSION));
+            env(finish("zelda", "alice", seq), condition(cb3),
+                fulfillment(fb3), fee(1500));
         }
     }
 
     void
     testEscrowConditions()
     {
-        testcase ("Escrow Conditions");
+        testcase ("Escrow with CryptoConditions");
 
         using namespace jtx;
         using namespace std::chrono;
-        using S = seconds;
 
         { // Test cryptoconditions
             Env env(*this);
-            auto T = [&env](NetClock::duration const& d)
-                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const seq = env.seq("alice");
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
-            env(condpay("alice", "carol", XRP(1000), makeSlice(cb1), T(S{1})));
+            env(escrow("alice", "carol", XRP(1000)), condition(cb1),
+                cancel_time(env.now() + 1s));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
             env.require(balance("alice", XRP(4000) - drops(10)));
             env.require(balance("carol", XRP(5000)));
-            env(cancel("bob", "alice", seq),                                 ter(tecNO_PERMISSION));
+            env(cancel("bob", "alice", seq), ter(tecNO_PERMISSION));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
 
             // Attempt to finish without a fulfillment
-            env(finish("bob", "alice", seq),                                 ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), ter(tecCRYPTOCONDITION_ERROR));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
 
             // Attempt to finish with a condition instead of a fulfillment
-            env(finish("bob", "alice", seq, makeSlice(cb1), makeSlice(cb1)), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(cb1),
+                fulfillment(cb1), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            env(finish("bob", "alice", seq, makeSlice(cb1), makeSlice(cb2)), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(cb1),
+                fulfillment(cb2), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            env(finish("bob", "alice", seq, makeSlice(cb1), makeSlice(cb3)), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(cb1),
+                fulfillment(cb3), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
 
             // Attempt to finish with an incorrect condition and various
             // combinations of correct and incorrect fulfillments.
-            env(finish("bob", "alice", seq, makeSlice(cb2), makeSlice(fb1)), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(cb2),
+                fulfillment(fb1), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            env(finish("bob", "alice", seq, makeSlice(cb2), makeSlice(fb2)), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(cb2),
+                fulfillment(fb2), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            env(finish("bob", "alice", seq, makeSlice(cb2), makeSlice(fb3)), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(cb2),
+                fulfillment(fb3), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
 
             // Attempt to finish with the correct condition & fulfillment
-            env(finish("bob", "alice", seq, makeSlice(cb1), makeSlice(fb1)), fee(1500));
+            env(finish("bob", "alice", seq), condition(cb1),
+                fulfillment(fb1), fee(1500));
+
             // SLE removed on finish
             BEAST_EXPECT(! env.le(keylet::escrow(Account("alice").id(), seq)));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
             env.require(balance("carol", XRP(6000)));
-            env(cancel("bob", "alice", seq),                                ter(tecNO_TARGET));
+            env(cancel("bob", "alice", seq), ter(tecNO_TARGET));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
-            env(cancel("bob", "carol", 1),                                  ter(tecNO_TARGET));
-            env.close();
+            env(cancel("bob", "carol", 1), ter(tecNO_TARGET));
         }
-
         { // Test cancel when condition is present
             Env env(*this);
-            auto T = [&env](NetClock::duration const& d)
-                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const seq = env.seq("alice");
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
-            env(condpay("alice", "carol", XRP(1000), makeSlice(cb2), T(S{1})));
+            env(escrow("alice", "carol", XRP(1000)), condition(cb2),
+                cancel_time(env.now() + 1s));
             env.close();
             env.require(balance("alice", XRP(4000) - drops(10)));
             // balance restored on cancel
@@ -473,31 +866,26 @@ struct Escrow_test : public beast::unit_test::suite
             // SLE removed on cancel
             BEAST_EXPECT(! env.le(keylet::escrow(Account("alice").id(), seq)));
         }
-
         {
             Env env(*this);
-            auto T = [&env](NetClock::duration const& d)
-                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
             env.close();
             auto const seq = env.seq("alice");
-            env(condpay("alice", "carol", XRP(1000), makeSlice(cb3), T(S{1})));
+            env(escrow("alice", "carol", XRP(1000)), condition(cb3),
+                cancel_time(env.now() + 1s));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
             // cancel fails before expiration
-            env(cancel("bob", "alice", seq),                                  ter(tecNO_PERMISSION));
+            env(cancel("bob", "alice", seq), ter(tecNO_PERMISSION));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
             env.close();
             // finish fails after expiration
-            env(finish("bob", "alice", seq, makeSlice(cb3), makeSlice(fb3)),
-                fee(1500),                                                    ter(tecNO_PERMISSION));
+            env(finish("bob", "alice", seq), condition(cb3),
+                fulfillment(fb3), fee(1500), ter(tecNO_PERMISSION));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
             env.require(balance("carol", XRP(5000)));
         }
-
         { // Test long & short conditions during creation
             Env env(*this);
-            auto T = [&env](NetClock::duration const& d)
-                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
 
             std::vector<std::uint8_t> v;
@@ -507,37 +895,36 @@ struct Escrow_test : public beast::unit_test::suite
             auto const p = v.data();
             auto const s = v.size();
 
+            auto const ts = env.now() + 1s;
+
             // All these are expected to fail, because the
             // condition we pass in is malformed in some way
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{p, s}, T(S{1})),              ter(temMALFORMED));
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{p, s - 1}, T(S{1})),          ter(temMALFORMED));
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{p, s - 2}, T(S{1})),          ter(temMALFORMED));
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{p + 1, s - 1}, T(S{1})),      ter(temMALFORMED));
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{p + 1, s - 3}, T(S{1})),      ter(temMALFORMED));
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{p + 2, s - 2}, T(S{1})),      ter(temMALFORMED));
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{p + 2, s - 3}, T(S{1})),      ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{p, s}),
+                cancel_time(ts), ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{p, s - 1}),
+                cancel_time(ts), ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{p, s - 2}),
+                cancel_time(ts), ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{p + 1, s - 1}),
+                cancel_time(ts), ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{p + 1, s - 3}),
+                cancel_time(ts), ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{p + 2, s - 2}),
+                cancel_time(ts), ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{p + 2, s - 3}),
+                cancel_time(ts), ter(temMALFORMED));
 
             auto const seq = env.seq("alice");
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{p + 1, s - 2}, T(S{1})), fee(100));
-            env(finish("bob", "alice", seq,
-                makeSlice(cb1), makeSlice(fb1)), fee(1500));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{p + 1, s - 2}),
+                cancel_time(ts), fee(100));
+            env(finish("bob", "alice", seq),
+                condition(cb1), fulfillment(fb1), fee(1500));
             env.require(balance("alice", XRP(4000) - drops(100)));
             env.require(balance("bob", XRP(5000) - drops(1500)));
             env.require(balance("carol", XRP(6000)));
         }
-
         { // Test long and short conditions & fulfillments during finish
             Env env(*this);
-            auto T = [&env](NetClock::duration const& d)
-                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
 
             std::vector<std::uint8_t> cv;
@@ -554,116 +941,104 @@ struct Escrow_test : public beast::unit_test::suite
             auto const fp = fv.data();
             auto const fs = fv.size();
 
+            auto const ts = env.now() + 1s;
+
             // All these are expected to fail, because the
             // condition we pass in is malformed in some way
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{cp, cs}, T(S{1})),              ter(temMALFORMED));
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{cp, cs - 1}, T(S{1})),          ter(temMALFORMED));
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{cp, cs - 2}, T(S{1})),          ter(temMALFORMED));
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{cp + 1, cs - 1}, T(S{1})),      ter(temMALFORMED));
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{cp + 1, cs - 3}, T(S{1})),      ter(temMALFORMED));
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{cp + 2, cs - 2}, T(S{1})),      ter(temMALFORMED));
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{cp + 2, cs - 3}, T(S{1})),      ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{cp, cs}),
+                cancel_time(ts), ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{cp, cs - 1}),
+                cancel_time(ts), ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{cp, cs - 2}),
+                cancel_time(ts), ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{cp + 1, cs - 1}),
+                cancel_time(ts), ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{cp + 1, cs - 3}),
+                cancel_time(ts), ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{cp + 2, cs - 2}),
+                cancel_time(ts), ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{cp + 2, cs - 3}),
+                cancel_time(ts), ter(temMALFORMED));
 
             auto const seq = env.seq("alice");
-            env(condpay("alice", "carol", XRP(1000),
-                Slice{cp + 1, cs - 2}, T(S{1})), fee(100));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{cp + 1, cs - 2}),
+                cancel_time(ts), fee(100));
 
             // Now, try to fulfill using the same sequence of
             // malformed conditions.
-            env(finish("bob", "alice", seq, Slice{cp, cs}, Slice{fp, fs}),
+            env(finish("bob", "alice", seq), condition(Slice{cp, cs}), fulfillment(Slice{fp, fs}),
                 fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, Slice{cp, cs - 1}, Slice{fp, fs}),
+            env(finish("bob", "alice", seq), condition(Slice{cp, cs - 1}), fulfillment(Slice{fp, fs}),
                 fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, Slice{cp, cs - 2}, Slice{fp, fs}),
+            env(finish("bob", "alice", seq), condition(Slice{cp, cs - 2}), fulfillment(Slice{fp, fs}),
                 fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, Slice{cp + 1, cs - 1}, Slice{fp, fs}),
+            env(finish("bob", "alice", seq), condition(Slice{cp + 1, cs - 1}), fulfillment(Slice{fp, fs}),
                 fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, Slice{cp + 1, cs - 3}, Slice{fp, fs}),
+            env(finish("bob", "alice", seq), condition(Slice{cp + 1, cs - 3}), fulfillment(Slice{fp, fs}),
                 fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, Slice{cp + 2, cs - 2}, Slice{fp, fs}),
+            env(finish("bob", "alice", seq), condition(Slice{cp + 2, cs - 2}), fulfillment(Slice{fp, fs}),
                 fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, Slice{cp + 2, cs - 3}, Slice{fp, fs}),
+            env(finish("bob", "alice", seq), condition(Slice{cp + 2, cs - 3}), fulfillment(Slice{fp, fs}),
                 fee(1500), ter(tecCRYPTOCONDITION_ERROR));
 
-            // Now, using the correct condition, try malformed
-            // fulfillments:
-            env(finish("bob", "alice", seq, Slice{cp + 1, cs - 2}, Slice{fp, fs}),
-                fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, Slice{cp + 1, cs - 2}, Slice{fp, fs - 1}),
-                fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, Slice{cp + 1, cs - 2}, Slice{fp, fs - 2}),
-                fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, Slice{cp + 1, cs - 2}, Slice{fp + 1, fs - 1}),
-                fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, Slice{cp + 1, cs - 2}, Slice{fp + 1, fs - 3}),
-                fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, Slice{cp + 1, cs - 2}, Slice{fp + 1, fs - 3}),
-                fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, Slice{cp + 1, cs - 2}, Slice{fp + 2, fs - 2}),
-                fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, Slice{cp + 1, cs - 2}, Slice{fp + 2, fs - 3}),
-                fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            // Now, using the correct condition, try malformed fulfillments:
+            env(finish("bob", "alice", seq), condition(Slice{cp + 1, cs - 2}),
+                fulfillment(Slice{fp, fs}), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(Slice{cp + 1, cs - 2}),
+                fulfillment(Slice{fp, fs - 1}), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(Slice{cp + 1, cs - 2}),
+                fulfillment(Slice{fp, fs - 2}), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(Slice{cp + 1, cs - 2}),
+                fulfillment(Slice{fp + 1, fs - 1}), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(Slice{cp + 1, cs - 2}),
+                fulfillment(Slice{fp + 1, fs - 3}), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(Slice{cp + 1, cs - 2}),
+                fulfillment(Slice{fp + 1, fs - 3}), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(Slice{cp + 1, cs - 2}),
+                fulfillment(Slice{fp + 2, fs - 2}), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(Slice{cp + 1, cs - 2}),
+                fulfillment(Slice{fp + 2, fs - 3}), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
 
             // Now try for the right one
-            env(finish("bob", "alice", seq,
-                makeSlice(cb2), makeSlice(fb2)), fee(1500));
+            env(finish("bob", "alice", seq), condition(cb2),
+                fulfillment(fb2), fee(1500));
             env.require(balance("alice", XRP(4000) - drops(100)));
             env.require(balance("carol", XRP(6000)));
         }
-
         { // Test empty condition during creation and
           // empty condition & fulfillment during finish
             Env env(*this);
-            auto T = [&env](NetClock::duration const& d)
-                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
 
-            env(condpay("alice", "carol", XRP(1000), {}, T(S{1})), ter(temMALFORMED));
+            env(escrow("alice", "carol", XRP(1000)), condition(Slice{}),
+                cancel_time(env.now() + 1s), ter(temMALFORMED));
 
             auto const seq = env.seq("alice");
-            env(condpay("alice", "carol", XRP(1000), makeSlice(cb3), T(S{1})));
+            env(escrow("alice", "carol", XRP(1000)),
+                condition(cb3), cancel_time(env.now() + 1s));
 
-            env(finish("bob", "alice", seq, {}, {}),
-                fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, makeSlice(cb3), {}),
-                fee(1500), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq, {}, makeSlice(fb3)),
-                fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(Slice{}),
+                fulfillment(Slice{}), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(cb3),
+                fulfillment(Slice{}), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
+            env(finish("bob", "alice", seq), condition(Slice{}),
+                fulfillment(fb3), fee(1500), ter(tecCRYPTOCONDITION_ERROR));
 
-            auto correctFinish = finish("bob", "alice", seq,
-                makeSlice(cb3), makeSlice(fb3));
+            // Assemble finish that is missing the Condition or the Fulfillment
+            // since either both must be present, or neither can:
+            env (finish("bob", "alice", seq), condition(cb3), ter(temMALFORMED));
+            env (finish("bob", "alice", seq), fulfillment(fb3), ter(temMALFORMED));
 
-            // Manually assemble finish that is missing the
-            // Condition or the Fulfillment (either both must
-            // be present, or neither can):
-            {
-                auto finishNoCondition = correctFinish;
-                finishNoCondition.removeMember ("Condition");
-                env (finishNoCondition, ter(temMALFORMED));
-
-                auto finishNoFulfillment = correctFinish;
-                finishNoFulfillment.removeMember ("Fulfillment");
-                env (finishNoFulfillment, ter(temMALFORMED));
-            }
-
-            env(correctFinish, fee(1500));
+            // Now finish it.
+            env(finish("bob", "alice", seq), condition(cb3),
+                fulfillment(fb3), fee(1500));
             env.require(balance ("carol", XRP(6000)));
             env.require(balance ("alice", XRP(4000) - drops(10)));
         }
-
         { // Test a condition other than PreimageSha256, which
           // would require a separate amendment
             Env env(*this);
-            auto T = [&env](NetClock::duration const& d)
-                { return env.now() + d; };
-            env.fund(XRP(5000), "alice", "bob", "carol");
+            env.fund(XRP(5000), "alice", "bob");
 
             std::array<std::uint8_t, 45> cb =
             {{
@@ -676,8 +1051,8 @@ struct Escrow_test : public beast::unit_test::suite
 
             // FIXME: this transaction should, eventually, return temDISABLED
             //        instead of temMALFORMED.
-            env(condpay("alice", "carol", XRP(1000), makeSlice(cb), T(S{1})),
-                ter(temMALFORMED));
+            env(escrow("alice", "bob", XRP(1000)), condition(cb),
+                cancel_time(env.now() + 1s), ter(temMALFORMED));
         }
     }
 
@@ -695,11 +1070,12 @@ struct Escrow_test : public beast::unit_test::suite
             testcase ("Metadata & Ownership (without fix1523)");
             Env env(*this, supported_amendments() - fix1523);
             env.fund(XRP(5000), alice, bruce, carol);
+
             auto const seq = env.seq(alice);
+            env(escrow(alice, carol, XRP(1000)), finish_time(env.now() + 1s));
 
-            env(lockup(alice, carol, XRP(1000), env.now() + 1s));
-
-            BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+            BEAST_EXPECT((*env.meta())[sfTransactionResult] ==
+                static_cast<std::uint8_t>(tesSUCCESS));
 
             auto const escrow = env.le(keylet::escrow(alice.id(), seq));
             BEAST_EXPECT(escrow);
@@ -711,7 +1087,6 @@ struct Escrow_test : public beast::unit_test::suite
             ripple::Dir cod (*env.current(), keylet::ownerDir(carol.id()));
             BEAST_EXPECT(cod.begin() == cod.end());
         }
-
         {
             testcase ("Metadata (with fix1523, to self)");
 
@@ -720,8 +1095,10 @@ struct Escrow_test : public beast::unit_test::suite
             auto const aseq = env.seq(alice);
             auto const bseq = env.seq(bruce);
 
-            env(lockup(alice, alice, XRP(1000), env.now() + 1s, env.now() + 500s));
-            BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+            env(escrow(alice, alice, XRP(1000)),
+                finish_time(env.now() + 1s), cancel_time(env.now() + 500s));
+            BEAST_EXPECT((*env.meta())[sfTransactionResult] ==
+                static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
             auto const aa = env.le(keylet::escrow(alice.id(), aseq));
             BEAST_EXPECT(aa);
@@ -732,8 +1109,10 @@ struct Escrow_test : public beast::unit_test::suite
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), aa) != aod.end());
             }
 
-            env(lockup(bruce, bruce, XRP(1000), env.now() + 1s, env.now() + 2s));
-            BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+            env(escrow(bruce, bruce, XRP(1000)),
+                finish_time(env.now() + 1s), cancel_time(env.now() + 2s));
+            BEAST_EXPECT((*env.meta())[sfTransactionResult] ==
+                static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
             auto const bb = env.le(keylet::escrow(bruce.id(), bseq));
             BEAST_EXPECT(bb);
@@ -748,7 +1127,8 @@ struct Escrow_test : public beast::unit_test::suite
             env(finish(alice, alice, aseq));
             {
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
-                BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+                BEAST_EXPECT((*env.meta())[sfTransactionResult] ==
+                    static_cast<std::uint8_t>(tesSUCCESS));
 
                 ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
@@ -763,14 +1143,14 @@ struct Escrow_test : public beast::unit_test::suite
             env(cancel(bruce, bruce, bseq));
             {
                 BEAST_EXPECT(!env.le(keylet::escrow(bruce.id(), bseq)));
-                BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+                BEAST_EXPECT((*env.meta())[sfTransactionResult] ==
+                    static_cast<std::uint8_t>(tesSUCCESS));
 
                 ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 0);
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bb) == bod.end());
             }
         }
-
         {
             testcase ("Metadata (with fix1523, to other)");
 
@@ -779,11 +1159,14 @@ struct Escrow_test : public beast::unit_test::suite
             auto const aseq = env.seq(alice);
             auto const bseq = env.seq(bruce);
 
-            env(lockup(alice, bruce, XRP(1000), env.now() + 1s));
-            BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+            env(escrow(alice, bruce, XRP(1000)), finish_time(env.now() + 1s));
+            BEAST_EXPECT((*env.meta())[sfTransactionResult] ==
+                static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
-            env(lockup(bruce, carol, XRP(1000), env.now() + 1s, env.now() + 2s));
-            BEAST_EXPECT((*env.meta())[sfTransactionResult] == tesSUCCESS);
+            env(escrow(bruce, carol, XRP(1000)),
+                finish_time(env.now() + 1s), cancel_time(env.now() + 2s));
+            BEAST_EXPECT((*env.meta())[sfTransactionResult] ==
+                static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
 
             auto const ab = env.le(keylet::escrow(alice.id(), aseq));
@@ -860,10 +1243,8 @@ struct Escrow_test : public beast::unit_test::suite
         env.memoize("carol");
 
         {
-            auto const jtx = env.jt(
-                condpay("alice", "carol", XRP(1000),
-                    makeSlice(cb1), env.now() + 1s),
-                seq(1), fee(10));
+            auto const jtx = env.jt(escrow("alice", "carol", XRP(1000)),
+                finish_time(env.now() + 1s), seq(1), fee(10));
             auto const pf = preflight(env.app(), env.current()->rules(),
                 *jtx.stx, tapNONE, env.journal);
             BEAST_EXPECT(pf.ter == tesSUCCESS);
@@ -874,8 +1255,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
 
         {
-            auto const jtx = env.jt(cancel("bob", "alice", 3),
-                seq(1), fee(10));
+            auto const jtx = env.jt(cancel("bob", "alice", 3), seq(1), fee(10));
             auto const pf = preflight(env.app(), env.current()->rules(),
                 *jtx.stx, tapNONE, env.journal);
             BEAST_EXPECT(pf.ter == tesSUCCESS);
@@ -886,10 +1266,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
 
         {
-            auto const jtx = env.jt(
-                finish("bob", "alice", 3,
-                    makeSlice(cb1), makeSlice(fb1)),
-                seq(1), fee(10));
+            auto const jtx = env.jt(finish("bob", "alice", 3), seq(1), fee(10));
             auto const pf = preflight(env.app(), env.current()->rules(),
                 *jtx.stx, tapNONE, env.journal);
             BEAST_EXPECT(pf.ter == tesSUCCESS);
@@ -903,7 +1280,10 @@ struct Escrow_test : public beast::unit_test::suite
     void run() override
     {
         testEnablement();
+        testTiming();
         testTags();
+        testDisallowXRP();
+        test1571();
         testFails();
         testLockup();
         testEscrowConditions();

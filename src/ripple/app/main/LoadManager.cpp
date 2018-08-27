@@ -17,12 +17,11 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/json/to_string.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <memory>
@@ -36,18 +35,16 @@ LoadManager::LoadManager (
     : Stoppable ("LoadManager", parent)
     , app_ (app)
     , journal_ (journal)
-    , deadLock_ (0)
+    , deadLock_ ()
     , armed_ (false)
     , stop_ (false)
 {
-    UptimeTimer::getInstance ().beginManualUpdates ();
 }
 
 LoadManager::~LoadManager ()
 {
     try
     {
-        UptimeTimer::getInstance ().endManualUpdates ();
         onStop ();
     }
     catch (std::exception const& ex)
@@ -68,9 +65,7 @@ void LoadManager::activateDeadlockDetector ()
 
 void LoadManager::resetDeadlockDetector ()
 {
-    auto const elapsedSeconds =
-        UptimeTimer::getInstance ().getElapsedSeconds ();
-
+    auto const elapsedSeconds = UptimeClock::now();
     std::lock_guard<std::mutex> sl (mutex_);
     deadLock_ = elapsedSeconds;
 }
@@ -109,24 +104,15 @@ void LoadManager::run ()
 {
     beast::setCurrentThreadName ("LoadManager");
 
-    using clock_type = std::chrono::steady_clock;
+    using namespace std::chrono_literals;
+    using clock_type = std::chrono::system_clock;
 
-    // Initialize the clock to the current time.
     auto t = clock_type::now();
     bool stop = false;
 
     while (! (stop || isStopping ()))
     {
         {
-            // VFALCO NOTE I think this is to reduce calls to the operating
-            //             system for retrieving the current time.
-            //
-            //        TODO Instead of incrementing can't we just retrieve the
-            //             current time again?
-            //
-            // Manually update the timer.
-            UptimeTimer::getInstance ().incrementElapsedTime ();
-
             // Copy out shared data under a lock.  Use copies outside lock.
             std::unique_lock<std::mutex> sl (mutex_);
             auto const deadLock = deadLock_;
@@ -135,29 +121,24 @@ void LoadManager::run ()
             sl.unlock();
 
             // Measure the amount of time we have been deadlocked, in seconds.
-            //
-            // VFALCO NOTE deadLock_ is a canary for detecting the condition.
-            int const timeSpentDeadlocked =
-                UptimeTimer::getInstance ().getElapsedSeconds () - deadLock;
+            auto const timeSpentDeadlocked = UptimeClock::now() - deadLock;
 
-            // VFALCO NOTE I think that "armed" refers to the deadlock detector.
-            //
-            int const reportingIntervalSeconds = 10;
+            auto const reportingIntervalSeconds = 10s;
             if (armed && (timeSpentDeadlocked >= reportingIntervalSeconds))
             {
                 // Report the deadlocked condition every 10 seconds
-                if ((timeSpentDeadlocked % reportingIntervalSeconds) == 0)
+                if ((timeSpentDeadlocked % reportingIntervalSeconds) == 0s)
                 {
                     JLOG(journal_.warn())
                         << "Server stalled for "
-                        << timeSpentDeadlocked << " seconds.";
+                        << timeSpentDeadlocked.count() << " seconds.";
                 }
 
                 // If we go over 500 seconds spent deadlocked, it means that
                 // the deadlock resolution code has failed, which qualifies
                 // as undefined behavior.
                 //
-                assert (timeSpentDeadlocked < 500);
+                assert (timeSpentDeadlocked < 500s);
             }
         }
 
@@ -179,18 +160,17 @@ void LoadManager::run ()
             app_.getOPs ().reportFeeChange ();
         }
 
-        t += std::chrono::seconds (1);
+        t += 1s;
         auto const duration = t - clock_type::now();
 
-        if ((duration < std::chrono::seconds (0)) ||
-            (duration > std::chrono::seconds (1)))
+        if ((duration < 0s) || (duration > 1s))
         {
             JLOG(journal_.warn()) << "time jump";
             t = clock_type::now();
         }
         else
         {
-            alertable_sleep_for(duration);
+            alertable_sleep_until(t);
         }
     }
 
@@ -203,7 +183,7 @@ std::unique_ptr<LoadManager>
 make_LoadManager (Application& app,
     Stoppable& parent, beast::Journal journal)
 {
-    return std::make_unique<LoadManager>(app, parent, journal);
+    return std::unique_ptr<LoadManager>{new LoadManager{app, parent, journal}};
 }
 
 } // ripple

@@ -35,7 +35,7 @@ ReadViewFwdRange<ValueType>::iterator::iterator(
 
 template<class ValueType>
 ReadViewFwdRange<ValueType>::iterator::iterator(
-        iterator&& other)
+        iterator&& other) noexcept
     : view_ (other.view_)
     , impl_ (std::move(other.impl_))
     , cache_ (std::move(other.cache_))
@@ -69,7 +69,7 @@ ReadViewFwdRange<ValueType>::iterator::operator=(
 template<class ValueType>
 auto
 ReadViewFwdRange<ValueType>::iterator::operator=(
-    iterator&& other) ->
+    iterator&& other) noexcept ->
         iterator&
 {
     view_ = other.view_;

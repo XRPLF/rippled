@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
@@ -25,6 +24,7 @@
 #include <ripple/basics/DecayingSample.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/container/aged_map.h>
@@ -65,44 +65,67 @@ public:
     }
 
     std::shared_ptr<Ledger const>
-    acquire (
-        uint256 const& hash,
-        std::uint32_t seq,
-        InboundLedger::fcReason reason)
+    acquire(uint256 const& hash, std::uint32_t seq,
+        InboundLedger::Reason reason) override
     {
-        assert (hash.isNonZero ());
+        assert(hash.isNonZero());
+        assert(reason != InboundLedger::Reason::SHARD ||
+            (seq != 0 && app_.getShardStore()));
+        if (isStopping())
+            return {};
+
         bool isNew = true;
         std::shared_ptr<InboundLedger> inbound;
         {
-            ScopedLockType sl (mLock);
-
-            if (! isStopping ())
+            ScopedLockType sl(mLock);
+            auto it = mLedgers.find(hash);
+            if (it != mLedgers.end())
             {
-                auto it = mLedgers.find (hash);
-                if (it != mLedgers.end ())
-                {
-                    isNew = false;
-                    inbound = it->second;
-                }
-                else
-                {
-                    inbound = std::make_shared <InboundLedger> (app_,
-                        hash, seq, reason, std::ref (m_clock));
-                    mLedgers.emplace (hash, inbound);
-                    inbound->init (sl);
-                    ++mCounter;
-                }
+                isNew = false;
+                inbound = it->second;
+            }
+            else
+            {
+                inbound = std::make_shared <InboundLedger>(
+                    app_, hash, seq, reason, std::ref(m_clock));
+                mLedgers.emplace(hash, inbound);
+                inbound->init(sl);
+                ++mCounter;
             }
         }
-        if (inbound && ! isNew && ! inbound->isFailed ())
-            inbound->update (seq);
 
-        if (inbound && inbound->isComplete ())
-            return inbound->getLedger();
-        return {};
+        if (inbound->isFailed())
+            return {};
+
+        if (! isNew)
+            inbound->update(seq);
+
+        if (! inbound->isComplete())
+            return {};
+
+        if (reason == InboundLedger::Reason::HISTORY)
+        {
+            if (inbound->getLedger()->stateMap().family().isShardBacked())
+                app_.getNodeStore().copyLedger(inbound->getLedger());
+        }
+        else if (reason == InboundLedger::Reason::SHARD)
+        {
+            auto shardStore = app_.getShardStore();
+            if (!shardStore)
+            {
+                JLOG(j_.error()) <<
+                    "Acquiring shard with no shard store available";
+                return {};
+            }
+            if (inbound->getLedger()->stateMap().family().isShardBacked())
+                shardStore->setStored(inbound->getLedger());
+            else
+                shardStore->copyLedger(inbound->getLedger());
+        }
+        return inbound->getLedger();
     }
 
-    std::shared_ptr<InboundLedger> find (uint256 const& hash)
+    std::shared_ptr<InboundLedger> find (uint256 const& hash) override
     {
         assert (hash.isNonZero ());
 
@@ -137,7 +160,7 @@ public:
     */
     bool gotLedgerData (LedgerHash const& hash,
             std::shared_ptr<Peer> peer,
-            std::shared_ptr<protocol::TMLedgerData> packet_ptr)
+            std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
     {
         protocol::TMLedgerData& packet = *packet_ptr;
 
@@ -173,7 +196,7 @@ public:
         return true;
     }
 
-    int getFetchCount (int& timeoutCount)
+    int getFetchCount (int& timeoutCount) override
     {
         timeoutCount = 0;
         int ret = 0;
@@ -201,14 +224,14 @@ public:
         return ret;
     }
 
-    void logFailure (uint256 const& h, std::uint32_t seq)
+    void logFailure (uint256 const& h, std::uint32_t seq) override
     {
         ScopedLockType sl (mLock);
 
         mRecentFailures.emplace(h, seq);
     }
 
-    bool isFailure (uint256 const& h)
+    bool isFailure (uint256 const& h) override
     {
         ScopedLockType sl (mLock);
 
@@ -216,7 +239,7 @@ public:
         return mRecentFailures.find (h) != mRecentFailures.end();
     }
 
-    void doLedgerData (LedgerHash hash)
+    void doLedgerData (LedgerHash hash) override
     {
         if (auto ledger = find (hash))
             ledger->runData ();
@@ -228,7 +251,7 @@ public:
         Nodes are received in wire format and must be stashed/hashed in prefix
         format
     */
-    void gotStaleData (std::shared_ptr<protocol::TMLedgerData> packet_ptr)
+    void gotStaleData (std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
     {
         const uint256 uZero;
         Serializer s;
@@ -264,7 +287,7 @@ public:
         }
     }
 
-    void clearFailures ()
+    void clearFailures () override
     {
         ScopedLockType sl (mLock);
 
@@ -272,7 +295,7 @@ public:
         mLedgers.clear();
     }
 
-    std::size_t fetchRate()
+    std::size_t fetchRate() override
     {
         std::lock_guard<
             std::mutex> lock(fetchRateMutex_);
@@ -280,17 +303,15 @@ public:
             m_clock.now());
     }
 
-    void onLedgerFetched (
-        InboundLedger::fcReason why)
+    // Should only be called with an inboundledger that has
+    // a reason of history or shard
+    void onLedgerFetched() override
     {
-        if (why != InboundLedger::fcHISTORY)
-            return;
-        std::lock_guard<
-            std::mutex> lock(fetchRateMutex_);
+        std::lock_guard<std::mutex> lock(fetchRateMutex_);
         fetchRate_.add(1, m_clock.now());
     }
 
-    Json::Value getInfo()
+    Json::Value getInfo() override
     {
         Json::Value ret(Json::objectValue);
 
@@ -327,7 +348,7 @@ public:
         return ret;
     }
 
-    void gotFetchPack ()
+    void gotFetchPack () override
     {
         std::vector<std::shared_ptr<InboundLedger>> acquires;
         {
@@ -347,7 +368,7 @@ public:
         }
     }
 
-    void sweep ()
+    void sweep () override
     {
         clock_type::time_point const now (m_clock.now());
 
@@ -390,7 +411,7 @@ public:
             " out of " << total << " inbound ledgers.";
     }
 
-    void onStop ()
+    void onStop () override
     {
         ScopedLockType lock (mLock);
 
@@ -419,9 +440,7 @@ private:
 decltype(InboundLedgersImp::kReacquireInterval)
 InboundLedgersImp::kReacquireInterval{5};
 
-InboundLedgers::~InboundLedgers()
-{
-}
+InboundLedgers::~InboundLedgers() = default;
 
 std::unique_ptr<InboundLedgers>
 make_InboundLedgers (Application& app,

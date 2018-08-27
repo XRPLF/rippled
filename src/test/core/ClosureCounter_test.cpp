@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/ClosureCounter.h>
 #include <ripple/beast/unit_test.h>
 #include <test/jtx/Env.h>
@@ -127,7 +126,7 @@ class ClosureCounter_test : public beast::unit_test::suite
         , str (rhs.str) {}
 
         // Move constructor
-        TrackedString (TrackedString&& rhs)
+        TrackedString (TrackedString&& rhs) noexcept
         : copies (rhs.copies)
         , moves (rhs.moves + 1)
         , str (std::move(rhs.str)) {}
@@ -314,7 +313,7 @@ class ClosureCounter_test : public beast::unit_test::suite
     }
 
 public:
-    void run()
+    void run() override
     {
         testConstruction();
         testArgs();

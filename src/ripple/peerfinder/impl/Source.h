@@ -21,7 +21,6 @@
 #define RIPPLE_PEERFINDER_SOURCE_H_INCLUDED
 
 #include <ripple/peerfinder/PeerfinderManager.h>
-#include <ripple/beast/core/SharedObject.h>
 #include <boost/system/error_code.hpp>
 
 namespace ripple {
@@ -35,12 +34,14 @@ namespace PeerFinder {
     be updated automatically. Another solution is to use a custom DNS server
     that hands out peer IP addresses when name lookups are performed.
 */
-class Source : public beast::SharedObject
+class Source
 {
 public:
     /** The results of a fetch. */
     struct Results
     {
+        explicit Results() = default;
+
         // error_code on a failure
         boost::system::error_code error;
 

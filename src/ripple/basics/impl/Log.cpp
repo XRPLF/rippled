@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/contract.h>
@@ -52,10 +51,6 @@ Logs::Sink::write (beast::severities::Severity level, std::string const& text)
 
 Logs::File::File()
     : m_stream (nullptr)
-{
-}
-
-Logs::File::~File()
 {
 }
 
@@ -289,26 +284,6 @@ Logs::fromString (std::string const& s)
     return lsINVALID;
 }
 
-// Replace the first secret, if any, with asterisks
-std::string
-Logs::scrub (std::string s)
-{
-    using namespace std;
-    char const* secretToken = "\"secret\"";
-    // Look for the first occurrence of "secret" in the string.
-    size_t startingPosition = s.find (secretToken);
-    if (startingPosition != string::npos)
-    {
-        // Found it, advance past the token.
-        startingPosition += strlen (secretToken);
-        // Replace the next 35 characters at most, without overwriting the end.
-        size_t endingPosition = std::min (startingPosition + 35, s.size () - 1);
-        for (size_t i = startingPosition; i < endingPosition; ++i)
-            s [i] = '*';
-    }
-    return s;
-}
-
 void
 Logs::format (std::string& output, std::string const& message,
     beast::severities::Severity severity, std::string const& partition)
@@ -334,13 +309,46 @@ Logs::format (std::string& output, std::string const& message,
     case kFatal:    output += "FTL "; break;
     }
 
-    output += scrub (message);
+    output += message;
 
+    // Limit the maximum length of the output
     if (output.size() > maximumMessageCharacters)
     {
         output.resize (maximumMessageCharacters - 3);
         output += "...";
     }
+
+    // Attempt to prevent sensitive information from appearing in log files by
+    // redacting it with asterisks.
+    auto scrubber = [&output](char const* token)
+    {
+        auto first = output.find(token);
+
+        // If we have found the specified token, then attempt to isolate the
+        // sensitive data (it's enclosed by double quotes) and mask it off:
+        if (first != std::string::npos)
+        {
+            first = output.find ('\"', first + std::strlen(token));
+
+            if (first != std::string::npos)
+            {
+                auto last = output.find('\"', ++first);
+
+                if (last == std::string::npos)
+                    last = output.size();
+
+                output.replace (first, last - first, last - first, '*');
+            }
+        }
+    };
+
+    scrubber ("\"seed\"");
+    scrubber ("\"seed_hex\"");
+    scrubber ("\"secret\"");
+    scrubber ("\"master_key\"");
+    scrubber ("\"master_seed\"");
+    scrubber ("\"master_seed_hex\"");
+    scrubber ("\"passphrase\"");
 }
 
 //------------------------------------------------------------------------------

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/beast/unit_test.h>
 #include <boost/functional/hash.hpp>
@@ -255,7 +254,7 @@ public:
     }
 
     void
-    run ()
+    run () override
     {
         test_user_types();
         test_containers();

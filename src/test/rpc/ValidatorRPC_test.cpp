@@ -17,15 +17,14 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/main/BasicApp.h>
 #include <ripple/app/misc/ValidatorSite.h>
+#include <ripple/basics/base64.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Sign.h>
-#include <beast/core/detail/base64.hpp>
 #include <test/jtx.h>
 #include <test/jtx/TrustedPublisherServer.h>
 
@@ -76,7 +75,7 @@ class ValidatorRPC_test : public beast::unit_test::suite
         Serializer s;
         st.add(s);
 
-        return beast::detail::base64_encode(
+        return base64_encode(
             std::string(static_cast<char const*>(s.data()), s.size()));
     }
 
@@ -179,11 +178,9 @@ public:
     testDynamicUNL()
     {
         using namespace test::jtx;
-        using endpoint_type = boost::asio::ip::tcp::endpoint;
-        using address_type = boost::asio::ip::address;
 
         auto toStr = [](PublicKey const& publicKey) {
-            return toBase58(TokenType::TOKEN_NODE_PUBLIC, publicKey);
+            return toBase58(TokenType::NodePublic, publicKey);
         };
 
         // Publisher manifest/signing keys
@@ -209,7 +206,9 @@ public:
         // Publisher list site unavailable
         {
             // Publisher site information
-            std::string siteURI = "http://127.0.0.1:1234/validators";
+            using namespace std::string_literals;
+            std::string siteURI =
+                "http://"s + getEnvLocalhostAddr() + ":1234/validators";
 
             Env env{
                 *this,
@@ -270,10 +269,8 @@ public:
         //----------------------------------------------------------------------
         // Publisher list site available
         {
+            using namespace std::chrono_literals;
             NetClock::time_point const expiration{3600s};
-
-            // 0 port means to use OS port selection
-            endpoint_type ep{address_type::from_string("127.0.0.1"), 0};
 
             // Manage single thread io_service for server
             struct Worker : BasicApp
@@ -283,7 +280,6 @@ public:
             Worker w;
 
             TrustedPublisherServer server(
-                ep,
                 w.get_io_service(),
                 publisherSigningKeys,
                 manifest,
@@ -292,9 +288,9 @@ public:
                 1,
                 validators);
 
-            endpoint_type const & local_ep = server.local_endpoint();
-            std::string siteURI = "http://127.0.0.1:" +
-                std::to_string(local_ep.port()) + "/validators";
+            std::stringstream uri;
+            uri << "http://" << server.local_endpoint() << "/validators";
+            auto siteURI = uri.str();
 
             Env env{
                 *this,
@@ -308,11 +304,11 @@ public:
 
             env.app().validatorSites().start();
             env.app().validatorSites().join();
-            std::set<PublicKey> startKeys;
+            hash_set<NodeID> startKeys;
             for (auto const& val : validators)
-                startKeys.insert(val.masterPublic);
+                startKeys.insert(calcNodeID(val.masterPublic));
 
-            env.app().validators().onConsensusStart(startKeys);
+            env.app().validators().updateTrusted(startKeys);
 
             {
                 auto const jrr = env.rpc("server_info")[jss::result];
@@ -386,11 +382,26 @@ public:
     }
 
     void
-    run()
+    test_validation_create()
+    {
+        using namespace test::jtx;
+        Env env{*this};
+        auto result = env.rpc("validation_create");
+        BEAST_EXPECT(result.isMember(jss::result) &&
+                     result[jss::result][jss::status] == "success");
+        result = env.rpc("validation_create",
+                         "BAWL MAN JADE MOON DOVE GEM SON NOW HAD ADEN GLOW TIRE");
+        BEAST_EXPECT(result.isMember(jss::result) &&
+                     result[jss::result][jss::status] == "success");
+    }
+
+    void
+    run() override
     {
         testPrivileges();
         testStaticUNL();
         testDynamicUNL();
+        test_validation_create();
     }
 };
 

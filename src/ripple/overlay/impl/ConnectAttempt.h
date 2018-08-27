@@ -20,7 +20,7 @@
 #ifndef RIPPLE_OVERLAY_CONNECTATTEMPT_H_INCLUDED
 #define RIPPLE_OVERLAY_CONNECTATTEMPT_H_INCLUDED
 
-#include "ripple.pb.h"
+#include <ripple/protocol/messages.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/Tuning.h>
 
@@ -37,10 +37,10 @@ private:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
 
     using request_type =
-        beast::http::request<beast::http::empty_body>;
+        boost::beast::http::request<boost::beast::http::empty_body>;
 
     using response_type =
-        beast::http::response<beast::http::dynamic_body>;
+        boost::beast::http::response<boost::beast::http::dynamic_body>;
 
     Application& app_;
     std::uint32_t const id_;
@@ -53,7 +53,7 @@ private:
     std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
     beast::asio::ssl_bundle::socket_type& socket_;
     beast::asio::ssl_bundle::stream_type& stream_;
-    beast::multi_buffer read_buf_;
+    boost::beast::multi_buffer read_buf_;
     response_type response_;
     PeerFinder::Slot::ptr slot_;
     request_type req_;

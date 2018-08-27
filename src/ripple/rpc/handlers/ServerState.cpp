@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/json/json_value.h>
 #include <ripple/net/RPCErr.h>
@@ -33,7 +32,9 @@ Json::Value doServerState (RPC::Context& context)
     Json::Value ret (Json::objectValue);
 
     ret[jss::state] = context.netOps.getServerInfo (
-        false, context.role == Role::ADMIN);
+        false, context.role == Role::ADMIN,
+        context.params.isMember(jss::counters) &&
+            context.params[jss::counters].asBool());
 
     return ret;
 }

@@ -28,9 +28,13 @@ namespace Resource {
 /** Data format for exchanging consumption information across peers. */
 struct Gossip
 {
+    explicit Gossip() = default;
+
     /** Describes a single consumer. */
     struct Item
     {
+        explicit Item() = default;
+
         int balance;
         beast::IP::Endpoint address;
     };

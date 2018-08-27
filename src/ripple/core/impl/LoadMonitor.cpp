@@ -17,10 +17,9 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/UptimeTimer.h>
-#include <ripple/beast/clock/chrono_util.h>
+#include <ripple/basics/UptimeClock.h>
+#include <ripple/basics/date.h>
 #include <ripple/core/LoadMonitor.h>
 
 namespace ripple {
@@ -53,7 +52,7 @@ LoadMonitor::LoadMonitor (beast::Journal j)
     , mLatencyMSPeak (0)
     , mTargetLatencyAvg (0)
     , mTargetLatencyPk (0)
-    , mLastUpdate (UptimeTimer::getInstance ().getElapsedSeconds ())
+    , mLastUpdate (UptimeClock::now())
     , j_ (j)
 {
 }
@@ -67,12 +66,12 @@ LoadMonitor::LoadMonitor (beast::Journal j)
 void LoadMonitor::update ()
 {
     using namespace std::chrono_literals;
-    int now = UptimeTimer::getInstance ().getElapsedSeconds ();
+    auto now = UptimeClock::now();
     if (now == mLastUpdate) // current
         return;
 
     // VFALCO TODO Why 8?
-    if ((now < mLastUpdate) || (now > (mLastUpdate + 8)))
+    if ((now < mLastUpdate) || (now > (mLastUpdate + 8s)))
     {
         // way out of date
         mCounts = 0;
@@ -94,7 +93,7 @@ void LoadMonitor::update ()
     */
     do
     {
-        ++mLastUpdate;
+        mLastUpdate += 1s;
         mCounts -= ((mCounts + 3) / 4);
         mLatencyEvents -= ((mLatencyEvents + 3) / 4);
         mLatencyMSAvg -= (mLatencyMSAvg / 4);
@@ -109,14 +108,15 @@ void LoadMonitor::addLoadSample (LoadEvent const& s)
 
     auto const total = s.runTime() + s.waitTime();
     // Don't include "jitter" as part of the latency
-    auto const latency = total < 2ms ? 0ms : round<milliseconds>(total);
+    auto const latency = total < 2ms ? 0ms : date::round<milliseconds>(total);
 
     if (latency > 500ms)
     {
         auto mj = (latency > 1s) ? j_.warn() : j_.info();
         JLOG (mj) << "Job: " << s.name() <<
-            " run: " << round<milliseconds>(s.runTime()).count() << "ms" <<
-            " wait: " << round<milliseconds>(s.waitTime()).count() << "ms";
+            " run: " << date::round<milliseconds>(s.runTime()).count() <<
+            "ms" << " wait: " <<
+            date::round<milliseconds>(s.waitTime()).count() << "ms";
     }
 
     addSamples (1, latency);

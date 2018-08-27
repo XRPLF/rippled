@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Log.h>
 #include <ripple/beast/net/IPAddressConversion.h>
+#include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/beast/core/WaitableEvent.h>
 #include <boost/asio.hpp>
 #include <atomic>
@@ -146,7 +146,7 @@ public:
 
     }
 
-    ~ResolverAsioImpl ()
+    ~ResolverAsioImpl () override
     {
         assert (m_work.empty ());
         assert (m_stopped);
@@ -165,7 +165,7 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void start ()
+    void start () override
     {
         assert (m_stopped == true);
         assert (m_stop_called == false);
@@ -177,7 +177,7 @@ public:
         }
     }
 
-    void stop_async ()
+    void stop_async () override
     {
         if (m_stop_called.exchange (true) == false)
         {
@@ -189,7 +189,7 @@ public:
         }
     }
 
-    void stop ()
+    void stop () override
     {
         stop_async ();
 
@@ -200,7 +200,7 @@ public:
 
     void resolve (
         std::vector <std::string> const& names,
-        HandlerType const& handler)
+        HandlerType const& handler) override
     {
         assert (m_stop_called == false);
         assert (m_stopped == true);
@@ -242,7 +242,7 @@ public:
 
         // If we get an error message back, we don't return any
         // results that we may have gotten.
-        if (ec == 0)
+        if (!ec)
         {
             while (iter != boost::asio::ip::tcp::resolver::iterator())
             {
@@ -260,6 +260,21 @@ public:
 
     HostAndPort parseName(std::string const& str)
     {
+        // first attempt to parse as an endpoint (IP addr + port).
+        // If that doesn't succeed, fall back to generic name + port parsing
+
+        auto result {beast::IP::Endpoint::from_string_checked (str)};
+        if (result.second)
+        {
+            return make_pair (
+                result.first.address().to_string(),
+                std::to_string(result.first.port()));
+        }
+
+        // generic name/port parsing, which doesn't work for
+        // IPv6 addresses in particular because it considers a colon
+        // a port separator
+
         // Attempt to find the first and last non-whitespace
         auto const find_whitespace = std::bind (
             &std::isspace <std::string::value_type>,
@@ -279,7 +294,7 @@ public:
         // Attempt to find the first and last valid port separators
         auto const find_port_separator = [](char const c) -> bool
         {
-            if (std::isspace (c))
+            if (std::isspace (static_cast<unsigned char>(c)))
                 return true;
 
             if (c == ':')
@@ -373,8 +388,5 @@ std::unique_ptr<ResolverAsio> ResolverAsio::New (
 }
 
 //-----------------------------------------------------------------------------
-Resolver::~Resolver ()
-{
-}
-
+Resolver::~Resolver() = default;
 }

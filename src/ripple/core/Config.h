@@ -24,9 +24,8 @@
 #include <ripple/basics/base_uint.h>
 #include <ripple/protocol/SystemParameters.h> // VFALCO Breaks levelization
 #include <ripple/beast/net/IPEndpoint.h>
-#include <beast/core/string.hpp>
+#include <boost/beast/core/string.hpp>
 #include <ripple/beast/utility/Journal.h>
-#include <boost/asio/ip/tcp.hpp> // VFALCO FIX: This include should not be here
 #include <boost/filesystem.hpp> // VFALCO FIX: This include should not be here
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
@@ -38,8 +37,6 @@
 #include <vector>
 
 namespace ripple {
-
-using namespace std::chrono_literals;
 
 class Rules;
 
@@ -89,7 +86,9 @@ public:
 
 private:
     boost::filesystem::path CONFIG_FILE;
+public:
     boost::filesystem::path CONFIG_DIR;
+private:
     boost::filesystem::path DEBUG_LOGFILE;
 
     void load ();
@@ -108,8 +107,18 @@ private:
     */
     bool                        RUN_STANDALONE = false;
 
+    /** Determines if the server will sign a tx, given an account's secret seed.
+
+        In the past, this was allowed, but this functionality can have security
+        implications. The new default is to not allow this functionality, but
+        a config option is included to enable this.
+    */
+    bool signingEnabled_ = false;
+
 public:
     bool doImport = false;
+    bool nodeToShard = false;
+    bool validateShards = false;
     bool ELB_SUPPORT = false;
 
     std::vector<std::string>    IPS;                    // Peer IPs from rippled.cfg.
@@ -141,7 +150,7 @@ public:
     bool                        PEER_PRIVATE = false;           // True to ask peers not to relay current IP.
     int                         PEERS_MAX = 0;
 
-    std::chrono::seconds        WEBSOCKET_PING_FREQ = 5min;
+    std::chrono::seconds        WEBSOCKET_PING_FREQ = std::chrono::minutes {5};
 
     // Path searching
     int                         PATH_SEARCH_OLD = 7;
@@ -170,8 +179,7 @@ public:
     std::size_t                 WORKERS = 0;
 
     // These override the command line client settings
-    boost::optional<boost::asio::ip::address_v4> rpc_ip;
-    boost::optional<std::uint16_t> rpc_port;
+    boost::optional<beast::IP::Endpoint> rpc_ip;
 
     std::unordered_set<uint256, beast::uhash<>> features;
 
@@ -196,6 +204,8 @@ public:
     bool quiet() const { return QUIET; }
     bool silent() const { return SILENT; }
     bool standalone() const { return RUN_STANDALONE; }
+
+    bool canSign() const { return signingEnabled_; }
 };
 
 } // ripple

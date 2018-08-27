@@ -22,6 +22,7 @@ bin/project-cache.jam
 # Ignore object files.
 *.o
 build
+.nih_c
 tags
 TAGS
 bin/rippled
@@ -50,6 +51,7 @@ validators.txt
 
 # Doxygen generated documentation output
 HtmlDocumentation
+docs/html_doc
 
 # Xcode user-specific project settings
 # Xcode

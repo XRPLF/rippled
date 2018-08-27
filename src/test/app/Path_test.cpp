@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/paths/AccountCurrencies.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/JobQueue.h>
@@ -260,6 +259,7 @@ public:
                 g.signal();
             });
 
+        using namespace std::chrono_literals;
         BEAST_EXPECT(g.wait_for(5s));
         BEAST_EXPECT(! result.isMember(jss::error));
         return result;
@@ -1353,7 +1353,7 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         source_currencies_limit();
         no_direct_path_no_intermediary_no_alternatives();

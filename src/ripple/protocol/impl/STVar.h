@@ -31,8 +31,15 @@
 namespace ripple {
 namespace detail {
 
-struct defaultObject_t { };
-struct nonPresentObject_t { };
+struct defaultObject_t
+{
+    explicit defaultObject_t() = default;
+};
+
+struct nonPresentObject_t
+{
+    explicit nonPresentObject_t() = default;
+};
 
 extern defaultObject_t defaultObject;
 extern nonPresentObject_t nonPresentObject;
@@ -67,7 +74,7 @@ public:
 
     STVar (defaultObject_t, SField const& name);
     STVar (nonPresentObject_t, SField const& name);
-    STVar (SerialIter& sit, SField const& name);
+    STVar (SerialIter& sit, SField const& name, int depth = 0);
 
     STBase& get() { return *p_; }
     STBase& operator*() { return get(); }

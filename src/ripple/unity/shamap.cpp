@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/shamap/impl/SHAMap.cpp>
 #include <ripple/shamap/impl/SHAMapDelta.cpp>
 #include <ripple/shamap/impl/SHAMapItem.cpp>

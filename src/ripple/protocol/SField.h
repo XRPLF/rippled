@@ -389,6 +389,7 @@ extern SF_U64 const sfLowNode;
 extern SF_U64 const sfHighNode;
 extern SF_U64 const sfDestinationNode;
 extern SF_U64 const sfIssuerNode;
+extern SF_U64 const sfCookie;
 
 // 128-bit
 extern SF_U128 const sfEmailHash;
@@ -419,6 +420,7 @@ extern SF_U256 const sfTicketID;
 extern SF_U256 const sfDigest;
 extern SF_U256 const sfPayChannel;
 extern SF_U256 const sfConsensusHash;
+extern SF_U256 const sfCheckID;
 
 // currency amount (common)
 extern SF_Amount const sfAmount;
@@ -462,6 +464,8 @@ extern SF_Account const sfAccount;
 extern SF_Account const sfOwner;
 extern SF_Account const sfDestination;
 extern SF_Account const sfIssuer;
+extern SF_Account const sfAuthorize;
+extern SF_Account const sfUnauthorize;
 extern SF_Account const sfTarget;
 extern SF_Account const sfRegularKey;
 

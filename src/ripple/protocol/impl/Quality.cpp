@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/Quality.h>
 #include <cassert>
 #include <limits>
@@ -104,10 +103,10 @@ Quality
 composed_quality (Quality const& lhs, Quality const& rhs)
 {
     STAmount const lhs_rate (lhs.rate ());
-    assert (lhs_rate != zero);
+    assert (lhs_rate != beast::zero);
 
     STAmount const rhs_rate (rhs.rate ());
-    assert (rhs_rate != zero);
+    assert (rhs_rate != beast::zero);
 
     STAmount const rate (mulRound (
         lhs_rate, rhs_rate, lhs_rate.issue (), true));

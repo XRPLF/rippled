@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/ToString.h>
@@ -78,6 +77,9 @@ public:
         BEAST_EXPECT(parseUrl (pUrl, "Mixed://domain/path"));
         BEAST_EXPECT(pUrl.scheme == "mixed");
         BEAST_EXPECT(pUrl.path == "/path");
+        BEAST_EXPECT(parseUrl (pUrl, "scheme://[::1]:123/path"));
+        BEAST_EXPECT(*pUrl.port == 123);
+        BEAST_EXPECT(pUrl.domain == "::1");
     }
 
     void testToString ()
@@ -87,7 +89,7 @@ public:
         BEAST_EXPECT(result == "hello");
     }
 
-    void run ()
+    void run () override
     {
         testParseUrl ();
         testUnHex ();

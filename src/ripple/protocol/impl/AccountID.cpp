@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/digest.h>
@@ -29,18 +28,14 @@ namespace ripple {
 std::string
 toBase58 (AccountID const& v)
 {
-    return base58EncodeToken(
-        TOKEN_ACCOUNT_ID,
-            v.data(), v.size());
+    return base58EncodeToken(TokenType::AccountID, v.data(), v.size());
 }
 
 template<>
 boost::optional<AccountID>
 parseBase58 (std::string const& s)
 {
-    auto const result =
-        decodeBase58Token(
-            s, TOKEN_ACCOUNT_ID);
+    auto const result = decodeBase58Token(s, TokenType::AccountID);
     if (result.empty())
         return boost::none;
     AccountID id;
@@ -54,9 +49,7 @@ parseBase58 (std::string const& s)
 boost::optional<AccountID>
 deprecatedParseBitcoinAccountID (std::string const& s)
 {
-    auto const result =
-        decodeBase58TokenBitcoin(
-            s, TOKEN_ACCOUNT_ID);
+    auto const result = decodeBase58TokenBitcoin(s, TokenType::AccountID);
     if (result.empty())
         return boost::none;
     AccountID id;

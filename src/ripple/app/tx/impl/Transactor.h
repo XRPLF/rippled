@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_TX_TRANSACTOR_H_INCLUDED
 #define RIPPLE_APP_TX_TRANSACTOR_H_INCLUDED
 
+#include <ripple/app/tx/applySteps.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
 #include <ripple/protocol/XRPAmount.h>
 #include <ripple/beast/utility/Journal.h>
@@ -80,9 +81,12 @@ protected:
     beast::Journal j_;
 
     AccountID     account_;
-    XRPAmount     mFeeDue;
     XRPAmount     mPriorBalance;  // Balance before fees.
     XRPAmount     mSourceBalance; // Balance after fees.
+
+    virtual ~Transactor() = default;
+    Transactor (Transactor const&) = delete;
+    Transactor& operator= (Transactor const&) = delete;
 
 public:
     /** Process the transaction. */
@@ -112,7 +116,7 @@ public:
     */
 
     static
-    TER
+    NotTEC
     checkSeq (PreclaimContext const& ctx);
 
     static
@@ -120,14 +124,15 @@ public:
     checkFee (PreclaimContext const& ctx, std::uint64_t baseFee);
 
     static
-    TER
+    NotTEC
     checkSign (PreclaimContext const& ctx);
 
     // Returns the fee in fee units, not scaled for load.
     static
     std::uint64_t
     calculateBaseFee (
-        PreclaimContext const& ctx);
+        ReadView const& view,
+        STTx const& tx);
 
     static
     bool
@@ -165,24 +170,39 @@ protected:
 
     virtual TER doApply () = 0;
 
+    /** Compute the minimum fee required to process a transaction
+        with a given baseFee based on the current server load.
+
+        @param app The application hosting the server
+        @param baseFee The base fee of a candidate transaction
+            @see ripple::calculateBaseFee
+        @param fees Fee settings from the current ledger
+        @param flags Transaction processing fees
+     */
+    static
+    XRPAmount
+    minimumFee (Application& app, std::uint64_t baseFee,
+        Fees const& fees, ApplyFlags flags);
+
 private:
+    XRPAmount reset(XRPAmount fee);
+
     void setSeq ();
     TER payFee ();
-    void claimFee (XRPAmount& fee, TER terResult, std::vector<uint256> const& removedOffers);
-    static TER checkSingleSign (PreclaimContext const& ctx);
-    static TER checkMultiSign (PreclaimContext const& ctx);
+    static NotTEC checkSingleSign (PreclaimContext const& ctx);
+    static NotTEC checkMultiSign (PreclaimContext const& ctx);
 };
 
 /** Performs early sanity checks on the txid */
-TER
+NotTEC
 preflight0(PreflightContext const& ctx);
 
 /** Performs early sanity checks on the account and fee fields */
-TER
+NotTEC
 preflight1 (PreflightContext const& ctx);
 
 /** Checks whether the signature appears valid */
-TER
+NotTEC
 preflight2 (PreflightContext const& ctx);
 
 }

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/unit_test.h>
@@ -264,10 +263,28 @@ class HashRouter_test : public beast::unit_test::suite
         BEAST_EXPECT(!router.shouldRecover(key1));
     }
 
+    void
+    testProcess()
+    {
+        using namespace std::chrono_literals;
+        TestStopwatch stopwatch;
+        HashRouter router(stopwatch, 5s, 5);
+        uint256 const key(1);
+        HashRouter::PeerShortID peer = 1;
+        int flags;
+
+        BEAST_EXPECT(router.shouldProcess(key, peer, flags, 1s));
+        BEAST_EXPECT(! router.shouldProcess(key, peer, flags, 1s));
+        ++stopwatch;
+        ++stopwatch;
+        BEAST_EXPECT(router.shouldProcess(key, peer, flags, 1s));
+    }
+
+
 public:
 
     void
-    run()
+    run() override
     {
         testNonExpiration();
         testExpiration();
@@ -275,6 +292,7 @@ public:
         testSetFlags();
         testRelay();
         testRecover();
+        testProcess();
     }
 };
 

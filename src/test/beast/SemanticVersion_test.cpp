@@ -248,7 +248,7 @@ public:
         checkLess("0.9.9", "1.0.0");
     }
 
-    void run()
+    void run() override
     {
         testParse();
         testValues();

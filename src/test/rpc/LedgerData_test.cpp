@@ -325,8 +325,10 @@ public:
             env(jv);
         }
 
+        // bob9 DepositPreauths bob4 and bob8.
+        env (deposit::auth (Account {"bob9"}, Account {"bob4"}));
+        env (deposit::auth (Account {"bob9"}, Account {"bob8"}));
         env.close();
-
 
         // Now fetch each type
         auto makeRequest = [&env](Json::StaticString t)
@@ -354,7 +356,7 @@ public:
 
         {  // jvParams[jss::type] = "directory";
         auto const jrr = makeRequest(jss::directory);
-        BEAST_EXPECT( checkArraySize(jrr[jss::state], 7) );
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 8) );
         for (auto const& j : jrr[jss::state])
             BEAST_EXPECT( j["LedgerEntryType"] == "DirectoryNode" );
         }
@@ -415,6 +417,13 @@ public:
             BEAST_EXPECT( j["LedgerEntryType"] == "PayChannel" );
         }
 
+        {  // jvParams[jss::type] = "deposit_preauth";
+        auto const jrr = makeRequest(jss::deposit_preauth);
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 2) );
+        for (auto const& j : jrr[jss::state])
+            BEAST_EXPECT( j["LedgerEntryType"] == "DepositPreauth" );
+        }
+
         {  // jvParams[jss::type] = "misspelling";
         Json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
@@ -427,7 +436,7 @@ public:
         }
     }
 
-    void run()
+    void run() override
     {
         testCurrentLedgerToLimits(true);
         testCurrentLedgerToLimits(false);
@@ -439,6 +448,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerData,app,ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(LedgerData,app,ripple,1);
 
 }

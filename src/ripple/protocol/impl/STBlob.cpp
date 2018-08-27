@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/STBlob.h>
 #include <ripple/basics/StringUtilities.h>
 

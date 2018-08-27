@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
 #include <ripple/basics/Log.h>
@@ -119,13 +118,13 @@ TER PathCursor::reverseLiquidityForAccount () const
 
     // Requests are computed to be the maximum flow possible.
     // Previous can redeem the owed IOUs it holds.
-    const STAmount saPrvRedeemReq  = (saPrvOwed > zero)
+    const STAmount saPrvRedeemReq  = (saPrvOwed > beast::zero)
         ? saPrvOwed
         : STAmount (saPrvOwed.issue ());
 
     // Previous can issue up to limit minus whatever portion of limit already
     // used (not including redeemable amount) - another "maximum flow".
-    const STAmount saPrvIssueReq = (saPrvOwed < zero)
+    const STAmount saPrvIssueReq = (saPrvOwed < beast::zero)
         ? saPrvLimit + saPrvOwed : saPrvLimit;
 
     // Precompute these values in case we have an order book.
@@ -159,7 +158,7 @@ TER PathCursor::reverseLiquidityForAccount () const
     // Current redeem req can't be more than IOUs on hand.
     assert (!node().saRevRedeem || -saNxtOwed >= node().saRevRedeem);
     assert (!node().saRevIssue  // If not issuing, fine.
-            || saNxtOwed >= zero
+            || saNxtOwed >= beast::zero
             // saNxtOwed >= 0: Sender not holding next IOUs, saNxtOwed < 0:
             // Sender holding next IOUs.
             || -saNxtOwed == node().saRevRedeem);
@@ -396,7 +395,7 @@ TER PathCursor::reverseLiquidityForAccount () const
         //
         // TODO(tom): Make sure deliver was cleared, or check actual is zero.
         // redeem -> deliver/issue.
-        if (saPrvOwed > zero                    // Previous has IOUs to redeem.
+        if (saPrvOwed > beast::zero                    // Previous has IOUs to redeem.
             && node().saRevDeliver)                 // Need some issued.
         {
             // Rate : 1.0 : transfer_rate
@@ -460,7 +459,7 @@ TER PathCursor::reverseLiquidityForAccount () const
                 << " saOutAct:" << pathState_.outAct()
                 << " saOutReq:" << pathState_.outReq();
 
-            if (saCurWantedReq <= zero)
+            if (saCurWantedReq <= beast::zero)
             {
                 assert(false);
                 JLOG (j_.fatal()) << "CurWantReq was not positive";

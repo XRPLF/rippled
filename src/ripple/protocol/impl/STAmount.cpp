@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
@@ -262,7 +261,7 @@ STAmount::STAmount (IOUAmount const& amount, Issue const& issue)
     : mIssue (issue)
     , mOffset (amount.exponent ())
     , mIsNative (false)
-    , mIsNegative (amount < zero)
+    , mIsNegative (amount < beast::zero)
 {
     if (mIsNegative)
         mValue = static_cast<std::uint64_t> (-amount.mantissa ());
@@ -275,7 +274,7 @@ STAmount::STAmount (IOUAmount const& amount, Issue const& issue)
 STAmount::STAmount (XRPAmount const& amount)
     : mOffset (0)
     , mIsNative (true)
-    , mIsNegative (amount < zero)
+    , mIsNegative (amount < beast::zero)
 {
     if (mIsNegative)
         mValue = static_cast<std::uint64_t> (-amount.drops ());
@@ -346,10 +345,10 @@ STAmount operator+ (STAmount const& v1, STAmount const& v2)
     if (!areComparable (v1, v2))
         Throw<std::runtime_error> ("Can't add amounts that are't comparable!");
 
-    if (v2 == zero)
+    if (v2 == beast::zero)
         return v1;
 
-    if (v1 == zero)
+    if (v1 == beast::zero)
     {
         // Result must be in terms of v1 currency and issuer.
         return { v1.getFName (), v1.issue (),
@@ -425,12 +424,12 @@ STAmount::setIssue (Issue const& issue)
 std::uint64_t
 getRate (STAmount const& offerOut, STAmount const& offerIn)
 {
-    if (offerOut == zero)
+    if (offerOut == beast::zero)
         return 0;
     try
     {
         STAmount r = divide (offerIn, offerOut, noIssue());
-        if (r == zero) // offer is too good
+        if (r == beast::zero) // offer is too good
             return 0;
         assert ((r.exponent() >= -100) && (r.exponent() <= 155));
         std::uint64_t ret = r.exponent() + 100;
@@ -495,7 +494,7 @@ std::string
 STAmount::getText () const
 {
     // keep full internal accuracy, but make more human friendly if posible
-    if (*this == zero)
+    if (*this == beast::zero)
         return "0";
 
     std::string const raw_value (std::to_string (mValue));
@@ -603,7 +602,7 @@ STAmount::add (Serializer& s) const
     }
     else
     {
-        if (*this == zero)
+        if (*this == beast::zero)
             s.add64 (cNotNative);
         else if (mIsNegative) // 512 = not native
             s.add64 (mValue | (static_cast<std::uint64_t>(mOffset + 512 + 97) << (64 - 10)));
@@ -806,13 +805,17 @@ amountFromJson (SField const& name, Json::Value const& v)
     Json::Value currency;
     Json::Value issuer;
 
-    if (v.isObject ())
+    if (v.isNull())
+    {
+        Throw<std::runtime_error> ("XRP may not be specified with a null Json value");
+    }
+    else if (v.isObject())
     {
         value       = v[jss::value];
         currency    = v[jss::currency];
         issuer      = v[jss::issuer];
     }
-    else if (v.isArray ())
+    else if (v.isArray())
     {
         value = v.get (Json::UInt (0), 0);
         currency = v.get (Json::UInt (1), Json::nullValue);
@@ -846,7 +849,7 @@ amountFromJson (SField const& name, Json::Value const& v)
 
     if (native)
     {
-        if (v.isObject ())
+        if (v.isObjectOrNull ())
             Throw<std::runtime_error> ("XRP may not be specified as an object");
         issue = xrpIssue ();
     }
@@ -1026,10 +1029,10 @@ muldiv_round(
 STAmount
 divide (STAmount const& num, STAmount const& den, Issue const& issue)
 {
-    if (den == zero)
+    if (den == beast::zero)
         Throw<std::runtime_error> ("division by zero");
 
-    if (num == zero)
+    if (num == beast::zero)
         return {issue};
 
     std::uint64_t numVal = num.mantissa();
@@ -1070,7 +1073,7 @@ divide (STAmount const& num, STAmount const& den, Issue const& issue)
 STAmount
 multiply (STAmount const& v1, STAmount const& v2, Issue const& issue)
 {
-    if (v1 == zero || v2 == zero)
+    if (v1 == beast::zero || v2 == beast::zero)
         return STAmount (issue);
 
     if (v1.native() && v2.native() && isXRP (issue))
@@ -1162,7 +1165,7 @@ STAmount
 mulRound (STAmount const& v1, STAmount const& v2, Issue const& issue,
     bool roundUp)
 {
-    if (v1 == zero || v2 == zero)
+    if (v1 == beast::zero || v2 == beast::zero)
         return {issue};
 
     bool const xrp = isXRP (issue);
@@ -1247,10 +1250,10 @@ STAmount
 divRound (STAmount const& num, STAmount const& den,
     Issue const& issue, bool roundUp)
 {
-    if (den == zero)
+    if (den == beast::zero)
         Throw<std::runtime_error> ("division by zero");
 
-    if (num == zero)
+    if (num == beast::zero)
         return {issue};
 
     std::uint64_t numVal = num.mantissa(), denVal = den.mantissa();

@@ -32,18 +32,22 @@
 #if BEAST_MAC || BEAST_IOS
 
  #if BEAST_IOS
-  #import <Foundation/Foundation.h>
-  #import <UIKit/UIKit.h>
-  #import <CoreData/CoreData.h>
-  #import <MobileCoreServices/MobileCoreServices.h>
+  #ifdef __OBJC__
+    #import <Foundation/Foundation.h>
+    #import <UIKit/UIKit.h>
+    #import <CoreData/CoreData.h>
+    #import <MobileCoreServices/MobileCoreServices.h>
+  #endif
   #include <sys/fcntl.h>
  #else
-  #define Point CarbonDummyPointName
-  #define Component CarbonDummyCompName
-  #import <Cocoa/Cocoa.h>
-  #import <CoreAudio/HostTime.h>
-  #undef Point
-  #undef Component
+  #ifdef __OBJC__
+    #define Point CarbonDummyPointName
+    #define Component CarbonDummyCompName
+    #import <Cocoa/Cocoa.h>
+    #import <CoreAudio/HostTime.h>
+    #undef Point
+    #undef Component
+  #endif
   #include <sys/dir.h>
  #endif
 
@@ -226,5 +230,78 @@
 #undef min
 #undef direct
 #undef check
+
+// Order matters, since headers don't have their own #include lines.
+// Add new includes to the bottom.
+
+#include <ripple/beast/core/LexicalCast.h>
+#include <ripple/beast/core/SemanticVersion.h>
+
+#include <locale>
+#include <cctype>
+
+#if ! BEAST_BSD
+ #include <sys/timeb.h>
+#endif
+
+#if ! BEAST_ANDROID
+ #include <cwctype>
+#endif
+
+#if BEAST_WINDOWS
+ #include <ctime>
+ #include <winsock2.h>
+ #include <ws2tcpip.h>
+
+ #if ! BEAST_MINGW
+  #pragma warning ( push )
+  #pragma warning ( disable: 4091 )
+  #include <Dbghelp.h>
+  #pragma warning ( pop )
+
+  #if ! BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES
+   #pragma comment (lib, "DbgHelp.lib")
+  #endif
+ #endif
+
+ #if BEAST_MINGW
+  #include <ws2spi.h>
+ #endif
+
+#else
+ #if BEAST_LINUX || BEAST_ANDROID
+  #include <sys/types.h>
+  #include <sys/socket.h>
+  #include <sys/errno.h>
+  #include <unistd.h>
+  #include <netinet/in.h>
+ #endif
+
+ #if BEAST_LINUX
+  #include <langinfo.h>
+ #endif
+
+ #include <pwd.h>
+ #include <fcntl.h>
+ #include <netdb.h>
+ #include <arpa/inet.h>
+ #include <netinet/tcp.h>
+ #include <sys/time.h>
+ #include <net/if.h>
+ #include <sys/ioctl.h>
+
+ #if ! BEAST_ANDROID && ! BEAST_BSD
+  #include <execinfo.h>
+ #endif
+#endif
+
+#if BEAST_MAC || BEAST_IOS
+ #include <xlocale.h>
+ #include <mach/mach.h>
+#endif
+
+#if BEAST_ANDROID
+ #include <android/log.h>
+#endif
 
 #endif   // BEAST_BASICNATIVEHEADERS_H_INCLUDED

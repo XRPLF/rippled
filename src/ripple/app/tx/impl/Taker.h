@@ -73,11 +73,15 @@ protected:
 
     struct Flow
     {
+        explicit Flow() = default;
+
         Amounts order;
         Amounts issuers;
 
         bool sanity_check () const
         {
+            using beast::zero;
+
             if (isXRP (order.in) && isXRP (order.out))
                 return false;
 
@@ -236,7 +240,7 @@ public:
     consume_offer (Offer& offer, Amounts const& order);
 
     STAmount
-    get_funds (AccountID const& account, STAmount const& funds) const;
+    get_funds (AccountID const& account, STAmount const& funds) const override;
 
     STAmount const&
     get_xrp_flow () const

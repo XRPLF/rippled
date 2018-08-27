@@ -25,8 +25,6 @@
 
 namespace ripple {
 
-using namespace std::chrono_literals;
-
 /** Consensus algorithm parameters
 
     Parameters which control the consensus algorithm.  This are not
@@ -34,6 +32,7 @@ using namespace std::chrono_literals;
 */
 struct ConsensusParms
 {
+    explicit ConsensusParms() = default;
 
     //-------------------------------------------------------------------------
     // Validation and proposal durations are relative to NetClock times, so use
@@ -44,7 +43,7 @@ struct ConsensusParms
         This is a safety to protect against very old validations and the time
         it takes to adjust the close time accuracy window.
     */
-    std::chrono::seconds validationVALID_WALL = 5min;
+    std::chrono::seconds validationVALID_WALL = std::chrono::minutes {5};
 
     /** Duration a validation remains current after first observed.
 
@@ -52,21 +51,21 @@ struct ConsensusParms
        first saw it. This provides faster recovery in very rare cases where the
        number of validations produced by the network is lower than normal
     */
-    std::chrono::seconds validationVALID_LOCAL = 3min;
+    std::chrono::seconds validationVALID_LOCAL = std::chrono::minutes {3};
 
     /**  Duration pre-close in which validations are acceptable.
 
         The number of seconds before a close time that we consider a validation
         acceptable. This protects against extreme clock errors
     */
-    std::chrono::seconds validationVALID_EARLY = 3min;
+    std::chrono::seconds validationVALID_EARLY = std::chrono::minutes {3};
 
 
     //! How long we consider a proposal fresh
-    std::chrono::seconds proposeFRESHNESS = 20s;
+    std::chrono::seconds proposeFRESHNESS = std::chrono::seconds {20};
 
     //! How often we force generating a new proposal to keep ours fresh
-    std::chrono::seconds proposeINTERVAL = 12s;
+    std::chrono::seconds proposeINTERVAL = std::chrono::seconds {12};
 
 
     //-------------------------------------------------------------------------
@@ -77,16 +76,17 @@ struct ConsensusParms
     std::size_t minCONSENSUS_PCT = 80;
 
     //! The duration a ledger may remain idle before closing
-    std::chrono::milliseconds ledgerIDLE_INTERVAL = 15s;
+    std::chrono::milliseconds ledgerIDLE_INTERVAL = std::chrono::seconds {15};
 
     //! The number of seconds we wait minimum to ensure participation
-    std::chrono::milliseconds ledgerMIN_CONSENSUS = 1950ms;
+    std::chrono::milliseconds ledgerMIN_CONSENSUS =
+        std::chrono::milliseconds {1950};
 
     //! Minimum number of seconds to wait to ensure others have computed the LCL
-    std::chrono::milliseconds ledgerMIN_CLOSE = 2s;
+    std::chrono::milliseconds ledgerMIN_CLOSE = std::chrono::seconds {2};
 
     //! How often we check state or change positions
-    std::chrono::milliseconds ledgerGRANULARITY = 1s;
+    std::chrono::milliseconds ledgerGRANULARITY = std::chrono::seconds {1};
 
     /** The minimum amount of time to consider the previous round
         to have taken.
@@ -98,7 +98,7 @@ struct ConsensusParms
         twice the interval between proposals (0.7s) divided by
         the interval between mid and late consensus ([85-50]/100).
     */
-    std::chrono::milliseconds avMIN_CONSENSUS_TIME = 5s;
+    std::chrono::milliseconds avMIN_CONSENSUS_TIME = std::chrono::seconds {5};
 
     //------------------------------------------------------------------------------
     // Avalanche tuning

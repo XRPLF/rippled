@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/Feature.h>
@@ -109,7 +108,7 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         using namespace jtx;
         auto const sa = supported_amendments();

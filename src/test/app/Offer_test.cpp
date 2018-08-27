@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/PathSet.h>
@@ -47,7 +46,7 @@ class Offer_test : public beast::unit_test::suite
         using namespace jtx;
         auto feeDrops = env.current()->fees().base;
         return drops (dropsPerXRP<std::int64_t>::value * xrpAmount - feeDrops);
-    };
+    }
 
     static auto
     ledgerEntryState(jtx::Env & env, jtx::Account const& acct_a,
@@ -61,7 +60,7 @@ class Offer_test : public beast::unit_test::suite
         jvParams[jss::ripple_state][jss::accounts].append(acct_b.human());
         return env.rpc ("json", "ledger_entry",
             to_string(jvParams))[jss::result];
-    };
+    }
 
     static auto
     ledgerEntryRoot (jtx::Env & env, jtx::Account const& acct)
@@ -71,7 +70,7 @@ class Offer_test : public beast::unit_test::suite
         jvParams[jss::account_root] = acct.human();
         return env.rpc ("json", "ledger_entry",
             to_string(jvParams))[jss::result];
-    };
+    }
 
     static auto
     ledgerEntryOffer (jtx::Env & env,
@@ -82,7 +81,7 @@ class Offer_test : public beast::unit_test::suite
         jvParams[jss::offer][jss::seq] = offer_seq;
         return env.rpc ("json", "ledger_entry",
             to_string(jvParams))[jss::result];
-    };
+    }
 
     static auto
     getBookOffers(jtx::Env & env,
@@ -174,48 +173,78 @@ public:
         auto const USD = gw["USD"];
 
         env.fund (XRP (10000), alice, gw);
+        env.close();
         env.trust (USD (100), alice);
+        env.close();
 
         env (pay (gw, alice, USD (50)));
+        env.close();
 
-        auto const firstOfferSeq = env.seq (alice);
+        auto const offer1Seq = env.seq (alice);
 
         env (offer (alice, XRP (500), USD (100)),
             require (offers (alice, 1)));
+        env.close();
 
         BEAST_EXPECT(isOffer (env, alice, XRP (500), USD (100)));
 
         // cancel the offer above and replace it with a new offer
+        auto const offer2Seq = env.seq (alice);
+
         env (offer (alice, XRP (300), USD (100)),
-             json (jss::OfferSequence, firstOfferSeq),
+             json (jss::OfferSequence, offer1Seq),
              require (offers (alice, 1)));
+        env.close();
 
         BEAST_EXPECT(isOffer (env, alice, XRP (300), USD (100)) &&
             !isOffer (env, alice, XRP (500), USD (100)));
 
         // Test canceling non-existent offer.
+//      auto const offer3Seq = env.seq (alice);
+
         env (offer (alice, XRP (400), USD (200)),
-             json (jss::OfferSequence, firstOfferSeq),
+             json (jss::OfferSequence, offer1Seq),
              require (offers (alice, 2)));
+        env.close();
 
         BEAST_EXPECT(isOffer (env, alice, XRP (300), USD (100)) &&
             isOffer (env, alice, XRP (400), USD (200)));
 
         // Test cancellation now with OfferCancel tx
-        auto const nextOfferSeq = env.seq (alice);
+        auto const offer4Seq = env.seq (alice);
         env (offer (alice, XRP (222), USD (111)),
             require (offers (alice, 3)));
+        env.close();
 
         BEAST_EXPECT(isOffer (env, alice, XRP (222), USD (111)));
-
-        Json::Value cancelOffer;
-        cancelOffer[jss::Account] = alice.human();
-        cancelOffer[jss::OfferSequence] = nextOfferSeq;
-        cancelOffer[jss::TransactionType] = "OfferCancel";
-        env (cancelOffer);
-        BEAST_EXPECT(env.seq(alice) == nextOfferSeq + 2);
+        {
+            Json::Value cancelOffer;
+            cancelOffer[jss::Account] = alice.human();
+            cancelOffer[jss::OfferSequence] = offer4Seq;
+            cancelOffer[jss::TransactionType] = "OfferCancel";
+            env (cancelOffer);
+        }
+        env.close();
+        BEAST_EXPECT(env.seq(alice) == offer4Seq + 2);
 
         BEAST_EXPECT(!isOffer (env, alice, XRP (222), USD (111)));
+
+        // Create an offer that both fails with a tecEXPIRED code and removes
+        // an offer.  Show that the attempt to remove the offer fails.
+        env.require (offers (alice, 2));
+
+        // featureDepositPreauths changes the return code on an expired Offer.
+        // Adapt to that.
+        bool const featPreauth {features[featureDepositPreauth]};
+        env (offer (alice, XRP (5), USD (2)),
+            json (sfExpiration.fieldName, lastClose(env)),
+            json (jss::OfferSequence, offer2Seq),
+            ter (featPreauth ? TER {tecEXPIRED} : TER {tesSUCCESS}));
+        env.close();
+
+        env.require (offers (alice, 2));
+        BEAST_EXPECT( isOffer (env, alice, XRP (300), USD (100))); // offer2
+        BEAST_EXPECT(!isOffer (env, alice, XRP   (5), USD   (2))); // expired
     }
 
     void testTinyPayment (FeatureBitset features)
@@ -260,8 +289,8 @@ public:
                 (hasFeature(env, featureFeeEscalation) &&
                     !hasFeature(env, fix1513));
             // Will fail without the underflow fix
-            auto expectedResult = *stAmountCalcSwitchover ?
-                tesSUCCESS : tecPATH_PARTIAL;
+            TER const expectedResult = *stAmountCalcSwitchover ?
+                TER {tesSUCCESS} : TER {tecPATH_PARTIAL};
             env (pay (alice, bob, EUR (epsilon)), path (~EUR),
                 sendmax (USD (100)), ter (expectedResult));
         }
@@ -300,7 +329,7 @@ public:
         for (auto withFix : {false, true})
         {
             if (!withFix &&
-                features[featureFlow] && features[featureFeeEscalation])
+                (features[featureFlow] || features[featureFeeEscalation]))
                 continue;
 
             Env env {*this, features};
@@ -859,10 +888,9 @@ public:
 
         // Offer with a bad expiration
         {
-            Json::StaticString const key {"Expiration"};
-
             env (offer (alice, USD (1000), XRP (1000)),
-                json (key, std::uint32_t (0)), ter(temBAD_EXPIRATION));
+                json (sfExpiration.fieldName, std::uint32_t (0)),
+                ter(temBAD_EXPIRATION));
             env.require (
                 owners (alice, 1),
                 offers (alice, 0));
@@ -905,8 +933,6 @@ public:
         auto const usdOffer = USD (1000);
         auto const xrpOffer = XRP (1000);
 
-        Json::StaticString const key ("Expiration");
-
         Env env {*this, features};
         auto const closeTime =
             fix1449Time () +
@@ -918,7 +944,6 @@ public:
 
         auto const f = env.current ()->fees ().base;
 
-        // Place an offer that should have already expired
         env (trust (alice, usdOffer),             ter(tesSUCCESS));
         env (pay (gw, alice, usdOffer),           ter(tesSUCCESS));
         env.close();
@@ -928,8 +953,14 @@ public:
             offers (alice, 0),
             owners (alice, 1));
 
+        // Place an offer that should have already expired.
+        // The DepositPreauth amendment changes the return code; adapt to that.
+        bool const featPreauth {features[featureDepositPreauth]};
+
         env (offer (alice, xrpOffer, usdOffer),
-            json (key, lastClose(env)),             ter(tesSUCCESS));
+            json (sfExpiration.fieldName, lastClose(env)),
+            ter (featPreauth ? TER {tecEXPIRED} : TER {tesSUCCESS}));
+
         env.require (
             balance (alice, startBalance - f - f),
             balance (alice, usdOffer),
@@ -937,9 +968,10 @@ public:
             owners (alice, 1));
         env.close();
 
-        // Add an offer that's expires before the next ledger close
+        // Add an offer that expires before the next ledger close
         env (offer (alice, xrpOffer, usdOffer),
-            json (key, lastClose(env) + 1),         ter(tesSUCCESS));
+            json (sfExpiration.fieldName, lastClose(env) + 1),
+            ter(tesSUCCESS));
         env.require (
             balance (alice, startBalance - f - f - f),
             balance (alice, usdOffer),
@@ -3390,7 +3422,7 @@ public:
 
             // Determine which TEC code we expect.
             TER const tecExpect =
-                features[featureFlow] ? temBAD_PATH : tecPATH_DRY;
+                features[featureFlow] ? TER {temBAD_PATH} : TER {tecPATH_DRY};
 
             // This payment caused the assert.
             env (pay (ann, ann, D_BUX(30)),
@@ -4358,20 +4390,20 @@ public:
         env(fset (gw, asfRequireAuth));
         env.close();
 
-        // The test behaves differently with or without FlowCross.
-        bool const flowCross = features[featureFlowCross];
+        // The test behaves differently with or without DepositPreauth.
+        bool const preauth = features[featureDepositPreauth];
 
-        // Before FlowCross an account with lsfRequireAuth set could not
-        // create an offer to buy their own currency.  After FlowCross
+        // Before DepositPreauth an account with lsfRequireAuth set could not
+        // create an offer to buy their own currency.  After DepositPreauth
         // they can.
         env (offer (gw, gwUSD(40), XRP(4000)),
-            ter (flowCross ? tesSUCCESS : tecNO_LINE));
+            ter (preauth ? TER {tesSUCCESS} : TER {tecNO_LINE}));
         env.close();
 
-        env.require (offers (gw, flowCross ? 1 : 0));
+        env.require (offers (gw, preauth ? 1 : 0));
 
-        if (!flowCross)
-            // The rest of the test verifies FlowCross behavior.
+        if (!preauth)
+            // The rest of the test verifies DepositPreauth behavior.
             return;
 
         // Set up an authorized trust line and pay alice gwUSD 50.
@@ -4626,8 +4658,8 @@ class Offer_manual_test : public Offer_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE (Offer, tx, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL (Offer_manual, tx, ripple);
+BEAST_DEFINE_TESTSUITE_PRIO (Offer, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO (Offer_manual, tx, ripple, 20);
 
 }  // test
 }  // ripple

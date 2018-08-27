@@ -25,6 +25,15 @@
 namespace ripple {
 namespace test {
 
+extern std::atomic<bool> envUseIPv4;
+
+inline
+const char *
+getEnvLocalhostAddr()
+{
+    return envUseIPv4 ? "127.0.0.1" : "::1";
+}
+
 /// @brief initializes a config object for use with jtx::Env
 ///
 /// @param config the configuration object to be initialized

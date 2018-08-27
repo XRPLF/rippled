@@ -17,25 +17,21 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/CountedObject.h>
+#include <type_traits>
 
 namespace ripple {
 
-CountedObjects& CountedObjects::getInstance ()
+CountedObjects& CountedObjects::getInstance () noexcept
 {
     static CountedObjects instance;
 
     return instance;
 }
 
-CountedObjects::CountedObjects ()
+CountedObjects::CountedObjects () noexcept
     : m_count (0)
     , m_head (nullptr)
-{
-}
-
-CountedObjects::~CountedObjects ()
 {
 }
 
@@ -71,7 +67,7 @@ CountedObjects::List CountedObjects::getCounts (int minimumThreshold) const
 
 //------------------------------------------------------------------------------
 
-CountedObjects::CounterBase::CounterBase ()
+CountedObjects::CounterBase::CounterBase () noexcept
     : m_count (0)
 {
     // Insert ourselves at the front of the lock-free linked list
@@ -89,7 +85,7 @@ CountedObjects::CounterBase::CounterBase ()
     ++instance.m_count;
 }
 
-CountedObjects::CounterBase::~CounterBase ()
+CountedObjects::CounterBase::~CounterBase () noexcept
 {
     // VFALCO NOTE If the counters are destroyed before the singleton,
     //             undefined behavior will result if the singleton's member

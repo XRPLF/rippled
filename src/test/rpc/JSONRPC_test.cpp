@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/contract.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
@@ -1949,6 +1949,7 @@ public:
         using namespace test::jtx;
         Env env {*this, envconfig([](std::unique_ptr<Config> cfg)
             {
+                cfg->loadFromString ("[" SECTION_SIGNING_SUPPORT "]\ntrue");
                 cfg->section("transaction_queue")
                     .set("minimum_txn_in_ledger_standalone", "3");
                 return cfg;
@@ -2354,7 +2355,7 @@ public:
         }
     }
 
-    void run ()
+    void run () override
     {
         testBadRpcCommand ();
         testAutoFillFees ();

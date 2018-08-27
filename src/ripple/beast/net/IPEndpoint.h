@@ -48,7 +48,6 @@ public:
     */
     static std::pair <Endpoint, bool> from_string_checked (std::string const& s);
     static Endpoint from_string (std::string const& s);
-    static Endpoint from_string_altform (std::string const& s);
 
     /** Returns a string representing the endpoint. */
     std::string to_string () const;
@@ -71,9 +70,9 @@ public:
         { return m_addr.is_v4(); }
     bool is_v6 () const
         { return m_addr.is_v6(); }
-    AddressV4 const& to_v4 () const
+    AddressV4 const to_v4 () const
         { return m_addr.to_v4 (); }
-    AddressV6 const& to_v6 () const
+    AddressV6 const to_v6 () const
         { return m_addr.to_v6 (); }
     /** @} */
 
@@ -97,7 +96,7 @@ public:
     void
     hash_append (Hasher& h, Endpoint const& endpoint)
     {
-        using beast::hash_append;
+        using ::beast::hash_append;
         hash_append(h, endpoint.m_addr, endpoint.m_port);
     }
 
@@ -155,20 +154,24 @@ std::istream& operator>> (std::istream& is, Endpoint& endpoint);
 namespace std {
 /** std::hash support. */
 template <>
-struct hash <beast::IP::Endpoint>
+struct hash <::beast::IP::Endpoint>
 {
-    std::size_t operator() (beast::IP::Endpoint const& endpoint) const
-        { return beast::uhash<>{} (endpoint); }
+    explicit hash() = default;
+
+    std::size_t operator() (::beast::IP::Endpoint const& endpoint) const
+        { return ::beast::uhash<>{} (endpoint); }
 };
 }
 
 namespace boost {
 /** boost::hash support. */
 template <>
-struct hash <beast::IP::Endpoint>
+struct hash <::beast::IP::Endpoint>
 {
-    std::size_t operator() (beast::IP::Endpoint const& endpoint) const
-        { return beast::uhash<>{} (endpoint); }
+    explicit hash() = default;
+
+    std::size_t operator() (::beast::IP::Endpoint const& endpoint) const
+        { return ::beast::uhash<>{} (endpoint); }
 };
 }
 

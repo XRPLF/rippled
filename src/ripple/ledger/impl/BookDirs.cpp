@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/ledger/BookDirs.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Indexes.h>
@@ -28,10 +27,10 @@ BookDirs::BookDirs(ReadView const& view, Book const& book)
     : view_(&view)
     , root_(keylet::page(getBookBase(book)).key)
     , next_quality_(getQualityNext(root_))
-    , key_(view_->succ(root_, next_quality_).value_or(zero))
+    , key_(view_->succ(root_, next_quality_).value_or(beast::zero))
 {
-    assert(root_ != zero);
-    if (key_ != zero)
+    assert(root_ != beast::zero);
+    if (key_ != beast::zero)
     {
         if (! cdirFirst(*view_, key_, sle_, entry_, index_,
             beast::Journal()))
@@ -46,7 +45,7 @@ BookDirs::begin() const ->
     BookDirs::const_iterator
 {
     auto it = BookDirs::const_iterator(*view_, root_, key_);
-    if (key_ != zero)
+    if (key_ != beast::zero)
     {
         it.next_quality_ = next_quality_;
         it.sle_ = sle_;
@@ -82,7 +81,7 @@ BookDirs::const_iterator::operator==
 BookDirs::const_iterator::reference
 BookDirs::const_iterator::operator*() const
 {
-    assert(index_ != zero);
+    assert(index_ != beast::zero);
     if (! cache_)
         cache_ = view_->read(keylet::offer(index_));
     return *cache_;
@@ -91,6 +90,8 @@ BookDirs::const_iterator::operator*() const
 BookDirs::const_iterator&
 BookDirs::const_iterator::operator++()
 {
+    using beast::zero;
+
     assert(index_ != zero);
     if (! cdirNext(*view_, cur_key_, sle_, entry_, index_, j_))
     {
@@ -116,7 +117,7 @@ BookDirs::const_iterator::operator++()
 BookDirs::const_iterator
 BookDirs::const_iterator::operator++(int)
 {
-    assert(index_ != zero);
+    assert(index_ != beast::zero);
     const_iterator tmp(*this);
     ++(*this);
     return tmp;

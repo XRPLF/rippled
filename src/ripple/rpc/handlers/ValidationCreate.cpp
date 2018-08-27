@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -55,11 +54,11 @@ Json::Value doValidationCreate (RPC::Context& context)
     auto const private_key = generateSecretKey (KeyType::secp256k1, *seed);
 
     obj[jss::validation_public_key] = toBase58 (
-        TokenType::TOKEN_NODE_PUBLIC,
+        TokenType::NodePublic,
         derivePublicKey (KeyType::secp256k1, private_key));
 
     obj[jss::validation_private_key] = toBase58 (
-        TokenType::TOKEN_NODE_PRIVATE, private_key);
+        TokenType::NodePrivate, private_key);
 
     obj[jss::validation_seed] = toBase58 (*seed);
     obj[jss::validation_key] = seedAs1751 (*seed);

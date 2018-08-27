@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/digest.h>
@@ -106,7 +105,15 @@ detail::supportedAmendments ()
         { "6C92211186613F9647A89DFFBAB8F94C99D4C7E956D495270789128569177DA1 fix1512" },
         { "67A34F2CF55BFC0F93AACD5B281413176FEE195269FA6D95219A2DF738671172 fix1513" },
         { "B9E739B8296B4A1BB29BE990B17D66E21B62A300A909F25AC55C22D6C72E1F9D fix1523" },
-        { "1D3463A5891F9E589C5AE839FFAC4A917CE96197098A1EF22304E1BC5B98A454 fix1528" }
+        { "1D3463A5891F9E589C5AE839FFAC4A917CE96197098A1EF22304E1BC5B98A454 fix1528" },
+        { "F64E1EABBE79D55B3BB82020516CEC2C582A98A6BFE20FBE9BB6A0D233418064 DepositAuth" },
+        { "157D2D480E006395B76F948E3E07A45A05FE10230D88A7993C71F97AE4B1F2D1 Checks" },
+        { "7117E2EC2DBF119CA55181D69819F1999ECEE1A0225A7FD2B9ED47940968479C fix1571" },
+        { "CA7C02118BA27599528543DFE77BA6838D1B0F43B447D4D7F53523CE6A0E9AC2 fix1543" },
+        { "58BE9B5968C4DA7C59BA900961828B113E5490699B21877DEF9A31E9D0FE5D5F fix1623" },
+        { "3CBC5C4E630A1B82380295CDA84B32B49DD066602E74E39B85EF64137FA65194 DepositPreauth"},
+        // Use liquidity from strands that consume max offers, but mark as dry
+        { "5D08145F0A4983F23AFFFF514E83FAD355C5ABFBB6CAB76FB5BC8519FF5F33BE fix1515"}
     };
     return supported;
 }
@@ -154,5 +161,12 @@ uint256 const fix1512 = *getRegisteredFeature("fix1512");
 uint256 const fix1513 = *getRegisteredFeature("fix1513");
 uint256 const fix1523 = *getRegisteredFeature("fix1523");
 uint256 const fix1528 = *getRegisteredFeature("fix1528");
+uint256 const featureDepositAuth = *getRegisteredFeature("DepositAuth");
+uint256 const featureChecks = *getRegisteredFeature("Checks");
+uint256 const fix1571 = *getRegisteredFeature("fix1571");
+uint256 const fix1543 = *getRegisteredFeature("fix1543");
+uint256 const fix1623 = *getRegisteredFeature("fix1623");
+uint256 const featureDepositPreauth = *getRegisteredFeature("DepositPreauth");
+uint256 const fix1515 = *getRegisteredFeature("fix1515");
 
 } // ripple

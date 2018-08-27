@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/IOUAmount.h>
 #include <ripple/beast/unit_test.h>
 
@@ -36,13 +35,13 @@ public:
         BEAST_EXPECT(z.exponent () == -100);
         BEAST_EXPECT(!z);
         BEAST_EXPECT(z.signum () == 0);
-        BEAST_EXPECT(z == zero);
+        BEAST_EXPECT(z == beast::zero);
 
         BEAST_EXPECT((z + z) == z);
         BEAST_EXPECT((z - z) == z);
         BEAST_EXPECT(z == -z);
 
-        IOUAmount const zz (zero);
+        IOUAmount const zz (beast::zero);
         BEAST_EXPECT(z == zz);
     }
 
@@ -63,6 +62,8 @@ public:
     void testBeastZero ()
     {
         testcase ("beast::Zero Comparisons");
+
+        using beast::zero;
 
         {
             IOUAmount z (zero);
@@ -202,8 +203,8 @@ public:
             // tiny negative numbers
             IOUAmount tinyNeg (-minMantissa, minExponent);
             // Round up should give zero
-            BEAST_EXPECT(zero == mulRatio (tinyNeg, 1, maxUInt, true));
-            BEAST_EXPECT(zero == mulRatio (tinyNeg, maxUInt - 1, maxUInt, true));
+            BEAST_EXPECT(beast::zero == mulRatio (tinyNeg, 1, maxUInt, true));
+            BEAST_EXPECT(beast::zero == mulRatio (tinyNeg, maxUInt - 1, maxUInt, true));
             // rounding down should be tiny
             BEAST_EXPECT(tinyNeg == mulRatio (tinyNeg, 1, maxUInt, false));
             BEAST_EXPECT(tinyNeg == mulRatio (tinyNeg, maxUInt - 1, maxUInt, false));
@@ -247,7 +248,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void run ()
+    void run () override
     {
         testZero ();
         testSigNum ();

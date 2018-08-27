@@ -38,6 +38,8 @@ namespace ripple {
 class TxFlag
 {
 public:
+    explicit TxFlag() = default;
+
     static std::uint32_t const requireDestTag = 0x00010000;
 };
 // VFALCO TODO Move all flags into this container after some study.
@@ -68,6 +70,7 @@ const std::uint32_t asfAccountTxnID        = 5;
 const std::uint32_t asfNoFreeze            = 6;
 const std::uint32_t asfGlobalFreeze        = 7;
 const std::uint32_t asfDefaultRipple       = 8;
+const std::uint32_t asfDepositAuth         = 9;
 
 // OfferCreate flags:
 const std::uint32_t tfPassive              = 0x00010000;
@@ -95,9 +98,10 @@ const std::uint32_t tfTrustSetMask         = ~ (tfUniversal | tfSetfAuth | tfSet
 const std::uint32_t tfGotMajority          = 0x00010000;
 const std::uint32_t tfLostMajority         = 0x00020000;
 
-// PaymentChannel flags:
+// PaymentChannelClaim flags:
 const std::uint32_t tfRenew                = 0x00010000;
 const std::uint32_t tfClose                = 0x00020000;
+const std::uint32_t tfPayChanClaimMask     = ~ (tfUniversal | tfRenew | tfClose);
 
 } // ripple
 

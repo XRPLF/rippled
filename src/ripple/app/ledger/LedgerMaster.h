@@ -22,10 +22,12 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/AbstractFetchPackContainer.h>
+#include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/LedgerHistory.h>
 #include <ripple/app/ledger/LedgerHolder.h>
+#include <ripple/app/ledger/LedgerReplay.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/RangeSet.h>
@@ -39,20 +41,14 @@
 #include <ripple/beast/utility/PropertyStream.h>
 #include <mutex>
 
-#include "ripple.pb.h"
+#include <ripple/protocol/messages.h>
 
 namespace ripple {
 
 class Peer;
 class Transaction;
 
-struct LedgerReplay
-{
-    std::map< int, std::shared_ptr<STTx const> > txns_;
-    NetClock::time_point closeTime_;
-    int closeFlags_;
-    std::shared_ptr<Ledger const> prevLedger_;
-};
+
 
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
@@ -180,7 +176,7 @@ public:
         LedgerIndex ledgerIndex);
 
     boost::optional <NetClock::time_point> getCloseTimeByHash (
-        LedgerHash const& ledgerHash);
+        LedgerHash const& ledgerHash, LedgerIndex ledgerIndex);
 
     void addHeldTransaction (std::shared_ptr<Transaction> const& trans);
     void fixMismatch (ReadView const& ledger);
@@ -192,13 +188,17 @@ public:
     bool getFullValidatedRange (
         std::uint32_t& minVal, std::uint32_t& maxVal);
 
-    void tune (int size, int age);
+    void tune (int size, std::chrono::seconds age);
     void sweep ();
     float getCacheHitRate ();
 
     void checkAccept (std::shared_ptr<Ledger const> const& ledger);
     void checkAccept (uint256 const& hash, std::uint32_t seq);
-    void consensusBuilt (std::shared_ptr<Ledger const> const& ledger, Json::Value consensus);
+    void
+    consensusBuilt(
+        std::shared_ptr<Ledger const> const& ledger,
+        uint256 const& consensusHash,
+        Json::Value consensus);
 
     LedgerIndex getBuildingLedger ();
     void setBuildingLedger (LedgerIndex index);
@@ -238,7 +238,7 @@ public:
         std::weak_ptr<Peer> const& wPeer,
         std::shared_ptr<protocol::TMGetObjectByHash> const& request,
         uint256 haveLedgerHash,
-        std::uint32_t uUptime);
+        UptimeClock::time_point uptime);
 
     std::size_t getFetchPackCacheSize () const;
 
@@ -255,14 +255,21 @@ private:
         Job& job,
         std::shared_ptr<Ledger const> ledger);
 
-    void getFetchPack(LedgerHash missingHash, LedgerIndex missingIndex);
-    boost::optional<LedgerHash> getLedgerHashForHistory(LedgerIndex index);
+    void getFetchPack(
+        LedgerIndex missingIndex, InboundLedger::Reason reason);
+
+    boost::optional<LedgerHash> getLedgerHashForHistory(
+        LedgerIndex index, InboundLedger::Reason reason);
+
     std::size_t getNeededValidations();
     void advanceThread();
+    void fetchForHistory(
+        std::uint32_t missing,
+        bool& progress,
+        InboundLedger::Reason reason);
     // Try to publish ledgers, acquire missing ledgers.  Always called with
     // m_mutex locked.  The passed ScopedLockType is a reminder to callers.
     void doAdvance(ScopedLockType&);
-    bool shouldFetchPack(std::uint32_t seq) const;
     bool shouldAcquire(
         std::uint32_t const currentLedger,
         std::uint32_t const ledgerHistory,
@@ -298,6 +305,9 @@ private:
 
     // The last ledger we handled fetching history
     std::shared_ptr<Ledger const> mHistLedger;
+
+    // The last ledger we handled fetching for a shard
+    std::shared_ptr<Ledger const> mShardLedger;
 
     // Fully validated ledger, whether or not we have the ledger resident.
     std::pair <uint256, LedgerIndex> mLastValidLedger {uint256(), 0};
@@ -342,7 +352,7 @@ private:
     // How much history do we want to keep
     std::uint32_t const ledger_history_;
 
-    int const ledger_fetch_size_;
+    std::uint32_t const ledger_fetch_size_;
 
     TaggedCache<uint256, Blob> fetch_packs_;
 

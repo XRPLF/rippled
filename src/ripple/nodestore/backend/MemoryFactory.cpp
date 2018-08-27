@@ -17,11 +17,10 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
-#include <beast/core/string.hpp>
+#include <boost/beast/core/string.hpp>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -31,6 +30,8 @@ namespace NodeStore {
 
 struct MemoryDB
 {
+    explicit MemoryDB() = default;
+
     std::mutex mutex;
     bool open = false;
     std::map <uint256 const, std::shared_ptr<NodeObject>> table;
@@ -40,21 +41,21 @@ class MemoryFactory : public Factory
 {
 private:
     std::mutex mutex_;
-    std::map <std::string, MemoryDB, beast::iless> map_;
+    std::map <std::string, MemoryDB, boost::beast::iless> map_;
 
 public:
     MemoryFactory();
-    ~MemoryFactory();
+    ~MemoryFactory() override;
 
     std::string
-    getName() const;
+    getName() const override;
 
     std::unique_ptr <Backend>
     createInstance (
         size_t keyBytes,
         Section const& keyValues,
         Scheduler& scheduler,
-        beast::Journal journal);
+        beast::Journal journal) override;
 
     MemoryDB&
     open (std::string const& path)
@@ -80,7 +81,7 @@ private:
 
     std::string name_;
     beast::Journal journal_;
-    MemoryDB* db_;
+    MemoryDB* db_ {nullptr};
 
 public:
     MemoryBackend (size_t keyBytes, Section const& keyValues,
@@ -90,10 +91,9 @@ public:
     {
         if (name_.empty())
             Throw<std::runtime_error> ("Missing path in Memory backend");
-        db_ = &memoryFactory.open(name_);
     }
 
-    ~MemoryBackend ()
+    ~MemoryBackend () override
     {
         close();
     }
@@ -102,6 +102,12 @@ public:
     getName () override
     {
         return name_;
+    }
+
+    void
+    open(bool createIfMissing) override
+    {
+        db_ = &memoryFactory.open(name_);
     }
 
     void
@@ -115,6 +121,7 @@ public:
     Status
     fetch (void const* key, std::shared_ptr<NodeObject>* pObject) override
     {
+        assert(db_);
         uint256 const hash (uint256::fromVoid (key));
 
         std::lock_guard<std::mutex> _(db_->mutex);
@@ -145,6 +152,7 @@ public:
     void
     store (std::shared_ptr<NodeObject> const& object) override
     {
+        assert(db_);
         std::lock_guard<std::mutex> _(db_->mutex);
         db_->table.emplace (object->getHash(), object);
     }
@@ -159,6 +167,7 @@ public:
     void
     for_each (std::function <void(std::shared_ptr<NodeObject>)> f) override
     {
+        assert(db_);
         for (auto const& e : db_->table)
             f (e.second);
     }

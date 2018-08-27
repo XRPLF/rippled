@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/OfferStream.h>
 #include <ripple/basics/Log.h>
 
@@ -43,7 +42,7 @@ template<class TIn, class TOut>
 void
 TOfferStreamBase<TIn, TOut>::erase (ApplyView& view)
 {
-    // NIKB NOTE This should be using ApplyView::dirDelete, which would
+    // NIKB NOTE This should be using ApplyView::dirRemove, which would
     //           correctly remove the directory if its the last entry.
     //           Unfortunately this is a protocol breaking change.
 
@@ -176,7 +175,7 @@ TOfferStreamBase<TIn, TOut>::step ()
             offer_.issueOut (), fhZERO_IF_FROZEN, j_);
 
         // Check for unfunded offer
-        if (*ownerFunds_ <= zero)
+        if (*ownerFunds_ <= beast::zero)
         {
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the

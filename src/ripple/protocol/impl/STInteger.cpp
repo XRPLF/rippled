@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/LedgerFormats.h>
@@ -49,7 +48,7 @@ STUInt8::getText () const
     {
         std::string token, human;
 
-        if (transResultInfo (static_cast<TER> (value_), token, human))
+        if (transResultInfo (TER::fromInt (value_), token, human))
             return human;
 
         JLOG (debugLog().error())
@@ -67,7 +66,7 @@ STUInt8::getJson (int) const
     {
         std::string token, human;
 
-        if (transResultInfo (static_cast<TER> (value_), token, human))
+        if (transResultInfo (TER::fromInt (value_), token, human))
             return token;
 
         JLOG (debugLog().error())

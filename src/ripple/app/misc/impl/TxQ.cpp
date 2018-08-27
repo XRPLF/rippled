@@ -86,8 +86,7 @@ TxQ::FeeMetrics::update(Application& app,
     feeLevels.reserve(txnsExpected_);
     for (auto const& tx : view.txs)
     {
-        auto const baseFee = calculateBaseFee(app, view,
-            *tx.first, j_);
+        auto const baseFee = calculateBaseFee(view, *tx.first);
         feeLevels.push_back(getFeeLevelPaid(*tx.first,
             baseLevel, baseFee, setup));
     }
@@ -263,7 +262,7 @@ TxQ::MaybeTx::MaybeTx(
 }
 
 std::pair<TER, bool>
-TxQ::MaybeTx::apply(Application& app, OpenView& view)
+TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
 {
     boost::optional<STAmountSO> saved;
     if (view.rules().enabled(fix1513))
@@ -273,6 +272,10 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view)
     if (pfresult->rules != view.rules() ||
         pfresult->flags != flags)
     {
+        JLOG(j.debug()) << "Queued transaction " <<
+            txID << " rules or flags have changed. Flags from " <<
+            pfresult->flags << " to " << flags ;
+
         pfresult.emplace(
             preflight(app, view.rules(),
                 pfresult->tx,
@@ -505,7 +508,7 @@ TxQ::tryClearAccountQueue(Application& app, OpenView& view,
     // Attempt to apply the queued transactions.
     for (auto it = beginTxIter; it != endTxIter; ++it)
     {
-        auto txResult = it->second.apply(app, view);
+        auto txResult = it->second.apply(app, view, j);
         // Succeed or fail, use up a retry, because if the overall
         // process fails, we want the attempt to count. If it all
         // succeeds, the MaybeTx will be destructed, so it'll be
@@ -636,6 +639,8 @@ TxQ::apply(Application& app, OpenView& view,
 
     struct MultiTxn
     {
+        explicit MultiTxn() = default;
+
         boost::optional<ApplyViewImpl> applyView;
         boost::optional<OpenView> openView;
 
@@ -658,7 +663,7 @@ TxQ::apply(Application& app, OpenView& view,
     // or transaction replacement, so just pull it up now.
     // TODO: Do we want to avoid doing it again during
     //   preclaim?
-    auto const baseFee = calculateBaseFee(app, view, *tx, j);
+    auto const baseFee = calculateBaseFee(view, *tx);
     auto const feeLevelPaid = getFeeLevelPaid(*tx,
         baseLevel, baseFee, setup_);
     auto const requiredFeeLevel = [&]()
@@ -1008,7 +1013,7 @@ TxQ::apply(Application& app, OpenView& view,
 
         std::tie(txnResult, didApply) = doApply(pcresult, app, view);
 
-        JLOG(j_.trace()) << "Transaction " <<
+        JLOG(j_.trace()) << "New transaction " <<
             transactionID <<
                 (didApply ? " applied successfully with " :
                     " failed with ") <<
@@ -1110,6 +1115,17 @@ TxQ::apply(Application& app, OpenView& view,
         (void)created;
         assert(created);
     }
+    // Modify the flags for use when coming out of the queue.
+    // These changes _may_ cause an extra `preflight`, but as long as
+    // the `HashRouter` still knows about the transaction, the signature
+    // will not be checked again, so the cost should be minimal.
+
+    // Don't allow soft failures, which can lead to retries
+    flags &= ~tapRETRY;
+
+    // Don't queue because we're already in the queue
+    flags &= ~tapPREFER_QUEUE;
+
     auto& candidate = accountIter->second.add(
         { tx, transactionID, feeLevelPaid, flags, pfresult });
     /* Normally we defer figuring out the consequences until
@@ -1121,8 +1137,10 @@ TxQ::apply(Application& app, OpenView& view,
     // Then index it into the byFee lookup.
     byFee_.insert(candidate);
     JLOG(j_.debug()) << "Added transaction " << candidate.txID <<
+        " with result " << transToken(pfresult.ter) <<
         " from " << (accountExists ? "existing" : "new") <<
-            " account " << candidate.account << " to queue.";
+            " account " << candidate.account << " to queue." <<
+            " Flags: " << flags;
 
     return { terQUEUED, false };
 }
@@ -1144,7 +1162,7 @@ TxQ::apply(Application& app, OpenView& view,
 */
 void
 TxQ::processClosedLedger(Application& app,
-    OpenView const& view, bool timeLeap)
+    ReadView const& view, bool timeLeap)
 {
     auto const allowEscalation =
         (view.rules().enabled(featureFeeEscalation));
@@ -1277,14 +1295,15 @@ TxQ::accept(Application& app,
 
             TER txnResult;
             bool didApply;
-            std::tie(txnResult, didApply) = candidateIter->apply(app, view);
+            std::tie(txnResult, didApply) = candidateIter->apply(app, view, j_);
 
             if (didApply)
             {
                 // Remove the candidate from the queue
                 JLOG(j_.debug()) << "Queued transaction " <<
                     candidateIter->txID <<
-                    " applied successfully. Remove from queue.";
+                    " applied successfully with " <<
+                    transToken(txnResult) << ". Remove from queue.";
 
                 candidateIter = eraseAndAdvance(candidateIter);
                 ledgerChanged = true;
@@ -1303,9 +1322,12 @@ TxQ::accept(Application& app,
             }
             else
             {
-                JLOG(j_.debug()) << "Transaction " <<
+                JLOG(j_.debug()) << "Queued transaction " <<
                     candidateIter->txID << " failed with " <<
-                    transToken(txnResult) << ". Leave in queue.";
+                    transToken(txnResult) << ". Leave in queue." <<
+                    " Applied: " << didApply <<
+                    ". Flags: " <<
+                    candidateIter->flags;
                 if (account.retryPenalty &&
                         candidateIter->retriesRemaining > 2)
                     candidateIter->retriesRemaining = 1;

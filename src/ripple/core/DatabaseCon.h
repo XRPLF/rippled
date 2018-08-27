@@ -79,6 +79,8 @@ class DatabaseCon
 public:
     struct Setup
     {
+        explicit Setup() = default;
+
         Config::StartUpType startUp = Config::NORMAL;
         bool standAlone = false;
         boost::filesystem::path dataDir;

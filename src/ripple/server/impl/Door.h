@@ -26,7 +26,7 @@
 #include <ripple/server/impl/PlainHTTPPeer.h>
 #include <ripple/server/impl/SSLHTTPPeer.h>
 #include <ripple/beast/asio/ssl_bundle.h>
-#include <beast/core/multi_buffer.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_service.hpp>
@@ -104,7 +104,7 @@ public:
         Thread Safety:
             May be called concurrently
     */
-    void close();
+    void close() override;
 
     endpoint_type get_endpoint() const
     {
@@ -229,7 +229,7 @@ do_detect(boost::asio::yield_context do_yield)
 {
     bool ssl;
     error_code ec;
-    beast::multi_buffer buf(16);
+    boost::beast::multi_buffer buf(16);
     timer_.expires_from_now(std::chrono::seconds(15));
     std::tie(ec, ssl) = detect_ssl(socket_, buf, do_yield);
     error_code unused;

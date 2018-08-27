@@ -141,6 +141,8 @@ struct LexicalCast;
 template <class In>
 struct LexicalCast <std::string, In>
 {
+    explicit LexicalCast() = default;
+
     template <class Arithmetic = In>
     std::enable_if_t <std::is_arithmetic <Arithmetic>::value, bool>
     operator () (std::string& out, Arithmetic in)
@@ -163,6 +165,8 @@ struct LexicalCast <std::string, In>
 template <class Out>
 struct LexicalCast <Out, std::string>
 {
+    explicit LexicalCast() = default;
+
     static_assert (std::is_integral <Out>::value,
         "beast::LexicalCast can only be used with integral types");
 
@@ -184,7 +188,11 @@ struct LexicalCast <Out, std::string>
     operator () (bool& out, std::string in) const
     {
         // Convert the input to lowercase
-        std::transform(in.begin (), in.end (), in.begin (), ::tolower);
+        std::transform(in.begin (), in.end (), in.begin (),
+                       [](auto c)
+                       {
+                           return ::tolower(static_cast<unsigned char>(c));
+                       });
 
         if (in == "1" || in == "true")
         {
@@ -208,6 +216,8 @@ struct LexicalCast <Out, std::string>
 template <class Out>
 struct LexicalCast <Out, char const*>
 {
+    explicit LexicalCast() = default;
+
     bool operator() (Out& out, char const* in) const
     {
         return LexicalCast <Out, std::string>()(out, in);
@@ -219,6 +229,8 @@ struct LexicalCast <Out, char const*>
 template <class Out>
 struct LexicalCast <Out, char*>
 {
+    explicit LexicalCast() = default;
+
     bool operator() (Out& out, char* in) const
     {
         return LexicalCast <Out, std::string>()(out, in);
@@ -238,6 +250,7 @@ struct LexicalCast <Out, char*>
 */
 struct BadLexicalCast : public std::bad_cast
 {
+    explicit BadLexicalCast() = default;
 };
 
 /** Intelligently convert from one type to another.

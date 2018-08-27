@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/protocol/STValidation.h>
@@ -91,7 +90,7 @@ struct AmendmentState
     /** The name of this amendment, possibly empty. */
     std::string name;
 
-    AmendmentState () = default;
+    explicit AmendmentState () = default;
 };
 
 /** The status of all amendments requested in a given window. */

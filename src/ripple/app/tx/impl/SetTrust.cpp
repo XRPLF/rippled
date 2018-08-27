@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/SetTrust.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Feature.h>
@@ -28,7 +27,7 @@
 
 namespace ripple {
 
-TER
+NotTEC
 SetTrust::preflight (PreflightContext const& ctx)
 {
     auto const ret = preflight1 (ctx);
@@ -67,7 +66,7 @@ SetTrust::preflight (PreflightContext const& ctx)
         return temBAD_CURRENCY;
     }
 
-    if (saLimitAmount < zero)
+    if (saLimitAmount < beast::zero)
     {
         JLOG(j.trace()) <<
             "Malformed transaction: Negative credit limit.";
@@ -169,7 +168,7 @@ SetTrust::doApply ()
     // could use the extra XRP for their own purposes.
 
     XRPAmount const reserveCreate ((uOwnerCount < 2)
-        ? XRPAmount (zero)
+        ? XRPAmount (beast::zero)
         : view().fees().accountReserve(uOwnerCount + 1));
 
     std::uint32_t uQualityIn (bQualityIn ? ctx_.tx.getFieldU32 (sfQualityIn) : 0);
@@ -318,7 +317,7 @@ SetTrust::doApply ()
         std::uint32_t const uFlagsIn (sleRippleState->getFieldU32 (sfFlags));
         std::uint32_t uFlagsOut (uFlagsIn);
 
-        if (bSetNoRipple && !bClearNoRipple && (bHigh ? saHighBalance : saLowBalance) >= zero)
+        if (bSetNoRipple && !bClearNoRipple && (bHigh ? saHighBalance : saLowBalance) >= beast::zero)
         {
             uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
@@ -346,13 +345,13 @@ SetTrust::doApply ()
         bool const  bLowReserveSet      = uLowQualityIn || uLowQualityOut ||
                                             ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
                                             (uFlagsOut & lsfLowFreeze) ||
-                                            saLowLimit || saLowBalance > zero;
+                                            saLowLimit || saLowBalance > beast::zero;
         bool const  bLowReserveClear    = !bLowReserveSet;
 
         bool const  bHighReserveSet     = uHighQualityIn || uHighQualityOut ||
                                             ((uFlagsOut & lsfHighNoRipple) == 0) != bHighDefRipple ||
                                             (uFlagsOut & lsfHighFreeze) ||
-                                            saHighLimit || saHighBalance > zero;
+                                            saHighLimit || saHighBalance > beast::zero;
         bool const  bHighReserveClear   = !bHighReserveSet;
 
         bool const  bDefault            = bLowReserveClear && bHighReserveClear;

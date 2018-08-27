@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -103,8 +102,8 @@ CanonicalTXSet::prune(AccountID const& account,
 {
     auto effectiveAccount = accountKey (account);
 
-    Key keyLow(effectiveAccount, seq, zero);
-    Key keyHigh(effectiveAccount, seq+1, zero);
+    Key keyLow(effectiveAccount, seq, beast::zero);
+    Key keyHigh(effectiveAccount, seq+1, beast::zero);
 
     auto range = boost::make_iterator_range(
         mMap.lower_bound(keyLow),

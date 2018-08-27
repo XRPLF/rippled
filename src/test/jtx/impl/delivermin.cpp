@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx/delivermin.h>
 #include <ripple/protocol/JsonFields.h>
 

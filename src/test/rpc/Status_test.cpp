@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/rpc/Status.h>
 #include <ripple/basics/contract.h>
 #include <ripple/beast/unit_test.h>
@@ -84,7 +83,7 @@ private:
     }
 
 public:
-    void run()
+    void run() override
     {
         test_OK ();
         test_error ();
@@ -201,7 +200,7 @@ private:
     }
 
 public:
-    void run()
+    void run() override
     {
         test_OK ();
         test_error ();

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/shamap/SHAMapItem.h>
 #include <test/shamap/common.h>
@@ -85,7 +84,7 @@ public:
         return true;
     }
 
-    void run()
+    void run() override
     {
         log << "Run, version 1\n" << std::endl;
         run(SHAMap::version{1});
@@ -129,9 +128,6 @@ public:
         std::vector<SHAMapNodeID> nodeIDs, gotNodeIDs;
         std::vector< Blob > gotNodes;
         std::vector<uint256> hashes;
-
-        std::vector<SHAMapNodeID>::iterator nodeIDIterator;
-        std::vector< Blob >::iterator rawNodeIterator;
 
         destination.setSynching ();
 

@@ -15,7 +15,7 @@
 */
 //==============================================================================
 
-#include <ripple/beast/xor_shift_engine.h>
+#include <ripple/basics/random.h>
 #include <ripple/ledger/BookDirs.h>
 #include <ripple/ledger/Directory.h>
 #include <ripple/ledger/Sandbox.h>
@@ -184,8 +184,6 @@ struct Directory_test : public beast::unit_test::suite
         auto const charlie = Account ("charlie");
         auto const gw = Account ("gw");
 
-        beast::xor_shift_engine eng;
-
         Env env(*this);
 
         env.fund(XRP(1000000), alice, charlie, gw);
@@ -228,7 +226,7 @@ struct Directory_test : public beast::unit_test::suite
 
             BEAST_EXPECT(! dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
 
-            std::shuffle (cl.begin(), cl.end(), eng);
+            std::shuffle (cl.begin(), cl.end(), default_prng());
 
             for (auto const& c : cl)
             {
@@ -261,7 +259,7 @@ struct Directory_test : public beast::unit_test::suite
             // Now fill the offers in a random order. Offer
             // entries will drop, and be replaced by trust
             // lines that are implicitly created.
-            std::shuffle (cl.begin(), cl.end(), eng);
+            std::shuffle (cl.begin(), cl.end(), default_prng());
 
             for (auto const& c : cl)
             {
@@ -272,7 +270,7 @@ struct Directory_test : public beast::unit_test::suite
             // Finally, Alice now sends the funds back to
             // Charlie. The implicitly created trust lines
             // should drop away:
-            std::shuffle (cl.begin(), cl.end(), eng);
+            std::shuffle (cl.begin(), cl.end(), default_prng());
 
             for (auto const& c : cl)
             {
@@ -441,7 +439,7 @@ struct Directory_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Directory,ledger,ripple);
+BEAST_DEFINE_TESTSUITE_PRIO(Directory,ledger,ripple,1);
 
 }
 }

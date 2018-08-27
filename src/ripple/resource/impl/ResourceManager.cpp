@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/resource/impl/Logic.h>
 #include <ripple/basics/chrono.h>
@@ -132,9 +131,7 @@ Manager::Manager ()
 {
 }
 
-Manager::~Manager ()
-{
-}
+Manager::~Manager() = default;
 
 //------------------------------------------------------------------------------
 

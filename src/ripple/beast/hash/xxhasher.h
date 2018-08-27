@@ -20,12 +20,6 @@
 #ifndef BEAST_HASH_XXHASHER_H_INCLUDED
 #define BEAST_HASH_XXHASHER_H_INCLUDED
 
-#ifndef BEAST_NO_XXHASH
-#define BEAST_NO_XXHASH 0
-#endif
-
-#if ! BEAST_NO_XXHASH
-
 #include <ripple/beast/hash/endian.h>
 #include <ripple/beast/hash/impl/xxhash.h>
 #include <type_traits>
@@ -82,7 +76,5 @@ public:
 };
 
 } // beast
-
-#endif
 
 #endif

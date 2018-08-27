@@ -127,9 +127,7 @@ public:
         {
         }
 
-        AllocT (AllocT const&)
-        {
-        }
+        AllocT (AllocT const&) = default;
 
         template <class U>
         AllocT (AllocT <U> const&)
@@ -252,7 +250,7 @@ public:
                 "orange",
             };
             return v;
-        };
+        }
 
     protected:
         static std::string name_map_part()
@@ -285,7 +283,7 @@ public:
                 std::make_pair ("orange", 5)
             };
             return v;
-        };
+        }
 
     protected:
         static std::string name_map_part()
@@ -1910,7 +1908,7 @@ public:
         detail::aged_unordered_container <true, true, Key, T>>::value,
             "bad alias: aged_unordered_multimap");
 
-    void run ()
+    void run () override
     {
         testMaybeUnorderedMultiMap <false, false, false>();
     }
@@ -1919,7 +1917,7 @@ public:
 class aged_map_test : public aged_associative_container_test_base
 {
 public:
-    void run ()
+    void run () override
     {
         testMaybeUnorderedMultiMap <false, false, true>();
     }
@@ -1928,7 +1926,7 @@ public:
 class aged_multiset_test : public aged_associative_container_test_base
 {
 public:
-    void run ()
+    void run () override
     {
         testMaybeUnorderedMultiMap <false, true, false>();
     }
@@ -1937,7 +1935,7 @@ public:
 class aged_multimap_test : public aged_associative_container_test_base
 {
 public:
-    void run ()
+    void run () override
     {
         testMaybeUnorderedMultiMap <false, true, true>();
     }
@@ -1947,7 +1945,7 @@ public:
 class aged_unordered_set_test : public aged_associative_container_test_base
 {
 public:
-    void run ()
+    void run () override
     {
         testMaybeUnorderedMultiMap <true, false, false>();
     }
@@ -1956,7 +1954,7 @@ public:
 class aged_unordered_map_test : public aged_associative_container_test_base
 {
 public:
-    void run ()
+    void run () override
     {
         testMaybeUnorderedMultiMap <true, false, true>();
     }
@@ -1965,7 +1963,7 @@ public:
 class aged_unordered_multiset_test : public aged_associative_container_test_base
 {
 public:
-    void run ()
+    void run () override
     {
         testMaybeUnorderedMultiMap <true, true, false>();
     }
@@ -1974,7 +1972,7 @@ public:
 class aged_unordered_multimap_test : public aged_associative_container_test_base
 {
 public:
-    void run ()
+    void run () override
     {
         testMaybeUnorderedMultiMap <true, true, true>();
     }

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx/trust.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/basics/contract.h>

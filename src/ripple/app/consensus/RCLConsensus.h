@@ -20,7 +20,6 @@
 #ifndef RIPPLE_APP_CONSENSUS_RCLCONSENSUS_H_INCLUDED
 #define RIPPLE_APP_CONSENSUS_RCLCONSENSUS_H_INCLUDED
 
-#include <BeastConfig.h>
 #include <ripple/app/consensus/RCLCxLedger.h>
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/app/consensus/RCLCxTx.h>
@@ -201,12 +200,13 @@ class RCLConsensus
         /** Number of proposers that have validated a ledger descended from
            requested ledger.
 
-            @param h The hash of the ledger of interest.
+            @param ledger The current working ledger
+            @param h The hash of the preferred working ledger
             @return The number of validating peers that have validated a ledger
-                    succeeding the one provided.
+                    descended from the preferred working ledger.
         */
         std::size_t
-        proposersFinished(LedgerHash const& h) const;
+        proposersFinished(RCLCxLedger const & ledger, LedgerHash const& h) const;
 
         /** Propose the given position to my peers.
 
@@ -217,10 +217,10 @@ class RCLConsensus
 
         /** Share the given tx set to peers.
 
-            @param set The TxSet to share.
+            @param txns The TxSet to share.
         */
         void
-        share(RCLTxSet const& set);
+        share(RCLTxSet const& txns);
 
         /** Get the ID of the previous ledger/last closed ledger(LCL) on the
            network
@@ -331,8 +331,8 @@ class RCLConsensus
             can be retried in the next round.
 
             @param previousLedger Prior ledger building upon
-            @param set The set of transactions to apply to the ledger
-            @param closeTime The the ledger closed
+            @param txns The set of transactions to apply to the ledger
+            @param closeTime The time the ledger closed
             @param closeTimeCorrect Whether consensus agreed on close time
             @param closeResolution Resolution used to determine consensus close
                                    time
@@ -344,7 +344,7 @@ class RCLConsensus
         RCLCxLedger
         buildLCL(
             RCLCxLedger const& previousLedger,
-            RCLTxSet const& set,
+            RCLTxSet const& txns,
             NetClock::time_point closeTime,
             bool closeTimeCorrect,
             NetClock::duration closeResolution,
@@ -354,6 +354,7 @@ class RCLConsensus
         /** Validate the given ledger and share with peers as necessary
 
             @param ledger The ledger to validate
+            @param txns The consensus transaction set
             @param proposing Whether we were proposing transactions while
                              generating this ledger.  If we are not proposing,
                              a validation can still be sent to inform peers that
@@ -361,7 +362,7 @@ class RCLConsensus
                              but are still around and trying to catch up.
         */
         void
-        validate(RCLCxLedger const& ledger, bool proposing);
+        validate(RCLCxLedger const& ledger, RCLTxSet const& txns, bool proposing);
 
     };
 
@@ -426,7 +427,8 @@ public:
     startRound(
         NetClock::time_point const& now,
         RCLCxLedger::ID const& prevLgrId,
-        RCLCxLedger const& prevLgr);
+        RCLCxLedger const& prevLgr,
+        hash_set<NodeID> const& nowUntrusted);
 
     //! @see Consensus::timerEntry
     void

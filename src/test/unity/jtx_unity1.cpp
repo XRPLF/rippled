@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 
 #include <test/jtx/Env_test.cpp>
 #include <test/jtx/WSClient_test.cpp>
@@ -26,6 +25,7 @@
 #include <test/jtx/impl/amount.cpp>
 #include <test/jtx/impl/balance.cpp>
 #include <test/jtx/impl/delivermin.cpp>
+#include <test/jtx/impl/deposit.cpp>
 #include <test/jtx/impl/Env.cpp>
 #include <test/jtx/impl/envconfig.cpp>
 #include <test/jtx/impl/fee.cpp>

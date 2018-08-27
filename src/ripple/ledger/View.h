@@ -60,6 +60,10 @@ bool
 isGlobalFrozen (ReadView const& view,
     AccountID const& issuer);
 
+bool
+isFrozen (ReadView const& view, AccountID const& account,
+    Currency const& currency, AccountID const& issuer);
+
 // Returns the amount an account can spend without going into debt.
 //
 // <-- saAmount: amount of currency held by account. May be negative.
@@ -230,17 +234,6 @@ dirAdd (ApplyView& view,
     uint256 const&                      uLedgerIndex,
     bool                                strictOrder,
     std::function<void (SLE::ref)>      fDescriber,
-    beast::Journal j);
-
-// deprecated
-TER
-dirDelete (ApplyView& view,
-    const bool           bKeepRoot,
-    std::uint64_t        uNodeDir,      // Node item is mentioned in.
-    Keylet const&        uRootIndex,
-    uint256 const&       uLedgerIndex,  // Item being deleted
-    const bool           bStable,
-    const bool           bSoft,
     beast::Journal j);
 
 // VFALCO NOTE Both STAmount parameters should just

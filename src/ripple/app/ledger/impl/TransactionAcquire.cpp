@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/ledger/impl/TransactionAcquire.h>
 #include <ripple/app/ledger/ConsensusTransSetSF.h>
 #include <ripple/app/ledger/InboundLedgers.h>
@@ -50,10 +49,6 @@ TransactionAcquire::TransactionAcquire (Application& app, uint256 const& hash, c
     mMap = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, hash,
         app_.family(), SHAMap::version{1});
     mMap->setUnbacked ();
-}
-
-TransactionAcquire::~TransactionAcquire ()
-{
 }
 
 void TransactionAcquire::execute ()

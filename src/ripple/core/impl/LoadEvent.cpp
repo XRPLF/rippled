@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/LoadEvent.h>
 #include <ripple/core/LoadMonitor.h>
 #include <cassert>
@@ -61,7 +60,7 @@ LoadEvent::runTime() const
     return timeRunning_;
 }
 
-void LoadEvent::reName (std::string const& name)
+void LoadEvent::setName (std::string const& name)
 {
     name_ = name;
 }

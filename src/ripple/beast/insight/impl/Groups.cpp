@@ -45,11 +45,9 @@ public:
     {
     }
 
-    ~GroupImp ()
-    {
-    }
+    ~GroupImp() = default;
 
-    std::string const& name () const
+    std::string const& name () const override
     {
         return m_name;
     }
@@ -59,27 +57,27 @@ public:
         return m_name + "." + name;
     }
 
-    Hook make_hook (HookImpl::HandlerType const& handler)
+    Hook make_hook (HookImpl::HandlerType const& handler) override
     {
         return m_collector->make_hook (handler);
     }
 
-    Counter make_counter (std::string const& name)
+    Counter make_counter (std::string const& name) override
     {
         return m_collector->make_counter (make_name (name));
     }
 
-    Event make_event (std::string const& name)
+    Event make_event (std::string const& name) override
     {
         return m_collector->make_event (make_name (name));
     }
 
-    Gauge make_gauge (std::string const& name)
+    Gauge make_gauge (std::string const& name) override
     {
         return m_collector->make_gauge (make_name (name));
     }
 
-    Meter make_meter (std::string const& name)
+    Meter make_meter (std::string const& name) override
     {
         return m_collector->make_meter (make_name (name));
     }
@@ -98,16 +96,14 @@ public:
     Collector::ptr m_collector;
     Items m_items;
 
-    GroupsImp (Collector::ptr const& collector)
+    explicit GroupsImp (Collector::ptr const& collector)
         : m_collector (collector)
     {
     }
 
-    ~GroupsImp ()
-    {
-    }
+    ~GroupsImp() = default;
 
-    Group::ptr const& get (std::string const& name)
+    Group::ptr const& get (std::string const& name) override
     {
         std::pair <Items::iterator, bool> result (
             m_items.emplace (name, Group::ptr ()));
@@ -122,9 +118,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-Groups::~Groups ()
-{
-}
+Groups::~Groups() = default;
 
 std::unique_ptr <Groups> make_Groups (Collector::ptr const& collector)
 {

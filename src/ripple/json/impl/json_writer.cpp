@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/json/json_writer.h>
 #include <cassert>
 #include <iomanip>
@@ -182,9 +181,6 @@ std::string valueToQuotedString ( const char* value )
 // Class FastWriter
 // //////////////////////////////////////////////////////////////////
 
-FastWriter::FastWriter ()
-{
-}
 
 std::string
 FastWriter::write ( const Value& root )
@@ -426,7 +422,7 @@ StyledWriter::isMultineArray ( const Value& value )
     {
         const Value& childValue = value[index];
         isMultiLine = isMultiLine  ||
-                      ( (childValue.isArray ()  ||  childValue.isObject ())  &&
+                      ( (childValue.isArray()  ||  childValue.isObject())  &&
                         childValue.size () > 0 );
     }
 
@@ -660,7 +656,7 @@ StyledStreamWriter::isMultineArray ( const Value& value )
     {
         const Value& childValue = value[index];
         isMultiLine = isMultiLine  ||
-                      ( (childValue.isArray ()  ||  childValue.isObject ())  &&
+                      ( (childValue.isArray()  ||  childValue.isObject())  &&
                         childValue.size () > 0 );
     }
 

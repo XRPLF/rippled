@@ -93,6 +93,7 @@ enum error_code_i
     rpcCOMMAND_MISSING,
     rpcDST_ACT_MALFORMED,
     rpcDST_ACT_MISSING,
+    rpcDST_ACT_NOT_FOUND,
     rpcDST_AMT_MALFORMED,
     rpcDST_AMT_MISSING,
     rpcDST_ISR_MALFORMED,

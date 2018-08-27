@@ -262,8 +262,10 @@ public:
     bool isDouble () const;
     bool isNumeric () const;
     bool isString () const;
-    bool isArray () const;
-    bool isObject () const;
+    bool isArray() const;
+    bool isArrayOrNull () const;
+    bool isObject() const;
+    bool isObjectOrNull () const;
 
     bool isConvertibleTo ( ValueType other ) const;
 
@@ -385,7 +387,7 @@ private:
         double real_;
         bool bool_;
         char* string_;
-        ObjectValues* map_;
+        ObjectValues* map_ {nullptr};
     } value_;
     ValueType type_ : 8;
     int allocated_ : 1;     // Notes: if declared as bool, bitfield is useless.
@@ -431,7 +433,7 @@ class ValueAllocator
 public:
     enum { unknown = (unsigned) - 1 };
 
-    virtual ~ValueAllocator ();
+    virtual ~ValueAllocator () = default;
 
     virtual char* makeMemberName ( const char* memberName ) = 0;
     virtual void releaseMemberName ( char* memberName ) = 0;
@@ -510,7 +512,7 @@ public:
     using pointer = const Value*;
     using SelfType = ValueConstIterator;
 
-    ValueConstIterator ();
+    ValueConstIterator () = default;
 private:
     /*! \internal Use by Value to create an iterator.
      */
@@ -563,7 +565,7 @@ public:
     using pointer = Value*;
     using SelfType = ValueIterator;
 
-    ValueIterator ();
+    ValueIterator () = default;
     ValueIterator ( const ValueConstIterator& other );
     ValueIterator ( const ValueIterator& other );
 private:

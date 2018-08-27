@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
@@ -253,7 +252,7 @@ checkTxJsonFields (
 {
     std::pair<Json::Value, AccountID> ret;
 
-    if (! tx_json.isObject ())
+    if (!tx_json.isObject())
     {
         ret.first = RPC::object_field_error (jss::tx_json);
         return ret;
@@ -328,7 +327,7 @@ struct transactionPreProcessResult
     , second ()
     { }
 
-    transactionPreProcessResult (std::shared_ptr<STTx>&& st)
+    explicit transactionPreProcessResult (std::shared_ptr<STTx>&& st)
     : first ()
     , second (std::move (st))
     { }

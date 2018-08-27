@@ -16,7 +16,7 @@ Source folders:
 
 | Folder          | Upstream Repo                                | Description |
 |:----------------|:---------------------------------------------|:------------|
-| `beast`         | https://github.com/vinniefalco/Beast         | Cross-platform library for WebSocket and HTTP built on [Boost.Asio](https://think-async.com/Asio) |
+| `beast`         | https://github.com/boostorg/beast            | Cross-platform library for WebSocket and HTTP built on [Boost.Asio](https://think-async.com/Asio) |
 | `ed25519-donna` | https://github.com/floodyberry/ed25519-donna | [Ed25519](http://ed25519.cr.yp.to/) digital signatures |
 | `lz4`           | https://github.com/lz4/lz4                   | LZ4 lossless compression algorithm |
 | `nudb`          | https://github.com/vinniefalco/NuDB          | Constant-time insert-only key/value database for SSD drives (Less memory usage than RocksDB.) |

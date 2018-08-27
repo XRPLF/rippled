@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/unit_test.h>
+#include <test/jtx/envconfig.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/optional.hpp>
@@ -87,7 +87,7 @@ private:
             Base& base_;
 
         public:
-            Child(Base& base)
+            explicit Child(Base& base)
                 : base_(base)
             {
             }
@@ -179,12 +179,13 @@ private:
             socket_type socket_;
             strand_type strand_;
 
-            Acceptor(Server& server)
+            explicit Acceptor(Server& server)
                 : Child(server)
                 , server_(server)
                 , test_(server_.test_)
                 , acceptor_(test_.io_service_,
-                    endpoint_type(address_type::from_string("127.0.0.1"), 0))
+                    endpoint_type(beast::IP::Address::from_string(
+                        test::getEnvLocalhostAddr()), 0))
                 , socket_(test_.io_service_)
                 , strand_(socket_.get_io_service())
             {
@@ -367,7 +368,7 @@ private:
         };
 
     public:
-        Server(short_read_test& test)
+        explicit Server(short_read_test& test)
             : test_(test)
         {
             auto const p = std::make_shared<Acceptor>(*this);

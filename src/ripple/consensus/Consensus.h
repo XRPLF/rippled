@@ -225,8 +225,10 @@ checkConsensus(
       std::size_t proposersValidated(Ledger::ID const & prevLedger) const;
 
       // Number of proposers that have validated a ledger descended from the
-      // given ledger
-      std::size_t proposersFinished(Ledger::ID const & prevLedger) const;
+      // given ledger; if prevLedger.id() != prevLedgerID, use prevLedgerID
+      // for the determination
+      std::size_t proposersFinished(Ledger const & prevLedger,
+                                    Ledger::ID const & prevLedger) const;
 
       // Return the ID of the last closed (and validated) ledger that the
       // application thinks consensus should use as the prior ledger.
@@ -318,7 +320,7 @@ public:
     //! Clock type for measuring time within the consensus code
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
-    Consensus(Consensus&&) = default;
+    Consensus(Consensus&&) noexcept = default;
 
     /** Constructor.
 
@@ -335,6 +337,7 @@ public:
         @param now The network adjusted time
         @param prevLedgerID the ID of the last ledger
         @param prevLedger The last ledger
+        @param nowUntrusted ID of nodes that are newly untrusted this round
         @param proposing Whether we want to send proposals to peers this round.
 
         @note @b prevLedgerID is not required to the ID of @b prevLedger since
@@ -345,6 +348,7 @@ public:
         NetClock::time_point const& now,
         typename Ledger_t::ID const& prevLedgerID,
         Ledger_t prevLedger,
+        hash_set<NodeID_t> const & nowUntrusted,
         bool proposing);
 
     /** A peer has proposed a new position, adjust our tracking.
@@ -550,7 +554,7 @@ private:
     hash_map<NodeID_t, PeerPosition_t> currPeerPositions_;
 
     // Recently received peer positions, available when transitioning between
-    // ledgers or roundss
+    // ledgers or rounds
     hash_map<NodeID_t, std::deque<PeerPosition_t>> recentPeerPositions_;
 
     // The number of proposers who participated in the last consensus round
@@ -581,6 +585,7 @@ Consensus<Adaptor>::startRound(
     NetClock::time_point const& now,
     typename Ledger_t::ID const& prevLedgerID,
     Ledger_t prevLedger,
+    hash_set<NodeID_t> const& nowUntrusted,
     bool proposing)
 {
     if (firstRound_)
@@ -594,6 +599,9 @@ Consensus<Adaptor>::startRound(
     {
         prevCloseTime_ = rawCloseTimes_.self;
     }
+
+    for(NodeID_t const& n : nowUntrusted)
+        recentPeerPositions_.erase(n);
 
     ConsensusMode startMode =
         proposing ? ConsensusMode::proposing : ConsensusMode::observing;
@@ -847,6 +855,7 @@ Consensus<Adaptor>::simulate(
     NetClock::time_point const& now,
     boost::optional<std::chrono::milliseconds> consensusDelay)
 {
+    using namespace std::chrono_literals;
     JLOG(j_.info()) << "Simulating consensus";
     now_ = now;
     closeLedger();
@@ -1159,8 +1168,8 @@ Consensus<Adaptor>::closeLedger()
     result_->roundTime.reset(clock_.now());
     // Share the newly created transaction set if we haven't already
     // received it from a peer
-    if (acquired_.emplace(result_->set.id(), result_->set).second)
-        adaptor_.share(result_->set);
+    if (acquired_.emplace(result_->txns.id(), result_->txns).second)
+        adaptor_.share(result_->txns);
 
     if (mode_.get() == ConsensusMode::proposing)
         adaptor_.propose(result_->position);
@@ -1250,7 +1259,7 @@ Consensus<Adaptor>::updateOurPositions()
                     parms))
             {
                 if (!mutableSet)
-                    mutableSet.emplace(result_->set);
+                    mutableSet.emplace(result_->txns);
 
                 if (it.second.getOurVote())
                 {
@@ -1344,14 +1353,14 @@ Consensus<Adaptor>::updateOurPositions()
          result_->position.isStale(ourCutoff)))
     {
         // close time changed or our position is stale
-        ourNewSet.emplace(result_->set);
+        ourNewSet.emplace(result_->txns);
     }
 
     if (ourNewSet)
     {
         auto newID = ourNewSet->id();
 
-        result_->set = std::move(*ourNewSet);
+        result_->txns = std::move(*ourNewSet);
 
         JLOG(j_.info()) << "Position change: CTime "
                         << consensusCloseTime.time_since_epoch().count()
@@ -1361,16 +1370,16 @@ Consensus<Adaptor>::updateOurPositions()
 
         // Share our new transaction set and update disputes
         // if we haven't already received it
-        if (acquired_.emplace(newID, result_->set).second)
+        if (acquired_.emplace(newID, result_->txns).second)
         {
             if (!result_->position.isBowOut())
-                adaptor_.share(result_->set);
+                adaptor_.share(result_->txns);
 
             for (auto const& it : currPeerPositions_)
             {
                 Proposal_t const& p = it.second.proposal();
                 if (p.position() == newID)
-                    updateDisputes(it.first, result_->set);
+                    updateDisputes(it.first, result_->txns);
             }
         }
 
@@ -1410,7 +1419,8 @@ Consensus<Adaptor>::haveConsensus()
             ++disagree;
         }
     }
-    auto currentFinished = adaptor_.proposersFinished(prevLedgerID_);
+    auto currentFinished =
+        adaptor_.proposersFinished(previousLedger_, prevLedgerID_);
 
     JLOG(j_.debug()) << "Checking for TX consensus: agree=" << agree
                      << ", disagree=" << disagree;
@@ -1470,13 +1480,13 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
         return;
 
     // Nothing to dispute if we agree
-    if (result_->set.id() == o.id())
+    if (result_->txns.id() == o.id())
         return;
 
-    JLOG(j_.debug()) << "createDisputes " << result_->set.id() << " to "
+    JLOG(j_.debug()) << "createDisputes " << result_->txns.id() << " to "
                      << o.id();
 
-    auto differences = result_->set.compare(o);
+    auto differences = result_->txns.compare(o);
 
     int dc = 0;
 
@@ -1485,10 +1495,10 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
         ++dc;
         // create disputed transactions (from the ledger that has them)
         assert(
-            (id.second && result_->set.find(id.first) && !o.find(id.first)) ||
-            (!id.second && !result_->set.find(id.first) && o.find(id.first)));
+            (id.second && result_->txns.find(id.first) && !o.find(id.first)) ||
+            (!id.second && !result_->txns.find(id.first) && o.find(id.first)));
 
-        Tx_t tx = id.second ? *result_->set.find(id.first) : *o.find(id.first);
+        Tx_t tx = id.second ? *result_->txns.find(id.first) : *o.find(id.first);
         auto txID = tx.id();
 
         if (result_->disputes.find(txID) != result_->disputes.end())
@@ -1496,7 +1506,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
 
         JLOG(j_.debug()) << "Transaction " << txID << " is disputed";
 
-        typename Result::Dispute_t dtx{tx, result_->set.exists(txID),
+        typename Result::Dispute_t dtx{tx, result_->txns.exists(txID),
          std::max(prevProposers_, currPeerPositions_.size()), j_};
 
         // Update all of the available peer's votes on the disputed transaction

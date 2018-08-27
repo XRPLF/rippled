@@ -183,6 +183,10 @@ public:
     {
     }
 
+    virtual ~suite() = default;
+    suite(suite const&) = delete;
+    suite& operator=(suite const&) = delete;
+
     /** Invokes the test using the specified runner.
 
         Data members are set up here instead of the constructor as a
@@ -623,10 +627,10 @@ run(runner& r)
 
 // detail:
 // This inserts the suite with the given manual flag
-#define BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,manual) \
+#define BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,manual,priority) \
     static beast::unit_test::detail::insert_suite <Class##_test>   \
         Library ## Module ## Class ## _test_instance(             \
-            #Class, #Module, #Library, manual)
+            #Class, #Module, #Library, manual, priority)
 
 //------------------------------------------------------------------------------
 
@@ -670,14 +674,20 @@ run(runner& r)
 
 #if BEAST_NO_UNIT_TEST_INLINE
 #define BEAST_DEFINE_TESTSUITE(Class,Module,Library)
+#define BEAST_DEFINE_TESTSUITE_MANUAL(Class,Module,Library)
+#define BEAST_DEFINE_TESTSUITE_PRIO(Class,Module,Library,Priority)
+#define BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Class,Module,Library,Priority)
 
 #else
 #include <beast/unit_test/global_suites.hpp>
 #define BEAST_DEFINE_TESTSUITE(Class,Module,Library) \
-        BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,false)
+        BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,false,0)
 #define BEAST_DEFINE_TESTSUITE_MANUAL(Class,Module,Library) \
-        BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,true)
-
+        BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,true,0)
+#define BEAST_DEFINE_TESTSUITE_PRIO(Class,Module,Library,Priority) \
+        BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,false,Priority)
+#define BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Class,Module,Library,Priority) \
+        BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,true,Priority)
 #endif
 
 #endif

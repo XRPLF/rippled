@@ -60,7 +60,7 @@ struct TAmounts
     bool
     empty() const noexcept
     {
-        return in <= zero || out <= zero;
+        return in <= beast::zero || out <= beast::zero;
     }
 
     TAmounts& operator+=(TAmounts const& rhs)

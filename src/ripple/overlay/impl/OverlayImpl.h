@@ -119,6 +119,9 @@ private:
     Resolver& m_resolver;
     std::atomic <Peer::id_t> next_id_;
     int timer_count_;
+    std::atomic <uint64_t> jqTransOverflow_ {0};
+    std::atomic <uint64_t> peerDisconnects_ {0};
+    std::atomic <uint64_t> peerDisconnectsCharges_ {0};
 
     //--------------------------------------------------------------------------
 
@@ -252,11 +255,11 @@ public:
     template<class Body>
     static
     bool
-    isPeerUpgrade (beast::http::response<Body> const& response)
+    isPeerUpgrade (boost::beast::http::response<Body> const& response)
     {
         if (! is_upgrade(response))
             return false;
-        if(response.result() != beast::http::status::switching_protocols)
+        if(response.result() != boost::beast::http::status::switching_protocols)
             return false;
         auto const versions = parse_ProtocolVersions(
             response["Upgrade"]);
@@ -268,13 +271,13 @@ public:
     template<class Fields>
     static
     bool
-    is_upgrade(beast::http::header<true, Fields> const& req)
+    is_upgrade(boost::beast::http::header<true, Fields> const& req)
     {
-        if(req.version < 11)
+        if(req.version() < 11)
             return false;
-        if(req.method() != beast::http::verb::get)
+        if(req.method() != boost::beast::http::verb::get)
             return false;
-        if(! beast::http::token_list{req["Connection"]}.exists("upgrade"))
+        if(! boost::beast::http::token_list{req["Connection"]}.exists("upgrade"))
             return false;
         return true;
     }
@@ -282,11 +285,11 @@ public:
     template<class Fields>
     static
     bool
-    is_upgrade(beast::http::header<false, Fields> const& req)
+    is_upgrade(boost::beast::http::header<false, Fields> const& req)
     {
-        if(req.version < 11)
+        if(req.version() < 11)
             return false;
-        if(! beast::http::token_list{req["Connection"]}.exists("upgrade"))
+        if(! boost::beast::http::token_list{req["Connection"]}.exists("upgrade"))
             return false;
         return true;
     }
@@ -300,6 +303,42 @@ public:
         TrafficCount::category cat,
         bool isInbound,
         int bytes);
+
+    void
+    incJqTransOverflow() override
+    {
+        ++jqTransOverflow_;
+    }
+
+    std::uint64_t
+    getJqTransOverflow() const override
+    {
+        return jqTransOverflow_;
+    }
+
+    void
+    incPeerDisconnect() override
+    {
+        ++peerDisconnects_;
+    }
+
+    std::uint64_t
+    getPeerDisconnect() const override
+    {
+        return peerDisconnects_;
+    }
+
+    void
+    incPeerDisconnectCharges() override
+    {
+        ++peerDisconnectsCharges_;
+    }
+
+    std::uint64_t
+    getPeerDisconnectCharges() const override
+    {
+        return peerDisconnectsCharges_;
+    }
 
 private:
     std::shared_ptr<Writer>

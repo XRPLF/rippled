@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/rpc/Role.h>
 
 namespace ripple {
@@ -42,7 +41,7 @@ ipAllowed (beast::IP::Address const& remoteIp,
            std::vector<beast::IP::Address> const& adminIp)
 {
     return std::find_if (adminIp.begin (), adminIp.end (),
-        [&remoteIp](beast::IP::Address const& ip) { return ip.is_any () ||
+        [&remoteIp](beast::IP::Address const& ip) { return ip.is_unspecified () ||
             ip == remoteIp; }) != adminIp.end ();
 }
 

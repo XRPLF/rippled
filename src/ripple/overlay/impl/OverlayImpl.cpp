@@ -17,13 +17,15 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/basics/base64.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
@@ -43,8 +45,7 @@ struct get_peer_json
 
     Json::Value json;
 
-    get_peer_json ()
-    { }
+    get_peer_json() = default;
 
     void operator() (std::shared_ptr<Peer> const& peer)
     {
@@ -212,7 +213,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         if (std::find_if(types.begin(), types.end(),
                 [](std::string const& s)
                 {
-                    return beast::detail::iequals(s, "peer");
+                    return boost::beast::detail::iequals(s, "peer");
                 }) == types.end())
         {
             handoff.moved = false;
@@ -326,17 +327,17 @@ std::shared_ptr<Writer>
 OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
     http_request_type const& request, address_type remote_address)
 {
-    beast::http::response<json_body> msg;
-    msg.version = request.version;
-    msg.result(beast::http::status::service_unavailable);
+    boost::beast::http::response<json_body> msg;
+    msg.version(request.version());
+    msg.result(boost::beast::http::status::service_unavailable);
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Remote-Address", remote_address);
     msg.insert("Content-Type", "application/json");
-    msg.insert(beast::http::field::connection, "close");
-    msg.body = Json::objectValue;
+    msg.insert(boost::beast::http::field::connection, "close");
+    msg.body() = Json::objectValue;
     {
         auto const result = m_peerFinder->redirect(slot);
-        Json::Value& ips = (msg.body["peer-ips"] = Json::arrayValue);
+        Json::Value& ips = (msg.body()["peer-ips"] = Json::arrayValue);
         for (auto const& _ : m_peerFinder->redirect(slot))
             ips.append(_.address.to_string());
     }
@@ -350,13 +351,13 @@ OverlayImpl::makeErrorResponse (PeerFinder::Slot::ptr const& slot,
     address_type remote_address,
     std::string text)
 {
-    beast::http::response<beast::http::string_body> msg;
-    msg.version = request.version;
-    msg.result(beast::http::status::bad_request);
+    boost::beast::http::response<boost::beast::http::string_body> msg;
+    msg.version(request.version());
+    msg.result(boost::beast::http::status::bad_request);
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Remote-Address", remote_address.to_string());
-    msg.insert(beast::http::field::connection, "close");
-    msg.body = text;
+    msg.insert(boost::beast::http::field::connection, "close");
+    msg.body() = text;
     msg.prepare_payload();
     return std::make_shared<SimpleWriter>(msg);
 }
@@ -422,7 +423,7 @@ OverlayImpl::add_active (std::shared_ptr<PeerImp> const& peer)
         "activated " << peer->getRemoteAddress() <<
         " (" << peer->id() << ":" <<
         toBase58 (
-            TokenType::TOKEN_NODE_PUBLIC,
+            TokenType::NodePublic,
             peer->getNodePublic()) << ")";
 
     // As we are not on the strand, run() must be called
@@ -608,7 +609,7 @@ OverlayImpl::activate (std::shared_ptr<PeerImp> const& peer)
         "activated " << peer->getRemoteAddress() <<
         " (" << peer->id() <<
         ":" << toBase58 (
-            TokenType::TOKEN_NODE_PUBLIC,
+            TokenType::NodePublic,
             peer->getNodePublic()) << ")";
 
     // We just accepted this peer so we have non-zero active peers
@@ -640,8 +641,10 @@ OverlayImpl::onManifests (
         if (auto mo = Manifest::make_Manifest (s))
         {
             uint256 const hash = mo->hash ();
-            if (!hashRouter.addSuppressionPeer (hash, from->id ()))
+            if (!hashRouter.addSuppressionPeer (hash, from->id ())) {
+                JLOG(journal.info()) << "Duplicate manifest #" << i + 1;
                 continue;
+            }
 
             if (! app_.validators().listed (mo->masterKey))
             {
@@ -684,7 +687,8 @@ OverlayImpl::onManifests (
             }
             else
             {
-                JLOG(journal.info()) << "Bad manifest #" << i + 1;
+                JLOG(journal.info()) << "Bad manifest #" << i + 1 <<
+                    ": " << to_string(result);
             }
         }
         else
@@ -761,7 +765,7 @@ OverlayImpl::crawl()
     for_each ([&](std::shared_ptr<PeerImp>&& sp)
     {
         auto& pv = av.append(Json::Value(Json::objectValue));
-        pv[jss::public_key] = beast::detail::base64_encode(
+        pv[jss::public_key] = base64_encode(
             sp->getNodePublic().data(),
                 sp->getNodePublic().size());
         pv[jss::type] = sp->slot()->inbound() ?
@@ -784,8 +788,19 @@ OverlayImpl::crawl()
             }
         }
         auto version = sp->getVersion ();
-        if (!version.empty ())
-            pv["version"] = version;
+        if (! version.empty ())
+            pv[jss::version] = version;
+
+        std::uint32_t minSeq, maxSeq;
+        sp->ledgerRange(minSeq, maxSeq);
+        if (minSeq != 0 || maxSeq != 0)
+            pv[jss::complete_ledgers] =
+                std::to_string(minSeq) + "-" +
+                    std::to_string(maxSeq);
+
+        auto shards = sp->getShards();
+        if (! shards.empty())
+            pv[jss::complete_shards] = shards;
     });
 
     return jv;
@@ -805,13 +820,13 @@ OverlayImpl::processRequest (http_request_type const& req,
     if (req.target() != "/crawl")
         return false;
 
-    beast::http::response<json_body> msg;
-    msg.version = req.version;
-    msg.result(beast::http::status::ok);
+    boost::beast::http::response<json_body> msg;
+    msg.version(req.version());
+    msg.result(boost::beast::http::status::ok);
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
-    msg.body["overlay"] = crawl();
+    msg.body()["overlay"] = crawl();
     msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return true;
@@ -886,8 +901,12 @@ OverlayImpl::send (protocol::TMValidation& m)
     });
 
     SerialIter sit (m.validation().data(), m.validation().size());
-    auto val = std::make_shared <
-        STValidation> (std::ref (sit), false);
+    auto val = std::make_shared<STValidation>(
+        std::ref(sit),
+        [this](PublicKey const& pk) {
+            return calcNodeID(app_.validatorManifests().getMasterKey(pk));
+        },
+        false);
     app_.getOPs().pubValidation (val);
 }
 
@@ -1032,11 +1051,9 @@ setup_Overlay (BasicConfig const& config)
     set (ip, "public_ip", section);
     if (! ip.empty ())
     {
-        bool valid;
-        std::tie (setup.public_ip, valid) =
-            beast::IP::Address::from_string (ip);
-        if (! valid || ! setup.public_ip.is_v4() ||
-                is_private (setup.public_ip))
+        boost::system::error_code ec;
+        setup.public_ip = beast::IP::Address::from_string (ip, ec);
+        if (ec || beast::IP::is_private (setup.public_ip))
             Throw<std::runtime_error> ("Configured public IP is invalid");
     }
     return setup;

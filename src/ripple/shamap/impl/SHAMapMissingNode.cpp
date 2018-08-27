@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/shamap/SHAMapMissingNode.h>
+#include <ripple/beast/utility/Zero.h>
 #include <ostream>
 
 namespace ripple {
@@ -42,7 +42,7 @@ operator<< (std::ostream& out, const SHAMapMissingNode& mn)
         break;
     };
 
-    if (mn.mNodeHash == zero)
+    if (mn.mNodeHash == beast::zero)
         out << "id : " << mn.mNodeID;
     else
         out << "hash : " << mn.mNodeHash;

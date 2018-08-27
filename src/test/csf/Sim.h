@@ -65,6 +65,7 @@ class Sim
     // Use a deque to have stable pointers even when dynamically adding peers
     //  - Alternatively consider using unique_ptrs allocated from arena
     std::deque<Peer> peers;
+    PeerGroup allPeers;
 
 public:
     std::mt19937_64 rng;
@@ -113,7 +114,9 @@ public:
                 j);
             newPeers.emplace_back(&peers.back());
         }
-        return PeerGroup{newPeers};
+        PeerGroup res{newPeers};
+        allPeers = allPeers + res;
+        return res;
     }
 
     //! The number of peers in the simulation
@@ -136,18 +139,28 @@ public:
     void
     run(SimDuration const& dur);
 
-    /** Check whether all peers in the network are synchronized.
+    /** Check whether all peers in the group are synchronized.
 
-        Nodes in the network are synchronized if they share the same last
+        Nodes in the group are synchronized if they share the same last
         fully validated and last generated ledger.
+    */
+    bool
+    synchronized(PeerGroup const& g) const;
+
+    /** Check whether all peers in the network are synchronized
     */
     bool
     synchronized() const;
 
-    /** Calculate the number of branches in the network.
+    /** Calculate the number of branches in the group.
 
-        A branch occurs if two peers have fullyValidatedLedgers that are not on
-        the same chain of ledgers.
+        A branch occurs if two nodes in the group have fullyValidatedLedgers
+        that are not on the same chain of ledgers.
+    */
+    std::size_t
+    branches(PeerGroup const& g) const;
+
+    /** Calculate the number  of branches in the network
     */
     std::size_t
     branches() const;

@@ -15,7 +15,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx.h>
 #include <ripple/ledger/BookDirs.h>
 #include <ripple/protocol/Feature.h>

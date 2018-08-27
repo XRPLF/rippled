@@ -40,8 +40,8 @@ public:
     class Set;
     class Source;
 
-    PropertyStream ();
-    virtual ~PropertyStream ();
+    PropertyStream () = default;
+    virtual ~PropertyStream () = default;
 
 protected:
     virtual void map_begin () = 0;
@@ -282,7 +282,7 @@ private:
 
 public:
     explicit Source (std::string const& name);
-    ~Source ();
+    virtual ~Source ();
 
     Source (Source const&) = delete;
     Source& operator= (Source const&) = delete;

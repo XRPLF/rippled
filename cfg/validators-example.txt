@@ -1,0 +1,70 @@
+#
+# Default validators.txt
+#
+# A list of domains to bootstrap a nodes UNLs or for clients to indirectly
+# locate IPs to contact the Ripple network.
+#
+# This file is UTF-8 with Dos, UNIX, or Mac style end of lines.
+# Blank lines and lines starting with a '#' are ignored.
+# All other lines should be hankos or domain names.
+#
+#
+#
+# [validators]
+#
+#   List of the validation public keys of nodes to always accept as validators.
+#
+#   The latest list of recommended validators can be obtained from
+#   https://ripple.com/ripple.txt
+#
+#   See also https://wiki.ripple.com/Ripple.txt
+#
+#   Examples:
+#    n9KorY8QtTdRx7TVDpwnG9NvyxsDwHUKUEeDLY3AkiGncVaSXZi5
+#    n9MqiExBcoG19UXwoLjBJnhsxEhAZMuWwJDRdkyDz1EkEkwzQTNt
+#
+# [validator_list_sites]
+#
+#   List of URIs serving lists of recommended validators.
+#
+#   Examples:
+#    https://vl.ripple.com
+#    http://127.0.0.1:8000
+#
+# [validator_list_keys]
+#
+#   List of keys belonging to trusted validator list publishers.
+#   Validator lists fetched from configured sites will only be considered
+#   if the list is accompanied by a valid signature from a trusted
+#   publisher key.
+#   Validator list keys should be hex-encoded.
+#
+#   Examples:
+#    ed499d732bded01504a7407c224412ef550cc1ade638a4de4eb88af7c36cb8b282
+#    0202d3f36a801349f3be534e3f64cfa77dede6e1b6310a0b48f40f20f955cec945
+#    02dd8b7075f64d77d9d2bdb88da364f29fcd975f9ea6f21894abcc7564efda8054
+#
+
+# The default validator list publishers that the rippled instance
+# trusts.
+#
+# WARNING: Changing these values can cause your rippled instance to see a
+#          validated ledger that contradicts other rippled instances'
+#          validated ledgers (aka a ledger fork) if your validator list(s)
+#          do not sufficiently overlap with the list(s) used by others.
+#          See: https://arxiv.org/pdf/1802.07242.pdf
+
+[validator_list_sites]
+https://vl.ripple.com
+
+[validator_list_keys]
+ED2677ABFFD1B33AC6FBC3062B71F1E8397C1505E1C42C64D11AD1B28FF73F4734
+
+# To use the XRP test network (see https://ripple.com/build/xrp-test-net/),
+# use the following configuration instead:
+#
+# [validator_list_sites]
+# https://vl.altnet.rippletest.net
+#
+# [validator_list_keys]
+# ED264807102805220DA0F312E71FC2C69E1552C9C5790F6C25E3729DEB573D5860

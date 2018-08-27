@@ -42,7 +42,7 @@ public:
     /** \brief Constructs a Reader allowing all features
      * for parsing.
      */
-    Reader ();
+    Reader () = default;
 
     /** \brief Read a Value from a <a HREF="http://www.json.org">JSON</a> document.
      * \param document UTF-8 encoded string containing the document to read.
@@ -81,6 +81,8 @@ public:
      */
     std::string getFormatedErrorMessages () const;
 
+    static constexpr unsigned nest_limit {25};
+
 private:
     enum TokenType
     {
@@ -104,6 +106,8 @@ private:
     class Token
     {
     public:
+        explicit Token() = default;
+
         TokenType type_;
         Location start_;
         Location end_;
@@ -112,6 +116,8 @@ private:
     class ErrorInfo
     {
     public:
+        explicit ErrorInfo() = default;
+
         Token token_;
         std::string message_;
         Location extra_;
@@ -129,9 +135,9 @@ private:
     bool readCppStyleComment ();
     bool readString ();
     Reader::TokenType readNumber ();
-    bool readValue ();
-    bool readObject ( Token& token );
-    bool readArray ( Token& token );
+    bool readValue(unsigned depth);
+    bool readObject(Token& token, unsigned depth);
+    bool readArray (Token& token, unsigned depth);
     bool decodeNumber ( Token& token );
     bool decodeString ( Token& token );
     bool decodeString ( Token& token, std::string& decoded );

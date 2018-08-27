@@ -32,7 +32,7 @@ enum
     // This is only used to pre-allocate the array for
     // batch objects and does not affect the amount written.
     //
-    batchWritePreallocationSize = 128
+    batchWritePreallocationSize = 256
 };
 
 /** Return codes from Backend operations. */
@@ -48,6 +48,7 @@ enum Status
 
 /** A batch of NodeObjects to write at once. */
 using Batch = std::vector <std::shared_ptr<NodeObject>>;
+
 }
 }
 

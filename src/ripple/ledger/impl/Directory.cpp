@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/ledger/Directory.h>
 
 namespace ripple {
@@ -73,7 +72,7 @@ const_iterator::operator==(const_iterator const& other) const
 const_iterator::reference
 const_iterator::operator*() const
 {
-    assert(index_ != zero);
+    assert(index_ != beast::zero);
     if (! cache_)
         cache_ = view_->read(keylet::child(index_));
     return *cache_;
@@ -82,7 +81,7 @@ const_iterator::operator*() const
 const_iterator&
 const_iterator::operator++()
 {
-    assert(index_ != zero);
+    assert(index_ != beast::zero);
     if (++it_ != std::end(*indexes_))
     {
         index_ = *it_;
@@ -94,7 +93,7 @@ const_iterator::operator++()
         if (next == 0)
         {
             page_.key = root_.key;
-            index_ = zero;
+            index_ = beast::zero;
         }
         else
         {
@@ -104,7 +103,7 @@ const_iterator::operator++()
             indexes_ = &sle_->getFieldV256(sfIndexes);
             if (indexes_->empty())
             {
-                index_ = zero;
+                index_ = beast::zero;
             }
             else
             {
@@ -121,7 +120,7 @@ const_iterator::operator++()
 const_iterator
 const_iterator::operator++(int)
 {
-    assert(index_ != zero);
+    assert(index_ != beast::zero);
     const_iterator tmp(*this);
     ++(*this);
     return tmp;

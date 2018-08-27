@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LocalTxs.h>
 #include <ripple/app/main/Application.h>

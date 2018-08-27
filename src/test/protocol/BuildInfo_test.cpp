@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/beast/unit_test.h>
@@ -85,7 +84,7 @@ public:
         BEAST_EXPECT(to_packed (from_version (65535, 65535)) == 4294967295);
     }
 
-    void run ()
+    void run () override
     {
         testValues ();
         testStringVersion ();

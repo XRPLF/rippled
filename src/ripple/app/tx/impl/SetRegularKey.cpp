@@ -17,26 +17,25 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/types.h>
 
 namespace ripple {
 
 std::uint64_t
 SetRegularKey::calculateBaseFee (
-    PreclaimContext const& ctx)
+    ReadView const& view,
+    STTx const& tx)
 {
-    auto const id = ctx.tx.getAccountID(sfAccount);
-    auto const spk = ctx.tx.getSigningPubKey();
+    auto const id = tx.getAccountID(sfAccount);
+    auto const spk = tx.getSigningPubKey();
 
     if (publicKeyType (makeSlice (spk)))
     {
         if (calcAccountID(PublicKey (makeSlice(spk))) == id)
         {
-            auto const sle = ctx.view.read(keylet::account(id));
+            auto const sle = view.read(keylet::account(id));
 
             if (sle && (! (sle->getFlags () & lsfPasswordSpent)))
             {
@@ -46,10 +45,10 @@ SetRegularKey::calculateBaseFee (
         }
     }
 
-    return Transactor::calculateBaseFee (ctx);
+    return Transactor::calculateBaseFee (view, tx);
 }
 
-TER
+NotTEC
 SetRegularKey::preflight (PreflightContext const& ctx)
 {
     auto const ret = preflight1 (ctx);
@@ -72,10 +71,10 @@ SetRegularKey::preflight (PreflightContext const& ctx)
 TER
 SetRegularKey::doApply ()
 {
-    auto const sle = view().peek(
-        keylet::account(account_));
+    auto const sle = view ().peek (
+        keylet::account (account_));
 
-    if (mFeeDue == zero)
+    if (!minimumFee (ctx_.app, ctx_.baseFee, view ().fees (), view ().flags ()))
         sle->setFlag (lsfPasswordSpent);
 
     if (ctx_.tx.isFieldPresent (sfRegularKey))

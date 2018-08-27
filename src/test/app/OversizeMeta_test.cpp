@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
 #include <algorithm>
@@ -63,7 +62,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(PlumpBook,tx,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PlumpBook,tx,ripple,5);
 
 //------------------------------------------------------------------------------
 
@@ -116,13 +115,13 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         test();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(OversizeMeta,tx,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta,tx,ripple,3);
 
 //------------------------------------------------------------------------------
 
@@ -182,7 +181,7 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         auto const result = bfind(100, 9000,
             [&](std::size_t n) { return oversize(n); });
@@ -190,7 +189,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(FindOversizeCross,tx,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross,tx,ripple,50);
 
 } // test
 } // ripple

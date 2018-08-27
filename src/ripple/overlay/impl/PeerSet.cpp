@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/core/JobQueue.h>
@@ -54,9 +53,7 @@ PeerSet::PeerSet (Application& app, uint256 const& hash,
     assert ((mTimerInterval > 10ms) && (mTimerInterval < 30s));
 }
 
-PeerSet::~PeerSet ()
-{
-}
+PeerSet::~PeerSet() = default;
 
 bool PeerSet::insert (std::shared_ptr<Peer> const& ptr)
 {

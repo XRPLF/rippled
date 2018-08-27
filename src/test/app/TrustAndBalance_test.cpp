@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/Feature.h>
@@ -43,7 +42,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         jvParams[jss::ripple_state][jss::accounts].append(acct_a.human());
         jvParams[jss::ripple_state][jss::accounts].append(acct_b.human());
         return env.rpc ("json", "ledger_entry", to_string(jvParams))[jss::result];
-    };
+    }
 
     void
     testPayNonexistent (FeatureBitset features)
@@ -266,6 +265,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
             env.close();
 
+            using namespace std::chrono_literals;
             BEAST_EXPECT(wsc->findMsg(5s,
                 [](auto const& jv)
                 {
@@ -471,6 +471,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
             "00000000DEADBEEF");
         env.close();
 
+        using namespace std::chrono_literals;
         BEAST_EXPECT(wsc->findMsg(2s,
             [](auto const& jv)
             {
@@ -488,7 +489,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
     }
 
 public:
-    void run ()
+    void run () override
     {
         testTrustNonexistent ();
         testCreditLimit ();
@@ -516,7 +517,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE (TrustAndBalance, app, ripple);
+BEAST_DEFINE_TESTSUITE_PRIO (TrustAndBalance, app, ripple, 1);
 
 }  // ripple
 

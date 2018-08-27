@@ -15,7 +15,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
 #include <ripple/app/tx/apply.h>
@@ -213,8 +212,7 @@ struct Regression_test : public beast::unit_test::suite
         std::vector<boost::asio::const_buffer> buffers;
         buffers.emplace_back(buffer(request, 1024));
         buffers.emplace_back(buffer(request.data() + 1024, request.length() - 1024));
-        BEAST_EXPECT(jrReader.parse(jvRequest, buffers) &&
-            jvRequest && jvRequest.isObject());
+        BEAST_EXPECT(jrReader.parse(jvRequest, buffers) && jvRequest.isObject());
     }
 
     void run() override

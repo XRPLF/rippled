@@ -89,15 +89,17 @@ message TMHello
     required bytes          nodeProof       = 4;
     optional string         fullVersion     = 5;
     optional uint64         netTime         = 6;
-    optional uint32         ipv4Port        = 7;
+    optional uint32         ipv4Port        = 7;  // NOT USED
     optional uint32         ledgerIndex     = 8;
     optional bytes          ledgerClosed    = 9;  // our last closed ledger
     optional bytes          ledgerPrevious  = 10; // the ledger before the last closed ledger
     optional bool           nodePrivate     = 11; // Request to not forward IP.
     optional TMProofWork    proofOfWork     = 12; // request/provide proof of work
     optional bool           testNet         = 13; // Running as testnet.
-    optional uint32         local_ip        = 14; // our public IP
-    optional uint32         remote_ip       = 15; // IP we see connection from
+    optional uint32         local_ip        = 14; // NOT USED -- our public IP
+    optional uint32         remote_ip       = 15; // NOT USED -- IP we see connection from
+    optional string         local_ip_str    = 16; // our public IP
+    optional string         remote_ip_str   = 17; // IP we see connection from
 }
 
 // The status of a node in our cluster
@@ -178,6 +180,7 @@ message TMStatusChange
     optional uint64 networkTime         = 6;
     optional uint32 firstSeq            = 7;
     optional uint32 lastSeq             = 8;
+    optional string shardSeqs           = 9;
 }
 
 
@@ -233,6 +236,7 @@ message TMIPv4Endpoint
     required uint32 ipv4Port        = 2;
 }
 
+// this message is obsolete/no longer procesed
 message TMPeers
 {
     repeated TMIPv4Endpoint nodes   = 1;
@@ -249,10 +253,19 @@ message TMEndpoint
 message TMEndpoints
 {
     // This field is used to allow the TMEndpoints message format to be
-    // modified as necessary in the future. 
+    // modified as necessary in the future.
     required uint32         version = 1;
 
     repeated TMEndpoint     endpoints = 2;
+
+    // An update to the Endpoint type that uses a string
+    // to represent endpoints, thus allowing ipv6 or ipv4 addresses
+    message TMEndpointv2
+    {
+        required string endpoint = 1;
+        required uint32 hops     = 2;
+    }
+    repeated TMEndpointv2   endpoints_v2 = 3;
 };
 
 message TMIndexedObject

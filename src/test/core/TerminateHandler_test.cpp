@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/core/TerminateHandler.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/unit_test.h>
@@ -37,7 +36,7 @@ private:
     class CerrRedirect
     {
     public:
-        CerrRedirect (std::stringstream& sStream)
+        explicit CerrRedirect (std::stringstream& sStream)
         : old_ (std::cerr.rdbuf (sStream.rdbuf()))
         { }
 
@@ -54,7 +53,7 @@ private:
     class ThreadNameGuard
     {
     public:
-        ThreadNameGuard (std::string const& newName)
+        explicit ThreadNameGuard (std::string const& newName)
         : old_ (beast::getCurrentThreadName ())
         {
             beast::setCurrentThreadName (newName);

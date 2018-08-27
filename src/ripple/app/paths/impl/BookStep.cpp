@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/NodeDirectory.h>
@@ -43,13 +42,15 @@ template<class TIn, class TOut, class TDerived>
 class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 {
 protected:
-    static constexpr uint32_t maxOffersToConsume_ = 2000;
+    uint32_t const maxOffersToConsume_;
     Book book_;
     AccountID strandSrc_;
     AccountID strandDst_;
     // Charge transfer fees when the prev step redeems
     Step const* const prevStep_ = nullptr;
     bool const ownerPaysTransferFee_;
+    // Mark as inactive (dry) if too many offers are consumed
+    bool inactive_ = false;
     beast::Journal j_;
 
     struct Cache
@@ -65,11 +66,20 @@ protected:
 
     boost::optional<Cache> cache_;
 
+    static
+    uint32_t getMaxOffersToConsume(StrandContext const& ctx)
+    {
+        if (ctx.view.rules().enabled(fix1515))
+            return 1000;
+        return 2000;
+    }
+
 public:
     BookStep (StrandContext const& ctx,
         Issue const& in,
         Issue const& out)
-        : book_ (in, out)
+        : maxOffersToConsume_ (getMaxOffersToConsume(ctx))
+        , book_ (in, out)
         , strandSrc_ (ctx.strandSrc)
         , strandDst_ (ctx.strandDst)
         , prevStep_ (ctx.prevStep)
@@ -81,7 +91,7 @@ public:
     Book const& book() const
     {
         return book_;
-    };
+    }
 
     boost::optional<EitherAmount>
     cachedIn () const override
@@ -136,6 +146,10 @@ public:
 
     // Check for errors frozen constraints.
     TER check(StrandContext const& ctx) const;
+
+    bool inactive() const override {
+        return inactive_;
+    }
 
 protected:
     std::string logStringImpl (char const* name) const
@@ -197,6 +211,8 @@ class BookPaymentStep
     : public BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>
 {
 public:
+    explicit BookPaymentStep() = default;
+
     using BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>::BookStep;
     using BookStep<TIn, TOut, BookPaymentStep<TIn, TOut>>::qualityUpperBound;
 
@@ -718,9 +734,17 @@ BookStep<TIn, TOut, TDerived>::revImp (
 
         if (offersConsumed >= maxOffersToConsume_)
         {
-            // Too many iterations, mark this strand as dry
-            cache_.emplace (beast::zero, beast::zero);
-            return {beast::zero, beast::zero};
+            // Too many iterations, mark this strand as inactive
+            if (!afView.rules().enabled(fix1515))
+            {
+                // Don't use the liquidity
+                cache_.emplace(beast::zero, beast::zero);
+                return {beast::zero, beast::zero};
+            }
+
+            // Use the liquidity, but use this to mark the strand as inactive so
+            // it's not used further
+            inactive_ = true;
         }
     }
 
@@ -872,9 +896,17 @@ BookStep<TIn, TOut, TDerived>::fwdImp (
 
         if (offersConsumed >= maxOffersToConsume_)
         {
-            // Too many iterations, mark this strand as dry
-            cache_.emplace (beast::zero, beast::zero);
-            return {beast::zero, beast::zero};
+            // Too many iterations, mark this strand as inactive (dry)
+            if (!afView.rules().enabled(fix1515))
+            {
+                // Don't use the liquidity
+                cache_.emplace(beast::zero, beast::zero);
+                return {beast::zero, beast::zero};
+            }
+
+            // Use the liquidity, but use this to mark the strand as inactive so
+            // it's not used further
+            inactive_ = true;
         }
     }
 

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/paths/cursor/EffectiveRate.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
 #include <ripple/basics/Log.h>
@@ -113,7 +112,7 @@ TER PathCursor::deliverNodeForward (
                 saInFunded, xferRate, true);
             auto saInRemaining = saInReq - saInAct - saInFees;
 
-            if (saInRemaining < zero)
+            if (saInRemaining < beast::zero)
                 saInRemaining.clear();
 
             // In limited by remaining.
@@ -154,7 +153,7 @@ TER PathCursor::deliverNodeForward (
                 << " saOutPassMax=" << saOutPassMax;
 
             // FIXME: We remove an offer if WE didn't want anything out of it?
-            if (!node().saTakerPays || saInSum <= zero)
+            if (!node().saTakerPays || saInSum <= beast::zero)
             {
                 JLOG (j_.debug())
                     << "deliverNodeForward: Microscopic offer unfunded.";
@@ -224,7 +223,7 @@ TER PathCursor::deliverNodeForward (
                     saOutPassMax,             // --> Amount available.
                     saOutPassAct,             // <-- Amount delivered.
                     saOutPassFees,            // <-- Fees charged.
-                    saInAct > zero);
+                    saInAct > beast::zero);
 
                 if (resultCode != tesSUCCESS)
                     break;
@@ -308,7 +307,7 @@ TER PathCursor::deliverNodeForward (
             STAmount saTakerGetsNew  = node().saTakerGets - saOutPassAct;
             STAmount saTakerPaysNew  = node().saTakerPays - saInPassAct;
 
-            if (saTakerPaysNew < zero || saTakerGetsNew < zero)
+            if (saTakerPaysNew < beast::zero || saTakerGetsNew < beast::zero)
             {
                 JLOG (j_.warn())
                     << "deliverNodeForward: NEGATIVE:"
@@ -324,7 +323,7 @@ TER PathCursor::deliverNodeForward (
 
             view().update (node().sleOffer);
 
-            if (saOutPassAct == saOutFunded || saTakerGetsNew == zero)
+            if (saOutPassAct == saOutFunded || saTakerGetsNew == beast::zero)
             {
                 // Offer became unfunded.
 

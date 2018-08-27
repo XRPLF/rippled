@@ -21,7 +21,6 @@
 #include <ripple/server/README.md>
 #endif
 
-#include <BeastConfig.h>
 
 #include <ripple/server/impl/JSONRPCUtil.cpp>
 #include <ripple/server/impl/Port.cpp>

@@ -25,7 +25,7 @@
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/server/Handoff.h>
 #include <ripple/beast/asio/ssl_bundle.h>
-#include <beast/http/message.hpp>
+#include <boost/beast/http/message.hpp>
 #include <ripple/core/Stoppable.h>
 #include <ripple/beast/utility/PropertyStream.h>
 #include <memory>
@@ -64,6 +64,8 @@ public:
 
     struct Setup
     {
+        explicit Setup() = default;
+
         std::shared_ptr<boost::asio::ssl::context> context;
         bool expire = false;
         beast::IP::Address public_ip;
@@ -227,6 +229,18 @@ public:
     std::size_t
     selectPeers (PeerSet& set, std::size_t limit, std::function<
         bool(std::shared_ptr<Peer> const&)> score) = 0;
+
+    /** Increment and retrieve counter for transaction job queue overflows. */
+    virtual void incJqTransOverflow() = 0;
+    virtual std::uint64_t getJqTransOverflow() const = 0;
+
+    /** Increment and retrieve counters for total peer disconnects, and
+     * disconnects we initiate for excessive resource consumption.
+    */
+    virtual void incPeerDisconnect() = 0;
+    virtual std::uint64_t getPeerDisconnect() const = 0;
+    virtual void incPeerDisconnectCharges() = 0;
+    virtual std::uint64_t getPeerDisconnectCharges() const = 0;
 };
 
 struct ScoreHasLedger

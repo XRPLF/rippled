@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/JsonFields.h>
 #include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
@@ -89,7 +88,7 @@ public:
         }
     }
 
-    void run ()
+    void run () override
     {
         testServerInfo ();
     }

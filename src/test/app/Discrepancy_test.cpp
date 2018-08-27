@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
@@ -142,7 +141,7 @@ class Discrepancy_test : public beast::unit_test::suite
     }
 
 public:
-    void run ()
+    void run () override
     {
         using namespace test::jtx;
         auto const sa = supported_amendments();

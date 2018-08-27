@@ -1,66 +1,42 @@
 # Set environment variables.
 environment:
-  PYTHON: C:/Python27-x64
 
   # We bundle up protoc.exe and only the parts of boost and openssl we need so
   # that it's a small download. We also use appveyor's free cache, avoiding fees
-  # downloading from S3 each time. 
+  # downloading from S3 each time.
   # TODO: script to create this package.
-  RIPPLED_DEPS_PATH: rippled_deps15.02
+  RIPPLED_DEPS_PATH: rippled_deps17.04
   RIPPLED_DEPS_URL: https://ripple.github.io/Downloads/appveyor/%RIPPLED_DEPS_PATH%.zip
 
-  # Other dependencies we just download each time.
-  PIP_PATH: get-pip.py
-  PIP_URL: https://bootstrap.pypa.io/%PIP_PATH%
-  # The % in this URL messes up variable substition, so any updates will
-  # need to update both PYWIN32_PATH and PYWIN32_URL
-  PYWIN32_PATH: pywin32-220.win-amd64-py2.7.exe
-  PYWIN32_URL: https://downloads.sourceforge.net/project/pywin32/pywin32/Build%20220/pywin32-220.win-amd64-py2.7.exe
-
-  # Scons honours these environment variables, setting the include/lib paths.
+  # CMake honors these environment variables, setting the include/lib paths.
   BOOST_ROOT: C:/%RIPPLED_DEPS_PATH%/boost
   OPENSSL_ROOT: C:/%RIPPLED_DEPS_PATH%/openssl
 
+  # We've had trouble with AppVeyor apparently not having a stack as large
+  # as the *nix CI platforms.  AppVeyor support suggested that we try
+  # GCE VMs.  The following line is supposed to enable that VM type.
+  appveyor_build_worker_cloud: gce
+
   matrix:
-  # This build works, but our current Appveyor config runs matrix builds
-  # sequentially, and the one build is already slow enough.
-  # - build: scons
-  #   target: msvc.debug
   - build: cmake
     target: msvc.debug
     buildconfig: Debug
 
-os: Visual Studio 2015
+os: Visual Studio 2017
 
 # At the end of each successful build we cache this directory.
 # https://www.appveyor.com/docs/build-cache/
 # Resulting archive should not exceed 100 MB.
 cache:
   - 'C:\%RIPPLED_DEPS_PATH%'
-  - '%PIP_PATH%'
-  - '%PYWIN32_PATH%'
 
 # This means we'll download a zip of the branch we want, rather than the full
 # history.
 shallow_clone: true
 
 install:
-  # We want easy_install, python and protoc.exe on PATH.
-  - SET PATH=%PYTHON%;%PYTHON%/Scripts;C:/%RIPPLED_DEPS_PATH%;%PATH%
-
-  # `ps` prefix means the command is executed by powershell.
-  - ps: |
-        if ($env:build -eq "scons") {
-          if(-not(Test-Path $env:PIP_PATH)) {
-            echo "Download from $env:PIP_URL"
-            Start-FileDownload $env:PIP_URL
-          }
-          if(-not(Test-Path $env:PYWIN32_PATH)) {
-            echo "Download from $env:PYWIN32_URL"
-            Start-FileDownload $env:PYWIN32_URL
-          }
-        }
-  - bin/ci/windows/install-dependencies.bat
+  # We want  protoc.exe on PATH.
+  - SET PATH=C:/%RIPPLED_DEPS_PATH%;%PATH%
 
   # Download dependencies if appveyor didn't restore them from the cache.
   # Use 7zip to unzip.
@@ -90,44 +66,28 @@ build_script:
   # Show which version of the compiler we are using.
   - cl
   - ps: |
-        if ($env:build -eq "scons") {
-          # Build with scons
-          scons $env:target -j%NUMBER_OF_PROCESSORS%
-          if ($LastExitCode -ne 0) { throw "scons build failed" }
-        }
-        else
-        {
           # Build with cmake
           cmake --version
           $cmake_target="$($env:target).ci"
           "$cmake_target"
           New-Item -ItemType Directory -Force -Path "build/$cmake_target"
           Push-Location "build/$cmake_target"
-          cmake -G"Visual Studio 14 2015 Win64" -Dtarget="$cmake_target" ../..
+          cmake -G"Visual Studio 15 2017 Win64" ../..
           if ($LastExitCode -ne 0) { throw "CMake failed" }
           cmake --build . --config $env:buildconfig -- -m
           if ($LastExitCode -ne 0) { throw "CMake build failed" }
           Pop-Location
-        }
 
 after_build:
   - ps: |
-        if ($env:build -eq "scons") {
-          cp build/$($env:target)/rippled.exe build
-          ls build
-          $exe="build/rippled"
-        }
-        else
-        {
-          $exe="build/$cmake_target/$env:buildconfig/rippled"
-        }
+        $exe="build/$cmake_target/$env:buildconfig/rippled"
         "Exe is at $exe"
 
 test_script:
   - ps: |
         & {
           # Run the rippled unit tests
-          & $exe --unittest --quiet --unittest-log
+          & $exe --unittest --unittest-log
           # https://connect.microsoft.com/PowerShell/feedback/details/751703/option-to-stop-script-if-command-line-exe-fails
           if ($LastExitCode -ne 0) { throw "Unit tests failed" }
         }

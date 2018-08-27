@@ -15,7 +15,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/beast/unit_test.h>
 

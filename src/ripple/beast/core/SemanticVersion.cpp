@@ -17,10 +17,12 @@
 */
 //==============================================================================
 
+#include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/beast/core/LexicalCast.h>
 
 #include <algorithm>
 #include <cassert>
+#include <locale>
 
 namespace beast {
 

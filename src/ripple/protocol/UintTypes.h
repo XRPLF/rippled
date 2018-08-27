@@ -23,13 +23,28 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/protocol/AccountID.h>
+#include <ripple/beast/utility/Zero.h>
 
 namespace ripple {
 namespace detail {
 
-class CurrencyTag {};
-class DirectoryTag {};
-class NodeIDTag {};
+class CurrencyTag
+{
+public:
+    explicit CurrencyTag() = default;
+};
+
+class DirectoryTag
+{
+public:
+    explicit DirectoryTag() = default;
+};
+
+class NodeIDTag
+{
+public:
+    explicit NodeIDTag() = default;
+};
 
 } // detail
 
@@ -55,7 +70,7 @@ Currency const& badCurrency();
 
 inline bool isXRP(Currency const& c)
 {
-    return c == zero;
+    return c == beast::zero;
 }
 
 /** Returns "", "XRP", or three letter ISO code. */
@@ -80,16 +95,19 @@ namespace std {
 template <>
 struct hash <ripple::Currency> : ripple::Currency::hasher
 {
+    explicit hash() = default;
 };
 
 template <>
 struct hash <ripple::NodeID> : ripple::NodeID::hasher
 {
+    explicit hash() = default;
 };
 
 template <>
 struct hash <ripple::Directory> : ripple::Directory::hasher
 {
+    explicit hash() = default;
 };
 
 } // std

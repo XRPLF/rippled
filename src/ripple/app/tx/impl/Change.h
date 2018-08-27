@@ -33,13 +33,13 @@ class Change
     : public Transactor
 {
 public:
-    Change (ApplyContext& ctx)
+    explicit Change (ApplyContext& ctx)
         : Transactor(ctx)
     {
     }
 
     static
-    TER
+    NotTEC
     preflight (PreflightContext const& ctx);
 
     TER doApply () override;
@@ -48,7 +48,8 @@ public:
     static
     std::uint64_t
     calculateBaseFee (
-        PreclaimContext const& ctx)
+        ReadView const& view,
+        STTx const& tx)
     {
         return 0;
     }

@@ -63,7 +63,7 @@ class Taker_test : public beast::unit_test::suite
         }
 
         STAmount
-        get_funds (AccountID const& owner, STAmount const& funds) const
+        get_funds (AccountID const& owner, STAmount const& funds) const override
         {
             if (owner == account ())
                 return funds_;
@@ -78,7 +78,7 @@ class Taker_test : public beast::unit_test::suite
                 return Amounts (offer.in.zeroed (), offer.out.zeroed ());
 
             // we need to emulate "unfunded offers" behavior
-            if (get_funds (AccountID (0x4702), offer.out) == zero)
+            if (get_funds (AccountID (0x4702), offer.out) == beast::zero)
                 return Amounts (offer.in.zeroed (), offer.out.zeroed ());
 
             if (done ())
@@ -358,7 +358,7 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         test_xrp_to_iou ();
         test_iou_to_xrp ();

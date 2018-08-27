@@ -20,7 +20,7 @@
 #ifndef RIPPLE_OVERLAY_TRAFFIC_H_INCLUDED
 #define RIPPLE_OVERLAY_TRAFFIC_H_INCLUDED
 
-#include "ripple.pb.h"
+#include <ripple/protocol/messages.h>
 
 #include <atomic>
 #include <map>

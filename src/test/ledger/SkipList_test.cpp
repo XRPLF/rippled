@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/View.h>
@@ -102,7 +101,7 @@ class SkipList_test : public beast::unit_test::suite
         }
     }
 
-    void run()
+    void run() override
     {
         testSkipList();
     }

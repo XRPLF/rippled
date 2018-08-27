@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STAmount.h>
@@ -108,8 +107,10 @@ STVar::STVar (nonPresentObject_t, SField const& name)
 {
 }
 
-STVar::STVar (SerialIter& sit, SField const& name)
+STVar::STVar (SerialIter& sit, SField const& name, int depth)
 {
+    if (depth > 10)
+        Throw<std::runtime_error> ("Maximum nesting depth of STVar exceeded");
     switch (name.fieldType)
     {
     case STI_NOTPRESENT:    construct<STBase>(name); return;
@@ -125,8 +126,8 @@ STVar::STVar (SerialIter& sit, SField const& name)
     case STI_VL:            construct<STBlob>(sit, name); return;
     case STI_ACCOUNT:       construct<STAccount>(sit, name); return;
     case STI_PATHSET:       construct<STPathSet>(sit, name); return;
-    case STI_OBJECT:        construct<STObject>(sit, name); return;
-    case STI_ARRAY:         construct<STArray>(sit, name); return;
+    case STI_OBJECT:        construct<STObject>(sit, name, depth); return;
+    case STI_ARRAY:         construct<STArray>(sit, name, depth); return;
     default:
         Throw<std::runtime_error> ("Unknown object type");
     }

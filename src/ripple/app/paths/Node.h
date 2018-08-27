@@ -31,6 +31,8 @@ namespace path {
 
 struct Node
 {
+    explicit Node() = default;
+
     using List = std::vector<Node>;
 
     inline bool isAccount() const

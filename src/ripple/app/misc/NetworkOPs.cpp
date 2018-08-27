@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/consensus/Consensus.h>
 #include <ripple/app/consensus/RCLConsensus.h>
@@ -40,8 +39,10 @@
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/basics/base64.h>
 #include <ripple/basics/mulDiv.h>
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/PerfLog.h>
+#include <ripple/basics/UptimeClock.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/crypto/RFC1751.h>
@@ -53,11 +54,10 @@
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <ripple/beast/core/SystemStats.h>
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/basics/make_lock.h>
-#include <beast/core/detail/base64.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/asio/ip/host_name.hpp>
 
 namespace ripple {
 
@@ -120,6 +120,8 @@ class NetworkOPsImp final
     {
         struct Counters
         {
+            explicit Counters() = default;
+
             std::uint32_t transitions = 0;
             std::chrono::microseconds dur = std::chrono::microseconds (0);
         };
@@ -201,7 +203,7 @@ public:
             ledgerMaster,
             *m_localTX,
             app.getInboundTransactions(),
-            stopwatch(),
+            beast::get_abstract_clock<std::chrono::steady_clock>(),
             validatorKeys,
             app_.logs().journal("LedgerConsensus"))
         , m_ledgerMaster (ledgerMaster)
@@ -293,8 +295,7 @@ public:
     // Ledger proposal/close functions.
     void processTrustedProposal (
         RCLCxPeerPos proposal,
-        std::shared_ptr<protocol::TMProposeSet> set,
-        NodeID const &node) override;
+        std::shared_ptr<protocol::TMProposeSet> set) override;
 
     bool recvValidation (
         STValidation::ref val, std::string const& source) override;
@@ -333,7 +334,7 @@ public:
     */
     void setStateTimer () override;
 
-    void needNetworkLedger () override
+    void setNeedNetworkLedger () override
     {
         needNetworkLedger_ = true;
     }
@@ -357,7 +358,7 @@ public:
     void consensusViewChange () override;
 
     Json::Value getConsensusInfo () override;
-    Json::Value getServerInfo (bool human, bool admin) override;
+    Json::Value getServerInfo (bool human, bool admin, bool counters) override;
     void clearLedgerFetch () override;
     Json::Value getLedgerFetchInfo () override;
     std::uint32_t acceptLedger (
@@ -628,8 +629,10 @@ NetworkOPsImp::StateAccounting::states_ = {{
 std::string
 NetworkOPsImp::getHostId (bool forAdmin)
 {
+    static std::string const hostname = boost::asio::ip::host_name();
+
     if (forAdmin)
-        return beast::getComputerName ();
+        return hostname;
 
     // For non-admin uses hash the node public key into a
     // single RFC1751 word:
@@ -763,6 +766,7 @@ void NetworkOPsImp::processHeartbeatTimer ()
 
 void NetworkOPsImp::processClusterTimer ()
 {
+    using namespace std::chrono_literals;
     bool const update = app_.cluster().update(
         app_.nodeIdentity().first,
         "",
@@ -784,7 +788,7 @@ void NetworkOPsImp::processClusterTimer ()
         {
             protocol::TMClusterNode& n = *cluster.add_clusternodes();
             n.set_publickey(toBase58 (
-                TokenType::TOKEN_NODE_PUBLIC,
+                TokenType::NodePublic,
                 node.identity()));
             n.set_reporttime(
                 node.getReportTime().time_since_epoch().count());
@@ -1025,8 +1029,8 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             {
                 for (TransactionStatus& e : transactions)
                 {
-                    // we check before addingto the batch
-                    ApplyFlags flags = tapNO_CHECK_SIGN;
+                    // we check before adding to the batch
+                    ApplyFlags flags = tapNONE;
                     if (e.admin)
                         flags = flags | tapUNLIMITED;
 
@@ -1273,84 +1277,39 @@ bool NetworkOPsImp::checkLastClosedLedger (
     JLOG(m_journal.trace()) << "OurClosed:  " << closedLedger;
     JLOG(m_journal.trace()) << "PrevClosed: " << prevClosedLedger;
 
-    struct ValidationCount
-    {
-        std::uint32_t trustedValidations = 0;
-        std::uint32_t nodesUsing = 0;
-    };
+    //-------------------------------------------------------------------------
+    // Determine preferred last closed ledger
 
-    hash_map<uint256, ValidationCount> ledgers;
-    {
-        hash_map<uint256, std::uint32_t> current =
-            app_.getValidations().currentTrustedDistribution(
-                closedLedger,
-                prevClosedLedger,
-                m_ledgerMaster.getValidLedgerIndex());
+    auto & validations = app_.getValidations();
+    JLOG(m_journal.debug())
+        << "ValidationTrie " << Json::Compact(validations.getJsonTrie());
 
-        for (auto& it: current)
-            ledgers[it.first].trustedValidations += it.second;
-    }
-
-    auto& ourVC = ledgers[closedLedger];
-
+    // Will rely on peer LCL if no trusted validations exist
+    hash_map<uint256, std::uint32_t> peerCounts;
+    peerCounts[closedLedger] = 0;
     if (mMode >= omTRACKING)
+        peerCounts[closedLedger]++;
+
+    for (auto& peer : peerList)
     {
-        ++ourVC.nodesUsing;
+        uint256 peerLedger = peer->getClosedLedgerHash();
+
+        if (peerLedger.isNonZero())
+            ++peerCounts[peerLedger];
     }
 
-    for (auto& peer: peerList)
-    {
-        uint256 peerLedger = peer->getClosedLedgerHash ();
+    for(auto const & it: peerCounts)
+        JLOG(m_journal.debug()) << "L: " << it.first << " n=" << it.second;
 
-        if (peerLedger.isNonZero ())
-            ++ledgers[peerLedger].nodesUsing;
-    }
+    uint256 preferredLCL = validations.getPreferredLCL(
+        RCLValidatedLedger{ourClosed, validations.adaptor().journal()},
+        m_ledgerMaster.getValidLedgerIndex(),
+        peerCounts);
 
-
-    // 3) Is there a network ledger we'd like to switch to? If so, do we have
-    // it?
-    bool switchLedgers = false;
-    ValidationCount bestCounts = ledgers[closedLedger];
-
-    for (auto const& it: ledgers)
-    {
-        uint256 const & currLedger =  it.first;
-        ValidationCount const & currCounts = it.second;
-
-        JLOG(m_journal.debug()) << "L: " << currLedger
-                              << " t=" << currCounts.trustedValidations
-                              << ", n=" << currCounts.nodesUsing;
-
-        bool const preferCurr = [&]()
-        {
-            // Prefer ledger with more trustedValidations
-            if (currCounts.trustedValidations > bestCounts.trustedValidations)
-                return true;
-            if (currCounts.trustedValidations < bestCounts.trustedValidations)
-                return false;
-            // If neither are trusted, prefer more nodesUsing
-            if (currCounts.trustedValidations == 0)
-            {
-                if (currCounts.nodesUsing > bestCounts.nodesUsing)
-                    return true;
-                if (currCounts.nodesUsing < bestCounts.nodesUsing)
-                    return false;
-            }
-            // If tied trustedValidations (non-zero) or tied nodesUsing,
-            // prefer higher ledger hash
-            return currLedger > closedLedger;
-
-        }();
-
-        // Switch to current ledger if it is preferred over best so far
-        if (preferCurr)
-        {
-            bestCounts = currCounts;
-            closedLedger = currLedger;
-            switchLedgers = true;
-        }
-    }
-
+    bool switchLedgers = preferredLCL != closedLedger;
+    if(switchLedgers)
+        closedLedger = preferredLCL;
+    //-------------------------------------------------------------------------
     if (switchLedgers && (closedLedger == prevClosedLedger))
     {
         // don't switch to our own previous ledger
@@ -1364,15 +1323,15 @@ bool NetworkOPsImp::checkLastClosedLedger (
     if (!switchLedgers)
         return false;
 
-    auto consensus = m_ledgerMaster.getLedgerByHash (closedLedger);
+    auto consensus = m_ledgerMaster.getLedgerByHash(closedLedger);
 
     if (!consensus)
-        consensus = app_.getInboundLedgers().acquire (
-            closedLedger, 0, InboundLedger::fcCONSENSUS);
+        consensus = app_.getInboundLedgers().acquire(
+            closedLedger, 0, InboundLedger::Reason::CONSENSUS);
 
     if (consensus &&
-        ! m_ledgerMaster.isCompatible (*consensus, m_journal.debug(),
-            "Not switching"))
+        !m_ledgerMaster.isCompatible(
+            *consensus, m_journal.debug(), "Not switching"))
     {
         // Don't switch to a ledger not on the validated chain
         networkClosed = ourClosed->info().hash;
@@ -1380,18 +1339,18 @@ bool NetworkOPsImp::checkLastClosedLedger (
     }
 
     JLOG(m_journal.warn()) << "We are not running on the consensus ledger";
-    JLOG(m_journal.info()) << "Our LCL: " << getJson (*ourClosed);
+    JLOG(m_journal.info()) << "Our LCL: " << getJson(*ourClosed);
     JLOG(m_journal.info()) << "Net LCL " << closedLedger;
 
     if ((mMode == omTRACKING) || (mMode == omFULL))
-        setMode (omCONNECTED);
+        setMode(omCONNECTED);
 
     if (consensus)
     {
-        // FIXME: If this rewinds the ledger sequence, or has the same sequence, we
-        // should update the status on any stored transactions in the invalidated
-        // ledgers.
-        switchLastClosedLedger (consensus);
+        // FIXME: If this rewinds the ledger sequence, or has the same
+        // sequence, we should update the status on any stored transactions
+        // in the invalidated ledgers.
+        switchLastClosedLedger(consensus);
     }
 
     return true;
@@ -1407,8 +1366,7 @@ void NetworkOPsImp::switchLastClosedLedger (
     clearNeedNetworkLedger ();
 
     // Update fee computations.
-    // TODO: Needs an open ledger
-    //app_.getTxQ().processClosedLedger(app_, *newLCL, true);
+    app_.getTxQ().processClosedLedger(app_, *newLCL, true);
 
     // Caller must own master lock
     {
@@ -1479,13 +1437,17 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
     assert (closingInfo.parentHash ==
             m_ledgerMaster.getClosedLedger()->info().hash);
 
-    app_.validators().onConsensusStart (
-        app_.getValidations().getCurrentPublicKeys ());
+    TrustChanges const changes = app_.validators().updateTrusted(
+        app_.getValidations().getCurrentNodeIDs());
 
-    mConsensus.startRound (
+    if (!changes.added.empty() || !changes.removed.empty())
+        app_.getValidations().trustChanged(changes.added, changes.removed);
+
+    mConsensus.startRound(
         app_.timeKeeper().closeTime(),
         networkClosed,
-        prevLedger);
+        prevLedger,
+        changes.removed);
 
     JLOG(m_journal.debug()) << "Initiating consensus engine";
     return true;
@@ -1498,8 +1460,7 @@ uint256 NetworkOPsImp::getConsensusLCL ()
 
 void NetworkOPsImp::processTrustedProposal (
     RCLCxPeerPos peerPos,
-    std::shared_ptr<protocol::TMProposeSet> set,
-    NodeID const& node)
+    std::shared_ptr<protocol::TMProposeSet> set)
 {
     if (mConsensus.peerProposal(
             app_.timeKeeper().closeTime(), peerPos))
@@ -1601,9 +1562,9 @@ void NetworkOPsImp::pubManifest (Manifest const& mo)
 
         jvObj [jss::type]             = "manifestReceived";
         jvObj [jss::master_key]       = toBase58(
-            TokenType::TOKEN_NODE_PUBLIC, mo.masterKey);
+            TokenType::NodePublic, mo.masterKey);
         jvObj [jss::signing_key]      = toBase58(
-            TokenType::TOKEN_NODE_PUBLIC, mo.signingKey);
+            TokenType::NodePublic, mo.signingKey);
         jvObj [jss::seq]              = Json::UInt (mo.sequence);
         jvObj [jss::signature]        = strHex (mo.getSignature ());
         jvObj [jss::master_signature] = strHex (mo.getMasterSignature ());
@@ -1740,7 +1701,7 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
 
         jvObj [jss::type]                  = "validationReceived";
         jvObj [jss::validation_public_key] = toBase58(
-            TokenType::TOKEN_NODE_PUBLIC,
+            TokenType::NodePublic,
             val->getSignerPublic());
         jvObj [jss::ledger_hash]           = to_string (val->getLedgerHash ());
         jvObj [jss::signature]             = strHex (val->getSignature ());
@@ -1820,6 +1781,7 @@ void NetworkOPsImp::pubPeerStatus (
 
 void NetworkOPsImp::setMode (OperatingMode om)
 {
+    using namespace std::chrono_literals;
     if (om == omCONNECTED)
     {
         if (app_.getLedgerMaster ().getValidatedLedgerAge () < 1min)
@@ -2118,7 +2080,7 @@ Json::Value NetworkOPsImp::getConsensusInfo ()
     return mConsensus.getJson (true);
 }
 
-Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
+Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin, bool counters)
 {
     Json::Value info = Json::objectValue;
 
@@ -2129,6 +2091,9 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     info [jss::build_version] = BuildInfo::getVersionString ();
 
     info [jss::server_state] = strOperatingMode ();
+
+    info [jss::time] = to_string(date::floor<std::chrono::microseconds>(
+        std::chrono::system_clock::now()));
 
     if (needNetworkLedger_)
         info[jss::network_ledger] = "waiting";
@@ -2167,7 +2132,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         if (!app_.getValidationPublicKey().empty())
         {
             info[jss::pubkey_validator] = toBase58 (
-                TokenType::TOKEN_NODE_PUBLIC,
+                TokenType::NodePublic,
                 app_.validators().localPublicKey());
         }
         else
@@ -2176,8 +2141,14 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         }
     }
 
+    if (counters)
+    {
+        info[jss::counters] = app_.getPerfLog().countersJson();
+        info[jss::current_activities] = app_.getPerfLog().currentJson();
+    }
+
     info[jss::pubkey_node] = toBase58 (
-        TokenType::TOKEN_NODE_PUBLIC,
+        TokenType::NodePublic,
         app_.nodeIdentity().first);
 
     info[jss::complete_ledgers] =
@@ -2345,6 +2316,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
             auto closeTime = app_.timeKeeper().closeTime();
             if (lCloseTime <= closeTime)
             {
+                using namespace std::chrono_literals;
                 auto age = closeTime - lCloseTime;
                 if (age < 1000000s)
                     l[jss::age] = Json::UInt (age.count());
@@ -2366,7 +2338,13 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     }
 
     info[jss::state_accounting] = accounting_.json();
-    info[jss::uptime] = UptimeTimer::getInstance ().getElapsedSeconds ();
+    info[jss::uptime] = UptimeClock::now().time_since_epoch().count();
+    info[jss::jq_trans_overflow] = std::to_string(
+        app_.overlay().getJqTransOverflow());
+    info[jss::peer_disconnects] = std::to_string(
+        app_.overlay().getPeerDisconnect());
+    info[jss::peer_disconnects_resources] = std::to_string(
+        app_.overlay().getPeerDisconnectCharges());
 
     return info;
 }
@@ -2859,7 +2837,7 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult,
     jvResult[jss::load_factor]     = feeTrack.getLoadFactor ();
     jvResult [jss::hostid]         = getHostId (admin);
     jvResult[jss::pubkey_node]     = toBase58 (
-        TokenType::TOKEN_NODE_PUBLIC,
+        TokenType::NodePublic,
         app_.nodeIdentity().first);
 
     ScopedLockType sl (mSubLock);
@@ -3101,7 +3079,7 @@ void NetworkOPsImp::getBookPage (
                             uOfferOwnerID, book.out.currency,
                                 book.out.account, fhZERO_IF_FROZEN, viewJ);
 
-                        if (saOwnerFunds < zero)
+                        if (saOwnerFunds < beast::zero)
                         {
                             // Treat negative funds as zero.
 
@@ -3365,7 +3343,7 @@ Json::Value NetworkOPsImp::StateAccounting::json() const
         ret[states_[i]] = Json::objectValue;
         auto& state = ret[states_[i]];
         state[jss::transitions] = counters[i].transitions;
-        state[jss::duration_us] = std::to_string (counters[i].dur.count());
+        state[jss::duration_us] = std::to_string(counters[i].dur.count());
     }
 
     return ret;

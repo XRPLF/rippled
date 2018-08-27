@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
@@ -29,18 +28,19 @@ namespace NodeStore {
 class NullBackend : public Backend
 {
 public:
-    NullBackend ()
-    {
-    }
+    NullBackend() = default;
 
-    ~NullBackend ()
-    {
-    }
+    ~NullBackend() = default;
 
     std::string
     getName() override
     {
         return std::string ();
+    }
+
+    void
+    open(bool createIfMissing) override
+    {
     }
 
     void
@@ -118,13 +118,13 @@ public:
         Manager::instance().insert(*this);
     }
 
-    ~NullFactory()
+    ~NullFactory() override
     {
         Manager::instance().erase(*this);
     }
 
     std::string
-    getName () const
+    getName () const override
     {
         return "none";
     }
@@ -133,7 +133,7 @@ public:
     createInstance (
         size_t,
         Section const&,
-        Scheduler&, beast::Journal)
+        Scheduler&, beast::Journal) override
     {
         return std::make_unique <NullBackend> ();
     }

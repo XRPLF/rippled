@@ -17,10 +17,9 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
-#include <ripple/protocol/types.h>
+#include <ripple/protocol/UintTypes.h>
 
 namespace ripple {
 namespace test {

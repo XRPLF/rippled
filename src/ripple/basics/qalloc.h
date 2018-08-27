@@ -111,13 +111,15 @@ public:
     template <class U>
     struct rebind
     {
+        explicit rebind() = default;
+
         using other = qalloc_type<U, ShareOnCopy>;
     };
 
     qalloc_type (qalloc_type const&) = default;
-    qalloc_type (qalloc_type&& other) = default;
+    qalloc_type (qalloc_type&& other) noexcept = default;
     qalloc_type& operator= (qalloc_type const&) = default;
-    qalloc_type& operator= (qalloc_type&&) = default;
+    qalloc_type& operator= (qalloc_type&&) noexcept = default;
 
     qalloc_type();
 

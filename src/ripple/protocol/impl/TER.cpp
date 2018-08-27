@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/protocol/TER.h>
 #include <boost/range/adaptor/transformed.hpp>
 #include <unordered_map>
@@ -29,13 +28,13 @@ namespace detail {
 
 static
 std::unordered_map<
-    std::underlying_type_t<TER>,
+    TERUnderlyingType,
     std::pair<char const* const, char const* const>> const&
 transResults()
 {
     static
     std::unordered_map<
-        std::underlying_type_t<TER>,
+        TERUnderlyingType,
         std::pair<char const* const, char const* const>> const
     results
     {
@@ -73,6 +72,8 @@ transResults()
         { tecINTERNAL,               { "tecINTERNAL",              "An internal error has occurred during processing."                             } },
         { tecCRYPTOCONDITION_ERROR,  { "tecCRYPTOCONDITION_ERROR", "Malformed, invalid, or mismatched conditional or fulfillment."                 } },
         { tecINVARIANT_FAILED,       { "tecINVARIANT_FAILED",      "One or more invariants for the transaction were not satisfied."                } },
+        { tecEXPIRED,                { "tecEXPIRED",               "Expiration time is passed."                                                    } },
+        { tecDUPLICATE,              { "tecDUPLICATE",             "Ledger object already exists."                                                 } },
 
         { tefALREADY,                { "tefALREADY",               "The exact transaction was already in this ledger."                             } },
         { tefBAD_ADD_AUTH,           { "tefBAD_ADD_AUTH",          "Not authorized to add account."                                                } },
@@ -139,6 +140,8 @@ transResults()
         { temUNKNOWN,                { "temUNKNOWN",               "The transaction requires logic that is not implemented yet."                   } },
         { temDISABLED,               { "temDISABLED",              "The transaction requires logic that is currently disabled."                    } },
         { temBAD_TICK_SIZE,          { "temBAD_TICK_SIZE",         "Malformed: Tick size out of range."                                            } },
+        { temINVALID_ACCOUNT_ID,     { "temINVALID_ACCOUNT_ID",    "Malformed: A field contains an invalid account ID."                            } },
+        { temCANNOT_PREAUTH_SELF,    { "temCANNOT_PREAUTH_SELF",   "Malformed: An account may not preauthorize itself."                            } },
 
         { terRETRY,                  { "terRETRY",                 "Retry transaction."                                                            } },
         { terFUNDS_SPENT,            { "terFUNDS_SPENT",           "Can't set password, password set funds already spent."                         } },
@@ -163,8 +166,7 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
 {
     auto& results = detail::transResults();
 
-    auto const r = results.find (
-        static_cast<std::underlying_type_t<TER>> (code));
+    auto const r = results.find (TERtoInt (code));
 
     if (r == results.end())
         return false;
@@ -208,7 +210,7 @@ transCode(std::string const& token)
         );
         std::unordered_map<
             std::string,
-            std::underlying_type_t<TER>> const
+            TERUnderlyingType> const
         byToken(tRange.begin(), tRange.end());
         return byToken;
     }();
@@ -218,7 +220,7 @@ transCode(std::string const& token)
     if (r == results.end())
         return boost::none;
 
-    return static_cast<TER>(r->second);
+    return TER::fromInt (r->second);
 }
 
 } // ripple

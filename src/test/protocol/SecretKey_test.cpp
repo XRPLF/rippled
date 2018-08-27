@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
@@ -320,7 +319,7 @@ public:
                 generateSeed ("masterpassphrase"));
 
             auto const sk2 = parseBase58<SecretKey> (
-                TOKEN_NODE_PRIVATE,
+                TokenType::NodePrivate,
                 "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe");
             BEAST_EXPECT(sk2);
 
@@ -333,7 +332,7 @@ public:
                 generateSeed ("masterpassphrase"));
 
             auto const sk2 = parseBase58<SecretKey> (
-                TOKEN_NODE_PRIVATE,
+                TokenType::NodePrivate,
                 "paKv46LztLqK3GaKz1rG2nQGN6M4JLyRtxFBYFTw4wAVHtGys36");
             BEAST_EXPECT(sk2);
 
@@ -341,12 +340,12 @@ public:
         }
 
         // Try converting short, long and malformed data
-        BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, ""));
-        BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, " "));
-        BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, "!35gty9mhju8nfjl"));
+        BEAST_EXPECT(!parseBase58<SecretKey> (TokenType::NodePrivate, ""));
+        BEAST_EXPECT(!parseBase58<SecretKey> (TokenType::NodePrivate, " "));
+        BEAST_EXPECT(!parseBase58<SecretKey> (TokenType::NodePrivate, "!35gty9mhju8nfjl"));
 
         auto const good = toBase58 (
-            TokenType::TOKEN_NODE_PRIVATE,
+            TokenType::NodePrivate,
             randomSecretKey());
 
         // Short (non-empty) strings
@@ -359,7 +358,7 @@ public:
             while (!s.empty())
             {
                 s.erase (r(s) % s.size(), 1);
-                BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, s));
+                BEAST_EXPECT(!parseBase58<SecretKey> (TokenType::NodePrivate, s));
             }
         }
 
@@ -368,7 +367,7 @@ public:
         {
             auto s = good;
             s.resize (s.size() + i, s[i % s.size()]);
-            BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, s));
+            BEAST_EXPECT(!parseBase58<SecretKey> (TokenType::NodePrivate, s));
         }
 
         // Strings with invalid Base58 characters
@@ -378,7 +377,7 @@ public:
             {
                 auto s = good;
                 s[i % s.size()] = c;
-                BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, s));
+                BEAST_EXPECT(!parseBase58<SecretKey> (TokenType::NodePrivate, s));
             }
         }
 
@@ -389,7 +388,7 @@ public:
             for (auto c : std::string("ansrJqtv7"))
             {
                 s[0] = c;
-                BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, s));
+                BEAST_EXPECT(!parseBase58<SecretKey> (TokenType::NodePrivate, s));
             }
         }
 
@@ -402,12 +401,12 @@ public:
         for (std::size_t i = 0; i != keys.size(); ++i)
         {
             auto const si = toBase58 (
-                TokenType::TOKEN_NODE_PRIVATE,
+                TokenType::NodePrivate,
                 keys[i]);
             BEAST_EXPECT(!si.empty());
 
             auto const ski = parseBase58<SecretKey> (
-                TOKEN_NODE_PRIVATE, si);
+                TokenType::NodePrivate, si);
             BEAST_EXPECT(ski && keys[i] == *ski);
 
             for (std::size_t j = i; j != keys.size(); ++j)
@@ -415,13 +414,13 @@ public:
                 BEAST_EXPECT((keys[i] == keys[j]) == (i == j));
 
                 auto const sj = toBase58 (
-                    TokenType::TOKEN_NODE_PRIVATE,
+                    TokenType::NodePrivate,
                     keys[j]);
 
                 BEAST_EXPECT((si == sj) == (i == j));
 
                 auto const skj = parseBase58<SecretKey> (
-                    TOKEN_NODE_PRIVATE, sj);
+                    TokenType::NodePrivate, sj);
                 BEAST_EXPECT(skj && keys[j] == *skj);
 
                 BEAST_EXPECT((*ski == *skj) == (i == j));

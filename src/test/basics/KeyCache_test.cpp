@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/KeyCache.h>
 #include <ripple/beast/unit_test.h>
@@ -28,8 +27,9 @@ namespace ripple {
 class KeyCache_test : public beast::unit_test::suite
 {
 public:
-    void run ()
+    void run () override
     {
+        using namespace std::chrono_literals;
         TestStopwatch clock;
         clock.set (0);
 
@@ -38,7 +38,7 @@ public:
 
         // Insert an item, retrieve it, and age it so it gets purged.
         {
-            Cache c ("test", clock, 1, 2);
+            Cache c ("test", clock, 1, 2s);
 
             BEAST_EXPECT(c.size () == 0);
             BEAST_EXPECT(c.insert ("one"));
@@ -59,7 +59,7 @@ public:
 
         // Insert two items, have one expire
         {
-            Cache c ("test", clock, 2, 2);
+            Cache c ("test", clock, 2, 2s);
 
             BEAST_EXPECT(c.insert ("one"));
             BEAST_EXPECT(c.size  () == 1);
@@ -77,7 +77,7 @@ public:
 
         // Insert three items (1 over limit), sweep
         {
-            Cache c ("test", clock, 2, 3);
+            Cache c ("test", clock, 2, 3s);
 
             BEAST_EXPECT(c.insert ("one"));
             ++clock;
