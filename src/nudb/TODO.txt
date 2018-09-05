@@ -1,2 +1,0 @@
-* Support 32/64-bit
-  -- xxhasher specialization for 4/8 byte size-t
