@@ -1,9 +1,0 @@
-# Reported as a leak in Travis CI Ubuntu 12.04.5 LTS builds.
-{
-   ignored libc NSS leak
-   Memcheck:Leak
-   fun:malloc
-   fun:nss_parse_service_list
-   fun:__nss_database_lookup
-}
-
