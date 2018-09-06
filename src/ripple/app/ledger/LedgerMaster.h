@@ -256,7 +256,7 @@ private:
         std::shared_ptr<Ledger const> ledger);
 
     void getFetchPack(
-        LedgerIndex missingIndex, InboundLedger::Reason reason);
+        LedgerIndex missing, InboundLedger::Reason reason);
 
     boost::optional<LedgerHash> getLedgerHashForHistory(
         LedgerIndex index, InboundLedger::Reason reason);

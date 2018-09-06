@@ -516,16 +516,29 @@ LedgerMaster::tryFill (
 /** Request a fetch pack to get to the specified ledger
 */
 void
-LedgerMaster::getFetchPack (LedgerIndex missingIndex,
+LedgerMaster::getFetchPack (LedgerIndex missing,
     InboundLedger::Reason reason)
 {
-    auto haveHash = getLedgerHashForHistory(
-        missingIndex + 1, reason);
+    auto haveHash {getLedgerHashForHistory(missing + 1, reason)};
     if (!haveHash || haveHash->isZero())
     {
-        JLOG (m_journal.error()) <<
-            "No hash for fetch pack. Missing Index " <<
-            std::to_string(missingIndex);
+        if (reason == InboundLedger::Reason::SHARD)
+        {
+            auto const shardStore {app_.getShardStore()};
+            auto const shardIndex {shardStore->seqToShardIndex(missing)};
+            if (missing < shardStore->lastLedgerSeq(shardIndex))
+            {
+                 JLOG(m_journal.error())
+                    << "No hash for fetch pack. "
+                    << "Missing ledger sequence " << missing
+                    << " while acquiring shard " << shardIndex;
+            }
+        }
+        else
+        {
+            JLOG(m_journal.error()) <<
+                "No hash for fetch pack. Missing Index " << missing;
+        }
         return;
     }
 
@@ -537,7 +550,7 @@ LedgerMaster::getFetchPack (LedgerIndex missingIndex,
         auto peerList = app_.overlay ().getActivePeers();
         for (auto const& peer : peerList)
         {
-            if (peer->hasRange (missingIndex, missingIndex + 1))
+            if (peer->hasRange (missing, missing + 1))
             {
                 int score = peer->getScore (true);
                 if (! target || (score > maxScore))
@@ -559,8 +572,7 @@ LedgerMaster::getFetchPack (LedgerIndex missingIndex,
             tmBH, protocol::mtGET_OBJECTS);
 
         target->send (packet);
-        JLOG (m_journal.trace()) << "Requested fetch pack for "
-                                            << missingIndex;
+        JLOG(m_journal.trace()) << "Requested fetch pack for " << missing;
     }
     else
         JLOG (m_journal.debug()) << "No peer for fetch pack";
