@@ -14,6 +14,44 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 1.1.0
+
+The `rippled` 1.1.0 release release includes the `DepositPreAuth` amendment, which combined with the previously released `DepositAuth` amendment, allows users to pre-authorize incoming transactions to accounts, by whitelisting sender addresses. The 1.1.0 release also includes incremental improvements to several previously released features (`fix1515` amendment), deprecates support for the `sign` and `sign_for` commands from the rippled API and improves invariant checking for enhanced security.
+
+Ripple recommends that all server operators upgrade to XRP Ledger version 1.1.0 by Thursday, 2018-09-27, to ensure service continuity.
+
+**New and Updated Features**
+
+- Add `DepositPreAuth` ledger type and transaction (#2513)  
+- Increase fault tolerance and raise validation quorum to 80%, which fixes issue 2604 (#2613)
+- Support ipv6 for peer and RPC comms (#2321)
+- Refactor ledger replay logic (#2477)
+- Improve Invariant Checking (#2532)
+- Expand SQLite potential storage capacity (#2650)
+- Replace UptimeTimer with UptimeClock (#2532)
+- Don’t read Amount field if it is not present (#2566)
+- Remove Transactor:: mFeeDue member variable (#2586)
+- Remove conditional check for using Boost.Process (#2586)
+- Improve charge handling in NoRippleCheckLimits test (#2629)
+- Migrate more code into the chrono type system (#2629)
+- Supply ConsensusTimer with milliseconds for finer precision (#2629)
+- Refactor / modernize Cmake (#2629)
+- Add delimiter when appending to cmake_cxx_flags (#2650)
+- Remove using namespace declarations at namespace scope in headers (#2650)
+
+**Bug Fixes**
+
+- Deprecate the ‘sign’ and ‘sign_for’ APIs (#2657)
+- Use liquidity from strands that consume too many offers, which will be enabled on fix1515 Amendment (#2546)
+- Fix a corner case when decoding base64 (#2605)
+- Trim space in Endpoint::from_string (#2593)
+- Correctly suppress sent messages (#2564)
+- Detect when a unit test child process crashes (#2415)
+- Handle WebSocket construction exceptions (#2629)
+- Improve JSON exception handling (#2605)
+- Add missing virtual destructors (#2532)
+
+
 ## Version 1.0.0.
 
 The `rippled` 1.0.0 release includes incremental improvements to several previously released features.
