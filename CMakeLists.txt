@@ -81,6 +81,10 @@ if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     "The most likely cause of this warning is trying to build rippled with a 32-bit OS.")
 endif ()
 
+if (APPLE AND NOT HOMEBREW)
+  find_program (HOMEBREW brew)
+endif ()
+
 #[===================================================================[
    read version from source
 #]===================================================================]
@@ -106,6 +110,11 @@ option (unity "Creates a build based on unity sources. This is the default" ON)
 if (is_gcc OR is_clang)
   option (coverage "Generates coverage info." OFF)
   option (profile "Add profiling flags" OFF)
+  set (coverage_test "" CACHE STRING
+    "On gcc & clang, the specific unit test(s) to run for coverage. Default is all tests.")
+  if (coverage_test AND NOT coverage)
+    set (coverage ON CACHE BOOL "gcc/clang only" FORCE)
+  endif ()
 else ()
   set (profile OFF CACHE BOOL "gcc/clang only" FORCE)
   set (coverage OFF CACHE BOOL "gcc/clang only" FORCE)
@@ -384,13 +393,15 @@ target_compile_options (opts
   INTERFACE
     $<$<AND:$<BOOL:${is_gcc}>,$<COMPILE_LANGUAGE:CXX>>:-Wsuggest-override>
     $<$<BOOL:${perf}>:-fno-omit-frame-pointer>
-    $<$<BOOL:${coverage}>:-fprofile-arcs -ftest-coverage>
+    $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${coverage}>>:-fprofile-arcs -ftest-coverage>
+    $<$<AND:$<BOOL:${is_clang}>,$<BOOL:${coverage}>>:-fprofile-instr-generate -fcoverage-mapping>
     $<$<BOOL:${profile}>:-pg>
     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
 
 target_link_libraries (opts
   INTERFACE
-    $<$<BOOL:${coverage}>:-fprofile-arcs -ftest-coverage>
+    $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${coverage}>>:-fprofile-arcs -ftest-coverage>
+    $<$<AND:$<BOOL:${is_clang}>,$<BOOL:${coverage}>>:-fprofile-instr-generate -fcoverage-mapping>
     $<$<BOOL:${profile}>:-pg>
     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
 
@@ -575,13 +586,10 @@ target_link_libraries (ripple_boost
 if (NOT DEFINED OPENSSL_ROOT_DIR)
   if (DEFINED ENV{OPENSSL_ROOT})
     set (OPENSSL_ROOT_DIR $ENV{OPENSSL_ROOT})
-  elseif (APPLE)
-    find_program (homebrew brew)
-    if (homebrew)
-      execute_process (COMMAND ${homebrew} --prefix openssl
-        OUTPUT_VARIABLE OPENSSL_ROOT_DIR
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-    endif ()
+  elseif (HOMEBREW)
+    execute_process (COMMAND ${HOMEBREW} --prefix openssl
+      OUTPUT_VARIABLE OPENSSL_ROOT_DIR
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
   endif ()
   file (TO_CMAKE_PATH "${OPENSSL_ROOT_DIR}" OPENSSL_ROOT_DIR)
 endif ()
@@ -2329,6 +2337,87 @@ if (is_root_project)
     copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/rippled-example.cfg\" etc rippled.cfg)
     copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/validators-example.txt\" etc validators.txt)
   ")
+endif ()
+
+#[===================================================================[
+   coverage report target
+#]===================================================================]
+
+if (coverage)
+  if (is_clang)
+    if (APPLE)
+      execute_process (COMMAND xcrun -f llvm-profdata
+        OUTPUT_VARIABLE LLVM_PROFDATA
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    else ()
+      find_program (LLVM_PROFDATA llvm-profdata)
+    endif ()
+    if (NOT LLVM_PROFDATA)
+      message (WARNING "unable to find llvm-profdata - skipping coverage_report target")
+    endif ()
+
+    if (APPLE)
+      execute_process (COMMAND xcrun -f llvm-cov
+        OUTPUT_VARIABLE LLVM_COV
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    else ()
+      find_program (LLVM_COV llvm-cov)
+    endif ()
+    if (NOT LLVM_COV)
+      message (WARNING "unable to find llvm-cov - skipping coverage_report target")
+    endif ()
+
+    if (LLVM_COV AND LLVM_PROFDATA)
+      add_custom_target (coverage_report
+        USES_TERMINAL
+        COMMAND ${CMAKE_COMMAND} -E echo "Generating coverage - results will be in ${CMAKE_BINARY_DIR}/coverage/index.html."
+        COMMAND ${CMAKE_COMMAND} -E echo "Running rippled tests."
+        COMMAND rippled --unittest$<$<BOOL:${coverage_test}>:=${coverage_test}> --quiet --unittest-log
+        COMMAND ${LLVM_PROFDATA}
+          merge -sparse default.profraw -o rip.profdata
+        COMMAND ${LLVM_COV}
+          show -format=html -output-dir=${CMAKE_BINARY_DIR}/coverage
+          $<TARGET_FILE:rippled> -instr-profile=rip.profdata
+        BYPRODUCTS coverage/index.html)
+    endif ()
+  elseif (is_gcc)
+    find_program (LCOV lcov)
+    if (NOT LCOV)
+      message (WARNING "unable to find lcov - skipping coverage_report target")
+    endif ()
+
+    find_program (GENHTML genhtml)
+    if (NOT GENHTML)
+      message (WARNING "unable to find genhtml - skipping coverage_report target")
+    endif ()
+
+    if (LCOV AND GENHTML)
+      add_custom_target (coverage_report
+        USES_TERMINAL
+        COMMAND ${CMAKE_COMMAND} -E echo "Generating coverage- results will be in ${CMAKE_BINARY_DIR}/coverage/index.html."
+        # create baseline info file
+        COMMAND ${LCOV}
+          --no-external -d "${CMAKE_SOURCE_DIR}" -c -d . -i -o baseline.info
+          | grep -v "ignoring data for external file"
+        # run tests
+        COMMAND ${CMAKE_COMMAND} -E echo "Running rippled tests for coverage report."
+        COMMAND rippled --unittest$<$<BOOL:${coverage_test}>:=${coverage_test}> --quiet --unittest-log
+        # Create test coverage data file
+        COMMAND ${LCOV}
+          --no-external -d "${CMAKE_SOURCE_DIR}" -c -d . -o tests.info
+          | grep -v "ignoring data for external file"
+        # Combine baseline and test coverage data
+        COMMAND ${LCOV}
+          -a baseline.info -a tests.info -o lcov-all.info
+        # extract our files
+        COMMAND ${LCOV}
+          -e lcov-all.info "*/src/ripple/*" -o lcov.info
+        # generate HTML report
+        COMMAND ${GENHTML}
+          -o ${CMAKE_BINARY_DIR}/coverage lcov.info
+        BYPRODUCTS coverage/index.html)
+    endif ()
+  endif ()
 endif ()
 
 #[===================================================================[
