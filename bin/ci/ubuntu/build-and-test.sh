@@ -37,6 +37,12 @@ else
   time=
 fi
 
+if [[ "${MAX_TIME:-}" == "" ]] ; then
+  tcmd=""
+else
+  tcmd="timeout ${MAX_TIME}"
+fi
+
 echo "cmake building ${APP}"
 : ${CMAKE_EXTRA_ARGS:=""}
 if [[ ${NINJA_BUILD:-} == true ]]; then
@@ -44,9 +50,10 @@ if [[ ${NINJA_BUILD:-} == true ]]; then
 fi
 
 coverage=false
-if [[ "${CMAKE_EXTRA_ARGS}" =~ -Dcoverage=((on)|(ON)) ]] ; then
+if [[ "${TARGET}" == "coverage_report" ]] ; then
     echo "coverage option detected."
     coverage=true
+    export PATH=$PATH:$LCOV_ROOT/usr/bin
 fi
 
 #
@@ -79,7 +86,8 @@ pushd "build/${BUILD_DIR}"
 # generate
 $time cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS}
 # build
-time DESTDIR=$(pwd)/_INSTALLED_ cmake --build . --target ${TARGET} -- $BUILDARGS
+export DESTDIR=$(pwd)/_INSTALLED_
+time $tcmd cmake --build . --target ${TARGET} -- $BUILDARGS
 if [[ ${TARGET} == "docs" ]]; then
   ## mimic the standard test output for docs build
   ## to make controlling processes like jenkins happy
@@ -126,35 +134,20 @@ if [[ ${APP} == "rippled" ]]; then
   else
     APP_ARGS+=" --unittest --quiet --unittest-log"
   fi
-  # Only report on src/ripple files
-  export LCOV_FILES="*/src/ripple/*"
-  # Nothing to explicitly exclude
-  export LCOV_EXCLUDE_FILES="LCOV_NO_EXCLUDE"
   if [[ ${coverage} == false && ${PARALLEL_TESTS:-} == true ]]; then
     APP_ARGS+=" --unittest-jobs ${JOBS}"
   fi
-else
-  : ${LCOV_FILES:="*/src/*"}
-  # Don't exclude anything
-  : ${LCOV_EXCLUDE_FILES:="LCOV_NO_EXCLUDE"}
 fi
 
 if [[ $coverage == true ]]; then
-  export PATH=$PATH:$LCOV_ROOT/usr/bin
-
-  # Create baseline coverage data file
-  lcov --no-external -c -i -d . -o baseline.info | grep -v "ignoring data for external file"
+  # Push the results (lcov.info) to codecov
+  codecov -X gcov # don't even try and look for .gcov files ;)
+  find . -name "*.gcda" | xargs rm -f
 fi
 
 if [[ ${SKIP_TESTS:-} == true ]]; then
   echo "skipping tests."
   exit
-fi
-
-if [[ "${MAX_TIME:-}" == "" ]] ; then
-  tcmd=""
-else
-  tcmd="timeout ${MAX_TIME}"
 fi
 
 if [[ ${DEBUGGER:-true} == "true" && -v GDB_ROOT && -x $GDB_ROOT/bin/gdb ]]; then
@@ -171,25 +164,6 @@ if [[ ${DEBUGGER:-true} == "true" && -v GDB_ROOT && -x $GDB_ROOT/bin/gdb ]]; the
                     --args $APP_PATH $APP_ARGS
 else
   $tcmd $APP_PATH $APP_ARGS
-fi
-
-if [[ $coverage == true ]]; then
-  # Create test coverage data file
-  lcov --no-external -c -d . -o tests.info | grep -v "ignoring data for external file"
-
-  # Combine baseline and test coverage data
-  lcov -a baseline.info -a tests.info -o lcov-all.info
-
-  # Included files
-  lcov -e "lcov-all.info" "${LCOV_FILES}" -o lcov.pre.info
-
-  # Excluded files
-  lcov --remove lcov.pre.info "${LCOV_EXCLUDE_FILES}" -o lcov.info
-
-  # Push the results (lcov.info) to codecov
-  codecov -X gcov # don't even try and look for .gcov files ;)
-
-  find . -name "*.gcda" | xargs rm -f
 fi
 
 

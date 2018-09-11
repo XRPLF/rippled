@@ -111,8 +111,8 @@ try {
     stage ('Parallel Build') {
         String[][] variants = [
             ['gcc.Release'    ,'-Dassert=ON'     ,'MANUAL_TESTS=true'     ],
-            ['gcc.Debug'      ,'-Dcoverage=ON'                            ],
-            ['docs'                                                       ],
+            ['gcc.Debug'      ,'-Dcoverage=ON'   ,'TARGET=coverage_report', 'SKIP_TESTS=true'],
+            ['docs'           ,''                ,'TARGET=docs'           ],
             ['msvc.Debug'                                                 ],
             ['msvc.Debug'     ,''                ,'NINJA_BUILD=true'      ],
             ['msvc.Debug'     ,'-Dunity=OFF'                              ],
@@ -220,68 +220,91 @@ try {
                         env_vars.addAll(extra_env)
                     }
 
-                    withCredentials(
-                        [string(
-                            credentialsId: 'RIPPLED_CODECOV_TOKEN',
-                            variable: 'CODECOV_TOKEN')])
-                    {
-                        withEnv(env_vars) {
-                            myStage(bldlabel)
-                            try {
-                                timeout(
-                                  time: max_minutes * 2,
-                                  units: 'MINUTES')
-                                {
-                                    if (compiler == 'msvc') {
-                                        powershell "Remove-Item -Path \"${bldlabel}.txt\" -Force -ErrorAction Ignore"
-                                        // we capture stdout to variable because I could
-                                        // not figure out how to make powershell redirect internally
-                                        output = powershell (
-                                                returnStdout: true,
-                                                script: windowsBuildCmd())
-                                        // if the powershell command fails (has nonzero exit)
-                                        // then the command above throws, we don't get our output,
-                                        // and we never create this output file.
-                                        //  SEE https://issues.jenkins-ci.org/browse/JENKINS-44930
-                                        // Alternatively, figure out how to reliably redirect
-                                        // all output above to a file (Start/Stop transcript does not work)
-                                        writeFile(
-                                            file: "${bldlabel}.txt",
-                                            text: output)
-                                    }
-                                    else {
-                                        sh "rm -fv ${bldlabel}.txt"
-                                        // execute the bld command in a redirecting shell
-                                        // to capture output
-                                        sh redhatBuildCmd(bldlabel)
-                                    }
+                    // try to figure out codecov token to use. Look for
+                    // MY_CODECOV_TOKEN id first so users can set that
+                    // on job scope but then default to RIPPLED_CODECOV_TOKEN
+                    // which should be globally scoped
+                    def codecov_token = ''
+                    try {
+                        withCredentials( [string( credentialsId: 'MY_CODECOV_TOKEN', variable: 'CODECOV_TOKEN')]) {
+                            codecov_token = env.CODECOV_TOKEN
+                        }
+                    }
+                    catch (e) {
+                        // this might throw when MY_CODECOV_TOKEN doesn't exist
+                    }
+                    if (codecov_token == '') {
+                        withCredentials( [string( credentialsId: 'RIPPLED_CODECOV_TOKEN', variable: 'CODECOV_TOKEN')]) {
+                            codecov_token = env.CODECOV_TOKEN
+                        }
+                    }
+                    env_vars.addAll(["CODECOV_TOKEN=${codecov_token}"])
+
+                    withEnv(env_vars) {
+                        myStage(bldlabel)
+                        try {
+                            timeout(
+                              time: max_minutes * 2,
+                              units: 'MINUTES')
+                            {
+                                if (compiler == 'msvc') {
+                                    powershell "Remove-Item -Path \"${bldlabel}.txt\" -Force -ErrorAction Ignore"
+                                    // we capture stdout to variable because I could
+                                    // not figure out how to make powershell redirect internally
+                                    output = powershell (
+                                            returnStdout: true,
+                                            script: windowsBuildCmd())
+                                    // if the powershell command fails (has nonzero exit)
+                                    // then the command above throws, we don't get our output,
+                                    // and we never create this output file.
+                                    //  SEE https://issues.jenkins-ci.org/browse/JENKINS-44930
+                                    // Alternatively, figure out how to reliably redirect
+                                    // all output above to a file (Start/Stop transcript does not work)
+                                    writeFile(
+                                        file: "${bldlabel}.txt",
+                                        text: output)
+                                }
+                                else {
+                                    sh "rm -fv ${bldlabel}.txt"
+                                    // execute the bld command in a redirecting shell
+                                    // to capture output
+                                    sh redhatBuildCmd(bldlabel)
                                 }
                             }
-                            finally {
-                                if (bldtype == 'docs') {
-                                    publishHTML(
-                                        allowMissing: true,
-                                        alwaysLinkToLastBuild: false,
-                                        keepAll: true,
-                                        reportName:  'Doxygen',
-                                        reportDir:   'build/docs/html_doc',
-                                        reportFiles: 'index.html')
-                                }
-                                def envs = ''
-                                for (int j = 0; j < extra_env.size(); j++) {
-                                    envs += ", <br/>" + extra_env[j]
-                                }
-                                def cmake_txt = cmake_extra
-                                if (cmake_txt != '') {
-                                    cmake_txt = " <br/>" + cmake_txt
-                                }
-                                def st = reportStatus(bldlabel, bldtype + cmake_txt + envs, env.BUILD_URL)
-                                lock('rippled_dev_status') {
-                                    all_status[bldlabel] = st
-                                }
-                            } //try-catch-finally
-                        } //withEnv
-                    } //withCredentials
+                        }
+                        finally {
+                            if (bldtype == 'docs') {
+                                publishHTML(
+                                    allowMissing: true,
+                                    alwaysLinkToLastBuild: true,
+                                    keepAll: true,
+                                    reportName:  'Doxygen',
+                                    reportDir:   "build/${bldlabel}/html_doc",
+                                    reportFiles: 'index.html')
+                            }
+                            if (isCoverage(cmake_extra)) {
+                                publishHTML(
+                                    allowMissing: true,
+                                    alwaysLinkToLastBuild: false,
+                                    keepAll: true,
+                                    reportName:  'Coverage',
+                                    reportDir:   "build/${bldlabel}/coverage",
+                                    reportFiles: 'index.html')
+                            }
+                            def envs = ''
+                            for (int j = 0; j < extra_env.size(); j++) {
+                                envs += ", <br/>" + extra_env[j]
+                            }
+                            def cmake_txt = cmake_extra
+                            if (cmake_txt != '') {
+                                cmake_txt = " <br/>" + cmake_txt
+                            }
+                            def st = reportStatus(bldlabel, bldtype + cmake_txt + envs, env.BUILD_URL)
+                            lock('rippled_dev_status') {
+                                all_status[bldlabel] = st
+                            }
+                        } //try-catch-finally
+                    } //withEnv
                 } //node
             } //builds item
         } //for variants
