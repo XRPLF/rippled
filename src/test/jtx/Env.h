@@ -28,6 +28,7 @@
 #include <test/jtx/tags.h>
 #include <test/jtx/AbstractClient.h>
 #include <test/jtx/ManualTimeKeeper.h>
+#include <test/unit_test/SuiteJournal.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/OpenLedger.h>
@@ -45,7 +46,6 @@
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
 #include <boost/beast/core/detail/type_traits.hpp>
-#include <ripple/beast/unit_test.h>
 #include <functional>
 #include <string>
 #include <tuple>
@@ -87,30 +87,7 @@ supported_amendments()
     return ids;
 }
 
-class SuiteSink : public beast::Journal::Sink
-{
-    std::string partition_;
-    beast::unit_test::suite& suite_;
-
-public:
-    SuiteSink(std::string const& partition,
-            beast::severities::Severity threshold,
-            beast::unit_test::suite& suite)
-        : Sink (threshold, false)
-        , partition_(partition + " ")
-        , suite_ (suite)
-    {
-    }
-
-    // For unit testing, always generate logging text.
-    inline bool active(beast::severities::Severity level) const override
-    {
-        return true;
-    }
-
-    void
-    write(beast::severities::Severity level, std::string const& text) override;
-};
+//------------------------------------------------------------------------------
 
 class SuiteLogs : public Logs
 {
@@ -130,7 +107,8 @@ public:
     makeSink(std::string const& partition,
         beast::severities::Severity threshold) override
     {
-        return std::make_unique<SuiteSink>(partition, threshold, suite_);
+        return std::make_unique<SuiteJournalSink>(
+            partition, threshold, suite_);
     }
 };
 
@@ -142,15 +120,12 @@ class Env
 public:
     beast::unit_test::suite& test;
 
-    beast::Journal const journal;
-
     Account const& master = Account::master;
 
 private:
     struct AppBundle
     {
         Application* app;
-        std::unique_ptr<Logs> logs;
         std::unique_ptr<Application> owned;
         ManualTimeKeeper* timeKeeper;
         std::thread thread;
@@ -165,6 +140,8 @@ private:
     AppBundle bundle_;
 
 public:
+    beast::Journal const journal;
+
     Env() = delete;
     Env& operator= (Env const&) = delete;
     Env (Env const&) = delete;
@@ -192,6 +169,7 @@ public:
             suite_,
             std::move(config),
             logs ? std::move(logs) : std::make_unique<SuiteLogs>(suite_))
+        , journal {bundle_.app->journal ("Env")}
     {
         memoize(Account::master);
         Pathfinder::initPathTable();

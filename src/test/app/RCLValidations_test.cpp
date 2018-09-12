@@ -21,8 +21,8 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/View.h>
-#include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
+#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
@@ -63,7 +63,6 @@ class RCLValidations_test : public beast::unit_test::suite
     testRCLValidatedLedger()
     {
         testcase("RCLValidatedLedger ancestry");
-        beast::Journal j;
 
         using Seq = RCLValidatedLedger::Seq;
         using ID = RCLValidatedLedger::ID;
@@ -136,7 +135,7 @@ class RCLValidations_test : public beast::unit_test::suite
         // Full history ledgers
         {
             std::shared_ptr<Ledger const> ledger = history.back();
-            RCLValidatedLedger a{ledger, j};
+            RCLValidatedLedger a{ledger, env.journal};
             BEAST_EXPECT(a.seq() == ledger->info().seq);
             BEAST_EXPECT(
                 a.minSeq() == a.seq() - maxAncestors);
@@ -159,17 +158,17 @@ class RCLValidations_test : public beast::unit_test::suite
             for (auto ledger : {history.back(),
                                 history[maxAncestors - 1]})
             {
-                RCLValidatedLedger b{ledger, j};
+                RCLValidatedLedger b{ledger, env.journal};
                 BEAST_EXPECT(mismatch(a, b) == 1);
                 BEAST_EXPECT(mismatch(b, a) == 1);
             }
         }
         // Same chains, different seqs
         {
-            RCLValidatedLedger a{history.back(), j};
+            RCLValidatedLedger a{history.back(), env.journal};
             for(Seq s = a.seq(); s > 0; s--)
             {
-                RCLValidatedLedger b{history[s-1], j};
+                RCLValidatedLedger b{history[s-1], env.journal};
                 if(s >= a.minSeq())
                 {
                     BEAST_EXPECT(mismatch(a, b) == b.seq() + 1);
@@ -188,8 +187,8 @@ class RCLValidations_test : public beast::unit_test::suite
             // Alt history diverged at history.size()/2
             for(Seq s = 1; s < history.size(); ++s)
             {
-                RCLValidatedLedger a{history[s-1], j};
-                RCLValidatedLedger b{altHistory[s-1], j};
+                RCLValidatedLedger a{history[s-1], env.journal};
+                RCLValidatedLedger b{altHistory[s-1], env.journal};
 
                 BEAST_EXPECT(a.seq() == b.seq());
                 if(s <= diverge)
@@ -209,10 +208,10 @@ class RCLValidations_test : public beast::unit_test::suite
         // Different chains, different seqs
         {
             // Compare around the divergence point
-            RCLValidatedLedger a{history[diverge], j};
+            RCLValidatedLedger a{history[diverge], env.journal};
             for(Seq offset = diverge/2; offset < 3*diverge/2; ++offset)
             {
-                RCLValidatedLedger b{altHistory[offset-1], j};
+                RCLValidatedLedger b{altHistory[offset-1], env.journal};
                 if(offset <= diverge)
                 {
                     BEAST_EXPECT(mismatch(a,b) == b.seq() + 1);

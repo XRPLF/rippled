@@ -19,11 +19,12 @@
 
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/shamap/SHAMapItem.h>
-#include <test/shamap/common.h>
 #include <ripple/basics/random.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/xor_shift_engine.h>
+#include <test/shamap/common.h>
+#include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
 namespace tests {
@@ -86,17 +87,19 @@ public:
 
     void run() override
     {
+        using namespace beast::severities;
+        test::SuiteJournal journal ("SHAMapSync_test", *this);
+
         log << "Run, version 1\n" << std::endl;
-        run(SHAMap::version{1});
+        run(SHAMap::version{1}, journal);
 
         log << "Run, version 2\n" << std::endl;
-        run(SHAMap::version{2});
+        run(SHAMap::version{2}, journal);
     }
 
-    void run(SHAMap::version v)
+    void run(SHAMap::version v, beast::Journal const& journal)
     {
-        beast::Journal const j; // debug journal
-        TestFamily f(j), f2(j);
+        TestFamily f(journal), f2(journal);
         SHAMap source (SHAMapType::FREE, f, v);
         SHAMap destination (SHAMapType::FREE, f2, v);
 

@@ -189,7 +189,8 @@ private:
 
 public:
     explicit
-    ManifestCache (beast::Journal j = beast::Journal())
+    ManifestCache (beast::Journal j =
+        beast::Journal(beast::Journal::getNullSink()))
         : j_ (j)
     {
     }

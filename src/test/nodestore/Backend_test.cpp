@@ -18,10 +18,11 @@
 //==============================================================================
 
 #include <ripple/unity/rocksdb.h>
-#include <test/nodestore/TestBase.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/beast/utility/temp_dir.h>
+#include <test/nodestore/TestBase.h>
+#include <test/unit_test/SuiteJournal.h>
 #include <algorithm>
 
 namespace ripple {
@@ -52,12 +53,14 @@ public:
         auto batch = createPredictableBatch (
             numObjectsToTest, rng());
 
-        beast::Journal j;
+        using namespace beast::severities;
+        test::SuiteJournal journal ("Backend_test", *this);
 
         {
             // Open the backend
             std::unique_ptr <Backend> backend =
-                Manager::instance().make_Backend (params, scheduler, j);
+                Manager::instance().make_Backend (
+                    params, scheduler, journal);
             backend->open();
 
             // Write the batch
@@ -85,7 +88,7 @@ public:
         {
             // Re-open the backend
             std::unique_ptr <Backend> backend = Manager::instance().make_Backend (
-                params, scheduler, j);
+                params, scheduler, journal);
             backend->open();
 
             // Read it back in

@@ -58,7 +58,8 @@ public:
 
     PreclaimContext(Application& app_, ReadView const& view_,
         TER preflightResult_, STTx const& tx_,
-            ApplyFlags flags_, beast::Journal j_ = {})
+            ApplyFlags flags_,
+            beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
         : app(app_)
         , view(view_)
         , preflightResult(preflightResult_)

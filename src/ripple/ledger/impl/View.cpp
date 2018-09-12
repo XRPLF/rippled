@@ -241,7 +241,7 @@ static
 std::uint32_t
 confineOwnerCount (std::uint32_t current, std::int32_t adjustment,
     boost::optional<AccountID> const& id = boost::none,
-    beast::Journal j = beast::Journal{})
+    beast::Journal j = beast::Journal {beast::Journal::getNullSink()})
 {
     std::uint32_t adjusted {current + adjustment};
     if (adjustment > 0)
@@ -456,7 +456,7 @@ areCompatible (ReadView const& validLedger, ReadView const& testLedger,
     {
         // valid -> ... -> test
         auto hash = hashOfSeq (testLedger, validLedger.info().seq,
-            beast::Journal());
+            beast::Journal {beast::Journal::getNullSink()});
         if (hash && (*hash != validLedger.info().hash))
         {
             JLOG(s) << reason << " incompatible with valid ledger";
@@ -470,7 +470,7 @@ areCompatible (ReadView const& validLedger, ReadView const& testLedger,
     {
         // test -> ... -> valid
         auto hash = hashOfSeq (validLedger, testLedger.info().seq,
-            beast::Journal());
+            beast::Journal {beast::Journal::getNullSink()});
         if (hash && (*hash != testLedger.info().hash))
         {
             JLOG(s) << reason << " incompatible preceding ledger";
@@ -510,7 +510,7 @@ bool areCompatible (uint256 const& validHash, LedgerIndex validIndex,
     {
         // Ledger we are testing follows last valid ledger
         auto hash = hashOfSeq (testLedger, validIndex,
-            beast::Journal());
+            beast::Journal {beast::Journal::getNullSink()});
         if (hash && (*hash != validHash))
         {
             JLOG(s) << reason << " incompatible following ledger";

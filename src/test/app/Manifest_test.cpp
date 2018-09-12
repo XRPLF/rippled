@@ -218,10 +218,9 @@ public:
             std::vector<Manifest const*> const inManifests (
                 sort (getPopulatedManifests (m)));
 
-            beast::Journal journal;
             jtx::Env env (*this);
             auto unl = std::make_unique<ValidatorList> (
-                m, m, env.timeKeeper(), journal);
+                m, m, env.timeKeeper(), env.journal);
 
             {
                 // save should not store untrusted master keys to db

@@ -297,13 +297,11 @@ class PaymentSandbox_test : public beast::unit_test::suite
         testcase ("Reserve");
         using namespace jtx;
 
-        beast::Journal dj;
-
-        auto accountFundsXRP = [&dj](
-            ReadView const& view, AccountID const& id) -> XRPAmount
+        auto accountFundsXRP = [](ReadView const& view,
+            AccountID const& id, beast::Journal j) -> XRPAmount
         {
             return toAmount<XRPAmount> (accountHolds (
-                view, id, xrpCurrency (), xrpAccount (), fhZERO_IF_FROZEN, dj));
+                view, id, xrpCurrency (), xrpAccount (), fhZERO_IF_FROZEN, j));
         };
 
         auto reserve = [](jtx::Env& env, std::uint32_t count) -> XRPAmount
@@ -326,9 +324,10 @@ class PaymentSandbox_test : public beast::unit_test::suite
             // to drop below the reserve. Make sure her funds are zero (there was a bug that
             // caused her funds to become negative).
 
-            accountSend (sb, xrpAccount (), alice, XRP(100), dj);
-            accountSend (sb, alice, xrpAccount (), XRP(100), dj);
-            BEAST_EXPECT(accountFundsXRP (sb, alice) == beast::zero);
+            accountSend (sb, xrpAccount (), alice, XRP(100), env.journal);
+            accountSend (sb, alice, xrpAccount (), XRP(100), env.journal);
+            BEAST_EXPECT(
+                accountFundsXRP (sb, alice, env.journal) == beast::zero);
         }
     }
 

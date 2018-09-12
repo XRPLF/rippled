@@ -42,7 +42,8 @@ struct Fees;
 class LoadFeeTrack final
 {
 public:
-    explicit LoadFeeTrack (beast::Journal journal = beast::Journal())
+    explicit LoadFeeTrack (beast::Journal journal =
+        beast::Journal(beast::Journal::getNullSink()))
         : j_ (journal)
         , localTxnLoadFee_ (lftNormalFee)
         , remoteTxnLoadFee_ (lftNormalFee)

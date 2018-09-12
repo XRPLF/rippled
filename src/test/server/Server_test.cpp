@@ -25,6 +25,7 @@
 #include <ripple/core/ConfigSections.h>
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
+#include <test/unit_test/SuiteJournal.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -345,12 +346,15 @@ public:
             }
         };
 
+        using namespace beast::severities;
+        SuiteJournal journal ("Server_test", *this);
+
         NullHandler h;
         for(int i = 0; i < 1000; ++i)
         {
             TestThread thread;
             auto s = make_Server(h,
-                thread.get_io_service(), {});
+                thread.get_io_service(), journal);
             std::vector<Port> serverPort(1);
             serverPort.back().ip =
                 beast::IP::Address::from_string (getEnvLocalhostAddr()),

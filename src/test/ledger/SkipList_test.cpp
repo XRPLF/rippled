@@ -20,8 +20,8 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/View.h>
-#include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
+#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
@@ -31,10 +31,9 @@ class SkipList_test : public beast::unit_test::suite
     void
     testSkipList()
     {
-        beast::Journal const j;
+        jtx::Env env(*this);
         std::vector<std::shared_ptr<Ledger>> history;
         {
-            jtx::Env env(*this);
             Config config;
             auto prev = std::make_shared<Ledger>(
                 create_genesis, config,
@@ -56,13 +55,13 @@ class SkipList_test : public beast::unit_test::suite
             BEAST_EXPECT((*std::begin(history))->info().seq <
                 l->info().seq);
             BEAST_EXPECT(hashOfSeq(*l, l->info().seq + 1,
-                j) == boost::none);
+                env.journal) == boost::none);
             BEAST_EXPECT(hashOfSeq(*l, l->info().seq,
-                j) == l->info().hash);
+                env.journal) == l->info().hash);
             BEAST_EXPECT(hashOfSeq(*l, l->info().seq - 1,
-                j) == l->info().parentHash);
+                env.journal) == l->info().parentHash);
             BEAST_EXPECT(hashOfSeq(*history.back(),
-                l->info().seq, j) == boost::none);
+                l->info().seq, env.journal) == boost::none);
         }
 
         // ledger skip lists store up to the previous 256 hashes
@@ -75,13 +74,13 @@ class SkipList_test : public beast::unit_test::suite
                 ++n)
             {
                 BEAST_EXPECT(hashOfSeq(**i,
-                    (*n)->info().seq, j) ==
+                    (*n)->info().seq, env.journal) ==
                         (*n)->info().hash);
             }
 
             // edge case accessing beyond 256
             BEAST_EXPECT(hashOfSeq(**i,
-                (*i)->info().seq - 258, j) ==
+                (*i)->info().seq - 258, env.journal) ==
                     boost::none);
         }
 
@@ -95,7 +94,7 @@ class SkipList_test : public beast::unit_test::suite
                 n += 256)
             {
                 BEAST_EXPECT(hashOfSeq(**i,
-                    (*n)->info().seq, j) ==
+                    (*n)->info().seq, env.journal) ==
                         (*n)->info().hash);
             }
         }

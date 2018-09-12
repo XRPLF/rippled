@@ -92,7 +92,7 @@ private:
 
         Env env (*this);
         auto trustedSites = std::make_unique<ValidatorSite> (
-            env.app().getIOService(), env.app().validators(), beast::Journal());
+            env.app().getIOService(), env.app().validators(), env.journal);
 
         // load should accept empty sites list
         std::vector<std::string> emptyCfgSites;
@@ -130,8 +130,6 @@ private:
 
         Env env (*this);
         auto& trustedKeys = env.app ().validators ();
-
-        beast::Journal journal;
 
         PublicKey emptyLocalKey;
         std::vector<std::string> emptyCfgKeys;
@@ -205,7 +203,7 @@ private:
             std::vector<std::string> cfgSites({ url1.str() });
 
             auto sites = std::make_unique<ValidatorSite> (
-                env.app().getIOService(), env.app().validators(), journal);
+                env.app().getIOService(), env.app().validators(), env.journal);
 
             sites->load (cfgSites);
             sites->start();
@@ -222,7 +220,7 @@ private:
             std::vector<std::string> cfgSites({ url1.str(), url2.str() });
 
             auto sites = std::make_unique<ValidatorSite> (
-                env.app().getIOService(), env.app().validators(), journal);
+                env.app().getIOService(), env.app().validators(), env.journal);
 
             sites->load (cfgSites);
             sites->start();

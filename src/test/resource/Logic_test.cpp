@@ -20,17 +20,18 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/random.h>
 #include <ripple/beast/unit_test.h>
-#include <boost/utility/base_from_member.hpp>
 #include <ripple/resource/Consumer.h>
 #include <ripple/resource/impl/Entry.h>
 #include <ripple/resource/impl/Logic.h>
+#include <test/unit_test/SuiteJournal.h>
 
+#include <boost/utility/base_from_member.hpp>
 
 
 namespace ripple {
 namespace Resource {
 
-class Manager_test : public beast::unit_test::suite
+class ResourceManager_test : public beast::unit_test::suite
 {
 public:
     class TestLogic
@@ -246,16 +247,17 @@ public:
 
     void run() override
     {
-        beast::Journal j;
+        using namespace beast::severities;
+        test::SuiteJournal journal ("ResourceManager_test", *this);
 
-        testDrop (j);
-        testCharges (j);
-        testImports (j);
-        testImport (j);
+        testDrop (journal);
+        testCharges (journal);
+        testImports (journal);
+        testImport (journal);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Manager,resource,ripple);
+BEAST_DEFINE_TESTSUITE(ResourceManager,resource,ripple);
 
 }
 }
