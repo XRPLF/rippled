@@ -22,6 +22,7 @@
 
 #include <ripple/beast/core/Config.h>
 #include <algorithm>
+#include <cassert>
 #include <cerrno>
 #include <cstdlib>
 #include <iostream>

@@ -17,7 +17,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 #include <ripple/beast/unit_test.h>
-#include <ripple/beast/utility/Debug.h>
+
 namespace beast {
 
 // A simple unit test to determine the diagnostic settings in a build.
@@ -43,21 +43,11 @@ public:
 #endif
     }
 
-    static int beastForceDebug()
-    {
-#ifdef BEAST_FORCE_DEBUG
-        return BEAST_FORCE_DEBUG;
-#else
-        return 0;
-#endif
-    }
-
     void run() override
     {
         log <<
             "_DEBUG              = " << envDebug() << '\n' <<
             "BEAST_DEBUG         = " << beastDebug() << '\n' <<
-            "BEAST_FORCE_DEBUG   = " << beastForceDebug() << '\n' <<
             "sizeof(std::size_t) = " << sizeof(std::size_t) << std::endl;
         pass();
     }

@@ -20,8 +20,6 @@
 #ifndef BEAST_UTILITY_ZERO_H_INCLUDED
 #define BEAST_UTILITY_ZERO_H_INCLUDED
 
-#include <ripple/beast/core/CompilerConfig.h>
-
 namespace beast {
 
 /** Zero allows classes to offer efficient comparisons to zero.
