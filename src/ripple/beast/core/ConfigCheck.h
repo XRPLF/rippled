@@ -24,28 +24,6 @@
 // Apply sensible defaults for the configuration settings
 //
 
-#ifndef BEAST_FORCE_DEBUG
-#define BEAST_FORCE_DEBUG 0
-#endif
-
-#ifndef BEAST_LOG_ASSERTIONS
-# if BEAST_ANDROID
-#  define BEAST_LOG_ASSERTIONS 1
-# else
-#  define BEAST_LOG_ASSERTIONS 0
-# endif
-#endif
-
-#if BEAST_DEBUG && ! defined (BEAST_CHECK_MEMORY_LEAKS)
-#define BEAST_CHECK_MEMORY_LEAKS 1
-#endif
-
-#ifndef BEAST_DISABLE_CONTRACT_CHECKS
-#define BEAST_DISABLE_CONTRACT_CHECKS 0
-#endif
-
-//------------------------------------------------------------------------------
-
 #ifndef BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES
 #define BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES 0
 #endif

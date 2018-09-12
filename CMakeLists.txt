@@ -171,19 +171,12 @@ endif ()
 option (beast_no_unit_test_inline
   "Prevents unit test definitions from being inserted into global table"
   OFF)
-option (beast_force_debug
-  "Force BEAST_DEBUG regardless of DEBUG settings"
-  OFF)
 # NOTE - THIS OPTION CURRENTLY DOES NOT COMPILE :
 # TODO: fix or remove
 option (verify_nodeobject_keys
   "This verifies that the hash of node objects matches the payload. \
   This check is expensive - use with caution."
   OFF)
-option (dump_leaks_on_exit
-  "Displays heap blocks and counted objects which were not disposed of\
-  during exit. Only implemented for windows builds."
-  ON)
 option (single_io_service_thread
   "Restricts the number of threads calling io_service::run to one. \
   This can be useful when debugging."
@@ -192,10 +185,6 @@ option (boost_show_deprecated
   "Allow boost to fail on deprecated usage. Only useful if you're trying\
   to find deprecated calls."
   OFF)
-# beast_check_mem_leaks can't be an option() because we want to support an
-# "undefined" which means use default behavior
-# option (beast_check_mem_leaks
-#   "Force beast mem leak checking. Default is on for DEBUG builds. Only implemented on WIN32"
 if (WIN32)
   option (beast_disable_autolink "Disables autolinking of system libraries on WIN32" OFF)
 else ()
@@ -386,10 +375,7 @@ target_compile_definitions (opts
       BOOST_BEAST_ALLOW_DEPRECATED
       BOOST_FILESYSTEM_DEPRECATED
     >
-    BEAST_CHECK_MEMORY_LEAKS=$<BOOL:${beast_check_mem_leaks}>
-    RIPPLE_DUMP_LEAKS_ON_EXIT=$<BOOL:${dump_leaks_on_exit}>
     $<$<BOOL:${beast_no_unit_test_inline}>:BEAST_NO_UNIT_TEST_INLINE=1>
-    $<$<BOOL:${beast_force_debug}>:BEAST_FORCE_DEBUG=1>
     $<$<BOOL:${beast_disable_autolink}>:BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES=1>
     $<$<BOOL:${single_io_service_thread}>:RIPPLE_SINGLE_IO_SERVICE_THREAD=1>
     # doesn't currently compile ? :
@@ -1327,7 +1313,6 @@ else ()
     src/ripple/beast/net/impl/IPAddressV4.cpp
     src/ripple/beast/net/impl/IPAddressV6.cpp
     src/ripple/beast/net/impl/IPEndpoint.cpp
-    src/ripple/beast/utility/src/beast_Debug.cpp
     src/ripple/beast/utility/src/beast_Journal.cpp
     src/ripple/beast/utility/src/beast_PropertyStream.cpp)
 endif ()
@@ -1558,7 +1543,6 @@ install (
   DESTINATION include/ripple/beast/clock)
 install (
   FILES
-    src/ripple/beast/core/CompilerConfig.h
     src/ripple/beast/core/Config.h
     src/ripple/beast/core/ConfigCheck.h
     src/ripple/beast/core/LexicalCast.h
@@ -2081,7 +2065,6 @@ else ()
     src/test/beast/beast_asio_error_test.cpp
     src/test/beast/beast_basic_seconds_clock_test.cpp
     src/test/beast/beast_io_latency_probe_test.cpp
-    src/test/beast/beast_weak_fn_test.cpp
     src/test/beast/define_print.cpp
     #[===============================[
        nounity, test sources:

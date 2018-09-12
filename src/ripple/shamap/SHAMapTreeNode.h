@@ -135,11 +135,6 @@ public:
         make(Slice const& rawNode, std::uint32_t seq, SHANodeFormat format,
              SHAMapHash const& hash, bool hashValid, beast::Journal j,
              SHAMapNodeID const& id = SHAMapNodeID{});
-
-    // debugging
-#ifdef BEAST_DEBUG
-    static void dump (SHAMapNodeID const&, beast::Journal journal);
-#endif
 };
 
 class SHAMapInnerNodeV2;

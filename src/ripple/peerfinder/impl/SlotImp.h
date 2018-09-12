@@ -22,7 +22,6 @@
 
 #include <ripple/peerfinder/Slot.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
-#include <ripple/beast/core/CompilerConfig.h>
 #include <ripple/beast/container/aged_unordered_map.h>
 #include <ripple/beast/container/aged_container_utility.h>
 #include <boost/optional.hpp>

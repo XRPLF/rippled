@@ -24,10 +24,6 @@
 #ifndef BEAST_CONFIG_STANDARDCONFIG_H_INCLUDED
 #define BEAST_CONFIG_STANDARDCONFIG_H_INCLUDED
 
-#ifndef BEAST_CONFIG_COMPILERCONFIG_H_INCLUDED
-#error "CompilerConfig.h must be included first"
-#endif
-
 // Now we'll include some common OS headers..
 #if BEAST_MSVC
 #pragma warning (push)
