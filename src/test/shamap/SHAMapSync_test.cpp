@@ -19,11 +19,12 @@
 
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/shamap/SHAMapItem.h>
-#include <test/shamap/common.h>
 #include <ripple/basics/random.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/xor_shift_engine.h>
+#include <test/jtx/Env.h>
+#include <test/shamap/common.h>
 
 namespace ripple {
 namespace tests {
@@ -95,8 +96,8 @@ public:
 
     void run(SHAMap::version v)
     {
-        beast::Journal const j; // debug journal
-        TestFamily f(j), f2(j);
+        test::jtx::Env env (*this);  // Used only for its Journal.
+        TestFamily f(env.journal), f2(env.journal);
         SHAMap source (SHAMapType::FREE, f, v);
         SHAMap destination (SHAMapType::FREE, f2, v);
 

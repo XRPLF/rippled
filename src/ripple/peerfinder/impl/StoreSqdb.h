@@ -42,7 +42,8 @@ public:
         currentSchemaVersion = 4
     };
 
-    explicit StoreSqdb (beast::Journal journal = beast::Journal())
+    explicit StoreSqdb (beast::Journal journal =
+            beast::Journal {beast::Journal::getNullSink()})
         : m_journal (journal)
     {
     }

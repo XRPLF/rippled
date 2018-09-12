@@ -139,7 +139,8 @@ public:
     BasicTaker (
         CrossType cross_type, AccountID const& account, Amounts const& amount,
         Quality const& quality, std::uint32_t flags, Rate const& rate_in,
-        Rate const& rate_out, beast::Journal journal = beast::Journal ());
+        Rate const& rate_out,
+        beast::Journal journal = beast::Journal{beast::Journal::getNullSink()});
 
     virtual ~BasicTaker () = default;
 

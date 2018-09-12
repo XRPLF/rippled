@@ -230,7 +230,7 @@ public:
         auto& app = env.app();
         Resource::Charge loadType = Resource::feeReferenceRPC;
         Resource::Consumer c;
-        RPC::Context context {beast::Journal(), {}, app, loadType,
+        RPC::Context context {env.journal, {}, app, loadType,
             app.getOPs(), app.getLedgerMaster(), c, Role::USER, {}};
 
         Json::Value params = Json::objectValue;
@@ -328,7 +328,7 @@ public:
         auto& app = env.app();
         Resource::Charge loadType = Resource::feeReferenceRPC;
         Resource::Consumer c;
-        RPC::Context context {beast::Journal(), {}, app, loadType,
+        RPC::Context context {env.journal, {}, app, loadType,
             app.getOPs(), app.getLedgerMaster(), c, Role::USER, {}};
         Json::Value result;
         gate g;

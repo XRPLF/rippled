@@ -18,21 +18,28 @@
 //==============================================================================
 
 #include <ripple/basics/BasicConfig.h>
-#include <test/jtx/TestSuite.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/ClusterNode.h>
 #include <ripple/protocol/SecretKey.h>
+#include <test/jtx/TestSuite.h>
+#include <test/jtx/Env.h>
 
 namespace ripple {
 namespace tests {
 
 class cluster_test : public ripple::TestSuite
 {
+    test::jtx::Env env_;  // Used only for its Journal.
+
 public:
+    cluster_test ()
+    : env_ (*this)
+    { }
+
     std::unique_ptr<Cluster>
     create (std::vector<PublicKey> const& nodes)
     {
-        auto cluster = std::make_unique <Cluster> (beast::Journal ());
+        auto cluster = std::make_unique <Cluster> (env_.journal);
 
         for (auto const& n : nodes)
             cluster->update (n, "Test");
@@ -188,7 +195,7 @@ public:
     {
         testcase ("Config Load");
 
-        auto c = std::make_unique <Cluster> (beast::Journal ());
+        auto c = std::make_unique <Cluster> (env_.journal);
 
         // The servers on the network
         std::vector<PublicKey> network;

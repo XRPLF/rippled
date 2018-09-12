@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/shamap/SHAMap.h>
-#include <test/shamap/common.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/random.h>
@@ -26,6 +25,8 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/beast/xor_shift_engine.h>
 #include <ripple/beast/unit_test.h>
+#include <test/jtx/Env.h>
+#include <test/shamap/common.h>
 #include <functional>
 #include <stdexcept>
 
@@ -116,8 +117,8 @@ public:
 
     void run () override
     {
-        beast::Journal const j;                            // debug journal
-        TestFamily f(j);
+        test::jtx::Env env (*this);  // Used only for its Journal.
+        TestFamily f(env.journal);
         std::shared_ptr <Table> t1 (std::make_shared <Table> (
             SHAMapType::FREE, f, SHAMap::version{2}));
 

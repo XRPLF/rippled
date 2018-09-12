@@ -142,15 +142,12 @@ class Env
 public:
     beast::unit_test::suite& test;
 
-    beast::Journal const journal;
-
     Account const& master = Account::master;
 
 private:
     struct AppBundle
     {
         Application* app;
-        std::unique_ptr<Logs> logs;
         std::unique_ptr<Application> owned;
         ManualTimeKeeper* timeKeeper;
         std::thread thread;
@@ -165,6 +162,8 @@ private:
     AppBundle bundle_;
 
 public:
+    beast::Journal const journal;
+
     Env() = delete;
     Env& operator= (Env const&) = delete;
     Env (Env const&) = delete;
@@ -192,6 +191,7 @@ public:
             suite_,
             std::move(config),
             logs ? std::move(logs) : std::make_unique<SuiteLogs>(suite_))
+        , journal {bundle_.app->journal ("Env")}
     {
         memoize(Account::master);
         Pathfinder::initPathTable();

@@ -253,10 +253,8 @@ static_assert(std::is_nothrow_destructible<Stream>::value == true, "");
 
     //--------------------------------------------------------------------------
 
-    /** Create a journal that writes to the null sink. */
-    Journal ()
-    : Journal (getNullSink())
-    { }
+    /** Journal has no default constructor. */
+    Journal () = delete;
 
     /** Create a journal that writes to the specified sink. */
     explicit Journal (Sink& sink)
@@ -319,7 +317,7 @@ static_assert(std::is_nothrow_destructible<Stream>::value == true, "");
 };
 
 #ifndef __INTELLISENSE__
-static_assert(std::is_default_constructible<Journal>::value == true, "");
+static_assert(std::is_default_constructible<Journal>::value == false, "");
 static_assert(std::is_copy_constructible<Journal>::value == true, "");
 static_assert(std::is_move_constructible<Journal>::value == true, "");
 static_assert(std::is_copy_assignable<Journal>::value == true, "");

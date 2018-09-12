@@ -23,6 +23,7 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
+#include <test/jtx/Env.h>
 #include <string>
 
 namespace ripple {
@@ -74,7 +75,7 @@ public:
     void
     run() override
     {
-        beast::Journal j;
+        jtx::Env env (*this);  // Used only for its Journal.
 
         // Keys/ID when using [validation_seed]
         SecretKey const seedSecretKey =
@@ -98,7 +99,7 @@ public:
         {
             // No config -> no key but valid
             Config c;
-            ValidatorKeys k{c, j};
+            ValidatorKeys k{c, env.journal};
             BEAST_EXPECT(k.publicKey.size() == 0);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
@@ -109,7 +110,7 @@ public:
             Config c;
             c.section(SECTION_VALIDATION_SEED).append(seed);
 
-            ValidatorKeys k{c, j};
+            ValidatorKeys k{c, env.journal};
             BEAST_EXPECT(k.publicKey == seedPublicKey);
             BEAST_EXPECT(k.secretKey == seedSecretKey);
             BEAST_EXPECT(k.nodeID == seedNodeID);
@@ -122,7 +123,7 @@ public:
             Config c;
             c.section(SECTION_VALIDATION_SEED).append("badseed");
 
-            ValidatorKeys k{c, j};
+            ValidatorKeys k{c, env.journal};
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(k.publicKey.size() == 0);
             BEAST_EXPECT(k.manifest.empty());
@@ -132,7 +133,7 @@ public:
             // validator token
             Config c;
             c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
-            ValidatorKeys k{c, j};
+            ValidatorKeys k{c, env.journal};
 
             BEAST_EXPECT(k.publicKey == tokenPublicKey);
             BEAST_EXPECT(k.secretKey == tokenSecretKey);
@@ -144,7 +145,7 @@ public:
             // invalid validator token
             Config c;
             c.section(SECTION_VALIDATOR_TOKEN).append("badtoken");
-            ValidatorKeys k{c, j};
+            ValidatorKeys k{c, env.journal};
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(k.publicKey.size() == 0);
             BEAST_EXPECT(k.manifest.empty());
@@ -155,7 +156,7 @@ public:
             Config c;
             c.section(SECTION_VALIDATION_SEED).append(seed);
             c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
-            ValidatorKeys k{c, j};
+            ValidatorKeys k{c, env.journal};
 
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(k.publicKey.size() == 0);
@@ -166,7 +167,7 @@ public:
             // Token manifest and private key must match
             Config c;
             c.section(SECTION_VALIDATOR_TOKEN).append(invalidTokenBlob);
-            ValidatorKeys k{c, j};
+            ValidatorKeys k{c, env.journal};
 
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(k.publicKey.size() == 0);

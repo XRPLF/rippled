@@ -57,7 +57,9 @@ private:
 
         // Just instantiate without any logic in case online delete is not
         // configured
-        explicit SavedStateDB() = default;
+        explicit SavedStateDB()
+        : journal_ {beast::Journal::getNullSink()}
+        { }
 
         // opens database and, if necessary, creates & initializes its tables.
         void init (BasicConfig const& config, std::string const& dbName);

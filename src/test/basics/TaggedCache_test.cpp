@@ -21,6 +21,7 @@
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/clock/manual_clock.h>
+#include <test/jtx.h>
 
 namespace ripple {
 
@@ -40,7 +41,7 @@ public:
     void run () override
     {
         using namespace std::chrono_literals;
-        beast::Journal const j;
+        test::jtx::Env env (*this);  // Used only for its Journal.
 
         TestStopwatch clock;
         clock.set (0);
@@ -49,7 +50,7 @@ public:
         using Value = std::string;
         using Cache = TaggedCache <Key, Value>;
 
-        Cache c ("test", 1, 1s, clock, j);
+        Cache c ("test", 1, 1s, clock, env.journal);
 
         // Insert an item, retrieve it, and age it so it gets purged.
         {

@@ -23,6 +23,7 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/beast/unit_test.h>
+#include <test/jtx/Env.h>
 
 namespace ripple {
 namespace PeerFinder {
@@ -30,6 +31,12 @@ namespace PeerFinder {
 class Logic_test : public beast::unit_test::suite
 {
 public:
+    test::jtx::Env env_;  // Used only for its Journal.
+
+    Logic_test()
+    : env_ (*this)
+    { }
+
     struct TestStore : Store
     {
         std::size_t
@@ -74,7 +81,7 @@ public:
         TestStore store;
         TestChecker checker;
         TestStopwatch clock;
-        Logic<TestChecker> logic (clock, store, checker, beast::Journal{});
+        Logic<TestChecker> logic (clock, store, checker, env_.journal);
         logic.addFixedPeer ("test",
             beast::IP::Endpoint::from_string("65.0.0.1:5"));
         {
@@ -112,7 +119,7 @@ public:
         TestStore store;
         TestChecker checker;
         TestStopwatch clock;
-        Logic<TestChecker> logic (clock, store, checker, beast::Journal{});
+        Logic<TestChecker> logic (clock, store, checker, env_.journal);
         logic.addFixedPeer ("test",
             beast::IP::Endpoint::from_string("65.0.0.1:5"));
         {

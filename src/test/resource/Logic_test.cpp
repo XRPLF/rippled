@@ -20,11 +20,12 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/random.h>
 #include <ripple/beast/unit_test.h>
-#include <boost/utility/base_from_member.hpp>
 #include <ripple/resource/Consumer.h>
 #include <ripple/resource/impl/Entry.h>
 #include <ripple/resource/impl/Logic.h>
+#include <test/jtx/Env.h>
 
+#include <boost/utility/base_from_member.hpp>
 
 
 namespace ripple {
@@ -246,12 +247,12 @@ public:
 
     void run() override
     {
-        beast::Journal j;
+        test::jtx::Env env (*this);  // Used only for its Journal.
 
-        testDrop (j);
-        testCharges (j);
-        testImports (j);
-        testImport (j);
+        testDrop (env.journal);
+        testCharges (env.journal);
+        testImports (env.journal);
+        testImport (env.journal);
     }
 };
 

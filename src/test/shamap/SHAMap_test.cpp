@@ -18,11 +18,12 @@
 //==============================================================================
 
 #include <ripple/shamap/SHAMap.h>
-#include <test/shamap/common.h>
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/Journal.h>
+#include <test/jtx/Env.h>
+#include <test/shamap/common.h>
 
 namespace ripple {
 namespace tests {
@@ -132,8 +133,8 @@ public:
         else
             testcase ("add/traverse unbacked");
 
-        beast::Journal const j;                            // debug journal
-        tests::TestFamily f(j);
+        test::jtx::Env env (*this);  // Used only for its Journal.
+        tests::TestFamily f(env.journal);
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
         uint256 h1, h2, h3, h4, h5;
@@ -301,7 +302,7 @@ public:
             keys[6].SetHex ("b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
             keys[7].SetHex ("292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
 
-            tests::TestFamily tf{beast::Journal{}};
+            tests::TestFamily tf{env.journal};
             SHAMap map{SHAMapType::FREE, tf, v};
             if (! backed)
                 map.setUnbacked ();

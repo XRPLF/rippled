@@ -19,6 +19,7 @@
 
 #include <ripple/core/Stoppable.h>
 #include <ripple/beast/unit_test.h>
+#include <test/jtx/Env.h>
 #include <thread>
 
 namespace ripple {
@@ -399,6 +400,8 @@ class Stoppable_test
         B b_;
         C c_;
         Stoppable_test& test_;
+        jtx::Env env_;  // Used only for its Journal
+
     public:
         explicit Root(Stoppable_test& test)
             : RootStoppable("R")
@@ -406,13 +409,14 @@ class Stoppable_test
             , b_(*this, test)
             , c_(*this, test)
             , test_(test)
+            , env_(test)
         {}
 
         void run()
         {
             prepare();
             start();
-            stop({});
+            stop (env_.journal);
         }
 
         void onPrepare() override
@@ -441,7 +445,7 @@ class Stoppable_test
         {
             // Calling stop() a second time should have no negative
             // consequences.
-            stop({});
+            stop (env_.journal);
         }
     };
 

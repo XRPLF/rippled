@@ -22,6 +22,7 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/clock/manual_clock.h>
 #include <test/beast/IPEndpointCommon.h>
+#include <test/jtx/Env.h>
 #include <boost/algorithm/string.hpp>
 
 namespace ripple {
@@ -37,6 +38,11 @@ class Livecache_test : public beast::unit_test::suite
 {
 public:
     TestStopwatch m_clock;
+    test::jtx::Env env_;  // Used only for its Journal.
+
+    Livecache_test()
+    : env_ (*this)
+    { }
 
     // Add the address as an endpoint
     template <class C>
@@ -49,7 +55,7 @@ public:
     void testBasicInsert ()
     {
         testcase ("Basic Insert");
-        Livecache <> c (m_clock, beast::Journal());
+        Livecache <> c (m_clock, env_.journal);
         BEAST_EXPECT(c.empty());
 
         for (auto i = 0; i < 10; ++i)
@@ -68,7 +74,7 @@ public:
     void testInsertUpdate ()
     {
         testcase ("Insert/Update");
-        Livecache <> c (m_clock, beast::Journal());
+        Livecache <> c (m_clock, env_.journal);
 
         auto ep1 = Endpoint {beast::IP::randomEP(), 2};
         c.insert(ep1);
@@ -101,7 +107,7 @@ public:
     {
         testcase ("Expire");
         using namespace std::chrono_literals;
-        Livecache <> c (m_clock, beast::Journal());
+        Livecache <> c (m_clock, env_.journal);
 
         auto ep1 = Endpoint {beast::IP::randomEP(), 1};
         c.insert(ep1);
@@ -123,7 +129,7 @@ public:
     {
         testcase ("Histogram");
         constexpr auto num_eps = 40;
-        Livecache <> c (m_clock, beast::Journal());
+        Livecache <> c (m_clock, env_.journal);
         for (auto i = 0; i < num_eps; ++i)
             add(
                 beast::IP::randomEP(true),
@@ -148,7 +154,7 @@ public:
     void testShuffle ()
     {
         testcase ("Shuffle");
-        Livecache <> c (m_clock, beast::Journal());
+        Livecache <> c (m_clock, env_.journal);
         for (auto i = 0; i < 100; ++i)
             add(
                 beast::IP::randomEP(true),
