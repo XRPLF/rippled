@@ -32,13 +32,14 @@ public:
             boost::system::error_code ec =
                 boost::system::error_code (335544539,
                     boost::asio::error::get_ssl_category ());
-            std::string const s = beast::error_message_with_ssl(ec);
-
-#ifdef SSL_R_SHORT_READ
-            BEAST_EXPECT(s == " (20,0,219) error:140000DB:SSL routines:SSL routines:short read");
-#else
-            BEAST_EXPECT(s == " (20,0,219) error:140000DB:SSL routines:SSL routines:reason(219)");
-#endif
+            std::string s = beast::error_message_with_ssl(ec);
+            // strip away last part of the error message since
+            // it can vary with openssl versions and/or compile
+            // flags
+            auto const lastColon = s.find_last_of(':');
+            if (lastColon != s.npos)
+                s = s.substr(0, lastColon);
+            BEAST_EXPECT(s == " (20,0,219) error:140000DB:SSL routines:SSL routines");
         }
     }
 };
