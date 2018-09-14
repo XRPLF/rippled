@@ -31,7 +31,7 @@ namespace test {
 struct RPCCallTestData
 {
     char const* const description;
-    int line;
+    int const line;
     // List of passed arguments.
     std::initializer_list<char const* const> const args;
 
@@ -41,10 +41,20 @@ struct RPCCallTestData
         no_exception = 0,
         bad_cast
     };
-    Exception throwsWhat;
+    Exception const throwsWhat;
 
     // Expected JSON response.
     char const* const exp;
+
+    RPCCallTestData (char const* description_, int line_,
+        std::initializer_list<char const* const> const& args_,
+        Exception throwsWhat_, char const* exp_)
+    : description (description_)
+    , line (line_)
+    , args (args_)
+    , throwsWhat (throwsWhat_)
+    , exp (exp_)
+    { }
 
     RPCCallTestData () = delete;
     RPCCallTestData (RPCCallTestData const&) = delete;
