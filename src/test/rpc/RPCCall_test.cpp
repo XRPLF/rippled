@@ -6999,7 +6999,7 @@ public:
             {
                 got = cmdLineToJSONRPC (args, env.journal);
             }
-            catch (std::bad_cast& ex)
+            catch (std::bad_cast const&)
             {
                 if ((rpcCallTest.throwsWhat == RPCCallTestData::bad_cast) &&
                     (std::strlen (rpcCallTest.exp) == 0))
