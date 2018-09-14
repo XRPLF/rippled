@@ -20,6 +20,7 @@
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/contract.h>
+#include <ripple/beast/unit_test.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -27,7 +28,6 @@
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
-#include <ripple/beast/unit_test.h>
 
 namespace ripple {
 
@@ -36,7 +36,7 @@ namespace RPC {
 struct TxnTestData
 {
     char const* const description;
-    int line;
+    int const line;
     char const* const json;
     // The JSON is applied to four different interfaces:
     //   1. sign,
@@ -49,15 +49,23 @@ struct TxnTestData
     // The expMsg array contains the expected error string for the above cases.
     char const* const expMsg[4];
 
-    // Default and copy ctors should be deleted, but that displeases gcc 4.6.3.
-//  TxnTestData () = delete;
-//  TxnTestData (TxnTestData const&) = delete;
-//  TxnTestData (TxnTestData&&) = delete;
+    constexpr TxnTestData (char const* description_, int line_,
+        char const* json_, std::initializer_list<char const*> expMsg_)
+    : description (description_)
+    , line (line_)
+    , json (json_)
+    , expMsg {expMsg_.begin()[0],
+        expMsg_.begin()[1], expMsg_.begin()[2], expMsg_.begin()[3]}
+    { }
+
+    TxnTestData () = delete;
+    TxnTestData (TxnTestData const&) = delete;
+    TxnTestData (TxnTestData&&) = delete;
     TxnTestData& operator= (TxnTestData const&) = delete;
     TxnTestData& operator= (TxnTestData&&) = delete;
 };
 
-static TxnTestData const txnTestArray [] =
+static constexpr TxnTestData txnTestArray [] =
 {
 
 { "Minimal payment.", __LINE__,
