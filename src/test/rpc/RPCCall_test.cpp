@@ -33,7 +33,7 @@ struct RPCCallTestData
     char const* const description;
     int const line;
     // List of passed arguments.
-    std::initializer_list<char const* const> const args;
+    std::vector<char const*> const args;
 
     // If it throws, what does it throw?
     enum Exception
@@ -47,7 +47,7 @@ struct RPCCallTestData
     char const* const exp;
 
     RPCCallTestData (char const* description_, int line_,
-        std::initializer_list<char const* const> const& args_,
+        std::initializer_list<char const*> const& args_,
         Exception throwsWhat_, char const* exp_)
     : description (description_)
     , line (line_)
