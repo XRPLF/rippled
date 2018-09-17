@@ -98,12 +98,22 @@ struct Buffer_test : beast::unit_test::suite
             x = b0;
             BEAST_EXPECT (x == b0);
             BEAST_EXPECT (sane (x));
+#ifdef __clang__
+#pragma clang diagnostic push
+#if __clang_major__ >= 7
+#pragma clang diagnostic ignored "-Wself-assign-overloaded"
+#endif
+#endif
+
             x = x;
             BEAST_EXPECT (x == b0);
             BEAST_EXPECT (sane (x));
             y = y;
             BEAST_EXPECT (y == b3);
             BEAST_EXPECT (sane (y));
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
         }
 
         // Check move constructor & move assignments:
