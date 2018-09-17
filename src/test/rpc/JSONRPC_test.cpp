@@ -47,15 +47,14 @@ struct TxnTestData
     // crash none of them, and should provide reliable error messages.
     //
     // The expMsg array contains the expected error string for the above cases.
-    char const* const expMsg[4];
+    std::array<char const* const, 4> const expMsg;
 
     constexpr TxnTestData (char const* description_, int line_,
-        char const* json_, std::initializer_list<char const*> expMsg_)
+        char const* json_, std::array<char const* const, 4> const& expMsg_)
     : description (description_)
     , line (line_)
     , json (json_)
-    , expMsg {expMsg_.begin()[0],
-        expMsg_.begin()[1], expMsg_.begin()[2], expMsg_.begin()[3]}
+    , expMsg {expMsg_}
     { }
 
     TxnTestData () = delete;
@@ -79,11 +78,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "Missing field 'account'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Pass in Fee with minimal payment.", __LINE__,
 R"({
@@ -98,11 +97,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Pass in Sequence.", __LINE__,
 R"({
@@ -117,11 +116,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "Pass in Sequence and Fee with minimal payment.", __LINE__,
 R"({
@@ -137,11 +136,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "Add 'fee_mult_max' field.", __LINE__,
 R"({
@@ -157,11 +156,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "Add 'fee_mult_max' and 'fee_div_max' field.", __LINE__,
 R"({
@@ -178,11 +177,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "fee_mult_max is ignored if 'Fee' is present.", __LINE__,
 R"({
@@ -199,11 +198,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "fee_div_max is ignored if 'Fee' is present.", __LINE__,
 R"({
@@ -221,11 +220,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "Invalid 'fee_mult_max' field.", __LINE__,
 R"({
@@ -241,11 +240,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Invalid field 'fee_mult_max', not a positive integer.",
 "Invalid field 'fee_mult_max', not a positive integer.",
 "Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "Invalid 'fee_div_max' field.", __LINE__,
 R"({
@@ -262,11 +261,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Invalid field 'fee_div_max', not a positive integer.",
 "Invalid field 'fee_div_max', not a positive integer.",
 "Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "Invalid value for 'fee_mult_max' field.", __LINE__,
 R"({
@@ -282,11 +281,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Fee of 10 exceeds the requested tx limit of 0",
 "Fee of 10 exceeds the requested tx limit of 0",
 "Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "Invalid value for 'fee_div_max' field.", __LINE__,
 R"({
@@ -303,11 +302,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Fee of 10 exceeds the requested tx limit of 5",
 "Fee of 10 exceeds the requested tx limit of 5",
 "Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "Invalid zero value for 'fee_div_max' field.", __LINE__,
 R"({
@@ -324,11 +323,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Invalid field 'fee_div_max', not a positive integer.",
 "Invalid field 'fee_div_max', not a positive integer.",
 "Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "Missing 'Amount'.", __LINE__,
 R"({
@@ -341,11 +340,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'tx_json.Amount'.",
 "Missing field 'tx_json.Amount'.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Invalid 'Amount'.", __LINE__,
 R"({
@@ -359,11 +358,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Invalid field 'tx_json.Amount'.",
 "Invalid field 'tx_json.Amount'.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Missing 'Destination'.", __LINE__,
 R"({
@@ -376,11 +375,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'tx_json.Destination'.",
 "Missing field 'tx_json.Destination'.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Invalid 'Destination'.", __LINE__,
 R"({
@@ -394,11 +393,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Invalid field 'tx_json.Destination'.",
 "Invalid field 'tx_json.Destination'.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Cannot create XRP to XRP paths.", __LINE__,
 R"({
@@ -413,11 +412,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Cannot build XRP to XRP paths.",
 "Cannot build XRP to XRP paths.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Successful 'build_path'.", __LINE__,
 R"({
@@ -436,11 +435,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Not valid to include both 'Paths' and 'build_path'.", __LINE__,
 R"({
@@ -460,11 +459,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Cannot specify both 'tx_json.Paths' and 'build_path'",
 "Cannot specify both 'tx_json.Paths' and 'build_path'",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Successful 'SendMax'.", __LINE__,
 R"({
@@ -488,11 +487,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "'Amount' may not be XRP for pathfinding, but 'SendMax' may be XRP.", __LINE__,
 R"({
@@ -512,11 +511,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "'secret' must be present.", __LINE__,
 R"({
@@ -529,11 +528,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "'secret' must be non-empty.", __LINE__,
 R"({
@@ -547,11 +546,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Invalid field 'secret'.",
 "Invalid field 'secret'.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Use 'seed' instead of 'secret'.", __LINE__,
 R"({
@@ -566,11 +565,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Malformed 'seed'.", __LINE__,
 R"({
@@ -585,11 +584,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Disallowed seed.",
 "Disallowed seed.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "'tx_json' must be present.", __LINE__,
 R"({
@@ -603,11 +602,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'tx_json'.",
 "Missing field 'tx_json'.",
 "Missing field 'tx_json'.",
-"Missing field 'tx_json'."}},
+"Missing field 'tx_json'."}}},
 
 { "'TransactionType' must be present.", __LINE__,
 R"({
@@ -620,11 +619,11 @@ R"({
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     }
 })",
-{
+{{
 "Missing field 'tx_json.TransactionType'.",
 "Missing field 'tx_json.TransactionType'.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "The 'TransactionType' must be a pre-established transaction type.", __LINE__,
 R"({
@@ -638,11 +637,11 @@ R"({
         "TransactionType": "tt"
     }
 })",
-{
+{{
 "Field 'tx_json.TransactionType' has invalid data.",
 "Field 'tx_json.TransactionType' has invalid data.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "The 'TransactionType' may be represented with an integer.", __LINE__,
 R"({
@@ -656,11 +655,11 @@ R"({
         "TransactionType": 0
     }
 })",
-{
+{{
 "",
 "",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "'Account' must be present.", __LINE__,
 R"({
@@ -673,11 +672,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'tx_json.Account'.",
 "Missing field 'tx_json.Account'.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "'Account' must be well formed.", __LINE__,
 R"({
@@ -691,11 +690,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Invalid field 'tx_json.Account'.",
 "Invalid field 'tx_json.Account'.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "The 'offline' tag may be added to the transaction.", __LINE__,
 R"({
@@ -710,11 +709,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "If 'offline' is true then a 'Sequence' field must be supplied.", __LINE__,
 R"({
@@ -730,11 +729,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'tx_json.Sequence'.",
 "Missing field 'tx_json.Sequence'.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "If 'offline' is true then a 'Fee' field must be supplied.", __LINE__,
 R"({
@@ -750,11 +749,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "Valid transaction if 'offline' is true.", __LINE__,
 R"({
@@ -771,11 +770,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "'offline' and 'build_path' are mutually exclusive.", __LINE__,
 R"({
@@ -793,11 +792,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Field 'build_path' not allowed in this context.",
 "Field 'build_path' not allowed in this context.",
 "Field 'build_path' not allowed in this context.",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "A 'Flags' field may be specified.", __LINE__,
 R"({
@@ -812,11 +811,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "The 'Flags' field must be numeric.", __LINE__,
 R"({
@@ -831,11 +830,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Field 'tx_json.Flags' has invalid data.",
 "Field 'tx_json.Flags' has invalid data.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "It's okay to add a 'debug_signing' field.", __LINE__,
 R"({
@@ -850,11 +849,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Minimal sign_for.", __LINE__,
 R"({
@@ -871,11 +870,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Secret does not match account.",
 "Secret does not match account.",
 "",
-"Missing field 'tx_json.Signers'."}},
+"Missing field 'tx_json.Signers'."}}},
 
 { "Minimal offline sign_for.", __LINE__,
 R"({
@@ -893,11 +892,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "",
-"Missing field 'tx_json.Signers'."}},
+"Missing field 'tx_json.Signers'."}}},
 
 { "Offline sign_for using 'seed' instead of 'secret'.", __LINE__,
 R"({
@@ -916,11 +915,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "",
-"Missing field 'tx_json.Signers'."}},
+"Missing field 'tx_json.Signers'."}}},
 
 { "Malformed seed in sign_for.", __LINE__,
 R"({
@@ -939,11 +938,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Disallowed seed.",
 "Disallowed seed.",
 "Disallowed seed.",
-"Missing field 'tx_json.Signers'."}},
+"Missing field 'tx_json.Signers'."}}},
 
 { "Missing 'Account' in sign_for.", __LINE__,
 R"({
@@ -959,11 +958,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'tx_json.Account'.",
 "Missing field 'tx_json.Account'.",
 "Missing field 'tx_json.Account'.",
-"Missing field 'tx_json.Account'."}},
+"Missing field 'tx_json.Account'."}}},
 
 { "Missing 'Amount' in sign_for.", __LINE__,
 R"({
@@ -979,11 +978,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'tx_json.Amount'.",
 "Missing field 'tx_json.Amount'.",
 "Missing field 'tx_json.Amount'.",
-"Missing field 'tx_json.Amount'."}},
+"Missing field 'tx_json.Amount'."}}},
 
 { "Missing 'Destination' in sign_for.", __LINE__,
 R"({
@@ -999,11 +998,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'tx_json.Destination'.",
 "Missing field 'tx_json.Destination'.",
 "Missing field 'tx_json.Destination'.",
-"Missing field 'tx_json.Destination'."}},
+"Missing field 'tx_json.Destination'."}}},
 
 { "Missing 'Fee' in sign_for.", __LINE__,
 R"({
@@ -1019,11 +1018,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Secret does not match account.",
 "Secret does not match account.",
 "Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.Fee'."}},
+"Missing field 'tx_json.Fee'."}}},
 
 { "Missing 'Sequence' in sign_for.", __LINE__,
 R"({
@@ -1039,11 +1038,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Secret does not match account.",
 "Secret does not match account.",
 "Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Missing 'SigningPubKey' in sign_for is automatically filled in.", __LINE__,
 R"({
@@ -1059,11 +1058,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Secret does not match account.",
 "Secret does not match account.",
 "",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "In sign_for, an account may not sign for itself.", __LINE__,
 R"({
@@ -1079,11 +1078,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "",
 "",
 "A Signer may not be the transaction's Account (rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA).",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "Cannot put duplicate accounts in Signers array", __LINE__,
 R"({
@@ -1109,11 +1108,11 @@ R"({
         "TransactionType" : "Payment"
     }
 })",
-{
+{{
 "Secret does not match account.",
 "Secret does not match account.",
 "Duplicate Signers:Signer:Account entries (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh) are not allowed.",
-""}},
+""}}},
 
 { "Correctly append to pre-established Signers array", __LINE__,
 R"({
@@ -1139,11 +1138,11 @@ R"({
         "TransactionType" : "Payment"
     }
 })",
-{
+{{
 "Secret does not match account.",
 "Secret does not match account.",
 "",
-""}},
+""}}},
 
 { "Append to pre-established Signers array with bad signature", __LINE__,
 R"({
@@ -1169,11 +1168,11 @@ R"({
         "TransactionType" : "Payment"
     }
 })",
-{
+{{
 "Secret does not match account.",
 "Secret does not match account.",
 "Invalid signature.",
-"Invalid signature."}},
+"Invalid signature."}}},
 
 { "Non-empty 'SigningPubKey' in sign_for.", __LINE__,
 R"({
@@ -1190,11 +1189,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Secret does not match account.",
 "Secret does not match account.",
 "When multi-signing 'tx_json.SigningPubKey' must be empty.",
-"When multi-signing 'tx_json.SigningPubKey' must be empty."}},
+"When multi-signing 'tx_json.SigningPubKey' must be empty."}}},
 
 { "Missing 'TransactionType' in sign_for.", __LINE__,
 R"({
@@ -1210,11 +1209,11 @@ R"({
         "SigningPubKey": "",
     }
 })",
-{
+{{
 "Missing field 'tx_json.TransactionType'.",
 "Missing field 'tx_json.TransactionType'.",
 "Missing field 'tx_json.TransactionType'.",
-"Missing field 'tx_json.TransactionType'."}},
+"Missing field 'tx_json.TransactionType'."}}},
 
 { "Invalid field 'tx_json': string instead of object", __LINE__,
 R"({
@@ -1223,11 +1222,11 @@ R"({
     "secret": "masterpassphrase",
     "tx_json": ""
 })",
-{
+{{
 "Invalid field 'tx_json', not object.",
 "Invalid field 'tx_json', not object.",
 "Invalid field 'tx_json', not object.",
-"Invalid field 'tx_json', not object."}},
+"Invalid field 'tx_json', not object."}}},
 
 { "Invalid field 'tx_json': integer instead of object", __LINE__,
 R"({
@@ -1236,11 +1235,11 @@ R"({
     "secret": "masterpassphrase",
     "tx_json": 20160331
 })",
-{
+{{
 "Invalid field 'tx_json', not object.",
 "Invalid field 'tx_json', not object.",
 "Invalid field 'tx_json', not object.",
-"Invalid field 'tx_json', not object."}},
+"Invalid field 'tx_json', not object."}}},
 
 { "Invalid field 'tx_json': array instead of object", __LINE__,
 R"({
@@ -1249,11 +1248,11 @@ R"({
     "secret": "masterpassphrase",
     "tx_json": [ "hello", "world" ]
 })",
-{
+{{
 "Invalid field 'tx_json', not object.",
 "Invalid field 'tx_json', not object.",
 "Invalid field 'tx_json', not object.",
-"Invalid field 'tx_json', not object."}},
+"Invalid field 'tx_json', not object."}}},
 
 { "Minimal submit_multisigned.", __LINE__,
 R"({
@@ -1277,11 +1276,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-""}},
+""}}},
 
 { "Minimal submit_multisigned with bad signature.", __LINE__,
 R"({
@@ -1305,11 +1304,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Invalid signature."}},
+"Invalid signature."}}},
 
 { "Missing tx_json in submit_multisigned.", __LINE__,
 R"({
@@ -1324,11 +1323,11 @@ R"({
         }
     ]
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Missing field 'tx_json'."}},
+"Missing field 'tx_json'."}}},
 
 { "Missing sequence in submit_multisigned.", __LINE__,
 R"({
@@ -1351,11 +1350,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Missing field 'tx_json.Sequence'."}},
+"Missing field 'tx_json.Sequence'."}}},
 
 { "Missing SigningPubKey in submit_multisigned.", __LINE__,
 R"({
@@ -1378,11 +1377,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Missing field 'tx_json.SigningPubKey'."}},
+"Missing field 'tx_json.SigningPubKey'."}}},
 
 { "Non-empty SigningPubKey in submit_multisigned.", __LINE__,
 R"({
@@ -1406,11 +1405,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"When multi-signing 'tx_json.SigningPubKey' must be empty."}},
+"When multi-signing 'tx_json.SigningPubKey' must be empty."}}},
 
 { "Missing TransactionType in submit_multisigned.", __LINE__,
 R"({
@@ -1433,11 +1432,11 @@ R"({
         "SigningPubKey": "",
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Missing field 'tx_json.TransactionType'."}},
+"Missing field 'tx_json.TransactionType'."}}},
 
 { "Missing Account in submit_multisigned.", __LINE__,
 R"({
@@ -1460,11 +1459,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Missing field 'tx_json.Account'."}},
+"Missing field 'tx_json.Account'."}}},
 
 { "Malformed Account in submit_multisigned.", __LINE__,
 R"({
@@ -1488,11 +1487,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Invalid field 'tx_json.Account'."}},
+"Invalid field 'tx_json.Account'."}}},
 
 { "Account not in ledger in submit_multisigned.", __LINE__,
 R"({
@@ -1516,11 +1515,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Source account not found."}},
+"Source account not found."}}},
 
 { "Missing Fee in submit_multisigned.", __LINE__,
 R"({
@@ -1543,11 +1542,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Missing field 'tx_json.Fee'."}},
+"Missing field 'tx_json.Fee'."}}},
 
 { "Non-numeric Fee in submit_multisigned.", __LINE__,
 R"({
@@ -1571,11 +1570,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Field 'tx_json.Fee' has invalid data."}},
+"Field 'tx_json.Fee' has invalid data."}}},
 
 { "Missing Amount in submit_multisigned Payment.", __LINE__,
 R"({
@@ -1598,11 +1597,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Missing field 'tx_json.Amount'."}},
+"Missing field 'tx_json.Amount'."}}},
 
 { "Invalid Amount in submit_multisigned Payment.", __LINE__,
 R"({
@@ -1626,11 +1625,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Invalid field 'tx_json.Amount'."}},
+"Invalid field 'tx_json.Amount'."}}},
 
 { "No build_path in submit_multisigned.", __LINE__,
 R"({
@@ -1655,11 +1654,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Field 'build_path' not allowed in this context."}},
+"Field 'build_path' not allowed in this context."}}},
 
 { "Missing Destination in submit_multisigned Payment.", __LINE__,
 R"({
@@ -1682,11 +1681,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Missing field 'tx_json.Destination'."}},
+"Missing field 'tx_json.Destination'."}}},
 
 { "Malformed Destination in submit_multisigned Payment.", __LINE__,
 R"({
@@ -1710,11 +1709,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Invalid field 'tx_json.Destination'."}},
+"Invalid field 'tx_json.Destination'."}}},
 
 { "Missing Signers field in submit_multisigned.", __LINE__,
 R"({
@@ -1729,11 +1728,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Missing field 'tx_json.Signers'."}},
+"Missing field 'tx_json.Signers'."}}},
 
 { "Signers not an array in submit_multisigned.", __LINE__,
 R"({
@@ -1753,11 +1752,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Field 'tx_json.Signers' is not a JSON array."}},
+"Field 'tx_json.Signers' is not a JSON array."}}},
 
 { "Empty Signers array in submit_multisigned.", __LINE__,
 R"({
@@ -1774,11 +1773,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"tx_json.Signers array may not be empty."}},
+"tx_json.Signers array may not be empty."}}},
 
 { "Duplicate Signer in submit_multisigned.", __LINE__,
 R"({
@@ -1809,11 +1808,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Duplicate Signers:Signer:Account entries (rPcNzota6B8YBokhYtcTNqQVCngtbnWfux) are not allowed."}},
+"Duplicate Signers:Signer:Account entries (rPcNzota6B8YBokhYtcTNqQVCngtbnWfux) are not allowed."}}},
 
 { "Signer is tx_json Account in submit_multisigned.", __LINE__,
 R"({
@@ -1837,11 +1836,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{
+{{
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh)."}},
+"A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh)."}}},
 
 };
 
