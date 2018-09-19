@@ -200,6 +200,12 @@ target_compile_definitions (common
   INTERFACE
     $<$<CONFIG:Debug>:DEBUG _DEBUG>
     $<$<AND:$<BOOL:profile>,$<NOT:$<BOOL:assert>>>:NDEBUG>)
+    # ^^^^ NOTE: CMAKE release builds already have NDEBUG
+    # defined, so no need to add it explicitly except for
+    # this special case of (profile ON) and (assert OFF)
+    # -- presumably this is because we don't want profile
+    # builds asserting unless asserts were specifically
+    # requested
 
 if (MSVC)
   # remove existing exception flag since we set it to -EHa
@@ -523,19 +529,24 @@ target_link_libraries (ripple_boost
    NIH dep: openssl
 #]===================================================================]
 
-if (APPLE AND NOT DEFINED ENV{OPENSSL_ROOT_DIR})
-  find_program (HOMEBREW brew)
-  if (NOT HOMEBREW STREQUAL "HOMEBREW-NOTFOUND")
-    execute_process (COMMAND ${HOMEBREW} --prefix openssl
-      OUTPUT_VARIABLE OPENSSL_ROOT_DIR
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
+#[===============================================[
+  OPENSSL_ROOT_DIR is the only variable that
+  FindOpenSSL honors for locating, so convert any
+  OPENSSL_ROOT vars to this
+#]===============================================]
+if (NOT DEFINED OPENSSL_ROOT_DIR)
+  if (DEFINED ENV{OPENSSL_ROOT})
+    set (OPENSSL_ROOT_DIR $ENV{OPENSSL_ROOT})
+  elseif (APPLE)
+    find_program (homebrew brew)
+    if (homebrew)
+      execute_process (COMMAND ${homebrew} --prefix openssl
+        OUTPUT_VARIABLE OPENSSL_ROOT_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    endif ()
   endif ()
+  file (TO_CMAKE_PATH "${OPENSSL_ROOT_DIR}" OPENSSL_ROOT_DIR)
 endif ()
-
-if ((NOT DEFINED OPENSSL_ROOT) AND (DEFINED ENV{OPENSSL_ROOT}))
-  set (OPENSSL_ROOT $ENV{OPENSSL_ROOT})
-endif ()
-file (TO_CMAKE_PATH "${OPENSSL_ROOT}" OPENSSL_ROOT)
 
 if (static)
   set (OPENSSL_USE_STATIC_LIBS ON)
@@ -668,14 +679,24 @@ exclude_if_included (lz4)
 #]===================================================================]
 set (la_root_suffix)
 if (MSVC)
-  set(la_root_suffix "_static")
+  set (la_root_suffix "_static")
 endif ()
-string(REGEX REPLACE "[ \\/%]+" "_" gen_for_path ${CMAKE_GENERATOR})
-string(TOLOWER ${gen_for_path} gen_for_path)
+string (REGEX REPLACE "[ \\/%]+" "_" gen_for_path ${CMAKE_GENERATOR})
+string (TOLOWER ${gen_for_path} gen_for_path)
 # hack: trying to shorten paths for windows CI (hits 260 MAXPATH easily)
-string(REPLACE "visual_studio" "vs" gen_for_path ${gen_for_path})
+string (REPLACE "visual_studio" "vs" gen_for_path ${gen_for_path})
+set (nih_cache_path
+  ${CMAKE_SOURCE_DIR}/.nih_c/${gen_for_path}/${CMAKE_CXX_COMPILER_ID}_${CMAKE_CXX_COMPILER_VERSION})
+if (NOT is_multiconfig)
+  if (CMAKE_BUILD_TYPE STREQUAL Debug)
+    set (nih_cache_path "${nih_cache_path}/Debug")
+  else ()
+    set (nih_cache_path "${nih_cache_path}/Release")
+  endif ()
+endif ()
+message (STATUS "NIH-EP cache path: ${nih_cache_path}")
 ExternalProject_Add (libarchive
-  PREFIX ${CMAKE_SOURCE_DIR}/.nih_c/${gen_for_path}/${CMAKE_CXX_COMPILER_ID}_${CMAKE_CXX_COMPILER_VERSION}
+  PREFIX ${nih_cache_path}
   # TODO: switch back to official repo once they allow ENABLE_WERROR option in
   # mainline -- see https://github.com/libarchive/libarchive/pull/1033
   #GIT_REPOSITORY https://github.com/libarchive/libarchive.git
@@ -689,7 +710,7 @@ ExternalProject_Add (libarchive
     $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:-DCMAKE_VERBOSE_MAKEFILE=ON>
     -DCMAKE_PREFIX_PATH=${CMAKE_BINARY_DIR}/lz4
     -DCMAKE_DEBUG_POSTFIX=_d
-    -DCMAKE_BUILD_TYPE=$<IF:$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>,Debug,Release>
+    -DCMAKE_BUILD_TYPE=$<IF:$<CONFIG:Debug>,Debug,Release>
     -DENABLE_LZ4=ON
     -ULZ4_*
     -DENABLE_WERROR=OFF
@@ -733,7 +754,7 @@ ExternalProject_Add (libarchive
     $<$<BOOL:${is_multiconfig}>:
       COMMAND
         ${CMAKE_COMMAND} -E copy
-       <BINARY_DIR>/libarchive/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}archive${la_root_suffix}$<$<OR:$<CONFIG:Debug>,$<CONFIG:DebugClassic>>:_d>${CMAKE_STATIC_LIBRARY_SUFFIX}
+       <BINARY_DIR>/libarchive/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}archive${la_root_suffix}$<$<CONFIG:Debug>:_d>${CMAKE_STATIC_LIBRARY_SUFFIX}
         <BINARY_DIR>/libarchive
       >
   TEST_COMMAND ""
