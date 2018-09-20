@@ -87,6 +87,26 @@ public:
         return size_;
     }
 
+    auto begin() noexcept
+    {
+        return buf_;
+    }
+
+    auto cbegin() const noexcept
+    {
+        return buf_;
+    }
+
+    auto end() noexcept
+    {
+        return buf_ + size_;
+    }
+
+    auto cend() const noexcept
+    {
+        return buf_ + size_;
+    }
+
     bool
     empty() const noexcept
     {

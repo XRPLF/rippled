@@ -69,40 +69,15 @@ charUnHex (char c)
 template<class InputIterator>
 std::string strHex(InputIterator begin, InputIterator end)
 {
-    std::string result{};
+    std::string result;
     result.reserve (std::distance(begin, end));
     boost::algorithm::hex (begin, end, std::back_inserter(result));
     return result;
 }
-namespace
+template <class T>
+std::string strHex(T const& blob)
 {
-    // Using void_t since beast/cxx17/type_traits.h hijacked it into
-    // namespace std
-    template<class T, class = void>
-    struct has_data : std::false_type{};
-
-    template<class T>
-    struct has_data<T, std::void_t<decltype(std::declval<T>().data())>>
-    : std::true_type{};
-
-    template<class T, class = void>
-    struct has_size : std::false_type{};
-
-    template<class T>
-    struct has_size<T, std::void_t<decltype(std::declval<T>().size())>>
-    : std::true_type{};
-
-    template<class T>
-    using has_bytes = std::bool_constant<has_size<T>::value &&
-                                         has_data<T>::value>;
-}
-
-template <class T, std::enable_if_t<has_bytes<T>::value>* = nullptr>
-std::string
-strHex(T const& blob)
-{
-    const auto begin = blob.data();
-    return strHex(begin, begin + blob.size());
+    return strHex(blob.cbegin(), blob.cend());
 }
 
 inline std::string strHex (std::string const& src)

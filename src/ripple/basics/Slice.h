@@ -114,6 +114,26 @@ public:
         return temp += n;
     }
     /** @} */
+
+    auto begin() noexcept
+    {
+        return data_;
+    }
+
+    auto cbegin() const noexcept
+    {
+        return data_;
+    }
+
+    auto end() noexcept
+    {
+        return data_ + size_;
+    }
+
+    auto cend() const noexcept
+    {
+        return data_ + size_;
+    }
 };
 
 //------------------------------------------------------------------------------

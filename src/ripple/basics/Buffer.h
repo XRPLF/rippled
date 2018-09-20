@@ -191,6 +191,26 @@ public:
     {
         return alloc(n);
     }
+
+    auto begin() noexcept
+    {
+        return p_.get();
+    }
+
+    auto cbegin() const noexcept
+    {
+        return p_.get();
+    }
+
+    auto end() noexcept
+    {
+        return p_.get() + size_;
+    }
+
+    auto cend() const noexcept
+    {
+        return p_.get() + size_;
+    }
 };
 
 inline bool operator==(Buffer const& lhs, Buffer const& rhs) noexcept

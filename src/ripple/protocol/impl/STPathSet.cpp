@@ -156,10 +156,10 @@ STPath::getJson (int) const
     for (auto it: mPath)
     {
         Json::Value elem (Json::objectValue);
-        int         iType   = it.getNodeType ();
+        const auto iType   = it.getNodeType ();
 
         elem[jss::type]      = iType;
-        elem[jss::type_hex]  = strHex (iType);
+        elem[jss::type_hex]  = charHex (iType);
 
         if (iType & STPathElement::typeAccount)
             elem[jss::account]  = to_string (it.getAccountID ());
