@@ -23,18 +23,20 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/beast/unit_test.h>
-#include <test/jtx/Env.h>
+#include <test/unit_test/SuiteJournalSink.h>
 
 namespace ripple {
 namespace PeerFinder {
 
-class Logic_test : public beast::unit_test::suite
+class PeerFinder_test : public beast::unit_test::suite
 {
-public:
-    test::jtx::Env env_;  // Used only for its Journal.
+    test::SuiteJournalSink sink_;
+    beast::Journal journal_;
 
-    Logic_test()
-    : env_ (*this)
+public:
+    PeerFinder_test()
+    : sink_ ("PeerFinder_test", beast::severities::kFatal, *this)
+    , journal_ (sink_)
     { }
 
     struct TestStore : Store
@@ -81,7 +83,7 @@ public:
         TestStore store;
         TestChecker checker;
         TestStopwatch clock;
-        Logic<TestChecker> logic (clock, store, checker, env_.journal);
+        Logic<TestChecker> logic (clock, store, checker, journal_);
         logic.addFixedPeer ("test",
             beast::IP::Endpoint::from_string("65.0.0.1:5"));
         {
@@ -119,7 +121,7 @@ public:
         TestStore store;
         TestChecker checker;
         TestStopwatch clock;
-        Logic<TestChecker> logic (clock, store, checker, env_.journal);
+        Logic<TestChecker> logic (clock, store, checker, journal_);
         logic.addFixedPeer ("test",
             beast::IP::Endpoint::from_string("65.0.0.1:5"));
         {
@@ -163,7 +165,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Logic,PeerFinder,ripple);
+BEAST_DEFINE_TESTSUITE(PeerFinder,PeerFinder,ripple);
 
 }
 }

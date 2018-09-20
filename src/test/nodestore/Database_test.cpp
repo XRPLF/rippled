@@ -21,14 +21,22 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/beast/utility/temp_dir.h>
-#include <test/jtx/Env.h>
+#include <test/unit_test/SuiteJournalSink.h>
 
 namespace ripple {
 namespace NodeStore {
 
 class Database_test : public TestBase
 {
+    test::SuiteJournalSink sink_;
+    beast::Journal journal_;
+
 public:
+    Database_test ()
+    : sink_ ("Database_test", beast::severities::kFatal, *this)
+    , journal_ (sink_)
+    { }
+
     void testImport (std::string const& destBackendType,
         std::string const& srcBackendType, std::int64_t seedValue)
     {
@@ -44,12 +52,10 @@ public:
         auto batch = createPredictableBatch (
             numObjectsToTest, seedValue);
 
-        test::jtx::Env env (*this);  // Used only for its Journal.
-
         // Write to source db
         {
             std::unique_ptr <Database> src = Manager::instance().make_Database (
-                "test", scheduler, 2, parent, srcParams, env.journal);
+                "test", scheduler, 2, parent, srcParams, journal_);
             storeBatch (*src, batch);
         }
 
@@ -58,7 +64,7 @@ public:
         {
             // Re-open the db
             std::unique_ptr <Database> src = Manager::instance().make_Database (
-                "test", scheduler, 2, parent, srcParams, env.journal);
+                "test", scheduler, 2, parent, srcParams, journal_);
 
             // Set up the destination database
             beast::temp_dir dest_db;
@@ -67,7 +73,7 @@ public:
             destParams.set ("path", dest_db.path());
 
             std::unique_ptr <Database> dest = Manager::instance().make_Database (
-                "test", scheduler, 2, parent, destParams, env.journal);
+                "test", scheduler, 2, parent, destParams, journal_);
 
             testcase ("import into '" + destBackendType +
                 "' from '" + srcBackendType + "'");
@@ -110,12 +116,10 @@ public:
         auto batch = createPredictableBatch (
             numObjectsToTest, rng());
 
-        test::jtx::Env env (*this);  // Used only for its Journal.
-
         {
             // Open the database
             std::unique_ptr <Database> db = Manager::instance().make_Database (
-                "test", scheduler, 2, parent, nodeParams, env.journal);
+                "test", scheduler, 2, parent, nodeParams, journal_);
 
             // Write the batch
             storeBatch (*db, batch);
@@ -143,7 +147,7 @@ public:
         {
             // Re-open the database without the ephemeral DB
             std::unique_ptr <Database> db = Manager::instance().make_Database (
-                "test", scheduler, 2, parent, nodeParams, env.journal);
+                "test", scheduler, 2, parent, nodeParams, journal_);
 
             // Read it back in
             Batch copy;
@@ -162,7 +166,7 @@ public:
                 // Verify default earliest ledger sequence
                 std::unique_ptr<Database> db =
                     Manager::instance().make_Database(
-                        "test", scheduler, 2, parent, nodeParams, env.journal);
+                        "test", scheduler, 2, parent, nodeParams, journal_);
                 BEAST_EXPECT(db->earliestSeq() == XRP_LEDGER_EARLIEST_SEQ);
             }
 
@@ -172,7 +176,7 @@ public:
                 nodeParams.set("earliest_seq", "0");
                 std::unique_ptr<Database> db =
                     Manager::instance().make_Database(
-                        "test", scheduler, 2, parent, nodeParams, env.journal);
+                        "test", scheduler, 2, parent, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
             {
@@ -185,7 +189,7 @@ public:
                 nodeParams.set("earliest_seq", "1");
                 std::unique_ptr<Database> db =
                     Manager::instance().make_Database(
-                        "test", scheduler, 2, parent, nodeParams, env.journal);
+                        "test", scheduler, 2, parent, nodeParams, journal_);
 
                 // Verify database uses the earliest ledger sequence setting
                 BEAST_EXPECT(db->earliestSeq() == 1);
@@ -200,7 +204,7 @@ public:
                     std::to_string(XRP_LEDGER_EARLIEST_SEQ));
                 std::unique_ptr<Database> db2 =
                     Manager::instance().make_Database(
-                        "test", scheduler, 2, parent, nodeParams, env.journal);
+                        "test", scheduler, 2, parent, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
             {

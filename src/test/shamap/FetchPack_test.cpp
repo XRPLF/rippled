@@ -25,8 +25,8 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/beast/xor_shift_engine.h>
 #include <ripple/beast/unit_test.h>
-#include <test/jtx/Env.h>
 #include <test/shamap/common.h>
+#include <test/unit_test/SuiteJournalSink.h>
 #include <functional>
 #include <stdexcept>
 
@@ -117,8 +117,11 @@ public:
 
     void run () override
     {
-        test::jtx::Env env (*this);  // Used only for its Journal.
-        TestFamily f(env.journal);
+        using namespace beast::severities;
+        test::SuiteJournalSink sink ("FetchPack_test", kFatal, *this);
+        beast::Journal journal (sink);
+
+        TestFamily f(journal);
         std::shared_ptr <Table> t1 (std::make_shared <Table> (
             SHAMapType::FREE, f, SHAMap::version{2}));
 

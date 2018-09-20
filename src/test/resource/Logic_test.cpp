@@ -23,7 +23,7 @@
 #include <ripple/resource/Consumer.h>
 #include <ripple/resource/impl/Entry.h>
 #include <ripple/resource/impl/Logic.h>
-#include <test/jtx/Env.h>
+#include <test/unit_test/SuiteJournalSink.h>
 
 #include <boost/utility/base_from_member.hpp>
 
@@ -31,7 +31,7 @@
 namespace ripple {
 namespace Resource {
 
-class Manager_test : public beast::unit_test::suite
+class ResourceManager_test : public beast::unit_test::suite
 {
 public:
     class TestLogic
@@ -247,16 +247,18 @@ public:
 
     void run() override
     {
-        test::jtx::Env env (*this);  // Used only for its Journal.
+        using namespace beast::severities;
+        test::SuiteJournalSink sink ("ResourceManager_test", kFatal, *this);
+        beast::Journal journal (sink);
 
-        testDrop (env.journal);
-        testCharges (env.journal);
-        testImports (env.journal);
-        testImport (env.journal);
+        testDrop (journal);
+        testCharges (journal);
+        testImports (journal);
+        testImport (journal);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Manager,resource,ripple);
+BEAST_DEFINE_TESTSUITE(ResourceManager,resource,ripple);
 
 }
 }

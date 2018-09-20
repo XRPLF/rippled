@@ -22,24 +22,26 @@
 #include <ripple/overlay/ClusterNode.h>
 #include <ripple/protocol/SecretKey.h>
 #include <test/jtx/TestSuite.h>
-#include <test/jtx/Env.h>
+#include <test/unit_test/SuiteJournalSink.h>
 
 namespace ripple {
 namespace tests {
 
 class cluster_test : public ripple::TestSuite
 {
-    test::jtx::Env env_;  // Used only for its Journal.
+    test::SuiteJournalSink sink_;
+    beast::Journal journal_;
 
 public:
     cluster_test ()
-    : env_ (*this)
+    : sink_ ("cluster_test", beast::severities::kFatal, *this)
+    , journal_ (sink_)
     { }
 
     std::unique_ptr<Cluster>
     create (std::vector<PublicKey> const& nodes)
     {
-        auto cluster = std::make_unique <Cluster> (env_.journal);
+        auto cluster = std::make_unique <Cluster> (journal_);
 
         for (auto const& n : nodes)
             cluster->update (n, "Test");
@@ -195,7 +197,7 @@ public:
     {
         testcase ("Config Load");
 
-        auto c = std::make_unique <Cluster> (env_.journal);
+        auto c = std::make_unique <Cluster> (journal_);
 
         // The servers on the network
         std::vector<PublicKey> network;

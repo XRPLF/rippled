@@ -19,7 +19,7 @@
 
 #include <ripple/core/Stoppable.h>
 #include <ripple/beast/unit_test.h>
-#include <test/jtx/Env.h>
+#include <test/unit_test/SuiteJournalSink.h>
 #include <thread>
 
 namespace ripple {
@@ -400,7 +400,8 @@ class Stoppable_test
         B b_;
         C c_;
         Stoppable_test& test_;
-        jtx::Env env_;  // Used only for its Journal
+        SuiteJournalSink sink_;
+        beast::Journal journal_;
 
     public:
         explicit Root(Stoppable_test& test)
@@ -409,14 +410,15 @@ class Stoppable_test
             , b_(*this, test)
             , c_(*this, test)
             , test_(test)
-            , env_(test)
+            , sink_("Stoppable_test", beast::severities::kFatal, test)
+            , journal_(sink_)
         {}
 
         void run()
         {
             prepare();
             start();
-            stop (env_.journal);
+            stop (journal_);
         }
 
         void onPrepare() override
@@ -445,7 +447,7 @@ class Stoppable_test
         {
             // Calling stop() a second time should have no negative
             // consequences.
-            stop (env_.journal);
+            stop (journal_);
         }
     };
 

@@ -54,27 +54,6 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-void
-SuiteSink::write(beast::severities::Severity level, std::string const& text)
-{
-    using namespace beast::severities;
-    std::string s;
-    switch(level)
-    {
-    case kTrace:    s = "TRC:"; break;
-    case kDebug:    s = "DBG:"; break;
-    case kInfo:     s = "INF:"; break;
-    case kWarning:  s = "WRN:"; break;
-    case kError:    s = "ERR:"; break;
-    default:
-    case kFatal:    s = "FTL:"; break;
-    }
-
-    // Only write the string if the level at least equals the threshold.
-    if (level >= threshold())
-        suite_.log << s << partition_ << text << std::endl;
-}
-
 //------------------------------------------------------------------------------
 
 Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
@@ -83,7 +62,8 @@ Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
 {
     using namespace beast::severities;
     // Use kFatal threshold to reduce noise from STObject.
-    setDebugLogSink (std::make_unique<SuiteSink>("Debug", kFatal, suite));
+    setDebugLogSink (std::make_unique<SuiteJournalSink>(
+        "Debug", kFatal, suite));
     auto timeKeeper_ =
         std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();

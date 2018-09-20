@@ -25,9 +25,9 @@
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/beast/xor_shift_engine.h>
 #include <ripple/beast/unit_test.h>
+#include <test/unit_test/SuiteJournalSink.h>
 #include <beast/unit_test/thread.hpp>
 #include <boost/algorithm/string.hpp>
-#include <test/jtx/Env.h>
 #include <atomic>
 #include <chrono>
 #include <iterator>
@@ -677,7 +677,9 @@ public:
             log << ss.str() << std::endl;
         }
 
-        test::jtx::Env env (*this);  // Used only for its Journal
+        using namespace beast::severities;
+        test::SuiteJournalSink sink ("Timing_test", kFatal, *this);
+        beast::Journal journal (sink);
 
         for (auto const& config_string : config_strings)
         {
@@ -694,7 +696,7 @@ public:
                     get(config, "type", std::string()) << std::right;
                 for (auto const& test : tests)
                     ss << " " << setw(w) << to_string(
-                        do_test (test.second, config, params, env.journal));
+                        do_test (test.second, config, params, journal));
                 ss << "   " << to_string(config);
                 log << ss.str() << std::endl;
             }

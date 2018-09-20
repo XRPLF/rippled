@@ -21,8 +21,8 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/beast/utility/temp_dir.h>
-#include <test/jtx/Env.h>
 #include <test/nodestore/TestBase.h>
+#include <test/unit_test/SuiteJournalSink.h>
 #include <algorithm>
 
 namespace ripple {
@@ -53,13 +53,15 @@ public:
         auto batch = createPredictableBatch (
             numObjectsToTest, rng());
 
-        test::jtx::Env env (*this);  // Used only for its Journal.
+        using namespace beast::severities;
+        test::SuiteJournalSink sink ("Backend_test", kFatal, *this);
+        beast::Journal journal (sink);
 
         {
             // Open the backend
             std::unique_ptr <Backend> backend =
                 Manager::instance().make_Backend (
-                    params, scheduler, env.journal);
+                    params, scheduler, journal);
             backend->open();
 
             // Write the batch
@@ -87,7 +89,7 @@ public:
         {
             // Re-open the backend
             std::unique_ptr <Backend> backend = Manager::instance().make_Backend (
-                params, scheduler, env.journal);
+                params, scheduler, journal);
             backend->open();
 
             // Read it back in

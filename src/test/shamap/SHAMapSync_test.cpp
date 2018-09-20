@@ -23,8 +23,8 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/xor_shift_engine.h>
-#include <test/jtx/Env.h>
 #include <test/shamap/common.h>
+#include <test/unit_test/SuiteJournalSink.h>
 
 namespace ripple {
 namespace tests {
@@ -87,17 +87,20 @@ public:
 
     void run() override
     {
+        using namespace beast::severities;
+        test::SuiteJournalSink sink ("SHAMapSync_test", kFatal, *this);
+        beast::Journal journal (sink);
+
         log << "Run, version 1\n" << std::endl;
-        run(SHAMap::version{1});
+        run(SHAMap::version{1}, journal);
 
         log << "Run, version 2\n" << std::endl;
-        run(SHAMap::version{2});
+        run(SHAMap::version{2}, journal);
     }
 
-    void run(SHAMap::version v)
+    void run(SHAMap::version v, beast::Journal const& journal)
     {
-        test::jtx::Env env (*this);  // Used only for its Journal.
-        TestFamily f(env.journal), f2(env.journal);
+        TestFamily f(journal), f2(journal);
         SHAMap source (SHAMapType::FREE, f, v);
         SHAMap destination (SHAMapType::FREE, f2, v);
 

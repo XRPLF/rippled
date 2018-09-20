@@ -21,7 +21,7 @@
 #include <ripple/consensus/Consensus.h>
 #include <ripple/consensus/ConsensusProposal.h>
 #include <test/csf.h>
-#include <test/jtx/Env.h>
+#include <test/unit_test/SuiteJournalSink.h>
 #include <utility>
 
 namespace ripple {
@@ -29,7 +29,15 @@ namespace test {
 
 class Consensus_test : public beast::unit_test::suite
 {
+    SuiteJournalSink sink_;
+    beast::Journal journal_;
+
 public:
+    Consensus_test ()
+    : sink_ ("Consensus_test", beast::severities::kFatal, *this)
+    , journal_ (sink_)
+    { }
+
     void
     testShouldCloseLedger()
     {
@@ -37,36 +45,35 @@ public:
 
         // Use default parameters
         ConsensusParms const p{};
-        test::jtx::Env env (*this);  // Used only for its Journal.
 
         // Bizarre times forcibly close
         BEAST_EXPECT(
-            shouldCloseLedger(true, 10, 10, 10, -10s, 10s, 1s, 1s, p, env.journal));
+            shouldCloseLedger(true, 10, 10, 10, -10s, 10s, 1s, 1s, p, journal_));
         BEAST_EXPECT(
-            shouldCloseLedger(true, 10, 10, 10, 100h, 10s, 1s, 1s, p, env.journal));
+            shouldCloseLedger(true, 10, 10, 10, 100h, 10s, 1s, 1s, p, journal_));
         BEAST_EXPECT(
-            shouldCloseLedger(true, 10, 10, 10, 10s, 100h, 1s, 1s, p, env.journal));
+            shouldCloseLedger(true, 10, 10, 10, 10s, 100h, 1s, 1s, p, journal_));
 
         // Rest of network has closed
         BEAST_EXPECT(
-            shouldCloseLedger(true, 10, 3, 5, 10s, 10s, 10s, 10s, p, env.journal));
+            shouldCloseLedger(true, 10, 3, 5, 10s, 10s, 10s, 10s, p, journal_));
 
         // No transactions means wait until end of internval
         BEAST_EXPECT(
-            !shouldCloseLedger(false, 10, 0, 0, 1s, 1s, 1s, 10s, p, env.journal));
+            !shouldCloseLedger(false, 10, 0, 0, 1s, 1s, 1s, 10s, p, journal_));
         BEAST_EXPECT(
-            shouldCloseLedger(false, 10, 0, 0, 1s, 10s, 1s, 10s, p, env.journal));
+            shouldCloseLedger(false, 10, 0, 0, 1s, 10s, 1s, 10s, p, journal_));
 
         // Enforce minimum ledger open time
         BEAST_EXPECT(
-            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 1s, 10s, p, env.journal));
+            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 1s, 10s, p, journal_));
 
         // Don't go too much faster than last time
         BEAST_EXPECT(
-            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 3s, 10s, p, env.journal));
+            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 3s, 10s, p, journal_));
 
         BEAST_EXPECT(
-            shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 10s, 10s, p, env.journal));
+            shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 10s, 10s, p, journal_));
     }
 
     void
@@ -76,39 +83,38 @@ public:
 
         // Use default parameterss
         ConsensusParms const p{};
-        test::jtx::Env env (*this);  // Used only for its Journal.
 
         // Not enough time has elapsed
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(10, 2, 2, 0, 3s, 2s, p, true, env.journal));
+            checkConsensus(10, 2, 2, 0, 3s, 2s, p, true, journal_));
 
         // If not enough peers have propsed, ensure
         // more time for proposals
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(10, 2, 2, 0, 3s, 4s, p, true, env.journal));
+            checkConsensus(10, 2, 2, 0, 3s, 4s, p, true, journal_));
 
         // Enough time has elapsed and we all agree
         BEAST_EXPECT(
             ConsensusState::Yes ==
-            checkConsensus(10, 2, 2, 0, 3s, 10s, p, true, env.journal));
+            checkConsensus(10, 2, 2, 0, 3s, 10s, p, true, journal_));
 
         // Enough time has elapsed and we don't yet agree
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(10, 2, 1, 0, 3s, 10s, p, true, env.journal));
+            checkConsensus(10, 2, 1, 0, 3s, 10s, p, true, journal_));
 
         // Our peers have moved on
         // Enough time has elapsed and we all agree
         BEAST_EXPECT(
             ConsensusState::MovedOn ==
-            checkConsensus(10, 2, 1, 8, 3s, 10s, p, true, env.journal));
+            checkConsensus(10, 2, 1, 8, 3s, 10s, p, true, journal_));
 
         // No peers makes it easy to agree
         BEAST_EXPECT(
             ConsensusState::Yes ==
-            checkConsensus(0, 0, 0, 0, 3s, 10s, p, true, env.journal));
+            checkConsensus(0, 0, 0, 0, 3s, 10s, p, true, journal_));
     }
 
     void

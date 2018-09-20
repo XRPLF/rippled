@@ -29,7 +29,7 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/TxFlags.h>
-#include <test/jtx/Env.h>
+#include <test/unit_test/SuiteJournalSink.h>
 
 namespace ripple
 {
@@ -90,7 +90,8 @@ private:
 
     Section const emptySection;
 
-    test::jtx::Env env;  // Used only for its Journal.
+    test::SuiteJournalSink sink;
+    beast::Journal journal;
 
 public:
     AmendmentTable_test ()
@@ -98,7 +99,8 @@ public:
         , m_set2 (createSet (2, 12))
         , m_set3 (createSet (3, 12))
         , m_set4 (createSet (4, 12))
-        , env (*this)
+        , sink ("AmendmentTable_test", beast::severities::kFatal, *this)
+        , journal (sink)
     {
     }
 
@@ -115,7 +117,7 @@ public:
             supported,
             enabled,
             vetoed,
-            env.journal);
+            journal);
     }
 
     std::unique_ptr<AmendmentTable>

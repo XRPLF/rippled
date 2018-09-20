@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/basics/chrono.h>
 #include <ripple/peerfinder/impl/Livecache.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/clock/manual_clock.h>
 #include <test/beast/IPEndpointCommon.h>
-#include <test/jtx/Env.h>
+#include <test/unit_test/SuiteJournalSink.h>
 #include <boost/algorithm/string.hpp>
 
 namespace ripple {
@@ -36,12 +36,14 @@ bool operator== (Endpoint const& a, Endpoint const& b)
 
 class Livecache_test : public beast::unit_test::suite
 {
-public:
-    TestStopwatch m_clock;
-    test::jtx::Env env_;  // Used only for its Journal.
+    TestStopwatch clock_;
+    test::SuiteJournalSink sink_;
+    beast::Journal journal_;
 
+public:
     Livecache_test()
-    : env_ (*this)
+    : sink_ ("Livecache_test", beast::severities::kFatal, *this)
+    , journal_ (sink_)
     { }
 
     // Add the address as an endpoint
@@ -55,7 +57,7 @@ public:
     void testBasicInsert ()
     {
         testcase ("Basic Insert");
-        Livecache <> c (m_clock, env_.journal);
+        Livecache <> c (clock_, journal_);
         BEAST_EXPECT(c.empty());
 
         for (auto i = 0; i < 10; ++i)
@@ -74,7 +76,7 @@ public:
     void testInsertUpdate ()
     {
         testcase ("Insert/Update");
-        Livecache <> c (m_clock, env_.journal);
+        Livecache <> c (clock_, journal_);
 
         auto ep1 = Endpoint {beast::IP::randomEP(), 2};
         c.insert(ep1);
@@ -107,7 +109,7 @@ public:
     {
         testcase ("Expire");
         using namespace std::chrono_literals;
-        Livecache <> c (m_clock, env_.journal);
+        Livecache <> c (clock_, journal_);
 
         auto ep1 = Endpoint {beast::IP::randomEP(), 1};
         c.insert(ep1);
@@ -116,11 +118,11 @@ public:
         BEAST_EXPECT(c.size() == 1);
         // verify that advancing to 1 sec before expiration
         // leaves our entry intact
-        m_clock.advance(Tuning::liveCacheSecondsToLive - 1s);
+        clock_.advance(Tuning::liveCacheSecondsToLive - 1s);
         c.expire();
         BEAST_EXPECT(c.size() == 1);
         // now advance to the point of expiration
-        m_clock.advance(1s);
+        clock_.advance(1s);
         c.expire();
         BEAST_EXPECT(c.empty());
     }
@@ -129,7 +131,7 @@ public:
     {
         testcase ("Histogram");
         constexpr auto num_eps = 40;
-        Livecache <> c (m_clock, env_.journal);
+        Livecache <> c (clock_, journal_);
         for (auto i = 0; i < num_eps; ++i)
             add(
                 beast::IP::randomEP(true),
@@ -154,7 +156,7 @@ public:
     void testShuffle ()
     {
         testcase ("Shuffle");
-        Livecache <> c (m_clock, env_.journal);
+        Livecache <> c (clock_, journal_);
         for (auto i = 0; i < 100; ++i)
             add(
                 beast::IP::randomEP(true),

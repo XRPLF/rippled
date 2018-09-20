@@ -22,8 +22,8 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/Journal.h>
-#include <test/jtx/Env.h>
 #include <test/shamap/common.h>
+#include <test/unit_test/SuiteJournalSink.h>
 
 namespace ripple {
 namespace tests {
@@ -120,21 +120,24 @@ public:
 
     void run () override
     {
-        run (true,  SHAMap::version{1});
-        run (false, SHAMap::version{1});
-        run (true,  SHAMap::version{2});
-        run (false, SHAMap::version{2});
+        using namespace beast::severities;
+        test::SuiteJournalSink sink ("SHAMap_test", kFatal, *this);
+        beast::Journal journal (sink);
+
+        run (true,  SHAMap::version{1}, journal);
+        run (false, SHAMap::version{1}, journal);
+        run (true,  SHAMap::version{2}, journal);
+        run (false, SHAMap::version{2}, journal);
     }
 
-    void run (bool backed, SHAMap::version v)
+    void run (bool backed, SHAMap::version v, beast::Journal const& journal)
     {
         if (backed)
             testcase ("add/traverse backed");
         else
             testcase ("add/traverse unbacked");
 
-        test::jtx::Env env (*this);  // Used only for its Journal.
-        tests::TestFamily f(env.journal);
+        tests::TestFamily f(journal);
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
         uint256 h1, h2, h3, h4, h5;
@@ -302,7 +305,7 @@ public:
             keys[6].SetHex ("b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
             keys[7].SetHex ("292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
 
-            tests::TestFamily tf{env.journal};
+            tests::TestFamily tf{journal};
             SHAMap map{SHAMapType::FREE, tf, v};
             if (! backed)
                 map.setUnbacked ();
