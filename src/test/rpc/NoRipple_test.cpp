@@ -56,7 +56,8 @@ public:
             env.close();
 
             // Check no-ripple flag on sender 'gateway'
-            auto lines = env.rpc("json", "account_lines", to_string(account_gw));
+            Json::Value lines {env.rpc(
+                "json", "account_lines", to_string(account_gw))};
             auto const& gline0 = lines[jss::result][jss::lines][0u];
             BEAST_EXPECT(gline0[jss::no_ripple].asBool() == SetOrClear);
 
@@ -99,8 +100,10 @@ public:
             TER const terNeg {tweakedFeatures[fix1578] ?
                 TER {tecNO_PERMISSION} : TER {tesSUCCESS}};
 
-            env(trust(alice, bob["USD"](100), bob,   tfSetNoRipple), ter(terNeg));
-            env(trust(bob, carol["USD"](100), carol, tfSetNoRipple), ter(terNeg));
+            env(trust(
+                alice, bob["USD"](100), bob,   tfSetNoRipple), ter(terNeg));
+            env(trust(
+                bob, carol["USD"](100), carol, tfSetNoRipple), ter(terNeg));
             env.close();
 
             Json::Value params;
@@ -189,7 +192,8 @@ public:
             return dest_amt;
         }();
 
-        auto const resp = env.rpc("json", "ripple_path_find", to_string(params));
+        Json::Value const resp {
+            env.rpc("json", "ripple_path_find", to_string(params))};
         BEAST_EXPECT(resp[jss::result][jss::alternatives].size() == 0);
 
         env(pay(alice, carol, bob["USD"](50)), ter(tecPATH_DRY));
