@@ -103,20 +103,7 @@ void Stoppable::startRecursive ()
 
 void Stoppable::stopAsyncRecursive (beast::Journal j)
 {
-    using namespace std::chrono;
-    auto const start = high_resolution_clock::now();
     onStop ();
-    auto const ms = duration_cast<milliseconds>(
-        high_resolution_clock::now() - start);
-
-#ifdef NDEBUG
-    using namespace std::chrono_literals;
-    if (ms >= 10ms)
-        if (auto stream = j.fatal())
-            stream << m_name << "::onStop took " << ms.count() << "ms";
-#else
-    (void)ms;
-#endif
 
     for (Children::const_iterator iter (m_children.cbegin ());
         iter != m_children.cend(); ++iter)
