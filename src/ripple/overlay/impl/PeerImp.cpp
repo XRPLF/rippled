@@ -104,20 +104,6 @@ PeerImp::run()
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind (
             &PeerImp::run, shared_from_this()));
-    {
-        auto s = getVersion();
-        if (boost::starts_with(s, "rippled-"))
-        {
-            s.erase(s.begin(), s.begin() + 8);
-            beast::SemanticVersion v;
-            if (v.parse(s))
-            {
-                beast::SemanticVersion av;
-                av.parse("0.28.1-b7");
-                hopsAware_ = v >= av;
-            }
-        }
-    }
     if (m_inbound)
     {
         doAccept();

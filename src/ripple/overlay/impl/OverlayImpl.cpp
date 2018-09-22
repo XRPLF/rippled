@@ -1088,12 +1088,10 @@ OverlayImpl::send (protocol::TMProposeSet& m)
 {
     if (setup_.expire)
         m.set_hops(0);
-    auto const sm = std::make_shared<Message>(
-        m, protocol::mtPROPOSE_LEDGER);
+    auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
     for_each([&](std::shared_ptr<PeerImp>&& p)
     {
-        if (! m.has_hops() || p->hopsAware())
-            p->send(sm);
+        p->send(sm);
     });
 }
 void
@@ -1101,12 +1099,10 @@ OverlayImpl::send (protocol::TMValidation& m)
 {
     if (setup_.expire)
         m.set_hops(0);
-    auto const sm = std::make_shared<Message>(
-        m, protocol::mtVALIDATION);
+    auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
     for_each([&](std::shared_ptr<PeerImp>&& p)
     {
-        if (! m.has_hops() || p->hopsAware())
-            p->send(sm);
+        p->send(sm);
     });
 
     SerialIter sit (m.validation().data(), m.validation().size());
@@ -1120,43 +1116,35 @@ OverlayImpl::send (protocol::TMValidation& m)
 }
 
 void
-OverlayImpl::relay (protocol::TMProposeSet& m,
-    uint256 const& uid)
+OverlayImpl::relay (protocol::TMProposeSet& m, uint256 const& uid)
 {
     if (m.has_hops() && m.hops() >= maxTTL)
         return;
-    auto const toSkip = app_.getHashRouter().shouldRelay(uid);
-    if (!toSkip)
-        return;
-    auto const sm = std::make_shared<Message>(
-        m, protocol::mtPROPOSE_LEDGER);
-    for_each([&](std::shared_ptr<PeerImp>&& p)
+    if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
-        if (toSkip->find(p->id()) != toSkip->end())
-            return;
-        if (! m.has_hops() || p->hopsAware())
-            p->send(sm);
-    });
+        auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
+        for_each([&](std::shared_ptr<PeerImp>&& p)
+        {
+            if (toSkip->find(p->id()) == toSkip->end())
+                p->send(sm);
+        });
+    }
 }
 
 void
-OverlayImpl::relay (protocol::TMValidation& m,
-    uint256 const& uid)
+OverlayImpl::relay (protocol::TMValidation& m, uint256 const& uid)
 {
     if (m.has_hops() && m.hops() >= maxTTL)
         return;
-    auto const toSkip = app_.getHashRouter().shouldRelay(uid);
-    if (! toSkip)
-        return;
-    auto const sm = std::make_shared<Message>(
-        m, protocol::mtVALIDATION);
-    for_each([&](std::shared_ptr<PeerImp>&& p)
+    if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
-        if (toSkip->find(p->id()) != toSkip->end())
-            return;
-        if (! m.has_hops() || p->hopsAware())
-            p->send(sm);
-    });
+        auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
+        for_each([&](std::shared_ptr<PeerImp>&& p)
+        {
+            if (toSkip->find(p->id()) == toSkip->end())
+                p->send(sm);
+        });
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1248,6 +1236,7 @@ Overlay::Setup
 setup_Overlay (BasicConfig const& config)
 {
     Overlay::Setup setup;
+
     {
         auto const& section = config.section("overlay");
         setup.context = make_SSLContext("");

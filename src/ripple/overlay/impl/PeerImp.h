@@ -160,7 +160,6 @@ private:
     int large_sendq_ = 0;
     int no_ping_ = 0;
     std::unique_ptr <LoadEvent> load_event_;
-    bool hopsAware_ = false;
 
     std::mutex mutable shardInfoMutex_;
     hash_map<PublicKey, ShardInfo> shardInfo_;
@@ -253,12 +252,6 @@ public:
     cluster() const override
     {
         return slot_->cluster();
-    }
-
-    bool
-    hopsAware() const
-    {
-        return hopsAware_;
     }
 
     void
