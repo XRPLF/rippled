@@ -449,12 +449,12 @@ CreateOffer::bridged_cross (
             if (dry_offer (view, offers_leg1.tip ()))
             {
                 leg1_consumed = true;
-                have_bridge = (have_bridge && offers_leg1.step ());
+                have_bridge = (offers_leg1.step () && have_bridge);
             }
             if (dry_offer (view, offers_leg2.tip ()))
             {
                 leg2_consumed = true;
-                have_bridge = (have_bridge && offers_leg2.step ());
+                have_bridge = (offers_leg2.step () && have_bridge);
             }
         }
 
