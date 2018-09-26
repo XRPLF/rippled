@@ -446,15 +446,32 @@ CreateOffer::bridged_cross (
 
             JLOG (j_.debug()) << "Bridge Result: " << transToken (cross_result);
 
-            if (dry_offer (view, offers_leg1.tip ()))
+            if (view.rules().enabled (fixTakerDryOfferRemoval))
             {
-                leg1_consumed = true;
-                have_bridge = (have_bridge && offers_leg1.step ());
+                // have_bridge can be true the next time 'round only if
+                // neither of the OfferStreams are dry.
+                leg1_consumed = dry_offer (view, offers_leg1.tip());
+                if (leg1_consumed)
+                    have_bridge &= offers_leg1.step();
+
+                leg2_consumed = dry_offer (view, offers_leg2.tip());
+                if (leg2_consumed)
+                    have_bridge &= offers_leg2.step();
             }
-            if (dry_offer (view, offers_leg2.tip ()))
+            else
             {
-                leg2_consumed = true;
-                have_bridge = (have_bridge && offers_leg2.step ());
+                // This old behavior may leave an empty offer in the book for
+                // the second leg.
+                if (dry_offer (view, offers_leg1.tip ()))
+                {
+                    leg1_consumed = true;
+                    have_bridge = (have_bridge && offers_leg1.step ());
+                }
+                if (dry_offer (view, offers_leg2.tip ()))
+                {
+                    leg2_consumed = true;
+                    have_bridge = (have_bridge && offers_leg2.step ());
+                }
             }
         }
 

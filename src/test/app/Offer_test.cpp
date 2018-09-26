@@ -1154,15 +1154,19 @@ public:
         BEAST_EXPECT(jrr[jss::offers].size() == 0);
 
         // NOTE :
-        // at this point, all offers are expected to be consumed.
-        // alas, they are not - because of a bug in the Taker auto-bridging
-        // implementation (to be replaced in the not-so-distant future).
-        // the current implementation (incorrect) leaves an empty offer in the
-        // second leg of the bridge. validate both the old and the new
-        // behavior.
+        // At this point, all offers are expected to be consumed.
+        // Alas, they are not - because of a bug in the Taker auto-bridging
+        // implementation which is addressed by fixTakerDryOfferRemoval.
+        // The pre-fixTakerDryOfferRemoval implementation (incorrect) leaves
+        // an empty offer in the second leg of the bridge. Validate both the
+        // old and the new behavior.
         {
             auto acctOffers = offersOnAccount (env, account_to_test);
-            BEAST_EXPECT(acctOffers.size() == (features[featureFlowCross] ? 0 : 1));
+            bool const noStaleOffers {
+                features[featureFlowCross] ||
+                features[fixTakerDryOfferRemoval]};
+
+            BEAST_EXPECT(acctOffers.size() == (noStaleOffers ? 0 : 1));
             for (auto const& offerPtr : acctOffers)
             {
                 auto const& offer = *offerPtr;
@@ -1829,6 +1833,81 @@ public:
             gw2["EUR"] (20).value ().getJson (0));
         BEAST_EXPECT(
             jro[jss::node][jss::TakerPays] == XRP (200).value ().getText ());
+    }
+
+    void
+    testBridgedSecondLegDry(FeatureBitset features)
+    {
+        // At least with Taker bridging, a sensitivity was identified if the
+        // second leg goes dry before the first one.  This test exercises that
+        // case.
+        testcase ("Auto Bridged Second Leg Dry");
+
+        using namespace jtx;
+        Env env(*this, features);
+        auto const closeTime =
+            fix1449Time() +
+                100 * env.closed()->info().closeTimeResolution;
+        env.close (closeTime);
+
+        Account const alice {"alice"};
+        Account const bob {"bob"};
+        Account const carol {"carol"};
+        Account const gw {"gateway"};
+        auto const USD = gw["USD"];
+        auto const EUR = gw["EUR"];
+
+        env.fund(XRP(100000000), alice, bob, carol, gw);
+
+        env.trust(USD(10), alice);
+        env.close();
+        env(pay(gw, alice, USD(10)));
+        env.trust(USD(10), carol);
+        env.close();
+        env(pay(gw, carol, USD(3)));
+
+        env (offer (alice, EUR(2), XRP(1)));
+        env (offer (alice, EUR(2), XRP(1)));
+
+        env (offer (alice, XRP(1), USD(4)));
+        env (offer (carol, XRP(1), USD(3)));
+        env.close();
+
+        // Bob offers to buy 10 USD for 10 EUR.
+        //  1. He spends 2 EUR taking Alice's auto-bridged offers and
+        //     gets 4 USD for that.
+        //  2. He spends another 2 EUR taking Alice's last EUR->XRP offer and
+        //     Carol's XRP-USD offer.  He gets 3 USD for that.
+        // The key for this test is that Alice's XRP->USD leg goes dry before
+        // Alice's EUR->XRP.  The XRP->USD leg is the second leg which showed
+        // some sensitivity.
+        env.trust(EUR(10), bob);
+        env.close();
+        env(pay(gw, bob, EUR(10)));
+        env.close();
+        env(offer(bob, USD(10), EUR(10)));
+        env.close();
+
+        env.require (balance(bob, USD(7)));
+        env.require (balance(bob, EUR(6)));
+        env.require (offers (bob, 1));
+        env.require (owners (bob, 3));
+
+        env.require (balance(alice, USD(6)));
+        env.require (balance(alice, EUR(4)));
+        env.require (offers(alice, 0));
+        env.require (owners(alice, 2));
+
+        env.require (balance(carol, USD(0)));
+        env.require (balance(carol, EUR(none)));
+        // If neither featureFlowCross nor fixTakerDryOfferRemoval are defined
+        // then carol's offer will be left on the books, but with zero value.
+        int const emptyOfferCount {
+            features[featureFlowCross] ||
+            features[fixTakerDryOfferRemoval] ? 0 : 1};
+
+        env.require (offers(carol, 0 + emptyOfferCount));
+        env.require (owners(carol, 1 + emptyOfferCount));
     }
 
     void
@@ -4607,6 +4686,7 @@ public:
         testCrossCurrencyStartXRP(features);
         testCrossCurrencyEndXRP(features);
         testCrossCurrencyBridged(features);
+        testBridgedSecondLegDry(features);
         testOfferFeesConsumeFunds(features);
         testOfferCreateThenCross(features);
         testSellFlagBasic(features);
@@ -4640,20 +4720,15 @@ public:
     void run () override
     {
         using namespace jtx;
-        auto const all           = supported_amendments();
-        FeatureBitset const flow{featureFlow};
+        FeatureBitset const all{supported_amendments()};
         FeatureBitset const f1373{fix1373};
         FeatureBitset const flowCross{featureFlowCross};
-        (void) flow;
+        FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
 
-        // The first three test variants below passed at one time in the past
-        // (and should still pass) but are commented out to conserve test time.
-//      testAll(all - flow - f1373 - flowCross);
-//      testAll(all - flow - f1373            );
-//      testAll(all        - f1373 - flowCross);
-        testAll(all        - f1373            );
-        testAll(all                - flowCross);
-        testAll(all                           );
+        testAll(all - f1373             - takerDryOffer);
+        testAll(all         - flowCross - takerDryOffer);
+        testAll(all         - flowCross                );
+        testAll(all                                    );
     }
 };
 
@@ -4662,12 +4737,13 @@ class Offer_manual_test : public Offer_test
     void run() override
     {
         using namespace jtx;
-        auto const all = supported_amendments();
+        FeatureBitset const all{supported_amendments()};
         FeatureBitset const feeEscalation{featureFeeEscalation};
         FeatureBitset const flow{featureFlow};
         FeatureBitset const f1373{fix1373};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
+        FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
 
         testAll(all -feeEscalation - flow - f1373 - flowCross - f1513);
         testAll(all                - flow - f1373 - flowCross - f1513);
@@ -4687,6 +4763,10 @@ class Offer_manual_test : public Offer_test
         testAll(all -feeEscalation                            - f1513);
         testAll(all                                           - f1513);
         testAll(all                                                  );
+
+        testAll(all                - flow - f1373 - flowCross - takerDryOffer);
+        testAll(all                - flow - f1373             - takerDryOffer);
+        testAll(all                       - f1373 - flowCross - takerDryOffer);
     }
 };
 
