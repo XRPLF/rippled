@@ -88,8 +88,7 @@ public:
     void run() override
     {
         using namespace beast::severities;
-        test::SuiteJournalSink sink ("SHAMapSync_test", kFatal, *this);
-        beast::Journal journal (sink);
+        test::SuiteJournal journal ("SHAMapSync_test", *this);
 
         log << "Run, version 1\n" << std::endl;
         run(SHAMap::version{1}, journal);

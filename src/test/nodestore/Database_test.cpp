@@ -28,13 +28,11 @@ namespace NodeStore {
 
 class Database_test : public TestBase
 {
-    test::SuiteJournalSink sink_;
-    beast::Journal journal_;
+    test::SuiteJournal journal_;
 
 public:
     Database_test ()
-    : sink_ ("Database_test", beast::severities::kFatal, *this)
-    , journal_ (sink_)
+    : journal_ ("Database_test", *this)
     { }
 
     void testImport (std::string const& destBackendType,

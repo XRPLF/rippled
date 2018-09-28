@@ -90,8 +90,7 @@ private:
 
     Section const emptySection;
 
-    test::SuiteJournalSink sink;
-    beast::Journal journal;
+    test::SuiteJournal journal;
 
 public:
     AmendmentTable_test ()
@@ -99,8 +98,7 @@ public:
         , m_set2 (createSet (2, 12))
         , m_set3 (createSet (3, 12))
         , m_set4 (createSet (4, 12))
-        , sink ("AmendmentTable_test", beast::severities::kFatal, *this)
-        , journal (sink)
+        , journal ("AmendmentTable_test", *this)
     {
     }
 

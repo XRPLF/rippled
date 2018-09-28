@@ -30,13 +30,11 @@ namespace PeerFinder {
 
 class PeerFinder_test : public beast::unit_test::suite
 {
-    test::SuiteJournalSink sink_;
-    beast::Journal journal_;
+    test::SuiteJournal journal_;
 
 public:
     PeerFinder_test()
-    : sink_ ("PeerFinder_test", beast::severities::kFatal, *this)
-    , journal_ (sink_)
+    : journal_ ("PeerFinder_test", *this)
     { }
 
     struct TestStore : Store

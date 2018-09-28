@@ -678,8 +678,7 @@ public:
         }
 
         using namespace beast::severities;
-        test::SuiteJournalSink sink ("Timing_test", kFatal, *this);
-        beast::Journal journal (sink);
+        test::SuiteJournal journal ("Timing_test", *this);
 
         for (auto const& config_string : config_strings)
         {

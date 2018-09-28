@@ -29,13 +29,11 @@ namespace tests {
 
 class cluster_test : public ripple::TestSuite
 {
-    test::SuiteJournalSink sink_;
-    beast::Journal journal_;
+    test::SuiteJournal journal_;
 
 public:
     cluster_test ()
-    : sink_ ("cluster_test", beast::severities::kFatal, *this)
-    , journal_ (sink_)
+    : journal_ ("cluster_test", *this)
     { }
 
     std::unique_ptr<Cluster>

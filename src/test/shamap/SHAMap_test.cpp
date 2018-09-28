@@ -121,8 +121,7 @@ public:
     void run () override
     {
         using namespace beast::severities;
-        test::SuiteJournalSink sink ("SHAMap_test", kFatal, *this);
-        beast::Journal journal (sink);
+        test::SuiteJournal journal ("SHAMap_test", *this);
 
         run (true,  SHAMap::version{1}, journal);
         run (false, SHAMap::version{1}, journal);

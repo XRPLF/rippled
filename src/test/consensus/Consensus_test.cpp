@@ -29,13 +29,11 @@ namespace test {
 
 class Consensus_test : public beast::unit_test::suite
 {
-    SuiteJournalSink sink_;
-    beast::Journal journal_;
+    SuiteJournal journal_;
 
 public:
     Consensus_test ()
-    : sink_ ("Consensus_test", beast::severities::kFatal, *this)
-    , journal_ (sink_)
+    : journal_ ("Consensus_test", *this)
     { }
 
     void

@@ -75,9 +75,7 @@ public:
     void
     run() override
     {
-        SuiteJournalSink sink (
-            "ValidatorKeys_test", beast::severities::kFatal, *this);
-        beast::Journal journal (sink);
+        SuiteJournal journal ("ValidatorKeys_test", *this);
 
         // Keys/ID when using [validation_seed]
         SecretKey const seedSecretKey =

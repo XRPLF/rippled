@@ -400,8 +400,7 @@ class Stoppable_test
         B b_;
         C c_;
         Stoppable_test& test_;
-        SuiteJournalSink sink_;
-        beast::Journal journal_;
+        SuiteJournal journal_;
 
     public:
         explicit Root(Stoppable_test& test)
@@ -410,8 +409,7 @@ class Stoppable_test
             , b_(*this, test)
             , c_(*this, test)
             , test_(test)
-            , sink_("Stoppable_test", beast::severities::kFatal, test)
-            , journal_(sink_)
+            , journal_("Stoppable_test", test)
         {}
 
         void run()

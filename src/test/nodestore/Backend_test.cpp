@@ -54,8 +54,7 @@ public:
             numObjectsToTest, rng());
 
         using namespace beast::severities;
-        test::SuiteJournalSink sink ("Backend_test", kFatal, *this);
-        beast::Journal journal (sink);
+        test::SuiteJournal journal ("Backend_test", *this);
 
         {
             // Open the backend

@@ -248,8 +248,7 @@ public:
     void run() override
     {
         using namespace beast::severities;
-        test::SuiteJournalSink sink ("ResourceManager_test", kFatal, *this);
-        beast::Journal journal (sink);
+        test::SuiteJournal journal ("ResourceManager_test", *this);
 
         testDrop (journal);
         testCharges (journal);

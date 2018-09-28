@@ -118,8 +118,7 @@ public:
     void run () override
     {
         using namespace beast::severities;
-        test::SuiteJournalSink sink ("FetchPack_test", kFatal, *this);
-        beast::Journal journal (sink);
+        test::SuiteJournal journal ("FetchPack_test", *this);
 
         TestFamily f(journal);
         std::shared_ptr <Table> t1 (std::make_shared <Table> (

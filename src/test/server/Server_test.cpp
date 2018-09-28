@@ -347,8 +347,7 @@ public:
         };
 
         using namespace beast::severities;
-        SuiteJournalSink sink ("Server_test", kFatal, *this);
-        beast::Journal journal (sink);
+        SuiteJournal journal ("Server_test", *this);
 
         NullHandler h;
         for(int i = 0; i < 1000; ++i)

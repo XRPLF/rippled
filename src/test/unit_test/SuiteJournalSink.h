@@ -78,6 +78,22 @@ SuiteJournalSink::write (
         suite_.log << s << partition_ << text << std::endl;
 }
 
+class SuiteJournal
+{
+    SuiteJournalSink sink_;
+    beast::Journal journal_;
+
+public:
+    SuiteJournal(std::string const& partition,
+            beast::unit_test::suite& suite,
+            beast::severities::Severity threshold = beast::severities::kFatal)
+        : sink_ (partition, threshold, suite)
+        , journal_ (sink_)
+    {
+    }
+    operator beast::Journal&() { return journal_; }
+};
+
 } // test
 } // ripple
 

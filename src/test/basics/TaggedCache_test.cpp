@@ -42,7 +42,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace beast::severities;
-        test::SuiteJournalSink sink ("TaggedCache_test", kFatal, *this);
+        test::SuiteJournal journal ("TaggedCache_test", *this);
 
         TestStopwatch clock;
         clock.set (0);
@@ -51,7 +51,7 @@ public:
         using Value = std::string;
         using Cache = TaggedCache <Key, Value>;
 
-        Cache c ("test", 1, 1s, clock, beast::Journal (sink));
+        Cache c ("test", 1, 1s, clock, journal);
 
         // Insert an item, retrieve it, and age it so it gets purged.
         {

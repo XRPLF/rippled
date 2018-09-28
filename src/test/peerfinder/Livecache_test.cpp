@@ -37,13 +37,11 @@ bool operator== (Endpoint const& a, Endpoint const& b)
 class Livecache_test : public beast::unit_test::suite
 {
     TestStopwatch clock_;
-    test::SuiteJournalSink sink_;
-    beast::Journal journal_;
+    test::SuiteJournal journal_;
 
 public:
     Livecache_test()
-    : sink_ ("Livecache_test", beast::severities::kFatal, *this)
-    , journal_ (sink_)
+    : journal_ ("Livecache_test", *this)
     { }
 
     // Add the address as an endpoint
