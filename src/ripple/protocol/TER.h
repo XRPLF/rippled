@@ -263,6 +263,8 @@ enum TECcodes : TERUnderlyingType
     tecINVARIANT_FAILED         = 147,
     tecEXPIRED                  = 148,
     tecDUPLICATE                = 149,
+    tecBAD_QUORUM               = 150,
+    tecBAD_SIGNER_LIST          = 151
 };
 
 //------------------------------------------------------------------------------

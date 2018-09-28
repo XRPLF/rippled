@@ -81,37 +81,209 @@ SetSignerList::preflight (PreflightContext const& ctx)
     if (!isTesSuccess (ret))
         return ret;
 
-    auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
-    if (std::get<0>(result) != tesSUCCESS)
-        return std::get<0>(result);
-
-    if (std::get<3>(result) == unknown)
+    if (ctx.rules.enabled(featureNoGoodName))
     {
-        // Neither a set nor a destroy.  Malformed.
-        JLOG(ctx.j.trace()) <<
-            "Malformed transaction: Invalid signer set list format.";
-        return temMALFORMED;
-    }
+        auto const quorum = ctx.tx[sfSignerQuorum];
 
-    if (std::get<3>(result) == set)
-    {
-        // Validate our settings.
-        auto const account = ctx.tx.getAccountID(sfAccount);
-        NotTEC const ter =
-            validateQuorumAndSignerEntries(std::get<1>(result),
-                std::get<2>(result), account, ctx.j);
-        if (ter != tesSUCCESS)
+        // If quorum is non-zero we are adding a signer list so one
+        // must be specified; otherwise we are removing a signer list
+        // so no singer list must be present.
+        if (quorum != 0)
         {
-            return ter;
+            if (!ctx.tx.isFieldPresent(sfSignerEntries))
+                return temMALFORMED;
+
+            auto const size = ctx.tx.getFieldArray(sfSignerEntries).size();
+
+            if (size < STTx::minMultiSigners || size > STTx::maxMultiSigners)
+                return temMALFORMED;
+        }
+
+        if (quorum == 0 && ctx.tx.isFieldPresent(sfSignerEntries))
+            return temMALFORMED;
+    }
+    else
+    {
+        auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
+        if (std::get<0>(result) != tesSUCCESS)
+            return std::get<0>(result);
+
+        if (std::get<3>(result) == unknown)
+        {
+            // Neither a set nor a destroy.  Malformed.
+            JLOG(ctx.j.trace()) <<
+                                "Malformed transaction: Invalid signer set list format.";
+            return temMALFORMED;
+        }
+
+        if (std::get<3>(result) == set)
+        {
+            // Validate our settings.
+            auto const account = ctx.tx.getAccountID(sfAccount);
+            NotTEC const ter =
+                validateQuorumAndSignerEntries(std::get<1>(result),
+                                               std::get<2>(result), account, ctx.j);
+            if (ter != tesSUCCESS)
+            {
+                return ter;
+            }
         }
     }
 
     return preflight2 (ctx);
 }
 
+bool
+SetSignerList::extract(STArray const& entries,
+    std::vector<std::pair<AccountID, std::uint16_t>>& result)
+{
+    if (entries.size() != 0)
+    {
+        result.clear();
+        result.reserve(entries.size());
+
+        for (auto const& e : entries)
+        {
+            if (e.getFName() != sfSignerEntry)
+                return false;
+            result.emplace_back(e.getAccountID(sfAccount), e.getFieldU16(sfSignerWeight));
+        }
+    }
+
+    // We rely on the default std::pair comparator here, so duplicate entries
+    // will be sorted by weight.
+    std::sort(result.begin(), result.end());
+
+    return true;
+}
+
 TER
 SetSignerList::doApply ()
 {
+    if (ctx_.view().rules().enabled(featureNoGoodName))
+    {
+        // If the list is removed check that the account will still be able
+        // to sign transactions:
+        if (quorum_ == 0)
+        {
+            auto acct = view().peek(keylet::account(account_));
+
+            // Destroying the signer list is only allowed if either the master
+            // key is enabled or there is a regular key.
+            if (acct->isFlag(lsfDisableMaster) && !acct->isFieldPresent(sfRegularKey))
+                return tecNO_ALTERNATIVE_KEY;
+        }
+
+        auto const slk = keylet::signers (account_);
+        auto const odk = keylet::ownerDir(account_);
+
+        auto const root = view().peek(keylet::account(account_));
+
+        // At this pint we want to remove the existing signer list if one is
+        // present:
+        if (auto sl = view().peek(slk))
+        {
+            int ocdelta = 1;
+
+            if ((sl->getFlags() & lsfOneOwnerCount) == 0)
+                ocdelta = legacyOwnerCountDelta(
+                    sl->getFieldArray(sfSignerEntries).size());
+
+            // Remove the node from the account directory.
+            auto const hint = (*sl)[sfOwnerNode];
+
+            if (!ctx_.view().dirRemove(odk, hint, slk, false))
+                return tefBAD_LEDGER;
+
+            adjustOwnerCount(view(), root, -ocdelta, {});
+            ctx_.view().erase(sl);
+        }
+
+        // If we are adding a new list do it now:
+        if (quorum_ != 0)
+        {
+            std::vector<std::pair<AccountID, std::uint16_t>> signers;
+
+            if (!extract(ctx_.tx.getFieldArray(sfSignerEntries), signers))
+                return tecBAD_SIGNER_LIST;
+
+            if (signers.empty())
+                return tecBAD_SIGNER_LIST;
+
+            // Ensure that no account appears twice in the list:
+            auto const dup = std::adjacent_find(signers.begin(), signers.end(),
+                [](auto const& a, auto const& b) { return (a.first == b.first); });
+
+            if (dup != signers.end())
+                return tecBAD_SIGNER_LIST;
+
+            // Calculate the maximum weight of this list, and make sure that it
+            // doesn't reference the account that it's being set against and
+            // ensure all entries have non-zero weights:
+            std::uint32_t weight = 0;
+
+            for (auto s : signers)
+            {
+                if (s.first == account_)
+                    return tecBAD_SIGNER_LIST;
+
+                if (s.second == 0)
+                    return tecBAD_SIGNER_LIST;
+
+                weight += s.second;
+            }
+
+            if (weight < quorum_)
+                return tecBAD_QUORUM;
+
+            // The required reserve changes based on featureMultiSignReserve...
+            std::uint32_t flags = lsfOneOwnerCount;
+            int ocdelta = 1;
+
+            if (! ctx_.view().rules().enabled(featureMultiSignReserve))
+            {
+                ocdelta = legacyOwnerCountDelta (signers.size ());
+                flags = 0;
+            }
+
+            // We check the reserve against the starting balance because we want
+            // to allow dipping into the reserve to pay fees.
+            if (mPriorBalance < view().fees().accountReserve(ocdelta + (*root)[sfOwnerCount]))
+                return tecINSUFFICIENT_RESERVE;
+
+            STArray toLedger (signers.size());
+
+            for (auto const& entry : signers)
+            {
+                toLedger.emplace_back(sfSignerEntry);
+                STObject& obj = toLedger.back();
+                obj.reserve (2);
+                obj.setAccountID (sfAccount, entry.first);
+                obj.setFieldU16 (sfSignerWeight, entry.second);
+            }
+
+            auto sl = std::make_shared<SLE>(slk);
+            sl->setFieldU32 (sfSignerQuorum, quorum_);
+            sl->setFieldU32 (sfSignerListID, defaultSignerListID_);
+            sl->setFieldArray (sfSignerEntries, toLedger);
+            if (flags)
+                sl->setFieldU32 (sfFlags, flags);
+
+            view().insert (sl);
+
+            auto const page = ctx_.view().dirInsert(odk, slk, describeOwnerDir(account_));
+
+            if (!page)
+                return tecDIR_FULL;
+
+            sl->setFieldU64(sfOwnerNode, *page);
+
+            adjustOwnerCount(view(), root, ocdelta, {});
+        }
+
+        return tesSUCCESS;
+    }
+
     // Perform the operation preCompute() decided on.
     switch (do_)
     {
@@ -131,14 +303,21 @@ SetSignerList::doApply ()
 void
 SetSignerList::preCompute()
 {
-    // Get the quorum and operation info.
-    auto result = determineOperation(ctx_.tx, view().flags(), j_);
-    assert(std::get<0>(result) == tesSUCCESS);
-    assert(std::get<3>(result) != unknown);
+    if (ctx_.view().rules().enabled(featureNoGoodName))
+    {
+        quorum_ = ctx_.tx[sfSignerQuorum];
+    }
+    else
+    {
+        // Get the quorum and operation info.
+        auto result = determineOperation(ctx_.tx, view().flags(), j_);
+        assert(std::get<0>(result) == tesSUCCESS);
+        assert(std::get<3>(result) != unknown);
 
-    quorum_ = std::get<1>(result);
-    signers_ = std::get<2>(result);
-    do_ = std::get<3>(result);
+        quorum_ = std::get<1>(result);
+        signers_ = std::get<2>(result);
+        do_ = std::get<3>(result);
+    }
 
     return Transactor::preCompute();
 }
@@ -225,7 +404,7 @@ SetSignerList::replaceSignerList ()
     std::uint32_t flags {lsfOneOwnerCount};
     if (! ctx_.view().rules().enabled(featureMultiSignReserve))
     {
-        addedOwnerCount = signerCountBasedOwnerCountDelta (signers_.size ());
+        addedOwnerCount = legacyOwnerCountDelta (signers_.size ());
         flags = 0;
     }
 
@@ -298,8 +477,7 @@ SetSignerList::removeSignersFromLedger (Keylet const& accountKeylet,
     if ((signers->getFlags() & lsfOneOwnerCount) == 0)
     {
         STArray const& actualList = signers->getFieldArray (sfSignerEntries);
-        removeFromOwnerCount =
-            signerCountBasedOwnerCountDelta (actualList.size()) * -1;
+        removeFromOwnerCount = legacyOwnerCountDelta (actualList.size()) * -1;
     }
 
     // Remove the node from the account directory.
@@ -343,34 +521,6 @@ SetSignerList::writeSignersToSLE (
 
     // Assign the SignerEntries.
     ledgerEntry->setFieldArray (sfSignerEntries, toLedger);
-}
-
-// The return type is signed so it is compatible with the 3rd argument
-// of adjustOwnerCount() (which must be signed).
-//
-// NOTE: This way of computing the OwnerCount associated with a SignerList
-// is valid until the featureMultiSignReserve amendment passes.  Once it
-// passes then just 1 OwnerCount is associated with a SignerList.
-int
-SetSignerList::signerCountBasedOwnerCountDelta (std::size_t entryCount)
-{
-    // We always compute the full change in OwnerCount, taking into account:
-    //  o The fact that we're adding/removing a SignerList and
-    //  o Accounting for the number of entries in the list.
-    // We can get away with that because lists are not adjusted incrementally;
-    // we add or remove an entire list.
-    //
-    // The rule is:
-    //  o Simply having a SignerList costs 2 OwnerCount units.
-    //  o And each signer in the list costs 1 more OwnerCount unit.
-    // So, at a minimum, adding a SignerList with 1 entry costs 3 OwnerCount
-    // units.  A SignerList with 8 entries would cost 10 OwnerCount units.
-    //
-    // The static_cast should always be safe since entryCount should always
-    // be in the range from 1 to 8.  We've got a lot of room to grow.
-    assert (entryCount >= STTx::minMultiSigners);
-    assert (entryCount <= STTx::maxMultiSigners);
-    return 2 + static_cast<int>(entryCount);
 }
 
 } // namespace ripple
