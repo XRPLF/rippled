@@ -80,7 +80,9 @@ class FeatureCollections
         "fix1543",
         "fix1623",
         "DepositPreauth",
-        "fix1515"
+        "fix1515",
+        "MultiSignReserve",
+        "NoGoodName"
     };
 
     std::vector<uint256> features;
@@ -367,6 +369,8 @@ extern uint256 const fix1543;
 extern uint256 const fix1623;
 extern uint256 const featureDepositPreauth;
 extern uint256 const fix1515;
+extern uint256 const featureMultiSignReserve;
+extern uint256 const featureNoGoodName;
 
 } // ripple
 

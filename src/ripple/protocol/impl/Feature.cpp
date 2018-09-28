@@ -113,7 +113,9 @@ detail::supportedAmendments ()
         { "58BE9B5968C4DA7C59BA900961828B113E5490699B21877DEF9A31E9D0FE5D5F fix1623" },
         { "3CBC5C4E630A1B82380295CDA84B32B49DD066602E74E39B85EF64137FA65194 DepositPreauth"},
         // Use liquidity from strands that consume max offers, but mark as dry
-        { "5D08145F0A4983F23AFFFF514E83FAD355C5ABFBB6CAB76FB5BC8519FF5F33BE fix1515"}
+        { "5D08145F0A4983F23AFFFF514E83FAD355C5ABFBB6CAB76FB5BC8519FF5F33BE fix1515"},
+        { "586480873651E106F1D6339B0C4A8945BA705A777F3F4524626FF1FC07EFE41D MultiSignReserve" },
+        { "665976A5AAF0559FD5507900290EF810EE393D032C393DB4B846320D8AFB444A NoGoodName" }
     };
     return supported;
 }
@@ -168,5 +170,7 @@ uint256 const fix1543 = *getRegisteredFeature("fix1543");
 uint256 const fix1623 = *getRegisteredFeature("fix1623");
 uint256 const featureDepositPreauth = *getRegisteredFeature("DepositPreauth");
 uint256 const fix1515 = *getRegisteredFeature("fix1515");
+uint256 const featureMultiSignReserve = *getRegisteredFeature("MultiSignReserve");
+uint256 const featureNoGoodName = *getRegisteredFeature("NoGoodName");
 
 } // ripple

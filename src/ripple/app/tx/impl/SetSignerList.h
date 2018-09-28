@@ -47,6 +47,12 @@ private:
     std::uint32_t quorum_ {0};
     std::vector<SignerEntries::SignerEntry> signers_;
 
+    // Deserialize a signer list and return true if successful.
+    // The list will be sorted by account, but needs to be checked to ensure
+    // there are no duplicates or incorrect entries.
+    static bool extract(STArray const& entries,
+        std::vector<std::pair<AccountID, std::uint16_t>>& result);
+
 public:
     explicit SetSignerList (ApplyContext& ctx)
         : Transactor(ctx)
@@ -87,9 +93,20 @@ private:
 
     TER removeSignersFromLedger (Keylet const& accountKeylet,
         Keylet const& ownerDirKeylet, Keylet const& signerListKeylet);
-    void writeSignersToSLE (SLE::pointer const& ledgerEntry) const;
+    void writeSignersToSLE (
+        SLE::pointer const& ledgerEntry, std::uint32_t flags) const;
 
-    static int ownerCountDelta (std::size_t entryCount);
+    // This is how we computed the owner count prior to activation of the
+    // featureMultiSignReserve amendment. This needs to stay in the code
+    // until no SignerLists created prior to that amendment are left in the
+    // ledger, which means it'll be here effectively forever.
+    static int legacyOwnerCountDelta (std::size_t entryCount)
+    {
+        assert (entryCount >= STTx::minMultiSigners);
+        assert (entryCount <= STTx::maxMultiSigners);
+
+        return 2 + static_cast<int>(entryCount);
+    }
 };
 
 } // ripple
