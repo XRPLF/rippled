@@ -205,80 +205,78 @@ ValidatorList::applyList (
 
     Json::Value list;
     PublicKey pubKey;
-    auto const result = verify (list, pubKey, manifest, blob, signature);
+    auto const result = verify(list, pubKey, manifest, blob, signature);
     if (result != ListDisposition::accepted)
         return result;
 
     // Update publisher's list
     Json::Value const& newList = list["validators"];
     publisherLists_[pubKey].available = true;
-    publisherLists_[pubKey].sequence = list["sequence"].asUInt ();
+    publisherLists_[pubKey].sequence = list["sequence"].asUInt();
     publisherLists_[pubKey].expiration = TimeKeeper::time_point{
         TimeKeeper::duration{list["expiration"].asUInt()}};
-    std::vector<PublicKey>& publisherList = publisherLists_[pubKey].list;
+    auto& publisherList = publisherLists_[pubKey].list;
 
-    std::vector<PublicKey> oldList = publisherList;
-    publisherList.clear ();
-    publisherList.reserve (newList.size ());
+    auto oldList = publisherList;
+    publisherList.clear();
+    publisherList.reserve(newList.size());
     std::vector<std::string> manifests;
     for (auto const& val : newList)
     {
-        if (val.isObject() &&
-            val.isMember ("validation_public_key") &&
-            val["validation_public_key"].isString ())
+        if (val.isObject())
         {
-            std::pair<Blob, bool> ret (strUnHex (
-                val["validation_public_key"].asString ()));
-
-            if (! ret.second || ! publicKeyType(makeSlice(ret.first)))
+            if (val.isMember("validation_public_key") &&
+                val["validation_public_key"].isString())
             {
-                JLOG (j_.error()) <<
-                    "Invalid node identity: " <<
-                    val["validation_public_key"].asString ();
-            }
-            else
-            {
-                publisherList.push_back (
-                    PublicKey(Slice{ ret.first.data (), ret.first.size() }));
+                std::pair<Blob, bool> ret(
+                    strUnHex(val["validation_public_key"].asString()));
+
+                if (!ret.second || !publicKeyType(makeSlice(ret.first)))
+                {
+                    JLOG (j_.error()) << "Invalid node identity: "
+                        << val["validation_public_key"].asString();
+                    continue;
+                }
+
+                publisherList.emplace_back(
+                    PublicKey{Slice{ret.first.data(), ret.first.size()}});
             }
 
-            if (val.isMember ("manifest") && val["manifest"].isString ())
-                manifests.push_back(val["manifest"].asString ());
+            if (val.isMember("manifest") && val["manifest"].isString())
+                manifests.push_back(val["manifest"].asString());
         }
     }
 
-    // Update keyListings_ for added and removed keys
-    std::sort (
-        publisherList.begin (),
-        publisherList.end ());
-
-    auto iNew = publisherList.begin ();
-    auto iOld = oldList.begin ();
-    while (iNew != publisherList.end () ||
-        iOld != oldList.end ())
     {
-        if (iOld == oldList.end () ||
-            (iNew != publisherList.end () &&
-            *iNew < *iOld))
+        // Update keyListings_ for added and removed keys
+        std::sort(publisherList.begin(), publisherList.end());
+
         {
-            // Increment list count for added keys
-            ++keyListings_[*iNew];
-            ++iNew;
+            // Removed elements appear in the old list but not in the new
+            std::vector<PublicKey> removed;
+            std::set_difference(oldList.begin(), oldList.end(),
+                publisherList.begin(), publisherList.end(),
+                std::back_inserter(removed), comparator);
+            for (auto const& r : removed)
+                keyListings_[r]--;
         }
-        else if (iNew == publisherList.end () ||
-            (iOld != oldList.end () && *iOld < *iNew))
+
         {
-            // Decrement list count for removed keys
-            if (keyListings_[*iOld] <= 1)
-                keyListings_.erase (*iOld);
+            // Added elements appear in the new list but not in the old
+            std::vector<PublicKey> added;
+            std::set_difference(publisherList.begin(), publisherList.end(),
+                oldList.begin(), oldList.end(), std::back_inserter(added));
+            for (auto const& a : added)
+                keyListings_[a]++;
+        }
+
+        // Remove all entries that are not longer referenced
+        for (auto it = keyListings_.begin(); it != keyListings_.end(); )
+        {
+            if (it->second <= 0)
+                it = keyListings_.erase(it);
             else
-                --keyListings_[*iOld];
-            ++iOld;
-        }
-        else
-        {
-            ++iNew;
-            ++iOld;
+                ++it;
         }
     }
 
@@ -529,9 +527,9 @@ ValidatorList::getJson() const
     auto it = publisherLists_.find(local);
     if (it != publisherLists_.end())
     {
-        for (auto const& key : it->second.list)
+        for (auto const& e : it->second.list)
             jLocalStaticKeys.append(
-                toBase58(TokenType::NodePublic, key));
+                toBase58(TokenType::NodePublic, e));
     }
 
     // Publisher lists
@@ -551,10 +549,8 @@ ValidatorList::getJson() const
             curr[jss::version] = requiredListVersion;
         }
         Json::Value& keys = (curr[jss::list] = Json::arrayValue);
-        for (auto const& key : p.second.list)
-        {
-            keys.append(toBase58(TokenType::NodePublic, key));
-        }
+        for (auto const& e : p.second.list)
+            keys.append(toBase58(TokenType::NodePublic, e));
     }
 
     // Trusted validator keys
