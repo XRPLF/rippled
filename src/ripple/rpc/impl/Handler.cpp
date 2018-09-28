@@ -104,7 +104,7 @@ Handler const handlerArray[] {
     {   "submit_multisigned",   byRef (&doSubmitMultiSigned),   Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "server_info",          byRef (&doServerInfo),          Role::USER,  NO_CONDITION     },
     {   "server_state",         byRef (&doServerState),         Role::USER,  NO_CONDITION     },
-    {   "crawl_shards",         byRef (&doCrawlShards),         Role::USER,  NO_CONDITION     },
+    {   "crawl_shards",         byRef (&doCrawlShards),         Role::ADMIN,  NO_CONDITION     },
     {   "stop",                 byRef (&doStop),                Role::ADMIN,   NO_CONDITION     },
     {   "transaction_entry",    byRef (&doTransactionEntry),    Role::USER,  NO_CONDITION  },
     {   "tx",                   byRef (&doTx),                  Role::USER,  NEEDS_NETWORK_CONNECTION  },

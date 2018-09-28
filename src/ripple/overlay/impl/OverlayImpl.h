@@ -123,7 +123,7 @@ private:
     std::atomic <uint64_t> peerDisconnects_ {0};
     std::atomic <uint64_t> peerDisconnectsCharges_ {0};
 
-    // Last time we crawled peers for shard info
+    // Last time we crawled peers for shard info. 'cs' = crawl shards
     std::atomic<std::chrono::seconds> csLast_{std::chrono::seconds{0}};
     std::mutex csMutex_;
     std::condition_variable csCV_;

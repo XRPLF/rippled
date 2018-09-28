@@ -32,6 +32,9 @@ namespace Resource {
 class Charge;
 }
 
+// Maximum hops to attempt when crawling shards. cs = crawl shards
+static constexpr std::uint32_t csHopLimit = 3;
+
 /** Represents a peer connection in the overlay. */
 class Peer
 {

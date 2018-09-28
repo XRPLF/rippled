@@ -518,7 +518,7 @@ DatabaseShardImp::setStored(std::shared_ptr<Ledger const> const& ledger)
 
         // Update peers with new shard index
         protocol::TMShardInfo message;
-        auto const& publicKey {app_.nodeIdentity().first};
+        PublicKey const& publicKey {app_.nodeIdentity().first};
         message.set_nodepubkey(publicKey.data(), publicKey.size());
         message.set_shardindexes(std::to_string(shardIndex));
         app_.overlay().foreach(send_always(

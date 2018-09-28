@@ -27,8 +27,6 @@
 
 namespace ripple {
 
-static std::uint32_t constexpr hopLimit = 3;
-
 /** RPC command that reports stored shards by nodes.
     {
         // Determines if the result includes node public key.
@@ -43,6 +41,9 @@ static std::uint32_t constexpr hopLimit = 3;
 Json::Value
 doCrawlShards(RPC::Context& context)
 {
+    if (context.role != Role::ADMIN)
+        return rpcError(rpcNO_PERMISSION);
+
     std::uint32_t hops {0};
     if (auto const& jv = context.params[jss::limit])
     {
@@ -52,7 +53,7 @@ doCrawlShards(RPC::Context& context)
                 jss::limit, "unsigned integer");
         }
 
-        hops = std::min(jv.asUInt(), hopLimit);
+        hops = std::min(jv.asUInt(), csHopLimit);
     }
 
     bool const pubKey {context.params.isMember(jss::public_key) &&
@@ -67,8 +68,7 @@ doCrawlShards(RPC::Context& context)
         if (pubKey)
             jvResult[jss::public_key] = toBase58(
                 TokenType::NodePublic, context.app.nodeIdentity().first);
-        jvResult[jss::complete_shards] = std::move(
-            shardStore->getCompleteShards());
+        jvResult[jss::complete_shards] = shardStore->getCompleteShards();
     }
 
     if (hops == 0)

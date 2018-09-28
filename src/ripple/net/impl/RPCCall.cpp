@@ -1146,7 +1146,7 @@ public:
             {   "submit_multisigned",   &RPCParser::parseSubmitMultiSigned,     1,  1   },
             {   "server_info",          &RPCParser::parseServerInfo,            0,  1   },
             {   "server_state",         &RPCParser::parseServerInfo,            0,  1   },
-            {   "shards",               &RPCParser::parseAsIs,                  0,  0   },
+            {   "crawl_shards",         &RPCParser::parseAsIs,                  0,  2   },
             {   "stop",                 &RPCParser::parseAsIs,                  0,  0   },
             {   "transaction_entry",    &RPCParser::parseTransactionEntry,      2,  2   },
             {   "tx",                   &RPCParser::parseTx,                    1,  2   },

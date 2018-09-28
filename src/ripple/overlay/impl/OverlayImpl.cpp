@@ -724,7 +724,7 @@ OverlayImpl::crawlShards(bool pubKey, std::uint32_t hops)
     {
         // Prevent crawl spamming
         clock_type::time_point const last(csLast_.load());
-        if (duration_cast<seconds>(clock_type::now() - last) > 60s)
+        if ((clock_type::now() - last) > 60s)
         {
             auto const timeout(seconds((hops * hops) * 10));
             std::unique_lock<std::mutex> l {csMutex_};
@@ -759,7 +759,7 @@ OverlayImpl::crawlShards(bool pubKey, std::uint32_t hops)
 
     // Combine the shard info from peers and their sub peers
     hash_map<PublicKey, PeerImp::ShardInfo> peerShardInfo;
-    for_each([&](std::shared_ptr<PeerImp>&& peer)
+    for_each([&](std::shared_ptr<PeerImp>const& peer)
     {
         if (auto psi = peer->getPeerShardInfo())
         {
@@ -782,7 +782,11 @@ OverlayImpl::crawlShards(bool pubKey, std::uint32_t hops)
         auto& pv {av.append(Json::Value(Json::objectValue))};
         if (pubKey)
             pv[jss::public_key] = toBase58(TokenType::NodePublic, e.first);
-        pv[jss::ip] = e.second.endpoint.address().to_string();
+
+        auto const& address {e.second.endpoint.address()};
+        if (!address.is_unspecified())
+            pv[jss::ip] = address.to_string();
+
         pv[jss::complete_shards] = to_string(e.second.shardIndexes);
     }
 
@@ -894,7 +898,7 @@ OverlayImpl::crawl()
                     std::to_string(maxSeq);
 
         if (auto shardIndexes = sp->getShardIndexes())
-            pv[jss::complete_shards] = to_string(shardIndexes);
+            pv[jss::complete_shards] = to_string(*shardIndexes);
     });
 
     return jv;

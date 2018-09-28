@@ -8,8 +8,6 @@ enum MessageType
     mtPING                  = 3;
     mtPROOFOFWORK           = 4;
     mtCLUSTER               = 5;
-    mtGET_SHARD_INFO        = 10;
-    mtSHARD_INFO            = 11;
     mtGET_PEERS             = 12;
     mtPEERS                 = 13;
     mtENDPOINTS             = 15;
@@ -21,7 +19,11 @@ enum MessageType
     mtHAVE_SET              = 35;
     mtVALIDATION            = 41;
     mtGET_OBJECTS           = 42;
+    mtGET_SHARD_INFO        = 50;
+    mtSHARD_INFO            = 51;
 
+    // <available>          = 10;
+    // <available>          = 11;
     // <available>          = 14;
     // <available>          = 20;
     // <available>          = 21;
@@ -138,11 +140,11 @@ message TMGetShardInfo
 // Info about shards held
 message TMShardInfo
 {
-    required bytes nodePubKey       = 1;
-    required string shardIndexes    = 2; // rangeSet of shard indexes
+    required string shardIndexes    = 1; // rangeSet of shard indexes
+    optional bytes nodePubKey       = 2; // The node's public key
     optional string endpoint        = 3; // ipv6 or ipv4 address
     optional bool lastLink          = 4; // true if last link in the peer chain
-    repeated uint32 peerchain       = 5;
+    repeated uint32 peerchain       = 5; // List of IDs used to route messages
 }
 
 // A transaction can have only one input and one output.

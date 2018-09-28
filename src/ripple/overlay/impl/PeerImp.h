@@ -38,7 +38,6 @@
 #include <deque>
 #include <queue>
 
-
 namespace ripple {
 
 class PeerImp

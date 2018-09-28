@@ -39,6 +39,7 @@
 #include <ripple/rpc/handlers/CanDelete.cpp>
 #include <ripple/rpc/handlers/Connect.cpp>
 #include <ripple/rpc/handlers/ConsensusInfo.cpp>
+#include <ripple/rpc/handlers/CrawlShards.cpp>
 #include <ripple/rpc/handlers/DepositAuthorized.cpp>
 #include <ripple/rpc/handlers/DownloadShard.cpp>
 #include <ripple/rpc/handlers/Feature1.cpp>

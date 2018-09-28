@@ -396,7 +396,7 @@ bool
 PeerImp::hasShard (std::uint32_t shardIndex) const
 {
     std::lock_guard<std::mutex> l {shardInfoMutex_};
-    auto it {shardInfo_.find(publicKey_)};
+    auto const it {shardInfo_.find(publicKey_)};
     if (it != shardInfo_.end())
         return boost::icl::contains(it->second.shardIndexes, shardIndex);
     return false;
@@ -1019,17 +1019,24 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
 void
 PeerImp::onMessage (std::shared_ptr <protocol::TMGetShardInfo> const& m)
 {
-    fee_ = Resource::feeMediumBurdenPeer;
+    if (m->hops() > csHopLimit || m->peerchain_size() > csHopLimit)
+    {
+        fee_ = Resource::feeInvalidRequest;
+        JLOG(p_journal_.warn()) <<
+            (m->hops() > csHopLimit ?
+            "Hops (" + std::to_string(m->hops()) + ") exceed limit" :
+            "Invalid Peerchain");
+        return;
+    }
 
     // Reply with shard info we may have
     if (auto shardStore = app_.getShardStore())
     {
+        fee_ = Resource::feeLightPeer;
         auto shards {shardStore->getCompleteShards()};
         if (!shards.empty())
         {
             protocol::TMShardInfo reply;
-            auto const& publicKey {app_.nodeIdentity().first};
-            reply.set_nodepubkey(publicKey.data(), publicKey.size());
             reply.set_shardindexes(shards);
 
             if (m->has_lastlink())
@@ -1041,16 +1048,15 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetShardInfo> const& m)
             send(std::make_shared<Message>(reply, protocol::mtSHARD_INFO));
 
             JLOG(p_journal_.trace()) <<
-                "Sent shard info to peer with IP " <<
-                remote_address_.address().to_string() <<
-                " public key " << toBase58(TokenType::NodePublic, publicKey) <<
-                " shard indexes " << shards;
+                "Sent shard indexes " << shards;
         }
     }
 
     // Relay request to peers
     if (m->hops() > 0)
     {
+        fee_ = Resource::feeMediumBurdenPeer;
+
         m->set_hops(m->hops() - 1);
         if (m->hops() == 0)
             m->set_lastlink(true);
@@ -1065,14 +1071,33 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetShardInfo> const& m)
 void
 PeerImp::onMessage(std::shared_ptr <protocol::TMShardInfo> const& m)
 {
+    if (m->shardindexes().empty() || m->peerchain_size() > csHopLimit)
+    {
+        fee_ = Resource::feeBadData;
+        JLOG(p_journal_.warn()) <<
+            (m->shardindexes().empty() ?
+            "Missing shard indexes" :
+            "Invalid Peerchain");
+        return;
+    }
+
     // Check if the message should be forwarded to another peer
     if (m->peerchain_size() > 0)
     {
         auto const peerId {m->peerchain(m->peerchain_size() - 1)};
         if (auto peer = overlay_.findPeerByShortID(peerId))
         {
+            if (!m->has_nodepubkey())
+                m->set_nodepubkey(publicKey_.data(), publicKey_.size());
+
             if (!m->has_endpoint())
-                m->set_endpoint(remote_address_.address().to_string());
+            {
+                // Check if peer will share IP publicly
+                if (crawl())
+                    m->set_endpoint(remote_address_.address().to_string());
+                else
+                    m->set_endpoint("0");
+            }
 
             m->mutable_peerchain()->RemoveLast();
             peer->send(std::make_shared<Message>(*m, protocol::mtSHARD_INFO));
@@ -1084,81 +1109,104 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMShardInfo> const& m)
         else
         {
             // Peer is no longer available so the relay ends
+            fee_ = Resource::feeUnwantedData;
             JLOG(p_journal_.info()) <<
                 "Unable to route shard info";
-            fee_ = Resource::feeUnwantedData;
         }
         return;
     }
 
-    // Consume the shard info received
-    if (m->shardindexes().empty())
+    // Parse the shard indexes received in the shard info
+    RangeSet<std::uint32_t> shardIndexes;
     {
-        JLOG(p_journal_.error()) <<
-            "Node response missing shard indexes";
-        return;
+        std::vector<std::string> tokens;
+        boost::split(tokens, m->shardindexes(), boost::algorithm::is_any_of(","));
+        for (auto const& t : tokens)
+        {
+            std::vector<std::string> seqs;
+            boost::split(seqs, t, boost::algorithm::is_any_of("-"));
+            if (seqs.empty() || seqs.size() > 2)
+            {
+                fee_ = Resource::feeBadData;
+                return;
+            }
+
+            std::uint32_t first;
+            if (!beast::lexicalCastChecked(first, seqs.front()))
+            {
+                fee_ = Resource::feeBadData;
+                return;
+            }
+
+            if (seqs.size() == 1)
+                shardIndexes.insert(first);
+            else
+            {
+                std::uint32_t second;
+                if (!beast::lexicalCastChecked(second, seqs.back()))
+                {
+                    fee_ = Resource::feeBadData;
+                    return;
+                }
+                shardIndexes.insert(range(first, second));
+            }
+        }
     }
+
+    // Get the Public key of the node reporting the shard info
+    PublicKey publicKey;
+    if (m->has_nodepubkey())
+        publicKey = PublicKey(makeSlice(m->nodepubkey()));
+    else
+        publicKey = publicKey_;
 
     // Get the IP of the node reporting the shard info
-    beast::IP::Endpoint address;
+    beast::IP::Endpoint endpoint;
     if (m->has_endpoint())
     {
-        auto result {beast::IP::Endpoint::from_string_checked(m->endpoint())};
-        if (!result.second)
+        if (m->endpoint() != "0")
         {
-            JLOG(p_journal_.error()) <<
-                "failed to parse incoming endpoint: {" <<
-                m->endpoint() << "}";
-            return;
+            auto result {
+                beast::IP::Endpoint::from_string_checked(m->endpoint())};
+            if (!result.second)
+            {
+                fee_ = Resource::feeBadData;
+                JLOG(p_journal_.warn()) <<
+                    "failed to parse incoming endpoint: {" <<
+                    m->endpoint() << "}";
+                return;
+            }
+            endpoint = std::move(result.first);
         }
-        address = std::move(result.first);
     }
-    else
-        address = remote_address_;
+    else if (crawl()) // Check if peer will share IP publicly
+        endpoint = remote_address_;
 
-    RangeSet<std::uint32_t>* shardIndexes {nullptr};
-    PublicKey const publicKey(makeSlice(m->nodepubkey()));
-
-    std::lock_guard<std::mutex> l {shardInfoMutex_};
-    auto it {shardInfo_.find(publicKey)};
-    if (it != shardInfo_.end())
     {
-        // Update the IP address for the node
-        it->second.endpoint = address;
+        std::lock_guard<std::mutex> l {shardInfoMutex_};
+        auto it {shardInfo_.find(publicKey)};
+        if (it != shardInfo_.end())
+        {
+            // Update the IP address for the node
+            it->second.endpoint = std::move(endpoint);
 
-        // Update the shard indexes held by the node
-        shardIndexes = &(it->second.shardIndexes);
-    }
-    else
-    {
-        // Add a new node
-        ShardInfo shardInfo;
-        shardInfo.endpoint = address;
-        shardIndexes = &(shardInfo_.emplace(std::move(publicKey),
-            std::move(shardInfo)).first->second.shardIndexes);
-    }
-
-    // Parse shard indexes
-    std::vector<std::string> tokens;
-    boost::split(tokens, m->shardindexes(), boost::algorithm::is_any_of(","));
-    for (auto const& t : tokens)
-    {
-        std::vector<std::string> seqs;
-        boost::split(seqs, t, boost::algorithm::is_any_of("-"));
-        if (seqs.size() == 1)
-            shardIndexes->insert(
-                beast::lexicalCastThrow<std::uint32_t>(seqs.front()));
-        else if (seqs.size() == 2)
-            shardIndexes->insert(range(
-                beast::lexicalCastThrow<std::uint32_t>(seqs.front()),
-                beast::lexicalCastThrow<std::uint32_t>(seqs.back())));
+            // Join the shard index range set
+            it->second.shardIndexes += shardIndexes;
+        }
+        else
+        {
+            // Add a new node
+            ShardInfo shardInfo;
+            shardInfo.endpoint = std::move(endpoint);
+            shardInfo.shardIndexes = std::move(shardIndexes);
+            shardInfo_.emplace(publicKey, std::move(shardInfo));
+        }
     }
 
     JLOG(p_journal_.trace()) <<
-        "Consumed TMShardInfo originating from peer with IP " <<
-        address.address().to_string() <<
-        " public key " << toBase58(TokenType::NodePublic, publicKey) <<
-        " shard indexes " << to_string(*shardIndexes);
+        "Consumed TMShardInfo originating from public key " <<
+        toBase58(TokenType::NodePublic, publicKey) <<
+        " shard indexes " << m->shardindexes();
 
     if (m->has_lastlink())
         overlay_.lastLink(id_);
