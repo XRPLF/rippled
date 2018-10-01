@@ -21,7 +21,7 @@
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/clock/manual_clock.h>
-#include <test/unit_test/SuiteJournalSink.h>
+#include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
 

@@ -26,7 +26,7 @@
 #include <ripple/beast/xor_shift_engine.h>
 #include <ripple/beast/unit_test.h>
 #include <test/shamap/common.h>
-#include <test/unit_test/SuiteJournalSink.h>
+#include <test/unit_test/SuiteJournal.h>
 #include <functional>
 #include <stdexcept>
 

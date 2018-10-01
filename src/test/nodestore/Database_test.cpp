@@ -21,7 +21,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/beast/utility/temp_dir.h>
-#include <test/unit_test/SuiteJournalSink.h>
+#include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
 namespace NodeStore {

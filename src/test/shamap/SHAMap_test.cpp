@@ -23,7 +23,7 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/Journal.h>
 #include <test/shamap/common.h>
-#include <test/unit_test/SuiteJournalSink.h>
+#include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
 namespace tests {

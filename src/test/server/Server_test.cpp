@@ -25,7 +25,7 @@
 #include <ripple/core/ConfigSections.h>
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
-#include <test/unit_test/SuiteJournalSink.h>
+#include <test/unit_test/SuiteJournal.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>

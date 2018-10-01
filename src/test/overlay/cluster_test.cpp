@@ -22,7 +22,7 @@
 #include <ripple/overlay/ClusterNode.h>
 #include <ripple/protocol/SecretKey.h>
 #include <test/jtx/TestSuite.h>
-#include <test/unit_test/SuiteJournalSink.h>
+#include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
 namespace tests {

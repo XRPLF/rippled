@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef TEST_UNIT_TEST_SUITE_JOURNAL_SINK_H
-#define TEST_UNIT_TEST_SUITE_JOURNAL_SINK_H
+#ifndef TEST_UNIT_TEST_SUITE_JOURNAL_H
+#define TEST_UNIT_TEST_SUITE_JOURNAL_H
 
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/Journal.h>

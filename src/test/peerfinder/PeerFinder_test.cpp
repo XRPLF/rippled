@@ -23,7 +23,7 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/beast/unit_test.h>
-#include <test/unit_test/SuiteJournalSink.h>
+#include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
 namespace PeerFinder {

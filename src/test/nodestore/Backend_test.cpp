@@ -22,7 +22,7 @@
 #include <ripple/nodestore/Manager.h>
 #include <ripple/beast/utility/temp_dir.h>
 #include <test/nodestore/TestBase.h>
-#include <test/unit_test/SuiteJournalSink.h>
+#include <test/unit_test/SuiteJournal.h>
 #include <algorithm>
 
 namespace ripple {
