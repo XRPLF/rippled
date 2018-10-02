@@ -115,7 +115,8 @@ detail::supportedAmendments ()
         // Use liquidity from strands that consume max offers, but mark as dry
         { "5D08145F0A4983F23AFFFF514E83FAD355C5ABFBB6CAB76FB5BC8519FF5F33BE fix1515" },
         { "FBD513F1B893AC765B78F250E6FFA6A11B573209D1842ADC787C850696741288 fix1578" },
-        { "586480873651E106F1D6339B0C4A8945BA705A777F3F4524626FF1FC07EFE41D MultiSignReserve" }
+        { "586480873651E106F1D6339B0C4A8945BA705A777F3F4524626FF1FC07EFE41D MultiSignReserve" },
+        { "2CD5286D8D687E98B41102BDD797198E81EA41DF7BD104E6561FEB104EFF2561 fixTakerDryOfferRemoval"}
     };
     return supported;
 }
@@ -172,5 +173,6 @@ uint256 const featureDepositPreauth = *getRegisteredFeature("DepositPreauth");
 uint256 const fix1515 = *getRegisteredFeature("fix1515");
 uint256 const fix1578 = *getRegisteredFeature("fix1578");
 uint256 const featureMultiSignReserve = *getRegisteredFeature("MultiSignReserve");
+uint256 const fixTakerDryOfferRemoval = *getRegisteredFeature("fixTakerDryOfferRemoval");
 
 } // ripple
