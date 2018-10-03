@@ -1150,6 +1150,7 @@ target_link_libraries (ripple_libs INTERFACE NIH::rocksdb)
    proper targets and export/install
 #]===================================================================]
 
+add_library (nudb INTERFACE)
 if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
   FetchContent_Declare(
     nudb_src
@@ -1174,9 +1175,9 @@ else ()
   ExternalProject_Get_Property (nudb_src SOURCE_DIR)
   set (nudb_src_SOURCE_DIR "${SOURCE_DIR}")
   file (MAKE_DIRECTORY ${nudb_src_SOURCE_DIR}/include)
+  add_dependencies (nudb nudb_src)
 endif ()
 
-add_library (nudb INTERFACE)
 file(TO_CMAKE_PATH "${nudb_src_SOURCE_DIR}" nudb_src_SOURCE_DIR)
 # specify as system includes so as to avoid warnings
 target_include_directories (nudb SYSTEM INTERFACE ${nudb_src_SOURCE_DIR}/include)
