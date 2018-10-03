@@ -1664,7 +1664,7 @@ public:
             auto fee = env.rpc("fee");
 
             if (BEAST_EXPECT(fee.isMember(jss::result) &&
-                !RPC::contains_error(fee[jss::result])))
+                BEAST_EXPECT(!RPC::contains_error(fee[jss::result]))))
             {
                 auto const& result = fee[jss::result];
                 BEAST_EXPECT(result.isMember(jss::ledger_current_index)
@@ -1692,7 +1692,7 @@ public:
             fee = env.rpc("fee");
 
             if (BEAST_EXPECT(fee.isMember(jss::result) &&
-                !RPC::contains_error(fee[jss::result])))
+                BEAST_EXPECT(!RPC::contains_error(fee[jss::result]))))
             {
                 auto const& result = fee[jss::result];
                 BEAST_EXPECT(result.isMember(jss::ledger_current_index)
