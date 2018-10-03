@@ -701,7 +701,7 @@ function error {
   exit 1
 }
 
-yum install -y yum-utils
+yum install -y yum-utils openssl-static zlib-static
 rpm -i /opt/rippled-rpm/*.rpm
 rc=$?; if [[ $rc != 0 ]]; then
   error "error installing rpms"
