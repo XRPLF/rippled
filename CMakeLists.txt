@@ -1285,19 +1285,21 @@ file (GLOB_RECURSE rb_headers
   src/ripple/beast/*.hpp)
 
 add_library (xrpl_core
-  ${rb_headers} ## headers added here for benefit of IDEs
-  #[===============================[
-      beast/legacy FILES:
-      TODO: review these sources for removal or replacement
-  #]===============================]
-  $<$<BOOL:${unity}>:
+  ${rb_headers}) ## headers added here for benefit of IDEs
+
+#[===============================[
+    beast/legacy FILES:
+    TODO: review these sources for removal or replacement
+#]===============================]
+if (unity)
+  target_sources (xrpl_core PRIVATE
     src/ripple/beast/core/core.unity.cpp
     src/ripple/beast/unity/beast_hash_unity.cpp
     src/ripple/beast/unity/beast_insight_unity.cpp
     src/ripple/beast/unity/beast_net_unity.cpp
-    src/ripple/beast/unity/beast_utility_unity.cpp
-  >
-  $<$<NOT:$<BOOL:${unity}>>:
+    src/ripple/beast/unity/beast_utility_unity.cpp)
+else ()
+  target_sources (xrpl_core PRIVATE
     src/ripple/beast/core/CurrentThreadName.cpp
     src/ripple/beast/core/SemanticVersion.cpp
     src/ripple/beast/core/WaitableEvent.cpp
@@ -1314,23 +1316,23 @@ add_library (xrpl_core
     src/ripple/beast/net/impl/IPEndpoint.cpp
     src/ripple/beast/utility/src/beast_Debug.cpp
     src/ripple/beast/utility/src/beast_Journal.cpp
-    src/ripple/beast/utility/src/beast_PropertyStream.cpp
-  >
-  # END beast/legacy
+    src/ripple/beast/utility/src/beast_PropertyStream.cpp)
+endif ()
 
-  #[===============================[
-     core sources
-  #]===============================]
-  $<$<BOOL:${unity}>:
+#[===============================[
+    core sources
+#]===============================]
+if (unity)
+  target_sources (xrpl_core PRIVATE
     src/ripple/unity/basics1.cpp
     src/ripple/unity/json.cpp
     src/ripple/unity/protocol.cpp
-    src/ripple/unity/crypto.cpp
-  >
-  $<$<NOT:$<BOOL:${unity}>>:
+    src/ripple/unity/crypto.cpp)
+else ()
+  target_sources (xrpl_core PRIVATE
     #[===============================[
-       nounity, main sources:
-         subdir: basics (partial)
+      nounity, main sources:
+        subdir: basics (partial)
     #]===============================]
     src/ripple/basics/impl/base64.cpp
     src/ripple/basics/impl/contract.cpp
@@ -1339,8 +1341,8 @@ add_library (xrpl_core
     src/ripple/basics/impl/strHex.cpp
     src/ripple/basics/impl/StringUtilities.cpp
     #[===============================[
-       nounity, main sources:
-         subdir: json
+      nounity, main sources:
+        subdir: json
     #]===============================]
     src/ripple/json/impl/JsonPropertyStream.cpp
     src/ripple/json/impl/Object.cpp
@@ -1352,8 +1354,8 @@ add_library (xrpl_core
     src/ripple/json/impl/json_writer.cpp
     src/ripple/json/impl/to_string.cpp
     #[===============================[
-       nounity, main sources:
-         subdir: protocol
+      nounity, main sources:
+        subdir: protocol
     #]===============================]
     src/ripple/protocol/impl/AccountID.cpp
     src/ripple/protocol/impl/Book.cpp
@@ -1396,16 +1398,16 @@ add_library (xrpl_core
     src/ripple/protocol/impl/digest.cpp
     src/ripple/protocol/impl/tokens.cpp
     #[===============================[
-       nounity, main sources:
-         subdir: crypto
+      nounity, main sources:
+        subdir: crypto
     #]===============================]
     src/ripple/crypto/impl/GenerateDeterministicKey.cpp
     src/ripple/crypto/impl/KeyType.cpp
     src/ripple/crypto/impl/RFC1751.cpp
     src/ripple/crypto/impl/csprng.cpp
     src/ripple/crypto/impl/ec_key.cpp
-    src/ripple/crypto/impl/openssl.cpp
-  >)
+    src/ripple/crypto/impl/openssl.cpp)
+endif ()
 add_library (Ripple::xrpl_core ALIAS xrpl_core)
 target_include_directories (xrpl_core
   PUBLIC
@@ -1619,8 +1621,8 @@ install (
    add_executable with no sources
 #]=========================================================]
 add_executable (rippled src/ripple/app/main/Application.h)
-target_sources (rippled PRIVATE
-  $<$<BOOL:${unity}>:
+if (unity)
+  target_sources (rippled PRIVATE
     #[===============================[
        unity, main sources
     #]===============================]
@@ -1674,9 +1676,9 @@ target_sources (rippled PRIVATE
     src/test/unity/shamap_test_unity.cpp
     src/test/unity/jtx_unity1.cpp
     src/test/unity/jtx_unity2.cpp
-    src/test/unity/csf_unity.cpp
-  >
-  $<$<NOT:$<BOOL:${unity}>>:
+    src/test/unity/csf_unity.cpp)
+else ()
+  target_sources (rippled PRIVATE
     #[===============================[
        nounity, main sources:
          subdir: app
@@ -2270,8 +2272,8 @@ target_sources (rippled PRIVATE
        nounity, test sources:
          subdir: unit_test
     #]===============================]
-    src/test/unit_test/multi_runner.cpp
-    >)
+    src/test/unit_test/multi_runner.cpp)
+endif ()
 target_link_libraries (rippled
   Ripple::opts
   Ripple::libs
@@ -2336,11 +2338,28 @@ endif ()
 #]===================================================================]
 
 if (is_multiconfig)
-  # Rippled headers. Only useful for IDEs.
-  file (GLOB_RECURSE rippled_headers src/*.h src/*.hpp *.md)
-  target_sources (rippled PRIVATE ${rippled_headers})
+  # This code finds all source files in the src subdirectory for inclusion
+  # in the IDE file tree as non-compiled sources. Since this file list will
+  # have some overlap with files we have already added to our targets to
+  # be compiled, we explicitly remove any of these target source files from
+  # this list.
+  file (GLOB_RECURSE all_sources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    CONFIGURE_DEPENDS
+    src/*.* Builds/*.md docs/*.md src/*.md Builds/*.cmake)
+  file(GLOB md_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS
+    *.md)
+  LIST(APPEND all_sources ${md_files})
+  foreach (_target secp256k1 ed25519-donna rocksdb pbufs xrpl_core rippled)
+    get_target_property (_type ${_target} TYPE)
+    if(_type STREQUAL "INTERFACE_LIBRARY")
+      continue()
+    endif()
+    get_target_property (_src ${_target} SOURCES)
+    list (REMOVE_ITEM all_sources ${_src})
+  endforeach ()
+  target_sources (rippled PRIVATE ${all_sources})
   set_property (
-    SOURCE ${rippled_headers}
+    SOURCE ${all_sources}
     APPEND
     PROPERTY HEADER_FILE_ONLY true)
   if (MSVC)
@@ -2348,9 +2367,7 @@ if (is_multiconfig)
       DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       PROPERTY VS_STARTUP_PROJECT rippled)
   endif ()
-endif ()
 
-if (is_multiconfig)
   group_sources(src)
   group_sources(docs)
   group_sources(Builds)
