@@ -115,7 +115,7 @@ public:
     }
     /** @} */
 
-    auto begin() noexcept
+    auto begin() const noexcept
     {
         return data_;
     }
@@ -125,7 +125,7 @@ public:
         return data_;
     }
 
-    auto end() noexcept
+    auto end() const noexcept
     {
         return data_ + size_;
     }

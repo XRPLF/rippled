@@ -192,7 +192,7 @@ public:
         return alloc(n);
     }
 
-    auto begin() noexcept
+    auto begin() const noexcept
     {
         return p_.get();
     }
@@ -202,7 +202,7 @@ public:
         return p_.get();
     }
 
-    auto end() noexcept
+    auto end() const noexcept
     {
         return p_.get() + size_;
     }

@@ -70,27 +70,22 @@ template<class InputIterator>
 std::string strHex(InputIterator begin, InputIterator end)
 {
     std::string result;
-    result.reserve (std::distance(begin, end));
+    result.reserve(2 * std::distance(begin, end));
     boost::algorithm::hex (begin, end, std::back_inserter(result));
     return result;
 }
-template <class T>
-std::string strHex(T const& blob)
+template <class T, class = decltype(std::declval<T>().begin())>
+std::string strHex(T const& from)
 {
-    return strHex(blob.cbegin(), blob.cend());
-}
-
-inline std::string strHex (std::string const& src)
-{
-    return boost::algorithm::hex (src);
+    return strHex(from.begin(), from.end());
 }
 
 inline std::string strHex (const std::uint64_t uiHost)
 {
     uint64_t uBig    = boost::endian::native_to_big (uiHost);
 
-    const auto begin = (unsigned char*) &uBig;
-    const auto end   = begin + sizeof(uBig);
+    auto const begin = (unsigned char*) &uBig;
+    auto const end   = begin + sizeof(uBig);
     return strHex(begin, end);
 }
 }

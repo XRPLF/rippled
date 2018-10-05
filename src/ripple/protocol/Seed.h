@@ -63,7 +63,7 @@ public:
         return buf_.size();
     }
 
-    auto begin() noexcept
+    auto begin() const noexcept
     {
         return buf_.begin();
     }
@@ -73,7 +73,7 @@ public:
         return buf_.cbegin();
     }
 
-    auto end() noexcept
+    auto end() const noexcept
     {
         return buf_.end();
     }

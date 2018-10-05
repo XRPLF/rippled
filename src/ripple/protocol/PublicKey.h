@@ -87,7 +87,7 @@ public:
         return size_;
     }
 
-    auto begin() noexcept
+    auto begin() const noexcept
     {
         return buf_;
     }
@@ -97,7 +97,7 @@ public:
         return buf_;
     }
 
-    auto end() noexcept
+    auto end() const noexcept
     {
         return buf_ + size_;
     }
