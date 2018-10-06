@@ -212,7 +212,8 @@ public:
         env(jt);
         BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfMessageKey));
 
-        jt[sfMessageKey.fieldName] = strHex("NOT_REALLY_A_PUBKEY");
+        using namespace std::string_literals;
+        jt[sfMessageKey.fieldName] = strHex("NOT_REALLY_A_PUBKEY"s);
         env(jt, ter(telBAD_PUBLIC_KEY));
     }
 

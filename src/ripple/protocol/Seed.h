@@ -62,6 +62,26 @@ public:
     {
         return buf_.size();
     }
+
+    auto begin() const noexcept
+    {
+        return buf_.begin();
+    }
+
+    auto cbegin() const noexcept
+    {
+        return buf_.cbegin();
+    }
+
+    auto end() const noexcept
+    {
+        return buf_.end();
+    }
+
+    auto cend() const noexcept
+    {
+        return buf_.cend();
+    }
 };
 
 //------------------------------------------------------------------------------

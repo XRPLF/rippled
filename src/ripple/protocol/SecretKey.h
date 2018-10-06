@@ -66,6 +66,26 @@ public:
     */
     std::string
     to_string() const;
+
+    auto begin() const noexcept
+    {
+        return buf_;
+    }
+
+    auto cbegin() const noexcept
+    {
+        return buf_;
+    }
+
+    auto end() const noexcept
+    {
+        return buf_ + sizeof(buf_);
+    }
+
+    auto cend() const noexcept
+    {
+        return buf_ + sizeof(buf_);
+    }
 };
 
 inline

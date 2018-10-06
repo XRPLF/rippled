@@ -114,6 +114,26 @@ public:
         return temp += n;
     }
     /** @} */
+
+    auto begin() const noexcept
+    {
+        return data_;
+    }
+
+    auto cbegin() const noexcept
+    {
+        return data_;
+    }
+
+    auto end() const noexcept
+    {
+        return data_ + size_;
+    }
+
+    auto cend() const noexcept
+    {
+        return data_ + size_;
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -159,7 +179,7 @@ operator< (Slice const& lhs, Slice const& rhs) noexcept
 template <class Stream>
 Stream& operator<<(Stream& s, Slice const& v)
 {
-    s << strHex(v.data(), v.size());
+    s << strHex(v);
     return s;
 }
 
@@ -191,9 +211,6 @@ makeSlice (std::basic_string<char, Traits, Alloc> const& s)
 {
     return Slice(s.data(), s.size());
 }
-
-std::string
-strHex (Slice const& slice);
 
 } // ripple
 

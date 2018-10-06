@@ -31,7 +31,7 @@ STBlob::STBlob (SerialIter& st, SField const& name)
 std::string
 STBlob::getText () const
 {
-    return strHex (value_.data (), value_.size ());
+    return strHex (value_);
 }
 
 bool
