@@ -27,6 +27,7 @@
 #include <ripple/json/json_value.h>
 #include <boost/asio.hpp>
 #include <mutex>
+#include <memory>
 
 namespace ripple {
 
@@ -73,10 +74,33 @@ private:
         {
             clock_type::time_point refreshed;
             ListDisposition disposition;
+            std::string message;
         };
 
-        std::string uri;
-        parsedURL pUrl;
+        struct Resource
+        {
+            explicit Resource(std::string u);
+            std::string uri;
+            parsedURL pUrl;
+        };
+        using ResourcePtr = std::shared_ptr<Resource>;
+
+        explicit Site(std::string uri);
+
+        /// the original uri as loaded from config
+        ResourcePtr loadedResource;
+
+        /// the resource to to request at <timer>
+        /// intervals. same as loadedResource
+        /// except in the case of a permanent redir.
+        ResourcePtr startingResource;
+
+        /// the active resource being requested.
+        /// same as startingResource except
+        /// when we've gotten a temp redirect
+        ResourcePtr activeResource;
+
+        unsigned short redirCount;
         std::chrono::minutes refreshInterval;
         clock_type::time_point nextRefresh;
         boost::optional<Status> lastRefreshStatus;
@@ -176,6 +200,30 @@ private:
         boost::system::error_code const& ec,
         detail::response_type&& res,
         std::size_t siteIdx);
+
+    /// Initiate request to given resource.
+    /// lock over sites_mutex_ required
+    void
+    makeRequest (
+        Site::ResourcePtr resource,
+        std::size_t siteIdx,
+        std::lock_guard<std::mutex>& lock);
+
+    /// Parse json response from validator list site.
+    /// lock over sites_mutex_ required
+    void
+    parseJsonResponse (
+        detail::response_type& res,
+        std::size_t siteIdx,
+        std::lock_guard<std::mutex>& lock);
+
+    /// Interpret a redirect response.
+    /// lock over sites_mutex_ required
+    Site::ResourcePtr
+    processRedirect (
+        detail::response_type& res,
+        std::size_t siteIdx,
+        std::lock_guard<std::mutex>& lock);
 };
 
 } // ripple
