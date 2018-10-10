@@ -50,7 +50,6 @@ Json::Value doLedgerEntry (RPC::Context& context)
     if (context.params.isMember (jss::index))
     {
         uNodeIndex.SetHex (context.params[jss::index].asString());
-        bNodeBinary = true;
     }
     else if (context.params.isMember (jss::account_root))
     {

@@ -248,12 +248,6 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr[jss::ledger_index] == 3);
         }
 
-        char const alicesAcctRootBinary[] {
-            "1100612200800000240000000225000000032D00000000554294BEBE5B569"
-            "A18C0A2702387C9B1E7146DC3A5850C1E87204951C6FDAA4C426240000002"
-            "540BE4008114AE123A8556F3CF91154711376AFB0F894F832B3D"
-        };
-
         std::string accountRootIndex;
         {
             // Request alice's account root.
@@ -268,6 +262,12 @@ class LedgerRPC_test : public beast::unit_test::suite
             accountRootIndex = jrr[jss::index].asString();
         }
         {
+            constexpr char alicesAcctRootBinary[] {
+                "1100612200800000240000000225000000032D00000000554294BEBE5B569"
+                "A18C0A2702387C9B1E7146DC3A5850C1E87204951C6FDAA4C426240000002"
+                "540BE4008114AE123A8556F3CF91154711376AFB0F894F832B3D"
+            };
+
             // Request alice's account root, but with binary == true;
             Json::Value jvParams;
             jvParams[jss::account_root] = alice.human();
@@ -284,8 +284,10 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::index] = accountRootIndex;
             Json::Value const jrr = env.rpc (
                 "json", "ledger_entry", to_string (jvParams))[jss::result];
-            BEAST_EXPECT(jrr.isMember(jss::node_binary));
-            BEAST_EXPECT(jrr[jss::node_binary] == alicesAcctRootBinary);
+            BEAST_EXPECT(! jrr.isMember(jss::node_binary));
+            BEAST_EXPECT(jrr.isMember(jss::node));
+            BEAST_EXPECT(jrr[jss::node][jss::Account] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfBalance.jsonName] == "10000000000");
         }
         {
             // Request alice's account root by index, but with binary == false.
