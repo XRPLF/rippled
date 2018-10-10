@@ -759,7 +759,7 @@ OverlayImpl::crawlShards(bool pubKey, std::uint32_t hops)
 
     // Combine the shard info from peers and their sub peers
     hash_map<PublicKey, PeerImp::ShardInfo> peerShardInfo;
-    for_each([&](std::shared_ptr<PeerImp>const& peer)
+    for_each([&](std::shared_ptr<PeerImp> const& peer)
     {
         if (auto psi = peer->getPeerShardInfo())
         {
