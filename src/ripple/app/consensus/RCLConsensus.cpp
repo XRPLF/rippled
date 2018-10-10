@@ -628,12 +628,6 @@ RCLConsensus::Adaptor::notify(
     }
     s.set_firstseq(uMin);
     s.set_lastseq(uMax);
-    if (auto shardStore = app_.getShardStore())
-    {
-        auto shards = shardStore->getCompleteShards();
-        if (! shards.empty())
-            s.set_shardseqs(shards);
-    }
     app_.overlay ().foreach (send_always (
         std::make_shared <Message> (
             s, protocol::mtSTATUS_CHANGE)));

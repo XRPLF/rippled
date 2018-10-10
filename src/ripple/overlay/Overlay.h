@@ -241,6 +241,15 @@ public:
     virtual std::uint64_t getPeerDisconnect() const = 0;
     virtual void incPeerDisconnectCharges() = 0;
     virtual std::uint64_t getPeerDisconnectCharges() const = 0;
+
+    /** Returns information reported to the crawl shard RPC command.
+
+        @param hops the maximum jumps the crawler will attempt.
+        The number of hops achieved is not guaranteed.
+    */
+    virtual
+    Json::Value
+    crawlShards(bool pubKey, std::uint32_t hops) = 0;
 };
 
 struct ScoreHasLedger
