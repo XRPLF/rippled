@@ -169,6 +169,7 @@ BaseWSPeer(
         io_service, journal)
     , request_(std::move(request))
     , timer_(io_service)
+    , payload_ ("12345678")
 {
 }
 
