@@ -290,11 +290,6 @@
  #include <net/if.h>
  #include <sys/ioctl.h>
 
- #if ! BEAST_ANDROID && ! BEAST_BSD && ( ! BEAST_LINUX || BEAST_LINUX && __GLIBC__ )
-  #include <execinfo.h>
- #endif
-#endif
-
 #if BEAST_MAC || BEAST_IOS
  #include <xlocale.h>
  #include <mach/mach.h>
