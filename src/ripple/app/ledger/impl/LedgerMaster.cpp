@@ -59,6 +59,9 @@ using namespace std::chrono_literals;
 // Don't acquire history if ledger is too old
 auto constexpr MAX_LEDGER_AGE_ACQUIRE = 1min;
 
+// Don't acquire history if write load is too high
+auto constexpr MAX_WRITE_LOAD_ACQUIRE = 8192;
+
 LedgerMaster::LedgerMaster (Application& app, Stopwatch& stopwatch,
     Stoppable& parent,
     beast::insight::Collector::ptr const& collector, beast::Journal journal)
@@ -1680,7 +1683,8 @@ void LedgerMaster::doAdvance (ScopedLockType& sl)
             if (!standalone_ && !app_.getFeeTrack().isLoadedLocal() &&
                 (app_.getJobQueue().getJobCount(jtPUBOLDLEDGER) < 10) &&
                 (mValidLedgerSeq == mPubLedgerSeq) &&
-                (getValidatedLedgerAge() < MAX_LEDGER_AGE_ACQUIRE))
+                (getValidatedLedgerAge() < MAX_LEDGER_AGE_ACQUIRE) &&
+                (app_.getNodeStore().getWriteLoad() < MAX_WRITE_LOAD_ACQUIRE))
             {
                 // We are in sync, so can acquire
                 InboundLedger::Reason reason = InboundLedger::Reason::HISTORY;

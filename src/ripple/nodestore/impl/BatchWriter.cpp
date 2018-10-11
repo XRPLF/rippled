@@ -39,7 +39,12 @@ BatchWriter::~BatchWriter ()
 void
 BatchWriter::store (std::shared_ptr<NodeObject> const& object)
 {
-    std::lock_guard<decltype(mWriteMutex)> sl (mWriteMutex);
+    std::unique_lock<decltype(mWriteMutex)> sl (mWriteMutex);
+
+    // If the batch has reached its limit, we wait
+    // until the batch writer is finished
+    while (mWriteSet.size() >= batchWriteLimitSize)
+        mWriteCondition.wait (sl);
 
     mWriteSet.push_back (object);
 
