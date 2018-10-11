@@ -253,6 +253,66 @@ LedgerMaster::addHeldTransaction (
     mHeldTransactions.insert (transaction->getSTransaction ());
 }
 
+// Validate a ledger's close time and sequence number if we're considering
+// jumping to that ledger. This helps defend agains some rare hostile or
+// insane majority scenarios.
+bool
+LedgerMaster::canBeCurrent (std::shared_ptr<Ledger const> const& ledger)
+{
+    assert (ledger);
+
+    // Never jump to a candidate ledger that precedes our
+    // last validated ledger
+
+    auto validLedger = getValidatedLedger();
+    if (validLedger &&
+        (ledger->info().seq < validLedger->info().seq))
+    {
+        JLOG (m_journal.trace()) << "Candidate for current ledger has low seq "
+            << ledger->info().seq << " < " << validLedger->info().seq;
+        return false;
+    }
+
+    // Ensure this ledger's parent close time is within five minutes of
+    // our current time. If we already have a known fully-valid ledger
+    // we perform this check. Otherwise, we only do it if we've built a
+    // few ledgers as our clock can be off when we first start up
+
+    auto closeTime = app_.timeKeeper().closeTime();
+    auto ledgerClose = ledger->info().parentCloseTime;
+    if ((validLedger || (ledger->info().seq > 10)) &&
+        ((std::max (closeTime, ledgerClose) - std::min (closeTime, ledgerClose))
+            > 5min))
+    {
+        JLOG (m_journal.warn()) << "Candidate for current ledger has close time "
+            << to_string(ledgerClose) << " at network time "
+            << to_string(closeTime) << " seq " << ledger->info().seq;
+        return false;
+    }
+
+    if (validLedger)
+    {
+        // Sequence number must not be too high. We allow ten ledgers for time
+        // inaccuracies plus a maximum run rate of one ledger every two seconds
+
+        LedgerIndex maxSeq = validLedger->info().seq + 10;
+        maxSeq += std::chrono::duration_cast<std::chrono::seconds>(
+            closeTime - validLedger->info().parentCloseTime).count() / 2;
+        if (ledger->info().seq > maxSeq)
+        {
+            JLOG (m_journal.warn()) << "Candidate for current ledger has high seq "
+                << ledger->info().seq << " > " << maxSeq;
+            return false;
+        }
+
+        JLOG (m_journal.trace()) << "Acceptable seq range: " <<
+            (validLedger ? validLedger->info().seq : 0) << " <= " <<
+             ledger->info().seq << " <= " << maxSeq;
+    }
+
+    return true;
+}
+
 void
 LedgerMaster::switchLCL(std::shared_ptr<Ledger const> const& lastClosed)
 {
@@ -772,7 +832,9 @@ void
 LedgerMaster::checkAccept (
     std::shared_ptr<Ledger const> const& ledger)
 {
-    if (ledger->info().seq <= mValidLedgerSeq)
+    // Can we accept this ledger as our new last fully-validated ledger
+
+    if (! canBeCurrent (ledger))
         return;
 
     // Can we advance the last fully-validated ledger? If so, can we

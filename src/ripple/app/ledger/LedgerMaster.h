@@ -118,6 +118,12 @@ public:
         std::shared_ptr<Ledger const> const& ledger,
             bool isSynchronous, bool isCurrent);
 
+    /** Check the sequence number and parent close time of a
+        ledger against our clock and last validated ledger to
+        see if it can be the network's current ledger
+    */
+    bool canBeCurrent (std::shared_ptr<Ledger const> const& ledger);
+
     void switchLCL (std::shared_ptr<Ledger const> const& lastClosed);
 
     void failedSave(std::uint32_t seq, uint256 const& hash);

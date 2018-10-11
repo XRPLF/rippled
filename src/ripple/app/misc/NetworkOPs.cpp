@@ -1330,10 +1330,12 @@ bool NetworkOPsImp::checkLastClosedLedger (
             closedLedger, 0, InboundLedger::Reason::CONSENSUS);
 
     if (consensus &&
-        !m_ledgerMaster.isCompatible(
-            *consensus, m_journal.debug(), "Not switching"))
+        (!m_ledgerMaster.canBeCurrent (consensus) ||
+            !m_ledgerMaster.isCompatible(
+                *consensus, m_journal.debug(), "Not switching")))
     {
         // Don't switch to a ledger not on the validated chain
+        // or with an invalid close time or sequence
         networkClosed = ourClosed->info().hash;
         return false;
     }
