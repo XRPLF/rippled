@@ -289,11 +289,12 @@
  #include <sys/time.h>
  #include <net/if.h>
  #include <sys/ioctl.h>
+#endif	
 
 #if BEAST_MAC || BEAST_IOS
  #include <xlocale.h>
  #include <mach/mach.h>
-#endif
+#endif	
 
 #if BEAST_ANDROID
  #include <android/log.h>
