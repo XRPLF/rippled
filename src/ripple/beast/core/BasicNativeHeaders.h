@@ -294,7 +294,7 @@
 #if BEAST_MAC || BEAST_IOS
  #include <xlocale.h>
  #include <mach/mach.h>
-#endif	
+#endif
 
 #if BEAST_ANDROID
  #include <android/log.h>
