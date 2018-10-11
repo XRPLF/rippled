@@ -289,11 +289,7 @@
  #include <sys/time.h>
  #include <net/if.h>
  #include <sys/ioctl.h>
-
- #if ! BEAST_ANDROID && ! BEAST_BSD
-  #include <execinfo.h>
- #endif
-#endif
+#endif	
 
 #if BEAST_MAC || BEAST_IOS
  #include <xlocale.h>
