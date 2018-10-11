@@ -32,8 +32,6 @@
 #include <ripple/rpc/handlers/AccountObjects.cpp>
 #include <ripple/rpc/handlers/AccountOffers.cpp>
 #include <ripple/rpc/handlers/AccountTx.cpp>
-#include <ripple/rpc/handlers/AccountTxOld.cpp>
-#include <ripple/rpc/handlers/AccountTxSwitch.cpp>
 #include <ripple/rpc/handlers/BlackList.cpp>
 #include <ripple/rpc/handlers/BookOffers.cpp>
 #include <ripple/rpc/handlers/CanDelete.cpp>
