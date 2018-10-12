@@ -248,12 +248,6 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr[jss::ledger_index] == 3);
         }
 
-        constexpr char alicesAcctRootBinary[] {
-            "1100612200800000240000000225000000032D00000000554294BEBE5B569"
-            "A18C0A2702387C9B1E7146DC3A5850C1E87204951C6FDAA4C426240000002"
-            "540BE4008114AE123A8556F3CF91154711376AFB0F894F832B3D"
-        };
-
         std::string accountRootIndex;
         {
             // Request alice's account root.
@@ -268,6 +262,12 @@ class LedgerRPC_test : public beast::unit_test::suite
             accountRootIndex = jrr[jss::index].asString();
         }
         {
+            constexpr char alicesAcctRootBinary[] {
+                "1100612200800000240000000225000000032D00000000554294BEBE5B569"
+                "A18C0A2702387C9B1E7146DC3A5850C1E87204951C6FDAA4C426240000002"
+                "540BE4008114AE123A8556F3CF91154711376AFB0F894F832B3D"
+            };
+
             // Request alice's account root, but with binary == true;
             Json::Value jvParams;
             jvParams[jss::account_root] = alice.human();
