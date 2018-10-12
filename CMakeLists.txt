@@ -275,6 +275,8 @@ if (MSVC)
       _CRT_SECURE_NO_WARNINGS
       WIN32_CONSOLE
       NOMINMAX
+      # TODO: Resolve these warnings, don't just silence them
+      _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
       $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Debug>>:_CRTDBG_MAP_ALLOC>)
   target_link_libraries (common
     INTERFACE
@@ -369,7 +371,6 @@ add_library (opts INTERFACE)
 add_library (Ripple::opts ALIAS opts)
 target_compile_definitions (opts
   INTERFACE
-    BOOST_NO_AUTO_PTR
     BOOST_ASIO_HAS_STD_ARRAY
     BOOST_ASIO_DISABLE_HANDLER_TYPE_REQUIREMENTS
     $<$<BOOL:${boost_show_deprecated}>:

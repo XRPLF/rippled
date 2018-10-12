@@ -897,7 +897,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 false,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(r.first == expTer);
-            if (sizeof...(expSteps))
+            if (sizeof...(expSteps) !=0 )
                 BEAST_EXPECT(equal(
                     r.second, std::forward<decltype(expSteps)>(expSteps)...));
         };

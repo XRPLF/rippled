@@ -25,9 +25,7 @@
 #include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/XRPAmount.h>
 
-#include <boost/range/adaptors.hpp>
-#include <boost/range/algorithm.hpp>
-
+#include <algorithm>
 #include <numeric>
 #include <sstream>
 
@@ -209,7 +207,7 @@ toStrandV1 (
     // Note that for offer crossing (only) we do use an offer book even if
     // all that is changing is the Issue.account.
     STPathElement const* const lastCurrency =
-        *boost::find_if (boost::adaptors::reverse (pes), hasCurrency);
+        *std::find_if (pes.rbegin(), pes.rend(), hasCurrency);
     if ((lastCurrency->getCurrency() != deliver.currency) ||
         (offerCrossing && lastCurrency->getIssuerID() != deliver.account))
     {
@@ -472,7 +470,7 @@ toStrandV2 (
             // Note that for offer crossing (only) we do use an offer book
             // even if all that is changing is the Issue.account.
             STPathElement const& lastCurrency =
-                *boost::find_if (boost::adaptors::reverse (normPath),
+                *std::find_if (normPath.rbegin(), normPath.rend(),
                     hasCurrency);
             if ((lastCurrency.getCurrency() != deliver.currency) ||
                 (offerCrossing &&
@@ -731,7 +729,8 @@ toStrands (
     // Insert the strand into result if it is not already part of the vector
     auto insert = [&](Strand s)
     {
-        bool const hasStrand = boost::find (result, s) != result.end ();
+        bool const hasStrand =
+            std::find (result.begin(), result.end(), s) != result.end ();
 
         if (!hasStrand)
             result.emplace_back (std::move (s));
