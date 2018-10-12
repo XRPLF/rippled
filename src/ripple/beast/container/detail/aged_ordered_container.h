@@ -163,9 +163,17 @@ private:
     // VFALCO TODO This should only be enabled for maps.
     class pair_value_compare
         : public boost::beast::detail::empty_base_optimization <Compare>
+#ifdef _LIBCPP_VERSION
         , public std::binary_function <value_type, value_type, bool>
+#endif
     {
     public:
+#ifndef _LIBCPP_VERSION
+        using first_argument = value_type;
+        using second_argument = value_type;
+        using result_type = bool;
+#endif
+
         bool operator() (value_type const& lhs, value_type const& rhs) const
         {
             return this->member() (lhs.first, rhs.first);
@@ -193,9 +201,17 @@ private:
     // VFALCO TODO hoist to remove template argument dependencies
     class KeyValueCompare
         : public boost::beast::detail::empty_base_optimization <Compare>
+#ifdef _LIBCPP_VERSION
         , public std::binary_function <Key, element, bool>
+#endif
     {
     public:
+#ifndef _LIBCPP_VERSION
+        using first_argument = Key;
+        using second_argument = element;
+        using result_type = bool;
+#endif
+
         KeyValueCompare () = default;
 
         KeyValueCompare (Compare const& compare)

@@ -263,11 +263,12 @@ getCashFlow (ReadView const& view, CashFilter f, ApplyStateTable const& table)
     auto each = [&result, &filters](uint256 const& key, bool isDelete,
         std::shared_ptr<SLE const> const& before,
         std::shared_ptr<SLE const> const& after) {
-
-        std::find_if (filters.begin(), filters.end(),
-            [&result, isDelete, &before, &after] (FuncType func) {
-                return func (result, isDelete, before, after);
+        auto discarded =
+            std::find_if (filters.begin(), filters.end(),
+                [&result, isDelete, &before, &after] (FuncType func) {
+                    return func (result, isDelete, before, after);
         });
+        (void) discarded;
     };
 
     table.visit (view, each);

@@ -28,11 +28,19 @@ namespace std {
 
 #ifndef _MSC_VER
 
-template<class...>
-using void_t = void;
+    #if ! __cpp_lib_void_t
 
-template<bool B>
-using bool_constant = std::integral_constant<bool, B>;
+        template<class...>
+        using void_t = void;
+
+    #endif // ! __cpp_lib_void_t
+
+    #if ! __cpp_lib_bool_constant
+
+        template<bool B>
+        using bool_constant = std::integral_constant<bool, B>;
+
+    #endif // ! __cpp_lib_bool_constant
 
 #endif
 
