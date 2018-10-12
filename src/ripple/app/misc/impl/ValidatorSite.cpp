@@ -96,7 +96,7 @@ ValidatorSite::load (
 
     std::lock_guard <std::mutex> lock{sites_mutex_};
 
-    for (auto uri : siteURIs)
+    for (auto const& uri : siteURIs)
     {
         try
         {
@@ -171,7 +171,7 @@ ValidatorSite::setTimer ()
 
 void
 ValidatorSite::makeRequest (
-    Site::ResourcePtr resource,
+    std::shared_ptr<Site::Resource> resource,
     std::size_t siteIdx,
     std::lock_guard<std::mutex>& lock)
 {
@@ -319,14 +319,14 @@ ValidatorSite::parseJsonResponse (
     }
 }
 
-ValidatorSite::Site::ResourcePtr
+std::shared_ptr<ValidatorSite::Site::Resource>
 ValidatorSite::processRedirect (
     detail::response_type& res,
     std::size_t siteIdx,
     std::lock_guard<std::mutex>& lock)
 {
     using namespace boost::beast::http;
-    Site::ResourcePtr newLocation;
+    std::shared_ptr<Site::Resource> newLocation;
     if (res.find(field::location) == res.end() ||
         res[field::location].empty())
     {
@@ -371,7 +371,6 @@ ValidatorSite::onSiteFetch(
     detail::response_type&& res,
     std::size_t siteIdx)
 {
-    Site::ResourcePtr newLocation;
     bool shouldRetry = false;
     {
         std::lock_guard <std::mutex> lock_sites{sites_mutex_};
@@ -401,13 +400,18 @@ ValidatorSite::onSiteFetch(
                          res.result() == status::found              ||
                          res.result() == status::temporary_redirect)
                 {
-                    newLocation = processRedirect (res, siteIdx, lock_sites);
+                    auto newLocation =
+                        processRedirect (res, siteIdx, lock_sites);
+                    assert(newLocation);
                     // for perm redirects, also update our starting URI
                     if (res.result() == status::moved_permanently ||
                         res.result() == status::permanent_redirect)
                     {
                         sites_[siteIdx].startingResource = newLocation;
                     }
+                    makeRequest(newLocation, siteIdx, lock_sites);
+                    return; // we are still fetching, so skip
+                            // state update/notify below
                 }
                 else
                 {
@@ -418,13 +422,6 @@ ValidatorSite::onSiteFetch(
                         res.result_int();
                     shouldRetry = true;
                     throw std::runtime_error{"bad result code"};
-                }
-
-                if (newLocation)
-                {
-                    makeRequest(newLocation, siteIdx, lock_sites);
-                    return; // we are still fetching, so skip
-                            // state update/notify below
                 }
             }
         }
