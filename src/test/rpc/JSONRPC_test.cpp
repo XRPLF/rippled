@@ -1965,11 +1965,10 @@ public:
         LoadFeeTrack const& feeTrack = env.app().getFeeTrack();
 
         {
-            // 1: high mult, no queue, no pad
+            // high mult, no tx
             Json::Value req;
             Json::Reader ().parse (R"({
                 "fee_mult_max" : 1000,
-                "x_queue_okay" : false,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -1983,29 +1982,33 @@ public:
         }
 
         {
-            // 2: high mult, can queue, no pad
+            // low mult, no tx
             Json::Value req;
             Json::Reader().parse(R"({
-                "fee_mult_max" : 1000,
-                "x_queue_okay" : true,
+                "fee_mult_max" : 5,
                 "tx_json" : { }
             })", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
                     env.app().config(), feeTrack,
-                        env.app().getTxQ(), env.current());
+                    env.app().getTxQ(), env.current());
 
             BEAST_EXPECT(!RPC::contains_error(result));
             BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 10);
         }
 
+        // put 4 transactions into the open ledger
+        for (auto i = 0; i < 4; ++i)
         {
-            // 3: high mult, no queue, 4 pad
+            env(noop(env.master));
+        }
+
+        {
+            // high mult, 4 txs
             Json::Value req;
             Json::Reader().parse(R"({
                 "fee_mult_max" : 1000,
-                "x_assume_tx" : 4,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -2019,67 +2022,10 @@ public:
         }
 
         {
-            // 4: high mult, can queue, 4 pad
-            Json::Value req;
-            Json::Reader().parse(R"({
-                "fee_mult_max" : 1000,
-                "x_assume_tx" : 4,
-                "x_queue_okay" : true,
-                "tx_json" : { }
-            })", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
-                        env.app().getTxQ(), env.current());
-
-            BEAST_EXPECT(!RPC::contains_error(result));
-            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == 8889);
-        }
-
-        ///////////////////
-        {
-            // 5: low mult, no queue, no pad
+            // low mult, 4 tx
             Json::Value req;
             Json::Reader().parse(R"({
                 "fee_mult_max" : 5,
-                "tx_json" : { }
-            })", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
-                        env.app().getTxQ(), env.current());
-
-            BEAST_EXPECT(!RPC::contains_error(result));
-            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == 10);
-        }
-
-        {
-            // 6: low mult, can queue, no pad
-            Json::Value req;
-            Json::Reader().parse(R"({
-                "fee_mult_max" : 5,
-                "x_queue_okay" : true,
-                "tx_json" : { }
-            })", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
-                      env.app().getTxQ(), env.current());
-
-            BEAST_EXPECT(!RPC::contains_error(result));
-            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == 10);
-        }
-
-        {
-            // 7: low mult, no queue, 4 pad
-            Json::Value req;
-            Json::Reader().parse(R"({
-                "fee_mult_max" : 5,
-                "x_assume_tx" : 4,
-                "x_queue_okay" : false,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -2092,32 +2038,28 @@ public:
         }
 
         {
-            // 8: : low mult, can queue, 4 pad
+            // different low mult, 4 tx
             Json::Value req;
             Json::Reader().parse(R"({
-                "fee_mult_max" : 5,
-                "x_assume_tx" : 4,
-                "x_queue_okay" : true,
+                "fee_mult_max" : 1000,
+                "fee_div_max" : 3,
                 "tx_json" : { }
             })", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
                     env.app().config(), feeTrack,
-                        env.app().getTxQ(), env.current());
+                    env.app().getTxQ(), env.current());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
-            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == 50);
+            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
-            // 8a: : different low mult, can queue, 4 pad
+            // high mult, 4 tx
             Json::Value req;
             Json::Reader().parse(R"({
-                "fee_mult_max" : 1000,
+                "fee_mult_max" : 8000,
                 "fee_div_max" : 3,
-                "x_assume_tx" : 4,
-                "x_queue_okay" : true,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -2127,15 +2069,14 @@ public:
 
             BEAST_EXPECT(!RPC::contains_error(result));
             BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == 3333);
+                req[jss::tx_json][jss::Fee] == 8889);
         }
 
         {
-            // 9: negative mult
+            // negative mult
             Json::Value req;
             Json::Reader().parse(R"({
                 "fee_mult_max" : -5,
-                "x_queue_okay" : true,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -2147,11 +2088,10 @@ public:
         }
 
         {
-            // 9: negative div
+            // negative div
             Json::Value req;
             Json::Reader().parse(R"({
                 "fee_div_max" : -2,
-                "x_queue_okay" : true,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -2163,12 +2103,11 @@ public:
         }
 
         {
-            // 9: negative mult & div
+            // negative mult & div
             Json::Value req;
             Json::Reader().parse(R"({
                 "fee_mult_max" : -2,
                 "fee_div_max" : -3,
-                "x_queue_okay" : true,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -2179,8 +2118,10 @@ public:
             BEAST_EXPECT(RPC::contains_error(result));
         }
 
+        env.close();
+
         {
-            // 10: Call "sign" with nothing in the open ledger
+            // Call "sign" with nothing in the open ledger
             Json::Value toSign;
             toSign[jss::tx_json] = noop(env.master);
             toSign[jss::secret] = "masterpassphrase";
@@ -2196,7 +2137,7 @@ public:
         }
 
         {
-            // 11: Call "sign" with enough transactions in the open ledger
+            // Call "sign" with enough transactions in the open ledger
             // to escalate the fee.
             for (;;)
             {
@@ -2218,7 +2159,7 @@ public:
 
             BEAST_EXPECT(! RPC::contains_error(result));
             BEAST_EXPECT(result[jss::tx_json].isMember(jss::Fee) &&
-                result[jss::tx_json][jss::Fee] == "8889");
+                result[jss::tx_json][jss::Fee] == "7813");
             BEAST_EXPECT(result[jss::tx_json].isMember(jss::Sequence) &&
                 result[jss::tx_json][jss::Sequence].isConvertibleTo(
                     Json::ValueType::uintValue));
@@ -2227,7 +2168,7 @@ public:
         }
 
         {
-            // 12: Call "sign" with higher server load
+            // Call "sign" with higher server load
             {
                 auto& feeTrack = env.app().getFeeTrack();
                 BEAST_EXPECT(feeTrack.getLoadFactor() == 256);
@@ -2250,6 +2191,40 @@ public:
                     Json::ValueType::uintValue));
         }
 
+        {
+            // Call "sign" with higher server load and
+            // enough transactions to escalate the fee
+            BEAST_EXPECT(feeTrack.getLoadFactor() == 1220);
+
+            for (;;)
+            {
+                auto metrics = env.app().getTxQ().getMetrics(*env.current());
+                if (!BEAST_EXPECT(metrics))
+                    break;
+                if (metrics->openLedgerFeeLevel >
+                    metrics->minProcessingFeeLevel)
+                    break;
+                env(noop(env.master), fee(47));
+            }
+
+            Env_ss envs(env);
+
+
+            Json::Value toSign;
+            toSign[jss::tx_json] = noop(env.master);
+            toSign[jss::secret] = "masterpassphrase";
+            // Max fee = 7000 drops
+            toSign[jss::fee_mult_max] = 700;
+            auto rpcResult = env.rpc("json", "sign", to_string(toSign));
+            auto result = rpcResult[jss::result];
+
+            BEAST_EXPECT(! RPC::contains_error(result));
+            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Fee) &&
+                result[jss::tx_json][jss::Fee] == "6806");
+            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Sequence) &&
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(
+                    Json::ValueType::uintValue));
+        }
     }
 
     // A function that can be called as though it would process a transaction.

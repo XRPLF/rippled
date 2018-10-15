@@ -164,10 +164,10 @@ TxQ::FeeMetrics::update(Application& app,
 
 std::uint64_t
 TxQ::FeeMetrics::scaleFeeLevel(Snapshot const& snapshot,
-    OpenView const& view, std::uint32_t txCountPadding)
+    OpenView const& view)
 {
     // Transactions in the open ledger so far
-    auto const current = view.txCount() + txCountPadding;
+    auto const current = view.txCount();
 
     auto const target = snapshot.txnsExpected;
     auto const multiplier = snapshot.escalationMultiplier;
@@ -1375,7 +1375,7 @@ TxQ::accept(Application& app,
 }
 
 auto
-TxQ::getMetrics(OpenView const& view, std::uint32_t txCountPadding) const
+TxQ::getMetrics(OpenView const& view) const
     -> boost::optional<Metrics>
 {
     auto const allowEscalation =
@@ -1397,8 +1397,7 @@ TxQ::getMetrics(OpenView const& view, std::uint32_t txCountPadding) const
     result.minProcessingFeeLevel = isFull() ? byFee_.rbegin()->feeLevel + 1 :
         baseLevel;
     result.medFeeLevel = snapshot.escalationMultiplier;
-    result.openLedgerFeeLevel = FeeMetrics::scaleFeeLevel(snapshot, view,
-        txCountPadding);
+    result.openLedgerFeeLevel = FeeMetrics::scaleFeeLevel(snapshot, view);
 
     return result;
 }
