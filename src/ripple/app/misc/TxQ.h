@@ -320,8 +320,7 @@ public:
         FeeEscalation amendment is not enabled.
     */
     boost::optional<Metrics>
-    getMetrics(OpenView const& view,
-        std::uint32_t txCountPadding = 0) const;
+    getMetrics(OpenView const& view) const;
 
     /** Returns information about the transactions currently
         in the queue for the account.
@@ -452,8 +451,7 @@ private:
         */
         static
         std::uint64_t
-        scaleFeeLevel(Snapshot const& snapshot, OpenView const& view,
-            std::uint32_t txCountPadding = 0);
+        scaleFeeLevel(Snapshot const& snapshot, OpenView const& view);
 
         /**
             Computes the total fee level for all transactions in a series.

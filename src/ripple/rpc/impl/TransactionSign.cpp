@@ -699,10 +699,7 @@ Json::Value checkFee (
             ledger->fees(), isUnlimited (role));
     std::uint64_t fee = loadFee;
     {
-        auto const assumeTx = request.isMember("x_assume_tx") &&
-            request["x_assume_tx"].isConvertibleTo(Json::uintValue) ?
-                request["x_assume_tx"].asUInt() : 0;
-        auto const metrics = txQ.getMetrics(*ledger, assumeTx);
+        auto const metrics = txQ.getMetrics(*ledger);
         if(metrics)
         {
             auto const baseFee = ledger->fees().base;
@@ -729,13 +726,6 @@ Json::Value checkFee (
         return result.second;
     }();
 
-    if (fee > limit && fee != loadFee &&
-        request.isMember("x_queue_okay") &&
-            request["x_queue_okay"].isBool() &&
-                request["x_queue_okay"].asBool())
-    {
-        fee = std::max(loadFee, limit);
-    }
     if (fee > limit)
     {
         std::stringstream ss;

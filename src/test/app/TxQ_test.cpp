@@ -1830,11 +1830,6 @@ public:
         auto const bob = Account("bob");
         env.fund(XRP(100000), alice, bob);
 
-        auto params = Json::Value(Json::objectValue);
-        // Max fee = 50k drops
-        params[jss::fee_mult_max] = 100;
-        params["x_queue_okay"] = true;
-
         fillQueue(env, alice);
         checkMetrics(env, 0, boost::none, 7, 6, 256);
 
@@ -1842,15 +1837,16 @@ public:
         auto const aliceSeq = env.seq(alice);
         auto const lastLedgerSeq = env.current()->info().seq + 2;
 
+        auto submitParams = Json::Value(Json::objectValue);
         for (int i = 0; i < 5; ++i)
         {
             if (i == 2)
-                envs(noop(alice), fee(none), seq(none),
+                envs(noop(alice), fee(1000), seq(none),
                     json(jss::LastLedgerSequence, lastLedgerSeq),
-                        ter(terQUEUED))(params);
+                        ter(terQUEUED))(submitParams);
             else
-                envs(noop(alice), fee(none), seq(none),
-                    ter(terQUEUED))(params);
+                envs(noop(alice), fee(1000), seq(none),
+                    ter(terQUEUED))(submitParams);
         }
         checkMetrics(env, 5, boost::none, 7, 6, 256);
         {
@@ -1920,7 +1916,7 @@ public:
             }
         }
         // Now, fill the gap.
-        envs(noop(alice), fee(none), seq(none), ter(terQUEUED))(params);
+        envs(noop(alice), fee(1000), seq(none), ter(terQUEUED))(submitParams);
         checkMetrics(env, 5, 18, 10, 9, 256);
         {
             auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
@@ -1970,11 +1966,6 @@ public:
             R"(", "queue": true, "ledger_index": 3 })";
         BEAST_EXPECT(env.current()->info().seq > 3);
 
-        auto submitParams = Json::Value(Json::objectValue);
-        // Max fee = 100 drops
-        submitParams[jss::fee_mult_max] = 10;
-        submitParams["x_queue_okay"] = true;
-
         {
             // account_info without the "queue" argument.
             auto const info = env.rpc("json", "account_info", withoutQueue);
@@ -2021,10 +2012,11 @@ public:
             BEAST_EXPECT(!queue_data.isMember(jss::transactions));
         }
 
-        envs(noop(alice), fee(none), seq(none), ter(terQUEUED))(submitParams);
-        envs(noop(alice), fee(none), seq(none), ter(terQUEUED))(submitParams);
-        envs(noop(alice), fee(none), seq(none), ter(terQUEUED))(submitParams);
-        envs(noop(alice), fee(none), seq(none), ter(terQUEUED))(submitParams);
+        auto submitParams = Json::Value(Json::objectValue);
+        envs(noop(alice), fee(100), seq(none), ter(terQUEUED))(submitParams);
+        envs(noop(alice), fee(100), seq(none), ter(terQUEUED))(submitParams);
+        envs(noop(alice), fee(100), seq(none), ter(terQUEUED))(submitParams);
+        envs(noop(alice), fee(100), seq(none), ter(terQUEUED))(submitParams);
         checkMetrics(env, 4, 6, 4, 3, 256);
 
         {
@@ -2076,7 +2068,7 @@ public:
         }
 
         // Queue up a blocker
-        envs(fset(alice, asfAccountTxnID), fee(none), seq(none),
+        envs(fset(alice, asfAccountTxnID), fee(100), seq(none),
             json(jss::LastLedgerSequence, 10),
                 ter(terQUEUED))(submitParams);
         checkMetrics(env, 5, 6, 4, 3, 256);
@@ -2131,7 +2123,7 @@ public:
             }
         }
 
-        envs(noop(alice), fee(none), seq(none), ter(telCAN_NOT_QUEUE_BLOCKED))(submitParams);
+        envs(noop(alice), fee(100), seq(none), ter(telCAN_NOT_QUEUE_BLOCKED))(submitParams);
         checkMetrics(env, 5, 6, 4, 3, 256);
 
         {
@@ -2229,12 +2221,6 @@ public:
         env.fund(XRP(1000000), alice);
         env.close();
 
-        auto submitParams = Json::Value(Json::objectValue);
-        // Max fee = 100 drops
-        submitParams[jss::fee_mult_max] = 10;
-        submitParams["x-queue-okay"] = true;
-        submitParams["x_queue_okay"] = true;
-
         {
             auto const server_info = env.rpc("server_info");
             BEAST_EXPECT(server_info.isMember(jss::result) &&
@@ -2270,8 +2256,9 @@ public:
         checkMetrics(env, 0, 6, 4, 3, 256);
 
         auto aliceSeq = env.seq(alice);
+        auto submitParams = Json::Value(Json::objectValue);
         for (auto i = 0; i < 4; ++i)
-            envs(noop(alice), fee(none), seq(aliceSeq + i),
+            envs(noop(alice), fee(100), seq(aliceSeq + i),
                 ter(terQUEUED))(submitParams);
         checkMetrics(env, 4, 6, 4, 3, 256);
 
