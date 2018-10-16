@@ -619,13 +619,6 @@ TxQ::apply(Application& app, OpenView& view,
     std::shared_ptr<STTx const> const& tx,
         ApplyFlags flags, beast::Journal j)
 {
-    auto const allowEscalation =
-        (view.rules().enabled(featureFeeEscalation));
-    if (!allowEscalation)
-    {
-        return ripple::apply(app, view, *tx, flags, j);
-    }
-
     auto const account = (*tx)[sfAccount];
     auto const transactionID = tx->getTransactionID();
     auto const tSeq = tx->getSequence();
@@ -1169,13 +1162,6 @@ void
 TxQ::processClosedLedger(Application& app,
     ReadView const& view, bool timeLeap)
 {
-    auto const allowEscalation =
-        (view.rules().enabled(featureFeeEscalation));
-    if (!allowEscalation)
-    {
-        return;
-    }
-
     std::lock_guard<std::mutex> lock(mutex_);
 
     feeMetrics_.update(app, view, timeLeap, setup_);
@@ -1250,13 +1236,6 @@ bool
 TxQ::accept(Application& app,
     OpenView& view)
 {
-    auto const allowEscalation =
-        (view.rules().enabled(featureFeeEscalation));
-    if (!allowEscalation)
-    {
-        return false;
-    }
-
     /* Move transactions from the queue from largest fee level to smallest.
        As we add more transactions, the required fee level will increase.
        Stop when the transaction fee level gets lower than the required fee
@@ -1374,15 +1353,9 @@ TxQ::accept(Application& app,
     return ledgerChanged;
 }
 
-auto
+TxQ::Metrics
 TxQ::getMetrics(OpenView const& view) const
-    -> boost::optional<Metrics>
 {
-    auto const allowEscalation =
-        (view.rules().enabled(featureFeeEscalation));
-    if (!allowEscalation)
-        return boost::none;
-
     Metrics result;
 
     std::lock_guard<std::mutex> lock(mutex_);
@@ -1406,11 +1379,6 @@ auto
 TxQ::getAccountTxs(AccountID const& account, ReadView const& view) const
     -> std::map<TxSeq, AccountTxDetails const>
 {
-    auto const allowEscalation =
-        (view.rules().enabled(featureFeeEscalation));
-    if (!allowEscalation)
-        return {};
-
     std::lock_guard<std::mutex> lock(mutex_);
 
     auto accountIter = byAccount_.find(account);
@@ -1440,11 +1408,6 @@ auto
 TxQ::getTxs(ReadView const& view) const
 -> std::vector<TxDetails>
 {
-    auto const allowEscalation =
-        (view.rules().enabled(featureFeeEscalation));
-    if (!allowEscalation)
-        return {};
-
     std::lock_guard<std::mutex> lock(mutex_);
 
     if (byFee_.empty())
@@ -1483,45 +1446,48 @@ TxQ::doRPC(Application& app) const
     using std::to_string;
 
     auto const view = app.openLedger().current();
-    auto const metrics = getMetrics(*view);
+    if (!view)
+    {
+        BOOST_ASSERT(false);
+        return {};
+    }
 
-    if (!metrics)
-        return{};
+    auto const metrics = getMetrics(*view);
 
     Json::Value ret(Json::objectValue);
 
     auto& levels = ret[jss::levels] = Json::objectValue;
 
     ret[jss::ledger_current_index] = view->info().seq;
-    ret[jss::expected_ledger_size] = to_string(metrics->txPerLedger);
-    ret[jss::current_ledger_size] = to_string(metrics->txInLedger);
-    ret[jss::current_queue_size] = to_string(metrics->txCount);
-    if (metrics->txQMaxSize)
-        ret[jss::max_queue_size] = to_string(*metrics->txQMaxSize);
+    ret[jss::expected_ledger_size] = to_string(metrics.txPerLedger);
+    ret[jss::current_ledger_size] = to_string(metrics.txInLedger);
+    ret[jss::current_queue_size] = to_string(metrics.txCount);
+    if (metrics.txQMaxSize)
+        ret[jss::max_queue_size] = to_string(*metrics.txQMaxSize);
 
-    levels[jss::reference_level] = to_string(metrics->referenceFeeLevel);
-    levels[jss::minimum_level] = to_string(metrics->minProcessingFeeLevel);
-    levels[jss::median_level] = to_string(metrics->medFeeLevel);
-    levels[jss::open_ledger_level] = to_string(metrics->openLedgerFeeLevel);
+    levels[jss::reference_level] = to_string(metrics.referenceFeeLevel);
+    levels[jss::minimum_level] = to_string(metrics.minProcessingFeeLevel);
+    levels[jss::median_level] = to_string(metrics.medFeeLevel);
+    levels[jss::open_ledger_level] = to_string(metrics.openLedgerFeeLevel);
 
     auto const baseFee = view->fees().base;
     auto& drops = ret[jss::drops] = Json::Value();
 
     // Don't care about the overflow flags
     drops[jss::base_fee] = to_string(mulDiv(
-        metrics->referenceFeeLevel, baseFee,
-            metrics->referenceFeeLevel).second);
+        metrics.referenceFeeLevel, baseFee,
+            metrics.referenceFeeLevel).second);
     drops[jss::minimum_fee] = to_string(mulDiv(
-        metrics->minProcessingFeeLevel, baseFee,
-            metrics->referenceFeeLevel).second);
+        metrics.minProcessingFeeLevel, baseFee,
+            metrics.referenceFeeLevel).second);
     drops[jss::median_fee] = to_string(mulDiv(
-        metrics->medFeeLevel, baseFee,
-            metrics->referenceFeeLevel).second);
+        metrics.medFeeLevel, baseFee,
+            metrics.referenceFeeLevel).second);
     auto escalatedFee = mulDiv(
-        metrics->openLedgerFeeLevel, baseFee,
-            metrics->referenceFeeLevel).second;
-    if (mulDiv(escalatedFee, metrics->referenceFeeLevel,
-            baseFee).second < metrics->openLedgerFeeLevel)
+        metrics.openLedgerFeeLevel, baseFee,
+            metrics.referenceFeeLevel).second;
+    if (mulDiv(escalatedFee, metrics.referenceFeeLevel,
+            baseFee).second < metrics.openLedgerFeeLevel)
         ++escalatedFee;
 
     drops[jss::open_ledger_fee] = to_string(escalatedFee);

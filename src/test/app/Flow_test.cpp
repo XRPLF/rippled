@@ -1297,26 +1297,20 @@ struct Flow_manual_test : public Flow_test
     {
         using namespace jtx;
         auto const all = supported_amendments();
-        FeatureBitset const feeEscalation{featureFeeEscalation};
         FeatureBitset const flow{featureFlow};
         FeatureBitset const f1373{fix1373};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
 
-        testWithFeats(all - feeEscalation - flow - f1373 - flowCross - f1513);
         testWithFeats(all                 - flow - f1373 - flowCross - f1513);
         testWithFeats(all                 - flow - f1373 - flowCross        );
-        testWithFeats(all - feeEscalation        - f1373 - flowCross - f1513);
         testWithFeats(all                        - f1373 - flowCross - f1513);
         testWithFeats(all                        - f1373 - flowCross        );
-        testWithFeats(all - feeEscalation                - flowCross - f1513);
         testWithFeats(all                                - flowCross - f1513);
         testWithFeats(all                                - flowCross        );
-        testWithFeats(all - feeEscalation                            - f1513);
         testWithFeats(all                                            - f1513);
         testWithFeats(all                                                      );
 
-        testEmptyStrand(all - feeEscalation - f1513);
         testEmptyStrand(all                 - f1513);
         testEmptyStrand(all                        );
     }

@@ -50,10 +50,7 @@ class TxQ_test : public beast::unit_test::suite
         std::uint64_t expectedMinFeeLevel,
         std::uint64_t expectedMedFeeLevel = 256 * 500)
     {
-        auto optMetrics = env.app().getTxQ().getMetrics(*env.current());
-        if (!BEAST_EXPECT(optMetrics))
-            return;
-        auto& metrics = *optMetrics;
+        auto const metrics = env.app().getTxQ().getMetrics(*env.current());
         BEAST_EXPECT(metrics.referenceFeeLevel == 256);
         BEAST_EXPECT(metrics.txCount == expectedCount);
         BEAST_EXPECT(metrics.txQMaxSize == expectedMaxCount);
@@ -74,9 +71,7 @@ class TxQ_test : public beast::unit_test::suite
         jtx::Account const& account)
     {
         auto metrics = env.app().getTxQ().getMetrics(*env.current());
-        if (!BEAST_EXPECT(metrics))
-            return;
-        for (int i = metrics->txInLedger; i <= metrics->txPerLedger; ++i)
+        for (int i = metrics.txInLedger; i <= metrics.txPerLedger; ++i)
             env(noop(account));
     }
 
@@ -87,12 +82,10 @@ class TxQ_test : public beast::unit_test::suite
 
         auto const& view = *env.current();
         auto metrics = env.app().getTxQ().getMetrics(view);
-        if (!BEAST_EXPECT(metrics))
-            return fee(none);
 
         // Don't care about the overflow flag
-        return fee(mulDiv(metrics->openLedgerFeeLevel,
-            view.fees().base, metrics->referenceFeeLevel).second + 1);
+        return fee(mulDiv(metrics.openLedgerFeeLevel,
+            view.fees().base, metrics.referenceFeeLevel).second + 1);
     }
 
     static
@@ -328,21 +321,21 @@ public:
         // test ends and the TxQ is destructed.
 
         auto metrics = txq.getMetrics(*env.current());
-        BEAST_EXPECT(metrics->txCount == 0);
+        BEAST_EXPECT(metrics.txCount == 0);
 
         // Stuff the ledger.
-        for (int i = metrics->txInLedger; i <= metrics->txPerLedger; ++i)
+        for (int i = metrics.txInLedger; i <= metrics.txPerLedger; ++i)
         {
             env(noop(env.master));
         }
 
         // Queue one straightforward transaction
         env(noop(env.master), fee(20), queued);
-        ++metrics->txCount;
+        ++metrics.txCount;
 
-        checkMetrics(env, metrics->txCount,
-            metrics->txQMaxSize, metrics->txPerLedger + 1,
-            metrics->txPerLedger,
+        checkMetrics(env, metrics.txCount,
+            metrics.txQMaxSize, metrics.txPerLedger + 1,
+            metrics.txPerLedger,
             256);
     }
 
@@ -1098,28 +1091,6 @@ public:
         BEAST_EXPECT(elmoSeq == env.seq(elmo));
     }
 
-    void testDisabled()
-    {
-        using namespace jtx;
-
-        Env env(*this, FeatureBitset{});
-
-        auto alice = Account("alice");
-
-        BEAST_EXPECT(!env.app().getTxQ().getMetrics(*env.current()));
-
-        env.fund(XRP(50000), noripple(alice));
-
-        // If the queue was enabled, most of these would
-        // return terQUEUED. (The required fee for the last
-        // would be 10 * 500 * 11^2 / 5^2 = 24,200.)
-        for (int i = 0; i < 10; ++i)
-            env(noop(alice), fee(30));
-
-        env.close();
-        BEAST_EXPECT(!env.app().getTxQ().getMetrics(*env.current()));
-    }
-
     void testAcctTxnID()
     {
         using namespace jtx;
@@ -1658,76 +1629,59 @@ public:
     void testRPC()
     {
         using namespace jtx;
+        Env env(*this);
+
+        auto fee = env.rpc("fee");
+
+        if (BEAST_EXPECT(fee.isMember(jss::result)) &&
+            BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
         {
-            Env env(*this);
-
-            auto fee = env.rpc("fee");
-
-            if (BEAST_EXPECT(fee.isMember(jss::result) &&
-                BEAST_EXPECT(!RPC::contains_error(fee[jss::result]))))
-            {
-                auto const& result = fee[jss::result];
-                BEAST_EXPECT(result.isMember(jss::ledger_current_index)
-                    && result[jss::ledger_current_index] == 3);
-                BEAST_EXPECT(result.isMember(jss::current_ledger_size));
-                BEAST_EXPECT(result.isMember(jss::current_queue_size));
-                BEAST_EXPECT(result.isMember(jss::expected_ledger_size));
-                BEAST_EXPECT(!result.isMember(jss::max_queue_size));
-                BEAST_EXPECT(result.isMember(jss::drops));
-                auto const& drops = result[jss::drops];
-                BEAST_EXPECT(drops.isMember(jss::base_fee));
-                BEAST_EXPECT(drops.isMember(jss::median_fee));
-                BEAST_EXPECT(drops.isMember(jss::minimum_fee));
-                BEAST_EXPECT(drops.isMember(jss::open_ledger_fee));
-                BEAST_EXPECT(result.isMember(jss::levels));
-                auto const& levels = result[jss::levels];
-                BEAST_EXPECT(levels.isMember(jss::median_level));
-                BEAST_EXPECT(levels.isMember(jss::minimum_level));
-                BEAST_EXPECT(levels.isMember(jss::open_ledger_level));
-                BEAST_EXPECT(levels.isMember(jss::reference_level));
-            }
-
-            env.close();
-
-            fee = env.rpc("fee");
-
-            if (BEAST_EXPECT(fee.isMember(jss::result) &&
-                BEAST_EXPECT(!RPC::contains_error(fee[jss::result]))))
-            {
-                auto const& result = fee[jss::result];
-                BEAST_EXPECT(result.isMember(jss::ledger_current_index)
-                    && result[jss::ledger_current_index] == 4);
-                BEAST_EXPECT(result.isMember(jss::current_ledger_size));
-                BEAST_EXPECT(result.isMember(jss::current_queue_size));
-                BEAST_EXPECT(result.isMember(jss::expected_ledger_size));
-                BEAST_EXPECT(result.isMember(jss::max_queue_size));
-                auto const& drops = result[jss::drops];
-                BEAST_EXPECT(drops.isMember(jss::base_fee));
-                BEAST_EXPECT(drops.isMember(jss::median_fee));
-                BEAST_EXPECT(drops.isMember(jss::minimum_fee));
-                BEAST_EXPECT(drops.isMember(jss::open_ledger_fee));
-                BEAST_EXPECT(result.isMember(jss::levels));
-                auto const& levels = result[jss::levels];
-                BEAST_EXPECT(levels.isMember(jss::median_level));
-                BEAST_EXPECT(levels.isMember(jss::minimum_level));
-                BEAST_EXPECT(levels.isMember(jss::open_ledger_level));
-                BEAST_EXPECT(levels.isMember(jss::reference_level));
-            }
+            auto const& result = fee[jss::result];
+            BEAST_EXPECT(result.isMember(jss::ledger_current_index)
+                && result[jss::ledger_current_index] == 3);
+            BEAST_EXPECT(result.isMember(jss::current_ledger_size));
+            BEAST_EXPECT(result.isMember(jss::current_queue_size));
+            BEAST_EXPECT(result.isMember(jss::expected_ledger_size));
+            BEAST_EXPECT(!result.isMember(jss::max_queue_size));
+            BEAST_EXPECT(result.isMember(jss::drops));
+            auto const& drops = result[jss::drops];
+            BEAST_EXPECT(drops.isMember(jss::base_fee));
+            BEAST_EXPECT(drops.isMember(jss::median_fee));
+            BEAST_EXPECT(drops.isMember(jss::minimum_fee));
+            BEAST_EXPECT(drops.isMember(jss::open_ledger_fee));
+            BEAST_EXPECT(result.isMember(jss::levels));
+            auto const& levels = result[jss::levels];
+            BEAST_EXPECT(levels.isMember(jss::median_level));
+            BEAST_EXPECT(levels.isMember(jss::minimum_level));
+            BEAST_EXPECT(levels.isMember(jss::open_ledger_level));
+            BEAST_EXPECT(levels.isMember(jss::reference_level));
         }
 
+        env.close();
+
+        fee = env.rpc("fee");
+
+        if (BEAST_EXPECT(fee.isMember(jss::result)) &&
+            BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
         {
-            Env env(*this, FeatureBitset{});
-
-            auto fee = env.rpc("fee");
-
-            if(BEAST_EXPECT(fee.isMember(jss::result) &&
-                RPC::contains_error(fee[jss::result])))
-            {
-                auto const& result = fee[jss::result];
-                BEAST_EXPECT(result.isMember(jss::error) &&
-                    result[jss::error] ==
-                        RPC::get_error_info(rpcNOT_ENABLED).token);
-            }
+            auto const& result = fee[jss::result];
+            BEAST_EXPECT(result.isMember(jss::ledger_current_index)
+                && result[jss::ledger_current_index] == 4);
+            BEAST_EXPECT(result.isMember(jss::current_ledger_size));
+            BEAST_EXPECT(result.isMember(jss::current_queue_size));
+            BEAST_EXPECT(result.isMember(jss::expected_ledger_size));
+            BEAST_EXPECT(result.isMember(jss::max_queue_size));
+            auto const& drops = result[jss::drops];
+            BEAST_EXPECT(drops.isMember(jss::base_fee));
+            BEAST_EXPECT(drops.isMember(jss::median_fee));
+            BEAST_EXPECT(drops.isMember(jss::minimum_fee));
+            BEAST_EXPECT(drops.isMember(jss::open_ledger_fee));
+            BEAST_EXPECT(result.isMember(jss::levels));
+            auto const& levels = result[jss::levels];
+            BEAST_EXPECT(levels.isMember(jss::median_level));
+            BEAST_EXPECT(levels.isMember(jss::minimum_level));
+            BEAST_EXPECT(levels.isMember(jss::open_ledger_level));
+            BEAST_EXPECT(levels.isMember(jss::reference_level));
         }
     }
 
@@ -2617,16 +2571,16 @@ public:
             auto const metrics = env.app ().getTxQ ().getMetrics (
                 *env.current ());
             if (!numToClear)
-                numToClear.emplace(metrics->txCount + 1);
+                numToClear.emplace(metrics.txCount + 1);
             for (int i = 0; i < *numToClear; ++i)
             {
-                auto inLedger = metrics->txInLedger + i;
+                auto inLedger = metrics.txInLedger + i;
                 totalFactor += inLedger * inLedger;
             }
             auto result =
-                mulDiv (metrics->medFeeLevel * totalFactor /
-                        (metrics->txPerLedger * metrics->txPerLedger),
-                    env.current ()->fees ().base, metrics->referenceFeeLevel)
+                mulDiv (metrics.medFeeLevel * totalFactor /
+                        (metrics.txPerLedger * metrics.txPerLedger),
+                    env.current ()->fees ().base, metrics.referenceFeeLevel)
                     .second;
             // Subtract the fees already paid
             result -= alreadyPaid;
@@ -2698,7 +2652,7 @@ public:
             auto const metrics = env.app ().getTxQ ().getMetrics (
                 *env.current ());
             std::uint64_t const totalFee =
-                calcTotalFee (100 * 2, metrics->txCount);
+                calcTotalFee (100 * 2, metrics.txCount);
             BEAST_EXPECT(totalFee == 167578);
             // Replacing the last tx with the large fee succeeds.
             --aliceSeq;
@@ -2944,7 +2898,6 @@ public:
         testQueuedFailure();
         testMultiTxnPerAccount();
         testTieBreaking();
-        testDisabled();
         testAcctTxnID();
         testMaximum();
         testUnexpectedBalanceChange();

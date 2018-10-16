@@ -700,17 +700,14 @@ Json::Value checkFee (
     std::uint64_t fee = loadFee;
     {
         auto const metrics = txQ.getMetrics(*ledger);
-        if(metrics)
-        {
-            auto const baseFee = ledger->fees().base;
-            auto escalatedFee = mulDiv(
-                metrics->openLedgerFeeLevel, baseFee,
-                    metrics->referenceFeeLevel).second;
-            if (mulDiv(escalatedFee, metrics->referenceFeeLevel,
-                    baseFee).second < metrics->openLedgerFeeLevel)
-                ++escalatedFee;
-            fee = std::max(fee, escalatedFee);
-        }
+        auto const baseFee = ledger->fees().base;
+        auto escalatedFee = mulDiv(
+            metrics.openLedgerFeeLevel, baseFee,
+                metrics.referenceFeeLevel).second;
+        if (mulDiv(escalatedFee, metrics.referenceFeeLevel,
+                baseFee).second < metrics.openLedgerFeeLevel)
+            ++escalatedFee;
+        fee = std::max(fee, escalatedFee);
     }
 
     auto const limit = [&]()

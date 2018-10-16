@@ -1212,8 +1212,18 @@ bool ApplicationImp::setup()
 
     // Configure the amendments the server supports
     {
+        auto const& sa = detail::supportedAmendments();
+        std::vector<std::string> saHashes;
+        saHashes.reserve(sa.size());
+        for (auto const& name : sa)
+        {
+            auto const f = getRegisteredFeature(name);
+            BOOST_ASSERT(f);
+            if (f)
+                saHashes.push_back(to_string(*f) + " " + name);
+        }
         Section supportedAmendments ("Supported Amendments");
-        supportedAmendments.append (detail::supportedAmendments ());
+        supportedAmendments.append (saHashes);
 
         Section enabledAmendments = config_->section (SECTION_AMENDMENTS);
 
