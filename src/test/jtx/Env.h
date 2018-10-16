@@ -77,7 +77,7 @@ supported_amendments()
         feats.reserve(sa.size());
         for (auto const& s : sa)
         {
-            if (auto const f = getRegisteredFeature(s.substr(65)))
+            if (auto const f = getRegisteredFeature(s))
                 feats.push_back(*f);
             else
                 Throw<std::runtime_error> ("Unknown feature: " + s + "  in supportedAmendments.");

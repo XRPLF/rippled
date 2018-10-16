@@ -737,16 +737,6 @@ public:
         }
     }
 
-    void
-    testSupportedAmendments ()
-    {
-        for (auto const& amend : detail::supportedAmendments ())
-        {
-            auto const f = getRegisteredFeature(amend.substr (65));
-            BEAST_EXPECT(f && amend.substr (0, 64) == to_string (*f));
-        }
-    }
-
     void testHasUnsupported ()
     {
         testcase ("hasUnsupportedEnabled");
@@ -772,7 +762,6 @@ public:
         testVoteEnable ();
         testDetectMajority ();
         testLostMajority ();
-        testSupportedAmendments ();
         testHasUnsupported ();
     }
 };
