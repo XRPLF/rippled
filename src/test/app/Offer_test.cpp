@@ -286,8 +286,7 @@ public:
                 d * env.closed()->info().closeTimeResolution;
             env.close (closeTime);
             *stAmountCalcSwitchover = closeTime > STAmountSO::soTime ||
-                (hasFeature(env, featureFeeEscalation) &&
-                    !hasFeature(env, fix1513));
+                !hasFeature(env, fix1513);
             // Will fail without the underflow fix
             TER const expectedResult = *stAmountCalcSwitchover ?
                 TER {tesSUCCESS} : TER {tecPATH_PARTIAL};
@@ -328,8 +327,7 @@ public:
 
         for (auto withFix : {false, true})
         {
-            if (!withFix &&
-                (features[featureFlow] || features[featureFeeEscalation]))
+            if (!withFix)
                 continue;
 
             Env env {*this, features};
@@ -4738,29 +4736,22 @@ class Offer_manual_test : public Offer_test
     {
         using namespace jtx;
         FeatureBitset const all{supported_amendments()};
-        FeatureBitset const feeEscalation{featureFeeEscalation};
         FeatureBitset const flow{featureFlow};
         FeatureBitset const f1373{fix1373};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
 
-        testAll(all -feeEscalation - flow - f1373 - flowCross - f1513);
         testAll(all                - flow - f1373 - flowCross - f1513);
         testAll(all                - flow - f1373 - flowCross        );
-        testAll(all -feeEscalation - flow - f1373             - f1513);
         testAll(all                - flow - f1373             - f1513);
         testAll(all                - flow - f1373                    );
-        testAll(all -feeEscalation        - f1373 - flowCross - f1513);
         testAll(all                       - f1373 - flowCross - f1513);
         testAll(all                       - f1373 - flowCross        );
-        testAll(all -feeEscalation        - f1373             - f1513);
         testAll(all                       - f1373             - f1513);
         testAll(all                       - f1373                    );
-        testAll(all -feeEscalation                - flowCross - f1513);
         testAll(all                               - flowCross - f1513);
         testAll(all                               - flowCross        );
-        testAll(all -feeEscalation                            - f1513);
         testAll(all                                           - f1513);
         testAll(all                                                  );
 

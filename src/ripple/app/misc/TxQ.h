@@ -319,7 +319,7 @@ public:
         @returns Uninitialized boost::optional if the
         FeeEscalation amendment is not enabled.
     */
-    boost::optional<Metrics>
+    Metrics
     getMetrics(OpenView const& view) const;
 
     /** Returns information about the transactions currently
