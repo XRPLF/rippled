@@ -812,11 +812,19 @@ RCLConsensus::peerProposal(
 bool
 RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
 {
-    // We have a key and do not want out of sync validations after a restart,
+    // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
     validating_ = valPublic_.size() != 0 &&
                   prevLgr.seq() >= app_.getMaxDisallowedLedger() &&
                   !app_.getOPs().isAmendmentBlocked();
+
+    // If we have an expired UNL we do not want to validate:
+    if (validating_ && app_.validators().count())
+    {
+        auto const when = app_.validators().expires();
+        if (!when || *when < app_.timeKeeper().now())
+            validating_ = false;
+    }
 
     const bool synced = app_.getOPs().getOperatingMode() == NetworkOPs::omFULL;
 
