@@ -812,11 +812,25 @@ RCLConsensus::peerProposal(
 bool
 RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
 {
-    // We have a key and do not want out of sync validations after a restart,
+    // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
     validating_ = valPublic_.size() != 0 &&
                   prevLgr.seq() >= app_.getMaxDisallowedLedger() &&
                   !app_.getOPs().isAmendmentBlocked();
+
+    // If we are not running in standalone mode and there's a configured UNL,
+    // check to make sure that it's not expired.
+    if (validating_ && !app_.config().standalone() && app_.validators().count())
+    {
+        auto const when = app_.validators().expires();
+
+        if (!when || *when < app_.timeKeeper().now())
+        {
+            JLOG(j_.error()) << "Voluntarily bowing out of consensus process "
+                                "because of an expired validator list.";
+            validating_ = false;
+        }
+    }
 
     const bool synced = app_.getOPs().getOperatingMode() == NetworkOPs::omFULL;
 

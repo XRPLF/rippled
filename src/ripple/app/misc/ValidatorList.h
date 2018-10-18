@@ -331,6 +331,10 @@ public:
     for_each_listed (
         std::function<void(PublicKey const&, bool)> func) const;
 
+    /** Return the number of configured validator list sites. */
+    std::size_t
+    count() const;
+
     /** Return the time when the validator list will expire
 
         @note This may be a time in the past if a published list has not

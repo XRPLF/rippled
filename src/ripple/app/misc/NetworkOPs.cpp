@@ -2103,25 +2103,44 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin, bool counters)
 
     if (admin)
     {
-        if (auto when = app_.validators().expires())
+        auto when = app_.validators().expires();
+
+        if (!human)
         {
-            if (human)
-            {
-                if(*when == TimeKeeper::time_point::max())
-                    info[jss::validator_list_expires] = "never";
-                else
-                    info[jss::validator_list_expires] = to_string(*when);
-            }
-            else
+            if (when)
                 info[jss::validator_list_expires] =
                     static_cast<Json::UInt>(when->time_since_epoch().count());
+            else
+                info[jss::validator_list_expires] = 0;
         }
         else
         {
-            if (human)
-                info[jss::validator_list_expires] = "unknown";
+            auto& x = (info[jss::validator_list] = Json::objectValue);
+
+            x[jss::count] = static_cast<Json::UInt>(app_.validators().count());
+
+            if (when)
+            {
+                if (*when == TimeKeeper::time_point::max())
+                {
+                    x[jss::expiration] = "never";
+                    x[jss::status] = "active";
+                }
+                else
+                {
+                    x[jss::expiration] = to_string(*when);
+
+                    if (*when > app_.timeKeeper().now())
+                        x[jss::status] = "active";
+                    else
+                        x[jss::status] = "expired";
+                }
+            }
             else
-                info[jss::validator_list_expires] = 0;
+            {
+                x[jss::status] = "unknown";
+                x[jss::expiration] = "unknown";
+            }
         }
     }
     info[jss::io_latency_ms] = static_cast<Json::UInt> (

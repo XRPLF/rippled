@@ -459,6 +459,13 @@ ValidatorList::removePublisherList (PublicKey const& publisherKey)
     return true;
 }
 
+std::size_t
+ValidatorList::count() const
+{
+    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+    return publisherLists_.size();
+}
+
 boost::optional<TimeKeeper::time_point>
 ValidatorList::expires() const
 {
@@ -486,19 +493,34 @@ ValidatorList::getJson() const
 
     res[jss::validation_quorum] = static_cast<Json::UInt>(quorum());
 
-    if (auto when = expires())
     {
-        if (*when == TimeKeeper::time_point::max())
+        auto& x = (res[jss::validator_list] = Json::objectValue);
+
+        x[jss::count] = static_cast<Json::UInt>(count());
+
+        if (auto when = expires())
         {
-            res[jss::validator_list_expires] = "never";
+            if (*when == TimeKeeper::time_point::max())
+            {
+                x[jss::expiration] = "never";
+                x[jss::status] = "active";
+            }
+            else
+            {
+                x[jss::expiration] = to_string(*when);
+
+                if (*when > timeKeeper_.now())
+                    x[jss::status] = "active";
+                else
+                    x[jss::status] = "expired";
+            }
         }
         else
         {
-            res[jss::validator_list_expires] = to_string(*when);
+            x[jss::status] = "unknown";
+            x[jss::expiration] = "unknown";
         }
     }
-    else
-        res[jss::validator_list_expires] = "unknown";
 
     // Local static keys
     PublicKey local;
