@@ -79,8 +79,8 @@ private:
 
         struct Resource
         {
-            explicit Resource(std::string u);
-            std::string uri;
+            explicit Resource(std::string uri_);
+            const std::string uri;
             parsedURL pUrl;
         };
 
@@ -89,7 +89,7 @@ private:
         /// the original uri as loaded from config
         std::shared_ptr<Resource> loadedResource;
 
-        /// the resource to to request at <timer>
+        /// the resource to request at <timer>
         /// intervals. same as loadedResource
         /// except in the case of a permanent redir.
         std::shared_ptr<Resource> startingResource;

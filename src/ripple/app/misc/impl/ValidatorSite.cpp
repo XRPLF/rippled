@@ -34,8 +34,8 @@ auto constexpr DEFAULT_REFRESH_INTERVAL = std::chrono::minutes{5};
 auto constexpr ERROR_RETRY_INTERVAL = std::chrono::seconds{30};
 unsigned short constexpr MAX_REDIRECTS = 3;
 
-ValidatorSite::Site::Resource::Resource (std::string u)
-    : uri {std::move(u)}
+ValidatorSite::Site::Resource::Resource (std::string uri_)
+    : uri {std::move(uri_)}
 {
     if (! parseUrl (pUrl, uri) ||
         (pUrl.scheme != "http" && pUrl.scheme != "https"))
@@ -228,7 +228,18 @@ ValidatorSite::onTimer (
 
     assert(! fetching_);
     sites_[siteIdx].redirCount = 0;
-    makeRequest(sites_[siteIdx].startingResource, siteIdx, lock);
+    try
+    {
+        // the WorkSSL client can throw if SSL init fails
+        makeRequest(sites_[siteIdx].startingResource, siteIdx, lock);
+    }
+    catch (std::exception &)
+    {
+        onSiteFetch(
+            boost::system::error_code {-1, boost::system::generic_category()},
+            detail::response_type {},
+            siteIdx);
+    }
 }
 
 void
@@ -354,7 +365,7 @@ ValidatorSite::processRedirect (
     {
         newLocation = std::make_shared<Site::Resource>(
             std::string(res[field::location]));
-        sites_[siteIdx].redirCount++;
+        ++sites_[siteIdx].redirCount;
     }
     catch (std::exception &)
     {
@@ -388,42 +399,42 @@ ValidatorSite::onSiteFetch(
                 shouldRetry = true;
                 throw std::runtime_error{"fetch error"};
             }
-            else
+
+            using namespace boost::beast::http;
+            switch (res.result())
             {
-                using namespace boost::beast::http;
-                if (res.result() == status::ok)
+            case status::ok:
+                parseJsonResponse(res, siteIdx, lock_sites);
+                break;
+            case status::moved_permanently :
+            case status::permanent_redirect :
+            case status::found :
+            case status::temporary_redirect :
+            {
+                auto newLocation = processRedirect (res, siteIdx, lock_sites);
+                assert(newLocation);
+                // for perm redirects, also update our starting URI
+                if (res.result() == status::moved_permanently ||
+                    res.result() == status::permanent_redirect)
                 {
-                    parseJsonResponse(res, siteIdx, lock_sites);
+                    sites_[siteIdx].startingResource = newLocation;
                 }
-                else if (res.result() == status::moved_permanently  ||
-                         res.result() == status::permanent_redirect ||
-                         res.result() == status::found              ||
-                         res.result() == status::temporary_redirect)
-                {
-                    auto newLocation =
-                        processRedirect (res, siteIdx, lock_sites);
-                    assert(newLocation);
-                    // for perm redirects, also update our starting URI
-                    if (res.result() == status::moved_permanently ||
-                        res.result() == status::permanent_redirect)
-                    {
-                        sites_[siteIdx].startingResource = newLocation;
-                    }
-                    makeRequest(newLocation, siteIdx, lock_sites);
-                    return; // we are still fetching, so skip
-                            // state update/notify below
-                }
-                else
-                {
-                    JLOG (j_.warn()) <<
-                        "Request for validator list at " <<
-                        sites_[siteIdx].activeResource->uri <<
-                        " returned bad status: " <<
-                        res.result_int();
-                    shouldRetry = true;
-                    throw std::runtime_error{"bad result code"};
-                }
+                makeRequest(newLocation, siteIdx, lock_sites);
+                return; // we are still fetching, so skip
+                        // state update/notify below
             }
+            default:
+            {
+                JLOG (j_.warn()) <<
+                    "Request for validator list at " <<
+                    sites_[siteIdx].activeResource->uri <<
+                    " returned bad status: " <<
+                    res.result_int();
+                shouldRetry = true;
+                throw std::runtime_error{"bad result code"};
+            }
+            }
+
         }
         catch (std::exception& ex)
         {
