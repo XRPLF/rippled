@@ -818,12 +818,18 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
                   prevLgr.seq() >= app_.getMaxDisallowedLedger() &&
                   !app_.getOPs().isAmendmentBlocked();
 
-    // If we have an expired UNL we do not want to validate:
-    if (validating_ && app_.validators().count())
+    // If we are not running in standalone mode and there's a configured UNL,
+    // check to make sure that it's not expired.
+    if (validating_ && !app_.config().standalone() && app_.validators().count())
     {
         auto const when = app_.validators().expires();
+
         if (!when || *when < app_.timeKeeper().now())
+        {
+            JLOG(j_.error()) << "Voluntarily bowing out of consensus process "
+                                "because of an expired validator list.";
             validating_ = false;
+        }
     }
 
     const bool synced = app_.getOPs().getOperatingMode() == NetworkOPs::omFULL;
