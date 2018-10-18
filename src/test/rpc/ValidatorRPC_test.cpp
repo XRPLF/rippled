@@ -111,7 +111,7 @@ public:
                 auto const jrr = env.rpc("server_info")[jss::result];
                 BEAST_EXPECT(jrr[jss::status] == "success");
                 BEAST_EXPECT(jrr[jss::info].isMember(
-                                 jss::validator_list_expires) == isAdmin);
+                                 jss::validator_list) == isAdmin);
             }
 
             {
@@ -145,7 +145,8 @@ public:
         {
             auto const jrr = env.rpc("server_info")[jss::result];
             BEAST_EXPECT(
-                jrr[jss::info][jss::validator_list_expires] == "never");
+                jrr[jss::info][jss::validator_list][jss::expiration] ==
+                "never");
         }
         {
             auto const jrr = env.rpc("server_state")[jss::result];
@@ -156,7 +157,7 @@ public:
         // All our keys are in the response
         {
             auto const jrr = env.rpc("validators")[jss::result];
-            BEAST_EXPECT(jrr[jss::validator_list_expires] == "never");
+            BEAST_EXPECT(jrr[jss::validator_list][jss::expiration] == "never");
             BEAST_EXPECT(jrr[jss::validation_quorum].asUInt() == keys.size());
             BEAST_EXPECT(jrr[jss::trusted_validator_keys].size() == keys.size());
             BEAST_EXPECT(jrr[jss::publisher_lists].size() == 0);
@@ -226,7 +227,8 @@ public:
             {
                 auto const jrr = env.rpc("server_info")[jss::result];
                 BEAST_EXPECT(
-                    jrr[jss::info][jss::validator_list_expires] == "unknown");
+                    jrr[jss::info][jss::validator_list][jss::expiration] ==
+                    "unknown");
             }
             {
                 auto const jrr = env.rpc("server_state")[jss::result];
@@ -239,7 +241,8 @@ public:
                     std::numeric_limits<std::uint32_t>::max());
                 BEAST_EXPECT(jrr[jss::local_static_keys].size() == 0);
                 BEAST_EXPECT(jrr[jss::trusted_validator_keys].size() == 0);
-                BEAST_EXPECT(jrr[jss::validator_list_expires] == "unknown");
+                BEAST_EXPECT(
+                    jrr[jss::validator_list][jss::expiration] == "unknown");
 
                 if (BEAST_EXPECT(jrr[jss::publisher_lists].size() == 1))
                 {
@@ -312,7 +315,8 @@ public:
 
             {
                 auto const jrr = env.rpc("server_info")[jss::result];
-                BEAST_EXPECT(jrr[jss::info][jss::validator_list_expires] ==
+                BEAST_EXPECT(
+                    jrr[jss::info][jss::validator_list][jss::expiration] ==
                     to_string(expiration));
             }
             {
@@ -325,7 +329,8 @@ public:
                 auto const jrr = env.rpc("validators")[jss::result];
                 BEAST_EXPECT(jrr[jss::validation_quorum].asUInt() == 2);
                 BEAST_EXPECT(
-                    jrr[jss::validator_list_expires] == to_string(expiration));
+                    jrr[jss::validator_list][jss::expiration] ==
+                    to_string(expiration));
                 BEAST_EXPECT(jrr[jss::local_static_keys].size() == 0);
 
                 BEAST_EXPECT(jrr[jss::trusted_validator_keys].size() ==
