@@ -28,15 +28,6 @@ namespace ripple
 {
     Json::Value doFee(RPC::Context& context)
     {
-        // Bail if fee escalation is not enabled.
-        auto const view = context.app.openLedger().current();
-        BOOST_ASSERT(view);
-        if (!view)
-        {
-            RPC::inject_error(rpcNOT_ENABLED, context.params);
-            return context.params;
-        }
-
         auto result = context.app.getTxQ().doRPC(context.app);
         if (result.type() == Json::objectValue)
             return result;

@@ -315,9 +315,6 @@ public:
         ReadView const& view, bool timeLeap);
 
     /** Returns fee metrics in reference fee level units.
-
-        @returns Uninitialized boost::optional if the
-        FeeEscalation amendment is not enabled.
     */
     Metrics
     getMetrics(OpenView const& view) const;
@@ -326,7 +323,6 @@ public:
         in the queue for the account.
 
         @returns Empty `map` if the
-        FeeEscalation amendment is not enabled, OR if the
         account has no transactions in the queue.
     */
     std::map<TxSeq, AccountTxDetails const>
@@ -335,8 +331,7 @@ public:
     /** Returns information about all transactions currently
         in the queue.
 
-        @returns Empty `vector` if the FeeEscalation
-        amendment is not enabled, OR if there are no transactions
+        @returns Empty `vector` if there are no transactions
         in the queue.
     */
     std::vector<TxDetails>
@@ -440,12 +435,6 @@ private:
             queue.
 
             @param view Current open ledger.
-            @param txCountPadding Optional number of "extra" transactions
-                to assume are in the ledger. Can be used to determine a
-                padded fee, so a transaction can pay more if the user is
-                concerned that more transactions will get into the open
-                ledger between the time this fee is computed and the
-                transaction is submitted.
 
             @return A fee level value.
         */

@@ -1446,6 +1446,12 @@ TxQ::doRPC(Application& app) const
     using std::to_string;
 
     auto const view = app.openLedger().current();
+    if (!view)
+    {
+        BOOST_ASSERT(false);
+        return {};
+    }
+
     auto const metrics = getMetrics(*view);
 
     Json::Value ret(Json::objectValue);
