@@ -29,6 +29,7 @@
 #include <ripple/ledger/detail/ReadViewFwdRange.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STTx.h>
 #include <boost/optional.hpp>
@@ -67,10 +68,13 @@ struct Fees
         return reserve + ownerCount * increment;
     }
 
-    std::pair<bool, XRPAmount>
+    XRPAmount
     toDrops(FeeUnit64 const& fee) const
     {
-        return mulDiv(base, fee, units);
+        if (auto const resultPair = mulDiv(base, fee, units); resultPair.first)
+            return resultPair.second;
+
+        return XRPAmount(STAmount::cMaxNativeN);
     }
 };
 

@@ -162,6 +162,12 @@ closeChannel(
 
 //------------------------------------------------------------------------------
 
+TxConsequences
+PayChanCreate::makeTxConsequences(PreflightContext const& ctx)
+{
+    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+}
+
 NotTEC
 PayChanCreate::preflight(PreflightContext const& ctx)
 {
@@ -236,9 +242,12 @@ PayChanCreate::doApply()
 
     auto const dst = ctx_.tx[sfDestination];
 
-    // Create PayChan in ledger
+    // Create PayChan in ledger.
+    //
+    // Note that we we use the value from the sequence or ticket as the
+    // payChan sequence.  For more explanation see comments in SeqProxy.h.
     auto const slep = std::make_shared<SLE>(
-        keylet::payChan(account, dst, (*sle)[sfSequence] - 1));
+        keylet::payChan(account, dst, ctx_.tx.getSeqProxy().value()));
     // Funds held in this channel
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
     // Amount channel has already paid
@@ -291,6 +300,12 @@ PayChanCreate::doApply()
 }
 
 //------------------------------------------------------------------------------
+
+TxConsequences
+PayChanFund::makeTxConsequences(PreflightContext const& ctx)
+{
+    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+}
 
 NotTEC
 PayChanFund::preflight(PreflightContext const& ctx)
@@ -429,6 +444,7 @@ PayChanClaim::preflight(PreflightContext const& ctx)
         Keylet const k(ltPAYCHAN, ctx.tx[sfPayChannel]);
         if (!publicKeyType(ctx.tx[sfPublicKey]))
             return temMALFORMED;
+
         PublicKey const pk(ctx.tx[sfPublicKey]);
         Serializer msg;
         serializePayChanAuthorization(msg, k.key, authAmt);

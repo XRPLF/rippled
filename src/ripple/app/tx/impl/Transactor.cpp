@@ -55,6 +55,14 @@ preflight0(PreflightContext const& ctx)
 NotTEC
 preflight1(PreflightContext const& ctx)
 {
+    // This is inappropriate in preflight0, because only Change transactions
+    // skip this function, and those do not allow an sfTicketSequence field.
+    if (ctx.tx.getSeqProxy().isTicket() &&
+        !ctx.rules.enabled(featureTicketBatch))
+    {
+        return temMALFORMED;
+    }
+
     auto const ret = preflight0(ctx);
     if (!isTesSuccess(ret))
         return ret;
@@ -81,6 +89,16 @@ preflight1(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "preflight1: invalid signing key";
         return temBAD_SIGNATURE;
     }
+
+    // An AccountTxnID field constrains transaction ordering more than the
+    // Sequence field.  Tickets, on the other hand, reduce ordering
+    // constraints.  Because Tickets and AccountTxnID work against one
+    // another the combination is unsupported and treated as malformed.
+    //
+    // We return temINVALID for such transactions.
+    if (ctx.tx.getSeqProxy().isTicket() &&
+        ctx.tx.isFieldPresent(sfAccountTxnID))
+        return temINVALID;
 
     return tesSUCCESS;
 }
@@ -113,7 +131,8 @@ PreflightContext::PreflightContext(
 
 //------------------------------------------------------------------------------
 
-Transactor::Transactor(ApplyContext& ctx) : ctx_(ctx), j_(ctx.journal)
+Transactor::Transactor(ApplyContext& ctx)
+    : ctx_(ctx), j_(ctx.journal), account_(ctx.tx.getAccountID(sfAccount))
 {
 }
 
@@ -136,12 +155,6 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 }
 
 XRPAmount
-Transactor::calculateFeePaid(STTx const& tx)
-{
-    return tx[sfFee].xrp();
-}
-
-XRPAmount
 Transactor::minimumFee(
     Application& app,
     FeeUnit64 baseFee,
@@ -151,16 +164,13 @@ Transactor::minimumFee(
     return scaleFeeLoad(baseFee, app.getFeeTrack(), fees, flags & tapUNLIMITED);
 }
 
-XRPAmount
-Transactor::calculateMaxSpend(STTx const& tx)
-{
-    return beast::zero;
-}
-
 TER
 Transactor::checkFee(PreclaimContext const& ctx, FeeUnit64 baseFee)
 {
-    auto const feePaid = calculateFeePaid(ctx.tx);
+    if (!ctx.tx[sfFee].native())
+        return temBAD_FEE;
+
+    auto const feePaid = ctx.tx[sfFee].xrp();
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
@@ -206,7 +216,7 @@ Transactor::checkFee(PreclaimContext const& ctx, FeeUnit64 baseFee)
 TER
 Transactor::payFee()
 {
-    auto const feePaid = calculateFeePaid(ctx_.tx);
+    auto const feePaid = ctx_.tx[sfFee].xrp();
 
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)
@@ -224,7 +234,68 @@ Transactor::payFee()
 }
 
 NotTEC
-Transactor::checkSeq(PreclaimContext const& ctx)
+Transactor::checkSeqProxy(
+    ReadView const& view,
+    STTx const& tx,
+    beast::Journal j)
+{
+    auto const id = tx.getAccountID(sfAccount);
+
+    auto const sle = view.read(keylet::account(id));
+
+    if (!sle)
+    {
+        JLOG(j.trace())
+            << "applyTransaction: delay: source account does not exist "
+            << toBase58(tx.getAccountID(sfAccount));
+        return terNO_ACCOUNT;
+    }
+
+    SeqProxy const t_seqProx = tx.getSeqProxy();
+    SeqProxy const a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+
+    if (t_seqProx.isSeq() && t_seqProx != a_seq)
+    {
+        if (a_seq < t_seqProx)
+        {
+            JLOG(j.trace()) << "applyTransaction: has future sequence number "
+                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+            return terPRE_SEQ;
+        }
+        // It's an already-used sequence number.
+        JLOG(j.trace()) << "applyTransaction: has past sequence number "
+                        << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+        return tefPAST_SEQ;
+    }
+    else if (t_seqProx.isTicket())
+    {
+        // Bypass the type comparison. Apples and oranges.
+        if (a_seq.value() <= t_seqProx.value())
+        {
+            // If the Ticket number is greater than or equal to the
+            // account sequence there's the possibility that the
+            // transaction to create the Ticket has not hit the ledger
+            // yet.  Allow a retry.
+            JLOG(j.trace()) << "applyTransaction: has future ticket id "
+                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+            return terPRE_TICKET;
+        }
+
+        // Transaction can never succeed if the Ticket is not in the ledger.
+        if (!view.exists(keylet::ticket(id, t_seqProx)))
+        {
+            JLOG(j.trace())
+                << "applyTransaction: ticket already used or never created "
+                << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+            return tefNO_TICKET;
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+NotTEC
+Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx.getAccountID(sfAccount);
 
@@ -238,27 +309,6 @@ Transactor::checkSeq(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
     }
 
-    std::uint32_t const t_seq = ctx.tx.getSequence();
-    std::uint32_t const a_seq = sle->getFieldU32(sfSequence);
-
-    if (t_seq != a_seq)
-    {
-        if (a_seq < t_seq)
-        {
-            JLOG(ctx.j.trace())
-                << "applyTransaction: has future sequence number "
-                << "a_seq=" << a_seq << " t_seq=" << t_seq;
-            return terPRE_SEQ;
-        }
-
-        if (ctx.view.txExists(ctx.tx.getTransactionID()))
-            return tefALREADY;
-
-        JLOG(ctx.j.trace()) << "applyTransaction: has past sequence number "
-                            << "a_seq=" << a_seq << " t_seq=" << t_seq;
-        return tefPAST_SEQ;
-    }
-
     if (ctx.tx.isFieldPresent(sfAccountTxnID) &&
         (sle->getFieldH256(sfAccountTxnID) !=
          ctx.tx.getFieldH256(sfAccountTxnID)))
@@ -268,29 +318,87 @@ Transactor::checkSeq(PreclaimContext const& ctx)
         (ctx.view.seq() > ctx.tx.getFieldU32(sfLastLedgerSequence)))
         return tefMAX_LEDGER;
 
+    if (ctx.view.txExists(ctx.tx.getTransactionID()))
+        return tefALREADY;
+
     return tesSUCCESS;
 }
 
-void
-Transactor::setSeq()
+TER
+Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
-    auto const sle = view().peek(keylet::account(account_));
-    if (!sle)
-        return;
+    assert(sleAccount);
+    SeqProxy const seqProx = ctx_.tx.getSeqProxy();
+    if (seqProx.isSeq())
+    {
+        // Note that if this transaction is a TicketCreate, then
+        // the transaction will modify the account root sfSequence
+        // yet again.
+        sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
+        return tesSUCCESS;
+    }
+    return ticketDelete(
+        view(), account_, getTicketIndex(account_, seqProx), j_);
+}
 
-    std::uint32_t const t_seq = ctx_.tx.getSequence();
+// Remove a single Ticket from the ledger.
+TER
+Transactor::ticketDelete(
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const& ticketIndex,
+    beast::Journal j)
+{
+    // Delete the Ticket, adjust the account root ticket count, and
+    // reduce the owner count.
+    SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
+    if (!sleTicket)
+    {
+        JLOG(j.fatal()) << "Ticket disappeared from ledger.";
+        return tefBAD_LEDGER;
+    }
 
-    sle->setFieldU32(sfSequence, t_seq + 1);
+    std::uint64_t const page{(*sleTicket)[sfOwnerNode]};
+    if (!view.dirRemove(keylet::ownerDir(account), page, ticketIndex, true))
+    {
+        JLOG(j.fatal()) << "Unable to delete Ticket from owner.";
+        return tefBAD_LEDGER;
+    }
 
-    if (sle->isFieldPresent(sfAccountTxnID))
-        sle->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
+    // Update the account root's TicketCount.  If the ticket count drops to
+    // zero remove the (optional) field.
+    auto sleAccount = view.peek(keylet::account(account));
+    if (!sleAccount)
+    {
+        JLOG(j.fatal()) << "Could not find Ticket owner account root.";
+        return tefBAD_LEDGER;
+    }
+
+    if (auto ticketCount = (*sleAccount)[~sfTicketCount])
+    {
+        if (*ticketCount == 1)
+            sleAccount->makeFieldAbsent(sfTicketCount);
+        else
+            ticketCount = *ticketCount - 1;
+    }
+    else
+    {
+        JLOG(j.fatal()) << "TicketCount field missing from account root.";
+        return tefBAD_LEDGER;
+    }
+
+    // Update the Ticket owner's reserve.
+    adjustOwnerCount(view, sleAccount, -1, j);
+
+    // Remove Ticket from ledger.
+    view.erase(sleTicket);
+    return tesSUCCESS;
 }
 
 // check stuff before you bother to lock the ledger
 void
 Transactor::preCompute()
 {
-    account_ = ctx_.tx.getAccountID(sfAccount);
     assert(account_ != beast::zero);
 }
 
@@ -309,15 +417,19 @@ Transactor::apply()
 
     if (sle)
     {
-        mPriorBalance = STAmount((*sle)[sfBalance]).xrp();
+        mPriorBalance = STAmount{(*sle)[sfBalance]}.xrp();
         mSourceBalance = mPriorBalance;
 
-        setSeq();
-
-        auto result = payFee();
-
+        TER result = consumeSeqProxy(sle);
         if (result != tesSUCCESS)
             return result;
+
+        result = payFee();
+        if (result != tesSUCCESS)
+            return result;
+
+        if (sle->isFieldPresent(sfAccountTxnID))
+            sle->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
 
         view().update(sle);
     }
@@ -590,7 +702,7 @@ removeUnfundedOffers(
 }
 
 /** Reset the context, discarding any changes made and adjust the fee */
-XRPAmount
+std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
 {
     ctx_.discard();
@@ -600,7 +712,7 @@ Transactor::reset(XRPAmount fee)
     if (!txnAcct)
         // The account should never be missing from the ledger.  But if it
         // is missing then we can't very well charge it a fee, can we?
-        return beast::zero;
+        return {tefINTERNAL, beast::zero};
 
     auto const balance = txnAcct->getFieldAmount(sfBalance).xrp();
 
@@ -613,13 +725,19 @@ Transactor::reset(XRPAmount fee)
         fee = balance;
 
     // Since we reset the context, we need to charge the fee and update
-    // the account's sequence number again.
+    // the account's sequence number (or consume the Ticket) again.
+    //
+    // If for some reason we are unable to consume the ticket or sequence
+    // then the ledger is corrupted.  Rather than make things worse we
+    // reject the transaction.
     txnAcct->setFieldAmount(sfBalance, balance - fee);
-    txnAcct->setFieldU32(sfSequence, ctx_.tx.getSequence() + 1);
+    TER const ter{consumeSeqProxy(txnAcct)};
+    assert(isTesSuccess(ter));
 
-    view().update(txnAcct);
+    if (isTesSuccess(ter))
+        view().update(txnAcct);
 
-    return fee;
+    return {ter, fee};
 }
 
 //------------------------------------------------------------------------------
@@ -699,15 +817,21 @@ Transactor::operator()()
             });
         }
 
-        // Reset the context, potentially adjusting the fee
-        fee = reset(fee);
+        // Reset the context, potentially adjusting the fee.
+        {
+            auto const resetResult = reset(fee);
+            if (!isTesSuccess(resetResult.first))
+                result = resetResult.first;
+
+            fee = resetResult.second;
+        }
 
         // If necessary, remove any offers found unfunded during processing
         if ((result == tecOVERSIZE) || (result == tecKILLED))
             removeUnfundedOffers(
                 view(), removedOffers, ctx_.app.journal("View"));
 
-        applied = true;
+        applied = isTecClaim(result);
     }
 
     if (applied)
@@ -720,11 +844,16 @@ Transactor::operator()()
         {
             // if invariants checking failed again, reset the context and
             // attempt to only claim a fee.
-            fee = reset(fee);
+            auto const resetResult = reset(fee);
+            if (!isTesSuccess(resetResult.first))
+                result = resetResult.first;
+
+            fee = resetResult.second;
 
             // Check invariants again to ensure the fee claiming doesn't
             // violate invariants.
-            result = ctx_.checkInvariants(result, fee);
+            if (isTesSuccess(result) || isTecClaim(result))
+                result = ctx_.checkInvariants(result, fee);
         }
 
         // We ran through the invariant checker, which can, in some cases,

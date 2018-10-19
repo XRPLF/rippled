@@ -416,6 +416,15 @@ populateSignerQuorum(T& to, STObject const& from)
     populateProtoPrimitive(
         [&to]() { return to.mutable_signer_quorum(); }, from, sfSignerQuorum);
 }
+
+template <class T>
+void
+populateTicketCount(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_count(); }, from, sfTicketCount);
+}
+
 template <class T>
 void
 populateLimitAmount(T& to, STObject const& from)
@@ -735,6 +744,16 @@ populateSignerListID(T& to, STObject const& from)
 {
     populateProtoPrimitive(
         [&to]() { return to.mutable_signer_list_id(); }, from, sfSignerListID);
+}
+
+template <class T>
+void
+populateTicketSequence(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_ticket_sequence(); },
+        from,
+        sfTicketSequence);
 }
 
 template <class T>
@@ -1144,6 +1163,12 @@ convert(org::xrpl::rpc::v1::SignerListSet& to, STObject const& from)
 }
 
 void
+convert(org::xrpl::rpc::v1::TicketCreate& to, STObject const& from)
+{
+    populateTicketCount(to, from);
+}
+
+void
 convert(org::xrpl::rpc::v1::TrustSet& to, STObject const& from)
 {
     populateLimitAmount(to, from);
@@ -1475,6 +1500,22 @@ convert(org::xrpl::rpc::v1::NegativeUNL& to, STObject const& from)
 }
 
 void
+convert(org::xrpl::rpc::v1::TicketObject& to, STObject const& from)
+{
+    populateAccount(to, from);
+
+    populateFlags(to, from);
+
+    populateOwnerNode(to, from);
+
+    populatePreviousTransactionID(to, from);
+
+    populatePreviousTransactionLedgerSequence(to, from);
+
+    populateTicketSequence(to, from);
+}
+
+void
 setLedgerEntryType(
     org::xrpl::rpc::v1::AffectedNode& proto,
     std::uint16_t lgrType)
@@ -1533,6 +1574,10 @@ setLedgerEntryType(
             proto.set_ledger_entry_type(
                 org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_NEGATIVE_UNL);
             break;
+        case ltTICKET:
+            proto.set_ledger_entry_type(
+                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_TICKET);
+            break;
     }
 }
 
@@ -1580,6 +1625,9 @@ convert(T& to, STObject& from, std::uint16_t type)
             break;
         case ltNEGATIVE_UNL:
             RPC::convert(*to.mutable_negative_unl(), from);
+            break;
+        case ltTICKET:
+            RPC::convert(*to.mutable_ticket(), from);
             break;
     }
 }
@@ -1698,55 +1746,72 @@ convert(org::xrpl::rpc::v1::Meta& to, std::shared_ptr<TxMeta> const& from)
 void
 convert(
     org::xrpl::rpc::v1::QueueData& to,
-    std::map<TxSeq, TxQ::AccountTxDetails const> const& from)
+    std::vector<TxQ::TxDetails> const& from)
 {
     if (!from.empty())
     {
         to.set_txn_count(from.size());
-        to.set_lowest_sequence(from.begin()->first);
-        to.set_highest_sequence(from.rbegin()->first);
 
-        boost::optional<bool> anyAuthChanged(false);
-        boost::optional<XRPAmount> totalSpend(0);
+        std::uint32_t seqCount = 0;
+        std::uint32_t ticketCount = 0;
+        boost::optional<std::uint32_t> lowestSeq;
+        boost::optional<std::uint32_t> highestSeq;
+        boost::optional<std::uint32_t> lowestTicket;
+        boost::optional<std::uint32_t> highestTicket;
+        bool anyAuthChanged = false;
+        XRPAmount totalSpend(0);
 
-        for (auto const& [txSeq, txDetails] : from)
+        for (auto const& tx : from)
         {
             org::xrpl::rpc::v1::QueuedTransaction& qt = *to.add_transactions();
 
-            qt.mutable_sequence()->set_value(txSeq);
-            qt.set_fee_level(txDetails.feeLevel.fee());
-            if (txDetails.lastValid)
-                qt.mutable_last_ledger_sequence()->set_value(
-                    *txDetails.lastValid);
-
-            if (txDetails.consequences)
+            if (tx.seqProxy.isSeq())
             {
-                qt.mutable_fee()->set_drops(
-                    txDetails.consequences->fee.drops());
-                auto spend = txDetails.consequences->potentialSpend +
-                    txDetails.consequences->fee;
-                qt.mutable_max_spend_drops()->set_drops(spend.drops());
-                if (totalSpend)
-                    *totalSpend += spend;
-                auto authChanged =
-                    txDetails.consequences->category == TxConsequences::blocker;
-                if (authChanged)
-                    anyAuthChanged.emplace(authChanged);
-                qt.set_auth_change(authChanged);
+                qt.mutable_sequence()->set_value(tx.seqProxy.value());
+                ++seqCount;
+                if (!lowestSeq)
+                    lowestSeq = tx.seqProxy.value();
+                highestSeq = tx.seqProxy.value();
             }
             else
             {
-                if (anyAuthChanged && !*anyAuthChanged)
-                    anyAuthChanged.reset();
-                totalSpend.reset();
+                qt.mutable_ticket()->set_value(tx.seqProxy.value());
+                ++ticketCount;
+                if (!lowestTicket)
+                    lowestTicket = tx.seqProxy.value();
+                highestTicket = tx.seqProxy.value();
             }
+
+            qt.set_fee_level(tx.feeLevel.fee());
+            if (tx.lastValid)
+                qt.mutable_last_ledger_sequence()->set_value(*tx.lastValid);
+
+            qt.mutable_fee()->set_drops(tx.consequences.fee().drops());
+            auto const spend =
+                tx.consequences.potentialSpend() + tx.consequences.fee();
+            qt.mutable_max_spend_drops()->set_drops(spend.drops());
+            totalSpend += spend;
+            bool const authChanged = tx.consequences.isBlocker();
+            if (authChanged)
+                anyAuthChanged = true;
+            qt.set_auth_change(authChanged);
         }
 
-        if (anyAuthChanged)
-            to.set_auth_change_queued(*anyAuthChanged);
-        if (totalSpend)
-            to.mutable_max_spend_drops_total()->set_drops(
-                (*totalSpend).drops());
+        if (seqCount)
+            to.set_sequence_count(seqCount);
+        if (ticketCount)
+            to.set_ticket_count(ticketCount);
+        if (lowestSeq)
+            to.set_lowest_sequence(*lowestSeq);
+        if (highestSeq)
+            to.set_highest_sequence(*highestSeq);
+        if (lowestTicket)
+            to.set_lowest_ticket(*lowestTicket);
+        if (highestTicket)
+            to.set_highest_ticket(*highestTicket);
+
+        to.set_auth_change_queued(anyAuthChanged);
+        to.mutable_max_spend_drops_total()->set_drops(totalSpend.drops());
     }
 }
 
@@ -1778,6 +1843,8 @@ convert(
     populateMemos(to, fromObj);
 
     populateSigners(to, fromObj);
+
+    populateTicketSequence(to, fromObj);
 
     auto type = safe_cast<TxType>(fromObj.getFieldU16(sfTransactionType));
 
@@ -1836,6 +1903,9 @@ convert(
             break;
         case TxType::ttACCOUNT_DELETE:
             convert(*to.mutable_account_delete(), fromObj);
+            break;
+        case TxType::ttTICKET_CREATE:
+            convert(*to.mutable_ticket_create(), fromObj);
             break;
         default:
             break;

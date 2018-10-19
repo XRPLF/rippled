@@ -110,7 +110,7 @@ public:
 
         testcase("Basics");
 
-        Env env{*this};
+        Env env{*this, supported_amendments() | featureTicketBatch};
         Account const alice("alice");
         Account const becky("becky");
         Account const carol("carol");
@@ -144,11 +144,13 @@ public:
         env(trust(becky, gw["USD"](1000)));
         env.close();
 
-        // Give carol a deposit preauthorization, an offer, and a signer list.
-        // Even with all that she's still deletable.
+        // Give carol a deposit preauthorization, an offer, a ticket,
+        // and a signer list.  Even with all that she's still deletable.
         env(deposit::auth(carol, becky));
         std::uint32_t const carolOfferSeq{env.seq(carol)};
         env(offer(carol, gw["USD"](51), XRP(51)));
+        std::uint32_t const carolTicketSeq{env.seq(carol) + 1};
+        env(ticket::create(carol, 1));
         env(signers(carol, 1, {{alice, 1}, {becky, 1}}));
 
         // Deleting should fail with TOO_SOON, which is a relatively
@@ -200,13 +202,15 @@ public:
             auto const carolOldBalance{env.balance(carol)};
 
             // Verify that Carol's account, directory, deposit
-            // preauthorization, offer, and signer list exist.
+            // preauthorization, offer, ticket, and signer list exist.
             BEAST_EXPECT(env.closed()->exists(keylet::account(carol.id())));
             BEAST_EXPECT(env.closed()->exists(keylet::ownerDir(carol.id())));
             BEAST_EXPECT(env.closed()->exists(
                 keylet::depositPreauth(carol.id(), becky.id())));
             BEAST_EXPECT(
                 env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
+            BEAST_EXPECT(env.closed()->exists(
+                keylet::ticket(carol.id(), carolTicketSeq)));
             BEAST_EXPECT(env.closed()->exists(keylet::signers(carol.id())));
 
             // Delete carol's account even with stuff in her directory.  Show
@@ -222,6 +226,8 @@ public:
                 keylet::depositPreauth(carol.id(), becky.id())));
             BEAST_EXPECT(!env.closed()->exists(
                 keylet::offer(carol.id(), carolOfferSeq)));
+            BEAST_EXPECT(!env.closed()->exists(
+                keylet::ticket(carol.id(), carolTicketSeq)));
             BEAST_EXPECT(!env.closed()->exists(keylet::signers(carol.id())));
 
             // Verify that Carol's XRP, minus the fee, was transferred to becky.
@@ -776,6 +782,57 @@ public:
     }
 
     void
+    testWithTickets()
+    {
+        testcase("With Tickets");
+
+        using namespace test::jtx;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        Env env{*this, supported_amendments() | featureTicketBatch};
+        env.fund(XRP(100000), alice, bob);
+        env.close();
+
+        // bob grabs as many tickets as he is allowed to have.
+        std::uint32_t const ticketSeq{env.seq(bob) + 1};
+        env(ticket::create(bob, 250));
+        env.close();
+        env.require(owners(bob, 250));
+
+        {
+            std::shared_ptr<ReadView const> closed{env.closed()};
+            BEAST_EXPECT(closed->exists(keylet::account(bob.id())));
+            for (std::uint32_t i = 0; i < 250; ++i)
+            {
+                BEAST_EXPECT(
+                    closed->exists(keylet::ticket(bob.id(), ticketSeq + i)));
+            }
+        }
+
+        // Close enough ledgers to be able to delete bob's account.
+        incLgrSeqForAccDel(env, bob);
+
+        // bob deletes his account using a ticket.  bob's account and all
+        // of his tickets should be removed from the ledger.
+        auto const acctDelFee{drops(env.current()->fees().increment)};
+        auto const bobOldBalance{env.balance(bob)};
+        env(acctdelete(bob, alice), ticket::use(ticketSeq), fee(acctDelFee));
+        verifyDeliveredAmount(env, bobOldBalance - acctDelFee);
+        env.close();
+        {
+            std::shared_ptr<ReadView const> closed{env.closed()};
+            BEAST_EXPECT(!closed->exists(keylet::account(bob.id())));
+            for (std::uint32_t i = 0; i < 250; ++i)
+            {
+                BEAST_EXPECT(
+                    !closed->exists(keylet::ticket(bob.id(), ticketSeq + i)));
+            }
+        }
+    }
+
+    void
     run() override
     {
         testBasics();
@@ -786,6 +843,7 @@ public:
         testTooManyOffers();
         testImplicitlyCreatedTrustline();
         testBalanceTooSmallForFee();
+        testWithTickets();
     }
 };
 

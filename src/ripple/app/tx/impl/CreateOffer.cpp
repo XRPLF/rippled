@@ -29,12 +29,15 @@
 
 namespace ripple {
 
-XRPAmount
-CreateOffer::calculateMaxSpend(STTx const& tx)
+TxConsequences
+CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 {
-    auto const& saTakerGets = tx[sfTakerGets];
+    auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
+        auto const& amount{tx[sfTakerGets]};
+        return amount.native() ? amount.xrp() : beast::zero;
+    };
 
-    return saTakerGets.native() ? saTakerGets.xrp() : beast::zero;
+    return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
 }
 
 NotTEC
@@ -1143,10 +1146,9 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     auto const cancelSequence = ctx_.tx[~sfOfferSequence];
 
-    // FIXME understand why we use SequenceNext instead of current transaction
-    //       sequence to determine the transaction. Why is the offer sequence
-    //       number insufficient?
-    auto const uSequence = ctx_.tx.getSequence();
+    // Note that we we use the value from the sequence or ticket as the
+    // offer sequence.  For more explanation see comments in SeqProxy.h.
+    auto const offerSequence = ctx_.tx.getSeqProxy().value();
 
     // This is the original rate of the offer, and is the rate at which
     // it will be placed, even if crossing offers change the amounts that
@@ -1373,7 +1375,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // We need to place the remainder of the offer into its order book.
-    auto const offer_index = keylet::offer(account_, uSequence);
+    auto const offer_index = keylet::offer(account_, offerSequence);
 
     // Add offer to owner's directory.
     auto const ownerNode = sb.dirInsert(
@@ -1415,7 +1417,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     auto sleOffer = std::make_shared<SLE>(offer_index);
     sleOffer->setAccountID(sfAccount, account_);
-    sleOffer->setFieldU32(sfSequence, uSequence);
+    sleOffer->setFieldU32(sfSequence, offerSequence);
     sleOffer->setFieldH256(sfBookDirectory, dir.key);
     sleOffer->setFieldAmount(sfTakerPays, saTakerPays);
     sleOffer->setFieldAmount(sfTakerGets, saTakerGets);

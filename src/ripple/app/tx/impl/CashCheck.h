@@ -27,6 +27,8 @@ namespace ripple {
 class CashCheck : public Transactor
 {
 public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
     explicit CashCheck(ApplyContext& ctx) : Transactor(ctx)
     {
     }

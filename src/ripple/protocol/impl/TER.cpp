@@ -100,6 +100,7 @@ transResults()
         MAKE_ERROR(tefBAD_AUTH_MASTER,        "Auth for unclaimed account needs correct master key."),
         MAKE_ERROR(tefINVARIANT_FAILED,       "Fee claim violated invariants for the transaction."),
         MAKE_ERROR(tefTOO_BIG,                "Transaction affects too many items."),
+        MAKE_ERROR(tefNO_TICKET,              "Ticket is not in ledger."),
 
         MAKE_ERROR(telLOCAL_ERROR,            "Local failure."),
         MAKE_ERROR(telBAD_DOMAIN,             "Domain too long."),
@@ -150,6 +151,7 @@ transResults()
         MAKE_ERROR(temBAD_TICK_SIZE,          "Malformed: Tick size out of range."),
         MAKE_ERROR(temINVALID_ACCOUNT_ID,     "Malformed: A field contains an invalid account ID."),
         MAKE_ERROR(temCANNOT_PREAUTH_SELF,    "Malformed: An account may not preauthorize itself."),
+        MAKE_ERROR(temINVALID_COUNT,          "Malformed: Count field outside valid range."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),
@@ -162,6 +164,7 @@ transResults()
         MAKE_ERROR(terPRE_SEQ,                "Missing/inapplicable prior transaction."),
         MAKE_ERROR(terOWNERS,                 "Non-zero owner count."),
         MAKE_ERROR(terQUEUED,                 "Held until escalated fee drops."),
+        {terPRE_TICKET, {"terPRE_TICKET", "Ticket is not yet in ledger."}},
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };

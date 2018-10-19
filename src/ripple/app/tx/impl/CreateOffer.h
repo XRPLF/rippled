@@ -34,15 +34,16 @@ class Sandbox;
 class CreateOffer : public Transactor
 {
 public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+
     /** Construct a Transactor subclass that creates an offer in the ledger. */
     explicit CreateOffer(ApplyContext& ctx)
         : Transactor(ctx), stepCounter_(1000, j_)
     {
     }
 
-    /** Override default behavior provided by Transactor base class. */
-    static XRPAmount
-    calculateMaxSpend(STTx const& tx);
+    static TxConsequences
+    makeTxConsequences(PreflightContext const& ctx);
 
     /** Enforce constraints beyond those of the Transactor base class. */
     static NotTEC

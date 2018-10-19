@@ -391,7 +391,7 @@ CashCheck::doApply()
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(account_), page, sleCheck->key(), true))
         {
-            JLOG(j_.warn()) << "Unable to delete check from destination.";
+            JLOG(j_.fatal()) << "Unable to delete check from destination.";
             return tefBAD_LEDGER;
         }
     }
@@ -401,7 +401,7 @@ CashCheck::doApply()
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(srcId), page, sleCheck->key(), true))
         {
-            JLOG(j_.warn()) << "Unable to delete check from owner.";
+            JLOG(j_.fatal()) << "Unable to delete check from owner.";
             return tefBAD_LEDGER;
         }
     }

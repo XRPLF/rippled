@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-14 Ripple Labs Inc.
+    Copyright (c) 2012-19 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -24,6 +24,7 @@
 #include <ripple/ledger/ApplyView.h>
 #include <ripple/ledger/OpenView.h>
 #include <ripple/protocol/STTx.h>
+#include <ripple/protocol/SeqProxy.h>
 #include <ripple/protocol/TER.h>
 #include <boost/circular_buffer.hpp>
 #include <boost/intrusive/set.hpp>
@@ -81,7 +82,7 @@ public:
         std::size_t queueSizeMin = 2000;
         /** Extra percentage required on the fee level of a queued
             transaction to replace that transaction with another
-            with the same sequence number.
+            with the same SeqProxy.
 
             If queued transaction for account "Alice" with seq 45
             has a fee level of 512, a replacement transaction for
@@ -89,19 +90,6 @@ public:
             512 * (1 + 0.25) = 640 to be considered.
         */
         std::uint32_t retrySequencePercent = 25;
-        /** Extra percentage required on the fee level of a
-            queued transaction to queue the transaction with
-            the next sequence number.
-
-            If queued transaction for account "Alice" with seq 45
-            has a fee level of 512, a transaction with seq 46 must
-            have a fee level of at least
-            512 * (1 + -0.90) = 51.2 ~= 52 to
-            be considered.
-
-            @todo eahennis. Can we remove the multi tx factor?
-        */
-        std::int32_t multiTxnPercent = -90;
         /// Minimum value of the escalation multiplier, regardless
         /// of the prior ledger's median fee level.
         FeeLevel64 minimumEscalationMultiplier = baseLevel * 500;
@@ -160,15 +148,6 @@ public:
             processed.
         */
         std::uint32_t minimumLastLedgerBuffer = 2;
-        /** So we don't deal with "infinite" fee levels, treat
-            any transaction with a 0 base fee (i.e. SetRegularKey
-            password recovery) as having this fee level.
-            Should the network behavior change in the future such
-            that these transactions are unable to be processed,
-            we can make this more complicated. But avoid
-            bikeshedding for now.
-        */
-        FeeLevel64 zeroBaseFeeTransactionFeeLevel{256000};
         /// Use standalone mode behavior.
         bool standAlone = false;
     };
@@ -203,39 +182,47 @@ public:
     };
 
     /**
-        Structure returned by @ref TxQ::getAccountTxs to describe
-        transactions in the queue for an account.
-    */
-    struct AccountTxDetails
-    {
-        /// Default constructor
-        explicit AccountTxDetails() = default;
-
-        /// Fee level of the queued transaction
-        FeeLevel64 feeLevel;
-        /// LastValidLedger field of the queued transaction, if any
-        boost::optional<LedgerIndex const> lastValid;
-        /** Potential @ref TxConsequences of applying the queued transaction
-            to the open ledger, if known.
-
-            @note `consequences` is lazy-computed, so may not be known at any
-            given time.
-        */
-        boost::optional<TxConsequences const> consequences;
-    };
-
-    /**
         Structure that describes a transaction in the queue
         waiting to be applied to the current open ledger.
         A collection of these is returned by @ref TxQ::getTxs.
     */
-    struct TxDetails : AccountTxDetails
+    struct TxDetails
     {
-        /// Default constructor
-        explicit TxDetails() = default;
+        /// Full initialization
+        TxDetails(
+            FeeLevel64 feeLevel_,
+            boost::optional<LedgerIndex> const& lastValid_,
+            TxConsequences const& consequences_,
+            AccountID const& account_,
+            SeqProxy seqProxy_,
+            std::shared_ptr<STTx const> const& txn_,
+            int retriesRemaining_,
+            TER preflightResult_,
+            boost::optional<TER> lastResult_)
+            : feeLevel(feeLevel_)
+            , lastValid(lastValid_)
+            , consequences(consequences_)
+            , account(account_)
+            , seqProxy(seqProxy_)
+            , txn(txn_)
+            , retriesRemaining(retriesRemaining_)
+            , preflightResult(preflightResult_)
+            , lastResult(lastResult_)
+        {
+        }
 
+        /// Fee level of the queued transaction
+        FeeLevel64 feeLevel;
+        /// LastValidLedger field of the queued transaction, if any
+        boost::optional<LedgerIndex> lastValid;
+        /** Potential @ref TxConsequences of applying the queued transaction
+            to the open ledger.
+        */
+        TxConsequences consequences;
         /// The account the transaction is queued for
         AccountID account;
+        /// SeqProxy of the transaction
+        SeqProxy seqProxy;
         /// The full transaction
         std::shared_ptr<STTx const> txn;
         /** Number of times the transactor can return a retry / `ter` result
@@ -315,6 +302,10 @@ public:
     void
     processClosedLedger(Application& app, ReadView const& view, bool timeLeap);
 
+    /** Return the next sequence that would go in the TxQ for an account. */
+    SeqProxy
+    nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const;
+
     /** Returns fee metrics in reference fee level units.
      */
     Metrics
@@ -344,10 +335,10 @@ public:
     /** Returns information about the transactions currently
         in the queue for the account.
 
-        @returns Empty `map` if the
-        account has no transactions in the queue.
+        @returns Empty `vector` if the account has no transactions
+        in the queue.
     */
-    std::map<TxSeq, AccountTxDetails const>
+    std::vector<TxDetails>
     getAccountTxs(AccountID const& account, ReadView const& view) const;
 
     /** Returns information about all transactions currently
@@ -367,6 +358,12 @@ public:
     doRPC(Application& app) const;
 
 private:
+    // Implementation for nextQueuableSeq().  The passed lock must be held.
+    SeqProxy
+    nextQueuableSeqImpl(
+        std::shared_ptr<SLE const> const& sleAccount,
+        std::lock_guard<std::mutex> const&) const;
+
     /**
         Track and use the fee escalation metrics of the
         current open ledger. Does the work of scaling fees
@@ -473,18 +470,18 @@ private:
             will be sensible (e.g. there won't be any underflows or
             overflows), but the level will be higher than actually required.
 
-            @note A "series" is a set of transactions for the same account
-                with sequential sequence numbers. In the context of this
-                function, the series is already in the queue, and the series
-                starts with the account's current sequence number. This
-                function is called by @ref tryClearAccountQueue to figure
-                out if a newly submitted transaction is paying enough to
-                get all of the queued transactions plus itself out of the
-                queue and into the open ledger while accounting for the
-                escalating fee as each one is processed. The idea is that
-                if a series of transactions are taking too long to get out
-                of the queue, a user can "rescue" them without having to
-                resubmit each one with an individually higher fee.
+            @note A "series" is a set of transactions for the same account.
+                In the context of this function, the series is already in
+                the queue, and the series starts with the account's current
+                sequence number. This function is called by
+                @ref tryClearAccountQueueUpThruTx to figure out if a newly
+                submitted transaction is paying enough to get all of the queued
+                transactions plus itself out of the queue and into the open
+                ledger while accounting for the escalating fee as each one
+                is processed. The idea is that if a series of transactions
+                are taking too long to get out of the queue, a user can
+                "rescue" them without having to resubmit each one with an
+                individually higher fee.
 
             @param view Current open / working ledger. (May be a sandbox.)
             @param extraCount Number of additional transactions to count as
@@ -519,23 +516,18 @@ private:
         /// The complete transaction.
         std::shared_ptr<STTx const> txn;
 
-        /// Potential @ref TxConsequences of applying this transaction
-        /// to the open ledger.
-        boost::optional<TxConsequences const> consequences;
-
         /// Computed fee level that the transaction will pay.
         FeeLevel64 const feeLevel;
         /// Transaction ID.
         TxID const txID;
-        /// Prior transaction ID (`sfAccountTxnID` field).
-        boost::optional<TxID> priorTxID;
         /// Account submitting the transaction.
         AccountID const account;
         /// Expiration ledger for the transaction
         /// (`sfLastLedgerSequence` field).
-        boost::optional<LedgerIndex> lastValid;
-        /// Transaction sequence number (`sfSequence` field).
-        TxSeq const sequence;
+        boost::optional<LedgerIndex> const lastValid;
+        /// Transaction SeqProxy number
+        /// (`sfSequence` or `sfTicketSequence` field).
+        SeqProxy const seqProxy;
         /**
             A transaction at the front of the queue will be given
             several attempts to succeed before being dropped from
@@ -594,6 +586,30 @@ private:
         /// Attempt to apply the queued transaction to the open ledger.
         std::pair<TER, bool>
         apply(Application& app, OpenView& view, beast::Journal j);
+
+        /// Potential @ref TxConsequences of applying this transaction
+        /// to the open ledger.
+        TxConsequences const&
+        consequences() const
+        {
+            return pfresult->consequences;
+        }
+
+        /// Return a TxDetails based on contained information.
+        TxDetails
+        getTxDetails() const
+        {
+            return {
+                feeLevel,
+                lastValid,
+                consequences(),
+                account,
+                seqProxy,
+                txn,
+                retriesRemaining,
+                pfresult->ter,
+                lastResult};
+        }
     };
 
     /// Used for sorting @ref MaybeTx by `feeLevel`
@@ -612,12 +628,12 @@ private:
     };
 
     /** Used to represent an account to the queue, and stores the
-        transactions queued for that account by sequence.
+        transactions queued for that account by SeqProxy.
     */
     class TxQAccount
     {
     public:
-        using TxMap = std::map<TxSeq, MaybeTx>;
+        using TxMap = std::map<SeqProxy, MaybeTx>;
 
         /// The account
         AccountID const account;
@@ -658,18 +674,46 @@ private:
             return !getTxnCount();
         }
 
+        /// Find the entry in transactions that precedes seqProx, if one does.
+        TxMap::const_iterator
+        getPrevTx(SeqProxy seqProx) const;
+
         /// Add a transaction candidate to this account for queuing
         MaybeTx&
         add(MaybeTx&&);
 
-        /** Remove the candidate with given sequence number from this
+        /** Remove the candidate with given SeqProxy value from this
             account.
 
             @return Whether a candidate was removed
         */
         bool
-        remove(TxSeq const& sequence);
+        remove(SeqProxy seqProx);
     };
+
+    // Helper function returns requiredFeeLevel.
+    FeeLevel64
+    getRequiredFeeLevel(
+        OpenView& view,
+        ApplyFlags flags,
+        FeeMetrics::Snapshot const& metricsSnapshot,
+        std::lock_guard<std::mutex> const& lock) const;
+
+    // Helper function for TxQ::apply.  If a transaction's fee is high enough,
+    // attempt to directly apply that transaction to the ledger.
+    std::optional<std::pair<TER, bool>>
+    tryDirectApply(
+        Application& app,
+        OpenView& view,
+        std::shared_ptr<STTx const> const& tx,
+        ApplyFlags flags,
+        beast::Journal j);
+
+    // Helper function that removes a replaced entry in _byFee.
+    boost::optional<TxQAccount::TxMap::iterator>
+    removeFromByFee(
+        boost::optional<TxQAccount::TxMap::iterator> const& replacedTxIter,
+        std::shared_ptr<STTx const> const& tx);
 
     using FeeHook = boost::intrusive::member_hook<
         MaybeTx,
@@ -726,13 +770,15 @@ private:
     /** Checks if the indicated transaction fits the conditions
         for being stored in the queue.
     */
-    bool
+    TER
     canBeHeld(
         STTx const&,
         ApplyFlags const,
         OpenView const&,
-        AccountMap::iterator,
-        boost::optional<FeeMultiSet::iterator>);
+        std::shared_ptr<SLE const> const& sleAccount,
+        AccountMap::iterator const&,
+        boost::optional<TxQAccount::TxMap::iterator> const&,
+        std::lock_guard<std::mutex> const& lock);
 
     /// Erase and return the next entry in byFee_ (lower fee level)
     FeeMultiSet::iterator_type erase(FeeMultiSet::const_iterator_type);
@@ -750,11 +796,12 @@ private:
         TxQAccount::TxMap::const_iterator end);
 
     /**
-        All-or-nothing attempt to try to apply all the queued txs for
-       `accountIter` up to and including `tx`.
+        All-or-nothing attempt to try to apply the queued txs for
+        `accountIter` up to and including `tx`.  Transactions following
+        `tx` are not cleared.
     */
     std::pair<TER, bool>
-    tryClearAccountQueue(
+    tryClearAccountQueueUpThruTx(
         Application& app,
         OpenView& view,
         STTx const& tx,
@@ -775,16 +822,23 @@ TxQ::Setup
 setup_TxQ(Config const&);
 
 template <class T>
-std::pair<bool, XRPAmount>
+XRPAmount
 toDrops(FeeLevel<T> const& level, XRPAmount const& baseFee)
 {
-    return mulDiv(level, baseFee, TxQ::baseLevel);
+    if (auto const drops = mulDiv(level, baseFee, TxQ::baseLevel); drops.first)
+        return drops.second;
+
+    return XRPAmount(STAmount::cMaxNativeN);
 }
 
-inline std::pair<bool, FeeLevel64>
+inline FeeLevel64
 toFeeLevel(XRPAmount const& drops, XRPAmount const& baseFee)
 {
-    return mulDiv(drops, TxQ::baseLevel, baseFee);
+    if (auto const feeLevel = mulDiv(drops, TxQ::baseLevel, baseFee);
+        feeLevel.first)
+        return feeLevel.second;
+
+    return FeeLevel64(std::numeric_limits<std::uint64_t>::max());
 }
 
 }  // namespace ripple

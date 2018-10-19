@@ -29,6 +29,8 @@ namespace ripple {
 class DeleteAccount : public Transactor
 {
 public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
+
     // Set a reasonable upper limit on the number of deletable directory
     // entries an account may have before we decide the account can't be
     // deleted.
@@ -39,12 +41,6 @@ public:
 
     explicit DeleteAccount(ApplyContext& ctx) : Transactor(ctx)
     {
-    }
-
-    static bool
-    affectsSubsequentTransactionAuth(STTx const& tx)
-    {
-        return true;
     }
 
     static NotTEC

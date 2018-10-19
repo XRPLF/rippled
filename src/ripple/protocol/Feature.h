@@ -70,8 +70,7 @@ namespace detail {
 class FeatureCollections
 {
     static constexpr char const* const featureNames[] = {
-        "MultiSign",  // Unconditionally supported.
-        "Tickets",
+        "MultiSign",      // Unconditionally supported.
         "TrustSetAuth",   // Unconditionally supported.
         "FeeEscalation",  // Unconditionally supported.
         "OwnerPaysFee",
@@ -113,7 +112,9 @@ class FeatureCollections
                     // payment check
         "HardenedValidations",
         "fixAmendmentMajorityCalc",  // Fix Amendment majority calculation
-        "NegativeUNL"};
+        "NegativeUNL",
+        "TicketBatch"};
+
     std::vector<uint256> features;
     boost::container::flat_map<uint256, std::size_t> featureToIndex;
     boost::container::flat_map<std::string, uint256> nameToFeature;
@@ -343,7 +344,6 @@ foreachFeature(FeatureBitset bs, F&& f)
             f(bitsetIndexToFeature(i));
 }
 
-extern uint256 const featureTickets;
 extern uint256 const featureOwnerPaysFee;
 extern uint256 const featureFlow;
 extern uint256 const featureCompareTakerFlowCross;
@@ -370,6 +370,7 @@ extern uint256 const fix1781;
 extern uint256 const featureHardenedValidations;
 extern uint256 const fixAmendmentMajorityCalc;
 extern uint256 const featureNegativeUNL;
+extern uint256 const featureTicketBatch;
 
 }  // namespace ripple
 

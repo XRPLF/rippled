@@ -130,8 +130,6 @@ transactions in the queue for that account, it will be considered
 for the queue if it meets these additional criteria:
   * the account has fewer than [10](#other-constants) transactions
   already in the queue.
-  * it pays a [fee level](#fee-level) that is greater than 10% of the
-  fee level for the transaction with the previous sequence number,
   * all other queued transactions for that account, in the case where
   they spend the maximum possible XRP, leave enough XRP balance to pay
   the fee,

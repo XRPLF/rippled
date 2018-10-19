@@ -312,7 +312,7 @@ public:
         Env env{
             *this,
             envconfig(validator, ""),
-            supported_amendments().set(featureTickets)};
+            supported_amendments() | featureTicketBatch};
 
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
@@ -338,7 +338,7 @@ public:
         }
         env(signers(
             Account{"bob0"}, 1, {{Account{"bob1"}, 1}, {Account{"bob2"}, 1}}));
-        env(ticket::create(env.master));
+        env(ticket::create(env.master, 1));
 
         {
             Json::Value jv;

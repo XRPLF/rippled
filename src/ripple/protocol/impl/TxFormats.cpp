@@ -54,6 +54,7 @@ TxFormats::TxFormats()
             {sfSetFlag, soeOPTIONAL},
             {sfClearFlag, soeOPTIONAL},
             {sfTickSize, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -63,6 +64,7 @@ TxFormats::TxFormats()
             {sfLimitAmount, soeOPTIONAL},
             {sfQualityIn, soeOPTIONAL},
             {sfQualityOut, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -73,6 +75,7 @@ TxFormats::TxFormats()
             {sfTakerGets, soeREQUIRED},
             {sfExpiration, soeOPTIONAL},
             {sfOfferSequence, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -80,6 +83,7 @@ TxFormats::TxFormats()
         ttOFFER_CANCEL,
         {
             {sfOfferSequence, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -87,6 +91,7 @@ TxFormats::TxFormats()
         ttREGULAR_KEY_SET,
         {
             {sfRegularKey, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -100,6 +105,7 @@ TxFormats::TxFormats()
             {sfInvoiceID, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
             {sfDeliverMin, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -112,6 +118,7 @@ TxFormats::TxFormats()
             {sfCancelAfter, soeOPTIONAL},
             {sfFinishAfter, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -122,6 +129,7 @@ TxFormats::TxFormats()
             {sfOfferSequence, soeREQUIRED},
             {sfFulfillment, soeOPTIONAL},
             {sfCondition, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -130,6 +138,7 @@ TxFormats::TxFormats()
         {
             {sfOwner, soeREQUIRED},
             {sfOfferSequence, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -164,15 +173,8 @@ TxFormats::TxFormats()
     add(jss::TicketCreate,
         ttTICKET_CREATE,
         {
-            {sfTarget, soeOPTIONAL},
-            {sfExpiration, soeOPTIONAL},
-        },
-        commonFields);
-
-    add(jss::TicketCancel,
-        ttTICKET_CANCEL,
-        {
-            {sfTicketID, soeREQUIRED},
+            {sfTicketCount, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -183,6 +185,7 @@ TxFormats::TxFormats()
         {
             {sfSignerQuorum, soeREQUIRED},
             {sfSignerEntries, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -195,6 +198,7 @@ TxFormats::TxFormats()
             {sfPublicKey, soeREQUIRED},
             {sfCancelAfter, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -204,6 +208,7 @@ TxFormats::TxFormats()
             {sfPayChannel, soeREQUIRED},
             {sfAmount, soeREQUIRED},
             {sfExpiration, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -215,6 +220,7 @@ TxFormats::TxFormats()
             {sfBalance, soeOPTIONAL},
             {sfSignature, soeOPTIONAL},
             {sfPublicKey, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -226,6 +232,7 @@ TxFormats::TxFormats()
             {sfExpiration, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
             {sfInvoiceID, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -235,6 +242,7 @@ TxFormats::TxFormats()
             {sfCheckID, soeREQUIRED},
             {sfAmount, soeOPTIONAL},
             {sfDeliverMin, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -242,6 +250,7 @@ TxFormats::TxFormats()
         ttCHECK_CANCEL,
         {
             {sfCheckID, soeREQUIRED},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -250,6 +259,7 @@ TxFormats::TxFormats()
         {
             {sfDestination, soeREQUIRED},
             {sfDestinationTag, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 
@@ -258,6 +268,7 @@ TxFormats::TxFormats()
         {
             {sfAuthorize, soeOPTIONAL},
             {sfUnauthorize, soeOPTIONAL},
+            {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
 }

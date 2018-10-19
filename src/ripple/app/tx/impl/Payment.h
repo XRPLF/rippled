@@ -38,12 +38,14 @@ class Payment : public Transactor
     static std::size_t const MaxPathLength = 8;
 
 public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+
     explicit Payment(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static XRPAmount
-    calculateMaxSpend(STTx const& tx);
+    static TxConsequences
+    makeTxConsequences(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);

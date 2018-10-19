@@ -199,6 +199,13 @@ private:
             return !(lhs == rhs);
         }
 
+        // Emulate boost::optional::value_or
+        value_type
+        value_or(value_type val) const
+        {
+            return engaged() ? this->value() : val;
+        }
+
         OptionalProxy&
         operator=(boost::none_t const&);
         OptionalProxy&

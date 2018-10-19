@@ -6,7 +6,7 @@ option java_multiple_files = true;
 
 import "org/xrpl/rpc/v1/common.proto";
 
-// Next field: 14
+// Next field: 15
 message LedgerObject
 {
     oneof object
@@ -24,10 +24,11 @@ message LedgerObject
         RippleState ripple_state = 11;
         SignerList signer_list = 12;
         NegativeUNL negative_unl = 13;
+        TicketObject ticket = 14;
     }
 }
 
-// Next field: 14
+// Next field: 15
 enum LedgerEntryType
 {
     LEDGER_ENTRY_TYPE_UNSPECIFIED     = 0;
@@ -44,9 +45,10 @@ enum LedgerEntryType
     LEDGER_ENTRY_TYPE_RIPPLE_STATE    = 11;
     LEDGER_ENTRY_TYPE_SIGNER_LIST     = 12;
     LEDGER_ENTRY_TYPE_NEGATIVE_UNL    = 13;
+    LEDGER_ENTRY_TYPE_TICKET          = 14;
 }
 
-// Next field: 15
+// Next field: 16
 message AccountRoot
 {
     Account account = 1;
@@ -76,6 +78,8 @@ message AccountRoot
     TickSize tick_size = 13;
 
     TransferRate transfer_rate = 14;
+
+    TicketCount ticket_count = 15;
 }
 
 // Next field: 4
@@ -330,6 +334,22 @@ message SignerList
     SignerListID signer_list_id = 6;
 
     SignerQuorum signer_quorum = 7;
+}
+
+// Next field: 7
+message TicketObject
+{
+    Flags flags = 1;
+
+    Account account = 2;
+
+    OwnerNode owner_node = 3;
+
+    PreviousTransactionID previous_transaction_id = 4;
+
+    PreviousTransactionLedgerSequence previous_transaction_ledger_sequence = 5;
+
+    TicketSequence ticket_sequence = 6;
 }
 
 // Next field: 5

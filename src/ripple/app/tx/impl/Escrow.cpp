@@ -90,10 +90,10 @@ after(NetClock::time_point now, std::uint32_t mark)
     return now.time_since_epoch().count() > mark;
 }
 
-XRPAmount
-EscrowCreate::calculateMaxSpend(STTx const& tx)
+TxConsequences
+EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return tx[sfAmount].xrp();
+    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
 NotTEC
@@ -229,9 +229,10 @@ EscrowCreate::doApply()
             return tecNO_TARGET;
     }
 
-    // Create escrow in ledger
-    auto const slep =
-        std::make_shared<SLE>(keylet::escrow(account, (*sle)[sfSequence] - 1));
+    // Create escrow in ledger.  Note that we we use the value from the
+    // sequence or ticket.  For more explanation see comments in SeqProxy.h.
+    auto const slep = std::make_shared<SLE>(
+        keylet::escrow(account, ctx_.tx.getSeqProxy().value()));
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
     (*slep)[sfAccount] = account;
     (*slep)[~sfCondition] = ctx_.tx[~sfCondition];
@@ -480,6 +481,7 @@ EscrowFinish::doApply()
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(account), page, k.key, true))
         {
+            JLOG(j_.fatal()) << "Unable to delete Escrow from owner.";
             return tefBAD_LEDGER;
         }
     }
@@ -490,6 +492,7 @@ EscrowFinish::doApply()
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(destID), *optPage, k.key, true))
         {
+            JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
             return tefBAD_LEDGER;
         }
     }
@@ -561,6 +564,7 @@ EscrowCancel::doApply()
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(account), page, k.key, true))
         {
+            JLOG(j_.fatal()) << "Unable to delete Escrow from owner.";
             return tefBAD_LEDGER;
         }
     }
@@ -574,6 +578,7 @@ EscrowCancel::doApply()
                 k.key,
                 true))
         {
+            JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
             return tefBAD_LEDGER;
         }
     }

@@ -29,23 +29,30 @@
 
 namespace ripple {
 
-bool
-SetAccount::affectsSubsequentTransactionAuth(STTx const& tx)
+TxConsequences
+SetAccount::makeTxConsequences(PreflightContext const& ctx)
 {
-    auto const uTxFlags = tx.getFlags();
-    if (uTxFlags & (tfRequireAuth | tfOptionalAuth))
-        return true;
+    // The SetAccount may be a blocker, but only if it sets or clears
+    // specific account flags.
+    auto getTxConsequencesCategory = [](STTx const& tx) {
+        if (std::uint32_t const uTxFlags = tx.getFlags();
+            uTxFlags & (tfRequireAuth | tfOptionalAuth))
+            return TxConsequences::blocker;
 
-    auto const uSetFlag = tx[~sfSetFlag];
-    if (uSetFlag &&
-        (*uSetFlag == asfRequireAuth || *uSetFlag == asfDisableMaster ||
-         *uSetFlag == asfAccountTxnID))
-        return true;
+        if (auto const uSetFlag = tx[~sfSetFlag]; uSetFlag &&
+            (*uSetFlag == asfRequireAuth || *uSetFlag == asfDisableMaster ||
+             *uSetFlag == asfAccountTxnID))
+            return TxConsequences::blocker;
 
-    auto const uClearFlag = tx[~sfClearFlag];
-    return uClearFlag &&
-        (*uClearFlag == asfRequireAuth || *uClearFlag == asfDisableMaster ||
-         *uClearFlag == asfAccountTxnID);
+        if (auto const uClearFlag = tx[~sfClearFlag]; uClearFlag &&
+            (*uClearFlag == asfRequireAuth || *uClearFlag == asfDisableMaster ||
+             *uClearFlag == asfAccountTxnID))
+            return TxConsequences::blocker;
+
+        return TxConsequences::normal;
+    };
+
+    return TxConsequences{ctx.tx, getTxConsequencesCategory(ctx.tx)};
 }
 
 NotTEC

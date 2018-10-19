@@ -209,5 +209,3 @@ I believe that the disadvantages outweigh the advantages, but debate is welcome.
 
 
 ### CreateTicket ###
-
-### CancelTicket ###

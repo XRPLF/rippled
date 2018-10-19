@@ -47,7 +47,7 @@ message GetAccountInfoResponse
 }
 
 // Aggregate data about queued transactions
-// Next field: 7
+// Next field: 11
 message QueueData
 {
     uint32 txn_count = 1;
@@ -61,10 +61,18 @@ message QueueData
     XRPDropsAmount max_spend_drops_total = 5;
 
     repeated QueuedTransaction transactions = 6;
+
+    uint32 lowest_ticket = 7;
+
+    uint32 highest_ticket = 8;
+
+    uint32 sequence_count = 9;
+
+    uint32 ticket_count = 10;
 }
 
 // Data about a single queued transaction
-// Next field: 7
+// Next field: 8
 message QueuedTransaction
 {
     bool auth_change = 1;
@@ -78,4 +86,6 @@ message QueuedTransaction
     Sequence sequence = 5;
 
     LastLedgerSequence last_ledger_sequence = 6;
+
+    Ticket ticket = 7;
 }

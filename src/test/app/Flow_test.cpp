@@ -1351,6 +1351,31 @@ struct Flow_test : public beast::unit_test::suite
     }
 
     void
+    testTicketPay(FeatureBitset features)
+    {
+        testcase("Payment with ticket");
+        using namespace jtx;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+
+        Env env(*this, features);
+        BEAST_EXPECT(features[featureTicketBatch]);
+
+        env.fund(XRP(10000), alice);
+
+        // alice creates a ticket for the payment.
+        std::uint32_t const ticketSeq{env.seq(alice) + 1};
+        env(ticket::create(alice, 1));
+
+        // Make a payment using the ticket.
+        env(pay(alice, bob, XRP(1000)), ticket::use(ticketSeq));
+        env.close();
+        env.require(balance(bob, XRP(1000)));
+        env.require(balance(alice, XRP(9000) - drops(20)));
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         using namespace jtx;
@@ -1370,6 +1395,7 @@ struct Flow_test : public beast::unit_test::suite
         testUnfundedOffer(features);
         testReexecuteDirectStep(features);
         testSelfPayLowQualityOffer(features);
+        testTicketPay(features);
     }
 
     void
@@ -1381,7 +1407,7 @@ struct Flow_test : public beast::unit_test::suite
         testRIPD1449();
 
         using namespace jtx;
-        auto const sa = supported_amendments();
+        auto const sa = supported_amendments() | featureTicketBatch;
         testWithFeats(sa - featureFlowCross);
         testWithFeats(sa);
         testEmptyStrand(sa);
@@ -1394,7 +1420,7 @@ struct Flow_manual_test : public Flow_test
     run() override
     {
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = supported_amendments() | featureTicketBatch;
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
 

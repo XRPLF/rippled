@@ -26,34 +26,22 @@ namespace jtx {
 
 namespace ticket {
 
-namespace detail {
-
 Json::Value
-create(
-    Account const& account,
-    boost::optional<Account> const& target,
-    boost::optional<std::uint32_t> const& expire)
+create(Account const& account, std::uint32_t count)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = jss::TicketCreate;
-    if (expire)
-        jv["Expiration"] = *expire;
-    if (target)
-        jv["Target"] = target->human();
+    jv[sfTicketCount.jsonName] = count;
     return jv;
 }
 
-}  // namespace detail
-
-Json::Value
-cancel(Account const& account, std::string const& ticketId)
+void
+use::operator()(Env&, JTx& jt) const
 {
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::TicketCancel;
-    jv[jss::Account] = account.human();
-    jv["TicketID"] = ticketId;
-    return jv;
+    jt.fill_seq = false;
+    jt[sfSequence.jsonName] = 0u;
+    jt[sfTicketSequence.jsonName] = ticketSeq_;
 }
 
 }  // namespace ticket

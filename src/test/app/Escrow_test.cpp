@@ -1462,10 +1462,9 @@ struct Escrow_test : public beast::unit_test::suite
                 tapNONE,
                 env.journal);
             BEAST_EXPECT(pf.ter == tesSUCCESS);
-            auto const conseq = calculateConsequences(pf);
-            BEAST_EXPECT(conseq.category == TxConsequences::normal);
-            BEAST_EXPECT(conseq.fee == drops(10));
-            BEAST_EXPECT(conseq.potentialSpend == XRP(1000));
+            BEAST_EXPECT(!pf.consequences.isBlocker());
+            BEAST_EXPECT(pf.consequences.fee() == drops(10));
+            BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(1000));
         }
 
         {
@@ -1477,10 +1476,9 @@ struct Escrow_test : public beast::unit_test::suite
                 tapNONE,
                 env.journal);
             BEAST_EXPECT(pf.ter == tesSUCCESS);
-            auto const conseq = calculateConsequences(pf);
-            BEAST_EXPECT(conseq.category == TxConsequences::normal);
-            BEAST_EXPECT(conseq.fee == drops(10));
-            BEAST_EXPECT(conseq.potentialSpend == XRP(0));
+            BEAST_EXPECT(!pf.consequences.isBlocker());
+            BEAST_EXPECT(pf.consequences.fee() == drops(10));
+            BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
         }
 
         {
@@ -1492,10 +1490,148 @@ struct Escrow_test : public beast::unit_test::suite
                 tapNONE,
                 env.journal);
             BEAST_EXPECT(pf.ter == tesSUCCESS);
-            auto const conseq = calculateConsequences(pf);
-            BEAST_EXPECT(conseq.category == TxConsequences::normal);
-            BEAST_EXPECT(conseq.fee == drops(10));
-            BEAST_EXPECT(conseq.potentialSpend == XRP(0));
+            BEAST_EXPECT(!pf.consequences.isBlocker());
+            BEAST_EXPECT(pf.consequences.fee() == drops(10));
+            BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
+        }
+    }
+
+    void
+    testEscrowWithTickets()
+    {
+        testcase("Escrow with tickets");
+
+        using namespace jtx;
+        using namespace std::chrono;
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        {
+            // Create escrow and finish using tickets.
+            Env env(*this, supported_amendments() | featureTicketBatch);
+            env.fund(XRP(5000), alice, bob);
+            env.close();
+
+            // alice creates a ticket.
+            std::uint32_t const aliceTicket{env.seq(alice) + 1};
+            env(ticket::create(alice, 1));
+
+            // bob creates a bunch of tickets because he will be burning
+            // through them with tec transactions.  Just because we can
+            // we'll use them up starting from largest and going smaller.
+            constexpr static std::uint32_t bobTicketCount{20};
+            env(ticket::create(bob, bobTicketCount));
+            env.close();
+            std::uint32_t bobTicket{env.seq(bob)};
+            env.require(tickets(alice, 1));
+            env.require(tickets(bob, bobTicketCount));
+
+            // Note that from here on all transactions use tickets.  No account
+            // root sequences should change.
+            std::uint32_t const aliceRootSeq{env.seq(alice)};
+            std::uint32_t const bobRootSeq{env.seq(bob)};
+
+            // alice creates an escrow that can be finished in the future
+            auto const ts = env.now() + 97s;
+
+            std::uint32_t const escrowSeq = aliceTicket;
+            env(escrow(alice, bob, XRP(1000)),
+                finish_time(ts),
+                ticket::use(aliceTicket));
+            BEAST_EXPECT(env.seq(alice) == aliceRootSeq);
+            env.require(tickets(alice, 0));
+            env.require(tickets(bob, bobTicketCount));
+
+            // Advance the ledger, verifying that the finish won't complete
+            // prematurely.  Note that each tec consumes one of bob's tickets.
+            for (; env.now() < ts; env.close())
+            {
+                env(finish(bob, alice, escrowSeq),
+                    fee(1500),
+                    ticket::use(--bobTicket),
+                    ter(tecNO_PERMISSION));
+                BEAST_EXPECT(env.seq(bob) == bobRootSeq);
+            }
+
+            // bob tries to re-use a ticket, which is rejected.
+            env(finish(bob, alice, escrowSeq),
+                fee(1500),
+                ticket::use(bobTicket),
+                ter(tefNO_TICKET));
+
+            // bob uses one of his remaining tickets.  Success!
+            env(finish(bob, alice, escrowSeq),
+                fee(1500),
+                ticket::use(--bobTicket));
+            env.close();
+            BEAST_EXPECT(env.seq(bob) == bobRootSeq);
+        }
+
+        {
+            // Create escrow and cancel using tickets.
+            Env env(*this, supported_amendments() | featureTicketBatch);
+            env.fund(XRP(5000), alice, bob);
+            env.close();
+
+            // alice creates a ticket.
+            std::uint32_t const aliceTicket{env.seq(alice) + 1};
+            env(ticket::create(alice, 1));
+
+            // bob creates a bunch of tickets because he will be burning
+            // through them with tec transactions.
+            constexpr std::uint32_t bobTicketCount{20};
+            std::uint32_t bobTicket{env.seq(bob) + 1};
+            env(ticket::create(bob, bobTicketCount));
+            env.close();
+            env.require(tickets(alice, 1));
+            env.require(tickets(bob, bobTicketCount));
+
+            // Note that from here on all transactions use tickets.  No account
+            // root sequences should change.
+            std::uint32_t const aliceRootSeq{env.seq(alice)};
+            std::uint32_t const bobRootSeq{env.seq(bob)};
+
+            // alice creates an escrow that can be finished in the future.
+            auto const ts = env.now() + 117s;
+
+            std::uint32_t const escrowSeq = aliceTicket;
+            env(escrow(alice, bob, XRP(1000)),
+                condition(cb1),
+                cancel_time(ts),
+                ticket::use(aliceTicket));
+            BEAST_EXPECT(env.seq(alice) == aliceRootSeq);
+            env.require(tickets(alice, 0));
+            env.require(tickets(bob, bobTicketCount));
+
+            // Advance the ledger, verifying that the cancel won't complete
+            // prematurely.
+            for (; env.now() < ts; env.close())
+            {
+                env(cancel(bob, alice, escrowSeq),
+                    fee(1500),
+                    ticket::use(bobTicket++),
+                    ter(tecNO_PERMISSION));
+                BEAST_EXPECT(env.seq(bob) == bobRootSeq);
+            }
+
+            // Verify that a finish won't work anymore.
+            env(finish(bob, alice, escrowSeq),
+                condition(cb1),
+                fulfillment(fb1),
+                fee(1500),
+                ticket::use(bobTicket++),
+                ter(tecNO_PERMISSION));
+            BEAST_EXPECT(env.seq(bob) == bobRootSeq);
+
+            // Verify that the cancel succeeds.
+            env(cancel(bob, alice, escrowSeq),
+                fee(1500),
+                ticket::use(bobTicket++));
+            env.close();
+            BEAST_EXPECT(env.seq(bob) == bobRootSeq);
+
+            // Verify that bob actually consumed his tickets.
+            env.require(tickets(bob, env.seq(bob) - bobTicket));
         }
     }
 
@@ -1512,6 +1648,7 @@ struct Escrow_test : public beast::unit_test::suite
         testEscrowConditions();
         testMetaAndOwnership();
         testConsequences();
+        testEscrowWithTickets();
     }
 };
 

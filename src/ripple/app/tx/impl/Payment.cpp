@@ -30,18 +30,19 @@ namespace ripple {
 
 // See https://ripple.com/wiki/Transaction_Format#Payment_.280.29
 
-XRPAmount
-Payment::calculateMaxSpend(STTx const& tx)
+TxConsequences
+Payment::makeTxConsequences(PreflightContext const& ctx)
 {
-    if (tx.isFieldPresent(sfSendMax))
-    {
-        auto const& sendMax = tx[sfSendMax];
-        return sendMax.native() ? sendMax.xrp() : beast::zero;
-    }
-    /* If there's no sfSendMax in XRP, and the sfAmount isn't
-    in XRP, then the transaction can not send XRP. */
-    auto const& saDstAmount = tx.getFieldAmount(sfAmount);
-    return saDstAmount.native() ? saDstAmount.xrp() : beast::zero;
+    auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
+        STAmount const maxAmount =
+            tx.isFieldPresent(sfSendMax) ? tx[sfSendMax] : tx[sfAmount];
+
+        // If there's no sfSendMax in XRP, and the sfAmount isn't
+        // in XRP, then the transaction does not spend XRP.
+        return maxAmount.native() ? maxAmount.xrp() : beast::zero;
+    };
+
+    return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
 }
 
 NotTEC

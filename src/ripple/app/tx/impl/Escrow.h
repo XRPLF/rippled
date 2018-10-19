@@ -27,12 +27,14 @@ namespace ripple {
 class EscrowCreate : public Transactor
 {
 public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+
     explicit EscrowCreate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static XRPAmount
-    calculateMaxSpend(STTx const& tx);
+    static TxConsequences
+    makeTxConsequences(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);
@@ -46,6 +48,8 @@ public:
 class EscrowFinish : public Transactor
 {
 public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
     explicit EscrowFinish(ApplyContext& ctx) : Transactor(ctx)
     {
     }
@@ -65,6 +69,8 @@ public:
 class EscrowCancel : public Transactor
 {
 public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
     explicit EscrowCancel(ApplyContext& ctx) : Transactor(ctx)
     {
     }

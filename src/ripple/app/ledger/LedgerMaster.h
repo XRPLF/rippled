@@ -148,14 +148,13 @@ public:
     void
     applyHeldTransactions();
 
-    /** Get all the transactions held for a particular account.
-        This is normally called when a transaction for that
-        account is successfully applied to the open
-        ledger so those transactions can be resubmitted without
-        waiting for ledger close.
+    /** Get the next transaction held for a particular account if any.
+        This is normally called when a transaction for that account is
+        successfully applied to the open ledger so the next transaction
+        can be resubmitted without waiting for ledger close.
     */
-    std::vector<std::shared_ptr<STTx const>>
-    pruneHeldTransactions(AccountID const& account, std::uint32_t const seq);
+    std::shared_ptr<STTx const>
+    popAcctTransaction(std::shared_ptr<STTx const> const& tx);
 
     /** Get a ledger's hash by sequence number using the cache
      */

@@ -393,7 +393,7 @@ class LedgerRPC_test : public beast::unit_test::suite
     void
     testLedgerEntryDepositPreauth()
     {
-        testcase("ledger_entry Request Directory");
+        testcase("ledger_entry Request DepositPreauth");
         using namespace test::jtx;
         Env env{*this};
         Account const alice{"alice"};
@@ -1075,6 +1075,124 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
+    testLedgerEntryTicket()
+    {
+        testcase("ledger_entry Request Ticket");
+        using namespace test::jtx;
+        Env env{*this, supported_amendments() | featureTicketBatch};
+        env.close();
+
+        // Create two tickets.
+        std::uint32_t const tkt1{env.seq(env.master) + 1};
+        env(ticket::create(env.master, 2));
+        env.close();
+
+        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        // Request four tickets: one before the first one we created, the
+        // two created tickets, and the ticket that would come after the
+        // last created ticket.
+        {
+            // Not a valid ticket requested by index.
+            Json::Value jvParams;
+            jvParams[jss::ticket] =
+                to_string(getTicketIndex(env.master, tkt1 - 1));
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+        {
+            // First real ticket requested by index.
+            Json::Value jvParams;
+            jvParams[jss::ticket] = to_string(getTicketIndex(env.master, tkt1));
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Ticket);
+            BEAST_EXPECT(jrr[jss::node][sfTicketSequence.jsonName] == tkt1);
+        }
+        {
+            // Second real ticket requested by account and sequence.
+            Json::Value jvParams;
+            jvParams[jss::ticket] = Json::objectValue;
+            jvParams[jss::ticket][jss::account] = env.master.human();
+            jvParams[jss::ticket][jss::ticket_seq] = tkt1 + 1;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][jss::index] ==
+                to_string(getTicketIndex(env.master, tkt1 + 1)));
+        }
+        {
+            // Not a valid ticket requested by account and sequence.
+            Json::Value jvParams;
+            jvParams[jss::ticket] = Json::objectValue;
+            jvParams[jss::ticket][jss::account] = env.master.human();
+            jvParams[jss::ticket][jss::ticket_seq] = tkt1 + 2;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+        {
+            // Request a ticket using an account root entry.
+            Json::Value jvParams;
+            jvParams[jss::ticket] = to_string(keylet::account(env.master).key);
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+        {
+            // Malformed account entry.
+            Json::Value jvParams;
+            jvParams[jss::ticket] = Json::objectValue;
+
+            std::string const badAddress = makeBadAddress(env.master.human());
+            jvParams[jss::ticket][jss::account] = badAddress;
+            jvParams[jss::ticket][jss::ticket_seq] = env.seq(env.master) - 1;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedAddress", "");
+        }
+        {
+            // Malformed ticket object.  Missing account member.
+            Json::Value jvParams;
+            jvParams[jss::ticket] = Json::objectValue;
+            jvParams[jss::ticket][jss::ticket_seq] = env.seq(env.master) - 1;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+        {
+            // Malformed ticket object.  Missing seq member.
+            Json::Value jvParams;
+            jvParams[jss::ticket] = Json::objectValue;
+            jvParams[jss::ticket][jss::account] = env.master.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+        {
+            // Malformed ticket object.  Non-integral seq member.
+            Json::Value jvParams;
+            jvParams[jss::ticket] = Json::objectValue;
+            jvParams[jss::ticket][jss::account] = env.master.human();
+            jvParams[jss::ticket][jss::ticket_seq] =
+                std::to_string(env.seq(env.master) - 1);
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+    }
+
+    void
     testLedgerEntryUnknownOption()
     {
         testcase("ledger_entry Request Unknown Option");
@@ -1560,6 +1678,7 @@ public:
         testLedgerEntryOffer();
         testLedgerEntryPayChan();
         testLedgerEntryRippleState();
+        testLedgerEntryTicket();
         testLedgerEntryUnknownOption();
         testLookupLedger();
         testNoQueue();

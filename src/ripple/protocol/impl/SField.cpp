@@ -117,6 +117,8 @@ SF_U32 const sfCancelAfter(access, STI_UINT32, 36, "CancelAfter");
 SF_U32 const sfFinishAfter(access, STI_UINT32, 37, "FinishAfter");
 SF_U32 const sfSignerListID(access, STI_UINT32, 38, "SignerListID");
 SF_U32 const sfSettleDelay(access, STI_UINT32, 39, "SettleDelay");
+SF_U32 const sfTicketCount(access, STI_UINT32, 40, "TicketCount");
+SF_U32 const sfTicketSequence(access, STI_UINT32, 41, "TicketSequence");
 
 // 64-bit integers
 SF_U64 const sfIndexNext(access, STI_UINT64, 1, "IndexNext");
@@ -162,7 +164,7 @@ SF_U256 const sfBookDirectory(access, STI_HASH256, 16, "BookDirectory");
 SF_U256 const sfInvoiceID(access, STI_HASH256, 17, "InvoiceID");
 SF_U256 const sfNickname(access, STI_HASH256, 18, "Nickname");
 SF_U256 const sfAmendment(access, STI_HASH256, 19, "Amendment");
-SF_U256 const sfTicketID(access, STI_HASH256, 20, "TicketID");
+//                                                  20 is currently unused
 SF_U256 const sfDigest(access, STI_HASH256, 21, "Digest");
 SF_U256 const sfPayChannel(access, STI_HASH256, 22, "Channel");
 SF_U256 const sfConsensusHash(access, STI_HASH256, 23, "ConsensusHash");
@@ -234,7 +236,7 @@ SF_Account const sfDestination(access, STI_ACCOUNT, 3, "Destination");
 SF_Account const sfIssuer(access, STI_ACCOUNT, 4, "Issuer");
 SF_Account const sfAuthorize(access, STI_ACCOUNT, 5, "Authorize");
 SF_Account const sfUnauthorize(access, STI_ACCOUNT, 6, "Unauthorize");
-SF_Account const sfTarget(access, STI_ACCOUNT, 7, "Target");
+//                                                   7 is currently unused
 SF_Account const sfRegularKey(access, STI_ACCOUNT, 8, "RegularKey");
 
 // path set

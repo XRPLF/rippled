@@ -100,7 +100,19 @@ removeSignersFromLedger(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
-    return SetSignerList::removeFromLedger(app, view, account);
+    return SetSignerList::removeFromLedger(app, view, account, j);
+}
+
+TER
+removeTicketFromLedger(
+    Application&,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const& delIndex,
+    std::shared_ptr<SLE> const&,
+    beast::Journal j)
+{
+    return Transactor::ticketDelete(view, account, delIndex, j);
 }
 
 TER
@@ -115,9 +127,9 @@ removeDepositPreauthFromLedger(
     return DepositPreauth::removeFromLedger(app, view, delIndex, j);
 }
 
-// Return nullptr if the LedgerEntryType represents an obligation that can't be
-// deleted Otherwise return the pointer to the function that can delete the
-// non-obligation
+// Return nullptr if the LedgerEntryType represents an obligation that can't
+// be deleted.  Otherwise return the pointer to the function that can delete
+// the non-obligation
 DeleterFuncPtr
 nonObligationDeleter(LedgerEntryType t)
 {
@@ -127,7 +139,8 @@ nonObligationDeleter(LedgerEntryType t)
             return offerDelete;
         case ltSIGNER_LIST:
             return removeSignersFromLedger;
-        // case ltTICKET: return ???;
+        case ltTICKET:
+            return removeTicketFromLedger;
         case ltDEPOSIT_PREAUTH:
             return removeDepositPreauthFromLedger;
         default:

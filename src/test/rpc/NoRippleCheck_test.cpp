@@ -297,23 +297,20 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
                 seq(autofill),
                 fee(toDrops(
                         txq.getMetrics(*env.current()).openLedgerFeeLevel,
-                        baseFee)
-                        .second +
+                        baseFee) +
                     1),
                 sig(autofill));
             env(fset(gw, asfDefaultRipple),
                 seq(autofill),
                 fee(toDrops(
                         txq.getMetrics(*env.current()).openLedgerFeeLevel,
-                        baseFee)
-                        .second +
+                        baseFee) +
                     1),
                 sig(autofill));
             env(trust(alice, gw["USD"](10)),
                 fee(toDrops(
                         txq.getMetrics(*env.current()).openLedgerFeeLevel,
-                        baseFee)
-                        .second +
+                        baseFee) +
                     1));
             env.close();
         }

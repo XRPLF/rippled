@@ -30,14 +30,10 @@ namespace ripple {
 class SetRegularKey : public Transactor
 {
 public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
+
     explicit SetRegularKey(ApplyContext& ctx) : Transactor(ctx)
     {
-    }
-
-    static bool
-    affectsSubsequentTransactionAuth(STTx const& tx)
-    {
-        return true;
     }
 
     static NotTEC

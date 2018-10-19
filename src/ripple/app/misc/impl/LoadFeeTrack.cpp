@@ -41,7 +41,7 @@ LoadFeeTrack::raiseLocalFee()
     if (++raiseCount_ < 2)
         return false;
 
-    std::uint32_t origFee = localTxnLoadFee_;
+    std::uint32_t const origFee = localTxnLoadFee_;
 
     // make sure this fee takes effect
     if (localTxnLoadFee_ < remoteTxnLoadFee_)
@@ -65,7 +65,7 @@ bool
 LoadFeeTrack::lowerLocalFee()
 {
     std::lock_guard sl(lock_);
-    std::uint32_t origFee = localTxnLoadFee_;
+    std::uint32_t const origFee = localTxnLoadFee_;
     raiseCount_ = 0;
 
     // Reduce slowly

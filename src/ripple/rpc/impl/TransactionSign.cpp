@@ -450,20 +450,7 @@ transactionPreProcessImpl(
 
                 return rpcError(rpcSRC_ACT_NOT_FOUND);
             }
-
-            auto seq = (*sle)[sfSequence];
-            auto const queued =
-                app.getTxQ().getAccountTxs(srcAddressID, *ledger);
-            // If the account has any txs in the TxQ, skip those sequence
-            // numbers (accounting for possible gaps).
-            for (auto const& tx : queued)
-            {
-                if (tx.first == seq)
-                    ++seq;
-                else if (tx.first > seq)
-                    break;
-            }
-            tx_json[jss::Sequence] = seq;
+            tx_json[jss::Sequence] = app.getTxQ().nextQueuableSeq(sle).value();
         }
 
         if (!tx_json.isMember(jss::Flags))
@@ -741,9 +728,7 @@ checkFee(
         auto const metrics = txQ.getMetrics(*ledger);
         auto const baseFee = ledger->fees().base;
         auto escalatedFee =
-            toDrops(metrics.openLedgerFeeLevel - FeeLevel64{1}, baseFee)
-                .second +
-            1;
+            toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
         fee = std::max(fee, escalatedFee);
     }
 

@@ -53,6 +53,7 @@ LedgerFormats::LedgerFormats()
             {sfTransferRate, soeOPTIONAL},
             {sfDomain, soeOPTIONAL},
             {sfTickSize, soeOPTIONAL},
+            {sfTicketCount, soeOPTIONAL},
         },
         commonFields);
 
@@ -155,10 +156,10 @@ LedgerFormats::LedgerFormats()
         ltTICKET,
         {
             {sfAccount, soeREQUIRED},
-            {sfSequence, soeREQUIRED},
             {sfOwnerNode, soeREQUIRED},
-            {sfTarget, soeOPTIONAL},
-            {sfExpiration, soeOPTIONAL},
+            {sfTicketSequence, soeREQUIRED},
+            {sfPreviousTxnID, soeREQUIRED},
+            {sfPreviousTxnLgrSeq, soeREQUIRED},
         },
         commonFields);
 

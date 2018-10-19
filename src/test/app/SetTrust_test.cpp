@@ -106,6 +106,40 @@ public:
         }
     }
 
+    void
+    testTicketSetTrust()
+    {
+        testcase("SetTrust using a ticket");
+
+        using namespace jtx;
+
+        //  Verify that TrustSet transactions can use tickets.
+        Env env{*this, supported_amendments() | featureTicketBatch};
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const USD = gw["USD"];
+
+        env.fund(XRP(10000), gw, alice);
+        env.close();
+
+        // Cannot pay alice without a trustline.
+        env(pay(gw, alice, USD(200)), ter(tecPATH_DRY));
+        env.close();
+
+        // Create a ticket.
+        std::uint32_t const ticketSeq{env.seq(alice) + 1};
+        env(ticket::create(alice, 1));
+        env.close();
+
+        // Use that ticket to create a trust line.
+        env(trust(alice, USD(1000)), ticket::use(ticketSeq));
+        env.close();
+
+        // Now the payment succeeds.
+        env(pay(gw, alice, USD(200)));
+        env.close();
+    }
+
     Json::Value
     trust_explicit_amt(jtx::Account const& a, STAmount const& amt)
     {
@@ -223,6 +257,7 @@ public:
         // true, true case doesn't matter since creating a trustline ledger
         // entry requires reserve from the creator
         // independent of hi/low account ids for endpoints
+        testTicketSetTrust();
         testMalformedTransaction();
         testModifyQualityOfTrustline(false, false);
         testModifyQualityOfTrustline(false, true);

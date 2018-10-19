@@ -543,14 +543,12 @@ LedgerMaster::applyHeldTransactions()
     mHeldTransactions.reset(app_.openLedger().current()->info().parentHash);
 }
 
-std::vector<std::shared_ptr<STTx const>>
-LedgerMaster::pruneHeldTransactions(
-    AccountID const& account,
-    std::uint32_t const seq)
+std::shared_ptr<STTx const>
+LedgerMaster::popAcctTransaction(std::shared_ptr<STTx const> const& tx)
 {
     std::lock_guard sl(m_mutex);
 
-    return mHeldTransactions.prune(account, seq);
+    return mHeldTransactions.popAcctTransaction(tx);
 }
 
 LedgerIndex

@@ -160,6 +160,22 @@ STTx::getSignature() const
     }
 }
 
+SeqProxy
+STTx::getSeqProxy() const
+{
+    std::uint32_t const seq{getFieldU32(sfSequence)};
+    if (seq != 0)
+        return SeqProxy::sequence(seq);
+
+    boost::optional<std::uint32_t> const ticketSeq{operator[](
+        ~sfTicketSequence)};
+    if (!ticketSeq)
+        // No TicketSequence specified.  Return the Sequence, whatever it is.
+        return SeqProxy::sequence(seq);
+
+    return SeqProxy{SeqProxy::ticket, *ticketSeq};
+}
+
 void
 STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
 {
@@ -250,8 +266,8 @@ STTx::getMetaSQL(
 
     return str(
         boost::format(bfTrans) % to_string(getTransactionID()) %
-        format->getName() % toBase58(getAccountID(sfAccount)) % getSequence() %
-        inLedger % status % rTxn % escapedMetaData);
+        format->getName() % toBase58(getAccountID(sfAccount)) %
+        getFieldU32(sfSequence) % inLedger % status % rTxn % escapedMetaData);
 }
 
 std::pair<bool, std::string>
