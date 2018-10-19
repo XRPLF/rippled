@@ -42,7 +42,7 @@ convert(org::xrpl::rpc::v1::Meta& to, std::shared_ptr<TxMeta> const& from);
 void
 convert(
     org::xrpl::rpc::v1::QueueData& to,
-    std::map<TxSeq, TxQ::AccountTxDetails const> const& from);
+    std::vector<TxQ::TxDetails> const& from);
 
 void
 convert(

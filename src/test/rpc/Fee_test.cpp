@@ -114,17 +114,14 @@ class Fee_test : public beast::unit_test::suite
         auto const baseFee = view->fees().base;
         BEAST_EXPECT(
             fee.base_fee().drops() ==
-            toDrops(metrics.referenceFeeLevel, baseFee).second);
+            toDrops(metrics.referenceFeeLevel, baseFee));
         BEAST_EXPECT(
             fee.minimum_fee().drops() ==
-            toDrops(metrics.minProcessingFeeLevel, baseFee).second);
+            toDrops(metrics.minProcessingFeeLevel, baseFee));
         BEAST_EXPECT(
-            fee.median_fee().drops() ==
-            toDrops(metrics.medFeeLevel, baseFee).second);
+            fee.median_fee().drops() == toDrops(metrics.medFeeLevel, baseFee));
         auto openLedgerFee =
-            toDrops(metrics.openLedgerFeeLevel - FeeLevel64{1}, baseFee)
-                .second +
-            1;
+            toDrops(metrics.openLedgerFeeLevel - FeeLevel64{1}, baseFee) + 1;
         BEAST_EXPECT(fee.open_ledger_fee().drops() == openLedgerFee.drops());
     }
 

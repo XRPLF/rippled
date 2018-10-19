@@ -60,7 +60,7 @@ enum TELcodes : TERUnderlyingType {
     telCAN_NOT_QUEUE_BLOCKS,
     telCAN_NOT_QUEUE_BLOCKED,
     telCAN_NOT_QUEUE_FEE,
-    telCAN_NOT_QUEUE_FULL
+    telCAN_NOT_QUEUE_FULL,
 };
 
 //------------------------------------------------------------------------------
@@ -113,10 +113,11 @@ enum TEMcodes : TERUnderlyingType {
     temBAD_TICK_SIZE,
     temINVALID_ACCOUNT_ID,
     temCANNOT_PREAUTH_SELF,
+    temINVALID_COUNT,
 
     // An intermediate result used internally, should never be returned.
     temUNCERTAIN,
-    temUNKNOWN
+    temUNKNOWN,
 };
 
 //------------------------------------------------------------------------------
@@ -158,6 +159,7 @@ enum TEFcodes : TERUnderlyingType {
     tefBAD_AUTH_MASTER,
     tefINVARIANT_FAILED,
     tefTOO_BIG,
+    tefNO_TICKET,
 };
 
 //------------------------------------------------------------------------------
@@ -195,7 +197,8 @@ enum TERcodes : TERUnderlyingType {
                      // burden network.
     terLAST,         // DEPRECATED.
     terNO_RIPPLE,    // Rippling not allowed
-    terQUEUED        // Transaction is being held in TxQ until fee drops
+    terQUEUED,       // Transaction is being held in TxQ until fee drops
+    terPRE_TICKET,   // Ticket is not yet in ledger but might be on its way
 };
 
 //------------------------------------------------------------------------------

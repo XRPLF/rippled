@@ -48,14 +48,10 @@ private:
     std::vector<SignerEntries::SignerEntry> signers_;
 
 public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
+
     explicit SetSignerList(ApplyContext& ctx) : Transactor(ctx)
     {
-    }
-
-    static bool
-    affectsSubsequentTransactionAuth(STTx const& tx)
-    {
-        return true;
     }
 
     static NotTEC
@@ -71,7 +67,8 @@ public:
     removeFromLedger(
         Application& app,
         ApplyView& view,
-        AccountID const& account);
+        AccountID const& account,
+        beast::Journal j);
 
 private:
     static std::tuple<

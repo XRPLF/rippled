@@ -480,20 +480,15 @@ public:
     {
         using namespace jtx;
         // create syntax
-        ticket::create("alice", "bob");
-        ticket::create("alice", 60);
-        ticket::create("alice", "bob", 60);
-        ticket::create("alice", 60, "bob");
+        ticket::create("alice", 1);
 
         {
-            Env env(*this, supported_amendments().set(featureTickets));
+            Env env(*this, supported_amendments() | featureTicketBatch);
             env.fund(XRP(10000), "alice");
             env(noop("alice"),
                 require(owners("alice", 0), tickets("alice", 0)));
-            env(ticket::create("alice"),
+            env(ticket::create("alice", 1),
                 require(owners("alice", 1), tickets("alice", 1)));
-            env(ticket::create("alice"),
-                require(owners("alice", 2), tickets("alice", 2)));
         }
     }
 

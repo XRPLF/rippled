@@ -32,6 +32,8 @@ namespace ripple {
 class Change : public Transactor
 {
 public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
     explicit Change(ApplyContext& ctx) : Transactor(ctx)
     {
     }

@@ -228,15 +228,12 @@ fillJsonQueue(Object& json, LedgerFill const& fill)
         txJson[jss::fee_level] = to_string(tx.feeLevel);
         if (tx.lastValid)
             txJson[jss::LastLedgerSequence] = *tx.lastValid;
-        if (tx.consequences)
-        {
-            txJson[jss::fee] = to_string(tx.consequences->fee);
-            auto spend = tx.consequences->potentialSpend + tx.consequences->fee;
-            txJson[jss::max_spend_drops] = to_string(spend);
-            auto authChanged =
-                tx.consequences->category == TxConsequences::blocker;
-            txJson[jss::auth_change] = authChanged;
-        }
+
+        txJson[jss::fee] = to_string(tx.consequences.fee());
+        auto const spend =
+            tx.consequences.potentialSpend() + tx.consequences.fee();
+        txJson[jss::max_spend_drops] = to_string(spend);
+        txJson[jss::auth_change] = tx.consequences.isBlocker();
 
         txJson[jss::account] = to_string(tx.account);
         txJson["retries_remaining"] = tx.retriesRemaining;

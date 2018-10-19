@@ -5134,6 +5134,260 @@ public:
         BEAST_EXPECT(++it == offers.end());
     }
 
+    // Helper function that returns offers on an account sorted by sequence.
+    static std::vector<std::shared_ptr<SLE const>>
+    sortedOffersOnAccount(jtx::Env& env, jtx::Account const& acct)
+    {
+        std::vector<std::shared_ptr<SLE const>> offers{
+            offersOnAccount(env, acct)};
+        std::sort(
+            offers.begin(),
+            offers.end(),
+            [](std::shared_ptr<SLE const> const& rhs,
+               std::shared_ptr<SLE const> const& lhs) {
+                return (*rhs)[sfSequence] < (*lhs)[sfSequence];
+            });
+        return offers;
+    }
+
+    void
+    testTicketOffer(FeatureBitset features)
+    {
+        testcase("Ticket Offers");
+
+        using namespace jtx;
+
+        // Should be called with TicketBatch enabled.
+        BEAST_EXPECT(features[featureTicketBatch]);
+
+        // Two goals for this test.
+        //
+        //  o Verify that offers can be created using tickets.
+        //
+        //  o Show that offers in the _same_ order book remain in
+        //    chronological order regardless of sequence/ticket numbers.
+        Env env{*this, features};
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const USD = gw["USD"];
+
+        env.fund(XRP(10000), gw, alice, bob);
+        env.close();
+
+        env(trust(alice, USD(1000)));
+        env(trust(bob, USD(1000)));
+        env.close();
+
+        env(pay(gw, alice, USD(200)));
+        env.close();
+
+        // Create four offers from the same account with identical quality
+        // so they go in the same order book.  Each offer goes in a different
+        // ledger so the chronology is clear.
+        std::uint32_t const offerId_0{env.seq(alice)};
+        env(offer(alice, XRP(50), USD(50)));
+        env.close();
+
+        // Create two tickets.
+        std::uint32_t const ticketSeq{env.seq(alice) + 1};
+        env(ticket::create(alice, 2));
+        env.close();
+
+        // Create another sequence-based offer.
+        std::uint32_t const offerId_1{env.seq(alice)};
+        BEAST_EXPECT(offerId_1 == offerId_0 + 4);
+        env(offer(alice, XRP(50), USD(50)));
+        env.close();
+
+        // Create two ticket based offers in reverse order.
+        std::uint32_t const offerId_2{ticketSeq + 1};
+        env(offer(alice, XRP(50), USD(50)), ticket::use(offerId_2));
+        env.close();
+
+        // Create the last offer.
+        std::uint32_t const offerId_3{ticketSeq};
+        env(offer(alice, XRP(50), USD(50)), ticket::use(offerId_3));
+        env.close();
+
+        // Verify that all of alice's offers are present.
+        {
+            auto offers = sortedOffersOnAccount(env, alice);
+            BEAST_EXPECT(offers.size() == 4);
+            BEAST_EXPECT(offers[0]->getFieldU32(sfSequence) == offerId_0);
+            BEAST_EXPECT(offers[1]->getFieldU32(sfSequence) == offerId_3);
+            BEAST_EXPECT(offers[2]->getFieldU32(sfSequence) == offerId_2);
+            BEAST_EXPECT(offers[3]->getFieldU32(sfSequence) == offerId_1);
+            env.require(balance(alice, USD(200)));
+            env.require(owners(alice, 5));
+        }
+
+        // Cross alice's first offer.
+        env(offer(bob, USD(50), XRP(50)));
+        env.close();
+
+        // Verify that the first offer alice created was consumed.
+        {
+            auto offers = sortedOffersOnAccount(env, alice);
+            BEAST_EXPECT(offers.size() == 3);
+            BEAST_EXPECT(offers[0]->getFieldU32(sfSequence) == offerId_3);
+            BEAST_EXPECT(offers[1]->getFieldU32(sfSequence) == offerId_2);
+            BEAST_EXPECT(offers[2]->getFieldU32(sfSequence) == offerId_1);
+        }
+
+        // Cross alice's second offer.
+        env(offer(bob, USD(50), XRP(50)));
+        env.close();
+
+        // Verify that the second offer alice created was consumed.
+        {
+            auto offers = sortedOffersOnAccount(env, alice);
+            BEAST_EXPECT(offers.size() == 2);
+            BEAST_EXPECT(offers[0]->getFieldU32(sfSequence) == offerId_3);
+            BEAST_EXPECT(offers[1]->getFieldU32(sfSequence) == offerId_2);
+        }
+
+        // Cross alice's third offer.
+        env(offer(bob, USD(50), XRP(50)));
+        env.close();
+
+        // Verify that the third offer alice created was consumed.
+        {
+            auto offers = sortedOffersOnAccount(env, alice);
+            BEAST_EXPECT(offers.size() == 1);
+            BEAST_EXPECT(offers[0]->getFieldU32(sfSequence) == offerId_3);
+        }
+
+        // Cross alice's last offer.
+        env(offer(bob, USD(50), XRP(50)));
+        env.close();
+
+        // Verify that the third offer alice created was consumed.
+        {
+            auto offers = sortedOffersOnAccount(env, alice);
+            BEAST_EXPECT(offers.size() == 0);
+        }
+        env.require(balance(alice, USD(0)));
+        env.require(owners(alice, 1));
+        env.require(balance(bob, USD(200)));
+        env.require(owners(bob, 1));
+    }
+
+    void
+    testTicketCancelOffer(FeatureBitset features)
+    {
+        testcase("Ticket Cancel Offers");
+
+        using namespace jtx;
+
+        // Should be called with TicketBatch enabled.
+        BEAST_EXPECT(features[featureTicketBatch]);
+
+        // Verify that offers created with or without tickets can be canceled
+        // by transactions with or without tickets.
+        Env env{*this, features};
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const USD = gw["USD"];
+
+        env.fund(XRP(10000), gw, alice);
+        env.close();
+
+        env(trust(alice, USD(1000)));
+        env.close();
+        env.require(owners(alice, 1), tickets(alice, 0));
+
+        env(pay(gw, alice, USD(200)));
+        env.close();
+
+        // Create the first of four offers using a sequence.
+        std::uint32_t const offerSeqId_0{env.seq(alice)};
+        env(offer(alice, XRP(50), USD(50)));
+        env.close();
+        env.require(owners(alice, 2), tickets(alice, 0));
+
+        // Create four tickets.
+        std::uint32_t const ticketSeq{env.seq(alice) + 1};
+        env(ticket::create(alice, 4));
+        env.close();
+        env.require(owners(alice, 6), tickets(alice, 4));
+
+        // Create the second (also sequence-based) offer.
+        std::uint32_t const offerSeqId_1{env.seq(alice)};
+        BEAST_EXPECT(offerSeqId_1 == offerSeqId_0 + 6);
+        env(offer(alice, XRP(50), USD(50)));
+        env.close();
+
+        // Create the third (ticket-based) offer.
+        std::uint32_t const offerTixId_0{ticketSeq + 1};
+        env(offer(alice, XRP(50), USD(50)), ticket::use(offerTixId_0));
+        env.close();
+
+        // Create the last offer.
+        std::uint32_t const offerTixId_1{ticketSeq};
+        env(offer(alice, XRP(50), USD(50)), ticket::use(offerTixId_1));
+        env.close();
+
+        // Verify that all of alice's offers are present.
+        {
+            auto offers = sortedOffersOnAccount(env, alice);
+            BEAST_EXPECT(offers.size() == 4);
+            BEAST_EXPECT(offers[0]->getFieldU32(sfSequence) == offerSeqId_0);
+            BEAST_EXPECT(offers[1]->getFieldU32(sfSequence) == offerTixId_1);
+            BEAST_EXPECT(offers[2]->getFieldU32(sfSequence) == offerTixId_0);
+            BEAST_EXPECT(offers[3]->getFieldU32(sfSequence) == offerSeqId_1);
+            env.require(balance(alice, USD(200)));
+            env.require(owners(alice, 7));
+        }
+
+        // Use a ticket to cancel an offer created with a sequence.
+        env(offer_cancel(alice, offerSeqId_0), ticket::use(ticketSeq + 2));
+        env.close();
+
+        // Verify that offerSeqId_0 was canceled.
+        {
+            auto offers = sortedOffersOnAccount(env, alice);
+            BEAST_EXPECT(offers.size() == 3);
+            BEAST_EXPECT(offers[0]->getFieldU32(sfSequence) == offerTixId_1);
+            BEAST_EXPECT(offers[1]->getFieldU32(sfSequence) == offerTixId_0);
+            BEAST_EXPECT(offers[2]->getFieldU32(sfSequence) == offerSeqId_1);
+        }
+
+        // Use a ticket to cancel an offer created with a ticket.
+        env(offer_cancel(alice, offerTixId_0), ticket::use(ticketSeq + 3));
+        env.close();
+
+        // Verify that offerTixId_0 was canceled.
+        {
+            auto offers = sortedOffersOnAccount(env, alice);
+            BEAST_EXPECT(offers.size() == 2);
+            BEAST_EXPECT(offers[0]->getFieldU32(sfSequence) == offerTixId_1);
+            BEAST_EXPECT(offers[1]->getFieldU32(sfSequence) == offerSeqId_1);
+        }
+
+        // All of alice's tickets should now be used up.
+        env.require(owners(alice, 3), tickets(alice, 0));
+
+        // Use a sequence to cancel an offer created with a ticket.
+        env(offer_cancel(alice, offerTixId_1));
+        env.close();
+
+        // Verify that offerTixId_1 was canceled.
+        {
+            auto offers = sortedOffersOnAccount(env, alice);
+            BEAST_EXPECT(offers.size() == 1);
+            BEAST_EXPECT(offers[0]->getFieldU32(sfSequence) == offerSeqId_1);
+        }
+
+        // Use a sequence to cancel an offer created with a sequence.
+        env(offer_cancel(alice, offerSeqId_1));
+        env.close();
+
+        // Verify that offerSeqId_1 was canceled.
+        // All of alice's tickets should now be used up.
+        env.require(owners(alice, 1), tickets(alice, 0), offers(alice, 0));
+    }
+
     void
     testFalseAssert()
     {
@@ -5209,13 +5463,15 @@ public:
         testSelfAuth(features);
         testDeletedOfferIssuer(features);
         testTickSize(features);
+        testTicketOffer(features);
+        testTicketCancelOffer(features);
     }
 
     void
     run() override
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{supported_amendments() | featureTicketBatch};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
 
@@ -5233,7 +5489,7 @@ class Offer_manual_test : public Offer_test
     run() override
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{supported_amendments() | featureTicketBatch};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};

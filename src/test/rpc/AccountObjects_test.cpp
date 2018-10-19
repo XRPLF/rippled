@@ -349,8 +349,7 @@ public:
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
 
-        // Test for ticket account objects when they are supported.
-        Env env(*this, supported_amendments().set(featureTickets));
+        Env env(*this, supported_amendments() | featureTicketBatch);
 
         // Make a lambda we can use to get "account_objects" easily.
         auto acct_objs = [&env](Account const& acct, char const* type) {
@@ -504,7 +503,7 @@ public:
             BEAST_EXPECT(entry[sfSignerWeight.jsonName].asUInt() == 7);
         }
         // Create a Ticket for gw.
-        env(ticket::create(gw, gw));
+        env(ticket::create(gw, 1));
         env.close();
         {
             // Find the ticket.
@@ -514,7 +513,7 @@ public:
             auto const& ticket = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(ticket[sfAccount.jsonName] == gw.human());
             BEAST_EXPECT(ticket[sfLedgerEntryType.jsonName] == jss::Ticket);
-            BEAST_EXPECT(ticket[sfSequence.jsonName].asUInt() == 11);
+            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() == 12);
         }
         {
             // See how "deletion_blockers_only" handles gw's directory.

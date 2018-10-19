@@ -32,6 +32,7 @@
 
 namespace ripple {
 
+class SeqProxy;
 /** Keylet computation funclets.
 
     Entries in the ledger are located using 256-bit locators. The locators are
@@ -152,7 +153,10 @@ struct ticket_t
     explicit ticket_t() = default;
 
     Keylet
-    operator()(AccountID const& id, std::uint32_t seq) const;
+    operator()(AccountID const& id, std::uint32_t ticketSeq) const;
+
+    Keylet
+    operator()(AccountID const& id, SeqProxy ticketSeq) const;
 
     Keylet
     operator()(uint256 const& key) const
@@ -237,6 +241,9 @@ getQuality(uint256 const& uBase);
 
 uint256
 getTicketIndex(AccountID const& account, std::uint32_t uSequence);
+
+uint256
+getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
 
 }  // namespace ripple
 

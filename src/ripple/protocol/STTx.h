@@ -23,9 +23,9 @@
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/SecretKey.h>
+#include <ripple/protocol/SeqProxy.h>
 #include <ripple/protocol/TxFormats.h>
 #include <boost/container/flat_set.hpp>
-#include <boost/logic/tribool.hpp>
 #include <functional>
 
 namespace ripple {
@@ -113,16 +113,8 @@ public:
         return getFieldVL(sfSigningPubKey);
     }
 
-    std::uint32_t
-    getSequence() const
-    {
-        return getFieldU32(sfSequence);
-    }
-    void
-    setSequence(std::uint32_t seq)
-    {
-        return setFieldU32(sfSequence, seq);
-    }
+    SeqProxy
+    getSeqProxy() const;
 
     boost::container::flat_set<AccountID>
     getMentionedAccounts() const;

@@ -39,62 +39,24 @@ namespace jtx {
 /** Ticket operations */
 namespace ticket {
 
-namespace detail {
-
+/** Create one of more tickets */
 Json::Value
-create(
-    Account const& account,
-    boost::optional<Account> const& target,
-    boost::optional<std::uint32_t> const& expire);
+create(Account const& account, std::uint32_t count);
 
-inline void
-create_arg(
-    boost::optional<Account>& opt,
-    boost::optional<std::uint32_t>&,
-    Account const& value)
+/** Set a ticket sequence on a JTx. */
+class use
 {
-    opt = value;
-}
+private:
+    std::uint32_t ticketSeq_;
 
-inline void
-create_arg(
-    boost::optional<Account>&,
-    boost::optional<std::uint32_t>& opt,
-    std::uint32_t value)
-{
-    opt = value;
-}
+public:
+    use(std::uint32_t ticketSeq) : ticketSeq_{ticketSeq}
+    {
+    }
 
-template <class Arg, class... Args>
-void
-create_args(
-    boost::optional<Account>& account_opt,
-    boost::optional<std::uint32_t>& expire_opt,
-    Arg const& arg,
-    Args const&... args)
-{
-    create_arg(account_opt, expire_opt, arg);
-    if constexpr (sizeof...(args))
-        create_args(account_opt, expire_opt, args...);
-}
-
-}  // namespace detail
-
-/** Create a ticket */
-template <class... Args>
-Json::Value
-create(Account const& account, Args const&... args)
-{
-    boost::optional<Account> target;
-    boost::optional<std::uint32_t> expire;
-    if constexpr (sizeof...(args) > 0)
-        detail::create_args(target, expire, args...);
-    return detail::create(account, target, expire);
-}
-
-/** Cancel a ticket */
-Json::Value
-cancel(Account const& account, std::string const& ticketId);
+    void
+    operator()(Env&, JTx& jt) const;
+};
 
 }  // namespace ticket
 

@@ -1746,6 +1746,108 @@ class Check_test : public beast::unit_test::suite
         testEnable(supported_amendments(), true);
     }
 
+    void
+    testWithTickets()
+    {
+        testcase("With Tickets");
+
+        using namespace test::jtx;
+
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        IOU const USD{gw["USD"]};
+
+        Env env{*this, supported_amendments() | featureTicketBatch};
+        env.fund(XRP(1000), gw, alice, bob);
+        env.close();
+
+        // alice and bob grab enough tickets for all of the following
+        // transactions.  Note that once the tickets are acquired alice's
+        // and bob's account sequence numbers should not advance.
+        std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+        env(ticket::create(alice, 10));
+        std::uint32_t const aliceSeq{env.seq(alice)};
+
+        std::uint32_t bobTicketSeq{env.seq(bob) + 1};
+        env(ticket::create(bob, 10));
+        std::uint32_t const bobSeq{env.seq(bob)};
+
+        env.close();
+        env.require(owners(alice, 10));
+        env.require(owners(bob, 10));
+
+        // alice gets enough USD to write a few checks.
+        env(trust(alice, USD(1000)), ticket::use(aliceTicketSeq++));
+        env(trust(bob, USD(1000)), ticket::use(bobTicketSeq++));
+        env.close();
+        env.require(owners(alice, 10));
+        env.require(owners(bob, 10));
+
+        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+        env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+        BEAST_EXPECT(env.seq(bob) == bobSeq);
+
+        env(pay(gw, alice, USD(900)));
+        env.close();
+
+        // alice creates four checks; two XRP, two IOU.  Bob will cash
+        // one of each and cancel one of each.
+        uint256 const chkIdXrp1{getCheckIndex(alice, aliceTicketSeq)};
+        env(check::create(alice, bob, XRP(200)), ticket::use(aliceTicketSeq++));
+
+        uint256 const chkIdXrp2{getCheckIndex(alice, aliceTicketSeq)};
+        env(check::create(alice, bob, XRP(300)), ticket::use(aliceTicketSeq++));
+
+        uint256 const chkIdUsd1{getCheckIndex(alice, aliceTicketSeq)};
+        env(check::create(alice, bob, USD(200)), ticket::use(aliceTicketSeq++));
+
+        uint256 const chkIdUsd2{getCheckIndex(alice, aliceTicketSeq)};
+        env(check::create(alice, bob, USD(300)), ticket::use(aliceTicketSeq++));
+
+        env.close();
+        // Alice used four tickets but created four checks.
+        env.require(owners(alice, 10));
+        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+        BEAST_EXPECT(checksOnAccount(env, alice).size() == 4);
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+        env.require(owners(bob, 10));
+        BEAST_EXPECT(env.seq(bob) == bobSeq);
+
+        // Bob cancels two of alice's checks.
+        env(check::cancel(bob, chkIdXrp1), ticket::use(bobTicketSeq++));
+        env(check::cancel(bob, chkIdUsd2), ticket::use(bobTicketSeq++));
+        env.close();
+
+        env.require(owners(alice, 8));
+        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+        BEAST_EXPECT(checksOnAccount(env, alice).size() == 2);
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+        env.require(owners(bob, 8));
+        BEAST_EXPECT(env.seq(bob) == bobSeq);
+
+        // Bob cashes alice's two remaining checks.
+        env(check::cash(bob, chkIdXrp2, XRP(300)), ticket::use(bobTicketSeq++));
+        env(check::cash(bob, chkIdUsd1, USD(200)), ticket::use(bobTicketSeq++));
+        env.close();
+
+        env.require(owners(alice, 6));
+        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+        BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        env.require(balance(alice, USD(700)));
+        env.require(balance(alice, drops(699'999'940)));
+
+        env.require(owners(bob, 6));
+        BEAST_EXPECT(env.seq(bob) == bobSeq);
+        env.require(balance(bob, USD(200)));
+        env.require(balance(bob, drops(1'299'999'940)));
+    }
+
 public:
     void
     run() override
@@ -1761,6 +1863,7 @@ public:
         testCancelValid();
         testCancelInvalid();
         testFix1623Enable();
+        testWithTickets();
     }
 };
 

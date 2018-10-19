@@ -44,7 +44,7 @@ enum TxType {
     ttOFFER_CANCEL = 8,
     no_longer_used = 9,
     ttTICKET_CREATE = 10,
-    ttTICKET_CANCEL = 11,
+    //                      = 11, // open
     ttSIGNER_LIST_SET = 12,
     ttPAYCHAN_CREATE = 13,
     ttPAYCHAN_FUND = 14,

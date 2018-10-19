@@ -183,11 +183,13 @@ CreateCheck::doApply()
             return tecINSUFFICIENT_RESERVE;
     }
 
-    AccountID const dstAccountId{ctx_.tx[sfDestination]};
-    std::uint32_t const seq{ctx_.tx.getSequence()};
+    // Note that we we use the value from the sequence or ticket as the
+    // Check sequence.  For more explanation see comments in SeqProxy.h.
+    std::uint32_t const seq = ctx_.tx.getSeqProxy().value();
     auto sleCheck = std::make_shared<SLE>(keylet::check(account_, seq));
 
     sleCheck->setAccountID(sfAccount, account_);
+    AccountID const dstAccountId = ctx_.tx[sfDestination];
     sleCheck->setAccountID(sfDestination, dstAccountId);
     sleCheck->setFieldU32(sfSequence, seq);
     sleCheck->setFieldAmount(sfSendMax, ctx_.tx[sfSendMax]);

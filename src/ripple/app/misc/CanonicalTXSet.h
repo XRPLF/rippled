@@ -22,6 +22,7 @@
 
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STTx.h>
+#include <ripple/protocol/SeqProxy.h>
 
 namespace ripple {
 
@@ -29,7 +30,7 @@ namespace ripple {
 
     "Canonical" refers to the order in which transactions are applied.
 
-    - Puts transactions from the same account in sequence order
+    - Puts transactions from the same account in SeqProxy order
 
 */
 // VFALCO TODO rename to SortedTxSet
@@ -39,42 +40,64 @@ private:
     class Key
     {
     public:
-        Key(uint256 const& account, std::uint32_t seq, uint256 const& id)
-            : mAccount(account), mTXid(id), mSeq(seq)
+        Key(uint256 const& account, SeqProxy seqProx, uint256 const& id)
+            : account_(account), txId_(id), seqProxy_(seqProx)
         {
         }
 
-        bool
-        operator<(Key const& rhs) const;
-        bool
-        operator>(Key const& rhs) const;
-        bool
-        operator<=(Key const& rhs) const;
-        bool
-        operator>=(Key const& rhs) const;
+        friend bool
+        operator<(Key const& lhs, Key const& rhs);
 
-        bool
-        operator==(Key const& rhs) const
+        inline friend bool
+        operator>(Key const& lhs, Key const& rhs)
         {
-            return mTXid == rhs.mTXid;
+            return rhs < lhs;
         }
-        bool
-        operator!=(Key const& rhs) const
+
+        inline friend bool
+        operator<=(Key const& lhs, Key const& rhs)
         {
-            return mTXid != rhs.mTXid;
+            return !(lhs > rhs);
+        }
+
+        inline friend bool
+        operator>=(Key const& lhs, Key const& rhs)
+        {
+            return !(lhs < rhs);
+        }
+
+        inline friend bool
+        operator==(Key const& lhs, Key const& rhs)
+        {
+            return lhs.txId_ == rhs.txId_;
+        }
+
+        inline friend bool
+        operator!=(Key const& lhs, Key const& rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        uint256 const&
+        getAccount() const
+        {
+            return account_;
         }
 
         uint256 const&
         getTXID() const
         {
-            return mTXid;
+            return txId_;
         }
 
     private:
-        uint256 mAccount;
-        uint256 mTXid;
-        std::uint32_t mSeq;
+        uint256 account_;
+        uint256 txId_;
+        SeqProxy seqProxy_;
     };
+
+    friend bool
+    operator<(Key const& lhs, Key const& rhs);
 
     // Calculate the salted key for the given account
     uint256
@@ -92,10 +115,16 @@ public:
     void
     insert(std::shared_ptr<STTx const> const& txn);
 
-    std::vector<std::shared_ptr<STTx const>>
-    prune(AccountID const& account, std::uint32_t const seq);
+    // Pops the next transaction on account that follows seqProx in the
+    // sort order.  Normally called when a transaction is successfully
+    // applied to the open ledger so the next transaction can be resubmitted
+    // without waiting for ledger close.
+    //
+    // The return value is often null, when an account has no more
+    // transactions.
+    std::shared_ptr<STTx const>
+    popAcctTransaction(std::shared_ptr<STTx const> const& tx);
 
-    // VFALCO TODO remove this function
     void
     reset(LedgerHash const& salt)
     {

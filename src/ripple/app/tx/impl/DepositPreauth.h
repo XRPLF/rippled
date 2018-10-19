@@ -27,6 +27,8 @@ namespace ripple {
 class DepositPreauth : public Transactor
 {
 public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
     explicit DepositPreauth(ApplyContext& ctx) : Transactor(ctx)
     {
     }

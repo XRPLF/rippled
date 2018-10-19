@@ -495,6 +495,46 @@ public:
         BEAST_EXPECT(!dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
         env(fset(alice, asfRequireAuth), ter(tecOWNERS));
+
+        // Remove the signer list.  After that asfRequireAuth should succeed.
+        env(signers(alice, test::jtx::none));
+        env.close();
+        BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
+
+        env(fset(alice, asfRequireAuth));
+    }
+
+    void
+    testTicket()
+    {
+        using namespace test::jtx;
+        Env env(*this, supported_amendments() | featureTicketBatch);
+        Account const alice("alice");
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        std::uint32_t const ticketSeq{env.seq(alice) + 1};
+        env(ticket::create(alice, 1));
+        env.close();
+        env.require(owners(alice, 1), tickets(alice, 1));
+
+        // Try using a ticket that alice doesn't have.
+        env(noop(alice), ticket::use(ticketSeq + 1), ter(terPRE_TICKET));
+        env.close();
+        env.require(owners(alice, 1), tickets(alice, 1));
+
+        // Actually use alice's ticket.  Note that if a transaction consumes
+        // a ticket then the account's sequence number does not advance.
+        std::uint32_t const aliceSeq{env.seq(alice)};
+        env(noop(alice), ticket::use(ticketSeq));
+        env.close();
+        env.require(owners(alice, 0), tickets(alice, 0));
+        BEAST_EXPECT(aliceSeq == env.seq(alice));
+
+        // Try re-using a ticket that alice already used.
+        env(noop(alice), ticket::use(ticketSeq), ter(tefNO_TICKET));
+        env.close();
     }
 
     void
@@ -512,6 +552,7 @@ public:
         testBadInputs();
         testRequireAuthWithDir();
         testTransferRate();
+        testTicket();
     }
 };
 

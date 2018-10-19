@@ -34,12 +34,14 @@ class SetAccount : public Transactor
     static std::size_t const DOMAIN_BYTES_MAX = 256;
 
 public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+
     explicit SetAccount(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static bool
-    affectsSubsequentTransactionAuth(STTx const& tx);
+    static TxConsequences
+    makeTxConsequences(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);

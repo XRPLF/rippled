@@ -185,8 +185,9 @@ public:
             {
                 return;
             }
-            BEAST_EXPECT(client.reply.engine_result().result() == "tefALREADY");
-            BEAST_EXPECT(client.reply.engine_result_code() == -198);
+            BEAST_EXPECT(
+                client.reply.engine_result().result() == "tefPAST_SEQ");
+            BEAST_EXPECT(client.reply.engine_result_code() == -190);
         }
     }
 

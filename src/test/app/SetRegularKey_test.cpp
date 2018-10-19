@@ -199,6 +199,58 @@ public:
     }
 
     void
+    testTicketRegularKey()
+    {
+        using namespace test::jtx;
+
+        testcase("Ticket regular key");
+        Env env{*this, supported_amendments() | featureTicketBatch};
+        Account const alice{"alice", KeyType::ed25519};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        // alice makes herself some tickets.
+        env(ticket::create(alice, 4));
+        env.close();
+        std::uint32_t ticketSeq{env.seq(alice)};
+
+        // Make sure we can give a regular key using a ticket.
+        Account const alie{"alie", KeyType::secp256k1};
+        env(regkey(alice, alie), ticket::use(--ticketSeq));
+        env.close();
+
+        // Disable alice's master key using a ticket.
+        env(fset(alice, asfDisableMaster),
+            sig(alice),
+            ticket::use(--ticketSeq));
+        env.close();
+
+        // alice should be able to sign using the regular key but not the
+        // master key.
+        std::uint32_t const aliceSeq{env.seq(alice)};
+        env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
+        env(noop(alice), sig(alie), ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+
+        // Re-enable the master key using a ticket.
+        env(fclear(alice, asfDisableMaster),
+            sig(alie),
+            ticket::use(--ticketSeq));
+        env.close();
+
+        // Disable the regular key using a ticket.
+        env(regkey(alice, disabled), sig(alie), ticket::use(--ticketSeq));
+        env.close();
+
+        // alice should be able to sign using the master key but not the
+        // regular key.
+        env(noop(alice), sig(alice), ter(tesSUCCESS));
+        env(noop(alice), sig(alie), ter(tefBAD_AUTH));
+        env.close();
+    }
+
+    void
     run() override
     {
         testDisableMasterKey();
@@ -207,6 +259,7 @@ public:
         testDisableRegularKeyAfterFix();
         testPasswordSpent();
         testUniversalMask();
+        testTicketRegularKey();
     }
 };
 

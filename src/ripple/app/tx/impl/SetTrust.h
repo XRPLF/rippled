@@ -31,6 +31,8 @@ namespace ripple {
 class SetTrust : public Transactor
 {
 public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
     explicit SetTrust(ApplyContext& ctx) : Transactor(ctx)
     {
     }

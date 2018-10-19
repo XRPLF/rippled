@@ -9,7 +9,7 @@ import "org/xrpl/rpc/v1/amount.proto";
 import "org/xrpl/rpc/v1/account.proto";
 
 // A message encompassing all transaction types
-// Next field: 30
+// Next field: 32
 message Transaction
 {
     Account account = 1;
@@ -55,8 +55,9 @@ message Transaction
 
         SignerListSet signer_list_set = 28;
 
-        TrustSet trust_set = 29;
+        TicketCreate ticket_create = 30;
 
+        TrustSet trust_set = 29;
     }
 
     SigningPublicKey signing_public_key = 5;
@@ -74,6 +75,8 @@ message Transaction
     repeated Signer signers = 11;
 
     AccountTransactionID account_transaction_id = 12;
+
+    TicketSequence ticket_sequence = 31;
 }
 
 // Next field: 4
@@ -306,6 +309,12 @@ message SignerListSet
    SignerQuorum signer_quorum = 1;
 
    repeated SignerEntry signer_entries = 2;
+}
+
+// Next field: 2
+message TicketCreate
+{
+    TicketCount count = 1;
 }
 
 // Next field: 4

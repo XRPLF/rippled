@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/SeqProxy.h>
 #include <ripple/protocol/digest.h>
 #include <boost/endian/conversion.hpp>
 #include <algorithm>
@@ -107,10 +108,17 @@ getQuality(uint256 const& uBase)
 }
 
 uint256
-getTicketIndex(AccountID const& account, std::uint32_t uSequence)
+getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
 {
     return indexHash(
-        LedgerNameSpace::TICKET, account, std::uint32_t(uSequence));
+        LedgerNameSpace::TICKET, account, std::uint32_t(ticketSeq));
+}
+
+uint256
+getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
+{
+    assert(ticketSeq.isTicket());
+    return getTicketIndex(account, ticketSeq.value());
 }
 
 //------------------------------------------------------------------------------
@@ -238,9 +246,15 @@ next_t::operator()(Keylet const& k) const
 }
 
 Keylet
-ticket_t::operator()(AccountID const& id, std::uint32_t seq) const
+ticket_t::operator()(AccountID const& id, std::uint32_t ticketSeq) const
 {
-    return {ltTICKET, getTicketIndex(id, seq)};
+    return {ltTICKET, getTicketIndex(id, ticketSeq)};
+}
+
+Keylet
+ticket_t::operator()(AccountID const& id, SeqProxy ticketSeq) const
+{
+    return {ltTICKET, getTicketIndex(id, ticketSeq)};
 }
 
 // This function is presently static, since it's never accessed from anywhere
