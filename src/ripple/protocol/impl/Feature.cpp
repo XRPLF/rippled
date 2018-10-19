@@ -88,7 +88,7 @@ detail::supportedAmendments ()
         { "MultiSign" },
 //        { "Tickets" },
         { "TrustSetAuth" },
-        { "FeeEscalation" },
+        { "FeeEscalation" }, // Looks unused, but do not remove; Servers will be amendment blocked.
 //        { "OwnerPaysFee" },
         { "PayChan" },
         { "Flow" },
