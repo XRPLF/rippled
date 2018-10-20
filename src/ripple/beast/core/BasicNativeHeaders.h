@@ -272,7 +272,6 @@
  #if BEAST_LINUX || BEAST_ANDROID
   #include <sys/types.h>
   #include <sys/socket.h>
-  #include <sys/errno.h>
   #include <unistd.h>
   #include <netinet/in.h>
  #endif
