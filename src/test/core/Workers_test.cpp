@@ -23,8 +23,10 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <ripple/core/JobTypes.h>
 #include <ripple/json/json_value.h>
 #include <chrono>
+#include <condition_variable>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <string>
 
 namespace ripple {
@@ -86,20 +88,16 @@ class Workers_test : public beast::unit_test::suite
 public:
     struct TestCallback : Workers::Callback
     {
-        TestCallback()
-            : finished(false, false)
-            , count(0)
-        {
-        }
-
         void processTask(int instance) override
         {
+            std::lock_guard<std::mutex> lk{mut};
             if (--count == 0)
-                finished.signal();
+                cv.notify_all();
         }
 
-        beast::WaitableEvent finished;
-        std::atomic <int> count;
+        std::condition_variable cv;
+        std::mutex              mut;
+        int                     count = 0;
     };
 
     void testThreads(int const tc1, int const tc2, int const tc3)
@@ -118,10 +116,6 @@ public:
         {
             // Prepare the callback.
             cb.count = threadCount;
-            if (threadCount == 0)
-                cb.finished.signal();
-            else
-                cb.finished.reset();
 
             // Execute the test.
             w.setNumberOfThreads(threadCount);
@@ -133,9 +127,10 @@ public:
             // 10 seconds should be enough to finish on any system
             //
             using namespace std::chrono_literals;
-            bool const signaled = cb.finished.wait(10s);
+            std::unique_lock<std::mutex> lk{cb.mut};
+            bool const signaled = cb.cv.wait_for(lk, 10s, [&cb]{return cb.count == 0;});
             BEAST_EXPECT(signaled);
-            BEAST_EXPECT(cb.count.load() == 0);
+            BEAST_EXPECT(cb.count == 0);
         };
         testForThreadCount (tc1);
         testForThreadCount (tc2);
@@ -143,7 +138,7 @@ public:
         w.pauseAllThreadsAndWait();
 
         // We had better finished all our work!
-        BEAST_EXPECT(cb.count.load() == 0);
+        BEAST_EXPECT(cb.count == 0);
     }
 
     void run() override
