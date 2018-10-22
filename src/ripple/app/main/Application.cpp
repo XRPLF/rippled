@@ -60,10 +60,12 @@
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/system/error_code.hpp>
-#include <fstream>
-#include <sstream>
-#include <iostream>
+#include <condition_variable>
 #include <cstring>
+#include <fstream>
+#include <iostream>
+#include <mutex>
+#include <sstream>
 
 namespace ripple {
 
@@ -368,7 +370,10 @@ public:
     std::vector <std::unique_ptr<Stoppable>> websocketServers_;
 
     boost::asio::signal_set m_signals;
-    beast::WaitableEvent m_stop;
+
+    std::condition_variable cv_;
+    std::mutex mut_;
+    bool isTimeToStop = false;
 
     std::atomic<bool> checkSigs_;
 
@@ -1474,7 +1479,10 @@ ApplicationImp::run()
         getLoadManager ().activateDeadlockDetector ();
     }
 
-    m_stop.wait ();
+    {
+        std::unique_lock<std::mutex> lk{mut_};
+        cv_.wait(lk, [this]{return isTimeToStop;});
+    }
 
     // Stop the server. When this returns, all
     // Stoppable objects should be stopped.
@@ -1489,7 +1497,9 @@ ApplicationImp::signalStop()
 {
     // Unblock the main thread (which is sitting in run()).
     //
-    m_stop.signal();
+    std::lock_guard<std::mutex> lk{mut_};
+    isTimeToStop = true;
+    cv_.notify_all();
 }
 
 bool
