@@ -22,7 +22,6 @@
 
 #include <ripple/core/impl/semaphore.h>
 #include <ripple/beast/core/LockFreeStack.h>
-#include <ripple/beast/core/WaitableEvent.h>
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
@@ -169,7 +168,9 @@ private:
     Callback& m_callback;
     perf::PerfLog& perfLog_;
     std::string m_threadNames;                   // The name to give each thread
-    beast::WaitableEvent m_allPaused;            // signaled when all threads paused
+    std::condition_variable m_cv;                // signaled when all threads paused
+    std::mutex              m_mut;
+    bool                    m_allPaused;
     semaphore m_semaphore;                       // each pending task is 1 resource
     int m_numberOfThreads;                       // how many we want active now
     std::atomic <int> m_activeCount;             // to know when all are paused
