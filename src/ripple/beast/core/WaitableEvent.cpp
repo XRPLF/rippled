@@ -22,150 +22,51 @@
 //==============================================================================
 
 #include <ripple/beast/core/WaitableEvent.h>
-#include <cerrno>
-
-#if BEAST_WINDOWS
-
-#include <Windows.h>
-#undef check
-#undef direct
-#undef max
-#undef min
-#undef TYPE_BOOL
-
-namespace beast {
-
-WaitableEvent::WaitableEvent (const bool manualReset, bool initiallySignaled)
-    : handle (CreateEvent (0, manualReset ? TRUE : FALSE, initiallySignaled ? TRUE : FALSE, 0))
-{
-}
-
-WaitableEvent::~WaitableEvent()
-{
-    CloseHandle (handle);
-}
-
-void WaitableEvent::signal() const
-{
-    SetEvent (handle);
-}
-
-void WaitableEvent::reset() const
-{
-    ResetEvent (handle);
-}
-
-bool WaitableEvent::wait () const
-{
-    return WaitForSingleObject (handle, INFINITE) == WAIT_OBJECT_0;
-}
-
-bool WaitableEvent::wait (const int timeOutMs) const
-{
-    if (timeOutMs >= 0)
-        return WaitForSingleObject (handle,
-            (DWORD) timeOutMs) == WAIT_OBJECT_0;
-    return wait ();
-}
-
-}
-
-#else
-
-#include <sys/time.h>
 
 namespace beast {
 
 WaitableEvent::WaitableEvent (const bool useManualReset, bool initiallySignaled)
     : triggered (false), manualReset (useManualReset)
 {
-    pthread_cond_init (&condition, 0);
-
-    pthread_mutexattr_t atts;
-    pthread_mutexattr_init (&atts);
-   #if ! BEAST_ANDROID
-    pthread_mutexattr_setprotocol (&atts, PTHREAD_PRIO_INHERIT);
-   #endif
-    pthread_mutex_init (&mutex, &atts);
-
     if (initiallySignaled)
         signal ();
 }
 
-WaitableEvent::~WaitableEvent()
-{
-    pthread_cond_destroy (&condition);
-    pthread_mutex_destroy (&mutex);
-}
-
 bool WaitableEvent::wait () const
 {
-    return wait (-1);
+    std::unique_lock<std::mutex> lk{mutex};
+    while (!triggered)
+        condition.wait(lk);
+    if (!manualReset)
+        triggered = false;
+    return true;
 }
 
-bool WaitableEvent::wait (const int timeOutMillisecs) const
+bool WaitableEvent::wait (std::chrono::milliseconds timeOut) const
 {
-    pthread_mutex_lock (&mutex);
-
-    if (! triggered)
+    std::unique_lock<std::mutex> lk{mutex};
+    while (!triggered)
     {
-        if (timeOutMillisecs < 0)
-        {
-            do
-            {
-                pthread_cond_wait (&condition, &mutex);
-            }
-            while (! triggered);
-        }
-        else
-        {
-            struct timeval now;
-            gettimeofday (&now, 0);
-
-            struct timespec time;
-            time.tv_sec  = now.tv_sec  + (timeOutMillisecs / 1000);
-            time.tv_nsec = (now.tv_usec + ((timeOutMillisecs % 1000) * 1000)) * 1000;
-
-            if (time.tv_nsec >= 1000000000)
-            {
-                time.tv_nsec -= 1000000000;
-                time.tv_sec++;
-            }
-
-            do
-            {
-                if (pthread_cond_timedwait (&condition, &mutex, &time) == ETIMEDOUT)
-                {
-                    pthread_mutex_unlock (&mutex);
-                    return false;
-                }
-            }
-            while (! triggered);
-        }
+        auto status = condition.wait_for(lk, timeOut);
+        if (status == std::cv_status::timeout)
+            return false;
     }
-
-    if (! manualReset)
+    if (!manualReset)
         triggered = false;
-
-    pthread_mutex_unlock (&mutex);
     return true;
 }
 
 void WaitableEvent::signal() const
 {
-    pthread_mutex_lock (&mutex);
+    std::lock_guard<std::mutex> lk{mutex};
     triggered = true;
-    pthread_cond_broadcast (&condition);
-    pthread_mutex_unlock (&mutex);
+    condition.notify_all();
 }
 
 void WaitableEvent::reset() const
 {
-    pthread_mutex_lock (&mutex);
+    std::lock_guard<std::mutex> lk{mutex};
     triggered = false;
-    pthread_mutex_unlock (&mutex);
 }
 
 }
-
-#endif

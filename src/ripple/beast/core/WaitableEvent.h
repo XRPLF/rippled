@@ -26,9 +26,8 @@
 
 #include <ripple/beast/core/Config.h>
 
-#if ! BEAST_WINDOWS
-#include <pthread.h>
-#endif
+#include <condition_variable>
+#include <mutex>
 
 namespace beast {
 
@@ -57,7 +56,7 @@ public:
         If other threads are waiting on this object when it gets deleted, this
         can cause nasty errors, so be careful!
     */
-    ~WaitableEvent();
+    ~WaitableEvent() = default;
 
     WaitableEvent (WaitableEvent const&) = delete;
     WaitableEvent& operator= (WaitableEvent const&) = delete;
@@ -80,7 +79,7 @@ public:
     /** @{ */
     bool wait () const;                             // wait forever
     // VFALCO TODO Change wait() to seconds instead of millis
-    bool wait (int timeOutMilliseconds) const; // DEPRECATED
+    bool wait (std::chrono::milliseconds timeOut) const; // DEPRECATED
     /** @} */
 
     //==============================================================================
@@ -109,14 +108,10 @@ public:
     void reset() const;
 
 private:
-#if BEAST_WINDOWS
-    void* handle;
-#else
-    mutable pthread_cond_t condition;
-    mutable pthread_mutex_t mutex;
+    mutable std::condition_variable condition;
+    mutable std::mutex mutex;
     mutable bool triggered;
     mutable bool manualReset;
-#endif
 };
 
 }

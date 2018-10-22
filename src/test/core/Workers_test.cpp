@@ -132,7 +132,8 @@ public:
 
             // 10 seconds should be enough to finish on any system
             //
-            bool const signaled = cb.finished.wait(10 * 1000);
+            using namespace std::chrono_literals;
+            bool const signaled = cb.finished.wait(10s);
             BEAST_EXPECT(signaled);
             BEAST_EXPECT(cb.count.load() == 0);
         };

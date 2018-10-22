@@ -125,7 +125,8 @@ void Stoppable::stopRecursive (beast::Journal j)
 
     // Now block on this Stoppable.
     //
-    bool const timedOut (! m_stoppedEvent.wait (1 * 1000)); // milliseconds
+    using namespace std::chrono_literals;
+    bool const timedOut = !m_stoppedEvent.wait(1s);
     if (timedOut)
     {
         if (auto stream = j.error())
