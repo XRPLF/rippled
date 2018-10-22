@@ -22,7 +22,6 @@
 
 #include <ripple/beast/core/LockFreeStack.h>
 #include <ripple/beast/utility/Journal.h>
-#include <ripple/beast/core/WaitableEvent.h>
 #include <ripple/core/Job.h>
 #include <ripple/core/ClosureCounter.h>
 #include <atomic>
@@ -316,7 +315,9 @@ private:
     std::atomic<bool> m_stopped {false};
     std::atomic<bool> m_childrenStopped {false};
     Children m_children;
-    beast::WaitableEvent m_stoppedEvent;
+    std::condition_variable m_cv;
+    std::mutex              m_mut;
+    bool                    m_is_stopping = false;
 };
 
 //------------------------------------------------------------------------------
