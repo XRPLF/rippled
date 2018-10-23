@@ -434,7 +434,6 @@ ValidatorSite::onSiteFetch(
                 throw std::runtime_error{"bad result code"};
             }
             }
-
         }
         catch (std::exception& ex)
         {
