@@ -45,7 +45,7 @@ keyTypeFromString (std::string const& s)
 }
 
 inline
-const char*
+char const*
 to_string (KeyType type)
 {
     if (type == KeyType::secp256k1)
