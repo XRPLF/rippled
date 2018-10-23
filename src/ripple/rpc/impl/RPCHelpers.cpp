@@ -517,6 +517,25 @@ readLimitField(unsigned int& limit, Tuning::LimitRange const& range,
 }
 
 boost::optional<Seed>
+parseRippleLibSeed(Json::Value const& value)
+{
+    // ripple-lib encodes seed used to generate an Ed25519 wallet in a
+    // non-standard way. While rippled never encode seeds that way, we
+    // try to detect such keys to avoid user confusion.
+    if (!value.isString())
+        return boost::none;
+
+    auto const result = decodeBase58Token(value.asString(), TokenType::None);
+
+    if (result.size() == 18 &&
+            static_cast<std::uint8_t>(result[0]) == std::uint8_t(0xE1) &&
+            static_cast<std::uint8_t>(result[1]) == std::uint8_t(0x4B))
+        return Seed(makeSlice(result.substr(2)));
+
+    return boost::none;
+}
+
+boost::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error)
 {
     // The array should be constexpr, but that makes Visual Studio unhappy.
@@ -623,7 +642,7 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
         return { };
     }
 
-    KeyType keyType = KeyType::secp256k1;
+    boost::optional<KeyType> keyType;
     boost::optional<Seed> seed;
 
     if (has_key_type)
@@ -635,10 +654,9 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
             return { };
         }
 
-        keyType = keyTypeFromString (
-            params[jss::key_type].asString());
+        keyType = keyTypeFromString(params[jss::key_type].asString());
 
-        if (keyType == KeyType::invalid)
+        if (!keyType)
         {
             error = RPC::invalid_field_error(jss::key_type);
             return { };
@@ -651,20 +669,51 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
                 std::string(jss::key_type) + " is used.");
             return { };
         }
-
-        seed = getSeedFromRPC (params, error);
     }
-    else
-    {
-        if (! params[jss::secret].isString())
-        {
-            error = RPC::expected_field_error (
-                jss::secret, "string");
-            return { };
-        }
 
-        seed = parseGenericSeed (
-            params[jss::secret].asString ());
+    // ripple-lib encodes seed used to generate an Ed25519 wallet in a
+    // non-standard way. While we never encode seeds that way, we try
+    // to detect such keys to avoid user confusion.
+    {
+        if (params.isMember(jss::passphrase))
+            seed = RPC::parseRippleLibSeed(params[jss::passphrase]);
+        else if (params.isMember(jss::seed))
+            seed = RPC::parseRippleLibSeed(params[jss::seed]);
+        else if (params.isMember(jss::secret))
+            seed = RPC::parseRippleLibSeed(params[jss::secret]);
+
+        if (seed)
+        {
+            // If the user passed in an Ed25519 seed but *explicitly*
+            // requested another key type, return an error.
+            if (keyType.value_or(KeyType::ed25519) != KeyType::ed25519)
+            {
+                error = RPC::make_error (rpcBAD_SEED,
+                    "Specified seed is for an Ed25519 wallet.");
+                return { };
+            }
+
+            keyType = KeyType::ed25519;
+        }
+    }
+
+    if (!keyType)
+        keyType = KeyType::secp256k1;
+
+    if (!seed)
+    {
+        if (has_key_type)
+            seed = getSeedFromRPC(params, error);
+        else
+        {
+            if (!params[jss::secret].isString())
+            {
+                error = RPC::expected_field_error(jss::secret, "string");
+                return {};
+            }
+
+            seed = parseGenericSeed(params[jss::secret].asString());
+        }
     }
 
     if (!seed)
@@ -672,7 +721,7 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
         if (!contains_error (error))
         {
             error = RPC::make_error (rpcBAD_SEED,
-            RPC::invalid_field_message (secretType));
+                RPC::invalid_field_message (secretType));
         }
 
         return { };
@@ -681,7 +730,7 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
     if (keyType != KeyType::secp256k1 && keyType != KeyType::ed25519)
         LogicError ("keypairForSignature: invalid key type");
 
-    return generateKeyPair (keyType, *seed);
+    return generateKeyPair (*keyType, *seed);
 }
 
 std::pair<RPC::Status, LedgerEntryType>
