@@ -1376,6 +1376,7 @@ else ()
     src/ripple/basics/impl/base64.cpp
     src/ripple/basics/impl/contract.cpp
     src/ripple/basics/impl/CountedObject.cpp
+    src/ripple/basics/impl/FileUtilities.cpp
     src/ripple/basics/impl/Log.cpp
     src/ripple/basics/impl/strHex.cpp
     src/ripple/basics/impl/StringUtilities.cpp
@@ -1474,6 +1475,7 @@ install (
     src/ripple/basics/Blob.h
     src/ripple/basics/Buffer.h
     src/ripple/basics/CountedObject.h
+    src/ripple/basics/FileUtilities.h
     src/ripple/basics/LocalValue.h
     src/ripple/basics/Log.h
     src/ripple/basics/Slice.h
@@ -2074,6 +2076,7 @@ else ()
     #]===============================]
     src/test/basics/Buffer_test.cpp
     src/test/basics/DetectCrash_test.cpp
+    src/test/basics/FileUtilities_test.cpp
     src/test/basics/KeyCache_test.cpp
     src/test/basics/PerfLog_test.cpp
     src/test/basics/RangeSet_test.cpp

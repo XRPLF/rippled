@@ -14,10 +14,8 @@
 #
 #   List of the validation public keys of nodes to always accept as validators.
 #
-#   The latest list of recommended validators can be obtained from
-#   https://ripple.com/ripple.txt
-#
-#   See also https://wiki.ripple.com/Ripple.txt
+#   Manually listing validator keys is not recommended for production networks.
+#   See validator_list_sites and validator_list_keys below.
 #
 #   Examples:
 #    n9KorY8QtTdRx7TVDpwnG9NvyxsDwHUKUEeDLY3AkiGncVaSXZi5
@@ -27,9 +25,13 @@
 #
 #   List of URIs serving lists of recommended validators.
 #
+#   The latest list of recommended validator sites can be
+#   obtained from https://ripple.com/ripple.txt
+#
 #   Examples:
 #    https://vl.ripple.com
 #    http://127.0.0.1:8000
+#    file:///etc/opt/ripple/vl.txt
 #
 # [validator_list_keys]
 #
@@ -38,6 +40,9 @@
 #   if the list is accompanied by a valid signature from a trusted
 #   publisher key.
 #   Validator list keys should be hex-encoded.
+#
+#   The latest list of recommended validator keys can be
+#   obtained from https://ripple.com/ripple.txt
 #
 #   Examples:
 #    ed499d732bded01504a7407c224412ef550cc1ade638a4de4eb88af7c36cb8b282

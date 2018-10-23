@@ -89,11 +89,15 @@ uint64_t uintFromHex (std::string const& strSrc)
     return uValue;
 }
 
-// TODO Callers should be using beast::URL and beast::parse_URL instead.
 bool parseUrl (parsedURL& pUrl, std::string const& strUrl)
 {
     // scheme://username:password@hostname:port/rest
-    static boost::regex reUrl ("(?i)\\`\\s*([[:alpha:]][-+.[:alpha:][:digit:]]*)://([^/]+)(/.*)?\\s*?\\'");
+    static boost::regex reUrl (
+        "(?i)\\`\\s*"
+        "([[:alpha:]][-+.[:alpha:][:digit:]]*):"    //scheme
+        "//([^/]+)?"                                 // hostname
+        "(/.*)?"                                    // path and parameters
+        "\\s*?\\'");
     boost::smatch smMatch;
 
     bool bMatch = boost::regex_match (strUrl, smMatch, reUrl); // Match status code.

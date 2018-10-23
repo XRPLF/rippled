@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2018 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,15 +17,23 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_BASICS_FILEUTILITIES_H_INCLUDED
+#define RIPPLE_BASICS_FILEUTILITIES_H_INCLUDED
 
-#include <ripple/basics/impl/base64.cpp>
-#include <ripple/basics/impl/contract.cpp>
-#include <ripple/basics/impl/CountedObject.cpp>
-#include <ripple/basics/impl/FileUtilities.cpp>
-#include <ripple/basics/impl/Log.cpp>
-#include <ripple/basics/impl/strHex.cpp>
-#include <ripple/basics/impl/StringUtilities.cpp>
+#include <boost/system/error_code.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/optional.hpp>
 
-#if DOXYGEN
-#include <ripple/basics/README.md>
+namespace ripple
+{
+
+// TODO: Should this one function have its own file, or can it
+// be absorbed somewhere else?
+
+std::string getFileContents(boost::system::error_code& ec,
+    boost::filesystem::path const& sourcePath,
+    boost::optional<std::size_t> maxSize = boost::none);
+
+}
+
 #endif

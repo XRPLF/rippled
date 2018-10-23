@@ -31,8 +31,11 @@ namespace ripple {
     template<class T>
     constexpr auto megabytes(T value) noexcept
     {
-        return kilobytes(1) * kilobytes(1) * value;
+        return kilobytes(kilobytes(value));
     }
+
+    static_assert(kilobytes(2) == 2048, "kilobytes(2) == 2048");
+    static_assert(megabytes(3) == 3145728, "megabytes(3) == 3145728");
 }
 
 #endif
