@@ -21,13 +21,14 @@
 #include <ripple/basics/Log.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/beast/net/IPEndpoint.h>
-#include <ripple/beast/core/WaitableEvent.h>
 #include <boost/asio.hpp>
 #include <atomic>
 #include <cassert>
+#include <condition_variable>
 #include <deque>
 #include <locale>
 #include <memory>
+#include <mutex>
 
 namespace ripple {
 
@@ -110,7 +111,10 @@ public:
     boost::asio::io_service::strand m_strand;
     boost::asio::ip::tcp::resolver m_resolver;
 
-    beast::WaitableEvent m_stop_complete;
+    std::condition_variable m_cv;
+    std::mutex              m_mut;
+    bool m_asyncHandlersCompleted;
+
     std::atomic <bool> m_stop_called;
     std::atomic <bool> m_stopped;
 
@@ -139,7 +143,7 @@ public:
             , m_io_service (io_service)
             , m_strand (io_service)
             , m_resolver (io_service)
-            , m_stop_complete (true, true)
+            , m_asyncHandlersCompleted (true)
             , m_stop_called (false)
             , m_stopped (true)
     {
@@ -156,7 +160,9 @@ public:
     // AsyncObject
     void asyncHandlersComplete()
     {
-        m_stop_complete.signal ();
+        std::unique_lock<std::mutex> lk{m_mut};
+        m_asyncHandlersCompleted = true;
+        m_cv.notify_all();
     }
 
     //--------------------------------------------------------------------------
@@ -172,7 +178,10 @@ public:
 
         if (m_stopped.exchange (false) == true)
         {
-            m_stop_complete.reset ();
+            {
+                std::lock_guard<std::mutex> lk{m_mut};
+                m_asyncHandlersCompleted = false;
+            }
             addReference ();
         }
     }
@@ -194,7 +203,9 @@ public:
         stop_async ();
 
         JLOG(m_journal.debug()) << "Waiting to stop";
-        m_stop_complete.wait();
+        std::unique_lock<std::mutex> lk{m_mut};
+        m_cv.wait(lk, [this]{return m_asyncHandlersCompleted;});
+        lk.unlock();
         JLOG(m_journal.debug()) << "Stopped";
     }
 
