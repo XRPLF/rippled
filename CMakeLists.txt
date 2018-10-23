@@ -1312,7 +1312,6 @@ else ()
   target_sources (xrpl_core PRIVATE
     src/ripple/beast/core/CurrentThreadName.cpp
     src/ripple/beast/core/SemanticVersion.cpp
-    src/ripple/beast/core/WaitableEvent.cpp
     src/ripple/beast/hash/impl/xxhash.cpp
     src/ripple/beast/insight/impl/Collector.cpp
     src/ripple/beast/insight/impl/Groups.cpp
