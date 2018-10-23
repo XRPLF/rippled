@@ -725,6 +725,20 @@ public:
                 BEAST_EXPECT(ret.first.size() != 0);
                 BEAST_EXPECT(toBase58(calcAccountID(ret.first)) == addr);
             }
+
+            {
+                Json::Value params;
+                Json::Value error;
+
+                params[jss::key_type] = "secp256k1";
+                params[jss::passphrase] = seed;
+
+                auto ret = keypairForSignature(params, error);
+
+                BEAST_EXPECT(contains_error(error));
+                BEAST_EXPECT(error[jss::error_message] ==
+                             "Specified seed is for an Ed25519 wallet.");
+            }
             
             {
                 Json::Value params;
@@ -745,7 +759,7 @@ public:
                 Json::Value error;
 
                 params[jss::key_type] = "secp256k1";
-                params[jss::secret] = seed;
+                params[jss::seed] = seed;
 
                 auto ret = keypairForSignature(params, error);
 

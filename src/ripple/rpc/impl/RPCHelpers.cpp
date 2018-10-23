@@ -674,13 +674,9 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
     // ripple-lib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While we never encode seeds that way, we try
     // to detect such keys to avoid user confusion.
+    if (secretType != jss::seed_hex.c_str())
     {
-        if (params.isMember(jss::passphrase))
-            seed = RPC::parseRippleLibSeed(params[jss::passphrase]);
-        else if (params.isMember(jss::seed))
-            seed = RPC::parseRippleLibSeed(params[jss::seed]);
-        else if (params.isMember(jss::secret))
-            seed = RPC::parseRippleLibSeed(params[jss::secret]);
+        seed = RPC::parseRippleLibSeed(params[secretType]);
 
         if (seed)
         {
