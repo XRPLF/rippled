@@ -1400,7 +1400,6 @@ else ()
         subdir: crypto
     #]===============================]
     src/ripple/crypto/impl/GenerateDeterministicKey.cpp
-    src/ripple/crypto/impl/KeyType.cpp
     src/ripple/crypto/impl/RFC1751.cpp
     src/ripple/crypto/impl/csprng.cpp
     src/ripple/crypto/impl/ec_key.cpp

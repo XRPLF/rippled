@@ -70,9 +70,9 @@ Json::Value doWalletPropose (RPC::Context& context)
 
 Json::Value walletPropose (Json::Value const& params)
 {
+    boost::optional<KeyType> keyType;
     boost::optional<Seed> seed;
-
-    KeyType keyType = KeyType::secp256k1;
+    bool rippleLibSeed = false;
 
     if (params.isMember (jss::key_type))
     {
@@ -85,25 +85,55 @@ Json::Value walletPropose (Json::Value const& params)
         keyType = keyTypeFromString (
             params[jss::key_type].asString());
 
-        if (keyType == KeyType::invalid)
+        if (!keyType)
             return rpcError(rpcINVALID_PARAMS);
     }
 
-    if (params.isMember (jss::passphrase) ||
-        params.isMember (jss::seed) ||
-        params.isMember (jss::seed_hex))
+    // ripple-lib encodes seed used to generate an Ed25519 wallet in a
+    // non-standard way. While we never encode seeds that way, we try
+    // to detect such keys to avoid user confusion.
     {
-        Json::Value err;
-        seed = RPC::getSeedFromRPC (params, err);
-        if (!seed)
-            return err;
-    }
-    else
-    {
-        seed = randomSeed ();
+        if (params.isMember(jss::passphrase))
+            seed = RPC::parseRippleLibSeed(params[jss::passphrase]);
+        else if (params.isMember(jss::seed))
+            seed = RPC::parseRippleLibSeed(params[jss::seed]);
+
+        if(seed)
+        {
+            rippleLibSeed = true;
+
+            // If the user *explicitly* requests a key type other than
+            // Ed25519 we return an error.
+            if (keyType.value_or(KeyType::ed25519) != KeyType::ed25519)
+                return rpcError(rpcBAD_SEED);
+
+            keyType = KeyType::ed25519;
+        }
     }
 
-    auto const publicKey = generateKeyPair (keyType, *seed).first;
+    if (!seed)
+    {
+        if (params.isMember(jss::passphrase) ||
+            params.isMember(jss::seed) ||
+            params.isMember(jss::seed_hex))
+        {
+            Json::Value err;
+
+            seed = RPC::getSeedFromRPC(params, err);
+
+            if (!seed)
+                return err;
+        }
+        else
+        {
+            seed = randomSeed();
+        }
+    }
+
+    if (!keyType)
+        keyType = KeyType::secp256k1;
+
+    auto const publicKey = generateKeyPair (*keyType, *seed).first;
 
     Json::Value obj (Json::objectValue);
 
@@ -116,13 +146,13 @@ Json::Value walletPropose (Json::Value const& params)
     obj[jss::master_key] = seed1751;
     obj[jss::account_id] = toBase58(calcAccountID(publicKey));
     obj[jss::public_key] = toBase58(TokenType::AccountPublic, publicKey);
-    obj[jss::key_type] = to_string (keyType);
+    obj[jss::key_type] = to_string (*keyType);
     obj[jss::public_key_hex] = strHex (publicKey);
 
     // If a passphrase was specified, and it was hashed and used as a seed
     // run a quick entropy check and add an appropriate warning, because
     // "brain wallets" can be easily attacked.
-    if (params.isMember (jss::passphrase))
+    if (!rippleLibSeed && params.isMember (jss::passphrase))
     {
         auto const passphrase = params[jss::passphrase].asString();
 
