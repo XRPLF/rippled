@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2018 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,15 +17,47 @@
 */
 //==============================================================================
 
+#include <ripple/basics/FileUtilities.h>
 
-#include <ripple/basics/impl/base64.cpp>
-#include <ripple/basics/impl/contract.cpp>
-#include <ripple/basics/impl/CountedObject.cpp>
-#include <ripple/basics/impl/FileUtilities.cpp>
-#include <ripple/basics/impl/Log.cpp>
-#include <ripple/basics/impl/strHex.cpp>
-#include <ripple/basics/impl/StringUtilities.cpp>
+namespace ripple
+{
 
-#if DOXYGEN
-#include <ripple/basics/README.md>
-#endif
+std::string getFileContents(boost::system::error_code& ec,
+    boost::filesystem::path const& sourcePath,
+    boost::optional<std::size_t> maxSize)
+{
+    using namespace boost::filesystem;
+    using namespace boost::system::errc;
+
+    path fullPath{ canonical(sourcePath, ec) };
+    if (ec)
+        return {};
+
+    if (maxSize && (file_size(fullPath, ec) > *maxSize || ec))
+    {
+        if (!ec)
+            ec = make_error_code(file_too_large);
+        return {};
+    }
+
+    ifstream fileStream(fullPath, std::ios::in);
+
+    if (!fileStream)
+    {
+        ec = make_error_code(static_cast<errc_t>(errno));
+        return {};
+    }
+
+    const std::string result{ std::istreambuf_iterator<char>{fileStream},
+        std::istreambuf_iterator<char>{} };
+
+    if (fileStream.bad ())
+    {
+        ec = make_error_code(static_cast<errc_t>(errno));
+        return {};
+    }
+
+    return result;
+}
+
+}

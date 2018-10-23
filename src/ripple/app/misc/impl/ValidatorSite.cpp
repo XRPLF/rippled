@@ -19,6 +19,7 @@
 
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/misc/ValidatorSite.h>
+#include <ripple/app/misc/detail/WorkFile.h>
 #include <ripple/app/misc/detail/WorkPlain.h>
 #include <ripple/app/misc/detail/WorkSSL.h>
 #include <ripple/basics/base64.h>
@@ -38,14 +39,43 @@ unsigned short constexpr MAX_REDIRECTS = 3;
 ValidatorSite::Site::Resource::Resource (std::string uri_)
     : uri {std::move(uri_)}
 {
-    if (! parseUrl (pUrl, uri) ||
-        (pUrl.scheme != "http" && pUrl.scheme != "https"))
-    {
-        throw std::runtime_error {"invalid url"};
-    }
+    if (! parseUrl (pUrl, uri))
+        throw std::runtime_error("URI '" + uri + "' cannot be parsed");
 
-    if (! pUrl.port)
-        pUrl.port = (pUrl.scheme == "https") ? 443 : 80;
+    if  (pUrl.scheme == "file")
+    {
+        if (!pUrl.domain.empty())
+            throw std::runtime_error("file URI cannot contain a hostname");
+
+#if _MSC_VER    // MSVC: Windows paths need the leading / removed
+        {
+            if (pUrl.path[0] == '/')
+                pUrl.path = pUrl.path.substr(1);
+
+        }
+#endif
+
+        if (pUrl.path.empty())
+            throw std::runtime_error("file URI must contain a path");
+    }
+    else if (pUrl.scheme == "http")
+    {
+        if (pUrl.domain.empty())
+            throw std::runtime_error("http URI must contain a hostname");
+
+        if (!pUrl.port)
+            pUrl.port = 80;
+    }
+    else if (pUrl.scheme == "https")
+    {
+        if (pUrl.domain.empty())
+            throw std::runtime_error("https URI must contain a hostname");
+
+        if (!pUrl.port)
+            pUrl.port = 443;
+    }
+    else
+        throw std::runtime_error ("Unsupported scheme: '" + pUrl.scheme + "'");
 }
 
 ValidatorSite::Site::Site (std::string uri)
@@ -103,10 +133,11 @@ ValidatorSite::load (
         {
             sites_.emplace_back (uri);
         }
-        catch (std::exception &)
+        catch (std::exception const& e)
         {
             JLOG (j_.error()) <<
-                "Invalid validator site uri: " << uri;
+                "Invalid validator site uri: " << uri <<
+                ": " << e.what();
             return false;
         }
     }
@@ -185,6 +216,12 @@ ValidatorSite::makeRequest (
             onSiteFetch (err, std::move(resp), siteIdx);
         };
 
+    auto onFetchFile =
+        [this, siteIdx] (error_code const& err, std::string const& resp)
+    {
+        onTextFetch (err, resp, siteIdx);
+    };
+
     if (resource->pUrl.scheme == "https")
     {
         sp = std::make_shared<detail::WorkSSL>(
@@ -195,7 +232,7 @@ ValidatorSite::makeRequest (
             j_,
             onFetch);
     }
-    else
+    else if(resource->pUrl.scheme == "http")
     {
         sp = std::make_shared<detail::WorkPlain>(
             resource->pUrl.domain,
@@ -203,6 +240,14 @@ ValidatorSite::makeRequest (
             std::to_string(*resource->pUrl.port),
             ios_,
             onFetch);
+    }
+    else
+    {
+        BOOST_ASSERT(resource->pUrl.scheme == "file");
+        sp = std::make_shared<detail::WorkFile>(
+            resource->pUrl.path,
+            ios_,
+            onFetchFile);
     }
 
     work_ = sp;
@@ -245,13 +290,13 @@ ValidatorSite::onTimer (
 
 void
 ValidatorSite::parseJsonResponse (
-    detail::response_type& res,
+    std::string const& res,
     std::size_t siteIdx,
     std::lock_guard<std::mutex>& lock)
 {
     Json::Reader r;
     Json::Value body;
-    if (! r.parse(res.body().data(), body))
+    if (! r.parse(res.data(), body))
     {
         JLOG (j_.warn()) <<
             "Unable to parse JSON response from  " <<
@@ -367,6 +412,10 @@ ValidatorSite::processRedirect (
         newLocation = std::make_shared<Site::Resource>(
             std::string(res[field::location]));
         ++sites_[siteIdx].redirCount;
+        if (newLocation->pUrl.scheme != "http" &&
+            newLocation->pUrl.scheme != "https")
+            throw std::runtime_error("invalid scheme in redirect " +
+                newLocation->pUrl.scheme);
     }
     catch (std::exception &)
     {
@@ -414,7 +463,7 @@ ValidatorSite::onSiteFetch(
                 switch (res.result())
                 {
                 case status::ok:
-                    parseJsonResponse(res, siteIdx, lock_sites);
+                    parseJsonResponse(res.body(), siteIdx, lock_sites);
                     break;
                 case status::moved_permanently :
                 case status::permanent_redirect :
@@ -449,6 +498,47 @@ ValidatorSite::onSiteFetch(
             {
                 onError(ex.what(), false);
             }
+        }
+        sites_[siteIdx].activeResource.reset();
+    }
+
+    std::lock_guard <std::mutex> lock_state{state_mutex_};
+    fetching_ = false;
+    if (! stopping_)
+        setTimer ();
+    cv_.notify_all();
+}
+
+void
+ValidatorSite::onTextFetch(
+    boost::system::error_code const& ec,
+    std::string const& res,
+    std::size_t siteIdx)
+{
+    {
+        std::lock_guard <std::mutex> lock_sites{sites_mutex_};
+        try
+        {
+            if (ec)
+            {
+                JLOG (j_.warn()) <<
+                    "Problem retrieving from " <<
+                    sites_[siteIdx].activeResource->uri <<
+                    " " <<
+                    ec.value() <<
+                    ":" <<
+                    ec.message();
+                throw std::runtime_error{"fetch error"};
+            }
+
+            parseJsonResponse(res, siteIdx, lock_sites);
+        }
+        catch (std::exception& ex)
+        {
+            sites_[siteIdx].lastRefreshStatus.emplace(
+                Site::Status{clock_type::now(),
+                ListDisposition::invalid,
+                ex.what()});
         }
         sites_[siteIdx].activeResource.reset();
     }

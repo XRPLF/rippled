@@ -20,6 +20,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/FileUtilities.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/Feature.h>
@@ -30,6 +31,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/regex.hpp>
+#include <boost/system/error_code.hpp>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -268,21 +270,13 @@ void Config::load ()
     if (!QUIET)
         std::cerr << "Loading: " << CONFIG_FILE << "\n";
 
-    std::ifstream ifsConfig (CONFIG_FILE.c_str (), std::ios::in);
+    boost::system::error_code ec;
+    auto const fileContents = getFileContents(ec, CONFIG_FILE);
 
-    if (!ifsConfig)
+    if (ec)
     {
-        std::cerr << "Failed to open '" << CONFIG_FILE << "'." << std::endl;
-        return;
-    }
-
-    std::string fileContents;
-    fileContents.assign ((std::istreambuf_iterator<char>(ifsConfig)),
-                          std::istreambuf_iterator<char>());
-
-    if (ifsConfig.bad ())
-    {
-        std::cerr << "Failed to read '" << CONFIG_FILE << "'." << std::endl;
+        std::cerr << "Failed to read '" << CONFIG_FILE << "'." <<
+            ec.value() << ": " << ec.message() << std::endl;
         return;
     }
 
@@ -472,13 +466,14 @@ void Config::loadFromString (std::string const& fileContents)
                 (boost::filesystem::is_regular_file (validatorsFile) ||
                 boost::filesystem::is_symlink (validatorsFile)))
         {
-            std::ifstream ifsDefault (validatorsFile.native().c_str());
-
-            std::string data;
-
-            data.assign (
-                std::istreambuf_iterator<char>(ifsDefault),
-                std::istreambuf_iterator<char>());
+            boost::system::error_code ec;
+            auto const data = getFileContents(ec, validatorsFile);
+            if (ec)
+            {
+                Throw<std::runtime_error>("Failed to read '" +
+                    validatorsFile.string() + "'." +
+                    std::to_string(ec.value()) + ": " + ec.message());
+            }
 
             auto iniFile = parseIniFile (data, true);
 

@@ -80,6 +80,10 @@ public:
         BEAST_EXPECT(parseUrl (pUrl, "scheme://[::1]:123/path"));
         BEAST_EXPECT(*pUrl.port == 123);
         BEAST_EXPECT(pUrl.domain == "::1");
+        BEAST_EXPECT(parseUrl(pUrl, "nodomain:///path/path/path"));
+        BEAST_EXPECT(pUrl.scheme == "nodomain");
+        BEAST_EXPECT(pUrl.domain.empty());
+        BEAST_EXPECT(pUrl.path == "/path/path/path");
     }
 
     void testToString ()

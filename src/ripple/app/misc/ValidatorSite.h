@@ -200,6 +200,13 @@ private:
         detail::response_type&& res,
         std::size_t siteIdx);
 
+    /// Store latest list fetched from anywhere
+    void
+    onTextFetch(
+        boost::system::error_code const& ec,
+        std::string const& res,
+        std::size_t siteIdx);
+
     /// Initiate request to given resource.
     /// lock over sites_mutex_ required
     void
@@ -212,7 +219,7 @@ private:
     /// lock over sites_mutex_ required
     void
     parseJsonResponse (
-        detail::response_type& res,
+        std::string const& res,
         std::size_t siteIdx,
         std::lock_guard<std::mutex>& lock);
 
