@@ -80,7 +80,6 @@ Json::Value doTxHistory             (RPC::Context&);
 Json::Value doUnlList               (RPC::Context&);
 Json::Value doUnsubscribe           (RPC::Context&);
 Json::Value doValidationCreate      (RPC::Context&);
-Json::Value doValidationSeed        (RPC::Context&);
 Json::Value doWalletPropose         (RPC::Context&);
 Json::Value doValidators            (RPC::Context&);
 Json::Value doValidatorListSites    (RPC::Context&);

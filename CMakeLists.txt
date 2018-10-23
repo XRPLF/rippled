@@ -1970,7 +1970,6 @@ else ()
     src/ripple/rpc/handlers/UnlList.cpp
     src/ripple/rpc/handlers/Unsubscribe.cpp
     src/ripple/rpc/handlers/ValidationCreate.cpp
-    src/ripple/rpc/handlers/ValidationSeed.cpp
     src/ripple/rpc/handlers/ValidatorListSites.cpp
     src/ripple/rpc/handlers/Validators.cpp
     src/ripple/rpc/handlers/WalletPropose.cpp

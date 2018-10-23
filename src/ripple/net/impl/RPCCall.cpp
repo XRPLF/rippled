@@ -993,20 +993,6 @@ private:
         return jvRequest;
     }
 
-    // validation_seed [<pass_phrase>|<seed>|<seed_key>]
-    //
-    // NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
-    // shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
-    Json::Value parseValidationSeed (Json::Value const& jvParams)
-    {
-        Json::Value jvRequest{Json::objectValue};
-
-        if (jvParams.size ())
-            jvRequest[jss::secret]     = jvParams[0u].asString ();
-
-        return jvRequest;
-    }
-
     // wallet_propose [<passphrase>]
     // <passphrase> is only for testing. Master seeds should only be generated randomly.
     Json::Value parseWalletPropose (Json::Value const& jvParams)
@@ -1155,7 +1141,6 @@ public:
             {   "tx_history",           &RPCParser::parseTxHistory,             1,  1   },
             {   "unl_list",             &RPCParser::parseAsIs,                  0,  0   },
             {   "validation_create",    &RPCParser::parseValidationCreate,      0,  1   },
-            {   "validation_seed",      &RPCParser::parseValidationSeed,        0,  1   },
             {   "version",              &RPCParser::parseAsIs,                  0,  0   },
             {   "wallet_propose",       &RPCParser::parseWalletPropose,         0,  1   },
             {   "internal",             &RPCParser::parseInternal,              1, -1   },

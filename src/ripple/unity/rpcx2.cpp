@@ -46,7 +46,6 @@
 #include <ripple/rpc/handlers/UnlList.cpp>
 #include <ripple/rpc/handlers/Unsubscribe.cpp>
 #include <ripple/rpc/handlers/ValidationCreate.cpp>
-#include <ripple/rpc/handlers/ValidationSeed.cpp>
 #include <ripple/rpc/handlers/Validators.cpp>
 #include <ripple/rpc/handlers/ValidatorListSites.cpp>
 #include <ripple/rpc/handlers/WalletPropose.cpp>
