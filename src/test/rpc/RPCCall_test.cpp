@@ -6638,53 +6638,6 @@ static RPCCallTestData const rpcCallTestArray [] =
     })"
 },
 
-// validation_seed -------------------------------------------------------------
-{
-    "validation_seed: minimal.", __LINE__,
-    {
-        "validation_seed",
-    },
-    RPCCallTestData::no_exception,
-    R"({
-    "method" : "validation_seed"
-    })"
-},
-{
-    "validation_seed: with secret.", __LINE__,
-    {
-        "validation_seed",
-        "the form of the secret is not validated"
-    },
-    RPCCallTestData::no_exception,
-    R"({
-    "method" : "validation_seed",
-    "params" : [
-      {
-         "secret" : "the form of the secret is not validated"
-      }
-    ]
-    })"
-},
-{
-    "validation_seed: too many arguments.", __LINE__,
-    {
-        "validation_seed",
-        "the form of the secret is not validated",
-        "extra"
-    },
-    RPCCallTestData::no_exception,
-    R"({
-    "method" : "validation_seed",
-    "params" : [
-      {
-         "error" : "badSyntax",
-         "error_code" : 1,
-         "error_message" : "Syntax error."
-      }
-    ]
-    })"
-},
-
 // version ---------------------------------------------------------------------
 {
     "version: minimal.", __LINE__,
