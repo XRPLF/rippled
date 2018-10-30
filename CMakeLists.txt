@@ -115,6 +115,10 @@ if (is_gcc OR is_clang)
   if (coverage_test AND NOT coverage)
     set (coverage ON CACHE BOOL "gcc/clang only" FORCE)
   endif ()
+  option (coverage_core_only
+    "Include only src/ripple files when generating coverage report. \
+    Set to OFF to include all sources in coverage report."
+    ON)
 else ()
   set (profile OFF CACHE BOOL "gcc/clang only" FORCE)
   set (coverage OFF CACHE BOOL "gcc/clang only" FORCE)
@@ -2372,6 +2376,11 @@ if (coverage)
       message (WARNING "unable to find llvm-cov - skipping coverage_report target")
     endif ()
 
+    set (extract_pattern "")
+    if (coverage_core_only)
+      set (extract_pattern "${CMAKE_SOURCE_DIR}/src/ripple/")
+    endif ()
+
     if (LLVM_COV AND LLVM_PROFDATA)
       add_custom_target (coverage_report
         USES_TERMINAL
@@ -2382,7 +2391,8 @@ if (coverage)
           merge -sparse default.profraw -o rip.profdata
         COMMAND ${LLVM_COV}
           show -format=html -output-dir=${CMAKE_BINARY_DIR}/coverage
-          $<TARGET_FILE:rippled> -instr-profile=rip.profdata
+          -instr-profile=rip.profdata
+          $<TARGET_FILE:rippled> ${extract_pattern}
         BYPRODUCTS coverage/index.html)
     endif ()
   elseif (is_gcc)
@@ -2394,6 +2404,11 @@ if (coverage)
     find_program (GENHTML genhtml)
     if (NOT GENHTML)
       message (WARNING "unable to find genhtml - skipping coverage_report target")
+    endif ()
+
+    set (extract_pattern "*")
+    if (coverage_core_only)
+      set (extract_pattern "*/src/ripple/*")
     endif ()
 
     if (LCOV AND GENHTML)
@@ -2416,7 +2431,7 @@ if (coverage)
           -a baseline.info -a tests.info -o lcov-all.info
         # extract our files
         COMMAND ${LCOV}
-          -e lcov-all.info "*/src/ripple/*" -o lcov.info
+          -e lcov-all.info "${extract_pattern}" -o lcov.info
         # generate HTML report
         COMMAND ${GENHTML}
           -o ${CMAKE_BINARY_DIR}/coverage lcov.info
