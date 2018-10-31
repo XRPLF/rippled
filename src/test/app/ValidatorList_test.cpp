@@ -355,6 +355,40 @@ private:
             for (auto const& key : keys)
                 BEAST_EXPECT(trustedKeys->trustedPublisher (key));
         }
+        {
+            // Attempt to load a publisher key that has been revoked.
+            // Should fail
+            ManifestCache valManifests;
+            ManifestCache pubManifests;
+            auto trustedKeys = std::make_unique <ValidatorList> (
+                valManifests, pubManifests, env.timeKeeper(), env.journal);
+
+            auto const pubRevokedSecret = randomSecretKey();
+            auto const pubRevokedPublic =
+                derivePublicKey(KeyType::ed25519, pubRevokedSecret);
+            auto const pubRevokedSigning = randomKeyPair(KeyType::secp256k1);
+            // make this manifest revoked (seq num = max)
+            //  -- thus should not be loaded
+            pubManifests.applyManifest (*Manifest::make_Manifest (
+                makeManifestString (
+                    pubRevokedPublic,
+                    pubRevokedSecret,
+                    pubRevokedSigning.first,
+                    pubRevokedSigning.second,
+                    std::numeric_limits<std::uint32_t>::max ())));
+
+            // this one is not revoked (and not in manifest cache at all.)
+            auto legitKey = randomMasterKey();
+
+            std::vector<std::string> cfgPublishers = {
+                strHex(pubRevokedPublic),
+                strHex(legitKey) };
+            BEAST_EXPECT(trustedKeys->load (
+                emptyLocalKey, emptyCfgKeys, cfgPublishers));
+
+            BEAST_EXPECT(!trustedKeys->trustedPublisher (pubRevokedPublic));
+            BEAST_EXPECT(trustedKeys->trustedPublisher (legitKey));
+        }
     }
 
     void
