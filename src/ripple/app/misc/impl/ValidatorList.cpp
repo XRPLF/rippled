@@ -107,7 +107,7 @@ ValidatorList::load (
 
         auto id = PublicKey(makeSlice(ret.first));
 
-        if (validatorManifests_.revoked (id))
+        if (publisherManifests_.revoked (id))
         {
             JLOG (j_.warn()) <<
                 "Configured validator list publisher key is revoked: " << key;

@@ -31,6 +31,7 @@
 #include <test/jtx/TrustedPublisherServer.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio.hpp>
+#include <chrono>
 
 namespace ripple {
 namespace test {
@@ -165,6 +166,7 @@ private:
             std::string uri;
             std::string expectMsg;
             bool shouldFail;
+            bool isRetry;
         };
         std::vector<publisher> servers;
 
@@ -191,6 +193,7 @@ private:
             servers.push_back({});
             auto& item = servers.back();
             item.shouldFail = ! cfg.second.empty();
+            item.isRetry = cfg.first == "/bad-resource";
             item.expectMsg = cfg.second;
             item.list.reserve (listSize);
             while (item.list.size () < listSize)
@@ -243,11 +246,21 @@ private:
                     != u.shouldFail, to_string(myStatus));
             if (u.shouldFail)
             {
+                using namespace std::chrono;
                 BEAST_EXPECTS(
                     sink.strm_.str().find(u.expectMsg) != std::string::npos,
                     sink.strm_.str());
                 log << " -- Msg: " <<
                     myStatus[jss::last_refresh_message].asString() << std::endl;
+                std::stringstream nextRefreshStr
+                    {myStatus[jss::next_refresh_time].asString()};
+                system_clock::time_point nextRefresh;
+                date::from_stream (nextRefreshStr, "%Y-%b-%d %T", nextRefresh);
+                BEAST_EXPECT(!nextRefreshStr.fail());
+                auto now = system_clock::now();
+                BEAST_EXPECTS(
+                    nextRefresh <= now + (u.isRetry ? seconds{30} : minutes{5}),
+                    "Now: " + to_string(now) + ", NR: " + nextRefreshStr.str());
             }
         }
     }
