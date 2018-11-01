@@ -348,10 +348,10 @@ Value::~Value ()
 }
 
 Value&
-Value::operator= ( const Value& other )
+Value::operator=(Value const& other)
 {
-    Value temp ( other );
-    swap ( temp );
+    Value tmp(other);
+    swap(tmp);
     return *this;
 }
 
@@ -365,9 +365,10 @@ Value::Value ( Value&& other ) noexcept
 }
 
 Value&
-Value::operator= ( Value&& other ) noexcept
+Value::operator=(Value&& other)
 {
-    swap ( other );
+    Value tmp(std::move(other));
+    swap(tmp);
     return *this;
 }
 

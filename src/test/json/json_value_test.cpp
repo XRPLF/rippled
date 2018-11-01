@@ -296,6 +296,17 @@ struct json_value_test : beast::unit_test::suite
         }
     }
 
+  void
+    test_leak()
+    {
+      // When run with the address sanitizer, this test confirms there is no
+      // memory leak with the scenario below.
+      Json::Value a;
+      a[0u] = 1;
+      a = std::move(a[0u]);
+      pass();
+    }
+
     void run () override
     {
         test_bool ();
@@ -306,6 +317,7 @@ struct json_value_test : beast::unit_test::suite
         test_comparisons ();
         test_compact ();
         test_nest_limits ();
+        test_leak();
     }
 };
 
