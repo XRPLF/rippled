@@ -348,10 +348,9 @@ Value::~Value ()
 }
 
 Value&
-Value::operator= ( const Value& other )
+Value::operator= ( Value other )
 {
-    Value temp ( other );
-    swap ( temp );
+    swap ( other );
     return *this;
 }
 
@@ -362,13 +361,6 @@ Value::Value ( Value&& other ) noexcept
 {
     other.type_ = nullValue;
     other.allocated_ = 0;
-}
-
-Value&
-Value::operator= ( Value&& other ) noexcept
-{
-    swap ( other );
-    return *this;
 }
 
 void

@@ -233,10 +233,9 @@ public:
     Value ( const Value& other );
     ~Value ();
 
-    Value& operator= ( const Value& other );
+    Value& operator= ( Value other );
 
     Value ( Value&& other ) noexcept;
-    Value& operator= ( Value&& other ) noexcept;
 
     /// Swap values.
     /// \note Currently, comments are intentionally not swapped, for
