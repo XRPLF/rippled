@@ -912,11 +912,23 @@ TxQ::apply(Application& app, OpenView& view,
                     LastLedgerSeq and MaybeTx::retriesRemaining.
                 */
                 auto const balance = (*sle)[sfBalance].xrp();
+                /* Get the minimum possible reserve. If fees exceed
+                   this amount, the transaction can't be queued.
+                   Considering that typical fees are several orders
+                   of magnitude smaller than any current or expected
+                   future reserve, this calculation is simpler than
+                   trying to figure out the potential changes to
+                   the ownerCount that may occur to the account
+                   as a result of these transactions, and removes
+                   any need to account for other transactions that
+                   may affect the owner count while these are queued.
+                */
+                auto const reserve = view.fees().accountReserve(0);
                 auto totalFee = multiTxn->fee;
                 if (multiTxn->includeCurrentFee)
                     totalFee += (*tx)[sfFee].xrp();
                 if (totalFee >= balance ||
-                    totalFee >= view.fees().accountReserve(0))
+                    totalFee >= reserve)
                 {
                     // Drop the current transaction
                     JLOG(j_.trace()) <<
@@ -933,9 +945,12 @@ TxQ::apply(Application& app, OpenView& view,
                 auto const sleBump = multiTxn->applyView->peek(
                     keylet::account(account));
 
+                auto const potentialTotalSpend = multiTxn->fee +
+                    std::min(balance - std::min(balance, reserve),
+                    multiTxn->potentialSpend);
+                assert(potentialTotalSpend > 0);
                 sleBump->setFieldAmount(sfBalance,
-                    balance - (multiTxn->fee +
-                        multiTxn->potentialSpend));
+                    balance - potentialTotalSpend);
                 sleBump->setFieldU32(sfSequence, tSeq);
             }
         }

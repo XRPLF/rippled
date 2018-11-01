@@ -144,7 +144,7 @@ closeChannel (
     assert ((*slep)[sfAmount] >= (*slep)[sfBalance]);
     (*sle)[sfBalance] =
         (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
-    (*sle)[sfOwnerCount] = (*sle)[sfOwnerCount] - 1;
+    adjustOwnerCount(view, sle, -1, j);
     view.update (sle);
 
     // Remove PayChan from ledger
@@ -254,7 +254,7 @@ PayChanCreate::doApply()
 
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    (*sle)[sfOwnerCount] = (*sle)[sfOwnerCount] + 1;
+    adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
     ctx_.view ().update (sle);
 
     return tesSUCCESS;
