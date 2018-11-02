@@ -43,6 +43,7 @@ namespace jss {
 
 JSS ( AL_hit_rate );                // out: GetCounts
 JSS ( Account );                    // in: TransactionSign; field.
+JSS ( AccountDelete );              // transaction type.
 JSS ( AccountRoot );                // ledger type.
 JSS ( AccountSet );                 // transaction type.
 JSS ( Amendments );                 // ledger type.

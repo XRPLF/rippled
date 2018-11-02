@@ -143,6 +143,87 @@ SetSignerList::preCompute()
     return Transactor::preCompute();
 }
 
+// The return type is signed so it is compatible with the 3rd argument
+// of adjustOwnerCount() (which must be signed).
+//
+// NOTE: This way of computing the OwnerCount associated with a SignerList
+// is valid until the featureMultiSignReserve amendment passes.  Once it
+// passes then just 1 OwnerCount is associated with a SignerList.
+static int
+signerCountBasedOwnerCountDelta (std::size_t entryCount)
+{
+    // We always compute the full change in OwnerCount, taking into account:
+    //  o The fact that we're adding/removing a SignerList and
+    //  o Accounting for the number of entries in the list.
+    // We can get away with that because lists are not adjusted incrementally;
+    // we add or remove an entire list.
+    //
+    // The rule is:
+    //  o Simply having a SignerList costs 2 OwnerCount units.
+    //  o And each signer in the list costs 1 more OwnerCount unit.
+    // So, at a minimum, adding a SignerList with 1 entry costs 3 OwnerCount
+    // units.  A SignerList with 8 entries would cost 10 OwnerCount units.
+    //
+    // The static_cast should always be safe since entryCount should always
+    // be in the range from 1 to 8.  We've got a lot of room to grow.
+    assert (entryCount >= STTx::minMultiSigners);
+    assert (entryCount <= STTx::maxMultiSigners);
+    return 2 + static_cast<int>(entryCount);
+}
+
+static TER
+removeSignersFromLedger (
+    Application& app, ApplyView& view, Keylet const& accountKeylet,
+        Keylet const& ownerDirKeylet, Keylet const& signerListKeylet)
+{
+    // We have to examine the current SignerList so we know how much to
+    // reduce the OwnerCount.
+    SLE::pointer signers = view.peek (signerListKeylet);
+
+    // If the signer list doesn't exist we've already succeeded in deleting it.
+    if (!signers)
+        return tesSUCCESS;
+
+    // There are two different ways that the OwnerCount could be managed.
+    // If the lsfOneOwnerCount bit is set then remove just one owner count.
+    // Otherwise use the pre-MultiSignReserve amendment calculation.
+    int removeFromOwnerCount = -1;
+    if ((signers->getFlags() & lsfOneOwnerCount) == 0)
+    {
+        STArray const& actualList = signers->getFieldArray (sfSignerEntries);
+        removeFromOwnerCount =
+            signerCountBasedOwnerCountDelta (actualList.size()) * -1;
+    }
+
+    // Remove the node from the account directory.
+    auto const hint = (*signers)[sfOwnerNode];
+
+    if (! view.dirRemove(
+            ownerDirKeylet, hint, signerListKeylet.key, false))
+    {
+        return tefBAD_LEDGER;
+    }
+
+    adjustOwnerCount(view,
+        view.peek(accountKeylet), removeFromOwnerCount, app.journal("View"));
+
+    view.erase (signers);
+
+    return tesSUCCESS;
+}
+
+TER
+SetSignerList::removeFromLedger (
+    Application& app, ApplyView& view, AccountID const& account)
+{
+    auto const accountKeylet = keylet::account (account);
+    auto const ownerDirKeylet = keylet::ownerDir (account);
+    auto const signerListKeylet = keylet::signers (account);
+
+    return removeSignersFromLedger (
+        app, view, accountKeylet, ownerDirKeylet, signerListKeylet);
+}
+
 NotTEC
 SetSignerList::validateQuorumAndSignerEntries (
     std::uint32_t quorum,
@@ -212,10 +293,12 @@ SetSignerList::replaceSignerList ()
     // old signer list.  May reduce the reserve, so this is done before
     // checking the reserve.
     if (TER const ter = removeSignersFromLedger (
-        accountKeylet, ownerDirKeylet, signerListKeylet))
+        ctx_.app, view(), accountKeylet, ownerDirKeylet, signerListKeylet))
             return ter;
 
     auto const sle = view().peek(accountKeylet);
+    if (!sle)
+        return tefINTERNAL;
 
     // Compute new reserve.  Verify the account has funds to meet the reserve.
     std::uint32_t const oldOwnerCount {(*sle)[sfOwnerCount]};
@@ -269,6 +352,9 @@ SetSignerList::destroySignerList ()
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
     SLE::pointer ledgerEntry = view().peek (accountKeylet);
+    if (! ledgerEntry)
+        return tefINTERNAL;
+
     if ((ledgerEntry->isFlag (lsfDisableMaster)) &&
         (!ledgerEntry->isFieldPresent (sfRegularKey)))
             return tecNO_ALTERNATIVE_KEY;
@@ -276,48 +362,7 @@ SetSignerList::destroySignerList ()
     auto const ownerDirKeylet = keylet::ownerDir (account_);
     auto const signerListKeylet = keylet::signers (account_);
     return removeSignersFromLedger(
-        accountKeylet, ownerDirKeylet, signerListKeylet);
-}
-
-TER
-SetSignerList::removeSignersFromLedger (Keylet const& accountKeylet,
-        Keylet const& ownerDirKeylet, Keylet const& signerListKeylet)
-{
-    // We have to examine the current SignerList so we know how much to
-    // reduce the OwnerCount.
-    SLE::pointer signers = view().peek (signerListKeylet);
-
-    // If the signer list doesn't exist we've already succeeded in deleting it.
-    if (!signers)
-        return tesSUCCESS;
-
-    // There are two different ways that the OwnerCount could be managed.
-    // If the lsfOneOwnerCount bit is set then remove just one owner count.
-    // Otherwise use the pre-MultiSignReserve amendment calculation.
-    int removeFromOwnerCount = -1;
-    if ((signers->getFlags() & lsfOneOwnerCount) == 0)
-    {
-        STArray const& actualList = signers->getFieldArray (sfSignerEntries);
-        removeFromOwnerCount =
-            signerCountBasedOwnerCountDelta (actualList.size()) * -1;
-    }
-
-    // Remove the node from the account directory.
-    auto const hint = (*signers)[sfOwnerNode];
-
-    if (! ctx_.view().dirRemove(
-            ownerDirKeylet, hint, signerListKeylet.key, false))
-    {
-        return tefBAD_LEDGER;
-    }
-
-    auto viewJ = ctx_.app.journal("View");
-    adjustOwnerCount(
-        view(), view().peek(accountKeylet), removeFromOwnerCount, viewJ);
-
-    ctx_.view().erase (signers);
-
-    return tesSUCCESS;
+        ctx_.app, view(), accountKeylet, ownerDirKeylet, signerListKeylet);
 }
 
 void
@@ -343,34 +388,6 @@ SetSignerList::writeSignersToSLE (
 
     // Assign the SignerEntries.
     ledgerEntry->setFieldArray (sfSignerEntries, toLedger);
-}
-
-// The return type is signed so it is compatible with the 3rd argument
-// of adjustOwnerCount() (which must be signed).
-//
-// NOTE: This way of computing the OwnerCount associated with a SignerList
-// is valid until the featureMultiSignReserve amendment passes.  Once it
-// passes then just 1 OwnerCount is associated with a SignerList.
-int
-SetSignerList::signerCountBasedOwnerCountDelta (std::size_t entryCount)
-{
-    // We always compute the full change in OwnerCount, taking into account:
-    //  o The fact that we're adding/removing a SignerList and
-    //  o Accounting for the number of entries in the list.
-    // We can get away with that because lists are not adjusted incrementally;
-    // we add or remove an entire list.
-    //
-    // The rule is:
-    //  o Simply having a SignerList costs 2 OwnerCount units.
-    //  o And each signer in the list costs 1 more OwnerCount unit.
-    // So, at a minimum, adding a SignerList with 1 entry costs 3 OwnerCount
-    // units.  A SignerList with 8 entries would cost 10 OwnerCount units.
-    //
-    // The static_cast should always be safe since entryCount should always
-    // be in the range from 1 to 8.  We've got a lot of room to grow.
-    assert (entryCount >= STTx::minMultiSigners);
-    assert (entryCount <= STTx::maxMultiSigners);
-    return 2 + static_cast<int>(entryCount);
 }
 
 } // namespace ripple

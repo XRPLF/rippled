@@ -196,8 +196,9 @@ EscrowCreate::doApply()
     }
 
     auto const account = ctx_.tx[sfAccount];
-    auto const sle = ctx_.view().peek(
-        keylet::account(account));
+    auto const sle = ctx_.view().peek(keylet::account(account));
+    if (! sle)
+        return tefINTERNAL;
 
     // Check reserve and funds availability
     {

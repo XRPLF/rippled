@@ -56,14 +56,6 @@ getLedgerFeeIndex ()
 }
 
 uint256
-getAccountRootIndex (AccountID const& account)
-{
-    return sha512Half(
-        std::uint16_t(spaceAccount),
-        account);
-}
-
-uint256
 getGeneratorIndex (AccountID const& uGeneratorID)
 {
     return sha512Half(
@@ -215,8 +207,7 @@ namespace keylet {
 Keylet account_t::operator()(
     AccountID const& id) const
 {
-    return { ltACCOUNT_ROOT,
-        getAccountRootIndex(id) };
+    return { ltACCOUNT_ROOT, sha512Half(std::uint16_t(spaceAccount), id) };
 }
 
 Keylet child (uint256 const& key)

@@ -19,12 +19,13 @@
 
 #include <ripple/app/tx/impl/InvariantCheck.h>
 #include <ripple/basics/Log.h>
+#include <ripple/ledger/ReadView.h>
+#include <ripple/protocol/Feature.h>
 
 namespace ripple {
 
 void
 TransactionFeeCheck::visitEntry(
-    uint256 const&,
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -35,8 +36,9 @@ TransactionFeeCheck::visitEntry(
 bool
 TransactionFeeCheck::finalize(
     STTx const& tx,
-    TER const result,
+    TER const,
     XRPAmount const fee,
+    ReadView const&,
     beast::Journal const& j)
 {
     // We should never charge a negative fee
@@ -70,7 +72,6 @@ TransactionFeeCheck::finalize(
 
 void
 XRPNotCreated::visitEntry(
-    uint256 const&,
     bool isDelete,
     std::shared_ptr <SLE const> const& before,
     std::shared_ptr <SLE const> const& after)
@@ -123,9 +124,10 @@ XRPNotCreated::visitEntry(
 
 bool
 XRPNotCreated::finalize(
-    STTx const& tx,
+    STTx const&,
     TER const,
     XRPAmount const fee,
+    ReadView const&,
     beast::Journal const& j)
 {
     // The net change should never be positive, as this would mean that the
@@ -153,7 +155,6 @@ XRPNotCreated::finalize(
 
 void
 XRPBalanceChecks::visitEntry(
-    uint256 const&,
     bool,
     std::shared_ptr <SLE const> const& before,
     std::shared_ptr <SLE const> const& after)
@@ -185,7 +186,12 @@ XRPBalanceChecks::visitEntry(
 }
 
 bool
-XRPBalanceChecks::finalize(STTx const&, TER const, XRPAmount const, beast::Journal const& j)
+XRPBalanceChecks::finalize(
+    STTx const&,
+    TER const,
+    XRPAmount const,
+    ReadView const&,
+    beast::Journal const& j)
 {
     if (bad_)
     {
@@ -200,7 +206,6 @@ XRPBalanceChecks::finalize(STTx const&, TER const, XRPAmount const, beast::Journ
 
 void
 NoBadOffers::visitEntry(
-    uint256 const&,
     bool isDelete,
     std::shared_ptr <SLE const> const& before,
     std::shared_ptr <SLE const> const& after)
@@ -226,7 +231,12 @@ NoBadOffers::visitEntry(
 }
 
 bool
-NoBadOffers::finalize(STTx const& tx, TER const, XRPAmount const, beast::Journal const& j)
+NoBadOffers::finalize(
+    STTx const&,
+    TER const,
+    XRPAmount const,
+    ReadView const&,
+    beast::Journal const& j)
 {
     if (bad_)
     {
@@ -241,7 +251,6 @@ NoBadOffers::finalize(STTx const& tx, TER const, XRPAmount const, beast::Journal
 
 void
 NoZeroEscrow::visitEntry(
-    uint256 const&,
     bool isDelete,
     std::shared_ptr <SLE const> const& before,
     std::shared_ptr <SLE const> const& after)
@@ -268,7 +277,12 @@ NoZeroEscrow::visitEntry(
 }
 
 bool
-NoZeroEscrow::finalize(STTx const& tx, TER const, XRPAmount const, beast::Journal const& j)
+NoZeroEscrow::finalize(
+    STTx const&,
+    TER const,
+    XRPAmount const,
+    ReadView const&,
+    beast::Journal const& j)
 {
     if (bad_)
     {
@@ -283,19 +297,37 @@ NoZeroEscrow::finalize(STTx const& tx, TER const, XRPAmount const, beast::Journa
 
 void
 AccountRootsNotDeleted::visitEntry(
-    uint256 const&,
     bool isDelete,
     std::shared_ptr <SLE const> const& before,
     std::shared_ptr <SLE const> const&)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
-        accountDeleted_ = true;
+        accountsDeleted_++;
 }
 
 bool
-AccountRootsNotDeleted::finalize(STTx const&, TER const, XRPAmount const, beast::Journal const& j)
+AccountRootsNotDeleted::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const&,
+    beast::Journal const& j)
 {
-    if (! accountDeleted_)
+    if (tx.getTxnType() == ttACCOUNT_DELETE && result == tesSUCCESS)
+    {
+        if (accountsDeleted_ == 1)
+            return true;
+
+        if (accountsDeleted_ == 0)
+            JLOG(j.fatal()) << "Invariant failed: account deletion "
+                               "succeeded without deleting an account";
+        else
+            JLOG(j.fatal()) << "Invariant failed: account deletion "
+                               "succeeded but deleted multiple accounts!";
+        return false;
+    }
+
+    if (accountsDeleted_ == 0)
         return true;
 
     JLOG(j.fatal()) << "Invariant failed: an account root was deleted";
@@ -306,7 +338,6 @@ AccountRootsNotDeleted::finalize(STTx const&, TER const, XRPAmount const, beast:
 
 void
 LedgerEntryTypesMatch::visitEntry(
-    uint256 const&,
     bool,
     std::shared_ptr <SLE const> const& before,
     std::shared_ptr <SLE const> const& after)
@@ -340,7 +371,12 @@ LedgerEntryTypesMatch::visitEntry(
 }
 
 bool
-LedgerEntryTypesMatch::finalize(STTx const&, TER const, XRPAmount const, beast::Journal const& j)
+LedgerEntryTypesMatch::finalize(
+    STTx const&,
+    TER const,
+    XRPAmount const,
+    ReadView const&,
+    beast::Journal const& j)
 {
     if ((! typeMismatch_) && (! invalidTypeAdded_))
         return true;
@@ -362,7 +398,6 @@ LedgerEntryTypesMatch::finalize(STTx const&, TER const, XRPAmount const, beast::
 
 void
 NoXRPTrustLines::visitEntry(
-    uint256 const&,
     bool,
     std::shared_ptr <SLE const> const&,
     std::shared_ptr <SLE const> const& after)
@@ -379,12 +414,70 @@ NoXRPTrustLines::visitEntry(
 }
 
 bool
-NoXRPTrustLines::finalize(STTx const&, TER const, XRPAmount const, beast::Journal const& j)
+NoXRPTrustLines::finalize(
+    STTx const&,
+    TER const,
+    XRPAmount const,
+    ReadView const&,
+    beast::Journal const& j)
 {
     if (! xrpTrustLine_)
         return true;
 
     JLOG(j.fatal()) << "Invariant failed: an XRP trust line was created";
+    return false;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidNewAccountRoot::visitEntry(
+    bool,
+    std::shared_ptr <SLE const> const& before,
+    std::shared_ptr <SLE const> const& after)
+{
+    if (!before && after->getType() == ltACCOUNT_ROOT)
+    {
+        accountsCreated_++;
+        accountSeq_ = (*after)[sfSequence];
+    }
+}
+
+bool
+ValidNewAccountRoot::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (accountsCreated_ == 0)
+        return true;
+
+    if (accountsCreated_ > 1)
+    {
+        JLOG(j.fatal()) << "Invariant failed: multiple accounts "
+                           "created in a single transaction";
+        return false;
+    }
+
+    // From this point on we know exactly one account was created.
+    if (tx.getTxnType() == ttPAYMENT && result == tesSUCCESS)
+    {
+        std::uint32_t const startingSeq {
+            view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
+
+        if (accountSeq_ != startingSeq)
+        {
+            JLOG(j.fatal()) << "Invariant failed: account created with "
+                               "wrong starting sequence number";
+            return false;
+        }
+        return true;
+    }
+
+    JLOG(j.fatal()) << "Invariant failed: account root created "
+                       "by a non-Payment or by an unsuccessful transaction";
     return false;
 }
 

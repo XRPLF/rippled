@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2019 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,20 +17,37 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_DEPOSIT_PREAUTH_H_INCLUDED
-#define RIPPLE_TX_DEPOSIT_PREAUTH_H_INCLUDED
+#ifndef RIPPLE_TX_DELETEACCOUNT_H_INCLUDED
+#define RIPPLE_TX_DELETEACCOUNT_H_INCLUDED
 
 #include <ripple/app/tx/impl/Transactor.h>
+#include <ripple/basics/Log.h>
+#include <ripple/protocol/Indexes.h>
 
 namespace ripple {
 
-class DepositPreauth
+class DeleteAccount
     : public Transactor
 {
 public:
-    explicit DepositPreauth (ApplyContext& ctx)
+    // Set a reasonable upper limit on the number of deletable directory
+    // entries an account may have before we decide the account can't be
+    // deleted.
+    //
+    // A limit is useful because if we go much past this limit the
+    // transaction will fail anyway due to too much metadata (tecOVERSIZE).
+    static constexpr std::int32_t maxDeletableDirEntries {1000};
+
+    explicit DeleteAccount (ApplyContext& ctx)
         : Transactor(ctx)
     {
+    }
+
+    static
+    bool
+    affectsSubsequentTransactionAuth(STTx const& tx)
+    {
+        return true;
     }
 
     static
@@ -38,19 +55,18 @@ public:
     preflight (PreflightContext const& ctx);
 
     static
-    TER
-    preclaim(PreclaimContext const& ctx);
+    std::uint64_t
+    calculateBaseFee (
+        ReadView const& view,
+        STTx const& tx);
 
-    TER doApply () override;
-
-    // Interface used by DeleteAccount
     static
     TER
-    removeFromLedger (Application& app, ApplyView& view,
-        uint256 const& delIndex, beast::Journal j);
+    preclaim (PreclaimContext const& ctx);
+
+    TER doApply () override;
 };
 
-} // ripple
+}
 
 #endif
-

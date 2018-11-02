@@ -113,6 +113,8 @@ DepositPreauth::doApply ()
     if (ctx_.tx.isFieldPresent (sfAuthorize))
     {
         auto const sleOwner = view().peek (keylet::account (account_));
+        if (! sleOwner)
+            return {tefINTERNAL};
 
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
@@ -154,35 +156,48 @@ DepositPreauth::doApply ()
     }
     else
     {
-        // Verify that the Preauth entry they asked to remove is
-        // in the ledger.
         AccountID const unauth {ctx_.tx[sfUnauthorize]};
         uint256 const preauthIndex {getDepositPreauthIndex (account_, unauth)};
-        auto slePreauth = view().peek (keylet::depositPreauth (preauthIndex));
 
-        if (! slePreauth)
-        {
-            // Error should have been caught in preclaim.
-            JLOG(j_.warn()) << "Selected DepositPreauth does not exist.";
-            return tecNO_ENTRY;
-        }
-
-        auto viewJ = ctx_.app.journal ("View");
-        std::uint64_t const page {(*slePreauth)[sfOwnerNode]};
-        if (! view().dirRemove (
-            keylet::ownerDir (account_), page, preauthIndex, true))
-        {
-            JLOG(j_.warn()) << "Unable to delete DepositPreauth from owner.";
-            return tefBAD_LEDGER;
-        }
-
-        // If we succeeded, update the DepositPreauth owner's reserve.
-        auto const sleOwner = view().peek (keylet::account (account_));
-        adjustOwnerCount (view(), sleOwner, -1, viewJ);
-
-        // Remove DepositPreauth from ledger.
-        view().erase (slePreauth);
+        return DepositPreauth::removeFromLedger (
+            ctx_.app, view(), preauthIndex, j_);
     }
+    return tesSUCCESS;
+}
+
+TER
+DepositPreauth::removeFromLedger (Application& app,
+    ApplyView& view, uint256 const& preauthIndex, beast::Journal j)
+{
+    // Verify that the Preauth entry they asked to remove is
+    // in the ledger.
+    std::shared_ptr<SLE> const slePreauth {
+        view.peek (keylet::depositPreauth (preauthIndex))};
+    if (! slePreauth)
+    {
+        JLOG(j.warn()) << "Selected DepositPreauth does not exist.";
+        return tecNO_ENTRY;
+    }
+
+    AccountID const account {(*slePreauth)[sfAccount]};
+    std::uint64_t const page {(*slePreauth)[sfOwnerNode]};
+    if (! view.dirRemove (
+        keylet::ownerDir (account), page, preauthIndex, false))
+    {
+        JLOG(j.fatal()) << "Unable to delete DepositPreauth from owner.";
+        return tefBAD_LEDGER;
+    }
+
+    // If we succeeded, update the DepositPreauth owner's reserve.
+    auto const sleOwner = view.peek (keylet::account (account));
+    if (! sleOwner)
+        return tefINTERNAL;
+
+    adjustOwnerCount (view, sleOwner, -1, app.journal ("View"));
+
+    // Remove DepositPreauth from ledger.
+    view.erase (slePreauth);
+
     return tesSUCCESS;
 }
 

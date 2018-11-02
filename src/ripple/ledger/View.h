@@ -56,24 +56,24 @@ enum FreezeHandling
     fhZERO_IF_FROZEN
 };
 
-bool
+[[nodiscard]] bool
 isGlobalFrozen (ReadView const& view,
     AccountID const& issuer);
 
-bool
+[[nodiscard]] bool
 isFrozen (ReadView const& view, AccountID const& account,
     Currency const& currency, AccountID const& issuer);
 
 // Returns the amount an account can spend without going into debt.
 //
 // <-- saAmount: amount of currency held by account. May be negative.
-STAmount
+[[nodiscard]] STAmount
 accountHolds (ReadView const& view,
     AccountID const& account, Currency const& currency,
         AccountID const& issuer, FreezeHandling zeroIfFrozen,
               beast::Journal j);
 
-STAmount
+[[nodiscard]] STAmount
 accountFunds (ReadView const& view, AccountID const& id,
     STAmount const& saDefault, FreezeHandling freezeHandling,
         beast::Journal j);
@@ -84,7 +84,7 @@ accountFunds (ReadView const& view, AccountID const& id,
 // necessary.
 //
 // @param ownerCountAdj positive to add to count, negative to reduce count.
-XRPAmount
+[[nodiscard]] XRPAmount
 xrpLiquid (ReadView const& view, AccountID const& id,
     std::int32_t ownerCountAdj, beast::Journal j);
 
@@ -105,14 +105,14 @@ forEachItemAfter (ReadView const& view, AccountID const& id,
         unsigned int limit, std::function<
             bool (std::shared_ptr<SLE const> const&)> f);
 
-Rate
+[[nodiscard]] Rate
 transferRate (ReadView const& view,
     AccountID const& issuer);
 
 /** Returns `true` if the directory is empty
     @param key The key of the directory
 */
-bool
+[[nodiscard]] bool
 dirIsEmpty (ReadView const& view,
     Keylet const& k);
 
@@ -139,12 +139,12 @@ cdirNext (ReadView const& view,
     beast::Journal j);
 
 // Return the list of enabled amendments
-std::set <uint256>
+[[nodiscard]] std::set <uint256>
 getEnabledAmendments (ReadView const& view);
 
 // Return a map of amendments that have achieved majority
 using majorityAmendments_t = std::map <uint256, NetClock::time_point>;
-majorityAmendments_t
+[[nodiscard]] majorityAmendments_t
 getMajorityAmendments (ReadView const& view);
 
 /** Return the hash of a ledger by sequence.
@@ -156,7 +156,7 @@ getMajorityAmendments (ReadView const& view);
     @return The hash of the ledger with the
             given sequence number or boost::none.
 */
-boost::optional<uint256>
+[[nodiscard]] boost::optional<uint256>
 hashOfSeq (ReadView const& ledger, LedgerIndex seq,
     beast::Journal journal);
 
@@ -184,10 +184,12 @@ getCandidateLedger (LedgerIndex requested)
     both be valid. Use the first form if you have both ledgers,
     use the second form if you have not acquired the valid ledger yet
 */
-bool areCompatible (ReadView const& validLedger, ReadView const& testLedger,
+[[nodiscard]] bool
+areCompatible (ReadView const& validLedger, ReadView const& testLedger,
     beast::Journal::Stream& s, const char* reason);
 
-bool areCompatible (uint256 const& validHash, LedgerIndex validIndex,
+[[nodiscard]] bool
+areCompatible (uint256 const& validHash, LedgerIndex validIndex,
     ReadView const& testLedger, beast::Journal::Stream& s, const char* reason);
 
 //------------------------------------------------------------------------------
@@ -224,7 +226,7 @@ dirNext (ApplyView& view,
     uint256& uEntryIndex,       // <-- The entry, if available. Otherwise, zero.
     beast::Journal j);
 
-std::function<void (SLE::ref)>
+[[nodiscard]] std::function<void (SLE::ref)>
 describeOwnerDir(AccountID const& account);
 
 // deprecated
@@ -243,7 +245,7 @@ dirAdd (ApplyView& view,
 
     This can set an initial balance.
 */
-TER
+[[nodiscard]] TER
 trustCreate (ApplyView& view,
     const bool      bSrcHigh,
     AccountID const&  uSrcAccountID,
@@ -261,7 +263,7 @@ trustCreate (ApplyView& view,
     std::uint32_t uSrcQualityOut,
     beast::Journal j);
 
-TER
+[[nodiscard]] TER
 trustDelete (ApplyView& view,
     std::shared_ptr<SLE> const& sleRippleState,
         AccountID const& uLowAccountID,
@@ -274,6 +276,7 @@ trustDelete (ApplyView& view,
         The passed `sle` be obtained from a prior
         call to view.peek()
 */
+// [[nodiscard]] // nodiscard commented out so Flow, BookTip and others compile.
 TER
 offerDelete (ApplyView& view,
     std::shared_ptr<SLE> const& sle,
@@ -289,12 +292,14 @@ offerDelete (ApplyView& view,
 // - Redeeming IOUs and/or sending sender's own IOUs.
 // - Create trust line of needed.
 // --> bCheckIssuer : normally require issuer to be involved.
+// [[nodiscard]] // nodiscard commented out so DirectStep.cpp compiles.
 TER
 rippleCredit (ApplyView& view,
     AccountID const& uSenderID, AccountID const& uReceiverID,
     const STAmount & saAmount, bool bCheckIssuer,
     beast::Journal j);
 
+// [[nodiscard]] // nodiscard commented out so DeliverNodeForward.cpp compiles.
 TER
 accountSend (ApplyView& view,
     AccountID const& from,
@@ -302,41 +307,41 @@ accountSend (ApplyView& view,
             const STAmount & saAmount,
                  beast::Journal j);
 
-TER
+[[nodiscard]] TER
 issueIOU (ApplyView& view,
     AccountID const& account,
         STAmount const& amount,
             Issue const& issue,
                 beast::Journal j);
 
-TER
+[[nodiscard]] TER
 redeemIOU (ApplyView& view,
     AccountID const& account,
         STAmount const& amount,
             Issue const& issue,
                 beast::Journal j);
 
-TER
+[[nodiscard]] TER
 transferXRP (ApplyView& view,
     AccountID const& from,
         AccountID const& to,
             STAmount const& amount,
                 beast::Journal j);
 
-NetClock::time_point const& fix1141Time ();
-bool fix1141 (NetClock::time_point const closeTime);
+[[nodiscard]] NetClock::time_point const& fix1141Time ();
+[[nodiscard]] bool fix1141 (NetClock::time_point const closeTime);
 
-NetClock::time_point const& fix1274Time ();
-bool fix1274 (NetClock::time_point const closeTime);
+[[nodiscard]] NetClock::time_point const& fix1274Time ();
+[[nodiscard]] bool fix1274 (NetClock::time_point const closeTime);
 
-NetClock::time_point const& fix1298Time ();
-bool fix1298 (NetClock::time_point const closeTime);
+[[nodiscard]] NetClock::time_point const& fix1298Time ();
+[[nodiscard]] bool fix1298 (NetClock::time_point const closeTime);
 
-NetClock::time_point const& fix1443Time ();
-bool fix1443 (NetClock::time_point const closeTime);
+[[nodiscard]] NetClock::time_point const& fix1443Time ();
+[[nodiscard]] bool fix1443 (NetClock::time_point const closeTime);
 
-NetClock::time_point const& fix1449Time ();
-bool fix1449 (NetClock::time_point const closeTime);
+[[nodiscard]] NetClock::time_point const& fix1449Time ();
+[[nodiscard]] bool fix1449 (NetClock::time_point const closeTime);
 
 } // ripple
 

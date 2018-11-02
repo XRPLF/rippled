@@ -110,7 +110,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
             BEAST_EXPECT(checkTransaction (txs[0u], 3, 3));
-            BEAST_EXPECT(checkTransaction (txs[1u], 1, 3));
+            BEAST_EXPECT(checkTransaction (txs[1u], 3, 3));
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
@@ -118,8 +118,8 @@ class AccountTxPaging_test : public beast::unit_test::suite
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 2, 4));
-            BEAST_EXPECT(checkTransaction (txs[1u], 2, 4));
+            BEAST_EXPECT(checkTransaction (txs[0u], 4, 4));
+            BEAST_EXPECT(checkTransaction (txs[1u], 4, 4));
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
@@ -127,8 +127,8 @@ class AccountTxPaging_test : public beast::unit_test::suite
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 2, 5));
-            BEAST_EXPECT(checkTransaction (txs[1u], 3, 5));
+            BEAST_EXPECT(checkTransaction (txs[0u], 4, 5));
+            BEAST_EXPECT(checkTransaction (txs[1u], 5, 5));
             BEAST_EXPECT(! jrr[jss::marker]);
         }
 
@@ -146,7 +146,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 1, 3));
+            BEAST_EXPECT(checkTransaction (txs[0u], 3, 3));
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
@@ -154,7 +154,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 2, 4));
+            BEAST_EXPECT(checkTransaction (txs[0u], 4, 4));
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
@@ -163,9 +163,9 @@ class AccountTxPaging_test : public beast::unit_test::suite
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 2, 4));
-            BEAST_EXPECT(checkTransaction (txs[1u], 2, 5));
-            BEAST_EXPECT(checkTransaction (txs[2u], 3, 5));
+            BEAST_EXPECT(checkTransaction (txs[0u], 4, 4));
+            BEAST_EXPECT(checkTransaction (txs[1u], 4, 5));
+            BEAST_EXPECT(checkTransaction (txs[2u], 5, 5));
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
@@ -173,9 +173,9 @@ class AccountTxPaging_test : public beast::unit_test::suite
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 4, 6));
-            BEAST_EXPECT(checkTransaction (txs[1u], 5, 6));
-            BEAST_EXPECT(checkTransaction (txs[2u], 6, 7));
+            BEAST_EXPECT(checkTransaction (txs[0u], 6, 6));
+            BEAST_EXPECT(checkTransaction (txs[1u], 7, 6));
+            BEAST_EXPECT(checkTransaction (txs[2u], 8, 7));
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
@@ -183,9 +183,9 @@ class AccountTxPaging_test : public beast::unit_test::suite
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 7, 7));
-            BEAST_EXPECT(checkTransaction (txs[1u], 8, 8));
-            BEAST_EXPECT(checkTransaction (txs[2u], 9, 8));
+            BEAST_EXPECT(checkTransaction (txs[0u], 9, 7));
+            BEAST_EXPECT(checkTransaction (txs[1u], 10, 8));
+            BEAST_EXPECT(checkTransaction (txs[2u], 11, 8));
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
@@ -193,8 +193,8 @@ class AccountTxPaging_test : public beast::unit_test::suite
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 10, 9));
-            BEAST_EXPECT(checkTransaction (txs[1u], 11, 9));
+            BEAST_EXPECT(checkTransaction (txs[0u], 12, 9));
+            BEAST_EXPECT(checkTransaction (txs[1u], 13, 9));
             BEAST_EXPECT(! jrr[jss::marker]);
         }
 
@@ -204,8 +204,8 @@ class AccountTxPaging_test : public beast::unit_test::suite
             auto txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 11, 9));
-            BEAST_EXPECT(checkTransaction (txs[1u], 10, 9));
+            BEAST_EXPECT(checkTransaction (txs[0u], 13, 9));
+            BEAST_EXPECT(checkTransaction (txs[1u], 12, 9));
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
@@ -213,8 +213,8 @@ class AccountTxPaging_test : public beast::unit_test::suite
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 9, 8));
-            BEAST_EXPECT(checkTransaction (txs[1u], 8, 8));
+            BEAST_EXPECT(checkTransaction (txs[0u], 11, 8));
+            BEAST_EXPECT(checkTransaction (txs[1u], 10, 8));
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
@@ -223,9 +223,9 @@ class AccountTxPaging_test : public beast::unit_test::suite
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 7, 7));
-            BEAST_EXPECT(checkTransaction (txs[1u], 6, 7));
-            BEAST_EXPECT(checkTransaction (txs[2u], 5, 6));
+            BEAST_EXPECT(checkTransaction (txs[0u], 9, 7));
+            BEAST_EXPECT(checkTransaction (txs[1u], 8, 7));
+            BEAST_EXPECT(checkTransaction (txs[2u], 7, 6));
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
@@ -233,9 +233,9 @@ class AccountTxPaging_test : public beast::unit_test::suite
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 4, 6));
-            BEAST_EXPECT(checkTransaction (txs[1u], 3, 5));
-            BEAST_EXPECT(checkTransaction (txs[2u], 2, 5));
+            BEAST_EXPECT(checkTransaction (txs[0u], 6, 6));
+            BEAST_EXPECT(checkTransaction (txs[1u], 5, 5));
+            BEAST_EXPECT(checkTransaction (txs[2u], 4, 5));
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
@@ -243,9 +243,9 @@ class AccountTxPaging_test : public beast::unit_test::suite
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 2, 4));
-            BEAST_EXPECT(checkTransaction (txs[1u], 2, 4));
-            BEAST_EXPECT(checkTransaction (txs[2u], 1, 3));
+            BEAST_EXPECT(checkTransaction (txs[0u], 4, 4));
+            BEAST_EXPECT(checkTransaction (txs[1u], 4, 4));
+            BEAST_EXPECT(checkTransaction (txs[2u], 3, 3));
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 

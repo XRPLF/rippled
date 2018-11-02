@@ -122,16 +122,12 @@ void addRaw (LedgerInfo const& info, Serializer& s)
 }
 
 bool
-isGlobalFrozen (ReadView const& view,
-    AccountID const& issuer)
+isGlobalFrozen (ReadView const& view, AccountID const& issuer)
 {
-    // VFALCO Perhaps this should assert
     if (isXRP (issuer))
         return false;
-    auto const sle =
-        view.read(keylet::account(issuer));
-    if (sle && sle->isFlag (lsfGlobalFreeze))
-        return true;
+    if (auto const sle = view.read(keylet::account(issuer)))
+        return sle->isFlag (lsfGlobalFreeze);
     return false;
 }
 
@@ -548,7 +544,9 @@ dirIsEmpty (ReadView const& view,
         return true;
     if (! sleNode->getFieldV256 (sfIndexes).empty ())
         return false;
-    // If there's another page, it must be non-empty
+    // The first page of a directory may legitimately be empty even if there
+    // are other pages (the first page is the anchor page) so check to see if
+    // there is another page. If there is, the directory isn't empty.
     return sleNode->getFieldU64 (sfIndexNext) == 0;
 }
 
@@ -730,6 +728,8 @@ adjustOwnerCount (ApplyView& view,
     std::shared_ptr<SLE> const& sle,
         std::int32_t amount, beast::Journal j)
 {
+    if (! sle)
+        return;
     assert(amount != 0);
     std::uint32_t const current {sle->getFieldU32 (sfOwnerCount)};
     AccountID const id = (*sle)[sfAccount];
@@ -955,11 +955,16 @@ trustCreate (ApplyView& view,
     const bool bSetDst = saLimit.getIssuer () == uDstAccountID;
     const bool bSetHigh = bSrcHigh ^ bSetDst;
 
+    assert (sleAccount);
+    if (! sleAccount)
+        return tefINTERNAL;
+
     assert (sleAccount->getAccountID (sfAccount) ==
         (bSetHigh ? uHighAccountID : uLowAccountID));
-    auto slePeer = view.peek (keylet::account(
+    auto const slePeer = view.peek (keylet::account(
         bSetHigh ? uLowAccountID : uHighAccountID));
-    assert (slePeer);
+    if (! slePeer)
+        return tecNO_TARGET;
 
     // Remember deletion hints.
     sleRippleState->setFieldU64 (sfLowNode, *lowNode);
@@ -1103,8 +1108,8 @@ rippleCredit (ApplyView& view,
     STAmount const& saAmount, bool bCheckIssuer,
     beast::Journal j)
 {
-    auto issuer = saAmount.getIssuer ();
-    auto currency = saAmount.getCurrency ();
+    AccountID const& issuer = saAmount.getIssuer ();
+    Currency const& currency = saAmount.getCurrency ();
 
     // Make sure issuer is involved.
     assert (
@@ -1114,10 +1119,10 @@ rippleCredit (ApplyView& view,
     // Disallow sending to self.
     assert (uSenderID != uReceiverID);
 
-    bool bSenderHigh = uSenderID > uReceiverID;
-    uint256 uIndex = getRippleStateIndex (
-        uSenderID, uReceiverID, saAmount.getCurrency ());
-    auto sleRippleState  = view.peek (keylet::line(uIndex));
+    bool const bSenderHigh = uSenderID > uReceiverID;
+    uint256 const uIndex = getRippleStateIndex (
+        uSenderID, uReceiverID, currency);
+    auto const sleRippleState  = view.peek (keylet::line(uIndex));
 
     TER terResult;
 
@@ -1126,8 +1131,8 @@ rippleCredit (ApplyView& view,
 
     if (!sleRippleState)
     {
-        STAmount saReceiverLimit({currency, uReceiverID});
-        STAmount saBalance = saAmount;
+        STAmount const saReceiverLimit ({currency, uReceiverID});
+        STAmount saBalance {saAmount};
 
         saBalance.setIssuer (noAccount());
 
@@ -1138,8 +1143,10 @@ rippleCredit (ApplyView& view,
 
         auto const sleAccount =
             view.peek(keylet::account(uReceiverID));
+        if (! sleAccount)
+            return tefINTERNAL;
 
-        bool noRipple = (sleAccount->getFlags() & lsfDefaultRipple) == 0;
+        bool const noRipple = (sleAccount->getFlags() & lsfDefaultRipple) == 0;
 
         terResult = trustCreate (view,
             bSenderHigh,
@@ -1158,17 +1165,16 @@ rippleCredit (ApplyView& view,
     }
     else
     {
-        STAmount saBalance   = sleRippleState->getFieldAmount (sfBalance);
+        STAmount saBalance = sleRippleState->getFieldAmount (sfBalance);
 
         if (bSenderHigh)
             saBalance.negate ();    // Put balance in sender terms.
 
-        view.creditHook (uSenderID,
-            uReceiverID, saAmount, saBalance);
+        view.creditHook (uSenderID, uReceiverID, saAmount, saBalance);
 
-        STAmount    saBefore    = saBalance;
+        STAmount const saBefore = saBalance;
 
-        saBalance   -= saAmount;
+        saBalance -= saAmount;
 
         JLOG (j.trace()) << "rippleCredit: " <<
             to_string (uSenderID) <<
@@ -1285,7 +1291,9 @@ rippleSend (ApplyView& view,
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
-        rippleCredit (view, uSenderID, uReceiverID, saAmount, false, j);
+        auto const ter = rippleCredit (view, uSenderID, uReceiverID, saAmount, false, j);
+        if (view.rules().enabled(featureDeletableAccounts) && ter != tesSUCCESS)
+            return ter;
         saActual = saAmount;
         return tesSUCCESS;
     }
@@ -1450,10 +1458,13 @@ updateTrustLine (
     STAmount const& after,
     beast::Journal j)
 {
+    if (!state)
+        return false;
     std::uint32_t const flags (state->getFieldU32 (sfFlags));
 
     auto sle = view.peek (keylet::account(sender));
-    assert (sle);
+    if (! sle)
+        return false;
 
     // YYY Could skip this if rippling in reverse.
     if (before > beast::zero
@@ -1488,7 +1499,6 @@ updateTrustLine (
             && !(flags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)))
             return true;
     }
-
     return false;
 }
 
@@ -1519,12 +1529,14 @@ issueIOU (ApplyView& view,
         // NIKB TODO: The limit uses the receiver's account as the issuer and
         // this is unnecessarily inefficient as copying which could be avoided
         // is now required. Consider available options.
-        STAmount limit({issue.currency, account});
+        STAmount const limit({issue.currency, account});
         STAmount final_balance = amount;
 
         final_balance.setIssuer (noAccount());
 
-        auto receiverAccount = view.peek (keylet::account(account));
+        auto const receiverAccount = view.peek (keylet::account(account));
+        if (! receiverAccount)
+            return tefINTERNAL;
 
         bool noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
 
@@ -1645,8 +1657,10 @@ transferXRP (ApplyView& view,
     assert (from != to);
     assert (amount.native ());
 
-    SLE::pointer sender = view.peek (keylet::account(from));
-    SLE::pointer receiver = view.peek (keylet::account(to));
+    SLE::pointer const sender = view.peek (keylet::account(from));
+    SLE::pointer const receiver = view.peek (keylet::account(to));
+    if (!sender || !receiver)
+        return tefINTERNAL;
 
     JLOG (j.trace()) << "transferXRP: " <<
         to_string (from) <<  " -> " << to_string (to) <<

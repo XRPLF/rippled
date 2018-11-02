@@ -51,9 +51,6 @@ uint256
 getLedgerFeeIndex ();
 
 uint256
-getAccountRootIndex (AccountID const& account);
-
-uint256
 getGeneratorIndex (AccountID const& uGeneratorID);
 
 uint256
@@ -203,7 +200,7 @@ struct quality_t
 };
 static quality_t const quality {};
 
-/** The directry for the next lower quality */
+/** The directory for the next lower quality */
 struct next_t
 {
     explicit next_t() = default;

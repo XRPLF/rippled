@@ -103,7 +103,7 @@ ApplyContext::checkInvariantsHelper(
                     std::shared_ptr <SLE const> const& before,
                     std::shared_ptr <SLE const> const& after)
                 {
-                    (..., std::get<Is>(checkers).visitEntry(index, isDelete, before, after));
+                    (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
                 });
 
             // Note: do not replace this logic with a `...&&` fold expression.
@@ -112,7 +112,7 @@ ApplyContext::checkInvariantsHelper(
             // message won't be. Every failed invariant should write to the log,
             // not just the first one.
             std::array<bool, sizeof...(Is)> finalizers{
-                {std::get<Is>(checkers).finalize(tx, result, fee, journal)...}};
+                {std::get<Is>(checkers).finalize(tx, result, fee, *view_, journal)...}};
 
             // call each check's finalizer to see that it passes
             if (! std::all_of( finalizers.cbegin(), finalizers.cend(),

@@ -22,12 +22,88 @@
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 
+#include <boost/container/flat_set.hpp>
+
 namespace ripple {
 
 namespace test {
 
 class AccountTx_test : public beast::unit_test::suite
 {
+    // A data structure used to describe the basic structure of a
+    // transactions array node as returned by the account_tx RPC command.
+    struct NodeSanity
+    {
+        int const index;
+        Json::StaticString const& txType;
+        boost::container::flat_set<std::string> created;
+        boost::container::flat_set<std::string> deleted;
+        boost::container::flat_set<std::string> modified;
+
+        NodeSanity(
+            int idx,
+            Json::StaticString const& t,
+            std::initializer_list<char const*> c,
+            std::initializer_list<char const*> d,
+            std::initializer_list<char const*> m)
+            : index(idx), txType(t)
+        {
+            auto buildSet = [](auto&& init){
+                boost::container::flat_set<std::string> r;
+                r.reserve(init.size());
+                for(auto&& s : init)
+                    r.insert(s);
+                return r;
+            };
+
+            created = buildSet(c);
+            deleted = buildSet(d);
+            modified = buildSet(m);
+        }
+    };
+
+    // A helper method tests can use to validate returned JSON vs NodeSanity.
+    void
+    checkSanity (Json::Value const& txNode, NodeSanity const& sane)
+    {
+        BEAST_EXPECT(txNode[jss::validated].asBool() == true);
+        BEAST_EXPECT(
+            txNode[jss::tx][sfTransactionType.jsonName].asString() ==
+            sane.txType);
+
+        // Make sure all of the expected node types are present.
+        boost::container::flat_set<std::string> createdNodes;
+        boost::container::flat_set<std::string> deletedNodes;
+        boost::container::flat_set<std::string> modifiedNodes;
+
+        for (Json::Value const& metaNode :
+            txNode[jss::meta][sfAffectedNodes.jsonName])
+        {
+            if (metaNode.isMember (sfCreatedNode.jsonName))
+                createdNodes.insert (
+                    metaNode[sfCreatedNode.jsonName]
+                        [sfLedgerEntryType.jsonName].asString());
+
+            else if (metaNode.isMember (sfDeletedNode.jsonName))
+                deletedNodes.insert (
+                    metaNode[sfDeletedNode.jsonName]
+                        [sfLedgerEntryType.jsonName].asString());
+
+            else if (metaNode.isMember (sfModifiedNode.jsonName))
+                modifiedNodes.insert (
+                    metaNode[sfModifiedNode.jsonName]
+                        [sfLedgerEntryType.jsonName].asString());
+
+            else
+                fail ("Unexpected or unlabeled node type in metadata.",
+                    __FILE__, __LINE__);
+        }
+
+        BEAST_EXPECT(createdNodes == sane.created);
+        BEAST_EXPECT(deletedNodes == sane.deleted);
+        BEAST_EXPECT(modifiedNodes == sane.modified);
+    };
+
     void
     testParameters()
     {
@@ -342,75 +418,6 @@ class AccountTx_test : public beast::unit_test::suite
 
         // Do a sanity check on each returned transaction.  They should
         // be returned in the reverse order of application to the ledger.
-        struct NodeSanity
-        {
-            int const index;
-            Json::StaticString const& txType;
-            std::initializer_list<char const*> created;
-            std::initializer_list<char const*> deleted;
-            std::initializer_list<char const*> modified;
-        };
-
-       auto checkSanity = [this] (
-            Json::Value const& txNode, NodeSanity const& sane)
-        {
-            BEAST_EXPECT(txNode[jss::validated].asBool() == true);
-            BEAST_EXPECT(
-                txNode[jss::tx][sfTransactionType.jsonName].asString() ==
-                sane.txType);
-
-            // Make sure all of the expected node types are present.
-            std::vector<std::string> createdNodes {};
-            std::vector<std::string> deletedNodes {};
-            std::vector<std::string> modifiedNodes{};
-
-            for (Json::Value const& metaNode :
-                txNode[jss::meta][sfAffectedNodes.jsonName])
-            {
-                if (metaNode.isMember (sfCreatedNode.jsonName))
-                    createdNodes.push_back (
-                        metaNode[sfCreatedNode.jsonName]
-                            [sfLedgerEntryType.jsonName].asString());
-
-                else if (metaNode.isMember (sfDeletedNode.jsonName))
-                    deletedNodes.push_back (
-                        metaNode[sfDeletedNode.jsonName]
-                            [sfLedgerEntryType.jsonName].asString());
-
-                else if (metaNode.isMember (sfModifiedNode.jsonName))
-                    modifiedNodes.push_back (
-                        metaNode[sfModifiedNode.jsonName]
-                            [sfLedgerEntryType.jsonName].asString());
-
-                else
-                    fail ("Unexpected or unlabeled node type in metadata.",
-                        __FILE__, __LINE__);
-            }
-
-            auto cmpNodeTypes = [this] (
-                char const* const errMsg,
-                std::vector<std::string>& got,
-                std::initializer_list<char const*> expList)
-            {
-                std::sort (got.begin(), got.end());
-
-                std::vector<std::string> exp;
-                exp.reserve (expList.size());
-                for (char const* nodeType : expList)
-                    exp.push_back (nodeType);
-                std::sort (exp.begin(), exp.end());
-
-                if (got != exp)
-                {
-                    fail (errMsg, __FILE__, __LINE__);
-                }
-            };
-
-            cmpNodeTypes ("Created mismatch", createdNodes, sane.created);
-            cmpNodeTypes ("Deleted mismatch", deletedNodes, sane.deleted);
-            cmpNodeTypes ("Modified mismatch", modifiedNodes, sane.modified);
-        };
-
         static const NodeSanity sanity[]
         {
             //    txType,                    created,                                                    deleted,                          modified
@@ -447,12 +454,107 @@ class AccountTx_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testAccountDelete()
+    {
+        // Verify that if an account is resurrected then the account_tx RPC
+        // command still recovers all transactions on that account before
+        // and after resurrection.
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        Env env(*this);
+        Account const alice {"alice"};
+        Account const becky {"becky"};
+
+        env.fund(XRP(10000), alice, becky);
+        env.close();
+
+        // Verify that becky's account root is present.
+        Keylet const beckyAcctKey {keylet::account (becky.id())};
+        BEAST_EXPECT (env.closed()->exists (beckyAcctKey));
+
+        // becky does an AccountSet .
+        env (noop (becky));
+
+        // Close enough ledgers to be able to delete becky's account.
+        std::uint32_t const ledgerCount {
+            env.current()->seq() + 257 - env.seq (becky)};
+
+        for (std::uint32_t i = 0; i < ledgerCount; ++i)
+            env.close();
+
+        auto const beckyPreDelBalance {env.balance (becky)};
+
+        auto const acctDelFee {drops (env.current()->fees().increment)};
+        env (acctdelete (becky, alice), fee (acctDelFee));
+        env.close();
+
+        // Verify that becky's account root is gone.
+        BEAST_EXPECT (! env.closed()->exists (beckyAcctKey));
+
+        // All it takes is a large enough XRP payment to resurrect
+        // becky's account.  Try too small a payment.
+        env (pay (alice, becky, XRP (19)), ter (tecNO_DST_INSUF_XRP));
+        env.close();
+
+        // Actually resurrect becky's account.
+        env (pay (alice, becky, XRP (45)));
+        env.close();
+
+        // becky's account root should be back.
+        BEAST_EXPECT (env.closed()->exists (beckyAcctKey));
+        BEAST_EXPECT (env.balance (becky) == XRP (45));
+
+        // becky pays alice.
+        env (pay (becky, alice, XRP(20)));
+        env.close();
+
+        // Setup is done.  Look at the transactions returned by account_tx.
+        // Verify that account_tx locates all of becky's transactions.
+        Json::Value params;
+        params[jss::account] = becky.human();
+        params[jss::ledger_index_min] = -1;
+        params[jss::ledger_index_max] = -1;
+
+        Json::Value const result {
+            env.rpc("json", "account_tx", to_string(params))};
+
+        BEAST_EXPECT (result[jss::result][jss::status] == "success");
+        BEAST_EXPECT (result[jss::result][jss::transactions].isArray());
+
+        Json::Value const& txs {result[jss::result][jss::transactions]};
+
+        // Do a sanity check on each returned transaction.  They should
+        // be returned in the reverse order of application to the ledger.
+        static const NodeSanity sanity[]
+        {
+                                    //   txType,                    created,            deleted,            modified
+/* becky pays alice              */ { 0, jss::Payment,              {},                 {},                 {jss::AccountRoot, jss::AccountRoot}},
+/* alice resurrects becky's acct */ { 1, jss::Payment,              {jss::AccountRoot}, {},                 {jss::AccountRoot}},
+/* becky deletes her account     */ { 2, jss::AccountDelete,        {},                 {jss::AccountRoot}, {jss::AccountRoot}},
+/* becky's noop                  */ { 3, jss::AccountSet,           {},                 {},                 {jss::AccountRoot}},
+/* "fund" sets flags             */ { 4, jss::AccountSet,           {},                 {},                 {jss::AccountRoot}},
+/* "fund" creates becky's acct   */ { 5, jss::Payment,              {jss::AccountRoot}, {},                 {jss::AccountRoot}}
+        };
+
+        BEAST_EXPECT (std::extent<decltype (sanity)>::value ==
+            result[jss::result][jss::transactions].size());
+
+        for (unsigned int index {0};
+            index < std::extent<decltype (sanity)>::value; ++index)
+        {
+            checkSanity (txs[index], sanity[index]);
+        }
+    }
+
 public:
     void
     run() override
     {
         testParameters();
         testContents();
+        testAccountDelete();
     }
 };
 BEAST_DEFINE_TESTSUITE(AccountTx, app, ripple);

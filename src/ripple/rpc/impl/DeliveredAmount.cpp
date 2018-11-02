@@ -57,7 +57,8 @@ insertDeliveredAmount(
     {
         TxType const tt{serializedTx->getTxnType()};
         if (tt != ttPAYMENT &&
-            tt != ttCHECK_CASH)
+            tt != ttCHECK_CASH &&
+            tt != ttACCOUNT_DELETE)
             return;
 
         if (tt == ttCHECK_CASH &&
