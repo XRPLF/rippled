@@ -288,6 +288,19 @@ ManifestCache::applyManifest (Manifest m)
 
     bool const revoked = m.revoked();
 
+    if (revoked)
+    {
+        /*
+            A validator master key has been compromised, so its manifests
+            are now untrustworthy.  In order to prevent us from accepting
+            a forged manifest signed by the compromised master key, store
+            this manifest, which has the highest possible sequence number
+            and therefore can't be superseded by a forged one.
+        */
+        if (auto stream = j_.warn())
+            logMftAct(stream, "Revoked", m.masterKey, m.sequence);
+    }
+
     if (iter == map_.end ())
     {
         /*
@@ -301,7 +314,8 @@ ManifestCache::applyManifest (Manifest m)
         if (! revoked)
             signingToMasterKeys_[m.signingKey] = m.masterKey;
 
-        map_.emplace (std::make_pair(m.masterKey, std::move (m)));
+        auto masterKey = m.masterKey;
+        map_.emplace(std::move(masterKey), std::move(m));
     }
     else
     {
@@ -319,19 +333,6 @@ ManifestCache::applyManifest (Manifest m)
             signingToMasterKeys_[m.signingKey] = m.masterKey;
 
         iter->second = std::move (m);
-    }
-
-    if (revoked)
-    {
-        /*
-            A validator master key has been compromised, so its manifests
-            are now untrustworthy.  In order to prevent us from accepting
-            a forged manifest signed by the compromised master key, store
-            this manifest, which has the highest possible sequence number
-            and therefore can't be superseded by a forged one.
-        */
-        if (auto stream = j_.warn())
-            logMftAct(stream, "Revoked", m.masterKey, m.sequence);
     }
 
     return ManifestDisposition::accepted;
