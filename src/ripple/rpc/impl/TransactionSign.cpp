@@ -374,8 +374,8 @@ transactionPreProcessImpl (
     if (!verify && !tx_json.isMember (jss::Sequence))
         return RPC::missing_field_error ("tx_json.Sequence");
 
-    std::shared_ptr<SLE const> sle = cachedRead(*ledger,
-        keylet::account(srcAddressID).key, ltACCOUNT_ROOT);
+    std::shared_ptr<SLE const> sle = ledger->read(
+            keylet::account(srcAddressID));
 
     if (verify && !sle)
     {
@@ -981,12 +981,11 @@ Json::Value transactionSignFor (
         return preprocResult.first;
 
     {
+        std::shared_ptr<SLE const> account_state = ledger->read(
+                keylet::account(*signerAccountID));
         // Make sure the account and secret belong together.
         auto const err = acctMatchesPubKey (
-            cachedRead(
-                *ledger,
-                keylet::account(*signerAccountID).key,
-                ltACCOUNT_ROOT),
+            account_state,
             *signerAccountID,
             multiSignPubKey);
 
@@ -1060,8 +1059,8 @@ Json::Value transactionSubmitMultiSigned (
 
     auto const srcAddressID = txJsonResult.second;
 
-    std::shared_ptr<SLE const> sle = cachedRead(*ledger,
-        keylet::account(srcAddressID).key, ltACCOUNT_ROOT);
+    std::shared_ptr<SLE const> sle = ledger->read(
+            keylet::account(srcAddressID));
 
     if (!sle)
     {
