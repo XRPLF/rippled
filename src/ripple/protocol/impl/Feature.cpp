@@ -118,6 +118,7 @@ detail::supportedAmendments ()
         "MultiSignReserve",
         "fixTakerDryOfferRemoval",
         "fixMasterKeyAsRegularKey",
+        "DeletableAccounts",
     };
     return supported;
 }
@@ -175,5 +176,6 @@ uint256 const fix1578 = *getRegisteredFeature("fix1578");
 uint256 const featureMultiSignReserve = *getRegisteredFeature("MultiSignReserve");
 uint256 const fixTakerDryOfferRemoval = *getRegisteredFeature("fixTakerDryOfferRemoval");
 uint256 const fixMasterKeyAsRegularKey = *getRegisteredFeature("fixMasterKeyAsRegularKey");
+uint256 const featureDeletableAccounts = *getRegisteredFeature("DeletableAccounts");
 
 } // ripple

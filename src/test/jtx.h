@@ -24,6 +24,7 @@
 
 #include <ripple/json/to_string.h>
 #include <test/jtx/Account.h>
+#include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/delivermin.h>

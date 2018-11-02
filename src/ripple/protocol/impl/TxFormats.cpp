@@ -217,6 +217,13 @@ TxFormats::TxFormats ()
         },
         commonFields);
 
+    add (jss::AccountDelete, ttACCOUNT_DELETE,
+        {
+            { sfDestination,         soeREQUIRED },
+            { sfDestinationTag,      soeOPTIONAL },
+        },
+        commonFields);
+
     add (jss::DepositPreauth, ttDEPOSIT_PREAUTH,
         {
             { sfAuthorize,           soeOPTIONAL },

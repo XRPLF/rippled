@@ -42,6 +42,12 @@ public:
     preclaim(PreclaimContext const& ctx);
 
     TER doApply () override;
+
+    // Interface used by DeleteAccount
+    static
+    TER
+    removeDepositPreauthFromLedger (Application& app, ApplyView& view,
+        uint256 const& delIndex, beast::Journal j);
 };
 
 } // ripple

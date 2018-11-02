@@ -522,7 +522,7 @@ class Freeze_test : public beast::unit_test::suite
             env.meta()->getJson(JsonOptions::none)[sfAffectedNodes.fieldName];
         if(! BEAST_EXPECT(checkArraySize(affected, 8u)))
             return;
-        auto created = affected[5u][sfCreatedNode.fieldName];
+        auto created = affected[0u][sfCreatedNode.fieldName];
         BEAST_EXPECT(created[sfNewFields.fieldName][jss::Account] == A2.human());
         env.close();
 

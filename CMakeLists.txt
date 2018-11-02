@@ -2064,6 +2064,7 @@ else ()
     src/ripple/app/tx/impl/CreateCheck.cpp
     src/ripple/app/tx/impl/CreateOffer.cpp
     src/ripple/app/tx/impl/CreateTicket.cpp
+    src/ripple/app/tx/impl/DeleteAccount.cpp
     src/ripple/app/tx/impl/DepositPreauth.cpp
     src/ripple/app/tx/impl/Escrow.cpp
     src/ripple/app/tx/impl/InvariantCheck.cpp
@@ -2291,6 +2292,7 @@ else ()
        nounity, test sources:
          subdir: app
     #]===============================]
+    src/test/app/AccountDelete_test.cpp
     src/test/app/AccountTxPaging_test.cpp
     src/test/app/AmendmentTable_test.cpp
     src/test/app/Check_test.cpp
@@ -2430,6 +2432,7 @@ else ()
     src/test/jtx/impl/JSONRPCClient.cpp
     src/test/jtx/impl/ManualTimeKeeper.cpp
     src/test/jtx/impl/WSClient.cpp
+    src/test/jtx/impl/acctdelete.cpp
     src/test/jtx/impl/amount.cpp
     src/test/jtx/impl/balance.cpp
     src/test/jtx/impl/delivermin.cpp

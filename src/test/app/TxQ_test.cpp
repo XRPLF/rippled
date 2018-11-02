@@ -524,7 +524,7 @@ public:
         env.close();
         // alice's transaction is still hanging around
         checkMetrics(env, 1, 8, 5, 4, 256, 700 * 256);
-        BEAST_EXPECT(env.seq(alice) == 1);
+        BEAST_EXPECT(env.seq(alice) == 3);
 
         // Keep alice's transaction waiting.
         env(noop(bob), fee(8000), queued);
@@ -543,12 +543,12 @@ public:
         // into the ledger, so her transaction is gone,
         // though one of felicia's is still in the queue.
         checkMetrics(env, 1, 10, 6, 5, 256, 700 * 256);
-        BEAST_EXPECT(env.seq(alice) == 1);
+        BEAST_EXPECT(env.seq(alice) == 3);
 
         env.close();
         // And now the queue is empty
         checkMetrics(env, 0, 12, 1, 6, 256, 800 * 256);
-        BEAST_EXPECT(env.seq(alice) == 1);
+        BEAST_EXPECT(env.seq(alice) == 3);
     }
 
     void testZeroFeeTxn()

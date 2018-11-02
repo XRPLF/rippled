@@ -67,6 +67,12 @@ public:
     TER doApply () override;
     void preCompute() override;
 
+    // Interface used by DeleteAccount
+    static
+    TER
+    removeSignersFromLedger (
+        Application& app, ApplyView& view, AccountID const& account);
+
 private:
     static
     std::tuple<NotTEC, std::uint32_t,
@@ -85,8 +91,11 @@ private:
     TER replaceSignerList ();
     TER destroySignerList ();
 
-    TER removeSignersFromLedger (Keylet const& accountKeylet,
-        Keylet const& ownerDirKeylet, Keylet const& signerListKeylet);
+    static
+    TER removeSignersFromLedger (
+        Application& app, ApplyView& view, Keylet const& accountKeylet,
+            Keylet const& ownerDirKeylet, Keylet const& signerListKeylet);
+
     void writeSignersToSLE (
         SLE::pointer const& ledgerEntry, std::uint32_t flags) const;
 

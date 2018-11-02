@@ -152,7 +152,7 @@ ApplyStateTable::apply (OpenView& to,
             if (type == &sfDeletedNode)
             {
                 assert (origNode && curNode);
-                threadOwners (to, meta, origNode, newMod, j);
+                threadOwners (to, meta, origNode, newMod, tx.getTxnType(), j);
 
                 STObject prevs (sfPreviousFields);
                 for (auto const& obj : *origNode)
@@ -212,7 +212,7 @@ ApplyStateTable::apply (OpenView& to,
             else if (type == &sfCreatedNode) // if created, thread to owner(s)
             {
                 assert (curNode && !origNode);
-                threadOwners (to, meta, curNode, newMod, j);
+                threadOwners (to, meta, curNode, newMod, tx.getTxnType(), j);
 
                 if (curNode->isThreadedType ()) // always thread to self
                     threadItem (meta, curNode);
@@ -544,7 +544,7 @@ ApplyStateTable::threadItem (TxMeta& meta,
 
 std::shared_ptr<SLE>
 ApplyStateTable::getForMod (ReadView const& base,
-    key_type const& key, Mods& mods, beast::Journal j)
+    key_type const& key, Mods& mods, TxType txType, beast::Journal j)
 {
     {
         auto miter = mods.find (key);
@@ -561,10 +561,11 @@ ApplyStateTable::getForMod (ReadView const& base,
             auto const& item = iter->second;
             if (item.first == Action::erase)
             {
-                // VFALCO We need to think about throwing
-                //        an exception or calling LogicError
-                JLOG(j.fatal()) <<
-                    "Trying to thread to deleted node";
+                if (txType != ttACCOUNT_DELETE)
+                {
+                    JLOG(j.fatal()) <<
+                        "Trying to thread to deleted node";
+                }
                 return nullptr;
             }
             if (item.first != Action::cache)
@@ -591,18 +592,18 @@ ApplyStateTable::getForMod (ReadView const& base,
 void
 ApplyStateTable::threadTx (ReadView const& base,
     TxMeta& meta, AccountID const& to,
-        Mods& mods, beast::Journal j)
+        Mods& mods, TxType txType, beast::Journal j)
 {
     auto const sle = getForMod(base,
-        keylet::account(to).key, mods, j);
-    assert(sle);
+        keylet::account(to).key, mods, txType, j);
     if (! sle)
     {
-        // VFALCO We need to think about throwing
-        //        an exception or calling LogicError
-        JLOG(j.fatal()) <<
-            "Threading to non-existent account: " <<
-                toBase58(to);
+        if (txType != ttACCOUNT_DELETE)
+        {
+            JLOG(j.fatal()) <<
+                "Threading to non-existent account: " <<
+                    toBase58(to);
+        }
         return;
     }
     threadItem (meta, sle);
@@ -612,7 +613,7 @@ void
 ApplyStateTable::threadOwners (ReadView const& base,
     TxMeta& meta, std::shared_ptr<
         SLE const> const& sle, Mods& mods,
-            beast::Journal j)
+            TxType txType, beast::Journal j)
 {
     switch(sle->getType())
     {
@@ -623,27 +624,27 @@ ApplyStateTable::threadOwners (ReadView const& base,
     }
     case ltESCROW:
     {
-        threadTx (base, meta, (*sle)[sfAccount], mods, j);
-        threadTx (base, meta, (*sle)[sfDestination], mods, j);
+        threadTx (base, meta, (*sle)[sfAccount], mods, txType, j);
+        threadTx (base, meta, (*sle)[sfDestination], mods, txType, j);
         break;
     }
     case ltPAYCHAN:
-        {
-            threadTx (base, meta, (*sle)[sfAccount], mods, j);
-            threadTx (base, meta, (*sle)[sfDestination], mods, j);
-            break;
-        }
+    {
+        threadTx (base, meta, (*sle)[sfAccount], mods, txType, j);
+        threadTx (base, meta, (*sle)[sfDestination], mods, txType, j);
+        break;
+    }
     case ltRIPPLE_STATE:
     {
-        threadTx (base, meta, (*sle)[sfLowLimit].getIssuer(), mods, j);
-        threadTx (base, meta, (*sle)[sfHighLimit].getIssuer(), mods, j);
+        threadTx (base, meta, (*sle)[sfLowLimit].getIssuer(), mods, txType, j);
+        threadTx (base, meta, (*sle)[sfHighLimit].getIssuer(), mods, txType, j);
         break;
     }
     default:
     {
         // If sfAccount is present, thread to that account
         if ((*sle)[~sfAccount])
-            threadTx (base, meta, (*sle)[sfAccount], mods, j);
+            threadTx (base, meta, (*sle)[sfAccount], mods, txType, j);
         break;
     }
     }

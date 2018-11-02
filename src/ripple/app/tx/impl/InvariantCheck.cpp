@@ -289,13 +289,27 @@ AccountRootsNotDeleted::visitEntry(
     std::shared_ptr <SLE const> const&)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
-        accountDeleted_ = true;
+        accountDeleted_++;
 }
 
 bool
-AccountRootsNotDeleted::finalize(STTx const&, TER const, XRPAmount const, beast::Journal const& j)
+AccountRootsNotDeleted::finalize(STTx const& tx, TER const result, XRPAmount const, beast::Journal const& j)
 {
-    if (! accountDeleted_)
+    if (tx.getTxnType() == ttACCOUNT_DELETE && result == tesSUCCESS)
+    {
+        if (accountDeleted_ == 1)
+            return true;
+
+        if (accountDeleted_ == 0)
+            JLOG(j.fatal()) << "Invariant failed: account deletion "
+                               "succeeded without deleting an account";
+        else
+            JLOG(j.fatal()) << "Invariant failed: account deletion "
+                               "succeeded but deleted multiple accounts!";
+        return false;
+    }
+
+    if (accountDeleted_ == 0)
         return true;
 
     JLOG(j.fatal()) << "Invariant failed: an account root was deleted";

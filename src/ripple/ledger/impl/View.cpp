@@ -122,16 +122,12 @@ void addRaw (LedgerInfo const& info, Serializer& s)
 }
 
 bool
-isGlobalFrozen (ReadView const& view,
-    AccountID const& issuer)
+isGlobalFrozen (ReadView const& view, AccountID const& issuer)
 {
-    // VFALCO Perhaps this should assert
     if (isXRP (issuer))
         return false;
-    auto const sle =
-        view.read(keylet::account(issuer));
-    if (sle && sle->isFlag (lsfGlobalFreeze))
-        return true;
+    if (auto const sle = view.read(keylet::account(issuer)))
+        return sle->isFlag (lsfGlobalFreeze);
     return false;
 }
 
@@ -548,7 +544,9 @@ dirIsEmpty (ReadView const& view,
         return true;
     if (! sleNode->getFieldV256 (sfIndexes).empty ())
         return false;
-    // If there's another page, it must be non-empty
+    // The first page of a directory may legitimately be empty even if there
+    // are other pages (the first page is the anchor page) so check to see if
+    // there is another page. If there is, the directory isn't empty.
     return sleNode->getFieldU64 (sfIndexNext) == 0;
 }
 

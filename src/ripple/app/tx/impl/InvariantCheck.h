@@ -134,7 +134,7 @@ public:
  */
 class AccountRootsNotDeleted
 {
-    bool accountDeleted_ = false;
+    std::uint32_t accountDeleted_ = 0;
 
 public:
     void

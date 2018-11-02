@@ -143,6 +143,18 @@ SetSignerList::preCompute()
     return Transactor::preCompute();
 }
 
+TER
+SetSignerList::removeSignersFromLedger (
+    Application& app, ApplyView& view, AccountID const& account)
+{
+    auto const accountKeylet = keylet::account (account);
+    auto const ownerDirKeylet = keylet::ownerDir (account);
+    auto const signerListKeylet = keylet::signers (account);
+
+    return removeSignersFromLedger (
+        app, view, accountKeylet, ownerDirKeylet, signerListKeylet);
+}
+
 NotTEC
 SetSignerList::validateQuorumAndSignerEntries (
     std::uint32_t quorum,
@@ -212,7 +224,7 @@ SetSignerList::replaceSignerList ()
     // old signer list.  May reduce the reserve, so this is done before
     // checking the reserve.
     if (TER const ter = removeSignersFromLedger (
-        accountKeylet, ownerDirKeylet, signerListKeylet))
+        ctx_.app, view(), accountKeylet, ownerDirKeylet, signerListKeylet))
             return ter;
 
     auto const sle = view().peek(accountKeylet);
@@ -276,16 +288,17 @@ SetSignerList::destroySignerList ()
     auto const ownerDirKeylet = keylet::ownerDir (account_);
     auto const signerListKeylet = keylet::signers (account_);
     return removeSignersFromLedger(
-        accountKeylet, ownerDirKeylet, signerListKeylet);
+        ctx_.app, view(), accountKeylet, ownerDirKeylet, signerListKeylet);
 }
 
 TER
-SetSignerList::removeSignersFromLedger (Keylet const& accountKeylet,
+SetSignerList::removeSignersFromLedger (
+    Application& app, ApplyView& view, Keylet const& accountKeylet,
         Keylet const& ownerDirKeylet, Keylet const& signerListKeylet)
 {
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    SLE::pointer signers = view().peek (signerListKeylet);
+    SLE::pointer signers = view.peek (signerListKeylet);
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
     if (!signers)
@@ -305,17 +318,17 @@ SetSignerList::removeSignersFromLedger (Keylet const& accountKeylet,
     // Remove the node from the account directory.
     auto const hint = (*signers)[sfOwnerNode];
 
-    if (! ctx_.view().dirRemove(
+    if (! view.dirRemove(
             ownerDirKeylet, hint, signerListKeylet.key, false))
     {
         return tefBAD_LEDGER;
     }
 
-    auto viewJ = ctx_.app.journal("View");
+    auto viewJ = app.journal("View");
     adjustOwnerCount(
-        view(), view().peek(accountKeylet), removeFromOwnerCount, viewJ);
+        view, view.peek(accountKeylet), removeFromOwnerCount, viewJ);
 
-    ctx_.view().erase (signers);
+    view.erase (signers);
 
     return tesSUCCESS;
 }

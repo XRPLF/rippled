@@ -371,6 +371,19 @@ public:
         return dirRemove (directory, page, key.key, keepRoot);
     }
     /** @} */
+
+    /** Remove the specified directory, if it is empty.
+
+        @param directory the identifier of the directory node to be deleted
+        @return \c true if the directory was found was succesfully deleted
+                \c false otherwise.
+
+        @note The function should only be called with the root entry (i.e. with
+              the first page) of a directory. Calling it with an intermediate
+              page can result in undefined behavior.
+    */
+    bool
+    dirDelete(Keylet const& directory);
 };
 
 } // ripple

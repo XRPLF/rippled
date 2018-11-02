@@ -86,6 +86,7 @@ public:
             Env env(*this, tweakedFeatures);
 
             env.fund(XRP(10000), gw, alice, bob, carol);
+            env.close();
 
             env.trust(alice["USD"](100), bob);
             env.trust(bob["USD"](100), carol);
