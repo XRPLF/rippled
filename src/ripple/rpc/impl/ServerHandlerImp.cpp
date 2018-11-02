@@ -779,15 +779,15 @@ ServerHandlerImp::processRequest (Port const& port,
                 result["code"] = result[jss::error_code];
                 result["message"] = result[jss::error_message];
                 result.removeMember(jss::error_message);
-                r[jss::error] = std::move(result);
                 JLOG (m_journal.debug())  <<
                     "rpcError: " << result [jss::error] <<
                     ": " << result [jss::error_message];
+                r[jss::error] = std::move(result);
             }
             else
             {
-                 result[jss::status]  = jss::success;
-                 r[jss::result] = std::move(result);
+                result[jss::status]  = jss::success;
+                r[jss::result] = std::move(result);
             }
         }
         else
