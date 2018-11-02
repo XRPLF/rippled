@@ -29,6 +29,7 @@
 #include <ripple/app/tx/impl/CreateCheck.cpp>
 #include <ripple/app/tx/impl/CreateOffer.cpp>
 #include <ripple/app/tx/impl/CreateTicket.cpp>
+#include <ripple/app/tx/impl/DeleteAccount.cpp>
 #include <ripple/app/tx/impl/DepositPreauth.cpp>
 #include <ripple/app/tx/impl/Escrow.cpp>
 #include <ripple/app/tx/impl/InvariantCheck.cpp>

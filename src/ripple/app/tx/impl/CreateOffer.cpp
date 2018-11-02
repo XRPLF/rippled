@@ -151,6 +151,8 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     auto const cancelSequence = ctx.tx[~sfOfferSequence];
 
     auto const sleCreator = ctx.view.read(keylet::account(id));
+    if (! sleCreator)
+        return terNO_ACCOUNT;
 
     std::uint32_t const uAccountSequence = sleCreator->getFieldU32(sfSequence);
 
@@ -1310,6 +1312,9 @@ CreateOffer::applyGuts (Sandbox& sb, Sandbox& sbCancel)
     }
 
     auto const sleCreator = sb.peek (keylet::account(account_));
+    if (! sleCreator)
+        return { tefINTERNAL, false };
+
     {
         XRPAmount reserve = ctx_.view().fees().accountReserve(
             sleCreator->getFieldU32 (sfOwnerCount) + 1);

@@ -152,6 +152,7 @@ enum TEFcodes : TERUnderlyingType
     tefNOT_MULTI_SIGNING,
     tefBAD_AUTH_MASTER,
     tefINVARIANT_FAILED,
+    tefTOO_BIG,
 };
 
 //------------------------------------------------------------------------------
@@ -266,6 +267,8 @@ enum TECcodes : TERUnderlyingType
     tecEXPIRED                  = 148,
     tecDUPLICATE                = 149,
     tecKILLED                   = 150,
+    tecHAS_OBLIGATIONS          = 151,
+    tecTOO_SOON                 = 152,
 };
 
 //------------------------------------------------------------------------------

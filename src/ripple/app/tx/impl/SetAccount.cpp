@@ -171,8 +171,9 @@ SetAccount::preclaim(PreclaimContext const& ctx)
 
     std::uint32_t const uTxFlags = ctx.tx.getFlags();
 
-    auto const sle = ctx.view.read(
-        keylet::account(id));
+    auto const sle = ctx.view.read(keylet::account(id));
+    if (! sle)
+        return terNO_ACCOUNT;
 
     std::uint32_t const uFlagsIn = sle->getFieldU32(sfFlags);
 
@@ -201,6 +202,8 @@ TER
 SetAccount::doApply ()
 {
     auto const sle = view().peek(keylet::account(account_));
+    if (! sle)
+        return tefINTERNAL;
 
     std::uint32_t const uFlagsIn = sle->getFieldU32 (sfFlags);
     std::uint32_t uFlagsOut = uFlagsIn;

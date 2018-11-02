@@ -122,6 +122,70 @@ ApplyView::dirAdd (
 }
 
 bool
+ApplyView::emptyDirDelete(Keylet const& directory)
+{
+    auto node = peek(directory);
+
+    if (!node)
+        return false;
+
+    // Verify that the passed directory node is the directory root.
+    if (directory.type != ltDIR_NODE ||
+        node->getFieldH256(sfRootIndex) != directory.key)
+    {
+        assert (!"emptyDirDelete() called with wrong node type");
+        return false;
+    }
+
+    // The directory still contains entries and so it cannot be removed
+    if (!node->getFieldV256(sfIndexes).empty())
+        return false;
+
+    std::uint64_t constexpr rootPage = 0;
+    auto prevPage = node->getFieldU64(sfIndexPrevious);
+    auto nextPage = node->getFieldU64(sfIndexNext);
+
+    if (nextPage == rootPage && prevPage != rootPage)
+        LogicError ("Directory chain: fwd link broken");
+
+    if (prevPage == rootPage && nextPage != rootPage)
+        LogicError ("Directory chain: rev link broken");
+
+    // Older versions of the code would, in some cases, allow the last
+    // page to be empty. Remove such pages:
+    if (nextPage == prevPage && nextPage != rootPage)
+    {
+        auto last = peek(keylet::page(directory, nextPage));
+
+        if (!last)
+            LogicError ("Directory chain: fwd link broken.");
+
+        if (!last->getFieldV256 (sfIndexes).empty())
+            return false;
+
+        // Update the first page's linked list and
+        // mark it as updated.
+        node->setFieldU64 (sfIndexNext, rootPage);
+        node->setFieldU64 (sfIndexPrevious, rootPage);
+        update(node);
+
+        // And erase the empty last page:
+        erase(last);
+
+        // Make sure our local values reflect the
+        // updated information:
+        nextPage = rootPage;
+        prevPage = rootPage;
+    }
+
+    // If there are no other pages, erase the root:
+    if (nextPage == rootPage && prevPage == rootPage)
+        erase(node);
+
+    return true;
+}
+
+bool
 ApplyView::dirRemove (
     Keylet const& directory,
     std::uint64_t page,

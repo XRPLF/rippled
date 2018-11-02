@@ -119,6 +119,7 @@ detail::supportedAmendments ()
         "fixMasterKeyAsRegularKey",
         "fixCheckThreading",
         "fixPayChanRecipientOwnerDir",
+        "DeletableAccounts",
     };
     return supported;
 }
@@ -177,5 +178,6 @@ uint256 const fixTakerDryOfferRemoval = *getRegisteredFeature("fixTakerDryOfferR
 uint256 const fixMasterKeyAsRegularKey = *getRegisteredFeature("fixMasterKeyAsRegularKey");
 uint256 const fixCheckThreading = *getRegisteredFeature("fixCheckThreading");
 uint256 const fixPayChanRecipientOwnerDir = *getRegisteredFeature("fixPayChanRecipientOwnerDir");
+uint256 const featureDeletableAccounts = *getRegisteredFeature("DeletableAccounts");
 
 } // ripple

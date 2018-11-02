@@ -185,8 +185,10 @@ Transactor::checkFee (PreclaimContext const& ctx,
         return tesSUCCESS;
 
     auto const id = ctx.tx.getAccountID(sfAccount);
-    auto const sle = ctx.view.read(
-        keylet::account(id));
+    auto const sle = ctx.view.read(keylet::account(id));
+    if (! sle)
+        return terNO_ACCOUNT;
+
     auto const balance = (*sle)[sfBalance].xrp();
 
     if (balance < feePaid)
@@ -211,8 +213,9 @@ TER Transactor::payFee ()
 {
     auto const feePaid = calculateFeePaid(ctx_.tx);
 
-    auto const sle = view().peek(
-        keylet::account(account_));
+    auto const sle = view().peek(keylet::account(account_));
+    if (! sle)
+        return tefINTERNAL;
 
     // Deduct the fee, so it's not available during the transaction.
     // Will only write the account back if the transaction succeeds.
@@ -276,8 +279,9 @@ Transactor::checkSeq (PreclaimContext const& ctx)
 void
 Transactor::setSeq ()
 {
-    auto const sle = view().peek(
-        keylet::account(account_));
+    auto const sle = view().peek(keylet::account(account_));
+    if (! sle)
+        return;
 
     std::uint32_t const t_seq = ctx_.tx.getSequence ();
 
@@ -354,6 +358,9 @@ Transactor::checkSingleSign (PreclaimContext const& ctx)
     auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const idAccount = ctx.tx.getAccountID(sfAccount);
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
+    if (! sleAccount)
+        return terNO_ACCOUNT;
+
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
     if (ctx.view.rules().enabled(fixMasterKeyAsRegularKey))
@@ -597,6 +604,10 @@ Transactor::reset(XRPAmount fee)
 
     auto const txnAcct = view().peek(
         keylet::account(ctx_.tx.getAccountID(sfAccount)));
+    if (! txnAcct)
+        // The account should never be missing from the ledger.  But if it
+        // is missing then we can't very well charge it a fee, can we?
+        return beast::zero;
 
     auto const balance = txnAcct->getFieldAmount (sfBalance).xrp ();
 

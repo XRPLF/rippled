@@ -38,7 +38,7 @@ struct Regression_test : public beast::unit_test::suite
         env.fund(XRP(10000), "alice", gw);
         env(offer("alice", USD(10), XRP(10)), require(owners("alice", 1)));
         env(offer("alice", USD(20), XRP(10)), json(R"raw(
-                { "OfferSequence" : 2 }
+                { "OfferSequence" : 4 }
             )raw"), require(owners("alice", 1)));
     }
 
@@ -91,7 +91,7 @@ struct Regression_test : public beast::unit_test::suite
             // Specify the seq manually since the env's open ledger
             // doesn't know about this account.
             auto const jt = env.jt(noop("alice"), fee(expectedDrops),
-                seq(1));
+                seq(2));
 
             OpenView accum(&*next);
 

@@ -25,6 +25,8 @@
 
 #include <boost/utility/string_ref.hpp>
 
+#include <set>
+
 namespace ripple {
 namespace test {
 
@@ -36,31 +38,14 @@ R"json({
   "Flags" : 65536,
   "LedgerEntryType" : "Offer",
   "OwnerNode" : "0000000000000000",
-  "Sequence" : 4,
+  "Sequence" : 6,
   "TakerGets" : {
     "currency" : "USD",
     "issuer" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
     "value" : "1"
   },
   "TakerPays" : "100000000",
-  "index" : "A984D036A0E562433A8377CA57D1A1E056E58C0D04818F8DFD3A1AA3F217DD82"
-})json"
-,
-R"json({
-    "Account" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
-    "BookDirectory" : "B025997A323F5C3E03DDF1334471F5984ABDE31C59D463525D038D7EA4C68000",
-    "BookNode" : "0000000000000000",
-    "Flags" : 65536,
-    "LedgerEntryType" : "Offer",
-    "OwnerNode" : "0000000000000000",
-    "Sequence" : 5,
-    "TakerGets" : {
-        "currency" : "USD",
-        "issuer" : "r32rQHyesiTtdWFU7UJVtff4nCR5SHCbJW",
-        "value" : "1"
-    },
-    "TakerPays" : "100000000",
-    "index" : "CAFE32332D752387B01083B60CC63069BA4A969C9730836929F841450F6A718E"
+  "index" : "29665262716C19830E26AEEC0916E476FC7D8EF195FF3B4F06829E64F82A3B3E"
 })json"
 ,
 R"json({
@@ -107,6 +92,23 @@ R"json({
     },
     "LowNode" : "0000000000000000",
     "index" : "D89BC239086183EB9458C396E643795C1134963E6550E682A190A5F021766D43"
+})json"
+,
+R"json({
+    "Account" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
+    "BookDirectory" : "B025997A323F5C3E03DDF1334471F5984ABDE31C59D463525D038D7EA4C68000",
+    "BookNode" : "0000000000000000",
+    "Flags" : 65536,
+    "LedgerEntryType" : "Offer",
+    "OwnerNode" : "0000000000000000",
+    "Sequence" : 7,
+    "TakerGets" : {
+        "currency" : "USD",
+        "issuer" : "r32rQHyesiTtdWFU7UJVtff4nCR5SHCbJW",
+        "value" : "1"
+    },
+    "TakerPays" : "100000000",
+    "index" : "F03ABE26CB8C5F4AFB31A86590BD25C64C5756FCE5CE9704C27AFE291A4A29A1"
 })json"
 };
 
@@ -288,8 +290,7 @@ public:
                 auto& aobj = resp[jss::result][jss::account_objects][i];
                 aobj.removeMember("PreviousTxnID");
                 aobj.removeMember("PreviousTxnLgrSeq");
-
-                BEAST_EXPECT( aobj == bobj[i+2]);
+                BEAST_EXPECT( aobj == bobj[i+1]);
             }
         }
         // test stepped one-at-a-time with limit=1, resume from prev marker
@@ -492,7 +493,7 @@ public:
             auto const& ticket = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT (ticket[sfAccount.jsonName] == gw.human());
             BEAST_EXPECT (ticket[sfLedgerEntryType.jsonName] == jss::Ticket);
-            BEAST_EXPECT (ticket[sfSequence.jsonName].asUInt() == 9);
+            BEAST_EXPECT (ticket[sfSequence.jsonName].asUInt() == 11);
         }
         {
             // See how "deletion_blockers_only" handles gw's directory.
@@ -501,21 +502,25 @@ public:
             params[jss::deletion_blockers_only] = true;
             auto resp = env.rpc("json", "account_objects", to_string(params));
 
-            constexpr Json::StaticString const expectedLedgerTypes[] = {
-                jss::Escrow, jss::Check, jss::RippleState, jss::PayChannel
-            };
-            constexpr auto expectedAccountObjects{
+            std::set<std::string> const expectedLedgerTypes{
+                {jss::Escrow.c_str(),
+                 jss::Check.c_str(),
+                 jss::RippleState.c_str(),
+                 jss::PayChannel.c_str()}};
+
+            std::uint32_t const expectedAccountObjects{
                 static_cast<std::uint32_t>(std::size(expectedLedgerTypes))
             };
 
             if (BEAST_EXPECT(acct_objs_is_size(resp, expectedAccountObjects)))
             {
                 auto const& aobjs = resp[jss::result][jss::account_objects];
+                std::set<std::string> gotLedgerTypes;
                 for (std::uint32_t i = 0; i < expectedAccountObjects; ++i)
                 {
-                    BEAST_EXPECT(
-                        aobjs[i]["LedgerEntryType"] == expectedLedgerTypes[i]);
+                    gotLedgerTypes.insert(aobjs[i]["LedgerEntryType"].asString());
                 }
+                BEAST_EXPECT(gotLedgerTypes == expectedLedgerTypes);
             }
         }
         {

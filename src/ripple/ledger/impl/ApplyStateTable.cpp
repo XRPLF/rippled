@@ -562,10 +562,10 @@ ApplyStateTable::getForMod (ReadView const& base,
             auto const& item = iter->second;
             if (item.first == Action::erase)
             {
-                // VFALCO We need to think about throwing
-                //        an exception or calling LogicError
-                JLOG(j.fatal()) <<
-                    "Trying to thread to deleted node";
+                // The Destination of an Escrow or a PayChannel may have been
+                // deleted.  In that case the account we're threading to will
+                // not be found and it is appropriate to return a nullptr.
+                JLOG(j.warn()) << "Trying to thread to deleted node";
                 return nullptr;
             }
             if (item.first != Action::cache)
@@ -578,10 +578,10 @@ ApplyStateTable::getForMod (ReadView const& base,
     auto c = base.read (keylet::unchecked (key));
     if (! c)
     {
-        // VFALCO We need to think about throwing
-        //        an exception or calling LogicError
-        JLOG(j.fatal()) <<
-            "ApplyStateTable::getForMod: key not found";
+        // The Destination of an Escrow or a PayChannel may have been
+        // deleted.  In that case the account we're threading to will
+        // not be found and it is appropriate to return a nullptr.
+        JLOG(j.warn()) << "ApplyStateTable::getForMod: key not found";
         return nullptr;
     }
     auto sle = std::make_shared<SLE> (*c);
@@ -596,14 +596,12 @@ ApplyStateTable::threadTx (ReadView const& base,
 {
     auto const sle = getForMod(base,
         keylet::account(to).key, mods, j);
-    assert(sle);
     if (! sle)
     {
-        // VFALCO We need to think about throwing
-        //        an exception or calling LogicError
-        JLOG(j.fatal()) <<
-            "Threading to non-existent account: " <<
-                toBase58(to);
+        // The Destination of an Escrow or PayChannel may have been deleted.
+        // In that case the account we are threading to will not be found.
+        // So this logging is just a warning.
+        JLOG(j.warn()) << "Threading to non-existent account: " << toBase58(to);
         return;
     }
     threadItem (meta, sle);

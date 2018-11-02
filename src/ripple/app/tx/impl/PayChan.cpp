@@ -154,6 +154,9 @@ closeChannel (
 
     // Transfer amount back to owner, decrement owner count
     auto const sle = view.peek (keylet::account (src));
+    if (! sle)
+        return tefINTERNAL;
+
     assert ((*slep)[sfAmount] >= (*slep)[sfBalance]);
     (*sle)[sfBalance] =
         (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
@@ -197,6 +200,8 @@ PayChanCreate::preclaim(PreclaimContext const &ctx)
 {
     auto const account = ctx.tx[sfAccount];
     auto const sle = ctx.view.read (keylet::account (account));
+    if (! sle)
+        return terNO_ACCOUNT;
 
     // Check reserve and funds availability
     {
@@ -237,6 +242,9 @@ PayChanCreate::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
     auto const sle = ctx_.view ().peek (keylet::account (account));
+    if (!sle)
+        return tefINTERNAL;
+
     auto const dst = ctx_.tx[sfDestination];
 
     // Create PayChan in ledger
@@ -345,6 +353,8 @@ PayChanFund::doApply()
     }
 
     auto const sle = ctx_.view ().peek (keylet::account (txAccount));
+    if (! sle)
+        return tefINTERNAL;
 
     {
         // Check reserve and funds availability
@@ -357,6 +367,13 @@ PayChanFund::doApply()
 
         if (balance < reserve + ctx_.tx[sfAmount])
             return tecUNFUNDED;
+    }
+
+    // do not allow adding funds if dst does not exist
+    if (AccountID const dst = (*slep)[sfDestination];
+        !ctx_.view().read(keylet::account(dst)))
+    {
+        return tecNO_DST;
     }
 
     (*slep)[sfAmount] = (*slep)[sfAmount] + ctx_.tx[sfAmount];
@@ -486,7 +503,7 @@ PayChanClaim::doApply()
 
         auto const sled = ctx_.view ().peek (keylet::account (dst));
         if (!sled)
-            return terNO_ACCOUNT;
+            return tecNO_DST;
 
         // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
         // featureDepositAuth to remove the bug.

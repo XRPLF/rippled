@@ -321,7 +321,12 @@ CashCheck::doApply ()
                 ctx_.deliver (xrpDeliver);
 
             // The source account has enough XRP so make the ledger change.
-            transferXRP (psb, srcId, account_, xrpDeliver, viewJ);
+            if (TER const ter {transferXRP (
+                psb, srcId, account_, xrpDeliver, viewJ)}; ter != tesSUCCESS)
+            {
+                // The transfer failed.  Return the error code.
+                return ter;
+            }
         }
         else
         {
