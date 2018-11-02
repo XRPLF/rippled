@@ -169,6 +169,8 @@ TER
 CreateCheck::doApply ()
 {
     auto const sle = view().peek (keylet::account (account_));
+    if (! sle)
+        return tefINTERNAL;
 
     // A check counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the

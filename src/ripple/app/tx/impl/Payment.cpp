@@ -332,10 +332,15 @@ Payment::doApply ()
 
     if (!sleDst)
     {
+        std::uint32_t const seqno {
+            view().rules().enabled(featureDeletableAccounts) ?
+            view().seq() : 1};
+
         // Create the account.
         sleDst = std::make_shared<SLE>(k);
         sleDst->setAccountID(sfAccount, uDstAccountID);
-        sleDst->setFieldU32(sfSequence, 1);
+        sleDst->setFieldU32(sfSequence, seqno);
+
         view().insert(sleDst);
     }
     else
@@ -435,10 +440,13 @@ Payment::doApply ()
 
     // Direct XRP payment.
 
+    auto const sleSrc = view().peek(keylet::account(account_));
+    if (! sleSrc)
+        return tefINTERNAL;
+
     // uOwnerCount is the number of entries in this ledger for this
     // account that require a reserve.
-    auto const uOwnerCount = view().read(
-        keylet::account(account_))->getFieldU32 (sfOwnerCount);
+    auto const uOwnerCount = sleSrc->getFieldU32 (sfOwnerCount);
 
     // This is the total reserve in drops.
     auto const reserve = view().fees().accountReserve(uOwnerCount);
@@ -499,9 +507,7 @@ Payment::doApply ()
     }
 
     // Do the arithmetic for the transfer and make the ledger change.
-    view()
-        .peek(keylet::account(account_))
-        ->setFieldAmount(sfBalance, mSourceBalance - saDstAmount);
+    sleSrc->setFieldAmount(sfBalance, mSourceBalance - saDstAmount);
     sleDst->setFieldAmount(
         sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
 

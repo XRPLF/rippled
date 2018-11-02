@@ -31,8 +31,6 @@
 
 namespace ripple {
 
-// tx_enable_test
-
 /** State information when applying a tx. */
 class ApplyContext
 {

@@ -202,7 +202,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             auto const startingAmount = accountHolds (
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
-            redeemIOU (pv, alice, toDebit, iss, j);
+            BEAST_EXPECT(redeemIOU (pv, alice, toDebit, iss, j) == tesSUCCESS);
             BEAST_EXPECT(accountHolds (pv, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount - toDebit);
@@ -217,7 +217,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             auto const startingAmount = accountHolds (
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
-            issueIOU (pv, alice, toCredit, iss, j);
+            BEAST_EXPECT(issueIOU (pv, alice, toCredit, iss, j) == tesSUCCESS);
             BEAST_EXPECT(accountHolds (pv, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount);

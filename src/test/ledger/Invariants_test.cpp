@@ -39,15 +39,14 @@ class Invariants_test : public beast::unit_test::suite
             test::jtx::Account const& b,
             ApplyContext& ac)>;
 
-    using TXMod = std::function <
-        void (STTx& tx)>;
-
     void
     doInvariantCheck( bool enabled,
         std::vector<std::string> const& expect_logs,
         Precheck const& precheck,
         XRPAmount fee = XRPAmount{},
-        TXMod txmod = [](STTx&){})
+        STTx tx = STTx {ttACCOUNT_SET, [](STObject&){  }},
+        std::initializer_list<TER> ters =
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED})
     {
         using namespace test::jtx;
         Env env {*this};
@@ -64,9 +63,6 @@ class Invariants_test : public beast::unit_test::suite
         env.fund (XRP (1000), A1, A2);
         env.close();
 
-        // dummy/empty tx to setup the AccountContext
-        auto tx = STTx {ttACCOUNT_SET, [](STObject&){  } };
-        txmod(tx);
         OpenView ov {*env.current()};
         test::StreamSink sink {beast::severities::kWarning};
         beast::Journal jlog {sink};
@@ -82,16 +78,17 @@ class Invariants_test : public beast::unit_test::suite
 
         BEAST_EXPECT(precheck(A1, A2, ac));
 
-        TER tr = tesSUCCESS;
         // invoke check twice to cover tec and tef cases
-        for (auto i : {0,1})
+        if (! BEAST_EXPECT(ters.size() == 2))
+            return;
+
+        TER terActual = tesSUCCESS;
+        for (TER const terExpect : ters)
         {
-            tr = ac.checkInvariants(tr, fee);
+            terActual = ac.checkInvariants(terActual, fee);
             if (enabled)
             {
-                BEAST_EXPECT(tr == (i == 0
-                    ? TER {tecINVARIANT_FAILED}
-                    : TER {tefINVARIANT_FAILED}));
+                BEAST_EXPECT(terExpect == terActual);
                 BEAST_EXPECT(
                     boost::starts_with(sink.messages().str(), "Invariant failed:") ||
                     boost::starts_with(sink.messages().str(),
@@ -105,7 +102,7 @@ class Invariants_test : public beast::unit_test::suite
             }
             else
             {
-                BEAST_EXPECT(tr == tesSUCCESS);
+                BEAST_EXPECT(terActual == tesSUCCESS);
                 BEAST_EXPECT(sink.messages().str().empty());
             }
         }
@@ -147,11 +144,13 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
-    testAccountsNotRemoved(bool enabled)
+    testAccountRootsNotRemoved(bool enabled)
     {
         using namespace test::jtx;
         testcase << "checks " << (enabled ? "enabled" : "disabled") <<
             " - account root removed";
+
+        // An account was deleted, but not by an AccountDelete transaction.
         doInvariantCheck (enabled,
             {{ "an account root was deleted" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
@@ -163,6 +162,35 @@ class Invariants_test : public beast::unit_test::suite
                 ac.view().erase (sle);
                 return true;
             });
+
+        // Successful AccountDelete transaction that didn't delete an account.
+        //
+        // Note that this is a case where a second invocation of the invariant
+        // checker returns a tecINVARIANT_FAILED, not a tefINVARIANT_FAILED.
+        // After a discussion with the team, we believe that's okay.
+        doInvariantCheck (enabled,
+            {{ "account deletion succeeded without deleting an account" }},
+            [](Account const&, Account const&, ApplyContext& ac){return true;},
+            XRPAmount{},
+            STTx {ttACCOUNT_DELETE, [](STObject& tx){ }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        // Successful AccountDelete that deleted more than one account.
+        doInvariantCheck (enabled,
+            {{ "account deletion succeeded but deleted multiple accounts" }},
+            [](Account const& A1, Account const& A2, ApplyContext& ac)
+            {
+                // remove two accounts from the view
+                auto const sleA1 = ac.view().peek (keylet::account(A1.id()));
+                auto const sleA2 = ac.view().peek (keylet::account(A2.id()));
+                if(!sleA1 || !sleA2)
+                    return false;
+                ac.view().erase (sleA1);
+                ac.view().erase (sleA2);
+                return true;
+            },
+            XRPAmount{},
+            STTx {ttACCOUNT_DELETE, [](STObject& tx){ }});
     }
 
     void
@@ -300,7 +328,8 @@ class Invariants_test : public beast::unit_test::suite
              { "XRP net change of 0 doesn't match fee 20" }},
             [](Account const&, Account const&, ApplyContext&) { return true; },
             XRPAmount{20},
-            [](STTx& tx) { tx.setFieldAmount(sfFee, XRPAmount{10}); } );
+            STTx { ttACCOUNT_SET,
+                [](STObject& tx){tx.setFieldAmount(sfFee, XRPAmount{10});} });
     }
 
 
@@ -424,6 +453,62 @@ class Invariants_test : public beast::unit_test::suite
             });
     }
 
+    void
+    testValidNewAccountRoot(bool enabled)
+    {
+        using namespace test::jtx;
+        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
+            " - valid new account root";
+
+        doInvariantCheck (enabled,
+            {{ "account root created by a non-Payment" }},
+            [](Account const&, Account const&, ApplyContext& ac)
+            {
+                // Insert a new account root created by a non-payment into
+                // the view.
+                const Account A3 {"A3"};
+                Keylet const acctKeylet = keylet::account (A3);
+                auto const sleNew = std::make_shared<SLE>(acctKeylet);
+                ac.view().insert (sleNew);
+                return true;
+            });
+
+        doInvariantCheck (enabled,
+            {{ "multiple accounts created in a single transaction" }},
+            [](Account const&, Account const&, ApplyContext& ac)
+            {
+                // Insert two new account roots into the view.
+                {
+                    const Account A3 {"A3"};
+                    Keylet const acctKeylet = keylet::account (A3);
+                    auto const sleA3 = std::make_shared<SLE>(acctKeylet);
+                    ac.view().insert (sleA3);
+                }
+                {
+                    const Account A4 {"A4"};
+                    Keylet const acctKeylet = keylet::account (A4);
+                    auto const sleA4 = std::make_shared<SLE>(acctKeylet);
+                    ac.view().insert (sleA4);
+                }
+                return true;
+            });
+
+        doInvariantCheck (enabled,
+            {{ "account created with wrong starting sequence number" }},
+            [](Account const&, Account const&, ApplyContext& ac)
+            {
+                // Insert a new account root with the wrong starting sequence.
+                const Account A3 {"A3"};
+                Keylet const acctKeylet = keylet::account (A3);
+                auto const sleNew = std::make_shared<SLE>(acctKeylet);
+                sleNew->setFieldU32 (sfSequence, ac.view().seq() + 1);
+                ac.view().insert (sleNew);
+                return true;
+            },
+            XRPAmount{},
+            STTx {ttPAYMENT, [](STObject& tx){ }});
+    }
+
 public:
     void run () override
     {
@@ -434,13 +519,14 @@ public:
         for(auto const& b : {false, true})
         {
             testXRPNotCreated (b);
-            testAccountsNotRemoved (b);
+            testAccountRootsNotRemoved (b);
             testTypesMatch (b);
             testNoXRPTrustLine (b);
             testXRPBalanceCheck (b);
             testTransactionFeeCheck(b);
             testNoBadOffers (b);
             testNoZeroEscrow (b);
+            testValidNewAccountRoot (b);
         }
     }
 };

@@ -1010,6 +1010,16 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH_LOOP;
     }
 
+    auto issuerExists = [](ReadView const& view, Issue const& iss) -> bool {
+        return isXRP(iss.account) || view.read(keylet::account(iss.account));
+    };
+
+    if (!issuerExists(ctx.view, book_.in) || !issuerExists(ctx.view, book_.out))
+    {
+        JLOG(j_.debug()) << "BookStep: deleted issuer detected: " << *this;
+        return tecNO_ISSUER;
+    }
+
     if (fix1443(ctx.view.info().parentCloseTime))
     {
         if (ctx.prevStep)

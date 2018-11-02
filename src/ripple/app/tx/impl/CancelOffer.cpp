@@ -59,8 +59,9 @@ CancelOffer::preclaim(PreclaimContext const& ctx)
     auto const id = ctx.tx[sfAccount];
     auto const offerSequence = ctx.tx[sfOfferSequence];
 
-    auto const sle = ctx.view.read(
-        keylet::account(id));
+    auto const sle = ctx.view.read(keylet::account(id));
+    if (! sle)
+        return terNO_ACCOUNT;
 
     if ((*sle)[sfSequence] <= offerSequence)
     {
@@ -79,8 +80,9 @@ CancelOffer::doApply ()
 {
     auto const offerSequence = ctx_.tx[sfOfferSequence];
 
-    auto const sle = view().read(
-        keylet::account(account_));
+    auto const sle = view().read(keylet::account(account_));
+    if (! sle)
+        return tefINTERNAL;
 
     uint256 const offerIndex (getOfferIndex (account_, offerSequence));
 

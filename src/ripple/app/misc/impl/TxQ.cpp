@@ -784,9 +784,7 @@ TxQ::apply(Application& app, OpenView& view,
     // so we don't get a false terPRE_SEQ.
     if (accountExists)
     {
-        auto const sle = view.read(keylet::account(account));
-
-        if (sle)
+        if (auto const sle = view.read(keylet::account(account)); sle)
         {
             auto& txQAcct = accountIter->second;
             auto const aSeq = (*sle)[sfSequence];
@@ -951,6 +949,8 @@ TxQ::apply(Application& app, OpenView& view,
 
                 auto const sleBump = multiTxn->applyView->peek(
                     keylet::account(account));
+                if (!sleBump)
+                    return {tefINTERNAL, false};
 
                 auto const potentialTotalSpend = multiTxn->fee +
                     std::min(balance - std::min(balance, reserve),

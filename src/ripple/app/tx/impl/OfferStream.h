@@ -73,6 +73,7 @@ protected:
     ApplyView& view_;
     ApplyView& cancelView_;
     Book book_;
+    bool validBook_;
     NetClock::time_point const expire_;
     BookTip tip_;
     TOffer<TIn, TOut> offer_;

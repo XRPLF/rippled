@@ -94,6 +94,7 @@ struct Directory_test : public beast::unit_test::suite
             env.fund(XRP(10000000), alice, bob, gw);
 
             // Insert 400 offers from Alice, then one from Bob:
+            std::uint32_t const firstOfferSeq {env.seq (alice)};
             for (std::size_t i = 1; i <= 400; ++i)
                 env(offer(alice, USD(10), XRP(10)));
 
@@ -104,7 +105,7 @@ struct Directory_test : public beast::unit_test::suite
                 auto dir = Dir(*env.current(),
                     keylet::ownerDir(alice));
 
-                std::uint32_t lastSeq = 1;
+                std::uint32_t lastSeq = firstOfferSeq - 1;
 
                 // Check that the orders are sequential by checking
                 // that their sequence numbers are:
@@ -121,6 +122,7 @@ struct Directory_test : public beast::unit_test::suite
             Env env(*this);
             env.fund(XRP(10000000), alice, gw);
 
+            std::uint32_t const firstOfferSeq {env.seq (alice)};
             for (std::size_t i = 1; i <= 400; ++i)
                 env(offer(alice, USD(i), XRP(i)));
             env.close();
@@ -143,8 +145,9 @@ struct Directory_test : public beast::unit_test::suite
 
                     // Ensure that the page contains the correct orders by
                     // calculating which sequence numbers belong here.
-                    std::uint32_t minSeq = 2 + (page * dirNodeMaxEntries);
-                    std::uint32_t maxSeq = minSeq + dirNodeMaxEntries;
+                    std::uint32_t const minSeq =
+                        firstOfferSeq + (page * dirNodeMaxEntries);
+                    std::uint32_t const maxSeq = minSeq + dirNodeMaxEntries;
 
                     for (auto const& e : v)
                     {
@@ -295,6 +298,7 @@ struct Directory_test : public beast::unit_test::suite
         auto const USD = gw["USD"];
 
         env.fund(XRP(10000), alice, gw);
+        env.close();
         env.trust(USD(1000), alice);
         env(pay(gw, alice, USD(1000)));
 

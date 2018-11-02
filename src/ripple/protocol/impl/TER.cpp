@@ -74,6 +74,8 @@ transResults()
         { tecEXPIRED,                { "tecEXPIRED",               "Expiration time is passed."                                                    } },
         { tecDUPLICATE,              { "tecDUPLICATE",             "Ledger object already exists."                                                 } },
         { tecKILLED,                 { "tecKILLED",                "FillOrKill offer killed."                                                      } },
+        { tecHAS_OBLIGATIONS,        { "tecHAS_OBLIGATIONS",       "The account cannot be deleted since it has obligations."                       } },
+        { tecTOO_SOON,               { "tecTOO_SOON",              "It is too early to attempt the requested operation. Please wait."              } },
 
         { tefALREADY,                { "tefALREADY",               "The exact transaction was already in this ledger."                             } },
         { tefBAD_ADD_AUTH,           { "tefBAD_ADD_AUTH",          "Not authorized to add account."                                                } },
@@ -93,6 +95,7 @@ transResults()
         { tefWRONG_PRIOR,            { "tefWRONG_PRIOR",           "This previous transaction does not match."                                     } },
         { tefBAD_AUTH_MASTER,        { "tefBAD_AUTH_MASTER",       "Auth for unclaimed account needs correct master key."                          } },
         { tefINVARIANT_FAILED,       { "tefINVARIANT_FAILED",      "Fee claim violated invariants for the transaction."                            } },
+        { tefTOO_BIG,                { "tefTOO_BIG",               "Transaction affects too many items."                                           } },
 
         { telLOCAL_ERROR,            { "telLOCAL_ERROR",           "Local failure."                                                                } },
         { telBAD_DOMAIN,             { "telBAD_DOMAIN",            "Domain too long."                                                              } },

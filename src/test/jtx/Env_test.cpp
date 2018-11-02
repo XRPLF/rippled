@@ -202,8 +202,8 @@ public:
         {
             Env env(*this);
             env.fund(n, noripple("alice", gw));
-            BEAST_EXPECT(env.seq("alice") == 1);
-            BEAST_EXPECT(env.seq(gw) == 1);
+            BEAST_EXPECT(env.seq("alice") == 3);
+            BEAST_EXPECT(env.seq(gw) == 3);
         }
 
         // autofill

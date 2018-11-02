@@ -18,6 +18,7 @@
 */
 //==============================================================================
 
+#include <test/app/AccountDelete_test.cpp>
 #include <test/app/AccountTxPaging_test.cpp>
 #include <test/app/AmendmentTable_test.cpp>
 #include <test/app/Check_test.cpp>

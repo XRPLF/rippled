@@ -1175,6 +1175,7 @@ struct Flow_test : public beast::unit_test::suite
         auto const USD = gw["USD"];
 
         env.fund(XRP(100000000), alice, bob, carol, gw);
+        env.close();
         env.trust(USD(10000), alice, carol);
         env(trust(bob, USD(10000), tfSetNoRipple));
         env.trust(USD(10000), bob);

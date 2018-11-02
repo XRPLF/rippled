@@ -22,18 +22,35 @@
 
 namespace ripple {
 
-template<class TIn, class TOut>
-TOfferStreamBase<TIn, TOut>::TOfferStreamBase (ApplyView& view, ApplyView& cancelView,
-    Book const& book, NetClock::time_point when,
-        StepCounter& counter, beast::Journal journal)
-    : j_ (journal)
-    , view_ (view)
-    , cancelView_ (cancelView)
-    , book_ (book)
-    , expire_ (when)
-    , tip_ (view, book_)
-    , counter_ (counter)
+namespace {
+bool
+checkIssuers(ReadView const& view, Book const& book)
 {
+    auto issuerExists = [](ReadView const& view, Issue const& iss) -> bool {
+        return isXRP(iss.account) || view.read(keylet::account(iss.account));
+    };
+    return issuerExists(view, book.in) && issuerExists(view, book.out);
+}
+}  // namespace
+
+template <class TIn, class TOut>
+TOfferStreamBase<TIn, TOut>::TOfferStreamBase(
+    ApplyView& view,
+    ApplyView& cancelView,
+    Book const& book,
+    NetClock::time_point when,
+    StepCounter& counter,
+    beast::Journal journal)
+    : j_(journal)
+    , view_(view)
+    , cancelView_(cancelView)
+    , book_(book)
+    , validBook_(checkIssuers(view, book))
+    , expire_(when)
+    , tip_(view, book_)
+    , counter_(counter)
+{
+    assert(validBook_);
 }
 
 // Handle the case where a directory item with no corresponding ledger entry
@@ -121,6 +138,9 @@ TOfferStreamBase<TIn, TOut>::step ()
 {
     // Modifying the order or logic of these
     // operations causes a protocol breaking change.
+
+    if (!validBook_)
+        return false;
 
     for(;;)
     {

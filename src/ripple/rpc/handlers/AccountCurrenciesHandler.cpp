@@ -53,7 +53,7 @@ Json::Value doAccountCurrencies (RPC::Context& context)
     if (auto jvAccepted = RPC::accountFromString (accountID, strIdent, bStrict))
         return jvAccepted;
 
-    if (! ledger->read(keylet::account(accountID)))
+    if (! ledger->exists(keylet::account(accountID)))
         return rpcError (rpcACT_NOT_FOUND);
 
     std::set<Currency> send, receive;
