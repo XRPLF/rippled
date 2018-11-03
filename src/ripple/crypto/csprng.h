@@ -61,14 +61,6 @@ public:
     void
     mix_entropy (void* buffer = nullptr, std::size_t count = 0);
 
-    /** Load entropy from the specified file */
-    void
-    load_state (std::string const& file);
-
-    /** Save entropy to the specified file */
-    void
-    save_state (std::string const& file);
-
     /** Generate a random integer */
     result_type
     operator()();

@@ -51,27 +51,6 @@ csprng_engine::~csprng_engine ()
 }
 
 void
-csprng_engine::load_state (std::string const& file)
-{
-    if (!file.empty())
-    {
-        std::lock_guard<std::mutex> lock (mutex_);
-        RAND_load_file (file.c_str (), kilobytes(1));
-        RAND_write_file (file.c_str ());
-    }
-}
-
-void
-csprng_engine::save_state (std::string const& file)
-{
-    if (!file.empty())
-    {
-        std::lock_guard<std::mutex> lock (mutex_);
-        RAND_write_file (file.c_str ());
-    }
-}
-
-void
 csprng_engine::mix_entropy (void* buffer, std::size_t count)
 {
     std::array<std::random_device::result_type, 128> entropy;
