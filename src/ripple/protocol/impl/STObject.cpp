@@ -58,15 +58,16 @@ STObject::STObject (SOTemplate const& type,
 }
 
 STObject::STObject (SOTemplate const& type,
-        SerialIter & sit, SField const& name)
+        SerialIter & sit, SField const& name) noexcept (false)
     : STBase (name)
 {
     v_.reserve(type.size());
     set (sit);
-    setType (type);
+    applyTemplate (type);  // May throw
 }
 
-STObject::STObject (SerialIter& sit, SField const& name, int depth)
+STObject::STObject (
+    SerialIter& sit, SField const& name, int depth) noexcept (false)
     : STBase(name)
     , mType(nullptr)
 {
@@ -99,9 +100,17 @@ void STObject::set (const SOTemplate& type)
     }
 }
 
-bool STObject::setType (const SOTemplate& type)
+void STObject::applyTemplate (const SOTemplate& type) noexcept (false)
 {
-    bool valid = true;
+    auto throwFieldErr = [] (std::string const& field, char const* description)
+    {
+        std::stringstream ss;
+        ss << "Field '" << field << "' " << description;
+        std::string text {ss.str()};
+        JLOG (debugLog().error()) << "STObject::applyTemplate failed: " << text;
+        Throw<FieldErr> (text);
+    };
+
     mType = &type;
     decltype(v_) v;
     v.reserve(type.size());
@@ -114,10 +123,8 @@ bool STObject::setType (const SOTemplate& type)
         {
             if ((e->flags == SOE_DEFAULT) && iter->get().isDefault())
             {
-                JLOG (debugLog().error())
-                    << "setType(" << getFName().getName()
-                    << "): explicit default " << e->e_field.fieldName;
-                valid = false;
+                throwFieldErr (e->e_field.fieldName,
+                    "may not be explicitly set to default.");
             }
             v.emplace_back(std::move(*iter));
             v_.erase(iter);
@@ -126,10 +133,8 @@ bool STObject::setType (const SOTemplate& type)
         {
             if (e->flags == SOE_REQUIRED)
             {
-                JLOG (debugLog().error())
-                    << "setType(" << getFName().getName()
-                    << "): missing " << e->e_field.fieldName;
-                valid = false;
+                throwFieldErr (e->e_field.fieldName,
+                    "is required but missing.");
             }
             v.emplace_back(detail::nonPresentObject, e->e_field);
         }
@@ -139,34 +144,25 @@ bool STObject::setType (const SOTemplate& type)
         // Anything left over in the object must be discardable
         if (! e->getFName().isDiscardable())
         {
-            JLOG (debugLog().error())
-                << "setType(" << getFName().getName()
-                << "): non-discardable leftover " << e->getFName().getName ();
-            valid = false;
+            throwFieldErr (e->getFName().getName(),
+                "found in disallowed location.");
         }
     }
     // Swap the template matching data in for the old data,
     // freeing any leftover junk
     v_.swap(v);
-    return valid;
 }
 
-STObject::ResultOfSetTypeFromSField
-STObject::setTypeFromSField (SField const& sField)
+void STObject::applyTemplateFromSField (SField const& sField) noexcept (false)
 {
-    ResultOfSetTypeFromSField ret = noTemplate;
-
     SOTemplate const* elements =
         InnerObjectFormats::getInstance ().findSOTemplateBySField (sField);
     if (elements)
-    {
-        ret = setType (*elements) ? typeIsSet : typeSetFail;
-    }
-    return ret;
+        applyTemplate (*elements);  // May throw
 }
 
 // return true = terminated with end-of-object
-bool STObject::set (SerialIter& sit, int depth)
+bool STObject::set (SerialIter& sit, int depth) noexcept (false)
 {
     bool reachedEndOfObject = false;
 
@@ -211,10 +207,8 @@ bool STObject::set (SerialIter& sit, int depth)
 
             // If the object type has a known SOTemplate then set it.
             STObject* const obj = dynamic_cast <STObject*> (&(v_.back().get()));
-            if (obj && (obj->setTypeFromSField (fn) == typeSetFail))
-            {
-                Throw<std::runtime_error> ("field deserialization error");
-            }
+            if (obj)
+                obj->applyTemplateFromSField (fn);  // May throw
         }
     }
 
@@ -624,6 +618,11 @@ void STObject::setFieldVL (SField const& field, Slice const& s)
 }
 
 void STObject::setFieldAmount (SField const& field, STAmount const& v)
+{
+    setFieldUsingAssignment (field, v);
+}
+
+void STObject::setFieldPathSet (SField const& field, STPathSet const& v)
 {
     setFieldUsingAssignment (field, v);
 }

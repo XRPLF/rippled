@@ -56,10 +56,10 @@ public:
 
     STTx (STTx const& other) = default;
 
-    explicit STTx (SerialIter& sit);
-    explicit STTx (SerialIter&& sit) : STTx(sit) {}
+    explicit STTx (SerialIter& sit) noexcept (false);
+    explicit STTx (SerialIter&& sit) noexcept (false) : STTx(sit) {}
 
-    explicit STTx (STObject&& object);
+    explicit STTx (STObject&& object) noexcept (false);
 
     /** Constructs a transaction.
 

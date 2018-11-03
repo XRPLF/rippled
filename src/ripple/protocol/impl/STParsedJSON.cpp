@@ -804,20 +804,19 @@ static boost::optional <STObject> parseObject (
         }
 
         // Some inner object types have templates.  Attempt to apply that.
-        if (data.setTypeFromSField (inName) == STObject::typeSetFail)
-        {
-            error = template_mismatch (inName);
-            return boost::none;
-        }
+        data.applyTemplateFromSField (inName);  // May throw
 
         return std::move (data);
-
+    }
+    catch (STObject::FieldErr const&)
+    {
+        error = template_mismatch (inName);
     }
     catch (std::exception const&)
     {
         error = invalid_data (json_name);
-        return boost::none;
     }
+    return boost::none;
 }
 
 static boost::optional <detail::STVar> parseArray (

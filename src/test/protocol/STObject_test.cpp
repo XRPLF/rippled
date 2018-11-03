@@ -363,7 +363,7 @@ public:
 
             BEAST_EXPECT(st[sf1] == 1);
             BEAST_EXPECT(st[sf2] == 2);
-            except<missing_field_error>([&]()
+            except<STObject::FieldErr>([&]()
                 { st[sf3]; });
             BEAST_EXPECT(*st[~sf1] == 1);
             BEAST_EXPECT(*st[~sf2] == 2);

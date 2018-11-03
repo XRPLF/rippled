@@ -55,18 +55,15 @@ auto getTxFormat (TxType type)
     return format;
 }
 
-STTx::STTx (STObject&& object)
+STTx::STTx (STObject&& object) noexcept (false)
     : STObject (std::move (object))
 {
     tx_type_ = static_cast <TxType> (getFieldU16 (sfTransactionType));
-
-    if (!setType (getTxFormat (tx_type_)->elements))
-        Throw<std::runtime_error> ("transaction not valid");
-
+    applyTemplate (getTxFormat (tx_type_)->elements);  //  may throw
     tid_ = getHash(HashPrefix::transactionID);
 }
 
-STTx::STTx (SerialIter& sit)
+STTx::STTx (SerialIter& sit) noexcept (false)
     : STObject (sfTransaction)
 {
     int length = sit.getBytesLeft ();
@@ -77,9 +74,7 @@ STTx::STTx (SerialIter& sit)
     set (sit);
     tx_type_ = static_cast<TxType> (getFieldU16 (sfTransactionType));
 
-    if (!setType (getTxFormat (tx_type_)->elements))
-        Throw<std::runtime_error> ("transaction not valid");
-
+    applyTemplate (getTxFormat (tx_type_)->elements);  // May throw
     tid_ = getHash(HashPrefix::transactionID);
 }
 

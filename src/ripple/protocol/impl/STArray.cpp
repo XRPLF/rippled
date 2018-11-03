@@ -98,10 +98,7 @@ STArray::STArray (SerialIter& sit, SField const& f, int depth)
 
         v_.emplace_back(sit, fn, depth+1);
 
-        if (v_.back().setTypeFromSField (fn) == STObject::typeSetFail)
-        {
-            Throw<std::runtime_error> ("Malformed object in array");
-        }
+        v_.back().applyTemplateFromSField (fn);  // May throw
     }
 }
 
