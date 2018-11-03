@@ -40,28 +40,6 @@ namespace ripple {
 
 class STArray;
 
-/** Thrown on illegal access to non-present SField. */
-struct missing_field_error : std::logic_error
-{
-    explicit
-    missing_field_error (SField const& f)
-        : logic_error(
-            "missing field '" + f.getName() + "'")
-    {
-    }
-};
-
-/** Thrown on a field template violation. */
-struct template_field_error : std::logic_error
-{
-    explicit
-    template_field_error (SField const& f)
-        : logic_error(
-            "template field error '" + f.getName() + "'")
-    {
-    }
-};
-
 //------------------------------------------------------------------------------
 
 class STObject
@@ -140,7 +118,7 @@ private:
 
             Throws:
 
-                missing_field_error if !engaged()
+                STObject::FieldErr if !engaged()
         */
         value_type operator*() const;
 
@@ -277,14 +255,21 @@ public:
     using iterator = boost::transform_iterator<
         Transform, STObject::list_type::const_iterator>;
 
+    class FieldErr : public std::runtime_error
+    {
+        using std::runtime_error::runtime_error;
+    };
+
     static char const* getCountedObjectName () { return "STObject"; }
 
     STObject(STObject&&);
     STObject(STObject const&) = default;
     STObject (const SOTemplate & type, SField const& name);
-    STObject (const SOTemplate & type, SerialIter & sit, SField const& name);
-    STObject (SerialIter& sit, SField const& name, int depth = 0);
-    STObject (SerialIter&& sit, SField const& name)
+    STObject (const SOTemplate& type,
+        SerialIter& sit, SField const& name) noexcept (false);
+    STObject (SerialIter& sit,
+        SField const& name, int depth = 0) noexcept (false);
+    STObject (SerialIter&& sit, SField const& name) noexcept (false)
         : STObject(sit, name)
     {
     }
@@ -327,12 +312,9 @@ public:
         v_.reserve (n);
     }
 
-    bool setType (const SOTemplate & type);
+    void applyTemplate (const SOTemplate & type) noexcept (false);
 
-    enum ResultOfSetTypeFromSField : unsigned char
-    {typeSetFail, typeIsSet, noTemplate};
-
-    ResultOfSetTypeFromSField setTypeFromSField (SField const&);
+    void applyTemplateFromSField (SField const&) noexcept (false);
 
     bool isFree () const
     {
@@ -446,7 +428,7 @@ public:
 
         Throws:
 
-            missing_field_error if the field is
+            STObject::FieldErr if the field is
             not present.
     */
     template<class T>
@@ -465,7 +447,7 @@ public:
 
         Throws:
 
-            missing_field_error if the field is
+            STObject::FieldErr if the field is
             not present.
     */
     template<class T>
@@ -499,6 +481,7 @@ public:
     void setAccountID (SField const& field, AccountID const&);
 
     void setFieldAmount (SField const& field, STAmount const&);
+    void setFieldPathSet (SField const& field, STPathSet const&);
     void setFieldV256 (SField const& field, STVector256 const& v);
     void setFieldArray (SField const& field, STArray const& v);
 
@@ -693,7 +676,8 @@ STObject::Proxy<T>::Proxy (STObject* st, TypedField<T> const* f)
     {
         // STObject has associated template
         if (! st_->peekAtPField(*f_))
-            Throw<template_field_error> (*f);
+            Throw<STObject::FieldErr> (
+                "Template field error '" + this->f_->getName() + "'");
         style_ = st_->mType->style(*f_);
     }
     else
@@ -711,7 +695,8 @@ STObject::Proxy<T>::value() const ->
     if (t)
         return t->value();
     if (style_ != SOE_DEFAULT)
-        Throw<missing_field_error> (*f_);
+        Throw<STObject::FieldErr> (
+            "Missing field '" + this->f_->getName() + "'");
     return value_type{};
 }
 
@@ -867,7 +852,8 @@ STObject::OptionalProxy<T>::disengage()
 {
     if (this->style_ == SOE_REQUIRED ||
             this->style_ == SOE_DEFAULT)
-        Throw<template_field_error> (*this->f_);
+        Throw<STObject::FieldErr> (
+            "Template field error '" + this->f_->getName() + "'");
     if (this->style_ == SOE_INVALID)
         this->st_->delField(*this->f_);
     else
@@ -894,7 +880,8 @@ STObject::operator[](TypedField<T> const& f) const
     if (! b)
         // This is a free object (no constraints)
         // with no template
-        Throw<missing_field_error> (f);
+        Throw<STObject::FieldErr> (
+            "Missing field '" + f.getName() + "'");
     auto const u =
         dynamic_cast<T const*>(b);
     if (! u)
@@ -902,7 +889,8 @@ STObject::operator[](TypedField<T> const& f) const
         assert(mType);
         assert(b->getSType() == STI_NOTPRESENT);
         if(mType->style(f) == SOE_OPTIONAL)
-            Throw<missing_field_error> (f);
+            Throw<STObject::FieldErr> (
+                "Missing field '" + f.getName() + "'");
         assert(mType->style(f) == SOE_DEFAULT);
         // Handle the case where value_type is a
         // const reference, otherwise we return

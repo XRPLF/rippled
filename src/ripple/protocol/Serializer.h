@@ -318,6 +318,14 @@ public:
     {
     }
 
+    // Infer the size of the data based on the size of the passed array.
+    template<int N>
+    explicit SerialIter (std::uint8_t const (&data)[N])
+        : SerialIter(&data[0], N)
+    {
+        static_assert (N > 0, "");
+    }
+
     std::size_t
     empty() const noexcept
     {
