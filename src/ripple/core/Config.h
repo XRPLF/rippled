@@ -81,9 +81,6 @@ public:
     /** Returns the full path and filename of the debug log file. */
     boost::filesystem::path getDebugLogFile () const;
 
-    /** Returns the full path and filename of the entropy seed file. */
-    boost::filesystem::path getEntropyFile () const;
-
 private:
     boost::filesystem::path CONFIG_FILE;
 public:

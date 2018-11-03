@@ -49,74 +49,10 @@ class CryptoPRNG_test : public beast::unit_test::suite
         }
     }
 
-    void
-    testSaveLoad()
-    {
-        testcase ("Save/Load State");
-        try
-        {
-            // create a temporary path to write crypto state files
-            beast::temp_dir td;
-
-            auto stateFile = boost::filesystem::path {td.file("cryptostate")};
-            auto& engine = crypto_prng();
-            engine.save_state(stateFile.string());
-
-            size_t size_before_load;
-            std::string data_before_load, data_after_load;
-
-            {
-                boost::system::error_code ec;
-                size_before_load = file_size(stateFile, ec);
-                if(! BEAST_EXPECTS(!ec, ec.message()))
-                    return;
-                if(! BEAST_EXPECT(size_before_load > 0))
-                    return;
-
-                std::ifstream ifs(
-                    stateFile.string(),
-                    std::ios::in | std::ios::binary);
-                data_before_load =
-                    std::string{std::istreambuf_iterator<char>{ifs}, {}};
-                BEAST_EXPECT(data_before_load.size() == size_before_load);
-            }
-
-            engine.load_state(stateFile.string());
-
-            // load_state actually causes a new state file to be written
-            // ...verify it has changed
-
-            {
-                boost::system::error_code ec;
-                size_t size_after_load = file_size(stateFile, ec);
-                if(! BEAST_EXPECTS(!ec, ec.message()))
-                    return;
-                BEAST_EXPECT(size_after_load == size_before_load);
-
-                std::ifstream ifs(
-                    stateFile.string(),
-                    std::ios::in | std::ios::binary);
-                data_after_load =
-                    std::string{std::istreambuf_iterator<char>{ifs}, {}};
-                BEAST_EXPECT(data_after_load.size() == size_after_load);
-                BEAST_EXPECT(data_after_load != data_before_load);
-            }
-
-            // verify the loaded engine works
-            engine();
-            pass();
-        }
-        catch(std::exception&)
-        {
-            fail();
-        }
-    }
-
 public:
     void run () override
     {
         testGetValues();
-        testSaveLoad();
     }
 };
 
