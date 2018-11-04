@@ -30,58 +30,22 @@ const Int Value::minInt = Int ( ~ (UInt (-1) / 2) );
 const Int Value::maxInt = Int ( UInt (-1) / 2 );
 const UInt Value::maxUInt = UInt (-1);
 
-class DefaultValueAllocator : public ValueAllocator
+static char const* emptyString = "";
+
+static
+char const*
+dupString(const char* str)
 {
-public:
-    virtual ~DefaultValueAllocator() = default;
+    if (str == nullptr)
+        str = "";
 
-    char* makeMemberName ( const char* memberName ) override
-    {
-        return duplicateStringValue ( memberName );
-    }
-
-    void releaseMemberName ( char* memberName ) override
-    {
-        releaseStringValue ( memberName );
-    }
-
-    char* duplicateStringValue ( const char* value,
-        unsigned int length = unknown ) override
-    {
-        //@todo investigate this old optimization
-        //if ( !value  ||  value[0] == 0 )
-        //   return 0;
-
-        if ( length == unknown )
-            length = value ? (unsigned int)strlen ( value ) : 0;
-
-        char* newString = static_cast<char*> ( malloc ( length + 1 ) );
-        if ( value )
-            memcpy ( newString, value, length );
-        newString[length] = 0;
-        return newString;
-    }
-
-    void releaseStringValue ( char* value ) override
-    {
-        if ( value )
-            free ( value );
-    }
-};
-
-static ValueAllocator*& valueAllocator ()
-{
-    static ValueAllocator* valueAllocator = new DefaultValueAllocator;
-    return valueAllocator;
+    auto len = std::strlen(str);
+    auto ret = new char[len + 1];
+    if (len)
+        std::memcpy(ret, str, len);
+    ret[len] = 0;
+    return ret;
 }
-
-static struct DummyValueAllocatorInitializer
-{
-    DummyValueAllocatorInitializer ()
-    {
-        valueAllocator ();     // ensure valueAllocator() statics are initialized before main().
-    }
-} dummyValueAllocatorInitializer;
 
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
@@ -101,25 +65,25 @@ Value::CZString::CZString ( int index )
 }
 
 Value::CZString::CZString ( const char* cstr, DuplicationPolicy allocate )
-    : cstr_ ( allocate == duplicate ? valueAllocator ()->makeMemberName (cstr)
-              : cstr )
+    : cstr_ ( allocate == duplicate ? dupString (cstr) : cstr )
     , index_ ( allocate )
 {
 }
 
 Value::CZString::CZString ( const CZString& other )
-    : cstr_ ( other.index_ != noDuplication&&   other.cstr_ != 0
-              ?  valueAllocator ()->makeMemberName ( other.cstr_ )
+    : cstr_ ( other.index_ != noDuplication && other.cstr_ != 0
+              ?  dupString ( other.cstr_ )
               : other.cstr_ )
-    , index_ ( other.cstr_ ? (other.index_ == noDuplication ? noDuplication : duplicate)
+    , index_ ( other.cstr_
+               ? (other.index_ == noDuplication ? noDuplication : duplicate)
                : other.index_ )
 {
 }
 
 Value::CZString::~CZString ()
 {
-    if ( cstr_  &&  index_ == duplicate )
-        valueAllocator ()->releaseMemberName ( const_cast<char*> ( cstr_ ) );
+    if ( cstr_ && index_ == duplicate )
+        delete[] cstr_;
 }
 
 void
@@ -155,6 +119,11 @@ Value::CZString::operator== ( const CZString& other ) const
     return index_ == other.index_;
 }
 
+bool
+Value::CZString::operator!= ( const CZString& other ) const
+{
+    return !(*this == other);
+}
 
 int
 Value::CZString::index () const
@@ -189,7 +158,6 @@ Value::CZString::isStaticString () const
  */
 Value::Value ( ValueType type )
     : type_ ( type )
-    , allocated_ ( 0 )
 {
     switch ( type )
     {
@@ -245,36 +213,35 @@ Value::Value ( double value )
 
 Value::Value ( const char* value )
     : type_ ( stringValue )
-    , allocated_ ( true )
 {
-    value_.string_ = valueAllocator ()->duplicateStringValue ( value );
+    if (!value)
+    {
+        value_.string_ = emptyString;
+        return;
+    }
+
+    allocated_ = true;
+    value_.string_ = dupString(value);
 }
-
-
-Value::Value ( const char* beginValue,
-               const char* endValue )
-    : type_ ( stringValue )
-    , allocated_ ( true )
-{
-    value_.string_ = valueAllocator ()->duplicateStringValue ( beginValue,
-                     UInt (endValue - beginValue) );
-}
-
 
 Value::Value ( std::string const& value )
     : type_ ( stringValue )
-    , allocated_ ( true )
 {
-    value_.string_ = valueAllocator ()->duplicateStringValue ( value.c_str (),
-                     (unsigned int)value.length () );
+    if (value.empty())
+    {
+        value_.string_ = emptyString;
+        return;
+    }
 
+    allocated_ = true;
+    value_.string_ = dupString(value.c_str());
 }
 
 Value::Value ( const StaticString& value )
     : type_ ( stringValue )
     , allocated_ ( false )
 {
-    value_.string_ = const_cast<char*> ( value.c_str () );
+    value_.string_ = value.c_str();
 }
 
 Value::Value ( bool value )
@@ -298,19 +265,26 @@ Value::Value ( const Value& other )
         break;
 
     case stringValue:
-        if ( other.value_.string_ )
+        if ( other.value_.string_)
         {
-            value_.string_ = valueAllocator ()->duplicateStringValue ( other.value_.string_ );
-            allocated_ = true;
+            allocated_ = other.allocated_;
+
+            if (allocated_)
+                value_.string_ = dupString(other.value_.string_);
+            else
+                value_.string_ = other.value_.string_;
         }
         else
-            value_.string_ = 0;
+        {
+            value_.string_ = emptyString;
+            allocated_ = false;
+        }
 
         break;
 
     case arrayValue:
     case objectValue:
-        value_.map_ = new ObjectValues ( *other.value_.map_ );
+        value_.map_ = new ObjectValues(*other.value_.map_);
         break;
 
     default:
@@ -332,7 +306,7 @@ Value::~Value ()
 
     case stringValue:
         if ( allocated_ )
-            valueAllocator ()->releaseStringValue ( value_.string_ );
+            delete[] value_.string_;
 
         break;
 
@@ -367,14 +341,8 @@ void
 Value::swap ( Value& other ) noexcept
 {
     std::swap ( value_, other.value_ );
-
-    ValueType temp = type_;
-    type_ = other.type_;
-    other.type_ = temp;
-
-    int temp2 = allocated_;
-    allocated_ = other.allocated_;
-    other.allocated_ = temp2;
+    std::swap ( type_, other.type_ );
+    std::swap ( allocated_, other.allocated_);
 }
 
 ValueType
@@ -492,7 +460,7 @@ const char*
 Value::asCString () const
 {
     JSON_ASSERT ( type_ == stringValue );
-    return value_.string_;
+    return value_.string_ ? value_.string_ : emptyString;
 }
 
 
@@ -502,10 +470,10 @@ Value::asString () const
     switch ( type_ )
     {
     case nullValue:
-        return "";
+        return emptyString;
 
     case stringValue:
-        return value_.string_ ? value_.string_ : "";
+        return value_.string_ ? value_.string_ : emptyString;
 
     case booleanValue:
         return value_.bool_ ? "true" : "false";
@@ -867,17 +835,15 @@ Value::resolveReference ( const char* key,
     if ( type_ == nullValue )
         *this = Value ( objectValue );
 
-    CZString actualKey ( key, isStatic ? CZString::noDuplication
-                         : CZString::duplicateOnCopy );
-    ObjectValues::iterator it = value_.map_->lower_bound ( actualKey );
+    CZString actualKey ( key,
+        isStatic ? CZString::noDuplication : CZString::duplicateOnCopy );
 
-    if ( it != value_.map_->end ()  &&  (*it).first == actualKey )
-        return (*it).second;
+    auto it = value_.map_->lower_bound(actualKey);
 
-    ObjectValues::value_type defaultValue ( actualKey, null );
-    it = value_.map_->insert ( it, defaultValue );
-    Value& value = (*it).second;
-    return value;
+    if (it == value_.map_->end () || it->first != actualKey)
+        it = value_.map_->emplace_hint(it, actualKey, null);
+
+    return it->second;
 }
 
 

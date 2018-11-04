@@ -21,6 +21,7 @@
 #define RIPPLE_JSON_JSON_VALUE_H_INCLUDED
 
 #include <ripple/json/json_forwards.h>
+#include <boost/operators.hpp>
 #include <cstring>
 #include <functional>
 #include <map>
@@ -34,7 +35,7 @@ namespace Json
 
 /** \brief Type of the value held by a Value object.
  */
-enum ValueType
+enum ValueType : std::uint8_t
 {
     nullValue = 0, ///< 'null' value
     intValue,      ///< signed integer value
@@ -44,14 +45,6 @@ enum ValueType
     booleanValue,  ///< bool value
     arrayValue,    ///< array value (ordered list)
     objectValue    ///< object value (collection of name/value pairs).
-};
-
-enum CommentPlacement
-{
-    commentBefore = 0,        ///< a comment placed on the line before a value
-    commentAfterOnSameLine,   ///< a comment just after a value on the same line
-    commentAfter,             ///< a comment on the line after a value (only make sense for root value)
-    numberOfCommentPlacement
 };
 
 /** \brief Lightweight wrapper to tag static string.
@@ -150,6 +143,7 @@ inline bool operator!= (StaticString x, std::string const& y)
  * the getMemberNames() method.
  */
 class Value
+    : boost::totally_ordered<Value>
 {
     friend class ValueIteratorBase;
 
@@ -183,6 +177,7 @@ private:
         CZString& operator = ( const CZString& other );
         bool operator< ( const CZString& other ) const;
         bool operator== ( const CZString& other ) const;
+        bool operator!= ( const CZString& other ) const;
         int index () const;
         const char* c_str () const;
         bool isStaticString () const;
@@ -216,7 +211,6 @@ public:
     Value ( UInt value );
     Value ( double value );
     Value ( const char* value );
-    Value ( const char* beginValue, const char* endValue );
     /** \brief Constructs a value from a static string.
 
      * Like other value string constructor but do not duplicate the string for
@@ -359,10 +353,6 @@ public:
     /// \post if type() was nullValue, it remains nullValue
     Members getMemberNames () const;
 
-    bool hasComment ( CommentPlacement placement ) const;
-    /// Include delimiters and embedded newlines.
-    std::string getComment ( CommentPlacement placement ) const;
-
     std::string toStyledString () const;
 
     const_iterator begin () const;
@@ -379,66 +369,21 @@ private:
                               bool isStatic );
 
 private:
+    // TODO (C++17):
+    // - Migrate to std::variant for improved type safety.
+    // - Use std::string instead of char* for dynamic strings.
+    // - Use std::string_view for static strings.
     union ValueHolder
     {
         Int int_;
         UInt uint_;
         double real_;
         bool bool_;
-        char* string_;
+        char const* string_;
         ObjectValues* map_ {nullptr};
     } value_;
-    ValueType type_ : 8;
-    int allocated_ : 1;     // Notes: if declared as bool, bitfield is useless.
-};
-
-bool operator== (const Value&, const Value&);
-
-inline
-bool operator!= (const Value& x, const Value& y)
-{
-    return ! (x == y);
-}
-
-bool operator< (const Value&, const Value&);
-
-inline
-bool operator<= (const Value& x, const Value& y)
-{
-    return ! (y < x);
-}
-
-inline
-bool operator> (const Value& x, const Value& y)
-{
-    return y < x;
-}
-
-inline
-bool operator>= (const Value& x, const Value& y)
-{
-    return ! (x < y);
-}
-
-/** \brief Experimental do not use: Allocator to customize member name and string value memory management done by Value.
- *
- * - makeMemberName() and releaseMemberName() are called to respectively duplicate and
- *   free an Json::objectValue member name.
- * - duplicateStringValue() and releaseStringValue() are called similarly to
- *   duplicate and free a Json::stringValue value.
- */
-class ValueAllocator
-{
-public:
-    enum { unknown = (unsigned) - 1 };
-
-    virtual ~ValueAllocator () = default;
-
-    virtual char* makeMemberName ( const char* memberName ) = 0;
-    virtual void releaseMemberName ( char* memberName ) = 0;
-    virtual char* duplicateStringValue ( const char* value,
-                                         unsigned int length = unknown ) = 0;
-    virtual void releaseStringValue ( char* value ) = 0;
+    ValueType type_;
+    bool allocated_ = false;
 };
 
 /** \brief base class for Value iterators.

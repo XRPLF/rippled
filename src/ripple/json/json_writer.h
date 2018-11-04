@@ -75,9 +75,8 @@ private:
  *     - otherwise, it the values do not fit on one line, or the array contains
  *       object or non empty array, then print one value per line.
  *
- * If the Value have comments then they are outputed according to their #CommentPlacement.
  *
- * \sa Reader, Value, Value::setComment()
+ * \sa Reader, Value
  */
 class StyledWriter: public WriterBase
 {
@@ -127,10 +126,9 @@ private:
  *     - otherwise, it the values do not fit on one line, or the array contains
  *       object or non empty array, then print one value per line.
  *
- * If the Value have comments then they are outputed according to their #CommentPlacement.
  *
  * \param indentation Each level will be indented by this amount extra.
- * \sa Reader, Value, Value::setComment()
+ * \sa Reader, Value
  */
 class StyledStreamWriter
 {
