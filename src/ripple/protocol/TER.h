@@ -300,7 +300,6 @@ public:
     constexpr TERSubset() : code_ (tesSUCCESS) { }
     constexpr TERSubset (TERSubset const& rhs) = default;
     constexpr TERSubset (TERSubset&& rhs) = default;
-private:
     constexpr explicit TERSubset (int rhs) : code_ (rhs) { }
 public:
     static constexpr TERSubset fromInt (int from)
