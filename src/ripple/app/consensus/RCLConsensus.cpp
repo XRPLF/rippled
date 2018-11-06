@@ -807,7 +807,7 @@ RCLConsensus::Adaptor::onModeChange(
 
     // If we were proposing but aren't any longer, we need to reset the
     // censorship tracking to avoid bogus warnings.
-    if (before == ConsensusMode::proposing && before != after)
+    if ((before == ConsensusMode::proposing || before == ConsensusMode::observing) && before != after)
         censorshipDetector_.reset();
 
     mode_ = after;
