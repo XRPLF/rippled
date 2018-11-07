@@ -94,9 +94,19 @@ bool parseUrl (parsedURL& pUrl, std::string const& strUrl)
     // scheme://username:password@hostname:port/rest
     static boost::regex reUrl (
         "(?i)\\`\\s*"
-        "([[:alpha:]][-+.[:alpha:][:digit:]]*):"    //scheme
-        "//([^/]+)?"                                 // hostname
-        "(/.*)?"                                    // path and parameters
+        // required scheme
+        "([[:alpha:]][-+.[:alpha:][:digit:]]*):"
+        // We choose to support only URIs whose `hier-part` has the form
+        // `"//" authority path-abempty`.
+        "//"
+        // optional userinfo
+        "(?:([^/]*?)(?::([^/]*?))?@)?"
+        // optional host
+        "([^/]*?)"
+        // optional port
+        "(?::([[:digit:]]+))?"
+        // optional path
+        "(/.*)?"
         "\\s*?\\'");
     boost::smatch smMatch;
 
@@ -106,29 +116,22 @@ bool parseUrl (parsedURL& pUrl, std::string const& strUrl)
     {
         pUrl.scheme = smMatch[1];
         boost::algorithm::to_lower (pUrl.scheme);
-        pUrl.path = smMatch[3];
-        pUrl.domain = smMatch[2];
-
-        // now consider the domain/port fragment
-        auto colonPos = pUrl.domain.find_last_of(':');
-        if (colonPos != std::string::npos)
+        pUrl.username = smMatch[2];
+        pUrl.password = smMatch[3];
+        const std::string domain = smMatch[4];
+        // We need to use Endpoint to parse the domain to
+        // strip surrounding brackets from IPv6 addresses,
+        // e.g. [::1] => ::1.
+        const auto result {beast::IP::Endpoint::from_string_checked (domain)};
+        pUrl.domain = result.second
+          ? result.first.address().to_string()
+          : domain;
+        const std::string port = smMatch[5];
+        if (!port.empty())
         {
-            // use Endpoint class to see if this thing looks
-            // like an IP addr...
-            auto result {beast::IP::Endpoint::from_string_checked (pUrl.domain)};
-            if (result.second)
-            {
-                pUrl.domain = result.first.address().to_string();
-                pUrl.port = result.first.port();
-            }
-            else // otherwise we are DNS name + port
-            {
-                pUrl.port = beast::lexicalCast <std::uint16_t> (
-                    pUrl.domain.substr(colonPos+1));
-                pUrl.domain = pUrl.domain.substr(0, colonPos);
-            }
+          pUrl.port = beast::lexicalCast <std::uint16_t> (port);
         }
-        //else, the whole thing is domain, not port
+        pUrl.path = smMatch[6];
     }
 
     return bMatch;
