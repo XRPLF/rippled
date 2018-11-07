@@ -26,6 +26,7 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/JsonFields.h>
 #include <boost/regex.hpp>
+#include <algorithm>
 
 namespace ripple {
 
@@ -152,11 +153,12 @@ void
 ValidatorSite::setTimer ()
 {
     std::lock_guard <std::mutex> lock{sites_mutex_};
-    auto next = sites_.end();
 
-    for (auto it = sites_.begin (); it != sites_.end (); ++it)
-        if (next == sites_.end () || it->nextRefresh < next->nextRefresh)
-            next = it;
+    auto next = std::min_element(sites_.begin(), sites_.end(),
+        [](Site const& a, Site const& b)
+        {
+            return a.nextRefresh < b.nextRefresh;
+        });
 
     if (next != sites_.end ())
     {
@@ -164,8 +166,7 @@ ValidatorSite::setTimer ()
         cv_.notify_all();
         timer_.expires_at (next->nextRefresh);
         timer_.async_wait (std::bind (&ValidatorSite::onTimer, this,
-            std::distance (sites_.begin (), next),
-                std::placeholders::_1));
+            std::distance (sites_.begin (), next), std::placeholders::_1));
     }
 }
 
@@ -213,12 +214,12 @@ ValidatorSite::onTimer (
     std::size_t siteIdx,
     error_code const& ec)
 {
-    if (ec == boost::asio::error::operation_aborted)
-        return;
     if (ec)
     {
-        JLOG(j_.error()) <<
-            "ValidatorSite::onTimer: " << ec.message();
+        // Restart the timer if any errors are encountered, unless the error
+        // is from the wait operating being aborted due to a shutdown request.
+        if (ec != boost::asio::error::operation_aborted)
+            onSiteFetch(ec, detail::response_type {}, siteIdx);
         return;
     }
 
