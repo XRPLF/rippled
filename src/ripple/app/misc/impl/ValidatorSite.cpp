@@ -218,7 +218,8 @@ ValidatorSite::onTimer (
     {
         // Restart the timer if any errors are encountered, unless the error
         // is from the wait operating being aborted due to a shutdown request.
-        onSiteFetch(ec, detail::response_type {}, siteIdx);
+        if (ec != boost::asio::error::operation_aborted)
+            onSiteFetch(ec, detail::response_type {}, siteIdx);
         return;
     }
 
