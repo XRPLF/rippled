@@ -156,8 +156,8 @@ public:
     void
     setValue (void const* data, std::size_t size)
     {
-        value_.alloc (size);
-        std::memcpy(value_.data(), data, size);
+        if (value_.alloc (size))
+            std::memcpy(value_.data(), data, size);
     }
 
     bool

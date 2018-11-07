@@ -49,14 +49,12 @@ public:
         mData.reserve (n);
     }
 
-    Serializer (void const* data,
-        std::size_t size)
+    Serializer (void const* data, std::size_t size)
     {
         mData.resize(size);
-        std::memcpy(mData.data(),
-            reinterpret_cast<
-                unsigned char const*>(
-                    data), size);
+
+        if (size)
+            std::memcpy(mData.data(), reinterpret_cast<unsigned char const*>(data), size);
     }
 
     Slice slice() const noexcept

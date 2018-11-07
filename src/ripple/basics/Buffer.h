@@ -221,9 +221,13 @@ public:
 
 inline bool operator==(Buffer const& lhs, Buffer const& rhs) noexcept
 {
-    if (lhs.size () != rhs.size ())
+    if (lhs.size() != rhs.size())
         return false;
-    return !std::memcmp (lhs.data (), rhs.data (), lhs.size ());
+
+    if (lhs.size() == 0)
+        return true;
+
+    return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
 }
 
 inline bool operator!=(Buffer const& lhs, Buffer const& rhs) noexcept
