@@ -29,7 +29,7 @@
 namespace ripple {
 
 /** The tip of a span of ledger ancestry
-*/
+ */
 template <class Ledger>
 class SpanTip
 {
@@ -461,7 +461,7 @@ public:
             newNode->branchSupport = loc->branchSupport;
             newNode->children = std::move(loc->children);
             assert(loc->children.empty());
-            for(std::unique_ptr<Node> & child : newNode->children)
+            for (std::unique_ptr<Node>& child : newNode->children)
                 child->parent = newNode.get();
 
             // Loc truncates to prefix and newNode is its child
@@ -525,7 +525,7 @@ public:
                 auto const it = seqSupport.find(ledger.seq());
                 assert(it != seqSupport.end() && it->second >= count);
                 it->second -= count;
-                if(it->second == 0)
+                if (it->second == 0)
                     seqSupport.erase(it->first);
 
                 Node* decNode = loc;
@@ -584,7 +584,8 @@ public:
     /** Return the count of branch support for the specific ledger
 
         @param ledger The ledger to lookup
-        @return The number of entries in the trie for this ledger or a descendant
+        @return The number of entries in the trie for this ledger or a
+                descendant
      */
     std::uint32_t
     branchSupport(Ledger const& ledger) const
@@ -595,8 +596,7 @@ public:
 
         // Check that ledger is is an exact match or proper
         // prefix of loc
-        if (loc && diffSeq > ledger.seq() &&
-            ledger.seq() < loc->span.end())
+        if (loc && diffSeq > ledger.seq() && ledger.seq() < loc->span.end())
         {
             return loc->branchSupport;
         }
@@ -699,7 +699,7 @@ public:
                         uncommitted += uncommittedIt->second;
                         uncommittedIt++;
                     }
-                    else // otherwise we jump to the end of the span
+                    else  // otherwise we jump to the end of the span
                         nextSeq = curr->span.end();
                 }
                 // We did not consume the entire span, so we have found the
@@ -727,8 +727,10 @@ public:
                     curr->children.end(),
                     [](std::unique_ptr<Node> const& a,
                        std::unique_ptr<Node> const& b) {
-                        return std::make_tuple(a->branchSupport, a->span.startID()) >
-                            std::make_tuple(b->branchSupport, b->span.startID());
+                        return std::make_tuple(
+                                   a->branchSupport, a->span.startID()) >
+                            std::make_tuple(
+                                   b->branchSupport, b->span.startID());
                     });
 
                 best = curr->children[0].get();
@@ -761,7 +763,7 @@ public:
     }
 
     /** Dump JSON representation of trie state
-    */
+     */
     Json::Value
     getJson() const
     {
@@ -798,7 +800,7 @@ public:
 
             for (auto const& child : curr->children)
             {
-                if(child->parent != curr)
+                if (child->parent != curr)
                     return false;
 
                 support += child->branchSupport;

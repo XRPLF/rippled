@@ -58,9 +58,7 @@ class Validations_test : public beast::unit_test::suite
         boost::optional<std::uint32_t> loadFee_;
 
     public:
-        Node(PeerID nodeID, clock_type const& c)
-            : c_(c)
-            , nodeID_(nodeID)
+        Node(PeerID nodeID, clock_type const& c) : c_(c), nodeID_(nodeID)
         {
         }
 
@@ -292,7 +290,7 @@ class Validations_test : public beast::unit_test::suite
         }
     };
 
-     Ledger const genesisLedger{Ledger::MakeGenesis{}};
+    Ledger const genesisLedger{Ledger::MakeGenesis{}};
 
     void
     testAddValidation()
@@ -349,8 +347,7 @@ class Validations_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 ValStatus::badSeq == harness.add(n.validate(ledgerAB)));
             // Cannot send the same partial validation sequence
-            BEAST_EXPECT(
-                ValStatus::badSeq == harness.add(n.partial(ledgerAB)));
+            BEAST_EXPECT(ValStatus::badSeq == harness.add(n.partial(ledgerAB)));
 
             // Now trusts the newest ledger too
             harness.clock().advance(1s);
@@ -425,9 +422,8 @@ class Validations_test : public beast::unit_test::suite
                 TestHarness harness(h.oracle);
                 Node n = harness.makeNode();
 
-                auto process = [&](Ledger & lgr)
-                {
-                    if(doFull)
+                auto process = [&](Ledger& lgr) {
+                    if (doFull)
                         return harness.add(n.validate(lgr));
                     return harness.add(n.partial(lgr));
                 };
@@ -457,7 +453,6 @@ class Validations_test : public beast::unit_test::suite
         LedgerHistoryHelper h;
         Ledger ledgerA = h["a"];
         Ledger ledgerAB = h["ab"];
-
 
         using Trigger = std::function<void(TestValidations&)>;
 
@@ -611,8 +606,7 @@ class Validations_test : public beast::unit_test::suite
                 ValStatus::current == harness.add(node.validate(ledgerA)));
 
         {
-            hash_set<PeerID> const expectedKeys = {a.nodeID(),
-                                                    b.nodeID()};
+            hash_set<PeerID> const expectedKeys = {a.nodeID(), b.nodeID()};
             BEAST_EXPECT(harness.vals().getCurrentNodeIDs() == expectedKeys);
         }
 
@@ -627,8 +621,7 @@ class Validations_test : public beast::unit_test::suite
                 ValStatus::current == harness.add(node.partial(ledgerAC)));
 
         {
-            hash_set<PeerID> const expectedKeys = {a.nodeID(),
-                                                    b.nodeID()};
+            hash_set<PeerID> const expectedKeys = {a.nodeID(), b.nodeID()};
             BEAST_EXPECT(harness.vals().getCurrentNodeIDs() == expectedKeys);
         }
 
@@ -695,7 +688,6 @@ class Validations_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     sorted(harness.vals().fees(id, baseFee)) ==
                     sorted(expectedFees));
-
             }
         };
 

@@ -18,9 +18,9 @@
 //==============================================================================
 #include <ripple/beast/unit_test.h>
 #include <ripple/consensus/LedgerTrie.h>
+#include <random>
 #include <test/csf/ledgers.h>
 #include <unordered_map>
-#include <random>
 
 namespace ripple {
 namespace test {
@@ -141,20 +141,19 @@ class LedgerTrie_test : public beast::unit_test::suite
         {
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
-            t.insert(h["ab"],4);
+            t.insert(h["ab"], 4);
             BEAST_EXPECT(t.tipSupport(h["ab"]) == 4);
             BEAST_EXPECT(t.branchSupport(h["ab"]) == 4);
             BEAST_EXPECT(t.tipSupport(h["a"]) == 0);
             BEAST_EXPECT(t.branchSupport(h["a"]) == 4);
 
-            t.insert(h["abc"],2);
+            t.insert(h["abc"], 2);
             BEAST_EXPECT(t.tipSupport(h["abc"]) == 2);
             BEAST_EXPECT(t.branchSupport(h["abc"]) == 2);
             BEAST_EXPECT(t.tipSupport(h["ab"]) == 4);
             BEAST_EXPECT(t.branchSupport(h["ab"]) == 6);
             BEAST_EXPECT(t.tipSupport(h["a"]) == 0);
             BEAST_EXPECT(t.branchSupport(h["a"]) == 6);
-
         }
     }
 
@@ -191,7 +190,7 @@ class LedgerTrie_test : public beast::unit_test::suite
         {
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
-            t.insert(h["abc"],2);
+            t.insert(h["abc"], 2);
 
             BEAST_EXPECT(t.tipSupport(h["abc"]) == 2);
             BEAST_EXPECT(t.remove(h["abc"]));
@@ -209,7 +208,6 @@ class LedgerTrie_test : public beast::unit_test::suite
             BEAST_EXPECT(t.remove(h["abc"], 300));
             BEAST_EXPECT(t.checkInvariants());
             BEAST_EXPECT(t.tipSupport(h["abc"]) == 0);
-
         }
         // In trie with = 1 tip support, no children
         {
@@ -288,7 +286,6 @@ class LedgerTrie_test : public beast::unit_test::suite
 
             BEAST_EXPECT(t.tipSupport(h["abc"]) == 1);
             BEAST_EXPECT(t.branchSupport(h["ab"]) == 1);
-
         }
     }
 
@@ -297,7 +294,6 @@ class LedgerTrie_test : public beast::unit_test::suite
     {
         using namespace csf;
         using Seq = Ledger::Seq;
-
 
         LedgerTrie<Ledger> t;
         LedgerHistoryHelper h;
@@ -339,7 +335,6 @@ class LedgerTrie_test : public beast::unit_test::suite
         BEAST_EXPECT(t.branchSupport(h["ab"]) == 1);
         BEAST_EXPECT(t.branchSupport(h["abc"]) == 0);
         BEAST_EXPECT(t.branchSupport(h["abe"]) == 1);
-
     }
 
     void
@@ -375,7 +370,7 @@ class LedgerTrie_test : public beast::unit_test::suite
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["abc"]);
-            t.insert(h["abcd"],2);
+            t.insert(h["abcd"], 2);
             BEAST_EXPECT(t.getPreferred(Seq{3}).id == h["abcd"].id());
             BEAST_EXPECT(t.getPreferred(Seq{4}).id == h["abcd"].id());
         }
@@ -398,7 +393,7 @@ class LedgerTrie_test : public beast::unit_test::suite
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["abc"]);
-            t.insert(h["abcd"],2);
+            t.insert(h["abcd"], 2);
             t.insert(h["abce"]);
             BEAST_EXPECT(t.getPreferred(Seq{3}).id == h["abc"].id());
             BEAST_EXPECT(t.getPreferred(Seq{4}).id == h["abc"].id());
@@ -411,8 +406,8 @@ class LedgerTrie_test : public beast::unit_test::suite
         {
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
-            t.insert(h["abcd"],2);
-            t.insert(h["abce"],2);
+            t.insert(h["abcd"], 2);
+            t.insert(h["abce"], 2);
 
             BEAST_EXPECT(h["abce"].id() > h["abcd"].id());
             BEAST_EXPECT(t.getPreferred(Seq{4}).id == h["abce"].id());
@@ -428,7 +423,7 @@ class LedgerTrie_test : public beast::unit_test::suite
             LedgerHistoryHelper h;
             t.insert(h["abc"]);
             t.insert(h["abcd"]);
-            t.insert(h["abce"],2);
+            t.insert(h["abce"], 2);
             // abce only has a margin of 1, but it owns the tie-breaker
             BEAST_EXPECT(h["abce"].id() > h["abcd"].id());
             BEAST_EXPECT(t.getPreferred(Seq{3}).id == h["abce"].id());
@@ -446,8 +441,8 @@ class LedgerTrie_test : public beast::unit_test::suite
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["abc"]);
-            t.insert(h["abcd"],2);
-            t.insert(h["abcde"],4);
+            t.insert(h["abcd"], 2);
+            t.insert(h["abcde"], 4);
             BEAST_EXPECT(t.getPreferred(Seq{3}).id == h["abcde"].id());
             BEAST_EXPECT(t.getPreferred(Seq{4}).id == h["abcde"].id());
             BEAST_EXPECT(t.getPreferred(Seq{5}).id == h["abcde"].id());
@@ -458,8 +453,8 @@ class LedgerTrie_test : public beast::unit_test::suite
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["abc"]);
-            t.insert(h["abcde"],2);
-            t.insert(h["abcfg"],2);
+            t.insert(h["abcde"], 2);
+            t.insert(h["abcfg"], 2);
             // 'de' and 'fg' are tied without 'abc' vote
             BEAST_EXPECT(t.getPreferred(Seq{3}).id == h["abc"].id());
             BEAST_EXPECT(t.getPreferred(Seq{4}).id == h["abc"].id());
@@ -497,7 +492,7 @@ class LedgerTrie_test : public beast::unit_test::suite
             t.insert(h["ab"]);
             t.insert(h["ac"]);
             t.insert(h["acf"]);
-            t.insert(h["abde"],2);
+            t.insert(h["abde"], 2);
 
             // B has more branch support
             BEAST_EXPECT(t.getPreferred(Seq{1}).id == h["ab"].id());
@@ -564,10 +559,7 @@ class LedgerTrie_test : public beast::unit_test::suite
             BEAST_EXPECT(t.getPreferred(Seq{3}).id == h["abde"].id());
             BEAST_EXPECT(t.getPreferred(Seq{4}).id == h["ab"].id());
             BEAST_EXPECT(t.getPreferred(Seq{5}).id == h["ab"].id());
-
         }
-
-
     }
 
     void
@@ -613,22 +605,22 @@ class LedgerTrie_test : public beast::unit_test::suite
         // Ledgers have sequence 1,2,3,4
         std::uint32_t const depth = 4;
         // Each ledger has 4 possible children
-        std::uint32_t const width  = 4;
+        std::uint32_t const width = 4;
 
         std::uint32_t const iterations = 10000;
 
         // Use explicit seed to have same results for CI
-        std::mt19937 gen{ 42 };
-        std::uniform_int_distribution<> depthDist(0, depth-1);
-        std::uniform_int_distribution<> widthDist(0, width-1);
+        std::mt19937 gen{42};
+        std::uniform_int_distribution<> depthDist(0, depth - 1);
+        std::uniform_int_distribution<> widthDist(0, width - 1);
         std::uniform_int_distribution<> flip(0, 1);
-        for(std::uint32_t i = 0; i < iterations; ++i)
+        for (std::uint32_t i = 0; i < iterations; ++i)
         {
             // pick a random ledger history
             std::string curr = "";
             char depth = depthDist(gen);
             char offset = 0;
-            for(char d = 0; d < depth; ++d)
+            for (char d = 0; d < depth; ++d)
             {
                 char a = offset + widthDist(gen);
                 curr += a;
@@ -636,11 +628,11 @@ class LedgerTrie_test : public beast::unit_test::suite
             }
 
             // 50-50 to add remove
-            if(flip(gen) == 0)
+            if (flip(gen) == 0)
                 t.insert(h[curr]);
             else
                 t.remove(h[curr]);
-            if(!BEAST_EXPECT(t.checkInvariants()))
+            if (!BEAST_EXPECT(t.checkInvariants()))
                 return;
         }
     }
