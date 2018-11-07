@@ -23,6 +23,7 @@
 #include <ripple/basics/Buffer.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/protocol/STBase.h>
+#include <cassert>
 #include <cstring>
 #include <memory>
 
@@ -40,18 +41,6 @@ public:
         :STBase(rhs)
         , value_ (rhs.data (), rhs.size ())
     {
-    }
-
-    /** Construct with size and initializer.
-        Init will be called as:
-            void(void* data, std::size_t size)
-    */
-    template <class Init>
-    STBlob (SField const& f, std::size_t size,
-            Init&& init)
-        : STBase(f), value_ (size)
-    {
-        init(value_.data(), value_.size());
     }
 
     STBlob (SField const& f,
@@ -115,12 +104,6 @@ public:
         s.addVL (value_.data (), value_.size ());
     }
 
-    Buffer const&
-    peekValue () const
-    {
-        return value_;
-    }
-
     STBlob&
     operator= (Slice const& slice)
     {
@@ -141,23 +124,10 @@ public:
         return *this;
     }
 
-    Buffer&
-    peekValue ()
-    {
-        return value_;
-    }
-
     void
     setValue (Buffer&& b)
     {
         value_ = std::move (b);
-    }
-
-    void
-    setValue (void const* data, std::size_t size)
-    {
-        value_.alloc (size);
-        std::memcpy(value_.data(), data, size);
     }
 
     bool
