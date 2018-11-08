@@ -70,6 +70,8 @@ struct parsedURL
     explicit parsedURL() = default;
 
     std::string scheme;
+    std::string username;
+    std::string password;
     std::string domain;
     boost::optional<std::uint16_t> port;
     std::string path;

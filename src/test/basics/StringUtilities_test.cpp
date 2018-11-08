@@ -67,6 +67,8 @@ public:
             parsedURL pUrl;
             BEAST_EXPECT(parseUrl (pUrl, "lower://domain"));
             BEAST_EXPECT(pUrl.scheme == "lower");
+            BEAST_EXPECT(pUrl.username == "");
+            BEAST_EXPECT(pUrl.password == "");
             BEAST_EXPECT(pUrl.domain == "domain");
             BEAST_EXPECT(! pUrl.port);
             BEAST_EXPECT(pUrl.path == "");
@@ -75,6 +77,9 @@ public:
             parsedURL pUrl;
             BEAST_EXPECT(parseUrl (pUrl, "UPPER://domain:234/"));
             BEAST_EXPECT(pUrl.scheme == "upper");
+            BEAST_EXPECT(pUrl.username == "");
+            BEAST_EXPECT(pUrl.password == "");
+            BEAST_EXPECT(pUrl.domain == "domain");
             BEAST_EXPECT(*pUrl.port == 234);
             BEAST_EXPECT(pUrl.path == "/");
         }
@@ -82,17 +87,25 @@ public:
             parsedURL pUrl;
             BEAST_EXPECT(parseUrl (pUrl, "Mixed://domain/path"));
             BEAST_EXPECT(pUrl.scheme == "mixed");
+            BEAST_EXPECT(pUrl.username == "");
+            BEAST_EXPECT(pUrl.password == "");
+            BEAST_EXPECT(pUrl.domain == "domain");
             BEAST_EXPECT(pUrl.path == "/path");
         }
         {
             parsedURL pUrl;
             BEAST_EXPECT(parseUrl (pUrl, "scheme://[::1]:123/path"));
-            BEAST_EXPECT(*pUrl.port == 123);
+            BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.domain == "::1");
+            BEAST_EXPECT(*pUrl.port == 123);
+            BEAST_EXPECT(pUrl.path == "/path");
         }
         {
             parsedURL pUrl;
             BEAST_EXPECT(parseUrl (pUrl, "scheme://user:pass@domain:123/abc:321"));
+            BEAST_EXPECT(pUrl.scheme == "scheme");
+            BEAST_EXPECT(pUrl.username == "user");
+            BEAST_EXPECT(pUrl.password == "pass");
             BEAST_EXPECT(pUrl.domain == "domain");
             BEAST_EXPECT(*pUrl.port == 123);
             BEAST_EXPECT(pUrl.path == "/abc:321");
@@ -100,6 +113,9 @@ public:
         {
             parsedURL pUrl;
             BEAST_EXPECT(parseUrl (pUrl, "scheme://user@domain:123/abc:321"));
+            BEAST_EXPECT(pUrl.scheme == "scheme");
+            BEAST_EXPECT(pUrl.username == "user");
+            BEAST_EXPECT(pUrl.password == "");
             BEAST_EXPECT(pUrl.domain == "domain");
             BEAST_EXPECT(*pUrl.port == 123);
             BEAST_EXPECT(pUrl.path == "/abc:321");
@@ -107,6 +123,9 @@ public:
         {
             parsedURL pUrl;
             BEAST_EXPECT(parseUrl (pUrl, "scheme://:pass@domain:123/abc:321"));
+            BEAST_EXPECT(pUrl.scheme == "scheme");
+            BEAST_EXPECT(pUrl.username == "");
+            BEAST_EXPECT(pUrl.password == "pass");
             BEAST_EXPECT(pUrl.domain == "domain");
             BEAST_EXPECT(*pUrl.port == 123);
             BEAST_EXPECT(pUrl.path == "/abc:321");
@@ -114,6 +133,9 @@ public:
         {
             parsedURL pUrl;
             BEAST_EXPECT(parseUrl (pUrl, "scheme://domain:123/abc:321"));
+            BEAST_EXPECT(pUrl.scheme == "scheme");
+            BEAST_EXPECT(pUrl.username == "");
+            BEAST_EXPECT(pUrl.password == "");
             BEAST_EXPECT(pUrl.domain == "domain");
             BEAST_EXPECT(*pUrl.port == 123);
             BEAST_EXPECT(pUrl.path == "/abc:321");
@@ -121,6 +143,9 @@ public:
         {
             parsedURL pUrl;
             BEAST_EXPECT(parseUrl (pUrl, "scheme://user:pass@domain/abc:321"));
+            BEAST_EXPECT(pUrl.scheme == "scheme");
+            BEAST_EXPECT(pUrl.username == "user");
+            BEAST_EXPECT(pUrl.password == "pass");
             BEAST_EXPECT(pUrl.domain == "domain");
             BEAST_EXPECT(! pUrl.port);
             BEAST_EXPECT(pUrl.path == "/abc:321");
@@ -128,6 +153,9 @@ public:
         {
             parsedURL pUrl;
             BEAST_EXPECT(parseUrl (pUrl, "scheme://user@domain/abc:321"));
+            BEAST_EXPECT(pUrl.scheme == "scheme");
+            BEAST_EXPECT(pUrl.username == "user");
+            BEAST_EXPECT(pUrl.password == "");
             BEAST_EXPECT(pUrl.domain == "domain");
             BEAST_EXPECT(! pUrl.port);
             BEAST_EXPECT(pUrl.path == "/abc:321");
@@ -135,6 +163,9 @@ public:
         {
             parsedURL pUrl;
             BEAST_EXPECT(parseUrl (pUrl, "scheme://:pass@domain/abc:321"));
+            BEAST_EXPECT(pUrl.scheme == "scheme");
+            BEAST_EXPECT(pUrl.username == "");
+            BEAST_EXPECT(pUrl.password == "pass");
             BEAST_EXPECT(pUrl.domain == "domain");
             BEAST_EXPECT(! pUrl.port);
             BEAST_EXPECT(pUrl.path == "/abc:321");
@@ -142,9 +173,22 @@ public:
         {
             parsedURL pUrl;
             BEAST_EXPECT(parseUrl (pUrl, "scheme://domain/abc:321"));
+            BEAST_EXPECT(pUrl.scheme == "scheme");
+            BEAST_EXPECT(pUrl.username == "");
+            BEAST_EXPECT(pUrl.password == "");
             BEAST_EXPECT(pUrl.domain == "domain");
             BEAST_EXPECT(! pUrl.port);
             BEAST_EXPECT(pUrl.path == "/abc:321");
+        }
+        {
+            parsedURL pUrl;
+            BEAST_EXPECT(parseUrl (pUrl, "scheme:///path/to/file"));
+            BEAST_EXPECT(pUrl.scheme == "scheme");
+            BEAST_EXPECT(pUrl.username == "");
+            BEAST_EXPECT(pUrl.password == "");
+            BEAST_EXPECT(pUrl.domain == "");
+            BEAST_EXPECT(! pUrl.port);
+            BEAST_EXPECT(pUrl.path == "/path/to/file");
         }
     }
 
