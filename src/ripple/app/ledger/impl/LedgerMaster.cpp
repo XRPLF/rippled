@@ -280,6 +280,7 @@ LedgerMaster::canBeCurrent (std::shared_ptr<Ledger const> const& ledger)
 
     auto closeTime = app_.timeKeeper().closeTime();
     auto ledgerClose = ledger->info().parentCloseTime;
+
     if ((validLedger || (ledger->info().seq > 10)) &&
         ((std::max (closeTime, ledgerClose) - std::min (closeTime, ledgerClose))
             > 5min))
@@ -292,12 +293,17 @@ LedgerMaster::canBeCurrent (std::shared_ptr<Ledger const> const& ledger)
 
     if (validLedger)
     {
-        // Sequence number must not be too high. We allow ten ledgers for time
-        // inaccuracies plus a maximum run rate of one ledger every two seconds
+        // Sequence number must not be too high. We allow ten ledgers
+        // for time inaccuracies plus a maximum run rate of one ledger
+        // every two seconds. The goal is to prevent a malicious ledger
+        // from increasing our sequence unreasonably high
 
         LedgerIndex maxSeq = validLedger->info().seq + 10;
-        maxSeq += std::chrono::duration_cast<std::chrono::seconds>(
-            closeTime - validLedger->info().parentCloseTime).count() / 2;
+
+        if (closeTime > validLedger->info().parentCloseTime)
+            maxSeq += std::chrono::duration_cast<std::chrono::seconds>(
+                closeTime - validLedger->info().parentCloseTime).count() / 2;
+
         if (ledger->info().seq > maxSeq)
         {
             JLOG (m_journal.warn()) << "Candidate for current ledger has high seq "
@@ -306,8 +312,8 @@ LedgerMaster::canBeCurrent (std::shared_ptr<Ledger const> const& ledger)
         }
 
         JLOG (m_journal.trace()) << "Acceptable seq range: " <<
-            (validLedger ? validLedger->info().seq : 0) << " <= " <<
-             ledger->info().seq << " <= " << maxSeq;
+            validLedger->info().seq << " <= " <<
+            ledger->info().seq << " <= " << maxSeq;
     }
 
     return true;
