@@ -148,7 +148,7 @@ public:
 
     SField(SField const&) = delete;
     SField& operator=(SField const&) = delete;
-    SField(SField&&) = default;
+    SField(SField&&);
 
 protected:
     // These constructors can only be called from FieldNames.cpp

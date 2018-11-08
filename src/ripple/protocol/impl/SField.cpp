@@ -285,7 +285,7 @@ SField::SField (int fc)
     , fieldMeta (sMD_Never)
     , fieldNum (++num)
     , signingField (IsSigning::yes)
-    , jsonName ("")
+    , jsonName (fieldName.c_str())
 {
 }
 
@@ -293,16 +293,29 @@ SField::SField (int fc)
 // This is naturally done with no extra expense
 // from getField(int code).
 SField::SField (SerializedTypeID tid, int fv)
-        : fieldCode (field_code (tid, fv))
-        , fieldType (tid)
-        , fieldValue (fv)
-        , fieldName (std::to_string (tid) + '/' + std::to_string (fv))
-        , fieldMeta (sMD_Default)
-        , fieldNum (++num)
-        , signingField (IsSigning::yes)
-        , jsonName (fieldName.c_str())
+    : fieldCode (field_code (tid, fv))
+    , fieldType (tid)
+    , fieldValue (fv)
+    , fieldName (std::to_string (tid) + '/' + std::to_string (fv))
+    , fieldMeta (sMD_Default)
+    , fieldNum (++num)
+    , signingField (IsSigning::yes)
+    , jsonName (fieldName.c_str())
 {
     assert ((fv != 1) || ((tid != STI_ARRAY) && (tid != STI_OBJECT)));
+}
+
+// we can't use the default move constructor because
+// it could leave jsonName referencing a destroyed string
+SField::SField (SField &&s)
+    : fieldCode (s.fieldCode)
+    , fieldType (s.fieldType)
+    , fieldValue (s.fieldValue)
+    , fieldMeta (s.fieldMeta)
+    , fieldNum (s.fieldNum)
+    , signingField (s.signingField)
+    , jsonName (fieldName.c_str())
+{
 }
 
 SField const&
