@@ -290,6 +290,20 @@ class LedgerTrie_test : public beast::unit_test::suite
     }
 
     void
+    testEmpty()
+    {
+        using namespace csf;
+        LedgerTrie<Ledger> t;
+        LedgerHistoryHelper h;
+        BEAST_EXPECT(t.empty());
+
+        t.insert(h["abc"]);
+        BEAST_EXPECT(!t.empty());
+        t.remove(h["abc"]);
+        BEAST_EXPECT(t.empty());
+    }
+
+    void
     testSupport()
     {
         using namespace csf;
@@ -642,6 +656,7 @@ class LedgerTrie_test : public beast::unit_test::suite
     {
         testInsert();
         testRemove();
+        testEmpty();
         testSupport();
         testGetPreferred();
         testRootRelated();

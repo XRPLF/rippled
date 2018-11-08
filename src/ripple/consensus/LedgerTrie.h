@@ -754,6 +754,14 @@ public:
         return curr->span.tip();
     }
 
+    /** Return whether the trie is tracking any ledgers
+     */
+    bool
+    empty() const
+    {
+        return !root || root->branchSupport == 0;
+    }
+
     /** Dump an ascii representation of the trie to the stream
      */
     void

@@ -693,20 +693,23 @@ public:
         @param curr The local node's current working ledger
 
         @return The sequence and id of the preferred working ledger,
-                or Seq{0},ID{0} if no trusted validations are available to
+                or boost::none if no trusted validations are available to
                 determine the preferred ledger.
     */
-    std::pair<Seq, ID>
+    boost::optional<std::pair<Seq, ID>>
     getPreferred(Ledger const& curr)
     {
         ScopedLock lock{mutex_};
-        SpanTip<Ledger> preferred =
-            withTrie(lock, [this](LedgerTrie<Ledger>& trie) {
+        boost::optional<SpanTip<Ledger>> preferred = withTrie(
+            lock,
+            [this](
+                LedgerTrie<Ledger>& trie) -> boost::optional<SpanTip<Ledger>> {
+                if (trie.empty())
+                    return boost::none;
                 return trie.getPreferred(localSeqEnforcer_.largest());
             });
-
         // No trusted validations to determine branch
-        if (preferred.seq == Seq{0})
+        if (!preferred)
         {
             // fall back to majority over acquiring ledgers
             auto it = std::max_element(
@@ -726,24 +729,24 @@ public:
                 });
             if (it != acquiring_.end())
                 return it->first;
-            return std::make_pair(preferred.seq, preferred.id);
+            return boost::none;
         }
 
         // If we are the parent of the preferred ledger, stick with our
         // current ledger since we might be about to generate it
-        if (preferred.seq == curr.seq() + Seq{1} &&
-            preferred.ancestor(curr.seq()) == curr.id())
+        if (preferred->seq == curr.seq() + Seq{1} &&
+            preferred->ancestor(curr.seq()) == curr.id())
             return std::make_pair(curr.seq(), curr.id());
 
         // A ledger ahead of us is preferred regardless of whether it is
         // a descendant of our working ledger or it is on a different chain
-        if (preferred.seq > curr.seq())
-            return std::make_pair(preferred.seq, preferred.id);
+        if (preferred->seq > curr.seq())
+            return std::make_pair(preferred->seq, preferred->id);
 
         // Only switch to earlier or same sequence number
         // if it is a different chain.
-        if (curr[preferred.seq] != preferred.id)
-            return std::make_pair(preferred.seq, preferred.id);
+        if (curr[preferred->seq] != preferred->id)
+            return std::make_pair(preferred->seq, preferred->id);
 
         // Stick with current ledger
         return std::make_pair(curr.seq(), curr.id());
@@ -761,9 +764,9 @@ public:
     ID
     getPreferred(Ledger const& curr, Seq minValidSeq)
     {
-        std::pair<Seq, ID> preferred = getPreferred(curr);
-        if (preferred.first >= minValidSeq && preferred.second != ID{0})
-            return preferred.second;
+        boost::optional<std::pair<Seq, ID>> preferred = getPreferred(curr);
+        if (preferred && preferred->first >= minValidSeq)
+            return preferred->second;
         return curr.id();
     }
 
@@ -789,11 +792,12 @@ public:
         Seq minSeq,
         hash_map<ID, std::uint32_t> const& peerCounts)
     {
-        std::pair<Seq, ID> preferred = getPreferred(lcl);
+        boost::optional<std::pair<Seq, ID>> preferred = getPreferred(lcl);
 
-        // Trusted validations exist
-        if (preferred.second != ID{0} && preferred.first > Seq{0})
-            return (preferred.first >= minSeq) ? preferred.second : lcl.id();
+        // Trusted validations exist, but stick with local preferred ledger if
+        // preferred is in the past
+        if (preferred)
+            return (preferred->first >= minSeq) ? preferred->second : lcl.id();
 
         // Otherwise, rely on peer ledgers
         auto it = std::max_element(
