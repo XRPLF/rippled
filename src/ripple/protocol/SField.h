@@ -23,6 +23,9 @@
 #include <ripple/basics/safe_cast.h>
 #include <ripple/json/json_value.h>
 #include <cstdint>
+#include <map>
+#include <memory>
+#include <mutex>
 #include <utility>
 
 namespace ripple {
@@ -149,14 +152,22 @@ public:
 
     SField(SField const&) = delete;
     SField& operator=(SField const&) = delete;
-    SField(SField&&);
+    SField(SField&&) = delete;
+    SField& operator=(SField&&) = delete;
+
+public:
+    struct private_access_tag_t;         // public, but still an implementation detail
+
+    // These constructors can only be called from SField.cpp
+    SField (private_access_tag_t, SerializedTypeID tid, int fv,
+        const char* fn, int meta = sMD_Default,
+        IsSigning signing = IsSigning::yes);
+    explicit SField (private_access_tag_t, int fc);
+    SField (private_access_tag_t, SerializedTypeID tid, int fv);
 
 protected:
-    // These constructors can only be called from FieldNames.cpp
-    SField (SerializedTypeID tid, int fv, const char* fn,
-            int meta = sMD_Default, IsSigning signing = IsSigning::yes);
-    explicit SField (int fc);
-    SField (SerializedTypeID id, int val);
+    // These constructors can only be called from SField.cpp
+    explicit SField (SerializedTypeID tid, int fv);
 
 public:
     // getField will dynamically construct a new SField if necessary
@@ -261,10 +272,12 @@ public:
 
     static int compare (const SField& f1, const SField& f2);
 
-    struct make;  // public, but still an implementation detail
-
 private:
     static int num;
+
+    static std::mutex SField_mutex;
+    static std::map<int, SField const*> knownCodeToField;
+    static std::map<int, std::unique_ptr<SField const>> unknownCodeToField;
 };
 
 /** A field with a type known at compile time. */
