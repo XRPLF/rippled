@@ -51,10 +51,12 @@ public:
 
     Serializer (void const* data, std::size_t size)
     {
+        assert(!data == !size);
+
         mData.resize(size);
 
         if (size)
-            std::memcpy(mData.data(), reinterpret_cast<unsigned char const*>(data), size);
+            std::memcpy(mData.data(), data, size);
     }
 
     Slice slice() const noexcept
