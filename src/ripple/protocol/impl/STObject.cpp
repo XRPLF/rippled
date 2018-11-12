@@ -169,48 +169,57 @@ bool STObject::set (SerialIter& sit, int depth) noexcept (false)
     v_.clear();
 
     // Consume data in the pipe until we run out or reach the end
-    //
-    while (!reachedEndOfObject && !sit.empty ())
+    while (!sit.empty ())
     {
         int type;
         int field;
 
         // Get the metadata for the next field
-        //
-        sit.getFieldID (type, field);
+        sit.getFieldID(type, field);
 
-        reachedEndOfObject = (type == STI_OBJECT) && (field == 1);
+        // The object termination marker has been found and the termination
+        // marker has been consumed. Done deserializing.
+        if (type == STI_OBJECT && field == 1)
+        {
+            reachedEndOfObject = true;
+            break;
+        }
 
-        if ((type == STI_ARRAY) && (field == 1))
+        if (type == STI_ARRAY && field == 1)
         {
             JLOG (debugLog().error())
-                << "Encountered object with end of array marker";
-            Throw<std::runtime_error> ("Illegal terminator in object");
+                << "Encountered object with embedded end-of-array marker";
+            Throw<std::runtime_error>("Illegal end-of-array marker in object");
         }
 
-        if (!reachedEndOfObject)
+        auto const& fn = SField::getField(type, field);
+
+        if (fn.isInvalid ())
         {
-            // Figure out the field
-            //
-            auto const& fn = SField::getField (type, field);
-
-            if (fn.isInvalid ())
-            {
-                JLOG (debugLog().error())
-                    << "Unknown field: field_type=" << type
-                    << ", field_name=" << field;
-                Throw<std::runtime_error> ("Unknown field");
-            }
-
-            // Unflatten the field
-            v_.emplace_back(sit, fn, depth+1);
-
-            // If the object type has a known SOTemplate then set it.
-            STObject* const obj = dynamic_cast <STObject*> (&(v_.back().get()));
-            if (obj)
-                obj->applyTemplateFromSField (fn);  // May throw
+            JLOG (debugLog().error())
+                << "Unknown field: field_type=" << type
+                << ", field_name=" << field;
+            Throw<std::runtime_error> ("Unknown field");
         }
+
+        // Unflatten the field
+        v_.emplace_back(sit, fn, depth+1);
+
+        // If the object type has a known SOTemplate then set it.
+        if (auto const obj = dynamic_cast<STObject*>(&(v_.back().get())))
+            obj->applyTemplateFromSField (fn);  // May throw
     }
+
+    // We want to ensure that the deserialized object does not contain any
+    // duplicate fields. This is a key invariant:
+    auto const sf = getSortedFields(*this, withAllFields);
+
+    auto const dup = std::adjacent_find (sf.cbegin(), sf.cend(),
+        [] (STBase const* lhs, STBase const* rhs)
+        { return lhs->getFName() == rhs->getFName(); });
+
+    if (dup != sf.cend())
+        Throw<std::runtime_error> ("Duplicate field detected");
 
     return reachedEndOfObject;
 }
@@ -279,10 +288,23 @@ bool STObject::isEquivalent (const STBase& t) const
     if (!v)
         return false;
 
-    if (mType != nullptr && (v->mType == mType))
-        return equivalentSTObjectSameTemplate (*this, *v);
+    if (mType != nullptr && v->mType == mType)
+    {
+        return std::equal (begin(), end(), v->begin(), v->end(),
+            [](STBase const& st1, STBase const& st2)
+            {
+                return (st1.getSType() == st2.getSType()) && st1.isEquivalent(st2);
+            });
+    }
 
-    return equivalentSTObject (*this, *v);
+    auto const sf1 = getSortedFields(*this, withAllFields);
+    auto const sf2 = getSortedFields(*v, withAllFields);
+
+    return std::equal (sf1.begin (), sf1.end (), sf2.begin (), sf2.end (),
+        [] (STBase const* st1, STBase const* st2)
+        {
+            return (st1->getSType() == st2->getSType()) && st1->isEquivalent (*st2);
+        });
 }
 
 uint256 STObject::getHash (std::uint32_t prefix) const
@@ -741,42 +763,7 @@ STObject::getSortedFields (
             return lhs->getFName().fieldCode < rhs->getFName().fieldCode;
         });
 
-    // There should never be duplicate fields in an STObject. Verify that
-    // in debug mode.
-    assert (std::adjacent_find (sf.cbegin(), sf.cend(),
-        [] (STBase const* lhs, STBase const* rhs)
-        {
-            return lhs->getFName().fieldCode == rhs->getFName().fieldCode;
-        }) == sf.cend());
-
     return sf;
-}
-
-bool STObject::equivalentSTObjectSameTemplate (
-    STObject const& obj1, STObject const& obj2)
-{
-    assert (obj1.mType != nullptr);
-    assert (obj1.mType == obj2.mType);
-
-    return std::equal (obj1.begin (), obj1.end (), obj2.begin (), obj2.end (),
-        [] (STBase const& st1, STBase const& st2)
-        {
-            return (st1.getSType() == st2.getSType()) &&
-                st1.isEquivalent (st2);
-        });
-}
-
-bool STObject::equivalentSTObject (STObject const& obj1, STObject const& obj2)
-{
-    auto sf1 = getSortedFields (obj1, withAllFields);
-    auto sf2 = getSortedFields (obj2, withAllFields);
-
-    return std::equal (sf1.begin (), sf1.end (), sf2.begin (), sf2.end (),
-        [] (STBase const* st1, STBase const* st2)
-        {
-            return (st1->getSType() == st2->getSType()) &&
-                st1->isEquivalent (*st2);
-        });
 }
 
 } // ripple

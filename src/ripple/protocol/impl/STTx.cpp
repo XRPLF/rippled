@@ -71,7 +71,9 @@ STTx::STTx (SerialIter& sit) noexcept (false)
     if ((length < txMinSizeBytes) || (length > txMaxSizeBytes))
         Throw<std::runtime_error> ("Transaction length invalid");
 
-    set (sit);
+    if (set (sit))
+        Throw<std::runtime_error> ("Transaction contains an object terminator");
+
     tx_type_ = static_cast<TxType> (getFieldU16 (sfTransactionType));
 
     applyTemplate (getTxFormat (tx_type_)->elements);  // May throw

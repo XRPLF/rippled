@@ -538,16 +538,6 @@ private:
     getSortedFields (
         STObject const& objToSort, WhichFields whichFields);
 
-    // Two different ways to compare STObjects.
-    //
-    // This one works only if the SOTemplates are the same.  Presumably it
-    // runs faster since there's no sorting.
-    static bool equivalentSTObjectSameTemplate (
-        STObject const& obj1, STObject const& obj2);
-
-    // This way of comparing STObjects always works, but is slower.
-    static bool equivalentSTObject (STObject const& obj1, STObject const& obj2);
-
     // Implementation for getting (most) fields that return by value.
     //
     // The remove_cv and remove_reference are necessitated by the STBitString
