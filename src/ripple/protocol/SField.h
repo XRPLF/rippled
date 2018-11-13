@@ -144,9 +144,9 @@ public:
     int const                fieldCode;      // (type<<16)|index
     SerializedTypeID const   fieldType;      // STI_*
     int const                fieldValue;     // Code number for protocol
-    std::string              fieldName;
-    int                      fieldMeta;
-    int                      fieldNum;
+    std::string const        fieldName;
+    int const                fieldMeta;
+    int const                fieldNum;
     IsSigning const          signingField;
     Json::StaticString const jsonName;
 
@@ -248,10 +248,6 @@ public:
     bool shouldMeta (int c) const
     {
         return (fieldMeta & c) != 0;
-    }
-    void setMeta (int c)
-    {
-        fieldMeta = c;
     }
 
     bool shouldInclude (bool withSigningField) const
