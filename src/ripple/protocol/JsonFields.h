@@ -400,6 +400,7 @@ JSS ( seq );                        // in: LedgerEntry;
                                     //      ValidatorList
 JSS ( seqNum );                     // out: LedgerToJson
 JSS ( server_state );               // out: NetworkOPs
+JSS ( server_state_duration_us );   // out: NetworkOPs
 JSS ( server_status );              // out: NetworkOPs
 JSS ( settle_delay );               // out: AccountChannels
 JSS ( severity );                   // in: LogLevel
