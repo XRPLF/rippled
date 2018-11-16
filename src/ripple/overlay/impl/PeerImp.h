@@ -592,7 +592,7 @@ private:
 
     void
     checkValidation(
-        STValidation::pointer val,
+        std::shared_ptr<STValidation> const& val,
         std::shared_ptr<protocol::TMValidation> const& packet);
 
     void

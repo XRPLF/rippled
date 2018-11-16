@@ -232,7 +232,7 @@ public:
         NetClock::time_point closeTime,
         std::set<uint256> const& enabledAmendments,
         majorityAmendments_t const& majorityAmendments,
-        std::vector<STValidation::pointer> const& validations) override;
+        std::vector<std::shared_ptr<STValidation>> const& validations) override;
 };
 
 //------------------------------------------------------------------------------
@@ -455,7 +455,7 @@ AmendmentTableImpl::doVoting(
     NetClock::time_point closeTime,
     std::set<uint256> const& enabledAmendments,
     majorityAmendments_t const& majorityAmendments,
-    std::vector<STValidation::pointer> const& valSet)
+    std::vector<std::shared_ptr<STValidation>> const& valSet)
 {
     JLOG(j_.trace()) << "voting at " << closeTime.time_since_epoch().count()
                      << ": " << enabledAmendments.size() << ", "

@@ -2117,7 +2117,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
     try
     {
-        STValidation::pointer val;
+        std::shared_ptr<STValidation> val;
         {
             SerialIter sit(makeSlice(m->validation()));
             val = std::make_shared<STValidation>(
@@ -2453,7 +2453,6 @@ PeerImp::checkPropose(
         << "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal";
 
     assert(packet);
-    protocol::TMProposeSet& set = *packet;
 
     if (!cluster() && !peerPos.checkSign())
     {
@@ -2474,7 +2473,7 @@ PeerImp::checkPropose(
         {
             // relay untrusted proposal
             JLOG(p_journal_.trace()) << "relaying UNTRUSTED proposal";
-            overlay_.relay(set, peerPos.suppressionID());
+            overlay_.relay(*packet, peerPos.suppressionID());
         }
         else
         {
@@ -2485,7 +2484,7 @@ PeerImp::checkPropose(
 
 void
 PeerImp::checkValidation(
-    STValidation::pointer val,
+    std::shared_ptr<STValidation> const& val,
     std::shared_ptr<protocol::TMValidation> const& packet)
 {
     try

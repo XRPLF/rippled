@@ -362,7 +362,9 @@ public:
         std::shared_ptr<protocol::TMProposeSet> set) override;
 
     bool
-    recvValidation(STValidation::ref val, std::string const& source) override;
+    recvValidation(
+        std::shared_ptr<STValidation> const& val,
+        std::string const& source) override;
 
     std::shared_ptr<SHAMap>
     getTXMap(uint256 const& hash);
@@ -550,7 +552,7 @@ public:
         std::shared_ptr<STTx const> const& stTxn,
         TER terResult) override;
     void
-    pubValidation(STValidation::ref val) override;
+    pubValidation(std::shared_ptr<STValidation> const& val) override;
 
     //--------------------------------------------------------------------------
     //
@@ -2047,7 +2049,7 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
 }
 
 void
-NetworkOPsImp::pubValidation(STValidation::ref val)
+NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 {
     // VFALCO consider std::shared_mutex
     std::lock_guard sl(mSubLock);
@@ -2473,7 +2475,9 @@ NetworkOPsImp::getTxsAccountB(
 }
 
 bool
-NetworkOPsImp::recvValidation(STValidation::ref val, std::string const& source)
+NetworkOPsImp::recvValidation(
+    std::shared_ptr<STValidation> const& val,
+    std::string const& source)
 {
     JLOG(m_journal.debug())
         << "recvValidation " << val->getLedgerHash() << " from " << source;

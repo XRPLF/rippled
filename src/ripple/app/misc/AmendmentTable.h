@@ -103,7 +103,7 @@ public:
         NetClock::time_point closeTime,
         std::set<uint256> const& enabledAmendments,
         majorityAmendments_t const& majorityAmendments,
-        std::vector<STValidation::pointer> const& valSet) = 0;
+        std::vector<std::shared_ptr<STValidation>> const& valSet) = 0;
 
     // Called by the consensus code when we need to
     // add feature entries to a validation
@@ -126,7 +126,7 @@ public:
     void
     doVoting(
         std::shared_ptr<ReadView const> const& lastClosedLedger,
-        std::vector<STValidation::pointer> const& parentValidations,
+        std::vector<std::shared_ptr<STValidation>> const& parentValidations,
         std::shared_ptr<SHAMap> const& initialPosition)
     {
         // Ask implementation what to do

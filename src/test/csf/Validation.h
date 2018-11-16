@@ -55,6 +55,7 @@ class Validation
     bool trusted_ = false;
     bool full_ = false;
     boost::optional<std::uint32_t> loadFee_;
+    std::uint64_t cookie_{0};
 
 public:
     using NodeKey = PeerKey;
@@ -68,7 +69,8 @@ public:
         PeerKey key,
         PeerID nodeID,
         bool full,
-        boost::optional<std::uint32_t> loadFee = boost::none)
+        boost::optional<std::uint32_t> loadFee = boost::none,
+        std::uint64_t cookie = 0)
         : ledgerID_{id}
         , seq_{seq}
         , signTime_{sign}
@@ -77,6 +79,7 @@ public:
         , nodeID_{nodeID}
         , full_{full}
         , loadFee_{loadFee}
+        , cookie_{cookie}
     {
     }
 
@@ -126,6 +129,12 @@ public:
     full() const
     {
         return full_;
+    }
+
+    std::uint64_t
+    cookie() const
+    {
+        return cookie_;
     }
 
     boost::optional<std::uint32_t>
@@ -191,4 +200,5 @@ public:
 }  // namespace csf
 }  // namespace test
 }  // namespace ripple
+
 #endif

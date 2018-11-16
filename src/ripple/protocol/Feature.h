@@ -111,7 +111,7 @@ class FeatureCollections
         "RequireFullyCanonicalSig",
         "fix1781",  // XRPEndpointSteps should be included in the circular
                     // payment check
-    };
+        "HardenedValidations"};
 
     std::vector<uint256> features;
     boost::container::flat_map<uint256, std::size_t> featureToIndex;
@@ -366,6 +366,7 @@ extern uint256 const featureDeletableAccounts;
 extern uint256 const fixQualityUpperBound;
 extern uint256 const featureRequireFullyCanonicalSig;
 extern uint256 const fix1781;
+extern uint256 const featureHardenedValidations;
 
 // The following amendments have been active for at least two years.
 // Their pre-amendment code has been removed.

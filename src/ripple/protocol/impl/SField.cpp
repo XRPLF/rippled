@@ -168,6 +168,7 @@ SF_U256 const sfDigest(access, STI_HASH256, 21, "Digest");
 SF_U256 const sfPayChannel(access, STI_HASH256, 22, "Channel");
 SF_U256 const sfConsensusHash(access, STI_HASH256, 23, "ConsensusHash");
 SF_U256 const sfCheckID(access, STI_HASH256, 24, "CheckID");
+SF_U256 const sfValidatedHash(access, STI_HASH256, 25, "ValidatedHash");
 
 // currency amount (common)
 SF_Amount const sfAmount(access, STI_AMOUNT, 1, "Amount");

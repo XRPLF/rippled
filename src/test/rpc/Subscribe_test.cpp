@@ -370,6 +370,7 @@ public:
 
             // Check stream update
             using namespace std::chrono_literals;
+
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 return jv[jss::type] == "validationReceived" &&
                     jv[jss::validation_public_key].asString() == valPublicKey &&
@@ -378,7 +379,7 @@ public:
                     jv[jss::ledger_index] ==
                     std::to_string(env.closed()->info().seq) &&
                     jv[jss::flags] ==
-                    (vfFullyCanonicalSig | STValidation::kFullFlag) &&
+                    (vfFullyCanonicalSig | vfFullValidation) &&
                     jv[jss::full] == true && !jv.isMember(jss::load_fee) &&
                     jv[jss::signature] && jv[jss::signing_time];
             }));

@@ -175,7 +175,9 @@ public:
         std::shared_ptr<protocol::TMProposeSet> set) = 0;
 
     virtual bool
-    recvValidation(STValidation::ref val, std::string const& source) = 0;
+    recvValidation(
+        std::shared_ptr<STValidation> const& val,
+        std::string const& source) = 0;
 
     virtual void
     mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire) = 0;
@@ -309,7 +311,7 @@ public:
         std::shared_ptr<STTx const> const& stTxn,
         TER terResult) = 0;
     virtual void
-    pubValidation(STValidation::ref val) = 0;
+    pubValidation(std::shared_ptr<STValidation> const& val) = 0;
 };
 
 //------------------------------------------------------------------------------

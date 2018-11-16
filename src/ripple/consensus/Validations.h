@@ -167,7 +167,11 @@ enum class ValStatus {
     /// Not current or was older than current from this node
     stale,
     /// A validation violates the increasing seq requirement
-    badSeq
+    badSeq,
+    /// Multiple validations for the same ledger from multiple validators
+    multiple,
+    /// Multiple validations for different ledgers by a single validator
+    conflicting
 };
 
 inline std::string
@@ -181,6 +185,10 @@ to_string(ValStatus m)
             return "stale";
         case ValStatus::badSeq:
             return "badSeq";
+        case ValStatus::multiple:
+            return "multiple";
+        case ValStatus::conflicting:
+            return "conflicting";
         default:
             return "unknown";
     }
@@ -305,6 +313,14 @@ class Validations
         std::chrono::steady_clock,
         beast::uhash<>>
         byLedger_;
+
+    // Partial and full validations indexed by sequence
+    beast::aged_unordered_map<
+        Seq,
+        hash_map<NodeID, Validation>,
+        std::chrono::steady_clock,
+        beast::uhash<>>
+        bySequence_;
 
     // Represents the ancestry of validated ledgers
     LedgerTrie<Ledger> trie_;
@@ -546,7 +562,10 @@ public:
         ValidationParms const& p,
         beast::abstract_clock<std::chrono::steady_clock>& c,
         Ts&&... ts)
-        : byLedger_(c), parms_(p), adaptor_(std::forward<Ts>(ts)...)
+        : byLedger_(c)
+        , bySequence_(c)
+        , parms_(p)
+        , adaptor_(std::forward<Ts>(ts)...)
     {
     }
 
@@ -598,11 +617,48 @@ public:
             std::lock_guard lock{mutex_};
 
             // Check that validation sequence is greater than any non-expired
-            // validations sequence from that validator
+            // validations sequence from that validator; if it's not, perform
+            // additional work to detect Byzantine validations
             auto const now = byLedger_.clock().now();
-            SeqEnforcer<Seq>& enforcer = seqEnforcers_[nodeID];
-            if (!enforcer(now, val.seq(), parms_))
+
+            auto const [seqit, seqinserted] =
+                bySequence_[val.seq()].emplace(nodeID, val);
+
+            if (!seqinserted)
+            {
+                // Check if the entry we're already tracking was signed
+                // long enough ago that we can disregard it.
+                auto const diff =
+                    std::max(seqit->second.signTime(), val.signTime()) -
+                    std::min(seqit->second.signTime(), val.signTime());
+
+                if (diff > parms_.validationCURRENT_WALL &&
+                    val.signTime() > seqit->second.signTime())
+                    seqit->second = val;
+            }
+
+            // Enforce monotonically increasing sequences for validations
+            // by a given node:
+            if (auto& enf = seqEnforcers_[nodeID]; !enf(now, val.seq(), parms_))
+            {
+                // If the validation is for the same sequence as one we are
+                // tracking, check it closely:
+                if (seqit->second.seq() == val.seq())
+                {
+                    // Two validations for the same sequence but for different
+                    // ledgers. This could be the result of misconfiguration
+                    // but it can also mean a Byzantine validator.
+                    if (seqit->second.ledgerID() != val.ledgerID())
+                        return ValStatus::conflicting;
+
+                    // Two validations for the same sequence but with different
+                    // cookies. This is probably accidental misconfiguration.
+                    if (seqit->second.cookie() != val.cookie())
+                        return ValStatus::multiple;
+                }
+
                 return ValStatus::badSeq;
+            }
 
             byLedger_[val.ledgerID()].insert_or_assign(nodeID, val);
 
@@ -626,6 +682,7 @@ public:
                 updateTrie(lock, nodeID, val, boost::none);
             }
         }
+
         return ValStatus::current;
     }
 
@@ -639,6 +696,7 @@ public:
     {
         std::lock_guard lock{mutex_};
         beast::expire(byLedger_, parms_.validationSET_EXPIRES);
+        beast::expire(bySequence_, parms_.validationSET_EXPIRES);
     }
 
     /** Update trust status of validations

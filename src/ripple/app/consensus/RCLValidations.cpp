@@ -151,15 +151,14 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 bool
 handleNewValidation(
     Application& app,
-    STValidation::ref val,
+    std::shared_ptr<STValidation> const& val,
     std::string const& source)
 {
     PublicKey const& signingKey = val->getSignerPublic();
     uint256 const& hash = val->getLedgerHash();
 
     // Ensure validation is marked as trusted if signer currently trusted
-    boost::optional<PublicKey> masterKey =
-        app.validators().getTrustedKey(signingKey);
+    auto masterKey = app.validators().getTrustedKey(signingKey);
     if (!val->isTrusted() && masterKey)
         val->setTrusted();
 
@@ -172,13 +171,15 @@ handleNewValidation(
     beast::Journal const j = validations.adaptor().journal();
 
     auto dmp = [&](beast::Journal::Stream s, std::string const& msg) {
-        s << "Val for " << hash
-          << (val->isTrusted() ? " trusted/" : " UNtrusted/")
-          << (val->isFull() ? "full" : "partial") << " from "
-          << (masterKey ? toBase58(TokenType::NodePublic, *masterKey)
-                        : "unknown")
-          << " signing key " << toBase58(TokenType::NodePublic, signingKey)
-          << " " << msg << " src=" << source;
+        std::string id = toBase58(TokenType::NodePublic, signingKey);
+
+        if (masterKey)
+            id += ":" + toBase58(TokenType::NodePublic, *masterKey);
+
+        s << (val->isTrusted() ? "trusted" : "untrusted") << " "
+          << (val->isFull() ? "full" : "partial") << " validation: " << hash
+          << " from " << id << " via " << source << ": " << msg << "\n"
+          << " [" << val->getSerializer().getHex() << "]";
     };
 
     if (!val->isFieldPresent(sfLedgerSequence))
@@ -192,13 +193,30 @@ handleNewValidation(
     if (masterKey)
     {
         ValStatus const outcome = validations.add(calcNodeID(*masterKey), val);
+
         if (j.debug())
             dmp(j.debug(), to_string(outcome));
+
+        if (outcome == ValStatus::conflicting && j.warn())
+        {
+            auto const seq = val->getFieldU32(sfLedgerSequence);
+            dmp(j.warn(),
+                "conflicting validations issued for " + to_string(seq) +
+                    " (likely from a Byzantine validator)");
+        }
+
+        if (outcome == ValStatus::multiple && j.warn())
+        {
+            auto const seq = val->getFieldU32(sfLedgerSequence);
+            dmp(j.warn(),
+                "multiple validations issued for " + to_string(seq) +
+                    " (multiple validators operating with the same key?)");
+        }
 
         if (outcome == ValStatus::badSeq && j.warn())
         {
             auto const seq = val->getFieldU32(sfLedgerSequence);
-            dmp(j.warn(),
+            dmp(j.debug(),
                 "already validated sequence at or past " + std::to_string(seq));
         }
 

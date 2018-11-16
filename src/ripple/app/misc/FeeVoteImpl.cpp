@@ -93,14 +93,12 @@ public:
     FeeVoteImpl(Setup const& setup, beast::Journal journal);
 
     void
-    doValidation(
-        std::shared_ptr<ReadView const> const& lastClosedLedger,
-        STValidation::FeeSettings& fees) override;
+    doValidation(Fees const& lastFees, STValidation& val) override;
 
     void
     doVoting(
         std::shared_ptr<ReadView const> const& lastClosedLedger,
-        std::vector<STValidation::pointer> const& parentValidations,
+        std::vector<std::shared_ptr<STValidation>> const& parentValidations,
         std::shared_ptr<SHAMap> const& initialPosition) override;
 };
 
@@ -112,39 +110,43 @@ FeeVoteImpl::FeeVoteImpl(Setup const& setup, beast::Journal journal)
 }
 
 void
-FeeVoteImpl::doValidation(
-    std::shared_ptr<ReadView const> const& lastClosedLedger,
-    STValidation::FeeSettings& fees)
+FeeVoteImpl::doValidation(Fees const& lastFees, STValidation& v)
 {
-    if (lastClosedLedger->fees().base != target_.reference_fee)
+    // Values should always be in a valid range (because the voting process
+    // will ignore out-of-range values) but if we detect such a case, we do
+    // not send a value.
+    if (lastFees.base != target_.reference_fee)
     {
         JLOG(journal_.info())
             << "Voting for base fee of " << target_.reference_fee;
 
-        fees.baseFee = target_.reference_fee;
+        if (auto const f = target_.reference_fee.dropsAs<std::uint64_t>())
+            v.setFieldU64(sfBaseFee, *f);
     }
 
-    if (lastClosedLedger->fees().accountReserve(0) != target_.account_reserve)
+    if (lastFees.accountReserve(0) != target_.account_reserve)
     {
         JLOG(journal_.info())
             << "Voting for base reserve of " << target_.account_reserve;
 
-        fees.reserveBase = target_.account_reserve;
+        if (auto const f = target_.account_reserve.dropsAs<std::uint32_t>())
+            v.setFieldU32(sfReserveBase, *f);
     }
 
-    if (lastClosedLedger->fees().increment != target_.owner_reserve)
+    if (lastFees.increment != target_.owner_reserve)
     {
         JLOG(journal_.info())
             << "Voting for reserve increment of " << target_.owner_reserve;
 
-        fees.reserveIncrement = target_.owner_reserve;
+        if (auto const f = target_.owner_reserve.dropsAs<std::uint32_t>())
+            v.setFieldU32(sfReserveIncrement, *f);
     }
 }
 
 void
 FeeVoteImpl::doVoting(
     std::shared_ptr<ReadView const> const& lastClosedLedger,
-    std::vector<STValidation::pointer> const& set,
+    std::vector<std::shared_ptr<STValidation>> const& set,
     std::shared_ptr<SHAMap> const& initialPosition)
 {
     // LCL must be flag ledger

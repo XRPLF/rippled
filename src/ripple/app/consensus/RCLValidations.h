@@ -33,12 +33,11 @@ class Application;
 
 /** Wrapper over STValidation for generic Validation code
 
-    Wraps an STValidation::pointer for compatibility with the generic validation
-    code.
+    Wraps an STValidation for compatibility with the generic validation code.
 */
 class RCLValidation
 {
-    STValidation::pointer val_;
+    std::shared_ptr<STValidation> val_;
 
 public:
     using NodeKey = ripple::PublicKey;
@@ -48,7 +47,7 @@ public:
 
         @param v The validation to wrap.
     */
-    RCLValidation(STValidation::pointer const& v) : val_{v}
+    RCLValidation(std::shared_ptr<STValidation> const& v) : val_{v}
     {
     }
 
@@ -127,8 +126,15 @@ public:
         return ~(*val_)[~sfLoadFee];
     }
 
+    /// Get the cookie specified in the validation (0 if not set)
+    std::uint64_t
+    cookie() const
+    {
+        return (*val_)[sfCookie];
+    }
+
     /// Extract the underlying STValidation being wrapped
-    STValidation::pointer
+    std::shared_ptr<STValidation>
     unwrap() const
     {
         return val_;
@@ -243,7 +249,7 @@ using RCLValidations = Validations<RCLValidationsAdaptor>;
 bool
 handleNewValidation(
     Application& app,
-    STValidation::ref val,
+    std::shared_ptr<STValidation> const& val,
     std::string const& source);
 
 }  // namespace ripple

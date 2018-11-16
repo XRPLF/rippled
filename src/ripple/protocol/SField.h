@@ -432,6 +432,7 @@ extern SF_U256 const sfDigest;
 extern SF_U256 const sfPayChannel;
 extern SF_U256 const sfConsensusHash;
 extern SF_U256 const sfCheckID;
+extern SF_U256 const sfValidatedHash;
 
 // currency amount (common)
 extern SF_Amount const sfAmount;

@@ -25,68 +25,32 @@
 
 namespace ripple {
 
-STValidation::STValidation(
-    uint256 const& ledgerHash,
-    std::uint32_t ledgerSeq,
-    uint256 const& consensusHash,
-    NetClock::time_point signTime,
-    PublicKey const& publicKey,
-    SecretKey const& secretKey,
-    NodeID const& nodeID,
-    bool isFull,
-    FeeSettings const& fees,
-    std::vector<uint256> const& amendments)
-    : STObject(getFormat(), sfValidation), mNodeID(nodeID), mSeen(signTime)
+SOTemplate const&
+STValidation::validationFormat()
 {
-    // This is our own public key and it should always be valid.
-    if (!publicKeyType(publicKey))
-        LogicError("Invalid validation public key");
-    assert(mNodeID.isNonZero());
-    setFieldH256(sfLedgerHash, ledgerHash);
-    setFieldH256(sfConsensusHash, consensusHash);
-    setFieldU32(sfSigningTime, signTime.time_since_epoch().count());
+    // We can't have this be a magic static at namespace scope because
+    // it relies on the SField's below being initialized, and we can't
+    // guarantee the initialization order.
+    static SOTemplate const format{
+        {sfFlags, soeREQUIRED},
+        {sfLedgerHash, soeREQUIRED},
+        {sfLedgerSequence, soeOPTIONAL},
+        {sfCloseTime, soeOPTIONAL},
+        {sfLoadFee, soeOPTIONAL},
+        {sfAmendments, soeOPTIONAL},
+        {sfBaseFee, soeOPTIONAL},
+        {sfReserveBase, soeOPTIONAL},
+        {sfReserveIncrement, soeOPTIONAL},
+        {sfSigningTime, soeREQUIRED},
+        {sfSigningPubKey, soeREQUIRED},
+        {sfSignature, soeOPTIONAL},
+        {sfConsensusHash, soeOPTIONAL},
+        {sfCookie, soeDEFAULT},
+        {sfValidatedHash, soeOPTIONAL},
+    };
 
-    setFieldVL(sfSigningPubKey, publicKey.slice());
-    if (isFull)
-        setFlag(kFullFlag);
-
-    setFieldU32(sfLedgerSequence, ledgerSeq);
-
-    if (fees.loadFee)
-        setFieldU32(sfLoadFee, *fees.loadFee);
-
-    // IF any of the values are out of the valid range, don't send a value.
-    // They should not be an issue, though, because the voting
-    // process (FeeVoteImpl) ignores any out of range values.
-    if (fees.baseFee)
-    {
-        if (auto const v = fees.baseFee->dropsAs<std::uint64_t>())
-            setFieldU64(sfBaseFee, *v);
-    }
-
-    if (fees.reserveBase)
-    {
-        if (auto const v = fees.reserveBase->dropsAs<std::uint32_t>())
-            setFieldU32(sfReserveBase, *v);
-    }
-
-    if (fees.reserveIncrement)
-    {
-        if (auto const v = fees.reserveIncrement->dropsAs<std::uint32_t>())
-            setFieldU32(sfReserveIncrement, *v);
-    }
-
-    if (!amendments.empty())
-        setFieldV256(sfAmendments, STVector256(sfAmendments, amendments));
-
-    setFlag(vfFullyCanonicalSig);
-
-    auto const signingHash = getSigningHash();
-    setFieldVL(
-        sfSignature, signDigest(getSignerPublic(), secretKey, signingHash));
-
-    setTrusted();
-}
+    return format;
+};
 
 uint256
 STValidation::getSigningHash() const
@@ -115,7 +79,7 @@ STValidation::getSignTime() const
 NetClock::time_point
 STValidation::getSeenTime() const
 {
-    return mSeen;
+    return seenTime_;
 }
 
 bool
@@ -148,7 +112,7 @@ STValidation::getSignerPublic() const
 bool
 STValidation::isFull() const
 {
-    return (getFlags() & kFullFlag) != 0;
+    return (getFlags() & vfFullValidation) != 0;
 }
 
 Blob
@@ -163,34 +127,6 @@ STValidation::getSerialized() const
     Serializer s;
     add(s);
     return s.peekData();
-}
-
-SOTemplate const&
-STValidation::getFormat()
-{
-    struct FormatHolder
-    {
-        SOTemplate format{
-            {sfFlags, soeREQUIRED},
-            {sfLedgerHash, soeREQUIRED},
-            {sfLedgerSequence, soeOPTIONAL},
-            {sfCloseTime, soeOPTIONAL},
-            {sfLoadFee, soeOPTIONAL},
-            {sfAmendments, soeOPTIONAL},
-            {sfBaseFee, soeOPTIONAL},
-            {sfReserveBase, soeOPTIONAL},
-            {sfReserveIncrement, soeOPTIONAL},
-            {sfSigningTime, soeREQUIRED},
-            {sfSigningPubKey, soeREQUIRED},
-            {sfSignature, soeOPTIONAL},
-            {sfConsensusHash, soeOPTIONAL},
-            {sfCookie, soeOPTIONAL},
-        };
-    };
-
-    static const FormatHolder holder;
-
-    return holder.format;
 }
 
 }  // namespace ripple

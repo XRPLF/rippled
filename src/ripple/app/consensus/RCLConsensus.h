@@ -66,6 +66,9 @@ class RCLConsensus
         PublicKey const valPublic_;
         SecretKey const valSecret_;
 
+        // A randomly selected non-zero value used to tag our validations
+        std::uint64_t const valCookie_;
+
         // Ledger we most recently needed to acquire
         LedgerHash acquiringLedger_;
         ConsensusParms parms_;
