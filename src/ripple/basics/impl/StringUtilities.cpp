@@ -93,7 +93,22 @@ uint64_t uintFromHex (std::string const& strSrc)
 bool parseUrl (parsedURL& pUrl, std::string const& strUrl)
 {
     // scheme://username:password@hostname:port/rest
-    static boost::regex reUrl ("(?i)\\`\\s*([[:alpha:]][-+.[:alpha:][:digit:]]*)://(?:(.*?)(?::(.*?))?@)?(.*?)(?::([[:digit:]]+))?(/.*)?\\s*?\\'");
+    static boost::regex reUrl (
+        "(?i)\\`\\s*"
+        // required scheme
+        "([[:alpha:]][-+.[:alpha:][:digit:]]*):"
+        // We choose to support only URIs whose `hier-part` has the form
+        // `"//" authority path-abempty`.
+        "//"
+        // optional userinfo
+        "(?:([^/]*?)(?::([^/]*?))?@)?"
+        // optional host
+        "([^/]*?)"
+        // optional port
+        "(?::([[:digit:]]+))?"
+        // optional path
+        "(/.*)?"
+        "\\s*?\\'");
     boost::smatch smMatch;
 
     bool bMatch = boost::regex_match (strUrl, smMatch, reUrl); // Match status code.
