@@ -28,7 +28,6 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/DatabaseCon.h>
-#include <ripple/core/TerminateHandler.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/json/to_string.h>
 #include <ripple/net/RPCCall.h>
@@ -765,8 +764,6 @@ int main (int argc, char** argv)
 #endif
 
     atexit(&google::protobuf::ShutdownProtobufLibrary);
-
-    std::set_terminate(ripple::terminateHandler);
 
     auto const result (ripple::run (argc, argv));
 
