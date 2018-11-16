@@ -35,28 +35,24 @@ template<>
 boost::optional<AccountID>
 parseBase58 (std::string const& s)
 {
-    auto const result = decodeBase58Token(s, TokenType::AccountID);
-    if (result.empty())
-        return boost::none;
     AccountID id;
-    if (result.size() != id.size())
+    if (!decodeBase58Token(
+            makeSlice(s),
+            TokenType::AccountID,
+            MutableSlice(id.data(), id.size())))
         return boost::none;
-    std::memcpy(id.data(),
-        result.data(), result.size());
     return id;
 }
 
 boost::optional<AccountID>
 deprecatedParseBitcoinAccountID (std::string const& s)
 {
-    auto const result = decodeBase58TokenBitcoin(s, TokenType::AccountID);
-    if (result.empty())
-        return boost::none;
     AccountID id;
-    if (result.size() != id.size())
+    if (!decodeBase58TokenBitcoin(
+            makeSlice(s),
+            TokenType::AccountID,
+            MutableSlice(id.data(), id.size())))
         return boost::none;
-    std::memcpy(id.data(),
-        result.data(), result.size());
     return id;
 }
 

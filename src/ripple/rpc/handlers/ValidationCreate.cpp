@@ -33,7 +33,9 @@ validationSeed (Json::Value const& params)
     if (!params.isMember (jss::secret))
         return randomSeed ();
 
-    return parseGenericSeed (params[jss::secret].asString ());
+    if (auto r = parseGenericSeed (params[jss::secret].asString ()))
+        return r->first;
+    return {};
 }
 
 // {

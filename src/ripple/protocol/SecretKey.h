@@ -35,8 +35,11 @@ namespace ripple {
 class SecretKey
 {
 private:
-    std::uint8_t buf_[32];
+    std::array<std::uint8_t, 32> buf_;
 
+    friend
+    boost::optional<SecretKey>
+    parseBase58SecretKey (TokenType type, std::string const& s);
 public:
     using const_iterator = std::uint8_t const*;
 
@@ -52,13 +55,13 @@ public:
     std::uint8_t const*
     data() const
     {
-        return buf_;
+        return buf_.data();
     }
 
     std::size_t
     size() const
     {
-        return sizeof(buf_);
+        return buf_.size();
     }
 
     /** Convert the secret key to a hexadecimal string.
@@ -72,25 +75,25 @@ public:
     const_iterator
     begin() const noexcept
     {
-        return buf_;
+        return buf_.data();
     }
 
     const_iterator
     cbegin() const noexcept
     {
-        return buf_;
+        return buf_.data();
     }
 
     const_iterator
     end() const noexcept
     {
-        return buf_ + sizeof(buf_);
+        return buf_.data() + buf_.size();
     }
 
     const_iterator
     cend() const noexcept
     {
-        return buf_ + sizeof(buf_);
+        return buf_.data() + buf_.size();
     }
 };
 

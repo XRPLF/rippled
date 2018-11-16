@@ -33,19 +33,19 @@ namespace ripple {
 
 SecretKey::~SecretKey()
 {
-    beast::secure_erase(buf_, sizeof(buf_));
+    beast::secure_erase(buf_.data(), buf_.size());
 }
 
 SecretKey::SecretKey (std::array<std::uint8_t, 32> const& key)
 {
-    std::memcpy(buf_, key.data(), key.size());
+    std::memcpy(buf_.data(), key.data(), key.size());
 }
 
 SecretKey::SecretKey (Slice const& slice)
 {
-    if (slice.size() != sizeof(buf_))
+    if (slice.size() != buf_.size())
         LogicError("SecretKey::SecretKey: invalid size");
-    std::memcpy(buf_, slice.data(), sizeof(buf_));
+    std::memcpy(buf_.data(), slice.data(), buf_.size());
 }
 
 std::string
@@ -289,16 +289,20 @@ randomKeyPair (KeyType type)
     return { derivePublicKey(type, sk), sk };
 }
 
+boost::optional<SecretKey>
+parseBase58SecretKey(TokenType type, std::string const& s)
+{
+    SecretKey result;
+    if (!decodeBase58Token(makeSlice(s), type, makeMutableSlice(result.buf_)))
+        return boost::none;
+    return result;
+}
+
 template <>
 boost::optional<SecretKey>
-parseBase58 (TokenType type, std::string const& s)
+parseBase58(TokenType type, std::string const& s)
 {
-    auto const result = decodeBase58Token(s, type);
-    if (result.empty())
-        return boost::none;
-    if (result.size() != 32)
-        return boost::none;
-    return SecretKey(makeSlice(result));
+    return parseBase58SecretKey(type, s);
 }
 
 } // ripple

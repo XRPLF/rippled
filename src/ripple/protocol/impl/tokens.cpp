@@ -19,7 +19,10 @@
 
 #include <ripple/protocol/tokens.h>
 #include <ripple/protocol/digest.h>
+
 #include <boost/container/small_vector.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
+
 #include <cassert>
 #include <cstring>
 #include <memory>
@@ -38,33 +41,41 @@ static char bitcoinAlphabet[] =
 //------------------------------------------------------------------------------
 
 template <class Hasher>
-static
-typename Hasher::result_type
-digest (void const* data, std::size_t size) noexcept
+static typename Hasher::result_type
+digest(Slice prefix, Slice message) noexcept
+{
+    Hasher h;
+    h(prefix.data(), prefix.size());
+    h(message.data(), message.size());
+    return static_cast<typename Hasher::result_type>(h);
+}
+
+template <class Hasher>
+static typename Hasher::result_type
+digest(void const* data, std::size_t size) noexcept
 {
     Hasher h;
     h(data, size);
-    return static_cast<
-        typename Hasher::result_type>(h);
+    return static_cast<typename Hasher::result_type>(h);
 }
 
-template <class Hasher, class T, std::size_t N,
+template <
+    class Hasher,
+    class T,
+    std::size_t N,
     class = std::enable_if_t<sizeof(T) == 1>>
-static
-typename Hasher::result_type
-digest (std::array<T, N> const& v)
+static typename Hasher::result_type
+digest(std::array<T, N> const& v)
 {
     return digest<Hasher>(v.data(), v.size());
 }
 
 // Computes a double digest (e.g. digest of the digest)
 template <class Hasher, class... Args>
-static
-typename Hasher::result_type
-digest2 (Args const&... args)
+static typename Hasher::result_type
+digest2(Args const&... args)
 {
-    return digest<Hasher>(
-        digest<Hasher>(args...));
+    return digest<Hasher>(digest<Hasher>(args...));
 }
 
 /*  Calculate a 4-byte checksum of the data
@@ -77,12 +88,16 @@ digest2 (Args const&... args)
     @note This checksum algorithm is part of the client API
 */
 void
-checksum (void* out,
-    void const* message,
-        std::size_t size)
+checksum(void* out, void const* message, std::size_t size)
 {
-    auto const h =
-        digest2<sha256_hasher>(message, size);
+    auto const h = digest2<sha256_hasher>(message, size);
+    std::memcpy(out, h.data(), 4);
+}
+
+void
+checksum(void* out, Slice prefix, Slice message)
+{
+    auto const h = digest2<sha256_hasher>(prefix, message);
     std::memcpy(out, h.data(), 4);
 }
 
@@ -98,12 +113,13 @@ checksum (void* out,
 // WARNING Do not call this directly, use
 //         encodeBase58Token instead since it
 //         calculates the size of buffer needed.
-static
-std::string
+static std::string
 encodeBase58(
-    void const* message, std::size_t size,
-        void *temp, std::size_t temp_size,
-            char const* const alphabet)
+    void const* message,
+    std::size_t size,
+    void* temp,
+    std::size_t temp_size,
+    char const* const alphabet)
 {
     auto pbegin = reinterpret_cast<unsigned char const*>(message);
     auto const pend = pbegin + size;
@@ -149,10 +165,12 @@ encodeBase58(
     return str;
 }
 
-static
-std::string
-encodeToken (TokenType type,
-    void const* token, std::size_t size, char const* const alphabet)
+static std::string
+encodeToken(
+    TokenType type,
+    void const* token,
+    std::size_t size,
+    char const* const alphabet)
 {
     // expanded token includes type + 4 byte checksum
     auto const expanded = 1 + size + 4;
@@ -162,90 +180,307 @@ encodeToken (TokenType type,
     // out to expanded * 3:
     auto const bufsize = expanded * 3;
 
-    boost::container::small_vector<std::uint8_t, 1024> buf (bufsize);
+    boost::container::small_vector<std::uint8_t, 1024> buf(bufsize);
 
     // Lay the data out as
     //      <type><token><checksum>
-    buf[0] = static_cast<std::underlying_type_t <TokenType>>(type);
+    buf[0] = static_cast<std::underlying_type_t<TokenType>>(type);
     if (size)
         std::memcpy(buf.data() + 1, token, size);
     checksum(buf.data() + 1 + size, buf.data(), 1 + size);
 
     return encodeBase58(
-        buf.data(), expanded,
-        buf.data() + expanded, bufsize - expanded,
+        buf.data(),
+        expanded,
+        buf.data() + expanded,
+        bufsize - expanded,
         alphabet);
 }
 
 std::string
-base58EncodeToken (TokenType type,
-    void const* token, std::size_t size)
+base58EncodeToken(TokenType type, void const* token, std::size_t size)
 {
     return encodeToken(type, token, size, rippleAlphabet);
 }
 
 std::string
-base58EncodeTokenBitcoin (TokenType type,
-    void const* token, std::size_t size)
+base58EncodeTokenBitcoin(TokenType type, void const* token, std::size_t size)
 {
     return encodeToken(type, token, size, bitcoinAlphabet);
 }
 
 //------------------------------------------------------------------------------
 
-// Code from Bitcoin: https://github.com/bitcoin/bitcoin
-// Copyright (c) 2014 The Bitcoin Core developers
-// Distributed under the MIT software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-//
-// Modified from the original
-template <class InverseArray>
-static
-std::string
-decodeBase58 (std::string const& s,
-    InverseArray const& inv)
+namespace DecodeBase58Detail {
+constexpr std::size_t const maybeSecret=0;
+constexpr std::size_t const maybeRippleLibEncoded=1;
+constexpr std::size_t const allowResize=2; // Result may be smaller than the result slice
+using bitset = std::bitset<3>;
+
+// Multi-precision unsigned integer for doing computations with at most NumBits bits.
+// An exception is throw if an overflow occurs. May be optionally securely erased on
+// destruction.
+template <size_t NumBits>
+class mpUint
 {
-    auto psz = s.c_str();
-    auto remain = s.size();
+    using T = typename boost::multiprecision::number<
+        boost::multiprecision::cpp_int_backend<
+            NumBits,
+            NumBits,
+            boost::multiprecision::unsigned_magnitude,
+            boost::multiprecision::checked,
+            void>>;
+
+    T* num_{nullptr};
+    alignas(alignof(T)) std::array<std::uint8_t, sizeof(T)> storage_;
+    bool secureErase_{false};
+
+public:
+    mpUint(bool secureErase) : secureErase_(secureErase){};
+    mpUint(mpUint const& other) = delete;
+    mpUint&
+    operator=(mpUint const& other) = delete;
+
+    ~mpUint()
+    {
+        if (num_)
+            num_->~T();
+        if (secureErase_)
+            beast::secure_erase(storage_.data(), storage_.size());
+    }
+    template <class TT>
+    void
+    emplace(TT&& n)
+    {
+        if (num_)
+            num_->~T();
+        num_ = new (storage_.data()) T(std::forward<TT>(n));
+    }
+
+    T& operator*()
+    {
+        assert(num_);
+        return *num_;
+    }
+    T const& operator*() const
+    {
+        assert(num_);
+        return *num_;
+    }
+};
+
+// Stack buffer appropriate for decoding into. May be optionally securely erased
+// on destruction.
+template <class T, size_t N>
+struct TempBuf : std::array<T, N>
+{
+private:
+    bool secureErase_;
+
+public:
+    using std::array<T, N>::array;
+    std::size_t numToErase = N;
+    TempBuf(bool secureErase) : secureErase_{secureErase}
+    {
+    }
+    TempBuf(TempBuf const& rhs) = default;
+    ~TempBuf()
+    {
+        if (secureErase_)
+            beast::secure_erase(this->data(), sizeof(T) * numToErase);
+    }
+};
+
+}  // namespace DecodeBase58Detail
+
+/**
+   Decode a base58 number.
+
+   This algorithm first encoding the base 58 number as a base 58^10 number. In
+   this representation, all the coefficients will fit into a 64 bit number. This
+   base 58^10 is then decoded into a boost multi precision integer.
+*/
+template <class InverseArray>
+static boost::optional<std::pair<Slice, DecodeMetadata>>
+decodeBase58(
+    Slice in,
+    MutableSlice out,
+    InverseArray const& inv,
+    DecodeBase58Detail::bitset const& flags)
+{
+    using namespace boost::multiprecision;
+
+    // Given an input of size N, the output size is not known exactly. If the largest token
+    // size is MaxDecodedTokenBytes, this function needs to be able to decode MaxDecodedTokenBytes+1
+    // bytes
+    constexpr size_t maxOutBytes = MaxDecodedTokenBytes+1;
+    constexpr size_t maxOutBits = maxOutBytes*8;
+
     // Skip and count leading zeroes
     int zeroes = 0;
-    while (remain > 0 && inv[*psz] == 0)
+    while (in.size() > 0 && inv[in[0]] == 0)
     {
         ++zeroes;
-        ++psz;
-        --remain;
+        in+=1;
     }
-    // Allocate enough space in big-endian base256 representation.
-    // log(58) / log(256), rounded up.
-    std::vector<unsigned char> b256(
-        remain * 733 / 1000 + 1);
-    while (remain > 0)
+
     {
-        auto carry = inv[*psz];
-        if (carry == -1)
+        std::size_t const maxSize = in.size() * 733 / 1000 + 1;
+        if (out.size() + 3 + 4 < maxSize - 1) // -1 because maxSize may overestimate
             return {};
-        // Apply "b256 = b256 * 58 + carry".
-        for (auto iter = b256.rbegin();
-            iter != b256.rend(); ++iter)
+        // tighter constraint for non-ripplelib encoded data
+        // ripple-lib encoded will be <1 token><2 encoding><16 data><4 checksum>==23
+        if (!flags.test(DecodeBase58Detail::maybeRippleLibEncoded) &&
+            out.size() + 1 + 4 < maxSize - 1) // -1 because maxSize may overestimate
         {
-            carry += 58 * *iter;
-            *iter = carry % 256;
-            carry /= 256;
+            return {};
         }
-        assert(carry == 0);
-        ++psz;
-        --remain;
+        if (maxSize + zeroes < 4 || maxSize + zeroes > maxOutBytes)
+            return {};
     }
-    // Skip leading zeroes in b256.
-    auto iter = std::find_if(
-        b256.begin(), b256.end(),[](unsigned char c)
-            { return c != 0; });
-    std::string result;
-    result.reserve (zeroes + (b256.end() - iter));
-    result.assign (zeroes, 0x00);
-    while (iter != b256.end())
-        result.push_back(*(iter++));
-    return result;
+
+    if (out.size() > maxOutBytes)
+    {
+        return {};
+    }
+
+    // coefficients for the base 58^10 decoding
+    std::array<std::uint64_t, 6> b5810{};
+    // Durring loop: index of the last next coefficients to populate
+    // After loop: number of coefficients in the b5810 array.
+    int b5810i = 0;
+    {
+        // convert from base58 to base 58^10; All values will fit in a 64-bit
+        // uint without overflow
+
+        // pow58[i] == 58^i
+        constexpr std::array<std::uint64_t, 10> pow58{1,
+                                                      58,
+                                                      3364,
+                                                      195112,
+                                                      11316496,
+                                                      656356768,
+                                                      38068692544,
+                                                      2207984167552,
+                                                      128063081718016,
+                                                      7427658739644928};
+
+        int const n = in.size();
+        int i = 0;
+        while (1)
+        {
+            auto const count = std::min(10, n - i);
+            std::uint64_t s = 0;
+            for (int j = 0; j < count; ++j, ++i)
+            {
+                auto const val = inv[in[n - i - 1]];
+                if (val == -1)
+                    return {};
+                s += pow58[j] * val;
+            }
+            assert(b5810i < b5810.size());
+            b5810[b5810i] = s;
+            ++b5810i;
+            if (i >= n)
+            {
+                assert(i == n);
+                break;
+            }
+        }
+    };
+
+    try
+    {
+        // The following static constants of the form c58_X == 58^X
+        static checked_uint128_t const c58_10{"430804206899405824"};  // 58^10
+        // Only c58_50 needs to be 512, the others can be 256; However, since there are static
+        // the extra space doesn't matter (and there is no extra computation)
+        static checked_uint512_t const c58_20{
+            "185592264682226060569122324245118976"};  // 58^20
+        static checked_uint512_t const c58_30{
+            "79953928393091004080532279173738402825689466587316224"};  // 58^30
+        static checked_uint512_t const c58_40{
+            "34444488709877454747081479018851205589883534409595458615323760395288576"};  // 58^40
+        static checked_uint512_t const c58_50{
+            "14838830640714294999983396511843381888381117770762056659674968992599706869653743415066624"};  // 58^50
+        using mpUint128 = DecodeBase58Detail::mpUint<128>;
+        using mpUintMaxOut = DecodeBase58Detail::mpUint<maxOutBits>;
+        bool const secureErase = flags.test(DecodeBase58Detail::maybeSecret);
+        // low result accounts for the first two base 58^10 coefficients. This is at most 2^64+2^62*58^10, or 123 bits.
+        mpUint128 low_result{secureErase};
+        low_result.emplace(b5810[0] + c58_10 * b5810[1]);
+        // high result accounts all but the first two base 58^10 coefficients.
+        mpUintMaxOut high_result{secureErase};
+        switch (b5810i)
+        {
+            case 3:
+                high_result.emplace(b5810[2] * c58_20);
+                break;
+            case 4:
+                high_result.emplace(b5810[2] * c58_20 + b5810[3] * c58_30);
+                break;
+            case 5:
+                high_result.emplace(b5810[2] * c58_20 + b5810[3] * c58_30 + b5810[4] * c58_40);
+                break;
+            case 6:
+                high_result.emplace(b5810[2] * c58_20 + b5810[3] * c58_30 +
+                                    b5810[4] * c58_40 + b5810[5] * c58_50);
+                break;
+            default:
+                high_result.emplace(0);
+                break;
+        }
+        mpUintMaxOut result{secureErase};
+        result.emplace(*low_result + *high_result);
+        DecodeBase58Detail::TempBuf<std::uint8_t, maxOutBytes> tmp{secureErase};
+        memset(tmp.data(), 0, zeroes);
+        // Account for leading zeroes by starting the write at an offset
+        auto endWritten =
+            boost::multiprecision::export_bits(*result, tmp.data() + zeroes, 8);
+        if (zeroes && endWritten == tmp.data() + zeroes + 1 && tmp[zeroes] == 0)
+        {
+            // The last zero is redundant and should be removed
+            --endWritten;
+        }
+        std::size_t const numWritten = std::distance(tmp.data(), endWritten);
+        assert(numWritten <= maxOutBytes);
+        tmp.numToErase = numWritten;
+        if (numWritten <= 4)
+            return {};
+        if (numWritten > MaxDecodedTokenBytes)
+            return {};
+
+        if (out.size())
+            memset(out.data(), 0, out.size());
+        DecodeMetadata metadata;
+        memset(metadata.encodingType.data(), 0, metadata.encodingType.size());
+        memcpy(metadata.checksum.data(), tmp.data() + numWritten - 4, 4);
+        metadata.tokenType = tmp[0];
+        std::uint8_t const* dataStart = &tmp[1];
+        std::uint8_t const* dataEnd = &tmp[0] + numWritten - 4;
+        if (flags.test(DecodeBase58Detail::maybeRippleLibEncoded) &&
+            static_cast<TokenType>(metadata.tokenType) == TokenType::None &&
+            dataEnd - dataStart == 18 && dataStart[0] == std::uint8_t(0xE1) &&
+            dataStart[1] == std::uint8_t(0x4B))
+        {
+            memcpy(metadata.encodingType.data(), dataStart, metadata.encodingType.size());
+            dataStart+=metadata.encodingType.size();
+        }
+        assert(dataStart<=dataEnd);
+        size_t const dataSize = dataEnd - dataStart;
+        if (dataSize > out.size())
+            return {};
+
+        if (!flags.test(DecodeBase58Detail::allowResize) &&
+            dataSize != out.size())
+            return {};
+        memcpy(out.data(), dataStart, dataSize);
+        return std::make_pair(Slice{out.data(), dataSize}, metadata);
+    }
+    catch (std::overflow_error const&)
+    {
+        return {};
+    }
 }
 
 /*  Base58 decode a Ripple token
@@ -255,28 +490,75 @@ decodeBase58 (std::string const& s,
 */
 template <class InverseArray>
 static
-std::string
-decodeBase58Token (std::string const& s,
-    TokenType type, InverseArray const& inv)
+boost::optional<std::pair<Slice, ExtraB58Encoding>>
+decodeBase58Token(
+    Slice s,
+    TokenType type,
+    MutableSlice result,
+    InverseArray const& inv,
+    DecodeBase58Detail::bitset flags)
 {
-    auto ret = decodeBase58(s, inv);
-
-    // Reject zero length tokens
-    if (ret.size() < 6)
+    // additional flags based on token type
+    switch (type)
+    {
+        case TokenType::NodePrivate:
+        case TokenType::AccountSecret:
+        case TokenType::FamilyGenerator:
+        case TokenType::FamilySeed:
+            flags.set(DecodeBase58Detail::maybeSecret);
+            break;
+        default:
+            break;
+    }
+    auto r = decodeBase58(s, result, inv, flags);
+    if (!r)
         return {};
+    Slice decoded;
+    DecodeMetadata metadata;
+    std::tie(decoded, metadata) = *r;
+    ExtraB58Encoding extraB58Encoding = ExtraB58Encoding::None;
 
-    // The type must match.
-    if (type != static_cast<TokenType>(ret[0]))
+    if (type == TokenType::FamilySeed &&
+        metadata.encodingType[0] == std::uint8_t(0xE1) &&
+        metadata.encodingType[1] == std::uint8_t(0x4B))
+    {
+        // ripple lib encoded seed
+        // ripple-lib encodes seed used to generate an Ed25519 wallet in a
+        // non-standard way. While rippled never encode seeds that way, we
+        // try to detect such keys to avoid user confusion.
+        if (TokenType::None != static_cast<TokenType>(metadata.tokenType))
+            return {};
+        extraB58Encoding = ExtraB58Encoding::RippleLib;
+    }
+    else
+    {
+        if (type != static_cast<TokenType>(metadata.tokenType) ||
+            metadata.encodingType[0] != 0 || metadata.encodingType[1] != 0)
+            return {};
+    }
+
+    std::array<std::uint8_t, 4> const guard = [&] {
+        std::array<std::uint8_t, 4> g;
+        if (metadata.encodingType[0] == 0 && metadata.encodingType[1] == 0)
+        {
+            Slice prefix(&metadata.tokenType, sizeof(metadata.tokenType));
+            checksum(g.data(), prefix, decoded);
+            return g;
+        }
+        else
+        {
+            // ripple lib encoded seed
+            assert(extraB58Encoding == ExtraB58Encoding::RippleLib);
+            std::array<std::uint8_t, 3> prefix{metadata.tokenType,
+                                               metadata.encodingType[0],
+                                               metadata.encodingType[1]};
+            checksum(g.data(), Slice(prefix.data(), prefix.size()), decoded);
+            return g;
+        }
+    }();
+    if (!std::equal(guard.begin(), guard.end(), metadata.checksum.begin()))
         return {};
-
-    // And the checksum must as well.
-    std::array<char, 4> guard;
-    checksum(guard.data(), ret.data(), ret.size() - guard.size());
-    if (!std::equal (guard.rbegin(), guard.rend(), ret.rbegin()))
-        return {};
-
-    // Skip the leading type byte and the trailing checksum.
-    return ret.substr(1, ret.size() - 1 - guard.size());
+    return std::make_pair(decoded, extraB58Encoding);
 }
 
 //------------------------------------------------------------------------------
@@ -288,21 +570,17 @@ private:
     std::array<int, 256> map_;
 
 public:
-    explicit
-    InverseAlphabet(std::string const& digits)
+    explicit InverseAlphabet(std::string const& digits)
     {
         map_.fill(-1);
         int i = 0;
-        for(auto const c : digits)
-            map_[static_cast<
-                unsigned char>(c)] = i++;
+        for (auto const c : digits)
+            map_[static_cast<unsigned char>(c)] = i++;
     }
 
-    int
-    operator[](char c) const
+    int operator[](char c) const
     {
-        return map_[static_cast<
-            unsigned char>(c)];
+        return map_[static_cast<unsigned char>(c)];
     }
 };
 
@@ -310,18 +588,58 @@ static InverseAlphabet rippleInverse(rippleAlphabet);
 
 static InverseAlphabet bitcoinInverse(bitcoinAlphabet);
 
-std::string
+boost::optional<Slice>
 decodeBase58Token(
-    std::string const& s, TokenType type)
+    Slice s,
+    TokenType type,
+    MutableSlice result,
+    bool allowResize)
 {
-    return decodeBase58Token(s, type, rippleInverse);
+    DecodeBase58Detail::bitset flags;
+    if (allowResize)
+        flags.set(DecodeBase58Detail::allowResize);
+    if (auto r = decodeBase58Token(s, type, result, rippleInverse, flags))
+        return r->first;
+    return {};
 }
 
-std::string
-decodeBase58TokenBitcoin(
-    std::string const& s, TokenType type)
+boost::optional<std::pair<Slice, ExtraB58Encoding>>
+decodeBase58FamilySeed(Slice s, MutableSlice result)
 {
-    return decodeBase58Token(s, type, bitcoinInverse);
+    DecodeBase58Detail::bitset flags;
+    flags.set(DecodeBase58Detail::maybeRippleLibEncoded);
+    flags.set(DecodeBase58Detail::maybeSecret);
+    return decodeBase58Token(
+        s, TokenType::FamilySeed, result, rippleInverse, flags);
 }
 
-} // ripple
+boost::optional<Slice>
+decodeBase58TokenBitcoin(Slice s, TokenType type, MutableSlice result)
+{
+    DecodeBase58Detail::bitset flags;
+    if (auto r = decodeBase58Token(s, type, result, bitcoinInverse, flags))
+        return r->first;
+    return {};
+}
+
+boost::optional<std::pair<Slice, DecodeMetadata>>
+decodeBase58(
+             Slice s,
+             MutableSlice result,
+             bool allowResize)
+{
+    DecodeBase58Detail::bitset flags;
+    flags.set(DecodeBase58Detail::maybeSecret);
+    flags.set(DecodeBase58Detail::maybeRippleLibEncoded);
+    if (allowResize)
+        flags.set(DecodeBase58Detail::allowResize);
+    return decodeBase58(s, result, rippleInverse, flags);
+}
+
+bool DecodeMetadata::isRippleLibEncoded() const
+{
+    return encodingType[0] == std::uint8_t(0xE1) &&
+        encodingType[1] == std::uint8_t(0x4B);
+}
+
+}  // namespace ripple

@@ -2235,6 +2235,7 @@ else ()
          subdir: protocol
     #]===============================]
     src/test/protocol/BuildInfo_test.cpp
+    src/test/protocol/Base58_test.cpp
     src/test/protocol/IOUAmount_test.cpp
     src/test/protocol/InnerObjectFormats_test.cpp
     src/test/protocol/Issue_test.cpp

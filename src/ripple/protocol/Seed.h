@@ -22,6 +22,7 @@
 
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/Slice.h>
+#include <ripple/crypto/KeyType.h>
 #include <ripple/protocol/tokens.h>
 #include <boost/optional.hpp>
 #include <array>
@@ -115,8 +116,13 @@ template <>
 boost::optional<Seed>
 parseBase58 (std::string const& s);
 
+/** Same as above, but inculde optional keyType
+*/
+boost::optional<std::pair<Seed, boost::optional<KeyType>>>
+parseBase58Seed (std::string const& s);
+
 /** Attempt to parse a string as a seed */
-boost::optional<Seed>
+boost::optional<std::pair<Seed, boost::optional<KeyType>>>
 parseGenericSeed (std::string const& str);
 
 /** Encode a Seed in RFC1751 format */

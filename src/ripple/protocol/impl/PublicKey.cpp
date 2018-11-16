@@ -39,11 +39,18 @@ template<>
 boost::optional<PublicKey>
 parseBase58 (TokenType type, std::string const& s)
 {
-    auto const result = decodeBase58Token(s, type);
-    auto const pks = makeSlice(result);
-    if (!publicKeyType(pks))
+    std::array<std::uint8_t, 33> result_buf;
+    // decoded may be 33 or 32 bytes
+    auto decoded = decodeBase58Token(
+        makeSlice(s),
+        type,
+        makeMutableSlice(result_buf),
+        /*allow resize*/ true);
+    if (!decoded || !(decoded->size() == 32 || decoded->size()==33))
         return boost::none;
-    return PublicKey(pks);
+    if (!publicKeyType(*decoded))
+        return boost::none;
+    return PublicKey(*decoded);
 }
 
 //------------------------------------------------------------------------------

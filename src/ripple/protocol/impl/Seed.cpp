@@ -24,6 +24,7 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/contract.h>
+#include <ripple/crypto/KeyType.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/beast/crypto/secure_erase.h>
@@ -57,10 +58,38 @@ Seed::Seed (uint128 const& seed)
 
 //------------------------------------------------------------------------------
 
+// Stack buffer whose memory is securely zeroed in the destructor
+template <class T, size_t N>
+struct zero_after_use_buf : std::array<T, N>
+{
+    using std::array<T, N>::array;
+    zero_after_use_buf() = default;
+    zero_after_use_buf(zero_after_use_buf const& rhs) = default;
+    ~zero_after_use_buf()
+    {
+        beast::secure_erase(this->data(), sizeof(T) * this->size());
+    }
+};
+struct zero_after_use_uint256 : uint256
+{
+    using uint256::uint256;
+    zero_after_use_uint256() = default;
+    zero_after_use_uint256(zero_after_use_uint256 const& other) : uint256{other}
+    {
+    }
+    zero_after_use_uint256(uint256 const& other) : uint256{other}
+    {
+    }
+    ~zero_after_use_uint256()
+    {
+        beast::secure_erase(this->data(), uint256::bytes);
+    }
+};
+
 Seed
 randomSeed()
 {
-    std::array <std::uint8_t, 16> buffer;
+    zero_after_use_buf <std::uint8_t, 16> buffer;
     beast::rngfill (
         buffer.data(),
         buffer.size(),
@@ -75,58 +104,99 @@ generateSeed (std::string const& passPhrase)
 {
     sha512_half_hasher_s h;
     h(passPhrase.data(), passPhrase.size());
-    auto const digest =
-        sha512_half_hasher::result_type(h);
+    zero_after_use_uint256 digest = sha512_half_hasher::result_type(h);
     return Seed({ digest.data(), 16 });
+}
+
+boost::optional<std::pair<Seed, boost::optional<KeyType>>>
+parseBase58Seed (std::string const& s)
+{
+    zero_after_use_buf<std::uint8_t, 16> result;
+    auto resultSlice = makeMutableSlice(result);
+    boost::optional<KeyType> keyType;
+    if (boost::optional<std::pair<Slice, ExtraB58Encoding>> r =
+            decodeBase58FamilySeed(makeSlice(s), resultSlice))
+    {
+        if (r->second == ExtraB58Encoding::RippleLib)
+            keyType = KeyType::ed25519;
+        return std::make_pair(Seed(resultSlice), keyType);
+    }
+    return {};
 }
 
 template <>
 boost::optional<Seed>
 parseBase58 (std::string const& s)
 {
-    auto const result = decodeBase58Token(s, TokenType::FamilySeed);
-    if (result.empty())
-        return boost::none;
-    if (result.size() != 16)
-        return boost::none;
-    return Seed(makeSlice(result));
+    if (auto r = parseBase58Seed(s))
+        return r->first;
+    return {};
 }
 
-boost::optional<Seed>
+boost::optional<std::pair<Seed, boost::optional<KeyType>>>
 parseGenericSeed (std::string const& str)
 {
-    if (str.empty ())
+    if (str.empty())
         return boost::none;
 
-    if (parseBase58<AccountID>(str) ||
-        parseBase58<PublicKey>(TokenType::NodePublic, str) ||
-        parseBase58<PublicKey>(TokenType::AccountPublic, str) ||
-        parseBase58<SecretKey>(TokenType::NodePrivate, str) ||
-        parseBase58<SecretKey>(TokenType::AccountSecret, str))
+    // large enough to hold either a public key, account, secret key, or seed
+    zero_after_use_buf<std::uint8_t, 33> buffer;
+
+    boost::optional<std::pair<Slice, DecodeMetadata>> rawDecode = decodeBase58(
+        makeSlice(str), makeMutableSlice(buffer), /*allowResize*/ true);
+
+    Slice decodedSlice;
+    DecodeMetadata metadata;
+    boost::optional<KeyType> keyType;
+    if (rawDecode)
     {
-        return boost::none;
+        std::tie(decodedSlice, metadata) = *rawDecode;
+        switch (static_cast<TokenType>(metadata.tokenType))
+        {
+            case TokenType::AccountID:
+            case TokenType::NodePublic:
+            case TokenType::AccountPublic:
+            case TokenType::NodePrivate:
+            case TokenType::AccountSecret:
+                return boost::none;
+            default:
+                break;
+        }
     }
 
     {
         uint128 seed;
 
-        if (seed.SetHexExact (str))
-            return Seed { Slice(seed.data(), seed.size()) };
+        if (seed.SetHexExact(str))
+            return std::make_pair(Seed{Slice(seed.data(), seed.size())}, keyType);
     }
 
-    if (auto seed = parseBase58<Seed> (str))
-        return seed;
-
+    if (rawDecode &&
+        decodedSlice.size() == 16)
     {
-        std::string key;
-        if (RFC1751::getKeyFromEnglish (key, str) == 1)
+        if (static_cast<TokenType>(metadata.tokenType) == TokenType::None &&
+            metadata.isRippleLibEncoded())
         {
-            Blob const blob (key.rbegin(), key.rend());
-            return Seed{ uint128{blob} };
+            keyType = KeyType::ed25519;
+            return std::make_pair(Seed{decodedSlice}, keyType);
+        }
+        if (static_cast<TokenType>(metadata.tokenType) == TokenType::FamilySeed &&
+            !metadata.isRippleLibEncoded())
+        {
+            return std::make_pair(Seed{decodedSlice}, keyType);
         }
     }
 
-    return generateSeed (str);
+    {
+        std::string key;
+        if (RFC1751::getKeyFromEnglish(key, str) == 1)
+        {
+            Blob const blob(key.rbegin(), key.rend());
+            return std::make_pair(Seed{uint128{blob}}, keyType);
+        }
+    }
+
+    return std::make_pair(generateSeed(str), keyType);
 }
 
 std::string

@@ -66,14 +66,15 @@ accountFromString(
 
     // We allow the use of the seeds which is poor practice
     // and merely for debugging convenience.
-    auto const seed = parseGenericSeed (strIdent);
+    boost::optional<std::pair<Seed, boost::optional<KeyType>>> const r =
+        parseGenericSeed(strIdent);
 
-    if (!seed)
+    if (!r)
         return rpcError (rpcBAD_SEED);
 
     auto const keypair = generateKeyPair (
         KeyType::secp256k1,
-        *seed);
+        r->first);
 
     result = calcAccountID (keypair.first);
     return Json::objectValue;
@@ -516,26 +517,7 @@ readLimitField(unsigned int& limit, Tuning::LimitRange const& range,
     return boost::none;
 }
 
-boost::optional<Seed>
-parseRippleLibSeed(Json::Value const& value)
-{
-    // ripple-lib encodes seed used to generate an Ed25519 wallet in a
-    // non-standard way. While rippled never encode seeds that way, we
-    // try to detect such keys to avoid user confusion.
-    if (!value.isString())
-        return boost::none;
-
-    auto const result = decodeBase58Token(value.asString(), TokenType::None);
-
-    if (result.size() == 18 &&
-            static_cast<std::uint8_t>(result[0]) == std::uint8_t(0xE1) &&
-            static_cast<std::uint8_t>(result[1]) == std::uint8_t(0x4B))
-        return Seed(makeSlice(result.substr(2)));
-
-    return boost::none;
-}
-
-boost::optional<Seed>
+boost::optional<std::pair<Seed, boost::optional<KeyType>>>
 getSeedFromRPC(Json::Value const& params, Json::Value& error)
 {
     // The array should be constexpr, but that makes Visual Studio unhappy.
@@ -577,25 +559,30 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
 
     auto const fieldContents = params[seedType].asString();
 
-    // Convert string to seed.
-    boost::optional<Seed> seed;
-
     if (seedType == jss::seed.c_str())
-        seed = parseBase58<Seed> (fieldContents);
+    {
+        if (auto r = parseBase58Seed (fieldContents))
+            return r;
+    }
     else if (seedType == jss::passphrase.c_str())
-        seed = parseGenericSeed (fieldContents);
+    {
+        if (auto r = parseGenericSeed (fieldContents))
+            return r;
+    }
     else if (seedType == jss::seed_hex.c_str())
     {
         uint128 s;
 
         if (s.SetHexExact (fieldContents))
-            seed.emplace (Slice(s.data(), s.size()));
+        {
+            Seed seed(Slice(s.data(), s.size()));
+            boost::optional<KeyType> none;
+            return std::make_pair(seed, none);
+        }
     }
 
-    if (!seed)
-        error = rpcError (rpcBAD_SEED);
-
-    return seed;
+    error = rpcError (rpcBAD_SEED);
+    return {};
 }
 
 std::pair<PublicKey, SecretKey>
@@ -643,7 +630,6 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
     }
 
     boost::optional<KeyType> keyType;
-    boost::optional<Seed> seed;
 
     if (has_key_type)
     {
@@ -671,36 +657,57 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
         }
     }
 
-    // ripple-lib encodes seed used to generate an Ed25519 wallet in a
-    // non-standard way. While we never encode seeds that way, we try
-    // to detect such keys to avoid user confusion.
-    if (secretType != jss::seed_hex.c_str())
+    boost::optional<Seed> seed;
     {
-        seed = RPC::parseRippleLibSeed(params[secretType]);
+        // Check the key type and set the error if needed. returns true if no error,
+        // false if error
+        auto checkKeyType = [&error](boost::optional<KeyType> const& expected, boost::optional<KeyType> const& got) -> bool{
+            if (!expected || !got || *expected == *got)
+                return true;
 
-        if (seed)
-        {
-            // If the user passed in an Ed25519 seed but *explicitly*
-            // requested another key type, return an error.
-            if (keyType.value_or(KeyType::ed25519) != KeyType::ed25519)
+            char const* errorString = nullptr;
+            switch (*got)
             {
-                error = RPC::make_error (rpcBAD_SEED,
-                    "Specified seed is for an Ed25519 wallet.");
-                return { };
+                case KeyType::ed25519:
+                    errorString = "Specified seed is for an Ed25519 wallet.";
+                    break;
+                case KeyType::secp256k1:
+                    errorString = "Specifier seed is for an Secp256k1 wallet.";
+                    break;
+                default:
+                    // Should never happen; added in case a new
+                    // keytype is added.
+                    errorString =
+                        "Specified seed key type does not match decoded type.";
+                    break;
             }
+            error = RPC::make_error(rpcBAD_SEED, errorString);
+            return false;
+        };
 
-            keyType = KeyType::ed25519;
+        {
+            Json::Value rpcError;
+            if (boost::optional<std::pair<Seed, boost::optional<KeyType>>> const
+                    r = getSeedFromRPC(params, rpcError))
+            {
+                if (has_key_type || r->second == KeyType::ed25519)
+                {
+                    // only ripple lib encoded keys are allowed to be decoded
+                    // without a keytype
+                    if (!checkKeyType(keyType, r->second))
+                        return {};
+                    seed = r->first;
+                    if (!keyType)
+                        keyType = r->second.value_or(KeyType::secp256k1);
+                }
+            }
+            else if (has_key_type)
+            {
+                error = rpcError;
+            }
         }
-    }
 
-    if (!keyType)
-        keyType = KeyType::secp256k1;
-
-    if (!seed)
-    {
-        if (has_key_type)
-            seed = getSeedFromRPC(params, error);
-        else
+        if (!has_key_type && !seed)
         {
             if (!params[jss::secret].isString())
             {
@@ -708,7 +715,15 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
                 return {};
             }
 
-            seed = parseGenericSeed(params[jss::secret].asString());
+            if (boost::optional<std::pair<Seed, boost::optional<KeyType>>> const
+                    r = parseGenericSeed(params[jss::secret].asString()))
+            {
+                if (!checkKeyType(keyType, r->second))
+                    return {};
+                seed = r->first;
+                if (!keyType)
+                    keyType = r->second.value_or(KeyType::secp256k1);
+            }
         }
     }
 

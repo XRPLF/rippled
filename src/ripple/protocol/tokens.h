@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_TOKENS_H_INCLUDED
 #define RIPPLE_PROTOCOL_TOKENS_H_INCLUDED
 
+#include <ripple/basics/Slice.h>
+
 #include <boost/optional.hpp>
 #include <cstdint>
 #include <string>
@@ -28,7 +30,7 @@ namespace ripple {
 
 enum class TokenType : std::uint8_t
 {
-    None             = 1,       // unused
+    None             = 1,       // Used for ripple lib encoded ed25519 seeds
     NodePublic       = 28,
     NodePrivate      = 32,
     AccountID        = 0,
@@ -37,6 +39,10 @@ enum class TokenType : std::uint8_t
     FamilyGenerator  = 41,      // unused
     FamilySeed       = 33
 };
+
+  // The largest base58 encoded token in rippled is 38 bytes.
+  // (PublicKey=33 bytes + 1 token + 4 checksum).
+constexpr std::size_t MaxDecodedTokenBytes = 38;
 
 template <class T>
 boost::optional<T>
@@ -59,7 +65,7 @@ parseHexOrBase58 (std::string const& s);
 
 /*  Base-58 encode a Ripple Token
 
-    Ripple Tokens have a one-byte prefx indicating
+    Ripple Tokens have a one-byte prefix indicating
     the type of token, followed by the data for the
     token, and finally a 4-byte checksum.
 
@@ -90,24 +96,90 @@ base58EncodeTokenBitcoin (TokenType type, void const* token, std::size_t size);
 
 /** Decode a Base58 token
 
-    The type and checksum must match or an
-    empty string is returned.
+    The type and checksum must match or `boost::none` is returned. The
+    value will be decoded into the slice specified by the `result` parameter.
+    If `allowResize` is true, the result may be smaller than the specified
+    slice. In that case the returned slice will be a proper subset of the
+    result slice. If `allowResize` is false, the returned slice is always
+    either `boost::none` or is the same slice as `result`. If the result is
+    larger than the space allowed by `result` then `boost::none` is returned.
+
+    @note `allowResize` is used to support public keys, which may be either
+    32 or 33 bytes. All other token types have known fixed sizes.
 */
-std::string
-decodeBase58Token(std::string const& s, TokenType type);
+boost::optional<Slice>
+decodeBase58Token(
+    Slice s,
+    TokenType type,
+    MutableSlice result,
+    bool allowResize = false);
+
+/** Distinguish between ripple lib encoded seeds and regular encoded seeds.
+
+    Ripple lib encoded seeds start with a three-byte prefix of:
+    <TokenType::None><0xE1><0x4B> rather than the usual one-byte prefix of:
+    <TokenType::FamilySeed>
+*/
+enum class ExtraB58Encoding {None, RippleLib};
+
+/** Decode a base58 family seed.
+
+    Return the decoded type and extra encoding type. The extra encoding type is
+    either `RippleLib` for ripple lib encoded seeds (these are ed25519 seeds with
+    a special prefix) to `None` for regular seeds.
+*/
+boost::optional<std::pair<Slice, ExtraB58Encoding>>
+decodeBase58FamilySeed(Slice s, MutableSlice result);
 
 /** Decode a Base58 token using Bitcoin alphabet
 
-    The type and checksum must match or an
-    empty string is returned.
+   The type and checksum must match or `boost::none is returned``. The slice
+   must decode into exactly as many bytes as specified as the result slice or
+   `boost::none` is returned. The value will be decoded into the slice specified
+   by the `result` parameter. The returned slice is always either `boost::none`
+   or is the same slice as `result`.
 
-    This is used to detect user error. Specifically,
-    when an AccountID is specified using the wrong
-    base58 alphabet, so that a better error message
-    may be returned.
+   @note This is used to detect user error. Specifically, when an AccountID is
+   specified using the wrong base58 alphabet, so that a better error message may
+   be returned.
 */
-std::string
-decodeBase58TokenBitcoin(std::string const& s, TokenType type);
+boost::optional<Slice>
+decodeBase58TokenBitcoin(
+    Slice s,
+    TokenType type,
+    MutableSlice result);
+
+/** Metadata associated with an encoding.
+
+    Tokens are encoded as:
+    <1-byte TokenType><Optional 2-byte Encoding type for ripple-lib><Data><4-byte checksum>
+    The metadata includes the non-data part of the encoding. If an encoding does not include
+    an encoding type, the metadata will use 2-bytes of zeros.
+*/
+struct DecodeMetadata
+{
+    std::array<std::uint8_t, 2> encodingType;
+    std::uint8_t tokenType;
+    std::array<std::uint8_t, 4> checksum;
+    bool isRippleLibEncoded() const;
+};
+
+/** Low-level decode routine. This can be used to when the token type is unknown. If the
+    Token type is known, use either `decodeBase58Token` or `decodeBase58FamilySeed`.
+
+    The checksum must match or `boost::none` is returned. The value will be
+    decoded into the slice specified by the `result` parameter. If `allowResize`
+    is true, the result may be smaller than the specified slice. In that case
+    the returned slice will be a proper subset of the result slice. If
+    `allowResize` is false, the returned slice is always either `boost::none` or
+    is the same slice as `result`. If the result is larger than the space
+    allowed by `result` then `boost::none` is returned.
+*/
+boost::optional<std::pair<Slice, DecodeMetadata>>
+decodeBase58(
+    Slice s,
+    MutableSlice result,
+    bool allowResize);
 
 } // ripple
 

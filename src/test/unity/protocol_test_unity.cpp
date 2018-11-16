@@ -19,6 +19,7 @@
 //==============================================================================
 
 #include <test/protocol/BuildInfo_test.cpp>
+#include <test/protocol/Base58_test.cpp>
 #include <test/protocol/digest_test.cpp>
 #include <test/protocol/InnerObjectFormats_test.cpp>
 #include <test/protocol/IOUAmount_test.cpp>
