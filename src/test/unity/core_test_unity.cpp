@@ -25,5 +25,4 @@
 #include <test/core/JobQueue_test.cpp>
 #include <test/core/SociDB_test.cpp>
 #include <test/core/Stoppable_test.cpp>
-#include <test/core/TerminateHandler_test.cpp>
 #include <test/core/Workers_test.cpp>
