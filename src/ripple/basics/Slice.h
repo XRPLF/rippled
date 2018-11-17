@@ -71,7 +71,7 @@ public:
     /** Can convert from a mutable slice to a non-mutable slice */
     template<class T,
              class = std::enable_if_t<!Mutable && std::is_same<T, SliceImpl<true>>::value>>
-    SliceImpl (/*SliceImpl<true>*/T const& rhs) noexcept
+    SliceImpl (T const& rhs) noexcept
         :SliceImpl{rhs.data(), rhs.size()}
     {
     }
