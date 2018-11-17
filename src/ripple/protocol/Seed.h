@@ -29,12 +29,12 @@
 
 namespace ripple {
 
-/** Seeds are used to generate deterministic secret keys. */
+/** Seeds are used to a generate deterministic secret key. */
 class Seed
 {
 private:
     std::array<uint8_t, 16> buf_;
-
+    boost::optional<KeyType> keyType_;
 public:
     using const_iterator = std::array<uint8_t, 16>::const_iterator;
 
@@ -50,9 +50,19 @@ public:
 
     /** Construct a seed */
     /** @{ */
-    explicit Seed (Slice const& slice);
-    explicit Seed (uint128 const& seed);
+    explicit Seed(
+        Slice const& slice,
+        boost::optional<KeyType> const& keyType = {});
+    explicit Seed(
+        uint128 const& seed,
+        boost::optional<KeyType> const& keyType = {});
     /** @} */
+
+    boost::optional<KeyType> const&
+    keyType() const
+    {
+        return keyType_;
+    }
 
     std::uint8_t const*
     data() const
@@ -116,13 +126,8 @@ template <>
 boost::optional<Seed>
 parseBase58 (std::string const& s);
 
-/** Same as above, but inculde optional keyType
-*/
-boost::optional<std::pair<Seed, boost::optional<KeyType>>>
-parseBase58Seed (std::string const& s);
-
 /** Attempt to parse a string as a seed */
-boost::optional<std::pair<Seed, boost::optional<KeyType>>>
+boost::optional<Seed>
 parseGenericSeed (std::string const& str);
 
 /** Encode a Seed in RFC1751 format */

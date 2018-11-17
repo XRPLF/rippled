@@ -109,7 +109,7 @@ injectSLE(Json::Value& jv, SLE const& sle);
 boost::optional<Json::Value>
 readLimitField(unsigned int& limit, Tuning::LimitRange const&, Context const&);
 
-boost::optional<std::pair<Seed, boost::optional<KeyType>>>
+boost::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error);
 
 std::pair<PublicKey, SecretKey>

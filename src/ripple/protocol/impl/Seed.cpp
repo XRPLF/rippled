@@ -40,7 +40,8 @@ Seed::~Seed()
     beast::secure_erase(buf_.data(), buf_.size());
 }
 
-Seed::Seed (Slice const& slice)
+Seed::Seed(Slice const& slice, boost::optional<KeyType> const& keyType)
+    : keyType_{keyType}
 {
     if (slice.size() != buf_.size())
         LogicError("Seed::Seed: invalid size");
@@ -48,7 +49,8 @@ Seed::Seed (Slice const& slice)
         slice.data(), buf_.size());
 }
 
-Seed::Seed (uint128 const& seed)
+Seed::Seed(uint128 const& seed, boost::optional<KeyType> const& keyType)
+    : keyType_{keyType}
 {
     if (seed.size() != buf_.size())
         LogicError("Seed::Seed: invalid size");
@@ -108,32 +110,24 @@ generateSeed (std::string const& passPhrase)
     return Seed({ digest.data(), 16 });
 }
 
-boost::optional<std::pair<Seed, boost::optional<KeyType>>>
-parseBase58Seed (std::string const& s)
+template <>
+boost::optional<Seed>
+parseBase58 (std::string const& s)
 {
     zero_after_use_buf<std::uint8_t, 16> result;
     auto resultSlice = makeMutableSlice(result);
     boost::optional<KeyType> keyType;
     if (boost::optional<std::pair<Slice, ExtraB58Encoding>> r =
-            decodeBase58FamilySeed(makeSlice(s), resultSlice))
+        decodeBase58FamilySeed(makeSlice(s), resultSlice))
     {
         if (r->second == ExtraB58Encoding::RippleLib)
             keyType = KeyType::ed25519;
-        return std::make_pair(Seed(resultSlice), keyType);
+        return Seed(resultSlice, keyType);
     }
     return {};
 }
 
-template <>
 boost::optional<Seed>
-parseBase58 (std::string const& s)
-{
-    if (auto r = parseBase58Seed(s))
-        return r->first;
-    return {};
-}
-
-boost::optional<std::pair<Seed, boost::optional<KeyType>>>
 parseGenericSeed (std::string const& str)
 {
     if (str.empty())
@@ -147,7 +141,6 @@ parseGenericSeed (std::string const& str)
 
     Slice decodedSlice;
     DecodeMetadata metadata;
-    boost::optional<KeyType> keyType;
     if (rawDecode)
     {
         std::tie(decodedSlice, metadata) = *rawDecode;
@@ -168,22 +161,20 @@ parseGenericSeed (std::string const& str)
         uint128 seed;
 
         if (seed.SetHexExact(str))
-            return std::make_pair(Seed{Slice(seed.data(), seed.size())}, keyType);
+            return Seed{Slice{seed.data(), seed.size()}};
     }
 
-    if (rawDecode &&
-        decodedSlice.size() == 16)
+    if (rawDecode && decodedSlice.size() == 16)
     {
         if (static_cast<TokenType>(metadata.tokenType) == TokenType::None &&
             metadata.isRippleLibEncoded())
         {
-            keyType = KeyType::ed25519;
-            return std::make_pair(Seed{decodedSlice}, keyType);
+            return Seed{decodedSlice, KeyType::ed25519};
         }
         if (static_cast<TokenType>(metadata.tokenType) == TokenType::FamilySeed &&
             !metadata.isRippleLibEncoded())
         {
-            return std::make_pair(Seed{decodedSlice}, keyType);
+            return Seed{decodedSlice};
         }
     }
 
@@ -192,11 +183,11 @@ parseGenericSeed (std::string const& str)
         if (RFC1751::getKeyFromEnglish(key, str) == 1)
         {
             Blob const blob(key.rbegin(), key.rend());
-            return std::make_pair(Seed{uint128{blob}}, keyType);
+            return Seed{uint128{blob}};
         }
     }
 
-    return std::make_pair(generateSeed(str), keyType);
+    return generateSeed(str);
 }
 
 std::string

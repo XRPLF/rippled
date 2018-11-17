@@ -97,19 +97,20 @@ Json::Value walletPropose (Json::Value const& params)
         {
             Json::Value err;
 
-            boost::optional<std::pair<Seed, boost::optional<KeyType>>> const r =
+            auto const r =
                 RPC::getSeedFromRPC(params, err);
 
             if (!r)
                 return err;
-            if (keyType && r->second && *keyType != *r->second)
+            auto const decodedKeyType = r->keyType();
+            if (keyType && decodedKeyType && *keyType != *decodedKeyType)
             {
                 return rpcError(rpcBAD_SEED);
             }
-            rippleLibSeed = !keyType && r->second == KeyType::ed25519;
+            rippleLibSeed = !keyType && r->keyType() == KeyType::ed25519;
             if (!keyType)
-                keyType = r->second.value_or(KeyType::secp256k1);
-            seed = r->first;
+                keyType = decodedKeyType.value_or(KeyType::secp256k1);
+            seed = r;
         }
         else
         {

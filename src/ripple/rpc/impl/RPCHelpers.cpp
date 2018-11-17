@@ -66,15 +66,12 @@ accountFromString(
 
     // We allow the use of the seeds which is poor practice
     // and merely for debugging convenience.
-    boost::optional<std::pair<Seed, boost::optional<KeyType>>> const r =
-        parseGenericSeed(strIdent);
+    auto const r = parseGenericSeed(strIdent);
 
-    if (!r)
+    if (!r || r->keyType().value_or(KeyType::secp256k1) != KeyType::secp256k1)
         return rpcError (rpcBAD_SEED);
 
-    auto const keypair = generateKeyPair (
-        KeyType::secp256k1,
-        r->first);
+    auto const keypair = generateKeyPair(KeyType::secp256k1, *r);
 
     result = calcAccountID (keypair.first);
     return Json::objectValue;
@@ -517,7 +514,7 @@ readLimitField(unsigned int& limit, Tuning::LimitRange const& range,
     return boost::none;
 }
 
-boost::optional<std::pair<Seed, boost::optional<KeyType>>>
+boost::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error)
 {
     // The array should be constexpr, but that makes Visual Studio unhappy.
@@ -561,7 +558,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
 
     if (seedType == jss::seed.c_str())
     {
-        if (auto r = parseBase58Seed (fieldContents))
+        if (auto r = parseBase58<Seed>(fieldContents))
             return r;
     }
     else if (seedType == jss::passphrase.c_str())
@@ -575,9 +572,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
 
         if (s.SetHexExact (fieldContents))
         {
-            Seed seed(Slice(s.data(), s.size()));
-            boost::optional<KeyType> none;
-            return std::make_pair(seed, none);
+            return Seed(Slice(s.data(), s.size()));
         }
     }
 
@@ -687,18 +682,17 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
 
         {
             Json::Value rpcError;
-            if (boost::optional<std::pair<Seed, boost::optional<KeyType>>> const
-                    r = getSeedFromRPC(params, rpcError))
+            if (auto const r = getSeedFromRPC(params, rpcError))
             {
-                if (has_key_type || r->second == KeyType::ed25519)
+                if (has_key_type || r->keyType() == KeyType::ed25519)
                 {
                     // only ripple lib encoded keys are allowed to be decoded
                     // without a keytype
-                    if (!checkKeyType(keyType, r->second))
+                    if (!checkKeyType(keyType, r->keyType()))
                         return {};
-                    seed = r->first;
+                    seed = r;
                     if (!keyType)
-                        keyType = r->second.value_or(KeyType::secp256k1);
+                        keyType = r->keyType().value_or(KeyType::secp256k1);
                 }
             }
             else if (has_key_type)
@@ -715,14 +709,13 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
                 return {};
             }
 
-            if (boost::optional<std::pair<Seed, boost::optional<KeyType>>> const
-                    r = parseGenericSeed(params[jss::secret].asString()))
+            if (auto const r = parseGenericSeed(params[jss::secret].asString()))
             {
-                if (!checkKeyType(keyType, r->second))
+                if (!checkKeyType(keyType, r->keyType()))
                     return {};
-                seed = r->first;
+                seed = r;
                 if (!keyType)
-                    keyType = r->second.value_or(KeyType::secp256k1);
+                    keyType = r->keyType().value_or(KeyType::secp256k1);
             }
         }
     }
