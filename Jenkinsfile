@@ -157,9 +157,9 @@ try {
                 target = 'docs'
             }
             def cc =
-                (compiler == 'clang') ? '/opt/llvm-5.0.1/bin/clang' : 'gcc'
+                (compiler == 'clang') ? '/opt/llvm-7.0.0/bin/clang' : 'gcc'
             def cxx =
-                (compiler == 'clang') ? '/opt/llvm-5.0.1/bin/clang++' : 'g++'
+                (compiler == 'clang') ? '/opt/llvm-7.0.0/bin/clang++' : 'g++'
             def ucc = isNoUnity(cmake_extra) ? 'true' : 'false'
             def node_type =
                 (compiler == 'msvc') ? 'rippled-win' : 'rippled-dev'
