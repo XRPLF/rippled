@@ -21,6 +21,7 @@
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/app/misc/ValidatorSite.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/core/LexicalCast.h>
@@ -32,6 +33,7 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/peerfinder/make_Manager.h>
 #include <ripple/rpc/json_body.h>
+#include <ripple/rpc/handlers/GetCounts.h>
 #include <ripple/server/SimpleWriter.h>
 
 #include <boost/utility/in_place_factory.hpp>
@@ -57,6 +59,18 @@ struct get_peer_json
         return json;
     }
 };
+
+namespace CrawlOptions
+{
+    enum
+    {
+        Disabled     = 0,
+        Overlay      = (1 << 0),
+        ServerInfo   = (1 << 1),
+        ServerCounts = (1 << 2),
+        Unl          = (1 << 3)
+    };
+}
 
 //------------------------------------------------------------------------------
 
@@ -860,7 +874,7 @@ OverlayImpl::limit()
 }
 
 Json::Value
-OverlayImpl::crawl()
+OverlayImpl::getOverlayInfo()
 {
     using namespace std::chrono;
     Json::Value jv;
@@ -912,6 +926,65 @@ OverlayImpl::crawl()
     return jv;
 }
 
+Json::Value
+OverlayImpl::getServerInfo()
+{
+    bool const humanReadable = false;
+    bool const admin = false;
+    bool const counters = false;
+
+    Json::Value server_info = app_.getOPs().getServerInfo(humanReadable, admin, counters);
+
+    // Filter out some information
+    server_info.removeMember(jss::hostid);
+    server_info.removeMember(jss::load_factor_fee_escalation);
+    server_info.removeMember(jss::load_factor_fee_queue);
+
+    if (server_info.isMember(jss::validated_ledger))
+    {
+        Json::Value& validated_ledger = server_info[jss::validated_ledger];
+
+        validated_ledger.removeMember(jss::base_fee);
+        validated_ledger.removeMember(jss::reserve_base_xrp);
+        validated_ledger.removeMember(jss::reserve_inc_xrp);
+    }
+
+    return server_info;
+}
+
+Json::Value
+OverlayImpl::getServerCounts()
+{
+    return getCountsJson(app_, 10);
+}
+
+Json::Value
+OverlayImpl::getUnlInfo()
+{
+    Json::Value validators = app_.validators().getJson();
+
+    if (validators.isMember(jss::publisher_lists))
+    {
+        Json::Value& publisher_lists = validators[jss::publisher_lists];
+
+        for (auto& publisher : publisher_lists)
+        {
+            publisher.removeMember(jss::list);
+        }
+    }
+
+    validators.removeMember(jss::signing_keys);
+
+    Json::Value validatorSites = app_.validatorSites().getJson();
+
+    if (validatorSites.isMember(jss::validator_sites))
+    {
+        validators[jss::validator_sites] = std::move(validatorSites[jss::validator_sites]);
+    }
+
+    return validators;
+}
+
 // Returns information on verified peers.
 Json::Value
 OverlayImpl::json ()
@@ -923,7 +996,7 @@ bool
 OverlayImpl::processRequest (http_request_type const& req,
     Handoff& handoff)
 {
-    if (req.target() != "/crawl")
+    if (req.target() != "/crawl" || setup_.crawlOptions == CrawlOptions::Disabled)
         return false;
 
     boost::beast::http::response<json_body> msg;
@@ -932,7 +1005,25 @@ OverlayImpl::processRequest (http_request_type const& req,
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
-    msg.body()["overlay"] = crawl();
+    msg.body()["version"] = Json::Value(1u);
+
+    if (setup_.crawlOptions & CrawlOptions::Overlay)
+    {
+        msg.body()["overlay"] = getOverlayInfo();
+    }
+    if (setup_.crawlOptions & CrawlOptions::ServerInfo)
+    {
+        msg.body()["server"] = getServerInfo();
+    }
+    if (setup_.crawlOptions & CrawlOptions::ServerCounts)
+    {
+        msg.body()["counts"] = getServerCounts();
+    }
+    if (setup_.crawlOptions & CrawlOptions::Unl)
+    {
+        msg.body()["unl"] = getUnlInfo();
+    }
+
     msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return true;
@@ -1145,23 +1236,72 @@ Overlay::Setup
 setup_Overlay (BasicConfig const& config)
 {
     Overlay::Setup setup;
-    auto const& section = config.section("overlay");
-    setup.context = make_SSLContext("");
-    setup.expire = get<bool>(section, "expire", false);
-
-    set (setup.ipLimit, "ip_limit", section);
-    if (setup.ipLimit < 0)
-        Throw<std::runtime_error> ("Configured IP limit is invalid");
-
-    std::string ip;
-    set (ip, "public_ip", section);
-    if (! ip.empty ())
     {
-        boost::system::error_code ec;
-        setup.public_ip = beast::IP::Address::from_string (ip, ec);
-        if (ec || beast::IP::is_private (setup.public_ip))
-            Throw<std::runtime_error> ("Configured public IP is invalid");
+        auto const& section = config.section("overlay");
+        setup.context = make_SSLContext("");
+        setup.expire = get<bool>(section, "expire", false);
+
+        set(setup.ipLimit, "ip_limit", section);
+        if (setup.ipLimit < 0)
+            Throw<std::runtime_error>("Configured IP limit is invalid");
+
+        std::string ip;
+        set(ip, "public_ip", section);
+        if (!ip.empty())
+        {
+            boost::system::error_code ec;
+            setup.public_ip = beast::IP::Address::from_string(ip, ec);
+            if (ec || beast::IP::is_private(setup.public_ip))
+                Throw<std::runtime_error>("Configured public IP is invalid");
+        }
     }
+    {
+        auto const& section = config.section("crawl");
+        auto const& values = section.values();
+
+        if (values.size() > 1)
+        {
+            Throw<std::runtime_error>(
+                "Configured [crawl] section is invalid, too many values");
+        }
+
+        bool crawlEnabled = true;
+
+        // Only allow "0|1" as a value
+        if (values.size() == 1)
+        {
+            try
+            {
+                crawlEnabled = boost::lexical_cast<bool>(values.front());
+            }
+            catch (boost::bad_lexical_cast const&)
+            {
+                Throw<std::runtime_error>(
+                    "Configured [crawl] section has invalid value: " + values.front());
+            }
+        }
+
+        if (crawlEnabled)
+        {
+            if (get<bool>(section, "overlay", true))
+            {
+                setup.crawlOptions |= CrawlOptions::Overlay;
+            }
+            if (get<bool>(section, "server", true))
+            {
+                setup.crawlOptions |= CrawlOptions::ServerInfo;
+            }
+            if (get<bool>(section, "counts", false))
+            {
+                setup.crawlOptions |= CrawlOptions::ServerCounts;
+            }
+            if (get<bool>(section, "unl", true))
+            {
+                setup.crawlOptions |= CrawlOptions::Unl;
+            }
+        }
+    }
+
     return setup;
 }
 

@@ -70,6 +70,7 @@ public:
         bool expire = false;
         beast::IP::Address public_ip;
         int ipLimit = 0;
+        std::uint32_t crawlOptions = 0;
     };
 
     using PeerSequence = std::vector <std::shared_ptr<Peer>>;
@@ -103,11 +104,6 @@ public:
     virtual
     std::size_t
     size () = 0;
-
-    /** Returns information reported to the crawl cgi command. */
-    virtual
-    Json::Value
-    crawl() = 0;
 
     /** Return diagnostics on the status of all peers.
         @deprecated This is superceded by PropertyStream
