@@ -22,6 +22,7 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/tokens.h>
 #include <boost/container/small_vector.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <cassert>
 #include <cstring>
 #include <memory>
@@ -825,6 +826,39 @@ class Base58_test : public beast::unit_test::suite
         pass();
     }
 
+    void
+    testExportBits()
+    {
+        testcase("Multiprecision export bits");
+        using namespace boost::multiprecision;
+        // Export bits must remove leading zeros, except when then value is
+        // zero, there there must be exactly one zero.
+        {
+            // test zero
+            std::array<std::uint8_t, 4> dst;
+            checked_uint128_t const v{0};
+            auto const e = export_bits(v, dst.data(), 8);
+            BEAST_EXPECT(std::distance(dst.data(), e) == 1 && dst[0] == 0);
+        }
+        {
+            // test import with leading zeros
+            std::array<std::uint8_t, 4> dst{};
+            // use hex or will interpret leading zeros as octal
+            checked_uint128_t const v{"0x00000000000000000000000042"};
+            auto const e = export_bits(v, dst.data(), 8);
+            BEAST_EXPECT(std::distance(dst.data(), e) == 1 && dst[0] == 0x42);
+        }
+        {
+            // test calculation that leaves leading zeros
+            std::array<std::uint8_t, 4> dst;
+            checked_uint128_t const v1{"900000000000000000000000042"};
+            checked_uint128_t const v0{"900000000000000000000000000"};
+            checked_uint128_t const v = v1 - v0;
+            auto const e = export_bits(v, dst.data(), 8);
+            BEAST_EXPECT(std::distance(dst.data(), e) == 1 && dst[0] == 42);
+        }
+    }
+
 public:
     void
     run() override
@@ -860,6 +894,7 @@ public:
         testMalformed();
         testMinMaxEncodeDecode();
         testMinMaxDecode();
+        testExportBits();
     }
 };
 
