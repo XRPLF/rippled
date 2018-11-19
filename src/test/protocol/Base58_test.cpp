@@ -25,6 +25,7 @@
 #include <cassert>
 #include <cstring>
 #include <memory>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -314,76 +315,74 @@ decodeBase58TokenBitcoin(std::string const& s, TokenType type)
 {
     return decodeBase58Token(s, type, bitcoinInverse);
 }
+}  // namespace Base58TestDetail
 
-template <class Log>
-bool
-checkMatch(Log&& log, Slice expected, Slice got, DecodeMetadata const& metadata)
+class Base58_test : public beast::unit_test::suite
 {
-    auto printIt = [&] {
-        log << std::hex;
-        log << "Exp, Got:\n";
-        for (auto c : expected)
-            log << std::uint32_t(c);
-        log << "\n";
-        log << std::uint32_t(metadata.tokenType);
-        if (metadata.isRippleLibEncoded())
-        {
-            for (auto c : metadata.encodingType)
+    bool
+    checkMatch(Slice expected, Slice got, DecodeMetadata const& metadata)
+    {
+        auto printIt = [&] {
+            log << std::hex;
+            log << "Exp, Got:\n";
+            for (auto c : expected)
                 log << std::uint32_t(c);
-        }
-        for (auto c : got)
-            log << std::uint32_t(c);
-        for (auto c : metadata.checksum)
-            log << std::uint32_t(c);
-        log << std::dec;
-        log << "\n";
-    };
+            log << "\n";
+            log << std::uint32_t(metadata.tokenType);
+            if (metadata.isRippleLibEncoded())
+            {
+                for (auto c : metadata.encodingType)
+                    log << std::uint32_t(c);
+            }
+            for (auto c : got)
+                log << std::uint32_t(c);
+            for (auto c : metadata.checksum)
+                log << std::uint32_t(c);
+            log << std::dec;
+            log << "\n";
+        };
 
-    if (expected[0] != metadata.tokenType)
-    {
-        log << "Token type mismatch\n";
-        printIt();
-        return false;
-    }
-    expected += 1;
-    if (metadata.isRippleLibEncoded())
-    {
-        if (expected[0] == std::uint8_t(0xE1) &&
-            expected[1] == std::uint8_t(0x4B))
-            expected += 2;
-        else
+        if (expected[0] != metadata.tokenType)
         {
-            log << "Ripple lib encoded mismatch\n";
+            log << "Token type mismatch\n";
             printIt();
             return false;
         }
+        expected += 1;
+        if (metadata.isRippleLibEncoded())
+        {
+            if (expected[0] == std::uint8_t(0xE1) &&
+                expected[1] == std::uint8_t(0x4B))
+                expected += 2;
+            else
+            {
+                log << "Ripple lib encoded mismatch\n";
+                printIt();
+                return false;
+            }
+        }
+        if (!std::equal(
+                expected.data() + expected.size() - 4,
+                expected.data() + expected.size(),
+                metadata.checksum.begin(),
+                metadata.checksum.end()))
+        {
+            log << "Checksum mismatch\n";
+            printIt();
+            return false;
+        }
+        if (!std::equal(
+                expected.data(),
+                expected.data() + expected.size() - 4,
+                got.data(),
+                got.data() + got.size()))
+        {
+            log << "Data mismatch\n";
+            printIt();
+            return false;
+        }
+        return true;
     }
-    if (!std::equal(
-            expected.data() + expected.size() - 4,
-            expected.data() + expected.size(),
-            metadata.checksum.begin(),
-            metadata.checksum.end()))
-    {
-        log << "Checksum mismatch\n";
-        printIt();
-        return false;
-    }
-    if (!std::equal(
-            expected.data(),
-            expected.data() + expected.size() - 4,
-            got.data(),
-            got.data() + got.size()))
-    {
-        log << "Data mismatch\n";
-        printIt();
-        return false;
-    }
-    return true;
-}
-}  // namespace Base58TestDetail
-
-class Base58Manual_test : public beast::unit_test::suite
-{
     void
     randomEncodedBase58(beast::xor_shift_engine& engine, MutableSlice result)
     {
@@ -498,8 +497,7 @@ class Base58Manual_test : public beast::unit_test::suite
                             (resultBufSizeDelta > 0 && allowResize);
                         BEAST_EXPECT(expectDecoded == bool(decodedRaw));
                         if (decodedRaw)
-                            BEAST_EXPECT(Base58TestDetail::checkMatch(
-                                log,
+                            BEAST_EXPECT(checkMatch(
                                 decodeSlice,
                                 decodedRaw->first,
                                 decodedRaw->second));
@@ -688,8 +686,7 @@ class Base58Manual_test : public beast::unit_test::suite
                          (resultBufSizeDelta > 0 && allowResize));
                     BEAST_EXPECT(expectDecoded == bool(decoded));
                     if (decoded)
-                        BEAST_EXPECT(Base58TestDetail::checkMatch(
-                            log,
+                        BEAST_EXPECT(checkMatch(
                             makeSlice(decodedRef),
                             decoded->first,
                             decoded->second));
@@ -698,18 +695,6 @@ class Base58Manual_test : public beast::unit_test::suite
         }
     }
 
-public:
-    void
-    run() override
-    {
-        constexpr std::size_t numTestIterations = 1'000'000;
-        testRandomEncodeDecode(numTestIterations);
-        testRandomDecode(numTestIterations);
-    }
-};
-
-class Base58_test : public beast::unit_test::suite
-{
     void
     testMinMaxEncodeDecode()
     {
@@ -764,11 +749,8 @@ class Base58_test : public beast::unit_test::suite
                              (resultBufSizeDelta > 0 && allowResize));
                         BEAST_EXPECT(expectDecoded == bool(decoded));
                         if (decoded)
-                            BEAST_EXPECT(Base58TestDetail::checkMatch(
-                                log,
-                                decodeSlice,
-                                decoded->first,
-                                decoded->second));
+                            BEAST_EXPECT(checkMatch(
+                                decodeSlice, decoded->first, decoded->second));
                     }
                 }
             }
@@ -817,8 +799,7 @@ class Base58_test : public beast::unit_test::suite
                              (resultBufSizeDelta > 0 && allowResize));
                         BEAST_EXPECT(expectDecoded == bool(decoded));
                         if (decoded)
-                            BEAST_EXPECT(Base58TestDetail::checkMatch(
-                                log,
+                            BEAST_EXPECT(checkMatch(
                                 makeSlice(decodedRef),
                                 decoded->first,
                                 decoded->second));
@@ -848,6 +829,33 @@ public:
     void
     run() override
     {
+        {
+            std::size_t numTestIterations = 10'000;
+            constexpr std::size_t maxIterations = 100'000'000;
+            constexpr std::size_t minIterations = 100;
+            if (!arg().empty())
+            {
+                // Use `--unittest-arg` to change the number of test iterations
+                try
+                {
+                    std::size_t sz;
+                    auto const& a = arg();
+                    auto const ai = std::stoi(a, &sz);
+                    if (a.size() == sz)
+                    {
+                        numTestIterations =
+                            std::min<std::size_t>(ai, maxIterations);
+                        numTestIterations = std::max<std::size_t>(
+                            numTestIterations, minIterations);
+                    }
+                }
+                catch (...)
+                {
+                }
+            }
+            testRandomEncodeDecode(numTestIterations);
+            testRandomDecode(numTestIterations);
+        }
         testRippleLibEncoded();
         testMalformed();
         testMinMaxEncodeDecode();
@@ -855,7 +863,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(Base58Manual, protocol, ripple);
 BEAST_DEFINE_TESTSUITE(Base58, protocol, ripple);
 
 }  // namespace ripple
