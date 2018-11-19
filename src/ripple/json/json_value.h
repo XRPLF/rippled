@@ -246,12 +246,14 @@ public:
     ValueType type () const;
 
     const char* asCString () const;
+    /** Returns the unquoted string value. */
     std::string asString () const;
     Int asInt () const;
     UInt asUInt () const;
     double asDouble () const;
     bool asBool () const;
 
+    // TODO: What is the "empty()" method this docstring mentions?
     /** isNull() tests to see if this field is null.  Don't use this method to
         test for emptiness: use empty(). */
     bool isNull () const;

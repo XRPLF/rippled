@@ -523,7 +523,11 @@ Value::asString () const
         return beast::lexicalCastThrow <std::string> (value_.int_);
 
     case uintValue:
+        return beast::lexicalCastThrow <std::string> (value_.uint_);
+
     case realValue:
+        return beast::lexicalCastThrow <std::string> (value_.real_);
+
     case arrayValue:
     case objectValue:
         JSON_ASSERT_MESSAGE ( false, "Type is not convertible to string" );

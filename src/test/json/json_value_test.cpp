@@ -24,6 +24,7 @@
 #include <ripple/beast/type_name.h>
 
 #include <algorithm>
+#include <regex>
 
 namespace ripple {
 
@@ -250,6 +251,41 @@ struct json_value_test : beast::unit_test::suite
         }
     }
 
+    void test_conversions ()
+    {
+      // We have Json::Int, but not Json::Double or Json::Real.
+      // We have Json::Int, Json::Value::Int, and Json::ValueType::intValue.
+      // We have Json::ValueType::realValue but Json::Value::asDouble.
+      // TODO: What's the thinking here?
+      {
+        // null
+        Json::Value val;
+        BEAST_EXPECT(val.isNull());
+        BEAST_EXPECT(val.asString() == "");
+      }
+      {
+        // bool
+        Json::Value val = true;
+        BEAST_EXPECT(val.asString() == "true");
+      }
+      {
+        // int
+        Json::Value val = -1234;
+        BEAST_EXPECT(val.asString() == "-1234");
+      }
+      {
+        // uint
+        Json::Value val = 1234U;
+        BEAST_EXPECT(val.asString() == "1234");
+      }
+      {
+        // real
+        Json::Value val = 2.0;
+        BEAST_EXPECT(std::regex_match(
+              val.asString(), std::regex("^2\\.0*$")));
+      }
+    }
+
     void test_nest_limits ()
     {
         Json::Reader r;
@@ -316,6 +352,7 @@ struct json_value_test : beast::unit_test::suite
         test_move ();
         test_comparisons ();
         test_compact ();
+        test_conversions();
         test_nest_limits ();
         test_leak();
     }
