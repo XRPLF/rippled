@@ -21,8 +21,10 @@
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/app/misc/ValidatorSite.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/make_SSLContext.h>
+#include <ripple/basics/PerfLog.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DatabaseShard.h>
@@ -32,6 +34,7 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/peerfinder/make_Manager.h>
 #include <ripple/rpc/json_body.h>
+#include <ripple/rpc/handlers/GetCounts.h>
 #include <ripple/server/SimpleWriter.h>
 
 #include <boost/utility/in_place_factory.hpp>
@@ -912,6 +915,61 @@ OverlayImpl::crawl()
     return jv;
 }
 
+Json::Value
+OverlayImpl::crawl_server()
+{
+    Json::Value jv;
+
+    bool const humanReadable = false;
+    bool const admin = false;
+    bool const counters = false;
+
+    Json::Value server_info = app_.getOPs().getServerInfo(humanReadable, admin, counters);
+
+    // Filter out some information
+    server_info.removeMember(jss::hostid);
+    server_info.removeMember(jss::load_factor_fee_escalation);
+    server_info.removeMember(jss::load_factor_fee_queue);
+
+    if (server_info.isMember(jss::validated_ledger))
+    {
+        Json::Value& validated_ledger = server_info[jss::validated_ledger];
+
+        validated_ledger.removeMember(jss::base_fee);
+        validated_ledger.removeMember(jss::reserve_base_xrp);
+        validated_ledger.removeMember(jss::reserve_inc_xrp);
+    }
+
+    jv[jss::info] = std::move(server_info);
+
+    jv[jss::counters] = getCountsJson(app_, 10);
+
+    Json::Value validators = app_.validators().getJson();
+
+    if (validators.isMember(jss::publisher_lists))
+    {
+        Json::Value& publisher_lists = validators[jss::publisher_lists];
+
+        for (auto& publisher : publisher_lists)
+        {
+            publisher.removeMember(jss::list);
+        }
+    }
+
+    validators.removeMember(jss::signing_keys);
+
+    Json::Value validatorSites = app_.validatorSites().getJson();
+
+    if (validatorSites.isMember(jss::validator_sites))
+    {
+        validators[jss::validator_sites] = std::move(validatorSites[jss::validator_sites]);
+    }
+
+    jv[jss::validators] = std::move(validators);
+
+    return jv;
+}
+
 // Returns information on verified peers.
 Json::Value
 OverlayImpl::json ()
@@ -933,6 +991,7 @@ OverlayImpl::processRequest (http_request_type const& req,
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
     msg.body()["overlay"] = crawl();
+    msg.body()["server"] = crawl_server();
     msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return true;

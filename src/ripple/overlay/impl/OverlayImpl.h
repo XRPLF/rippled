@@ -391,6 +391,9 @@ private:
     crawl() override;
 
     Json::Value
+    crawl_server();
+
+    Json::Value
     json() override;
 
     //--------------------------------------------------------------------------

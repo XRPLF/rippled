@@ -122,6 +122,7 @@ class ValidatorList
         std::vector<PublicKey> list;
         std::size_t sequence;
         TimeKeeper::time_point expiration;
+        std::string siteUri;
     };
 
     ManifestCache& validatorManifests_;
@@ -197,6 +198,15 @@ public:
     */
     ListDisposition
     applyList (
+        std::string const& manifest,
+        std::string const& blob,
+        std::string const& signature,
+        std::uint32_t version,
+        std::string siteUri);
+
+    // v1 - siteUri is not specified
+    ListDisposition
+    applyList(
         std::string const& manifest,
         std::string const& blob,
         std::string const& signature,

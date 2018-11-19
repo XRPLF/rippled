@@ -320,7 +320,8 @@ ValidatorSite::parseJsonResponse (
         body["manifest"].asString (),
         body["blob"].asString (),
         body["signature"].asString(),
-        body["version"].asUInt());
+        body["version"].asUInt(),
+        sites_[siteIdx].activeResource->uri);
 
     sites_[siteIdx].lastRefreshStatus.emplace(
         Site::Status{clock_type::now(), disp, ""});

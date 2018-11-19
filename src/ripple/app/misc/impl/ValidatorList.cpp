@@ -192,11 +192,28 @@ ValidatorList::load (
 
 
 ListDisposition
-ValidatorList::applyList (
+ValidatorList::applyList(
     std::string const& manifest,
     std::string const& blob,
     std::string const& signature,
     std::uint32_t version)
+{
+    // This API is only used by tests
+    return applyList(
+        manifest,
+        blob,
+        signature,
+        version,
+        std::string("unknown.test"));
+}
+
+ListDisposition
+ValidatorList::applyList (
+    std::string const& manifest,
+    std::string const& blob,
+    std::string const& signature,
+    std::uint32_t version,
+    std::string siteUri)
 {
     if (version != requiredListVersion)
         return ListDisposition::unsupported_version;
@@ -215,6 +232,7 @@ ValidatorList::applyList (
     publisherLists_[pubKey].sequence = list["sequence"].asUInt ();
     publisherLists_[pubKey].expiration = TimeKeeper::time_point{
         TimeKeeper::duration{list["expiration"].asUInt()}};
+    publisherLists_[pubKey].siteUri = std::move(siteUri);
     std::vector<PublicKey>& publisherList = publisherLists_[pubKey].list;
 
     std::vector<PublicKey> oldList = publisherList;
@@ -544,6 +562,7 @@ ValidatorList::getJson() const
         Json::Value& curr = jPublisherLists.append(Json::objectValue);
         curr[jss::pubkey_publisher] = strHex(p.first);
         curr[jss::available] = p.second.available;
+        curr[jss::uri] = p.second.siteUri;
         if(p.second.expiration != TimeKeeper::time_point{})
         {
             curr[jss::seq] = static_cast<Json::UInt>(p.second.sequence);
