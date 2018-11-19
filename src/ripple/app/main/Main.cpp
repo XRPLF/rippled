@@ -620,7 +620,8 @@ int run (int argc, char** argv)
                 std::cerr << "WARNING: using deprecated rpc_port param.\n";
                 try
                 {
-                    res.first.at_port(vm["rpc_port"].as<std::uint16_t>());
+                    res.first = res.first.at_port(
+                        vm["rpc_port"].as<std::uint16_t>());
                     if (res.first.port() == 0)
                         throw std::domain_error("0");
                 }
