@@ -76,9 +76,7 @@ struct zero_after_use_uint256 : uint256
 {
     using uint256::uint256;
     zero_after_use_uint256() = default;
-    zero_after_use_uint256(zero_after_use_uint256 const& other) : uint256{other}
-    {
-    }
+    zero_after_use_uint256(zero_after_use_uint256 const& other) = default;
     zero_after_use_uint256(uint256 const& other) : uint256{other}
     {
     }
@@ -136,8 +134,8 @@ parseGenericSeed (std::string const& str)
     // large enough to hold either a public key, account, secret key, or seed
     zero_after_use_buf<std::uint8_t, 33> buffer;
 
-    boost::optional<std::pair<Slice, DecodeMetadata>> rawDecode = decodeBase58(
-        makeSlice(str), makeMutableSlice(buffer), /*allowResize*/ true);
+    boost::optional<std::pair<Slice, DecodeMetadata>> rawDecode =
+        decodeBase58Resizable(makeSlice(str), makeMutableSlice(buffer));
 
     Slice decodedSlice;
     DecodeMetadata metadata;

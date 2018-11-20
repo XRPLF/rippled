@@ -37,16 +37,19 @@
 
 namespace ripple {
 
+enum class SliceImplMutability : bool { no, yes };
+
 /** A linear range of bytes.
 
     A fully constructed Slice is guaranteed to be in a valid state.
     A Slice is lightweight and copyable, it retains no ownership
     of the underlying memory.
 */
-template<bool Mutable>
+template<SliceImplMutability M>
 class SliceImpl
 {
 private:
+    constexpr static bool Mutable{M == SliceImplMutability::yes};
     using TData = typename std::conditional<Mutable, std::uint8_t*, std::uint8_t const*>::type;
     using TVoidData = typename std::conditional<Mutable, void*, void const*>::type;
     TData data_ = nullptr;
@@ -69,17 +72,23 @@ public:
     }
 
     /** Can convert from a mutable slice to a non-mutable slice */
-    template<class T,
-             class = std::enable_if_t<!Mutable && std::is_same<T, SliceImpl<true>>::value>>
-    SliceImpl (T const& rhs) noexcept
-        :SliceImpl{rhs.data(), rhs.size()}
+    template <
+        class T,
+        class = std::enable_if_t<
+            !Mutable &&
+            std::is_same<T, SliceImpl<SliceImplMutability::yes>>::value>>
+    SliceImpl(T const& rhs) noexcept : SliceImpl{rhs.data(), rhs.size()}
     {
     }
 
     /** Can assign from a mutable slice to a non-mutable slice */
-    template<class T,
-             class = std::enable_if_t<!Mutable && std::is_same<T, SliceImpl<true>>::value>>
-    SliceImpl& operator= (/*SliceImpl<true>*/T const& rhs) noexcept
+    template <
+        class T,
+        class = std::enable_if_t<
+            !Mutable &&
+            std::is_same<T, SliceImpl<SliceImplMutability::yes>>::value>>
+    SliceImpl&
+    operator=(T const& rhs) noexcept
     {
         data_ = rhs.data();
         size_ = rhs.size();
@@ -167,9 +176,9 @@ public:
 };
 
 /** An immutable linear range of bytes. */
-using Slice = SliceImpl<false>;
+using Slice = SliceImpl<SliceImplMutability::no>;
 /** A mutable linear range of bytes. */
-using MutableSlice = SliceImpl<true>;
+using MutableSlice = SliceImpl<SliceImplMutability::yes>;
 
 //------------------------------------------------------------------------------
 

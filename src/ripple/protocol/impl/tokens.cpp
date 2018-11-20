@@ -32,6 +32,15 @@
 
 namespace ripple {
 
+// Tokens are encoded as:
+// <1-byte TokenType><Optional 2-byte Encoding type for ripple-lib><Data><4-byte checksum>
+constexpr size_t checksumBytes = 4;
+constexpr size_t familySeedBytes = 16;
+// Ripple lib encoded seeds start with a three-byte prefix of:
+// <TokenType::None><0xE1><0x4B> rather than the usual one-byte prefix of:
+// <TokenType::FamilySeed>
+constexpr std::array<std::uint8_t, 2> rippleLibEncodedSeedPrefix{0xE1, 0x4B};
+
 static char rippleAlphabet[] =
     "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
@@ -91,14 +100,14 @@ void
 checksum(void* out, void const* message, std::size_t size)
 {
     auto const h = digest2<sha256_hasher>(message, size);
-    std::memcpy(out, h.data(), 4);
+    std::memcpy(out, h.data(), checksumBytes);
 }
 
 void
 checksum(void* out, Slice prefix, Slice message)
 {
     auto const h = digest2<sha256_hasher>(prefix, message);
-    std::memcpy(out, h.data(), 4);
+    std::memcpy(out, h.data(), checksumBytes);
 }
 
 //------------------------------------------------------------------------------
@@ -173,7 +182,7 @@ encodeToken(
     char const* const alphabet)
 {
     // expanded token includes type + 4 byte checksum
-    auto const expanded = 1 + size + 4;
+    auto const expanded = 1 + size + checksumBytes;
 
     // We need expanded + expanded * (log(256) / log(58)) which is
     // bounded by expanded + expanded * (138 / 100 + 1) which works
@@ -326,16 +335,17 @@ decodeBase58(
 
     {
         std::size_t const maxSize = in.size() * 733 / 1000 + 1;
-        if (out.size() + 3 + 4 < maxSize - 1) // -1 because maxSize may overestimate
+        if (out.size() + 1 + rippleLibEncodedSeedPrefix.size() + checksumBytes <
+            maxSize - 1)  // -1 because maxSize may overestimate
             return {};
         // tighter constraint for non-ripplelib encoded data
         // ripple-lib encoded will be <1 token><2 encoding><16 data><4 checksum>==23
         if (!flags.test(DecodeBase58Detail::maybeRippleLibEncoded) &&
-            out.size() + 1 + 4 < maxSize - 1) // -1 because maxSize may overestimate
+            out.size() + 1 + checksumBytes < maxSize - 1) // -1 because maxSize may overestimate
         {
             return {};
         }
-        if (maxSize + zeroes < 4 || maxSize + zeroes > maxOutBytes)
+        if (maxSize + zeroes < checksumBytes || maxSize + zeroes > maxOutBytes)
             return {};
     }
 
@@ -445,7 +455,7 @@ decodeBase58(
         std::size_t const numWritten = std::distance(tmp.data(), endWritten);
         assert(numWritten <= maxOutBytes);
         tmp.numToErase = numWritten;
-        if (numWritten <= 4)
+        if (numWritten <= checksumBytes)
             return {};
         if (numWritten > MaxDecodedTokenBytes)
             return {};
@@ -454,14 +464,15 @@ decodeBase58(
             memset(out.data(), 0, out.size());
         DecodeMetadata metadata;
         memset(metadata.encodingType.data(), 0, metadata.encodingType.size());
-        memcpy(metadata.checksum.data(), tmp.data() + numWritten - 4, 4);
+        memcpy(metadata.checksum.data(), tmp.data() + numWritten - checksumBytes, checksumBytes);
         metadata.tokenType = tmp[0];
         std::uint8_t const* dataStart = &tmp[1];
-        std::uint8_t const* dataEnd = &tmp[0] + numWritten - 4;
+        std::uint8_t const* dataEnd = &tmp[0] + numWritten - checksumBytes;
         if (flags.test(DecodeBase58Detail::maybeRippleLibEncoded) &&
             static_cast<TokenType>(metadata.tokenType) == TokenType::None &&
-            dataEnd - dataStart == 18 && dataStart[0] == std::uint8_t(0xE1) &&
-            dataStart[1] == std::uint8_t(0x4B))
+            (dataEnd - dataStart == rippleLibEncodedSeedPrefix.size() + familySeedBytes) &&
+            dataStart[0] == rippleLibEncodedSeedPrefix[0] &&
+            dataStart[1] == rippleLibEncodedSeedPrefix[1])
         {
             memcpy(metadata.encodingType.data(), dataStart, metadata.encodingType.size());
             dataStart+=metadata.encodingType.size();
@@ -518,9 +529,7 @@ decodeBase58Token(
     std::tie(decoded, metadata) = *r;
     ExtraB58Encoding extraB58Encoding = ExtraB58Encoding::None;
 
-    if (type == TokenType::FamilySeed &&
-        metadata.encodingType[0] == std::uint8_t(0xE1) &&
-        metadata.encodingType[1] == std::uint8_t(0x4B))
+    if (type == TokenType::FamilySeed && metadata.isRippleLibEncoded())
     {
         // ripple lib encoded seed
         // ripple-lib encodes seed used to generate an Ed25519 wallet in a
@@ -537,8 +546,8 @@ decodeBase58Token(
             return {};
     }
 
-    std::array<std::uint8_t, 4> const guard = [&] {
-        std::array<std::uint8_t, 4> g;
+    std::array<std::uint8_t, checksumBytes> const guard = [&] {
+        std::array<std::uint8_t, checksumBytes> g;
         if (metadata.encodingType[0] == 0 && metadata.encodingType[1] == 0)
         {
             Slice prefix(&metadata.tokenType, sizeof(metadata.tokenType));
@@ -624,23 +633,18 @@ decodeBase58TokenBitcoin(Slice s, TokenType type, MutableSlice result)
 }
 
 boost::optional<std::pair<Slice, DecodeMetadata>>
-decodeBase58(
-             Slice s,
-             MutableSlice result,
-             bool allowResize)
+decodeBase58Resizable(Slice s, MutableSlice result)
 {
     DecodeBase58Detail::bitset flags;
     flags.set(DecodeBase58Detail::maybeSecret);
     flags.set(DecodeBase58Detail::maybeRippleLibEncoded);
-    if (allowResize)
-        flags.set(DecodeBase58Detail::allowResize);
+    flags.set(DecodeBase58Detail::allowResize);
     return decodeBase58(s, result, rippleInverse, flags);
 }
 
 bool DecodeMetadata::isRippleLibEncoded() const
 {
-    return encodingType[0] == std::uint8_t(0xE1) &&
-        encodingType[1] == std::uint8_t(0x4B);
+    return encodingType == rippleLibEncodedSeedPrefix;
 }
 
 }  // namespace ripple

@@ -490,18 +490,20 @@ class Base58_test : public beast::unit_test::suite
                         decodeResultBuf.data(),
                         decodeSize - 5 +
                             resultBufSizeDelta);  // -5 for token and checksum
-                    auto const decodedRaw = decodeBase58(
-                        makeSlice(encoded), resultBuf, allowResize);
-                    if (!metadataRef.isRippleLibEncoded())
+                    if (allowResize)
                     {
-                        bool const expectDecoded = resultBufSizeDelta == 0 ||
-                            (resultBufSizeDelta > 0 && allowResize);
-                        BEAST_EXPECT(expectDecoded == bool(decodedRaw));
-                        if (decodedRaw)
-                            BEAST_EXPECT(checkMatch(
-                                decodeSlice,
-                                decodedRaw->first,
-                                decodedRaw->second));
+                        auto const decodedRaw = decodeBase58Resizable(
+                            makeSlice(encoded), resultBuf);
+                        if (!metadataRef.isRippleLibEncoded())
+                        {
+                            bool const expectDecoded = resultBufSizeDelta >= 0;
+                            BEAST_EXPECT(expectDecoded == bool(decodedRaw));
+                            if (decodedRaw)
+                                BEAST_EXPECT(checkMatch(
+                                    decodeSlice,
+                                    decodedRaw->first,
+                                    decodedRaw->second));
+                        }
                     }
                     else
                     {
@@ -672,30 +674,26 @@ class Base58_test : public beast::unit_test::suite
             auto const decodedRef = Base58TestDetail::decodeBase58(
                 encoded, Base58TestDetail::rippleInverse);
             auto const decodeSize = decodedRef.size();
-            for (auto allowResize : {true, false})
+            for (auto resultBufSizeDelta : {-5, -1, 0, 1, 5})
             {
-                for (auto resultBufSizeDelta : {-5, -1, 0, 1, 5})
-                {
-                    auto resultBuf = MutableSlice(
-                        decodeResultBuf.data(),
-                        decodeSize - 5 +
-                            resultBufSizeDelta);  // -5 for token and checksum
-                    auto const decoded = decodeBase58(
-                        makeSlice(encoded), resultBuf, allowResize);
-                    bool const expectDecoded = !decodedRef.empty() &&
-                        (decodeSize > 4) &&
-                        (decodeSize - 5 + resultBufSizeDelta <=
-                         MaxDecodedTokenBytes) &&
-                        decodeSize <= MaxDecodedTokenBytes &&
-                        (resultBufSizeDelta == 0 ||
-                         (resultBufSizeDelta > 0 && allowResize));
-                    BEAST_EXPECT(expectDecoded == bool(decoded));
-                    if (decoded)
-                        BEAST_EXPECT(checkMatch(
-                            makeSlice(decodedRef),
-                            decoded->first,
-                            decoded->second));
-                }
+                auto resultBuf = MutableSlice(
+                    decodeResultBuf.data(),
+                    decodeSize - 5 +
+                        resultBufSizeDelta);  // -5 for token and checksum
+                auto const decoded =
+                    decodeBase58Resizable(makeSlice(encoded), resultBuf);
+                bool const expectDecoded = !decodedRef.empty() &&
+                    (decodeSize > 4) &&
+                    (decodeSize - 5 + resultBufSizeDelta <=
+                     MaxDecodedTokenBytes) &&
+                    decodeSize <= MaxDecodedTokenBytes &&
+                    resultBufSizeDelta >= 0;
+                BEAST_EXPECT(expectDecoded == bool(decoded));
+                if (decoded)
+                    BEAST_EXPECT(checkMatch(
+                        makeSlice(decodedRef),
+                        decoded->first,
+                        decoded->second));
             }
         }
     }
@@ -737,26 +735,21 @@ class Base58_test : public beast::unit_test::suite
                 std::array<std::uint8_t, 2 * MaxDecodedTokenBytes>
                     decodeResultBuf;  //*2 to allow oversized tests
 
-                for (auto allowResize : {true, false})
+                for (auto resultBufSizeDelta : {-5, -1, 0, 1, 5})
                 {
-                    for (auto resultBufSizeDelta : {-5, -1, 0, 1, 5})
-                    {
-                        auto resultBuf = MutableSlice(
-                            decodeResultBuf.data(),
-                            decodeSize - 5 +
-                                resultBufSizeDelta);  // -5 for token and
-                                                      // checksum
-                        auto const decoded = decodeBase58(
-                            makeSlice(encoded), resultBuf, allowResize);
-                        bool const expectDecoded =
-                            decodeSize <= MaxDecodedTokenBytes &&
-                            (resultBufSizeDelta == 0 ||
-                             (resultBufSizeDelta > 0 && allowResize));
-                        BEAST_EXPECT(expectDecoded == bool(decoded));
-                        if (decoded)
-                            BEAST_EXPECT(checkMatch(
-                                decodeSlice, decoded->first, decoded->second));
-                    }
+                    auto resultBuf = MutableSlice(
+                        decodeResultBuf.data(),
+                        decodeSize - 5 + resultBufSizeDelta);  // -5 for token
+                                                               // and checksum
+                    auto const decoded =
+                        decodeBase58Resizable(makeSlice(encoded), resultBuf);
+                    bool const expectDecoded =
+                        decodeSize <= MaxDecodedTokenBytes &&
+                        resultBufSizeDelta >= 0;
+                    BEAST_EXPECT(expectDecoded == bool(decoded));
+                    if (decoded)
+                        BEAST_EXPECT(checkMatch(
+                            decodeSlice, decoded->first, decoded->second));
                 }
             }
         }
@@ -767,7 +760,7 @@ class Base58_test : public beast::unit_test::suite
     {
         testcase("base58 min/max decode");
         // encode all 'r'(0) and all 'z' (58) of different sizes
-        constexpr size_t maxValidEncodeChars = 52;  // ceir(log(2^(8*38), 58))
+        constexpr size_t maxValidEncodeChars = 52;  // ceil(log(2^(8*38), 58))
         constexpr size_t maxEncodeChars =
             3 + maxValidEncodeChars;  // encode some that could overflow
         std::string encoded;
@@ -784,31 +777,26 @@ class Base58_test : public beast::unit_test::suite
                 auto const decodedRef = Base58TestDetail::decodeBase58(
                     encoded, Base58TestDetail::rippleInverse);
                 auto const decodeSize = decodedRef.size();
-                for (auto allowResize : {true, false})
+                for (auto resultBufSizeDelta : {-5, -1, 0, 1, 5})
                 {
-                    for (auto resultBufSizeDelta : {-5, -1, 0, 1, 5})
-                    {
-                        auto resultBuf = MutableSlice(
-                            decodeResultBuf.data(),
-                            decodeSize - 5 +
-                                resultBufSizeDelta);  // -5 for token and
-                                                      // checksum
-                        auto const decoded = decodeBase58(
-                            makeSlice(encoded), resultBuf, allowResize);
-                        bool const expectDecoded = !decodedRef.empty() &&
-                            (decodeSize > 4) &&
-                            (decodeSize - 5 + resultBufSizeDelta <=
-                             MaxDecodedTokenBytes) &&
-                            decodeSize <= MaxDecodedTokenBytes &&
-                            (resultBufSizeDelta == 0 ||
-                             (resultBufSizeDelta > 0 && allowResize));
-                        BEAST_EXPECT(expectDecoded == bool(decoded));
-                        if (decoded)
-                            BEAST_EXPECT(checkMatch(
-                                makeSlice(decodedRef),
-                                decoded->first,
-                                decoded->second));
-                    }
+                    auto resultBuf = MutableSlice(
+                        decodeResultBuf.data(),
+                        decodeSize - 5 + resultBufSizeDelta);  // -5 for token
+                                                               // and checksum
+                    auto const decoded = decodeBase58Resizable(
+                        makeSlice(encoded), resultBuf);
+                    bool const expectDecoded = !decodedRef.empty() &&
+                        (decodeSize > 4) &&
+                        (decodeSize - 5 + resultBufSizeDelta <=
+                         MaxDecodedTokenBytes) &&
+                        decodeSize <= MaxDecodedTokenBytes &&
+                        resultBufSizeDelta >= 0;
+                    BEAST_EXPECT(expectDecoded == bool(decoded));
+                    if (decoded)
+                        BEAST_EXPECT(checkMatch(
+                            makeSlice(decodedRef),
+                            decoded->first,
+                            decoded->second));
                 }
             }
         }

@@ -161,18 +161,15 @@ struct DecodeMetadata
     Token type is known, use either `decodeBase58Token` or `decodeBase58FamilySeed`.
 
     The checksum must match or `boost::none` is returned. The value will be
-    decoded into the slice specified by the `result` parameter. If `allowResize`
-    is true, the result may be smaller than the specified slice. In that case
-    the returned slice will be a proper subset of the result slice. If
-    `allowResize` is false, the returned slice is always either `boost::none` or
-    is the same slice as `result`. If the result is larger than the space
+    decoded into the slice specified by the `result` parameter. The result may be
+    smaller than the specified slice. In that case the returned slice will be a
+    proper subset of the result slice. If the result is larger than the space
     allowed by `result` then `boost::none` is returned.
 */
 boost::optional<std::pair<Slice, DecodeMetadata>>
-decodeBase58(
+decodeBase58Resizable(
     Slice s,
-    MutableSlice result,
-    bool allowResize);
+    MutableSlice result);
 
 } // ripple
 

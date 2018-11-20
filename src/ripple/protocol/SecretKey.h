@@ -41,7 +41,7 @@ private:
     boost::optional<SecretKey>
     parseBase58<SecretKey> (TokenType type, std::string const& s);
 public:
-    using const_iterator = std::array<std::uint8_t, 32>::const_iterator;
+    using const_iterator = decltype(buf_)::const_iterator;
 
     SecretKey() = default;
     SecretKey (SecretKey const&) = default;
