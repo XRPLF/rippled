@@ -289,20 +289,14 @@ randomKeyPair (KeyType type)
     return { derivePublicKey(type, sk), sk };
 }
 
+template <>
 boost::optional<SecretKey>
-parseBase58SecretKey(TokenType type, std::string const& s)
+parseBase58(TokenType type, std::string const& s)
 {
     SecretKey result;
     if (!decodeBase58Token(makeSlice(s), type, makeMutableSlice(result.buf_)))
         return boost::none;
     return result;
-}
-
-template <>
-boost::optional<SecretKey>
-parseBase58(TokenType type, std::string const& s)
-{
-    return parseBase58SecretKey(type, s);
 }
 
 } // ripple

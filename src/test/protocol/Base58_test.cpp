@@ -510,7 +510,7 @@ class Base58_test : public beast::unit_test::suite
                     if (!allowResize)
                     {
                         {
-                            auto const decodedToken = decodeBase58Token(
+                            auto const wasDecoded = decodeBase58Token(
                                 makeSlice(encoded), decodeAsToken, resultBuf);
                             auto const decodedTokenRef =
                                 Base58TestDetail::decodeBase58Token(
@@ -520,14 +520,13 @@ class Base58_test : public beast::unit_test::suite
                                 if (!metadataRef.isRippleLibEncoded())
                                 {
                                     BEAST_EXPECT(
-                                        decodedTokenRef.empty() !=
-                                        bool(decodedToken));
-                                    if (decodedToken)
+                                        decodedTokenRef.empty() != wasDecoded);
+                                    if (wasDecoded)
                                         BEAST_EXPECT(std::equal(
                                             makeSlice(decodedTokenRef).begin(),
                                             makeSlice(decodedTokenRef).end(),
-                                            decodedToken->begin(),
-                                            decodedToken->end()));
+                                            resultBuf.begin(),
+                                            resultBuf.end()));
                                 }
                                 else
                                 {
@@ -536,13 +535,13 @@ class Base58_test : public beast::unit_test::suite
                             }
                             else
                             {
-                                BEAST_EXPECT(!decodedToken);
+                                BEAST_EXPECT(!wasDecoded);
                             }
                             memset(resultBuf.data(), 0, resultBuf.size());
                         }
 
                         {
-                            auto const decodedToken = decodeBase58TokenBitcoin(
+                            auto const wasDecoded = decodeBase58TokenBitcoin(
                                 makeSlice(encodedBitcoin),
                                 decodeAsToken,
                                 resultBuf);
@@ -554,24 +553,25 @@ class Base58_test : public beast::unit_test::suite
                                 // ripple lib encoding shouldn't matter for
                                 // bitcoin encoding
                                 BEAST_EXPECT(
-                                    decodedTokenRef.empty() !=
-                                    bool(decodedToken));
-                                if (decodedToken)
+                                    decodedTokenRef.empty() != wasDecoded);
+                                if (wasDecoded)
                                     BEAST_EXPECT(std::equal(
                                         makeSlice(decodedTokenRef).begin(),
                                         makeSlice(decodedTokenRef).end(),
-                                        decodedToken->begin(),
-                                        decodedToken->end()));
+                                        resultBuf.begin(),
+                                        resultBuf.end()));
                             }
                             else
                             {
-                                BEAST_EXPECT(!decodedToken);
+                                BEAST_EXPECT(!wasDecoded);
                             }
                             memset(resultBuf.data(), 0, resultBuf.size());
                         }
 
                         {
-                            auto const decodedToken = [&] {
+                            auto const decodedToken =
+                                [&]() -> boost::optional<
+                                          std::pair<Slice, ExtraB58Encoding>> {
                                 MutableSlice rb = resultBuf;
                                 if (metadataRef.isRippleLibEncoded() &&
                                     resultBuf.size() == 18)
@@ -579,8 +579,12 @@ class Base58_test : public beast::unit_test::suite
                                     rb = MutableSlice(
                                         resultBuf.data(), resultBuf.size() - 2);
                                 }
-                                return decodeBase58FamilySeed(
-                                    makeSlice(encoded), rb);
+                                if (auto encoding = decodeBase58FamilySeed(
+                                        makeSlice(encoded), rb))
+                                {
+                                    return std::make_pair(Slice(rb), *encoding);
+                                }
+                                return {};
                             }();
                             auto const decodedTokenRef =
                                 Base58TestDetail::decodeBase58Token(

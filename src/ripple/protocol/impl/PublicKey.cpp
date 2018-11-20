@@ -39,18 +39,13 @@ template<>
 boost::optional<PublicKey>
 parseBase58 (TokenType type, std::string const& s)
 {
-    std::array<std::uint8_t, 33> result_buf;
-    // decoded may be 33 or 32 bytes
-    auto decoded = decodeBase58Token(
-        makeSlice(s),
-        type,
-        makeMutableSlice(result_buf),
-        /*allow resize*/ true);
-    if (!decoded || !(decoded->size() == 32 || decoded->size()==33))
-        return boost::none;
-    if (!publicKeyType(*decoded))
-        return boost::none;
-    return PublicKey(*decoded);
+    PublicKey result;
+    result.empty_ = false;
+    if (!decodeBase58Token(makeSlice(s), type, makeMutableSlice(result.buf_)))
+        return {};
+    if (!publicKeyType(result.slice()))
+        return {};
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -186,23 +181,25 @@ ed25519Canonical (Slice const& sig)
 
 PublicKey::PublicKey (Slice const& slice)
 {
-    if(! publicKeyType(slice))
+    if (slice.size() != buf_.size() || !publicKeyType(slice))
         LogicError("PublicKey::PublicKey invalid type");
-    size_ = slice.size();
-    std::memcpy(buf_, slice.data(), size_);
+    empty_ = false;
+    std::memcpy(buf_.data(), slice.data(), slice.size());
 }
 
 PublicKey::PublicKey (PublicKey const& other)
-    : size_ (other.size_)
+    : empty_ (other.empty_)
 {
-    std::memcpy(buf_, other.buf_, size_);
+    if (!empty_)
+        buf_ = other.buf_;
 };
 
 PublicKey&
 PublicKey::operator=(PublicKey const& other)
 {
-    size_ = other.size_;
-    std::memcpy(buf_, other.buf_, size_);
+    empty_ = other.empty_;
+    if (!empty_)
+        buf_ = other.buf_;
     return *this;
 }
 

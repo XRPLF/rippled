@@ -39,7 +39,7 @@ private:
 
     friend
     boost::optional<SecretKey>
-    parseBase58SecretKey (TokenType type, std::string const& s);
+    parseBase58<SecretKey> (TokenType type, std::string const& s);
 public:
     using const_iterator = std::array<std::uint8_t, 32>::const_iterator;
 

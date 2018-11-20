@@ -58,12 +58,14 @@ namespace ripple {
 */
 class PublicKey
 {
-protected:
-    std::size_t size_ = 0;
-    std::uint8_t buf_[33]; // should be large enough
+private:
+    bool empty_{true};
+    std::array<std::uint8_t, 33> buf_; // all supported public keys are 33 bytes
 
+    friend boost::optional<PublicKey>
+    parseBase58<PublicKey> (TokenType type, std::string const& s);
 public:
-    using const_iterator = std::uint8_t const*;
+    using const_iterator = std::array<std::uint8_t, 33>::const_iterator;
 
     PublicKey() = default;
     PublicKey (PublicKey const& other);
@@ -80,49 +82,49 @@ public:
     std::uint8_t const*
     data() const noexcept
     {
-        return buf_;
+        return buf_.data();
     }
 
     std::size_t
     size() const noexcept
     {
-        return size_;
+        return empty_ ? 0 : buf_.size();
     }
 
     const_iterator
     begin() const noexcept
     {
-        return buf_;
+        return buf_.begin();
     }
 
     const_iterator
     cbegin() const noexcept
     {
-        return buf_;
+        return buf_.cbegin();
     }
 
     const_iterator
     end() const noexcept
     {
-        return buf_ + size_;
+        return empty_ ? buf_.begin() : buf_.end();
     }
 
     const_iterator
     cend() const noexcept
     {
-        return buf_ + size_;
+        return empty_ ? buf_.cbegin() : buf_.cend();
     }
 
     bool
     empty() const noexcept
     {
-        return size_ == 0;
+        return empty_;
     }
 
     Slice
     slice() const noexcept
     {
-        return { buf_, size_ };
+        return {buf_.data(), buf_.size()};
     }
 
     operator Slice() const noexcept

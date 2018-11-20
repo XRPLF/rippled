@@ -588,38 +588,39 @@ static InverseAlphabet rippleInverse(rippleAlphabet);
 
 static InverseAlphabet bitcoinInverse(bitcoinAlphabet);
 
-boost::optional<Slice>
+bool
 decodeBase58Token(
     Slice s,
     TokenType type,
-    MutableSlice result,
-    bool allowResize)
+    MutableSlice result)
 {
     DecodeBase58Detail::bitset flags;
-    if (allowResize)
-        flags.set(DecodeBase58Detail::allowResize);
     if (auto r = decodeBase58Token(s, type, result, rippleInverse, flags))
-        return r->first;
-    return {};
+        return true;
+    return false;
 }
 
-boost::optional<std::pair<Slice, ExtraB58Encoding>>
+boost::optional<ExtraB58Encoding>
 decodeBase58FamilySeed(Slice s, MutableSlice result)
 {
     DecodeBase58Detail::bitset flags;
     flags.set(DecodeBase58Detail::maybeRippleLibEncoded);
     flags.set(DecodeBase58Detail::maybeSecret);
-    return decodeBase58Token(
-        s, TokenType::FamilySeed, result, rippleInverse, flags);
+    if (auto const r = decodeBase58Token(
+            s, TokenType::FamilySeed, result, rippleInverse, flags))
+    {
+        return r->second;
+    }
+    return {};
 }
 
-boost::optional<Slice>
+bool
 decodeBase58TokenBitcoin(Slice s, TokenType type, MutableSlice result)
 {
     DecodeBase58Detail::bitset flags;
     if (auto r = decodeBase58Token(s, type, result, bitcoinInverse, flags))
-        return r->first;
-    return {};
+        return true;
+    return false;
 }
 
 boost::optional<std::pair<Slice, DecodeMetadata>>

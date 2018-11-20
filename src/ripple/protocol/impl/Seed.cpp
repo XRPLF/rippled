@@ -117,10 +117,10 @@ parseBase58 (std::string const& s)
     zero_after_use_buf<std::uint8_t, 16> result;
     auto resultSlice = makeMutableSlice(result);
     boost::optional<KeyType> keyType;
-    if (boost::optional<std::pair<Slice, ExtraB58Encoding>> r =
+    if (boost::optional<ExtraB58Encoding> r =
         decodeBase58FamilySeed(makeSlice(s), resultSlice))
     {
-        if (r->second == ExtraB58Encoding::RippleLib)
+        if (*r == ExtraB58Encoding::RippleLib)
             keyType = KeyType::ed25519;
         return Seed(resultSlice, keyType);
     }

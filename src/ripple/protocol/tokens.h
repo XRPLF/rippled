@@ -96,23 +96,16 @@ base58EncodeTokenBitcoin (TokenType type, void const* token, std::size_t size);
 
 /** Decode a Base58 token
 
-    The type and checksum must match or `boost::none` is returned. The
-    value will be decoded into the slice specified by the `result` parameter.
-    If `allowResize` is true, the result may be smaller than the specified
-    slice. In that case the returned slice will be a proper subset of the
-    result slice. If `allowResize` is false, the returned slice is always
-    either `boost::none` or is the same slice as `result`. If the result is
-    larger than the space allowed by `result` then `boost::none` is returned.
-
-    @note `allowResize` is used to support public keys, which may be either
-    32 or 33 bytes. All other token types have known fixed sizes.
+    The type and checksum must match or `false` is returned. The
+    value will be decoded into the slice specified by the `result` parameter. The
+    decoded result must fit exactly into the specified buffer or `false` is returned.
+    `true` is returned on successful decoding.
 */
-boost::optional<Slice>
+bool
 decodeBase58Token(
     Slice s,
     TokenType type,
-    MutableSlice result,
-    bool allowResize = false);
+    MutableSlice result);
 
 /** Distinguish between ripple lib encoded seeds and regular encoded seeds.
 
@@ -124,26 +117,26 @@ enum class ExtraB58Encoding {None, RippleLib};
 
 /** Decode a base58 family seed.
 
-    Return the decoded type and extra encoding type. The extra encoding type is
-    either `RippleLib` for ripple lib encoded seeds (these are ed25519 seeds with
+    Return `boost::none` if the encoding could not be interpreted as a family seed.
+    return the extra encoding type if the encoding is a family seed. The extra encoding
+    type is either `RippleLib` for ripple lib encoded seeds (these are ed25519 seeds with
     a special prefix) to `None` for regular seeds.
 */
-boost::optional<std::pair<Slice, ExtraB58Encoding>>
+boost::optional<ExtraB58Encoding>
 decodeBase58FamilySeed(Slice s, MutableSlice result);
 
 /** Decode a Base58 token using Bitcoin alphabet
 
    The type and checksum must match or `boost::none is returned``. The slice
    must decode into exactly as many bytes as specified as the result slice or
-   `boost::none` is returned. The value will be decoded into the slice specified
-   by the `result` parameter. The returned slice is always either `boost::none`
-   or is the same slice as `result`.
+   `false` is returned. The value will be decoded into the slice specified
+   by the `result` parameter.
 
    @note This is used to detect user error. Specifically, when an AccountID is
    specified using the wrong base58 alphabet, so that a better error message may
    be returned.
 */
-boost::optional<Slice>
+bool
 decodeBase58TokenBitcoin(
     Slice s,
     TokenType type,
