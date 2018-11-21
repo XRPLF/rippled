@@ -580,6 +580,38 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
     return {};
 }
 
+// Check the key type and set the error if needed. returns true if no error,
+// false if error
+static
+bool
+checkKeyType(
+    boost::optional<KeyType> const& expected,
+    boost::optional<KeyType> const& got,
+    Json::Value& error)
+{
+    if (!expected || !got || *expected == *got)
+        return true;
+
+    char const* errorString = nullptr;
+    switch (*got)
+    {
+        case KeyType::ed25519:
+            errorString = "Specified seed is for an Ed25519 wallet.";
+            break;
+        case KeyType::secp256k1:
+            errorString = "Specifier seed is for an Secp256k1 wallet.";
+            break;
+        default:
+            // Should never happen; added in case a new
+            // keytype is added.
+            errorString =
+                "Specified seed key type does not match decoded type.";
+            break;
+    }
+    error = RPC::make_error(rpcBAD_SEED, errorString);
+    return false;
+};
+
 std::pair<PublicKey, SecretKey>
 keypairForSignature(Json::Value const& params, Json::Value& error)
 {
@@ -654,32 +686,6 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
 
     boost::optional<Seed> seed;
     {
-        // Check the key type and set the error if needed. returns true if no error,
-        // false if error
-        auto checkKeyType = [&error](boost::optional<KeyType> const& expected, boost::optional<KeyType> const& got) -> bool{
-            if (!expected || !got || *expected == *got)
-                return true;
-
-            char const* errorString = nullptr;
-            switch (*got)
-            {
-                case KeyType::ed25519:
-                    errorString = "Specified seed is for an Ed25519 wallet.";
-                    break;
-                case KeyType::secp256k1:
-                    errorString = "Specifier seed is for an Secp256k1 wallet.";
-                    break;
-                default:
-                    // Should never happen; added in case a new
-                    // keytype is added.
-                    errorString =
-                        "Specified seed key type does not match decoded type.";
-                    break;
-            }
-            error = RPC::make_error(rpcBAD_SEED, errorString);
-            return false;
-        };
-
         {
             Json::Value rpcError;
             if (auto const r = getSeedFromRPC(params, rpcError))
@@ -688,7 +694,7 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
                 {
                     // only ripple lib encoded keys are allowed to be decoded
                     // without a keytype
-                    if (!checkKeyType(keyType, r->keyType()))
+                    if (!checkKeyType(keyType, r->keyType(), error))
                         return {};
                     seed = r;
                     if (!keyType)
@@ -711,7 +717,7 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
 
             if (auto const r = parseGenericSeed(params[jss::secret].asString()))
             {
-                if (!checkKeyType(keyType, r->keyType()))
+                if (!checkKeyType(keyType, r->keyType(), error))
                     return {};
                 seed = r;
                 if (!keyType)
