@@ -96,6 +96,7 @@ digest2(Args const&... args)
 
     @note This checksum algorithm is part of the client API
 */
+static
 void
 checksum(void* out, void const* message, std::size_t size)
 {
@@ -103,6 +104,7 @@ checksum(void* out, void const* message, std::size_t size)
     std::memcpy(out, h.data(), checksumBytes);
 }
 
+static
 void
 checksum(void* out, Slice prefix, Slice message)
 {

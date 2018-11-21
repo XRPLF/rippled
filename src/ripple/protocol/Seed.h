@@ -29,7 +29,7 @@
 
 namespace ripple {
 
-/** Seeds are used to a generate deterministic secret key. */
+/** Seeds are used to generate a deterministic secret key. */
 class Seed
 {
 private:

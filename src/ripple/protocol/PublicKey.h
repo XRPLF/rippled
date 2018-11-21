@@ -124,7 +124,7 @@ public:
     Slice
     slice() const noexcept
     {
-        return {buf_.data(), buf_.size()};
+        return {data(), size()};
     }
 
     operator Slice() const noexcept
