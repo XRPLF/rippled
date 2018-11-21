@@ -181,7 +181,7 @@ ed25519Canonical (Slice const& sig)
 
 PublicKey::PublicKey (Slice const& slice)
 {
-    if (slice.size() != buf_.size() || !publicKeyType(slice))
+    if (!publicKeyType(slice))
         LogicError("PublicKey::PublicKey invalid type");
     empty_ = false;
     std::memcpy(buf_.data(), slice.data(), slice.size());

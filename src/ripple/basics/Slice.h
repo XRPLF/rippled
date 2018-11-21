@@ -37,20 +37,22 @@
 
 namespace ripple {
 
-enum class SliceImplMutability : bool { no, yes };
-
 /** A linear range of bytes.
 
     A fully constructed Slice is guaranteed to be in a valid state.
     A Slice is lightweight and copyable, it retains no ownership
     of the underlying memory.
 */
-template<SliceImplMutability M>
+template<class TVal>
 class SliceImpl
 {
 private:
-    constexpr static bool Mutable{M == SliceImplMutability::yes};
-    using TData = typename std::conditional<Mutable, std::uint8_t*, std::uint8_t const*>::type;
+    static_assert(
+        std::is_same<TVal, std::uint8_t>::value ||
+            std::is_same<TVal, std::uint8_t const>::value,
+        "");
+    constexpr static bool Mutable = std::is_same<TVal, std::uint8_t>::value;
+    using TData = TVal*;
     using TVoidData = typename std::conditional<Mutable, void*, void const*>::type;
     TData data_ = nullptr;
     std::size_t size_ = 0;
@@ -76,7 +78,7 @@ public:
         class T,
         class = std::enable_if_t<
             !Mutable &&
-            std::is_same<T, SliceImpl<SliceImplMutability::yes>>::value>>
+            std::is_same<T, SliceImpl<std::uint8_t>>::value>>
     SliceImpl(T const& rhs) noexcept : SliceImpl{rhs.data(), rhs.size()}
     {
     }
@@ -86,7 +88,7 @@ public:
         class T,
         class = std::enable_if_t<
             !Mutable &&
-            std::is_same<T, SliceImpl<SliceImplMutability::yes>>::value>>
+            std::is_same<T, SliceImpl<std::uint8_t>>::value>>
     SliceImpl&
     operator=(T const& rhs) noexcept
     {
@@ -176,9 +178,9 @@ public:
 };
 
 /** An immutable linear range of bytes. */
-using Slice = SliceImpl<SliceImplMutability::no>;
+using Slice = SliceImpl<std::uint8_t const>;
 /** A mutable linear range of bytes. */
-using MutableSlice = SliceImpl<SliceImplMutability::yes>;
+using MutableSlice = SliceImpl<std::uint8_t>;
 
 //------------------------------------------------------------------------------
 
