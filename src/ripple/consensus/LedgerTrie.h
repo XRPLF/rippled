@@ -659,11 +659,15 @@ public:
 
         @param largestIssued The sequence number of the largest validation
                              issued by this node.
-        @return Pair with the sequence number and ID of the preferred ledger
+        @return Pair with the sequence number and ID of the preferred ledger or
+                boost::none if no preferred ledger exists
     */
-    SpanTip<Ledger>
+    boost::optional<SpanTip<Ledger>>
     getPreferred(Seq const largestIssued) const
     {
+        if (empty())
+            return boost::none;
+
         Node* curr = root.get();
 
         bool done = false;

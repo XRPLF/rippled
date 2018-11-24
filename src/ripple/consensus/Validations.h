@@ -700,12 +700,8 @@ public:
     getPreferred(Ledger const& curr)
     {
         ScopedLock lock{mutex_};
-        boost::optional<SpanTip<Ledger>> preferred = withTrie(
-            lock,
-            [this](
-                LedgerTrie<Ledger>& trie) -> boost::optional<SpanTip<Ledger>> {
-                if (trie.empty())
-                    return boost::none;
+        boost::optional<SpanTip<Ledger>> preferred =
+            withTrie(lock, [this](LedgerTrie<Ledger>& trie) {
                 return trie.getPreferred(localSeqEnforcer_.largest());
             });
         // No trusted validations to determine branch
