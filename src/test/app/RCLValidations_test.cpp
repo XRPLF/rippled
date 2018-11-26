@@ -224,12 +224,114 @@ class RCLValidations_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testLedgerTrieRCLValidatedLedger()
+    {
+        testcase("RCLValidatedLedger LedgerTrie");
+
+        // This test exposes an issue with the limited 256
+        // ancestor hash design of RCLValidatedLedger.
+        // There is only a single chain of validated ledgers
+        // but the 256 gap causes a "split" in the LedgerTrie
+        // due to the lack of ancestry information for a later ledger.
+        // This exposes a bug in which we are unable to remove
+        // support for a ledger hash which is already in the trie.
+
+        using Seq = RCLValidatedLedger::Seq;
+        using ID = RCLValidatedLedger::ID;
+
+        // Max known ancestors for each ledger
+        Seq const maxAncestors = 256;
+        std::vector<std::shared_ptr<Ledger const>> history;
+
+        // Generate a chain of 256 + 10 ledgers
+        jtx::Env env(*this);
+        auto& j = env.journal;
+        Config config;
+        auto prev = std::make_shared<Ledger const>(
+            create_genesis, config, std::vector<uint256>{}, env.app().family());
+        history.push_back(prev);
+        for (auto i = 0; i < (maxAncestors + 10); ++i)
+        {
+            auto next = std::make_shared<Ledger>(
+                *prev, env.app().timeKeeper().closeTime());
+            next->updateSkipList();
+            history.push_back(next);
+            prev = next;
+        }
+
+        LedgerTrie<RCLValidatedLedger> trie;
+
+        // First, create the single branch trie, with ledgers
+        // separated by exactly 256 ledgers
+        auto ledg_002 = RCLValidatedLedger{history[1], j};
+        auto ledg_258 = RCLValidatedLedger{history[257], j};
+        auto ledg_259 = RCLValidatedLedger{history[258], j};
+
+        trie.insert(ledg_002);
+        trie.insert(ledg_258, 4);
+        // trie.dump(std::cout);
+        // 000000[0,1)(T:0,B:5)
+        //                     |-AB868A..36C8[1,3)(T:1,B:5)
+        //                                                 |-AB868A..37C8[3,259)(T:4,B:4)
+        BEAST_EXPECT(trie.tipSupport(ledg_002) == 1);
+        BEAST_EXPECT(trie.branchSupport(ledg_002) == 5);
+        BEAST_EXPECT(trie.tipSupport(ledg_258) == 4);
+        BEAST_EXPECT(trie.branchSupport(ledg_258) == 4);
+
+        // Move three of the s258 ledgers to s259, which splits the trie
+        // due to the 256 ancestory limit
+        BEAST_EXPECT(
+            trie.remove(ledg_258, 3));
+        trie.insert(ledg_259, 3);
+        trie.getPreferred(1);
+        // trie.dump(std::cout);
+        // 000000[0,1)(T:0,B:5)
+        //                     |-AB868A..37C9[1,260)(T:3,B:3)
+        //                     |-AB868A..36C8[1,3)(T:1,B:2)
+        //                                                 |-AB868A..37C8[3,259)(T:1,B:1)
+        BEAST_EXPECT(trie.tipSupport(ledg_002) == 1);
+        BEAST_EXPECT(trie.branchSupport(ledg_002) == 2);
+        BEAST_EXPECT(trie.tipSupport(ledg_258) == 1);
+        BEAST_EXPECT(trie.branchSupport(ledg_258) == 1);
+        BEAST_EXPECT(trie.tipSupport(ledg_259) == 3);
+        BEAST_EXPECT(trie.branchSupport(ledg_259) == 3);
+
+        // The last call to trie.getPreferred cycled the children of the root
+        // node to make the new branch the first child (since it has support 3)
+        // then verify the remove call works
+        // past bug: remove had assumed the first child of a node in the trie
+        //      which matches is the *only* child in the trie which matches.
+        //      This is **NOT** true with the limited 256 ledger ancestory
+        //      quirk of RCLValidation and prevents deleting the old support
+        //      for ledger 257
+
+        BEAST_EXPECT(
+            trie.remove(RCLValidatedLedger{history[257], env.journal}, 1));
+        trie.insert(RCLValidatedLedger{history[258], env.journal}, 1);
+        trie.getPreferred(1);
+        // trie.dump(std::cout);
+        // 000000[0,1)(T:0,B:5)
+        //                      |-AB868A..37C9[1,260)(T:4,B:4)
+        //                      |-AB868A..36C8[1,3)(T:1,B:1)
+        BEAST_EXPECT(trie.tipSupport(ledg_002) == 1);
+        BEAST_EXPECT(trie.branchSupport(ledg_002) == 1);
+        BEAST_EXPECT(trie.tipSupport(ledg_258) == 0);
+        // 258 no longer lives on a tip in the tree, BUT it is an ancestor
+        // of 259 which is a tip and therefore gets it's branchSupport value
+        // implicitly
+        BEAST_EXPECT(trie.branchSupport(ledg_258) == 4);
+        BEAST_EXPECT(trie.tipSupport(ledg_259) == 4);
+        BEAST_EXPECT(trie.branchSupport(ledg_259) == 4);
+    }
+
 public:
     void
     run() override
     {
         testChangeTrusted();
         testRCLValidatedLedger();
+        testLedgerTrieRCLValidatedLedger();
     }
 };
 
