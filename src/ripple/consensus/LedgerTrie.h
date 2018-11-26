@@ -395,6 +395,22 @@ class LedgerTrie
         return std::make_pair(curr, pos);
     }
 
+    Node*
+    findByLedgerID(Ledger const& ledger, Node* parent = nullptr) const
+    {
+        if (!parent)
+            parent = root.get();
+        if (ledger.id() == parent->span.tip().id)
+            return parent;
+        for (auto const& child : parent->children)
+        {
+            auto cl = findByLedgerID(ledger, child.get());
+            if (cl)
+                return cl;
+        }
+        return nullptr;
+    }
+
     void
     dumpImpl(std::ostream& o, std::unique_ptr<Node> const& curr, int offset)
         const
@@ -513,58 +529,51 @@ public:
     bool
     remove(Ledger const& ledger, std::uint32_t count = 1)
     {
-        Node* loc;
-        Seq diffSeq;
-        std::tie(loc, diffSeq) = find(ledger);
+        Node* loc = findByLedgerID(ledger);
+        // Must be exact match with tip support
+        if (!loc || loc->tipSupport == 0)
+            return false;
 
-        if (loc)
+        // found our node, remove it
+        count = std::min(count, loc->tipSupport);
+        loc->tipSupport -= count;
+
+        auto const it = seqSupport.find(ledger.seq());
+        assert(it != seqSupport.end() && it->second >= count);
+        it->second -= count;
+        if (it->second == 0)
+            seqSupport.erase(it->first);
+
+        Node* decNode = loc;
+        while (decNode)
         {
-            // Must be exact match with tip support
-            if (diffSeq == loc->span.end() && diffSeq > ledger.seq() &&
-                loc->tipSupport > 0)
-            {
-                count = std::min(count, loc->tipSupport);
-                loc->tipSupport -= count;
-
-                auto const it = seqSupport.find(ledger.seq());
-                assert(it != seqSupport.end() && it->second >= count);
-                it->second -= count;
-                if (it->second == 0)
-                    seqSupport.erase(it->first);
-
-                Node* decNode = loc;
-                while (decNode)
-                {
-                    decNode->branchSupport -= count;
-                    decNode = decNode->parent;
-                }
-
-                while (loc->tipSupport == 0 && loc != root.get())
-                {
-                    Node* parent = loc->parent;
-                    if (loc->children.empty())
-                    {
-                        // this node can be erased
-                        parent->erase(loc);
-                    }
-                    else if (loc->children.size() == 1)
-                    {
-                        // This node can be combined with its child
-                        std::unique_ptr<Node> child =
-                            std::move(loc->children.front());
-                        child->span = merge(loc->span, child->span);
-                        child->parent = parent;
-                        parent->children.emplace_back(std::move(child));
-                        parent->erase(loc);
-                    }
-                    else
-                        break;
-                    loc = parent;
-                }
-                return true;
-            }
+            decNode->branchSupport -= count;
+            decNode = decNode->parent;
         }
-        return false;
+
+        while (loc->tipSupport == 0 && loc != root.get())
+        {
+            Node* parent = loc->parent;
+            if (loc->children.empty())
+            {
+                // this node can be erased
+                parent->erase(loc);
+            }
+            else if (loc->children.size() == 1)
+            {
+                // This node can be combined with its child
+                std::unique_ptr<Node> child =
+                    std::move(loc->children.front());
+                child->span = merge(loc->span, child->span);
+                child->parent = parent;
+                parent->children.emplace_back(std::move(child));
+                parent->erase(loc);
+            }
+            else
+                break;
+            loc = parent;
+        }
+        return true;
     }
 
     /** Return count of tip support for the specific ledger.
@@ -575,14 +584,8 @@ public:
     std::uint32_t
     tipSupport(Ledger const& ledger) const
     {
-        Node const* loc;
-        Seq diffSeq;
-        std::tie(loc, diffSeq) = find(ledger);
-
-        // Exact match
-        if (loc && diffSeq == loc->span.end() && diffSeq > ledger.seq())
-            return loc->tipSupport;
-        return 0;
+        Node const* loc = findByLedgerID(ledger);
+        return loc ? loc->tipSupport : 0;
     }
 
     /** Return the count of branch support for the specific ledger
@@ -594,17 +597,16 @@ public:
     std::uint32_t
     branchSupport(Ledger const& ledger) const
     {
-        Node const* loc;
-        Seq diffSeq;
-        std::tie(loc, diffSeq) = find(ledger);
-
-        // Check that ledger is is an exact match or proper
-        // prefix of loc
-        if (loc && diffSeq > ledger.seq() && ledger.seq() < loc->span.end())
+        Node const* loc = findByLedgerID(ledger);
+        if (!loc)
         {
-            return loc->branchSupport;
+            Seq diffSeq;
+            std::tie(loc, diffSeq) = find(ledger);
+            // Check that ledger is a proper prefix of loc
+            if (! (diffSeq > ledger.seq() && ledger.seq() < loc->span.end()))
+                loc = nullptr;
         }
-        return 0;
+        return loc ? loc->branchSupport : 0;
     }
 
     /** Return the preferred ledger ID
