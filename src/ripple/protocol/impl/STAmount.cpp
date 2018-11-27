@@ -623,12 +623,19 @@ STAmount::isEquivalent (const STBase& t) const
 
 //------------------------------------------------------------------------------
 
-// amount = value * [10 ^ offset]
+// amount = mValue * [10 ^ mOffset]
 // Representation range is 10^80 - 10^(-80).
-// On the wire, high 8 bits are (offset+142), low 56 bits are value.
+// 
+// On the wire:
+// - high bit is 0 for XRP, 1 for issued currency
+// - next bit is 1 for positive, 0 for negative (except 0 issued currency, which
+//      is a special case of 0x8000000000000000
+// - next 8 bits are (mOffset+97), so that this value is always positive
+// - last 54 bits are significant digits as an integer in the range 
 //
-// Value is zero if amount is zero, otherwise value is 10^15 to (10^16 - 1)
-// inclusive.
+// mValue is zero if the amount is zero, otherwise it's within the range
+//    10^15 to (10^16 - 1) inclusive.
+// mOffset is in the range -96 to +80.
 void STAmount::canonicalize ()
 {
     if (isXRP (*this))
