@@ -123,32 +123,45 @@ class TxQ_test : public beast::unit_test::suite
         return p;
     }
 
-    void
-    initFee(jtx::Env& env, std::size_t expectedPerLedger, std::uint32_t base,
+    std::size_t
+    initFee(jtx::Env& env, std::size_t expectedPerLedger,
+        std::size_t ledgersInQueue, std::uint32_t base,
         std::uint32_t units, std::uint32_t reserve, std::uint32_t increment)
     {
         // Run past the flag ledger so that a Fee change vote occurs and
-        // lowers the reserve fee.  This will allow creating accounts with lower
-        // balances.
+        // lowers the reserve fee. (It also activates all supported
+        // amendments.) This will allow creating accounts with lower
+        // reserves and balances.
         for(auto i = env.current()->seq(); i <= 257; ++i)
             env.close();
+        // The ledger after the flag ledger creates all the
+        // fee (1) and amendment (supportedAmendments().size())
+        // pseudotransactions. They all have 0 fee, which is
+        // treated as a high fee level by the queue, so the
+        // medianFeeLevel is 100000000000.
+        auto const flagPerLedger = 1 +
+            ripple::detail::supportedAmendments().size();
+        auto const flagMaxQueue = ledgersInQueue * flagPerLedger;
+        checkMetrics(env, 0, flagMaxQueue, 0, flagPerLedger, 256,
+            100000000000);
 
-        // Pad a couple of txs to keep the median at the default
+        // Pad a couple of txs with normal fees so the median comes
+        // back down to normal
         env(noop(env.master));
         env(noop(env.master));
 
-        // Close the ledger with a delay to force the TxQ stats
-        // to stay at the default.
+        // Close the ledger with a delay, which causes all the TxQ
+        // metrics to reset to defaults, EXCEPT the maxQueue size.
         using namespace std::chrono_literals;
         env.close(env.now() + 5s, 10000ms);
-        checkMetrics(env, 0,
-            2 * (ripple::detail::supportedAmendments().size() + 1),
-                0, expectedPerLedger, 256);
+        checkMetrics(env, 0, flagMaxQueue, 0, expectedPerLedger, 256);
         auto const fees = env.current()->fees();
         BEAST_EXPECT(fees.base == base);
         BEAST_EXPECT(fees.units == units);
         BEAST_EXPECT(fees.reserve == reserve);
         BEAST_EXPECT(fees.increment == increment);
+
+        return flagMaxQueue;
     }
 
 public:
@@ -744,9 +757,8 @@ public:
 
         checkMetrics(env, 0, boost::none, 0, 3, 256);
 
-        initFee(env, 3, 10, 10, 200, 50);
-        auto const initQueueMax =
-            2 * (ripple::detail::supportedAmendments().size() + 1);
+        // ledgers in queue is 2 because of makeConfig
+        auto const initQueueMax = initFee(env, 3, 2, 10, 10, 200, 50);
 
         // Create several accounts while the fee is cheap so they all apply.
         env.fund(drops(2000), noripple(alice));
@@ -1171,9 +1183,8 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        initFee(env, 3, 10, 10, 200, 50);
-        auto const initQueueMax =
-            2 * (ripple::detail::supportedAmendments().size() + 1);
+        // ledgers in queue is 2 because of makeConfig
+        auto const initQueueMax = initFee(env, 3, 2, 10, 10, 200, 50);
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
@@ -1332,14 +1343,15 @@ public:
         // reserves, a couple hundred transactions would have to be
         // queued before the open ledger fee approached the reserve,
         // which would unnecessarily slow down this test.
-        initFee(env, 3, 10, 10, 200, 50);
+        // ledgers in queue is 2 because of makeConfig
+        auto const initQueueMax = initFee(env, 3, 2, 10, 10, 200, 50);
 
         auto limit = 3;
 
-        checkMetrics(env, 0, 60, 0, limit, 256);
+        checkMetrics(env, 0, initQueueMax, 0, limit, 256);
 
         env.fund(XRP(50000), noripple(alice, charlie), gw);
-        checkMetrics(env, 0, 60, limit + 1, limit, 256);
+        checkMetrics(env, 0, initQueueMax, limit + 1, limit, 256);
 
         auto USD = gw["USD"];
         auto BUX = gw["BUX"];
@@ -1356,12 +1368,12 @@ public:
         // XRP will be taken (except the reserve).
         env(offer(alice, BUX(5000), XRP(50000)),
             queued);
-        checkMetrics(env, 1, 60, limit + 1, limit, 256);
+        checkMetrics(env, 1, initQueueMax, limit + 1, limit, 256);
 
         // But because the reserve is protected, another
         // transaction will be allowed to queue
         env(noop(alice), seq(aliceSeq + 1), queued);
-        checkMetrics(env, 2, 60, limit + 1, limit, 256);
+        checkMetrics(env, 2, initQueueMax, limit + 1, limit, 256);
 
         env.close();
         ++limit;
