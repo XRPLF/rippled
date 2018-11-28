@@ -758,12 +758,8 @@ if (MSVC)
 endif ()
 ExternalProject_Add (libarchive
   PREFIX ${nih_cache_path}
-  # TODO: switch back to official repo once they allow ENABLE_WERROR option in
-  # mainline -- see https://github.com/libarchive/libarchive/pull/1033
-  #GIT_REPOSITORY https://github.com/libarchive/libarchive.git
-  #GIT_TAG v3.3.1
-  GIT_REPOSITORY https://github.com/mellery451/libarchive.git
-  GIT_TAG e78e48ea4e102fef7f379bc8f10afbfbf25633a6
+  GIT_REPOSITORY https://github.com/libarchive/libarchive.git
+  GIT_TAG v3.3.3
   CMAKE_ARGS
     # passing the compiler seems to be needed for windows CI, sadly
     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
