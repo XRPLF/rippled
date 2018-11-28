@@ -83,15 +83,20 @@ TxQ::FeeMetrics::update(Application& app,
     TxQ::Setup const& setup)
 {
     std::vector<uint64_t> feeLevels;
-    feeLevels.reserve(txnsExpected_);
-    for (auto const& tx : view.txs)
-    {
-        auto const baseFee = calculateBaseFee(view, *tx.first);
-        feeLevels.push_back(getFeeLevelPaid(*tx.first,
-            baseLevel, baseFee, setup));
-    }
+    auto const txBegin = view.txs.begin();
+    auto const txEnd = view.txs.end();
+    auto const size = std::distance(txBegin, txEnd);
+    feeLevels.reserve(size);
+    std::for_each(txBegin, txEnd,
+        [&](auto const& tx)
+        {
+            auto const baseFee = calculateBaseFee(view, *tx.first);
+            feeLevels.push_back(getFeeLevelPaid(*tx.first,
+                baseLevel, baseFee, setup));
+        }
+    );
     std::sort(feeLevels.begin(), feeLevels.end());
-    auto const size = feeLevels.size();
+    assert(size == feeLevels.size());
 
     JLOG(j_.debug()) << "Ledger " << view.info().seq <<
         " has " << size << " transactions. " <<
