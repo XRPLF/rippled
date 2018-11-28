@@ -198,6 +198,32 @@ struct Regression_test : public beast::unit_test::suite
         }
     }
 
+    void testFeeEscalationExtremeConfig()
+    {
+        testcase("Fee escalation shouldn't allocate extreme memory");
+        using clock_type = std::chrono::steady_clock;
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg)
+        {
+            auto& s = cfg->section("transaction_queue");
+            s.set("minimum_txn_in_ledger_standalone", "4294967295");
+            s.set("minimum_txn_in_ledger", "4294967295");
+            s.set("target_txn_in_ledger", "4294967295");
+            s.set("normal_consensus_increase_percent", "4294967295");
+
+            return cfg;
+        }));
+
+        env(noop(env.master));
+        // This test will probably fail if any breakpoints are encountered,
+        // but should pass on even the slowest machines.
+        auto const start = clock_type::now();
+        env.close();
+        BEAST_EXPECT(clock_type::now() - start < 1s);
+    }
+
     void testJsonInvalid()
     {
         using namespace jtx;
@@ -221,6 +247,7 @@ struct Regression_test : public beast::unit_test::suite
         testLowBalanceDestroy();
         testSecp256r1key();
         testFeeEscalationAutofill();
+        testFeeEscalationExtremeConfig();
         testJsonInvalid();
     }
 };
