@@ -512,8 +512,7 @@ public:
         Seq diffSeq;
         std::tie(loc, diffSeq) = find(ledger);
 
-        // Cannot erase root
-        if (loc && loc != root.get())
+        if (loc)
         {
             // Must be exact match with tip support
             if (diffSeq == loc->span.end() && diffSeq > ledger.seq() &&
