@@ -374,6 +374,9 @@ class LedgerTrie_test : public beast::unit_test::suite
             Ledger genesis = h[""];
             t.insert(genesis);
             BEAST_EXPECT(t.getPreferred(Seq{0})->id == genesis.id());
+            BEAST_EXPECT(t.remove(genesis));
+            BEAST_EXPECT(t.getPreferred(Seq{0}) == boost::none);
+            BEAST_EXPECT(!t.remove(genesis));
         }
         // Single node no children
         {
