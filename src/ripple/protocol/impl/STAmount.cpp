@@ -630,8 +630,11 @@ STAmount::isEquivalent (const STBase& t) const
 // - high bit is 0 for XRP, 1 for issued currency
 // - next bit is 1 for positive, 0 for negative (except 0 issued currency, which
 //      is a special case of 0x8000000000000000
-// - next 8 bits are (mOffset+97), so that this value is always positive
-// - last 54 bits are significant digits as an integer in the range 
+// - for issued currencies, the next 8 bits are (mOffset+97).
+//   The +97 is so that this value is always positive.
+// - The remaining bits are significant digits (mantissa)
+//   That's 54 bits for issued currency and 62 bits for native
+//   (but XRP only needs 57 bits for the max value of 100 billion drops)
 //
 // mValue is zero if the amount is zero, otherwise it's within the range
 //    10^15 to (10^16 - 1) inclusive.
