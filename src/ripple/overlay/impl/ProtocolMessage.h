@@ -106,12 +106,25 @@ invokeProtocolMessage (Buffers const& buffers, Handler& handler)
     std::pair<std::size_t,boost::system::error_code> result = { 0, {} };
     boost::system::error_code& ec = result.second;
 
-    auto const type = Message::type(buffers);
-    if (type == 0)
+    auto const bs = boost::asio::buffer_size(buffers);
+
+    // If we don't even have enough bytes for the header, there's no point
+    // in doing any work.
+    if (bs < Message::kHeaderBytes)
         return result;
+
+    if (bs > Message::kMaxMessageSize)
+    {
+        result.second = make_error_code(boost::system::errc::message_size);
+        return result;
+    }
+
     auto const size = Message::kHeaderBytes + Message::size(buffers);
-    if (boost::asio::buffer_size(buffers) < size)
+
+    if (bs < size)
         return result;
+
+    auto const type = Message::type(buffers);
 
     switch (type)
     {
