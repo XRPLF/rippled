@@ -475,6 +475,7 @@ SHAMapInnerNodeV2::addRaw(Serializer& s, SHANodeFormat format) const
 {
     if (format == snfPREFIX)
     {
+        assert(depth_ <= 64);
         s.add32 (HashPrefix::innerNodeV2);
 
         for (int i = 0 ; i < 16; ++i)
