@@ -211,6 +211,14 @@ public:
     static constexpr std::uint32_t ledgersPerShardDefault {16384u};
 };
 
+constexpr
+std::uint32_t
+seqToShardIndex(std::uint32_t seq,
+    std::uint32_t ledgersPerShard = DatabaseShard::ledgersPerShardDefault)
+{
+    return (seq - 1) / ledgersPerShard;
+}
+
 }
 }
 
