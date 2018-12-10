@@ -1119,36 +1119,78 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMShardInfo> const& m)
     // Parse the shard indexes received in the shard info
     RangeSet<std::uint32_t> shardIndexes;
     {
-        std::vector<std::string> tokens;
-        boost::split(tokens, m->shardindexes(), boost::algorithm::is_any_of(","));
-        for (auto const& t : tokens)
+        std::uint32_t earliestShard;
+        boost::optional<std::uint32_t> latestShard;
         {
-            std::vector<std::string> seqs;
-            boost::split(seqs, t, boost::algorithm::is_any_of("-"));
-            if (seqs.empty() || seqs.size() > 2)
+            auto const curLedgerSeq {
+                app_.getLedgerMaster().getCurrentLedgerIndex()};
+            if (auto shardStore = app_.getShardStore())
             {
-                fee_ = Resource::feeBadData;
-                return;
+                earliestShard = shardStore->earliestShardIndex();
+                if (curLedgerSeq >= shardStore->earliestSeq())
+                    latestShard = shardStore->seqToShardIndex(curLedgerSeq);
             }
-
-            std::uint32_t first;
-            if (!beast::lexicalCastChecked(first, seqs.front()))
-            {
-                fee_ = Resource::feeBadData;
-                return;
-            }
-
-            if (seqs.size() == 1)
-                shardIndexes.insert(first);
             else
             {
-                std::uint32_t second;
-                if (!beast::lexicalCastChecked(second, seqs.back()))
-                {
-                    fee_ = Resource::feeBadData;
+                auto const earliestSeq {app_.getNodeStore().earliestSeq()};
+                earliestShard = NodeStore::seqToShardIndex(earliestSeq);
+                if (curLedgerSeq >= earliestSeq)
+                    latestShard = NodeStore::seqToShardIndex(curLedgerSeq);
+            }
+        }
+
+        auto getIndex = [this, &earliestShard, &latestShard]
+            (std::string const& s) -> boost::optional<std::uint32_t>
+        {
+            std::uint32_t shardIndex;
+            if (!beast::lexicalCastChecked(shardIndex, s))
+            {
+                fee_ = Resource::feeBadData;
+                return boost::none;
+            }
+            if (shardIndex < earliestShard ||
+                (latestShard && shardIndex > latestShard))
+            {
+                fee_ = Resource::feeBadData;
+                JLOG(p_journal_.error()) <<
+                    "Invalid shard index " << shardIndex;
+                return boost::none;
+            }
+            return shardIndex;
+        };
+
+        std::vector<std::string> tokens;
+        boost::split(tokens, m->shardindexes(),
+            boost::algorithm::is_any_of(","));
+        std::vector<std::string> indexes;
+        for (auto const& t : tokens)
+        {
+            indexes.clear();
+            boost::split(indexes, t, boost::algorithm::is_any_of("-"));
+            switch (indexes.size())
+            {
+            case 1:
+            {
+                auto const first {getIndex(indexes.front())};
+                if (!first)
                     return;
-                }
-                shardIndexes.insert(range(first, second));
+                shardIndexes.insert(*first);
+                break;
+            }
+            case 2:
+            {
+                auto const first {getIndex(indexes.front())};
+                if (!first)
+                    return;
+                auto const second {getIndex(indexes.back())};
+                if (!second)
+                    return;
+                shardIndexes.insert(range(*first, *second));
+                break;
+            }
+            default:
+                fee_ = Resource::feeBadData;
+                return;
             }
         }
     }

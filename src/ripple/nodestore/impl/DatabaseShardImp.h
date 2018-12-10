@@ -89,7 +89,7 @@ public:
     seqToShardIndex(std::uint32_t seq) const override
     {
         assert(seq >= earliestSeq());
-        return (seq - 1) / ledgersPerShard_;
+        return NodeStore::seqToShardIndex(seq, ledgersPerShard_);
     }
 
     std::uint32_t
