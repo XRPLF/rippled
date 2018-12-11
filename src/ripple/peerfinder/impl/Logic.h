@@ -392,6 +392,11 @@ public:
         if (keys_.find (key) != keys_.end())
             return Result::duplicate;
 
+        // If the peer belongs to a cluster, update the slot to reflect that.
+        counts_.remove (*slot);
+        slot->cluster (cluster);
+        counts_.add (*slot);
+
         // See if we have an open space for this slot
         if (! counts_.can_activate (*slot))
         {
@@ -401,18 +406,15 @@ public:
             return Result::full;
         }
 
-        // Set key and cluster right before adding to the map
-        // otherwise we could assert later when erasing the key.
-        counts_.remove (*slot);
+        // Set the key right before adding to the map, otherwise we might
+        // assert later when erasing the key.
         slot->public_key (key);
-        slot->cluster (cluster);
-        counts_.add (*slot);
-
-        // Add the public key to the active set
-        auto const result = keys_.insert (key);
-        // Public key must not already exist
-        assert (result.second);
-        (void) result.second;
+        {
+            auto const result = keys_.insert(key);
+            // Public key must not already exist
+            assert (result.second);
+            (void)result.second;
+        }
 
         // Change state and update counts
         counts_.remove (*slot);

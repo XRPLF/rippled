@@ -87,6 +87,7 @@ class SeqEnforcer
     using time_point = std::chrono::steady_clock::time_point;
     Seq seq_{0};
     time_point when_;
+
 public:
     /** Try advancing the largest observed validation ledger sequence
 
@@ -101,11 +102,11 @@ public:
         @return Whether the validation satisfies the invariant
     */
     bool
-    operator()(time_point now, Seq s, ValidationParms const & p)
+    operator()(time_point now, Seq s, ValidationParms const& p)
     {
-        if(now > (when_ + p.validationSET_EXPIRES))
+        if (now > (when_ + p.validationSET_EXPIRES))
             seq_ = Seq{0};
-        if(s <= seq_)
+        if (s <= seq_)
             return false;
         seq_ = s;
         when_ = now;
@@ -146,7 +147,6 @@ isCurrent(
         ((seenTime == NetClock::time_point{}) ||
          (seenTime < (now + p.validationCURRENT_LOCAL)));
 }
-
 
 /** Status of newly received validation
  */
@@ -233,8 +233,8 @@ to_string(ValStatus m)
         // Whether this is a full or partial validation
         bool full() const;
 
-        // Identifier for this node that remains fixed even when rotating signing
-        // keys
+        // Identifier for this node that remains fixed even when rotating
+        // signing keys
         NodeID nodeID()  const;
 
         implementation_specific_t
@@ -312,7 +312,7 @@ class Validations
     hash_map<NodeID, Ledger> lastLedger_;
 
     // Set of ledgers being acquired from the network
-    hash_map<std::pair<Seq,ID>, hash_set<NodeID>> acquiring_;
+    hash_map<std::pair<Seq, ID>, hash_set<NodeID>> acquiring_;
 
     // Parameters to determine validation staleness
     ValidationParms const parms_;
@@ -327,7 +327,8 @@ private:
     removeTrie(ScopedLock const&, NodeID const& nodeID, Validation const& val)
     {
         {
-            auto it = acquiring_.find(std::make_pair(val.seq(), val.ledgerID()));
+            auto it =
+                acquiring_.find(std::make_pair(val.seq(), val.ledgerID()));
             if (it != acquiring_.end())
             {
                 it->second.erase(nodeID);
@@ -387,7 +388,8 @@ private:
         @param lock Existing lock of mutex_
         @param nodeID The node identifier of the validating node
         @param val The trusted validation issued by the node
-        @param prior If not none, the last current validated ledger Seq,ID of key
+        @param prior If not none, the last current validated ledger Seq,ID of
+                     key
     */
     void
     updateTrie(
@@ -445,7 +447,7 @@ private:
     withTrie(ScopedLock const& lock, F&& f)
     {
         // Call current to flush any stale validations
-        current(lock, [](auto){}, [](auto, auto){});
+        current(lock, [](auto) {}, [](auto, auto) {});
         checkAcquired(lock);
         return f(trie_);
     }
@@ -537,8 +539,8 @@ public:
     }
 
     /** Return the adaptor instance
-    */
-    Adaptor const &
+     */
+    Adaptor const&
     adaptor() const
     {
         return adaptor_;
@@ -552,8 +554,8 @@ public:
         return parms_;
     }
 
-    /** Return whether the local node can issue a validation for the given sequence
-        number
+    /** Return whether the local node can issue a validation for the given
+       sequence number
 
         @param s The sequence number of the ledger the node wants to validate
         @return Whether the validation satisfies the invariant, updating the
@@ -602,7 +604,7 @@ public:
                 Validation& oldVal = ins.first->second;
                 if (val.signTime() > oldVal.signTime())
                 {
-                    std::pair<Seq,ID> old(oldVal.seq(),oldVal.ledgerID());
+                    std::pair<Seq, ID> old(oldVal.seq(), oldVal.ledgerID());
                     adaptor_.onStale(std::move(oldVal));
                     ins.first->second = val;
                     if (val.trusted())
@@ -691,20 +693,19 @@ public:
         @param curr The local node's current working ledger
 
         @return The sequence and id of the preferred working ledger,
-                or Seq{0},ID{0} if no trusted validations are available to
+                or boost::none if no trusted validations are available to
                 determine the preferred ledger.
     */
-    std::pair<Seq, ID>
+    boost::optional<std::pair<Seq, ID>>
     getPreferred(Ledger const& curr)
     {
         ScopedLock lock{mutex_};
-        SpanTip<Ledger> preferred =
+        boost::optional<SpanTip<Ledger>> preferred =
             withTrie(lock, [this](LedgerTrie<Ledger>& trie) {
                 return trie.getPreferred(localSeqEnforcer_.largest());
             });
-
         // No trusted validations to determine branch
-        if (preferred.seq == Seq{0})
+        if (!preferred)
         {
             // fall back to majority over acquiring ledgers
             auto it = std::max_element(
@@ -722,26 +723,26 @@ public:
                     return std::tie(aSize, aKey.second) <
                         std::tie(bSize, bKey.second);
                 });
-            if(it != acquiring_.end())
+            if (it != acquiring_.end())
                 return it->first;
-            return std::make_pair(preferred.seq, preferred.id);
+            return boost::none;
         }
 
         // If we are the parent of the preferred ledger, stick with our
         // current ledger since we might be about to generate it
-        if (preferred.seq == curr.seq() + Seq{1} &&
-            preferred.ancestor(curr.seq()) == curr.id())
+        if (preferred->seq == curr.seq() + Seq{1} &&
+            preferred->ancestor(curr.seq()) == curr.id())
             return std::make_pair(curr.seq(), curr.id());
 
         // A ledger ahead of us is preferred regardless of whether it is
         // a descendant of our working ledger or it is on a different chain
-        if (preferred.seq > curr.seq())
-            return std::make_pair(preferred.seq, preferred.id);
+        if (preferred->seq > curr.seq())
+            return std::make_pair(preferred->seq, preferred->id);
 
         // Only switch to earlier or same sequence number
         // if it is a different chain.
-        if (curr[preferred.seq] != preferred.id)
-            return std::make_pair(preferred.seq, preferred.id);
+        if (curr[preferred->seq] != preferred->id)
+            return std::make_pair(preferred->seq, preferred->id);
 
         // Stick with current ledger
         return std::make_pair(curr.seq(), curr.id());
@@ -759,22 +760,21 @@ public:
     ID
     getPreferred(Ledger const& curr, Seq minValidSeq)
     {
-        std::pair<Seq, ID> preferred = getPreferred(curr);
-        if(preferred.first >= minValidSeq && preferred.second != ID{0})
-            return preferred.second;
+        boost::optional<std::pair<Seq, ID>> preferred = getPreferred(curr);
+        if (preferred && preferred->first >= minValidSeq)
+            return preferred->second;
         return curr.id();
-
     }
-
 
     /** Determine the preferred last closed ledger for the next consensus round.
 
-        Called before starting the next round of ledger consensus to determine the
-        preferred working ledger. Uses the dominant peerCount ledger if no
+        Called before starting the next round of ledger consensus to determine
+        the preferred working ledger. Uses the dominant peerCount ledger if no
         trusted validations are available.
 
         @param lcl Last closed ledger by this node
-        @param minSeq Minimum allowed sequence number of the trusted preferred ledger
+        @param minSeq Minimum allowed sequence number of the trusted preferred
+                      ledger
         @param peerCounts Map from ledger ids to count of peers with that as the
                           last closed ledger
         @return The preferred last closed ledger ID
@@ -784,15 +784,16 @@ public:
     */
     ID
     getPreferredLCL(
-        Ledger const & lcl,
+        Ledger const& lcl,
         Seq minSeq,
         hash_map<ID, std::uint32_t> const& peerCounts)
     {
-        std::pair<Seq, ID> preferred = getPreferred(lcl);
+        boost::optional<std::pair<Seq, ID>> preferred = getPreferred(lcl);
 
-        // Trusted validations exist
-        if (preferred.second != ID{0} && preferred.first > Seq{0})
-            return (preferred.first >= minSeq) ? preferred.second : lcl.id();
+        // Trusted validations exist, but stick with local preferred ledger if
+        // preferred is in the past
+        if (preferred)
+            return (preferred->first >= minSeq) ? preferred->second : lcl.id();
 
         // Otherwise, rely on peer ledgers
         auto it = std::max_element(

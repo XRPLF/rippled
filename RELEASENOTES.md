@@ -14,6 +14,41 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 1.1.2
+
+The `rippled` 1.1.2 release introduces a fix for an issue that could have
+prevented cluster peers from successfully bypassing connection limits when
+connecting to other servers on the same cluster. Additionally, it improves
+logic used to determine what the preferred ledger is during suboptimal
+network conditions.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- Properly bypass connection limits for cluster peers (#2795, #2796)
+- Improve preferred ledger calculation (#2784)
+
+## Version 1.1.1
+
+The `rippled` 1.1.1 release adds support for redirections when retrieving
+validator lists and changes the way that validators with an expired list
+behave. Additionally, informational commands return more useful information
+to allow server operators to determine the state of their server
+
+**New and Updated Features**
+
+- Enhance status reporting when using the `server_info` and `validators` commands (#2734)
+- Accept redirects from validator list sites: (#2715)
+
+**Bug Fixes**
+
+- Properly handle expired validator lists when validating (#2734)
+
+
+
 ## Version 1.1.0
 
 The `rippled` 1.1.0 release release includes the `DepositPreAuth` amendment, which combined with the previously released `DepositAuth` amendment, allows users to pre-authorize incoming transactions to accounts, by whitelisting sender addresses. The 1.1.0 release also includes incremental improvements to several previously released features (`fix1515` amendment), deprecates support for the `sign` and `sign_for` commands from the rippled API and improves invariant checking for enhanced security.
