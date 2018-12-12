@@ -291,14 +291,20 @@ on_write(error_code const& ec)
     start_timer();
     if(! result.first)
         impl().ws_.async_write_some(
-            result.first, result.second, strand_.wrap(std::bind(
-                &BaseWSPeer::on_write, impl().shared_from_this(),
-                    std::placeholders::_1)));
+            static_cast<bool>(result.first),
+            result.second,
+            strand_.wrap(std::bind(
+                &BaseWSPeer::on_write,
+                impl().shared_from_this(),
+                std::placeholders::_1)));
     else
         impl().ws_.async_write_some(
-            result.first, result.second, strand_.wrap(std::bind(
-                &BaseWSPeer::on_write_fin, impl().shared_from_this(),
-                    std::placeholders::_1)));
+            static_cast<bool>(result.first),
+            result.second,
+            strand_.wrap(std::bind(
+                &BaseWSPeer::on_write_fin,
+                impl().shared_from_this(),
+                std::placeholders::_1)));
 }
 
 template<class Handler, class Impl>
