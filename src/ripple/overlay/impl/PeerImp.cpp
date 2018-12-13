@@ -1139,8 +1139,8 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMShardInfo> const& m)
             }
         }
 
-        auto getIndex = [&](std::string const& s)
-            -> boost::optional<std::uint32_t>
+        auto getIndex = [this, &earliestShard, &latestShard]
+            (std::string const& s) -> boost::optional<std::uint32_t>
         {
             std::uint32_t shardIndex;
             if (!beast::lexicalCastChecked(shardIndex, s))
@@ -1162,9 +1162,10 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMShardInfo> const& m)
         std::vector<std::string> tokens;
         boost::split(tokens, m->shardindexes(),
             boost::algorithm::is_any_of(","));
+        std::vector<std::string> indexes;
         for (auto const& t : tokens)
         {
-            std::vector<std::string> indexes;
+            indexes.clear();
             boost::split(indexes, t, boost::algorithm::is_any_of("-"));
             switch (indexes.size())
             {
