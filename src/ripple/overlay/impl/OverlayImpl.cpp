@@ -484,13 +484,22 @@ OverlayImpl::onPrepare()
     m_peerFinder->setConfig (config);
 
     // Populate our boot cache: if there are no entries in [ips] then we use
-    // the entries in [ips_fixed]. If both are empty, we resort to a round-robin
-    // pool.
+    // the entries in [ips_fixed].
     auto bootstrapIps = app_.config().IPS.empty()
         ? app_.config().IPS_FIXED
         : app_.config().IPS;
+
+
+    // If nothing is specified, default to several well-known high-capacity
+    // servers to serve as bootstrap:
     if (bootstrapIps.empty ())
-        bootstrapIps.push_back ("r.ripple.com 51235");
+    {
+        // Pool of servers operated by Ripple Labs Inc. - https://ripple.com
+        bootstrapIps.push_back("r.ripple.com 51235");
+
+        // Pool of servers operated by Alloy Networks - https://www.alloy.ee
+        bootstrapIps.push_back("zaphod.alloy.ee 51235");
+    }
 
     m_resolver.resolve (bootstrapIps,
         [this](std::string const& name,
