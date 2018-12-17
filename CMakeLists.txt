@@ -857,9 +857,9 @@ exclude_if_included (archive_lib)
 ExternalProject_Add (sqlite3
   PREFIX ${nih_cache_path}
   # sqlite doesn't use git, but it provides versioned tarballs
-  URL https://www.sqlite.org/2018/sqlite-amalgamation-3240000.zip
-  # ^^^ version is apparent in the URL:  3240000 => 3.24.0
-  URL_HASH SHA256=ad68c1216c3a474cf360c7581a4001e952515b3649342100f2d7ca7c8e313da6
+  URL https://www.sqlite.org/2018/sqlite-amalgamation-3260000.zip
+  # ^^^ version is apparent in the URL:  3260000 => 3.26.0
+  URL_HASH SHA256=de5dcab133aa339a4cf9e97c40aa6062570086d6085d8f9ad7bc6ddf8a52096e
   # we wrote a very simple CMake file to build sqlite
   # so that's what we copy here so that we can build with
   # CMake. sqlite doesn't generally provided a build system
