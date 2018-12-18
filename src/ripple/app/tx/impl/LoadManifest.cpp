@@ -61,11 +61,6 @@ LoadManifest::preflight (PreflightContext const& ctx)
     if (mb.size() < 32 || mb.size() > 768)
         return temMANIFEST_MALFORMED;
 
-    auto const m = deserializeManifest(ctx.tx[sfManifest]);
-
-    if (!m)
-        return temMANIFEST_MALFORMED;
-
     return preflight2 (ctx);
 }
 
@@ -78,7 +73,7 @@ LoadManifest::preclaim(PreclaimContext const& ctx)
     auto const m = deserializeManifest(ctx.tx[sfManifest]);
 
     if (!m)
-        return temMANIFEST_MALFORMED;
+        return tecMANIFEST_MALFORMED;
 
     // Existing code will not deserialize a manifest with a domain name
     // that is longer than maxDomainLength. However, such a change, if
@@ -86,7 +81,7 @@ LoadManifest::preclaim(PreclaimContext const& ctx)
     // amendment. This extra check here protects from this unlikely
     // scenario.
     if (m->domain.size() > maxDomainLength)
-        return tecMANIFEST_BAD_DOMAIN;
+        return tecMANIFEST_MALFORMED;
 
     auto const sle = ctx.view.read(keylet::manifest(m->masterKey));
 
@@ -116,8 +111,9 @@ LoadManifest::doApply()
     auto const key = keylet::manifest(m->masterKey);
 
     auto sle = view().peek(key);
+    bool const found = static_cast<bool>(sle);
 
-    if (!sle)
+    if (!found)
     {
         sle = std::make_shared<SLE>(key);
         (*sle)[sfPublicKey] = m->masterKey;
@@ -136,7 +132,7 @@ LoadManifest::doApply()
     if ((*sle)[~sfDomain] != domain)
         (*sle)[~sfDomain] = domain;
 
-    if (view().exists(key))
+    if (found)
         view().update(sle);
     else
         view().insert(sle);
