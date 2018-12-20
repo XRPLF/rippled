@@ -94,8 +94,8 @@ struct Manifest
     std::string domain;
 
     Manifest() = default;
-    Manifest(Manifest const& other) = delete;
-    Manifest& operator=(Manifest const& other) = delete;
+    Manifest(Manifest const& other) = default;
+    Manifest& operator=(Manifest const& other) = default;
     Manifest(Manifest&& other) = default;
     Manifest& operator=(Manifest&& other) = default;
 

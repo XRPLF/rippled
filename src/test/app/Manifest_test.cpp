@@ -169,11 +169,10 @@ public:
         Serializer s;
         st.add(s);
 
-        std::string const m (static_cast<char const*> (s.data()), s.size());
-        if (auto r = deserializeManifest(std::move(m)))
-            return std::move(*r);
-        Throw<std::runtime_error> ("Could not create a revocation manifest");
-        return *deserializeManifest(std::move(m)); // Silence compiler warning.
+        auto r = deserializeManifest(s.slice());
+        if (!r)
+            Throw<std::runtime_error> ("Could not create a revocation manifest");
+        return *r;
     }
 
     Manifest
@@ -200,23 +199,16 @@ public:
         Serializer s;
         st.add(s);
 
-        std::string const m (static_cast<char const*> (s.data()), s.size());
-        if (auto r = deserializeManifest(std::move(m)))
-            return std::move (*r);
-        Throw<std::runtime_error> ("Could not create a manifest");
-        return *deserializeManifest(std::move(m)); // Silence compiler warning.
+        auto r = deserializeManifest(s.slice());
+        if (!r)
+            Throw<std::runtime_error> ("Could not create a manifest");
+        return *r;
     }
 
     Manifest
     clone (Manifest const& m)
     {
-        Manifest m2;
-        m2.serialized = m.serialized;
-        m2.masterKey = m.masterKey;
-        m2.signingKey = m.signingKey;
-        m2.sequence = m.sequence;
-        m2.domain = m.domain;
-        return m2;
+        return m;
     }
 
     void testLoadStore (ManifestCache& m)

@@ -58,7 +58,7 @@ LoadManifest::preflight (PreflightContext const& ctx)
 
     auto const mb = ctx.tx[sfManifest];
 
-    if (mb.size() < 32 || mb.size() > 768)
+    if (mb.size() < 32 || mb.size() > 512)
         return temMANIFEST_MALFORMED;
 
     return preflight2 (ctx);
@@ -67,9 +67,6 @@ LoadManifest::preflight (PreflightContext const& ctx)
 TER
 LoadManifest::preclaim(PreclaimContext const& ctx)
 {
-    if (! ctx.view.rules().enabled(featureOnLedgerManifests))
-        return temDISABLED;
-
     auto const m = deserializeManifest(ctx.tx[sfManifest]);
 
     if (!m)
@@ -85,7 +82,8 @@ LoadManifest::preclaim(PreclaimContext const& ctx)
 
     auto const sle = ctx.view.read(keylet::manifest(m->masterKey));
 
-    // The manifest we're trying to update must already exist
+    // If the manifest entry doesn't already exist the transaction must
+    // pay the full reserve to create the entry:
     if (!sle && !(ctx.tx.getFlags() & tfPayReserve))
         return tecNO_ENTRY;
 
@@ -102,9 +100,6 @@ LoadManifest::preclaim(PreclaimContext const& ctx)
 TER
 LoadManifest::doApply()
 {
-    if (! ctx_.view().rules().enabled(featureOnLedgerManifests))
-        return temDISABLED;
-
     auto m = deserializeManifest(ctx_.tx[sfManifest]);
     assert(m);
 

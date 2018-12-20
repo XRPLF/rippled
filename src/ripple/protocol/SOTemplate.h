@@ -27,7 +27,6 @@
 namespace ripple {
 
 /** Flags for elements in a SOTemplate. */
-// VFALCO NOTE these don't look like bit-flags...
 enum SOE_Flags
 {
     SOE_INVALID  = -1,
@@ -84,8 +83,8 @@ public:
 
         @see push_back
     */
-    SOTemplate(std::function<void(SOTemplate&)> callback)
-        : SOTemplate()
+    SOTemplate(std::function<void(SOTemplate&)> const& callback)
+        : SOTemplate() // ensures that the object is fully constructed
     {
         if (callback)
             callback(*this);

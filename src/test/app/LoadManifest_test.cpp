@@ -1,4 +1,3 @@
-//------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012-2016 Ripple Labs Inc.
@@ -15,7 +14,7 @@
     ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
-//==============================================================================
+
 #include <test/jtx.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/TxFlags.h>
@@ -152,6 +151,13 @@ class LoadManifest_test : public beast::unit_test::suite
             return sle->getFieldU32(sfSequence) == expected;
         };
 
+        // Try specifying an invalid flag:
+        {
+            auto jv = updateManifest(env.master, m1);
+            jv[jss::Flags] = 22979;
+            env(jv, ter(temINVALID_FLAG));
+        }
+
         // Updating manifest entry which isn't present fails
         env(updateManifest(env.master, m1), ter(tecNO_ENTRY));
         env.close();
@@ -175,7 +181,16 @@ class LoadManifest_test : public beast::unit_test::suite
         env.close();
         checkSequence(3);
 
-        // Even if we skip manifest sequences
+        // A valid manifest but invalid tx flags should fail:
+        {
+            auto jv = updateManifest(env.master, m4);
+            jv[jss::Flags] = (tfPayReserve << 2);
+            env(jv, ter(tecMANIFEST_BAD_SEQUENCE), ter(temINVALID_FLAG));
+            env.close();
+            checkSequence(3);
+        }
+
+        // We should be able to skip manifest sequences
         env(updateManifest(env.master, m5));
         env.close();
         checkSequence(5);
@@ -189,7 +204,8 @@ class LoadManifest_test : public beast::unit_test::suite
         env.close();
         checkSequence(5);
 
-        env(updateManifest(env.master, m6));
+        // Updating with a very high fee works fine.
+        env(updateManifest(env.master, m6), fee(env.current()->fees().reserve));
         env.close();
         checkSequence(6);
 
@@ -205,10 +221,51 @@ class LoadManifest_test : public beast::unit_test::suite
             else if (mx[i] == 'F')
                 mx[i] = '0';
 
-            env(createManifest(env.master, mx), fee(env.current()->fees().reserve), ter(std::ignore));
+            env(updateManifest(env.master, mx), ter(std::ignore));
             BEAST_EXPECT(env.ter() != tesSUCCESS);
             env.close();
             checkSequence(6);
+        }
+
+        // Corrupted manifests, part 2: short and long manifests
+        {
+            std::string mx = m7;
+
+            // The min and max sizes of a hex-encoded manifest blob.
+            std::size_t constexpr minManifestSize = 64;
+            std::size_t constexpr maxManifestSize = 1024;
+
+            // Missing data, but length above the minimum limit:
+            do
+            {
+                mx.pop_back();
+                env(updateManifest(env.master, mx), ter(tecMANIFEST_MALFORMED));
+                env.close();
+                checkSequence(6);
+            } while (mx.size() >= minManifestSize);
+
+            // Below the minimum limit, we don't even attempt to decode:
+            mx.pop_back();
+            env(updateManifest(env.master, mx), ter(temMANIFEST_MALFORMED));
+            env.close();
+            checkSequence(6);
+
+            // Extraneous data, but length below the minimum limit:
+            mx = m7;
+            mx.resize(maxManifestSize, '0');
+
+            env(updateManifest(env.master, mx), ter(tecMANIFEST_MALFORMED));
+            env.close();
+            checkSequence(6);
+
+            // Above the maximum limit, we don't even attempt to decode:
+            for (int i = 0; i != 10; ++i)
+            {
+                mx.push_back('F');
+                env(updateManifest(env.master, mx), ter(temMANIFEST_MALFORMED));
+                env.close();
+                checkSequence(6);
+            }
         }
 
         // Revocation also works
