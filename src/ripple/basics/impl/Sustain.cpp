@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/safe_cast.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <boost/format.hpp>
@@ -41,8 +42,8 @@ namespace ripple {
 static auto const sleepBeforeWaiting = 10;
 static auto const sleepBetweenWaits = 1;
 
-static pid_t pManager = static_cast<pid_t> (0);
-static pid_t pChild = static_cast<pid_t> (0);
+static pid_t pManager = safe_cast<pid_t> (0);
+static pid_t pChild = safe_cast<pid_t> (0);
 
 static void pass_signal (int a)
 {

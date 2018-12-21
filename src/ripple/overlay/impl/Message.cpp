@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/safe_cast.h>
 #include <ripple/overlay/Message.h>
 #include <ripple/overlay/impl/TrafficCount.h>
 #include <cstdint>
@@ -38,7 +39,7 @@ Message::Message (::google::protobuf::Message const& message, int type)
         message.SerializeToArray (&mBuffer [Message::kHeaderBytes], messageBytes);
     }
 
-    mCategory = static_cast<int>(TrafficCount::categorize
+    mCategory = safe_cast<int>(TrafficCount::categorize
         (message, type, false));
 }
 

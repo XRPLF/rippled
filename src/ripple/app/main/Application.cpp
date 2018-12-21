@@ -46,6 +46,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/ResolverAsio.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/json/json_reader.h>
@@ -1068,7 +1069,7 @@ public:
             *db << "PRAGMA page_count;", soci::into(pageCount);
             std::uint32_t freePages = maxPages - pageCount;
             std::uint64_t freeSpace =
-                static_cast<std::uint64_t>(freePages) * pageSize;
+                safe_cast<std::uint64_t>(freePages) * pageSize;
             JLOG(m_journal.info())
                << "Transaction DB pathname: " << dbPath.string()
                << "; file size: " << dbSize.value_or(-1) << " bytes"

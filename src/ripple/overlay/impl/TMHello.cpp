@@ -21,6 +21,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/base64.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/protocol/digest.h>
@@ -226,11 +227,11 @@ parseHello (bool request, boost::beast::http::fields const& h, beast::Journal jo
         if (versions.empty())
             return boost::none;
         hello.set_protoversion(
-            (static_cast<std::uint32_t>(versions.back().first) << 16) |
-            (static_cast<std::uint32_t>(versions.back().second)));
+            (safe_cast<std::uint32_t>(versions.back().first) << 16) |
+            (safe_cast<std::uint32_t>(versions.back().second)));
         hello.set_protoversionmin(
-            (static_cast<std::uint32_t>(versions.front().first) << 16) |
-            (static_cast<std::uint32_t>(versions.front().second)));
+            (safe_cast<std::uint32_t>(versions.front().first) << 16) |
+            (safe_cast<std::uint32_t>(versions.front().second)));
     }
 
     {
@@ -362,7 +363,7 @@ verifyHello (protocol::TMHello const& h,
 
         JLOG(journal.trace()) <<
             "Connect: time offset " <<
-            static_cast<std::int64_t>(ourTime) - h.nettime();
+            safe_cast<std::int64_t>(ourTime) - h.nettime();
     }
 
     if (h.protoversionmin () > to_packed (BuildInfo::getCurrentProtocol()))

@@ -19,6 +19,7 @@
 
 #include <ripple/peerfinder/impl/Livecache.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/clock/manual_clock.h>
 #include <test/beast/IPEndpointCommon.h>
@@ -134,7 +135,7 @@ public:
             add(
                 beast::IP::randomEP(true),
                 c,
-                ripple::rand_int(0, static_cast<int>(Tuning::maxHops + 1)));
+                ripple::rand_int(0, safe_cast<int>(Tuning::maxHops + 1)));
         auto h = c.hops.histogram();
         if(! BEAST_EXPECT(! h.empty()))
             return;
@@ -159,7 +160,7 @@ public:
             add(
                 beast::IP::randomEP(true),
                 c,
-                ripple::rand_int(0, static_cast<int>(Tuning::maxHops + 1)));
+                ripple::rand_int(0, safe_cast<int>(Tuning::maxHops + 1)));
 
         using at_hop = std::vector <ripple::PeerFinder::Endpoint>;
         using all_hops = std::array <at_hop, 1 + Tuning::maxHops + 1>;

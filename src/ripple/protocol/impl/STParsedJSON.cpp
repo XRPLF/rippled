@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/contract.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/LedgerFormats.h>
@@ -275,6 +276,9 @@ static boost::optional<detail::STVar> parseLeaf (
                         TxType const txType (TxFormats::getInstance().
                             findTypeByName (strValue));
 
+                        if (txType == ttINVALID)
+                             Throw<std::runtime_error>(
+                                "Invalid transaction format name");
                         ret = detail::make_stvar <STUInt16> (field,
                             static_cast <std::uint16_t> (txType));
 
@@ -287,6 +291,13 @@ static boost::optional<detail::STVar> parseLeaf (
                             LedgerFormats::getInstance().
                                 findTypeByName (strValue));
 
+                        if (!(0u <= type &&
+                            type <= std::min<unsigned>(
+                                     std::numeric_limits<std::uint16_t>::max(),
+                                     std::numeric_limits<std::underlying_type_t
+                                           <LedgerEntryType>>::max())))
+                                 Throw<std::runtime_error>(
+                                     "Invalid ledger entry type: out of range");
                         ret = detail::make_stvar <STUInt16> (field,
                             static_cast <std::uint16_t> (type));
 
@@ -346,7 +357,7 @@ static boost::optional<detail::STVar> parseLeaf (
             else if (value.isUInt ())
             {
                 ret = detail::make_stvar <STUInt32> (field,
-                    static_cast <std::uint32_t> (value.asUInt ()));
+                    safe_cast <std::uint32_t> (value.asUInt ()));
             }
             else
             {
@@ -378,7 +389,7 @@ static boost::optional<detail::STVar> parseLeaf (
             else if (value.isUInt ())
             {
                 ret = detail::make_stvar <STUInt64> (field,
-                    static_cast <std::uint64_t> (value.asUInt ()));
+                    safe_cast <std::uint64_t> (value.asUInt ()));
             }
             else
             {

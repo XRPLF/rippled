@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <ripple/basics/contract.h>
+#include <ripple/basics/Log.h>
+#include <ripple/basics/safe_cast.h>
+#include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/JsonFields.h>
@@ -27,9 +31,6 @@
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/UintTypes.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
 #include <boost/format.hpp>
 #include <array>
@@ -49,7 +50,7 @@ auto getTxFormat (TxType type)
         Throw<std::runtime_error> (
             "Invalid transaction type " +
             std::to_string (
-                static_cast<std::underlying_type_t<TxType>>(type)));
+                safe_cast<std::underlying_type_t<TxType>>(type)));
     }
 
     return format;
@@ -58,7 +59,7 @@ auto getTxFormat (TxType type)
 STTx::STTx (STObject&& object) noexcept (false)
     : STObject (std::move (object))
 {
-    tx_type_ = static_cast <TxType> (getFieldU16 (sfTransactionType));
+    tx_type_ = safe_cast<TxType> (getFieldU16 (sfTransactionType));
     applyTemplate (getTxFormat (tx_type_)->elements);  //  may throw
     tid_ = getHash(HashPrefix::transactionID);
 }
@@ -72,7 +73,7 @@ STTx::STTx (SerialIter& sit) noexcept (false)
         Throw<std::runtime_error> ("Transaction length invalid");
 
     set (sit);
-    tx_type_ = static_cast<TxType> (getFieldU16 (sfTransactionType));
+    tx_type_ = safe_cast<TxType> (getFieldU16 (sfTransactionType));
 
     applyTemplate (getTxFormat (tx_type_)->elements);  // May throw
     tid_ = getHash(HashPrefix::transactionID);
@@ -90,7 +91,7 @@ STTx::STTx (
 
     assembler (*this);
 
-    tx_type_ = static_cast<TxType>(getFieldU16 (sfTransactionType));
+    tx_type_ = safe_cast<TxType>(getFieldU16 (sfTransactionType));
 
     if (tx_type_ != type)
         LogicError ("Transaction type was mutated during assembly");
@@ -521,7 +522,7 @@ isPseudoTx(STObject const& tx)
     auto t = tx[~sfTransactionType];
     if (!t)
         return false;
-    auto tt = static_cast<TxType>(*t);
+    auto tt = safe_cast<TxType>(*t);
     return tt == ttAMENDMENT || tt == ttFEE;
 }
 
