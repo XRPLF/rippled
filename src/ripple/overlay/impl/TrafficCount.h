@@ -20,6 +20,7 @@
 #ifndef RIPPLE_OVERLAY_TRAFFIC_H_INCLUDED
 #define RIPPLE_OVERLAY_TRAFFIC_H_INCLUDED
 
+#include <ripple/basics/safe_cast.h>
 #include <ripple/protocol/messages.h>
 
 #include <atomic>
@@ -99,7 +100,7 @@ public:
     {
         for (category i = category::CT_base;
             i <= category::CT_unknown;
-            i = static_cast<category>(static_cast<int>(i) + 1))
+            i = safe_cast<category>(safe_cast<std::underlying_type_t<category>>(i) + 1))
         {
             counts_[i];
         }

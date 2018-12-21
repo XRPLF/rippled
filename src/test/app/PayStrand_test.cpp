@@ -19,6 +19,7 @@
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/core/Config.h>
 #include <ripple/ledger/ApplyViewImpl.h>
 #include <ripple/ledger/PaymentSandbox.h>
@@ -183,6 +184,7 @@ allpe(AccountID const& a, Issue const& iss)
 class ElementComboIter
 {
     enum class SB /*state bit*/
+        : std::uint16_t
     { acc,
       iss,
       cur,
@@ -200,7 +202,7 @@ class ElementComboIter
       last };
 
     std::uint16_t state_ = 0;
-    static_assert(static_cast<size_t>(SB::last) <= sizeof(decltype(state_)) * 8, "");
+    static_assert(safe_cast<size_t>(SB::last) <= sizeof(decltype(state_)) * 8, "");
     STPathElement const* prev_ = nullptr;
     // disallow iss and cur to be specified with acc is specified (simplifies some tests)
     bool const allowCompound_ = false;
@@ -208,7 +210,7 @@ class ElementComboIter
     bool
     has(SB s) const
     {
-        return state_ & (1 << static_cast<int>(s));
+        return state_ & (1 << safe_cast<int>(s));
     }
 
     bool

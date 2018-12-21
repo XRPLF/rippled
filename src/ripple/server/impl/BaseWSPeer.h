@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SERVER_BASEWSPEER_H_INCLUDED
 #define RIPPLE_SERVER_BASEWSPEER_H_INCLUDED
 
+#include <ripple/basics/safe_cast.h>
 #include <ripple/server/impl/BasePeer.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/beast/utility/rngfill.h>
@@ -214,8 +215,9 @@ send(std::shared_ptr<WSMsg> w)
     {
         JLOG(this->j_.info()) <<
             "closing slow client";
-        cr_.code = static_cast<boost::beast::websocket::close_code>(4000);
-        cr_.reason = "Client is too slow.";
+        cr_.code = safe_cast<decltype(cr_.code)>
+                      (boost::beast::websocket::close_code::policy_error);
+        cr_.reason = "Policy error: client is too slow.";
         wq_.erase(std::next(wq_.begin()), wq_.end());
         close();
         return;

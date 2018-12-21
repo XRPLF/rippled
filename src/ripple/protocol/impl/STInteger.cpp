@@ -19,6 +19,7 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/STInteger.h>
 #include <ripple/protocol/TxFormats.h>
@@ -98,7 +99,7 @@ STUInt16::getText () const
     if (getFName () == sfLedgerEntryType)
     {
         auto item = LedgerFormats::getInstance ().findByType (
-            static_cast <LedgerEntryType> (value_));
+            safe_cast<LedgerEntryType> (value_));
 
         if (item != nullptr)
             return item->getName ();
@@ -107,7 +108,7 @@ STUInt16::getText () const
     if (getFName () == sfTransactionType)
     {
         auto item =TxFormats::getInstance().findByType (
-            static_cast <TxType> (value_));
+            safe_cast<TxType> (value_));
 
         if (item != nullptr)
             return item->getName ();
@@ -123,7 +124,7 @@ STUInt16::getJson (int) const
     if (getFName () == sfLedgerEntryType)
     {
         auto item = LedgerFormats::getInstance ().findByType (
-            static_cast <LedgerEntryType> (value_));
+            safe_cast<LedgerEntryType> (value_));
 
         if (item != nullptr)
             return item->getName ();
@@ -132,7 +133,7 @@ STUInt16::getJson (int) const
     if (getFName () == sfTransactionType)
     {
         auto item = TxFormats::getInstance().findByType (
-            static_cast <TxType> (value_));
+            safe_cast<TxType> (value_));
 
         if (item != nullptr)
             return item->getName ();

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/safe_cast.h>
 #include <ripple/server/Port.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
@@ -192,7 +193,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
         {
             try
             {
-                port.limit = static_cast<int> (
+                port.limit = safe_cast<int> (
                     beast::lexicalCastThrow<std::uint16_t>(lim));
             }
             catch (std::exception const&)

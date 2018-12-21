@@ -864,12 +864,11 @@ ServerHandlerImp::processRequest (Port const& port,
     }
     auto response = to_string (reply);
 
-    rpc_time_.notify (static_cast <beast::insight::Event::value_type> (
+    rpc_time_.notify (
         std::chrono::duration_cast <std::chrono::milliseconds> (
-            std::chrono::high_resolution_clock::now () - start)));
+            std::chrono::high_resolution_clock::now () - start));
     ++rpc_requests_;
-    rpc_size_.notify (static_cast <beast::insight::Event::value_type> (
-        response.size ()));
+    rpc_size_.notify (beast::insight::Event::value_type{response.size()});
 
     response += '\n';
 

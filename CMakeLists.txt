@@ -1474,6 +1474,7 @@ install (
     src/ripple/basics/FileUtilities.h
     src/ripple/basics/LocalValue.h
     src/ripple/basics/Log.h
+    src/ripple/basics/safe_cast.h
     src/ripple/basics/Slice.h
     src/ripple/basics/StringUtilities.h
     src/ripple/basics/ToString.h

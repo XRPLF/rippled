@@ -21,6 +21,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/basics/BasicConfig.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/unity/rocksdb.h>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/beast/xor_shift_engine.h>
@@ -121,7 +122,7 @@ public:
         Blob value(d_size_(gen_));
         rngcpy (&value[0], value.size(), gen_);
         return NodeObject::createObject (
-            static_cast<NodeObjectType>(d_type_(gen_)),
+            safe_cast<NodeObjectType>(d_type_(gen_)),
                 std::move(value), key);
     }
 

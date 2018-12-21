@@ -20,6 +20,7 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/STAmount.h>
@@ -246,13 +247,13 @@ STAmount::STAmount (Issue const& issue,
 
 STAmount::STAmount (Issue const& issue,
         std::uint32_t mantissa, int exponent, bool negative)
-    : STAmount (issue, static_cast<std::uint64_t>(mantissa), exponent, negative)
+    : STAmount (issue, safe_cast<std::uint64_t>(mantissa), exponent, negative)
 {
 }
 
 STAmount::STAmount (Issue const& issue,
         int mantissa, int exponent)
-    : STAmount (issue, static_cast<std::int64_t>(mantissa), exponent)
+    : STAmount (issue, safe_cast<std::int64_t>(mantissa), exponent)
 {
 }
 

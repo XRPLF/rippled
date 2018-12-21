@@ -22,6 +22,7 @@
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/conditions/Condition.h>
 #include <ripple/conditions/Fulfillment.h>
 #include <ripple/ledger/ApplyView.h>
@@ -358,7 +359,7 @@ EscrowFinish::calculateBaseFee (
     if (auto const fb = tx[~sfFulfillment])
     {
         extraFee += view.fees().units *
-            (32 + static_cast<std::uint64_t> (fb->size() / 16));
+            (32 + safe_cast<std::uint64_t> (fb->size() / 16));
     }
 
     return Transactor::calculateBaseFee (view, tx) + extraFee;

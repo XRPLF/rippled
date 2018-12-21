@@ -187,8 +187,8 @@ ShardArchiveHandler::complete(path dstPath)
             auto const mode {ptr->app_.getOPs().getOperatingMode()};
             if (ptr->validate_ && mode != NetworkOPs::omFULL)
             {
-                timer_.expires_from_now(static_cast<std::chrono::seconds>(
-                    (NetworkOPs::omFULL - mode) * 10));
+                timer_.expires_from_now(std::chrono::seconds{
+                    (NetworkOPs::omFULL - mode) * 10});
                 timer_.async_wait(
                     [=, dstPath = std::move(dstPath), ptr = std::move(ptr)]
                     (boost::system::error_code const& ec)

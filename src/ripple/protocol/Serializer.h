@@ -20,12 +20,13 @@
 #ifndef RIPPLE_PROTOCOL_SERIALIZER_H_INCLUDED
 #define RIPPLE_PROTOCOL_SERIALIZER_H_INCLUDED
 
-#include <ripple/protocol/SField.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Buffer.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/beast/crypto/secure_erase.h>
+#include <ripple/protocol/SField.h>
 #include <cassert>
 #include <cstdint>
 #include <iomanip>
@@ -158,7 +159,7 @@ public:
     int addFieldID (int type, int name);
     int addFieldID (SerializedTypeID type, int name)
     {
-        return addFieldID (static_cast<int> (type), name);
+        return addFieldID (safe_cast<int> (type), name);
     }
 
     // DEPRECATED
@@ -266,7 +267,7 @@ public:
                 std::setw (2) <<
                 std::hex <<
                 std::setfill ('0') <<
-                static_cast<unsigned int>(element);
+                safe_cast<unsigned int>(element);
         }
         return h.str ();
     }

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_SFIELD_H_INCLUDED
 #define RIPPLE_PROTOCOL_SFIELD_H_INCLUDED
 
+#include <ripple/basics/safe_cast.h>
 #include <ripple/json/json_value.h>
 #include <cstdint>
 #include <utility>
@@ -86,7 +87,7 @@ inline
 int
 field_code(SerializedTypeID id, int index)
 {
-    return (static_cast<int>(id) << 16) | index;
+    return (safe_cast<int>(id) << 16) | index;
 }
 
 // constexpr

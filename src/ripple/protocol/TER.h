@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_TER_H_INCLUDED
 #define RIPPLE_PROTOCOL_TER_H_INCLUDED
 
+#include <ripple/basics/safe_cast.h>
 #include <ripple/json/json_value.h>
 
 #include <boost/optional.hpp>
@@ -270,22 +271,22 @@ enum TECcodes : TERUnderlyingType
 
 // For generic purposes, a free function that returns the value of a TE*codes.
 constexpr TERUnderlyingType TERtoInt (TELcodes v)
-{ return static_cast<TERUnderlyingType>(v); }
+{ return safe_cast<TERUnderlyingType>(v); }
 
 constexpr TERUnderlyingType TERtoInt (TEMcodes v)
-{ return static_cast<TERUnderlyingType>(v); }
+{ return safe_cast<TERUnderlyingType>(v); }
 
 constexpr TERUnderlyingType TERtoInt (TEFcodes v)
-{ return static_cast<TERUnderlyingType>(v); }
+{ return safe_cast<TERUnderlyingType>(v); }
 
 constexpr TERUnderlyingType TERtoInt (TERcodes v)
-{ return static_cast<TERUnderlyingType>(v); }
+{ return safe_cast<TERUnderlyingType>(v); }
 
 constexpr TERUnderlyingType TERtoInt (TEScodes v)
-{ return static_cast<TERUnderlyingType>(v); }
+{ return safe_cast<TERUnderlyingType>(v); }
 
 constexpr TERUnderlyingType TERtoInt (TECcodes v)
-{ return static_cast<TERUnderlyingType>(v); }
+{ return safe_cast<TERUnderlyingType>(v); }
 
 //------------------------------------------------------------------------------
 // Template class that is specific to selected ranges of error codes.  The

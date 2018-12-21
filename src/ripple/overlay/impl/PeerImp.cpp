@@ -30,6 +30,7 @@
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/random.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/core/SemanticVersion.h>
@@ -192,7 +193,7 @@ PeerImp::send (Message::pointer const& m)
         return;
 
     overlay_.reportTraffic (
-        static_cast<TrafficCount::category>(m->getCategory()),
+        safe_cast<TrafficCount::category>(m->getCategory()),
         false, static_cast<int>(m->getBuffer().size()));
 
     auto sendq_size = send_queue_.size();
