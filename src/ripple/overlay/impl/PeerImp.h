@@ -139,8 +139,8 @@ private:
     std::deque<uint256> recentLedgers_;
     std::deque<uint256> recentTxSets_;
 
-    std::chrono::milliseconds latency_ = std::chrono::milliseconds (-1);
-    std::uint64_t lastPingSeq_ = 0;
+    boost::optional<std::chrono::milliseconds> latency_;
+    boost::optional<std::uint32_t> lastPingSeq_;
     clock_type::time_point lastPingTime_;
     clock_type::time_point creationTime_;
 

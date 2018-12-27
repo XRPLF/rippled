@@ -20,6 +20,8 @@
 #ifndef RIPPLE_OVERLAY_TUNING_H_INCLUDED
 #define RIPPLE_OVERLAY_TUNING_H_INCLUDED
 
+#include <chrono>
+
 namespace ripple {
 
 namespace Tuning
@@ -50,10 +52,6 @@ enum
         reply */
     maxReplyNodes       = 8192,
 
-    /** How many milliseconds to consider high latency
-        on a peer connection */
-    peerHighLatency     =  300,
-
     /** How often we check connections (seconds) */
     checkSeconds        =   32,
 
@@ -75,6 +73,9 @@ enum
     /** How often to log send queue size */
     sendQueueLogFreq    =    64,
 };
+
+/** The threshold above which we treat a peer connection as high latency */
+std::chrono::milliseconds constexpr peerHighLatency{300};
 
 } // Tuning
 
