@@ -290,14 +290,9 @@ PeerImp::json()
     }
 
     {
-        std::chrono::milliseconds latency;
-        {
-            std::lock_guard<std::mutex> sl (recentLock_);
-            latency = latency_;
-        }
-
-        if (latency != std::chrono::milliseconds (-1))
-            ret[jss::latency] = static_cast<Json::UInt> (latency.count());
+        std::lock_guard<std::mutex> sl (recentLock_);
+        if (latency_)
+            ret[jss::latency] = static_cast<Json::UInt> (latency_->count());
     }
 
     ret[jss::uptime] = static_cast<Json::UInt>(
@@ -581,25 +576,24 @@ PeerImp::onTimer (error_code const& ec)
         return;
     }
 
-    if (lastPingSeq_ == 0)
+    if (!lastPingSeq_)
     {
-        // Make sequence unpredictable enough that a peer
-        // can't fake their latency
-        lastPingSeq_ = rand_int (65535);
+        // Make the sequence unpredictable enough to prevent guessing
+        lastPingSeq_ = rand_int<std::uint32_t>();
         lastPingTime_ = clock_type::now();
 
         protocol::TMPing message;
         message.set_type (protocol::TMPing::ptPING);
-        message.set_seq (lastPingSeq_);
+        message.set_seq (*lastPingSeq_);
 
-        send (std::make_shared<Message> (
-            message, protocol::mtPING));
+        send (std::make_shared<Message> (message, protocol::mtPING));
     }
     else
     {
         // We have an outstanding ping, raise latency
-        auto minLatency = std::chrono::duration_cast <std::chrono::milliseconds>
-            (clock_type::now() - lastPingTime_);
+        auto const minLatency =
+            std::chrono::duration_cast<std::chrono::milliseconds>
+                (clock_type::now() - lastPingTime_);
 
         std::lock_guard<std::mutex> sl(recentLock_);
 
@@ -907,30 +901,33 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMPing> const& m)
         fee_ = Resource::feeMediumBurdenPeer;
         m->set_type (protocol::TMPing::ptPONG);
         send (std::make_shared<Message> (*m, protocol::mtPING));
-
         return;
     }
 
-    if ((m->type () == protocol::TMPing::ptPONG) && m->has_seq ())
+    if (m->type () == protocol::TMPing::ptPONG)
     {
-        // We have received a pong, update our latency estimate
-        auto unknownLatency = std::chrono::milliseconds (-1);
-
-        std::lock_guard<std::mutex> sl(recentLock_);
-
-        if ((lastPingSeq_ != 0) && (m->seq () == lastPingSeq_))
+        if (m->has_seq() && m->seq() == lastPingSeq_)
         {
             no_ping_ = 0;
-            auto estimate = std::chrono::duration_cast <std::chrono::milliseconds>
-                (clock_type::now() - lastPingTime_);
-            if (latency_ == unknownLatency)
-                latency_ = estimate;
+
+            // Only reset the ping sequence if we actually received a
+            // PONG with the correct cookie. That way, any peers which
+            // respond with incorrect cookies will eventually time out.
+            lastPingSeq_.reset();
+
+            // Update latency estimate
+            std::lock_guard<std::mutex> sl(recentLock_);
+
+            auto const estimate =
+                std::chrono::duration_cast<std::chrono::milliseconds>
+                    (clock_type::now() - lastPingTime_);
+
+            // Calculate the cumulative moving average of the latency:
+            if (latency_)
+                latency_ = (*latency_ * 7 + estimate) / 8;
             else
-                latency_ = (latency_ * 7 + estimate) / 8;
+                latency_ = estimate;
         }
-        else
-            latency_ = unknownLatency;
-        lastPingSeq_ = 0;
 
         return;
     }
@@ -2708,14 +2705,14 @@ PeerImp::getScore (bool haveItem) const
    if (haveItem)
        score += spHaveItem;
 
-   std::chrono::milliseconds latency;
+   boost::optional<std::chrono::milliseconds> latency;
    {
        std::lock_guard<std::mutex> sl (recentLock_);
        latency = latency_;
    }
 
-   if (latency != std::chrono::milliseconds (-1))
-       score -= latency.count() * spLatency;
+   if (latency)
+       score -= latency->count() * spLatency;
    else
        score -= spNoLatency;
 
@@ -2726,7 +2723,7 @@ bool
 PeerImp::isHighLatency() const
 {
     std::lock_guard<std::mutex> sl (recentLock_);
-    return latency_.count() >= Tuning::peerHighLatency;
+    return latency_ >= Tuning::peerHighLatency;
 }
 
 } // ripple
