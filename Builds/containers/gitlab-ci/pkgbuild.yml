@@ -1,0 +1,439 @@
+#########################################################################
+##                                                                     ##
+##  gitlab CI defintition for rippled build containers and distro      ##
+##  packages (rpm and dpkg).                                           ##
+##                                                                     ##
+#########################################################################
+
+# NOTE: these are sensible defaults for Ripple pipelines. These
+# can be overridden by project or group variables as needed.
+variables:
+  RPM_CONTAINER_NAME: "rippled-rpm-builder"
+  DPKG_CONTAINER_NAME: "rippled-dpkg-builder"
+  ARTIFACTORY_HOST: "artifactory.ops.ripple.com"
+  ARTIFACTORY_HUB: "${ARTIFACTORY_HOST}:6555"
+  GIT_SIGN_PUBKEYS_URL: "https://gitlab.ops.ripple.com/snippets/11/raw"
+  PUBLIC_REPO_ROOT: "https://mirrors1.ripple.com/repos"
+  # also need to define this variable ONLY for the primary
+  # build/publish pipeline on the mainline repo:
+  #   IS_PRIMARY_REPO = "true"
+
+stages:
+  - build_containers
+  - build_packages
+  - smoketest
+  - verify_sig
+  - tag_images
+  - push_to_test
+  - verify_from_test
+  - push_to_prod
+  - verify_from_prod
+  - get_final_hashes
+
+.dind_template: &dind_param
+  before_script:
+    - . ./Builds/containers/gitlab-ci/docker_alpine_setup.sh
+  variables:
+    docker_driver: overlay2
+  image:
+    name: docker:latest
+  services:
+    - docker:dind
+  tags:
+    - docker-4xlarge
+
+.only_primary_template: &only_primary
+  only:
+    refs:
+      - /^(master|release|develop)$/
+    variables:
+      - $IS_PRIMARY_REPO == "true"
+
+.smoketest_local_template: &run_local_smoketest
+  tags:
+    - xlarge
+  script:
+    - . ./Builds/containers/gitlab-ci/smoketest.sh local
+
+.smoketest_repo_template: &run_repo_smoketest
+  tags:
+    - xlarge
+  script:
+    - . ./Builds/containers/gitlab-ci/smoketest.sh repo
+
+#########################################################################
+##                                                                     ##
+##  stage: build_containers                                            ##
+##                                                                     ##
+##  build containers from docker definitions. These containers are     ##
+##  subsequently used to build the rpm and deb packages.               ##
+##                                                                     ##
+#########################################################################
+
+build_centos_container:
+  stage: build_containers
+  <<: *dind_param
+  cache:
+    key: containers
+    paths:
+      - .nih_c
+  script:
+    - . ./Builds/containers/gitlab-ci/build_container.sh rpm
+
+build_ubuntu_container:
+  stage: build_containers
+  <<: *dind_param
+  cache:
+    key: containers
+    paths:
+      - .nih_c
+  script:
+    - . ./Builds/containers/gitlab-ci/build_container.sh dpkg
+
+#########################################################################
+##                                                                     ##
+##  stage: build_packages                                              ##
+##                                                                     ##
+##  build packages using containers from previous stage.               ##
+##                                                                     ##
+#########################################################################
+
+rpm_build:
+  stage: build_packages
+  dependencies:
+    - build_centos_container
+  <<: *dind_param
+  artifacts:
+    paths:
+      - build/rpm/packages/
+  cache:
+    key: rpm
+    paths:
+      - .nih_c/pkgbuild
+  script:
+    - . ./Builds/containers/gitlab-ci/build_package.sh rpm
+
+dpkg_build:
+  stage: build_packages
+  dependencies:
+    - build_ubuntu_container
+  <<: *dind_param
+  artifacts:
+    paths:
+      - build/dpkg/packages/
+  cache:
+    key: dpkg
+    paths:
+      - .nih_c/pkgbuild
+  script:
+    - . ./Builds/containers/gitlab-ci/build_package.sh dpkg
+
+#########################################################################
+##                                                                     ##
+##  stage: smoketest                                                   ##
+##                                                                     ##
+##  install unsigned packages from previous step and run unit tests.   ##
+##                                                                     ##
+#########################################################################
+
+centos_smoketest:
+  stage: smoketest
+  dependencies:
+    - rpm_build
+  image:
+    name: centos:latest
+  <<: *run_local_smoketest
+
+fedora_smoketest:
+  stage: smoketest
+  dependencies:
+    - rpm_build
+  image:
+    name: fedora:latest
+  <<: *run_local_smoketest
+
+ubuntu_18_smoketest:
+  stage: smoketest
+  dependencies:
+    - dpkg_build
+  image:
+    name: ubuntu:18.04
+  <<: *run_local_smoketest
+
+ubuntu_16_smoketest:
+  stage: smoketest
+  dependencies:
+    - dpkg_build
+  image:
+    name: ubuntu:16.04
+  <<: *run_local_smoketest
+
+debian_smoketest:
+  stage: smoketest
+  dependencies:
+    - dpkg_build
+  image:
+    name: debian:stable
+  <<: *run_local_smoketest
+
+#########################################################################
+##                                                                     ##
+##  stage: verify_sig                                                  ##
+##                                                                     ##
+##  use git/gpg to verify that HEAD is signed by an approved           ##
+##  committer. The whitelist of pubkeys is manually mantained          ##
+##  and fetched from GIT_SIGN_PUBKEYS_URL (currently a snippet         ##
+##  link).                                                             ##
+##  ONLY RUNS FOR PRIMARY BRANCHES/REPO                                ##
+##                                                                     ##
+#########################################################################
+
+verify_head_signed:
+  stage: verify_sig
+  image:
+    name: ubuntu:latest
+  <<: *only_primary
+  script:
+    - . ./Builds/containers/gitlab-ci/verify_head_commit.sh
+
+#########################################################################
+##                                                                     ##
+##  stage: tag_images                                                  ##
+##                                                                     ##
+##  apply rippled version tag to containers from previous stage.       ##
+##  ONLY RUNS FOR PRIMARY BRANCHES/REPO                                ##
+##                                                                     ##
+#########################################################################
+
+tag_bld_images:
+  stage: tag_images
+  variables:
+    docker_driver: overlay2
+  image:
+    name: docker:latest
+  services:
+    - docker:dind
+  tags:
+    - docker-large
+  dependencies:
+    - rpm_build
+    - dpkg_build
+  <<: *only_primary
+  script:
+    - . ./Builds/containers/gitlab-ci/tag_docker_image.sh
+
+#########################################################################
+##                                                                     ##
+##  stage: push_to_test                                                ##
+##                                                                     ##
+##  push packages to artifactory repositories (test)                   ##
+##  ONLY RUNS FOR PRIMARY BRANCHES/REPO                                ##
+##                                                                     ##
+#########################################################################
+
+push_test:
+  stage: push_to_test
+  variables:
+    DEB_REPO: "rippled-deb-test-mirror"
+    RPM_REPO: "rippled-rpm-test-mirror"
+  image:
+    name: alpine:latest
+  artifacts:
+    paths:
+      - files.info
+  dependencies:
+    - rpm_build
+    - dpkg_build
+  <<: *only_primary
+  script:
+    - . ./Builds/containers/gitlab-ci/push_to_artifactory.sh "PUT" "."
+
+#########################################################################
+##                                                                     ##
+##  stage: verify_from_test                                            ##
+##                                                                     ##
+##  install/test packages from test repos.                             ##
+##  ONLY RUNS FOR PRIMARY BRANCHES/REPO                                ##
+##                                                                     ##
+#########################################################################
+
+centos_verify_repo_test:
+  stage: verify_from_test
+  variables:
+    RPM_REPO: "rippled-rpm-test-mirror"
+  image:
+    name: centos:latest
+  dependencies:
+    - rpm_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+fedora_verify_repo_test:
+  stage: verify_from_test
+  variables:
+    RPM_REPO: "rippled-rpm-test-mirror"
+  image:
+    name: fedora:latest
+  dependencies:
+    - rpm_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+ubuntu_18_verify_repo_test:
+  stage: verify_from_test
+  variables:
+    DISTRO: "stretch"
+    DEB_REPO: "rippled-deb-test-mirror"
+  image:
+    name: ubuntu:18.04
+  dependencies:
+    - dpkg_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+ubuntu_16_verify_repo_test:
+  stage: verify_from_test
+  variables:
+    DISTRO: "xenial"
+    DEB_REPO: "rippled-deb-test-mirror"
+  image:
+    name: ubuntu:16.04
+  dependencies:
+    - dpkg_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+debian_verify_repo_test:
+  stage: verify_from_test
+  variables:
+    DISTRO: "bionic"
+    DEB_REPO: "rippled-deb-test-mirror"
+  image:
+    name: debian:stable
+  dependencies:
+    - dpkg_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+#########################################################################
+##                                                                     ##
+##  stage: push_to_prod                                                ##
+##                                                                     ##
+##  push packages to artifactory repositories (prod)                   ##
+##  ONLY RUNS FOR PRIMARY BRANCHES/REPO                                ##
+##                                                                     ##
+#########################################################################
+
+push_prod:
+  variables:
+    DEB_REPO: "rippled-deb"
+    RPM_REPO: "rippled-rpm"
+  image:
+    name: alpine:latest
+  stage: push_to_prod
+  artifacts:
+    paths:
+      - files.info
+  dependencies:
+    - rpm_build
+    - dpkg_build
+  <<: *only_primary
+  script:
+    - . ./Builds/containers/gitlab-ci/push_to_artifactory.sh "PUT" "."
+# if we want to make the push to prod
+# an explicit/manual step, uncomment this:
+#  when: manual
+
+#########################################################################
+##                                                                     ##
+##  stage: verify_from_prod                                            ##
+##                                                                     ##
+##  install/test packages from prod repos.                             ##
+##  ONLY RUNS FOR PRIMARY BRANCHES/REPO                                ##
+##                                                                     ##
+#########################################################################
+
+centos_verify_repo_prod:
+  stage: verify_from_prod
+  variables:
+    RPM_REPO: "rippled-rpm"
+  image:
+    name: centos:latest
+  dependencies:
+    - rpm_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+fedora_verify_repo_prod:
+  stage: verify_from_prod
+  variables:
+    RPM_REPO: "rippled-rpm"
+  image:
+    name: fedora:latest
+  dependencies:
+    - rpm_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+ubuntu_18_verify_repo_prod:
+  stage: verify_from_prod
+  variables:
+    DISTRO: "stretch"
+    DEB_REPO: "rippled-deb"
+  image:
+    name: ubuntu:18.04
+  dependencies:
+    - dpkg_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+ubuntu_16_verify_repo_prod:
+  stage: verify_from_prod
+  variables:
+    DISTRO: "xenial"
+    DEB_REPO: "rippled-deb"
+  image:
+    name: ubuntu:16.04
+  dependencies:
+    - dpkg_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+debian_verify_repo_prod:
+  stage: verify_from_prod
+  variables:
+    DISTRO: "bionic"
+    DEB_REPO: "rippled-deb"
+  image:
+    name: debian:stable
+  dependencies:
+    - dpkg_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+#########################################################################
+##                                                                     ##
+##  stage: get_final_hashes                                            ##
+##                                                                     ##
+##  fetch final hashes from artifactory.                               ##
+##  ONLY RUNS FOR PRIMARY BRANCHES/REPO                                ##
+##                                                                     ##
+#########################################################################
+
+get_prod_hashes:
+  variables:
+    DEB_REPO: "rippled-deb"
+    RPM_REPO: "rippled-rpm"
+  image:
+    name: alpine:latest
+  stage: get_final_hashes
+  artifacts:
+    paths:
+      - files.info
+  dependencies:
+    - rpm_build
+    - dpkg_build
+  <<: *only_primary
+  script:
+    - . ./Builds/containers/gitlab-ci/push_to_artifactory.sh "GET" ".checksums"
+

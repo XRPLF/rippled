@@ -108,10 +108,15 @@ macro(group_sources curdir)
   group_sources_in(${PROJECT_SOURCE_DIR} ${curdir})
 endmacro()
 
+macro (exclude_from_default target_)
+  set_target_properties (${target_} PROPERTIES EXCLUDE_FROM_ALL ON)
+  set_target_properties (${target_} PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD ON)
+endmacro ()
+
 macro (exclude_if_included target_)
-  if (NOT ${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
-    set_target_properties (${target_} PROPERTIES EXCLUDE_FROM_ALL ON)
-    set_target_properties (${target_} PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD ON)
+  get_directory_property(has_parent PARENT_DIRECTORY)
+  if (has_parent)
+    exclude_from_default (${target_})
   endif ()
 endmacro ()
 
@@ -246,3 +251,30 @@ endif()
   set(${cmd_var} "${command}" PARENT_SCOPE)
 endfunction()
 
+find_package(Git)
+
+# function that calls git log to get current hash
+function (git_hash hash_val)
+  # note: optional second extra string argument not in signature
+  if (NOT GIT_FOUND)
+    return ()
+  endif ()
+  set (_hash "unknown")
+  set (_format "%H")
+  if (ARGC GREATER_EQUAL 2)
+    string (TOLOWER ${ARGV1} _short)
+    if (_short STREQUAL "short")
+      set (_format "%h")
+    endif ()
+  endif ()
+  execute_process (COMMAND ${GIT_EXECUTABLE} "log" "--pretty=${_format}" "-n1"
+                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                   RESULT_VARIABLE _git_exit_code
+                   OUTPUT_VARIABLE _temp_hash
+                   OUTPUT_STRIP_TRAILING_WHITESPACE
+                   ERROR_QUIET)
+  if (_git_exit_code EQUAL 0)
+    set (_hash ${_temp_hash})
+  endif ()
+  set (${hash_val} "${_hash}" PARENT_SCOPE)
+endfunction ()

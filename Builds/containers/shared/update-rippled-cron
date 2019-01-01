@@ -1,0 +1,10 @@
+# For automatic updates, symlink this file to /etc/cron.d/
+# Do not remove the newline at the end of this cron script
+
+# bash required for use of RANDOM below.
+SHELL=/bin/bash
+PATH=/sbin;/bin;/usr/sbin;/usr/bin
+
+# invoke check/update script with random delay up to 59 mins
+0 * * * * root sleep $((RANDOM*3540/32768)) && /opt/ripple/bin/update-rippled.sh
+

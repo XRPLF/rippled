@@ -1,0 +1,45 @@
+#!/usr/bin/make -f
+export DH_VERBOSE = 1
+export DH_OPTIONS = -v
+# debuild sets some warnings that don't work well
+# for our curent build..so try to remove those flags here:
+export CFLAGS:=$(subst -Wformat,,$(CFLAGS))
+export CFLAGS:=$(subst -Werror=format-security,,$(CFLAGS))
+export CXXFLAGS:=$(subst -Wformat,,$(CXXFLAGS))
+export CXXFLAGS:=$(subst -Werror=format-security,,$(CXXFLAGS))
+
+%:
+	dh $@ --with systemd
+
+override_dh_auto_configure:
+	env
+	rm -rf bld
+	mkdir -p bld
+	cd bld && \
+	cmake .. -G Ninja \
+		-DCMAKE_INSTALL_PREFIX=/opt/ripple \
+		-DCMAKE_BUILD_TYPE=Release \
+		-Dstatic=true \
+		-Dlocal_protobuf=ON \
+		-DCMAKE_VERBOSE_MAKEFILE=ON
+
+override_dh_auto_build:
+	cd bld && \
+	cmake --build . --parallel -- -v
+
+override_dh_auto_install:
+	cd bld && DESTDIR=../debian/tmp cmake --build . --target install -- -v
+	rm -rf bld_vl
+	mkdir -p bld_vl
+	cd bld_vl && \
+	cmake ../../validator-keys-tool -G Ninja \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_PREFIX_PATH=../debian/tmp/opt/ripple/ \
+		-Dstatic=true \
+		-DCMAKE_VERBOSE_MAKEFILE=ON && \
+	cmake --build . --parallel -- -v
+	install -D bld_vl/validator-keys debian/tmp/opt/ripple/bin/validator-keys
+	install -D Builds/containers/shared/update-rippled.sh debian/tmp/opt/ripple/bin/update-rippled.sh
+	install -D Builds/containers/shared/update-rippled-cron debian/tmp/opt/ripple/etc/update-rippled-cron
+	rm -rf bld
+	rm -rf bld_vl

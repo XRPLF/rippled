@@ -1,0 +1,3 @@
+opt/ripple/include
+opt/ripple/lib/*.a
+opt/ripple/lib/cmake/ripple

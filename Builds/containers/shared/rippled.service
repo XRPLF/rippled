@@ -1,0 +1,15 @@
+[Unit]
+Description=Ripple Daemon
+
+[Service]
+Type=simple
+ExecStart=/opt/ripple/bin/rippled --net --silent --conf /etc/opt/ripple/rippled.cfg
+# Default KillSignal can be used if/when rippled handles SIGTERM
+KillSignal=SIGINT
+Restart=no
+User=rippled
+Group=rippled
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
