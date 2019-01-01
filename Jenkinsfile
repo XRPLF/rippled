@@ -192,7 +192,7 @@ try {
                     echo "BUILD_TYPE: ${config}"
                     echo "USE_CC: ${ucc}"
                     env_vars.addAll([
-                        "NIH_CACHE_ROOT=${cdir}"])
+                        "NIH_CACHE_ROOT=${cdir}/.nih_c"])
                     if (compiler == 'msvc') {
                         env_vars.addAll([
                             'BOOST_ROOT=c:\\lib\\boost_1_67',

@@ -46,10 +46,11 @@ if (NOT is_multiconfig)
   endif ()
 endif ()
 
-if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
-  set (is_root_project ON)
-else ()
+get_directory_property(has_parent PARENT_DIRECTORY)
+if (has_parent)
   set (is_root_project OFF)
+else ()
+  set (is_root_project ON)
 endif ()
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang") # both Clang and AppleClang
@@ -175,6 +176,16 @@ if (san)
     message (FATAL_ERROR "${san} sanitizer does not seem to be supported by your compiler")
   endif ()
 endif ()
+set (container_label "" CACHE STRING "tag to use for package building containers")
+option (packages_only
+  "ONLY generate package building targets. This is special use-case and almost \
+   certainly not what you want. Use with caution as you won't be able to build \
+   any compiled targets locally." OFF)
+option (have_package_container
+  "Sometimes you already have the tagged container you want to use for package \
+   building and you don't want docker to rebuild it. This flag will detach the \
+   dependency of the package build from the container build. It's an advanced \
+   use case and most likely you should not be touching this flag." OFF)
 
 # the remaining options are obscure and rarely used
 option (beast_no_unit_test_inline
@@ -205,6 +216,189 @@ if (coverage)
 endif ()
 
 #[===================================================================[
+   NIH prefix path..this is where we will download
+   and build any ExternalProjects, and they will hopefully
+   survive across build directory deletion (manual cleans)
+#]===================================================================]
+
+string (REGEX REPLACE "[ \\/%]+" "_" gen_for_path ${CMAKE_GENERATOR})
+string (TOLOWER ${gen_for_path} gen_for_path)
+# HACK: trying to shorten paths for windows CI (which hits 260 MAXPATH easily)
+# @see:  https://issues.jenkins-ci.org/browse/JENKINS-38706?focusedCommentId=339847
+string (REPLACE "visual_studio" "vs" gen_for_path ${gen_for_path})
+if (NOT DEFINED NIH_CACHE_ROOT)
+  if (DEFINED ENV{NIH_CACHE_ROOT})
+    set (NIH_CACHE_ROOT $ENV{NIH_CACHE_ROOT})
+  else ()
+    set (NIH_CACHE_ROOT "${CMAKE_SOURCE_DIR}/.nih_c")
+  endif ()
+endif ()
+set (nih_cache_path
+  "${NIH_CACHE_ROOT}/${gen_for_path}/${CMAKE_CXX_COMPILER_ID}_${CMAKE_CXX_COMPILER_VERSION}")
+if (NOT is_multiconfig)
+  set (nih_cache_path "${nih_cache_path}/${CMAKE_BUILD_TYPE}")
+endif ()
+file(TO_CMAKE_PATH "${nih_cache_path}" nih_cache_path)
+message (STATUS "NIH-EP cache path: ${nih_cache_path}")
+## two convenience variables:
+set (ep_lib_prefix ${CMAKE_STATIC_LIBRARY_PREFIX})
+set (ep_lib_suffix ${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+# this is a setting for FetchContent and needs to be
+# a cache variable
+# https://cmake.org/cmake/help/latest/module/FetchContent.html#populating-the-content
+set (FETCHCONTENT_BASE_DIR ${nih_cache_path} CACHE STRING "" FORCE)
+
+#[===================================================================[
+   package/container targets - (optional)
+#]===================================================================]
+
+if (is_root_project)
+  if (NOT DOCKER)
+    find_program (DOCKER docker)
+  endif ()
+
+  if (DOCKER)
+    # if no container label is provided, use current git hash
+    git_hash (commit_hash)
+    if (NOT container_label)
+      set (container_label ${commit_hash})
+    endif ()
+    message (STATUS "using [${container_label}] as build container tag...")
+
+    file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/packages)
+    file (MAKE_DIRECTORY ${NIH_CACHE_ROOT}/pkgbuild)
+    if (UNIX)
+      execute_process (COMMAND id -u
+        OUTPUT_VARIABLE DOCKER_USER_ID
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+      message (STATUS "docker local user id: ${DOCKER_USER_ID}")
+      execute_process (COMMAND id -g
+        OUTPUT_VARIABLE DOCKER_GROUP_ID
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+      message (STATUS "docker local group id: ${DOCKER_GROUP_ID}")
+    endif ()
+    if (DOCKER_USER_ID AND DOCKER_GROUP_ID)
+      set(map_user TRUE)
+    endif ()
+    #[===================================================================[
+        rpm
+    #]===================================================================]
+    add_custom_target (rpm_container
+      docker build
+        --pull
+        --build-arg GIT_COMMIT=${commit_hash}
+        -t rippled-rpm-builder:${container_label}
+        $<$<BOOL:${rpm_cache_from}>:--cache-from=${rpm_cache_from}>
+        -f centos-builder/Dockerfile .
+      WORKING_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR}/Builds/containers
+      VERBATIM
+      USES_TERMINAL
+      COMMAND_EXPAND_LISTS
+      SOURCES
+        Builds/containers/centos-builder/Dockerfile
+        Builds/containers/centos-builder/centos_setup.sh
+        Builds/containers/centos-builder/extras.sh
+        Builds/containers/shared/build_deps.sh
+        Builds/containers/shared/rippled.service
+        Builds/containers/shared/update_sources.sh
+        Builds/containers/shared/update-rippled.sh
+        Builds/containers/packaging/rpm/rippled.spec
+        Builds/containers/packaging/rpm/build_rpm.sh
+    )
+    exclude_from_default (rpm_container)
+    add_custom_target (rpm
+      docker run
+        -e NIH_CACHE_ROOT=/opt/rippled_bld/pkg/.nih_c
+        -v ${NIH_CACHE_ROOT}/pkgbuild:/opt/rippled_bld/pkg/.nih_c
+        -v ${CMAKE_SOURCE_DIR}:/opt/rippled_bld/pkg/rippled
+        -v ${CMAKE_CURRENT_BINARY_DIR}/packages:/opt/rippled_bld/pkg/out
+        "$<$<BOOL:${map_user}>:--volume=/etc/passwd:/etc/passwd;--volume=/etc/group:/etc/group;--user=${DOCKER_USER_ID}:${DOCKER_GROUP_ID}>"
+        -t rippled-rpm-builder:${container_label}
+      VERBATIM
+      USES_TERMINAL
+      COMMAND_EXPAND_LISTS
+      SOURCES
+        Builds/containers/packaging/rpm/rippled.spec
+    )
+    exclude_from_default (rpm)
+    if (NOT have_package_container)
+      add_dependencies(rpm rpm_container)
+    endif ()
+    #[===================================================================[
+        dpkg
+    #]===================================================================]
+    # currently use ubuntu 16.04 as a base b/c it has one of
+    # the lower versions of libc among ubuntu and debian releases.
+    # we could change this in the future and build with some other deb
+    # based system.
+    add_custom_target (dpkg_container
+      docker build
+        --pull
+        --build-arg DIST_TAG=16.04
+        --build-arg GIT_COMMIT=${commit_hash}
+        -t rippled-dpkg-builder:${container_label}
+        $<$<BOOL:${dpkg_cache_from}>:--cache-from=${dpkg_cache_from}>
+        -f ubuntu-builder/Dockerfile .
+      WORKING_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR}/Builds/containers
+      VERBATIM
+      USES_TERMINAL
+      COMMAND_EXPAND_LISTS
+      SOURCES
+        Builds/containers/ubuntu-builder/Dockerfile
+        Builds/containers/ubuntu-builder/ubuntu_setup.sh
+        Builds/containers/shared/build_deps.sh
+        Builds/containers/shared/rippled.service
+        Builds/containers/shared/update_sources.sh
+        Builds/containers/shared/update-rippled.sh
+        Builds/containers/packaging/dpkg/build_dpkg.sh
+        Builds/containers/packaging/dpkg/debian/README.Debian
+        Builds/containers/packaging/dpkg/debian/conffiles
+        Builds/containers/packaging/dpkg/debian/control
+        Builds/containers/packaging/dpkg/debian/copyright
+        Builds/containers/packaging/dpkg/debian/dirs
+        Builds/containers/packaging/dpkg/debian/docs
+        Builds/containers/packaging/dpkg/debian/rippled-dev.install
+        Builds/containers/packaging/dpkg/debian/rippled.install
+        Builds/containers/packaging/dpkg/debian/rippled.links
+        Builds/containers/packaging/dpkg/debian/rippled.postinst
+        Builds/containers/packaging/dpkg/debian/rippled.postrm
+        Builds/containers/packaging/dpkg/debian/rippled.preinst
+        Builds/containers/packaging/dpkg/debian/rippled.prerm
+        Builds/containers/packaging/dpkg/debian/rules
+    )
+    exclude_from_default (dpkg_container)
+    add_custom_target (dpkg
+      docker run
+        -e NIH_CACHE_ROOT=/opt/rippled_bld/pkg/.nih_c
+        -v ${NIH_CACHE_ROOT}/pkgbuild:/opt/rippled_bld/pkg/.nih_c
+        -v ${CMAKE_SOURCE_DIR}:/opt/rippled_bld/pkg/rippled
+        -v ${CMAKE_CURRENT_BINARY_DIR}/packages:/opt/rippled_bld/pkg/out
+        "$<$<BOOL:${map_user}>:--volume=/etc/passwd:/etc/passwd;--volume=/etc/group:/etc/group;--user=${DOCKER_USER_ID}:${DOCKER_GROUP_ID}>"
+        -t rippled-dpkg-builder:${container_label}
+      VERBATIM
+      USES_TERMINAL
+      COMMAND_EXPAND_LISTS
+      SOURCES
+        Builds/containers/packaging/dpkg/debian/control
+    )
+    exclude_from_default (dpkg)
+    if (NOT have_package_container)
+      add_dependencies(dpkg dpkg_container)
+    endif ()
+  else ()
+    message (STATUS "docker NOT found -- won't be able to build containers for packaging")
+  endif ()
+endif ()
+
+if (packages_only)
+  if (NOT TARGET rpm)
+    message (FATAL_ERROR "packages_only requested, but targets were not created - is docker installed?")
+  endif()
+  return ()
+endif ()
+
+#[===================================================================[
    setup project-wide compiler settings
 #]===================================================================]
 
@@ -222,7 +416,7 @@ target_compile_features (common INTERFACE cxx_std_14)
 target_compile_definitions (common
   INTERFACE
     $<$<CONFIG:Debug>:DEBUG _DEBUG>
-    $<$<AND:$<BOOL:profile>,$<NOT:$<BOOL:assert>>>:NDEBUG>)
+    $<$<AND:$<BOOL:${profile}>,$<NOT:$<BOOL:${assert}>>>:NDEBUG>)
     # ^^^^ NOTE: CMAKE release builds already have NDEBUG
     # defined, so no need to add it explicitly except for
     # this special case of (profile ON) and (assert OFF)
@@ -305,7 +499,7 @@ else ()
       >
       $<$<NOT:$<CONFIG:Debug>>:-fno-strict-aliasing>
       # tweak gcc optimization for debug
-      $<$<AND:$<BOOL:is_gcc>,$<CONFIG:Debug>>:-O0>
+      $<$<AND:$<BOOL:${is_gcc}>,$<CONFIG:Debug>>:-O0>
       # Add debug symbols to release config
       $<$<CONFIG:Release>:-g>)
   target_link_libraries (common
@@ -465,40 +659,6 @@ endif ()
 add_library (ripple_libs INTERFACE)
 add_library (Ripple::libs ALIAS ripple_libs)
 target_link_libraries (ripple_libs INTERFACE Ripple::syslibs)
-
-#[===================================================================[
-   NIH prefix path..this is where we will download
-   and build any ExternalProjects, and they will hopefully
-   survive across build directory deletion (manual cleans)
-#]===================================================================]
-
-string (REGEX REPLACE "[ \\/%]+" "_" gen_for_path ${CMAKE_GENERATOR})
-string (TOLOWER ${gen_for_path} gen_for_path)
-# HACK: trying to shorten paths for windows CI (which hits 260 MAXPATH easily)
-# @see:  https://issues.jenkins-ci.org/browse/JENKINS-38706?focusedCommentId=339847
-string (REPLACE "visual_studio" "vs" gen_for_path ${gen_for_path})
-if (NOT DEFINED NIH_CACHE_ROOT)
-  if (DEFINED ENV{NIH_CACHE_ROOT})
-    set (NIH_CACHE_ROOT $ENV{NIH_CACHE_ROOT})
-  else ()
-    set (NIH_CACHE_ROOT ${CMAKE_SOURCE_DIR})
-  endif ()
-endif ()
-set (nih_cache_path
-  "${NIH_CACHE_ROOT}/.nih_c/${gen_for_path}/${CMAKE_CXX_COMPILER_ID}_${CMAKE_CXX_COMPILER_VERSION}")
-if (NOT is_multiconfig)
-  set (nih_cache_path "${nih_cache_path}/${CMAKE_BUILD_TYPE}")
-endif ()
-file(TO_CMAKE_PATH "${nih_cache_path}" nih_cache_path)
-message (STATUS "NIH-EP cache path: ${nih_cache_path}")
-## two convenience variables:
-set (ep_lib_prefix ${CMAKE_STATIC_LIBRARY_PREFIX})
-set (ep_lib_suffix ${CMAKE_STATIC_LIBRARY_SUFFIX})
-
-# this is a setting for FetchContent and needs to be
-# a cache variable
-# https://cmake.org/cmake/help/latest/module/FetchContent.html#populating-the-content
-set (FETCHCONTENT_BASE_DIR ${nih_cache_path} CACHE STRING "" FORCE)
 
 #[===================================================================[
    NIH dep: boost
@@ -1231,43 +1391,45 @@ exclude_if_included (rocksdb_lib)
    proper targets and export/install
 #]===================================================================]
 
-add_library (nudb INTERFACE)
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
-  FetchContent_Declare(
-    nudb_src
-    GIT_REPOSITORY https://github.com/vinniefalco/NuDB.git
-    GIT_TAG        1.0.0
-  )
-  FetchContent_GetProperties(nudb_src)
-  if(NOT nudb_src_POPULATED)
-    message (STATUS "Pausing to download NuDB...")
-    FetchContent_Populate(nudb_src)
-  endif()
-else ()
-  ExternalProject_Add (nudb_src
-    PREFIX ${nih_cache_path}
-    GIT_REPOSITORY https://github.com/vinniefalco/NuDB.git
-    GIT_TAG 1.0.0
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
-    TEST_COMMAND ""
-    INSTALL_COMMAND ""
-  )
-  ExternalProject_Get_Property (nudb_src SOURCE_DIR)
-  set (nudb_src_SOURCE_DIR "${SOURCE_DIR}")
-  file (MAKE_DIRECTORY ${nudb_src_SOURCE_DIR}/include)
-  add_dependencies (nudb nudb_src)
-endif ()
+if (is_root_project) # NuDB not needed in the case of xrpl_core inclusion build
+  add_library (nudb INTERFACE)
+  if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
+    FetchContent_Declare(
+      nudb_src
+      GIT_REPOSITORY https://github.com/vinniefalco/NuDB.git
+      GIT_TAG        1.0.0
+    )
+    FetchContent_GetProperties(nudb_src)
+    if(NOT nudb_src_POPULATED)
+      message (STATUS "Pausing to download NuDB...")
+      FetchContent_Populate(nudb_src)
+    endif()
+  else ()
+    ExternalProject_Add (nudb_src
+      PREFIX ${nih_cache_path}
+      GIT_REPOSITORY https://github.com/vinniefalco/NuDB.git
+      GIT_TAG 1.0.0
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND ""
+      TEST_COMMAND ""
+      INSTALL_COMMAND ""
+    )
+    ExternalProject_Get_Property (nudb_src SOURCE_DIR)
+    set (nudb_src_SOURCE_DIR "${SOURCE_DIR}")
+    file (MAKE_DIRECTORY ${nudb_src_SOURCE_DIR}/include)
+    add_dependencies (nudb nudb_src)
+  endif ()
 
-file(TO_CMAKE_PATH "${nudb_src_SOURCE_DIR}" nudb_src_SOURCE_DIR)
+  file(TO_CMAKE_PATH "${nudb_src_SOURCE_DIR}" nudb_src_SOURCE_DIR)
 # specify as system includes so as to avoid warnings
-target_include_directories (nudb SYSTEM INTERFACE ${nudb_src_SOURCE_DIR}/include)
-target_link_libraries (nudb
-  INTERFACE
-    Boost::thread
-    Boost::system)
-add_library (NIH::nudb ALIAS nudb)
-target_link_libraries (ripple_libs INTERFACE NIH::nudb)
+  target_include_directories (nudb SYSTEM INTERFACE ${nudb_src_SOURCE_DIR}/include)
+  target_link_libraries (nudb
+    INTERFACE
+      Boost::thread
+      Boost::system)
+  add_library (NIH::nudb ALIAS nudb)
+  target_link_libraries (ripple_libs INTERFACE NIH::nudb)
+endif ()
 
 #[===================================================================[
    import protobuf (lib and compiler) and create a lib

@@ -93,3 +93,4 @@ Builds/VisualStudio2015/*.sdf
 *.pdb
 .vs/
 CMakeSettings.json
+compile_commands.json
