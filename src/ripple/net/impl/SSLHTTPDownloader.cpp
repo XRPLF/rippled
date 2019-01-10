@@ -132,31 +132,21 @@ SSLHTTPDownloader::do_session(
     using namespace boost::beast;
 
     boost::system::error_code ec;
-    auto fail = [&](std::string errMsg)
-    {
-        if (ec != boost::asio::error::operation_aborted)
-        {
-            JLOG(j_.error()) <<
-                errMsg << ": " << ec.message();
-        }
-        try
-        {
-            remove(dstPath);
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(j_.error()) <<
-                "exception: " << e.what();
-        }
-        complete(std::move(dstPath));
-    };
-
     ip::tcp::resolver resolver {strand_.get_io_context()};
     auto const results = resolver.async_resolve(host, port, yield[ec]);
     if (ec)
-        return fail("async_resolve");
+        return fail(dstPath, complete, ec, "async_resolve");
 
-    stream_.emplace(strand_.get_io_service(), ctx_);
+    try
+    {
+        stream_.emplace(strand_.get_io_service(), ctx_);
+    }
+    catch (std::exception const& e)
+    {
+        return fail(dstPath, complete, ec,
+            std::string("exception: ") + e.what());
+    }
+
     if (ssl_verify_)
     {
         // If we intend to verify the SSL connection, we need to set the
@@ -165,36 +155,36 @@ SSLHTTPDownloader::do_session(
         {
             ec.assign(static_cast<int>(
                 ::ERR_get_error()), boost::asio::error::get_ssl_category());
-            return fail("SSL_set_tlsext_host_name");
+            return fail(dstPath, complete, ec, "SSL_set_tlsext_host_name");
         }
     }
     else
     {
         stream_->set_verify_mode(boost::asio::ssl::verify_none, ec);
         if (ec)
-            return fail("set_verify_mode");
+            return fail(dstPath, complete, ec, "set_verify_mode");
     }
 
     boost::asio::async_connect(
         stream_->next_layer(), results.begin(), results.end(), yield[ec]);
     if (ec)
-        return fail("async_connect");
+        return fail(dstPath, complete, ec, "async_connect");
 
     if (ssl_verify_)
     {
         stream_->set_verify_mode(boost::asio::ssl::verify_peer, ec);
         if (ec)
-            return fail("set_verify_mode");
+            return fail(dstPath, complete, ec, "set_verify_mode");
 
         stream_->set_verify_callback(
             boost::asio::ssl::rfc2818_verification(host.c_str()), ec);
         if (ec)
-            return fail("set_verify_callback");
+            return fail(dstPath, complete, ec, "set_verify_callback");
     }
 
     stream_->async_handshake(ssl::stream_base::client, yield[ec]);
     if (ec)
-        return fail("async_handshake");
+        return fail(dstPath, complete, ec, "async_handshake");
 
     // Set up an HTTP HEAD request message to find the file size
     http::request<http::empty_body> req {http::verb::head, target, version};
@@ -203,7 +193,7 @@ SSLHTTPDownloader::do_session(
 
     http::async_write(*stream_, req, yield[ec]);
     if(ec)
-        return fail("async_write");
+        return fail(dstPath, complete, ec, "async_write");
 
     {
         // Check if available storage for file size
@@ -211,19 +201,21 @@ SSLHTTPDownloader::do_session(
         p.skip(true);
         http::async_read(*stream_, read_buf_, p, yield[ec]);
         if(ec)
-            return fail("async_read");
+            return fail(dstPath, complete, ec, "async_read");
         if (auto len = p.content_length())
         {
             try
             {
                 if (*len > space(dstPath.parent_path()).available)
-                    return fail("Insufficient disk space for download");
+                {
+                    return fail(dstPath, complete, ec,
+                        "Insufficient disk space for download");
+                }
             }
             catch (std::exception const& e)
             {
-                JLOG(j_.error()) <<
-                    "exception: " << e.what();
-                return fail({});
+                return fail(dstPath, complete, ec,
+                    std::string("exception: ") + e.what());
             }
         }
     }
@@ -232,7 +224,7 @@ SSLHTTPDownloader::do_session(
     req.method(http::verb::get);
     http::async_write(*stream_, req, yield[ec]);
     if(ec)
-        return fail("async_write");
+        return fail(dstPath, complete, ec, "async_write");
 
     // Download the file
     http::response_parser<http::file_body> p;
@@ -244,14 +236,14 @@ SSLHTTPDownloader::do_session(
     if (ec)
     {
         p.get().body().close();
-        return fail("open");
+        return fail(dstPath, complete, ec, "open");
     }
 
     http::async_read(*stream_, read_buf_, p, yield[ec]);
     if (ec)
     {
         p.get().body().close();
-        return fail("async_read");
+        return fail(dstPath, complete, ec, "async_read");
     }
     p.get().body().close();
 
@@ -266,6 +258,7 @@ SSLHTTPDownloader::do_session(
         JLOG(j_.trace()) <<
             "async_shutdown: " << ec.message();
     }
+    // The socket cannot be reused
     stream_ = boost::none;
 
     JLOG(j_.trace()) <<
@@ -274,5 +267,37 @@ SSLHTTPDownloader::do_session(
     // Notify the completion handler
     complete(std::move(dstPath));
 }
+
+void
+SSLHTTPDownloader::fail(
+    boost::filesystem::path dstPath,
+    std::function<void(boost::filesystem::path)> const& complete,
+    boost::system::error_code const& ec,
+    std::string const& errMsg)
+{
+    if (!ec)
+    {
+        JLOG(j_.error()) <<
+            errMsg;
+    }
+    else if (ec != boost::asio::error::operation_aborted)
+    {
+        JLOG(j_.error()) <<
+            errMsg << ": " << ec.message();
+    }
+
+    try
+    {
+        remove(dstPath);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j_.error()) <<
+            "exception: " << e.what();
+    }
+    complete(std::move(dstPath));
+}
+
+
 
 }// ripple

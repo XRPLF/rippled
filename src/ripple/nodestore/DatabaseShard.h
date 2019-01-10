@@ -99,11 +99,11 @@ public:
 
     /** Get shard indexes being imported
 
-        @return The number of shards prepared for import
+        @return a string representing the shards prepared for import
     */
     virtual
-    std::uint32_t
-    getNumPreShard() = 0;
+    std::string
+    getPreShards() = 0;
 
     /** Import a shard into the shard database
 

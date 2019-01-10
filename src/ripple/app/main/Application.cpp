@@ -225,7 +225,7 @@ public:
     reset () override
     {
         {
-            std::lock_guard<std::mutex> l(maxSeqLock);
+            std::lock_guard<std::mutex> lock(maxSeqLock);
             maxSeq = 0;
         }
         fullbelow_.reset();

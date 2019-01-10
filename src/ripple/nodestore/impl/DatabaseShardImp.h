@@ -51,8 +51,8 @@ public:
     void
     removePreShard(std::uint32_t shardIndex) override;
 
-    std::uint32_t
-    getNumPreShard() override;
+    std::string
+    getPreShards() override;
 
     bool
     importShard(std::uint32_t shardIndex,

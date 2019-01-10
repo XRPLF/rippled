@@ -57,9 +57,15 @@ doDownloadShard(RPC::Context& context)
     if (!shardStore)
         return rpcError(rpcNOT_ENABLED);
 
-    // Deny request if already downloading
-    if (shardStore->getNumPreShard())
-        return rpcError(rpcTOO_BUSY);
+    // Return status update if already downloading
+    auto preShards {shardStore->getPreShards()};
+    if (!preShards.empty())
+    {
+        std::string s {"Download in progress. Shard"};
+        if (!std::all_of(preShards.begin(), preShards.end(), ::isdigit))
+            s += "s";
+        return RPC::makeObjectValue(s + " " + preShards);
+    }
 
     if (!context.params.isMember(jss::shards))
         return RPC::missing_field_error(jss::shards);
@@ -132,8 +138,6 @@ doDownloadShard(RPC::Context& context)
     // Begin downloading. The handler keeps itself alive while downloading.
     auto handler {
         std::make_shared<RPC::ShardArchiveHandler>(context.app, validate)};
-    if (!handler->init())
-        return rpcError(rpcINTERNAL);
     for (auto& ar : archives)
     {
         if (!handler->add(ar.first, std::move(ar.second)))
@@ -143,9 +147,14 @@ doDownloadShard(RPC::Context& context)
                 std::to_string(ar.first) + " exists or being acquired");
         }
     }
-    handler->next();
+    if (!handler->start())
+        return rpcError(rpcINTERNAL);
 
-    return RPC::makeObjectValue("downloading shards " + handler->toString());
+    std::string s {"Downloading shard"};
+    preShards = shardStore->getPreShards();
+    if (!std::all_of(preShards.begin(), preShards.end(), ::isdigit))
+        s += "s";
+    return RPC::makeObjectValue(s + " " + preShards);
 }
 
 } // ripple

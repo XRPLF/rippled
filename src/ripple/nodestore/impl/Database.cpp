@@ -63,7 +63,7 @@ Database::~Database()
 void
 Database::waitReads()
 {
-    std::unique_lock<std::mutex> l(readLock_);
+    std::unique_lock<std::mutex> lock(readLock_);
     // Wake in two generations.
     // Each generation is a full pass over the space.
     // If we're in generation N and you issue a request,
@@ -75,7 +75,7 @@ Database::waitReads()
     // you know the request is done.
     std::uint64_t const wakeGen = readGen_ + 2;
     while (! readShut_ && ! read_.empty() && (readGen_ < wakeGen))
-        readGenCondVar_.wait(l);
+        readGenCondVar_.wait(lock);
 }
 
 void
@@ -91,7 +91,7 @@ void
 Database::stopThreads()
 {
     {
-        std::lock_guard <std::mutex> l(readLock_);
+        std::lock_guard <std::mutex> lock(readLock_);
         if (readShut_) // Only stop threads once.
             return;
 
@@ -110,7 +110,7 @@ Database::asyncFetch(uint256 const& hash, std::uint32_t seq,
         std::shared_ptr<KeyCache<uint256>> const& nCache)
 {
     // Post a read
-    std::lock_guard <std::mutex> l(readLock_);
+    std::lock_guard <std::mutex> lock(readLock_);
     if (read_.emplace(hash, std::make_tuple(seq, pCache, nCache)).second)
         readCondVar_.notify_one();
 }
@@ -358,12 +358,12 @@ Database::threadEntry()
         std::shared_ptr<TaggedCache<uint256, NodeObject>> lastPcache;
         std::shared_ptr<KeyCache<uint256>> lastNcache;
         {
-            std::unique_lock<std::mutex> l(readLock_);
+            std::unique_lock<std::mutex> lock(readLock_);
             while (! readShut_ && read_.empty())
             {
                 // All work is done
                 readGenCondVar_.notify_all();
-                readCondVar_.wait(l);
+                readCondVar_.wait(lock);
             }
             if (readShut_)
                 break;
