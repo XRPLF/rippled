@@ -33,10 +33,11 @@ using namespace std::chrono_literals;
 
 ShardArchiveHandler::ShardArchiveHandler(Application& app, bool validate)
     : app_(app)
-    , validate_(validate)
     , downloadDir_(get(app_.config().section(
         ConfigSection::shardDatabase()), "path", "") + "/download")
+    , validate_(validate)
     , timer_(app_.getIOService())
+    , process_(false)
     , j_(app.journal("ShardArchiveHandler"))
 {
     assert(app_.getShardStore());
@@ -44,9 +45,11 @@ ShardArchiveHandler::ShardArchiveHandler(Application& app, bool validate)
 
 ShardArchiveHandler::~ShardArchiveHandler()
 {
+    std::lock_guard<std::mutex> lock(m_);
     timer_.cancel();
     for (auto const& ar : archives_)
         app_.getShardStore()->removePreShard(ar.first);
+    archives_.clear();
 
     // Remove temp root download directory
     try
@@ -61,18 +64,45 @@ ShardArchiveHandler::~ShardArchiveHandler()
 }
 
 bool
-ShardArchiveHandler::init()
+ShardArchiveHandler::add(std::uint32_t shardIndex, parsedURL&& url)
 {
+    std::lock_guard<std::mutex> lock(m_);
+    if (process_)
+    {
+        JLOG(j_.error()) <<
+            "Download and import already in progress";
+        return false;
+    }
+
+    auto const it {archives_.find(shardIndex)};
+    if (it != archives_.end())
+        return url == it->second;
+    if (!app_.getShardStore()->prepareShard(shardIndex))
+        return false;
+    archives_.emplace(shardIndex, std::move(url));
+    return true;
+}
+
+bool
+ShardArchiveHandler::start()
+{
+    std::lock_guard<std::mutex> lock(m_);
     if (!app_.getShardStore())
     {
         JLOG(j_.error()) <<
             "No shard store available";
         return false;
     }
-    if (downloader_)
+    if (process_)
     {
-        JLOG(j_.error()) <<
-            "Already initialized";
+        JLOG(j_.warn()) <<
+            "Archives already being processed";
+        return false;
+    }
+    if (archives_.empty())
+    {
+        JLOG(j_.warn()) <<
+            "No archives to process";
         return false;
     }
 
@@ -91,36 +121,31 @@ ShardArchiveHandler::init()
         return false;
     }
 
-    downloader_ = std::make_shared<SSLHTTPDownloader>(
-        app_.getIOService(), j_);
-    return downloader_->init(app_.config());
+    if (!downloader_)
+    {
+        downloader_ = std::make_shared<SSLHTTPDownloader>(
+            app_.getIOService(), j_);
+        if (!downloader_->init(app_.config()))
+        {
+            downloader_.reset();
+            return false;
+        }
+    }
+    return next(lock);
 }
 
 bool
-ShardArchiveHandler::add(std::uint32_t shardIndex, parsedURL&& url)
+ShardArchiveHandler::next(std::lock_guard<std::mutex>& l)
 {
-    assert(downloader_);
-    auto const it {archives_.find(shardIndex)};
-    if (it != archives_.end())
-        return url == it->second;
-    if (!app_.getShardStore()->prepareShard(shardIndex))
-        return false;
-    archives_.emplace(shardIndex, std::move(url));
-    return true;
-}
-
-void
-ShardArchiveHandler::next()
-{
-    assert(downloader_);
-
-    // Check if all archives completed
     if (archives_.empty())
-        return;
+    {
+        process_ = false;
+        return false;
+    }
 
     // Create a temp archive directory at the root
-    auto const dstDir {
-        downloadDir_ / std::to_string(archives_.begin()->first)};
+    auto const shardIndex {archives_.begin()->first};
+    auto const dstDir {downloadDir_ / std::to_string(shardIndex)};
     try
     {
         create_directory(dstDir);
@@ -129,53 +154,55 @@ ShardArchiveHandler::next()
     {
         JLOG(j_.error()) <<
             "exception: " << e.what();
-        remove(archives_.begin()->first);
-        return next();
+        remove(l);
+        return next(l);
     }
 
     // Download the archive
     auto const& url {archives_.begin()->second};
-    downloader_->download(
+    if (!downloader_->download(
         url.domain,
         std::to_string(url.port.get_value_or(443)),
         url.path,
         11,
         dstDir / "archive.tar.lz4",
         std::bind(&ShardArchiveHandler::complete,
-            shared_from_this(), std::placeholders::_1));
-}
+            shared_from_this(), std::placeholders::_1)))
+    {
+        remove(l);
+        return next(l);
+    }
 
-std::string
-ShardArchiveHandler::toString() const
-{
-    assert(downloader_);
-    RangeSet<std::uint32_t> rs;
-    for (auto const& ar : archives_)
-        rs.insert(ar.first);
-    return to_string(rs);
-};
+    process_ = true;
+    return true;
+}
 
 void
 ShardArchiveHandler::complete(path dstPath)
 {
-    try
     {
-        if (!is_regular_file(dstPath))
+        std::lock_guard<std::mutex> lock(m_);
+        try
         {
-            auto ar {archives_.begin()};
-            JLOG(j_.error()) <<
-                "Downloading shard id " << ar->first <<
-                " URL " << ar->second.domain << ar->second.path;
-            remove(ar->first);
-            return next();
+            if (!is_regular_file(dstPath))
+            {
+                auto ar {archives_.begin()};
+                JLOG(j_.error()) <<
+                    "Downloading shard id " << ar->first <<
+                    " form URL " << ar->second.domain << ar->second.path;
+                remove(lock);
+                next(lock);
+                return;
+            }
         }
-    }
-    catch (std::exception const& e)
-    {
-        JLOG(j_.error()) <<
-            "exception: " << e.what();
-        remove(archives_.begin()->first);
-        return next();
+        catch (std::exception const& e)
+        {
+            JLOG(j_.error()) <<
+                "exception: " << e.what();
+            remove(lock);
+            next(lock);
+            return;
+        }
     }
 
     // Process in another thread to not hold up the IO service
@@ -187,8 +214,9 @@ ShardArchiveHandler::complete(path dstPath)
             auto const mode {ptr->app_.getOPs().getOperatingMode()};
             if (ptr->validate_ && mode != NetworkOPs::omFULL)
             {
-                timer_.expires_from_now(std::chrono::seconds{
-                    (NetworkOPs::omFULL - mode) * 10});
+                std::lock_guard<std::mutex> lock(m_);
+                timer_.expires_from_now(static_cast<std::chrono::seconds>(
+                    (NetworkOPs::omFULL - mode) * 10));
                 timer_.async_wait(
                     [=, dstPath = std::move(dstPath), ptr = std::move(ptr)]
                     (boost::system::error_code const& ec)
@@ -196,21 +224,30 @@ ShardArchiveHandler::complete(path dstPath)
                         if (ec != boost::asio::error::operation_aborted)
                             ptr->complete(std::move(dstPath));
                     });
-                return;
             }
-            ptr->process(dstPath);
-            ptr->next();
+            else
+            {
+                ptr->process(dstPath);
+                std::lock_guard<std::mutex> lock(m_);
+                remove(lock);
+                next(lock);
+            }
         });
 }
 
 void
 ShardArchiveHandler::process(path const& dstPath)
 {
-    auto const shardIndex {archives_.begin()->first};
+    std::uint32_t shardIndex;
+    {
+        std::lock_guard<std::mutex> lock(m_);
+        shardIndex = archives_.begin()->first;
+    }
+
     auto const shardDir {dstPath.parent_path() / std::to_string(shardIndex)};
     try
     {
-        // Decompress and extract the downloaded file
+        // Extract the downloaded archive
         extractTarLz4(dstPath, dstPath.parent_path());
 
         // The extracted root directory name must match the shard index
@@ -219,14 +256,14 @@ ShardArchiveHandler::process(path const& dstPath)
             JLOG(j_.error()) <<
                 "Shard " << shardIndex <<
                 " mismatches archive shard directory";
-            return remove(shardIndex);
+            return;
         }
     }
     catch (std::exception const& e)
     {
         JLOG(j_.error()) <<
             "exception: " << e.what();
-        return remove(shardIndex);
+        return;
     }
 
     // Import the shard into the shard store
@@ -234,18 +271,17 @@ ShardArchiveHandler::process(path const& dstPath)
     {
         JLOG(j_.error()) <<
             "Importing shard " << shardIndex;
+        return;
     }
-    else
-    {
-        JLOG(j_.debug()) <<
-            "Shard " << shardIndex << " downloaded and imported";
-    }
-    remove(shardIndex);
+
+    JLOG(j_.debug()) <<
+        "Shard " << shardIndex << " downloaded and imported";
 }
 
 void
-ShardArchiveHandler::remove(std::uint32_t shardIndex)
+ShardArchiveHandler::remove(std::lock_guard<std::mutex>&)
 {
+    auto const shardIndex {archives_.begin()->first};
     app_.getShardStore()->removePreShard(shardIndex);
     archives_.erase(shardIndex);
 

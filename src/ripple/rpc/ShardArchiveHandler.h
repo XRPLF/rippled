@@ -46,48 +46,44 @@ public:
 
     ~ShardArchiveHandler();
 
-    /** Initializes the handler.
-        @return `true` if successfully initialized.
-    */
-    bool
-    init();
-
-    /** Queue an archive to be downloaded and imported.
+    /** Add an archive to be downloaded and imported.
         @param shardIndex the index of the shard to be imported.
         @param url the location of the archive.
         @return `true` if successfully added.
+        @note Returns false if called while downloading.
     */
     bool
     add(std::uint32_t shardIndex, parsedURL&& url);
 
-    /** Starts downloading and importing of queued archives. */
-    void
-    next();
-
-    /** Returns indexes of queued archives.
-        @return indexes of queued archives.
-    */
-    std::string
-    toString() const;
+    /** Starts downloading and importing archives. */
+    bool
+    start();
 
 private:
-    // The callback used by the downloader to notify completion of a download.
+    // Begins the download and import of the next archive.
+    bool
+    next(std::lock_guard<std::mutex>& l);
+
+    // Callback used by the downloader to notify completion of a download.
     void
     complete(boost::filesystem::path dstPath);
 
-    // A job to extract an archive and import a shard.
+    // Extract a downloaded archive and import it into the shard store.
     void
     process(boost::filesystem::path const& dstPath);
 
+    // Remove the archive being processed.
     void
-    remove(std::uint32_t shardIndex);
+    remove(std::lock_guard<std::mutex>&);
 
+    std::mutex mutable m_;
     Application& app_;
     std::shared_ptr<SSLHTTPDownloader> downloader_;
-    std::map<std::uint32_t, parsedURL> archives_;
-    bool const validate_;
     boost::filesystem::path const downloadDir_;
+    bool const validate_;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
+    bool process_;
+    std::map<std::uint32_t, parsedURL> archives_;
     beast::Journal j_;
 };
 

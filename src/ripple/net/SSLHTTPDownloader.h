@@ -80,6 +80,13 @@ private:
         boost::filesystem::path dstPath,
         std::function<void(boost::filesystem::path)> complete,
         boost::asio::yield_context yield);
+
+    void
+    fail(
+        boost::filesystem::path dstPath,
+        std::function<void(boost::filesystem::path)> const& complete,
+        boost::system::error_code const& ec,
+        std::string const& errMsg);
 };
 
 } // ripple

@@ -64,7 +64,7 @@ bool
 DatabaseShardImp::init()
 {
     using namespace boost::filesystem;
-    std::lock_guard<std::mutex> l(m_);
+    std::lock_guard<std::mutex> lock(m_);
     if (init_)
     {
         assert(false);
@@ -173,7 +173,7 @@ DatabaseShardImp::init()
             std::max<std::uint64_t>(1, maxDiskSpace_ / avgShardSz_));
     }
     else
-        updateStats(l);
+        updateStats(lock);
     init_ = true;
     return true;
 }
@@ -181,7 +181,7 @@ DatabaseShardImp::init()
 boost::optional<std::uint32_t>
 DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
 {
-    std::lock_guard<std::mutex> l(m_);
+    std::lock_guard<std::mutex> lock(m_);
     assert(init_);
     if (incomplete_)
         return incomplete_->prepare();
@@ -206,7 +206,7 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
         }
     }
 
-    auto const shardIndex {findShardIndexToAdd(validLedgerSeq, l)};
+    auto const shardIndex {findShardIndexToAdd(validLedgerSeq, lock)};
     if (!shardIndex)
     {
         JLOG(j_.debug()) <<
@@ -232,7 +232,7 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
 bool
 DatabaseShardImp::prepareShard(std::uint32_t shardIndex)
 {
-    std::lock_guard<std::mutex> l(m_);
+    std::lock_guard<std::mutex> lock(m_);
     assert(init_);
     if (!canAdd_)
     {
@@ -316,18 +316,25 @@ DatabaseShardImp::prepareShard(std::uint32_t shardIndex)
 void
 DatabaseShardImp::removePreShard(std::uint32_t shardIndex)
 {
-    std::lock_guard<std::mutex> l(m_);
+    std::lock_guard<std::mutex> lock(m_);
     assert(init_);
     preShards_.erase(shardIndex);
 }
 
-std::uint32_t
-DatabaseShardImp::getNumPreShard()
+std::string
+DatabaseShardImp::getPreShards()
 {
-    std::lock_guard<std::mutex> l(m_);
-    assert(init_);
-    return preShards_.size();
-}
+    RangeSet<std::uint32_t> rs;
+    {
+        std::lock_guard<std::mutex> lock(m_);
+        assert(init_);
+        if (preShards_.empty())
+            return {};
+        for (auto const& ps : preShards_)
+            rs.insert(ps.first);
+    }
+    return to_string(rs);
+};
 
 bool
 DatabaseShardImp::importShard(std::uint32_t shardIndex,
@@ -365,7 +372,7 @@ DatabaseShardImp::importShard(std::uint32_t shardIndex,
         return true;
     };
 
-    std::unique_lock<std::mutex> l(m_);
+    std::unique_lock<std::mutex> lock(m_);
     assert(init_);
 
     // Check shard is prepared
@@ -414,9 +421,9 @@ DatabaseShardImp::importShard(std::uint32_t shardIndex,
         // Shard validation requires releasing the lock
         // so the database can fetch data from it
         it->second = shard.get();
-        l.unlock();
+        lock.unlock();
         auto const valid {shard->validate(app_)};
-        l.lock();
+        lock.lock();
         if (!valid)
         {
             it = preShards_.find(shardIndex);
@@ -491,7 +498,7 @@ DatabaseShardImp::setStored(std::shared_ptr<Ledger const> const& ledger)
         return;
     }
     auto const shardIndex {seqToShardIndex(ledger->info().seq)};
-    std::lock_guard<std::mutex> l(m_);
+    std::lock_guard<std::mutex> lock(m_);
     assert(init_);
     if (!incomplete_ || shardIndex != incomplete_->index())
     {
@@ -514,7 +521,7 @@ DatabaseShardImp::setStored(std::shared_ptr<Ledger const> const& ledger)
     {
         complete_.emplace(incomplete_->index(), std::move(incomplete_));
         incomplete_.reset();
-        updateStats(l);
+        updateStats(lock);
 
         // Update peers with new shard index
         protocol::TMShardInfo message;
@@ -530,7 +537,7 @@ bool
 DatabaseShardImp::contains(std::uint32_t seq)
 {
     auto const shardIndex {seqToShardIndex(seq)};
-    std::lock_guard<std::mutex> l(m_);
+    std::lock_guard<std::mutex> lock(m_);
     assert(init_);
     if (complete_.find(shardIndex) != complete_.end())
         return true;
@@ -542,7 +549,7 @@ DatabaseShardImp::contains(std::uint32_t seq)
 std::string
 DatabaseShardImp::getCompleteShards()
 {
-    std::lock_guard<std::mutex> l(m_);
+    std::lock_guard<std::mutex> lock(m_);
     assert(init_);
     return status_;
 }
@@ -551,7 +558,7 @@ void
 DatabaseShardImp::validate()
 {
     {
-        std::lock_guard<std::mutex> l(m_);
+        std::lock_guard<std::mutex> lock(m_);
         assert(init_);
         if (complete_.empty() && !incomplete_)
         {
@@ -586,7 +593,7 @@ DatabaseShardImp::validate()
 void
 DatabaseShardImp::import(Database& source)
 {
-    std::unique_lock<std::mutex> l(m_);
+    std::unique_lock<std::mutex> lock(m_);
     assert(init_);
 
     // Only the application local node store can be imported
@@ -772,7 +779,7 @@ DatabaseShardImp::import(Database& source)
     complete_.clear();
     incomplete_.reset();
     usedDiskSpace_ = 0;
-    l.unlock();
+    lock.unlock();
 
     if (!init())
         Throw<std::runtime_error>("Failed to initialize");
@@ -783,7 +790,7 @@ DatabaseShardImp::getWriteLoad() const
 {
     std::int32_t wl {0};
     {
-        std::lock_guard<std::mutex> l(m_);
+        std::lock_guard<std::mutex> lock(m_);
         assert(init_);
         for (auto const& c : complete_)
             wl += c.second->getBackend()->getWriteLoad();
@@ -803,7 +810,7 @@ DatabaseShardImp::store(NodeObjectType type,
     std::shared_ptr<NodeObject> nObj;
     auto const shardIndex {seqToShardIndex(seq)};
     {
-        std::lock_guard<std::mutex> l(m_);
+        std::lock_guard<std::mutex> lock(m_);
         assert(init_);
         if (!incomplete_ || shardIndex != incomplete_->index())
         {
@@ -851,7 +858,7 @@ bool
 DatabaseShardImp::copyLedger(std::shared_ptr<Ledger const> const& ledger)
 {
     auto const shardIndex {seqToShardIndex(ledger->info().seq)};
-    std::lock_guard<std::mutex> l(m_);
+    std::lock_guard<std::mutex> lock(m_);
     assert(init_);
     if (!incomplete_ || shardIndex != incomplete_->index())
     {
@@ -881,7 +888,7 @@ DatabaseShardImp::copyLedger(std::shared_ptr<Ledger const> const& ledger)
     {
         complete_.emplace(incomplete_->index(), std::move(incomplete_));
         incomplete_.reset();
-        updateStats(l);
+        updateStats(lock);
     }
     return true;
 }
@@ -891,7 +898,7 @@ DatabaseShardImp::getDesiredAsyncReadCount(std::uint32_t seq)
 {
     auto const shardIndex {seqToShardIndex(seq)};
     {
-        std::lock_guard<std::mutex> l(m_);
+        std::lock_guard<std::mutex> lock(m_);
         assert(init_);
         auto it = complete_.find(shardIndex);
         if (it != complete_.end())
@@ -907,7 +914,7 @@ DatabaseShardImp::getCacheHitRate()
 {
     float sz, f {0};
     {
-        std::lock_guard<std::mutex> l(m_);
+        std::lock_guard<std::mutex> lock(m_);
         assert(init_);
         sz = complete_.size();
         for (auto const& c : complete_)
@@ -924,11 +931,11 @@ DatabaseShardImp::getCacheHitRate()
 void
 DatabaseShardImp::tune(int size, std::chrono::seconds age)
 {
-    std::lock_guard<std::mutex> l(m_);
+    std::lock_guard<std::mutex> lock(m_);
     assert(init_);
     cacheSz_ = size;
     cacheAge_ = age;
-    int const sz {calcTargetCacheSz(l)};
+    int const sz {calcTargetCacheSz(lock)};
     for (auto const& c : complete_)
     {
         c.second->pCache()->setTargetSize(sz);
@@ -948,9 +955,9 @@ DatabaseShardImp::tune(int size, std::chrono::seconds age)
 void
 DatabaseShardImp::sweep()
 {
-    std::lock_guard<std::mutex> l(m_);
+    std::lock_guard<std::mutex> lock(m_);
     assert(init_);
-    int const sz {calcTargetCacheSz(l)};
+    int const sz {calcTargetCacheSz(lock)};
     for (auto const& c : complete_)
     {
         c.second->pCache()->sweep();
@@ -971,19 +978,19 @@ std::shared_ptr<NodeObject>
 DatabaseShardImp::fetchFrom(uint256 const& hash, std::uint32_t seq)
 {
     auto const shardIndex {seqToShardIndex(seq)};
-    std::unique_lock<std::mutex> l(m_);
+    std::unique_lock<std::mutex> lock(m_);
     assert(init_);
     {
         auto it = complete_.find(shardIndex);
         if (it != complete_.end())
         {
-            l.unlock();
+            lock.unlock();
             return fetchInternal(hash, *it->second->getBackend());
         }
     }
     if (incomplete_ && incomplete_->index() == shardIndex)
     {
-        l.unlock();
+        lock.unlock();
         return fetchInternal(hash, *incomplete_->getBackend());
     }
 
@@ -991,7 +998,7 @@ DatabaseShardImp::fetchFrom(uint256 const& hash, std::uint32_t seq)
     auto it = preShards_.find(shardIndex);
     if (it != preShards_.end() && it->second)
     {
-        l.unlock();
+        lock.unlock();
         return fetchInternal(hash, *it->second->getBackend());
     }
     return {};
@@ -1109,7 +1116,7 @@ std::pair<std::shared_ptr<PCache>, std::shared_ptr<NCache>>
 DatabaseShardImp::selectCache(std::uint32_t seq)
 {
     auto const shardIndex {seqToShardIndex(seq)};
-    std::lock_guard<std::mutex> l(m_);
+    std::lock_guard<std::mutex> lock(m_);
     assert(init_);
     {
         auto it = complete_.find(shardIndex);
