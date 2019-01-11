@@ -65,8 +65,10 @@ public:
 private:
     boost::asio::ssl::context ctx_;
     boost::asio::io_service::strand strand_;
-    boost::asio::ssl::stream<boost::asio::ip::tcp::socket> stream_;
+    boost::optional<
+        boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> stream_;
     boost::beast::flat_buffer read_buf_;
+    bool ssl_verify_;
     beast::Journal j_;
 
     void

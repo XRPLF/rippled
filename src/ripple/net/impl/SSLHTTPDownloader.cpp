@@ -19,15 +19,15 @@
 
 #include <ripple/net/SSLHTTPDownloader.h>
 #include <ripple/net/RegisterSSLCerts.h>
+#include <boost/asio/ssl.hpp>
 
 namespace ripple {
 
 SSLHTTPDownloader::SSLHTTPDownloader(
     boost::asio::io_service& io_service,
     beast::Journal j)
-    : ctx_(boost::asio::ssl::context::sslv23_client)
+    : ctx_(boost::asio::ssl::context::tlsv12_client)
     , strand_(io_service)
-    , stream_(io_service, ctx_)
     , j_(j)
 {
 }
@@ -61,6 +61,8 @@ SSLHTTPDownloader::init(Config const& config)
             return false;
         }
     }
+
+    ssl_verify_ = config.SSL_VERIFY;
     return true;
 }
 
@@ -149,24 +151,48 @@ SSLHTTPDownloader::do_session(
         complete(std::move(dstPath));
     };
 
-    if (!SSL_set_tlsext_host_name(stream_.native_handle(), host.c_str()))
-    {
-        ec.assign(static_cast<int>(
-            ::ERR_get_error()), boost::asio::error::get_ssl_category());
-        return fail("SSL_set_tlsext_host_name");
-    }
-
-    ip::tcp::resolver resolver {stream_.get_io_context()};
+    ip::tcp::resolver resolver {strand_.get_io_context()};
     auto const results = resolver.async_resolve(host, port, yield[ec]);
     if (ec)
         return fail("async_resolve");
 
+    stream_.emplace(strand_.get_io_service(), ctx_);
+    if (ssl_verify_)
+    {
+        // If we intend to verify the SSL connection, we need to set the
+        // default domain for server name indication *prior* to connecting
+        if (!SSL_set_tlsext_host_name(stream_->native_handle(), host.c_str()))
+        {
+            ec.assign(static_cast<int>(
+                ::ERR_get_error()), boost::asio::error::get_ssl_category());
+            return fail("SSL_set_tlsext_host_name");
+        }
+    }
+    else
+    {
+        stream_->set_verify_mode(boost::asio::ssl::verify_none, ec);
+        if (ec)
+            return fail("set_verify_mode");
+    }
+
     boost::asio::async_connect(
-        stream_.next_layer(), results.begin(), results.end(), yield[ec]);
+        stream_->next_layer(), results.begin(), results.end(), yield[ec]);
     if (ec)
         return fail("async_connect");
 
-    stream_.async_handshake(ssl::stream_base::client, yield[ec]);
+    if (ssl_verify_)
+    {
+        stream_->set_verify_mode(boost::asio::ssl::verify_peer, ec);
+        if (ec)
+            return fail("set_verify_mode");
+
+        stream_->set_verify_callback(
+            boost::asio::ssl::rfc2818_verification(host.c_str()), ec);
+        if (ec)
+            return fail("set_verify_callback");
+    }
+
+    stream_->async_handshake(ssl::stream_base::client, yield[ec]);
     if (ec)
         return fail("async_handshake");
 
@@ -175,7 +201,7 @@ SSLHTTPDownloader::do_session(
     req.set(http::field::host, host);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 
-    http::async_write(stream_, req, yield[ec]);
+    http::async_write(*stream_, req, yield[ec]);
     if(ec)
         return fail("async_write");
 
@@ -183,7 +209,7 @@ SSLHTTPDownloader::do_session(
         // Check if available storage for file size
         http::response_parser<http::empty_body> p;
         p.skip(true);
-        http::async_read(stream_, read_buf_, p, yield[ec]);
+        http::async_read(*stream_, read_buf_, p, yield[ec]);
         if(ec)
             return fail("async_read");
         if (auto len = p.content_length())
@@ -204,7 +230,7 @@ SSLHTTPDownloader::do_session(
 
     // Set up an HTTP GET request message to download the file
     req.method(http::verb::get);
-    http::async_write(stream_, req, yield[ec]);
+    http::async_write(*stream_, req, yield[ec]);
     if(ec)
         return fail("async_write");
 
@@ -221,7 +247,7 @@ SSLHTTPDownloader::do_session(
         return fail("open");
     }
 
-    http::async_read(stream_, read_buf_, p, yield[ec]);
+    http::async_read(*stream_, read_buf_, p, yield[ec]);
     if (ec)
     {
         p.get().body().close();
@@ -230,7 +256,7 @@ SSLHTTPDownloader::do_session(
     p.get().body().close();
 
     // Gracefully close the stream
-    stream_.async_shutdown(yield[ec]);
+    stream_->async_shutdown(yield[ec]);
     if (ec == boost::asio::error::eof)
         ec.assign(0, ec.category());
     if (ec)
@@ -240,6 +266,7 @@ SSLHTTPDownloader::do_session(
         JLOG(j_.trace()) <<
             "async_shutdown: " << ec.message();
     }
+    stream_ = boost::none;
 
     JLOG(j_.trace()) <<
         "download completed: " << dstPath.string();
