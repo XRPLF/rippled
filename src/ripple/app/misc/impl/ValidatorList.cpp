@@ -190,23 +190,6 @@ ValidatorList::load (
     return true;
 }
 
-
-ListDisposition
-ValidatorList::applyList(
-    std::string const& manifest,
-    std::string const& blob,
-    std::string const& signature,
-    std::uint32_t version)
-{
-    // This API is only used by tests
-    return applyList(
-        manifest,
-        blob,
-        signature,
-        version,
-        std::string("unknown.test"));
-}
-
 ListDisposition
 ValidatorList::applyList (
     std::string const& manifest,

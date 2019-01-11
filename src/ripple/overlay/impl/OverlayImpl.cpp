@@ -24,7 +24,6 @@
 #include <ripple/app/misc/ValidatorSite.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/make_SSLContext.h>
-#include <ripple/basics/PerfLog.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DatabaseShard.h>
@@ -863,7 +862,7 @@ OverlayImpl::limit()
 }
 
 Json::Value
-OverlayImpl::crawl()
+OverlayImpl::getOverlayInfo()
 {
     using namespace std::chrono;
     Json::Value jv;
@@ -916,7 +915,7 @@ OverlayImpl::crawl()
 }
 
 Json::Value
-OverlayImpl::crawl_server()
+OverlayImpl::getLocalServerInfo()
 {
     Json::Value jv;
 
@@ -990,8 +989,8 @@ OverlayImpl::processRequest (http_request_type const& req,
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
-    msg.body()["overlay"] = crawl();
-    msg.body()["server"] = crawl_server();
+    msg.body()["overlay"] = getOverlayInfo();
+    msg.body()["server"] = getLocalServerInfo();
     msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return true;

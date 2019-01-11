@@ -104,11 +104,6 @@ public:
     std::size_t
     size () = 0;
 
-    /** Returns information reported to the crawl cgi command. */
-    virtual
-    Json::Value
-    crawl() = 0;
-
     /** Return diagnostics on the status of all peers.
         @deprecated This is superceded by PropertyStream
     */

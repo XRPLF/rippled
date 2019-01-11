@@ -204,14 +204,6 @@ public:
         std::uint32_t version,
         std::string siteUri);
 
-    // v1 - siteUri is not specified
-    ListDisposition
-    applyList(
-        std::string const& manifest,
-        std::string const& blob,
-        std::string const& signature,
-        std::uint32_t version);
-
     /** Update trusted nodes
 
         Reset the trusted nodes based on latest manifests, received validations,

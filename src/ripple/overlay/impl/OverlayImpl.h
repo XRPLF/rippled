@@ -172,6 +172,18 @@ public:
         http_request_type&& request,
             endpoint_type remote_endpoint) override;
 
+    void
+    connect(beast::IP::Endpoint const& remote_endpoint) override;
+
+    int
+    limit() override;
+
+    std::size_t
+    size() override;
+
+    Json::Value
+    json() override;
+
     PeerSequence
     getActivePeers() override;
 
@@ -374,27 +386,17 @@ private:
     processRequest (http_request_type const& req,
         Handoff& handoff);
 
-    void
-    connect (beast::IP::Endpoint const& remote_endpoint) override;
-
-    /*  The number of active peers on the network
-        Active peers are only those peers that have completed the handshake
-        and are running the Ripple protocol.
+    /** Returns information about peers on the overlay network.
+        Reported through the /crawl API
     */
-    std::size_t
-    size() override;
-
-    int
-    limit () override;
-
     Json::Value
-    crawl() override;
+    getOverlayInfo();
 
+    /** Returns information about the local server.
+        Reported through the /crawl API
+    */
     Json::Value
-    crawl_server();
-
-    Json::Value
-    json() override;
+    getLocalServerInfo();
 
     //--------------------------------------------------------------------------
 
