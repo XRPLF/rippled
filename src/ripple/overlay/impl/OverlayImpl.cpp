@@ -915,10 +915,8 @@ OverlayImpl::getOverlayInfo()
 }
 
 Json::Value
-OverlayImpl::getLocalServerInfo()
+OverlayImpl::getServerInfo()
 {
-    Json::Value jv;
-
     bool const humanReadable = false;
     bool const admin = false;
     bool const counters = false;
@@ -939,10 +937,18 @@ OverlayImpl::getLocalServerInfo()
         validated_ledger.removeMember(jss::reserve_inc_xrp);
     }
 
-    jv[jss::info] = std::move(server_info);
+    return server_info;
+}
 
-    jv[jss::counters] = getCountsJson(app_, 10);
+Json::Value
+OverlayImpl::getServerCounts()
+{
+    return getCountsJson(app_, 10);
+}
 
+Json::Value
+OverlayImpl::getUnlInfo()
+{
     Json::Value validators = app_.validators().getJson();
 
     if (validators.isMember(jss::publisher_lists))
@@ -964,9 +970,7 @@ OverlayImpl::getLocalServerInfo()
         validators[jss::validator_sites] = std::move(validatorSites[jss::validator_sites]);
     }
 
-    jv[jss::validators] = std::move(validators);
-
-    return jv;
+    return validators;
 }
 
 // Returns information on verified peers.
@@ -980,7 +984,7 @@ bool
 OverlayImpl::processRequest (http_request_type const& req,
     Handoff& handoff)
 {
-    if (req.target() != "/crawl")
+    if (req.target() != "/crawl" || setup_.crawlOptions == Overlay::Setup::Disabled)
         return false;
 
     boost::beast::http::response<json_body> msg;
@@ -989,8 +993,24 @@ OverlayImpl::processRequest (http_request_type const& req,
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
-    msg.body()["overlay"] = getOverlayInfo();
-    msg.body()["server"] = getLocalServerInfo();
+    msg.body()["version"] = Json::Value(1u);
+
+    if (setup_.crawlOptions & Overlay::Setup::Overlay) {
+        msg.body()["overlay"] = getOverlayInfo();
+    }
+
+    if (setup_.crawlOptions & Overlay::Setup::ServerInfo) {
+        msg.body()["server"] = getServerInfo();
+    }
+
+    if (setup_.crawlOptions & Overlay::Setup::ServerCounts) {
+        msg.body()["counts"] = getServerCounts();
+    }
+
+    if (setup_.crawlOptions & Overlay::Setup::Unl) {
+        msg.body()["unl"] = getUnlInfo();
+    }
+
     msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return true;
@@ -1203,23 +1223,49 @@ Overlay::Setup
 setup_Overlay (BasicConfig const& config)
 {
     Overlay::Setup setup;
-    auto const& section = config.section("overlay");
-    setup.context = make_SSLContext("");
-    setup.expire = get<bool>(section, "expire", false);
-
-    set (setup.ipLimit, "ip_limit", section);
-    if (setup.ipLimit < 0)
-        Throw<std::runtime_error> ("Configured IP limit is invalid");
-
-    std::string ip;
-    set (ip, "public_ip", section);
-    if (! ip.empty ())
     {
-        boost::system::error_code ec;
-        setup.public_ip = beast::IP::Address::from_string (ip, ec);
-        if (ec || beast::IP::is_private (setup.public_ip))
-            Throw<std::runtime_error> ("Configured public IP is invalid");
+        auto const& section = config.section("overlay");
+        setup.context = make_SSLContext("");
+        setup.expire = get<bool>(section, "expire", false);
+
+        set(setup.ipLimit, "ip_limit", section);
+        if (setup.ipLimit < 0)
+            Throw<std::runtime_error>("Configured IP limit is invalid");
+
+        std::string ip;
+        set(ip, "public_ip", section);
+        if (!ip.empty())
+        {
+            boost::system::error_code ec;
+            setup.public_ip = beast::IP::Address::from_string(ip, ec);
+            if (ec || beast::IP::is_private(setup.public_ip))
+                Throw<std::runtime_error>("Configured public IP is invalid");
+        }
     }
+    {
+        auto const& section = config.section("crawl");
+        bool crawlEnabled = true;
+
+        if (section.lines().size() == 1 && section.legacy() == "off") {
+            crawlEnabled = false;
+        }
+
+        if (crawlEnabled) {
+            if (get<bool>(section, "overlay", true)) {
+                setup.crawlOptions |= Overlay::Setup::Overlay;
+            }
+            if (get<bool>(section, "server", true)) {
+                setup.crawlOptions |= Overlay::Setup::ServerInfo;
+            }
+            if (get<bool>(section, "counts", false)) {
+                setup.crawlOptions |= Overlay::Setup::ServerCounts;
+            }
+            if (get<bool>(section, "unl", true)) {
+                setup.crawlOptions |= Overlay::Setup::Unl;
+            }
+        }
+    }
+
     return setup;
 }
 

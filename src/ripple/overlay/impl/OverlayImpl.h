@@ -388,15 +388,31 @@ private:
 
     /** Returns information about peers on the overlay network.
         Reported through the /crawl API
+        Controlled through the config section [crawl] overlay=[0|1]
     */
     Json::Value
     getOverlayInfo();
 
     /** Returns information about the local server.
         Reported through the /crawl API
+        Controlled through the config section [crawl] server=[0|1]
     */
     Json::Value
-    getLocalServerInfo();
+    getServerInfo();
+
+    /** Returns information about the local server's performance counters.
+        Reported through the /crawl API
+        Controlled through the config section [crawl] counts=[0|1]
+    */
+    Json::Value
+    getServerCounts();
+
+    /** Returns information about the local server's UNL.
+        Reported through the /crawl API
+        Controlled through the config section [crawl] unl=[0|1]
+    */
+    Json::Value
+    getUnlInfo();
 
     //--------------------------------------------------------------------------
 

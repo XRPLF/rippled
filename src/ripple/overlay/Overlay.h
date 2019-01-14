@@ -70,6 +70,16 @@ public:
         bool expire = false;
         beast::IP::Address public_ip;
         int ipLimit = 0;
+
+        enum CrawlOptions {
+            Disabled = 0x00,
+            Overlay = 0x01,
+            ServerInfo = 0x02,
+            ServerCounts = 0x04,
+            Unl = 0x08
+        };
+
+        std::uint32_t crawlOptions = 0;
     };
 
     using PeerSequence = std::vector <std::shared_ptr<Peer>>;
