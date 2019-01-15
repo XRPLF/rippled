@@ -1246,8 +1246,11 @@ setup_Overlay (BasicConfig const& config)
         auto const& section = config.section("crawl");
         auto const& values = section.values();
 
-        if (values.size() > 1) {
-            Throw<std::runtime_error>("Configured [crawl] section is invalid");
+        if (values.size() > 1 ||
+            values.size() == 1 && section.lines().size() > 1)
+        {
+            Throw<std::runtime_error>(
+                "Configured [crawl] section is invalid, too many values");
         }
 
         bool crawlEnabled = true;
