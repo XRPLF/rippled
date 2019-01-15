@@ -1244,10 +1244,22 @@ setup_Overlay (BasicConfig const& config)
     }
     {
         auto const& section = config.section("crawl");
+        auto const& values = section.values();
+
+        if (values.size() > 1) {
+            Throw<std::runtime_error>("Configured [crawl] section is invalid");
+        }
+
         bool crawlEnabled = true;
 
-        if (section.lines().size() == 1 && section.legacy() == "off") {
-            crawlEnabled = false;
+        // Only allow "off" as a value
+        if (values.size() == 1) {
+            if (values.front() == "off") {
+                crawlEnabled = false;
+            } else {
+                Throw<std::runtime_error>(
+                    "Configured [crawl] section has invalid value: " + values.front());
+            }
         }
 
         if (crawlEnabled) {
