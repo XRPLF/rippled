@@ -1246,8 +1246,7 @@ setup_Overlay (BasicConfig const& config)
         auto const& section = config.section("crawl");
         auto const& values = section.values();
 
-        if (values.size() > 1 ||
-            values.size() == 1 && section.lines().size() > 1)
+        if (values.size() > 1)
         {
             Throw<std::runtime_error>(
                 "Configured [crawl] section is invalid, too many values");
@@ -1255,11 +1254,12 @@ setup_Overlay (BasicConfig const& config)
 
         bool crawlEnabled = true;
 
-        // Only allow "off" as a value
+        // Only allow "0|1" as a value
         if (values.size() == 1) {
-            if (values.front() == "off") {
-                crawlEnabled = false;
-            } else {
+            try {
+                crawlEnabled = boost::lexical_cast<bool>(values.front());
+            }
+            catch (boost::bad_lexical_cast const&) {
                 Throw<std::runtime_error>(
                     "Configured [crawl] section has invalid value: " + values.front());
             }
