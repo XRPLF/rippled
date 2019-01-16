@@ -60,6 +60,16 @@ struct get_peer_json
     }
 };
 
+namespace CrawlOptions {
+    enum {
+        Disabled     = 0,
+        Overlay      = (1 << 0),
+        ServerInfo   = (1 << 1),
+        ServerCounts = (1 << 2),
+        Unl          = (1 << 3)
+    };
+}
+
 //------------------------------------------------------------------------------
 
 OverlayImpl::Child::Child (OverlayImpl& overlay)
@@ -984,7 +994,7 @@ bool
 OverlayImpl::processRequest (http_request_type const& req,
     Handoff& handoff)
 {
-    if (req.target() != "/crawl" || setup_.crawlOptions == Overlay::Setup::Disabled)
+    if (req.target() != "/crawl" || setup_.crawlOptions == CrawlOptions::Disabled)
         return false;
 
     boost::beast::http::response<json_body> msg;
@@ -995,19 +1005,19 @@ OverlayImpl::processRequest (http_request_type const& req,
     msg.insert("Connection", "close");
     msg.body()["version"] = Json::Value(1u);
 
-    if (setup_.crawlOptions & Overlay::Setup::Overlay) {
+    if (setup_.crawlOptions & CrawlOptions::Overlay) {
         msg.body()["overlay"] = getOverlayInfo();
     }
 
-    if (setup_.crawlOptions & Overlay::Setup::ServerInfo) {
+    if (setup_.crawlOptions & CrawlOptions::ServerInfo) {
         msg.body()["server"] = getServerInfo();
     }
 
-    if (setup_.crawlOptions & Overlay::Setup::ServerCounts) {
+    if (setup_.crawlOptions & CrawlOptions::ServerCounts) {
         msg.body()["counts"] = getServerCounts();
     }
 
-    if (setup_.crawlOptions & Overlay::Setup::Unl) {
+    if (setup_.crawlOptions & CrawlOptions::Unl) {
         msg.body()["unl"] = getUnlInfo();
     }
 
@@ -1267,16 +1277,16 @@ setup_Overlay (BasicConfig const& config)
 
         if (crawlEnabled) {
             if (get<bool>(section, "overlay", true)) {
-                setup.crawlOptions |= Overlay::Setup::Overlay;
+                setup.crawlOptions |= CrawlOptions::Overlay;
             }
             if (get<bool>(section, "server", true)) {
-                setup.crawlOptions |= Overlay::Setup::ServerInfo;
+                setup.crawlOptions |= CrawlOptions::ServerInfo;
             }
             if (get<bool>(section, "counts", false)) {
-                setup.crawlOptions |= Overlay::Setup::ServerCounts;
+                setup.crawlOptions |= CrawlOptions::ServerCounts;
             }
             if (get<bool>(section, "unl", true)) {
-                setup.crawlOptions |= Overlay::Setup::Unl;
+                setup.crawlOptions |= CrawlOptions::Unl;
             }
         }
     }
