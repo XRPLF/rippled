@@ -256,7 +256,7 @@ ValidatorList::applyList (
             std::vector<PublicKey> removed;
             std::set_difference(oldList.begin(), oldList.end(),
                 publisherList.begin(), publisherList.end(),
-                std::back_inserter(removed), comparator);
+                std::back_inserter(removed));
             for (auto const& r : removed)
                 keyListings_[r]--;
         }
