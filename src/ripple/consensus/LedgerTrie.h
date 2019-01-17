@@ -24,6 +24,8 @@
 #include <boost/optional.hpp>
 #include <algorithm>
 #include <memory>
+#include <sstream>
+#include <stack>
 #include <vector>
 
 namespace ripple {
@@ -242,7 +244,10 @@ struct Node
     getJson() const
     {
         Json::Value res;
-        res["id"] = to_string(span.tip().id);
+        std::stringstream sps;
+        sps << span;
+        res["span"] = sps.str();
+        res["startID"] = to_string(span.startID());
         res["seq"] = static_cast<std::uint32_t>(span.tip().seq);
         res["tipSupport"] = tipSupport;
         res["branchSupport"] = branchSupport;
@@ -778,7 +783,12 @@ public:
     Json::Value
     getJson() const
     {
-        return root->getJson();
+        Json::Value res;
+        res["trie"] = root->getJson();
+        res["seq_support"] = Json::objectValue;
+        for (auto const& mit : seqSupport)
+            res["seq_support"][to_string(mit.first)] = mit.second;
+        return res;
     }
 
     /** Check the compressed trie and support invariants.
