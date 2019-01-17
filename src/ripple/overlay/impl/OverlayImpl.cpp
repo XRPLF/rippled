@@ -60,8 +60,10 @@ struct get_peer_json
     }
 };
 
-namespace CrawlOptions {
-    enum {
+namespace CrawlOptions
+{
+    enum
+    {
         Disabled     = 0,
         Overlay      = (1 << 0),
         ServerInfo   = (1 << 1),
@@ -1005,19 +1007,20 @@ OverlayImpl::processRequest (http_request_type const& req,
     msg.insert("Connection", "close");
     msg.body()["version"] = Json::Value(1u);
 
-    if (setup_.crawlOptions & CrawlOptions::Overlay) {
+    if (setup_.crawlOptions & CrawlOptions::Overlay)
+    {
         msg.body()["overlay"] = getOverlayInfo();
     }
-
-    if (setup_.crawlOptions & CrawlOptions::ServerInfo) {
+    if (setup_.crawlOptions & CrawlOptions::ServerInfo)
+    {
         msg.body()["server"] = getServerInfo();
     }
-
-    if (setup_.crawlOptions & CrawlOptions::ServerCounts) {
+    if (setup_.crawlOptions & CrawlOptions::ServerCounts)
+    {
         msg.body()["counts"] = getServerCounts();
     }
-
-    if (setup_.crawlOptions & CrawlOptions::Unl) {
+    if (setup_.crawlOptions & CrawlOptions::Unl)
+    {
         msg.body()["unl"] = getUnlInfo();
     }
 
@@ -1265,27 +1268,35 @@ setup_Overlay (BasicConfig const& config)
         bool crawlEnabled = true;
 
         // Only allow "0|1" as a value
-        if (values.size() == 1) {
-            try {
+        if (values.size() == 1)
+        {
+            try
+            {
                 crawlEnabled = boost::lexical_cast<bool>(values.front());
             }
-            catch (boost::bad_lexical_cast const&) {
+            catch (boost::bad_lexical_cast const&)
+            {
                 Throw<std::runtime_error>(
                     "Configured [crawl] section has invalid value: " + values.front());
             }
         }
 
-        if (crawlEnabled) {
-            if (get<bool>(section, "overlay", true)) {
+        if (crawlEnabled)
+        {
+            if (get<bool>(section, "overlay", true))
+            {
                 setup.crawlOptions |= CrawlOptions::Overlay;
             }
-            if (get<bool>(section, "server", true)) {
+            if (get<bool>(section, "server", true))
+            {
                 setup.crawlOptions |= CrawlOptions::ServerInfo;
             }
-            if (get<bool>(section, "counts", false)) {
+            if (get<bool>(section, "counts", false))
+            {
                 setup.crawlOptions |= CrawlOptions::ServerCounts;
             }
-            if (get<bool>(section, "unl", true)) {
+            if (get<bool>(section, "unl", true))
+            {
                 setup.crawlOptions |= CrawlOptions::Unl;
             }
         }
