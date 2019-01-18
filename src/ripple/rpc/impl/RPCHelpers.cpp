@@ -461,7 +461,7 @@ addPaymentDeliveredAmount(Json::Value& meta, RPC::Context& context,
             context.ledgerMaster.getCloseTimeBySeq (transaction->getLedger ());
         if (ct && (*ct > NetClock::time_point{446000000s}))
         {
-            // 446000000 is in Feb 2014, well after DeliveredAmount went live
+            // 446000000 is 2014-02-18 00:53:20 UTC, well after DeliveredAmount went live
             meta[jss::delivered_amount] =
                 serializedTx->getFieldAmount (sfAmount).getJson (1);
             return;

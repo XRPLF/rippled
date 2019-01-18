@@ -36,7 +36,7 @@ namespace ripple {
 NetClock::time_point const& fix1141Time ()
 {
     using namespace std::chrono_literals;
-    // Fri July 1, 2016 10:00:00am PDT
+    // Fri July 1, 2016 17:00:00 UTC
     static NetClock::time_point const soTime{520707600s};
     return soTime;
 }
@@ -49,7 +49,7 @@ bool fix1141 (NetClock::time_point const closeTime)
 NetClock::time_point const& fix1274Time ()
 {
     using namespace std::chrono_literals;
-    // Fri Sep 30, 2016 10:00:00am PDT
+    // Fri Sep 30, 2016 17:00:00 UTC
     static NetClock::time_point const soTime{528570000s};
 
     return soTime;
@@ -63,7 +63,7 @@ bool fix1274 (NetClock::time_point const closeTime)
 NetClock::time_point const& fix1298Time ()
 {
     using namespace std::chrono_literals;
-    // Wed Dec 21, 2016 10:00:00am PST
+    // Wed Dec 21, 2016 18:00:00 UTC
     static NetClock::time_point const soTime{535658400s};
 
     return soTime;
@@ -77,7 +77,7 @@ bool fix1298 (NetClock::time_point const closeTime)
 NetClock::time_point const& fix1443Time ()
 {
     using namespace std::chrono_literals;
-    // Sat Mar 11, 2017 05:00:00pm PST
+    // Sun Mar 12, 2017 01:00:00 UTC
     static NetClock::time_point const soTime{542595600s};
 
     return soTime;
@@ -91,7 +91,7 @@ bool fix1443 (NetClock::time_point const closeTime)
 NetClock::time_point const& fix1449Time ()
 {
     using namespace std::chrono_literals;
-    // Thurs, Mar 30, 2017 01:00:00pm PDT
+    // Thurs, Mar 30, 2017 20:00:00 UTC
     static NetClock::time_point const soTime{544219200s};
 
     return soTime;
