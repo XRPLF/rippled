@@ -47,7 +47,7 @@ public:
     /** Returns the estimate of wall time, in network time.
 
         The network time is wall time adjusted for the Ripple
-        epoch, the beginning of January 1st, 2000. Each server
+        epoch, the beginning of January 1st, 2000 UTC. Each server
         can compute a different value for network time. Other
         servers value for network time is not directly observable,
         but good guesses can be made by looking at validators'

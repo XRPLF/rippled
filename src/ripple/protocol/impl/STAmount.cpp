@@ -39,9 +39,11 @@ LocalValue<bool> stAmountCalcSwitchover(true);
 LocalValue<bool> stAmountCalcSwitchover2(true);
 
 using namespace std::chrono_literals;
+
+// Mon Dec 28, 2015 18:00:00 UTC
 const NetClock::time_point STAmountSO::soTime{504640800s};
 
-// Fri Feb 26, 2016 9:00:00pm PST
+// Sat Feb 27, 2016 05:00:00 UTC
 const NetClock::time_point STAmountSO::soTime2{509864400s};
 
 static const std::uint64_t tenTo14 = 100000000000000ull;

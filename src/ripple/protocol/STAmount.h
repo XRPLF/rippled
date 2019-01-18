@@ -426,10 +426,10 @@ public:
         *stAmountCalcSwitchover2 = saved2_;
     }
 
-    // Mon Dec 28, 2015 10:00:00am PST
+    // Mon Dec 28, 2015 18:00:00 UTC
     static NetClock::time_point const soTime;
 
-    // Mon Mar 28, 2015 10:00:00am PST
+    // Sat Feb 27, 2016 05:00:00 UTC
     static NetClock::time_point const soTime2;
 
 private:

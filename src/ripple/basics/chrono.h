@@ -66,6 +66,7 @@ inline
 std::string
 to_string(NetClock::time_point tp)
 {
+    // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     using namespace std::chrono;
     return to_string(
         system_clock::time_point{tp.time_since_epoch() + 946684800s});
