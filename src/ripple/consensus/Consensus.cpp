@@ -114,6 +114,8 @@ checkConsensus(
     std::chrono::milliseconds currentAgreeTime,
     ConsensusParms const& parms,
     bool proposing,
+    std::size_t const laggards,
+    std::size_t const allowedDisagree,
     beast::Journal j)
 {
     JLOG(j.trace()) << "checkConsensus: prop=" << currentProposers << "/"
@@ -134,6 +136,16 @@ checkConsensus(
             JLOG(j.trace()) << "too fast, not enough proposers";
             return ConsensusState::No;
         }
+    }
+
+    // If consensus is impossible based on proposals for an earlier sequence,
+    // allow them to catch up.
+    if (currentAgreeTime < previousAgreeTime + parms.ledgerMAX_CONSENSUS &&
+        laggards > allowedDisagree)
+    {
+        JLOG(j.warn()) << "Too many proposers lagging to allow consensus: "
+            << laggards << "(" << allowedDisagree << ")";
+        return ConsensusState::No;
     }
 
     // Have we, together with the nodes on our UNL list, reached the threshold

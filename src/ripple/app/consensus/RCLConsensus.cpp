@@ -925,6 +925,12 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
     return validating_ && synced;
 }
 
+std::size_t
+RCLConsensus::Adaptor::allowedDisagree() const
+{
+    return app_.validators().allowedDisagree();
+}
+
 void
 RCLConsensus::startRound(
     NetClock::time_point const& now,

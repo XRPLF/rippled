@@ -85,34 +85,46 @@ public:
         // Not enough time has elapsed
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(10, 2, 2, 0, 3s, 2s, p, true, journal_));
+            checkConsensus(10, 2, 2, 0, 3s, 2s, p, true, 0, 0, journal_));
 
-        // If not enough peers have propsed, ensure
+        // If not enough peers have proposed, ensure
         // more time for proposals
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(10, 2, 2, 0, 3s, 4s, p, true, journal_));
+            checkConsensus(10, 2, 2, 0, 3s, 4s, p, true, 0, 0, journal_));
 
         // Enough time has elapsed and we all agree
         BEAST_EXPECT(
             ConsensusState::Yes ==
-            checkConsensus(10, 2, 2, 0, 3s, 10s, p, true, journal_));
+            checkConsensus(10, 2, 2, 0, 3s, 10s, p, true, 0, 0, journal_));
 
         // Enough time has elapsed and we don't yet agree
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(10, 2, 1, 0, 3s, 10s, p, true, journal_));
+            checkConsensus(10, 2, 1, 0, 3s, 10s, p, true, 0, 0, journal_));
 
         // Our peers have moved on
         // Enough time has elapsed and we all agree
         BEAST_EXPECT(
             ConsensusState::MovedOn ==
-            checkConsensus(10, 2, 1, 8, 3s, 10s, p, true, journal_));
+            checkConsensus(10, 2, 1, 8, 3s, 10s, p, true, 0, 0, journal_));
 
         // No peers makes it easy to agree
         BEAST_EXPECT(
             ConsensusState::Yes ==
-            checkConsensus(0, 0, 0, 0, 3s, 10s, p, true, journal_));
+            checkConsensus(0, 0, 0, 0, 3s, 10s, p, true, 0, 0, journal_));
+
+        // Enough time has elapsed and we all agree, but there are too many
+        // lagging proposers.
+        BEAST_EXPECT(
+            ConsensusState::No ==
+                checkConsensus(10, 2, 2, 0, 3s, 10s, p, true, 5, 4, journal_));
+
+        // Enough time has elapsed, we all agree, and not too many
+        // proposers lagged.
+        BEAST_EXPECT(
+            ConsensusState::Yes ==
+                checkConsensus(10, 2, 2, 0, 3s, 10s, p, true, 4, 5, journal_));
     }
 
     void
@@ -600,11 +612,12 @@ public:
 
             Sim sim;
 
-            // This requires a group of 4 fast and 2 slow peers to create a
+            // This requires a group of fast and slow peers to create a
             // situation in which a subset of peers requires seeing additional
-            // proposals to declare consensus.
+            // proposals to declare consensus. Note: too many slow peers / too
+            // few fast causes consensus failure outright.
             PeerGroup slow = sim.createGroup(2);
-            PeerGroup fast = sim.createGroup(4);
+            PeerGroup fast = sim.createGroup(27);
             PeerGroup network = fast + slow;
 
             for (Peer* peer : network)

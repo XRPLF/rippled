@@ -298,6 +298,15 @@ struct Peer
         trustGraph.trust(this, this);
     }
 
+    /**
+     * Stubs
+     */
+    std::size_t
+    allowedDisagree()
+    {
+        return 0;
+    }
+
     /**  Schedule the provided callback in `when` duration, but if
         `when` is 0, call immediately
     */

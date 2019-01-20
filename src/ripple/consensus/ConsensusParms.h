@@ -82,6 +82,9 @@ struct ConsensusParms
     std::chrono::milliseconds ledgerMIN_CONSENSUS =
         std::chrono::milliseconds {1950};
 
+    //! Maximum time to delay consensus to let others catch up
+    std::chrono::seconds ledgerMAX_CONSENSUS {20};
+
     //! Minimum number of seconds to wait to ensure others have computed the LCL
     std::chrono::milliseconds ledgerMIN_CLOSE = std::chrono::seconds {2};
 

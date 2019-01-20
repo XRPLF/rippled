@@ -374,6 +374,14 @@ class RCLConsensus
         */
         void
         validate(RCLCxLedger const& ledger, RCLTxSet const& txns, bool proposing);
+
+        /** Get maximum quantity of trusted validators allowed to disagree
+         * while still allowing consensus (converse of quorum).
+         *
+         * @return quantity allowed to disagree.
+         */
+        std::size_t
+        allowedDisagree() const;
     };
 
 public:

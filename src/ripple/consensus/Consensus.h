@@ -76,6 +76,9 @@ shouldCloseLedger(
                             agree
     @param parms            Consensus constant parameters
     @param proposing        whether we should count ourselves
+    @param laggards         proposers with lesser sequence
+    @param allowedDisagree  max proposers that can disagree without delaying
+                            consensus
     @param j                journal for logging
 */
 ConsensusState
@@ -88,6 +91,8 @@ checkConsensus(
     std::chrono::milliseconds currentAgreeTime,
     ConsensusParms const & parms,
     bool proposing,
+    std::size_t const laggards,
+    std::size_t const allowedDisagree,
     beast::Journal j);
 
 /** Generic implementation of consensus algorithm.
@@ -504,6 +509,19 @@ private:
     asCloseTime(NetClock::time_point raw) const;
 
 private:
+    struct PeerPositions
+    {
+        void
+        clear()
+        {
+            positions.clear();
+            laggards = 0;
+        }
+
+        hash_map<NodeID_t, PeerPosition_t> positions;
+        std::size_t laggards {};
+    };
+
     Adaptor& adaptor_;
 
     ConsensusPhase phase_{ConsensusPhase::accepted};
@@ -551,7 +569,7 @@ private:
     // Peer related consensus data
 
     // Peer proposed positions for the current round
-    hash_map<NodeID_t, PeerPosition_t> currPeerPositions_;
+    PeerPositions currPeerPositions_;
 
     // Recently received peer positions, available when transitioning between
     // ledgers or rounds
@@ -654,7 +672,7 @@ Consensus<Adaptor>::startRoundInternal(
         previousLedger_.seq() + typename Ledger_t::Seq{1});
 
     playbackProposals();
-    if (currPeerPositions_.size() > (prevProposers_ / 2))
+    if (currPeerPositions_.positions.size() > (prevProposers_ / 2))
     {
         // We may be falling behind, don't wait for the timer
         // consider closing the ledger immediately
@@ -700,6 +718,15 @@ Consensus<Adaptor>::peerProposalInternal(
 
     if (newPeerProp.prevLedger() != prevLedgerID_)
     {
+        uint32_t ourSeq = previousLedger_.seq();
+        if (newPeerProp.proposeSeq() < ++ourSeq)
+        {
+            ++currPeerPositions_.laggards;
+            JLOG(j_.debug()) << "Got proposal for earlier ledger "
+                    << newPeerProp.proposeSeq()
+                    << " than ours "
+                    << ourSeq;
+        }
         JLOG(j_.debug()) << "Got proposal for " << newPeerProp.prevLedger()
                          << " but we are on " << prevLedgerID_;
         return false;
@@ -714,9 +741,9 @@ Consensus<Adaptor>::peerProposalInternal(
 
     {
         // update current position
-        auto peerPosIt = currPeerPositions_.find(peerID);
+        auto peerPosIt = currPeerPositions_.positions.find(peerID);
 
-        if (peerPosIt != currPeerPositions_.end())
+        if (peerPosIt != currPeerPositions_.positions.end())
         {
             if (newPeerProp.proposeSeq() <=
                 peerPosIt->second.proposal().proposeSeq())
@@ -735,17 +762,17 @@ Consensus<Adaptor>::peerProposalInternal(
                 for (auto& it : result_->disputes)
                     it.second.unVote(peerID);
             }
-            if (peerPosIt != currPeerPositions_.end())
-                currPeerPositions_.erase(peerID);
+            if (peerPosIt != currPeerPositions_.positions.end())
+                currPeerPositions_.positions.erase(peerID);
             deadNodes_.insert(peerID);
 
             return true;
         }
 
-        if (peerPosIt != currPeerPositions_.end())
+        if (peerPosIt != currPeerPositions_.positions.end())
             peerPosIt->second = newPeerPos;
         else
-            currPeerPositions_.emplace(peerID, newPeerPos);
+            currPeerPositions_.positions.emplace(peerID, newPeerPos);
     }
 
     if (newPeerProp.isInitial())
@@ -832,7 +859,7 @@ Consensus<Adaptor>::gotTxSet(
         // so this txSet must differ
         assert(id != result_->position.position());
         bool any = false;
-        for (auto const& it : currPeerPositions_)
+        for (auto const& it : currPeerPositions_.positions)
         {
             if (it.second.proposal().position() == id)
             {
@@ -860,7 +887,7 @@ Consensus<Adaptor>::simulate(
     now_ = now;
     closeLedger();
     result_->roundTime.tick(consensusDelay.value_or(100ms));
-    result_->proposers = prevProposers_ = currPeerPositions_.size();
+    result_->proposers = prevProposers_ = currPeerPositions_.positions.size();
     prevRoundTime_ = result_->roundTime.read();
     phase_ = ConsensusPhase::accepted;
     adaptor_.onForceAccept(
@@ -883,7 +910,7 @@ Consensus<Adaptor>::getJson(bool full) const
     Json::Value ret(Json::objectValue);
 
     ret["proposing"] = (mode_.get() == ConsensusMode::proposing);
-    ret["proposers"] = static_cast<int>(currPeerPositions_.size());
+    ret["proposers"] = static_cast<int>(currPeerPositions_.positions.size());
 
     if (mode_.get() != ConsensusMode::wrongLedger)
     {
@@ -913,11 +940,11 @@ Consensus<Adaptor>::getJson(bool full) const
         ret["previous_proposers"] = static_cast<Int>(prevProposers_);
         ret["previous_mseconds"] = static_cast<Int>(prevRoundTime_.count());
 
-        if (!currPeerPositions_.empty())
+        if (!currPeerPositions_.positions.empty())
         {
             Json::Value ppj(Json::objectValue);
 
-            for (auto const& pp : currPeerPositions_)
+            for (auto const& pp : currPeerPositions_.positions)
             {
                 ppj[to_string(pp.first)] = pp.second.getJson();
             }
@@ -1063,7 +1090,7 @@ Consensus<Adaptor>::phaseOpen()
 
     // it is shortly before ledger close time
     bool anyTransactions = adaptor_.hasOpenTransactions();
-    auto proposersClosed = currPeerPositions_.size();
+    auto proposersClosed = currPeerPositions_.positions.size();
     auto proposersValidated = adaptor_.proposersValidated(prevLedgerID_);
 
     openTime_.tick(clock_.now());
@@ -1119,7 +1146,7 @@ Consensus<Adaptor>::phaseEstablish()
     ConsensusParms const & parms = adaptor_.parms();
 
     result_->roundTime.tick(clock_.now());
-    result_->proposers = currPeerPositions_.size();
+    result_->proposers = currPeerPositions_.positions.size();
 
     convergePercent_ = result_->roundTime.read() * 100 /
         std::max<milliseconds>(prevRoundTime_, parms.avMIN_CONSENSUS_TIME);
@@ -1140,9 +1167,10 @@ Consensus<Adaptor>::phaseEstablish()
         return;
     }
 
-    JLOG(j_.info()) << "Converge cutoff (" << currPeerPositions_.size()
+    JLOG(j_.info()) << "Converge cutoff ("
+                    << currPeerPositions_.positions.size()
                     << " participants)";
-    prevProposers_ = currPeerPositions_.size();
+    prevProposers_ = currPeerPositions_.positions.size();
     prevRoundTime_ = result_->roundTime.read();
     phase_ = ConsensusPhase::accepted;
     adaptor_.onAccept(
@@ -1175,7 +1203,7 @@ Consensus<Adaptor>::closeLedger()
         adaptor_.propose(result_->position);
 
     // Create disputes with any peer positions we have transactions for
-    for (auto const& pit : currPeerPositions_)
+    for (auto const& pit : currPeerPositions_.positions)
     {
         auto const& pos = pit.second.proposal().position();
         auto const it = acquired_.find(pos);
@@ -1221,8 +1249,8 @@ Consensus<Adaptor>::updateOurPositions()
     // Verify freshness of peer positions and compute close times
     std::map<NetClock::time_point, int> closeTimeVotes;
     {
-        auto it = currPeerPositions_.begin();
-        while (it != currPeerPositions_.end())
+        auto it = currPeerPositions_.positions.begin();
+        while (it != currPeerPositions_.positions.end())
         {
             Proposal_t const& peerProp = it->second.proposal();
             if (peerProp.isStale(peerCutoff))
@@ -1232,7 +1260,7 @@ Consensus<Adaptor>::updateOurPositions()
                 JLOG(j_.warn()) << "Removing stale proposal from " << peerID;
                 for (auto& dt : result_->disputes)
                     dt.second.unVote(peerID);
-                it = currPeerPositions_.erase(it);
+                it = currPeerPositions_.positions.erase(it);
             }
             else
             {
@@ -1281,7 +1309,7 @@ Consensus<Adaptor>::updateOurPositions()
     NetClock::time_point consensusCloseTime = {};
     haveCloseTimeConsensus_ = false;
 
-    if (currPeerPositions_.empty())
+    if (currPeerPositions_.positions.empty())
     {
         // no other times
         haveCloseTimeConsensus_ = true;
@@ -1300,7 +1328,7 @@ Consensus<Adaptor>::updateOurPositions()
         else
             neededWeight = parms.avSTUCK_CONSENSUS_PCT;
 
-        int participants = currPeerPositions_.size();
+        int participants = currPeerPositions_.positions.size();
         if (mode_.get() == ConsensusMode::proposing)
         {
             ++closeTimeVotes[asCloseTime(result_->position.closeTime())];
@@ -1314,7 +1342,7 @@ Consensus<Adaptor>::updateOurPositions()
         int const threshConsensus =
             participantsNeeded(participants, parms.avCT_CONSENSUS_PCT);
 
-        JLOG(j_.info()) << "Proposers:" << currPeerPositions_.size()
+        JLOG(j_.info()) << "Proposers:" << currPeerPositions_.positions.size()
                         << " nw:" << neededWeight << " thrV:" << threshVote
                         << " thrC:" << threshConsensus;
 
@@ -1341,7 +1369,7 @@ Consensus<Adaptor>::updateOurPositions()
         {
             JLOG(j_.debug())
                 << "No CT consensus:"
-                << " Proposers:" << currPeerPositions_.size()
+                << " Proposers:" << currPeerPositions_.positions.size()
                 << " Mode:" << to_string(mode_.get())
                 << " Thresh:" << threshConsensus
                 << " Pos:" << consensusCloseTime.time_since_epoch().count();
@@ -1375,7 +1403,7 @@ Consensus<Adaptor>::updateOurPositions()
             if (!result_->position.isBowOut())
                 adaptor_.share(result_->txns);
 
-            for (auto const& it : currPeerPositions_)
+            for (auto const& it : currPeerPositions_.positions)
             {
                 Proposal_t const& p = it.second.proposal();
                 if (p.position() == newID)
@@ -1403,7 +1431,7 @@ Consensus<Adaptor>::haveConsensus()
     auto ourPosition = result_->position.position();
 
     // Count number of agreements/disagreements with our position
-    for (auto const& it : currPeerPositions_)
+    for (auto const& it : currPeerPositions_.positions)
     {
         Proposal_t const& peerProp = it.second.proposal();
         if (peerProp.position() == ourPosition)
@@ -1435,6 +1463,8 @@ Consensus<Adaptor>::haveConsensus()
         result_->roundTime.read(),
         adaptor_.parms(),
         mode_.get() == ConsensusMode::proposing,
+        currPeerPositions_.laggards,
+        adaptor_.allowedDisagree(),
         j_);
 
     if (result_->state == ConsensusState::No)
@@ -1507,10 +1537,10 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
         JLOG(j_.debug()) << "Transaction " << txID << " is disputed";
 
         typename Result::Dispute_t dtx{tx, result_->txns.exists(txID),
-         std::max(prevProposers_, currPeerPositions_.size()), j_};
+        std::max(prevProposers_, currPeerPositions_.positions.size()), j_};
 
         // Update all of the available peer's votes on the disputed transaction
-        for (auto const& pit : currPeerPositions_)
+        for (auto const& pit : currPeerPositions_.positions)
         {
             Proposal_t const& peerProp = pit.second.proposal();
             auto const cit = acquired_.find(peerProp.position());

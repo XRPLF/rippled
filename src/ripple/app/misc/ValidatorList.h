@@ -241,6 +241,18 @@ public:
         return quorum_;
     }
 
+    /** Get maximum quantity of trusted validators allowed to disagree
+     * while still allowing consensus (converse of quorum).
+     *
+     * @return quantity allowed to disagree.
+     */
+    std::size_t
+    allowedDisagree () const
+    {
+        std::lock_guard<std::shared_timed_mutex> lock{mutex_};
+        return trustedKeys_.size() - quorum_;
+    }
+
     /** Returns `true` if public key is trusted
 
         @param identity Validation public key
