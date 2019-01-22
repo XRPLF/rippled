@@ -327,7 +327,7 @@ class RootStoppable : public Stoppable
 public:
     explicit RootStoppable (std::string name);
 
-    ~RootStoppable ();
+    virtual ~RootStoppable ();
 
     bool isStopping() const;
 
