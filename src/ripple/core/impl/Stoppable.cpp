@@ -42,8 +42,6 @@ Stoppable::Stoppable (std::string name, Stoppable& parent)
 
 Stoppable::~Stoppable ()
 {
-    // Either we must not have started, or Children must be stopped.
-    assert (!m_root.started() || m_childrenStopped);
 }
 
 bool Stoppable::isStopping() const
