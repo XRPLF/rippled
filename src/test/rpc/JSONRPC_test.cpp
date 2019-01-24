@@ -855,6 +855,36 @@ R"({
 "Missing field 'tx_json.Sequence'.",
 "Missing field 'tx_json.Sequence'."}}},
 
+{ "Single-sign a multisigned transaction.", __LINE__,
+R"({
+    "command": "doesnt_matter",
+    "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+    "secret": "a",
+    "tx_json": {
+        "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount" : "1000000000",
+        "Destination" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee" : "50",
+        "Sequence" : 0,
+        "Signers" : [
+            {
+                "Signer" : {
+                    "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                    "SigningPubKey" : "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+                    "TxnSignature" : "304502210080EB23E78A841DDC5E3A4F10DE6EAF052207D6B519BF8954467ADB221B3F349002202CA458E8D4E4DE7176D27A91628545E7B295A5DFC8ADF0B5CD3E279B6FA02998"
+                }
+            }
+        ],
+        "SigningPubKey" : "",
+        "TransactionType" : "Payment"
+    }
+})",
+{{
+"Already multisigned.",
+"Already multisigned.",
+"Secret does not match account.",
+""}}},
+
 { "Minimal sign_for.", __LINE__,
 R"({
     "command": "doesnt_matter",
@@ -1109,8 +1139,8 @@ R"({
     }
 })",
 {{
-"Secret does not match account.",
-"Secret does not match account.",
+"Already multisigned.",
+"Already multisigned.",
 "Duplicate Signers:Signer:Account entries (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh) are not allowed.",
 ""}}},
 
@@ -1139,8 +1169,8 @@ R"({
     }
 })",
 {{
-"Secret does not match account.",
-"Secret does not match account.",
+"Already multisigned.",
+"Already multisigned.",
 "",
 ""}}},
 
@@ -1169,8 +1199,8 @@ R"({
     }
 })",
 {{
-"Secret does not match account.",
-"Secret does not match account.",
+"Already multisigned.",
+"Already multisigned.",
 "Invalid signature.",
 "Invalid signature."}}},
 
@@ -1214,6 +1244,37 @@ R"({
 "Missing field 'tx_json.TransactionType'.",
 "Missing field 'tx_json.TransactionType'.",
 "Missing field 'tx_json.TransactionType'."}}},
+
+{ "TxnSignature in sign_for.", __LINE__,
+R"({
+    "command": "doesnt_matter",
+    "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+    "secret": "c",
+    "tx_json": {
+        "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount" : "1000000000",
+        "Destination" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee" : "50",
+        "Sequence" : 0,
+        "Signers" : [
+            {
+                "Signer" : {
+                    "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                    "SigningPubKey" : "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+                    "TxnSignature" : "304502210080EB23E78A841DDC5E3A4F10DE6EAF052207D6B519BF8954467ADB221B3F349002202CA458E8D4E4DE7176D27A91628545E7B295A5DFC8ADF0B5CD3E279B6FA02998"
+                }
+            }
+        ],
+        "SigningPubKey" : "",
+        "TxnSignature" : "304502210080EB23E78A841DDC5E3A4F10DE6EAF052207D6B519BF8954467ADB221B3F349002202CA458E8D4E4DE7176D27A91628545E7B295A5DFC8ADF0B5CD3E279B6FA02998",
+        "TransactionType" : "Payment"
+    }
+})",
+{{
+"Already multisigned.",
+"Already multisigned.",
+"Already single-signed.",
+"Signing of transaction is malformed."}}},
 
 { "Invalid field 'tx_json': string instead of object", __LINE__,
 R"({
@@ -2337,7 +2398,8 @@ public:
                     {
                         std::ostringstream description;
                         description << txnTest.description << "  Called "
-                            << get<2>(testFunc) << "()";
+                            << get<2>(testFunc) << "().  Got \'"
+                            << errStr << "\'";
                         fail (description.str(), __FILE__, txnTest.line);
                     }
                 }

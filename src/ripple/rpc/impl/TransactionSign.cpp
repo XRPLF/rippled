@@ -80,6 +80,11 @@ public:
                 (multiSignature_ != nullptr));
     }
 
+    bool isSingleSigning () const
+    {
+        return !isMultiSigning();
+    }
+
     // When multi-signing we should not edit the tx_json fields.
     bool editFields () const
     {
@@ -447,9 +452,20 @@ transactionPreProcessImpl (
             tx_json[jss::Flags] = tfFullyCanonicalSig;
     }
 
-    // If multisigning then we need to return the public key.
+    // If multisigning there should not be a single signature and vice versa.
     if (signingArgs.isMultiSigning())
+    {
+        if (tx_json.isMember (sfTxnSignature.jsonName))
+            return rpcError (rpcALREADY_SINGLE_SIG);
+
+        // If multisigning then we need to return the public key.
         signingArgs.setPublicKey (keypair.first);
+    }
+    else if (signingArgs.isSingleSigning())
+    {
+        if (tx_json.isMember (sfSigners.jsonName))
+            return rpcError (rpcALREADY_MULTISIG);
+    }
 
     if (verify)
     {
@@ -524,7 +540,7 @@ transactionPreProcessImpl (
 
         signingArgs.moveMultiSignature (std::move (multisig));
     }
-    else
+    else if (signingArgs.isSingleSigning())
     {
         stpTrans->sign (keypair.first, keypair.second);
     }
@@ -1130,6 +1146,10 @@ Json::Value transactionSubmitMultiSigned (
                 << " field.  Field must be empty when multi-signing.";
             return RPC::make_error (rpcINVALID_PARAMS, err.str ());
         }
+
+        // There may not be a TxnSignature field.
+        if (stpTrans->isFieldPresent (sfTxnSignature))
+            return rpcError (rpcSIGNING_MALFORMED);
 
         // The Fee field must be in XRP and greater than zero.
         auto const fee = stpTrans->getFieldAmount (sfFee);

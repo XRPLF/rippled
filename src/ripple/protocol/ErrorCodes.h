@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012 - 2019 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -81,6 +81,8 @@ enum error_code_i
     // Bad parameter
     rpcACT_BITCOIN,
     rpcACT_MALFORMED,
+    rpcALREADY_MULTISIG,
+    rpcALREADY_SINGLE_SIG,
     rpcQUALITY_MALFORMED,
     rpcBAD_BLOB,
     rpcBAD_FEATURE,
@@ -106,7 +108,7 @@ enum error_code_i
     rpcPAYS_AMT_MALFORMED,
     rpcPORT_MALFORMED,
     rpcPUBLIC_MALFORMED,
-    rpcSIGN_FOR_MALFORMED,
+    rpcSIGNING_MALFORMED,
     rpcSENDMAX_MALFORMED,
     rpcSRC_ACT_MALFORMED,
     rpcSRC_ACT_MISSING,
