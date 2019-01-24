@@ -41,11 +41,8 @@ enum error_code_i
     // Programs should use error tokens.
 
     // Misc failure
-    rpcGENERAL,
-    rpcLOAD_FAILED,
     rpcNO_PERMISSION,
     rpcNO_EVENTS,
-    rpcNOT_STANDALONE,
     rpcTOO_BUSY,
     rpcSLOW_DOWN,
     rpcHIGH_FEE,
@@ -59,19 +56,11 @@ enum error_code_i
     rpcNO_NETWORK,
 
     // Ledger state
-    rpcACT_EXISTS,
     rpcACT_NOT_FOUND,
-    rpcINSUF_FUNDS,
     rpcLGR_NOT_FOUND,
     rpcLGR_NOT_VALIDATED,
     rpcMASTER_DISABLED,
-    rpcNO_ACCOUNT,
-    rpcNO_PATH,
-    rpcPASSWD_CHANGED,
-    rpcSRC_MISSING,
-    rpcSRC_UNCLAIMED,
     rpcTXN_NOT_FOUND,
-    rpcWRONG_SEED,
 
     // Malformed command
     rpcINVALID_PARAMS,
@@ -83,8 +72,6 @@ enum error_code_i
     rpcACT_MALFORMED,
     rpcALREADY_MULTISIG,
     rpcALREADY_SINGLE_SIG,
-    rpcQUALITY_MALFORMED,
-    rpcBAD_BLOB,
     rpcBAD_FEATURE,
     rpcBAD_ISSUER,
     rpcBAD_MARKET,
@@ -99,21 +86,14 @@ enum error_code_i
     rpcDST_AMT_MALFORMED,
     rpcDST_AMT_MISSING,
     rpcDST_ISR_MALFORMED,
-    rpcGETS_ACT_MALFORMED,
-    rpcGETS_AMT_MALFORMED,
-    rpcHOST_IP_MALFORMED,
     rpcLGR_IDXS_INVALID,
     rpcLGR_IDX_MALFORMED,
-    rpcPAYS_ACT_MALFORMED,
-    rpcPAYS_AMT_MALFORMED,
-    rpcPORT_MALFORMED,
     rpcPUBLIC_MALFORMED,
     rpcSIGNING_MALFORMED,
     rpcSENDMAX_MALFORMED,
     rpcSRC_ACT_MALFORMED,
     rpcSRC_ACT_MISSING,
     rpcSRC_ACT_NOT_FOUND,
-    rpcSRC_AMT_MALFORMED,
     rpcSRC_CUR_MALFORMED,
     rpcSRC_ISR_MALFORMED,
     rpcSTREAM_MALFORMED,
@@ -123,6 +103,7 @@ enum error_code_i
     rpcINTERNAL,        // Generic internal error.
     rpcNOT_IMPL,
     rpcNOT_SUPPORTED,
+    rpcLAST = rpcNOT_SUPPORTED   // rpcLAST should always equal the last code.
 };
 
 //------------------------------------------------------------------------------
