@@ -6970,10 +6970,20 @@ public:
             Json::Value exp;
             Json::Reader{}.parse (rpcCallTest.exp, exp);
 
-            // If there is an "error_code" field, remove it.  Error codes
-            // are not expected to stay stable between releases.
-            got.removeMember ("error_code");
-            exp.removeMember ("error_code");
+            // Lambda to remove the "params[0u]:error_code" field if present.
+            // Error codes are not expected to be stable between releases.
+            auto rmErrorCode = [] (Json::Value& json)
+            {
+                if (json.isMember (jss::params) &&
+                    json[jss::params].isArray() &&
+                    json[jss::params].size() > 0 &&
+                    json[jss::params][0u].isObject())
+                {
+                    json[jss::params][0u].removeMember (jss::error_code);
+                }
+            };
+            rmErrorCode (got);
+            rmErrorCode (exp);
 
             // Pass if we didn't expect a throw and we got what we expected.
             if ((rpcCallTest.throwsWhat == RPCCallTestData::no_exception) &&
