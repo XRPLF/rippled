@@ -45,11 +45,10 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
-#include <boost/beast/core/detail/type_traits.hpp>
 #include <functional>
 #include <string>
 #include <tuple>
-#include <type_traits>
+#include <ripple/beast/cxx17/type_traits.h> // <type_traits>
 #include <utility>
 #include <unordered_map>
 #include <vector>
@@ -691,7 +690,7 @@ protected:
         FN const&... fN)
     {
         maybe_invoke(stx, f,
-            boost::beast::detail::is_invocable<F,
+            std::is_invocable<F,
                 void(Env&, STTx const&)>());
         invoke(stx, fN...);
     }
@@ -725,7 +724,7 @@ protected:
         FN const&... fN)
     {
         maybe_invoke(jt, f,
-            boost::beast::detail::is_invocable<F,
+            std::is_invocable<F,
                 void(Env&, JTx&)>());
         invoke(jt, fN...);
     }
