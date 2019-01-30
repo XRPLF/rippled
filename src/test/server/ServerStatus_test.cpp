@@ -29,11 +29,13 @@
 #include <ripple/basics/base64.h>
 #include <boost/beast/http.hpp>
 #include <beast/test/yield_to.hpp>
-#include <boost/beast/websocket/detail/mask.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <algorithm>
+#include <array>
+#include <random>
 #include <regex>
 
 namespace ripple {
@@ -97,14 +99,16 @@ class ServerStatus_test :
         req.insert("User-Agent", "test");
         req.method(boost::beast::http::verb::get);
         req.insert("Upgrade", "websocket");
-        boost::beast::websocket::detail::sec_ws_key_type key;
-#if BOOST_VERSION >= 106800
-        boost::beast::websocket::detail::make_sec_ws_key(key);
-#else
-        boost::beast::websocket::detail::maskgen maskgen;
-        boost::beast::websocket::detail::make_sec_ws_key(key, maskgen);
-#endif
-        req.insert("Sec-WebSocket-Key", key);
+        {
+            // not secure, but OK for a testing
+            std::random_device rd;
+            std::mt19937 e{rd()};
+            std::uniform_int_distribution<> d(0, 255);
+            std::array<std::uint8_t, 16> key;
+            for(auto& v : key)
+                v = d(e);
+            req.insert("Sec-WebSocket-Key", base64_encode(key.data(), key.size()));
+        };
         req.insert("Sec-WebSocket-Version", "13");
         req.insert(boost::beast::http::field::connection, "upgrade");
         return req;
