@@ -44,12 +44,13 @@ matrix:
 cache:
   directories:
   - $BOOST_ROOT
+  - .nih_c
 
 before_install:
   - bin/ci/ubuntu/install-dependencies.sh
 
 script:
-  - travis_retry bin/ci/ubuntu/build-and-test.sh
+  - travis_wait 35 bin/ci/ubuntu/build-and-test.sh
 
 notifications:
   email:
