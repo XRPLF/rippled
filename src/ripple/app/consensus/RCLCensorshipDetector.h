@@ -20,80 +20,71 @@
 #ifndef RIPPLE_APP_CONSENSUS_RCLCENSORSHIPDETECTOR_H_INCLUDED
 #define RIPPLE_APP_CONSENSUS_RCLCENSORSHIPDETECTOR_H_INCLUDED
 
+#include <ripple/basics/algorithm.h>
 #include <ripple/shamap/SHAMap.h>
 #include <algorithm>
-#include <map>
+#include <utility>
+#include <vector>
 
 namespace ripple {
 
 template <class TxID, class Sequence>
 class RCLCensorshipDetector
 {
-private:
-    std::map<TxID, Sequence> tracker_;
-
-    /** Removes all elements satisfying specific criteria from the tracker
-
-        @param pred A predicate which returns true for tracking entries that
-                    should be removed. The predicate must be callable as:
-                        bool pred(TxID const&, Sequence)
-                    It must return true for entries that should be removed.
-
-        @note This could be replaced with std::erase_if when it becomes part
-              of the standard. For example:
-
-                prune ([](TxID const& id, Sequence seq)
-                    {
-                        return id.isZero() || seq == 314159;
-                    });
-
-              would become:
-
-                std::erase_if(tracker_.begin(), tracker_.end(),
-                    [](auto const& e)
-                    {
-                        return e.first.isZero() || e.second == 314159;
-                    }
-    */
-    template <class Predicate>
-    void prune(Predicate&& pred)
+public:
+    struct TxIDSeq
     {
-        auto t = tracker_.begin();
+        TxID txid;
+        Sequence seq;
 
-        while (t != tracker_.end())
-        {
-            if (pred(t->first, t->second))
-                t = tracker_.erase(t);
-            else
-                t = std::next(t);
-        }
+        TxIDSeq (TxID const& txid_, Sequence const& seq_)
+        : txid (txid_)
+        , seq (seq_)
+        { }
+    };
+
+    friend bool operator< (TxIDSeq const& lhs, TxIDSeq const& rhs)
+    {
+        if (lhs.txid != rhs.txid)
+            return lhs.txid < rhs.txid;
+        return lhs.seq < rhs.seq;
     }
+
+    friend bool operator< (TxIDSeq const& lhs, TxID const& rhs)
+    {
+        return lhs.txid < rhs;
+    }
+
+    friend bool operator< (TxID const& lhs, TxIDSeq const& rhs)
+    {
+        return lhs < rhs.txid;
+    }
+
+    using TxIDSeqVec = std::vector<TxIDSeq>;
+
+private:
+    TxIDSeqVec tracker_;
 
 public:
     RCLCensorshipDetector() = default;
 
     /** Add transactions being proposed for the current consensus round.
 
-        @param seq      The sequence number of the ledger being built.
         @param proposed The set of transactions that we are initially proposing
                         for this round.
     */
-    void propose(
-        Sequence seq,
-        std::vector<TxID> proposed)
+    void propose(TxIDSeqVec proposed)
     {
-        std::sort (proposed.begin(), proposed.end());
-
         // We want to remove any entries that we proposed in a previous round
         // that did not make it in yet if we are no longer proposing them.
-        prune ([&proposed](TxID const& id, Sequence seq)
-            {
-                return !std::binary_search(proposed.begin(), proposed.end(), id);
-            });
-
-        // Track the entries that we are proposing in this round.
-        for (auto const& p : proposed)
-            tracker_.emplace(p, seq); // FIXME C++17: use try_emplace
+        // And we also want to preserve the Sequence of entries that we proposed
+        // in the last round and want to propose again.
+        std::sort(proposed.begin(), proposed.end());
+        generalized_set_intersection(proposed.begin(), proposed.end(),
+            tracker_.cbegin(), tracker_.cend(),
+            [](auto& x, auto const& y) {x.seq = y.seq;},
+            [](auto const& x, auto const& y) {return x.txid < y.txid;});
+        tracker_ = std::move(proposed);
     }
 
     /** Determine which transactions made it and perform censorship detection.
@@ -114,17 +105,18 @@ public:
         std::vector<TxID> accepted,
         Predicate&& pred)
     {
-        std::sort (accepted.begin(), accepted.end());
+        auto acceptTxid = accepted.begin();
+        auto const ae = accepted.end();
+        std::sort(acceptTxid, ae);
 
         // We want to remove all tracking entries for transactions that were
         // accepted as well as those which match the predicate.
-        prune ([&pred, &accepted](TxID const& id, Sequence seq)
-            {
-                if (std::binary_search(accepted.begin(), accepted.end(), id))
-                    return true;
 
-                return pred(id, seq);
-            });
+        auto i = remove_if_intersect_or_match(tracker_.begin(), tracker_.end(),
+                     accepted.begin(), accepted.end(),
+                     [&pred](auto const& x) {return pred(x.txid, x.seq);},
+                     std::less<void>{});
+        tracker_.erase(i, tracker_.end());
     }
 
     /** Removes all elements from the tracker

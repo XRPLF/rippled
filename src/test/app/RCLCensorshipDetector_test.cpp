@@ -33,7 +33,10 @@ class RCLCensorshipDetector_test : public beast::unit_test::suite
         std::vector<int> remain, std::vector<int> remove)
     {
         // Begin tracking what we're proposing this round
-        cdet.propose(round, std::move(proposed));
+        RCLCensorshipDetector<int, int>::TxIDSeqVec proposal;
+        for (auto const& i : proposed)
+            proposal.emplace_back(i, round);
+        cdet.propose(std::move(proposal));
 
         // Finalize the round, by processing what we accepted; then
         // remove anything that needs to be removed and ensure that
@@ -68,7 +71,7 @@ public:
 
         RCLCensorshipDetector<int, int> cdet;
         int round = 0;
-
+                             // proposed            accepted    remain          remove
         test(cdet, ++round,     { },                { },        { },            { });
         test(cdet, ++round,     { 10, 11, 12, 13 }, { 11, 2 },  { 10, 13 },     { });
         test(cdet, ++round,     { 10, 13, 14, 15 }, { 14 },     { 10, 13, 15 }, { });
