@@ -1487,6 +1487,7 @@ install (
     src/ripple/basics/StringUtilities.h
     src/ripple/basics/ToString.h
     src/ripple/basics/UnorderedContainers.h
+    src/ripple/basics/algorithm.h
     src/ripple/basics/base_uint.h
     src/ripple/basics/chrono.h
     src/ripple/basics/contract.h

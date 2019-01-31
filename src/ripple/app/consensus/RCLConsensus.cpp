@@ -330,15 +330,16 @@ RCLConsensus::Adaptor::onClose(
 
     if (!wrongLCL)
     {
-        std::vector<TxID> proposed;
+        LedgerIndex const seq = prevLedger->info().seq + 1;
+        RCLCensorshipDetector<TxID, LedgerIndex>::TxIDSeqVec proposed;
 
         initialSet->visitLeaves(
-            [&proposed](std::shared_ptr<SHAMapItem const> const& item)
+            [&proposed, seq](std::shared_ptr<SHAMapItem const> const& item)
             {
-                proposed.push_back(item->key());
+                proposed.emplace_back(item->key(), seq);
             });
 
-        censorshipDetector_.propose(prevLedger->info().seq + 1, std::move(proposed));
+        censorshipDetector_.propose(std::move(proposed));
     }
 
     // Needed because of the move below.
