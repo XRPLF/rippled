@@ -25,6 +25,7 @@
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/rpc/Role.h>
+#include <boost/utility/string_view.hpp>
 #include <memory>
 #include <string>
 
@@ -42,26 +43,23 @@ public:
         , ws_(ws)
     {
         auto const& h = ws->request();
-        auto it = h.find("X-User");
-        if (it != h.end() &&
-            isIdentified(
-                ws->port(), beast::IPAddressConversion::from_asio(
-                    ws->remote_endpoint()).address(), it->value().to_string()))
+        if (ipAllowed(beast::IPAddressConversion::from_asio(
+            ws->remote_endpoint()).address(), ws->port().secure_gateway_ip))
         {
-            user_ = it->value().to_string();
-            it = h.find("X-Forwarded-For");
+            auto it = h.find("X-User");
             if (it != h.end())
-                fwdfor_ = it->value().to_string();
+                user_ = it->value().to_string();
+            fwdfor_ = std::string(forwardedFor(h));
         }
     }
 
-    std::string
+    boost::string_view
     user() const
     {
         return user_;
     }
 
-    std::string
+    boost::string_view
     forwarded_for() const
     {
         return fwdfor_;

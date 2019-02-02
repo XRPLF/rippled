@@ -20,10 +20,13 @@
 #ifndef RIPPLE_SERVER_ROLE_H_INCLUDED
 #define RIPPLE_SERVER_ROLE_H_INCLUDED
 
-#include <ripple/server/Port.h>
+#include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/json/json_value.h>
 #include <ripple/resource/ResourceManager.h>
-#include <ripple/beast/net/IPEndpoint.h>
+#include <ripple/server/Handoff.h>
+#include <ripple/server/Port.h>
+#include <boost/utility/string_view.hpp>
+#include <string>
 #include <vector>
 
 namespace ripple {
@@ -40,25 +43,27 @@ enum class Role
     USER,
     IDENTIFIED,
     ADMIN,
+    PROXY,
     FORBID
 };
 
 /** Return the allowed privilege role.
-    jsonRPC must meet the requirements of the JSON-RPC
+    params must meet the requirements of the JSON-RPC
     specification. It must be of type Object, containing the key params
     which is an array with at least one object. Inside this object
     are the optional keys 'admin_user' and 'admin_password' used to
-    validate the credentials.
+    validate the credentials. If user is non-blank, it's username
+    passed in the HTTP header by a secure_gateway proxy.
 */
 Role
 requestRole (Role const& required, Port const& port,
-    Json::Value const& jsonRPC, beast::IP::Endpoint const& remoteIp,
-    std::string const& user);
+    Json::Value const& params, beast::IP::Endpoint const& remoteIp,
+    boost::string_view const& user);
 
 Resource::Consumer
 requestInboundEndpoint (Resource::Manager& manager,
-    beast::IP::Endpoint const& remoteAddress,
-        Port const& port, std::string const& user);
+    beast::IP::Endpoint const& remoteAddress, Role const& role,
+    boost::string_view const& user, boost::string_view const& forwardedFor);
 
 /**
  * Check if the role entitles the user to unlimited resources.
@@ -67,12 +72,18 @@ bool
 isUnlimited (Role const& role);
 
 /**
- * If the HTTP header X-User exists with a non-empty value was passed by an IP
- * configured as secure_gateway, then the user can be positively identified.
+ * True if remoteIp is in any of adminIp
+ *
+ * @param remoteIp Remote address for which to search.
+ * @param adminIp  List of IP's in which to search.
+ * @return Whether remoteIp is in adminIp.
  */
 bool
-isIdentified (Port const& port, beast::IP::Address const& remoteIp,
-        std::string const& user);
+ipAllowed (beast::IP::Address const& remoteIp,
+    std::vector<beast::IP::Address> const& adminIp);
+
+boost::string_view
+forwardedFor(http_request_type const& request);
 
 } // ripple
 

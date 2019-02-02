@@ -30,29 +30,33 @@ struct Context;
 
 Json::Value doPing (RPC::Context& context)
 {
-    // For testing connection privileges.
-    if (isUnlimited(context.role))
+    Json::Value ret(Json::objectValue);
+    switch (context.role)
     {
-        Json::Value ret;
-
-        switch (context.role)
-        {
-            case Role::ADMIN:
-                ret[jss::role] = "admin";
-                break;
-            case Role::IDENTIFIED:
-                ret[jss::role] = "identified";
-                break;
-            default:
-                ;
-        }
-
-        return ret;
+        case Role::ADMIN:
+            ret[jss::role] = "admin";
+            break;
+        case Role::IDENTIFIED:
+            ret[jss::role] = "identified";
+            ret[jss::username] = context.headers.user.to_string();
+            if (context.headers.forwardedFor.size())
+                ret[jss::ip] = context.headers.forwardedFor.to_string();
+            break;
+        case Role::PROXY:
+            ret[jss::role] = "proxied";
+            ret[jss::ip] = context.headers.forwardedFor.to_string();
+        default:
+            ;
     }
-    else
+
+    // This is only accessible on ws sessions.
+    if (context.infoSub)
     {
-        return Json::Value (Json::objectValue);
+        if (context.infoSub->getConsumer().isUnlimited())
+            ret[jss::unlimited] = true;
     }
+
+    return ret;
 }
 
 } // ripple

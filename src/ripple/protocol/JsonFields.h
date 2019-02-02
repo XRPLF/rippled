@@ -351,6 +351,7 @@ JSS ( proof );                      // in: BookOffers
 JSS ( propose_seq );                // out: LedgerPropose
 JSS ( proposers );                  // out: NetworkOPs, LedgerConsensus
 JSS ( protocol );                   // out: PeerImp
+JSS ( proxied );                    // out: RPC ping
 JSS ( pubkey_node );                // out: NetworkOPs
 JSS ( pubkey_publisher );           // out: ValidatorList
 JSS ( pubkey_validator );           // out: NetworkOPs, ValidatorList

@@ -53,16 +53,7 @@ struct Entry
 
     std::string to_string() const
     {
-        switch (key->kind)
-        {
-        case kindInbound:   return key->address.to_string();
-        case kindOutbound:  return key->address.to_string();
-        case kindUnlimited: return std::string ("\"") + key->name + "\"";
-        default:
-            assert(false);
-        }
-
-        return "(undefined)";
+        return key->address.to_string();
     }
 
     /**

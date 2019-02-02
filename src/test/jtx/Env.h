@@ -275,6 +275,12 @@ public:
     */
     template<class... Args>
     Json::Value
+    rpc(std::unordered_map<std::string, std::string> const& headers,
+        std::string const& cmd,
+        Args&&... args);
+
+    template<class... Args>
+    Json::Value
     rpc(std::string const& cmd, Args&&... args);
 
     /** Returns the current ledger.
@@ -641,7 +647,8 @@ protected:
     TER ter_ = tesSUCCESS;
 
     Json::Value
-    do_rpc(std::vector<std::string> const& args);
+    do_rpc(std::vector<std::string> const& args,
+        std::unordered_map<std::string, std::string> const& headers = {});
 
     void
     autofill_sig (JTx& jt);
@@ -736,11 +743,20 @@ protected:
 
 template<class... Args>
 Json::Value
+Env::rpc(std::unordered_map<std::string, std::string> const& headers,
+    std::string const& cmd,
+    Args&&... args)
+{
+    return do_rpc(std::vector<std::string>{cmd, std::forward<Args>(args)...},
+        headers);
+}
+
+template<class... Args>
+Json::Value
 Env::rpc(std::string const& cmd, Args&&... args)
 {
-    std::vector<std::string> vs{cmd,
-        std::forward<Args>(args)...};
-    return do_rpc(vs);
+    return rpc(std::unordered_map<std::string, std::string>(), cmd,
+        std::forward<Args>(args)...);
 }
 
 } // jtx

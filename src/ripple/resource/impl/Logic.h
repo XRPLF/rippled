@@ -172,7 +172,7 @@ public:
      * restrictions, such as permission to perform certain RPC calls, may be
      * enabled.
      */
-    Consumer newUnlimitedEndpoint (std::string const& name)
+    Consumer newUnlimitedEndpoint (beast::IP::Endpoint const& address)
     {
         Entry* entry (nullptr);
 
@@ -180,7 +180,7 @@ public:
             std::lock_guard<std::recursive_mutex> _(lock_);
             auto result =
                 table_.emplace (std::piecewise_construct,
-                    std::make_tuple (name),                             // Key
+                    std::make_tuple (kindUnlimited, address.at_port(1)),// Key
                     std::make_tuple (m_clock.now()));                   // Entry
 
             entry = &result.first->second;

@@ -38,6 +38,7 @@
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/impl/Tuning.h>
+#include <ripple/rpc/Role.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/server/SimpleWriter.h>
 #include <boost/beast/http/fields.hpp>
@@ -199,11 +200,14 @@ ServerHandlerImp::onHandoff(
         }
 
         auto is {std::make_shared<WSInfoSub>(m_networkOPs, ws)};
+        auto const beast_remote_address =
+            beast::IPAddressConversion::from_asio(remote_address);
         is->getConsumer() = requestInboundEndpoint(
-            m_resourceManager,
-            beast::IPAddressConversion::from_asio(remote_address),
-            session.port(),
-            is->user());
+            m_resourceManager, beast_remote_address,
+            requestRole(Role::GUEST, session.port(), Json::Value(),
+                beast_remote_address, is->user()),
+            is->user(),
+            is->forwarded_for());
         ws->appDefined = std::move(is);
         ws->run();
 
@@ -489,12 +493,6 @@ ServerHandlerImp::processSession(
     else
     {
         jr[jss::status] = jss::success;
-
-        // For testing resource limits on this connection.
-        if (is->getConsumer().isUnlimited() &&
-            jv[jss::command].isString() &&
-            jv[jss::command].asString() == "ping")
-                jr[jss::unlimited] = true;
     }
 
     if (jv.isMember(jss::id))
@@ -517,23 +515,14 @@ ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
             session->request().body().data()),
                 session->remoteAddress().at_port (0),
                     makeOutput (*session), coro,
-        [&]
-        {
-            auto const iter =
-                session->request().find(
-                    "X-Forwarded-For");
-            if(iter != session->request().end())
-                return iter->value().to_string();
-            return std::string{};
-        }(),
-        [&]
-        {
+        forwardedFor(session->request()),
+        [&]{
             auto const iter =
                 session->request().find(
                     "X-User");
             if(iter != session->request().end())
-                return iter->value().to_string();
-            return std::string{};
+                return iter->value();
+            return boost::beast::string_view{};
         }());
 
     if(beast::rfc2616::is_keep_alive(session->request()))
@@ -562,7 +551,7 @@ void
 ServerHandlerImp::processRequest (Port const& port,
     std::string const& request, beast::IP::Endpoint const& remoteIPAddress,
         Output&& output, std::shared_ptr<JobQueue::Coro> coro,
-        std::string forwardedFor, std::string user)
+        boost::string_view forwardedFor, boost::string_view user)
 {
     auto rpcJ = app_.journal ("RPC");
 
@@ -636,12 +625,12 @@ ServerHandlerImp::processRequest (Port const& port,
         Resource::Consumer usage;
         if (isUnlimited(role))
         {
-            usage = m_resourceManager.newUnlimitedEndpoint(
-                remoteIPAddress.to_string());
+            usage = m_resourceManager.newUnlimitedEndpoint(remoteIPAddress);
         }
         else
         {
-            usage = m_resourceManager.newInboundEndpoint(remoteIPAddress);
+            usage = m_resourceManager.newInboundEndpoint(remoteIPAddress,
+                role == Role::PROXY, forwardedFor);
             if (usage.disconnect())
             {
                 if (!batch)
@@ -774,7 +763,7 @@ ServerHandlerImp::processRequest (Port const& port,
          * Clear header-assigned values if not positively identified from a
          * secure_gateway.
          */
-        if (role != Role::IDENTIFIED)
+        if (role != Role::IDENTIFIED && role != Role::PROXY)
         {
             forwardedFor.clear();
             user.clear();

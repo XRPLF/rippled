@@ -22,7 +22,10 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
 #include <ripple/beast/core/CurrentThreadName.h>
+#include <ripple/beast/net/IPAddressConversion.h>
+#include <boost/asio/ip/address_v4.hpp>
 #include <boost/core/ignore_unused.hpp>
+#include <boost/system/error_code.hpp>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
@@ -46,7 +49,6 @@ public:
         : journal_ (journal)
         , logic_ (collector, stopwatch(), journal)
     {
-        boost::ignore_unused (journal_); // Keep unused journal_ just in case.
         thread_ = std::thread {&ManagerImp::run, this};
     }
 
@@ -69,14 +71,37 @@ public:
         return logic_.newInboundEndpoint (address);
     }
 
+    Consumer newInboundEndpoint (beast::IP::Endpoint const& address,
+        bool const proxy, boost::string_view const& forwardedFor) override
+    {
+        if (! proxy)
+            return newInboundEndpoint(address);
+
+        boost::system::error_code ec;
+        auto const proxiedIp = boost::asio::ip::make_address(
+            forwardedFor.to_string(), ec);
+        if (ec)
+        {
+            journal_.warn() << "forwarded for ("
+                << forwardedFor
+                << ") from proxy "
+                << address.to_string()
+                << " doesn't convert to IP endpoint: "
+                << ec.message();
+            return newInboundEndpoint(address);
+        }
+        return newInboundEndpoint(
+            beast::IPAddressConversion::from_asio(proxiedIp));
+    }
+
     Consumer newOutboundEndpoint (beast::IP::Endpoint const& address) override
     {
         return logic_.newOutboundEndpoint (address);
     }
 
-    Consumer newUnlimitedEndpoint (std::string const& name) override
+    Consumer newUnlimitedEndpoint (beast::IP::Endpoint const& address) override
     {
-        return logic_.newUnlimitedEndpoint (name);
+        return logic_.newUnlimitedEndpoint (address);
     }
 
     Gossip exportConsumers () override

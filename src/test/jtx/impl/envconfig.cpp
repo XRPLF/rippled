@@ -72,6 +72,15 @@ no_admin(std::unique_ptr<Config> cfg)
     return cfg;
 }
 
+std::unique_ptr<Config>
+secure_gateway(std::unique_ptr<Config> cfg)
+{
+    (*cfg)["port_rpc"].set("admin", "");
+    (*cfg)["port_ws"].set("admin","");
+    (*cfg)["port_rpc"].set("secure_gateway", getEnvLocalhostAddr());
+    return cfg;
+}
+
 auto constexpr defaultseed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
 std::unique_ptr<Config>

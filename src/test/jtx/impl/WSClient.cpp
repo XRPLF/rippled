@@ -27,6 +27,10 @@
 #include <boost/beast/websocket.hpp>
 
 #include <condition_variable>
+#include <string>
+#include <unordered_map>
+
+#include <iostream>
 
 #include <ripple/beast/unit_test.h>
 
@@ -125,7 +129,8 @@ class WSClientImpl : public WSClient
     }
 
 public:
-    WSClientImpl(Config const& cfg, bool v2, unsigned rpc_version)
+    WSClientImpl(Config const& cfg, bool v2, unsigned rpc_version,
+        std::unordered_map<std::string, std::string> const& headers = {})
         : work_(ios_)
         , strand_(ios_)
         , thread_([&]{ ios_.run(); })
@@ -137,8 +142,13 @@ public:
         {
             auto const ep = getEndpoint(cfg, v2);
             stream_.connect(ep);
-            ws_.handshake(ep.address().to_string() +
-                ":" + std::to_string(ep.port()), "/");
+            ws_.handshake_ex(ep.address().to_string() +
+                    ":" + std::to_string(ep.port()), "/",
+                [&](boost::beast::websocket::request_type &req)
+                {
+                    for (auto const& h : headers)
+                        req.set(h.first, h.second);
+                });
             ws_.async_read(rb_,
                 strand_.wrap(std::bind(&WSClientImpl::on_read_msg,
                     this, std::placeholders::_1)));
@@ -294,9 +304,10 @@ private:
 };
 
 std::unique_ptr<WSClient>
-makeWSClient(Config const& cfg, bool v2, unsigned rpc_version)
+makeWSClient(Config const& cfg, bool v2, unsigned rpc_version,
+    std::unordered_map<std::string, std::string> const& headers)
 {
-    return std::make_unique<WSClientImpl>(cfg, v2, rpc_version);
+    return std::make_unique<WSClientImpl>(cfg, v2, rpc_version, headers);
 }
 
 } // test

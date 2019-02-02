@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <ripple/rpc/Role.h>
+#include <boost/beast/core/string.hpp>
+#include <algorithm>
 
 namespace ripple {
 
@@ -56,7 +58,7 @@ isAdmin (Port const& port, Json::Value const& params,
 Role
 requestRole (Role const& required, Port const& port,
              Json::Value const& params, beast::IP::Endpoint const& remoteIp,
-             std::string const& user)
+             boost::string_view const& user)
 {
     if (isAdmin(port, params, remoteIp.address()))
         return Role::ADMIN;
@@ -64,8 +66,12 @@ requestRole (Role const& required, Port const& port,
     if (required == Role::ADMIN)
         return Role::FORBID;
 
-    if (isIdentified(port, remoteIp.address(), user))
-        return Role::IDENTIFIED;
+    if (ipAllowed(remoteIp.address(), port.secure_gateway_ip))
+    {
+        if (user.size())
+            return Role::IDENTIFIED;
+        return Role::PROXY;
+    }
 
     return Role::GUEST;
 }
@@ -74,40 +80,65 @@ requestRole (Role const& required, Port const& port,
  * ADMIN and IDENTIFIED roles shall have unlimited resources.
  */
 bool
-isUnlimited (Role const& required, Port const& port,
-    Json::Value const&params, beast::IP::Endpoint const& remoteIp,
-    std::string const& user)
-{
-    Role role = requestRole(required, port, params, remoteIp, user);
-
-    if (role == Role::ADMIN || role == Role::IDENTIFIED)
-        return true;
-    else
-        return false;
-}
-
-bool
 isUnlimited (Role const& role)
 {
     return role == Role::ADMIN || role == Role::IDENTIFIED;
 }
 
-Resource::Consumer
-requestInboundEndpoint (Resource::Manager& manager,
-    beast::IP::Endpoint const& remoteAddress,
-        Port const& port, std::string const& user)
+bool
+isUnlimited (Role const& required, Port const& port,
+    Json::Value const& params, beast::IP::Endpoint const& remoteIp,
+    std::string const& user)
 {
-    if (isUnlimited (Role::GUEST, port, Json::Value(), remoteAddress, user))
-        return manager.newUnlimitedEndpoint (to_string (remoteAddress));
-
-    return manager.newInboundEndpoint(remoteAddress);
+    return isUnlimited(requestRole(required, port, params, remoteIp, user));
 }
 
-bool
-isIdentified (Port const& port, beast::IP::Address const& remoteIp,
-        std::string const& user)
+Resource::Consumer
+requestInboundEndpoint (Resource::Manager& manager,
+    beast::IP::Endpoint const& remoteAddress, Role const& role,
+    boost::string_view const& user, boost::string_view const& forwardedFor)
 {
-    return ! user.empty() && ipAllowed (remoteIp, port.secure_gateway_ip);
+    if (isUnlimited(role))
+        return manager.newUnlimitedEndpoint (remoteAddress);
+
+    return manager.newInboundEndpoint(remoteAddress, role == Role::PROXY,
+        forwardedFor);
+}
+
+boost::string_view
+forwardedFor(http_request_type const& request)
+{
+    auto it = request.find("X-Forwarded-For");
+    if (it != request.end())
+    {
+        return boost::beast::http::ext_list{
+            it->value()}.begin()->first;
+    }
+
+    it = request.find("Forwarded");
+    if (it != request.end())
+    {
+        static std::string const forStr{"for="};
+        auto found = std::search(it->value().begin(), it->value().end(),
+            forStr.begin(), forStr.end(),
+            [](char c1, char c2)
+            {
+                return boost::beast::detail::ascii_tolower(c1) ==
+                       boost::beast::detail::ascii_tolower(c2);
+            }
+        );
+
+        if (found == it->value().end())
+            return {};
+
+        found += forStr.size();
+        auto pos{it->value().find(';', forStr.size())};
+        if (pos != boost::string_view::npos)
+            return {found, pos + 1};
+        return {found, it->value().size() - forStr.size()};
+    }
+
+    return {};
 }
 
 }
