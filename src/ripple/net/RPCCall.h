@@ -26,6 +26,7 @@
 #include <boost/asio/io_service.hpp>
 #include <functional>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -52,7 +53,8 @@ void fromNetwork (
     std::string const& strPath, std::string const& strMethod,
     Json::Value const& jvParams, const bool bSSL, bool quiet,
     Logs& logs,
-    std::function<void (Json::Value const& jvInput)> callbackFuncP = std::function<void (Json::Value const& jvInput)> ());
+    std::function<void (Json::Value const& jvInput)> callbackFuncP = std::function<void (Json::Value const& jvInput)> (),
+    std::unordered_map<std::string, std::string> headers = {});
 }
 
 /** Given a rippled command line, return the corresponding JSON.
@@ -64,7 +66,8 @@ cmdLineToJSONRPC (std::vector<std::string> const& args, beast::Journal j);
 */
 std::pair<int, Json::Value>
 rpcClient(std::vector<std::string> const& args,
-    Config const& config, Logs& logs);
+    Config const& config, Logs& logs,
+    std::unordered_map<std::string, std::string> const& headers = {});
 
 } // ripple
 

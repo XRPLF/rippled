@@ -28,6 +28,7 @@
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/app/main/CollectorManager.h>
 #include <ripple/json/Output.h>
+#include <boost/utility/string_view.hpp>
 #include <map>
 #include <mutex>
 #include <vector>
@@ -180,7 +181,7 @@ private:
     processRequest (Port const& port, std::string const& request,
         beast::IP::Endpoint const& remoteIPAddress, Output&&,
         std::shared_ptr<JobQueue::Coro> coro,
-        std::string forwardedFor, std::string user);
+        boost::string_view forwardedFor, boost::string_view user);
 
     Handoff
     statusResponse(http_request_type const& request) const;

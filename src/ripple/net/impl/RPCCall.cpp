@@ -44,6 +44,7 @@
 #include <array>
 #include <iostream>
 #include <type_traits>
+#include <unordered_map>
 
 namespace ripple {
 
@@ -60,7 +61,7 @@ std::string createHTTPPost (
     std::string const& strHost,
     std::string const& strPath,
     std::string const& strMsg,
-    std::map<std::string, std::string> const& mapRequestHeaders)
+    std::unordered_map<std::string, std::string> const& mapRequestHeaders)
 {
     std::ostringstream s;
 
@@ -1264,9 +1265,14 @@ struct RPCCallImp
     }
 
     // Build the request.
-    static void onRequest (std::string const& strMethod, Json::Value const& jvParams,
-        const std::map<std::string, std::string>& mHeaders, std::string const& strPath,
-            boost::asio::streambuf& sb, std::string const& strHost, beast::Journal j)
+    static void onRequest (
+        std::string const& strMethod,
+        Json::Value const& jvParams,
+        std::unordered_map<std::string, std::string> const& headers,
+        std::string const& strPath,
+        boost::asio::streambuf& sb,
+        std::string const& strHost,
+        beast::Journal j)
     {
         JLOG (j.debug()) << "requestRPC: strPath='" << strPath << "'";
 
@@ -1276,7 +1282,7 @@ struct RPCCallImp
                       strHost,
                       strPath,
                       JSONRPCRequest (strMethod, jvParams, Json::Value (1)),
-                      mHeaders);
+                      headers);
     }
 };
 
@@ -1338,7 +1344,8 @@ cmdLineToJSONRPC (std::vector<std::string> const& args, beast::Journal j)
 
 std::pair<int, Json::Value>
 rpcClient(std::vector<std::string> const& args,
-    Config const& config, Logs& logs)
+    Config const& config, Logs& logs,
+    std::unordered_map<std::string, std::string> const& headers)
 {
     static_assert(rpcBAD_SYNTAX == 1 && rpcSUCCESS == 0,
         "Expect specific rpc enum values.");
@@ -1415,7 +1422,8 @@ rpcClient(std::vector<std::string> const& args,
                     config.quiet(),
                     logs,
                     std::bind (RPCCallImp::callRPCHandler, &jvOutput,
-                               std::placeholders::_1));
+                               std::placeholders::_1),
+                    headers);
                 isService.run(); // This blocks until there is no more outstanding async calls.
             }
             if (jvOutput.isMember ("result"))
@@ -1499,7 +1507,8 @@ void fromNetwork (
     std::string const& strPath, std::string const& strMethod,
     Json::Value const& jvParams, const bool bSSL, const bool quiet,
     Logs& logs,
-    std::function<void (Json::Value const& jvInput)> callbackFuncP)
+    std::function<void (Json::Value const& jvInput)> callbackFuncP,
+    std::unordered_map<std::string, std::string> headers)
 {
     auto j = logs.journal ("HTTPClient");
 
@@ -1511,11 +1520,8 @@ void fromNetwork (
     }
 
     // HTTP basic authentication
-    auto const auth = base64_encode(strUsername + ":" + strPassword);
-
-    std::map<std::string, std::string> mapRequestHeaders;
-
-    mapRequestHeaders["Authorization"] = std::string ("Basic ") + auth;
+    headers["Authorization"] = std::string("Basic ") + base64_encode(
+        strUsername + ":" + strPassword);
 
     // Send request
 
@@ -1535,7 +1541,7 @@ void fromNetwork (
             &RPCCallImp::onRequest,
             strMethod,
             jvParams,
-            mapRequestHeaders,
+            headers,
             strPath, std::placeholders::_1, std::placeholders::_2, j),
         RPC_REPLY_MAX_BYTES,
         RPC_NOTIFY,

@@ -47,7 +47,8 @@ public:
 
 /** Returns a client operating through WebSockets/S. */
 std::unique_ptr<WSClient>
-makeWSClient(Config const& cfg, bool v2 = true, unsigned rpc_version = 2);
+makeWSClient(Config const& cfg, bool v2 = true, unsigned rpc_version = 2,
+    std::unordered_map<std::string, std::string> const& headers = {});
 
 } // test
 } // ripple

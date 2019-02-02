@@ -43,6 +43,7 @@
 #include <test/rpc/OwnerInfo_test.cpp>
 #include <test/rpc/Peers_test.cpp>
 #include <test/rpc/RobustTransaction_test.cpp>
+#include <test/rpc/Roles_test.cpp>
 #include <test/rpc/RPCCall_test.cpp>
 #include <test/rpc/RPCOverload_test.cpp>
 #include <test/rpc/ServerInfo_test.cpp>

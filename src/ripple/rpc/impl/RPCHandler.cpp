@@ -276,13 +276,13 @@ Status doCommand (
             ! context.headers.forwardedFor.empty())
         {
             JLOG(context.j.debug()) << "start command: " << handler->name_ <<
-                ", X-User: " << context.headers.user << ", X-Forwarded-For: " <<
+                ", user: " << context.headers.user << ", forwarded for: " <<
                     context.headers.forwardedFor;
 
             auto ret = callMethod (context, method, handler->name_, result);
 
             JLOG(context.j.debug()) << "finish command: " << handler->name_ <<
-                ", X-User: " << context.headers.user << ", X-Forwarded-For: " <<
+                ", user: " << context.headers.user << ", forwarded for: " <<
                     context.headers.forwardedFor;
 
             return ret;

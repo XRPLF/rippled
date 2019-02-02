@@ -80,9 +80,12 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void testDrop (beast::Journal j)
+    void testDrop (beast::Journal j, bool limited)
     {
-        testcase ("Warn/drop");
+        if (limited)
+            testcase("Limited warn/drop");
+        else
+            testcase("Unlimited warn/drop");
 
         TestLogic logic (j);
 
@@ -90,8 +93,14 @@ public:
         beast::IP::Endpoint const addr (
             beast::IP::Endpoint::from_string ("192.0.2.2"));
 
+        using namespace std::placeholders;
+
+        std::function<Consumer(beast::IP::Endpoint)> ep = limited ?
+            std::bind(&TestLogic::newInboundEndpoint, &logic, _1) :
+            std::bind(&TestLogic::newUnlimitedEndpoint, &logic, _1);
+
         {
-            Consumer c (logic.newInboundEndpoint (addr));
+            Consumer c (ep(addr));
 
             // Create load until we get a warning
             int n = 10000;
@@ -100,13 +109,19 @@ public:
             {
                 if (n == 0)
                 {
-                    fail ("Loop count exceeded without warning");
+                    if (limited)
+                        fail ("Loop count exceeded without warning");
+                    else
+                        pass();
                     return;
                 }
 
                 if (c.charge (fee) == warn)
                 {
-                    pass ();
+                    if (limited)
+                       pass();
+                    else
+                        fail ("Should loop forever with no warning");
                     break;
                 }
                 ++logic.clock ();
@@ -117,14 +132,17 @@ public:
             {
                 if (n == 0)
                 {
-                    fail ("Loop count exceeded without dropping");
+                    if (limited)
+                        fail ("Loop count exceeded without dropping");
+                    else
+                        pass();
                     return;
                 }
 
                 if (c.charge (fee) == drop)
                 {
                     // Disconnect abusive Consumer
-                    BEAST_EXPECT(c.disconnect ());
+                    BEAST_EXPECT(c.disconnect () == limited);
                     break;
                 }
                 ++logic.clock ();
@@ -137,7 +155,10 @@ public:
             logic.periodicActivity();
             if (c.disposition () != drop)
             {
-                fail ("Dropped consumer not put on blacklist");
+                if (limited)
+                    fail ("Dropped consumer not put on blacklist");
+                else
+                    pass();
                 return;
             }
         }
@@ -250,7 +271,8 @@ public:
         using namespace beast::severities;
         test::SuiteJournal journal ("ResourceManager_test", *this);
 
-        testDrop (journal);
+        testDrop (journal, true);
+        testDrop (journal, false);
         testCharges (journal);
         testImports (journal);
         testImport (journal);

@@ -27,6 +27,7 @@
 #include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/beast/utility/PropertyStream.h>
+#include <boost/utility/string_view.hpp>
 
 namespace ripple {
 namespace Resource {
@@ -40,14 +41,18 @@ protected:
 public:
     virtual ~Manager() = 0;
 
-    /** Create a new endpoint keyed by inbound IP address. */
+    /** Create a new endpoint keyed by inbound IP address or the forwarded
+     * IP if proxied. */
     virtual Consumer newInboundEndpoint (beast::IP::Endpoint const& address) = 0;
+    virtual Consumer newInboundEndpoint (beast::IP::Endpoint const& address,
+        bool const proxy, boost::string_view const& forwardedFor) = 0;
 
     /** Create a new endpoint keyed by outbound IP address and port. */
     virtual Consumer newOutboundEndpoint (beast::IP::Endpoint const& address) = 0;
 
-    /** Create a new endpoint keyed by name. */
-    virtual Consumer newUnlimitedEndpoint (std::string const& name) = 0;
+    /** Create a new unlimited endpoint keyed by forwarded IP. */
+    virtual Consumer newUnlimitedEndpoint (
+        beast::IP::Endpoint const& address) = 0;
 
     /** Extract packaged consumer information for export. */
     virtual Gossip exportConsumers () = 0;

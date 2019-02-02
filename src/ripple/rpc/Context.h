@@ -43,8 +43,8 @@ struct Context
      */
     struct Headers
     {
-        std::string user;
-        std::string forwardedFor;
+        boost::string_view user;
+        boost::string_view forwardedFor;
     };
 
     beast::Journal j;
