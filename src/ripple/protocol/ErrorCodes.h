@@ -115,16 +115,23 @@ namespace RPC {
 /** Maps an rpc error code to its token and default message. */
 struct ErrorInfo
 {
-    ErrorInfo (error_code_i code_, std::string const& token_,
-        std::string const& message_)
+    // Default ctor needed to produce an empty std::array during constexpr eval.
+    constexpr ErrorInfo ()
+    : code (rpcUNKNOWN)
+    , token ("unknown")
+    , message ("An unknown error code.")
+    { }
+
+    constexpr ErrorInfo (error_code_i code_, char const* token_,
+        char const* message_)
         : code (code_)
         , token (token_)
         , message (message_)
     { }
 
     error_code_i code;
-    std::string token;
-    std::string message;
+    Json::StaticString token;
+    Json::StaticString message;
 };
 
 /** Returns an ErrorInfo that reflects the error code. */
