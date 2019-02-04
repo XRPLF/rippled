@@ -1,5 +1,6 @@
 sudo: false
 language: cpp
+dist: xenial
 
 env:
   global:
@@ -17,10 +18,12 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-trusty-5.0
+      - llvm-toolchain-xenial-7
     packages:
-      - gcc-5
-      - g++-5
+      - gcc-7
+      - g++-7
+      - gcc-8
+      - g++-8
       - python-software-properties
       - protobuf-compiler
       - libprotobuf-dev
@@ -29,17 +32,15 @@ addons:
       - binutils-gold
       - cmake
       - lcov
-      - llvm-5.0
-      - clang-5.0
+      - llvm-7
+      - clang-7
 
 matrix:
   include:
-
     - compiler: gcc
-      env: GCC_VER=5 BUILD_TYPE=Debug
-
+      env: GCC_VER=7 BUILD_TYPE=Debug
     - compiler: clang
-      env: GCC_VER=5 BUILD_TYPE=Debug
+      env: GCC_VER=7 BUILD_TYPE=Debug
 
 cache:
   directories:
