@@ -24,8 +24,9 @@ then
   tar xzf /tmp/boost.tar.gz
   cd $BOOST_ROOT && \
     $time ./bootstrap.sh --prefix=$BOOST_ROOT && \
-    $time ./b2 -d1 define=_GLIBCXX_USE_CXX11_ABI=0 -j$((2*${NUM_PROCESSORS:-2})) &&\
-    $time ./b2 -d0 define=_GLIBCXX_USE_CXX11_ABI=0 install
+    $time ./b2 cxxflags="-std=c++14" -j$((2*${NUM_PROCESSORS:-2})) &&\
+    $time ./b2 install
+  
 else
   echo "Using cached boost at $BOOST_ROOT"
 fi
