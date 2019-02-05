@@ -512,14 +512,7 @@ RCLConsensus::Adaptor::doAccept(
                        << " has not been included as of ledger " << curr
                        << ".";
 
-                    if (wait / censorshipWarnInternal == censorshipMaxWarnings)
-                    {
-                        JLOG(j.error()) << ss.str() << " Additional warnings suppressed.";
-                    }
-                    else
-                    {
-                        JLOG(j.warn()) << ss.str();
-                    }
+                    JLOG(j.warn()) << ss.str();
                 }
 
                 return false;

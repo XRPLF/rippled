@@ -51,9 +51,6 @@ class RCLConsensus
     /** Warn for transactions that haven't been included every so many ledgers. */
     constexpr static unsigned int censorshipWarnInternal = 15;
 
-    /** Stop warning after several warnings. */
-    constexpr static unsigned int censorshipMaxWarnings = 5;
-
     // Implements the Adaptor template interface required by Consensus.
     class Adaptor
     {
