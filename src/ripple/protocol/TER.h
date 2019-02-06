@@ -109,7 +109,6 @@ enum TEMcodes : TERUnderlyingType
     temBAD_TICK_SIZE,
     temINVALID_ACCOUNT_ID,
     temCANNOT_PREAUTH_SELF,
-    temMANIFEST_MALFORMED,
 
     // An intermediate result used internally, should never be returned.
     temUNCERTAIN,
@@ -266,9 +265,6 @@ enum TECcodes : TERUnderlyingType
     tecEXPIRED                  = 148,
     tecDUPLICATE                = 149,
     tecKILLED                   = 150,
-    tecMANIFEST_MALFORMED       = 151,
-    tecMANIFEST_BAD_SIGNATURE   = 152,
-    tecMANIFEST_BAD_SEQUENCE    = 153
 };
 
 //------------------------------------------------------------------------------

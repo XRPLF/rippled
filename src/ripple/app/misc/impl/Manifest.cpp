@@ -43,17 +43,17 @@ boost::optional<Manifest> deserializeManifest(Slice s)
         [](SOTemplate& t)
         {
             // A manifest must include:
-            // - master public key:
+            // - the master public key
             t.push_back (SOElement (sfPublicKey,       SOE_REQUIRED));
 
-            // - signature with that public key:
+            // - a signature with that public key
             t.push_back (SOElement (sfMasterSignature, SOE_REQUIRED));
 
-            // - sequence number:
+            // - a sequence number:
             t.push_back (SOElement (sfSequence,        SOE_REQUIRED));
 
             // It may, optionally, contain:
-            // - a version number which defaults to 0:
+            // - a version number which defaults to 0
             t.push_back (SOElement (sfVersion,          SOE_DEFAULT));
 
             // - a domain name
@@ -62,7 +62,7 @@ boost::optional<Manifest> deserializeManifest(Slice s)
             // - an ephemeral signing key that can be changed as necessary
             t.push_back (SOElement (sfSigningPubKey,    SOE_OPTIONAL));
 
-            // - an signature using the ephemeral signing key, if it is present:
+            // - a signature using the ephemeral signing key, if it is present
             t.push_back (SOElement (sfSignature,        SOE_OPTIONAL));
         });
 
@@ -91,8 +91,7 @@ boost::optional<Manifest> deserializeManifest(Slice s)
         {
             auto const d = st.getFieldVL(sfDomain);
 
-            // A valid domain for a validator must be between 4 and 128
-            // characters long and must contain at least one . character.
+            // The domain must be between 4 and 128 characters long
             if (boost::algorithm::clamp(d.size(), 4, 128) != d.size())
                 return boost::none;
 
@@ -429,7 +428,7 @@ ManifestCache::load (
     {
         std::string serialized;
         convert (sociRawData, serialized);
-        if (auto mo = deserializeManifest(std::move(serialized)))
+        if (auto mo = deserializeManifest(serialized))
         {
             if (!mo->verify())
             {

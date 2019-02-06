@@ -217,7 +217,6 @@ SF_Blob const sfMemoFormat      = make::one<SF_Blob::type>(&sfMemoFormat,    STI
 SF_Blob const sfFulfillment     = make::one<SF_Blob::type>(&sfFulfillment,     STI_VL, 16, "Fulfillment");
 SF_Blob const sfCondition       = make::one<SF_Blob::type>(&sfCondition,       STI_VL, 17, "Condition");
 SF_Blob const sfMasterSignature = make::one<SF_Blob::type>(&sfMasterSignature, STI_VL, 18, "MasterSignature", SField::sMD_Default, SField::notSigning);
-SF_Blob const sfManifest        = make::one<SF_Blob::type>(&sfManifest,        STI_VL, 19, "Manifest");
 
 // account
 SF_Account const sfAccount     = make::one<SF_Account::type>(&sfAccount,     STI_ACCOUNT, 1, "Account");

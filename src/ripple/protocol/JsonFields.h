@@ -276,8 +276,6 @@ JSS ( local_txs );                  // out: GetCounts
 JSS ( local_static_keys );          // out: ValidatorList
 JSS ( lowest_sequence );            // out: AccountInfo
 JSS ( majority );                   // out: RPC feature
-JSS ( manifest );                   // in: LedgerEntry
-JSS ( Manifest );                   //
 JSS ( marker );                     // in/out: AccountTx, AccountOffers,
                                     //         AccountLines, AccountObjects,
                                     //         LedgerData

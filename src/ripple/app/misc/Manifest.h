@@ -26,7 +26,6 @@
 #include <ripple/beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <string>
-#include <type_traits>
 
 namespace ripple {
 
