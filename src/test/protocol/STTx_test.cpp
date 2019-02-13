@@ -28,6 +28,8 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/protocol/messages.h>
 
+#include <memory>
+
 namespace ripple {
 
 class STTx_test : public beast::unit_test::suite
@@ -1218,7 +1220,7 @@ public:
             0x12, 0x12, 0x12, 0xff
         };
 
-        constexpr unsigned char dupField[] =
+        constexpr unsigned char payload3[] =
         {
             0x12, 0x00, 0x65, 0x24, 0x00, 0x00, 0x00, 0x00, 0x20, 0x1e, 0x00, 0x4f,
             0x00, 0x00, 0x20, 0x1f, 0x03, 0xf6, 0x00, 0x00, 0x20, 0x20, 0x00, 0x00,
@@ -1243,6 +1245,173 @@ public:
             0x00, 0x00, 0x00, 0x26, 0x00, 0x00, 0x00, 0x00, 0xe5, 0xfe
         };
 
+        // Construct an STObject with 11 levels of object nesting so the
+        // maximum nesting level exception is thrown.
+        {
+            // Construct an SOTemplate to get the ball rolling on building
+            // an STObject that can contain another STObject.
+            SOTemplate recurse;
+            recurse.push_back (SOElement {sfTransactionMetaData, SOE_OPTIONAL});
+            recurse.push_back (SOElement {sfTransactionHash, SOE_OPTIONAL});
+
+            // Make an STObject that nests objects ten levels deep.  There's
+            // a minimum transaction size we must meet, so include a hash256.
+            uint256 const hash {42u};
+            auto inner =
+                std::make_unique<STObject> (recurse, sfTransactionMetaData);
+            inner->setFieldH256 (sfTransactionHash, hash);
+
+            for (int i = 1; i < 10; ++i)
+            {
+                auto outer =
+                    std::make_unique<STObject> (recurse, sfTransactionMetaData);
+                outer->set (std::move (inner));
+                outer->setFieldH256 (sfTransactionHash, hash);
+                inner = std::move (outer);
+            }
+            {
+                // A ten-deep nested STObject should throw an exception that
+                // there is no sfTransactionType field.
+                Serializer const tenDeep {inner->getSerializer()};
+                SerialIter tenSit {tenDeep.slice()};
+                try
+                {
+                    auto stx = std::make_shared<ripple::STTx const>(tenSit);
+                    fail ("STTx construction should have thrown.");
+                }
+                catch (std::runtime_error const& ex)
+                {
+                    BEAST_EXPECT (
+                        std::strcmp (ex.what(), "Field not found") == 0);
+                }
+            }
+
+            // Add one more level of nesting and we should get an error
+            // about excessive nesting.
+            STObject outer {recurse, sfTransactionMetaData};
+            outer.set (std::move (inner));
+            outer.setFieldH256 (sfTransactionHash, hash);
+
+            Serializer const tooDeep {outer.getSerializer()};
+            SerialIter tooDeepSit {tooDeep.slice()};
+            try
+            {
+                auto stx = std::make_shared<ripple::STTx const>(tooDeepSit);
+                fail ("STTx construction should have thrown.");
+            }
+            catch (std::runtime_error const& ex)
+            {
+                BEAST_EXPECT (std::strcmp (ex.what(),
+                    "Maximum nesting depth of STVar exceeded") == 0);
+            }
+        }
+        {
+            // Construct an STObject with 11 levels of nesting so the
+            // maximum nesting level exception is thrown.  This time
+            // we're nesting arrays in addition to objects.
+
+            // Construct an SOTemplate to get the ball rolling on building
+            // an STObject that can contain an STArray.
+            SOTemplate recurse;
+            recurse.push_back (SOElement {sfTransactionMetaData, SOE_OPTIONAL});
+            recurse.push_back (SOElement {sfTransactionHash, SOE_OPTIONAL});
+            recurse.push_back (SOElement {sfTemplate, SOE_OPTIONAL});
+
+            // Make an STObject that nests ten levels deep alternating objects
+            // and arrays.  Include a hash256 to meet the minimum transaction
+            // size.
+            uint256 const hash {42u};
+            STObject inner = {recurse, sfTransactionMetaData};
+            inner.setFieldH256 (sfTransactionHash, hash);
+
+            for (int i = 1; i < 5; ++i)
+            {
+                STObject outer {recurse, sfTransactionMetaData};
+                outer.setFieldH256 (sfTransactionHash, hash);
+                STArray& array {outer.peekFieldArray (sfTemplate)};
+                array.push_back (std::move (inner));
+                inner = std::move (outer);
+            }
+            {
+                // A nine-deep nested STObject/STArray should throw an
+                // exception that there is no sfTransactionType field.
+                Serializer const nineDeep {inner.getSerializer()};
+                SerialIter nineSit {nineDeep.slice()};
+                try
+                {
+                    auto stx = std::make_shared<ripple::STTx const>(nineSit);
+                    fail ("STTx construction should have thrown.");
+                }
+                catch (std::runtime_error const& ex)
+                {
+                    BEAST_EXPECT (
+                        std::strcmp (ex.what(), "Field not found") == 0);
+                }
+            }
+
+            // Add one more level of nesting and we should get an error
+            // about excessive nesting.
+            STObject outer {recurse, sfTransactionMetaData};
+            outer.setFieldH256 (sfTransactionHash, hash);
+            STArray& array {outer.peekFieldArray (sfTemplate)};
+            array.push_back (std::move (inner));
+
+            Serializer const tooDeep {outer.getSerializer()};
+            SerialIter tooDeepSit {tooDeep.slice()};
+            try
+            {
+                auto stx = std::make_shared<ripple::STTx const>(tooDeepSit);
+                fail ("STTx construction should have thrown.");
+            }
+            catch (std::runtime_error const& ex)
+            {
+                BEAST_EXPECT (std::strcmp (ex.what(),
+                    "Maximum nesting depth of STVar exceeded") == 0);
+            }
+        }
+
+        {
+            // Make an otherwise legit STTx with a duplicate field.  Should
+            // generate an exception when we deserialize.
+            auto const keypair = randomKeyPair (KeyType::secp256k1);
+            STTx acctSet (ttACCOUNT_SET,
+                [&keypair](auto& obj)
+                {
+                    obj.setAccountID (sfAccount, calcAccountID(keypair.first));
+                    obj.setFieldU32 (sfSequence, 7);
+                    obj.setFieldAmount (sfFee, STAmount (2557891634ull));
+                    obj.setFieldVL (sfSigningPubKey, keypair.first.slice());
+                    obj.setFieldU32 (sfSetFlag, 0x0DDBA11);
+                    obj.setFieldU32 (sfClearFlag, 0xB01DFACE);
+                });
+
+            Serializer serialized {acctSet.getSerializer()};
+            {
+                // Verify we have a valid transaction.
+                SerialIter sit {serialized.slice()};
+                auto stx = std::make_shared<ripple::STTx const>(sit);
+            }
+
+            // Tweak the serialized data to change the ClearFlag to
+            // a SetFlag.  This will leave us with two SetFlag fields
+            // which we should trap as a duplicate field.
+            BEAST_EXPECT (serialized.modData()[15] == sfClearFlag.fieldValue);
+            serialized.modData()[15] = sfSetFlag.fieldValue;
+
+            SerialIter sit {serialized.slice()};
+            try
+            {
+                auto stx = std::make_shared<ripple::STTx const>(sit);
+                fail("An exception should have been thrown");
+            }
+            catch (std::exception const& ex)
+            {
+                BEAST_EXPECT(
+                    strcmp(ex.what(), "Duplicate field detected") == 0);
+            }
+        }
+
+        // Exercise the three raw transactions.
         try
         {
             protocol::TMTransaction tx2;
@@ -1253,10 +1422,9 @@ public:
             auto stx = std::make_shared<ripple::STTx const>(sit);
             fail("An exception should have been thrown");
         }
-        catch (std::exception const& e)
+        catch (std::exception const& ex)
         {
-            BEAST_EXPECT(strcmp(e.what(),
-                "Maximum nesting depth of STVar exceeded") == 0);
+            BEAST_EXPECT(strcmp(ex.what(), "Unknown field") == 0);
         }
 
         try
@@ -1265,22 +1433,20 @@ public:
             auto stx = std::make_shared<ripple::STTx const>(sit);
             fail("An exception should have been thrown");
         }
-        catch (std::exception const& e)
+        catch (std::exception const& ex)
         {
-            BEAST_EXPECT(strcmp(e.what(),
-                "Maximum nesting depth of STVar exceeded") == 0);
+            BEAST_EXPECT(strcmp(ex.what(), "Unknown field") == 0);
         }
 
         try
         {
-            ripple::SerialIter sit (Slice{dupField, sizeof(dupField)});
+            ripple::SerialIter sit {payload3};
             auto stx = std::make_shared<ripple::STTx const>(sit);
             fail("An exception should have been thrown");
         }
-        catch (std::exception const& e)
+        catch (std::exception const& ex)
         {
-            BEAST_EXPECT(strcmp(e.what(),
-                "Duplicate field detected") == 0);
+            BEAST_EXPECT(strcmp(ex.what(), "Unknown field") == 0);
         }
     }
 
