@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/basics/safe_cast.h>
 #include <ripple/protocol/SField.h>
 #include <cassert>
 #include <string>
@@ -28,11 +27,7 @@ namespace ripple {
 // Storage for static const members.
 SField::IsSigning const SField::notSigning;
 int SField::num = 0;
-std::mutex SField::SField_mutex;
 std::map<int, SField const*> SField::knownCodeToField;
-std::map<int, std::unique_ptr<SField const>> SField::unknownCodeToField;
-
-using StaticScopedLockType = std::lock_guard <std::mutex>;
 
 // Give only this translation unit permission to construct SFields
 struct SField::private_access_tag_t
@@ -40,7 +35,7 @@ struct SField::private_access_tag_t
     explicit private_access_tag_t() = default;
 };
 
-SField::private_access_tag_t access;
+static SField::private_access_tag_t access;
 
 // Construct all compile-time SFields, and register them in the knownCodeToField
 // database:
@@ -268,29 +263,6 @@ SField::SField(private_access_tag_t, int fc)
     knownCodeToField[fieldCode] = this;
 }
 
-// call with the map mutex to protect num.
-// This is naturally done with no extra expense
-// from getField(int code).
-SField::SField(SerializedTypeID tid, int fv)
-    : fieldCode (field_code (tid, fv))
-    , fieldType (tid)
-    , fieldValue (fv)
-    , fieldName (std::to_string (tid) + '/' + std::to_string (fv))
-    , fieldMeta (sMD_Default)
-    , fieldNum (++num)
-    , signingField (IsSigning::yes)
-    , jsonName (fieldName.c_str())
-{
-    assert ((fv != 1) || ((tid != STI_ARRAY) && (tid != STI_OBJECT)));
-}
-
-SField::SField(private_access_tag_t,
-    SerializedTypeID tid, int fv)
-    : SField(tid, fv)
-{
-    knownCodeToField[fieldCode] = this;
-}
-
 SField const&
 SField::getField (int code)
 {
@@ -298,54 +270,9 @@ SField::getField (int code)
 
     if (it != knownCodeToField.end ())
     {
-        // 99+% of the time, it will be a valid, known field
         return * (it->second);
     }
-
-    int type = code >> 16;
-    int field = code & 0xffff;
-
-    // Don't dynamically extend types that have no binary encoding.
-    if ((field > 255) || (code < 0))
-        return sfInvalid;
-
-    switch (type)
-    {
-    // Types we are willing to dynamically extend
-    // types (common)
-    case STI_UINT16:
-    case STI_UINT32:
-    case STI_UINT64:
-    case STI_HASH128:
-    case STI_HASH256:
-    case STI_AMOUNT:
-    case STI_VL:
-    case STI_ACCOUNT:
-    case STI_OBJECT:
-    case STI_ARRAY:
-    // types (uncommon)
-    case STI_UINT8:
-    case STI_HASH160:
-    case STI_PATHSET:
-    case STI_VECTOR256:
-        break;
-
-    default:
-        return sfInvalid;
-    }
-
-    {
-        // Lookup in the run-time data base, and create if it does not
-        // yet exist.
-        StaticScopedLockType sl (SField_mutex);
-
-        auto it = unknownCodeToField.find (code);
-
-        if (it != unknownCodeToField.end ())
-            return * (it->second);
-        return *(unknownCodeToField[code] = std::unique_ptr<SField const>(
-                       new SField(safe_cast<SerializedTypeID>(type), field)));
-    }
+    return sfInvalid;
 }
 
 int SField::compare (SField const& f1, SField const& f2)
@@ -370,15 +297,6 @@ SField::getField (std::string const& fieldName)
     {
         if (fieldPair.second->fieldName == fieldName)
             return * (fieldPair.second);
-    }
-    {
-        StaticScopedLockType sl (SField_mutex);
-
-        for (auto const & fieldPair : unknownCodeToField)
-        {
-            if (fieldPair.second->fieldName == fieldName)
-                return * (fieldPair.second);
-        }
     }
     return sfInvalid;
 }

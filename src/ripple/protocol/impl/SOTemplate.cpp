@@ -28,18 +28,20 @@ void SOTemplate::push_back (SOElement const& r)
     //
     if (mIndex.empty ())
     {
-        // Unmapped indices will be set to -1
+        // Unmapped indices are initialized to -1
         //
         mIndex.resize (SField::getNumFields () + 1, -1);
     }
 
     // Make sure the field's index is in range
     //
-    assert (r.e_field.getNum () < mIndex.size ());
+    if (r.e_field.getNum() <= 0 || r.e_field.getNum() >= mIndex.size())
+        Throw<std::runtime_error> ("Invalid field index for SOTemplate.");
 
     // Make sure that this field hasn't already been assigned
     //
-    assert (getIndex (r.e_field) == -1);
+    if (getIndex (r.e_field) != -1)
+        Throw<std::runtime_error> ("Duplicate field index for SOTemplate.");
 
     // Add the field to the index mapping table
     //

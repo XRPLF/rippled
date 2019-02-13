@@ -24,8 +24,6 @@
 #include <ripple/json/json_value.h>
 #include <cstdint>
 #include <map>
-#include <memory>
-#include <mutex>
 #include <utility>
 
 namespace ripple {
@@ -163,14 +161,7 @@ public:
         const char* fn, int meta = sMD_Default,
         IsSigning signing = IsSigning::yes);
     explicit SField (private_access_tag_t, int fc);
-    SField (private_access_tag_t, SerializedTypeID tid, int fv);
 
-protected:
-    // These constructors can only be called from SField.cpp
-    explicit SField (SerializedTypeID tid, int fv);
-
-public:
-    // getField will dynamically construct a new SField if necessary
     static const SField& getField (int fieldCode);
     static const SField& getField (std::string const& fieldName);
     static const SField& getField (int type, int value)
@@ -270,10 +261,7 @@ public:
 
 private:
     static int num;
-
-    static std::mutex SField_mutex;
     static std::map<int, SField const*> knownCodeToField;
-    static std::map<int, std::unique_ptr<SField const>> unknownCodeToField;
 };
 
 /** A field with a type known at compile time. */
