@@ -235,12 +235,54 @@ public:
         testcase ("serialization");
 
         unexpected (sfGeneric.isUseful (), "sfGeneric must not be useful");
+        {
+            // Try to put sfGeneric in an SOTemplate.
+            SOTemplate elements;
+            except<std::runtime_error>( [&]()
+                {
+                    elements.push_back (SOElement (sfGeneric, SOE_REQUIRED));
+                });
+        }
 
-        SField const& sfTestVL = SField::getField (STI_VL, 255);
-        SField const& sfTestH256 = SField::getField (STI_HASH256, 255);
-        SField const& sfTestU32 = SField::getField (STI_UINT32, 255);
-        SField const& sfTestV256 = SField::getField(STI_VECTOR256, 255);
-        SField const& sfTestObject = SField::getField (STI_OBJECT, 255);
+        unexpected (sfInvalid.isUseful (), "sfInvalid must not be useful");
+        {
+            // Test return of sfInvalid.
+            auto testInvalid = [this] (SerializedTypeID tid, int fv)
+            {
+                SField const& shouldBeInvalid {SField::getField (tid, fv)};
+                BEAST_EXPECT (shouldBeInvalid == sfInvalid);
+            };
+            testInvalid (STI_VL, 255);
+            testInvalid (STI_HASH256, 255);
+            testInvalid (STI_UINT32, 255);
+            testInvalid (STI_VECTOR256, 255);
+            testInvalid (STI_OBJECT, 255);
+        }
+        {
+            // Try to put sfInvalid in an SOTemplate.
+            SOTemplate elements;
+            except<std::runtime_error>( [&]()
+                {
+                    elements.push_back (SOElement (sfInvalid, SOE_REQUIRED));
+                });
+        }
+        {
+            // Try to put the same SField into an SOTemplate twice.
+            SOTemplate elements;
+            elements.push_back (SOElement (sfAccount, SOE_REQUIRED));
+            except<std::runtime_error>( [&]()
+                {
+                    elements.push_back (SOElement (sfAccount, SOE_REQUIRED));
+                });
+        }
+
+        // Put a variety of SFields of different types in an SOTemplate.
+        SField const& sfTestVL = sfMasterSignature;
+        SField const& sfTestH256 = sfCheckID;
+        SField const& sfTestU32 = sfSettleDelay;
+        SField const& sfTestV256 = sfAmendments;
+        SField const& sfTestObject = sfMajority;
+
 
         SOTemplate elements;
         elements.push_back (SOElement (sfFlags, SOE_REQUIRED));
@@ -639,15 +681,15 @@ public:
 
         try
         {
-            std::array<std::uint8_t, 5> const payload {{ 0xee, 0xee, 0xe1, 0xee, 0xee }};
+            std::array<std::uint8_t, 7> const payload {
+                { 0xe9, 0x12, 0xab, 0xcd, 0x12, 0xfe, 0xdc }};
             SerialIter sit{makeSlice(payload)};
             auto obj = std::make_shared<STArray>(sit, sfMetadata);
             BEAST_EXPECT(!obj);
         }
         catch (std::exception const& e)
         {
-            BEAST_EXPECT(strcmp(e.what(),
-                "Duplicate field detected") == 0);
+            BEAST_EXPECT(strcmp(e.what(), "Duplicate field detected") == 0);
         }
 
         try
@@ -659,45 +701,7 @@ public:
         }
         catch (std::exception const& e)
         {
-            BEAST_EXPECT(strcmp(e.what(),
-                "Duplicate field detected") == 0);
-        }
-
-        try
-        {
-            std::array<std::uint8_t, 250> const payload
-            {{
-                0x12, 0x00, 0x65, 0x24, 0x00, 0x00, 0x00, 0x00, 0x20, 0x1e, 0x00, 0x4f,
-                0x00, 0x00, 0x20, 0x1f, 0x03, 0xf6, 0x00, 0x00, 0x20, 0x20, 0x00, 0x00,
-                0x00, 0x00, 0x35, 0x00, 0x59, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68,
-                0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x73, 0x00, 0x81, 0x14,
-                0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x65, 0x24, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe5, 0xfe, 0xf3, 0xe7, 0xe5, 0x65,
-                0x24, 0x00, 0x00, 0x00, 0x00, 0x20, 0x1e, 0x00, 0x6f, 0x00, 0x00, 0x20,
-                0x1f, 0x03, 0xf6, 0x00, 0x00, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x35,
-                0x00, 0x59, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x40, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x02, 0x00, 0x12, 0x00, 0x65, 0x24, 0x00, 0x00, 0x00,
-                0x00, 0x20, 0x1e, 0x00, 0x4f, 0x00, 0x00, 0x20, 0x1f, 0x03, 0xf6, 0x00,
-                0x00, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x35, 0x24, 0x59, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x68, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02,
-                0x00, 0x54, 0x72, 0x61, 0x6e, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x65, 0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe5,
-                0xfe, 0xf3, 0xe7, 0xe5, 0x65, 0x24, 0x00, 0x00, 0x00, 0x00, 0x20, 0x1e,
-                0x00, 0x6f, 0x00, 0x00, 0x20, 0xf6, 0x00, 0x00, 0x03, 0x1f, 0x20, 0x20,
-                0x00, 0x00, 0x00, 0x00, 0x35, 0x00, 0x59, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x68, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x73, 0x00,
-                0x81, 0x14, 0x00, 0x10, 0x00, 0x73, 0x00, 0x81, 0x14, 0x00, 0x10, 0x00,
-                0x00, 0x00, 0x00, 0x26, 0x00, 0x00, 0x00, 0x00, 0xe5, 0xfe
-            }};
-
-            SerialIter sit{makeSlice(payload)};
-            auto obj = std::make_shared<STTx>(sit);
-            BEAST_EXPECT(!obj);
-        }
-        catch (std::exception const& e)
-        {
-            BEAST_EXPECT(strcmp(e.what(),
-                "Duplicate field detected") == 0);
+            BEAST_EXPECT(strcmp(e.what(), "Duplicate field detected") == 0);
         }
     }
 

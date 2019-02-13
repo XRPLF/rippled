@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_SOTEMPLATE_H_INCLUDED
 #define RIPPLE_PROTOCOL_SOTEMPLATE_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/SField.h>
 #include <boost/range.hpp>
 #include <memory>
@@ -49,6 +50,8 @@ public:
         : e_field (fieldName)
         , flags (flags)
     {
+        if (! e_field.isUseful())
+            Throw<std::runtime_error> ("SField in SOElement must be useful.");
     }
 };
 
