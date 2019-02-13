@@ -14,6 +14,41 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 1.2.0
+
+The `rippled` 1.2.0 release introduces the MultisignReserve Amendment, which
+reduces the reserve requirement associated with signer lists. This release also
+includes incremental improvements to the code that handles offers. Furthermore,
+`rippled` now also has the ability to automatically detect transaction
+censorship attempts and issue warnings of increasing severity for transactions
+that should have been included in a closed ledger after several rounds of
+consensus.
+
+**New and Updated Features**
+
+- Reduce the account reserve for a Multisign SignerList (6572fc8)
+- Improve transaction error condition handling (4104778)
+- Allow servers to automatically detect transaction censorship attempts (945493d)
+- Load validator list from file (c1a0244)
+- Add RPC command shard crawl (17e0d09)
+- Add RPC Call unit tests (eeb9d92)
+- Grow the open ledger expected transactions quickly (7295cf9)
+- Avoid dispatching multiple fetch pack threads (4dcb3c9)
+- Remove unused function in AutoSocket.h (8dd8433)
+- Update TxQ developer docs (e14f913)
+- Add user defined literals for megabytes and kilobytes (cd1c5a3)
+- Make the FeeEscalation Amendment permanent (58f786c)
+- Remove undocumented experimental options from RPC sign (a96cb8f)
+- Improve RPC error message for fee command (af1697c)
+- Improve ledger_entry command’s inconsistent behavior (63e167b) 
+
+**Bug Fixes**
+
+- Accept redirects from validator list sites (7fe1d4b)
+- Implement missing string conversions for JSON (c0e9418) 
+- Eliminate potential undefined behavior (c71eb45)
+- Add safe_cast to sure no overflow in casts between enums and integral types (a7e4541)
+
 ## Version 1.1.2
 
 The `rippled` 1.1.2 release introduces a fix for an issue that could have
