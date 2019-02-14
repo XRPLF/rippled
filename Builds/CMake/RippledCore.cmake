@@ -59,6 +59,7 @@ else ()
     src/ripple/basics/impl/contract.cpp
     src/ripple/basics/impl/CountedObject.cpp
     src/ripple/basics/impl/FileUtilities.cpp
+    src/ripple/basics/impl/IOUAmount.cpp
     src/ripple/basics/impl/Log.cpp
     src/ripple/basics/impl/strHex.cpp
     src/ripple/basics/impl/StringUtilities.cpp
@@ -85,7 +86,6 @@ else ()
     src/ripple/protocol/impl/ErrorCodes.cpp
     src/ripple/protocol/impl/Feature.cpp
     src/ripple/protocol/impl/HashPrefix.cpp
-    src/ripple/protocol/impl/IOUAmount.cpp
     src/ripple/protocol/impl/Indexes.cpp
     src/ripple/protocol/impl/InnerObjectFormats.cpp
     src/ripple/protocol/impl/Issue.cpp
@@ -159,6 +159,7 @@ install (
     src/ripple/basics/Buffer.h
     src/ripple/basics/CountedObject.h
     src/ripple/basics/FileUtilities.h
+    src/ripple/basics/IOUAmount.h
     src/ripple/basics/LocalValue.h
     src/ripple/basics/Log.h
     src/ripple/basics/safe_cast.h
@@ -166,10 +167,12 @@ install (
     src/ripple/basics/StringUtilities.h
     src/ripple/basics/ToString.h
     src/ripple/basics/UnorderedContainers.h
+    src/ripple/basics/XRPAmount.h
     src/ripple/basics/algorithm.h
     src/ripple/basics/base_uint.h
     src/ripple/basics/chrono.h
     src/ripple/basics/contract.h
+    src/ripple/basics/FeeUnits.h
     src/ripple/basics/hardened_hash.h
     src/ripple/basics/strHex.h
   DESTINATION include/ripple/basics)
@@ -209,7 +212,6 @@ install (
     src/ripple/protocol/ErrorCodes.h
     src/ripple/protocol/Feature.h
     src/ripple/protocol/HashPrefix.h
-    src/ripple/protocol/IOUAmount.h
     src/ripple/protocol/Indexes.h
     src/ripple/protocol/InnerObjectFormats.h
     src/ripple/protocol/Issue.h
@@ -247,7 +249,6 @@ install (
     src/ripple/protocol/TxFlags.h
     src/ripple/protocol/TxFormats.h
     src/ripple/protocol/UintTypes.h
-    src/ripple/protocol/XRPAmount.h
     src/ripple/protocol/digest.h
     src/ripple/protocol/jss.h
     src/ripple/protocol/tokens.h
@@ -728,6 +729,7 @@ else ()
     src/test/app/DepositAuth_test.cpp
     src/test/app/Discrepancy_test.cpp
     src/test/app/Escrow_test.cpp
+    src/test/app/FeeVote_test.cpp
     src/test/app/Flow_test.cpp
     src/test/app/Freeze_test.cpp
     src/test/app/HashRouter_test.cpp
@@ -766,15 +768,18 @@ else ()
     src/test/basics/Buffer_test.cpp
     src/test/basics/DetectCrash_test.cpp
     src/test/basics/FileUtilities_test.cpp
+    src/test/basics/IOUAmount_test.cpp
     src/test/basics/KeyCache_test.cpp
     src/test/basics/PerfLog_test.cpp
     src/test/basics/RangeSet_test.cpp
     src/test/basics/Slice_test.cpp
     src/test/basics/StringUtilities_test.cpp
     src/test/basics/TaggedCache_test.cpp
+    src/test/basics/XRPAmount_test.cpp
     src/test/basics/base64_test.cpp
     src/test/basics/base_uint_test.cpp
     src/test/basics/contract_test.cpp
+    src/test/basics/FeeUnits_test.cpp
     src/test/basics/hardened_hash_test.cpp
     src/test/basics/mulDiv_test.cpp
     src/test/basics/qalloc_test.cpp
@@ -929,7 +934,6 @@ else ()
        nounity, test sources:
          subdir: protocol
     #]===============================]
-    src/test/protocol/IOUAmount_test.cpp
     src/test/protocol/InnerObjectFormats_test.cpp
     src/test/protocol/Issue_test.cpp
     src/test/protocol/PublicKey_test.cpp
@@ -942,7 +946,6 @@ else ()
     src/test/protocol/SecretKey_test.cpp
     src/test/protocol/Seed_test.cpp
     src/test/protocol/TER_test.cpp
-    src/test/protocol/XRPAmount_test.cpp
     src/test/protocol/digest_test.cpp
     src/test/protocol/types_test.cpp
     #[===============================[

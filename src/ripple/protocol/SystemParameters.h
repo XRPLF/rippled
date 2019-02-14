@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED
 #define RIPPLE_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED
 
+#include <ripple/basics/XRPAmount.h>
 #include <cstdint>
 #include <string>
 
@@ -37,23 +38,18 @@ systemName ()
 }
 
 /** Configure the native currency. */
-static
-std::uint64_t const
-SYSTEM_CURRENCY_GIFT = 1000;
-
-static
-std::uint64_t const
-SYSTEM_CURRENCY_USERS = 100000000;
-
-/** Number of drops per 1 XRP */
-static
-std::uint64_t const
-SYSTEM_CURRENCY_PARTS = 1000000;
 
 /** Number of drops in the genesis account. */
-static
-std::uint64_t const
-SYSTEM_CURRENCY_START = SYSTEM_CURRENCY_GIFT * SYSTEM_CURRENCY_USERS * SYSTEM_CURRENCY_PARTS;
+constexpr
+XRPAmount
+INITIAL_XRP{ 100'000'000'000 * DROPS_PER_XRP };
+
+/** Returns true if the amount does not exceed the initial XRP in existence. */
+inline
+bool isLegalAmount (XRPAmount const& amount)
+{
+    return amount <= INITIAL_XRP;
+}
 
 /* The currency code for the native currency. */
 static inline

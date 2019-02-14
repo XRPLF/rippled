@@ -22,12 +22,13 @@
 
 #include <ripple/ledger/detail/ReadViewFwdRange.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/FeeUnits.h>
+#include <ripple/basics/IOUAmount.h>
+#include <ripple/basics/XRPAmount.h>
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STTx.h>
-#include <ripple/protocol/XRPAmount.h>
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/beast/utility/Journal.h>
 #include <boost/optional.hpp>
@@ -45,10 +46,10 @@ namespace ripple {
 */
 struct Fees
 {
-    std::uint64_t base = 0;         // Reference tx cost (drops)
-    std::uint32_t units = 0;        // Reference fee units
-    std::uint32_t reserve = 0;      // Reserve base (drops)
-    std::uint32_t increment = 0;    // Reserve increment (drops)
+    XRPAmount base{ 0 };         // Reference tx cost (drops)
+    FeeUnit32 units{ 0 };        // Reference fee units
+    XRPAmount reserve{ 0 };      // Reserve base (drops)
+    XRPAmount increment{ 0 };    // Reserve increment (drops)
 
     explicit Fees() = default;
     Fees (Fees const&) = default;
@@ -62,7 +63,13 @@ struct Fees
     XRPAmount
     accountReserve (std::size_t ownerCount) const
     {
-        return { reserve + ownerCount * increment };
+        return reserve + ownerCount * increment;
+    }
+
+    std::pair<bool, XRPAmount>
+    toDrops(FeeUnit64 const& fee) const
+    {
+        return mulDiv(base, fee, units);
     }
 };
 

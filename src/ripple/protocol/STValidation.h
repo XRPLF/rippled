@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
 #define RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
 
+#include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/STObject.h>
@@ -100,9 +101,9 @@ public:
     struct FeeSettings
     {
         boost::optional<std::uint32_t> loadFee;
-        boost::optional<std::uint64_t> baseFee;
-        boost::optional<std::uint32_t> reserveBase;
-        boost::optional<std::uint32_t> reserveIncrement;
+        boost::optional<XRPAmount> baseFee;
+        boost::optional<XRPAmount> reserveBase;
+        boost::optional<XRPAmount> reserveIncrement;
     };
 
     /** Construct, sign and trust a new STValidation

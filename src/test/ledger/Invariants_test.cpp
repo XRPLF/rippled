@@ -71,7 +71,7 @@ class Invariants_test : public beast::unit_test::suite
             ov,
             tx,
             tesSUCCESS,
-            env.current()->fees().base,
+            safe_cast<FeeUnit64>(env.current()->fees().units),
             tapNONE,
             jlog
         };
@@ -275,13 +275,17 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck (enabled,
             {{ "incorrect account XRP balance" },
              {  "XRP net change was positive: 99999999000000001" }},
-            [](Account const& A1, Account const&, ApplyContext& ac)
+            [this](Account const& A1, Account const&, ApplyContext& ac)
             {
                 // balance exceeds genesis amount
                 auto const sle = ac.view().peek (keylet::account(A1.id()));
                 if(! sle)
                     return false;
-                sle->setFieldAmount (sfBalance, SYSTEM_CURRENCY_START + 1);
+                // Use `drops(1)` to bypass a call to STAmount::canonicalize
+                // with an invalid value
+                sle->setFieldAmount (sfBalance,
+                    INITIAL_XRP + drops(1));
+                BEAST_EXPECT(!sle->getFieldAmount(sfBalance).negative());
                 ac.view().update (sle);
                 return true;
             });
@@ -289,13 +293,14 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck (enabled,
             {{ "incorrect account XRP balance" },
              { "XRP net change of -1000000001 doesn't match fee 0" }},
-            [](Account const& A1, Account const&, ApplyContext& ac)
+            [this](Account const& A1, Account const&, ApplyContext& ac)
             {
                 // balance is negative
                 auto const sle = ac.view().peek (keylet::account(A1.id()));
                 if(! sle)
                     return false;
-                sle->setFieldAmount (sfBalance, -1);
+                sle->setFieldAmount (sfBalance, {1, true});
+                BEAST_EXPECT(sle->getFieldAmount(sfBalance).negative());
                 ac.view().update (sle);
                 return true;
             });
@@ -317,11 +322,11 @@ class Invariants_test : public beast::unit_test::suite
 
         doInvariantCheck (enabled,
             {{ "fee paid exceeds system limit: "s +
-                std::to_string(SYSTEM_CURRENCY_START) },
+                to_string(INITIAL_XRP) },
              { "XRP net change of 0 doesn't match fee "s +
-                std::to_string(SYSTEM_CURRENCY_START) }},
+                to_string(INITIAL_XRP) }},
             [](Account const&, Account const&, ApplyContext&) { return true; },
-            XRPAmount{SYSTEM_CURRENCY_START});
+            XRPAmount{INITIAL_XRP});
 
          doInvariantCheck (enabled,
             {{ "fee paid is 20 exceeds fee specified in transaction." },
@@ -447,7 +452,10 @@ class Invariants_test : public beast::unit_test::suite
                     return false;
                 auto sleNew = std::make_shared<SLE> (
                     keylet::escrow(A1, (*sle)[sfSequence] + 2));
-                sleNew->setFieldAmount (sfAmount, SYSTEM_CURRENCY_START + 1);
+                // Use `drops(1)` to bypass a call to STAmount::canonicalize
+                // with an invalid value
+                sleNew->setFieldAmount (sfAmount,
+                    INITIAL_XRP + drops(1));
                 ac.view().insert (sleNew);
                 return true;
             });

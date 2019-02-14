@@ -45,7 +45,7 @@ class Offer_test : public beast::unit_test::suite
     {
         using namespace jtx;
         auto feeDrops = env.current()->fees().base;
-        return drops (dropsPerXRP<std::int64_t>::value * xrpAmount - feeDrops);
+        return drops (dropsPerXRP * xrpAmount - feeDrops);
     }
 
     static auto
@@ -1046,7 +1046,7 @@ public:
         env.fund (XRP(1000000), gw);
 
         // The fee that's charged for transactions
-        auto const f = env.current ()->fees ().base;
+        auto const f = env.current()->fees().base;
 
         // Account is at the reserve, and will dip below once
         // fees are subtracted.
@@ -1342,10 +1342,10 @@ public:
         jrr = ledgerEntryRoot (env, bob);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            std::to_string(
-                XRP (10000).value ().mantissa () -
-                XRP (reverse_order ? 4000 : 3000).value ().mantissa () -
-                env.current ()->fees ().base * 2)
+            to_string(
+                (XRP (10000) -
+                XRP (reverse_order ? 4000 : 3000) -
+                env.current ()->fees ().base * 2).xrp())
         );
 
         jrr = ledgerEntryState (env, alice, gw, "USD");
@@ -1353,10 +1353,10 @@ public:
         jrr = ledgerEntryRoot (env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            std::to_string(
-                XRP (10000).value ().mantissa( ) +
-                XRP(reverse_order ? 4000 : 3000).value ().mantissa () -
-                env.current ()->fees ().base * 2)
+            to_string(
+                (XRP (10000) +
+                XRP(reverse_order ? 4000 : 3000) -
+                env.current ()->fees ().base * 2).xrp ())
         );
     }
 
@@ -1392,10 +1392,10 @@ public:
         jrr = ledgerEntryRoot(env, bob);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            std::to_string(
-                XRP (100000).value ().mantissa () -
-                XRP (3000).value ().mantissa () -
-                env.current ()->fees ().base * 1)
+            to_string(
+                (XRP (100000) -
+                XRP (3000) -
+                env.current ()->fees ().base * 1).xrp ())
         );
 
         jrr = ledgerEntryState (env, alice, gw, "USD");
@@ -1403,10 +1403,10 @@ public:
         jrr = ledgerEntryRoot (env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            std::to_string(
-                XRP (100000).value ().mantissa () +
-                XRP (3000).value ().mantissa () -
-                env.current ()->fees ().base * 2)
+            to_string(
+                (XRP (100000) +
+                XRP (3000) -
+                env.current ()->fees ().base * 2).xrp ())
         );
     }
 
@@ -1526,10 +1526,10 @@ public:
         jrr = ledgerEntryRoot (env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            std::to_string(
-                XRP (10000).value ().mantissa () +
-                XRP (500).value ().mantissa () -
-                env.current ()->fees ().base * 2)
+            to_string(
+                (XRP (10000) +
+                XRP (500) -
+                env.current ()->fees ().base * 2).xrp ())
         );
 
         jrr = ledgerEntryState (env, bob, gw, "USD");
@@ -1622,10 +1622,10 @@ public:
         jrr = ledgerEntryRoot (env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            std::to_string(
-                XRP (10000).value ().mantissa () +
-                XRP (200).value ().mantissa () -
-                env.current ()->fees ().base * 2)
+            to_string(
+                (XRP (10000) +
+                XRP (200) -
+                env.current ()->fees ().base * 2).xrp ())
         );
 
         // bob got 40 USD from partial consumption of the offer
@@ -1656,11 +1656,11 @@ public:
         jrr = ledgerEntryRoot (env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            std::to_string(
-                XRP (10000).value ().mantissa () +
-                XRP (200).value ().mantissa () +
-                XRP (300).value ().mantissa () -
-                env.current ()->fees ().base * 4)
+            to_string(
+                (XRP (10000) +
+                XRP (200) +
+                XRP (300) -
+                env.current ()->fees ().base * 4).xrp ())
         );
 
         // bob now has 100 USD - 40 from the first payment and 60 from the
@@ -2154,7 +2154,7 @@ public:
             env.current ()->read (
                 keylet::account (bob.id ()))->getFieldU32 (sfSequence);
         payment[jss::tx_json][jss::Fee] =
-            std::to_string( env.current ()->fees ().base);
+            to_string( env.current()->fees().base);
         payment[jss::tx_json][jss::SendMax] =
             bob ["XTS"] (1.5).value ().getJson (JsonOptions::none);
         auto jrr = wsc->invoke("submit", payment);
@@ -2403,7 +2403,7 @@ public:
 
         // alice's account has enough for the reserve, one trust line plus two
         // offers, and two fees.
-        env.fund (reserve (env, 2) + (fee * 2), alice);
+        env.fund (reserve (env, 2) + fee * 2, alice);
         env.close();
 
         env (trust(alice, usdOffer));
@@ -2488,8 +2488,8 @@ public:
 
         // Each account has enough for the reserve, two trust lines, one
         // offer, and two fees.
-        env.fund (reserve (env, 3) + (fee * 3), alice);
-        env.fund (reserve (env, 3) + (fee * 2), bob);
+        env.fund (reserve (env, 3) + fee * 3, alice);
+        env.fund (reserve (env, 3) + fee * 2, bob);
         env.close();
 
         env (trust(alice, usdOffer));
@@ -3038,7 +3038,7 @@ public:
             auto const eve = Account("eve");
             auto const fyn = Account("fyn");
 
-            env.fund (XRP(20000) + fee*2, eve, fyn);
+            env.fund (XRP(20000) + (fee*2), eve, fyn);
             env.close();
 
             env (trust (eve, USD(1000)));

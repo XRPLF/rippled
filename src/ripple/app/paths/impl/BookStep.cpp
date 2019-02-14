@@ -23,14 +23,14 @@
 #include <ripple/app/paths/NodeDirectory.h>
 #include <ripple/app/tx/impl/OfferStream.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/XRPAmount.h>
 #include <ripple/ledger/Directory.h>
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/protocol/Book.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/Quality.h>
-#include <ripple/protocol/XRPAmount.h>
 
 #include <boost/container/flat_set.hpp>
 

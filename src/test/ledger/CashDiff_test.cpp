@@ -69,7 +69,8 @@ class CashDiff_test : public beast::unit_test::suite
                 oldProbe = newProbe;
                 newProbe = oldProbe * 10;
                 e10 += 1;
-            } while (newProbe > oldProbe);
+            } while (newProbe > oldProbe &&
+                newProbe < std::numeric_limits<std::int64_t>::max());
         }
         {
             // Test XRP.
@@ -92,7 +93,8 @@ class CashDiff_test : public beast::unit_test::suite
                 oldProbe = newProbe;
                 newProbe = oldProbe * 10;
                 e10 += 1;
-            } while (newProbe > oldProbe);
+            } while (newProbe > oldProbe &&
+                newProbe < std::numeric_limits<std::int64_t>::max());
         }
     }
 

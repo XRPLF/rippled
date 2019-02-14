@@ -79,13 +79,13 @@ public:
         PrettyAmount(0u);
         PrettyAmount(1u);
         PrettyAmount(-1);
-        static_assert(! std::is_constructible<
+        static_assert(! std::is_trivially_constructible<
             PrettyAmount, char>::value, "");
-        static_assert(! std::is_constructible<
+        static_assert(! std::is_trivially_constructible<
             PrettyAmount, unsigned char>::value, "");
-        static_assert(! std::is_constructible<
+        static_assert(! std::is_trivially_constructible<
             PrettyAmount, short>::value, "");
-        static_assert(! std::is_constructible<
+        static_assert(! std::is_trivially_constructible<
             PrettyAmount, unsigned short>::value, "");
 
         try
@@ -367,7 +367,7 @@ public:
         env(noop("alice"), msig("carol"), fee(2 * baseFee));
         env(noop("alice"), msig("bob", "carol"), fee(3 * baseFee));
         env(noop("alice"), msig("bob", "carol", "dilbert"),
-            fee(4 * baseFee),                                   ter(tefBAD_SIGNATURE));
+            fee(4 * baseFee), ter(tefBAD_SIGNATURE));
 
         env(signers("alice", none));
     }

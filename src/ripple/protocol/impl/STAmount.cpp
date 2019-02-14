@@ -205,6 +205,7 @@ STAmount::STAmount (SField const& name,
     , mIsNative (true)
     , mIsNegative (negative)
 {
+    assert(mValue <= std::numeric_limits<std::int64_t>::max());
 }
 
 STAmount::STAmount (SField const& name, Issue const& issue,
@@ -215,6 +216,7 @@ STAmount::STAmount (SField const& name, Issue const& issue,
     , mOffset (exponent)
     , mIsNegative (negative)
 {
+    assert(mValue <= std::numeric_limits<std::int64_t>::max());
     canonicalize ();
 }
 
@@ -226,6 +228,7 @@ STAmount::STAmount (std::uint64_t mantissa, bool negative)
     , mIsNative (true)
     , mIsNegative (mantissa != 0 && negative)
 {
+    assert(mValue <= std::numeric_limits<std::int64_t>::max());
 }
 
 STAmount::STAmount (Issue const& issue,
@@ -235,6 +238,7 @@ STAmount::STAmount (Issue const& issue,
     , mOffset (exponent)
     , mIsNegative (negative)
 {
+    assert(mValue <= std::numeric_limits<std::int64_t>::max());
     canonicalize ();
 }
 
@@ -280,9 +284,9 @@ STAmount::STAmount (XRPAmount const& amount)
     , mIsNegative (amount < beast::zero)
 {
     if (mIsNegative)
-        mValue = static_cast<std::uint64_t> (-amount.drops ());
+        mValue = unsafe_cast<std::uint64_t> (-amount.drops ());
     else
-        mValue = static_cast<std::uint64_t> (amount.drops ());
+        mValue = unsafe_cast<std::uint64_t> (amount.drops ());
 
     canonicalize ();
 }
@@ -298,20 +302,23 @@ STAmount::construct (SerialIter& sit, SField const& name)
 // Conversion
 //
 //------------------------------------------------------------------------------
-XRPAmount STAmount::xrp () const
+XRPAmount
+STAmount::xrp () const
 {
     if (!mIsNative)
-        Throw<std::logic_error> ("Cannot return non-native STAmount as XRPAmount");
+        Throw<std::logic_error> (
+            "Cannot return non-native STAmount as XRPAmount");
 
-    auto drops = static_cast<std::int64_t> (mValue);
+    auto drops = static_cast<XRPAmount::value_type> (mValue);
 
     if (mIsNegative)
         drops = -drops;
 
-    return { drops };
+    return XRPAmount{ drops };
 }
 
-IOUAmount STAmount::iou () const
+IOUAmount
+STAmount::iou () const
 {
     if (mIsNative)
         Throw<std::logic_error> ("Cannot return native STAmount as IOUAmount");

@@ -52,7 +52,7 @@ xrpMinusFee (jtx::Env const& env, std::int64_t xrpAmount)
     using namespace jtx;
     auto feeDrops = env.current ()->fees ().base;
     return drops (
-        dropsPerXRP<std::int64_t>::value * xrpAmount - feeDrops);
+        dropsPerXRP * xrpAmount - feeDrops);
 };
 
 struct Flow_test : public beast::unit_test::suite
@@ -1212,8 +1212,8 @@ struct Flow_test : public beast::unit_test::suite
         auto const CTB = gw["CTB"];
 
         auto const fee = env.current ()->fees ().base;
-        env.fund (reserve(env, 2) + drops (9999640) + (fee), ann);
-        env.fund (reserve(env, 2) + (fee*4), gw);
+        env.fund (reserve(env, 2) + drops (9999640) + fee, ann);
+        env.fund (reserve(env, 2) + fee*4, gw);
         env.close();
 
         env (rate(gw, 1.002));

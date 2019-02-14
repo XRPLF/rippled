@@ -50,16 +50,18 @@ class TxQ_test : public beast::unit_test::suite
         std::uint64_t expectedMinFeeLevel,
         std::uint64_t expectedMedFeeLevel = 256 * 500)
     {
+        FeeLevel64 const expectedMin{ expectedMinFeeLevel };
+        FeeLevel64 const expectedMed{ expectedMedFeeLevel };
         auto const metrics = env.app().getTxQ().getMetrics(*env.current());
-        BEAST_EXPECT(metrics.referenceFeeLevel == 256);
+        BEAST_EXPECT(metrics.referenceFeeLevel == FeeLevel64{ 256 });
         BEAST_EXPECT(metrics.txCount == expectedCount);
         BEAST_EXPECT(metrics.txQMaxSize == expectedMaxCount);
         BEAST_EXPECT(metrics.txInLedger == expectedInLedger);
         BEAST_EXPECT(metrics.txPerLedger == expectedPerLedger);
-        BEAST_EXPECT(metrics.minProcessingFeeLevel == expectedMinFeeLevel);
-        BEAST_EXPECT(metrics.medFeeLevel == expectedMedFeeLevel);
+        BEAST_EXPECT(metrics.minProcessingFeeLevel == expectedMin);
+        BEAST_EXPECT(metrics.medFeeLevel == expectedMed);
         auto expectedCurFeeLevel = expectedInLedger > expectedPerLedger ?
-            expectedMedFeeLevel * expectedInLedger * expectedInLedger /
+            expectedMed *expectedInLedger * expectedInLedger /
                 (expectedPerLedger * expectedPerLedger) :
                     metrics.referenceFeeLevel;
         BEAST_EXPECT(metrics.openLedgerFeeLevel == expectedCurFeeLevel);
@@ -84,8 +86,8 @@ class TxQ_test : public beast::unit_test::suite
         auto metrics = env.app().getTxQ().getMetrics(view);
 
         // Don't care about the overflow flag
-        return fee(mulDiv(metrics.openLedgerFeeLevel,
-            view.fees().base, metrics.referenceFeeLevel).second + 1);
+        return fee(toDrops(metrics.openLedgerFeeLevel,
+            view.fees().base).second + 1);
     }
 
     static
@@ -156,10 +158,10 @@ class TxQ_test : public beast::unit_test::suite
         env.close(env.now() + 5s, 10000ms);
         checkMetrics(env, 0, flagMaxQueue, 0, expectedPerLedger, 256);
         auto const fees = env.current()->fees();
-        BEAST_EXPECT(fees.base == base);
-        BEAST_EXPECT(fees.units == units);
-        BEAST_EXPECT(fees.reserve == reserve);
-        BEAST_EXPECT(fees.increment == increment);
+        BEAST_EXPECT(fees.base == XRPAmount{ base });
+        BEAST_EXPECT(fees.units == FeeUnit64{ units });
+        BEAST_EXPECT(fees.reserve == XRPAmount{ reserve });
+        BEAST_EXPECT(fees.increment == XRPAmount{ increment });
 
         return flagMaxQueue;
     }
@@ -494,14 +496,16 @@ public:
             auto& txQ = env.app().getTxQ();
             auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
             BEAST_EXPECT(aliceStat.size() == 1);
-            BEAST_EXPECT(aliceStat.begin()->second.feeLevel == 256);
+            BEAST_EXPECT(aliceStat.begin()->second.feeLevel ==
+                FeeLevel64{ 256 });
             BEAST_EXPECT(aliceStat.begin()->second.lastValid &&
                 *aliceStat.begin()->second.lastValid == 8);
             BEAST_EXPECT(!aliceStat.begin()->second.consequences);
 
             auto bobStat = txQ.getAccountTxs(bob.id(), *env.current());
             BEAST_EXPECT(bobStat.size() == 1);
-            BEAST_EXPECT(bobStat.begin()->second.feeLevel == 7000 * 256 / 10);
+            BEAST_EXPECT(bobStat.begin()->second.feeLevel ==
+                FeeLevel64{ 7000 * 256 / 10 });
             BEAST_EXPECT(!bobStat.begin()->second.lastValid);
             BEAST_EXPECT(!bobStat.begin()->second.consequences);
 
@@ -833,13 +837,14 @@ public:
         {
             auto& txQ = env.app().getTxQ();
             auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
-            std::int64_t fee = 20;
+            constexpr XRPAmount fee{ 20 };
+            auto const& baseFee = env.current()->fees().base;
             auto seq = env.seq(alice);
             BEAST_EXPECT(aliceStat.size() == 7);
             for (auto const& [txSeq, details] : aliceStat)
             {
                 BEAST_EXPECT(txSeq == seq);
-                BEAST_EXPECT(details.feeLevel == mulDiv(fee, 256, 10).second);
+                BEAST_EXPECT(details.feeLevel == toFeeLevel(fee, baseFee).second);
                 BEAST_EXPECT(details.lastValid);
                 BEAST_EXPECT((details.consequences &&
                     details.consequences->fee == drops(fee) &&
@@ -1995,7 +2000,7 @@ public:
             for (auto const& tx : aliceStat)
             {
                 BEAST_EXPECT(tx.first == seq);
-                BEAST_EXPECT(tx.second.feeLevel == 25600);
+                BEAST_EXPECT(tx.second.feeLevel == FeeLevel64{ 25600 });
                 if(seq == aliceSeq + 2)
                 {
                     BEAST_EXPECT(tx.second.lastValid &&
@@ -2049,7 +2054,7 @@ public:
                     ++seq;
 
                 BEAST_EXPECT(tx.first == seq);
-                BEAST_EXPECT(tx.second.feeLevel == 25600);
+                BEAST_EXPECT(tx.second.feeLevel == FeeLevel64{ 25600 });
                 BEAST_EXPECT(!tx.second.lastValid);
                 ++seq;
             }
@@ -2064,7 +2069,7 @@ public:
             for (auto const& tx : aliceStat)
             {
                 BEAST_EXPECT(tx.first == seq);
-                BEAST_EXPECT(tx.second.feeLevel == 25600);
+                BEAST_EXPECT(tx.second.feeLevel == FeeLevel64{ 25600 });
                 BEAST_EXPECT(!tx.second.lastValid);
                 ++seq;
             }
@@ -2763,10 +2768,10 @@ public:
                 totalFactor += inLedger * inLedger;
             }
             auto result =
-                mulDiv (metrics.medFeeLevel * totalFactor /
+                toDrops (metrics.medFeeLevel * totalFactor /
                         (metrics.txPerLedger * metrics.txPerLedger),
-                    env.current ()->fees ().base, metrics.referenceFeeLevel)
-                    .second;
+                    env.current ()->fees ().base)
+                    .second.drops();
             // Subtract the fees already paid
             result -= alreadyPaid;
             // round up
@@ -2807,7 +2812,8 @@ public:
 
             // Now repeat the process including the new tx
             // and avoiding the rounding error
-            std::uint64_t const totalFee2 = calcTotalFee (100 * 2 + 8889 + 60911);
+            std::uint64_t const totalFee2 = calcTotalFee (100 * 2 + 8889 +
+                60911);
             BEAST_EXPECT(totalFee2 == 35556);
             // Submit a transaction with that fee. It will succeed.
             env(noop(alice), fee(totalFee2), seq(aliceSeq++));
@@ -2877,7 +2883,7 @@ public:
             for (auto const& tx : aliceQueue)
             {
                 BEAST_EXPECT(tx.first == seq);
-                BEAST_EXPECT(tx.second.feeLevel == 2560);
+                BEAST_EXPECT(tx.second.feeLevel == FeeLevel64{ 2560 });
                 ++seq;
             }
 

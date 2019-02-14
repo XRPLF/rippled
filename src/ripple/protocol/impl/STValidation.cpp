@@ -55,14 +55,26 @@ STValidation::STValidation(
     if (fees.loadFee)
         setFieldU32(sfLoadFee, *fees.loadFee);
 
+    // IF any of the values are out of the valid range, don't send a value.
+    // They should not be an issue, though, because the voting
+    // process (FeeVoteImpl) ignores any out of range values.
     if (fees.baseFee)
-        setFieldU64(sfBaseFee, *fees.baseFee);
+    {
+        if (auto const v = fees.baseFee->dropsAs<std::uint64_t>())
+            setFieldU64(sfBaseFee, *v);
+    }
 
     if (fees.reserveBase)
-        setFieldU32(sfReserveBase, *fees.reserveBase);
+    {
+        if (auto const v = fees.reserveBase->dropsAs<std::uint32_t>())
+            setFieldU32(sfReserveBase, *v);
+    }
 
     if (fees.reserveIncrement)
-        setFieldU32(sfReserveIncrement, *fees.reserveIncrement);
+    {
+        if (auto const v = fees.reserveIncrement->dropsAs<std::uint32_t>())
+            setFieldU32(sfReserveIncrement, *v);
+    }
 
     if (!amendments.empty())
         setFieldV256(sfAmendments, STVector256(sfAmendments, amendments));

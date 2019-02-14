@@ -122,7 +122,8 @@ Transactor::Transactor(
 {
 }
 
-std::uint64_t Transactor::calculateBaseFee (
+FeeUnit64
+Transactor::calculateBaseFee (
     ReadView const& view,
     STTx const& tx)
 {
@@ -131,13 +132,12 @@ std::uint64_t Transactor::calculateBaseFee (
     // The computation has two parts:
     //  * The base fee, which is the same for most transactions.
     //  * The additional cost of each multisignature on the transaction.
-    std::uint64_t baseFee = view.fees().units;
+    FeeUnit64 const baseFee = safe_cast<FeeUnit64>(view.fees().units);
 
     // Each signer adds one more baseFee to the minimum required fee
     // for the transaction.
-    std::uint32_t signerCount = 0;
-    if (tx.isFieldPresent (sfSigners))
-        signerCount = tx.getFieldArray (sfSigners).size();
+    std::size_t const signerCount = tx.isFieldPresent (sfSigners) ?
+        tx.getFieldArray (sfSigners).size() : 0;
 
     return baseFee + (signerCount * baseFee);
 }
@@ -149,7 +149,7 @@ Transactor::calculateFeePaid(STTx const& tx)
 }
 
 XRPAmount
-Transactor::minimumFee (Application& app, std::uint64_t baseFee,
+Transactor::minimumFee (Application& app, FeeUnit64 baseFee,
     Fees const& fees, ApplyFlags flags)
 {
     return scaleFeeLoad (baseFee, app.getFeeTrack (),
@@ -164,7 +164,7 @@ Transactor::calculateMaxSpend(STTx const& tx)
 
 TER
 Transactor::checkFee (PreclaimContext const& ctx,
-    std::uint64_t baseFee)
+    FeeUnit64 baseFee)
 {
     auto const feePaid = calculateFeePaid(ctx.tx);
     if (!isLegalAmount (feePaid) || feePaid < beast::zero)

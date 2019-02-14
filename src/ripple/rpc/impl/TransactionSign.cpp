@@ -709,22 +709,19 @@ Json::Value checkFee (
     }
 
     // Default fee in fee units.
-    std::uint64_t const feeDefault = config.TRANSACTION_FEE_BASE;
+    FeeUnit32 const feeDefault = config.TRANSACTION_FEE_BASE;
 
     // Administrative and identified endpoints are exempt from local fees.
-    std::uint64_t const loadFee =
+    XRPAmount const loadFee =
         scaleFeeLoad (feeDefault, feeTrack,
             ledger->fees(), isUnlimited (role));
-    std::uint64_t fee = loadFee;
+    XRPAmount fee = loadFee;
     {
         auto const metrics = txQ.getMetrics(*ledger);
         auto const baseFee = ledger->fees().base;
-        auto escalatedFee = mulDiv(
-            metrics.openLedgerFeeLevel, baseFee,
-                metrics.referenceFeeLevel).second;
-        if (mulDiv(escalatedFee, metrics.referenceFeeLevel,
-                baseFee).second < metrics.openLedgerFeeLevel)
-            ++escalatedFee;
+        auto escalatedFee = toDrops(
+            metrics.openLedgerFeeLevel - FeeLevel64{ 1 }, baseFee).second +
+            1;
         fee = std::max(fee, escalatedFee);
     }
 
@@ -749,7 +746,7 @@ Json::Value checkFee (
         return RPC::make_error (rpcHIGH_FEE, ss.str());
     }
 
-    tx [jss::Fee] = static_cast<unsigned int>(fee);
+    tx [jss::Fee] = fee.jsonClipped();
     return Json::Value();
 }
 

@@ -21,13 +21,13 @@
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/LocalValue.h>
+#include <ripple/basics/XRPAmount.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/Issue.h>
-#include <ripple/protocol/IOUAmount.h>
-#include <ripple/protocol/XRPAmount.h>
 #include <memory>
 
 namespace ripple {

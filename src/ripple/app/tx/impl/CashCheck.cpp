@@ -178,7 +178,7 @@ CashCheck::preclaim (PreclaimContext const& ctx)
             // longer be required.  So, if we're dealing in XRP, we add one
             // reserve's worth to the available funds.
             if (value.native())
-                availableFunds += XRPAmount (ctx.view.fees().increment);
+                availableFunds += XRPAmount{ctx.view.fees().increment};
 
             if (value > availableFunds)
             {

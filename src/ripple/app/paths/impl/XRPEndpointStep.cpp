@@ -21,11 +21,11 @@
 #include <ripple/app/paths/impl/AmountSpec.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/app/paths/impl/StepChecks.h>
+#include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/XRPAmount.h>
 #include <ripple/ledger/PaymentSandbox.h>
-#include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/Quality.h>
-#include <ripple/protocol/XRPAmount.h>
 
 #include <boost/container/flat_set.hpp>
 

@@ -20,7 +20,6 @@
 
 #include <test/protocol/digest_test.cpp>
 #include <test/protocol/InnerObjectFormats_test.cpp>
-#include <test/protocol/IOUAmount_test.cpp>
 #include <test/protocol/Issue_test.cpp>
 #include <test/protocol/PublicKey_test.cpp>
 #include <test/protocol/Quality_test.cpp>
@@ -33,4 +32,3 @@
 #include <test/protocol/STValidation_test.cpp>
 #include <test/protocol/TER_test.cpp>
 #include <test/protocol/types_test.cpp>
-#include <test/protocol/XRPAmount_test.cpp>

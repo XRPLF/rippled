@@ -23,6 +23,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/CountedObject.h>
+#include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STPathSet.h>
@@ -81,7 +82,7 @@ private:
 
         template <class U>
         std::enable_if_t<
-            std::is_assignable<T, U>::value,
+            std::is_assignable_v<T, U>,
                 ValueProxy&>
         operator= (U&& u);
 
@@ -209,7 +210,7 @@ private:
 
         template <class U>
         std::enable_if_t<
-            std::is_assignable<T, U>::value,
+            std::is_assignable_v<T, U>,
                 OptionalProxy&>
         operator= (U&& u);
 
@@ -726,7 +727,7 @@ STObject::Proxy<T>::assign(U&& u)
 template <class T>
 template <class U>
 std::enable_if_t<
-    std::is_assignable<T, U>::value,
+    std::is_assignable_v<T, U>,
         STObject::ValueProxy<T>&>
 STObject::ValueProxy<T>::operator= (U&& u)
 {
@@ -813,7 +814,7 @@ STObject::OptionalProxy<T>::operator=(optional_type const& v) ->
 template <class T>
 template <class U>
 std::enable_if_t<
-    std::is_assignable<T, U>::value,
+    std::is_assignable_v<T, U>,
         STObject::OptionalProxy<T>&>
 STObject::OptionalProxy<T>::operator=(U&& u)
 {

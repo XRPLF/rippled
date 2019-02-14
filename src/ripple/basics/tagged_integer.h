@@ -68,9 +68,9 @@ public:
             std::is_integral<OtherInt>::value &&
             sizeof(OtherInt) <= sizeof(Int)>::type>
     explicit
-        /* constexpr */
-        tagged_integer(OtherInt value) noexcept
-        : m_value(value)
+    constexpr
+    tagged_integer(OtherInt value) noexcept
+    : m_value(value)
     {
         static_assert(
             sizeof(tagged_integer) == sizeof(Int),

@@ -22,6 +22,7 @@
 #include <ripple/basics/impl/contract.cpp>
 #include <ripple/basics/impl/CountedObject.cpp>
 #include <ripple/basics/impl/FileUtilities.cpp>
+#include <ripple/basics/impl/IOUAmount.cpp>
 #include <ripple/basics/impl/Log.cpp>
 #include <ripple/basics/impl/strHex.cpp>
 #include <ripple/basics/impl/StringUtilities.cpp>

@@ -200,6 +200,8 @@ getEnvVar (char const* name)
     return value;
 }
 
+constexpr FeeUnit32 Config::TRANSACTION_FEE_BASE;
+
 void Config::setupControl(bool bQuiet,
     bool bSilent, bool bStandalone)
 {
@@ -406,13 +408,13 @@ void Config::loadFromString (std::string const& fileContents)
         NETWORK_QUORUM      = beast::lexicalCastThrow<std::size_t>(strTemp);
 
     if (getSingleSection (secConfig, SECTION_FEE_ACCOUNT_RESERVE, strTemp, j_))
-        FEE_ACCOUNT_RESERVE = beast::lexicalCastThrow <std::uint64_t> (strTemp);
+        FEE_ACCOUNT_RESERVE = beast::lexicalCastThrow <std::uint64_t>(strTemp);
 
     if (getSingleSection (secConfig, SECTION_FEE_OWNER_RESERVE, strTemp, j_))
-        FEE_OWNER_RESERVE   = beast::lexicalCastThrow <std::uint64_t> (strTemp);
+        FEE_OWNER_RESERVE = beast::lexicalCastThrow <std::uint64_t>(strTemp);
 
     if (getSingleSection (secConfig, SECTION_FEE_DEFAULT, strTemp, j_))
-        FEE_DEFAULT         = beast::lexicalCastThrow <int> (strTemp);
+        FEE_DEFAULT = beast::lexicalCastThrow <std::uint64_t>(strTemp);
 
     if (getSingleSection (secConfig, SECTION_LEDGER_HISTORY, strTemp, j_))
     {

@@ -28,17 +28,16 @@ namespace ripple {
 
 namespace detail {
 
-template <typename Integer>
-class VotableInteger
+class VotableValue
 {
 private:
-    using map_type = std::map <Integer, int>;
-    Integer mCurrent;   // The current setting
-    Integer mTarget;    // The setting we want
-    map_type mVoteMap;
+    using value_type = XRPAmount;
+    value_type const mCurrent;   // The current setting
+    value_type const mTarget;    // The setting we want
+    std::map <value_type, int> mVoteMap;
 
 public:
-    VotableInteger (Integer current, Integer target)
+    VotableValue (value_type current, value_type target)
         : mCurrent (current)
         , mTarget (target)
     {
@@ -47,7 +46,7 @@ public:
     }
 
     void
-    addVote(Integer vote)
+    addVote(value_type vote)
     {
         ++mVoteMap[vote];
     }
@@ -58,15 +57,15 @@ public:
         addVote (mCurrent);
     }
 
-    Integer
+    value_type
     getVotes() const;
 };
 
-template <class Integer>
-Integer
-VotableInteger <Integer>::getVotes() const
+auto
+VotableValue::getVotes() const
+    -> value_type
 {
-    Integer ourVote = mCurrent;
+    value_type ourVote = mCurrent;
     int weight = 0;
     for (auto const& [key, val] : mVoteMap)
     {
@@ -153,14 +152,17 @@ FeeVoteImpl::doVoting(
     // LCL must be flag ledger
     assert ((lastClosedLedger->info().seq % 256) == 0);
 
-    detail::VotableInteger<std::uint64_t> baseFeeVote (
-        lastClosedLedger->fees().base, target_.reference_fee);
+    detail::VotableValue baseFeeVote (
+        lastClosedLedger->fees().base,
+        target_.reference_fee);
 
-    detail::VotableInteger<std::uint32_t> baseReserveVote (
-        lastClosedLedger->fees().accountReserve(0).drops(), target_.account_reserve);
+    detail::VotableValue baseReserveVote(
+        lastClosedLedger->fees().accountReserve(0),
+        target_.account_reserve);
 
-    detail::VotableInteger<std::uint32_t> incReserveVote (
-        lastClosedLedger->fees().increment, target_.owner_reserve);
+    detail::VotableValue incReserveVote (
+        lastClosedLedger->fees().increment,
+        target_.owner_reserve);
 
     for (auto const& val : set)
     {
@@ -168,7 +170,17 @@ FeeVoteImpl::doVoting(
         {
             if (val->isFieldPresent (sfBaseFee))
             {
-                baseFeeVote.addVote (val->getFieldU64 (sfBaseFee));
+                using xrptype = XRPAmount::value_type;
+                auto const vote = val->getFieldU64 (sfBaseFee);
+                if (vote <= std::numeric_limits<xrptype>::max() &&
+                    isLegalAmount(XRPAmount{unsafe_cast<xrptype>(vote)}))
+                    baseFeeVote.addVote(XRPAmount{
+                        unsafe_cast<XRPAmount::value_type>(vote)});
+                else
+                    // Invalid amounts will be treated as if they're
+                    // not provided. Don't throw because this value is
+                    // provided by an external entity.
+                    baseFeeVote.noVote();
             }
             else
             {
@@ -177,7 +189,8 @@ FeeVoteImpl::doVoting(
 
             if (val->isFieldPresent (sfReserveBase))
             {
-                baseReserveVote.addVote (val->getFieldU32 (sfReserveBase));
+                baseReserveVote.addVote(XRPAmount{
+                    val->getFieldU32(sfReserveBase)});
             }
             else
             {
@@ -186,7 +199,8 @@ FeeVoteImpl::doVoting(
 
             if (val->isFieldPresent (sfReserveIncrement))
             {
-                incReserveVote.addVote (val->getFieldU32 (sfReserveIncrement));
+                incReserveVote.addVote (XRPAmount{
+                    val->getFieldU32 (sfReserveIncrement)});
             }
             else
             {
@@ -196,15 +210,19 @@ FeeVoteImpl::doVoting(
     }
 
     // choose our positions
-    std::uint64_t const baseFee = baseFeeVote.getVotes ();
-    std::uint32_t const baseReserve = baseReserveVote.getVotes ();
-    std::uint32_t const incReserve = incReserveVote.getVotes ();
-    std::uint32_t const feeUnits = target_.reference_fee_units;
+    // If any of the values are invalid, send the current values.
+    auto const baseFee = baseFeeVote.getVotes ().dropsAs<std::uint64_t>(
+        lastClosedLedger->fees().base);
+    auto const baseReserve = baseReserveVote.getVotes ().dropsAs<std::uint32_t>(
+        lastClosedLedger->fees().accountReserve(0));
+    auto const incReserve = incReserveVote.getVotes ().dropsAs<std::uint32_t>(
+        lastClosedLedger->fees().increment);
+    constexpr FeeUnit32 feeUnits = Setup::reference_fee_units;
     auto const seq = lastClosedLedger->info().seq + 1;
 
     // add transactions to our position
     if ((baseFee != lastClosedLedger->fees().base) ||
-            (baseReserve != lastClosedLedger->fees().accountReserve(0)) ||
+        (baseReserve != lastClosedLedger->fees().accountReserve(0)) ||
             (incReserve != lastClosedLedger->fees().increment))
     {
         JLOG(journal_.warn()) <<
@@ -220,7 +238,7 @@ FeeVoteImpl::doVoting(
                 obj[sfBaseFee] = baseFee;
                 obj[sfReserveBase] = baseReserve;
                 obj[sfReserveIncrement] = incReserve;
-                obj[sfReferenceFeeUnits] = feeUnits;
+                obj[sfReferenceFeeUnits] = feeUnits.fee();
             });
 
         uint256 txID = feeTx.getTransactionID ();
@@ -247,9 +265,19 @@ FeeVote::Setup
 setup_FeeVote (Section const& section)
 {
     FeeVote::Setup setup;
-    set (setup.reference_fee, "reference_fee", section);
-    set (setup.account_reserve, "account_reserve", section);
-    set (setup.owner_reserve, "owner_reserve", section);
+    {
+        std::uint64_t temp;
+        if (set(temp, "reference_fee", section) &&
+            temp <= std::numeric_limits<XRPAmount::value_type>::max())
+            setup.reference_fee = temp;
+    }
+    {
+        std::uint32_t temp;
+        if (set(temp, "account_reserve", section))
+            setup.account_reserve = temp;
+        if (set(temp, "owner_reserve", section))
+            setup.owner_reserve = temp;
+    }
     return setup;
 }
 

@@ -305,7 +305,7 @@ class Check_test : public beast::unit_test::suite
         BEAST_EXPECT (checksOnAccount (env, bob  ).size() == bobCount   + 6);
 
         // alice uses multisigning to create a check.
-        std::uint64_t const baseFeeDrops {env.current()->fees().base};
+        XRPAmount const baseFeeDrops {env.current()->fees().base};
         env (check::create (alice, bob, USD(50)),
             msig (bogie, demon), fee (3 * baseFeeDrops));
         env.close();
@@ -511,7 +511,7 @@ class Check_test : public beast::unit_test::suite
             fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
         env.close (closeTime);
 
-        std::uint64_t const baseFeeDrops {env.current()->fees().base};
+        XRPAmount const baseFeeDrops {env.current()->fees().base};
         STAmount const startBalance {XRP(300).value()};
         env.fund (startBalance, alice, bob);
         {
@@ -601,7 +601,7 @@ class Check_test : public beast::unit_test::suite
             verifyDeliveredAmount (env, drops(checkAmount.mantissa() - 1));
             env.require (balance (alice, reserve));
             env.require (balance (bob,
-                startBalance + checkAmount - drops ((baseFeeDrops * 2) + 1)));
+                startBalance + checkAmount - drops (baseFeeDrops * 2 + 1)));
             BEAST_EXPECT (checksOnAccount (env, alice).size() == 0);
             BEAST_EXPECT (checksOnAccount (env, bob  ).size() == 0);
             BEAST_EXPECT (ownerCount (env, alice) == 0);
@@ -611,7 +611,7 @@ class Check_test : public beast::unit_test::suite
             env (pay (env.master, alice,
                 checkAmount + drops (baseFeeDrops - 1)));
             env (pay (bob, env.master,
-                checkAmount - drops ((baseFeeDrops * 3) + 1)));
+                checkAmount - drops (baseFeeDrops * 3 + 1)));
             env.close();
             env.require (balance (alice, startBalance));
             env.require (balance (bob,   startBalance));
@@ -947,7 +947,7 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT (ownerCount (env, bob  ) == signersCount + 1);
 
             // bob uses multisigning to cash a check.
-            std::uint64_t const baseFeeDrops {env.current()->fees().base};
+            XRPAmount const baseFeeDrops {env.current()->fees().base};
             env (check::cash (bob, chkId2, (USD(2))),
                 msig (bogie, demon), fee (3 * baseFeeDrops));
             env.close();
@@ -1677,7 +1677,7 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT (ownerCount (env, alice) == signersCount + 3);
 
             // alice uses multisigning to cancel a check.
-            std::uint64_t const baseFeeDrops {env.current()->fees().base};
+            XRPAmount const baseFeeDrops {env.current()->fees().base};
             env (check::cancel (alice, chkIdMSig),
                 msig (bogie, demon), fee (3 * baseFeeDrops));
             env.close();

@@ -20,9 +20,9 @@
 #ifndef RIPPLE_APP_PATHS_CREDIT_H_INCLUDED
 #define RIPPLE_APP_PATHS_CREDIT_H_INCLUDED
 
+#include <ripple/basics/IOUAmount.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/IOUAmount.h>
 
 namespace ripple {
 

@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/contract.h>
-#include <ripple/protocol/IOUAmount.h>
+#include <ripple/basics/IOUAmount.h>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <algorithm>
 #include <numeric>

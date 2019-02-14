@@ -20,9 +20,9 @@
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/impl/StepChecks.h>
 #include <ripple/app/paths/impl/Steps.h>
+#include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/PaymentSandbox.h>
-#include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/Quality.h>
 
 #include <boost/container/flat_set.hpp>

@@ -20,6 +20,7 @@
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
+#include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/protocol/Feature.h>
@@ -51,7 +52,7 @@ DeleteAccount::preflight (PreflightContext const& ctx)
     return preflight2 (ctx);
 }
 
-std::uint64_t
+FeeUnit64
 DeleteAccount::calculateBaseFee (
     ReadView const& view,
     STTx const& tx)
@@ -59,8 +60,8 @@ DeleteAccount::calculateBaseFee (
     // The fee required for AccountDelete is one owner reserve.  But the
     // owner reserve is stored in drops.  We need to convert it to fee units.
     Fees const& fees {view.fees()};
-    std::pair<bool, std::uint64_t> const mulDivResult {
-        mulDiv (fees.increment, fees.units, fees.base)};
+    std::pair<bool, FeeUnit64> const mulDivResult {
+        mulDiv (fees.increment, safe_cast<FeeUnit64>(fees.units), fees.base)};
     if (mulDivResult.first)
         return mulDivResult.second;
 

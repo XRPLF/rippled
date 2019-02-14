@@ -144,7 +144,7 @@ invoke_preclaim (PreclaimContext const& ctx)
 }
 
 static
-std::uint64_t
+FeeUnit64
 invoke_calculateBaseFee(
     ReadView const& view,
     STTx const& tx)
@@ -175,7 +175,7 @@ invoke_calculateBaseFee(
     case ttFEE:                  return Change::calculateBaseFee(view, tx);
     default:
         assert(false);
-        return 0;
+        return FeeUnit64{0};
     }
 }
 
@@ -314,7 +314,7 @@ preclaim (PreflightResult const& preflightResult,
     }
 }
 
-std::uint64_t
+FeeUnit64
 calculateBaseFee(ReadView const& view,
     STTx const& tx)
 {

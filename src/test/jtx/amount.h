@@ -26,6 +26,7 @@
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/FeeUnits.h>
 #include <cstdint>
 #include <ostream>
 #include <string>
@@ -60,11 +61,10 @@ struct None
 
 //------------------------------------------------------------------------------
 
-template <class T>
-struct dropsPerXRP
-{
-    static T const value = 1000000;
-};
+// This value is also defined in SystemParameters.h. It's
+// duplicated here to catch any possible future errors that
+// could change that value (however unlikely).
+constexpr XRPAmount dropsPerXRP{ 1'000'000 };
 
 /** Represents an XRP or IOU quantity
     This customizes the string conversion and supports
@@ -93,8 +93,8 @@ public:
     template <class T>
     PrettyAmount (T v, std::enable_if_t<
         sizeof(T) >= sizeof(int) &&
-            std::is_integral<T>::value &&
-                std::is_signed<T>::value>* = nullptr)
+            std::is_integral_v<T> &&
+                std::is_signed_v<T>>* = nullptr)
         : amount_((v > 0) ?
             v : -v, v < 0)
     {
@@ -104,8 +104,13 @@ public:
     template <class T>
     PrettyAmount (T v, std::enable_if_t<
         sizeof(T) >= sizeof(int) &&
-            std::is_integral<T>::value &&
-                std::is_unsigned<T>::value>* = nullptr)
+            std::is_unsigned_v<T>>* = nullptr)
+        : amount_(v)
+    {
+    }
+
+    /** drops */
+    PrettyAmount (XRPAmount v)
         : amount_(v)
     {
     }
@@ -172,27 +177,28 @@ struct XRP_t
         return xrpIssue();
     }
 
-    /** Returns an amount of XRP as STAmount
+    /** Returns an amount of XRP as PrettyAmount,
+        which is trivially convertable to STAmount
 
         @param v The number of XRP (not drops)
     */
     /** @{ */
     template <class T, class = std::enable_if_t<
-        std::is_integral<T>::value>>
+        std::is_integral_v<T>>>
     PrettyAmount
     operator()(T v) const
     {
-        return { std::conditional_t<
-            std::is_signed<T>::value,
-                std::int64_t, std::uint64_t>{v} *
-                    dropsPerXRP<T>::value };
+        using TOut = std::conditional_t<
+            std::is_signed_v<T>,
+                std::int64_t, std::uint64_t>;
+        return { TOut{v} * dropsPerXRP };
     }
 
     PrettyAmount
     operator()(double v) const
     {
         auto const c =
-            dropsPerXRP<int>::value;
+            dropsPerXRP.drops();
         if (v >= 0)
         {
             auto const d = std::uint64_t(
@@ -235,16 +241,28 @@ struct XRP_t
 */
 extern XRP_t const XRP;
 
-/** Returns an XRP STAmount.
+/** Returns an XRP PrettyAmount, which is trivially convertible to STAmount.
 
     Example:
-        drops(10)   Returns STAmount of 10 drops
+        drops(10)   Returns PrettyAmount of 10 drops
 */
 template <class Integer,
     class = std::enable_if_t<
-        std::is_integral<Integer>::value>>
+        std::is_integral_v<Integer>>>
 PrettyAmount
 drops (Integer i)
+{
+    return { i };
+}
+
+/** Returns an XRP PrettyAmount, which is trivially convertible to STAmount.
+
+Example:
+drops(view->fee().basefee)   Returns PrettyAmount of 10 drops
+*/
+inline
+PrettyAmount
+drops (XRPAmount i)
 {
     return { i };
 }

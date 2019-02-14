@@ -55,7 +55,7 @@ struct Regression_test : public beast::unit_test::suite
         auto closed = std::make_shared<Ledger>(
             create_genesis, env.app().config(),
             std::vector<uint256>{}, env.app().family());
-        auto expectedDrops = SYSTEM_CURRENCY_START;
+        auto expectedDrops = INITIAL_XRP;
         BEAST_EXPECT(closed->info().drops == expectedDrops);
 
         auto const aliceXRP = 400;
@@ -110,7 +110,7 @@ struct Regression_test : public beast::unit_test::suite
 
             BEAST_EXPECT(balance == XRP(0));
         }
-        expectedDrops -= aliceXRP * dropsPerXRP<int>::value;
+        expectedDrops -= aliceXRP * dropsPerXRP;
         BEAST_EXPECT(next->info().drops == expectedDrops);
     }
 

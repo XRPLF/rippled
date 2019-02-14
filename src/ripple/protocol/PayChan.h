@@ -21,9 +21,9 @@
 #define RIPPLE_PROTOCOL_PAYCHAN_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
+#include <ripple/basics/XRPAmount.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/XRPAmount.h>
 
 namespace ripple {
 

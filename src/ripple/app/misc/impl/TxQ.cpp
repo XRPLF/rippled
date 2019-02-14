@@ -36,11 +36,11 @@ namespace ripple {
 //////////////////////////////////////////////////////////////////////////
 
 static
-std::uint64_t
+FeeLevel64
 getFeeLevelPaid(
     STTx const& tx,
-    std::uint64_t baseRefLevel,
-    std::uint64_t refTxnCostDrops,
+    FeeLevel64 baseRefLevel,
+    XRPAmount refTxnCostDrops,
     TxQ::Setup const& setup)
 {
     if (refTxnCostDrops == 0)
@@ -51,7 +51,7 @@ getFeeLevelPaid(
     // If the math overflows, return the clipped
     // result blindly. This is very unlikely to ever
     // happen.
-    return mulDiv(tx[sfFee].xrp().drops(),
+    return mulDiv(tx[sfFee].xrp(),
         baseRefLevel,
             refTxnCostDrops).second;
 }
@@ -66,23 +66,24 @@ getLastLedgerSequence(STTx const& tx)
 }
 
 static
-std::uint64_t
-increase(std::uint64_t level,
+FeeLevel64
+increase(FeeLevel64 level,
     std::uint32_t increasePercent)
 {
-    return mulDiv(
-        level, 100 + increasePercent, 100).second;
+    return mulDiv(level, 100 + increasePercent, 100).second;
 }
 
 
 //////////////////////////////////////////////////////////////////////////
+
+constexpr FeeLevel64 TxQ::baseLevel;
 
 std::size_t
 TxQ::FeeMetrics::update(Application& app,
     ReadView const& view, bool timeLeap,
     TxQ::Setup const& setup)
 {
-    std::vector<uint64_t> feeLevels;
+    std::vector<FeeLevel64> feeLevels;
     auto const txBegin = view.txs.begin();
     auto const txEnd = view.txs.end();
     auto const size = std::distance(txBegin, txEnd);
@@ -90,7 +91,8 @@ TxQ::FeeMetrics::update(Application& app,
     std::for_each(txBegin, txEnd,
         [&](auto const& tx)
         {
-            auto const baseFee = calculateBaseFee(view, *tx.first);
+            auto const baseFee = view.fees().toDrops(
+                calculateBaseFee(view, *tx.first)).second;
             feeLevels.push_back(getFeeLevelPaid(*tx.first,
                 baseLevel, baseFee, setup));
         }
@@ -158,7 +160,7 @@ TxQ::FeeMetrics::update(Application& app,
         // number of elements, it will add the two elements
         // on either side of the "middle" and average them.
         escalationMultiplier_ = (feeLevels[size / 2] +
-            feeLevels[(size - 1) / 2] + 1) / 2;
+            feeLevels[(size - 1) / 2] + FeeLevel64{ 1 }) / 2;
         escalationMultiplier_ = std::max(escalationMultiplier_,
             setup.minimumEscalationMultiplier);
     }
@@ -169,7 +171,7 @@ TxQ::FeeMetrics::update(Application& app,
     return size;
 }
 
-std::uint64_t
+FeeLevel64
 TxQ::FeeMetrics::scaleFeeLevel(Snapshot const& snapshot,
     OpenView const& view)
 {
@@ -213,7 +215,7 @@ sumOfFirstSquares(std::size_t x)
 
 }
 
-std::pair<bool, std::uint64_t>
+std::pair<bool, FeeLevel64>
 TxQ::FeeMetrics::escalatedSeriesFeeLevel(Snapshot const& snapshot,
     OpenView const& view, std::size_t extraCount,
     std::size_t seriesSize)
@@ -245,7 +247,7 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(Snapshot const& snapshot,
     // `sumNlast` definitely overflowed. Also the odds of this
     // are nearly nil.
     if (!sumNlast.first)
-        return sumNlast;
+        return { sumNlast.first, FeeLevel64{ sumNlast.second } };
     auto const totalFeeLevel = mulDiv(multiplier,
         sumNlast.second - sumNcurrent.second, target * target);
 
@@ -255,7 +257,7 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(Snapshot const& snapshot,
 
 TxQ::MaybeTx::MaybeTx(
     std::shared_ptr<STTx const> const& txn_,
-        TxID const& txID_, std::uint64_t feeLevel_,
+        TxID const& txID_, FeeLevel64 feeLevel_,
             ApplyFlags const flags_,
                 PreflightResult const& pfresult_)
     : txn(txn_)
@@ -483,7 +485,7 @@ TxQ::erase(TxQ::TxQAccount& txQAccount,
 std::pair<TER, bool>
 TxQ::tryClearAccountQueue(Application& app, OpenView& view,
     STTx const& tx, TxQ::AccountMap::iterator const& accountIter,
-        TxQAccount::TxMap::iterator beginTxIter, std::uint64_t feeLevelPaid,
+        TxQAccount::TxMap::iterator beginTxIter, FeeLevel64 feeLevelPaid,
             PreflightResult const& pfresult, std::size_t const txExtraCount,
                 ApplyFlags flags, FeeMetrics::Snapshot const& metricsSnapshot,
                     beast::Journal j)
@@ -668,7 +670,8 @@ TxQ::apply(Application& app, OpenView& view,
     // or transaction replacement, so just pull it up now.
     // TODO: Do we want to avoid doing it again during
     //   preclaim?
-    auto const baseFee = calculateBaseFee(view, *tx);
+    auto const baseFee = view.fees().toDrops(
+        calculateBaseFee(view, *tx)).second;
     auto const feeLevelPaid = getFeeLevelPaid(*tx,
         baseLevel, baseFee, setup_);
     auto const requiredFeeLevel = [&]()
@@ -1003,7 +1006,8 @@ TxQ::apply(Application& app, OpenView& view,
         multiTxn->nextTxIter->second.retriesRemaining ==
             MaybeTx::retriesAllowed &&
                 feeLevelPaid > requiredFeeLevel &&
-                    requiredFeeLevel > baseLevel && baseFee != 0)
+                    requiredFeeLevel > baseLevel &&
+                        baseFee != 0)
     {
         OpenView sandbox(open_ledger, &view, view.rules());
 
@@ -1077,11 +1081,11 @@ TxQ::apply(Application& app, OpenView& view,
                 || endAccount.transactions.size() == 1)
                 return lastRIter->feeLevel;
 
-            constexpr std::uint64_t max =
-                std::numeric_limits<std::uint64_t>::max();
+            constexpr FeeLevel64 max{
+                std::numeric_limits<std::uint64_t>::max() };
             auto endTotal = std::accumulate(endAccount.transactions.begin(),
                 endAccount.transactions.end(),
-                    std::pair<std::uint64_t, std::uint64_t>(0, 0),
+                    std::pair<FeeLevel64, FeeLevel64>(0, 0),
                         [&](auto const& total, auto const& txn)
                         {
                             // Check for overflow.
@@ -1091,7 +1095,7 @@ TxQ::apply(Application& app, OpenView& view,
                                 endAccount.transactions.size();
                             if (total.first >= max - next ||
                                     total.second >= max - mod)
-                                return std::make_pair(max, std::uint64_t(0));
+                                return std::make_pair(max, FeeLevel64 { 0 });
                             return std::make_pair(total.first + next, total.second + mod);
                         });
             return endTotal.first + endTotal.second /
@@ -1385,7 +1389,8 @@ TxQ::getMetrics(OpenView const& view) const
     result.txInLedger = view.txCount();
     result.txPerLedger = snapshot.txnsExpected;
     result.referenceFeeLevel = baseLevel;
-    result.minProcessingFeeLevel = isFull() ? byFee_.rbegin()->feeLevel + 1 :
+    result.minProcessingFeeLevel = isFull() ?
+        byFee_.rbegin()->feeLevel + FeeLevel64{ 1 }  :
         baseLevel;
     result.medFeeLevel = snapshot.escalationMultiplier;
     result.openLedgerFeeLevel = FeeMetrics::scaleFeeLevel(snapshot, view);
@@ -1402,7 +1407,8 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view,
     std::lock_guard lock(mutex_);
 
     auto const snapshot = feeMetrics_.getSnapshot();
-    auto const baseFee = calculateBaseFee(view, *tx);
+    auto const baseFee = view.fees().toDrops(
+        calculateBaseFee(view, *tx)).second;
     auto const fee = FeeMetrics::scaleFeeLevel(snapshot, view);
 
     auto const accountSeq = [&view, &account]() -> std::uint32_t {
@@ -1425,7 +1431,7 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view,
         }
     }
 
-    return {fee * baseFee / baseLevel, accountSeq, availableSeq};
+    return {mulDiv(fee, baseFee, baseLevel).second, accountSeq, availableSeq};
 }
 
 auto
@@ -1496,8 +1502,6 @@ TxQ::getTxs(ReadView const& view) const
 Json::Value
 TxQ::doRPC(Application& app) const
 {
-    using std::to_string;
-
     auto const view = app.openLedger().current();
     if (!view)
     {
@@ -1527,23 +1531,15 @@ TxQ::doRPC(Application& app) const
     auto& drops = ret[jss::drops] = Json::Value();
 
     // Don't care about the overflow flags
-    drops[jss::base_fee] = to_string(mulDiv(
-        metrics.referenceFeeLevel, baseFee,
-            metrics.referenceFeeLevel).second);
-    drops[jss::minimum_fee] = to_string(mulDiv(
-        metrics.minProcessingFeeLevel, baseFee,
-            metrics.referenceFeeLevel).second);
-    drops[jss::median_fee] = to_string(mulDiv(
-        metrics.medFeeLevel, baseFee,
-            metrics.referenceFeeLevel).second);
-    auto escalatedFee = mulDiv(
-        metrics.openLedgerFeeLevel, baseFee,
-            metrics.referenceFeeLevel).second;
-    if (mulDiv(escalatedFee, metrics.referenceFeeLevel,
-            baseFee).second < metrics.openLedgerFeeLevel)
-        ++escalatedFee;
-
-    drops[jss::open_ledger_fee] = to_string(escalatedFee);
+    drops[jss::base_fee] = to_string(toDrops(
+        metrics.referenceFeeLevel, baseFee).second);
+    drops[jss::minimum_fee] = to_string(toDrops(
+        metrics.minProcessingFeeLevel, baseFee).second);
+    drops[jss::median_fee] = to_string(toDrops(
+        metrics.medFeeLevel, baseFee).second);
+    drops[jss::open_ledger_fee] = to_string(toDrops(
+        metrics.openLedgerFeeLevel - FeeLevel64{ 1 }, baseFee).second +
+        1);
 
     return ret;
 }

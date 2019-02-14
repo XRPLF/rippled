@@ -64,7 +64,7 @@ public:
             env.require (owners (alice, 0));
 
             // Fund alice enough to set the signer list, then attach signers.
-            env(pay(env.master, alice, fee + drops (1)));
+            env(pay(env.master, alice, fee + drops(1)));
             env.close();
             env(smallSigners);
             env.close();
@@ -281,7 +281,8 @@ public:
         // This should fail because the fee is too small.
         aliceSeq = env.seq (alice);
         env(noop(alice),
-            msig(bogie), fee((2 * baseFee) - 1), ter(telINSUF_FEE_P));
+            msig(bogie), fee((2 * baseFee) - 1),
+            ter(telINSUF_FEE_P));
         env.close();
 
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
@@ -482,7 +483,7 @@ public:
             Json::Value jv;
             jv[jss::tx_json][jss::Account]         = alice.human();
             jv[jss::tx_json][jss::TransactionType] = jss::AccountSet;
-            jv[jss::tx_json][jss::Fee]             = static_cast<uint32_t>(8 * baseFee);
+            jv[jss::tx_json][jss::Fee]             = (8 * baseFee).jsonClipped();
             jv[jss::tx_json][jss::Sequence]        = env.seq(alice);
             jv[jss::tx_json][jss::SigningPubKey]   = "";
             return jv;
@@ -1211,14 +1212,14 @@ public:
 
         // Use sign_for to sign a transaction where alice pays 10 XRP to
         // masterpassphrase.
-        std::uint32_t baseFee = env.current()->fees().base;
+        auto const baseFee = env.current()->fees().base;
         Json::Value jvSig1;
         jvSig1[jss::account] = bogie.human();
         jvSig1[jss::secret]  = bogie.name();
         jvSig1[jss::tx_json][jss::Account]         = alice.human();
         jvSig1[jss::tx_json][jss::Amount]          = 10000000;
         jvSig1[jss::tx_json][jss::Destination]     = env.master.human();
-        jvSig1[jss::tx_json][jss::Fee]             = 3 * baseFee;
+        jvSig1[jss::tx_json][jss::Fee]             = (3 * baseFee).jsonClipped();
         jvSig1[jss::tx_json][jss::Sequence]        = env.seq(alice);
         jvSig1[jss::tx_json][jss::TransactionType] = jss::Payment;
 

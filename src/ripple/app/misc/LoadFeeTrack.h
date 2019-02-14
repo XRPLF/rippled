@@ -20,6 +20,7 @@
 #ifndef RIPPLE_CORE_LOADFEETRACK_H_INCLUDED
 #define RIPPLE_CORE_LOADFEETRACK_H_INCLUDED
 
+#include <ripple/basics/FeeUnits.h>
 #include <ripple/json/json_value.h>
 #include <ripple/beast/utility/Journal.h>
 #include <algorithm>
@@ -140,7 +141,8 @@ private:
 //------------------------------------------------------------------------------
 
 // Scale using load as well as base rate
-std::uint64_t scaleFeeLoad(std::uint64_t fee, LoadFeeTrack const& feeTrack,
+XRPAmount
+scaleFeeLoad(FeeUnit64 fee, LoadFeeTrack const& feeTrack,
     Fees const& fees, bool bUnlimited);
 
 } // ripple

@@ -27,6 +27,7 @@
 #include <test/app/DepositAuth_test.cpp>
 #include <test/app/Discrepancy_test.cpp>
 #include <test/app/Escrow_test.cpp>
+#include <test/app/FeeVote_test.cpp>
 #include <test/app/Flow_test.cpp>
 #include <test/app/Freeze_test.cpp>
 #include <test/app/HashRouter_test.cpp>

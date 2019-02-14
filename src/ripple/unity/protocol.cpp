@@ -58,7 +58,6 @@
 #include <ripple/protocol/impl/STValidation.cpp>
 #include <ripple/protocol/impl/STVar.cpp>
 #include <ripple/protocol/impl/STVector256.cpp>
-#include <ripple/protocol/impl/IOUAmount.cpp>
 
 #if DOXYGEN
 #include <ripple/protocol/README.md>

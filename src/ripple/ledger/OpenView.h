@@ -24,7 +24,7 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/detail/RawStateTable.h>
 #include <ripple/basics/qalloc.h>
-#include <ripple/protocol/XRPAmount.h>
+#include <ripple/basics/XRPAmount.h>
 #include <functional>
 #include <utility>
 

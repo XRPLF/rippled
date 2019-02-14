@@ -22,9 +22,9 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/ledger/ApplyViewImpl.h>
+#include <ripple/basics/XRPAmount.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/STTx.h>
-#include <ripple/protocol/XRPAmount.h>
 #include <ripple/beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <utility>
@@ -38,13 +38,13 @@ public:
     explicit
     ApplyContext (Application& app, OpenView& base,
         STTx const& tx, TER preclaimResult,
-            std::uint64_t baseFee, ApplyFlags flags,
+            FeeUnit64 baseFee, ApplyFlags flags,
                 beast::Journal = beast::Journal{beast::Journal::getNullSink()});
 
     Application& app;
     STTx const& tx;
     TER const preclaimResult;
-    std::uint64_t const baseFee;
+    FeeUnit64 const baseFee;
     beast::Journal const journal;
 
     ApplyView&

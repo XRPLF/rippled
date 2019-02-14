@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_IOUAMOUNT_H_INCLUDED
-#define RIPPLE_PROTOCOL_IOUAMOUNT_H_INCLUDED
+#ifndef RIPPLE_BASICS_IOUAMOUNT_H_INCLUDED
+#define RIPPLE_BASICS_IOUAMOUNT_H_INCLUDED
 
 #include <ripple/beast/utility/Zero.h>
 #include <boost/operators.hpp>

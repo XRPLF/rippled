@@ -77,8 +77,7 @@ operator<< (std::ostream& os,
     if (amount.value().native())
     {
         // measure in hundredths
-        auto const c =
-            dropsPerXRP<int>::value / 100;
+        XRPAmount const c{dropsPerXRP.drops() / 100};
         auto const n = amount.value().mantissa();
         if(n < c)
         {
@@ -89,7 +88,7 @@ operator<< (std::ostream& os,
             return os;
         }
         auto const d = double(n) /
-            dropsPerXRP<int>::value;
+            dropsPerXRP.drops();
         if (amount.value().negative())
             os << "-";
 

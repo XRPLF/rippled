@@ -20,6 +20,7 @@
 #include <ripple/app/tx/impl/PayChan.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/XRPAmount.h>
 #include <ripple/ledger/ApplyView.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/digest.h>
@@ -29,7 +30,6 @@
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/XRPAmount.h>
 
 namespace ripple {
 

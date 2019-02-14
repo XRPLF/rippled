@@ -304,9 +304,9 @@ xrpLiquid (ReadView const& view, AccountID const& id,
             " amount=" << amount.getFullText() <<
             " fullBalance=" << fullBalance.getFullText() <<
             " balance=" << balance.getFullText() <<
-            " reserve=" << to_string (reserve) <<
-            " ownerCount=" << to_string (ownerCount) <<
-            " ownerCountAdj=" << to_string (ownerCountAdj);
+            " reserve=" << reserve <<
+            " ownerCount=" << ownerCount <<
+            " ownerCountAdj=" << ownerCountAdj;
 
         return amount.xrp();
     }
@@ -328,9 +328,9 @@ xrpLiquid (ReadView const& view, AccountID const& id,
             " account=" << to_string (id) <<
             " amount=" << amount.getFullText() <<
             " balance=" << balance.getFullText() <<
-            " reserve=" << to_string (reserve) <<
-            " ownerCount=" << to_string (ownerCount) <<
-            " ownerCountAdj=" << to_string (ownerCountAdj);
+            " reserve=" << reserve <<
+            " ownerCount=" << ownerCount <<
+            " ownerCountAdj=" << ownerCountAdj;
 
         return view.balanceHook(id, xrpAccount(), amount).xrp();
     }

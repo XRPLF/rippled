@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
 #define RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
 
+#include <ripple/basics/IOUAmount.h>
+#include <ripple/basics/XRPAmount.h>
 #include <ripple/protocol/AmountConversions.h>
-#include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/XRPAmount.h>
 
 #include <cstdint>
 #include <ostream>
@@ -104,7 +104,7 @@ operator!= (
 //------------------------------------------------------------------------------
 
 // Ripple specific constant used for parsing qualities and other things
-#define QUALITY_ONE 1000000000
+#define QUALITY_ONE 1'000'000'000
 
 /** Represents the logical ratio of output currency to input currency.
     Internally this is stored using a custom floating point representation,
