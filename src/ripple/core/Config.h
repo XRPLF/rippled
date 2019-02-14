@@ -141,7 +141,8 @@ public:
     int const                   TRANSACTION_FEE_BASE = 10;   // The number of fee units a reference transaction costs
 
     // Note: The following parameters do not relate to the UNL or trust at all
-    std::size_t                 NETWORK_QUORUM = 0;         // Minimum number of nodes to consider the network present
+    // Minimum number of nodes to consider the network present
+    std::size_t                 NETWORK_QUORUM = 1;
 
     // Peer networking parameters
     bool                        PEER_PRIVATE = false;           // True to ask peers not to relay current IP.

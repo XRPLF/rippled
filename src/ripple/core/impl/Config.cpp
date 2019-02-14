@@ -539,6 +539,14 @@ void Config::loadFromString (std::string const& fileContents)
                     "Unknown feature: " + s + "  in config file.");
         }
     }
+
+    // This doesn't properly belong here:
+    if (NETWORK_QUORUM > PEERS_MAX)
+    {
+        Throw<std::runtime_error>(
+            "The minimum number of required peers (network_quorum) exceeds "
+            "the maximum number of allowed peers (peers_max)");
+    }
 }
 
 int Config::getSize (SizedItemName item) const
