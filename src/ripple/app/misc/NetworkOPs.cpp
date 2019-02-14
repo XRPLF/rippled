@@ -196,7 +196,7 @@ public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
     NetworkOPsImp (Application& app, NetworkOPs::clock_type& clock,
-        bool standalone, std::size_t network_quorum, bool start_valid,
+        bool standalone, std::size_t minPeerCount, bool start_valid,
         JobQueue& job_queue, LedgerMaster& ledgerMaster, Stoppable& parent,
         ValidatorKeys const & validatorKeys, boost::asio::io_service& io_svc,
         beast::Journal journal)
@@ -220,7 +220,7 @@ public:
         , m_ledgerMaster (ledgerMaster)
         , m_job_queue (job_queue)
         , m_standalone (standalone)
-        , m_network_quorum (start_valid ? 0 : network_quorum)
+        , minPeerCount_ (start_valid ? 0 : minPeerCount)
     {
     }
 
@@ -598,7 +598,7 @@ private:
     bool const m_standalone;
 
     // The number of nodes that we need to consider ourselves connected.
-    std::size_t const m_network_quorum;
+    std::size_t const minPeerCount_;
 
     // Transaction batching.
     std::condition_variable mCond;
@@ -738,19 +738,19 @@ void NetworkOPsImp::processHeartbeatTimer ()
         std::size_t const numPeers = app_.overlay ().size ();
 
         // do we have sufficient peers? If not, we are disconnected.
-        if (numPeers < m_network_quorum)
+        if (numPeers < minPeerCount_)
         {
             if (mMode != omDISCONNECTED)
             {
                 setMode (omDISCONNECTED);
                 JLOG(m_journal.warn())
-                    << "Node count (" << numPeers << ") "
-                    << "has fallen below quorum (" << m_network_quorum << ").";
+                    << "Node count (" << numPeers << ") has fallen "
+                    << "below required minimum (" << minPeerCount_ << ").";
             }
-            // We do not call mConsensus.timerEntry until there
-            // are enough peers providing meaningful inputs to consensus
-            setHeartbeatTimer ();
 
+            // We do not call mConsensus.timerEntry until there are enough
+            // peers providing meaningful inputs to consensus
+            setHeartbeatTimer ();
             return;
         }
 
@@ -767,7 +767,6 @@ void NetworkOPsImp::processHeartbeatTimer ()
             setMode (omSYNCING);
         else if (mMode == omCONNECTED)
             setMode (omCONNECTED);
-
     }
 
     mConsensus.timerEntry (app_.timeKeeper().closeTime());
@@ -3383,13 +3382,13 @@ NetworkOPsImp::StateAccounting::json() const
 
 std::unique_ptr<NetworkOPs>
 make_NetworkOPs (Application& app, NetworkOPs::clock_type& clock,
-    bool standalone, std::size_t network_quorum, bool startvalid,
+    bool standalone, std::size_t minPeerCount, bool startvalid,
     JobQueue& job_queue, LedgerMaster& ledgerMaster, Stoppable& parent,
     ValidatorKeys const & validatorKeys, boost::asio::io_service& io_svc,
     beast::Journal journal)
 {
     return std::make_unique<NetworkOPsImp> (app, clock, standalone,
-        network_quorum, startvalid, job_queue, ledgerMaster, parent,
+        minPeerCount, startvalid, job_queue, ledgerMaster, parent,
         validatorKeys, io_svc, journal);
 }
 
