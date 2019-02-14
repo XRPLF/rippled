@@ -377,10 +377,8 @@ PeerImp::hasLedger (uint256 const& hash, std::uint32_t seq) const
             return true;
     }
 
-    if (seq >= app_.getNodeStore().earliestSeq())
-        return hasShard(
-            (seq - 1) / NodeStore::DatabaseShard::ledgersPerShardDefault);
-    return false;
+    return seq >= app_.getNodeStore().earliestSeq() &&
+        hasShard(NodeStore::seqToShardIndex(seq));
 }
 
 void
