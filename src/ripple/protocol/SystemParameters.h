@@ -20,10 +20,14 @@
 #ifndef RIPPLE_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED
 #define RIPPLE_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED
 
+#include <ripple/basics/tagged_integer.h>
 #include <cstdint>
 #include <string>
 
 namespace ripple {
+
+// Forward declaration - defined in ReadView.h
+struct DropsTag;
 
 // Various protocol and system specific constant globals.
 
@@ -38,22 +42,22 @@ systemName ()
 
 /** Configure the native currency. */
 static
-std::uint64_t const
+std::uint64_t constexpr
 SYSTEM_CURRENCY_GIFT = 1000;
 
 static
-std::uint64_t const
+std::uint64_t constexpr
 SYSTEM_CURRENCY_USERS = 100000000;
 
 /** Number of drops per 1 XRP */
 static
-std::uint64_t const
-SYSTEM_CURRENCY_PARTS = 1000000;
+tagged_integer<std::uint32_t, DropsTag> constexpr
+SYSTEM_CURRENCY_PARTS{ 1000000 };
 
 /** Number of drops in the genesis account. */
 static
-std::uint64_t const
-SYSTEM_CURRENCY_START = SYSTEM_CURRENCY_GIFT * SYSTEM_CURRENCY_USERS * SYSTEM_CURRENCY_PARTS;
+tagged_integer<std::uint64_t, DropsTag> constexpr
+SYSTEM_CURRENCY_START{ SYSTEM_CURRENCY_GIFT * SYSTEM_CURRENCY_USERS * SYSTEM_CURRENCY_PARTS.value() };
 
 /* The currency code for the native currency. */
 static inline

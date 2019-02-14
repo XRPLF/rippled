@@ -349,12 +349,12 @@ EscrowFinish::preflight (PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-std::uint64_t
+FeeUnit64
 EscrowFinish::calculateBaseFee (
     ReadView const& view,
     STTx const& tx)
 {
-    std::uint64_t extraFee = 0;
+    FeeUnit64 extraFee{ 0 };
 
     if (auto const fb = tx[~sfFulfillment])
     {

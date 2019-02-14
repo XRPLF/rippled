@@ -94,7 +94,7 @@ class Invariants_test : public beast::unit_test::suite
             ov,
             tx,
             tesSUCCESS,
-            env.current()->fees().base,
+            env.current()->fees().units,
             tapNONE,
             jlog
         };
@@ -308,9 +308,9 @@ class Invariants_test : public beast::unit_test::suite
 
         doInvariantCheck (enabled,
             {{ "fee paid exceeds system limit: "s +
-                std::to_string(SYSTEM_CURRENCY_START) },
+                to_string(SYSTEM_CURRENCY_START) },
              { "XRP net change of 0 doesn't match fee "s +
-                std::to_string(SYSTEM_CURRENCY_START) }},
+                to_string(SYSTEM_CURRENCY_START) }},
             [](Account const&, Account const&, ApplyContext&) { return true; },
             XRPAmount{SYSTEM_CURRENCY_START});
 

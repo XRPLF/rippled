@@ -64,7 +64,7 @@ public:
             env.require (owners (alice, 0));
 
             // Fund alice enough to set the signer list, then attach signers.
-            env(pay(env.master, alice, fee + drops (1)));
+            env(pay(env.master, alice, drops (fee + 1)));
             env.close();
             env(smallSigners);
             env.close();
@@ -74,7 +74,7 @@ public:
             // Pay alice enough to almost make the reserve for the biggest
             // possible list.
             auto const addReserveBigSigners = reserve1 ? XRP(0) : XRP(350);
-            env(pay(env.master, alice, addReserveBigSigners + fee - drops(1)));
+            env(pay(env.master, alice, addReserveBigSigners + drops(fee - 1)));
 
             // Replace with the biggest possible signer list.  Should fail.
             Json::Value bigSigners = signers(alice, 1, {
@@ -85,7 +85,7 @@ public:
             env.require (owners (alice, reserve1 ? 1 : 3));
 
             // Fund alice one more drop (plus the fee) and succeed.
-            env(pay(env.master, alice, fee + drops(1)));
+            env(pay(env.master, alice, drops(fee + 1)));
             env.close();
             env(bigSigners);
             env.close();
@@ -482,7 +482,7 @@ public:
             Json::Value jv;
             jv[jss::tx_json][jss::Account]         = alice.human();
             jv[jss::tx_json][jss::TransactionType] = "AccountSet";
-            jv[jss::tx_json][jss::Fee]             = static_cast<uint32_t>(8 * baseFee);
+            jv[jss::tx_json][jss::Fee]             = Json::toUInt(8 * baseFee);
             jv[jss::tx_json][jss::Sequence]        = env.seq(alice);
             jv[jss::tx_json][jss::SigningPubKey]   = "";
             return jv;
@@ -1211,7 +1211,7 @@ public:
 
         // Use sign_for to sign a transaction where alice pays 10 XRP to
         // masterpassphrase.
-        std::uint32_t baseFee = env.current()->fees().base;
+        std::uint32_t baseFee = env.current()->fees().base.value();
         Json::Value jvSig1;
         jvSig1[jss::account] = bogie.human();
         jvSig1[jss::secret]  = bogie.name();

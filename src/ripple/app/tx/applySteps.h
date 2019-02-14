@@ -234,7 +234,7 @@ preclaim(PreflightResult const& preflightResult,
 
     @return The base fee.
 */
-std::uint64_t
+FeeUnit64
 calculateBaseFee(ReadView const& view,
     STTx const& tx);
 

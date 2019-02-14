@@ -30,7 +30,7 @@ namespace ripple {
 
 ApplyContext::ApplyContext(Application& app_,
     OpenView& base, STTx const& tx_, TER preclaimResult_,
-        std::uint64_t baseFee_, ApplyFlags flags,
+        FeeUnit64 baseFee_, ApplyFlags flags,
             beast::Journal journal_)
     : app(app_)
     , tx(tx_)

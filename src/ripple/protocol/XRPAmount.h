@@ -21,6 +21,8 @@
 #define RIPPLE_PROTOCOL_XRPAMOUNT_H_INCLUDED
 
 #include <ripple/basics/contract.h>
+#include <ripple/basics/safe_cast.h>
+#include <ripple/basics/tagged_integer.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/beast/utility/Zero.h>
 #include <boost/operators.hpp>
@@ -30,6 +32,9 @@
 #include <type_traits>
 
 namespace ripple {
+
+// Forward declaration - defined in ReadView.h
+struct DropsTag;
 
 class XRPAmount
     : private boost::totally_ordered <XRPAmount>
@@ -60,6 +65,14 @@ public:
             std::is_integral<Integer>::value>>
     XRPAmount (Integer drops)
         : drops_ (static_cast<std::int64_t> (drops))
+    {
+    }
+
+    template <class Integer,
+        class = typename std::enable_if_t <
+            std::is_integral<Integer>::value>>
+    XRPAmount (tagged_integer<Integer, DropsTag> drops)
+        : drops_ (static_cast<std::int64_t> (drops.value()))
     {
     }
 
@@ -125,6 +138,24 @@ public:
     {
         return drops_;
     }
+
+    /* Returns a DropsTag tagged_integer of smaller size or unsigned */
+    template <class Integer = std::uint64_t,
+        class = typename std::enable_if_t <
+            std::is_integral<Integer>::value &&
+            // This odd use of operators is because of an unresolved bug in MSVC
+            // which causes compilation errors on the "<" operator in a template
+            // https://developercommunity.visualstudio.com/content/problem/374878/vs2017-158-c-errors-c2059-c1004-when-less-than-ope.html
+            ( !(sizeof(Integer) >= sizeof(std::int64_t) ||
+            (std::is_unsigned<Integer>::value &&
+            sizeof(Integer) >= sizeof(std::int64_t))))>>
+    tagged_integer<Integer, DropsTag>
+    toTagged() const
+    {
+        return tagged_integer<Integer, DropsTag>{
+            unsafe_cast<Integer>(drops_) };
+    }
+
 };
 
 inline

@@ -24,6 +24,7 @@
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/basics/BasicConfig.h>
+#include <ripple/basics/tagged_integer.h>
 #include <ripple/protocol/SystemParameters.h>
 
 namespace ripple {
@@ -40,16 +41,16 @@ public:
     struct Setup
     {
         /** The cost of a reference transaction in drops. */
-        std::uint64_t reference_fee = 10;
+        Drops64 reference_fee{ 10 };
 
         /** The cost of a reference transaction in fee units. */
-        std::uint32_t const reference_fee_units = 10;
+        FeeUnit32 const reference_fee_units{ 10 };
 
         /** The account reserve requirement in drops. */
-        std::uint64_t account_reserve = 20 * SYSTEM_CURRENCY_PARTS;
+        Drops32 account_reserve{ 20 * SYSTEM_CURRENCY_PARTS };
 
         /** The per-owned item reserve requirement in drops. */
-        std::uint64_t owner_reserve = 5 * SYSTEM_CURRENCY_PARTS;
+        Drops32 owner_reserve{ 5 * SYSTEM_CURRENCY_PARTS };
     };
 
     virtual ~FeeVote () = default;

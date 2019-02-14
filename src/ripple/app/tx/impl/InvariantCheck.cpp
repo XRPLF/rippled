@@ -48,7 +48,7 @@ TransactionFeeCheck::finalize(
 
     // We should never charge a fee that's greater than or equal to the
     // entire XRP supply.
-    if (fee.drops() >= SYSTEM_CURRENCY_START)
+    if (fee >= SYSTEM_CURRENCY_START)
     {
         JLOG(j.fatal()) << "Invariant failed: fee paid exceeds system limit: " << fee.drops();
         return false;

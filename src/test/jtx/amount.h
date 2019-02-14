@@ -26,12 +26,17 @@
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/tagged_integer.h>
 #include <cstdint>
 #include <ostream>
 #include <string>
 #include <type_traits>
 
 namespace ripple {
+
+// Forward declaration - defined in ReadView.h
+struct DropsTag;
+
 namespace test {
 namespace jtx {
 
@@ -107,6 +112,27 @@ public:
             std::is_integral<T>::value &&
                 std::is_unsigned<T>::value>* = nullptr)
         : amount_(v)
+    {
+    }
+
+    /** drops */
+    template <class T>
+    PrettyAmount (tagged_integer<T, DropsTag> v, std::enable_if_t<
+        sizeof(T) >= sizeof(int) &&
+        std::is_integral<T>::value &&
+        std::is_signed<T>::value>* = nullptr)
+        : amount_((v > beast::zero) ?
+            v.value() : -v.value(), v < beast::zero)
+    {
+    }
+
+    /** drops */
+    template <class T>
+    PrettyAmount (tagged_integer<T, DropsTag> v, std::enable_if_t<
+        sizeof(T) >= sizeof(int) &&
+        std::is_integral<T>::value &&
+        std::is_unsigned<T>::value>* = nullptr)
+        : amount_(v.value())
     {
     }
 
@@ -247,6 +273,20 @@ PrettyAmount
 drops (Integer i)
 {
     return { i };
+}
+
+/** Returns an XRP STAmount.
+
+Example:
+drops(view->fee().basefee)   Returns STAmount of 10 drops
+*/
+template <class Integer,
+    class = std::enable_if_t<
+        std::is_integral<Integer>::value>>
+PrettyAmount
+drops (tagged_integer<Integer, DropsTag> i)
+{
+    return { i.value() };
 }
 
 //------------------------------------------------------------------------------

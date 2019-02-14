@@ -40,13 +40,13 @@ public:
     explicit
     ApplyContext (Application& app, OpenView& base,
         STTx const& tx, TER preclaimResult,
-            std::uint64_t baseFee, ApplyFlags flags,
+            FeeUnit64 baseFee, ApplyFlags flags,
                 beast::Journal = beast::Journal{beast::Journal::getNullSink()});
 
     Application& app;
     STTx const& tx;
     TER const preclaimResult;
-    std::uint64_t const baseFee;
+    FeeUnit64 const baseFee;
     beast::Journal const journal;
 
     ApplyView&

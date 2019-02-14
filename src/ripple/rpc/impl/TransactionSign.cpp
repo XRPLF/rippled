@@ -711,21 +711,22 @@ Json::Value checkFee (
     }
 
     // Default fee in fee units.
-    std::uint64_t const feeDefault = config.TRANSACTION_FEE_BASE;
+    FeeUnit32 const feeDefault = config.TRANSACTION_FEE_BASE;
 
     // Administrative and identified endpoints are exempt from local fees.
-    std::uint64_t const loadFee =
+    Drops64 const loadFee =
         scaleFeeLoad (feeDefault, feeTrack,
             ledger->fees(), isUnlimited (role));
-    std::uint64_t fee = loadFee;
+    Drops64 fee = loadFee;
     {
         auto const metrics = txQ.getMetrics(*ledger);
         auto const baseFee = ledger->fees().base;
-        auto escalatedFee = mulDiv(
-            metrics.openLedgerFeeLevel, baseFee,
-                metrics.referenceFeeLevel).second;
-        if (mulDiv(escalatedFee, metrics.referenceFeeLevel,
-                baseFee).second < metrics.openLedgerFeeLevel)
+        auto escalatedFee = toDrops(
+            metrics.openLedgerFeeLevel, baseFee).second;
+        // Bump the fee up if the first calculation rounded down
+        // so that converting back won't get queued.
+        if (toFeeLevel(escalatedFee, baseFee).second <
+            metrics.openLedgerFeeLevel)
             ++escalatedFee;
         fee = std::max(fee, escalatedFee);
     }
@@ -751,7 +752,7 @@ Json::Value checkFee (
         return RPC::make_error (rpcHIGH_FEE, ss.str());
     }
 
-    tx [jss::Fee] = static_cast<unsigned int>(fee);
+    tx [jss::Fee] = Json::toUInt(fee);
     return Json::Value();
 }
 

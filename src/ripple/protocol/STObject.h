@@ -481,6 +481,13 @@ public:
     void setAccountID (SField const& field, AccountID const&);
 
     void setFieldAmount (SField const& field, STAmount const&);
+    template<class Integer,
+        class = typename std::enable_if_t <
+            std::is_integral<Integer>::value>>
+    void setFieldAmount (SField const& field, tagged_integer<Integer, DropsTag> const& v)
+    {
+        setFieldAmount(field, STAmount{ v });
+    }
     void setFieldPathSet (SField const& field, STPathSet const&);
     void setFieldV256 (SField const& field, STVector256 const& v);
     void setFieldArray (SField const& field, STArray const& v);

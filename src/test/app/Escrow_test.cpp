@@ -668,9 +668,9 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
 
             auto const baseFee = env.current()->fees().base;
-            env.require(balance("alice", XRP(4000) - (baseFee * 5)));
-            env.require(balance("bob", XRP(6000) - (baseFee * 5)));
-            env.require(balance("zelda", XRP(5000) - (baseFee * 4)));
+            env.require(balance("alice", XRP(4000) - drops(baseFee * 5)));
+            env.require(balance("bob", XRP(6000) - drops(baseFee * 5)));
+            env.require(balance("zelda", XRP(5000) - drops(baseFee * 4)));
         }
         {
             // Bob sets DepositAuth but preauthorizes Zelda, so Zelda can
@@ -696,9 +696,9 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
 
             auto const baseFee = env.current()->fees().base;
-            env.require(balance("alice", XRP(4000) - (baseFee * 2)));
-            env.require(balance("bob", XRP(6000) - (baseFee * 2)));
-            env.require(balance("zelda", XRP(5000) - (baseFee * 1)));
+            env.require(balance("alice", XRP(4000) - drops(baseFee * 2)));
+            env.require(balance("bob", XRP(6000) - drops(baseFee * 2)));
+            env.require(balance("zelda", XRP(5000) - drops(baseFee * 1)));
         }
         {
             // Conditional

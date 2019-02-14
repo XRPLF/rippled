@@ -124,13 +124,90 @@ void lowestTerms(T1& a,  T2& b)
     b /= x;
 }
 
+template <class T1, class T2, class Tag1, class Tag2,
+    class = std::enable_if_t <
+        std::is_integral<T1>::value &&
+        std::is_unsigned<T1>::value &&
+        sizeof(T1) <= sizeof(std::uint64_t) >,
+    class = std::enable_if_t <
+        std::is_integral<T2>::value &&
+        std::is_unsigned<T2>::value &&
+        sizeof(T2) <= sizeof(std::uint64_t) >
+>
+void lowestTerms(tagged_integer<T1, Tag1>& a, tagged_integer<T2, Tag2>& b)
+{
+    T1 valA = a.value();
+    T2 valB = b.value();
+    lowestTerms(valA, valB);
+    a = tagged_integer<T1, Tag1>{ valA };
+    b = tagged_integer<T2, Tag2>{ valB };
+}
+
+template <class T1, class T2, class Tag2,
+    class = std::enable_if_t <
+        std::is_integral<T1>::value &&
+        std::is_unsigned<T1>::value &&
+        sizeof(T1) <= sizeof(std::uint64_t) >,
+    class = std::enable_if_t <
+        std::is_integral<T2>::value &&
+        std::is_unsigned<T2>::value &&
+        sizeof(T2) <= sizeof(std::uint64_t) >
+>
+void lowestTerms(T1& a, tagged_integer<T2, Tag2>& b)
+{
+    T2 valB = b.value();
+    lowestTerms(a, valB);
+    b = tagged_integer<T2, Tag2>{ valB };
+}
+
+// Normally, these types wouldn't be comparable. For this file only, it's ok.
+template<class T1, class T2>
+static
+bool
+operator< (tagged_integer<T1, FeeUnitTag> const& lhs, tagged_integer<T2, DropsTag> const& rhs)
+{
+    return lhs.value() < rhs.value();
+}
+
+// Normally, these types wouldn't be swappable. For this file only, it's ok.
+template<class T1, class T2>
+static
+void
+swap (tagged_integer<T1, FeeUnitTag>& lhs, tagged_integer<T2, DropsTag>& rhs)
+{
+    T1 vLHS = lhs.value();
+    T2 vRHS = rhs.value();
+    std::swap(vLHS, vRHS);
+    lhs = tagged_integer<T1, FeeUnitTag>{ vLHS };
+    rhs = tagged_integer<T2, DropsTag>{ vRHS };
+}
+
+// Represents the product of a Drops and a FeeUnit
+struct DropFeeUnit;
+
+using DropFeeUnit64 = tagged_integer<std::uint64_t, DropFeeUnit>;
+
+static
+DropFeeUnit64
+operator* (FeeUnit64 const& lhs, Drops64 const& rhs)
+{
+    return DropFeeUnit64{ lhs.value() * rhs.value() };
+}
+
+static
+Drops64
+operator/ (DropFeeUnit64 const& lhs, FeeUnit64 const& rhs)
+{
+    return Drops64{ lhs.value() / rhs.value() };
+}
+
 // Scale using load as well as base rate
-std::uint64_t
-scaleFeeLoad(std::uint64_t fee, LoadFeeTrack const& feeTrack,
+Drops64
+scaleFeeLoad(FeeUnit64 fee, LoadFeeTrack const& feeTrack,
     Fees const& fees, bool bUnlimited)
 {
     if (fee == 0)
-        return fee;
+        return beast::zero;
     std::uint32_t feeFactor;
     std::uint32_t uRemFee;
     {
@@ -142,7 +219,7 @@ scaleFeeLoad(std::uint64_t fee, LoadFeeTrack const& feeTrack,
     if (bUnlimited && (feeFactor > uRemFee) && (feeFactor < (4 * uRemFee)))
         feeFactor = uRemFee;
 
-    auto baseFee = fees.base;
+    Drops64 baseFee = fees.base;
     // Compute:
     // fee = fee * baseFee * feeFactor / (fees.units * lftNormalFee);
     // without overflow, and as accurately as possible
@@ -150,7 +227,7 @@ scaleFeeLoad(std::uint64_t fee, LoadFeeTrack const& feeTrack,
     // The denominator of the fraction we're trying to compute.
     // fees.units and lftNormalFee are both 32 bit,
     //  so the multiplication can't overflow.
-    auto den = safe_cast<std::uint64_t>(fees.units)
+    FeeUnit64 den = FeeUnit64{ fees.units }
         * safe_cast<std::uint64_t>(feeTrack.getLoadBase());
     // Reduce fee * baseFee * feeFactor / (fees.units * lftNormalFee)
     // to lowest terms.
@@ -161,32 +238,31 @@ scaleFeeLoad(std::uint64_t fee, LoadFeeTrack const& feeTrack,
     // fee and baseFee are 64 bit, feeFactor is 32 bit
     // Order fee and baseFee largest first
     if (fee < baseFee)
-        std::swap(fee, baseFee);
+        swap(fee, baseFee);
     // If baseFee * feeFactor overflows, the final result will overflow
-    const auto max = std::numeric_limits<std::uint64_t>::max();
+    constexpr auto max = std::numeric_limits<std::uint64_t>::max();
     if (baseFee > max / feeFactor)
         Throw<std::overflow_error> ("scaleFeeLoad");
     baseFee *= feeFactor;
     // Reorder fee and baseFee
     if (fee < baseFee)
-        std::swap(fee, baseFee);
+        swap(fee, baseFee);
     // If fee * baseFee / den might overflow...
-    if (fee > max / baseFee)
+    if (fee.value() > max / baseFee.value())
     {
         // Do the division first, on the larger of fee and baseFee
-        fee /= den;
-        if (fee > max / baseFee)
+        std::uint64_t const factor = divide(fee, den);
+        if (factor > max / baseFee.value())
             Throw<std::overflow_error> ("scaleFeeLoad");
-        fee *= baseFee;
+        return factor * baseFee;
     }
     else
     {
         // Otherwise fee * baseFee won't overflow,
         //   so do it prior to the division.
-        fee *= baseFee;
-        fee /= den;
+        DropFeeUnit64 product = fee * baseFee;
+        return product / den;
     }
-    return fee;
 }
 
 } // ripple

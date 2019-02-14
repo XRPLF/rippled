@@ -23,7 +23,7 @@
 
 namespace ripple {
 
-std::uint64_t
+FeeUnit64
 SetRegularKey::calculateBaseFee (
     ReadView const& view,
     STTx const& tx)
@@ -40,7 +40,7 @@ SetRegularKey::calculateBaseFee (
             if (sle && (! (sle->getFlags () & lsfPasswordSpent)))
             {
                 // flag is armed and they signed with the right account
-                return 0;
+                return beast::zero;
             }
         }
     }

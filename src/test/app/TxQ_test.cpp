@@ -61,7 +61,7 @@ class TxQ_test : public beast::unit_test::suite
         auto expectedCurFeeLevel = expectedInLedger > expectedPerLedger ?
             expectedMedFeeLevel * expectedInLedger * expectedInLedger /
                 (expectedPerLedger * expectedPerLedger) :
-                    metrics.referenceFeeLevel;
+                    metrics.referenceFeeLevel.value();
         BEAST_EXPECT(metrics.openLedgerFeeLevel == expectedCurFeeLevel);
     }
 
@@ -833,13 +833,14 @@ public:
         {
             auto& txQ = env.app().getTxQ();
             auto aliceStat = txQ.getAccountTxs(alice.id(), *env.current());
-            std::int64_t fee = 20;
+            Drops64 const fee{ 20 };
+            auto const& baseFee = env.current()->fees().base;
             auto seq = env.seq(alice);
             BEAST_EXPECT(aliceStat.size() == 7);
             for (auto const& tx : aliceStat)
             {
                 BEAST_EXPECT(tx.first == seq);
-                BEAST_EXPECT(tx.second.feeLevel == mulDiv(fee, 256, 10).second);
+                BEAST_EXPECT(tx.second.feeLevel == toFeeLevel(fee, baseFee).second);
                 BEAST_EXPECT(tx.second.lastValid);
                 BEAST_EXPECT((tx.second.consequences &&
                     tx.second.consequences->fee == drops(fee) &&
@@ -2763,10 +2764,10 @@ public:
                 totalFactor += inLedger * inLedger;
             }
             auto result =
-                mulDiv (metrics.medFeeLevel * totalFactor /
+                toDrops (metrics.medFeeLevel * totalFactor /
                         (metrics.txPerLedger * metrics.txPerLedger),
-                    env.current ()->fees ().base, metrics.referenceFeeLevel)
-                    .second;
+                    env.current ()->fees ().base)
+                    .second.value();
             // Subtract the fees already paid
             result -= alreadyPaid;
             // round up

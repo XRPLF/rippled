@@ -122,7 +122,7 @@ public:
 
     static
     TER
-    checkFee (PreclaimContext const& ctx, std::uint64_t baseFee);
+    checkFee (PreclaimContext const& ctx, FeeUnit64 baseFee);
 
     static
     NotTEC
@@ -130,7 +130,7 @@ public:
 
     // Returns the fee in fee units, not scaled for load.
     static
-    std::uint64_t
+    FeeUnit64
     calculateBaseFee (
         ReadView const& view,
         STTx const& tx);
@@ -182,7 +182,7 @@ protected:
      */
     static
     XRPAmount
-    minimumFee (Application& app, std::uint64_t baseFee,
+    minimumFee (Application& app, FeeUnit64 baseFee,
         Fees const& fees, ApplyFlags flags);
 
 private:

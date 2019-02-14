@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2019 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,64 +17,55 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_FEE_H_INCLUDED
-#define RIPPLE_TEST_JTX_FEE_H_INCLUDED
+#ifndef RIPPLE_JSON_JSON_CONVERSIONS_H_INCLUDED
+#define RIPPLE_JSON_JSON_CONVERSIONS_H_INCLUDED
 
-#include <test/jtx/Env.h>
-#include <test/jtx/tags.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/basics/contract.h>
-#include <boost/optional.hpp>
+#include <ripple/basics/safe_cast.h>
+#include <ripple/basics/tagged_integer.h>
 
-namespace ripple {
-
+namespace ripple
+{
 // Forward declaration - defined in ReadView.h
 struct DropsTag;
+}
 
-namespace test {
-namespace jtx {
-
-/** Set the fee on a JTx. */
-class fee
+namespace Json
 {
-private:
-    bool manual_ = true;
-    boost::optional<STAmount> amount_;
 
-public:
-    explicit
-    fee (autofill_t)
-        : manual_(false)
-    {
-    }
+namespace detail
+{
 
-    explicit
-    fee (none_t)
-    {
-    }
+template <class Integer>
+UInt
+maybe_toUInt(ripple::tagged_integer<Integer, ripple::DropsTag> drops,
+    std::false_type)
+{
+    using namespace ripple;
+    return unsafe_cast<UInt>(drops.value());
+}
 
-    explicit
-    fee (STAmount const& amount)
-        : amount_(amount)
-    {
-        if (! isXRP(*amount_))
-            Throw<std::runtime_error> (
-                "fee: not XRP");
-    }
+template <class Integer>
+UInt
+maybe_toUInt(ripple::tagged_integer<Integer, ripple::DropsTag> drops,
+    std::true_type)
+{
+    using namespace ripple;
+    return safe_cast<UInt>(drops.value());
+}
 
-    template <class T>
-    explicit
-    fee(tagged_integer<T, DropsTag> const& amount)
-        : fee(STAmount{ amount })
-    {
-    }
+}
 
-    void
-    operator()(Env&, JTx& jt) const;
-};
+template<class Integer,
+    class = typename std::enable_if<
+        std::is_integral<Integer>::value >::type>
+UInt
+toUInt(ripple::tagged_integer<Integer, ripple::DropsTag> drops)
+{
+    return detail::maybe_toUInt(drops, std::integral_constant<bool,
+        sizeof(Integer) <= sizeof(UInt)>{});
+}
 
-} // jtx
-} // test
-} // ripple
+} // namespace Json
 
-#endif
+
+#endif // RIPPLE_JSON_JSON_CONVERSIONS_H_INCLUDED

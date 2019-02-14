@@ -41,8 +41,8 @@ public:
             return f;
         }();
 
-        BEAST_EXPECT (scaleFeeLoad (10000, l, fees, false) == 10000);
-        BEAST_EXPECT (scaleFeeLoad (1, l, fees, false) == 1);
+        BEAST_EXPECT(scaleFeeLoad(FeeUnit64{ 10000 }, l, fees, false) == 10000);
+        BEAST_EXPECT(scaleFeeLoad(FeeUnit64{ 1 }, l, fees, false) == 1);
     }
 };
 

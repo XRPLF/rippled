@@ -22,6 +22,7 @@
 
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/base_uint.h>
+#include <ripple/basics/tagged_integer.h>
 #include <ripple/protocol/SystemParameters.h> // VFALCO Breaks levelization
 #include <ripple/beast/net/IPEndpoint.h>
 #include <boost/beast/core/string.hpp>
@@ -39,6 +40,10 @@
 namespace ripple {
 
 class Rules;
+
+// Forward declaration - defined in ReadView.h
+struct DropsTag;
+struct FeeUnitTag;
 
 //------------------------------------------------------------------------------
 
@@ -138,7 +143,8 @@ public:
     std::string                 START_LEDGER;
 
     // Network parameters
-    int const                   TRANSACTION_FEE_BASE = 10;   // The number of fee units a reference transaction costs
+    static constexpr tagged_integer<int, FeeUnitTag>
+                                TRANSACTION_FEE_BASE{ 10 };   // The number of fee units a reference transaction costs
 
     // Note: The following parameters do not relate to the UNL or trust at all
     // Minimum number of nodes to consider the network present
@@ -159,10 +165,12 @@ public:
     // Validation
     boost::optional<std::size_t> VALIDATION_QUORUM;     // validations to consider ledger authoritative
 
-    std::uint64_t                      FEE_DEFAULT = 10;
-    std::uint64_t                      FEE_ACCOUNT_RESERVE = 200*SYSTEM_CURRENCY_PARTS;
-    std::uint64_t                      FEE_OWNER_RESERVE = 50*SYSTEM_CURRENCY_PARTS;
-    std::uint64_t                      FEE_OFFER = 10;
+    tagged_integer<std::uint64_t, DropsTag>
+                                FEE_DEFAULT{ 10 };
+    tagged_integer<std::uint32_t, DropsTag>
+                                FEE_ACCOUNT_RESERVE{ 200 * SYSTEM_CURRENCY_PARTS };
+    tagged_integer<std::uint32_t, DropsTag>
+                                FEE_OWNER_RESERVE{ 50 * SYSTEM_CURRENCY_PARTS };
 
     // Node storage configuration
     std::uint32_t                      LEDGER_HISTORY = 256;

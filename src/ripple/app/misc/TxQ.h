@@ -33,6 +33,60 @@ namespace ripple {
 class Application;
 class Config;
 
+struct FeeLevelTag;
+using FeeLevel64 = tagged_integer<std::uint64_t, FeeLevelTag>;
+
+template<class T>
+std::pair<bool, FeeLevel64>
+mulDiv(T value, FeeLevel64 mul, T div)
+{
+    auto const result = mulDiv(value, mul.value(), div);
+    return { result.first, FeeLevel64{result.second} };
+}
+
+template<class T>
+std::pair<bool, FeeLevel64>
+mulDiv(FeeLevel64 value, T mul, T div)
+{
+    auto const result = mulDiv(value.value(), mul, div);
+    return { result.first, FeeLevel64{result.second} };
+}
+
+template<class T>
+std::pair<bool, FeeLevel64>
+mulDiv(tagged_integer<T, DropsTag> value, FeeLevel64 mul, tagged_integer<T, DropsTag> div)
+{
+    auto const result = mulDiv(value.value(), mul.value(), div.value());
+    return { result.first, FeeLevel64{result.second} };
+}
+
+template<class T>
+std::pair<bool, FeeLevel64>
+mulDiv(FeeLevel64 value, tagged_integer<T, DropsTag> mul, tagged_integer<T, DropsTag> div)
+{
+    auto const result = mulDiv(value.value(), mul.value(), div.value());
+    return { result.first, FeeLevel64{result.second} };
+}
+
+template<class T,
+    class = typename std::enable_if<
+        std::is_integral<T>::value &&
+        sizeof(T) <= sizeof(std::uint64_t)>::type>
+std::pair<bool, std::uint64_t>
+mulDiv(tagged_integer<std::uint64_t, FeeLevelTag> value, T mul,
+    tagged_integer<std::uint64_t, FeeLevelTag> div)
+{
+    return mulDiv(value.value(), mul, div.value());
+}
+
+template<class T>
+std::pair<bool, Drops64>
+mulDiv(Drops64 value, tagged_integer<T, FeeLevelTag> mul, tagged_integer<T, FeeLevelTag> div)
+{
+    auto const result = mulDiv(value.value(), mul.value(), div.value());
+    return { result.first, Drops64{result.second} };
+}
+
 /**
     Transaction Queue. Used to manage transactions in conjunction with
     fee escalation.
@@ -55,7 +109,7 @@ class TxQ
 {
 public:
     /// Fee level for single-signed reference transaction.
-    static constexpr std::uint64_t baseLevel = 256;
+    static constexpr FeeLevel64 baseLevel{ 256 };
 
     /**
         Structure used to customize @ref TxQ behavior.
@@ -104,7 +158,7 @@ public:
         std::int32_t multiTxnPercent = -90;
         /// Minimum value of the escalation multiplier, regardless
         /// of the prior ledger's median fee level.
-        std::uint64_t minimumEscalationMultiplier = baseLevel * 500;
+        FeeLevel64 minimumEscalationMultiplier{ baseLevel * 500 };
         /// Minimum number of transactions to allow into the ledger
         /// before escalation, regardless of the prior ledger's size.
         std::uint32_t minimumTxnInLedger = 5;
@@ -168,7 +222,7 @@ public:
             we can make this more complicated. But avoid
             bikeshedding for now.
         */
-        std::uint64_t zeroBaseFeeTransactionFeeLevel = 256000;
+        FeeLevel64 zeroBaseFeeTransactionFeeLevel{ 256000 };
         /// Use standalone mode behavior.
         bool standAlone = false;
     };
@@ -191,15 +245,15 @@ public:
         /// Number of transactions expected per ledger
         std::size_t txPerLedger;
         /// Reference transaction fee level
-        std::uint64_t referenceFeeLevel;
+        FeeLevel64 referenceFeeLevel;
         /// Minimum fee level for a transaction to be considered for
         /// the open ledger or the queue
-        std::uint64_t minProcessingFeeLevel;
+        FeeLevel64 minProcessingFeeLevel;
         /// Median fee level of the last ledger
-        std::uint64_t medFeeLevel;
+        FeeLevel64 medFeeLevel;
         /// Minimum fee level to get into the current open ledger,
         /// bypassing the queue
-        std::uint64_t openLedgerFeeLevel;
+        FeeLevel64 openLedgerFeeLevel;
     };
 
     /**
@@ -212,7 +266,7 @@ public:
         explicit AccountTxDetails() = default;
 
         /// Fee level of the queued transaction
-        uint64_t feeLevel;
+        FeeLevel64 feeLevel;
         /// LastValidLedger field of the queued transaction, if any
         boost::optional<LedgerIndex const> lastValid;
         /** Potential @ref TxConsequences of applying the queued transaction
@@ -369,7 +423,7 @@ private:
         boost::circular_buffer<std::size_t> recentTxnCounts_;
         /// Based on the median fee of the LCL. Used
         /// when fee escalation kicks in.
-        std::uint64_t escalationMultiplier_;
+        FeeLevel64 escalationMultiplier_;
         /// Journal
         beast::Journal j_;
 
@@ -417,7 +471,7 @@ private:
             std::size_t const txnsExpected;
             // Based on the median fee of the LCL. Used
             // when fee escalation kicks in.
-            std::uint64_t const escalationMultiplier;
+            FeeLevel64 const escalationMultiplier;
         };
 
         /// Get the current @ref Snapshot
@@ -439,7 +493,7 @@ private:
             @return A fee level value.
         */
         static
-        std::uint64_t
+        FeeLevel64
         scaleFeeLevel(Snapshot const& snapshot, OpenView const& view);
 
         /**
@@ -473,7 +527,7 @@ private:
                 whether the calculation result overflows.
         */
         static
-        std::pair<bool, std::uint64_t>
+        std::pair<bool, FeeLevel64>
         escalatedSeriesFeeLevel(Snapshot const& snapshot, OpenView const& view,
             std::size_t extraCount, std::size_t seriesSize);
     };
@@ -498,7 +552,7 @@ private:
         boost::optional<TxConsequences const> consequences;
 
         /// Computed fee level that the transaction will pay.
-        uint64_t const feeLevel;
+        FeeLevel64 const feeLevel;
         /// Transaction ID.
         TxID const txID;
         /// Prior transaction ID (`sfAccountTxnID` field).
@@ -559,7 +613,7 @@ private:
     public:
         /// Constructor
         MaybeTx(std::shared_ptr<STTx const> const&,
-            TxID const& txID, std::uint64_t feeLevel,
+            TxID const& txID, FeeLevel64 feeLevel,
                 ApplyFlags const flags,
                     PreflightResult const& pfresult);
 
@@ -720,7 +774,7 @@ private:
     std::pair<TER, bool>
     tryClearAccountQueue(Application& app, OpenView& view,
         STTx const& tx, AccountMap::iterator const& accountIter,
-            TxQAccount::TxMap::iterator, std::uint64_t feeLevelPaid,
+            TxQAccount::TxMap::iterator, FeeLevel64 feeLevelPaid,
                 PreflightResult const& pfresult,
                     std::size_t const txExtraCount, ApplyFlags flags,
                         FeeMetrics::Snapshot const& metricsSnapshot,
@@ -739,6 +793,30 @@ setup_TxQ(Config const&);
 */
 std::unique_ptr<TxQ>
 make_TxQ(TxQ::Setup const&, beast::Journal);
+
+template<class T, class B,
+    class = typename std::enable_if<
+        std::is_integral<T>::value &&
+        std::is_integral<B>::value &&
+        sizeof(B) <= sizeof(T)>::type>
+std::pair<bool, tagged_integer<T, DropsTag>>
+toDrops(tagged_integer<T, FeeLevelTag> const& level,
+    tagged_integer<B, DropsTag> const& baseFee)
+{
+    return mulDiv(level, baseFee, TxQ::baseLevel);
+}
+
+template<class T, class B,
+    class = typename std::enable_if<
+        std::is_integral<T>::value &&
+        std::is_integral<B>::value &&
+        sizeof(B) <= sizeof(T)>::type>
+std::pair<bool, tagged_integer<T, FeeLevelTag>>
+toFeeLevel(tagged_integer<T, DropsTag> const& drops,
+    tagged_integer<B, DropsTag> const& baseFee)
+{
+    return mulDiv(drops, TxQ::baseLevel, baseFee);
+}
 
 } // ripple
 

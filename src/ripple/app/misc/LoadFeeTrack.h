@@ -22,6 +22,7 @@
 
 #include <ripple/json/json_value.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/ledger/ReadView.h>
 #include <algorithm>
 #include <cstdint>
 #include <mutex>
@@ -140,7 +141,8 @@ private:
 //------------------------------------------------------------------------------
 
 // Scale using load as well as base rate
-std::uint64_t scaleFeeLoad(std::uint64_t fee, LoadFeeTrack const& feeTrack,
+Drops64
+scaleFeeLoad(FeeUnit64 fee, LoadFeeTrack const& feeTrack,
     Fees const& fees, bool bUnlimited);
 
 } // ripple

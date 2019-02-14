@@ -62,7 +62,7 @@ fill_fee (Json::Value& jv,
 {
     if (jv.isMember(jss::Fee))
         return;
-    jv[jss::Fee] = std::to_string(
+    jv[jss::Fee] = to_string(
         view.fees().base);
 }
 

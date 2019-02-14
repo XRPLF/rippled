@@ -28,17 +28,18 @@ namespace ripple {
 
 namespace detail {
 
-template <typename Integer>
+template <typename Integer, class Tag>
 class VotableInteger
 {
 private:
-    using map_type = std::map <Integer, int>;
-    Integer mCurrent;   // The current setting
-    Integer mTarget;    // The setting we want
+    using TagInt = tagged_integer<Integer, Tag>;
+    using map_type = std::map <TagInt, int>;
+    TagInt mCurrent;   // The current setting
+    TagInt mTarget;    // The setting we want
     map_type mVoteMap;
 
 public:
-    VotableInteger (Integer current, Integer target)
+    VotableInteger (TagInt current, TagInt target)
         : mCurrent (current)
         , mTarget (target)
     {
@@ -49,6 +50,12 @@ public:
     void
     addVote(Integer vote)
     {
+        addVote(TagInt{ vote });
+    }
+
+    void
+    addVote(TagInt vote)
+    {
         ++mVoteMap[vote];
     }
 
@@ -58,15 +65,16 @@ public:
         addVote (mCurrent);
     }
 
-    Integer
+    TagInt
     getVotes() const;
 };
 
-template <class Integer>
-Integer
-VotableInteger <Integer>::getVotes() const
+template <class Integer, class Tag>
+auto
+VotableInteger <Integer, Tag>::getVotes() const
+    -> TagInt
 {
-    Integer ourVote = mCurrent;
+    TagInt ourVote = mCurrent;
     int weight = 0;
     for (auto const& e : mVoteMap)
     {
@@ -153,13 +161,14 @@ FeeVoteImpl::doVoting(
     // LCL must be flag ledger
     assert ((lastClosedLedger->info().seq % 256) == 0);
 
-    detail::VotableInteger<std::uint64_t> baseFeeVote (
+    detail::VotableInteger<std::uint64_t, DropsTag> baseFeeVote (
         lastClosedLedger->fees().base, target_.reference_fee);
 
-    detail::VotableInteger<std::uint32_t> baseReserveVote (
-        lastClosedLedger->fees().accountReserve(0).drops(), target_.account_reserve);
+    detail::VotableInteger<std::uint32_t, DropsTag> baseReserveVote(
+        lastClosedLedger->fees().accountReserve(0).toTagged<std::uint32_t>(),
+        target_.account_reserve);
 
-    detail::VotableInteger<std::uint32_t> incReserveVote (
+    detail::VotableInteger<std::uint32_t, DropsTag> incReserveVote (
         lastClosedLedger->fees().increment, target_.owner_reserve);
 
     for (auto const& val : set)
@@ -196,15 +205,15 @@ FeeVoteImpl::doVoting(
     }
 
     // choose our positions
-    std::uint64_t const baseFee = baseFeeVote.getVotes ();
-    std::uint32_t const baseReserve = baseReserveVote.getVotes ();
-    std::uint32_t const incReserve = incReserveVote.getVotes ();
-    std::uint32_t const feeUnits = target_.reference_fee_units;
+    Drops64 const baseFee = baseFeeVote.getVotes ();
+    Drops32 const baseReserve = baseReserveVote.getVotes ();
+    Drops32 const incReserve = incReserveVote.getVotes ();
+    FeeUnit32 const feeUnits = target_.reference_fee_units;
     auto const seq = lastClosedLedger->info().seq + 1;
 
     // add transactions to our position
     if ((baseFee != lastClosedLedger->fees().base) ||
-            (baseReserve != lastClosedLedger->fees().accountReserve(0)) ||
+        (baseReserve != lastClosedLedger->fees().accountReserve(0)) ||
             (incReserve != lastClosedLedger->fees().increment))
     {
         JLOG(journal_.warn()) <<
@@ -217,10 +226,10 @@ FeeVoteImpl::doVoting(
             {
                 obj[sfAccount] = AccountID();
                 obj[sfLedgerSequence] = seq;
-                obj[sfBaseFee] = baseFee;
-                obj[sfReserveBase] = baseReserve;
-                obj[sfReserveIncrement] = incReserve;
-                obj[sfReferenceFeeUnits] = feeUnits;
+                obj[sfBaseFee] = baseFee.value();
+                obj[sfReserveBase] = baseReserve.value();
+                obj[sfReserveIncrement] = incReserve.value();
+                obj[sfReferenceFeeUnits] = feeUnits.value();
             });
 
         uint256 txID = feeTx.getTransactionID ();

@@ -52,17 +52,17 @@ private:
         "TagUInt3 should be constructible using a std::uint64_t");
 
     // Check assignment of tagged_integers
-    static_assert (!std::is_assignable<TagUInt1, std::uint32_t>::value,
-        "TagUInt1 should not be assignable with a std::uint32_t");
+    static_assert (std::is_assignable<TagUInt1, std::uint32_t>::value,
+        "TagUInt1 should be assignable with a std::uint32_t");
 
     static_assert (!std::is_assignable<TagUInt1, std::uint64_t>::value,
         "TagUInt1 should not be assignable with a std::uint64_t");
 
-    static_assert (!std::is_assignable<TagUInt3, std::uint32_t>::value,
-        "TagUInt3 should not be assignable with a std::uint32_t");
+    static_assert (std::is_assignable<TagUInt3, std::uint32_t>::value,
+        "TagUInt3 should be assignable with a std::uint32_t");
 
-    static_assert (!std::is_assignable<TagUInt3, std::uint64_t>::value,
-        "TagUInt3 should not be assignable with a std::uint64_t");
+    static_assert (std::is_assignable<TagUInt3, std::uint64_t>::value,
+        "TagUInt3 should be assignable with a std::uint64_t");
 
     static_assert (std::is_assignable<TagUInt1, TagUInt1>::value,
         "TagUInt1 should be assignable with a TagUInt1");
@@ -76,8 +76,8 @@ private:
     static_assert (!std::is_assignable<TagUInt1, TagUInt3>::value,
         "TagUInt1 should not be assignable with a TagUInt3");
 
-    static_assert (!std::is_assignable<TagUInt3, TagUInt1>::value,
-        "TagUInt3 should not be assignable with a TagUInt1");
+    static_assert (std::is_assignable<TagUInt3, TagUInt1>::value,
+        "TagUInt3 should be assignable with a TagUInt1");
 
     // Check convertibility of tagged_integers
     static_assert (!std::is_convertible<std::uint32_t, TagUInt1>::value,
@@ -95,8 +95,8 @@ private:
     static_assert (!std::is_convertible<TagUInt1, TagUInt2>::value,
         "TagUInt1 should not be convertible to TagUInt2");
 
-    static_assert (!std::is_convertible<TagUInt1, TagUInt3>::value,
-        "TagUInt1 should not be convertible to TagUInt3");
+    static_assert (std::is_convertible<TagUInt1, TagUInt3>::value,
+        "TagUInt1 should be convertible to TagUInt3");
 
     static_assert (!std::is_convertible<TagUInt2, TagUInt3>::value,
         "TagUInt2 should not be convertible to a TagUInt3");

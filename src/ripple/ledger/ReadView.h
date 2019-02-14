@@ -22,6 +22,8 @@
 
 #include <ripple/ledger/detail/ReadViewFwdRange.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/mulDiv.h>
+#include <ripple/basics/tagged_integer.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/Protocol.h>
@@ -38,6 +40,62 @@
 
 namespace ripple {
 
+// Tag types to differentiate units
+struct DropsTag;
+struct FeeUnitTag;
+
+using Drops32 = tagged_integer<std::uint32_t, DropsTag>;
+using Drops64 = tagged_integer<std::uint64_t, DropsTag>;
+using FeeUnit32 = tagged_integer<std::uint32_t, FeeUnitTag>;
+using FeeUnit64 = tagged_integer<std::uint64_t, FeeUnitTag>;
+
+template<class Integer>
+Integer divide (tagged_integer<Integer, FeeUnitTag> const& lhs,
+    tagged_integer<Integer, FeeUnitTag> const& rhs)
+{
+    return lhs.value() / rhs.value();
+}
+
+template<class T>
+std::pair<bool, Drops64>
+mulDiv(T value, Drops64 mul, T div)
+{
+    auto const result = mulDiv(value, mul.value(), div);
+    return { result.first, Drops64{result.second} };
+}
+
+template<class T>
+std::pair<bool, Drops64>
+mulDiv(Drops64 value, T mul, T div)
+{
+    auto const result = mulDiv(value.value(), mul, div);
+    return { result.first, Drops64{result.second} };
+}
+
+template<class T>
+std::pair<bool, Drops64>
+mulDiv(tagged_integer<T, FeeUnitTag> value, Drops64 mul, tagged_integer<T, FeeUnitTag> div)
+{
+    auto const result = mulDiv(value.value(), mul.value(), div.value());
+    return { result.first, Drops64{result.second} };
+}
+
+template<class T>
+std::pair<bool, Drops64>
+mulDiv(Drops64 value, tagged_integer<T, FeeUnitTag> mul, tagged_integer<T, FeeUnitTag> div)
+{
+    auto const result = mulDiv(value.value(), mul.value(), div.value());
+    return { result.first, Drops64{result.second} };
+}
+
+inline
+std::pair<bool, std::uint64_t>
+mulDiv(tagged_integer<std::uint64_t, DropsTag> value, std::uint64_t mul,
+    tagged_integer<std::uint64_t, DropsTag> div)
+{
+    return mulDiv(value.value(), mul, div.value());
+}
+
 /** Reflects the fee settings for a particular ledger.
 
     The fees are always the same for any transactions applied
@@ -45,10 +103,10 @@ namespace ripple {
 */
 struct Fees
 {
-    std::uint64_t base = 0;         // Reference tx cost (drops)
-    std::uint32_t units = 0;        // Reference fee units
-    std::uint32_t reserve = 0;      // Reserve base (drops)
-    std::uint32_t increment = 0;    // Reserve increment (drops)
+    Drops64 base{ 0 };         // Reference tx cost (drops)
+    FeeUnit32 units{ 0 };        // Reference fee units
+    Drops32 reserve{ 0 };      // Reserve base (drops)
+    Drops32 increment{ 0 };    // Reserve increment (drops)
 
     explicit Fees() = default;
     Fees (Fees const&) = default;
@@ -62,7 +120,13 @@ struct Fees
     XRPAmount
     accountReserve (std::size_t ownerCount) const
     {
-        return { reserve + ownerCount * increment };
+        return reserve + ownerCount * increment;
+    }
+
+    std::pair<bool, Drops64>
+    toDrops(FeeUnit64 const& fee) const
+    {
+        return mulDiv(fee, base, FeeUnit64{ units });
     }
 };
 

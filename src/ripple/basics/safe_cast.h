@@ -73,6 +73,56 @@ safe_cast(Src s) noexcept
     return safe_cast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
 }
 
+// unsafe_cast explicitly flags a static_cast as not necessarily able to hold
+// all values of the source. It includes a compile-time check so that if
+// underlying types become safe, it can be converted to a safe_cast.
+
+template <class Dest, class Src>
+inline
+constexpr
+std::enable_if_t
+<
+    std::is_integral<Dest>::value && std::is_integral<Src>::value,
+    Dest
+>
+unsafe_cast(Src s) noexcept
+{
+    constexpr unsigned not_same = std::is_signed<Dest>::value !=
+        std::is_signed<Src>::value;
+    static_assert((std::is_unsigned<Dest>::value &&
+        std::is_signed<Src>::value) ||
+        sizeof(Dest) < sizeof(Src) + not_same,
+        "Only unsafe if casting signed to unsigned or "
+        "destination is too small");
+    return static_cast<Dest>(s);
+}
+
+template <class Dest, class Src>
+inline
+constexpr
+std::enable_if_t
+<
+    std::is_enum<Dest>::value && std::is_integral<Src>::value,
+    Dest
+>
+unsafe_cast(Src s) noexcept
+{
+    return static_cast<Dest>(unsafe_cast<std::underlying_type_t<Dest>>(s));
+}
+
+template <class Dest, class Src>
+inline
+constexpr
+std::enable_if_t
+<
+    std::is_integral<Dest>::value && std::is_enum<Src>::value,
+    Dest
+>
+unsafe_cast(Src s) noexcept
+{
+    return unsafe_cast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
+}
+
 } // ripple
 
 #endif

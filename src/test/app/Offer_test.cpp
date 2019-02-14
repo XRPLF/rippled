@@ -503,7 +503,7 @@ public:
 
             env.fund (XRP (1000000), gw);
 
-            auto const f = env.current ()->fees ().base;
+            auto const f = drops(env.current ()->fees ().base);
             auto const r = reserve (env, 0);
 
             env.fund (r + f, alice);
@@ -528,7 +528,7 @@ public:
 
             env.fund (XRP (1000000), gw);
 
-            auto const f = env.current ()->fees ().base;
+            auto const f = drops(env.current ()->fees ().base);
             auto const r = reserve (env, 0);
 
             auto const usdOffer2 = USD (500);
@@ -562,7 +562,7 @@ public:
 
             env.fund (XRP (1000000), gw);
 
-            auto const f = env.current ()->fees ().base;
+            auto const f = drops(env.current ()->fees ().base);
             auto const r = reserve (env, 0);
 
             auto const usdOffer2 = USD (500);
@@ -665,11 +665,11 @@ public:
                     txflags (tfFillOrKill),         ter(killedCode));
             }
             env.require (
-                balance (alice, startBalance - (f * 2)),
+                balance (alice, startBalance - drops(f * 2)),
                 balance (alice, USD (1000)),
                 owners (alice, 1),
                 offers (alice, 0),
-                balance (bob, startBalance - (f * 2)),
+                balance (bob, startBalance - drops(f * 2)),
                 balance (bob, USD (none)),
                 owners (bob, 1),
                 offers (bob, 1));
@@ -679,11 +679,11 @@ public:
                 txflags (tfFillOrKill),              ter(tesSUCCESS));
 
             env.require (
-                balance (alice, startBalance - (f * 3) + XRP (500)),
+                balance (alice, startBalance - drops(f * 3) + XRP (500)),
                 balance (alice, USD (500)),
                 owners (alice, 1),
                 offers (alice, 0),
-                balance (bob, startBalance - (f * 2) - XRP (500)),
+                balance (bob, startBalance - drops(f * 2) - XRP (500)),
                 balance (bob, USD (500)),
                 owners (bob, 1),
                 offers (bob, 0));
@@ -698,7 +698,7 @@ public:
                     100 * env.closed ()->info ().closeTimeResolution;
             env.close (closeTime);
 
-            auto const f = env.current ()->fees ().base;
+            auto const f = drops(env.current ()->fees ().base);
 
             env.fund (startBalance, gw, alice, bob);
 
@@ -967,7 +967,7 @@ public:
         env.fund (startBalance, gw, alice, bob);
         env.close();
 
-        auto const f = env.current ()->fees ().base;
+        auto const f = drops(env.current ()->fees ().base);
 
         env (trust (alice, usdOffer),             ter(tesSUCCESS));
         env (pay (gw, alice, usdOffer),           ter(tesSUCCESS));
@@ -1046,7 +1046,7 @@ public:
         env.fund (XRP(1000000), gw);
 
         // The fee that's charged for transactions
-        auto const f = env.current ()->fees ().base;
+        XRPAmount const f{ env.current()->fees().base };
 
         // Account is at the reserve, and will dip below once
         // fees are subtracted.
@@ -1287,14 +1287,14 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "50");
         BEAST_EXPECT(env.balance (alice, xrpIssue()) ==
             alice_initial_balance -
-                env.current ()->fees ().base * 3 - crossingDelta
+                drops(env.current ()->fees ().base * 3) - crossingDelta
         );
 
         jrr = ledgerEntryState (env, bob, gw, "USD");
         BEAST_EXPECT( jrr[jss::node][sfBalance.fieldName][jss::value] == "0");
         BEAST_EXPECT(env.balance (bob, xrpIssue()) ==
             bob_initial_balance -
-                env.current ()->fees ().base * 2 + crossingDelta
+                drops(env.current ()->fees ().base * 2) + crossingDelta
         );
     }
 
@@ -1345,7 +1345,7 @@ public:
             std::to_string(
                 XRP (10000).value ().mantissa () -
                 XRP (reverse_order ? 4000 : 3000).value ().mantissa () -
-                env.current ()->fees ().base * 2)
+                drops(env.current ()->fees ().base * 2).value ().mantissa ())
         );
 
         jrr = ledgerEntryState (env, alice, gw, "USD");
@@ -1356,7 +1356,7 @@ public:
             std::to_string(
                 XRP (10000).value ().mantissa( ) +
                 XRP(reverse_order ? 4000 : 3000).value ().mantissa () -
-                env.current ()->fees ().base * 2)
+                drops(env.current ()->fees ().base * 2).value ().mantissa ())
         );
     }
 
@@ -1395,7 +1395,7 @@ public:
             std::to_string(
                 XRP (100000).value ().mantissa () -
                 XRP (3000).value ().mantissa () -
-                env.current ()->fees ().base * 1)
+                drops(env.current ()->fees ().base * 1).value ().mantissa ())
         );
 
         jrr = ledgerEntryState (env, alice, gw, "USD");
@@ -1406,7 +1406,7 @@ public:
             std::to_string(
                 XRP (100000).value ().mantissa () +
                 XRP (3000).value ().mantissa () -
-                env.current ()->fees ().base * 2)
+                drops(env.current ()->fees ().base * 2).value ().mantissa ())
         );
     }
 
@@ -1528,7 +1528,7 @@ public:
             std::to_string(
                 XRP (10000).value ().mantissa () +
                 XRP (500).value ().mantissa () -
-                env.current ()->fees ().base * 2)
+                drops(env.current ()->fees ().base * 2).value ().mantissa ())
         );
 
         jrr = ledgerEntryState (env, bob, gw, "USD");
@@ -1623,7 +1623,7 @@ public:
             std::to_string(
                 XRP (10000).value ().mantissa () +
                 XRP (200).value ().mantissa () -
-                env.current ()->fees ().base * 2)
+                drops(env.current ()->fees ().base * 2).value ().mantissa ())
         );
 
         // bob got 40 USD from partial consumption of the offer
@@ -1658,7 +1658,7 @@ public:
                 XRP (10000).value ().mantissa () +
                 XRP (200).value ().mantissa () +
                 XRP (300).value ().mantissa () -
-                env.current ()->fees ().base * 4)
+                drops(env.current ()->fees ().base * 4).value ().mantissa ())
         );
 
         // bob now has 100 USD - 40 from the first payment and 60 from the
@@ -1938,7 +1938,7 @@ public:
         //  1 for payment          == 4
         auto const starting_xrp = XRP (100) +
             env.current ()->fees ().accountReserve (3) +
-            env.current ()->fees ().base * 4;
+            drops(env.current ()->fees ().base * 4);
 
         env.fund (starting_xrp, gw1, gw2, gw3, alice, bob);
 
@@ -2026,7 +2026,7 @@ public:
 
         auto const starting_xrp = XRP (100) +
             env.current ()->fees ().accountReserve (1) +
-            env.current ()->fees ().base * 2;
+            drops(env.current ()->fees ().base * 2);
 
         env.fund (starting_xrp, gw, alice, bob);
 
@@ -2072,7 +2072,7 @@ public:
 
         auto const starting_xrp = XRP (100) +
             env.current ()->fees ().accountReserve (1) +
-            env.current ()->fees ().base * 2;
+            drops(env.current ()->fees ().base * 2);
 
         env.fund (starting_xrp, gw, alice, bob);
 
@@ -2121,7 +2121,7 @@ public:
 
         auto const starting_xrp = XRP (100.1) +
             env.current ()->fees ().accountReserve (1) +
-            env.current ()->fees ().base * 2;
+            drops(env.current ()->fees ().base * 2);
 
         env.fund (starting_xrp, gw, alice, bob);
 
@@ -2148,8 +2148,8 @@ public:
         payment[jss::tx_json][jss::Sequence] =
             env.current ()->read (
                 keylet::account (bob.id ()))->getFieldU32 (sfSequence);
-        payment[jss::tx_json][jss::Fee] =
-            std::to_string( env.current ()->fees ().base);
+        payment[jss::tx_json][jss::Fee] = to_string(
+            env.current()->fees().base);
         payment[jss::tx_json][jss::SendMax] =
             bob ["XTS"] (1.5).value ().getJson (0);
         auto jrr = wsc->invoke("submit", payment);
@@ -2225,7 +2225,7 @@ public:
         env.fund (XRP(10000000), gw);
 
         // The fee that's charged for transactions
-        auto const f = env.current ()->fees ().base;
+        auto const f = env.current ()->fees ().base.value();
 
         // To keep things simple all offers are 1 : 1 for XRP : USD.
         enum preTrustType {noPreTrust, gwPreTrust, acctPreTrust};
@@ -2392,7 +2392,7 @@ public:
 
         // alice's account has enough for the reserve, one trust line plus two
         // offers, and two fees.
-        env.fund (reserve (env, 2) + (fee * 2), alice);
+        env.fund (reserve (env, 2) + drops(fee * 2), alice);
         env.close();
 
         env (trust(alice, usdOffer));
@@ -2420,8 +2420,8 @@ public:
         env.require (
             balance (alice, USD(0)),
             balance (bob, usdOffer),
-            balance (alice, alicesXRP + xrpOffer - fee),
-            balance (bob,   bobsXRP   - xrpOffer - fee),
+            balance (alice, alicesXRP + xrpOffer - drops(fee)),
+            balance (bob,   bobsXRP   - xrpOffer - drops(fee)),
             offers (alice, 0),
             offers (bob, 0));
 
@@ -2477,8 +2477,8 @@ public:
 
         // Each account has enough for the reserve, two trust lines, one
         // offer, and two fees.
-        env.fund (reserve (env, 3) + (fee * 3), alice);
-        env.fund (reserve (env, 3) + (fee * 2), bob);
+        env.fund (reserve (env, 3) + drops(fee * 3), alice);
+        env.fund (reserve (env, 3) + drops(fee * 2), bob);
         env.close();
         env (trust(alice, usdOffer));
         env (trust(bob, eurOffer));
@@ -2667,7 +2667,7 @@ public:
         env.fund (XRP(10000000), gw);
 
         // The fee that's charged for transactions
-        auto const f = env.current ()->fees ().base;
+        auto const f = env.current ()->fees ().base.value();
 
         // To keep things simple all offers are 1 : 1 for XRP : USD.
         enum preTrustType {noPreTrust, gwPreTrust, acctPreTrust};
@@ -2936,7 +2936,7 @@ public:
         {
             auto const ann = Account("ann");
             auto const bob = Account("bob");
-            env.fund (XRP(100) + reserve(env, 2) + (fee*2), ann, bob);
+            env.fund (XRP(100) + reserve(env, 2) + drops(fee*2), ann, bob);
             env.close();
 
             env (trust(ann, USD(200)));
@@ -2971,7 +2971,7 @@ public:
             // in return for USD.  Gateway rate should still apply identically.
             auto const che = Account("che");
             auto const deb = Account("deb");
-            env.fund (XRP(100) + reserve(env, 2) + (fee*2), che, deb);
+            env.fund (XRP(100) + reserve(env, 2) + drops(fee*2), che, deb);
             env.close();
 
             env (trust(che, USD(200)));
@@ -2999,7 +2999,7 @@ public:
             auto const eve = Account("eve");
             auto const fyn = Account("fyn");
 
-            env.fund (XRP(20000) + fee*2, eve, fyn);
+            env.fund (XRP(20000) + drops(fee*2), eve, fyn);
             env.close();
 
             env (trust (eve, USD(1000)));
@@ -3051,7 +3051,7 @@ public:
             // apply in the same transaction.
             auto const gay = Account("gay");
             auto const hal = Account("hal");
-            env.fund (reserve(env, 3) + (fee*3), gay, hal);
+            env.fund (reserve(env, 3) + drops(fee*3), gay, hal);
             env.close();
 
             env (trust(gay, USD(200)));
@@ -3084,7 +3084,7 @@ public:
             // A trust line's QualityIn should not affect offer crossing.
             auto const ivy = Account("ivy");
             auto const joe = Account("joe");
-            env.fund (reserve(env, 3) + (fee*3), ivy, joe);
+            env.fund (reserve(env, 3) + drops(fee*3), ivy, joe);
             env.close();
 
             env (trust(ivy, USD(400)), qualityInPercent (90));
@@ -3125,7 +3125,7 @@ public:
             auto const N_BUX = ned["BUX"];
 
             // Verify trust line QualityOut affects payments.
-            env.fund (reserve(env, 4) + (fee*4), kim, lex, meg, ned);
+            env.fund (reserve(env, 4) + drops(fee*4), kim, lex, meg, ned);
             env.close();
 
             env (trust (lex, K_BUX(400)));
@@ -3170,7 +3170,7 @@ public:
             auto const ova = Account("ova");
             auto const pat = Account("pat");
             auto const qae = Account("qae");
-            env.fund (XRP(2) + reserve(env, 3) + (fee*3), ova, pat, qae);
+            env.fund (XRP(2) + reserve(env, 3) + drops(fee*3), ova, pat, qae);
             env.close();
 
             //   o ova has USD but wants XPR.
@@ -3255,7 +3255,7 @@ public:
         auto const fee = env.current ()->fees ().base;
         auto const startBalance = XRP(1000000);
 
-        env.fund (startBalance + (fee*4), gw);
+        env.fund (startBalance + drops(fee*4), gw);
         env.close();
 
         env (offer (gw, USD(60), XRP(600)));
@@ -3266,7 +3266,7 @@ public:
         env.close();
 
         env.require (owners (gw, 3));
-        env.require (balance (gw, startBalance + fee));
+        env.require (balance (gw, startBalance + drops(fee)));
 
         auto gwOffers = offersOnAccount (env, gw);
         BEAST_EXPECT (gwOffers.size() == 3);
@@ -3318,7 +3318,7 @@ public:
         env.close();
 
         // The fee that's charged for transactions.
-        auto const f = env.current ()->fees ().base;
+        auto const f = env.current ()->fees ().base.value();
 
         // Test cases
         struct TestData
@@ -3440,7 +3440,7 @@ public:
         auto const USD = bob["USD"];
         auto const f = env.current ()->fees ().base;
 
-        env.fund(XRP(50000) + f, alice, bob);
+        env.fund(XRP(50000) + drops(f), alice, bob);
         env.close();
 
         env(offer(alice, USD(5000), XRP(50000)));
@@ -3499,7 +3499,7 @@ public:
             auto const D_BUX = dan["BUX"];
 
             // Verify trust line QualityOut affects payments.
-            env.fund (reserve(env, 4) + (fee*4), ann, bob, cam, dan);
+            env.fund (reserve(env, 4) + drops(fee*4), ann, bob, cam, dan);
             env.close();
 
             env (trust (bob, A_BUX(400)));
@@ -3572,7 +3572,7 @@ public:
         auto const B_BUX = bob["BUX"];
 
         auto const fee = env.current ()->fees ().base;
-        env.fund (reserve(env, 4) + (fee*5), ann, bob, cam);
+        env.fund (reserve(env, 4) + drops(fee*5), ann, bob, cam);
         env.close();
 
         env (trust (ann, B_BUX(40)));
@@ -3625,8 +3625,8 @@ public:
         auto const BTC = gw["BTC"];
 
         auto const fee = env.current ()->fees ().base;
-        env.fund (reserve(env, 2) + drops (9999640) + (fee), ann);
-        env.fund (reserve(env, 2) + (fee*4), gw);
+        env.fund (reserve(env, 2) + drops (9999640 + fee), ann);
+        env.fund (reserve(env, 2) + drops(fee*4), gw);
         env.close();
 
         env (rate(gw, 1.002));
@@ -3666,8 +3666,8 @@ public:
         auto const CNY = gw["CNY"];
 
         auto const fee = env.current ()->fees ().base;
-        env.fund (reserve(env, 2) + drops (400000000000) + (fee), alice, bob);
-        env.fund (reserve(env, 2) + (fee*4), gw);
+        env.fund (reserve(env, 2) + drops (400000000000 + fee), alice, bob);
+        env.fund (reserve(env, 2) + drops(fee*4), gw);
         env.close();
 
         env (trust(bob, CNY(500)));
@@ -3716,8 +3716,8 @@ public:
         auto const JPY = gw["JPY"];
 
         auto const fee = env.current ()->fees ().base;
-        env.fund (reserve(env, 2) + drops (400000000000) + (fee), alice, bob);
-        env.fund (reserve(env, 2) + (fee*4), gw);
+        env.fund (reserve(env, 2) + drops (400000000000 + fee), alice, bob);
+        env.fund (reserve(env, 2) + drops(fee*4), gw);
         env.close();
 
         env (rate(gw, 1.002));
@@ -3771,8 +3771,8 @@ public:
         auto const JPY = gw2["JPY"];
 
         auto const fee = env.current ()->fees ().base;
-        env.fund (reserve(env, 2) + drops (400000000000) + (fee), alice, bob);
-        env.fund (reserve(env, 2) + (fee*4), gw1, gw2);
+        env.fund (reserve(env, 2) + drops (400000000000 + fee), alice, bob);
+        env.fund (reserve(env, 2) + drops(fee*4), gw1, gw2);
         env.close();
 
         env (rate(gw1, 1.002));
@@ -3827,7 +3827,7 @@ public:
         auto const bob = Account("bob");
         auto const CNY = gw["CNY"];
         auto const fee = env.current()->fees().base;
-        auto const startXrpBalance = drops (400000000000) + (fee * 2);
+        auto const startXrpBalance = drops (400000000000 + fee * 2);
 
         env.fund (startXrpBalance, gw, alice, bob);
         env.close();
@@ -3854,9 +3854,9 @@ public:
         env.close();
 
         env.require (balance (alice, alicesCnyOffer));
-        env.require (balance (alice, startXrpBalance - fee - drops(1)));
+        env.require (balance (alice, startXrpBalance - drops(fee + 1)));
         env.require (balance (bob, bobsCnyStartBalance - alicesCnyOffer));
-        env.require (balance (bob, startXrpBalance - (fee * 2) + drops(1)));
+        env.require (balance (bob, startXrpBalance - drops((fee * 2) - 1)));
     }
 
     void testSelfPayXferFeeOffer (FeatureBitset features)

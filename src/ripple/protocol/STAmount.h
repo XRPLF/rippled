@@ -32,6 +32,9 @@
 
 namespace ripple {
 
+// Forward declaration - defined in ReadView.h
+struct DropsTag;
+
 // Internal form:
 // 1: If amount is zero, then value is zero and offset is -100
 // 2: Otherwise:
@@ -106,6 +109,15 @@ public:
         std::uint64_t mantissa = 0, int exponent = 0, bool negative = false);
 
     STAmount (std::uint64_t mantissa = 0, bool negative = false);
+
+    template <class Integer,
+        class = typename std::enable_if_t <
+            std::is_integral<Integer>::value>>
+    explicit
+    STAmount (tagged_integer<Integer, DropsTag> const& drops)
+        : STAmount (drops.value(), false)
+    {
+    }
 
     STAmount (Issue const& issue, std::uint64_t mantissa = 0, int exponent = 0,
         bool negative = false);
@@ -209,6 +221,15 @@ public:
         return *this;
     }
 
+    template <class Integer,
+        class = typename std::enable_if_t <
+            std::is_integral<Integer>::value>>
+    STAmount& operator=(tagged_integer<Integer, DropsTag> const& drops)
+    {
+        *this = STAmount(drops);
+        return *this;
+    }
+
     //--------------------------------------------------------------------------
     //
     // Modification
@@ -285,6 +306,7 @@ public:
     }
 
     XRPAmount xrp () const;
+    tagged_integer<std::uint64_t, DropsTag> taggeddrops () const;
     IOUAmount iou () const;
 };
 

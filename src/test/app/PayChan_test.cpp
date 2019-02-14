@@ -189,7 +189,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             auto const preAlice = env.balance (alice);
             env (fund (alice, chan, XRP (1000)));
-            auto const feeDrops = env.current ()->fees ().base;
+            auto const feeDrops = drops(env.current ()->fees ().base);
             BEAST_EXPECT (env.balance (alice) == preAlice - XRP (1000) - feeDrops);
         }
 
@@ -268,7 +268,7 @@ struct PayChan_test : public beast::unit_test::suite
             env (claim (bob, chan, reqBal, authAmt, Slice (sig), alice.pk ()));
             BEAST_EXPECT (channelBalance (*env.current (), chan) == reqBal);
             BEAST_EXPECT (channelAmount (*env.current (), chan) == chanAmt);
-            auto const feeDrops = env.current ()->fees ().base;
+            auto const feeDrops = drops(env.current ()->fees ().base);
             BEAST_EXPECT (env.balance (bob) == preBob + delta - feeDrops);
             chanBal = reqBal;
 
@@ -326,7 +326,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const preBob = env.balance (bob);
             env (claim (bob, chan), txflags (tfClose));
             BEAST_EXPECT (!channelExists (*env.current (), chan));
-            auto const feeDrops = env.current ()->fees ().base;
+            auto const feeDrops = drops(env.current ()->fees ().base);
             auto const delta = chanAmt - chanBal;
             assert (delta > beast::zero);
             BEAST_EXPECT (env.balance (alice) == preAlice + delta);
@@ -376,7 +376,7 @@ struct PayChan_test : public beast::unit_test::suite
                     signClaimAuth (alice.pk (), alice.sk (), chan, authAmt);
                 env (claim (
                     bob, chan, reqBal, authAmt, Slice (sig), alice.pk ()));
-                auto const feeDrops = env.current ()->fees ().base;
+                auto const feeDrops = drops(env.current ()->fees ().base);
                 BEAST_EXPECT (!channelExists (*env.current (), chan));
                 BEAST_EXPECT (env.balance (bob) == preBob - feeDrops);
                 BEAST_EXPECT (env.balance (alice) == preAlice + channelFunds);
@@ -505,7 +505,7 @@ struct PayChan_test : public beast::unit_test::suite
             env (claim (bob, chan, reqBal, authAmt, Slice (sig), alice.pk ()));
             BEAST_EXPECT (channelBalance (*env.current (), chan) == reqBal);
             BEAST_EXPECT (channelAmount (*env.current (), chan) == chanAmt);
-            auto const feeDrops = env.current ()->fees ().base;
+            auto const feeDrops = drops(env.current ()->fees ().base);
             BEAST_EXPECT (env.balance (bob) == preBob + delta - feeDrops);
         }
         env.close (settleTimepoint);
@@ -523,7 +523,7 @@ struct PayChan_test : public beast::unit_test::suite
                 signClaimAuth (alice.pk (), alice.sk (), chan, authAmt);
             env (claim (bob, chan, reqBal, authAmt, Slice (sig), alice.pk ()));
             BEAST_EXPECT (!channelExists (*env.current (), chan));
-            auto const feeDrops = env.current ()->fees ().base;
+            auto const feeDrops = drops(env.current ()->fees ().base);
             BEAST_EXPECT (env.balance (alice) == preAlice + chanAmt - chanBal);
             BEAST_EXPECT (env.balance (bob) == preBob - feeDrops);
         }
@@ -560,7 +560,7 @@ struct PayChan_test : public beast::unit_test::suite
         // Channel is now dry, can close before expiration date
         env (claim (alice, chan), txflags (tfClose));
         BEAST_EXPECT (!channelExists (*env.current (), chan));
-        auto const feeDrops = env.current ()->fees ().base;
+        auto const feeDrops = drops(env.current ()->fees ().base);
         BEAST_EXPECT (env.balance (alice) == preAlice - feeDrops);
     }
 
@@ -597,7 +597,7 @@ struct PayChan_test : public beast::unit_test::suite
             env (claim (
                 bob, chan, reqBal, boost::none, Slice (sig), alice.pk ()));
             BEAST_EXPECT (channelBalance (*env.current (), chan) == reqBal);
-            auto const feeDrops = env.current ()->fees ().base;
+            auto const feeDrops = drops(env.current ()->fees ().base);
             BEAST_EXPECT (env.balance (bob) == preBob + delta - feeDrops);
             chanBal = reqBal;
         }
@@ -615,7 +615,7 @@ struct PayChan_test : public beast::unit_test::suite
             env (claim (
                 bob, chan, reqBal, boost::none, Slice (sig), alice.pk ()));
             BEAST_EXPECT (channelBalance (*env.current (), chan) == reqBal);
-            auto const feeDrops = env.current ()->fees ().base;
+            auto const feeDrops = drops(env.current ()->fees ().base);
             BEAST_EXPECT (env.balance (bob) == preBob + delta - feeDrops);
             chanBal = reqBal;
         }
@@ -768,7 +768,8 @@ struct PayChan_test : public beast::unit_test::suite
                 // transaction.
                 env (claim (bob, chan, delta, delta, Slice (sig), pk));
                 env.close();
-                BEAST_EXPECT (env.balance (bob) == preBob + delta - baseFee);
+                BEAST_EXPECT (env.balance (bob) == preBob + delta -
+                    drops(baseFee));
             }
             {
                 // Explore the limits of deposit preauthorization.
@@ -804,7 +805,7 @@ struct PayChan_test : public beast::unit_test::suite
                 env.close();
 
                 BEAST_EXPECT (
-                    env.balance (bob) == preBob + delta - (3 * baseFee));
+                    env.balance (bob) == preBob + delta - drops(3 * baseFee));
             }
             {
                 // bob removes preauthorization of alice.  Once again she
@@ -825,8 +826,8 @@ struct PayChan_test : public beast::unit_test::suite
                 // alice claims successfully.
                 env (claim (alice, chan, delta, delta));
                 env.close();
-                BEAST_EXPECT (
-                    env.balance (bob) == preBob + XRP (800) - (5 * baseFee));
+                BEAST_EXPECT (env.balance (bob) ==
+                    preBob + XRP (800) - drops(5 * baseFee));
             }
         }
     }

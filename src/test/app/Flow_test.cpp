@@ -816,7 +816,7 @@ struct Flow_test : public beast::unit_test::suite
         // The fee that's charged for transactions.
         auto const f = env.current ()->fees ().base;
 
-        env.fund (reserve (env, 3) + f * 4, alice);
+        env.fund (reserve (env, 3) + drops(f * 4), alice);
         env.close ();
 
         env (trust (alice, USD (2000)));
@@ -890,7 +890,7 @@ struct Flow_test : public beast::unit_test::suite
         // The fee that's charged for transactions.
         auto const f = env.current ()->fees ().base;
 
-        env.fund (reserve (env, 3) + f * 4, alice);
+        env.fund (reserve (env, 3) + drops(f * 4), alice);
         env.close ();
 
         env (trust (alice, USD (506)));
@@ -1211,8 +1211,8 @@ struct Flow_test : public beast::unit_test::suite
         auto const CTB = gw["CTB"];
 
         auto const fee = env.current ()->fees ().base;
-        env.fund (reserve(env, 2) + drops (9999640) + (fee), ann);
-        env.fund (reserve(env, 2) + (fee*4), gw);
+        env.fund (reserve(env, 2) + drops (9999640 + fee), ann);
+        env.fund (reserve(env, 2) + drops(fee*4), gw);
         env.close();
 
         env (rate(gw, 1.002));

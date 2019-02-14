@@ -288,16 +288,23 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
             auto& txq = env.app().getTxQ();
             auto const gw = Account {"gw" + std::to_string(i)};
             env.memoize(gw);
+            auto const& baseFee = env.current()->fees().base;
             env (pay (env.master, gw, XRP(1000)),
                 seq (autofill),
-                fee (txq.getMetrics(*env.current()).openLedgerFeeLevel + 1),
+                fee (toDrops(
+                    txq.getMetrics(*env.current()).openLedgerFeeLevel,
+                    baseFee).second + 1),
                 sig (autofill));
             env (fset (gw, asfDefaultRipple),
                 seq (autofill),
-                fee (txq.getMetrics(*env.current()).openLedgerFeeLevel + 1),
+                fee (toDrops(
+                    txq.getMetrics(*env.current()).openLedgerFeeLevel,
+                    baseFee).second + 1),
                 sig (autofill));
             env (trust (alice, gw["USD"](10)),
-                fee (txq.getMetrics(*env.current()).openLedgerFeeLevel + 1));
+                fee (toDrops(
+                    txq.getMetrics(*env.current()).openLedgerFeeLevel,
+                    baseFee).second + 1));
             env.close();
         }
 

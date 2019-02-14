@@ -21,6 +21,7 @@
 #define BEAST_UTILITY_TAGGED_INTEGER_H_INCLUDED
 
 #include <ripple/beast/hash/hash_append.h>
+#include <ripple/beast/utility/Zero.h>
 #include <boost/operators.hpp>
 #include <functional>
 #include <iostream>
@@ -68,13 +69,45 @@ public:
             std::is_integral<OtherInt>::value &&
             sizeof(OtherInt) <= sizeof(Int)>::type>
     explicit
-        /* constexpr */
-        tagged_integer(OtherInt value) noexcept
+    constexpr
+    tagged_integer(OtherInt value) noexcept
         : m_value(value)
     {
         static_assert(
             sizeof(tagged_integer) == sizeof(Int),
             "tagged_integer is adding padding");
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value &&
+            sizeof(OtherInt) <= sizeof(Int)>::type>
+    constexpr
+    tagged_integer(tagged_integer<OtherInt, Tag> value) noexcept
+    : m_value(value.value())
+    {
+        static_assert(
+            sizeof(tagged_integer) == sizeof(Int),
+            "tagged_integer is adding padding");
+    }
+
+    constexpr
+    tagged_integer(beast::Zero)
+    : m_value(0)
+    {
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value &&
+            sizeof(OtherInt) <= sizeof(Int)>::type>
+    tagged_integer&
+    operator=(OtherInt value) noexcept
+    {
+        m_value = value;
+        return *this;
     }
 
     bool
@@ -83,10 +116,74 @@ public:
         return m_value < rhs.m_value;
     }
 
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value &&
+            sizeof(OtherInt) <= sizeof(Int)>::type>
+    bool
+    operator<(OtherInt rhs) const noexcept
+    {
+        return m_value < rhs;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value &&
+            sizeof(OtherInt) <= sizeof(Int)>::type>
+    bool
+    operator<=(OtherInt rhs) const noexcept
+    {
+        return m_value <= rhs;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value &&
+            sizeof(OtherInt) <= sizeof(Int)>::type>
+    bool
+    operator>(OtherInt rhs) const noexcept
+    {
+        return m_value > rhs;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value &&
+            sizeof(OtherInt) <= sizeof(Int)>::type>
+    bool
+    operator>=(OtherInt rhs) const noexcept
+    {
+        return m_value >= rhs;
+    }
+
     bool
     operator==(const tagged_integer & rhs) const noexcept
     {
         return m_value == rhs.m_value;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value>>
+    bool
+    operator==(OtherInt const& rhs) const noexcept
+    {
+        return m_value == rhs;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value>>
+    bool
+    operator!=(OtherInt const& rhs) const noexcept
+    {
+        return m_value != rhs;
     }
 
     tagged_integer&
@@ -96,11 +193,90 @@ public:
         return *this;
     }
 
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value &&
+            // This odd use of operators is because of an unresolved bug in MSVC
+            // which causes compilation errors on the "<" operator in a template
+            // https://developercommunity.visualstudio.com/content/problem/374878/vs2017-158-c-errors-c2059-c1004-when-less-than-ope.html
+            !( sizeof(OtherInt) >= sizeof(Int) )>::type>
+    tagged_integer&
+    operator+=(tagged_integer<OtherInt, Tag> const& rhs) noexcept
+    {
+        m_value += rhs.value();
+        return *this;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value &&
+            sizeof(OtherInt) <= sizeof(Int)>::type>
+    tagged_integer&
+    operator+=(OtherInt const& rhs) noexcept
+    {
+        m_value += rhs;
+        return *this;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value &&
+            sizeof(OtherInt) <= sizeof(Int)>::type>
+    tagged_integer
+    operator+(OtherInt const& rhs) const noexcept
+    {
+        tagged_integer copy = *this;
+        copy += rhs;
+        return copy;
+    }
+
     tagged_integer&
     operator-=(tagged_integer const& rhs) noexcept
     {
         m_value -= rhs.m_value;
         return *this;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value &&
+            // This odd use of operators is because of an unresolved bug in MSVC
+            // which causes compilation errors on the "<" operator in a template
+            // https://developercommunity.visualstudio.com/content/problem/374878/vs2017-158-c-errors-c2059-c1004-when-less-than-ope.html
+            !( sizeof(OtherInt) >= sizeof(Int) )>::type>
+    tagged_integer&
+    operator-=(tagged_integer<OtherInt, Tag> const& rhs) noexcept
+    {
+        m_value -= rhs.m_value;
+        return *this;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value &&
+            sizeof(OtherInt) <= sizeof(Int)>::type>
+    tagged_integer&
+    operator-=(OtherInt const& rhs) noexcept
+    {
+        m_value -= rhs;
+        return *this;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value>>
+    tagged_integer
+    operator-(OtherInt const& rhs) const noexcept
+    {
+        tagged_integer copy = *this;
+        copy.m_value -= rhs;
+        return copy;
     }
 
     tagged_integer&
@@ -110,6 +286,29 @@ public:
         return *this;
     }
 
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value>>
+    tagged_integer&
+    operator*=(OtherInt const& rhs) noexcept
+    {
+        m_value *= rhs;
+        return *this;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value>>
+    tagged_integer
+    operator*(OtherInt const& rhs) const noexcept
+    {
+        tagged_integer copy = *this;
+        copy.m_value *= rhs;
+        return copy;
+    }
+
     tagged_integer&
     operator/=(tagged_integer const& rhs) noexcept
     {
@@ -117,11 +316,57 @@ public:
         return *this;
     }
 
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value>>
+    tagged_integer&
+    operator/=(OtherInt const& rhs) noexcept
+    {
+        m_value /= rhs;
+        return *this;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value>>
+    tagged_integer
+    operator/(OtherInt const& rhs) const noexcept
+    {
+        tagged_integer copy = *this;
+        copy.m_value /= rhs;
+        return copy;
+    }
+
     tagged_integer&
     operator%=(tagged_integer const& rhs) noexcept
     {
         m_value %= rhs.m_value;
         return *this;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value>>
+    tagged_integer&
+    operator%=(OtherInt const& rhs) noexcept
+    {
+        m_value %= rhs;
+        return *this;
+    }
+
+    template <
+        class OtherInt,
+        class = typename std::enable_if<
+            std::is_integral<OtherInt>::value>>
+    tagged_integer
+    operator%(OtherInt const& rhs) const noexcept
+    {
+        tagged_integer copy = *this;
+        copy.m_value %= rhs;
+        return copy;
     }
 
     tagged_integer&
@@ -192,7 +437,14 @@ public:
     }
 
     explicit
+    constexpr
     operator Int() const noexcept
+    {
+        return m_value;
+    }
+
+    constexpr
+    Int value() const noexcept
     {
         return m_value;
     }
@@ -219,7 +471,108 @@ public:
     {
         return std::to_string(t.m_value);
     }
+
+    /** Return the sign of the value */
+    constexpr
+    int
+    signum() const noexcept
+    {
+        return (m_value < 0) ? -1 : (m_value ? 1 : 0);
+    }
 };
+
+template <class Int, class Tag,
+    class OtherInt,
+    class = typename std::enable_if<
+        std::is_integral<OtherInt>::value>>
+tagged_integer<Int, Tag>
+operator*(OtherInt const& lhs, tagged_integer<Int, Tag> const& rhs) noexcept
+{
+    return rhs * lhs;
+}
+
+template <class Int, class Tag,
+    class OtherInt,
+    class = typename std::enable_if<
+        std::is_integral<OtherInt>::value &&
+        sizeof(OtherInt) <= sizeof(Int)>::type>
+tagged_integer<Int, Tag>
+operator+(OtherInt const& lhs, tagged_integer<Int, Tag> const& rhs) noexcept
+{
+    return rhs + lhs;
+}
+
+template <class Int, class Tag,
+    class OtherInt,
+    class = typename std::enable_if<
+        std::is_integral<OtherInt>::value &&
+        sizeof(OtherInt) <= sizeof(Int)>::type>
+tagged_integer<Int, Tag>
+operator-(OtherInt const& lhs, tagged_integer<Int, Tag> const& rhs) noexcept
+{
+    // Just in case Int is unsigned, do straight math
+    return tagged_integer<Int, Tag>(lhs - rhs.value());
+}
+
+template <class Int, class Tag,
+    class OtherInt,
+    class = typename std::enable_if<
+        std::is_integral<OtherInt>::value>>
+bool
+operator==(OtherInt const& lhs, tagged_integer<Int, Tag> const& rhs) noexcept
+{
+    return rhs == lhs;
+}
+
+template <class Int, class Tag,
+    class OtherInt,
+    class = typename std::enable_if<
+        std::is_integral<OtherInt>::value>>
+bool
+operator!=(OtherInt const& lhs, tagged_integer<Int, Tag> const& rhs) noexcept
+{
+    return rhs != lhs;
+}
+
+template <class Int, class Tag,
+    class OtherInt,
+    class = typename std::enable_if<
+        std::is_integral<OtherInt>::value>>
+bool
+operator<(OtherInt const& lhs, tagged_integer<Int, Tag> const& rhs) noexcept
+{
+    return rhs > lhs;
+}
+
+template <class Int, class Tag,
+    class OtherInt,
+    class = typename std::enable_if<
+        std::is_integral<OtherInt>::value>>
+bool
+operator<=(OtherInt const& lhs, tagged_integer<Int, Tag> const& rhs) noexcept
+{
+    return rhs >= lhs;
+}
+
+template <class Int, class Tag,
+    class OtherInt,
+    class = typename std::enable_if<
+        std::is_integral<OtherInt>::value>>
+bool
+operator>(OtherInt const& lhs, tagged_integer<Int, Tag> const& rhs) noexcept
+{
+    return rhs < lhs;
+}
+
+template <class Int, class Tag,
+    class OtherInt,
+    class = typename std::enable_if<
+        std::is_integral<OtherInt>::value>>
+bool
+operator>=(OtherInt const& lhs, tagged_integer<Int, Tag> const& rhs) noexcept
+{
+    return rhs <= lhs;
+}
 
 } // ripple
 
