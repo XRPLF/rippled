@@ -146,7 +146,7 @@ public:
 
     // Peer networking parameters
     bool                        PEER_PRIVATE = false;           // True to ask peers not to relay current IP.
-    int                         PEERS_MAX = 0;
+    std::size_t                 PEERS_MAX = 0;
 
     std::chrono::seconds        WEBSOCKET_PING_FREQ = std::chrono::minutes {5};
 

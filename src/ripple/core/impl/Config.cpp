@@ -314,7 +314,7 @@ void Config::loadFromString (std::string const& fileContents)
         PEER_PRIVATE = beast::lexicalCastThrow <bool> (strTemp);
 
     if (getSingleSection (secConfig, SECTION_PEERS_MAX, strTemp, j_))
-        PEERS_MAX = std::max (0, beast::lexicalCastThrow <int> (strTemp));
+        PEERS_MAX = beast::lexicalCastThrow <std::size_t> (strTemp);
 
     if (getSingleSection (secConfig, SECTION_NODE_SIZE, strTemp, j_))
     {
@@ -360,7 +360,7 @@ void Config::loadFromString (std::string const& fileContents)
             "and [" SECTION_VALIDATOR_TOKEN "] config sections");
 
     if (getSingleSection (secConfig, SECTION_NETWORK_QUORUM, strTemp, j_))
-        NETWORK_QUORUM      = beast::lexicalCastThrow <std::size_t> (strTemp);
+        NETWORK_QUORUM      = beast::lexicalCastThrow<std::size_t>(strTemp);
 
     if (getSingleSection (secConfig, SECTION_FEE_ACCOUNT_RESERVE, strTemp, j_))
         FEE_ACCOUNT_RESERVE = beast::lexicalCastThrow <std::uint64_t> (strTemp);
@@ -540,12 +540,22 @@ void Config::loadFromString (std::string const& fileContents)
         }
     }
 
-    // This doesn't properly belong here:
-    if (NETWORK_QUORUM > PEERS_MAX)
+    // This doesn't properly belong here, but check to make sure that the
+    // value specified for network_quorum is achievable:
     {
-        Throw<std::runtime_error>(
-            "The minimum number of required peers (network_quorum) exceeds "
-            "the maximum number of allowed peers (peers_max)");
+        auto pm = PEERS_MAX;
+
+        // FIXME this apparently magic value is actually defined as a constant
+        //       elsewhere (see defaultMaxPeers) but we handle this check here.
+        if (pm == 0)
+            pm = 21;
+
+        if (NETWORK_QUORUM > pm)
+        {
+            Throw<std::runtime_error>(
+                "The minimum number of required peers (network_quorum) exceeds "
+                "the maximum number of allowed peers (peers_max)");
+        }
     }
 }
 
