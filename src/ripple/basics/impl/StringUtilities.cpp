@@ -100,9 +100,9 @@ bool parseUrl (parsedURL& pUrl, std::string const& strUrl)
         // `"//" authority path-abempty`.
         "//"
         // optional userinfo
-        "(?:([^/]*?)(?::([^/]*?))?@)?"
+        "(?:([^[.[.][.].]:/?#@]*?)(?::([^[.[.][.].]:/?#@]*?))?@)?"
         // optional host
-        "([^/]*?)"
+        "((?:\\[[[:digit:]:.]+\\])|(?:[^[.[.][.].]:/?#@]*?))"
         // optional port
         "(?::([[:digit:]]+))?"
         // optional path
@@ -110,7 +110,12 @@ bool parseUrl (parsedURL& pUrl, std::string const& strUrl)
         "\\s*?\\'");
     boost::smatch smMatch;
 
-    bool bMatch = boost::regex_match (strUrl, smMatch, reUrl); // Match status code.
+    bool bMatch = false;
+    try {
+      bMatch = boost::regex_match (strUrl, smMatch, reUrl); // Match status code.
+    } catch (...) {
+      return false;
+    }
 
     if (bMatch)
     {

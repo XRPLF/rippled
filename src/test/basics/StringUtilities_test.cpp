@@ -259,6 +259,15 @@ public:
             BEAST_EXPECT(! parseUrl (pUrl, "://"));
             BEAST_EXPECT(! parseUrl (pUrl, ":///"));
         }
+
+        {
+          std::string strUrl("s://");
+          for (size_t i = 0; i < 8192; i++) {
+            strUrl += ":";
+          }
+          parsedURL pUrl;
+          BEAST_EXPECT(! parseUrl (pUrl, strUrl));
+        }
     }
 
     void testToString ()
