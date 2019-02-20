@@ -28,6 +28,7 @@
 #include <test/rpc/AmendmentBlocked_test.cpp>
 #include <test/rpc/Book_test.cpp>
 #include <test/rpc/DepositAuthorized_test.cpp>
+#include <test/rpc/DeliveredAmount_test.cpp>
 #include <test/rpc/Feature_test.cpp>
 #include <test/rpc/GatewayBalances_test.cpp>
 #include <test/rpc/GetCounts_test.cpp>

@@ -53,6 +53,7 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/resource/ResourceManager.h>
+#include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/utility/rngfill.h>
@@ -1963,9 +1964,10 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
             }
 
             if (txn)
-                ret.emplace_back (txn, std::make_shared<TxMeta> (
-                    txn->getID (), txn->getLedger (), txnMeta,
-                        app_.journal("TxMeta")));
+                ret.emplace_back(
+                    txn,
+                    std::make_shared<TxMeta>(
+                        txn->getID(), txn->getLedger(), txnMeta));
         }
     }
 
@@ -2556,9 +2558,16 @@ void NetworkOPsImp::pubValidatedTransaction (
     std::shared_ptr<ReadView const> const& alAccepted,
     const AcceptedLedgerTx& alTx)
 {
+    std::shared_ptr<STTx const> stTxn = alTx.getTxn();
     Json::Value jvObj = transJson (
-        *alTx.getTxn (), alTx.getResult (), true, alAccepted);
-    jvObj[jss::meta] = alTx.getMeta ()->getJson (0);
+        *stTxn, alTx.getResult (), true, alAccepted);
+
+    if (auto const txMeta = alTx.getMeta())
+    {
+        jvObj[jss::meta] = txMeta->getJson(0);
+        RPC::insertDeliveredAmount(
+            jvObj[jss::meta], *alAccepted, stTxn, *txMeta);
+    }
 
     {
         ScopedLockType sl (mSubLock);
@@ -2666,11 +2675,19 @@ void NetworkOPsImp::pubAccountTransaction (
 
     if (!notify.empty ())
     {
+        std::shared_ptr<STTx const> stTxn = alTx.getTxn();
         Json::Value jvObj = transJson (
-            *alTx.getTxn (), alTx.getResult (), bAccepted, lpCurrent);
+            *stTxn, alTx.getResult (), bAccepted, lpCurrent);
 
         if (alTx.isApplied ())
-            jvObj[jss::meta] = alTx.getMeta ()->getJson (0);
+        {
+            if (auto const txMeta = alTx.getMeta())
+            {
+                jvObj[jss::meta] = txMeta->getJson(0);
+                RPC::insertDeliveredAmount(
+                    jvObj[jss::meta], *lpCurrent, stTxn, *txMeta);
+            }
+        }
 
         for (InfoSub::ref isrListener : notify)
             isrListener->send (jvObj, true);

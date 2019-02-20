@@ -86,10 +86,6 @@ lookupLedger (std::shared_ptr<ReadView const>&, Context&, Json::Value& result);
 hash_set <AccountID>
 parseAccountIds(Json::Value const& jvArray);
 
-void
-addPaymentDeliveredAmount(Json::Value&, Context&,
-    std::shared_ptr<Transaction>, TxMeta::pointer);
-
 /** Inject JSON describing ledger entry
 
     Effects:

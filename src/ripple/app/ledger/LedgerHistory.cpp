@@ -170,13 +170,13 @@ log_metadata_difference(
     uint256 const& tx,
     beast::Journal j)
 {
-    auto getMeta = [j](ReadView const& ledger,
+    auto getMeta = [](ReadView const& ledger,
         uint256 const& txID) -> std::shared_ptr<TxMeta>
     {
         auto meta = ledger.txRead(txID).second;
         if (!meta)
             return {};
-        return std::make_shared<TxMeta> (txID, ledger.seq(), *meta, j);
+        return std::make_shared<TxMeta> (txID, ledger.seq(), *meta);
     };
 
     auto validMetaData = getMeta (validLedger, tx);
