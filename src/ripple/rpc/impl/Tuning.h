@@ -33,48 +33,48 @@ struct LimitRange {
 };
 
 /** Limits for the account_lines command. */
-static LimitRange const accountLines = {10, 200, 400};
+static LimitRange constexpr accountLines = {10, 200, 400};
 
 /** Limits for the account_channels command. */
-static LimitRange const accountChannels = {10, 200, 400};
+static LimitRange constexpr accountChannels = {10, 200, 400};
 
 /** Limits for the account_objects command. */
-static LimitRange const accountObjects = {10, 200, 400};
+static LimitRange constexpr accountObjects = {10, 200, 400};
 
 /** Limits for the account_offers command. */
-static LimitRange const accountOffers = {10, 200, 400};
+static LimitRange constexpr accountOffers = {10, 200, 400};
 
 /** Limits for the book_offers command. */
-static LimitRange const bookOffers = {0, 300, 400};
+static LimitRange constexpr bookOffers = {0, 300, 400};
 
 /** Limits for the no_ripple_check command. */
-static LimitRange const noRippleCheck = {10, 300, 400};
+static LimitRange constexpr noRippleCheck = {10, 300, 400};
 
-static int const defaultAutoFillFeeMultiplier = 10;
-static int const defaultAutoFillFeeDivisor = 1;
-static int const maxPathfindsInProgress = 2;
-static int const maxPathfindJobCount = 50;
-static int const maxJobQueueClients = 500;
+static int constexpr defaultAutoFillFeeMultiplier = 10;
+static int constexpr defaultAutoFillFeeDivisor = 1;
+static int constexpr maxPathfindsInProgress = 2;
+static int constexpr maxPathfindJobCount = 50;
+static int constexpr maxJobQueueClients = 500;
 auto constexpr maxValidatedLedgerAge = std::chrono::minutes {2};
-static int const maxRequestSize = 1000000;
+static int constexpr maxRequestSize = 1000000;
 
 /** Maximum number of pages in one response from a binary LedgerData request. */
-static int const binaryPageLength = 2048;
+static int constexpr binaryPageLength = 2048;
 
 /** Maximum number of pages in one response from a Json LedgerData request. */
-static int const jsonPageLength = 256;
+static int constexpr jsonPageLength = 256;
 
 /** Maximum number of pages in a LedgerData response. */
-inline int pageLength(bool isBinary)
+inline int constexpr pageLength(bool isBinary)
 {
     return isBinary ? binaryPageLength : jsonPageLength;
 }
 
 /** Maximum number of source currencies allowed in a path find request. */
-static int const max_src_cur = 18;
+static int constexpr max_src_cur = 18;
 
 /** Maximum number of auto source currencies in a path find request. */
-static int const max_auto_src_cur = 88;
+static int constexpr max_auto_src_cur = 88;
 
 } // Tuning
 /** @} */
