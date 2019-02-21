@@ -556,6 +556,11 @@ void Config::loadFromString (std::string const& fileContents)
                 "The minimum number of required peers (network_quorum) exceeds "
                 "the maximum number of allowed peers (peers_max)");
         }
+
+        if (NETWORK_QUORUM == 0)
+            Throw<std::runtime_error> (
+                "The minimum number of required peers (network_quorum) must be "
+                "non-zero.");
     }
 }
 
