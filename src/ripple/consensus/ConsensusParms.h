@@ -82,6 +82,15 @@ struct ConsensusParms
     std::chrono::milliseconds ledgerMIN_CONSENSUS =
         std::chrono::milliseconds {1950};
 
+    /** The maximum amount of time to spend pausing for laggards.
+     *
+     *  This should be sufficiently less than validationFRESHNESS so that
+     *  validators don't appear to be offline that are merely waiting for
+     *  laggards.
+     */
+    std::chrono::milliseconds ledgerMAX_CONSENSUS =
+        std::chrono::seconds {10};
+
     //! Minimum number of seconds to wait to ensure others have computed the LCL
     std::chrono::milliseconds ledgerMIN_CLOSE = std::chrono::seconds {2};
 

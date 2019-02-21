@@ -248,6 +248,13 @@ public:
 
     std::size_t getFetchPackCacheSize () const;
 
+    //! Whether we have ever fully validated a ledger.
+    bool
+    haveValidated()
+    {
+        return !mValidLedger.empty();
+    }
+
 private:
     using ScopedLockType = std::lock_guard <std::recursive_mutex>;
     using ScopedUnlockType = GenericScopedUnlock <std::recursive_mutex>;
@@ -329,9 +336,6 @@ private:
     RangeSet<std::uint32_t> mCompleteLedgers;
 
     std::unique_ptr <detail::LedgerCleaner> mLedgerCleaner;
-
-    uint256 mLastValidateHash;
-    std::uint32_t mLastValidateSeq {0};
 
     // Publish thread is running.
     bool                        mAdvanceThread {false};
