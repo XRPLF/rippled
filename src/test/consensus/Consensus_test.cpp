@@ -996,6 +996,125 @@ public:
         }
     }
 
+    // Helper collector for testPauseForLaggards
+    // This will remove the ledgerAccept delay used to
+    // initially create the slow vs. fast validator groups.
+    struct UndoDelay
+    {
+        csf::PeerGroup& g;
+
+        UndoDelay(csf::PeerGroup& a) : g(a)
+        {
+        }
+
+        template <class E>
+        void
+        on(csf::PeerID, csf::SimTime, E const&)
+        {
+        }
+
+        void
+        on(csf::PeerID who, csf::SimTime, csf::AcceptLedger const& e)
+        {
+            for (csf::Peer* p : g)
+            {
+                if (p->id == who)
+                    p->delays.ledgerAccept = std::chrono::seconds{0};
+            }
+        }
+    };
+
+    void
+    testPauseForLaggards()
+    {
+        using namespace csf;
+        using namespace std::chrono;
+
+        // Test that validators that jump ahead of the network slow
+        // down.
+
+        // We engineer the following validated ledger history scenario:
+        //
+        //  / --> B1 --> C1 --> ... -> G1  "ahead"
+        // A
+        //  \ --> B2 --> C2 "behind"
+        //
+        // After validating a common ledger A, a set of "behind" validators
+        // briefly run slower and validate the lower chain of ledgers.
+        // The "ahead" validators run normal speed and run ahead validating the
+        // upper chain of ledgers.
+        //
+        // Due to the uncommited support definition of the preferred branch
+        // protocol, even if the "behind" validators are a majority, the "ahead"
+        // validators cannot jump to the proper branch until the "behind"
+        // validators catch up to the same sequence number. For this test to
+        // succeed, the ahead validators need to briefly slow down consensus.
+
+        ConsensusParms const parms{};
+        Sim sim;
+        SimDuration delay =
+            date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+
+        PeerGroup behind = sim.createGroup(3);
+        PeerGroup ahead = sim.createGroup(2);
+        PeerGroup network = ahead + behind;
+
+        hash_set<Peer::NodeKey_t> trustedKeys;
+        for (Peer* p : network)
+            trustedKeys.insert(p->key);
+        for (Peer* p : network)
+            p->trustedKeys = trustedKeys;
+
+        network.trustAndConnect(network, delay);
+
+        // Initial seed round to set prior state
+        sim.run(1);
+
+        // Have the "behind" group initially take a really long time to
+        // accept a ledger after ending deliberation
+        for (Peer* p : behind)
+            p->delays.ledgerAccept = 20s;
+
+        // Use the collector to revert the delay after the single
+        // slow ledger is generated
+        UndoDelay undoDelay{behind};
+        sim.collectors.add(undoDelay);
+
+#if 0
+        // Have all beast::journal output printed to stdout
+        for (Peer* p : network)
+            p->sink.threshold(beast::severities::kAll);
+
+        // Print ledger accept and fully validated events to stdout
+        StreamCollector sc{std::cout};
+        sim.collectors.add(sc);
+#endif
+        // Run the simulation for 100 seconds of simulation time with
+        std::chrono::nanoseconds const simDuration = 100s;
+
+        // Simulate clients submitting 1 tx every 5 seconds to a random
+        // validator
+        Rate const rate{1, 5s};
+        auto peerSelector = makeSelector(
+            network.begin(),
+            network.end(),
+            std::vector<double>(network.size(), 1.),
+            sim.rng);
+        auto txSubmitter = makeSubmitter(
+            ConstantDistribution{rate.inv()},
+            sim.scheduler.now(),
+            sim.scheduler.now() + simDuration,
+            peerSelector,
+            sim.scheduler,
+            sim.rng);
+
+        // Run simulation
+        sim.run(simDuration);
+
+        // Verify that the network recovered
+        BEAST_EXPECT(sim.synchronized());
+    }
+
     void
     run() override
     {
@@ -1011,6 +1130,7 @@ public:
         testFork();
         testHubNetwork();
         testPreferredByBranch();
+        testPauseForLaggards();
     }
 };
 

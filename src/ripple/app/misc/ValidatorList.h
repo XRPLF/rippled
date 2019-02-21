@@ -357,6 +357,19 @@ public:
     Json::Value
     getJson() const;
 
+    using QuorumKeys = std::pair<std::size_t const, hash_set<PublicKey>>;
+    /** Get the quorum and all of the trusted keys.
+     *
+     * @return quorum and keys.
+     */
+    QuorumKeys
+    getQuorumKeys() const
+    {
+        std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+        return {quorum_, trustedKeys_};
+    }
+
+
 private:
     /** Check response for trusted valid published list
 

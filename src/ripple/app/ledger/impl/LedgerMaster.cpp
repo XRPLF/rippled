@@ -864,9 +864,6 @@ LedgerMaster::checkAccept (
         << "Advancing accepted ledger to " << ledger->info().seq
         << " with >= " << minVal << " validations";
 
-    mLastValidateHash = ledger->info().hash;
-    mLastValidateSeq = ledger->info().seq;
-
     ledger->setValidated();
     ledger->setFull();
     setValidLedger(ledger);

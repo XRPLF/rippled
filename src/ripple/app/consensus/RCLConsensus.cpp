@@ -919,6 +919,37 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
     return validating_ && synced;
 }
 
+bool
+RCLConsensus::Adaptor::haveValidated() const
+{
+    return ledgerMaster_.haveValidated();
+}
+
+LedgerIndex
+RCLConsensus::Adaptor::getValidLedgerIndex() const
+{
+    return ledgerMaster_.getValidLedgerIndex();
+}
+
+std::pair<std::size_t, hash_set<RCLConsensus::Adaptor::NodeKey_t>>
+RCLConsensus::Adaptor::getQuorumKeys() const
+{
+    return app_.validators().getQuorumKeys();
+}
+
+std::size_t
+RCLConsensus::Adaptor::laggards(Ledger_t::Seq const seq,
+    hash_set<RCLConsensus::Adaptor::NodeKey_t>& trustedKeys) const
+{
+    return app_.getValidations().laggards(seq, trustedKeys);
+}
+
+bool
+RCLConsensus::Adaptor::validator() const
+{
+    return !valPublic_.empty();
+}
+
 void
 RCLConsensus::startRound(
     NetClock::time_point const& now,

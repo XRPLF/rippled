@@ -85,6 +85,7 @@ class RCLConsensus
     public:
         using Ledger_t = RCLCxLedger;
         using NodeID_t = NodeID;
+        using NodeKey_t = PublicKey;
         using TxSet_t = RCLTxSet;
         using PeerPosition_t = RCLCxPeerPos;
 
@@ -130,6 +131,26 @@ class RCLConsensus
         */
         bool
         preStartRound(RCLCxLedger const & prevLedger);
+
+        bool
+        haveValidated() const;
+
+        LedgerIndex
+        getValidLedgerIndex() const;
+
+        std::pair<std::size_t, hash_set<NodeKey_t>>
+        getQuorumKeys() const;
+
+        std::size_t
+        laggards(Ledger_t::Seq const seq,
+            hash_set<NodeKey_t >& trustedKeys) const;
+
+        /** Whether I am a validator.
+         *
+         * @return whether I am a validator.
+         */
+        bool
+        validator() const;
 
         /** Consensus simulation parameters
          */
