@@ -366,7 +366,6 @@ add_library (opts INTERFACE)
 add_library (Ripple::opts ALIAS opts)
 target_compile_definitions (opts
   INTERFACE
-    BOOST_ASIO_HAS_STD_ARRAY
     BOOST_ASIO_DISABLE_HANDLER_TYPE_REQUIREMENTS
     $<$<BOOL:${boost_show_deprecated}>:
       BOOST_ASIO_NO_DEPRECATED
@@ -566,6 +565,15 @@ target_link_libraries (ripple_boost
     Boost::serialization
     Boost::system
     Boost::thread)
+
+# workaround for xcode 10.2 and boost < 1.69
+# once we require Boost 1.69 or higher, this can be removed
+# see:  https://github.com/boostorg/asio/commit/43874d5
+if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND
+    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0.1.10010043 AND
+    Boost_VERSION LESS 106900)
+  target_compile_definitions (opts INTERFACE BOOST_ASIO_HAS_STD_STRING_VIEW)
+endif ()
 
 #[===================================================================[
    NIH dep: openssl
