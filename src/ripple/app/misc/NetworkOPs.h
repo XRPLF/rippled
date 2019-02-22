@@ -105,7 +105,7 @@ public:
     //
 
     virtual OperatingMode getOperatingMode () const = 0;
-    virtual std::string strOperatingMode () const = 0;
+    virtual std::string strOperatingMode (bool admin = false) const = 0;
 
     //--------------------------------------------------------------------------
     //

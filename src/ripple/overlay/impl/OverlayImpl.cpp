@@ -939,6 +939,7 @@ OverlayImpl::getServerInfo()
     server_info.removeMember(jss::hostid);
     server_info.removeMember(jss::load_factor_fee_escalation);
     server_info.removeMember(jss::load_factor_fee_queue);
+    server_info.removeMember(jss::validation_quorum);
 
     if (server_info.isMember(jss::validated_ledger))
     {
@@ -974,6 +975,8 @@ OverlayImpl::getUnlInfo()
     }
 
     validators.removeMember(jss::signing_keys);
+    validators.removeMember(jss::trusted_validator_keys);
+    validators.removeMember(jss::validation_quorum);
 
     Json::Value validatorSites = app_.validatorSites().getJson();
 
@@ -1005,7 +1008,7 @@ OverlayImpl::processRequest (http_request_type const& req,
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
-    msg.body()["version"] = Json::Value(1u);
+    msg.body()["version"] = Json::Value(2u);
 
     if (setup_.crawlOptions & CrawlOptions::Overlay)
     {

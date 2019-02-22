@@ -237,7 +237,7 @@ public:
     {
         return mMode;
     }
-    std::string strOperatingMode () const override;
+    std::string strOperatingMode (bool admin = false) const override;
 
     //
     // Transaction operations.
@@ -824,9 +824,9 @@ void NetworkOPsImp::processClusterTimer ()
 //------------------------------------------------------------------------------
 
 
-std::string NetworkOPsImp::strOperatingMode () const
+std::string NetworkOPsImp::strOperatingMode (bool admin) const
 {
-    if (mMode == omFULL)
+    if (mMode == omFULL && admin)
     {
         auto const mode = mConsensus.mode();
         if (mode != ConsensusMode::wrongLedger)
@@ -2103,7 +2103,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin, bool counters)
 
     info [jss::build_version] = BuildInfo::getVersionString ();
 
-    info [jss::server_state] = strOperatingMode ();
+    info [jss::server_state] = strOperatingMode (admin);
 
     info [jss::time] = to_string(date::floor<std::chrono::microseconds>(
         std::chrono::system_clock::now()));
@@ -2860,7 +2860,7 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult,
 
     auto const& feeTrack = app_.getFeeTrack();
     jvResult[jss::random]          = to_string (uRandom);
-    jvResult[jss::server_status]   = strOperatingMode ();
+    jvResult[jss::server_status]   = strOperatingMode (admin);
     jvResult[jss::load_base]       = feeTrack.getLoadBase ();
     jvResult[jss::load_factor]     = feeTrack.getLoadFactor ();
     jvResult [jss::hostid]         = getHostId (admin);
