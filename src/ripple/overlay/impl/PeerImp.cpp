@@ -39,6 +39,7 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/digest.h>
 
+#include <boost/algorithm/clamp.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string.hpp>
 #include <algorithm>
@@ -1527,40 +1528,34 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
     if (set.has_hops() && ! slot_->cluster())
         set.set_hops(set.hops() + 1);
 
-    auto const type = publicKeyType(
-        makeSlice(set.nodepubkey()));
+    auto const sig = makeSlice(set.signature());
 
-    // VFALCO Magic numbers are bad
-    // Roll this into a validation function
-    if ((! type) ||
-        (set.currenttxhash ().size () != 32) ||
-        (set.signature ().size () < 56) ||
-        (set.signature ().size () > 128)
-    )
+    // Preliminary check for the validity of the signature: A DER encoded
+    // signature can't be longer than 72 bytes.
+    if ((boost::algorithm::clamp(sig.size(), 64, 72) != sig.size()) ||
+        (publicKeyType(makeSlice(set.nodepubkey())) != KeyType::secp256k1))
     {
         JLOG(p_journal_.warn()) << "Proposal: malformed";
         fee_ = Resource::feeInvalidSignature;
         return;
     }
 
-    if (set.previousledger ().size () != 32)
+    if (set.currenttxhash().size() != 32 || set.previousledger().size() != 32)
     {
         JLOG(p_journal_.warn()) << "Proposal: malformed";
         fee_ = Resource::feeInvalidRequest;
         return;
     }
 
-    PublicKey const publicKey (makeSlice(set.nodepubkey()));
+    auto const proposeHash = uint256::fromVoid(set.currenttxhash().data());
+    auto const prevLedger = uint256::fromVoid(set.previousledger().data());
+
+    PublicKey const publicKey {makeSlice(set.nodepubkey())};
     NetClock::time_point const closeTime { NetClock::duration{set.closetime()} };
-    Slice signature (set.signature().data(), set.signature ().size());
 
-    uint256 proposeHash, prevLedger;
-    memcpy (proposeHash.begin (), set.currenttxhash ().data (), 32);
-    memcpy (prevLedger.begin (), set.previousledger ().data (), 32);
-
-    uint256 suppression = proposalUniqueId (
+    uint256 const suppression = proposalUniqueId (
         proposeHash, prevLedger, set.proposeseq(),
-        closeTime, publicKey.slice(), signature);
+        closeTime, publicKey.slice(), sig);
 
     if (! app_.getHashRouter ().addSuppressionPeer (suppression, id_))
     {
@@ -1590,7 +1585,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
 
     auto proposal = RCLCxPeerPos(
         publicKey,
-        signature,
+        sig,
         suppression,
         RCLCxPeerPos::Proposal{
             prevLedger,
