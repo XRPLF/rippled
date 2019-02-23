@@ -14,6 +14,29 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 1.2.1
+
+The `rippled` 1.2.1 release introduces several fixes including a change in the
+information reported via the enhanced crawl functionality introduced in the
+1.2.0 release, a fix for a potential race condition when processing a status
+change message for a peer, and for a technical flaw that could cause a server
+to not properly detect that it had lost all its peers.
+
+The release also adds the `delivered_amount` field to more responses to simplify
+the handling of payment or check cashing transactions.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- Fix a race condition during `TMStatusChange` handling (c8249981)
+- Properly transition state to disconnected (9d027394)
+- Display validator status only in response to admin requests (2d6a518a)
+- Add the `delivered_amount` to more RPC commands (f2756914)
+
+
 ## Version 1.2.0
 
 The `rippled` 1.2.0 release introduces the MultisignReserve Amendment, which
