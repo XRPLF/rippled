@@ -1663,15 +1663,13 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
 
     if (m->has_firstseq () && m->has_lastseq())
     {
+        std::lock_guard<std::mutex> sl (recentLock_);
+
         minLedger_ = m->firstseq ();
         maxLedger_ = m->lastseq ();
 
-        // VFALCO Is this workaround still needed?
-        // Work around some servers that report sequences incorrectly
-        if (minLedger_ == 0)
-            maxLedger_ = 0;
-        if (maxLedger_ == 0)
-            minLedger_ = 0;
+        if ((maxLedger_ < minLedger_) || (minLedger_ == 0) || (maxLedger_ == 0))
+            minLedger_ = maxLedger_ = 0;
     }
 
     if (m->has_ledgerseq() &&
