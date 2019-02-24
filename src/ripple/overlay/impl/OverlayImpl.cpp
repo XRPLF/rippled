@@ -481,8 +481,17 @@ OverlayImpl::onPrepare()
     auto const port = serverHandler_.setup().overlay.port;
 
     config.peerPrivate = app_.config().PEER_PRIVATE;
-    config.wantIncoming =
-        (! config.peerPrivate) && (port != 0);
+
+    // Servers with peer privacy don't want to allow incoming connections
+    config.wantIncoming = (! config.peerPrivate) && (port != 0);
+
+    // This will cause servers configured as validators to request that
+    // peers they connect to never report their IP address. We set this
+    // after we set the 'wantIncoming' because we want a "soft" version
+    // of peer privacy unless the operator explicitly asks for it.
+    if (!app_.getValidationPublicKey().empty())
+        config.peerPrivate = true;
+
     // if it's a private peer or we are running as standalone
     // automatic connections would defeat the purpose.
     config.autoConnect =
