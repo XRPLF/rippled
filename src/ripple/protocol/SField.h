@@ -102,17 +102,8 @@ field_code(int id, int index)
 /** Identifies fields.
 
     Fields are necessary to tag data in signed transactions so that
-    the binary format of the transaction can be canonicalized.
-
-    There are two categories of these fields:
-
-    1.  Those that are created at compile time.
-    2.  Those that are created at run time.
-
-    Both are always const.  Category 1 can only be created in FieldNames.cpp.
-    This is enforced at compile time.  Category 2 can only be created by
-    calling getField with an as yet unused fieldType and fieldValue (or the
-    equivalent fieldCode).
+    the binary format of the transaction can be canonicalized.  All
+    SFields are created at compile time.
 
     Each SField, once constructed, lives until program termination, and there
     is only one instance per fieldType/fieldValue pair which serves the entire
@@ -154,7 +145,7 @@ public:
     SField& operator=(SField&&) = delete;
 
 public:
-    struct private_access_tag_t;         // public, but still an implementation detail
+    struct private_access_tag_t;   // public, but still an implementation detail
 
     // These constructors can only be called from SField.cpp
     SField (private_access_tag_t, SerializedTypeID tid, int fv,

@@ -238,16 +238,10 @@ public:
         {
             // Try to put sfGeneric in an SOTemplate.
             SOTemplate elements;
-            bool genericFieldInSOTemplateThrowsException = false;
-            try
-            {
-                elements.push_back (SOElement (sfGeneric, SOE_REQUIRED));
-            }
-            catch (std::runtime_error const&)
-            {
-                genericFieldInSOTemplateThrowsException = true;
-            }
-            BEAST_EXPECT (genericFieldInSOTemplateThrowsException == true);
+            except<std::runtime_error>( [&]()
+                {
+                    elements.push_back (SOElement (sfGeneric, SOE_REQUIRED));
+                });
         }
 
         unexpected (sfInvalid.isUseful (), "sfInvalid must not be useful");
@@ -267,31 +261,19 @@ public:
         {
             // Try to put sfInvalid in an SOTemplate.
             SOTemplate elements;
-            bool invalidFieldInSOTemplateThrowsException = false;
-            try
-            {
-                elements.push_back (SOElement (sfInvalid, SOE_REQUIRED));
-            }
-            catch (std::runtime_error const&)
-            {
-                invalidFieldInSOTemplateThrowsException = true;
-            }
-            BEAST_EXPECT (invalidFieldInSOTemplateThrowsException == true);
+            except<std::runtime_error>( [&]()
+                {
+                    elements.push_back (SOElement (sfInvalid, SOE_REQUIRED));
+                });
         }
         {
             // Try to put the same SField into an SOTemplate twice.
             SOTemplate elements;
-            bool duplicateFieldInSOTemplateThrowsException = false;
             elements.push_back (SOElement (sfAccount, SOE_REQUIRED));
-            try
-            {
-                elements.push_back (SOElement (sfAccount, SOE_REQUIRED));
-            }
-            catch (std::runtime_error const&)
-            {
-                duplicateFieldInSOTemplateThrowsException = true;
-            }
-            BEAST_EXPECT (duplicateFieldInSOTemplateThrowsException == true);
+            except<std::runtime_error>( [&]()
+                {
+                    elements.push_back (SOElement (sfAccount, SOE_REQUIRED));
+                });
         }
 
         // Put a variety of SFields of different types in an SOTemplate.
