@@ -2063,7 +2063,7 @@ void ApplicationImp::addTxnSeqField ()
         }
         else
         {
-            TxMeta m (transID, 0, txnMeta, journal ("TxMeta"));
+            TxMeta m (transID, 0, txnMeta);
             txIDs.push_back (std::make_pair (transID, m.getIndex ()));
         }
 

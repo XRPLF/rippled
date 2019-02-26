@@ -21,6 +21,8 @@
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/date.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/DeliveredAmount.h>
 
 namespace ripple {
 
@@ -97,49 +99,63 @@ void fillJsonBinary(Object& json, bool closed, LedgerInfo const& info)
     }
 }
 
-Json::Value fillJsonTx (LedgerFill const& fill,
-    bool bBinary, bool bExpanded,
-        std::pair<std::shared_ptr<STTx const>,
-            std::shared_ptr<STObject const>> const i)
+Json::Value
+fillJsonTx(
+    LedgerFill const& fill,
+    bool bBinary,
+    bool bExpanded,
+    std::shared_ptr<STTx const> const& txn,
+    std::shared_ptr<STObject const> const& stMeta)
 {
-    if (! bExpanded)
+    if (!bExpanded)
+        return to_string(txn->getTransactionID());
+
+    Json::Value txJson{Json::objectValue};
+    auto const txnType = txn->getTxnType();
+    if (bBinary)
     {
-        return to_string(i.first->getTransactionID());
+        txJson[jss::tx_blob] = serializeHex(*txn);
+        if (stMeta)
+            txJson[jss::meta] = serializeHex(*stMeta);
     }
     else
     {
-        Json::Value txJson{ Json::objectValue };
-        if (bBinary)
+        copyFrom(txJson, txn->getJson(0));
+        if (stMeta)
         {
-            txJson[jss::tx_blob] = serializeHex(*i.first);
-            if (i.second)
-                txJson[jss::meta] = serializeHex(*i.second);
-        }
-        else
-        {
-            copyFrom(txJson, i.first->getJson(0));
-            if (i.second)
-                txJson[jss::metaData] = i.second->getJson(0);
-        }
-
-        if ((fill.options & LedgerFill::ownerFunds) &&
-            i.first->getTxnType() == ttOFFER_CREATE)
-        {
-            auto const account = i.first->getAccountID(sfAccount);
-            auto const amount = i.first->getFieldAmount(sfTakerGets);
-
-            // If the offer create is not self funded then add the
-            // owner balance
-            if (account != amount.getIssuer())
+            txJson[jss::metaData] = stMeta->getJson(0);
+            if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
             {
-                auto const ownerFunds = accountFunds(fill.ledger,
-                    account, amount, fhIGNORE_FREEZE,
-                    beast::Journal {beast::Journal::getNullSink()});
-                txJson[jss::owner_funds] = ownerFunds.getText ();
+                // Insert delivered amount
+                auto txMeta = std::make_shared<TxMeta>(
+                    txn->getTransactionID(), fill.ledger.seq(), *stMeta);
+                RPC::insertDeliveredAmount(
+                    txJson[jss::metaData], fill.ledger, txn, *txMeta);
             }
         }
-        return txJson;
     }
+
+    if ((fill.options & LedgerFill::ownerFunds) &&
+        txn->getTxnType() == ttOFFER_CREATE)
+    {
+        auto const account = txn->getAccountID(sfAccount);
+        auto const amount = txn->getFieldAmount(sfTakerGets);
+
+        // If the offer create is not self funded then add the
+        // owner balance
+        if (account != amount.getIssuer())
+        {
+            auto const ownerFunds = accountFunds(
+                fill.ledger,
+                account,
+                amount,
+                fhIGNORE_FREEZE,
+                beast::Journal{beast::Journal::getNullSink()});
+            txJson[jss::owner_funds] = ownerFunds.getText();
+        }
+    }
+
+    return txJson;
 }
 
 template <class Object>
@@ -153,7 +169,7 @@ void fillJsonTx (Object& json, LedgerFill const& fill)
     {
         for (auto& i: fill.ledger.txs)
         {
-            txns.append(fillJsonTx(fill, bBinary, bExpanded, i));
+            txns.append(fillJsonTx(fill, bBinary, bExpanded, i.first, i.second));
         }
     }
     catch (std::exception const&)
@@ -219,8 +235,7 @@ void fillJsonQueue(Object& json, LedgerFill const& fill)
         if (tx.lastResult)
             txJson["last_result"] = transToken(*tx.lastResult);
 
-        txJson[jss::tx] = fillJsonTx(fill, bBinary, bExpanded,
-            std::make_pair(tx.txn, nullptr));
+        txJson[jss::tx] = fillJsonTx(fill, bBinary, bExpanded, tx.txn, nullptr);
     }
 }
 

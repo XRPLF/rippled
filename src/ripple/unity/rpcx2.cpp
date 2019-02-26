@@ -50,6 +50,7 @@
 #include <ripple/rpc/handlers/ValidatorListSites.cpp>
 #include <ripple/rpc/handlers/WalletPropose.cpp>
 
+#include <ripple/rpc/impl/DeliveredAmount.cpp>
 #include <ripple/rpc/impl/Handler.cpp>
 #include <ripple/rpc/impl/LegacyPathFind.cpp>
 #include <ripple/rpc/impl/Role.cpp>

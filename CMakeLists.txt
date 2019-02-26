@@ -1998,6 +1998,7 @@ else ()
     src/ripple/rpc/handlers/ValidatorListSites.cpp
     src/ripple/rpc/handlers/Validators.cpp
     src/ripple/rpc/handlers/WalletPropose.cpp
+    src/ripple/rpc/impl/DeliveredAmount.cpp
     src/ripple/rpc/impl/Handler.cpp
     src/ripple/rpc/impl/LegacyPathFind.cpp
     src/ripple/rpc/impl/RPCHandler.cpp
@@ -2268,6 +2269,7 @@ else ()
     src/test/rpc/AmendmentBlocked_test.cpp
     src/test/rpc/Book_test.cpp
     src/test/rpc/DepositAuthorized_test.cpp
+    src/test/rpc/DeliveredAmount_test.cpp
     src/test/rpc/Feature_test.cpp
     src/test/rpc/GatewayBalances_test.cpp
     src/test/rpc/GetCounts_test.cpp

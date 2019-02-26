@@ -29,6 +29,7 @@
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/Role.h>
 
@@ -166,7 +167,7 @@ Json::Value doAccountTx (RPC::Context& context)
                 if (it.second)
                 {
                     auto meta = it.second->getJson (1);
-                    addPaymentDeliveredAmount (meta, context, it.first, it.second);
+                    insertDeliveredAmount (meta, context, it.first, *it.second);
                     jvObj[jss::meta] = std::move(meta);
 
                     std::uint32_t uLedgerIndex = it.second->getLgrSeq ();

@@ -26,6 +26,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
@@ -126,12 +127,12 @@ Json::Value doTx (RPC::Context& context)
             auto rawMeta = lgr->txRead (txn->getID()).second;
             if (rawMeta)
             {
-                auto txMeta = std::make_shared<TxMeta> (txn->getID (),
-                    lgr->seq (), *rawMeta, context.app.journal ("TxMeta"));
+                auto txMeta = std::make_shared<TxMeta>(
+                    txn->getID(), lgr->seq(), *rawMeta);
                 okay = true;
                 auto meta = txMeta->getJson (0);
-                addPaymentDeliveredAmount (meta, context, txn, txMeta);
-                ret[jss::meta] = meta;
+                insertDeliveredAmount (meta, context, txn, *txMeta);
+                ret[jss::meta] = std::move(meta);
             }
         }
 

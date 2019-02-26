@@ -116,7 +116,7 @@ ApplyStateTable::apply (OpenView& to,
     std::shared_ptr<Serializer> sMeta;
     if (!to.open())
     {
-        TxMeta meta(j);
+        TxMeta meta;
         // VFALCO Shouldn't TxMeta ctor do this?
         meta.init (tx.getTransactionID(), to.seq());
         if (deliver)

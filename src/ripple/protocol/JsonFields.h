@@ -140,7 +140,7 @@ JSS ( dbKBLedger );                 // out: getCounts
 JSS ( dbKBTotal );                  // out: getCounts
 JSS ( dbKBTransaction );            // out: getCounts
 JSS ( debug_signing );              // in: TransactionSign
-JSS ( delivered_amount );           // out: addPaymentDeliveredAmount
+JSS ( delivered_amount );           // out: insertDeliveredAmount
 JSS ( deposit_authorized );         // out: deposit_authorized
 JSS ( deposit_preauth );            // in: AccountObjects, LedgerData
 JSS ( deprecated );                 // out
