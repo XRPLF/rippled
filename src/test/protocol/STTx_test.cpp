@@ -1250,9 +1250,11 @@ public:
         {
             // Construct an SOTemplate to get the ball rolling on building
             // an STObject that can contain another STObject.
-            SOTemplate recurse;
-            recurse.push_back (SOElement {sfTransactionMetaData, SOE_OPTIONAL});
-            recurse.push_back (SOElement {sfTransactionHash, SOE_OPTIONAL});
+            SOTemplate const recurse
+                {
+                    { sfTransactionMetaData, soeOPTIONAL},
+                    { sfTransactionHash,     soeOPTIONAL},
+                };
 
             // Make an STObject that nests objects ten levels deep.  There's
             // a minimum transaction size we must meet, so include a hash256.
@@ -1312,10 +1314,12 @@ public:
 
             // Construct an SOTemplate to get the ball rolling on building
             // an STObject that can contain an STArray.
-            SOTemplate recurse;
-            recurse.push_back (SOElement {sfTransactionMetaData, SOE_OPTIONAL});
-            recurse.push_back (SOElement {sfTransactionHash, SOE_OPTIONAL});
-            recurse.push_back (SOElement {sfTemplate, SOE_OPTIONAL});
+            SOTemplate recurse
+                {
+                    { sfTransactionMetaData, soeOPTIONAL },
+                    { sfTransactionHash,     soeOPTIONAL },
+                    { sfTemplate,            soeOPTIONAL },
+                };
 
             // Make an STObject that nests ten levels deep alternating objects
             // and arrays.  Include a hash256 to meet the minimum transaction

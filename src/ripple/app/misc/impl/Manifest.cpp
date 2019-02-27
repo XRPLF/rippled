@@ -39,32 +39,30 @@ boost::optional<Manifest> deserializeManifest(Slice s)
     if (s.empty())
         return boost::none;
 
-    static SOTemplate const manifestFormat (
-        [](SOTemplate& t)
-        {
+    static SOTemplate const manifestFormat {
             // A manifest must include:
             // - the master public key
-            t.push_back (SOElement (sfPublicKey,       SOE_REQUIRED));
+            {sfPublicKey,       soeREQUIRED},
 
             // - a signature with that public key
-            t.push_back (SOElement (sfMasterSignature, SOE_REQUIRED));
+            {sfMasterSignature, soeREQUIRED},
 
             // - a sequence number
-            t.push_back (SOElement (sfSequence,        SOE_REQUIRED));
+            {sfSequence,        soeREQUIRED},
 
             // It may, optionally, contain:
             // - a version number which defaults to 0
-            t.push_back (SOElement (sfVersion,          SOE_DEFAULT));
+            {sfVersion,         soeDEFAULT},
 
             // - a domain name
-            t.push_back (SOElement (sfDomain,           SOE_OPTIONAL));
+            {sfDomain,          soeOPTIONAL},
 
             // - an ephemeral signing key that can be changed as necessary
-            t.push_back (SOElement (sfSigningPubKey,    SOE_OPTIONAL));
+            {sfSigningPubKey,   soeOPTIONAL},
 
             // - a signature using the ephemeral signing key, if it is present
-            t.push_back (SOElement (sfSignature,        SOE_OPTIONAL));
-        });
+            {sfSignature,       soeOPTIONAL},
+        };
 
     try
     {

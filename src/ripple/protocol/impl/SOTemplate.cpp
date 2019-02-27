@@ -21,44 +21,45 @@
 
 namespace ripple {
 
-void SOTemplate::push_back (SOElement const& r)
+SOTemplate::SOTemplate (
+    std::initializer_list<SOElement> uniqueFields,
+    std::initializer_list<SOElement> commonFields)
+    : indices_ (SField::getNumFields () + 1, -1) // Unmapped indices == -1
 {
-    // Ensure there is the enough space in the index mapping
-    // table for all possible fields.
-    //
-    if (mIndex.empty ())
+    // Add all SOElements.
+    elements_.reserve (uniqueFields.size() + commonFields.size());
+    elements_.assign (uniqueFields);
+    elements_.insert (elements_.end(), commonFields);
+
+    // Validate and index elements_.
+    for (std::size_t i = 0; i < elements_.size(); ++i)
     {
-        // Unmapped indices are initialized to -1
+        SField const& sField {elements_[i].sField()};
+
+        // Make sure the field's index is in range
         //
-        mIndex.resize (SField::getNumFields () + 1, -1);
+        if (sField.getNum() <= 0 || sField.getNum() >= indices_.size())
+            Throw<std::runtime_error> ("Invalid field index for SOTemplate.");
+
+        // Make sure that this field hasn't already been assigned
+        //
+        if (getIndex (sField) != -1)
+            Throw<std::runtime_error> ("Duplicate field index for SOTemplate.");
+
+        // Add the field to the index mapping table
+        //
+        indices_[sField.getNum ()] = i;
     }
-
-    // Make sure the field's index is in range
-    //
-    if (r.e_field.getNum() <= 0 || r.e_field.getNum() >= mIndex.size())
-        Throw<std::runtime_error> ("Invalid field index for SOTemplate.");
-
-    // Make sure that this field hasn't already been assigned
-    //
-    if (getIndex (r.e_field) != -1)
-        Throw<std::runtime_error> ("Duplicate field index for SOTemplate.");
-
-    // Add the field to the index mapping table
-    //
-    mIndex [r.e_field.getNum ()] = mTypes.size ();
-
-    // Append the new element.
-    //
-    mTypes.push_back (std::make_unique<SOElement const> (r));
 }
 
-int SOTemplate::getIndex (SField const& f) const
+int SOTemplate::getIndex (SField const& sField) const
 {
     // The mapping table should be large enough for any possible field
     //
-    assert (f.getNum () < mIndex.size ());
+    if (sField.getNum() <= 0 || sField.getNum() >= indices_.size())
+        Throw<std::runtime_error> ("Invalid field index for getIndex().");
 
-    return mIndex[f.getNum ()];
+    return indices_[sField.getNum()];
 }
 
 } // ripple

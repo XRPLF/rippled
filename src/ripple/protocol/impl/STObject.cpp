@@ -91,12 +91,12 @@ void STObject::set (const SOTemplate& type)
     v_.reserve(type.size());
     mType = &type;
 
-    for (auto const& elem : type.all())
+    for (auto const& elem : type)
     {
-        if (elem->flags != SOE_REQUIRED)
-            v_.emplace_back(detail::nonPresentObject, elem->e_field);
+        if (elem.style() != soeREQUIRED)
+            v_.emplace_back(detail::nonPresentObject, elem.sField());
         else
-            v_.emplace_back(detail::defaultObject, elem->e_field);
+            v_.emplace_back(detail::defaultObject, elem.sField());
     }
 }
 
@@ -114,16 +114,16 @@ void STObject::applyTemplate (const SOTemplate& type) noexcept (false)
     mType = &type;
     decltype(v_) v;
     v.reserve(type.size());
-    for (auto const& e : type.all())
+    for (auto const& e : type)
     {
         auto const iter = std::find_if(
             v_.begin(), v_.end(), [&](detail::STVar const& b)
-                { return b.get().getFName() == e->e_field; });
+                { return b.get().getFName() == e.sField(); });
         if (iter != v_.end())
         {
-            if ((e->flags == SOE_DEFAULT) && iter->get().isDefault())
+            if ((e.style() == soeDEFAULT) && iter->get().isDefault())
             {
-                throwFieldErr (e->e_field.fieldName,
+                throwFieldErr (e.sField().fieldName,
                     "may not be explicitly set to default.");
             }
             v.emplace_back(std::move(*iter));
@@ -131,12 +131,12 @@ void STObject::applyTemplate (const SOTemplate& type) noexcept (false)
         }
         else
         {
-            if (e->flags == SOE_REQUIRED)
+            if (e.style() == soeREQUIRED)
             {
-                throwFieldErr (e->e_field.fieldName,
+                throwFieldErr (e.sField().fieldName,
                     "is required but missing.");
             }
-            v.emplace_back(detail::nonPresentObject, e->e_field);
+            v.emplace_back(detail::nonPresentObject, e.sField());
         }
     }
     for (auto const& e : v_)

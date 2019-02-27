@@ -65,14 +65,12 @@ enum TxType
 class TxFormats : public KnownFormats <TxType>
 {
 private:
-    void addCommonFields (Item& item) override;
-
-public:
     /** Create the object.
-        This will load the object will all the known transaction formats.
+        This will load the object with all the known transaction formats.
     */
     TxFormats ();
 
+public:
     static TxFormats const& getInstance ();
 };
 

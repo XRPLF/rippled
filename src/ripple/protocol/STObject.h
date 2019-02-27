@@ -56,7 +56,7 @@ private:
             typename T::value_type;
 
         STObject* st_;
-        SOE_Flags style_;
+        SOEStyle style_;
         TypedField<T> const* f_;
 
         Proxy (Proxy const&) = default;
@@ -109,7 +109,7 @@ private:
 
         /** Returns `true` if the field is set.
 
-            Fields with SOE_DEFAULT and set to the
+            Fields with soeDEFAULT and set to the
             default value will return `true`
         */
         explicit operator bool() const noexcept;
@@ -672,7 +672,7 @@ STObject::Proxy<T>::Proxy (STObject* st, TypedField<T> const* f)
     }
     else
     {
-        style_ = SOE_INVALID;
+        style_ = soeINVALID;
     }
 }
 
@@ -684,7 +684,7 @@ STObject::Proxy<T>::value() const ->
     auto const t = find();
     if (t)
         return t->value();
-    if (style_ != SOE_DEFAULT)
+    if (style_ != soeDEFAULT)
         Throw<STObject::FieldErr> (
             "Missing field '" + this->f_->getName() + "'");
     return value_type{};
@@ -704,14 +704,14 @@ template <class U>
 void
 STObject::Proxy<T>::assign(U&& u)
 {
-    if (style_ == SOE_DEFAULT &&
+    if (style_ == soeDEFAULT &&
         u == value_type{})
     {
         st_->makeFieldAbsent(*f_);
         return;
     }
     T* t;
-    if (style_ == SOE_INVALID)
+    if (style_ == soeINVALID)
         t = dynamic_cast<T*>(
             st_->getPField(*f_, true));
     else
@@ -832,7 +832,7 @@ template <class T>
 bool
 STObject::OptionalProxy<T>::engaged() const noexcept
 {
-    return this->style_ == SOE_DEFAULT
+    return this->style_ == soeDEFAULT
         || this->find() != nullptr;
 }
 
@@ -840,11 +840,11 @@ template <class T>
 void
 STObject::OptionalProxy<T>::disengage()
 {
-    if (this->style_ == SOE_REQUIRED ||
-            this->style_ == SOE_DEFAULT)
+    if (this->style_ == soeREQUIRED ||
+            this->style_ == soeDEFAULT)
         Throw<STObject::FieldErr> (
             "Template field error '" + this->f_->getName() + "'");
-    if (this->style_ == SOE_INVALID)
+    if (this->style_ == soeINVALID)
         this->st_->delField(*this->f_);
     else
         this->st_->makeFieldAbsent(*this->f_);
@@ -878,10 +878,10 @@ STObject::operator[](TypedField<T> const& f) const
     {
         assert(mType);
         assert(b->getSType() == STI_NOTPRESENT);
-        if(mType->style(f) == SOE_OPTIONAL)
+        if(mType->style(f) == soeOPTIONAL)
             Throw<STObject::FieldErr> (
                 "Missing field '" + f.getName() + "'");
-        assert(mType->style(f) == SOE_DEFAULT);
+        assert(mType->style(f) == soeDEFAULT);
         // Handle the case where value_type is a
         // const reference, otherwise we return
         // the address of a temporary.
@@ -905,9 +905,9 @@ STObject::operator[](OptionaledField<T> const& of) const
     {
         assert(mType);
         assert(b->getSType() == STI_NOTPRESENT);
-        if(mType->style(*of.f) == SOE_OPTIONAL)
+        if(mType->style(*of.f) == soeOPTIONAL)
             return boost::none;
-        assert(mType->style(*of.f) == SOE_DEFAULT);
+        assert(mType->style(*of.f) == soeDEFAULT);
         return typename T::value_type{};
     }
     return u->value();
