@@ -23,20 +23,18 @@ namespace ripple {
 
 InnerObjectFormats::InnerObjectFormats ()
 {
-    add (sfSignerEntry.getJsonName ().c_str (), sfSignerEntry.getCode ())
-        << SOElement (sfAccount,              SOE_REQUIRED)
-        << SOElement (sfSignerWeight,         SOE_REQUIRED)
-        ;
+    add (sfSignerEntry.jsonName.c_str(), sfSignerEntry.getCode(),
+        {
+            {sfAccount,       soeREQUIRED},
+            {sfSignerWeight,  soeREQUIRED},
+        });
 
-    add (sfSigner.getJsonName ().c_str (), sfSigner.getCode ())
-        << SOElement (sfAccount,              SOE_REQUIRED)
-        << SOElement (sfSigningPubKey,        SOE_REQUIRED)
-        << SOElement (sfTxnSignature,         SOE_REQUIRED)
-        ;
-}
-
-void InnerObjectFormats::addCommonFields (Item& item)
-{
+    add (sfSigner.jsonName.c_str(), sfSigner.getCode(),
+        {
+            {sfAccount,       soeREQUIRED},
+            {sfSigningPubKey, soeREQUIRED},
+            {sfTxnSignature,  soeREQUIRED},
+        });
 }
 
 InnerObjectFormats const&
@@ -49,12 +47,11 @@ InnerObjectFormats::getInstance ()
 SOTemplate const*
 InnerObjectFormats::findSOTemplateBySField (SField const& sField) const
 {
-    SOTemplate const* ret = nullptr;
     auto itemPtr = findByType (sField.getCode ());
     if (itemPtr)
-        ret = &(itemPtr->elements);
+        return &(itemPtr->getSOTemplate());
 
-    return ret;
+    return nullptr;
 }
 
 } // ripple

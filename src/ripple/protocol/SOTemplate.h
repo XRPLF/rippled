@@ -22,19 +22,19 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/SField.h>
-#include <boost/range.hpp>
+#include <functional>
+#include <initializer_list>
 #include <memory>
 
 namespace ripple {
 
-/** Flags for elements in a SOTemplate. */
-// VFALCO NOTE these don't look like bit-flags...
-enum SOE_Flags
+/** Kind of element in each entry of an SOTemplate. */
+enum SOEStyle
 {
-    SOE_INVALID  = -1,
-    SOE_REQUIRED = 0,   // required
-    SOE_OPTIONAL = 1,   // optional, may be present with default value
-    SOE_DEFAULT  = 2,   // optional, if present, must not have default value
+    soeINVALID  = -1,
+    soeREQUIRED = 0,   // required
+    soeOPTIONAL = 1,   // optional, may be present with default value
+    soeDEFAULT  = 2,   // optional, if present, must not have default value
 };
 
 //------------------------------------------------------------------------------
@@ -42,16 +42,27 @@ enum SOE_Flags
 /** An element in a SOTemplate. */
 class SOElement
 {
-public:
-    SField const&     e_field;
-    SOE_Flags const   flags;
+    // Use std::reference_wrapper so SOElement can be stored in a std::vector.
+    std::reference_wrapper<SField const> sField_;
+    SOEStyle                             style_;
 
-    SOElement (SField const& fieldName, SOE_Flags flags)
-        : e_field (fieldName)
-        , flags (flags)
+public:
+    SOElement (SField const& fieldName, SOEStyle style)
+        : sField_ (fieldName)
+        , style_ (style)
     {
-        if (! e_field.isUseful())
+        if (! sField_.get().isUseful())
             Throw<std::runtime_error> ("SField in SOElement must be useful.");
+    }
+
+    SField const& sField () const
+    {
+        return sField_.get();
+    }
+
+    SOEStyle style () const
+    {
+        return style_;
     }
 };
 
@@ -64,64 +75,57 @@ public:
 class SOTemplate
 {
 public:
-    using list_type = std::vector <std::unique_ptr <SOElement const>>;
-    using iterator_range = boost::iterator_range<list_type::const_iterator>;
+    // Copying vectors is expensive.  Make this a move-only type until
+    // there is motivation to change that.
+    SOTemplate(SOTemplate&& other) = default;
+    SOTemplate& operator=(SOTemplate&& other) = default;
 
-    /** Create an empty template.
-        After creating the template, call @ref push_back with the
-        desired fields.
-        @see push_back
+    /** Create a template populated with all fields.
+        After creating the template fields cannot be
+        added, modified, or removed.
     */
-    SOTemplate () = default;
-
-    SOTemplate(SOTemplate&& other)
-        : mTypes(std::move(other.mTypes))
-        , mIndex(std::move(other.mIndex))
-    {
-    }
-
-    /** Create a template and pass it to the callback to be populated.
-
-        The callback will typically consist of one or more calls to the
-        @ref push_back member function on the object that it is passed.
-
-        @see push_back
-    */
-    SOTemplate(std::function<void(SOTemplate&)> callback)
-        : SOTemplate()
-    {
-        if (callback)
-            callback(*this);
-    }
+    SOTemplate (std::initializer_list<SOElement> uniqueFields,
+        std::initializer_list<SOElement> commonFields = {});
 
     /* Provide for the enumeration of fields */
-    iterator_range all () const
+    std::vector<SOElement>::const_iterator begin() const
     {
-        return boost::make_iterator_range(mTypes);
+        return elements_.cbegin();
+    }
+
+    std::vector<SOElement>::const_iterator cbegin() const
+    {
+        return begin();
+    }
+
+    std::vector<SOElement>::const_iterator end() const
+    {
+        return elements_.cend();
+    }
+
+    std::vector<SOElement>::const_iterator cend() const
+    {
+        return end();
     }
 
     /** The number of entries in this template */
     std::size_t size () const
     {
-        return mTypes.size ();
+        return elements_.size ();
     }
-
-    /** Add an element to the template. */
-    void push_back (SOElement const& r);
 
     /** Retrieve the position of a named field. */
     int getIndex (SField const&) const;
 
-    SOE_Flags
+    SOEStyle
     style(SField const& sf) const
     {
-        return mTypes[mIndex[sf.getNum()]]->flags;
+        return elements_[indices_[sf.getNum()]].style();
     }
 
 private:
-    list_type mTypes;
-
-    std::vector <int> mIndex;       // field num -> index
+    std::vector<SOElement> elements_;
+    std::vector<int> indices_;              // field num -> index
 };
 
 } // ripple

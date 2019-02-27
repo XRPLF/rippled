@@ -237,10 +237,9 @@ public:
         unexpected (sfGeneric.isUseful (), "sfGeneric must not be useful");
         {
             // Try to put sfGeneric in an SOTemplate.
-            SOTemplate elements;
             except<std::runtime_error>( [&]()
                 {
-                    elements.push_back (SOElement (sfGeneric, SOE_REQUIRED));
+                    SOTemplate elements {{ sfGeneric, soeREQUIRED }};
                 });
         }
 
@@ -260,19 +259,19 @@ public:
         }
         {
             // Try to put sfInvalid in an SOTemplate.
-            SOTemplate elements;
             except<std::runtime_error>( [&]()
                 {
-                    elements.push_back (SOElement (sfInvalid, SOE_REQUIRED));
+                    SOTemplate elements {{ sfInvalid, soeREQUIRED }};
                 });
         }
         {
             // Try to put the same SField into an SOTemplate twice.
-            SOTemplate elements;
-            elements.push_back (SOElement (sfAccount, SOE_REQUIRED));
             except<std::runtime_error>( [&]()
                 {
-                    elements.push_back (SOElement (sfAccount, SOE_REQUIRED));
+                    SOTemplate elements {
+                        { sfAccount, soeREQUIRED },
+                        { sfAccount, soeREQUIRED },
+                    };
                 });
         }
 
@@ -284,12 +283,14 @@ public:
         SField const& sfTestObject = sfMajority;
 
 
-        SOTemplate elements;
-        elements.push_back (SOElement (sfFlags, SOE_REQUIRED));
-        elements.push_back (SOElement (sfTestVL, SOE_REQUIRED));
-        elements.push_back (SOElement (sfTestH256, SOE_OPTIONAL));
-        elements.push_back (SOElement (sfTestU32, SOE_REQUIRED));
-        elements.push_back (SOElement (sfTestV256, SOE_OPTIONAL));
+        SOTemplate const elements
+            {
+                { sfFlags,    soeREQUIRED },
+                { sfTestVL,   soeREQUIRED },
+                { sfTestH256, soeOPTIONAL },
+                { sfTestU32,  soeREQUIRED },
+                { sfTestV256, soeOPTIONAL },
+            };
 
         STObject object1 (elements, sfTestObject);
         STObject object2 (object1);
@@ -419,17 +420,14 @@ public:
         }
 
         // read templated object
-
-        auto const sot = [&]()
-        {
-            SOTemplate sot;
-            sot.push_back(SOElement(sf1, SOE_REQUIRED));
-            sot.push_back(SOElement(sf2, SOE_OPTIONAL));
-            sot.push_back(SOElement(sf3, SOE_DEFAULT));
-            sot.push_back(SOElement(sf4, SOE_OPTIONAL));
-            sot.push_back(SOElement(sf5, SOE_DEFAULT));
-            return sot;
-        }();
+        SOTemplate const sot
+            {
+                { sf1, soeREQUIRED },
+                { sf2, soeOPTIONAL },
+                { sf3, soeDEFAULT },
+                { sf4, soeOPTIONAL },
+                { sf5, soeDEFAULT },
+            };
 
         {
             auto const st = [&]()
@@ -643,14 +641,13 @@ public:
             auto const& sf1 = sfIndexes;
             auto const& sf2 = sfHashes;
             auto const& sf3 = sfAmendments;
-            auto const sot = [&]()
-            {
-                SOTemplate sot;
-                sot.push_back(SOElement(sf1, SOE_REQUIRED));
-                sot.push_back(SOElement(sf2, SOE_OPTIONAL));
-                sot.push_back(SOElement(sf3, SOE_DEFAULT));
-                return sot;
-            }();
+            SOTemplate const sot
+                {
+                    { sf1, soeREQUIRED },
+                    { sf2, soeOPTIONAL },
+                    { sf3, soeDEFAULT  },
+                };
+
             STObject st(sot, sfGeneric);
             auto const& cst(st);
             BEAST_EXPECT(cst[sf1].size() == 0);

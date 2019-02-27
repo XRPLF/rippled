@@ -164,13 +164,13 @@ enum LedgerSpecificFlags
 class LedgerFormats : public KnownFormats <LedgerEntryType>
 {
 private:
+    /** Create the object.
+        This will load the object with all the known ledger formats.
+    */
     LedgerFormats ();
 
 public:
     static LedgerFormats const& getInstance ();
-
-private:
-    void addCommonFields (Item& item) override;
 };
 
 } // ripple

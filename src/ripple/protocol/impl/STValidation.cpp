@@ -147,26 +147,23 @@ SOTemplate const& STValidation::getFormat ()
 {
     struct FormatHolder
     {
-        SOTemplate format;
-
-        FormatHolder ()
+        SOTemplate format
         {
-            format.push_back (SOElement (sfFlags,           SOE_REQUIRED));
-            format.push_back (SOElement (sfLedgerHash,      SOE_REQUIRED));
-            format.push_back (SOElement (sfLedgerSequence,  SOE_OPTIONAL));
-            format.push_back (SOElement (sfCloseTime,       SOE_OPTIONAL));
-            format.push_back (SOElement (sfLoadFee,         SOE_OPTIONAL));
-            format.push_back (SOElement (sfAmendments,      SOE_OPTIONAL));
-            format.push_back (SOElement (sfBaseFee,         SOE_OPTIONAL));
-            format.push_back (SOElement (sfReserveBase,     SOE_OPTIONAL));
-            format.push_back (SOElement (sfReserveIncrement, SOE_OPTIONAL));
-            format.push_back (SOElement (sfSigningTime,     SOE_REQUIRED));
-            format.push_back (SOElement (sfSigningPubKey,   SOE_REQUIRED));
-            format.push_back (SOElement (sfSignature,       SOE_OPTIONAL));
-            format.push_back (SOElement (sfConsensusHash,   SOE_OPTIONAL));
-            format.push_back (SOElement (sfCookie,          SOE_OPTIONAL));
-
-        }
+            { sfFlags,            soeREQUIRED },
+            { sfLedgerHash,       soeREQUIRED },
+            { sfLedgerSequence,   soeOPTIONAL },
+            { sfCloseTime,        soeOPTIONAL },
+            { sfLoadFee,          soeOPTIONAL },
+            { sfAmendments,       soeOPTIONAL },
+            { sfBaseFee,          soeOPTIONAL },
+            { sfReserveBase,      soeOPTIONAL },
+            { sfReserveIncrement, soeOPTIONAL },
+            { sfSigningTime,      soeREQUIRED },
+            { sfSigningPubKey,    soeREQUIRED },
+            { sfSignature,        soeOPTIONAL },
+            { sfConsensusHash,    soeOPTIONAL },
+            { sfCookie,           soeOPTIONAL },
+        };
     };
 
     static const FormatHolder holder;

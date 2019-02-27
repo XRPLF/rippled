@@ -28,163 +28,188 @@ namespace ripple {
 
 LedgerFormats::LedgerFormats ()
 {
-    add ("AccountRoot", ltACCOUNT_ROOT)
-            << SOElement (sfAccount,             SOE_REQUIRED)
-            << SOElement (sfSequence,            SOE_REQUIRED)
-            << SOElement (sfBalance,             SOE_REQUIRED)
-            << SOElement (sfOwnerCount,          SOE_REQUIRED)
-            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
-            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
-            << SOElement (sfAccountTxnID,        SOE_OPTIONAL)
-            << SOElement (sfRegularKey,          SOE_OPTIONAL)
-            << SOElement (sfEmailHash,           SOE_OPTIONAL)
-            << SOElement (sfWalletLocator,       SOE_OPTIONAL)
-            << SOElement (sfWalletSize,          SOE_OPTIONAL)
-            << SOElement (sfMessageKey,          SOE_OPTIONAL)
-            << SOElement (sfTransferRate,        SOE_OPTIONAL)
-            << SOElement (sfDomain,              SOE_OPTIONAL)
-            << SOElement (sfTickSize,            SOE_OPTIONAL)
-            ;
+    // Fields shared by all ledger formats:
+    static const std::initializer_list<SOElement> commonFields
+    {
+        { sfLedgerIndex,             soeOPTIONAL },
+        { sfLedgerEntryType,         soeREQUIRED },
+        { sfFlags,                   soeREQUIRED },
+    };
 
-    add ("DirectoryNode", ltDIR_NODE)
-            << SOElement (sfOwner,               SOE_OPTIONAL)  // for owner directories
-            << SOElement (sfTakerPaysCurrency,   SOE_OPTIONAL)  // for order book directories
-            << SOElement (sfTakerPaysIssuer,     SOE_OPTIONAL)  // for order book directories
-            << SOElement (sfTakerGetsCurrency,   SOE_OPTIONAL)  // for order book directories
-            << SOElement (sfTakerGetsIssuer,     SOE_OPTIONAL)  // for order book directories
-            << SOElement (sfExchangeRate,        SOE_OPTIONAL)  // for order book directories
-            << SOElement (sfIndexes,             SOE_REQUIRED)
-            << SOElement (sfRootIndex,           SOE_REQUIRED)
-            << SOElement (sfIndexNext,           SOE_OPTIONAL)
-            << SOElement (sfIndexPrevious,       SOE_OPTIONAL)
-            ;
+    add ("AccountRoot", ltACCOUNT_ROOT,
+        {
+            { sfAccount,             soeREQUIRED },
+            { sfSequence,            soeREQUIRED },
+            { sfBalance,             soeREQUIRED },
+            { sfOwnerCount,          soeREQUIRED },
+            { sfPreviousTxnID,       soeREQUIRED },
+            { sfPreviousTxnLgrSeq,   soeREQUIRED },
+            { sfAccountTxnID,        soeOPTIONAL },
+            { sfRegularKey,          soeOPTIONAL },
+            { sfEmailHash,           soeOPTIONAL },
+            { sfWalletLocator,       soeOPTIONAL },
+            { sfWalletSize,          soeOPTIONAL },
+            { sfMessageKey,          soeOPTIONAL },
+            { sfTransferRate,        soeOPTIONAL },
+            { sfDomain,              soeOPTIONAL },
+            { sfTickSize,            soeOPTIONAL },
+        },
+        commonFields);
 
-    add ("Offer", ltOFFER)
-            << SOElement (sfAccount,             SOE_REQUIRED)
-            << SOElement (sfSequence,            SOE_REQUIRED)
-            << SOElement (sfTakerPays,           SOE_REQUIRED)
-            << SOElement (sfTakerGets,           SOE_REQUIRED)
-            << SOElement (sfBookDirectory,       SOE_REQUIRED)
-            << SOElement (sfBookNode,            SOE_REQUIRED)
-            << SOElement (sfOwnerNode,           SOE_REQUIRED)
-            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
-            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
-            << SOElement (sfExpiration,          SOE_OPTIONAL)
-            ;
+    add ("DirectoryNode", ltDIR_NODE,
+        {
+            { sfOwner,               soeOPTIONAL },  // for owner directories
+            { sfTakerPaysCurrency,   soeOPTIONAL },  // for order book directories
+            { sfTakerPaysIssuer,     soeOPTIONAL },  // for order book directories
+            { sfTakerGetsCurrency,   soeOPTIONAL },  // for order book directories
+            { sfTakerGetsIssuer,     soeOPTIONAL },  // for order book directories
+            { sfExchangeRate,        soeOPTIONAL },  // for order book directories
+            { sfIndexes,             soeREQUIRED },
+            { sfRootIndex,           soeREQUIRED },
+            { sfIndexNext,           soeOPTIONAL },
+            { sfIndexPrevious,       soeOPTIONAL },
+        },
+        commonFields);
 
-    add ("RippleState", ltRIPPLE_STATE)
-            << SOElement (sfBalance,             SOE_REQUIRED)
-            << SOElement (sfLowLimit,            SOE_REQUIRED)
-            << SOElement (sfHighLimit,           SOE_REQUIRED)
-            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
-            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
-            << SOElement (sfLowNode,             SOE_OPTIONAL)
-            << SOElement (sfLowQualityIn,        SOE_OPTIONAL)
-            << SOElement (sfLowQualityOut,       SOE_OPTIONAL)
-            << SOElement (sfHighNode,            SOE_OPTIONAL)
-            << SOElement (sfHighQualityIn,       SOE_OPTIONAL)
-            << SOElement (sfHighQualityOut,      SOE_OPTIONAL)
-            ;
+    add ("Offer", ltOFFER,
+        {
+            { sfAccount,             soeREQUIRED },
+            { sfSequence,            soeREQUIRED },
+            { sfTakerPays,           soeREQUIRED },
+            { sfTakerGets,           soeREQUIRED },
+            { sfBookDirectory,       soeREQUIRED },
+            { sfBookNode,            soeREQUIRED },
+            { sfOwnerNode,           soeREQUIRED },
+            { sfPreviousTxnID,       soeREQUIRED },
+            { sfPreviousTxnLgrSeq,   soeREQUIRED },
+            { sfExpiration,          soeOPTIONAL },
+        },
+        commonFields);
 
-    add ("Escrow", ltESCROW)
-            << SOElement (sfAccount,             SOE_REQUIRED)
-            << SOElement (sfDestination,         SOE_REQUIRED)
-            << SOElement (sfAmount,              SOE_REQUIRED)
-            << SOElement (sfCondition,           SOE_OPTIONAL)
-            << SOElement (sfCancelAfter,         SOE_OPTIONAL)
-            << SOElement (sfFinishAfter,         SOE_OPTIONAL)
-            << SOElement (sfSourceTag,           SOE_OPTIONAL)
-            << SOElement (sfDestinationTag,      SOE_OPTIONAL)
-            << SOElement (sfOwnerNode,           SOE_REQUIRED)
-            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
-            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
-            << SOElement (sfDestinationNode,     SOE_OPTIONAL)
-            ;
+    add ("RippleState", ltRIPPLE_STATE,
+        {
+            { sfBalance,             soeREQUIRED },
+            { sfLowLimit,            soeREQUIRED },
+            { sfHighLimit,           soeREQUIRED },
+            { sfPreviousTxnID,       soeREQUIRED },
+            { sfPreviousTxnLgrSeq,   soeREQUIRED },
+            { sfLowNode,             soeOPTIONAL },
+            { sfLowQualityIn,        soeOPTIONAL },
+            { sfLowQualityOut,       soeOPTIONAL },
+            { sfHighNode,            soeOPTIONAL },
+            { sfHighQualityIn,       soeOPTIONAL },
+            { sfHighQualityOut,      soeOPTIONAL },
+        },
+        commonFields);
 
-    add ("LedgerHashes", ltLEDGER_HASHES)
-            << SOElement (sfFirstLedgerSequence, SOE_OPTIONAL) // Remove if we do a ledger restart
-            << SOElement (sfLastLedgerSequence,  SOE_OPTIONAL)
-            << SOElement (sfHashes,              SOE_REQUIRED)
-            ;
+    add ("Escrow", ltESCROW,
+        {
+            { sfAccount,             soeREQUIRED },
+            { sfDestination,         soeREQUIRED },
+            { sfAmount,              soeREQUIRED },
+            { sfCondition,           soeOPTIONAL },
+            { sfCancelAfter,         soeOPTIONAL },
+            { sfFinishAfter,         soeOPTIONAL },
+            { sfSourceTag,           soeOPTIONAL },
+            { sfDestinationTag,      soeOPTIONAL },
+            { sfOwnerNode,           soeREQUIRED },
+            { sfPreviousTxnID,       soeREQUIRED },
+            { sfPreviousTxnLgrSeq,   soeREQUIRED },
+            { sfDestinationNode,     soeOPTIONAL },
+        },
+        commonFields);
 
-    add ("Amendments", ltAMENDMENTS)
-            << SOElement (sfAmendments,          SOE_OPTIONAL) // Enabled
-            << SOElement (sfMajorities,          SOE_OPTIONAL)
-            ;
+    add ("LedgerHashes", ltLEDGER_HASHES,
+        {
+            { sfFirstLedgerSequence, soeOPTIONAL }, // Remove if we do a ledger restart
+            { sfLastLedgerSequence,  soeOPTIONAL },
+            { sfHashes,              soeREQUIRED },
+        },
+        commonFields);
 
-    add ("FeeSettings", ltFEE_SETTINGS)
-            << SOElement (sfBaseFee,             SOE_REQUIRED)
-            << SOElement (sfReferenceFeeUnits,   SOE_REQUIRED)
-            << SOElement (sfReserveBase,         SOE_REQUIRED)
-            << SOElement (sfReserveIncrement,    SOE_REQUIRED)
-            ;
+    add ("Amendments", ltAMENDMENTS,
+        {
+            { sfAmendments,          soeOPTIONAL }, // Enabled
+            { sfMajorities,          soeOPTIONAL },
+        },
+        commonFields);
 
-    add ("Ticket", ltTICKET)
-            << SOElement (sfAccount,             SOE_REQUIRED)
-            << SOElement (sfSequence,            SOE_REQUIRED)
-            << SOElement (sfOwnerNode,           SOE_REQUIRED)
-            << SOElement (sfTarget,              SOE_OPTIONAL)
-            << SOElement (sfExpiration,          SOE_OPTIONAL)
-            ;
+    add ("FeeSettings", ltFEE_SETTINGS,
+        {
+            { sfBaseFee,             soeREQUIRED },
+            { sfReferenceFeeUnits,   soeREQUIRED },
+            { sfReserveBase,         soeREQUIRED },
+            { sfReserveIncrement,    soeREQUIRED },
+        },
+        commonFields);
 
-    // All fields are SOE_REQUIRED because there is always a
+    add ("Ticket", ltTICKET,
+        {
+            { sfAccount,             soeREQUIRED },
+            { sfSequence,            soeREQUIRED },
+            { sfOwnerNode,           soeREQUIRED },
+            { sfTarget,              soeOPTIONAL },
+            { sfExpiration,          soeOPTIONAL },
+        },
+        commonFields);
+
+    // All fields are soeREQUIRED because there is always a
     // SignerEntries.  If there are no SignerEntries the node is deleted.
-    add ("SignerList", ltSIGNER_LIST)
-            << SOElement (sfOwnerNode,           SOE_REQUIRED)
-            << SOElement (sfSignerQuorum,        SOE_REQUIRED)
-            << SOElement (sfSignerEntries,       SOE_REQUIRED)
-            << SOElement (sfSignerListID,        SOE_REQUIRED)
-            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
-            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
-            ;
+    add ("SignerList", ltSIGNER_LIST,
+        {
+            { sfOwnerNode,           soeREQUIRED },
+            { sfSignerQuorum,        soeREQUIRED },
+            { sfSignerEntries,       soeREQUIRED },
+            { sfSignerListID,        soeREQUIRED },
+            { sfPreviousTxnID,       soeREQUIRED },
+            { sfPreviousTxnLgrSeq,   soeREQUIRED },
+        },
+        commonFields);
 
-    add ("PayChannel", ltPAYCHAN)
-            << SOElement (sfAccount,             SOE_REQUIRED)
-            << SOElement (sfDestination,         SOE_REQUIRED)
-            << SOElement (sfAmount,              SOE_REQUIRED)
-            << SOElement (sfBalance,             SOE_REQUIRED)
-            << SOElement (sfPublicKey,           SOE_REQUIRED)
-            << SOElement (sfSettleDelay,         SOE_REQUIRED)
-            << SOElement (sfExpiration,          SOE_OPTIONAL)
-            << SOElement (sfCancelAfter,         SOE_OPTIONAL)
-            << SOElement (sfSourceTag,           SOE_OPTIONAL)
-            << SOElement (sfDestinationTag,      SOE_OPTIONAL)
-            << SOElement (sfOwnerNode,           SOE_REQUIRED)
-            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
-            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
-            ;
+    add ("PayChannel", ltPAYCHAN,
+        {
+            { sfAccount,             soeREQUIRED },
+            { sfDestination,         soeREQUIRED },
+            { sfAmount,              soeREQUIRED },
+            { sfBalance,             soeREQUIRED },
+            { sfPublicKey,           soeREQUIRED },
+            { sfSettleDelay,         soeREQUIRED },
+            { sfExpiration,          soeOPTIONAL },
+            { sfCancelAfter,         soeOPTIONAL },
+            { sfSourceTag,           soeOPTIONAL },
+            { sfDestinationTag,      soeOPTIONAL },
+            { sfOwnerNode,           soeREQUIRED },
+            { sfPreviousTxnID,       soeREQUIRED },
+            { sfPreviousTxnLgrSeq,   soeREQUIRED },
+        },
+        commonFields);
 
-    add ("Check", ltCHECK)
-            << SOElement (sfAccount,             SOE_REQUIRED)
-            << SOElement (sfDestination,         SOE_REQUIRED)
-            << SOElement (sfSendMax,             SOE_REQUIRED)
-            << SOElement (sfSequence,            SOE_REQUIRED)
-            << SOElement (sfOwnerNode,           SOE_REQUIRED)
-            << SOElement (sfDestinationNode,     SOE_REQUIRED)
-            << SOElement (sfExpiration,          SOE_OPTIONAL)
-            << SOElement (sfInvoiceID,           SOE_OPTIONAL)
-            << SOElement (sfSourceTag,           SOE_OPTIONAL)
-            << SOElement (sfDestinationTag,      SOE_OPTIONAL)
-            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
-            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
-            ;
+    add ("Check", ltCHECK,
+        {
+            { sfAccount,             soeREQUIRED },
+            { sfDestination,         soeREQUIRED },
+            { sfSendMax,             soeREQUIRED },
+            { sfSequence,            soeREQUIRED },
+            { sfOwnerNode,           soeREQUIRED },
+            { sfDestinationNode,     soeREQUIRED },
+            { sfExpiration,          soeOPTIONAL },
+            { sfInvoiceID,           soeOPTIONAL },
+            { sfSourceTag,           soeOPTIONAL },
+            { sfDestinationTag,      soeOPTIONAL },
+            { sfPreviousTxnID,       soeREQUIRED },
+            { sfPreviousTxnLgrSeq,   soeREQUIRED },
+        },
+        commonFields);
 
-    add ("DepositPreauth", ltDEPOSIT_PREAUTH)
-            << SOElement (sfAccount,             SOE_REQUIRED)
-            << SOElement (sfAuthorize,           SOE_REQUIRED)
-            << SOElement (sfOwnerNode,           SOE_REQUIRED)
-            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
-            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
-            ;
-}
-
-void LedgerFormats::addCommonFields (Item& item)
-{
-    item
-        << SOElement(sfLedgerIndex,             SOE_OPTIONAL)
-        << SOElement(sfLedgerEntryType,         SOE_REQUIRED)
-        << SOElement(sfFlags,                   SOE_REQUIRED)
-        ;
+    add ("DepositPreauth", ltDEPOSIT_PREAUTH,
+        {
+            { sfAccount,             soeREQUIRED },
+            { sfAuthorize,           soeREQUIRED },
+            { sfOwnerNode,           soeREQUIRED },
+            { sfPreviousTxnID,       soeREQUIRED },
+            { sfPreviousTxnLgrSeq,   soeREQUIRED },
+        },
+        commonFields);
 }
 
 LedgerFormats const&

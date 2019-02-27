@@ -22,7 +22,9 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/SOTemplate.h>
-#include <memory>
+#include <boost/container/flat_map.hpp>
+#include <algorithm>
+#include <forward_list>
 
 namespace ripple {
 
@@ -42,50 +44,49 @@ public:
     class Item
     {
     public:
-        Item (char const* name, KeyType type)
-            : m_name (name)
-            , m_type (type)
+        Item (char const* name,
+            KeyType type,
+            std::initializer_list<SOElement> uniqueFields,
+            std::initializer_list<SOElement> commonFields)
+            : soTemplate_ (uniqueFields, commonFields)
+            , name_ (name)
+            , type_ (type)
         {
-        }
-
-        Item& operator<< (SOElement const& el)
-        {
-            elements.push_back (el);
-
-            return *this;
+            // Verify that KeyType is appropriate.
+            static_assert (
+                std::is_enum<KeyType>::value ||
+                std::is_integral<KeyType>::value,
+                "KnownFormats KeyType must be integral or enum.");
         }
 
         /** Retrieve the name of the format.
         */
-        std::string const& getName () const noexcept
+        std::string const& getName () const
         {
-            return m_name;
+            return name_;
         }
 
         /** Retrieve the transaction type this format represents.
         */
-        KeyType getType () const noexcept
+        KeyType getType () const
         {
-            return m_type;
+            return type_;
         }
 
-    public:
-        // VFALCO TODO make an accessor for this
-        SOTemplate elements;
+        SOTemplate const& getSOTemplate() const
+        {
+            return soTemplate_;
+        }
 
     private:
-        std::string const m_name;
-        KeyType const m_type;
+        SOTemplate soTemplate_;
+        std::string const name_;
+        KeyType const type_;
     };
 
-private:
-    using NameMap = std::map <std::string, Item*>;
-    using TypeMap = std::map <KeyType, Item*>;
-
-public:
     /** Create the known formats object.
 
-        Derived classes will load the object will all the known formats.
+        Derived classes will load the object with all the known formats.
     */
     KnownFormats () = default;
 
@@ -104,7 +105,7 @@ public:
         @param  name The name of the type.
         @return      The type.
     */
-    KeyType findTypeByName (std::string const name) const
+    KeyType findTypeByName (std::string const& name) const
     {
         Item const* const result = findByName (name);
 
@@ -116,71 +117,55 @@ public:
 
     /** Retrieve a format based on its type.
     */
-    // VFALCO TODO Can we just return the SOElement& ?
-    Item const* findByType (KeyType type) const noexcept
+    Item const* findByType (KeyType type) const
     {
-        Item* result = nullptr;
-
-        typename TypeMap::const_iterator const iter = m_types.find (type);
-
-        if (iter != m_types.end ())
-        {
-            result = iter->second;
-        }
-
-        return result;
+        auto const itr = types_.find (type);
+        if (itr == types_.end())
+            return nullptr;
+        return itr->second;
     }
 
 protected:
     /** Retrieve a format based on its name.
     */
-    Item const* findByName (std::string const& name) const noexcept
+    Item const* findByName (std::string const& name) const
     {
-        Item* result = nullptr;
-
-        typename NameMap::const_iterator const iter = m_names.find (name);
-
-        if (iter != m_names.end ())
-        {
-            result = iter->second;
-        }
-
-        return result;
+        auto const itr = names_.find (name);
+        if (itr == names_.end())
+            return nullptr;
+        return itr->second;
     }
 
     /** Add a new format.
 
-        The new format has the set of common fields already added.
-
         @param name The name of this format.
         @param type The type of this format.
+        @param uniqueFields An std::initializer_list of unique fields
+        @param commonFields An std::initializer_list of common fields
 
         @return The created format.
     */
-    Item& add (char const* name, KeyType type)
+    Item const& add (char const* name, KeyType type,
+        std::initializer_list<SOElement> uniqueFields,
+        std::initializer_list<SOElement> commonFields = {})
     {
-        m_formats.emplace_back (
-            std::make_unique <Item> (name, type));
-        auto& item (*m_formats.back());
+        formats_.emplace_front (name, type, uniqueFields, commonFields);
+        Item const& item {formats_.front()};
 
-        addCommonFields (item);
-
-        m_types [item.getType ()] = &item;
-        m_names [item.getName ()] = &item;
+        names_[name] = &item;
+        types_[type] = &item;
 
         return item;
     }
 
-    /** Adds common fields.
-
-        This is called for every new item.
-    */
-    virtual void addCommonFields (Item& item) = 0;
-
 private:
-    std::vector <std::unique_ptr <Item>> m_formats;
-    NameMap m_names;
-    TypeMap m_types;
+    // One of the situations where a std::forward_list is useful.  We want to
+    // store each Item in a place where its address won't change.  So a node-
+    // based container is appropriate.  But we don't need searchability.
+    std::forward_list<Item> formats_;
+
+    boost::container::flat_map<std::string, Item const*> names_;
+    boost::container::flat_map<KeyType, Item const*> types_;
 };
 
 } // ripple

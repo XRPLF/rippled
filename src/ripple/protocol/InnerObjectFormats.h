@@ -29,18 +29,12 @@ namespace ripple {
 class InnerObjectFormats : public KnownFormats <int>
 {
 private:
-    void addCommonFields (Item& item) override;
-
-public:
-    virtual ~InnerObjectFormats () = default;
-    InnerObjectFormats(InnerObjectFormats const&) = delete;
-    InnerObjectFormats& operator=(InnerObjectFormats const&) = delete;
-
     /** Create the object.
-        This will load the object will all the known inner object formats.
+        This will load the object with all the known inner object formats.
     */
     InnerObjectFormats ();
 
+public:
     static InnerObjectFormats const& getInstance ();
 
     SOTemplate const* findSOTemplateBySField (SField const& sField) const;
