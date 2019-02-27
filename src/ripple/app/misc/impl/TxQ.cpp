@@ -111,10 +111,12 @@ TxQ::FeeMetrics::update(Application& app,
         // Ledgers are taking to long to process,
         // so clamp down on limits.
         auto const cutPct = 100 - setup.slowConsensusDecreasePercent;
+        // upperLimit must be >= minimumTxnCount_ or boost::clamp can give
+        // unexpected results
+        auto const upperLimit = std::max<std::uint64_t>(
+            mulDiv(txnsExpected_, cutPct, 100).second, minimumTxnCount_);
         txnsExpected_ = boost::algorithm::clamp(
-            mulDiv(size, cutPct, 100).second,
-            minimumTxnCount_,
-            mulDiv(txnsExpected_, cutPct, 100).second);
+            mulDiv(size, cutPct, 100).second, minimumTxnCount_, upperLimit);
         recentTxnCounts_.clear();
     }
     else if (size > txnsExpected_ ||
@@ -1534,7 +1536,28 @@ setup_TxQ(Config const& config)
     set(setup.targetTxnInLedger, "target_txn_in_ledger", section);
     std::uint32_t max;
     if (set(max, "maximum_txn_in_ledger", section))
+    {
+        if (max < setup.minimumTxnInLedger)
+        {
+            Throw<std::runtime_error>(
+                "The minimum number of low-fee transactions allowed "
+                "per ledger (minimum_txn_in_ledger) exceeds "
+                "the maximum number of low-fee transactions allowed per "
+                "ledger (maximum_txn_in_ledger)."
+            );
+        }
+        if (max < setup.minimumTxnInLedgerSA)
+        {
+            Throw<std::runtime_error>(
+                "The minimum number of low-fee transactions allowed "
+                "per ledger (minimum_txn_in_ledger_standalone) exceeds "
+                "the maximum number of low-fee transactions allowed per "
+                "ledger (maximum_txn_in_ledger)."
+                );
+        }
+
         setup.maximumTxnInLedger.emplace(max);
+    }
 
     /* The math works as expected for any value up to and including
        MAXINT, but put a reasonable limit on this percentage so that

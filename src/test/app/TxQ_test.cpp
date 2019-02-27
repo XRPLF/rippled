@@ -1144,28 +1144,88 @@ public:
     void testMaximum()
     {
         using namespace jtx;
+        using namespace std::string_literals;
 
-        Env env(*this, makeConfig(
-            { {"minimum_txn_in_ledger_standalone", "2"},
-                {"target_txn_in_ledger", "4"},
-                    {"maximum_txn_in_ledger", "5"} }));
+        {
+            Env env(*this, makeConfig(
+                { {"minimum_txn_in_ledger_standalone", "2"},
+                    {"target_txn_in_ledger", "4"},
+                        {"maximum_txn_in_ledger", "5"} }));
 
-        auto alice = Account("alice");
+            auto alice = Account("alice");
 
-        checkMetrics(env, 0, boost::none, 0, 2, 256);
+            checkMetrics(env, 0, boost::none, 0, 2, 256);
 
-        env.fund(XRP(50000), noripple(alice));
-        checkMetrics(env, 0, boost::none, 1, 2, 256);
+            env.fund(XRP(50000), noripple(alice));
+            checkMetrics(env, 0, boost::none, 1, 2, 256);
 
-        for (int i = 0; i < 10; ++i)
-            env(noop(alice), openLedgerFee(env));
+            for (int i = 0; i < 10; ++i)
+                env(noop(alice), openLedgerFee(env));
 
-        checkMetrics(env, 0, boost::none, 11, 2, 256);
+            checkMetrics(env, 0, boost::none, 11, 2, 256);
 
-        env.close();
-        // If not for the maximum, the per ledger would be 11.
-        checkMetrics(env, 0, 10, 0, 5, 256, 800025);
+            env.close();
+            // If not for the maximum, the per ledger would be 11.
+            checkMetrics(env, 0, 10, 0, 5, 256, 800025);
+        }
 
+        try
+        {
+            Env env(*this, makeConfig(
+                { {"minimum_txn_in_ledger", "200"},
+                    {"minimum_txn_in_ledger_standalone", "200"},
+                        {"target_txn_in_ledger", "4"},
+                            {"maximum_txn_in_ledger", "5"} }));
+            // should throw
+            fail();
+        }
+        catch (std::runtime_error const& e)
+        {
+            BEAST_EXPECT(e.what() ==
+                "The minimum number of low-fee transactions allowed "
+                "per ledger (minimum_txn_in_ledger) exceeds "
+                "the maximum number of low-fee transactions allowed per "
+                "ledger (maximum_txn_in_ledger)."s
+            );
+        }
+        try
+        {
+            Env env(*this, makeConfig(
+                { {"minimum_txn_in_ledger", "200"},
+                    {"minimum_txn_in_ledger_standalone", "2"},
+                        {"target_txn_in_ledger", "4"},
+                            {"maximum_txn_in_ledger", "5"} }));
+            // should throw
+            fail();
+        }
+        catch (std::runtime_error const& e)
+        {
+            BEAST_EXPECT(e.what() ==
+                "The minimum number of low-fee transactions allowed "
+                "per ledger (minimum_txn_in_ledger) exceeds "
+                "the maximum number of low-fee transactions allowed per "
+                "ledger (maximum_txn_in_ledger)."s
+            );
+        }
+        try
+        {
+            Env env(*this, makeConfig(
+                { {"minimum_txn_in_ledger", "2"},
+                    {"minimum_txn_in_ledger_standalone", "200"},
+                        {"target_txn_in_ledger", "4"},
+                            {"maximum_txn_in_ledger", "5"} }));
+            // should throw
+            fail();
+        }
+        catch (std::runtime_error const& e)
+        {
+            BEAST_EXPECT(e.what() ==
+                "The minimum number of low-fee transactions allowed "
+                "per ledger (minimum_txn_in_ledger_standalone) exceeds "
+                "the maximum number of low-fee transactions allowed per "
+                "ledger (maximum_txn_in_ledger)."s
+            );
+        }
     }
 
     void testUnexpectedBalanceChange()
