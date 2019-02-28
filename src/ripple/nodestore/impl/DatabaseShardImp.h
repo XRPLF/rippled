@@ -31,11 +31,18 @@ class DatabaseShardImp : public DatabaseShard
 public:
     DatabaseShardImp() = delete;
     DatabaseShardImp(DatabaseShardImp const&) = delete;
+    DatabaseShardImp(DatabaseShardImp&&) = delete;
     DatabaseShardImp& operator=(DatabaseShardImp const&) = delete;
+    DatabaseShardImp& operator=(DatabaseShardImp&&) = delete;
 
-    DatabaseShardImp(Application& app, std::string const& name,
-        Stoppable& parent, Scheduler& scheduler, int readThreads,
-            Section const& config, beast::Journal j);
+    DatabaseShardImp(
+        Application& app,
+        std::string const& name,
+        Stoppable& parent,
+        Scheduler& scheduler,
+        int readThreads,
+        Section const& config,
+        beast::Journal j);
 
     ~DatabaseShardImp() override;
 
@@ -160,6 +167,9 @@ private:
     Application& app_;
     mutable std::mutex m_;
     bool init_ {false};
+
+    // The context shared with all shard backend databases
+    std::unique_ptr<nudb::context> ctx_;
 
     // Complete shards
     std::map<std::uint32_t, std::unique_ptr<Shard>> complete_;

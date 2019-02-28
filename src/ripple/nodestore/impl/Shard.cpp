@@ -49,79 +49,66 @@ Shard::Shard(DatabaseShard const& db, std::uint32_t index,
 }
 
 bool
-Shard::open(Section config, Scheduler& scheduler)
+Shard::open(Section config, Scheduler& scheduler, nudb::context& ctx)
 {
     assert(!backend_);
     using namespace boost::filesystem;
+    using namespace boost::beast::detail;
 
-    bool dirPreexist;
-    bool dirEmpty;
-    try
-    {
-        if (!exists(dir_))
-        {
-            dirPreexist = false;
-            dirEmpty = true;
-        }
-        else if (is_directory(dir_))
-        {
-            dirPreexist = true;
-            dirEmpty = is_empty(dir_);
-        }
-        else
-        {
-             JLOG(j_.error()) <<
-                "path exists as file: " << dir_.string();
-            return false;
-        }
-    }
-    catch (std::exception const& e)
+    std::string const type (get<std::string>(config, "type", "nudb"));
+    auto factory {Manager::instance().find(type)};
+    if (!factory)
     {
         JLOG(j_.error()) <<
-            "shard " + std::to_string(index_) + " exception: " + e.what();
+            "shard " << index_ <<
+            ": failed to create shard store type " << type;
         return false;
     }
+
+    boost::system::error_code ec;
+    auto const preexist {exists(dir_, ec)};
+    if (ec)
+    {
+        JLOG(j_.error()) <<
+            "shard " << index_ << ": " << ec.message();
+        return false;
+    }
+
+    config.set("path", dir_.string());
+    backend_ = factory->createInstance(
+        NodeObject::keyBytes, config, scheduler, ctx, j_);
 
     auto fail = [&](std::string msg)
     {
-        JLOG(j_.error()) <<
-            "shard " << std::to_string(index_) << " error: " << msg;
-
-        if (!dirPreexist)
-            removeAll(dir_, j_);
-        else if (dirEmpty)
+        if (!msg.empty())
         {
-            for (auto const& p : recursive_directory_iterator(dir_))
-                removeAll(p.path(), j_);
+            JLOG(j_.error()) <<
+                "shard " << index_ << ": " << msg;
         }
+        if (!preexist)
+            removeAll(dir_, j_);
         return false;
     };
 
-    config.set("path", dir_.string());
     try
     {
-        backend_ = Manager::instance().make_Backend(
-            config, scheduler, j_);
-        backend_->open(!dirPreexist || dirEmpty);
+        backend_->open(!preexist);
 
-        if (backend_->fdlimit() == 0)
+        if (!backend_->backed())
             return true;
 
-        if (!dirPreexist || dirEmpty)
+        if (!preexist)
         {
             // New shard, create a control file
             if (!saveControl())
-                return fail("failure");
+                return fail({});
         }
         else if (is_regular_file(control_))
         {
             // Incomplete shard, inspect control file
             std::ifstream ifs(control_.string());
             if (!ifs.is_open())
-            {
-                return fail("shard " + std::to_string(index_) +
-                    ", unable to open control file");
-            }
+                return fail("failed to open control file");
 
             boost::archive::text_iarchive ar(ifs);
             ar & storedSeqs_;
@@ -130,15 +117,14 @@ Shard::open(Section config, Scheduler& scheduler)
                 if (boost::icl::first(storedSeqs_) < firstSeq_ ||
                     boost::icl::last(storedSeqs_) > lastSeq_)
                 {
-                    return fail("shard " + std::to_string(index_) +
-                        ": Invalid control file");
+                    return fail("invalid control file");
                 }
 
                 if (boost::icl::length(storedSeqs_) >= maxLedgers_)
                 {
                     JLOG(j_.error()) <<
                         "shard " << index_ <<
-                        " found control file for complete shard";
+                        ": found control file for complete shard";
                     storedSeqs_.clear();
                     complete_ = true;
                     remove_all(control_);
@@ -155,9 +141,7 @@ Shard::open(Section config, Scheduler& scheduler)
     }
     catch (std::exception const& e)
     {
-        JLOG(j_.error()) <<
-            "shard " << std::to_string(index_) << " error: " << e.what();
-        return false;
+        return fail(e.what());
     }
 
     return true;
@@ -177,7 +161,7 @@ Shard::setStored(std::shared_ptr<Ledger const> const& l)
     }
     if (boost::icl::length(storedSeqs_) >= maxLedgers_ - 1)
     {
-        if (backend_->fdlimit() != 0)
+        if (backend_->backed())
         {
             if (!removeAll(control_, j_))
                 return false;
@@ -212,7 +196,7 @@ Shard::setStored(std::shared_ptr<Ledger const> const& l)
     {
         storedSeqs_.insert(l->info().seq);
         lastStored_ = l;
-        if (backend_->fdlimit() != 0 && !saveControl())
+        if (backend_->backed() && !saveControl())
             return false;
 
         JLOG(j_.debug()) <<

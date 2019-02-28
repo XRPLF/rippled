@@ -109,11 +109,18 @@ public:
     /** Remove contents on disk upon destruction. */
     virtual void setDeletePath() = 0;
 
-    /** Perform consistency checks on database .*/
+    /** Perform consistency checks on database. */
     virtual void verify() = 0;
 
-    /** Returns the number of file handles the backend expects to need */
+    /** Returns the number of file handles the backend expects to need. */
     virtual int fdlimit() const = 0;
+
+    /** Returns true if the backend uses permanent storage. */
+    bool
+    backed() const
+    {
+        return fdlimit();
+    }
 };
 
 }

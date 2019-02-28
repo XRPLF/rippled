@@ -714,7 +714,7 @@ if (static AND NOT APPLE)
 else ()
   set (Boost_USE_STATIC_RUNTIME OFF)
 endif ()
-find_package (Boost 1.67 REQUIRED
+find_package (Boost 1.70 REQUIRED
   COMPONENTS
     chrono
     context
@@ -748,15 +748,6 @@ target_link_libraries (ripple_boost
     Boost::serialization
     Boost::system
     Boost::thread)
-
-# workaround for xcode 10.2 and boost < 1.69
-# once we require Boost 1.69 or higher, this can be removed
-# see:  https://github.com/boostorg/asio/commit/43874d5
-if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND
-    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0.1.10010043 AND
-    Boost_VERSION LESS 106900)
-  target_compile_definitions (opts INTERFACE BOOST_ASIO_HAS_STD_STRING_VIEW)
-endif ()
 
 #[===================================================================[
    NIH dep: openssl
@@ -1419,8 +1410,8 @@ if (is_root_project) # NuDB not needed in the case of xrpl_core inclusion build
   if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
     FetchContent_Declare(
       nudb_src
-      GIT_REPOSITORY https://github.com/vinniefalco/NuDB.git
-      GIT_TAG        1.0.0
+      GIT_REPOSITORY https://github.com/CPPAlliance/NuDB.git
+      GIT_TAG        2.0.1
     )
     FetchContent_GetProperties(nudb_src)
     if(NOT nudb_src_POPULATED)
@@ -1430,8 +1421,8 @@ if (is_root_project) # NuDB not needed in the case of xrpl_core inclusion build
   else ()
     ExternalProject_Add (nudb_src
       PREFIX ${nih_cache_path}
-      GIT_REPOSITORY https://github.com/vinniefalco/NuDB.git
-      GIT_TAG 1.0.0
+      GIT_REPOSITORY https://github.com/CPPAlliance/NuDB.git
+      GIT_TAG 2.0.1
       CONFIGURE_COMMAND ""
       BUILD_COMMAND ""
       TEST_COMMAND ""

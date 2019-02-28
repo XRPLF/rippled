@@ -23,6 +23,7 @@
 #include <ripple/nodestore/Backend.h>
 #include <ripple/nodestore/Scheduler.h>
 #include <ripple/beast/utility/Journal.h>
+#include <nudb/store.hpp>
 
 namespace ripple {
 namespace NodeStore {
@@ -42,14 +43,37 @@ public:
     /** Create an instance of this factory's backend.
 
         @param keyBytes The fixed number of bytes per key.
-        @param keyValues A set of key/value configuration pairs.
+        @param parameters A set of key/value configuration pairs.
         @param scheduler The scheduler to use for running tasks.
         @return A pointer to the Backend object.
     */
     virtual
     std::unique_ptr <Backend>
-    createInstance (size_t keyBytes, Section const& parameters,
-        Scheduler& scheduler, beast::Journal journal) = 0;
+    createInstance (
+        size_t keyBytes,
+        Section const& parameters,
+        Scheduler& scheduler,
+        beast::Journal journal) = 0;
+
+    /** Create an instance of this factory's backend.
+
+        @param keyBytes The fixed number of bytes per key.
+        @param parameters A set of key/value configuration pairs.
+        @param scheduler The scheduler to use for running tasks.
+        @param context The context used by database.
+        @return A pointer to the Backend object.
+    */
+    virtual
+    std::unique_ptr <Backend>
+    createInstance (
+        size_t keyBytes,
+        Section const& parameters,
+        Scheduler& scheduler,
+        nudb::context& context,
+        beast::Journal journal)
+    {
+        return {};
+    }
 };
 
 }

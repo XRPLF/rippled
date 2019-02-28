@@ -40,9 +40,6 @@ class NuDBBackend
     : public Backend
 {
 public:
-    // This needs to be tuned for the
-    // distribution of data sizes.
-    static constexpr std::size_t arena_alloc_size = megabytes(16);
     static constexpr std::size_t currentType = 1;
 
     beast::Journal j_;
@@ -52,11 +49,32 @@ public:
     std::atomic <bool> deletePath_;
     Scheduler& scheduler_;
 
-    NuDBBackend (int keyBytes, Section const& keyValues,
-        Scheduler& scheduler, beast::Journal journal)
+    NuDBBackend (
+        size_t keyBytes,
+        Section const& keyValues,
+        Scheduler& scheduler,
+        beast::Journal journal)
         : j_(journal)
         , keyBytes_ (keyBytes)
         , name_ (get<std::string>(keyValues, "path"))
+        , deletePath_(false)
+        , scheduler_ (scheduler)
+    {
+        if (name_.empty())
+            Throw<std::runtime_error> (
+                "nodestore: Missing path in NuDB backend");
+    }
+
+    NuDBBackend (
+        size_t keyBytes,
+        Section const& keyValues,
+        Scheduler& scheduler,
+        nudb::context& context,
+        beast::Journal journal)
+        : j_(journal)
+        , keyBytes_ (keyBytes)
+        , name_ (get<std::string>(keyValues, "path"))
+        , db_ (context)
         , deletePath_(false)
         , scheduler_ (scheduler)
     {
@@ -278,7 +296,6 @@ public:
             Throw<nudb::system_error>(ec);
     }
 
-    /** Returns the number of file handles the backend expects to need */
     int
     fdlimit() const override
     {
@@ -316,6 +333,18 @@ public:
     {
         return std::make_unique <NuDBBackend> (
             keyBytes, keyValues, scheduler, journal);
+    }
+
+    std::unique_ptr <Backend>
+    createInstance (
+        size_t keyBytes,
+        Section const& keyValues,
+        Scheduler& scheduler,
+        nudb::context& context,
+        beast::Journal journal) override
+    {
+        return std::make_unique <NuDBBackend> (
+            keyBytes, keyValues, scheduler, context, journal);
     }
 };
 

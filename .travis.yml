@@ -11,8 +11,8 @@ env:
     # to boost's .tar.gz.
     - LCOV_ROOT=$HOME/lcov
     - GDB_ROOT=$HOME/gdb
-    - BOOST_ROOT=$HOME/boost_1_67_0
-    - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.67.0/boost_1_67_0.tar.gz'
+    - BOOST_ROOT=$HOME/boost_1_70_0
+    - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.70.0/boost_1_70_0.tar.gz'
 
 addons:
   apt:
