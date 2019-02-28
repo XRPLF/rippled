@@ -26,6 +26,7 @@
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/nodestore/Scheduler.h>
 
+#include <nudb/nudb.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/archive/text_oarchive.hpp>
@@ -69,7 +70,7 @@ public:
         std::chrono::seconds cacheAge, beast::Journal& j);
 
     bool
-    open(Section config, Scheduler& scheduler);
+    open(Section config, Scheduler& scheduler, nudb::context& ctx);
 
     bool
     setStored(std::shared_ptr<Ledger const> const& l);
