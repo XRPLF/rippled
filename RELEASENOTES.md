@@ -14,6 +14,20 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 1.2.2
+
+The `rippled` 1.2.2 release corrects a technical flaw in the fee escalation
+engine which could cause some fee metrics to be calculated incorrectly. In some
+circumstances this can potentially cause the server to crash.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- Fix a technical flaw in the fee escalation engine which could cause some fee metrics to be calculated incorrectly (4c06b3f86)
+
 ## Version 1.2.1
 
 The `rippled` 1.2.1 release introduces several fixes including a change in the
