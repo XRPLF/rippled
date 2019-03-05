@@ -29,7 +29,7 @@ public:
 
     void testDisableMasterKey()
     {
-        testcase('Disable master key');
+        testcase("Disable master key");
         using namespace test::jtx;
         Env env(*this);
         Account const alice("alice");
@@ -41,13 +41,11 @@ public:
         auto const ar = env.le(alice);
         BEAST_EXPECT(ar->isFieldPresent(sfRegularKey) && (ar->getAccountID(sfRegularKey) == bob.id()));
 
-        env(noop(alice));
         env(noop(alice), sig(bob));
         env(noop(alice), sig(alice));
 
         // Regular key only
         env(fset(alice, asfDisableMaster), sig(alice));
-        env(noop(alice));
         env(noop(alice), sig(bob));
         env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
         env(fclear(alice, asfDisableMaster), sig(alice), ter(tefMASTER_DISABLED));
@@ -60,8 +58,9 @@ public:
      */
     void testSetRegularKeyToMasterKey()
     {
+        testcase("Set regular key to master key (before fix1721)");
         using namespace test::jtx;
-        Env env(*this);
+        Env env {*this, supported_amendments() - fix1721};
         Account const alice("alice");
         env.fund(XRP(10000), alice);
 
@@ -81,8 +80,9 @@ public:
      */
     void testSetRegularKeyToMasterKeyAfterFix1721()
     {
+        testcase("Set regular key to master key (after fix1721)");
         using namespace test::jtx;
-        Env env {*this, supported_amendments().set(fix1721)};
+        Env env {*this, supported_amendments() | fix1721};
         Account const alice("alice");
         env.fund(XRP(10000), alice);
 
@@ -92,6 +92,7 @@ public:
 
     void testPasswordSpent()
     {
+        testcase("Password spent");
         using namespace test::jtx;
         Env env(*this);
         Account const alice("alice");
@@ -117,6 +118,7 @@ public:
 
     void testUniversalMaskError()
     {
+        testcase("Universal mask");
         using namespace test::jtx;
         Env env(*this);
         Account const alice("alice");
