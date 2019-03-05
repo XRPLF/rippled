@@ -359,16 +359,17 @@ Transactor::checkSingleSign (PreclaimContext const& ctx)
     auto const pkAccount = calcAccountID (
         PublicKey (makeSlice (spk)));
 
-    if (pkAccount == id)
+    // Check regular key first. The regular key may be set to the master key.
+    if (hasAuthKey &&
+        (pkAccount == sle->getAccountID (sfRegularKey)))
+    {
+        // Authorized to continue.
+    }
+    else if (pkAccount == id)
     {
         // Authorized to continue.
         if (sle->isFlag(lsfDisableMaster))
             return tefMASTER_DISABLED;
-    }
-    else if (hasAuthKey &&
-        (pkAccount == sle->getAccountID (sfRegularKey)))
-    {
-        // Authorized to continue.
     }
     else if (hasAuthKey)
     {
