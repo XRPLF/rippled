@@ -29,6 +29,7 @@ public:
 
     void testDisableMasterKey()
     {
+        testcase('Disable master key');
         using namespace test::jtx;
         Env env(*this);
         Account const alice("alice");
@@ -52,6 +53,41 @@ public:
         env(fclear(alice, asfDisableMaster), sig(alice), ter(tefMASTER_DISABLED));
         env(fclear(alice, asfDisableMaster), sig(bob));
         env(noop(alice), sig(alice));
+    }
+
+    /**
+     * @see https://ripplelabs.atlassian.net/browse/RIPD-1721
+     */
+    void testSetRegularKeyToMasterKey()
+    {
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice("alice");
+        env.fund(XRP(10000), alice);
+
+        // Must be possible unless amendment `fix1721` enabled.
+        log << "set regular key to master key";
+        env(regkey(alice, alice), sig(alice));
+        log << "disable master key";
+        env(fset(alice, asfDisableMaster), sig(alice));
+        // No way to sign.
+        log << "implicitly sign transaction with master key";
+        env(noop(alice), ter(tefMASTER_DISABLED));
+        env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
+    }
+
+    /**
+     * @see https://ripplelabs.atlassian.net/browse/RIPD-1721
+     */
+    void testSetRegularKeyToMasterKeyAfterFix1721()
+    {
+        using namespace test::jtx;
+        Env env {*this, supported_amendments().set(fix1721)};
+        Account const alice("alice");
+        env.fund(XRP(10000), alice);
+
+        // Must be possible unless amendment `fix1721` enabled.
+        env(regkey(alice, alice), ter(temCANT_USE_MASTER_KEY));
     }
 
     void testPasswordSpent()
@@ -95,6 +131,8 @@ public:
     void run() override
     {
         testDisableMasterKey();
+        testSetRegularKeyToMasterKey();
+        testSetRegularKeyToMasterKeyAfterFix1721();
         testPasswordSpent();
         testUniversalMaskError();
     }

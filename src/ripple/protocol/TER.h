@@ -96,6 +96,7 @@ enum TEMcodes : TERUnderlyingType
     temBAD_SIGNATURE,
     temBAD_SRC_ACCOUNT,
     temBAD_TRANSFER_RATE,
+    temCANT_USE_MASTER_KEY,
     temDST_IS_SRC,
     temDST_NEEDED,
     temINVALID,

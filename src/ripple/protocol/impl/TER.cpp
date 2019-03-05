@@ -130,6 +130,7 @@ transResults()
         { temBAD_SRC_ACCOUNT,        { "temBAD_SRC_ACCOUNT",       "Malformed: Bad source account."                                                } },
         { temBAD_TRANSFER_RATE,      { "temBAD_TRANSFER_RATE",     "Malformed: Transfer rate must be >= 1.0 and <= 2.0"                                       } },
         { temBAD_WEIGHT,             { "temBAD_WEIGHT",            "Malformed: Weight must be a positive value."                                   } },
+        { temCANT_USE_MASTER_KEY,    { "temCANT_USE_MASTER_KEY",   "Malformed: Regular key cannot be same as master key."                          } },
         { temDST_IS_SRC,             { "temDST_IS_SRC",            "Destination may not be source."                                                } },
         { temDST_NEEDED,             { "temDST_NEEDED",            "Destination not specified."                                                    } },
         { temINVALID,                { "temINVALID",               "The transaction is ill-formed."                                                } },

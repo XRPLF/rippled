@@ -19,6 +19,7 @@
 
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
@@ -54,6 +55,13 @@ SetRegularKey::preflight (PreflightContext const& ctx)
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))
         return ret;
+
+    if (ctx.rules.enabled(fix1721)
+        && ctx.tx.isFieldPresent(sfRegularKey)
+        && (ctx.tx.getAccountID(sfRegularKey) == ctx.tx.getAccountID(sfAccount)))
+    {
+        return temCANT_USE_MASTER_KEY;
+    }
 
     std::uint32_t const uTxFlags = ctx.tx.getFlags ();
 
