@@ -250,7 +250,7 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this);
+        Env env{*this, supported_amendments() | fixMasterKeyAsRegularKey};
         Account const alice("alice", KeyType::ed25519);
         Account const bob("bob", KeyType::secp256k1);
         Account const carol("carol");
@@ -259,12 +259,12 @@ public:
         // Master key only
         env(noop(alice));
         env(noop(bob));
-        env(noop(alice), sig("alice"),                          ter(tefBAD_AUTH_MASTER));
+        env(noop(alice), sig("alice"),                          ter(tefBAD_AUTH));
         env(noop(alice), sig(Account("alice",
-            KeyType::secp256k1)),                               ter(tefBAD_AUTH_MASTER));
+            KeyType::secp256k1)),                               ter(tefBAD_AUTH));
         env(noop(bob), sig(Account("bob",
-            KeyType::ed25519)),                                 ter(tefBAD_AUTH_MASTER));
-        env(noop(alice), sig(carol),                            ter(tefBAD_AUTH_MASTER));
+            KeyType::ed25519)),                                 ter(tefBAD_AUTH));
+        env(noop(alice), sig(carol),                            ter(tefBAD_AUTH));
 
         // Master and Regular key
         env(regkey(alice, bob));
@@ -302,7 +302,7 @@ public:
         env(pay(env.master, "alice", XRP(1000)), seq(none),     ter(temMALFORMED));
         env(pay(env.master, "alice", XRP(1000)), seq(20),       ter(terPRE_SEQ));
         env(pay(env.master, "alice", XRP(1000)), sig(none),     ter(temMALFORMED));
-        env(pay(env.master, "alice", XRP(1000)), sig("bob"),    ter(tefBAD_AUTH_MASTER));
+        env(pay(env.master, "alice", XRP(1000)), sig("bob"),    ter(tefBAD_AUTH));
 
         env(pay(env.master, "dilbert", XRP(1000)), sig(env.master));
 
@@ -344,7 +344,7 @@ public:
         env(fclear("alice", asfDisableMaster));
         env.require(nflags("alice", asfDisableMaster));
         env(regkey("alice", disabled));
-        env(noop("alice"), sig("eric"),                         ter(tefBAD_AUTH_MASTER));
+        env(noop("alice"), sig("eric"),                         ter(tefBAD_AUTH));
         env(noop("alice"));
     }
 
