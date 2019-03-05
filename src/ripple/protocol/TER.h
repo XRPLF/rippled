@@ -87,6 +87,7 @@ enum TEMcodes : TERUnderlyingType
     temBAD_OFFER,
     temBAD_PATH,
     temBAD_PATH_LOOP,
+    temBAD_REGKEY,
     temBAD_SEND_XRP_LIMIT,
     temBAD_SEND_XRP_MAX,
     temBAD_SEND_XRP_NO_DIRECT,

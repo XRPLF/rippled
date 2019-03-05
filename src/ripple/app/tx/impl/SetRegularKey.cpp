@@ -19,6 +19,7 @@
 
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
@@ -65,6 +66,14 @@ SetRegularKey::preflight (PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
+
+    if (ctx.rules.enabled(fixMasterKeyAsRegularKey)
+        && ctx.tx.isFieldPresent(sfRegularKey)
+        && (ctx.tx.getAccountID(sfRegularKey) == ctx.tx.getAccountID(sfAccount)))
+    {
+        return temBAD_REGKEY;
+    }
+
     return preflight2(ctx);
 }
 
@@ -84,9 +93,9 @@ SetRegularKey::doApply ()
     }
     else
     {
+        // Account has disabled master key and no multi-signer signer list.
         if (sle->isFlag (lsfDisableMaster) &&
             !view().peek (keylet::signers (account_)))
-            // Account has disabled master key and no multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;
 
         sle->makeFieldAbsent (sfRegularKey);

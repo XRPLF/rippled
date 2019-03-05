@@ -31,6 +31,7 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/STAccount.h>
 
 namespace ripple {
 
@@ -340,44 +341,68 @@ Transactor::checkSign (PreclaimContext const& ctx)
 NotTEC
 Transactor::checkSingleSign (PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx.getAccountID(sfAccount);
-
-    auto const sle = ctx.view.read(
-        keylet::account(id));
-    auto const hasAuthKey     = sle->isFieldPresent (sfRegularKey);
-
-    // Consistency: Check signature & verify the transaction's signing
-    // public key is authorized for signing.
-    auto const spk = ctx.tx.getSigningPubKey();
-    if (!publicKeyType (makeSlice (spk)))
+    // Check that the value in the signing key slot is a public key.
+    auto const pkSigner = ctx.tx.getSigningPubKey();
+    if (!publicKeyType(makeSlice(pkSigner)))
     {
         JLOG(ctx.j.trace()) <<
             "checkSingleSign: signing public key type is unknown";
         return tefBAD_AUTH; // FIXME: should be better error!
     }
 
-    auto const pkAccount = calcAccountID (
-        PublicKey (makeSlice (spk)));
+    // Look up the account.
+    auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
+    auto const idAccount = ctx.tx.getAccountID(sfAccount);
+    auto const sleAccount = ctx.view.read(keylet::account(idAccount));
+    bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
-    if (pkAccount == id)
+    if (ctx.view.rules().enabled(fixMasterKeyAsRegularKey))
     {
-        // Authorized to continue.
-        if (sle->isFlag(lsfDisableMaster))
+
+        // Signed with regular key.
+        if ((*sleAccount)[~sfRegularKey] == idSigner)
+        {
+            return tesSUCCESS;
+        }
+
+        // Signed with enabled mater key.
+        if (!isMasterDisabled && idAccount == idSigner)
+        {
+            return tesSUCCESS;
+        }
+
+        // Signed with disabled master key.
+        if (isMasterDisabled && idAccount == idSigner)
+        {
+            return tefMASTER_DISABLED;
+        }
+
+        // Signed with any other key.
+        return tefBAD_AUTH;
+
+    }
+
+    if (idSigner == idAccount)
+    {
+        // Signing with the master key. Continue if it is not disabled.
+        if (isMasterDisabled)
             return tefMASTER_DISABLED;
     }
-    else if (hasAuthKey &&
-        (pkAccount == sle->getAccountID (sfRegularKey)))
+    else if ((*sleAccount)[~sfRegularKey] == idSigner)
     {
-        // Authorized to continue.
+        // Signing with the regular key. Continue.
     }
-    else if (hasAuthKey)
+    else if (sleAccount->isFieldPresent(sfRegularKey))
     {
+        // Signing key does not match master or regular key.
         JLOG(ctx.j.trace()) <<
             "checkSingleSign: Not authorized to use account.";
         return tefBAD_AUTH;
     }
     else
     {
+        // No regular key on account and signing key does not match master key.
+        // FIXME: Why differentiate this case from tefBAD_AUTH?
         JLOG(ctx.j.trace()) <<
             "checkSingleSign: Not authorized to use account.";
         return tefBAD_AUTH_MASTER;
