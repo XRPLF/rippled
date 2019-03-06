@@ -15,6 +15,9 @@ if (target)
 endif ()
 project (rippled)
 
+if (POLICY CMP0074)
+  cmake_policy(SET CMP0074 NEW)
+endif ()
 #[===================================================================[
    convenience variables and sanity checks
 #]===================================================================]
@@ -606,6 +609,9 @@ target_link_libraries (opts
     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
 
 if (jemalloc)
+  if (static)
+    set(JEMALLOC_USE_STATIC ON CACHE BOOL "" FORCE)
+  endif ()
   find_package (jemalloc REQUIRED)
   target_compile_definitions (opts INTERFACE PROFILE_JEMALLOC)
   target_include_directories (opts SYSTEM INTERFACE ${JEMALLOC_INCLUDE_DIRS})
@@ -724,7 +730,7 @@ if (is_xcode)
   target_include_directories (ripple_boost BEFORE INTERFACE ${Boost_INCLUDE_DIRS})
   target_compile_options (ripple_boost INTERFACE --system-header-prefix="boost/")
 else ()
-  target_include_directories (ripple_boost SYSTEM INTERFACE ${Boost_INCLUDE_DIRS})
+  target_include_directories (ripple_boost SYSTEM BEFORE INTERFACE ${Boost_INCLUDE_DIRS})
 endif()
 
 target_link_libraries (ripple_boost
@@ -2564,9 +2570,9 @@ else ()
     src/test/unit_test/multi_runner.cpp)
 endif ()
 target_link_libraries (rippled
+  Ripple::boost
   Ripple::opts
   Ripple::libs
-  Ripple::boost
   Ripple::xrpl_core)
 exclude_if_included (rippled)
 
