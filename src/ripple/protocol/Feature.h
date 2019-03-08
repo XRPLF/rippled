@@ -84,7 +84,7 @@ class FeatureCollections
         "fix1578",
         "MultiSignReserve",
         "fixTakerDryOfferRemoval",
-        "fix1721"
+        "fixDisabledRegularKey"
     };
 
     std::vector<uint256> features;
@@ -373,7 +373,7 @@ extern uint256 const fix1515;
 extern uint256 const fix1578;
 extern uint256 const featureMultiSignReserve;
 extern uint256 const fixTakerDryOfferRemoval;
-extern uint256 const fix1721;
+extern uint256 const fixDisabledRegularKey;
 
 } // ripple
 

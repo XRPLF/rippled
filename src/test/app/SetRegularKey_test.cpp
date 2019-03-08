@@ -62,17 +62,17 @@ public:
         env(noop(alice), sig(alice));
     }
 
-    void testBadMasterKeyBeforeFix1721()
+    void testDisableRegularKeyBeforeFix()
     {
         using namespace test::jtx;
 
         // See https://ripplelabs.atlassian.net/browse/RIPD-1721.
-        testcase("Set regular key to master key (before fix1721)");
-        Env env {*this, supported_amendments() - fix1721};
+        testcase("Set regular key to master key (before fixDisabledRegularKey)");
+        Env env {*this, supported_amendments() - fixDisabledRegularKey};
         Account const alice("alice");
         env.fund(XRP(10000), alice);
 
-        // Must be possible unless amendment `fix1721` enabled.
+        // Must be possible unless amendment `fixDisabledRegularKey` enabled.
         log << "set regular key to master key";
         env(regkey(alice, alice), sig(alice));
         log << "disable master key";
@@ -83,16 +83,16 @@ public:
         env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
     }
 
-    void testBadMasterKeyAfterFix1721()
+    void testDisableRegularKeyAfterFix()
     {
         using namespace test::jtx;
 
-        testcase("Set regular key to master key (after fix1721)");
-        Env env {*this, supported_amendments() | fix1721};
+        testcase("Set regular key to master key (after fixDisabledRegularKey)");
+        Env env {*this, supported_amendments() | fixDisabledRegularKey};
         Account const alice("alice");
         env.fund(XRP(10000), alice);
 
-        // Must be possible unless amendment `fix1721` enabled.
+        // Must be possible unless amendment `fixDisabledRegularKey` enabled.
         env(regkey(alice, alice), ter(temBAD_REGKEY));
     }
 
@@ -141,8 +141,8 @@ public:
     void run() override
     {
         testDisableMasterKey();
-        testBadMasterKeyBeforeFix1721();
-        testBadMasterKeyAfterFix1721();
+        testDisableRegularKeyBeforeFix();
+        testDisableRegularKeyAfterFix();
         testPasswordSpent();
         testUniversalMask();
     }
