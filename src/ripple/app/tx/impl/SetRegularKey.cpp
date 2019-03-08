@@ -60,7 +60,7 @@ SetRegularKey::preflight (PreflightContext const& ctx)
         && ctx.tx.isFieldPresent(sfRegularKey)
         && (ctx.tx.getAccountID(sfRegularKey) == ctx.tx.getAccountID(sfAccount)))
     {
-        return temCANT_USE_MASTER_KEY;
+        return temBAD_REGKEY;
     }
 
     std::uint32_t const uTxFlags = ctx.tx.getFlags ();
