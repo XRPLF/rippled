@@ -340,44 +340,53 @@ Transactor::checkSign (PreclaimContext const& ctx)
 NotTEC
 Transactor::checkSingleSign (PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx.getAccountID(sfAccount);
-
-    auto const sle = ctx.view.read(
-        keylet::account(id));
-    auto const hasAuthKey     = sle->isFieldPresent (sfRegularKey);
-
-    // Consistency: Check signature & verify the transaction's signing
-    // public key is authorized for signing.
-    auto const spk = ctx.tx.getSigningPubKey();
-    if (!publicKeyType (makeSlice (spk)))
+    // Check that the value in the signing key slot is a public key.
+    auto const pkSigner = ctx.tx.getSigningPubKey();
+    if (!publicKeyType(makeSlice(pkSigner)))
     {
         JLOG(ctx.j.trace()) <<
             "checkSingleSign: signing public key type is unknown";
         return tefBAD_AUTH; // FIXME: should be better error!
     }
 
-    auto const pkAccount = calcAccountID (
-        PublicKey (makeSlice (spk)));
+    // Look up the account.
+    auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
+    auto const idAccount = ctx.tx.getAccountID(sfAccount);
+    auto const sleAccount = ctx.view.read(keylet::account(idAccount));
+    auto const hasRegularKey = sleAccount->isFieldPresent(sfRegularKey);
 
-    if (pkAccount == id)
+    auto const amended = ctx.view.rules().enabled(fixDisabledRegularKey);
+
+    // Check that the signing key is authorized.
+    if (amended
+            && hasRegularKey
+            && idSigner == sleAccount->getAccountID(sfRegularKey))
     {
-        // Authorized to continue.
-        if (sle->isFlag(lsfDisableMaster))
+        // Signing with the regular key. Continue.
+    }
+    else if (idSigner == idAccount)
+    {
+        // Signing with the master key. Continue if it is not disabled.
+        if (sleAccount->isFlag(lsfDisableMaster))
             return tefMASTER_DISABLED;
     }
-    else if (hasAuthKey &&
-        (pkAccount == sle->getAccountID (sfRegularKey)))
+    else if (!amended
+            && hasRegularKey
+            && idSigner == sleAccount->getAccountID(sfRegularKey))
     {
-        // Authorized to continue.
+        // Signing with the regular key. Continue.
     }
-    else if (hasAuthKey)
+    else if (hasRegularKey)
     {
+        // Signing key does not match master or regular key.
         JLOG(ctx.j.trace()) <<
             "checkSingleSign: Not authorized to use account.";
         return tefBAD_AUTH;
     }
     else
     {
+        // No regular key on account and signing key does not match master key.
+        // FIXME: Why differentiate this case from tefBAD_AUTH?
         JLOG(ctx.j.trace()) <<
             "checkSingleSign: Not authorized to use account.";
         return tefBAD_AUTH_MASTER;

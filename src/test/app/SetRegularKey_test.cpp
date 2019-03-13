@@ -62,7 +62,7 @@ public:
         env(noop(alice), sig(alice));
     }
 
-    void testDisableRegularKeyBeforeFix()
+    void testDisabledRegularKey()
     {
         using namespace test::jtx;
 
@@ -77,10 +77,17 @@ public:
         env(regkey(alice, alice), sig(alice));
         log << "disable master key";
         env(fset(alice, asfDisableMaster), sig(alice));
-        // No way to sign.
+
+        // No way to sign...
         log << "implicitly sign transaction with master key";
         env(noop(alice), ter(tefMASTER_DISABLED));
         env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
+
+        // ... until now.
+        log << "pass amendment: fixDisabledRegularKey";
+        env.enableFeature(fixDisabledRegularKey);
+        env(noop(alice));
+        env(noop(alice), sig(alice));
     }
 
     void testDisableRegularKeyAfterFix()
@@ -141,7 +148,7 @@ public:
     void run() override
     {
         testDisableMasterKey();
-        testDisableRegularKeyBeforeFix();
+        testDisabledRegularKey();
         testDisableRegularKeyAfterFix();
         testPasswordSpent();
         testUniversalMask();
