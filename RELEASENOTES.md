@@ -1,16 +1,16 @@
 # Release Notes
 
-![Ripple](docs/images/ripple.png)
+![XRP](docs/images/xrp-text-mark-black-small@2x.png)
 
-This document contains the release notes for `rippled`, the reference server implementation of the Ripple protocol. To learn more about how to build and run a `rippled` server, visit https://ripple.com/build/rippled-setup/
+This document contains the release notes for `rippled`, the reference server implementation of the XRP Ledger protocol. To learn more about how to build and run a `rippled` server, visit https://developers.ripple.com/manage-the-rippled-server.html
 
 > **Do you work at a digital asset exchange or wallet provider?** 
 > 
-> Please [contact us](mailto:support@ripple.com). We can help guide your integration.
+> Please contact support@ripple.com for guidance with your integration.
 
 ## Updating `rippled`
 
-If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `yum`](https://ripple.com/build/rippled-setup/#updating-rippled). For other platforms, please [compile from source](https://wiki.ripple.com/Rippled_build_instructions).
+If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `yum`](https://developers.ripple.com/update-rippled-manually-on-centos-rhel.html). For other platforms, please [compile from source](https://developers.ripple.com/install-rippled.html).
 
 # Releases
 
