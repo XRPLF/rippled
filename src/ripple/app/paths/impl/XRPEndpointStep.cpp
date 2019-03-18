@@ -166,8 +166,6 @@ private:
 class XRPEndpointPaymentStep : public XRPEndpointStep<XRPEndpointPaymentStep>
 {
 public:
-    explicit XRPEndpointPaymentStep() = default;
-
     using XRPEndpointStep<XRPEndpointPaymentStep>::XRPEndpointStep;
 
     XRPAmount
