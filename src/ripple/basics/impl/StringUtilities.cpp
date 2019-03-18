@@ -95,14 +95,14 @@ bool parseUrl (parsedURL& pUrl, std::string const& strUrl)
     static boost::regex reUrl (
         "(?i)\\`\\s*"
         // required scheme
-        "([[:alpha:]][-+.[:alpha:][:digit:]]*):"
+        "([[:alpha:]][-+.[:alpha:][:digit:]]*?):"
         // We choose to support only URIs whose `hier-part` has the form
         // `"//" authority path-abempty`.
         "//"
         // optional userinfo
-        "(?:([^[.[.][.].]:/?#@]*?)(?::([^[.[.][.].]:/?#@]*?))?@)?"
+        "(?:([^:@/]*?)(?::([^@/]*?))?@)?"
         // optional host
-        "((?:\\[[[:digit:]:.]+\\])|(?:[^[.[.][.].]:/?#@]*?))"
+        "([[:digit:]:]*[[:digit:]]|\\[[^]]+\\]|[^:/?#]*?)"
         // optional port
         "(?::([[:digit:]]+))?"
         // optional path
