@@ -24,8 +24,6 @@ private:
 
 public:
     recorder() = default;
-    recorder(recorder const&) = default;
-    recorder& operator=(recorder const&) = default;
 
     /** Returns a report with the results of all completed suites. */
     results const&
