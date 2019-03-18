@@ -32,7 +32,7 @@ public:
         using namespace test::jtx;
 
         testcase("Set regular key");
-        Env env(*this);
+        Env env {*this, supported_amendments() - fixDisabledRegularKey};
         Account const alice("alice");
         Account const bob("bob");
         env.fund(XRP(10000), alice, bob);
@@ -62,6 +62,38 @@ public:
         env(noop(alice), sig(alice));
     }
 
+    void testDisableMasterKeyAfterFix()
+    {
+        using namespace test::jtx;
+
+        testcase("Set regular key");
+        Env env {*this, supported_amendments() | fixDisabledRegularKey};
+        Account const alice("alice");
+        Account const bob("bob");
+        env.fund(XRP(10000), alice, bob);
+
+        env(regkey(alice, bob));
+        env(noop(alice), sig(bob));
+        env(noop(alice), sig(alice));
+
+        testcase("Disable master key");
+        env(fset(alice, asfDisableMaster), sig(alice));
+        env(noop(alice), sig(bob));
+        env(noop(alice), sig(alice), ter(tefBAD_AUTH));
+
+        testcase("Re-enable master key");
+        env(fclear(alice, asfDisableMaster), sig(alice), ter(tefBAD_AUTH));
+
+        env(fclear(alice, asfDisableMaster), sig(bob));
+        env(noop(alice), sig(bob));
+        env(noop(alice), sig(alice));
+
+        testcase("Revoke regular key");
+        env(regkey(alice, disabled));
+        env(noop(alice), sig(bob), ter(tefBAD_AUTH));
+        env(noop(alice), sig(alice));
+    }
+
     void testDisabledRegularKey()
     {
         using namespace test::jtx;
@@ -73,18 +105,18 @@ public:
         env.fund(XRP(10000), alice);
 
         // Must be possible unless amendment `fixDisabledRegularKey` enabled.
-        log << "set regular key to master key";
+        // log << "set regular key to master key" << std::endl;
         env(regkey(alice, alice), sig(alice));
-        log << "disable master key";
+        // log << "disable master key" << std::endl;
         env(fset(alice, asfDisableMaster), sig(alice));
 
         // No way to sign...
-        log << "implicitly sign transaction with master key";
+        // log << "implicitly sign transaction with master key" << std::endl;
         env(noop(alice), ter(tefMASTER_DISABLED));
         env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
 
         // ... until now.
-        log << "pass amendment: fixDisabledRegularKey";
+        // log << "pass amendment: fixDisabledRegularKey" << std::endl;
         env.enableFeature(fixDisabledRegularKey);
         env(noop(alice));
         env(noop(alice), sig(alice));
@@ -148,6 +180,7 @@ public:
     void run() override
     {
         testDisableMasterKey();
+        testDisableMasterKeyAfterFix();
         testDisabledRegularKey();
         testDisableRegularKeyAfterFix();
         testPasswordSpent();

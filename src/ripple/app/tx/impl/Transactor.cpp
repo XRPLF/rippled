@@ -355,24 +355,24 @@ Transactor::checkSingleSign (PreclaimContext const& ctx)
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     auto const hasRegularKey = sleAccount->isFieldPresent(sfRegularKey);
 
-    auto const amended = ctx.view.rules().enabled(fixDisabledRegularKey);
+    if (ctx.view.rules().enabled(fixDisabledRegularKey)) {
 
-    // Check that the signing key is authorized.
-    if (amended
-            && hasRegularKey
-            && idSigner == sleAccount->getAccountID(sfRegularKey))
-    {
-        // Signing with the regular key. Continue.
+        if ((*sleAccount)[~sfRegularKey] == idSigner
+                || (!sleAccount->isFlag(lsfDisableMaster) && idAccount == idSigner))
+        {
+            return tesSUCCESS;
+        }
+        return tefBAD_AUTH;
+
     }
-    else if (idSigner == idAccount)
+
+    if (idSigner == idAccount)
     {
         // Signing with the master key. Continue if it is not disabled.
         if (sleAccount->isFlag(lsfDisableMaster))
             return tefMASTER_DISABLED;
     }
-    else if (!amended
-            && hasRegularKey
-            && idSigner == sleAccount->getAccountID(sfRegularKey))
+    else if (hasRegularKey && idSigner == sleAccount->getAccountID(sfRegularKey))
     {
         // Signing with the regular key. Continue.
     }
