@@ -395,6 +395,12 @@ class LedgerTrie
         return std::make_pair(curr, pos);
     }
 
+    /** Find the node in the trie with an exact match to the given ledger ID
+
+        @return the found node or nullptr if an exact match was not found.
+
+        @note O(n) since this searches all nodes until a match is found
+    */
     Node*
     findByLedgerID(Ledger const& ledger, Node* parent = nullptr) const
     {
@@ -584,8 +590,9 @@ public:
     std::uint32_t
     tipSupport(Ledger const& ledger) const
     {
-        Node const* loc = findByLedgerID(ledger);
-        return loc ? loc->tipSupport : 0;
+        if (auto const* loc = findByLedgerID(ledger))
+            return loc->tipSupport;
+        return 0;
     }
 
     /** Return the count of branch support for the specific ledger
