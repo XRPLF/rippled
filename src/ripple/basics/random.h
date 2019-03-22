@@ -51,7 +51,7 @@ namespace detail {
 // Determines if a type can be called like an Engine
 template <class Engine, class Result = typename Engine::result_type>
 using is_engine =
-    std::is_invocable<Engine, Result()>;
+    std::is_invocable_r<Result, Engine>;
 }
 
 /** Return the default random engine.
