@@ -673,9 +673,7 @@ protected:
     void
     invoke (STTx& stx, FN const&... fN)
     {
-        // Sean Parent for_each_argument trick (C++ fold expressions would be
-        // nice here)
-        (void)std::array<int, sizeof...(fN)>{{((fN(*this, stx)), 0)...}};
+        (fN(*this, stx),...);
     }
 
     // Invoke funclets on jt
@@ -683,9 +681,7 @@ protected:
     void
     invoke (JTx& jt, FN const&... fN)
     {
-        // Sean Parent for_each_argument trick (C++ fold expressions would be
-        // nice here)
-        (void)std::array<int, sizeof...(fN)>{{((fN(*this, jt)), 0)...}};
+        (fN(*this, jt),...);
     }
 
     // Map of account IDs to Account
