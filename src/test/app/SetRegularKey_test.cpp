@@ -67,7 +67,7 @@ public:
         using namespace test::jtx;
 
         testcase("Set regular key");
-        Env env {*this, supported_amendments() | fixDisabledRegularKey};
+        Env env{*this, supported_amendments() | fixDisabledRegularKey};
         Account const alice("alice");
         Account const bob("bob");
         env.fund(XRP(10000), alice, bob);
