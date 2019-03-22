@@ -79,10 +79,14 @@ public:
         testcase("Disable master key");
         env(fset(alice, asfDisableMaster), sig(alice));
         env(noop(alice), sig(bob));
-        env(noop(alice), sig(alice), ter(tefBAD_AUTH));
+        env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
 
         testcase("Re-enable master key");
-        env(fclear(alice, asfDisableMaster), sig(alice), ter(tefBAD_AUTH));
+        env(
+            fclear(alice, asfDisableMaster),
+            sig(alice),
+            ter(tefMASTER_DISABLED)
+        );
 
         env(fclear(alice, asfDisableMaster), sig(bob));
         env(noop(alice), sig(bob));

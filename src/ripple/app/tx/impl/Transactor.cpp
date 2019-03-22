@@ -31,6 +31,7 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/STAccount.h>
 
 namespace ripple {
 
@@ -353,14 +354,18 @@ Transactor::checkSingleSign (PreclaimContext const& ctx)
     auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const idAccount = ctx.tx.getAccountID(sfAccount);
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
-    auto const hasRegularKey = sleAccount->isFieldPresent(sfRegularKey);
+    auto const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
     if (ctx.view.rules().enabled(fixDisabledRegularKey)) {
 
         if ((*sleAccount)[~sfRegularKey] == idSigner
-                || (!sleAccount->isFlag(lsfDisableMaster) && idAccount == idSigner))
+                || (!isMasterDisabled && idAccount == idSigner))
         {
             return tesSUCCESS;
+        }
+        if (isMasterDisabled && idAccount == idSigner)
+        {
+            return tefMASTER_DISABLED;
         }
         return tefBAD_AUTH;
 
@@ -369,14 +374,14 @@ Transactor::checkSingleSign (PreclaimContext const& ctx)
     if (idSigner == idAccount)
     {
         // Signing with the master key. Continue if it is not disabled.
-        if (sleAccount->isFlag(lsfDisableMaster))
+        if (isMasterDisabled)
             return tefMASTER_DISABLED;
     }
-    else if (hasRegularKey && idSigner == sleAccount->getAccountID(sfRegularKey))
+    else if ((*sleAccount)[~sfRegularKey] == idSigner)
     {
         // Signing with the regular key. Continue.
     }
-    else if (hasRegularKey)
+    else if (sleAccount->isFieldPresent(sfRegularKey))
     {
         // Signing key does not match master or regular key.
         JLOG(ctx.j.trace()) <<
