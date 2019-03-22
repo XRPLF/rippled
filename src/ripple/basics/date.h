@@ -30,6 +30,7 @@
 // been invented (that would involve another several millennia of evolution).
 // We did not mean to shout.
 
+#define HAS_STRING_VIEW 0
 #ifndef HAS_STRING_VIEW
 #  if __cplusplus >= 201703
 #    define HAS_STRING_VIEW 1
