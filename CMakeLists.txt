@@ -422,7 +422,8 @@ add_library (Ripple::common ALIAS common)
 link_libraries (Ripple::common)
 set_target_properties (common
   PROPERTIES INTERFACE_POSITION_INDEPENDENT_CODE ON)
-target_compile_features (common INTERFACE cxx_std_14)
+set(CMAKE_CXX_EXTENSIONS OFF)
+target_compile_features (common INTERFACE cxx_std_17)
 target_compile_definitions (common
   INTERFACE
     $<$<CONFIG:Debug>:DEBUG _DEBUG>
