@@ -667,73 +667,25 @@ protected:
     std::shared_ptr<STTx const>
     st (JTx const& jt);
 
-    inline
-    void
-    invoke (STTx& stx)
-    {
-    }
-
-    template <class F>
-    inline
-    void
-    maybe_invoke (STTx& stx, F const& f,
-        std::false_type)
-    {
-    }
-
-    template <class F>
-    void
-    maybe_invoke (STTx& stx, F const& f,
-        std::true_type)
-    {
-        f(*this, stx);
-    }
-
     // Invoke funclets on stx
     // Note: The STTx may not be modified
-    template <class F, class... FN>
+    template <class... FN>
     void
-    invoke (STTx& stx, F const& f,
-        FN const&... fN)
+    invoke (STTx& stx, FN const&... fN)
     {
-        maybe_invoke(stx, f,
-            std::is_invocable<F,
-                void(Env&, STTx const&)>());
-        invoke(stx, fN...);
-    }
-
-    inline
-    void
-    invoke (JTx&)
-    {
-    }
-
-    template <class F>
-    inline
-    void
-    maybe_invoke (JTx& jt, F const& f,
-        std::false_type)
-    {
-    }
-
-    template <class F>
-    void
-    maybe_invoke (JTx& jt, F const& f,
-        std::true_type)
-    {
-        f(*this, jt);
+        // Sean Parent for_each_argument trick (C++ fold expressions would be
+        // nice here)
+        (void)std::array<int, sizeof...(fN)>{{((fN(*this, stx)), 0)...}};
     }
 
     // Invoke funclets on jt
-    template <class F, class... FN>
+    template <class... FN>
     void
-    invoke (JTx& jt, F const& f,
-        FN const&... fN)
+    invoke (JTx& jt, FN const&... fN)
     {
-        maybe_invoke(jt, f,
-            std::is_invocable<F,
-                void(Env&, JTx&)>());
-        invoke(jt, fN...);
+        // Sean Parent for_each_argument trick (C++ fold expressions would be
+        // nice here)
+        (void)std::array<int, sizeof...(fN)>{{((fN(*this, jt)), 0)...}};
     }
 
     // Map of account IDs to Account
