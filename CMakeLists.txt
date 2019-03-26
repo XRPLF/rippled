@@ -205,6 +205,10 @@ option (boost_show_deprecated
   "Allow boost to fail on deprecated usage. Only useful if you're trying\
   to find deprecated calls."
   OFF)
+option (beast_hashers
+  "Use local implementations for sha/ripemd hashes (experimental, not recommended)"
+  OFF)
+
 if (WIN32)
   option (beast_disable_autolink "Disables autolinking of system libraries on WIN32" OFF)
 else ()
@@ -576,6 +580,9 @@ target_compile_definitions (opts
       BOOST_COROUTINES_NO_DEPRECATION_WARNING
       BOOST_BEAST_ALLOW_DEPRECATED
       BOOST_FILESYSTEM_DEPRECATED
+    >
+    $<$<BOOL:${beast_hashers}>:
+      USE_BEAST_HASHER
     >
     $<$<BOOL:${beast_no_unit_test_inline}>:BEAST_NO_UNIT_TEST_INLINE=1>
     $<$<BOOL:${beast_disable_autolink}>:BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES=1>
