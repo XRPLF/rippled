@@ -122,14 +122,14 @@ private:
 
 // Aliases to choose the correct digest implementation
 
-#if RIPPLE_USE_OPENSSL
-using ripemd160_hasher = openssl_ripemd160_hasher;
-using sha256_hasher = openssl_sha256_hasher;
-using sha512_hasher = openssl_sha512_hasher;
-#else
+#if USE_BEAST_HASHER
 using ripemd160_hasher = beast::ripemd160_hasher;
 using sha256_hasher = beast::sha256_hasher;
 using sha512_hasher = beast::sha512_hasher;
+#else
+using ripemd160_hasher = openssl_ripemd160_hasher;
+using sha256_hasher = openssl_sha256_hasher;
+using sha512_hasher = openssl_sha512_hasher;
 #endif
 
 //------------------------------------------------------------------------------
