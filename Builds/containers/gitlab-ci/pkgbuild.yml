@@ -13,10 +13,13 @@ variables:
   ARTIFACTORY_HOST: "artifactory.ops.ripple.com"
   ARTIFACTORY_HUB: "${ARTIFACTORY_HOST}:6555"
   GIT_SIGN_PUBKEYS_URL: "https://gitlab.ops.ripple.com/snippets/11/raw"
-  PUBLIC_REPO_ROOT: "https://mirrors1.ripple.com/repos"
+  PUBLIC_REPO_ROOT: "https://repos.ripple.com/repos"
   # also need to define this variable ONLY for the primary
   # build/publish pipeline on the mainline repo:
   #   IS_PRIMARY_REPO = "true"
+  # and if you want to pause for manual approval before
+  # pushing to pkg repos:
+  #   REQUIRE_APPROVAL = "true"
 
 stages:
   - build_containers
@@ -26,6 +29,7 @@ stages:
   - tag_images
   - push_to_test
   - verify_from_test
+  - wait_approval_prod
   - push_to_prod
   - verify_from_prod
   - get_final_hashes
@@ -48,6 +52,15 @@ stages:
       - /^(master|release|develop)$/
     variables:
       - $IS_PRIMARY_REPO == "true"
+
+.only_primary_manual_template: &only_primary_manual
+  only:
+    refs:
+      - /^(master|release|develop)$/
+    variables:
+      - $IS_PRIMARY_REPO == "true"
+      - $REQUIRE_APPROVAL == "true"
+  when: manual
 
 .smoketest_local_template: &run_local_smoketest
   tags:
@@ -136,20 +149,47 @@ dpkg_build:
 ##                                                                     ##
 #########################################################################
 
-centos_smoketest:
+centos_7_smoketest:
   stage: smoketest
   dependencies:
     - rpm_build
   image:
-    name: centos:latest
+    name: centos:7
   <<: *run_local_smoketest
 
-fedora_smoketest:
+fedora_29_smoketest:
   stage: smoketest
   dependencies:
     - rpm_build
   image:
-    name: fedora:latest
+    name: fedora:29
+  <<: *run_local_smoketest
+
+fedora_28_smoketest:
+  stage: smoketest
+  dependencies:
+    - rpm_build
+  image:
+    name: fedora:28
+  <<: *run_local_smoketest
+
+fedora_27_smoketest:
+  stage: smoketest
+  dependencies:
+    - rpm_build
+  image:
+    name: fedora:27
+  <<: *run_local_smoketest
+
+## this one is not LTS, but we
+## get some extra coverage by including it
+## consider dropping it when 20.04 is ready
+ubuntu_19_smoketest:
+  stage: smoketest
+  dependencies:
+    - dpkg_build
+  image:
+    name: ubuntu:19.04
   <<: *run_local_smoketest
 
 ubuntu_18_smoketest:
@@ -168,12 +208,12 @@ ubuntu_16_smoketest:
     name: ubuntu:16.04
   <<: *run_local_smoketest
 
-debian_smoketest:
+debian_9_smoketest:
   stage: smoketest
   dependencies:
     - dpkg_build
   image:
-    name: debian:stable
+    name: debian:9
   <<: *run_local_smoketest
 
 #########################################################################
@@ -257,32 +297,66 @@ push_test:
 ##                                                                     ##
 #########################################################################
 
-centos_verify_repo_test:
+centos_7_verify_repo_test:
   stage: verify_from_test
   variables:
     RPM_REPO: "rippled-rpm-test-mirror"
   image:
-    name: centos:latest
+    name: centos:7
   dependencies:
     - rpm_build
   <<: *only_primary
   <<: *run_repo_smoketest
 
-fedora_verify_repo_test:
+fedora_29_verify_repo_test:
   stage: verify_from_test
   variables:
     RPM_REPO: "rippled-rpm-test-mirror"
   image:
-    name: fedora:latest
+    name: fedora:29
   dependencies:
     - rpm_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+fedora_28_verify_repo_test:
+  stage: verify_from_test
+  variables:
+    RPM_REPO: "rippled-rpm-test-mirror"
+  image:
+    name: fedora:28
+  dependencies:
+    - rpm_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+fedora_27_verify_repo_test:
+  stage: verify_from_test
+  variables:
+    RPM_REPO: "rippled-rpm-test-mirror"
+  image:
+    name: fedora:27
+  dependencies:
+    - rpm_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+ubuntu_19_verify_repo_test:
+  stage: verify_from_test
+  variables:
+    DISTRO: "disco"
+    DEB_REPO: "rippled-deb-test-mirror"
+  image:
+    name: ubuntu:19.04
+  dependencies:
+    - dpkg_build
   <<: *only_primary
   <<: *run_repo_smoketest
 
 ubuntu_18_verify_repo_test:
   stage: verify_from_test
   variables:
-    DISTRO: "stretch"
+    DISTRO: "bionic"
     DEB_REPO: "rippled-deb-test-mirror"
   image:
     name: ubuntu:18.04
@@ -303,17 +377,35 @@ ubuntu_16_verify_repo_test:
   <<: *only_primary
   <<: *run_repo_smoketest
 
-debian_verify_repo_test:
+debian_9_verify_repo_test:
   stage: verify_from_test
   variables:
-    DISTRO: "bionic"
+    DISTRO: "stretch"
     DEB_REPO: "rippled-deb-test-mirror"
   image:
-    name: debian:stable
+    name: debian:9
   dependencies:
     - dpkg_build
   <<: *only_primary
   <<: *run_repo_smoketest
+
+#########################################################################
+##                                                                     ##
+##  stage: wait_approval_prod                                          ##
+##                                                                     ##
+##  wait for manual approval before proceeding to next stage           ##
+##  which pushes to prod repo.                                         ##
+##  ONLY RUNS FOR PRIMARY BRANCHES/REPO and when                       ##
+##  REQUIRE_APPROVAL is set to true.                                   ##
+##                                                                     ##
+#########################################################################
+wait_before_push_prod:
+  stage: wait_approval_prod
+  image:
+    name: alpine:latest
+  <<: *only_primary_manual
+  script:
+    - echo "proceeding to next stage"
 
 #########################################################################
 ##                                                                     ##
@@ -340,9 +432,6 @@ push_prod:
   <<: *only_primary
   script:
     - . ./Builds/containers/gitlab-ci/push_to_artifactory.sh "PUT" "."
-# if we want to make the push to prod
-# an explicit/manual step, uncomment this:
-#  when: manual
 
 #########################################################################
 ##                                                                     ##
@@ -353,32 +442,66 @@ push_prod:
 ##                                                                     ##
 #########################################################################
 
-centos_verify_repo_prod:
+centos_7_verify_repo_prod:
   stage: verify_from_prod
   variables:
     RPM_REPO: "rippled-rpm"
   image:
-    name: centos:latest
+    name: centos:7
   dependencies:
     - rpm_build
   <<: *only_primary
   <<: *run_repo_smoketest
 
-fedora_verify_repo_prod:
+fedora_29_verify_repo_prod:
   stage: verify_from_prod
   variables:
     RPM_REPO: "rippled-rpm"
   image:
-    name: fedora:latest
+    name: fedora:29
   dependencies:
     - rpm_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+fedora_28_verify_repo_prod:
+  stage: verify_from_prod
+  variables:
+    RPM_REPO: "rippled-rpm"
+  image:
+    name: fedora:28
+  dependencies:
+    - rpm_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+fedora_27_verify_repo_prod:
+  stage: verify_from_prod
+  variables:
+    RPM_REPO: "rippled-rpm"
+  image:
+    name: fedora:27
+  dependencies:
+    - rpm_build
+  <<: *only_primary
+  <<: *run_repo_smoketest
+
+ubuntu_19_verify_repo_prod:
+  stage: verify_from_prod
+  variables:
+    DISTRO: "disco"
+    DEB_REPO: "rippled-deb"
+  image:
+    name: ubuntu:19.04
+  dependencies:
+    - dpkg_build
   <<: *only_primary
   <<: *run_repo_smoketest
 
 ubuntu_18_verify_repo_prod:
   stage: verify_from_prod
   variables:
-    DISTRO: "stretch"
+    DISTRO: "bionic"
     DEB_REPO: "rippled-deb"
   image:
     name: ubuntu:18.04
@@ -399,13 +522,13 @@ ubuntu_16_verify_repo_prod:
   <<: *only_primary
   <<: *run_repo_smoketest
 
-debian_verify_repo_prod:
+debian_9_verify_repo_prod:
   stage: verify_from_prod
   variables:
-    DISTRO: "bionic"
+    DISTRO: "stretch"
     DEB_REPO: "rippled-deb"
   image:
-    name: debian:stable
+    name: debian:9
   dependencies:
     - dpkg_build
   <<: *only_primary

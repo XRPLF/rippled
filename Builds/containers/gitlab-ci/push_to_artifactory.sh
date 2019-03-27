@@ -19,7 +19,7 @@ RIPPLED_DBG_PKG=$(ls rippled-dbgsym_*.deb)
 # TODO - where to upload src tgz?
 RIPPLED_SRC=$(ls rippled_*.orig.tar.gz)
 DEB_MATRIX=";deb.component=${COMPONENT};deb.architecture=amd64"
-for dist in stretch buster xenial bionic ; do
+for dist in stretch buster xenial bionic disco ; do
     DEB_MATRIX="${DEB_MATRIX};deb.distribution=${dist}"
 done
 for deb in ${RIPPLED_PKG} ${RIPPLED_DEV_PKG} ${RIPPLED_DBG_PKG} ; do
