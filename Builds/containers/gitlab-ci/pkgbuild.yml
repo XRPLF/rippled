@@ -17,6 +17,9 @@ variables:
   # also need to define this variable ONLY for the primary
   # build/publish pipeline on the mainline repo:
   #   IS_PRIMARY_REPO = "true"
+  # and if you want to pause for manual approval before
+  # pushing to pkg repos:
+  #   REQUIRE_APPROVAL = "true"
 
 stages:
   - build_containers
@@ -24,8 +27,10 @@ stages:
   - smoketest
   - verify_sig
   - tag_images
+  - wait_approval_test
   - push_to_test
   - verify_from_test
+  - wait_approval_prod
   - push_to_prod
   - verify_from_prod
   - get_final_hashes
@@ -48,6 +53,15 @@ stages:
       - /^(master|release|develop)$/
     variables:
       - $IS_PRIMARY_REPO == "true"
+
+.only_primary_manual_template: &only_primary_manual
+  only:
+    refs:
+      - /^(master|release|develop)$/
+    variables:
+      - $IS_PRIMARY_REPO == "true"
+      - $REQUIRE_APPROVAL == "true"
+  when: manual
 
 .smoketest_local_template: &run_local_smoketest
   tags:
@@ -224,6 +238,24 @@ tag_bld_images:
 
 #########################################################################
 ##                                                                     ##
+##  stage: wait_approval_test                                          ##
+##                                                                     ##
+##  wait for manual approval before proceeding to next stage           ##
+##  which pushes to test repo.                                         ##
+##  ONLY RUNS FOR PRIMARY BRANCHES/REPO and when                       ##
+##  REQUIRE_APPROVAL is set to true.                                   ##
+##                                                                     ##
+#########################################################################
+wait_before_push_test:
+  stage: wait_approval_test
+  image:
+    name: alpine:latest
+  <<: *only_primary_manual
+  script:
+    - echo "proceeding to next stage"
+
+#########################################################################
+##                                                                     ##
 ##  stage: push_to_test                                                ##
 ##                                                                     ##
 ##  push packages to artifactory repositories (test)                   ##
@@ -317,6 +349,24 @@ debian_verify_repo_test:
 
 #########################################################################
 ##                                                                     ##
+##  stage: wait_approval_prod                                          ##
+##                                                                     ##
+##  wait for manual approval before proceeding to next stage           ##
+##  which pushes to prod repo.                                         ##
+##  ONLY RUNS FOR PRIMARY BRANCHES/REPO and when                       ##
+##  REQUIRE_APPROVAL is set to true.                                   ##
+##                                                                     ##
+#########################################################################
+wait_before_push_prod:
+  stage: wait_approval_prod
+  image:
+    name: alpine:latest
+  <<: *only_primary_manual
+  script:
+    - echo "proceeding to next stage"
+
+#########################################################################
+##                                                                     ##
 ##  stage: push_to_prod                                                ##
 ##                                                                     ##
 ##  push packages to artifactory repositories (prod)                   ##
@@ -340,9 +390,6 @@ push_prod:
   <<: *only_primary
   script:
     - . ./Builds/containers/gitlab-ci/push_to_artifactory.sh "PUT" "."
-# if we want to make the push to prod
-# an explicit/manual step, uncomment this:
-#  when: manual
 
 #########################################################################
 ##                                                                     ##
