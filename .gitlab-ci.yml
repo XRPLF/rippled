@@ -1,0 +1,69 @@
+# I don't know what the minimum size is, but we cannot build on t3.micro.
+
+# The parameters for our job matrix:
+#
+# 1. Generator (Make, Ninja, MSBuild)
+# 2. Compiler (GCC, Clang, MSVC)
+# 3. Build type (Debug, Release)
+# 4. Definitions (-Dunity=OFF, -Dassert=ON, ...)
+
+.jog_linux_build_test: &job_linux_build_test
+  stage: build
+  tags:
+    - jfreeman
+    - linux
+    - c5.2xlarge
+  image: thejohnfreeman/rippled-build-ubuntu:develop
+  script:
+    - bin/ci/build.sh
+    - bin/ci/test.sh
+
+'build+test Make GCC Release -Dassert=ON':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: gcc
+    BUILD_TYPE: Release
+    CMAKE_ARGS: '-Dassert=ON'
+
+'build+test Make GCC Debug':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: gcc
+    BUILD_TYPE: Debug
+
+'build+test Make GCC Release':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: gcc
+    BUILD_TYPE: Release
+
+'build+test Make clang Debug':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: clang
+    BUILD_TYPE: Debug
+
+'build+test Make clang Release':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: clang
+    BUILD_TYPE: Release
+
+'build+test Ninja GCC Debug':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Ninja
+    COMPILER: gcc
+    BUILD_TYPE: Debug
+
+'build+test Ninja GCC Release':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Ninja
+    COMPILER: gcc
+    BUILD_TYPE: Release
