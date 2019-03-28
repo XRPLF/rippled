@@ -14,6 +14,18 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 1.2.3
+
+The `rippled` 1.2.3 release corrects a technical flaw which in some circumstances can cause a null pointer dereference that can crash the server.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- Fix a technical flaw which in some circumstances can cause a null pointer dereference that can crash the server.
+
 ## Version 1.2.2
 
 The `rippled` 1.2.2 release corrects a technical flaw in the fee escalation
