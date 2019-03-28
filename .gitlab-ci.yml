@@ -1,0 +1,169 @@
+# I don't know what the minimum size is, but we cannot build on t3.micro.
+
+# TODO: Factor common builds between different tests.
+
+# The parameters for our job matrix:
+#
+# 1. Generator (Make, Ninja, MSBuild)
+# 2. Compiler (GCC, Clang, MSVC)
+# 3. Build type (Debug, Release)
+# 4. Definitions (-Dunity=OFF, -Dassert=ON, ...)
+
+
+.job_linux_build_test:
+  only:
+    variables:
+      - $CI_PROJECT_URL =~ /^https?:\/\/gitlab.com\//
+  stage: build
+  tags:
+    - linux
+    - c5.2xlarge
+  image: thejohnfreeman/rippled-build-ubuntu:1bc7230e5b97
+  script:
+    - bin/ci/build.sh
+    - bin/ci/test.sh
+  cache:
+    # Use a different key for each unique combination of (generator, compiler,
+    # build type). Caches are stored as `.zip` files; they are not merged.
+    # Generate a new key whenever you want to bust the cache, e.g. when the
+    # dependency versions have been bumped.
+    # By default, jobs pull the cache. Only a few specially chosen jobs update
+    # the cache (with policy `pull-push`); one for each unique combination of
+    # (generator, compiler, build type).
+    policy: pull
+    paths:
+      - .nih_c/
+
+'build+test Make GCC Debug':
+  extends: .job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: gcc
+    BUILD_TYPE: Debug
+  cache:
+    key: ae412fb0-5fc8-4fd5-8e48-e3a60e91ed46
+    policy: pull-push
+
+'build+test Ninja GCC Debug':
+  extends: .job_linux_build_test
+  variables:
+    GENERATOR: Ninja
+    COMPILER: gcc
+    BUILD_TYPE: Debug
+  cache:
+    key: 3a314872-4faa-4712-b8ab-a8d54ac83342
+    policy: pull-push
+
+'build+test Ninja GCC Debug -Dstatic=OFF':
+  extends: .job_linux_build_test
+  variables:
+    GENERATOR: Ninja
+    COMPILER: gcc
+    BUILD_TYPE: Debug
+    CMAKE_ARGS: '-Dstatic=OFF'
+  cache:
+    key: 3a314872-4faa-4712-b8ab-a8d54ac83342
+
+'build+test Ninja GCC Debug -Dstatic=OFF -DBUILD_SHARED_LIBS=ON':
+  extends: .job_linux_build_test
+  variables:
+    GENERATOR: Ninja
+    COMPILER: gcc
+    BUILD_TYPE: Debug
+    CMAKE_ARGS: '-Dstatic=OFF -DBUILD_SHARED_LIBS=ON'
+  cache:
+    key: 3a314872-4faa-4712-b8ab-a8d54ac83342
+
+'build+test Ninja GCC Debug -Dunity=OFF':
+  extends: .job_linux_build_test
+  variables:
+    GENERATOR: Ninja
+    COMPILER: gcc
+    BUILD_TYPE: Debug
+    CMAKE_ARGS: '-Dunity=OFF'
+  cache:
+    key: 3a314872-4faa-4712-b8ab-a8d54ac83342
+
+'build+test Ninja GCC Release -Dassert=ON':
+  extends: .job_linux_build_test
+  variables:
+    GENERATOR: Ninja
+    COMPILER: gcc
+    BUILD_TYPE: Release
+    CMAKE_ARGS: '-Dassert=ON'
+  cache:
+    key: ac5e7a8a-bfcb-4480-a3cc-07d0336f4408
+    policy: pull-push
+
+'build+test(manual) Ninja GCC Release -Dassert=ON':
+  extends: .job_linux_build_test
+  variables:
+    GENERATOR: Ninja
+    COMPILER: gcc
+    BUILD_TYPE: Release
+    CMAKE_ARGS: '-Dassert=ON'
+    MANUAL_TEST: 'true'
+  cache:
+    key: ac5e7a8a-bfcb-4480-a3cc-07d0336f4408
+
+'build+test Make clang Debug':
+  extends: .job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: clang
+    BUILD_TYPE: Debug
+  cache:
+    key: 09cec2ce-83f5-4ce9-8a3b-23737edefd4f
+    policy: pull-push
+
+'build+test Ninja clang Debug':
+  extends: .job_linux_build_test
+  variables:
+    GENERATOR: Ninja
+    COMPILER: clang
+    BUILD_TYPE: Debug
+  cache:
+    key: c6e29541-e539-4d57-86c5-57d923521f35
+    policy: pull-push
+
+'build+test Ninja clang Debug -Dunity=OFF':
+  extends: .job_linux_build_test
+  variables:
+    GENERATOR: Ninja
+    COMPILER: clang
+    BUILD_TYPE: Debug
+    CMAKE_ARGS: '-Dunity=OFF'
+  cache:
+    key: c6e29541-e539-4d57-86c5-57d923521f35
+
+'build+test Ninja clang Debug -Dunity=OFF -Dsan=address':
+  extends: .job_linux_build_test
+  variables:
+    GENERATOR: Ninja
+    COMPILER: clang
+    BUILD_TYPE: Debug
+    CMAKE_ARGS: '-Dunity=OFF -Dsan=address'
+    CONCURRENT_TESTS: 1
+  cache:
+    key: c6e29541-e539-4d57-86c5-57d923521f35
+
+'build+test Ninja clang Debug -Dunity=OFF -Dsan=undefined':
+  extends: .job_linux_build_test
+  variables:
+    GENERATOR: Ninja
+    COMPILER: clang
+    BUILD_TYPE: Debug
+    CMAKE_ARGS: '-Dunity=OFF -Dsan=undefined'
+  cache:
+    key: c6e29541-e539-4d57-86c5-57d923521f35
+
+'build+test Ninja clang Release -Dassert=ON':
+  extends: .job_linux_build_test
+  variables:
+    GENERATOR: Ninja
+    COMPILER: clang
+    BUILD_TYPE: Release
+    CMAKE_ARGS: '-Dassert=ON'
+  cache:
+    key: 2e48f4d8-e0d7-4aa9-b646-499cef6c1a87
+    policy: pull-push
