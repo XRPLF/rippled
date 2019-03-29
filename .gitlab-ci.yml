@@ -1,5 +1,8 @@
 # I don't know what the minimum size is, but we cannot build on t3.micro.
 
+# TODO: Factor common builds between different tests.
+# TODO: Prefer Ninja builds because they are faster.
+
 # The parameters for our job matrix:
 #
 # 1. Generator (Make, Ninja, MSBuild)
@@ -18,41 +21,12 @@
     - bin/ci/build.sh
     - bin/ci/test.sh
 
-'build+test Make GCC Release -Dassert=ON':
-  <<: *job_linux_build_test
-  variables:
-    GENERATOR: Unix Makefiles
-    COMPILER: gcc
-    BUILD_TYPE: Release
-    CMAKE_ARGS: '-Dassert=ON'
-
 'build+test Make GCC Debug':
   <<: *job_linux_build_test
   variables:
     GENERATOR: Unix Makefiles
     COMPILER: gcc
     BUILD_TYPE: Debug
-
-'build+test Make GCC Release':
-  <<: *job_linux_build_test
-  variables:
-    GENERATOR: Unix Makefiles
-    COMPILER: gcc
-    BUILD_TYPE: Release
-
-'build+test Make clang Debug':
-  <<: *job_linux_build_test
-  variables:
-    GENERATOR: Unix Makefiles
-    COMPILER: clang
-    BUILD_TYPE: Debug
-
-'build+test Make clang Release':
-  <<: *job_linux_build_test
-  variables:
-    GENERATOR: Unix Makefiles
-    COMPILER: clang
-    BUILD_TYPE: Release
 
 'build+test Ninja GCC Debug':
   <<: *job_linux_build_test
@@ -61,9 +35,82 @@
     COMPILER: gcc
     BUILD_TYPE: Debug
 
-'build+test Ninja GCC Release':
+'build+test Make GCC Debug -Dstatic=OFF':
   <<: *job_linux_build_test
   variables:
-    GENERATOR: Ninja
+    GENERATOR: Unix Makefiles
+    COMPILER: gcc
+    BUILD_TYPE: Debug
+    CMAKE_ARGS: '-Dstatic=OFF'
+
+'build+test Make GCC Debug -Dstatic=OFF -DBUILD_SHARED_LIBS=ON':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: gcc
+    BUILD_TYPE: Debug
+    CMAKE_ARGS: '-Dstatic=OFF -DBUILD_SHARED_LIBS=ON'
+
+'build+test Make GCC Debug -Dunity=OFF':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: gcc
+    BUILD_TYPE: Debug
+    CMAKE_ARGS: '-Dunity=OFF'
+
+'build+test Make GCC Release -Dassert=ON':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
     COMPILER: gcc
     BUILD_TYPE: Release
+    CMAKE_ARGS: '-Dassert=ON'
+
+'build+test(manual) Make GCC Release -Dassert=ON':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: gcc
+    BUILD_TYPE: Release
+    CMAKE_ARGS: '-Dassert=ON'
+    MANUAL_TEST: 'true'
+
+'build+test Make clang Debug':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: clang
+    BUILD_TYPE: Debug
+
+'build+test Make clang Debug -Dunity=OFF':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: clang
+    BUILD_TYPE: Debug
+    CMAKE_ARGS: '-Dunity=OFF'
+
+'build+test Make clang Debug -Dunity=OFF -Dsan=address':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: clang
+    BUILD_TYPE: Debug
+    CMAKE_ARGS: '-Dunity=OFF -Dsan=address'
+
+'build+test Make clang Debug -Dunity=OFF -Dsan=undefined':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: clang
+    BUILD_TYPE: Debug
+    CMAKE_ARGS: '-Dunity=OFF -Dsan=undefined'
+
+'build+test Make clang Release -Dassert=ON':
+  <<: *job_linux_build_test
+  variables:
+    GENERATOR: Unix Makefiles
+    COMPILER: clang
+    BUILD_TYPE: Release
+    CMAKE_ARGS: '-Dassert=ON'
