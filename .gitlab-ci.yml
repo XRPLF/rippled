@@ -98,6 +98,7 @@
     COMPILER: clang
     BUILD_TYPE: Debug
     CMAKE_ARGS: '-Dunity=OFF -Dsan=address'
+    CONCURRENT_TESTS: 1
 
 'build+test Make clang Debug -Dunity=OFF -Dsan=undefined':
   <<: *job_linux_build_test

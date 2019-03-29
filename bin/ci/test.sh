@@ -6,7 +6,7 @@ set -o errexit
 # Set to 'true' to run the known "manual" tests in rippled.
 MANUAL_TESTS=${MANUAL_TESTS:-false}
 # The maximum number of concurrent tests.
-JOBS=${JOBS:-$(nproc)}
+CONCURRENT_TESTS=${CONCURRENT_TESTS:-$(nproc)}
 # The path to rippled.
 RIPPLED=${RIPPLED:-build/rippled}
 # Additional arguments to rippled.
@@ -37,6 +37,6 @@ if [[ ${MANUAL_TESTS} == 'true' ]]; then
 else
   RIPPLED_ARGS+=" --unittest --quiet --unittest-log"
 fi
-RIPPLED_ARGS+=" --unittest-jobs ${JOBS}"
+RIPPLED_ARGS+=" --unittest-jobs ${CONCURRENT_TESTS}"
 
 ${RIPPLED} ${RIPPLED_ARGS}
