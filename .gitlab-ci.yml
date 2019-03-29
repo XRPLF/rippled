@@ -10,6 +10,17 @@
 # 3. Build type (Debug, Release)
 # 4. Definitions (-Dunity=OFF, -Dassert=ON, ...)
 
+cache:
+  # Generate a new UUID whenever you want to bust the cache, e.g. when the
+  # dependency versions have been bumped.
+  key: 910f11a6-8869-4ee4-9681-905f21b14b0c
+  # By default, jobs pull the cache. Only a few specially chosen jobs update
+  # the cache (with policy `pull-push`); one for each unique combination of
+  # (generator, compiler, build type).
+  policy: pull
+  paths:
+    - .nih_c/
+
 .jog_linux_build_test: &job_linux_build_test
   stage: build
   tags:
@@ -27,6 +38,8 @@
     GENERATOR: Unix Makefiles
     COMPILER: gcc
     BUILD_TYPE: Debug
+  cache:
+    policy: pull-push
 
 'build+test Ninja GCC Debug':
   <<: *job_linux_build_test
@@ -34,6 +47,8 @@
     GENERATOR: Ninja
     COMPILER: gcc
     BUILD_TYPE: Debug
+  cache:
+    policy: pull-push
 
 'build+test Make GCC Debug -Dstatic=OFF':
   <<: *job_linux_build_test
@@ -66,6 +81,8 @@
     COMPILER: gcc
     BUILD_TYPE: Release
     CMAKE_ARGS: '-Dassert=ON'
+  cache:
+    policy: pull-push
 
 'build+test(manual) Make GCC Release -Dassert=ON':
   <<: *job_linux_build_test
@@ -82,6 +99,8 @@
     GENERATOR: Unix Makefiles
     COMPILER: clang
     BUILD_TYPE: Debug
+  cache:
+    policy: pull-push
 
 'build+test Make clang Debug -Dunity=OFF':
   <<: *job_linux_build_test
@@ -115,3 +134,5 @@
     COMPILER: clang
     BUILD_TYPE: Release
     CMAKE_ARGS: '-Dassert=ON'
+  cache:
+    policy: pull-push
