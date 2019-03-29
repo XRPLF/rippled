@@ -9,18 +9,8 @@
 # 3. Build type (Debug, Release)
 # 4. Definitions (-Dunity=OFF, -Dassert=ON, ...)
 
-cache:
-  # Generate a new UUID whenever you want to bust the cache, e.g. when the
-  # dependency versions have been bumped.
-  key: 910f11a6-8869-4ee4-9681-905f21b14b0c
-  # By default, jobs pull the cache. Only a few specially chosen jobs update
-  # the cache (with policy `pull-push`); one for each unique combination of
-  # (generator, compiler, build type).
-  policy: pull
-  paths:
-    - .nih_c/
 
-.jog_linux_build_test: &job_linux_build_test
+.job_linux_build_test:
   stage: build
   tags:
     - jfreeman
@@ -30,9 +20,19 @@ cache:
   script:
     - bin/ci/build.sh
     - bin/ci/test.sh
+  cache:
+    # Generate a new UUID whenever you want to bust the cache, e.g. when the
+    # dependency versions have been bumped.
+    key: 910f11a6-8869-4ee4-9681-905f21b14b0c
+    # By default, jobs pull the cache. Only a few specially chosen jobs update
+    # the cache (with policy `pull-push`); one for each unique combination of
+    # (generator, compiler, build type).
+    policy: pull
+    paths:
+      - .nih_c/
 
 'build+test Make GCC Debug':
-  <<: *job_linux_build_test
+  extends: .job_linux_build_test
   variables:
     GENERATOR: Unix Makefiles
     COMPILER: gcc
@@ -41,7 +41,7 @@ cache:
     policy: pull-push
 
 'build+test Ninja GCC Debug':
-  <<: *job_linux_build_test
+  extends: .job_linux_build_test
   variables:
     GENERATOR: Ninja
     COMPILER: gcc
@@ -50,7 +50,7 @@ cache:
     policy: pull-push
 
 'build+test Ninja GCC Debug -Dstatic=OFF':
-  <<: *job_linux_build_test
+  extends: .job_linux_build_test
   variables:
     GENERATOR: Ninja
     COMPILER: gcc
@@ -58,7 +58,7 @@ cache:
     CMAKE_ARGS: '-Dstatic=OFF'
 
 'build+test Ninja GCC Debug -Dstatic=OFF -DBUILD_SHARED_LIBS=ON':
-  <<: *job_linux_build_test
+  extends: .job_linux_build_test
   variables:
     GENERATOR: Ninja
     COMPILER: gcc
@@ -66,7 +66,7 @@ cache:
     CMAKE_ARGS: '-Dstatic=OFF -DBUILD_SHARED_LIBS=ON'
 
 'build+test Ninja GCC Debug -Dunity=OFF':
-  <<: *job_linux_build_test
+  extends: .job_linux_build_test
   variables:
     GENERATOR: Ninja
     COMPILER: gcc
@@ -74,7 +74,7 @@ cache:
     CMAKE_ARGS: '-Dunity=OFF'
 
 'build+test Ninja GCC Release -Dassert=ON':
-  <<: *job_linux_build_test
+  extends: .job_linux_build_test
   variables:
     GENERATOR: Ninja
     COMPILER: gcc
@@ -84,7 +84,7 @@ cache:
     policy: pull-push
 
 'build+test(manual) Ninja GCC Release -Dassert=ON':
-  <<: *job_linux_build_test
+  extends: .job_linux_build_test
   variables:
     GENERATOR: Ninja
     COMPILER: gcc
@@ -93,7 +93,7 @@ cache:
     MANUAL_TEST: 'true'
 
 'build+test Make clang Debug':
-  <<: *job_linux_build_test
+  extends: .job_linux_build_test
   variables:
     GENERATOR: Unix Makefiles
     COMPILER: clang
@@ -102,7 +102,7 @@ cache:
     policy: pull-push
 
 'build+test Ninja clang Debug':
-  <<: *job_linux_build_test
+  extends: .job_linux_build_test
   variables:
     GENERATOR: Ninja
     COMPILER: clang
@@ -111,7 +111,7 @@ cache:
     policy: pull-push
 
 'build+test Ninja clang Debug -Dunity=OFF':
-  <<: *job_linux_build_test
+  extends: .job_linux_build_test
   variables:
     GENERATOR: Ninja
     COMPILER: clang
@@ -119,7 +119,7 @@ cache:
     CMAKE_ARGS: '-Dunity=OFF'
 
 'build+test Ninja clang Debug -Dunity=OFF -Dsan=address':
-  <<: *job_linux_build_test
+  extends: .job_linux_build_test
   variables:
     GENERATOR: Ninja
     COMPILER: clang
@@ -128,7 +128,7 @@ cache:
     CONCURRENT_TESTS: 1
 
 'build+test Ninja clang Debug -Dunity=OFF -Dsan=undefined':
-  <<: *job_linux_build_test
+  extends: .job_linux_build_test
   variables:
     GENERATOR: Ninja
     COMPILER: clang
@@ -136,7 +136,7 @@ cache:
     CMAKE_ARGS: '-Dunity=OFF -Dsan=undefined'
 
 'build+test Ninja clang Release -Dassert=ON':
-  <<: *job_linux_build_test
+  extends: .job_linux_build_test
   variables:
     GENERATOR: Ninja
     COMPILER: clang
