@@ -21,7 +21,6 @@
 #include <ripple/app/main/DBInit.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/Sustain.h>
 #include <ripple/basics/contract.h>
 #include <ripple/beast/clock/basic_seconds_clock.h>
 #include <ripple/beast/core/CurrentThreadName.h>
@@ -32,7 +31,6 @@
 #include <ripple/json/to_string.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/protocol/BuildInfo.h>
-#include <ripple/protocol/digest.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/RPCHandler.h>
 
@@ -308,7 +306,8 @@ run(int argc, char** argv)
 {
     using namespace std;
 
-    beast::setCurrentThreadName("rippled: main");
+    beast::setCurrentThreadName(
+        "rippled: main " + BuildInfo::getVersionString());
 
     po::variables_map vm;
 
@@ -334,7 +333,7 @@ run(int argc, char** argv)
     gen.add_options()(
         "conf", po::value<std::string>(), "Specify the configuration file.")(
         "debug", "Enable normally suppressed debug logging")(
-        "fg", "Run in the foreground.")("help,h", "Display this message.")(
+        "help,h", "Display this message.")(
         "quorum",
         po::value<std::size_t>(),
         "Override the minimum validation quorum.")(
@@ -416,7 +415,8 @@ run(int argc, char** argv)
         "purpose, "
         "so this option is not needed for users")(
         "unittest-child",
-        "For internal use only when spawning child unit test processes.");
+        "For internal use only when spawning child unit test processes.")(
+        "fg", "Deprecated: server always in foreground mode.");
 
     // Interpret positional arguments as --parameters.
     po::positional_options_description p;
@@ -439,10 +439,10 @@ run(int argc, char** argv)
             vm);
         po::notify(vm);  // Invoke option notify functions.
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
-        std::cerr << "rippled: Incorrect command line syntax." << std::endl;
-        std::cerr << "Use '--help' for a list of options." << std::endl;
+        std::cerr << "rippled: " << ex.what() << std::endl;
+        std::cerr << "Try 'rippled --help' for a list of options." << std::endl;
         return 1;
     }
 
@@ -708,18 +708,8 @@ run(int argc, char** argv)
         if (!adjustDescriptorLimit(1024, logs->journal("Application")))
             return -1;
 
-        if (HaveSustain() && !vm.count("fg") && !config->standalone())
-        {
-            auto const ret = DoSustain();
-
-            if (!ret.empty())
-                std::cerr << "Watchdog: " << ret << std::endl;
-        }
-
         if (vm.count("debug"))
-        {
             setDebugLogSink(logs->makeSink("Debug", beast::severities::kTrace));
-        }
 
         auto timeKeeper = make_TimeKeeper(logs->journal("TimeKeeper"));
 
@@ -727,19 +717,13 @@ run(int argc, char** argv)
             std::move(config), std::move(logs), std::move(timeKeeper));
 
         if (!app->setup())
-        {
-            StopSustain();
             return -1;
-        }
 
         // With our configuration parsed, ensure we have
         // enough file descriptors available:
         if (!adjustDescriptorLimit(
                 app->fdRequired(), app->logs().journal("Application")))
-        {
-            StopSustain();
             return -1;
-        }
 
         // Start the server
         app->doStart(true /*start timers*/);
