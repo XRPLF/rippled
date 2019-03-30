@@ -19,7 +19,7 @@
 
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <algorithm>
 #include <array>
 #include <utility>

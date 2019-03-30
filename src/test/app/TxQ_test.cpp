@@ -27,7 +27,7 @@
 #include <test/jtx/envconfig.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/st.h>
 #include <test/jtx.h>
 #include <test/jtx/ticket.h>
@@ -1461,7 +1461,7 @@ public:
             queued);
         checkMetrics(env, 1, limit * 2, limit + 1, limit, 256);
 
-        // Alice creates another offer with a fee 
+        // Alice creates another offer with a fee
         // that brings the total to just shy of the reserve
         env(noop(alice), fee(drops(99)), seq(aliceSeq + 1), queued);
         checkMetrics(env, 2, limit * 2, limit + 1, limit, 256);
@@ -3072,7 +3072,7 @@ public:
             BEAST_EXPECT(!txCount);
         }
     }
-    
+
     void run() override
     {
         testQueue();

@@ -27,7 +27,7 @@
 #include <ripple/ledger/Sandbox.h>
 #include <test/jtx/PathSet.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 
 namespace ripple {
 namespace test {

@@ -30,7 +30,7 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/nodestore/DatabaseShard.h>
 
 #include <algorithm>

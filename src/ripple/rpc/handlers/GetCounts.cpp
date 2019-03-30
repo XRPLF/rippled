@@ -30,7 +30,7 @@
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 
 namespace ripple {

@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/JsonFields.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 
 #include <boost/utility/string_ref.hpp>

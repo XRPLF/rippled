@@ -20,7 +20,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/Seed.h>
 #include <ripple/rpc/Context.h>
 

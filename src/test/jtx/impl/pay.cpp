@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/pay.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/TxFlags.h>
 
 namespace ripple {

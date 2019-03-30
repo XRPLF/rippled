@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/rate.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/basics/contract.h>
 #include <stdexcept>
 

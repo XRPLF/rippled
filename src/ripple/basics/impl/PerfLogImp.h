@@ -24,7 +24,7 @@
 #include <ripple/basics/PerfLog.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/core/Stoppable.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <boost/asio/ip/host_name.hpp>
 #include <condition_variable>

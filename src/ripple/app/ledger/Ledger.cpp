@@ -41,7 +41,7 @@
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/HashPrefix.h>

@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/Log.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/st.h>
 #include <ripple/json/json_reader.h>

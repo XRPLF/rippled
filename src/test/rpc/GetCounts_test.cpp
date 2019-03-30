@@ -19,7 +19,7 @@
 
 #include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/basics/CountedObject.h>
 

@@ -30,9 +30,9 @@
 #include <ripple/json/to_string.h>
 #include <ripple/json/Object.h>
 #include <ripple/net/HTTPClient.h>
-#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/rpc/ServerHandler.h>

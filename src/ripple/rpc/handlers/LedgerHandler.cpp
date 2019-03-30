@@ -23,7 +23,7 @@
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/json/Object.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/Role.h>

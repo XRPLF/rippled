@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
+#include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/STLedgerEntry.h>
+#include <ripple/protocol/jss.h>
 #include <boost/format.hpp>
 
 namespace ripple {

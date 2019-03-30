@@ -20,7 +20,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/PayChan.h>
 #include <ripple/protocol/TxFlags.h>
 #include <test/jtx.h>
