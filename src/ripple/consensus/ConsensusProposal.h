@@ -21,7 +21,7 @@
 
 #include <ripple/basics/chrono.h>
 #include <ripple/json/json_value.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <cstdint>
 
 namespace ripple {

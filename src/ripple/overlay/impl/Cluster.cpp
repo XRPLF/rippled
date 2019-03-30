@@ -24,7 +24,7 @@
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/ClusterNode.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/tokens.h>
 #include <boost/regex.hpp>
 #include <memory.h>

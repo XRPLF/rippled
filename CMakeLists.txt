@@ -1772,7 +1772,6 @@ install (
     src/ripple/protocol/Indexes.h
     src/ripple/protocol/InnerObjectFormats.h
     src/ripple/protocol/Issue.h
-    src/ripple/protocol/JsonFields.h
     src/ripple/protocol/Keylet.h
     src/ripple/protocol/KnownFormats.h
     src/ripple/protocol/LedgerFormats.h
@@ -1808,6 +1807,7 @@ install (
     src/ripple/protocol/UintTypes.h
     src/ripple/protocol/XRPAmount.h
     src/ripple/protocol/digest.h
+    src/ripple/protocol/jss.h
     src/ripple/protocol/tokens.h
   DESTINATION include/ripple/protocol)
 install (

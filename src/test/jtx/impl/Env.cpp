@@ -38,16 +38,16 @@
 #include <ripple/net/HTTPClient.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/Feature.h>
 #include <memory>
 
 namespace ripple {

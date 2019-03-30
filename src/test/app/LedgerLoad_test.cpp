@@ -21,7 +21,7 @@
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <ripple/beast/utility/temp_dir.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/SField.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>

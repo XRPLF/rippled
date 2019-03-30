@@ -17,11 +17,11 @@
 */
 //==============================================================================
 #include <test/jtx.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/SField.h>
 #include <ripple/protocol/AccountID.h>
+#include <ripple/protocol/Feature.h>
+#include <ripple/protocol/jss.h>
+#include <ripple/protocol/SField.h>
+#include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
 

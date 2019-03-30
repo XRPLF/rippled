@@ -25,7 +25,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/nodestore/DatabaseShard.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/container/aged_map.h>
 #include <memory>

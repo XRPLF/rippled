@@ -21,7 +21,7 @@
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 
 namespace ripple {

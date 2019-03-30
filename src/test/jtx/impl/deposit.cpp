@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/deposit.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 
 namespace ripple {
 namespace test {

@@ -23,7 +23,7 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/json/json_value.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/Sign.h>
 #include <test/jtx.h>
 #include <test/jtx/TrustedPublisherServer.h>

@@ -20,7 +20,7 @@
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/digest.h>
 

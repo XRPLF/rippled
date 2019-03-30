@@ -23,7 +23,7 @@
 #include <ripple/basics/strHex.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Sign.h>

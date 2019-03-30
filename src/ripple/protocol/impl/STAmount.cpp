@@ -18,12 +18,12 @@
 //==============================================================================
 
 
+#include <ripple/protocol/STAmount.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/safe_cast.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/SystemParameters.h>
-#include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/regex.hpp>
@@ -628,7 +628,7 @@ STAmount::isEquivalent (const STBase& t) const
 
 // amount = mValue * [10 ^ mOffset]
 // Representation range is 10^80 - 10^(-80).
-// 
+//
 // On the wire:
 // - high bit is 0 for XRP, 1 for issued currency
 // - next bit is 1 for positive, 0 for negative (except 0 issued currency, which

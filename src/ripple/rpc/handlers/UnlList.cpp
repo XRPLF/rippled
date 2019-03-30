@@ -19,7 +19,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/ValidatorList.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/basics/make_lock.h>
 

@@ -22,7 +22,7 @@
 #include <ripple/json/json_value.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/rpc/handlers/WalletPropose.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
@@ -739,7 +739,7 @@ public:
                 BEAST_EXPECT(error[jss::error_message] ==
                              "Specified seed is for an Ed25519 wallet.");
             }
-            
+
             {
                 Json::Value params;
                 Json::Value error;

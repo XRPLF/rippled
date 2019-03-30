@@ -21,7 +21,7 @@
 // This has to be included early to prevent an obscure MSVC compile error
 #include <boost/asio/deadline_timer.hpp>
 
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/handlers/Handlers.h>
 

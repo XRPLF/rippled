@@ -23,8 +23,8 @@
 #include <ripple/basics/safe_cast.h>
 #include <ripple/core/Config.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/JsonFields.h>
 #include <cstdint>
 #include <type_traits>
 

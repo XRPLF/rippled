@@ -21,7 +21,7 @@
 #include <test/jtx.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/beast/unit_test.h>

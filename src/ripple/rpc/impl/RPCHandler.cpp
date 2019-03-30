@@ -33,7 +33,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/net/RPCErr.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Role.h>
 #include <ripple/resource/Fees.h>

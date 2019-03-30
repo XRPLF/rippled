@@ -22,7 +22,7 @@
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/SociDB.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
 

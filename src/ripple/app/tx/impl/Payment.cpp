@@ -22,9 +22,9 @@
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
 

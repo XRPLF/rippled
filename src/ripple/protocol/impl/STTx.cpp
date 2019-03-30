@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
+#include <ripple/protocol/STTx.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/STTx.h>
 #include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>

@@ -23,7 +23,7 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/json_reader.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <boost/regex.hpp>
 
 #include <mutex>

@@ -19,7 +19,7 @@
 
 #include <test/jtx.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <test/jtx/WSClient.h>
 

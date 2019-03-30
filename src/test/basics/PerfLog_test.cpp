@@ -21,7 +21,7 @@
 #include <ripple/basics/random.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/json/json_reader.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <test/jtx/Env.h>
 #include <atomic>

@@ -21,7 +21,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 
 namespace ripple {
 namespace test {

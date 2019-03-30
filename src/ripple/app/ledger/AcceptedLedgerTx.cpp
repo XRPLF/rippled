@@ -21,7 +21,7 @@
 #include <ripple/app/ledger/AcceptedLedgerTx.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/UintTypes.h>
 
 namespace ripple {

@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/protocol/STPathSet.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/strHex.h>

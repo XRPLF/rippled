@@ -20,7 +20,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/AmountConversions.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/Rate.h>
 #include <test/jtx.h>

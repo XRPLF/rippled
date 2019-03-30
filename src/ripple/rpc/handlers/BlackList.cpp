@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/Context.h>
 

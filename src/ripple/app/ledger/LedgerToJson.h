@@ -23,7 +23,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/json/Object.h>
 

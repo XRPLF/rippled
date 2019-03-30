@@ -22,7 +22,7 @@
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/Overlay.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/basics/make_lock.h>
 

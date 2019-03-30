@@ -20,7 +20,7 @@
 
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/protocol/STAmount.h>
 
 namespace ripple {

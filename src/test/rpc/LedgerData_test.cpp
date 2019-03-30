@@ -19,7 +19,7 @@
 
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 
 namespace ripple {
