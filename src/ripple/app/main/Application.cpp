@@ -46,7 +46,6 @@
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/ResolverAsio.h>
-#include <ripple/basics/Sustain.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
@@ -73,10 +72,8 @@
 
 #include <condition_variable>
 #include <cstring>
-#include <fstream>
 #include <iostream>
 #include <mutex>
-#include <sstream>
 
 namespace ripple {
 
@@ -1081,26 +1078,6 @@ public:
         return true;
     }
 
-    void
-    signalled(const boost::system::error_code& ec, int signal_number)
-    {
-        if (ec == boost::asio::error::operation_aborted)
-        {
-            // Indicates the signal handler has been aborted
-            // do nothing
-        }
-        else if (ec)
-        {
-            JLOG(m_journal.error()) << "Received signal: " << signal_number
-                                    << " with error: " << ec.message();
-        }
-        else
-        {
-            JLOG(m_journal.debug()) << "Received signal: " << signal_number;
-            signalStop();
-        }
-    }
-
     //--------------------------------------------------------------------------
     //
     // Stoppable
@@ -1392,21 +1369,31 @@ private:
 
 //------------------------------------------------------------------------------
 
-// VFALCO TODO Break this function up into many small initialization segments.
-//             Or better yet refactor these initializations into RAII classes
-//             which are members of the Application object.
-//
+// TODO Break this up into smaller, more digestible initialization segments.
 bool
 ApplicationImp::setup()
 {
-    // We want to intercept and wait for CTRL-C to terminate the process
+    // We want to intercept CTRL-C and the standard termination signal SIGTERM
+    // and terminate the process. This handler will NEVER be invoked twice.
+    //
+    // Note that async_wait is "one-shot": for each call, the handler will be
+    // invoked exactly once, either when one of the registered signals in the
+    // signal set occurs or the signal set is cancelled. Subsequent signals are
+    // effectively ignored (technically, they are queued up, waiting for a call
+    // to async_wait).
     m_signals.add(SIGINT);
+    m_signals.add(SIGTERM);
+    m_signals.async_wait(
+        [this](boost::system::error_code const& ec, int signum) {
+            // Indicates the signal handler has been aborted; do nothing
+            if (ec == boost::asio::error::operation_aborted)
+                return;
 
-    m_signals.async_wait(std::bind(
-        &ApplicationImp::signalled,
-        this,
-        std::placeholders::_1,
-        std::placeholders::_2));
+            JLOG(m_journal.info()) << "Received signal " << signum;
+
+            if (signum == SIGTERM || signum == SIGINT)
+                signalStop();
+        });
 
     assert(mTxnDB == nullptr);
 
@@ -1805,17 +1792,20 @@ ApplicationImp::run()
     JLOG(m_journal.info()) << "Received shutdown request";
     stop(m_journal);
     JLOG(m_journal.info()) << "Done.";
-    StopSustain();
 }
 
 void
 ApplicationImp::signalStop()
 {
     // Unblock the main thread (which is sitting in run()).
-    //
+    // When we get C++20 this can use std::latch.
     std::lock_guard lk{mut_};
-    isTimeToStop = true;
-    cv_.notify_all();
+
+    if (!isTimeToStop)
+    {
+        isTimeToStop = true;
+        cv_.notify_all();
+    }
 }
 
 bool

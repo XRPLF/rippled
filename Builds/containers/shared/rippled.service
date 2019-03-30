@@ -1,12 +1,12 @@
 [Unit]
 Description=Ripple Daemon
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 ExecStart=/opt/ripple/bin/rippled --net --silent --conf /etc/opt/ripple/rippled.cfg
-# Default KillSignal can be used if/when rippled handles SIGTERM
-KillSignal=SIGINT
-Restart=no
+Restart=on-failure
 User=rippled
 Group=rippled
 LimitNOFILE=65536
