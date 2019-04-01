@@ -33,6 +33,54 @@
 
 namespace ripple {
 
+std::pair<bool, FeeLevel64>
+mulDiv(std::uint64_t value, FeeLevel64 mul, std::uint64_t div)
+{
+    auto const result = mulDiv(value, mul.value(), div);
+    return { result.first, FeeLevel64{result.second} };
+}
+
+std::pair<bool, FeeLevel64>
+mulDiv(FeeLevel64 value, std::uint64_t mul, std::uint64_t div)
+{
+    auto const result = mulDiv(value.value(), mul, div);
+    return { result.first, FeeLevel64{result.second} };
+}
+
+std::pair<bool, FeeLevel64>
+mulDiv(Drops64 value, FeeLevel64 mul, Drops64 div)
+{
+    auto const result = mulDiv(value.value(), mul.value(), div.value());
+    return { result.first, FeeLevel64{result.second} };
+}
+
+std::pair<bool, FeeLevel64>
+mulDiv(FeeLevel64 value, Drops64 mul, Drops64 div)
+{
+    auto const result = mulDiv(value.value(), mul.value(), div.value());
+    return { result.first, FeeLevel64{result.second} };
+}
+
+std::pair<bool, std::uint64_t>
+mulDiv(FeeLevel64 value, std::uint64_t mul, FeeLevel64 div)
+{
+    return mulDiv(value.value(), mul, div.value());
+}
+
+std::pair<bool, Drops64>
+mulDiv(Drops64 value, FeeLevel64 mul, FeeLevel64 div)
+{
+    auto const result = mulDiv(value.value(), mul.value(), div.value());
+    return { result.first, Drops64{result.second} };
+}
+
+std::pair<bool, Drops64>
+mulDiv(FeeLevel64 value, Drops64 mul, FeeLevel64 div)
+{
+    auto const result = mulDiv(value.value(), mul.value(), div.value());
+    return { result.first, Drops64{result.second} };
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 static

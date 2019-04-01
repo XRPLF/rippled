@@ -49,52 +49,20 @@ using Drops64 = tagged_integer<std::uint64_t, DropsTag>;
 using FeeUnit32 = tagged_integer<std::uint32_t, FeeUnitTag>;
 using FeeUnit64 = tagged_integer<std::uint64_t, FeeUnitTag>;
 
-template<class Integer>
-Integer divide (tagged_integer<Integer, FeeUnitTag> const& lhs,
-    tagged_integer<Integer, FeeUnitTag> const& rhs)
-{
-    return lhs.value() / rhs.value();
-}
-
-template<class T>
 std::pair<bool, Drops64>
-mulDiv(T value, Drops64 mul, T div)
-{
-    auto const result = mulDiv(value, mul.value(), div);
-    return { result.first, Drops64{result.second} };
-}
+mulDiv(std::uint64_t value, Drops64 mul, std::uint64_t div);
 
-template<class T>
 std::pair<bool, Drops64>
-mulDiv(Drops64 value, T mul, T div)
-{
-    auto const result = mulDiv(value.value(), mul, div);
-    return { result.first, Drops64{result.second} };
-}
+mulDiv(Drops64 value, std::uint64_t mul, std::uint64_t div);
 
-template<class T>
 std::pair<bool, Drops64>
-mulDiv(tagged_integer<T, FeeUnitTag> value, Drops64 mul, tagged_integer<T, FeeUnitTag> div)
-{
-    auto const result = mulDiv(value.value(), mul.value(), div.value());
-    return { result.first, Drops64{result.second} };
-}
+mulDiv(FeeUnit64 value, Drops64 mul, FeeUnit64 div);
 
-template<class T>
 std::pair<bool, Drops64>
-mulDiv(Drops64 value, tagged_integer<T, FeeUnitTag> mul, tagged_integer<T, FeeUnitTag> div)
-{
-    auto const result = mulDiv(value.value(), mul.value(), div.value());
-    return { result.first, Drops64{result.second} };
-}
+mulDiv(Drops64 value, FeeUnit64 mul, FeeUnit64 div);
 
-inline
 std::pair<bool, std::uint64_t>
-mulDiv(tagged_integer<std::uint64_t, DropsTag> value, std::uint64_t mul,
-    tagged_integer<std::uint64_t, DropsTag> div)
-{
-    return mulDiv(value.value(), mul, div.value());
-}
+mulDiv(Drops64 value, std::uint64_t mul, Drops64 div);
 
 /** Reflects the fee settings for a particular ledger.
 

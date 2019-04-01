@@ -36,56 +36,26 @@ class Config;
 struct FeeLevelTag;
 using FeeLevel64 = tagged_integer<std::uint64_t, FeeLevelTag>;
 
-template<class T>
 std::pair<bool, FeeLevel64>
-mulDiv(T value, FeeLevel64 mul, T div)
-{
-    auto const result = mulDiv(value, mul.value(), div);
-    return { result.first, FeeLevel64{result.second} };
-}
+mulDiv(std::uint64_t value, FeeLevel64 mul, std::uint64_t div);
 
-template<class T>
 std::pair<bool, FeeLevel64>
-mulDiv(FeeLevel64 value, T mul, T div)
-{
-    auto const result = mulDiv(value.value(), mul, div);
-    return { result.first, FeeLevel64{result.second} };
-}
+mulDiv(FeeLevel64 value, std::uint64_t mul, std::uint64_t div);
 
-template<class T>
 std::pair<bool, FeeLevel64>
-mulDiv(tagged_integer<T, DropsTag> value, FeeLevel64 mul, tagged_integer<T, DropsTag> div)
-{
-    auto const result = mulDiv(value.value(), mul.value(), div.value());
-    return { result.first, FeeLevel64{result.second} };
-}
+mulDiv(Drops64 value, FeeLevel64 mul, Drops64 div);
 
-template<class T>
 std::pair<bool, FeeLevel64>
-mulDiv(FeeLevel64 value, tagged_integer<T, DropsTag> mul, tagged_integer<T, DropsTag> div)
-{
-    auto const result = mulDiv(value.value(), mul.value(), div.value());
-    return { result.first, FeeLevel64{result.second} };
-}
+mulDiv(FeeLevel64 value, Drops64 mul, Drops64 div);
 
-template<class T,
-    class = typename std::enable_if<
-        std::is_integral<T>::value &&
-        sizeof(T) <= sizeof(std::uint64_t)>::type>
 std::pair<bool, std::uint64_t>
-mulDiv(tagged_integer<std::uint64_t, FeeLevelTag> value, T mul,
-    tagged_integer<std::uint64_t, FeeLevelTag> div)
-{
-    return mulDiv(value.value(), mul, div.value());
-}
+mulDiv(FeeLevel64 value, std::uint64_t mul, FeeLevel64 div);
 
-template<class T>
 std::pair<bool, Drops64>
-mulDiv(Drops64 value, tagged_integer<T, FeeLevelTag> mul, tagged_integer<T, FeeLevelTag> div)
-{
-    auto const result = mulDiv(value.value(), mul.value(), div.value());
-    return { result.first, Drops64{result.second} };
-}
+mulDiv(Drops64 value, FeeLevel64 mul, FeeLevel64 div);
+
+std::pair<bool, Drops64>
+mulDiv(FeeLevel64 value, Drops64 mul, FeeLevel64 div);
 
 /**
     Transaction Queue. Used to manage transactions in conjunction with

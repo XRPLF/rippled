@@ -22,6 +22,40 @@
 
 namespace ripple {
 
+std::pair<bool, Drops64>
+mulDiv(std::uint64_t value, Drops64 mul, std::uint64_t div)
+{
+    auto const result = mulDiv(value, mul.value(), div);
+    return { result.first, Drops64{result.second} };
+}
+
+std::pair<bool, Drops64>
+mulDiv(Drops64 value, std::uint64_t mul, std::uint64_t div)
+{
+    auto const result = mulDiv(value.value(), mul, div);
+    return { result.first, Drops64{result.second} };
+}
+
+std::pair<bool, Drops64>
+mulDiv(FeeUnit64 value, Drops64 mul, FeeUnit64 div)
+{
+    auto const result = mulDiv(value.value(), mul.value(), div.value());
+    return { result.first, Drops64{result.second} };
+}
+
+std::pair<bool, Drops64>
+mulDiv(Drops64 value, FeeUnit64 mul, FeeUnit64 div)
+{
+    auto const result = mulDiv(value.value(), mul.value(), div.value());
+    return { result.first, Drops64{result.second} };
+}
+
+std::pair<bool, std::uint64_t>
+mulDiv(Drops64 value, std::uint64_t mul, Drops64 div)
+{
+    return mulDiv(value.value(), mul, div.value());
+}
+
 class Rules::Impl
 {
 private:

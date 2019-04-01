@@ -182,6 +182,14 @@ swap (tagged_integer<T1, FeeUnitTag>& lhs, tagged_integer<T2, DropsTag>& rhs)
     rhs = tagged_integer<T2, DropsTag>{ vRHS };
 }
 
+static
+std::uint64_t
+divide (FeeUnit64 const& lhs,
+    FeeUnit64 const& rhs)
+{
+    return lhs.value() / rhs.value();
+}
+
 // Represents the product of a Drops and a FeeUnit
 struct DropFeeUnit;
 
