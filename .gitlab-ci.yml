@@ -11,9 +11,11 @@
 
 
 .job_linux_build_test:
+  only:
+    variables:
+      - $CI_PROJECT_URL =~ /^https?:\/\/gitlab.com\//
   stage: build
   tags:
-    - jfreeman
     - linux
     - c5.2xlarge
   image: thejohnfreeman/rippled-build-ubuntu:develop
