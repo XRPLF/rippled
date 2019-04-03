@@ -729,8 +729,14 @@ BookStep<TIn, TOut, TDerived>::revImp (
         auto const r = forEachOffer (sb, afView, prevStepRedeems, eachOffer);
         boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
-        ofrsToRm.insert (boost::container::ordered_unique_range_t{},
-            toRm.begin (), toRm.end ());
+        if (!toRm.empty())
+        {
+            ofrsToRm.reserve(ofrsToRm.size() + toRm.size());
+            ofrsToRm.insert(
+                boost::container::ordered_unique_range_t{},
+                toRm.begin(),
+                toRm.end());
+        }
 
         if (offersConsumed >= maxOffersToConsume_)
         {
@@ -891,8 +897,14 @@ BookStep<TIn, TOut, TDerived>::fwdImp (
         auto const r = forEachOffer (sb, afView, prevStepRedeems, eachOffer);
         boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
-        ofrsToRm.insert (boost::container::ordered_unique_range_t{},
-            toRm.begin (), toRm.end ());
+        if (!toRm.empty())
+        {
+            ofrsToRm.reserve(ofrsToRm.size() + toRm.size());
+            ofrsToRm.insert(
+                boost::container::ordered_unique_range_t{},
+                toRm.begin(),
+                toRm.end());
+        }
 
         if (offersConsumed >= maxOffersToConsume_)
         {

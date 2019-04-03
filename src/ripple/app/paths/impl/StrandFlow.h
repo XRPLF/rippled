@@ -506,8 +506,12 @@ flow (PaymentSandbox const& baseView,
                 sb, *strand, remainingIn, remainingOut, j);
 
             // rm bad offers even if the strand fails
-            ofrsToRm.insert (boost::container::ordered_unique_range_t{},
-                f.ofrsToRm.begin (), f.ofrsToRm.end ());
+            if (!f.ofrsToRm.empty())
+            {
+                ofrsToRm.reserve(ofrsToRm.size() + f.ofrsToRm.size());
+                ofrsToRm.insert (boost::container::ordered_unique_range_t{},
+                                 f.ofrsToRm.begin (), f.ofrsToRm.end ());
+            }
 
             if (f.ter != tesSUCCESS || f.out == beast::zero)
                 continue;
@@ -589,6 +593,7 @@ flow (PaymentSandbox const& baseView,
                         // view
         if (!ofrsToRm.empty ())
         {
+            ofrsToRmOnFail.reserve(ofrsToRmOnFail.size() + ofrsToRm.size());
             ofrsToRmOnFail.insert (boost::container::ordered_unique_range_t{},
                 ofrsToRm.begin (), ofrsToRm.end ());
             for (auto const& o : ofrsToRm)
