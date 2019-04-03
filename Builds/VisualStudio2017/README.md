@@ -15,11 +15,10 @@ need these software components
 | Component | Minimum Recommended Version |
 |-----------|-----------------------|
 | [Visual Studio 2017](README.md#install-visual-studio-2017)| 15.5.4 |
-| [Git for Windows](README.md#install-git-for-windows)| 2.16.1|
-| [Google Protocol Buffers Compiler](README.md#install-google-protocol-buffers-compiler) | 2.5.1|
+| [Git for Windows](README.md#install-git-for-windows)| 2.16.1 |
 | [OpenSSL Library](README.md#install-openssl) | 1.0.2n |
 | [Boost library](README.md#build-boost) | 1.67.0 |
-| [CMake for Windows](README.md#optional-install-cmake-for-windows)* | 3.10.2 |
+| [CMake for Windows](README.md#optional-install-cmake-for-windows)* | 3.12 |
 
 \* Only needed if not using the integrated CMake in VS 2017 and prefer generating dedicated project/solution files.
 
@@ -48,26 +47,6 @@ integrates with the Explorer shell), we recommend installing [Git for
 Windows](https://git-scm.com/) since it provides a Unix-like command line
 environment useful for running shell scripts. Use of the bash shell under
 Windows is mandatory for running the unit tests.
-
-### Install Google Protocol Buffers Compiler
-
-Building rippled requires **protoc.exe** version 2. Version 3 is not currently
-supported.. At your option you may build it yourself from the sources in the
-[Google Protocol Buffers](https://github.com/google/protobuf) repository, or you
-may download a
-[protoc.exe](https://ripple.github.io/Downloads/protoc/2.5.1/protoc.exe)
-([alternate
-link](https://github.com/ripple/Downloads/raw/gh-pages/protoc/2.5.1/protoc.exe))
-precompiled Windows executable from the [Ripple
-Organization](https://github.com/ripple).
-
-Either way, once you have the required version of **protoc.exe**, copy it into a
-standard location that is in your command line `%PATH%`.
-
-* **NOTE:** If you use an older version of the compiler, the build will fail
-  with errors related to a mismatch of the version of protocol buffer headers
-  versus the compiler. Likewise, if you use version 3 or newer, the build will
-  fail.
 
 ### Install OpenSSL
 
@@ -137,11 +116,9 @@ library paths as they will be required later.
 Studio 2017 includes an integrated version of CMake that avoids having to
 manually run CMake, but it is undergoing continuous improvement. Users that
 prefer to use standard Visual Studio project and solution files need to install
-a dedicated version of Cmake to generate them.  The latest version can be found
+a dedicated version of CMake to generate them.  The latest version can be found
 at the [CMake download site](https://cmake.org/download/). It is recommended you
 select the install option to add CMake to your path.
-
-As of this writing, the latest version of CMake for windows is 3.10.2.
 
 ## Clone the rippled repository
 
@@ -218,13 +195,13 @@ documentation](https://docs.microsoft.com/en-us/cpp/ide/cmake-tools-for-visual-c
 
 If using the provided `CMakeSettings.json` file, the executable will be in
 ```
-.\build\x64-Release\Release\rippled(_classic).exe
+.\build\x64-Release\Release\rippled.exe
 ```
 or
 ```
-.\build\x64-Debug\Debug\rippled(_classic).exe
+.\build\x64-Debug\Debug\rippled.exe
 ```
-where these paths are relative to your cloned git repository.
+These paths are relative to your cloned git repository.
 
 # Build using stand-alone CMake
 
@@ -242,19 +219,35 @@ cmake ..\.. -G"Visual Studio 15 2017 Win64" -DBOOST_ROOT="C:\lib\boost_1_68_0" -
 Now launch Visual Studio 2017 and select **File | Open | Project/Solution**.
 Navigate to the `build\cmake` folder created above and select the `rippled.sln`
 file. You can then choose whether to build the `Debug` or `Release` solution
-configuration. Within the **Solution Explorer**, selected either the `rippled`
-(unity build) project or the `rippled_classic` (non-unity) project, and
-right-click to build.
+configuration.
 
 The executable will be in 
 ```
-.\build\cmake\Release\rippled(_classic).exe
+.\build\cmake\Release\rippled.exe
 ```
- or
-````
-.\build\cmake\Debug\rippled(_classic).exe
-````
-where these paths are relative to your cloned git repository.
+or
+```
+.\build\cmake\Debug\rippled.exe
+```
+These paths are relative to your cloned git repository.
+
+# Unity/No-Unity Builds
+
+The rippled build system defaults to using [unity source files](http://onqtam.com/programming/2018-07-07-unity-builds/)
+to improve build times. In some cases it might be desirable to disable the unity build and compile
+individual translation units. Here is how you can switch to a "no-unity" build configuration:
+
+## Visual Studio Integrated CMake
+ 
+Edit your `CmakeSettings.json` (described above) by adding `-Dunity=OFF` to the `cmakeCommandArgs` entry 
+for each build configuration.
+
+## Standalone CMake Builds
+
+When running cmake to generate the Visual Studio project files, add `-Dunity=OFF` to the 
+command line options passed to cmake.
+
+**Note:** you will need to re-run the cmake configuration step anytime you want to switch between unity/no-unity builds.
 
 # Unit Test (Recommended)
 
