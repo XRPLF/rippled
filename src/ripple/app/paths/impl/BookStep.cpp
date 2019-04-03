@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/paths/impl/FlatSets.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/NodeDirectory.h>
@@ -729,14 +730,7 @@ BookStep<TIn, TOut, TDerived>::revImp (
         auto const r = forEachOffer (sb, afView, prevStepRedeems, eachOffer);
         boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
-        if (!toRm.empty())
-        {
-            ofrsToRm.reserve(ofrsToRm.size() + toRm.size());
-            ofrsToRm.insert(
-                boost::container::ordered_unique_range_t{},
-                toRm.begin(),
-                toRm.end());
-        }
+        SetUnion(ofrsToRm, toRm);
 
         if (offersConsumed >= maxOffersToConsume_)
         {
@@ -897,14 +891,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp (
         auto const r = forEachOffer (sb, afView, prevStepRedeems, eachOffer);
         boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
-        if (!toRm.empty())
-        {
-            ofrsToRm.reserve(ofrsToRm.size() + toRm.size());
-            ofrsToRm.insert(
-                boost::container::ordered_unique_range_t{},
-                toRm.begin(),
-                toRm.end());
-        }
+        SetUnion(ofrsToRm, toRm);
 
         if (offersConsumed >= maxOffersToConsume_)
         {

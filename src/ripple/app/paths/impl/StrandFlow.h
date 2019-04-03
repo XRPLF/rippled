@@ -23,6 +23,7 @@
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/AmountSpec.h>
+#include <ripple/app/paths/impl/FlatSets.h>
 #include <ripple/app/paths/impl/FlowDebugInfo.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/basics/Log.h>
@@ -506,12 +507,7 @@ flow (PaymentSandbox const& baseView,
                 sb, *strand, remainingIn, remainingOut, j);
 
             // rm bad offers even if the strand fails
-            if (!f.ofrsToRm.empty())
-            {
-                ofrsToRm.reserve(ofrsToRm.size() + f.ofrsToRm.size());
-                ofrsToRm.insert (boost::container::ordered_unique_range_t{},
-                                 f.ofrsToRm.begin (), f.ofrsToRm.end ());
-            }
+            SetUnion(ofrsToRm, f.ofrsToRm);
 
             if (f.ter != tesSUCCESS || f.out == beast::zero)
                 continue;
@@ -593,9 +589,7 @@ flow (PaymentSandbox const& baseView,
                         // view
         if (!ofrsToRm.empty ())
         {
-            ofrsToRmOnFail.reserve(ofrsToRmOnFail.size() + ofrsToRm.size());
-            ofrsToRmOnFail.insert (boost::container::ordered_unique_range_t{},
-                ofrsToRm.begin (), ofrsToRm.end ());
+            SetUnion(ofrsToRmOnFail, ofrsToRm);
             for (auto const& o : ofrsToRm)
             {
                 if (auto ok = sb.peek (keylet::offer (o)))
