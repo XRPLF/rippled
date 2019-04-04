@@ -354,9 +354,10 @@ Transactor::checkSingleSign (PreclaimContext const& ctx)
     auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const idAccount = ctx.tx.getAccountID(sfAccount);
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
-    auto const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
+    bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
-    if (ctx.view.rules().enabled(fixDisabledRegularKey)) {
+    if (ctx.view.rules().enabled(fixDisabledRegularKey))
+    {
 
         if ((*sleAccount)[~sfRegularKey] == idSigner
                 || (!isMasterDisabled && idAccount == idSigner))
