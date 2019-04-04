@@ -58,7 +58,8 @@ SetRegularKey::preflight (PreflightContext const& ctx)
 
     if (ctx.rules.enabled(fixDisabledRegularKey)
         && ctx.tx.isFieldPresent(sfRegularKey)
-        && (ctx.tx.getAccountID(sfRegularKey) == ctx.tx.getAccountID(sfAccount)))
+        && (ctx.tx.getAccountID(sfRegularKey) ==
+            ctx.tx.getAccountID(sfAccount)))
     {
         return temBAD_REGKEY;
     }

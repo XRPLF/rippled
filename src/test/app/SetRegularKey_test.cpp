@@ -109,21 +109,22 @@ public:
         env.fund(XRP(10000), alice);
 
         // Must be possible unless amendment `fixDisabledRegularKey` enabled.
-        // log << "set regular key to master key" << std::endl;
         env(regkey(alice, alice), sig(alice));
-        // log << "disable master key" << std::endl;
         env(fset(alice, asfDisableMaster), sig(alice));
 
         // No way to sign...
-        // log << "implicitly sign transaction with master key" << std::endl;
         env(noop(alice), ter(tefMASTER_DISABLED));
         env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
 
         // ... until now.
-        // log << "pass amendment: fixDisabledRegularKey" << std::endl;
         env.enableFeature(fixDisabledRegularKey);
         env(noop(alice));
         env(noop(alice), sig(alice));
+
+        env(regkey(alice, disabled), ter(tecNO_ALTERNATIVE_KEY));
+        env(fclear(alice, asfDisableMaster));
+        env(regkey(alice, disabled));
+        env(fset(alice, asfDisableMaster), ter(tecNO_ALTERNATIVE_KEY));
     }
 
     void testDisableRegularKeyAfterFix()
