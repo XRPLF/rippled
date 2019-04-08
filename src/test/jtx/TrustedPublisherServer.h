@@ -28,6 +28,8 @@
 #include <boost/asio.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/http.hpp>
+#include <boost/lexical_cast.hpp>
+#include <thread>
 
 namespace ripple {
 namespace test {
@@ -44,8 +46,7 @@ class TrustedPublisherServer
 
     socket_type sock_;
     boost::asio::ip::tcp::acceptor acceptor_;
-
-    std::string list_;
+    std::function<std::string(int)> getList_;
 
 public:
 
@@ -82,14 +83,16 @@ public:
         data.pop_back();
         data += "]}";
         std::string blob = base64_encode(data);
-
-        list_ = "{\"blob\":\"" + blob + "\"";
-
         auto const sig = sign(keys.first, keys.second, makeSlice(data));
-
-        list_ += ",\"signature\":\"" + strHex(sig) + "\"";
-        list_ += ",\"manifest\":\"" + manifest + "\"";
-        list_ += ",\"version\":" + std::to_string(version) + '}';
+        getList_ = [blob, sig, manifest, version](int interval) {
+            std::stringstream l;
+            l << "{\"blob\":\"" << blob << "\"" <<
+                ",\"signature\":\"" << strHex(sig) << "\"" <<
+                ",\"manifest\":\"" << manifest << "\"" <<
+                ",\"refresh_interval\": " << interval <<
+                ",\"version\":" << version  << '}';
+            return l.str();
+        };
 
         acceptor_.open(ep.protocol());
         error_code ec;
@@ -181,7 +184,19 @@ private:
                 else if (path == "/validators/missing")
                     res.body() = "{\"version\": 1}";
                 else
-                    res.body() = list_;
+                {
+                    int refresh = 5;
+                    if (boost::starts_with(path, "/validators/refresh"))
+                        refresh =
+                            boost::lexical_cast<unsigned int>(path.substr(20));
+                    res.body() = getList_(refresh);
+                }
+            }
+            else if (boost::starts_with(path, "/sleep/"))
+            {
+                auto sleep_sec =
+                    boost::lexical_cast<unsigned int>(path.substr(7));
+                std::this_thread::sleep_for(std::chrono::seconds{sleep_sec});
             }
             else if (boost::starts_with(path, "/redirect"))
             {

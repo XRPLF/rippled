@@ -26,15 +26,15 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/JsonFields.h>
+#include <boost/algorithm/clamp.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
 
 namespace ripple {
 
-// default site query frequency - 5 minutes
-auto constexpr DEFAULT_REFRESH_INTERVAL = std::chrono::minutes{5};
-auto constexpr ERROR_RETRY_INTERVAL = std::chrono::seconds{30};
-unsigned short constexpr MAX_REDIRECTS = 3;
+auto           constexpr DEFAULT_REFRESH_INTERVAL = std::chrono::minutes{5};
+auto           constexpr ERROR_RETRY_INTERVAL     = std::chrono::seconds{30};
+unsigned short constexpr MAX_REDIRECTS            = 3;
 
 ValidatorSite::Site::Resource::Resource (std::string uri_)
     : uri {std::move(uri_)}
@@ -90,7 +90,8 @@ ValidatorSite::Site::Site (std::string uri)
 ValidatorSite::ValidatorSite (
     boost::asio::io_service& ios,
     ValidatorList& validators,
-    beast::Journal j)
+    beast::Journal j,
+    std::chrono::seconds timeout)
     : ios_ (ios)
     , validators_ (validators)
     , j_ (j)
@@ -98,6 +99,7 @@ ValidatorSite::ValidatorSite (
     , fetching_ (false)
     , pending_ (false)
     , stopping_ (false)
+    , requestTimeout_ (timeout)
 {
 }
 
@@ -168,10 +170,12 @@ ValidatorSite::stop()
 {
     std::unique_lock<std::mutex> lock{state_mutex_};
     stopping_ = true;
-    cv_.wait(lock, [&]{ return ! fetching_; });
-
+    // work::cancel() must be called before the
+    // cv wait in order to kick any asio async operations
+    // that might be pending.
     if(auto sp = work_.lock())
         sp->cancel();
+    cv_.wait(lock, [&]{ return ! fetching_; });
 
     error_code ec;
     timer_.cancel(ec);
@@ -210,17 +214,30 @@ ValidatorSite::makeRequest (
     fetching_ = true;
     sites_[siteIdx].activeResource = resource;
     std::shared_ptr<detail::Work> sp;
-    auto onFetch =
-        [this, siteIdx] (error_code const& err, detail::response_type&& resp)
+    auto timeoutCancel =
+        [this] ()
         {
+            std::unique_lock <std::mutex> lock_state{state_mutex_};
+            error_code ec;
+            timer_.cancel_one(ec);
+        };
+    auto onFetch =
+        [this, siteIdx, timeoutCancel] (
+            error_code const& err, detail::response_type&& resp)
+        {
+            timeoutCancel ();
             onSiteFetch (err, std::move(resp), siteIdx);
         };
 
     auto onFetchFile =
-        [this, siteIdx] (error_code const& err, std::string const& resp)
-    {
-        onTextFetch (err, resp, siteIdx);
-    };
+        [this, siteIdx, timeoutCancel] (
+            error_code const& err, std::string const& resp)
+        {
+            timeoutCancel ();
+            onTextFetch (err, resp, siteIdx);
+        };
+
+    JLOG (j_.debug()) << "Starting request for " << resource->uri;
 
     if (resource->pUrl.scheme == "https")
     {
@@ -252,6 +269,32 @@ ValidatorSite::makeRequest (
 
     work_ = sp;
     sp->run ();
+    // start a timer for the request, which shouldn't take more
+    // than requestTimeout_ to complete
+    std::unique_lock <std::mutex> lock_state{state_mutex_};
+    timer_.expires_at ( clock_type::now() + requestTimeout_);
+    timer_.async_wait ( std::bind (
+        &ValidatorSite::onRequestTimeout, this, siteIdx, std::placeholders::_1));
+}
+
+void
+ValidatorSite::onRequestTimeout (
+    std::size_t siteIdx,
+    error_code const& ec)
+{
+    if (ec)
+        return;
+
+    {
+        std::unique_lock <std::mutex> lock_site{sites_mutex_};
+        JLOG (j_.warn()) <<
+            "Request for " << sites_[siteIdx].activeResource->uri <<
+            " took too long";
+    }
+
+    std::unique_lock<std::mutex> lock_state{state_mutex_};
+    if(auto sp = work_.lock())
+        sp->cancel();
 }
 
 void
@@ -370,10 +413,14 @@ ValidatorSite::parseJsonResponse (
     if (body.isMember ("refresh_interval") &&
         body["refresh_interval"].isNumeric ())
     {
-        // TODO: should we sanity check/clamp this value
-        // to something reasonable?
-        sites_[siteIdx].refreshInterval =
-            std::chrono::minutes{body["refresh_interval"].asUInt ()};
+        auto refresh =
+            boost::algorithm::clamp(
+                body["refresh_interval"].asUInt (),
+                1u,
+                60u*24);
+        sites_[siteIdx].refreshInterval = std::chrono::minutes{refresh};
+        sites_[siteIdx].nextRefresh =
+            clock_type::now() + sites_[siteIdx].refreshInterval;
     }
 }
 
@@ -435,6 +482,8 @@ ValidatorSite::onSiteFetch(
 {
     {
         std::lock_guard <std::mutex> lock_sites{sites_mutex_};
+        JLOG (j_.debug()) << "Got completion for "
+            << sites_[siteIdx].activeResource->uri;
         auto onError = [&](std::string const& errMsg, bool retry)
         {
             sites_[siteIdx].lastRefreshStatus.emplace(
@@ -503,7 +552,7 @@ ValidatorSite::onSiteFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::lock_guard <std::mutex> lock_state{state_mutex_};
+    std::unique_lock <std::mutex> lock_state{state_mutex_};
     fetching_ = false;
     if (! stopping_)
         setTimer ();
@@ -544,7 +593,7 @@ ValidatorSite::onTextFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::lock_guard <std::mutex> lock_state{state_mutex_};
+    std::unique_lock <std::mutex> lock_state{state_mutex_};
     fetching_ = false;
     if (! stopping_)
         setTimer ();

@@ -58,7 +58,8 @@ namespace ripple {
 
     @li @c "version": 1
 
-    @li @c "refreshInterval" (optional)
+    @li @c "refreshInterval" (optional, integer minutes).
+        This value is clamped internally to [1,1440] (1 min - 1 day)
 */
 class ValidatorSite
 {
@@ -125,11 +126,15 @@ private:
     // The configured list of URIs for fetching lists
     std::vector<Site> sites_;
 
+    // time to allow for requests to complete
+    const std::chrono::seconds requestTimeout_;
+
 public:
     ValidatorSite (
         boost::asio::io_service& ios,
         ValidatorList& validators,
-        beast::Journal j);
+        beast::Journal j,
+        std::chrono::seconds timeout = std::chrono::seconds{20});
     ~ValidatorSite ();
 
     /** Load configured site URIs.
@@ -186,6 +191,12 @@ private:
     /// Queue next site to be fetched
     void
     setTimer ();
+
+    /// request took too long
+    void
+    onRequestTimeout (
+        std::size_t siteIdx,
+        error_code const& ec);
 
     /// Fetch site whose time has come
     void
