@@ -148,9 +148,9 @@ PeerImp::run()
     }
 
     // Request shard info from peer
-    protocol::TMGetShardInfo tmGS;
-    tmGS.set_hops(0);
-    send(std::make_shared<Message>(tmGS, protocol::mtGET_SHARD_INFO));
+    protocol::TMGetPeerShardInfo tmGPS;
+    tmGPS.set_hops(0);
+    send(std::make_shared<Message>(tmGPS, protocol::mtGET_PEER_SHARD_INFO));
 
     setTimer();
 }
@@ -1019,17 +1019,29 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
 }
 
 void
-PeerImp::onMessage (std::shared_ptr <protocol::TMGetShardInfo> const& m)
+PeerImp::onMessage(std::shared_ptr <protocol::TMGetShardInfo> const& m)
 {
-    if (m->hops() > csHopLimit || m->peerchain_size() > csHopLimit)
-    {
-        fee_ = Resource::feeInvalidRequest;
-        JLOG(p_journal_.warn()) <<
-            (m->hops() > csHopLimit ?
-            "Hops (" + std::to_string(m->hops()) + ") exceed limit" :
-            "Invalid Peerchain");
-        return;
-    }
+    // DEPRECATED
+}
+
+void
+PeerImp::onMessage(std::shared_ptr <protocol::TMShardInfo> const& m)
+{
+    // DEPRECATED
+}
+
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMGetPeerShardInfo> const& m)
+{
+    auto badData = [&](std::string msg) {
+        fee_ = Resource::feeBadData;
+        JLOG(p_journal_.warn()) << msg;
+    };
+
+    if (m->hops() > csHopLimit)
+        return badData("Invalid hops: " + std::to_string(m->hops()));
+    if (m->peerchain_size() > csHopLimit)
+        return badData("Invalid peer chain");
 
     // Reply with shard info we may have
     if (auto shardStore = app_.getShardStore())
@@ -1038,7 +1050,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetShardInfo> const& m)
         auto shards {shardStore->getCompleteShards()};
         if (!shards.empty())
         {
-            protocol::TMShardInfo reply;
+            protocol::TMPeerShardInfo reply;
             reply.set_shardindexes(shards);
 
             if (m->has_lastlink())
@@ -1047,7 +1059,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetShardInfo> const& m)
             if (m->peerchain_size() > 0)
                 *reply.mutable_peerchain() = m->peerchain();
 
-            send(std::make_shared<Message>(reply, protocol::mtSHARD_INFO));
+            send(std::make_shared<Message>(
+                reply, protocol::mtPEER_SHARD_INFO));
 
             JLOG(p_journal_.trace()) <<
                 "Sent shard indexes " << shards;
@@ -1063,31 +1076,41 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetShardInfo> const& m)
         if (m->hops() == 0)
             m->set_lastlink(true);
 
-        m->add_peerchain(id());
+        m->add_peerchain()->set_nodepubkey(
+            publicKey_.data(), publicKey_.size());
+
         overlay_.foreach(send_if_not(
-            std::make_shared<Message>(*m, protocol::mtGET_SHARD_INFO),
+            std::make_shared<Message>(*m, protocol::mtGET_PEER_SHARD_INFO),
             match_peer(this)));
     }
 }
 
 void
-PeerImp::onMessage(std::shared_ptr <protocol::TMShardInfo> const& m)
+PeerImp::onMessage(std::shared_ptr <protocol::TMPeerShardInfo> const& m)
 {
-    if (m->shardindexes().empty() || m->peerchain_size() > csHopLimit)
-    {
+    auto badData = [&](std::string msg) {
         fee_ = Resource::feeBadData;
-        JLOG(p_journal_.warn()) <<
-            (m->shardindexes().empty() ?
-            "Missing shard indexes" :
-            "Invalid Peerchain");
-        return;
-    }
+        JLOG(p_journal_.warn()) << msg;
+    };
+
+    if (m->shardindexes().empty())
+        return badData("Missing shard indexes");
+    if (m->peerchain_size() > csHopLimit)
+        return badData("Invalid peer chain");
+    if (m->has_nodepubkey() && !publicKeyType(makeSlice(m->nodepubkey())))
+        return badData("Invalid public key");
 
     // Check if the message should be forwarded to another peer
     if (m->peerchain_size() > 0)
     {
-        auto const peerId {m->peerchain(m->peerchain_size() - 1)};
-        if (auto peer = overlay_.findPeerByShortID(peerId))
+        // Get the Public key of the last link in the peer chain
+        auto const s {makeSlice(m->peerchain(
+            m->peerchain_size() - 1).nodepubkey())};
+        if (!publicKeyType(s))
+            return badData("Invalid pubKey");
+        PublicKey peerPubKey(s);
+
+        if (auto peer = overlay_.findPeerByPublicKey(peerPubKey))
         {
             if (!m->has_nodepubkey())
                 m->set_nodepubkey(publicKey_.data(), publicKey_.size());
@@ -1102,10 +1125,11 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMShardInfo> const& m)
             }
 
             m->mutable_peerchain()->RemoveLast();
-            peer->send(std::make_shared<Message>(*m, protocol::mtSHARD_INFO));
+            peer->send(std::make_shared<Message>(
+                *m, protocol::mtPEER_SHARD_INFO));
 
             JLOG(p_journal_.trace()) <<
-                "Relayed TMShardInfo to peer with IP " <<
+                "Relayed TMPeerShardInfo to peer with IP " <<
                 remote_address_.address().to_string();
         }
         else
@@ -1191,18 +1215,10 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMShardInfo> const& m)
                 break;
             }
             default:
-                fee_ = Resource::feeBadData;
-                return;
+                return badData("Invalid shard indexes");
             }
         }
     }
-
-    // Get the Public key of the node reporting the shard info
-    PublicKey publicKey;
-    if (m->has_nodepubkey())
-        publicKey = PublicKey(makeSlice(m->nodepubkey()));
-    else
-        publicKey = publicKey_;
 
     // Get the IP of the node reporting the shard info
     beast::IP::Endpoint endpoint;
@@ -1213,18 +1229,21 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMShardInfo> const& m)
             auto result {
                 beast::IP::Endpoint::from_string_checked(m->endpoint())};
             if (!result.second)
-            {
-                fee_ = Resource::feeBadData;
-                JLOG(p_journal_.warn()) <<
-                    "failed to parse incoming endpoint: {" <<
-                    m->endpoint() << "}";
-                return;
-            }
+                return badData("Invalid incoming endpoint: " + m->endpoint());
             endpoint = std::move(result.first);
         }
     }
     else if (crawl()) // Check if peer will share IP publicly
+    {
         endpoint = remote_address_;
+    }
+
+    // Get the Public key of the node reporting the shard info
+    PublicKey publicKey;
+    if (m->has_nodepubkey())
+        publicKey = PublicKey(makeSlice(m->nodepubkey()));
+    else
+        publicKey = publicKey_;
 
     {
         std::lock_guard<std::mutex> l {shardInfoMutex_};
@@ -1248,7 +1267,7 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMShardInfo> const& m)
     }
 
     JLOG(p_journal_.trace()) <<
-        "Consumed TMShardInfo originating from public key " <<
+        "Consumed TMPeerShardInfo originating from public key " <<
         toBase58(TokenType::NodePublic, publicKey) <<
         " shard indexes " << m->shardindexes();
 
