@@ -23,6 +23,7 @@
 #include <ripple/server/impl/BaseHTTPPeer.h>
 #include <ripple/server/impl/SSLWSPeer.h>
 #include <ripple/beast/asio/ssl_bundle.h>
+#include <ripple/beast/asio/waitable_timer.h>
 #include <memory>
 
 namespace ripple {
@@ -34,6 +35,7 @@ class SSLHTTPPeer
 {
 private:
     friend class BaseHTTPPeer<Handler, SSLHTTPPeer>;
+    using waitable_timer = typename BaseHTTPPeer<Handler, SSLHTTPPeer>::waitable_timer;
     using socket_type = boost::asio::ip::tcp::socket;
     using stream_type = boost::asio::ssl::stream <socket_type&>;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
@@ -44,10 +46,15 @@ private:
     stream_type& stream_;
 
 public:
-    template<class ConstBufferSequence>
-    SSLHTTPPeer(Port const& port, Handler& handler,
-        beast::Journal journal, endpoint_type remote_address,
-            ConstBufferSequence const& buffers, socket_type&& socket);
+    template <class ConstBufferSequence>
+    SSLHTTPPeer(
+        Port const& port,
+        Handler& handler,
+        boost::asio::io_context& ioc,
+        beast::Journal journal,
+        endpoint_type remote_address,
+        ConstBufferSequence const& buffers,
+        socket_type&& socket);
 
     void
     run();
@@ -71,14 +78,24 @@ private:
 
 //------------------------------------------------------------------------------
 
-template<class Handler>
-template<class ConstBufferSequence>
-SSLHTTPPeer<Handler>::
-SSLHTTPPeer(Port const& port, Handler& handler,
-    beast::Journal journal, endpoint_type remote_address,
-        ConstBufferSequence const& buffers, socket_type&& socket)
-    : BaseHTTPPeer<Handler, SSLHTTPPeer>(port, handler,
-        socket.get_io_service(), journal, remote_address, buffers)
+template <class Handler>
+template <class ConstBufferSequence>
+SSLHTTPPeer<Handler>::SSLHTTPPeer(
+    Port const& port,
+    Handler& handler,
+    boost::asio::io_context& ioc,
+    beast::Journal journal,
+    endpoint_type remote_address,
+    ConstBufferSequence const& buffers,
+    socket_type&& socket)
+    : BaseHTTPPeer<Handler, SSLHTTPPeer>(
+          port,
+          handler,
+          ioc.get_executor(),
+          waitable_timer{ioc},
+          journal,
+          remote_address,
+          buffers)
     , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
         port.context, std::move(socket)))
     , stream_(ssl_bundle_->stream)
@@ -168,8 +185,11 @@ SSLHTTPPeer<Handler>::
 do_close()
 {
     this->start_timer();
-    stream_.async_shutdown(this->strand_.wrap(std::bind (
-        &SSLHTTPPeer::on_shutdown, this->shared_from_this(),
+    stream_.async_shutdown(bind_executor(
+        this->strand_,
+        std::bind(
+            &SSLHTTPPeer::on_shutdown,
+            this->shared_from_this(),
             std::placeholders::_1)));
 }
 

@@ -29,7 +29,7 @@
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/buffer.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/container/flat_map.hpp>
@@ -65,16 +65,21 @@ private:
     private:
         Port const& port_;
         Handler& handler_;
+        boost::asio::io_context& ioc_;
         socket_type socket_;
         timer_type timer_;
         endpoint_type remote_address_;
-        boost::asio::io_service::strand strand_;
+        boost::asio::io_context::strand strand_;
         beast::Journal j_;
 
     public:
-        Detector (Port const& port, Handler& handler,
-            socket_type&& socket, endpoint_type remote_address,
-                beast::Journal j);
+        Detector(
+            Port const& port,
+            Handler& handler,
+            boost::asio::io_context& ioc,
+            socket_type&& socket,
+            endpoint_type remote_address,
+            beast::Journal j);
         void run();
         void close() override;
 
@@ -86,13 +91,14 @@ private:
     beast::Journal j_;
     Port const& port_;
     Handler& handler_;
+    boost::asio::io_context& ioc_;
     acceptor_type acceptor_;
-    boost::asio::io_service::strand strand_;
+    boost::asio::io_context::strand strand_;
     bool ssl_;
     bool plain_;
 
 public:
-    Door(Handler& handler, boost::asio::io_service& io_service,
+    Door(Handler& handler, boost::asio::io_context& io_context,
         Port const& port, beast::Journal j);
 
     // Work-around because we can't call shared_from_this in ctor
@@ -169,17 +175,21 @@ detect_ssl (Socket& socket, StreamBuf& buf, Yield do_yield)
     return result;
 }
 
-template<class Handler>
-Door<Handler>::Detector::
-Detector(Port const& port,
-    Handler& handler, socket_type&& socket,
-        endpoint_type remote_address, beast::Journal j)
+template <class Handler>
+Door<Handler>::Detector::Detector(
+    Port const& port,
+    Handler& handler,
+    boost::asio::io_context& ioc,
+    socket_type&& socket,
+    endpoint_type remote_address,
+    beast::Journal j)
     : port_(port)
     , handler_(handler)
+    , ioc_(ioc)
     , socket_(std::move(socket))
-    , timer_(socket_.get_io_service())
+    , timer_(ioc_)
     , remote_address_(remote_address)
-    , strand_(socket_.get_io_service())
+    , strand_(ioc_)
     , j_(j)
 {
 }
@@ -238,15 +248,15 @@ do_detect(boost::asio::yield_context do_yield)
     {
         if (ssl)
         {
-            if(auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
-                port_, handler_, j_, remote_address_,
-                    buf.data(), std::move(socket_)))
+            if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
+                 port_, handler_, ioc_, j_, remote_address_,
+                     buf.data(), std::move(socket_)))
                 sp->run();
             return;
         }
-        if(auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
-            port_, handler_, j_, remote_address_,
-                buf.data(), std::move(socket_)))
+        if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
+             port_, handler_, ioc_, j_, remote_address_,
+                 buf.data(), std::move(socket_)))
             sp->run();
         return;
     }
@@ -262,13 +272,14 @@ do_detect(boost::asio::yield_context do_yield)
 
 template<class Handler>
 Door<Handler>::
-Door(Handler& handler, boost::asio::io_service& io_service,
+Door(Handler& handler, boost::asio::io_context& io_context,
         Port const& port, beast::Journal j)
     : j_(j)
     , port_(port)
     , handler_(handler)
-    , acceptor_(io_service)
-    , strand_(io_service)
+    , ioc_(io_context)
+    , acceptor_(io_context)
+    , strand_(io_context)
     , ssl_(
         port_.protocol.count("https") > 0 ||
         port_.protocol.count("wss") > 0 ||
@@ -352,15 +363,15 @@ create(bool ssl, ConstBufferSequence const& buffers,
 {
     if (ssl)
     {
-        if(auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
-            port_, handler_, j_, remote_address,
-                buffers, std::move(socket)))
+        if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
+             port_, handler_, ioc_, j_, remote_address,
+                 buffers, std::move(socket)))
             sp->run();
         return;
     }
-    if(auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
-        port_, handler_, j_, remote_address,
-            buffers, std::move(socket)))
+    if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
+         port_, handler_, ioc_, j_, remote_address,
+             buffers, std::move(socket)))
         sp->run();
 }
 
@@ -373,7 +384,7 @@ do_accept(boost::asio::yield_context do_yield)
     {
         error_code ec;
         endpoint_type remote_address;
-        socket_type socket (acceptor_.get_io_service());
+        socket_type socket (ioc_);
         acceptor_.async_accept (socket, remote_address, do_yield[ec]);
         if (ec && ec != boost::asio::error::operation_aborted)
         {
@@ -387,9 +398,9 @@ do_accept(boost::asio::yield_context do_yield)
 
         if (ssl_ && plain_)
         {
-            if(auto sp = ios().template emplace<Detector>(
-                port_, handler_, std::move(socket),
-                    remote_address, j_))
+            if (auto sp = ios().template emplace<Detector>(
+                 port_, handler_, ioc_, std::move(socket),
+                     remote_address, j_))
                 sp->run();
         }
         else if (ssl_ || plain_)
