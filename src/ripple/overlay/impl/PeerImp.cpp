@@ -66,8 +66,8 @@ PeerImp::PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
     , ssl_bundle_(std::move(ssl_bundle))
     , socket_ (ssl_bundle_->socket)
     , stream_ (ssl_bundle_->stream)
-    , strand_ (socket_.get_io_service())
-    , timer_ (socket_.get_io_service())
+    , strand_ (socket_.get_executor())
+    , timer_ (beast::create_waitable_timer<waitable_timer>(socket_))
     , remote_address_ (
         beast::IPAddressConversion::from_asio(remote_endpoint))
     , overlay_ (overlay)
@@ -102,7 +102,7 @@ void
 PeerImp::run()
 {
     if(! strand_.running_in_this_thread())
-        return strand_.post(std::bind (
+        return post(strand_, std::bind (
             &PeerImp::run, shared_from_this()));
     if (m_inbound)
     {
@@ -145,8 +145,7 @@ void
 PeerImp::stop()
 {
     if(! strand_.running_in_this_thread())
-        return strand_.post(std::bind (
-            &PeerImp::stop, shared_from_this()));
+        return post(strand_, std::bind(&PeerImp::stop, shared_from_this()));
     if (socket_.is_open())
     {
         // The rationale for using different severity levels is that
@@ -172,8 +171,7 @@ void
 PeerImp::send (Message::pointer const& m)
 {
     if (! strand_.running_in_this_thread())
-        return strand_.post(std::bind (
-            &PeerImp::send, shared_from_this(), m));
+        return post(strand_, std::bind(&PeerImp::send, shared_from_this(), m));
     if(gracefulClose_)
         return;
     if(detaching_)
@@ -204,11 +202,16 @@ PeerImp::send (Message::pointer const& m)
     if(sendq_size != 0)
         return;
 
-    boost::asio::async_write (stream_, boost::asio::buffer(
-        send_queue_.front()->getBuffer()), strand_.wrap(std::bind(
-            &PeerImp::onWriteMessage, shared_from_this(),
+    boost::asio::async_write(
+        stream_,
+        boost::asio::buffer(send_queue_.front()->getBuffer()),
+        bind_executor(
+            strand_,
+            std::bind(
+                &PeerImp::onWriteMessage,
+                shared_from_this(),
                 std::placeholders::_1,
-                    std::placeholders::_2)));
+                std::placeholders::_2)));
 }
 
 void
@@ -438,9 +441,12 @@ void
 PeerImp::fail(std::string const& reason)
 {
     if(! strand_.running_in_this_thread())
-        return strand_.post(std::bind (
-            (void(Peer::*)(std::string const&))&PeerImp::fail,
-                shared_from_this(), reason));
+        return post(
+            strand_,
+            std::bind(
+                (void (Peer::*)(std::string const&)) & PeerImp::fail,
+                shared_from_this(),
+                reason));
     if (socket_.is_open())
     {
         JLOG (journal_.warn()) <<
@@ -495,8 +501,10 @@ PeerImp::gracefulClose()
     if (send_queue_.size() > 0)
         return;
     setTimer();
-    stream_.async_shutdown(strand_.wrap(std::bind(&PeerImp::onShutdown,
-        shared_from_this(), std::placeholders::_1)));
+    stream_.async_shutdown(bind_executor(
+        strand_,
+        std::bind(
+            &PeerImp::onShutdown, shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -511,8 +519,10 @@ PeerImp::setTimer()
         JLOG(journal_.error()) << "setTimer: " << ec.message();
         return;
     }
-    timer_.async_wait(strand_.wrap(std::bind(&PeerImp::onTimer,
-        shared_from_this(), std::placeholders::_1)));
+    timer_.async_wait(bind_executor(
+        strand_,
+        std::bind(
+            &PeerImp::onTimer, shared_from_this(), std::placeholders::_1)));
 }
 
 // convenience for ignoring the error code
@@ -706,9 +716,14 @@ PeerImp::onWriteResponse (error_code ec, std::size_t bytes_transferred)
     if (write_buffer_.size() == 0)
         return doProtocolStart();
 
-    stream_.async_write_some (write_buffer_.data(),
-        strand_.wrap (std::bind (&PeerImp::onWriteResponse,
-            shared_from_this(), std::placeholders::_1,
+    stream_.async_write_some(
+        write_buffer_.data(),
+        bind_executor(
+            strand_,
+            std::bind(
+                &PeerImp::onWriteResponse,
+                shared_from_this(),
+                std::placeholders::_1,
                 std::placeholders::_2)));
 }
 
@@ -782,9 +797,14 @@ PeerImp::onReadMessage (error_code ec, std::size_t bytes_transferred)
         read_buffer_.consume (bytes_consumed);
     }
     // Timeout on writes only
-    stream_.async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
-        strand_.wrap (std::bind (&PeerImp::onReadMessage,
-            shared_from_this(), std::placeholders::_1,
+    stream_.async_read_some(
+        read_buffer_.prepare(Tuning::readBufferBytes),
+        bind_executor(
+            strand_,
+            std::bind(
+                &PeerImp::onReadMessage,
+                shared_from_this(),
+                std::placeholders::_1,
                 std::placeholders::_2)));
 }
 
@@ -811,17 +831,25 @@ PeerImp::onWriteMessage (error_code ec, std::size_t bytes_transferred)
     if (! send_queue_.empty())
     {
         // Timeout on writes only
-        return boost::asio::async_write (stream_, boost::asio::buffer(
-            send_queue_.front()->getBuffer()), strand_.wrap(std::bind(
-                &PeerImp::onWriteMessage, shared_from_this(),
+        return boost::asio::async_write(
+            stream_,
+            boost::asio::buffer(send_queue_.front()->getBuffer()),
+            bind_executor(
+                strand_,
+                std::bind(
+                    &PeerImp::onWriteMessage,
+                    shared_from_this(),
                     std::placeholders::_1,
-                        std::placeholders::_2)));
+                    std::placeholders::_2)));
     }
 
     if (gracefulClose_)
     {
-        return stream_.async_shutdown(strand_.wrap(std::bind(
-            &PeerImp::onShutdown, shared_from_this(),
+        return stream_.async_shutdown(bind_executor(
+            strand_,
+            std::bind(
+                &PeerImp::onShutdown,
+                shared_from_this(),
                 std::placeholders::_1)));
     }
 }
@@ -1813,9 +1841,12 @@ void PeerImp::check ()
     if (reject)
     {
         overlay_.peerFinder().on_failure (slot_);
-        strand_.post (std::bind (
-            (void (PeerImp::*)(std::string const&)) &PeerImp::fail,
-                shared_from_this(), "Not useful"));
+        post(
+            strand_,
+            std::bind(
+                (void (PeerImp::*)(std::string const&)) & PeerImp::fail,
+                shared_from_this(),
+                "Not useful"));
     }
 }
 

@@ -22,6 +22,7 @@
 
 #include <ripple/basics/safe_cast.h>
 #include <ripple/server/impl/BasePeer.h>
+#include <ripple/server/impl/LowestLayer.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/crypto/csprng.h>
@@ -66,9 +67,10 @@ public:
     BaseWSPeer(
         Port const& port,
         Handler& handler,
+        boost::asio::executor const& executor,
+        waitable_timer timer,
         endpoint_type remote_address,
         boost::beast::http::request<Body, Headers>&& request,
-        boost::asio::io_service& io_service,
         beast::Journal journal);
 
     void
@@ -156,21 +158,25 @@ protected:
 
 //------------------------------------------------------------------------------
 
-template<class Handler, class Impl>
-template<class Body, class Headers>
-BaseWSPeer<Handler, Impl>::
-BaseWSPeer(
+template <class Handler, class Impl>
+template <class Body, class Headers>
+BaseWSPeer<Handler, Impl>::BaseWSPeer(
     Port const& port,
     Handler& handler,
+    boost::asio::executor const& executor,
+    waitable_timer timer,
     endpoint_type remote_address,
     boost::beast::http::request<Body, Headers>&& request,
-    boost::asio::io_service& io_service,
     beast::Journal journal)
-    : BasePeer<Handler, Impl>(port, handler, remote_address,
-        io_service, journal)
+    : BasePeer<Handler, Impl>(
+          port,
+          handler,
+          executor,
+          remote_address,
+          journal)
     , request_(std::move(request))
-    , timer_(io_service)
-    , payload_ ("12345678") // ensures size is 8 bytes
+    , timer_(std::move(timer))
+    , payload_("12345678")  // ensures size is 8 bytes
 {
 }
 
@@ -180,8 +186,8 @@ BaseWSPeer<Handler, Impl>::
 run()
 {
     if(! strand_.running_in_this_thread())
-        return strand_.post(std::bind(
-            &BaseWSPeer::run, impl().shared_from_this()));
+        return post(
+            strand_, std::bind(&BaseWSPeer::run, impl().shared_from_this()));
     impl().ws_.set_option(port().pmd_options);
     // Must manage the control callback memory outside of the `control_callback` function
     control_callback_ = std::bind(
@@ -190,14 +196,18 @@ run()
     impl().ws_.control_callback(control_callback_);
     start_timer();
     close_on_timer_ = true;
-    impl().ws_.async_accept_ex(request_,
-        [](auto & res)
-        {
+    impl().ws_.async_accept_ex(
+        request_,
+        [](auto& res) {
             res.set(boost::beast::http::field::server,
                 BuildInfo::getFullVersionString());
         },
-        strand_.wrap(std::bind(&BaseWSPeer::on_ws_handshake,
-            impl().shared_from_this(), std::placeholders::_1)));
+        bind_executor(
+            strand_,
+            std::bind(
+                &BaseWSPeer::on_ws_handshake,
+                impl().shared_from_this(),
+                std::placeholders::_1)));
 }
 
 template<class Handler, class Impl>
@@ -206,9 +216,10 @@ BaseWSPeer<Handler, Impl>::
 send(std::shared_ptr<WSMsg> w)
 {
     if(! strand_.running_in_this_thread())
-        return strand_.post(std::bind(
-            &BaseWSPeer::send, impl().shared_from_this(),
-                std::move(w)));
+        return post(
+            strand_,
+            std::bind(
+                &BaseWSPeer::send, impl().shared_from_this(), std::move(w)));
     if(do_close_)
         return;
     if(wq_.size() > port().ws_queue_limit)
@@ -233,13 +244,18 @@ BaseWSPeer<Handler, Impl>::
 close()
 {
     if(! strand_.running_in_this_thread())
-        return strand_.post(std::bind(
-            &BaseWSPeer::close, impl().shared_from_this()));
+        return post(
+            strand_, std::bind(&BaseWSPeer::close, impl().shared_from_this()));
     do_close_ = true;
     if(wq_.empty())
-        impl().ws_.async_close({}, strand_.wrap(std::bind(
-            &BaseWSPeer::on_close, impl().shared_from_this(),
-                std::placeholders::_1)));
+        impl().ws_.async_close(
+            {},
+            bind_executor(
+                strand_,
+                std::bind(
+                    &BaseWSPeer::on_close,
+                    impl().shared_from_this(),
+                    std::placeholders::_1)));
 }
 
 template<class Handler, class Impl>
@@ -248,8 +264,9 @@ BaseWSPeer<Handler, Impl>::
 complete()
 {
     if(! strand_.running_in_this_thread())
-        return strand_.post(std::bind(
-            &BaseWSPeer::complete, impl().shared_from_this()));
+        return post(
+            strand_,
+            std::bind(&BaseWSPeer::complete, impl().shared_from_this()));
     do_read();
 }
 
@@ -270,8 +287,9 @@ BaseWSPeer<Handler, Impl>::
 do_write()
 {
     if(! strand_.running_in_this_thread())
-        return strand_.post(std::bind(
-            &BaseWSPeer::do_write, impl().shared_from_this()));
+        return post(
+            strand_,
+            std::bind(&BaseWSPeer::do_write, impl().shared_from_this()));
     on_write({});
 }
 
@@ -293,18 +311,22 @@ on_write(error_code const& ec)
         impl().ws_.async_write_some(
             static_cast<bool>(result.first),
             result.second,
-            strand_.wrap(std::bind(
-                &BaseWSPeer::on_write,
-                impl().shared_from_this(),
-                std::placeholders::_1)));
+            bind_executor(
+                strand_,
+                std::bind(
+                    &BaseWSPeer::on_write,
+                    impl().shared_from_this(),
+                    std::placeholders::_1)));
     else
         impl().ws_.async_write_some(
             static_cast<bool>(result.first),
             result.second,
-            strand_.wrap(std::bind(
-                &BaseWSPeer::on_write_fin,
-                impl().shared_from_this(),
-                std::placeholders::_1)));
+            bind_executor(
+                strand_,
+                std::bind(
+                    &BaseWSPeer::on_write_fin,
+                    impl().shared_from_this(),
+                    std::placeholders::_1)));
 }
 
 template<class Handler, class Impl>
@@ -316,9 +338,14 @@ on_write_fin(error_code const& ec)
         return fail(ec, "write_fin");
     wq_.pop_front();
     if(do_close_)
-        impl().ws_.async_close(cr_, strand_.wrap(std::bind(
-            &BaseWSPeer::on_close, impl().shared_from_this(),
-                std::placeholders::_1)));
+        impl().ws_.async_close(
+            cr_,
+            bind_executor(
+                strand_,
+                std::bind(
+                    &BaseWSPeer::on_close,
+                    impl().shared_from_this(),
+                    std::placeholders::_1)));
     else if(! wq_.empty())
         on_write({});
 }
@@ -329,11 +356,17 @@ BaseWSPeer<Handler, Impl>::
 do_read()
 {
     if(! strand_.running_in_this_thread())
-        return strand_.post(std::bind(
-            &BaseWSPeer::do_read, impl().shared_from_this()));
-    impl().ws_.async_read(rb_, strand_.wrap(
-        std::bind(&BaseWSPeer::on_read,
-            impl().shared_from_this(), std::placeholders::_1)));
+        return post(
+            strand_,
+            std::bind(&BaseWSPeer::do_read, impl().shared_from_this()));
+    impl().ws_.async_read(
+        rb_,
+        bind_executor(
+            strand_,
+            std::bind(
+                &BaseWSPeer::on_read,
+                impl().shared_from_this(),
+                std::placeholders::_1)));
 }
 
 template<class Handler, class Impl>
@@ -376,8 +409,11 @@ start_timer()
         ec);
     if(ec)
         return fail(ec, "start_timer");
-    timer_.async_wait(strand_.wrap(std::bind(
-        &BaseWSPeer<Handler, Impl>::on_timer, impl().shared_from_this(),
+    timer_.async_wait(bind_executor(
+        strand_,
+        std::bind(
+            &BaseWSPeer<Handler, Impl>::on_timer,
+            impl().shared_from_this(),
             std::placeholders::_1)));
 }
 
@@ -444,11 +480,14 @@ on_timer(error_code ec)
             // cryptographic is probably overkill..
             beast::rngfill(payload_.begin(),
                 payload_.size(), crypto_prng());
-            impl().ws_.async_ping(payload_,
-                strand_.wrap(std::bind(
-                    &BaseWSPeer::on_ping,
+            impl().ws_.async_ping(
+                payload_,
+                bind_executor(
+                    strand_,
+                    std::bind(
+                        &BaseWSPeer::on_ping,
                         impl().shared_from_this(),
-                            std::placeholders::_1)));
+                        std::placeholders::_1)));
             JLOG(this->j_.trace()) <<
                 "sent ping";
             return;
@@ -474,7 +513,7 @@ fail(error_code ec, String const& what)
         ec_ = ec;
         JLOG(this->j_.trace()) <<
             what << ": " << ec.message();
-        impl().ws_.lowest_layer().close(ec);
+        ripple::get_lowest_layer(impl().ws_).close(ec);
     }
 }
 

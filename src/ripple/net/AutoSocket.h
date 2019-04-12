@@ -64,11 +64,6 @@ public:
     {
     }
 
-    boost::asio::io_service& get_io_service () noexcept
-    {
-        return mSocket->get_io_service ();
-    }
-
     bool            isSecure ()
     {
         return mSecure;
@@ -167,8 +162,9 @@ public:
         {
             // must be plain
             mSecure = false;
-            mSocket->get_io_service ().post (
-                boost::beast::bind_handler (cbFunc, error_code()));
+            post(
+                mSocket->get_executor(),
+                boost::beast::bind_handler(cbFunc, error_code()));
         }
         else
         {
@@ -200,8 +196,9 @@ public:
             {
                 ec = e.code();
             }
-            mSocket->get_io_service ().post (
-                boost::beast::bind_handler (handler, ec));
+            post(
+                mSocket->get_executor(),
+                boost::beast::bind_handler(handler, ec));
         }
     }
 

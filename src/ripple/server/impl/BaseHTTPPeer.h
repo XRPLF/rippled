@@ -84,8 +84,8 @@ protected:
 
     Port const& port_;
     Handler& handler_;
-    boost::asio::io_service::work work_;
-    boost::asio::io_service::strand strand_;
+    boost::asio::executor_work_guard<boost::asio::executor> work_;
+    boost::asio::strand<boost::asio::executor> strand_;
     waitable_timer timer_;
     endpoint_type remote_address_;
     beast::Journal journal_;
@@ -109,10 +109,15 @@ protected:
     //--------------------------------------------------------------------------
 
 public:
-    template<class ConstBufferSequence>
-    BaseHTTPPeer(Port const& port, Handler& handler,
-        boost::asio::io_service& io_service, beast::Journal journal,
-            endpoint_type remote_address, ConstBufferSequence const& buffers);
+    template <class ConstBufferSequence>
+    BaseHTTPPeer(
+        Port const& port,
+        Handler& handler,
+        boost::asio::executor const& executor,
+        waitable_timer timer,
+        beast::Journal journal,
+        endpoint_type remote_address,
+        ConstBufferSequence const& buffers);
 
     virtual
     ~BaseHTTPPeer();
@@ -208,18 +213,21 @@ protected:
 
 //------------------------------------------------------------------------------
 
-template<class Handler, class Impl>
-template<class ConstBufferSequence>
-BaseHTTPPeer<Handler, Impl>::
-BaseHTTPPeer(Port const& port, Handler& handler,
-    boost::asio::io_service& io_service, beast::Journal journal,
-        endpoint_type remote_address,
-        ConstBufferSequence const& buffers)
+template <class Handler, class Impl>
+template <class ConstBufferSequence>
+BaseHTTPPeer<Handler, Impl>::BaseHTTPPeer(
+    Port const& port,
+    Handler& handler,
+    boost::asio::executor const& executor,
+    waitable_timer timer,
+    beast::Journal journal,
+    endpoint_type remote_address,
+    ConstBufferSequence const& buffers)
     : port_(port)
     , handler_(handler)
-    , work_(io_service)
-    , strand_(io_service)
-    , timer_(io_service)
+    , work_(executor)
+    , strand_(executor)
+    , timer_(std::move(timer))
     , remote_address_(remote_address)
     , journal_(journal)
 {
@@ -248,8 +256,10 @@ BaseHTTPPeer<Handler, Impl>::
 close()
 {
     if(! strand_.running_in_this_thread())
-        return strand_.post(std::bind(
-           (void(BaseHTTPPeer::*)(void))&BaseHTTPPeer::close,
+        return post(
+            strand_,
+            std::bind(
+                (void (BaseHTTPPeer::*)(void)) & BaseHTTPPeer::close,
                 impl().shared_from_this()));
     error_code ec;
     impl().stream_.lowest_layer().close(ec);
@@ -285,8 +295,11 @@ start_timer()
         ec);
     if(ec)
         return fail(ec, "start_timer");
-    timer_.async_wait(strand_.wrap(std::bind(
-        &BaseHTTPPeer<Handler, Impl>::on_timer, impl().shared_from_this(),
+    timer_.async_wait(bind_executor(
+        strand_,
+        std::bind(
+            &BaseHTTPPeer<Handler, Impl>::on_timer,
+            impl().shared_from_this(),
             std::placeholders::_1)));
 }
 
@@ -359,9 +372,15 @@ on_write(error_code const& ec,
         for(auto const& b : wq2_)
             v.emplace_back(b.data.get(), b.bytes);
         start_timer();
-        return boost::asio::async_write(impl().stream_, v,
-            strand_.wrap(std::bind(&BaseHTTPPeer::on_write,
-                impl().shared_from_this(), std::placeholders::_1,
+        return boost::asio::async_write(
+            impl().stream_,
+            v,
+            bind_executor(
+                strand_,
+                std::bind(
+                    &BaseHTTPPeer::on_write,
+                    impl().shared_from_this(),
+                    std::placeholders::_1,
                     std::placeholders::_2)));
     }
     if(! complete_)
@@ -432,10 +451,13 @@ write(
         }())
     {
         if(! strand_.running_in_this_thread())
-            return strand_.post(std::bind(
-                &BaseHTTPPeer::on_write,
+            return post(
+                strand_,
+                std::bind(
+                    &BaseHTTPPeer::on_write,
                     impl().shared_from_this(),
-                        error_code{}, 0));
+                    error_code{},
+                    0));
         else
             return on_write(error_code{}, 0);
     }
@@ -447,9 +469,14 @@ BaseHTTPPeer<Handler, Impl>::
 write(std::shared_ptr <Writer> const& writer,
     bool keep_alive)
 {
-    boost::asio::spawn(strand_, std::bind(
-        &BaseHTTPPeer<Handler, Impl>::do_writer, impl().shared_from_this(),
-            writer, keep_alive, std::placeholders::_1));
+    boost::asio::spawn(bind_executor(
+        strand_,
+        std::bind(
+            &BaseHTTPPeer<Handler, Impl>::do_writer,
+            impl().shared_from_this(),
+            writer,
+            keep_alive,
+            std::placeholders::_1)));
 }
 
 // DEPRECATED
@@ -470,8 +497,11 @@ BaseHTTPPeer<Handler, Impl>::
 complete()
 {
     if(! strand_.running_in_this_thread())
-        return strand_.post(std::bind(&BaseHTTPPeer<Handler, Impl>::complete,
-            impl().shared_from_this()));
+        return post(
+            strand_,
+            std::bind(
+                &BaseHTTPPeer<Handler, Impl>::complete,
+                impl().shared_from_this()));
 
     message_ = {};
     complete_ = true;
@@ -483,8 +513,12 @@ complete()
     }
 
     // keep-alive
-    boost::asio::spawn(strand_, std::bind(&BaseHTTPPeer<Handler, Impl>::do_read,
-        impl().shared_from_this(), std::placeholders::_1));
+    boost::asio::spawn(bind_executor(
+        strand_,
+        std::bind(
+            &BaseHTTPPeer<Handler, Impl>::do_read,
+            impl().shared_from_this(),
+            std::placeholders::_1)));
 }
 
 // DEPRECATED
@@ -495,9 +529,13 @@ BaseHTTPPeer<Handler, Impl>::
 close(bool graceful)
 {
     if(! strand_.running_in_this_thread())
-        return strand_.post(std::bind(
-           (void(BaseHTTPPeer::*)(bool))&BaseHTTPPeer<Handler, Impl>::close,
-                impl().shared_from_this(), graceful));
+        return post(
+            strand_,
+            std::bind(
+                (void (BaseHTTPPeer::*)(bool)) &
+                    BaseHTTPPeer<Handler, Impl>::close,
+                impl().shared_from_this(),
+                graceful));
 
     complete_ = true;
     if(graceful)

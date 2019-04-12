@@ -34,19 +34,24 @@ class PlainHTTPPeer
 {
 private:
     friend class BaseHTTPPeer<Handler, PlainHTTPPeer>;
+    using waitable_timer = typename BaseHTTPPeer<Handler, PlainHTTPPeer>::waitable_timer;
     using socket_type = boost::asio::ip::tcp::socket;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
 
     socket_type stream_;
 
 public:
-    template<class ConstBufferSequence>
-    PlainHTTPPeer(Port const& port, Handler& handler,
-        beast::Journal journal, endpoint_type remote_address,
-            ConstBufferSequence const& buffers, socket_type&& socket);
+    template <class ConstBufferSequence>
+    PlainHTTPPeer(
+        Port const& port,
+        Handler& handler,
+        boost::asio::io_context& ioc,
+        beast::Journal journal,
+        endpoint_type remote_address,
+        ConstBufferSequence const& buffers,
+        socket_type&& socket);
 
-    void
-    run();
+    void run();
 
     std::shared_ptr<WSSession>
     websocketUpgrade() override;
@@ -61,14 +66,24 @@ private:
 
 //------------------------------------------------------------------------------
 
-template<class Handler>
-template<class ConstBufferSequence>
-PlainHTTPPeer<Handler>::
-PlainHTTPPeer(Port const& port, Handler& handler,
-    beast::Journal journal, endpoint_type remote_endpoint,
-        ConstBufferSequence const& buffers, socket_type&& socket)
-    : BaseHTTPPeer<Handler, PlainHTTPPeer>(port, handler,
-        socket.get_io_service(), journal, remote_endpoint, buffers)
+template <class Handler>
+template <class ConstBufferSequence>
+PlainHTTPPeer<Handler>::PlainHTTPPeer(
+    Port const& port,
+    Handler& handler,
+    boost::asio::io_context& ioc,
+    beast::Journal journal,
+    endpoint_type remote_endpoint,
+    ConstBufferSequence const& buffers,
+    socket_type&& socket)
+    : BaseHTTPPeer<Handler, PlainHTTPPeer>(
+          port,
+          handler,
+          ioc.get_executor(),
+          waitable_timer{ioc},
+          journal,
+          remote_endpoint,
+          buffers)
     , stream_(std::move(socket))
 {
     // Set TCP_NODELAY on loopback interfaces,

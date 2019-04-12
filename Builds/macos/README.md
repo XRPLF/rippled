@@ -70,7 +70,7 @@ Extract it to a folder, making note of where, open a terminal, then:
 
 ```
 ./bootstrap.sh
-./b2 cxxflags="-std=c++14"
+./b2 cxxflags="-std=c++14"  visibility=global
 ```
 
 Create an environment variable `BOOST_ROOT` in one of your `rc` files, pointing
