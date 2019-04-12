@@ -58,14 +58,14 @@ public:
     };
 
     TrustedPublisherServer(
-        boost::asio::io_service& ios,
+        boost::asio::io_context& ioc,
         std::pair<PublicKey, SecretKey> keys,
         std::string const& manifest,
         int sequence,
         NetClock::time_point expiration,
         int version,
         std::vector<Validator> const& validators)
-        : sock_(ios), acceptor_(ios)
+            : sock_(ioc), acceptor_(ioc)
     {
         endpoint_type const& ep {
             beast::IP::Address::from_string (ripple::test::getEnvLocalhostAddr()),
@@ -124,13 +124,13 @@ private:
         int id;
         TrustedPublisherServer& self;
         socket_type sock;
-        boost::asio::io_service::work work;
+        boost::asio::executor_work_guard<boost::asio::executor> work;
 
         lambda(int id_, TrustedPublisherServer& self_, socket_type&& sock_)
             : id(id_)
             , self(self_)
             , sock(std::move(sock_))
-            , work(sock.get_io_service())
+            , work(sock_.get_executor())
         {
         }
 

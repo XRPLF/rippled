@@ -5,6 +5,9 @@ include (CheckCXXCompilerFlag)
 if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)
   include (FetchContent)
 endif ()
+if (MSVC AND CMAKE_VERSION VERSION_LESS 3.12)
+  message (FATAL_ERROR "MSVC requires cmake 3.12 or greater for proper boost support")
+endif ()
 include (ExternalProject)
 include (CMakeFuncs) # must come *after* ExternalProject b/c it overrides one function in EP
 include (ProcessorCount)
@@ -1117,6 +1120,7 @@ if (WIN32)
   # this version in the name might change if/when we change versions of soci
   set (soci_lib_post "_4_0")
 endif ()
+get_target_property (_boost_incs Boost::date_time INTERFACE_INCLUDE_DIRECTORIES)
 ExternalProject_Add (soci
   PREFIX ${nih_cache_path}
   GIT_REPOSITORY https://github.com/SOCI/soci.git
@@ -1135,6 +1139,7 @@ ExternalProject_Add (soci
     -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
     $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:-DCMAKE_VERBOSE_MAKEFILE=ON>
     -DCMAKE_PREFIX_PATH=${CMAKE_BINARY_DIR}/sqlite3
+    -DCMAKE_MODULE_PATH=${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake
     -DCMAKE_INCLUDE_PATH=$<JOIN:$<TARGET_PROPERTY:sqlite,INTERFACE_INCLUDE_DIRECTORIES>,::>
     -DCMAKE_LIBRARY_PATH=${sqlite_BINARY_DIR}
     -DCMAKE_DEBUG_POSTFIX=_d
@@ -1144,7 +1149,12 @@ ExternalProject_Add (soci
     -DSOCI_LIBDIR=lib
     -DSOCI_SHARED=OFF
     -DSOCI_TESTS=OFF
-    -DBOOST_ROOT=${Boost_DIR}
+    # hack to workaround the fact that soci doesn't currently use
+    # boost imported targets in its cmake. If they switch to
+    # proper imported targets, this next line can be removed
+    # (as well as the get_property above that sets _boost_incs)
+    -DBoost_INCLUDE_DIRS=$<JOIN:${_boost_incs},::>
+    -DBOOST_ROOT=${BOOST_ROOT}
     -DWITH_BOOST=ON
     -DSOCI_DB2=OFF
     -DSOCI_FIREBIRD=OFF

@@ -132,14 +132,14 @@ SSLHTTPDownloader::do_session(
     using namespace boost::beast;
 
     boost::system::error_code ec;
-    ip::tcp::resolver resolver {strand_.get_io_context()};
+    ip::tcp::resolver resolver {strand_.context()};
     auto const results = resolver.async_resolve(host, port, yield[ec]);
     if (ec)
         return fail(dstPath, complete, ec, "async_resolve");
 
     try
     {
-        stream_.emplace(strand_.get_io_service(), ctx_);
+        stream_.emplace(strand_.context(), ctx_);
     }
     catch (std::exception const& e)
     {

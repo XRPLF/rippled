@@ -23,6 +23,7 @@
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/RangeSet.h>
+#include <ripple/beast/asio/waitable_timer.h>
 #include <ripple/beast/utility/WrappedSink.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
@@ -94,6 +95,7 @@ private:
     using stream_type   = boost::asio::ssl::stream <socket_type&>;
     using address_type  = boost::asio::ip::address;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
+    using waitable_timer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
 
     // The length of the smallest valid finished message
     static const size_t sslMinimumFinishedLength = 12;
@@ -107,9 +109,8 @@ private:
     std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
     socket_type& socket_;
     stream_type& stream_;
-    boost::asio::io_service::strand strand_;
-    boost::asio::basic_waitable_timer<
-        std::chrono::steady_clock> timer_;
+    boost::asio::strand<boost::asio::executor> strand_;
+    waitable_timer timer_;
 
     //Type type_ = Type::legacy;
 
@@ -479,6 +480,7 @@ private:
             beast::Journal journal);
 };
 
+
 //------------------------------------------------------------------------------
 
 template <class Buffers>
@@ -498,8 +500,8 @@ PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& s
     , ssl_bundle_(std::move(ssl_bundle))
     , socket_ (ssl_bundle_->socket)
     , stream_ (ssl_bundle_->stream)
-    , strand_ (socket_.get_io_service())
-    , timer_ (socket_.get_io_service())
+    , strand_ (socket_.get_executor())
+    , timer_ (beast::create_waitable_timer<waitable_timer>(socket_))
     , remote_address_ (slot->remote_endpoint())
     , overlay_ (overlay)
     , m_inbound (false)
