@@ -32,9 +32,9 @@
 
 namespace ripple {
 
-auto           constexpr DEFAULT_REFRESH_INTERVAL = std::chrono::minutes{5};
-auto           constexpr ERROR_RETRY_INTERVAL     = std::chrono::seconds{30};
-unsigned short constexpr MAX_REDIRECTS            = 3;
+auto           constexpr default_refresh_interval = std::chrono::minutes{5};
+auto           constexpr error_retry_interval     = std::chrono::seconds{30};
+unsigned short constexpr max_redirects            = 3;
 
 ValidatorSite::Site::Resource::Resource (std::string uri_)
     : uri {std::move(uri_)}
@@ -82,7 +82,7 @@ ValidatorSite::Site::Site (std::string uri)
     : loadedResource {std::make_shared<Resource>(std::move(uri))}
     , startingResource {loadedResource}
     , redirCount {0}
-    , refreshInterval {DEFAULT_REFRESH_INTERVAL}
+    , refreshInterval {default_refresh_interval}
     , nextRefresh {clock_type::now()}
 {
 }
@@ -155,7 +155,7 @@ ValidatorSite::start ()
 {
     std::lock_guard <std::mutex> lock{state_mutex_};
     if (timer_.expires_at() == clock_type::time_point{})
-        setTimer ();
+        setTimer (lock);
 }
 
 void
@@ -177,15 +177,14 @@ ValidatorSite::stop()
         sp->cancel();
     cv_.wait(lock, [&]{ return ! fetching_; });
 
-    error_code ec;
-    timer_.cancel(ec);
+    timer_.cancel();
     stopping_ = false;
     pending_ = false;
     cv_.notify_all();
 }
 
 void
-ValidatorSite::setTimer ()
+ValidatorSite::setTimer (std::lock_guard<std::mutex>& state_lock)
 {
     std::lock_guard <std::mutex> lock{sites_mutex_};
 
@@ -200,8 +199,11 @@ ValidatorSite::setTimer ()
         pending_ = next->nextRefresh <= clock_type::now();
         cv_.notify_all();
         timer_.expires_at (next->nextRefresh);
-        timer_.async_wait (std::bind (&ValidatorSite::onTimer, this,
-            std::distance (sites_.begin (), next), std::placeholders::_1));
+        auto idx = std::distance (sites_.begin (), next);
+        timer_.async_wait ([this, idx] (boost::system::error_code const& ec)
+        {
+            this->onTimer (idx, ec);
+        });
     }
 }
 
@@ -209,7 +211,7 @@ void
 ValidatorSite::makeRequest (
     std::shared_ptr<Site::Resource> resource,
     std::size_t siteIdx,
-    std::lock_guard<std::mutex>& lock)
+    std::lock_guard<std::mutex>& sites_lock)
 {
     fetching_ = true;
     sites_[siteIdx].activeResource = resource;
@@ -217,9 +219,8 @@ ValidatorSite::makeRequest (
     auto timeoutCancel =
         [this] ()
         {
-            std::unique_lock <std::mutex> lock_state{state_mutex_};
-            error_code ec;
-            timer_.cancel_one(ec);
+            std::lock_guard <std::mutex> lock_state{state_mutex_};
+            timer_.cancel_one();
         };
     auto onFetch =
         [this, siteIdx, timeoutCancel] (
@@ -271,10 +272,12 @@ ValidatorSite::makeRequest (
     sp->run ();
     // start a timer for the request, which shouldn't take more
     // than requestTimeout_ to complete
-    std::unique_lock <std::mutex> lock_state{state_mutex_};
-    timer_.expires_at ( clock_type::now() + requestTimeout_);
-    timer_.async_wait ( std::bind (
-        &ValidatorSite::onRequestTimeout, this, siteIdx, std::placeholders::_1));
+    std::lock_guard <std::mutex> lock_state{state_mutex_};
+    timer_.expires_after (requestTimeout_);
+    timer_.async_wait ([this, siteIdx] (boost::system::error_code const& ec)
+        {
+            this->onRequestTimeout (siteIdx, ec);
+        });
 }
 
 void
@@ -286,13 +289,13 @@ ValidatorSite::onRequestTimeout (
         return;
 
     {
-        std::unique_lock <std::mutex> lock_site{sites_mutex_};
+        std::lock_guard <std::mutex> lock_site{sites_mutex_};
         JLOG (j_.warn()) <<
             "Request for " << sites_[siteIdx].activeResource->uri <<
             " took too long";
     }
 
-    std::unique_lock<std::mutex> lock_state{state_mutex_};
+    std::lock_guard<std::mutex> lock_state{state_mutex_};
     if(auto sp = work_.lock())
         sp->cancel();
 }
@@ -311,14 +314,12 @@ ValidatorSite::onTimer (
         return;
     }
 
-    std::lock_guard <std::mutex> lock{sites_mutex_};
-    sites_[siteIdx].nextRefresh =
-        clock_type::now() + sites_[siteIdx].refreshInterval;
-
-    assert(! fetching_);
-    sites_[siteIdx].redirCount = 0;
     try
     {
+        std::lock_guard <std::mutex> lock{sites_mutex_};
+        sites_[siteIdx].nextRefresh =
+            clock_type::now() + sites_[siteIdx].refreshInterval;
+        sites_[siteIdx].redirCount = 0;
         // the WorkSSL client can throw if SSL init fails
         makeRequest(sites_[siteIdx].startingResource, siteIdx, lock);
     }
@@ -335,7 +336,7 @@ void
 ValidatorSite::parseJsonResponse (
     std::string const& res,
     std::size_t siteIdx,
-    std::lock_guard<std::mutex>& lock)
+    std::lock_guard<std::mutex>& sites_lock)
 {
     Json::Reader r;
     Json::Value body;
@@ -413,12 +414,13 @@ ValidatorSite::parseJsonResponse (
     if (body.isMember ("refresh_interval") &&
         body["refresh_interval"].isNumeric ())
     {
-        auto refresh =
+        using namespace std::chrono_literals;
+        std::chrono::minutes const refresh =
             boost::algorithm::clamp(
-                body["refresh_interval"].asUInt (),
-                1u,
-                60u*24);
-        sites_[siteIdx].refreshInterval = std::chrono::minutes{refresh};
+                std::chrono::minutes {body["refresh_interval"].asUInt ()},
+                1min,
+                24h);
+        sites_[siteIdx].refreshInterval = refresh;
         sites_[siteIdx].nextRefresh =
             clock_type::now() + sites_[siteIdx].refreshInterval;
     }
@@ -428,7 +430,7 @@ std::shared_ptr<ValidatorSite::Site::Resource>
 ValidatorSite::processRedirect (
     detail::response_type& res,
     std::size_t siteIdx,
-    std::lock_guard<std::mutex>& lock)
+    std::lock_guard<std::mutex>& sites_lock)
 {
     using namespace boost::beast::http;
     std::shared_ptr<Site::Resource> newLocation;
@@ -442,7 +444,7 @@ ValidatorSite::processRedirect (
         throw std::runtime_error{"missing location"};
     }
 
-    if (sites_[siteIdx].redirCount == MAX_REDIRECTS)
+    if (sites_[siteIdx].redirCount == max_redirects)
     {
         JLOG (j_.warn()) <<
             "Exceeded max redirects for validator list at " <<
@@ -492,7 +494,7 @@ ValidatorSite::onSiteFetch(
                             errMsg});
             if (retry)
                 sites_[siteIdx].nextRefresh =
-                        clock_type::now() + ERROR_RETRY_INTERVAL;
+                        clock_type::now() + error_retry_interval;
         };
         if (ec)
         {
@@ -552,10 +554,10 @@ ValidatorSite::onSiteFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::unique_lock <std::mutex> lock_state{state_mutex_};
+    std::lock_guard <std::mutex> lock_state{state_mutex_};
     fetching_ = false;
     if (! stopping_)
-        setTimer ();
+        setTimer (lock_state);
     cv_.notify_all();
 }
 
@@ -593,10 +595,10 @@ ValidatorSite::onTextFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::unique_lock <std::mutex> lock_state{state_mutex_};
+    std::lock_guard <std::mutex> lock_state{state_mutex_};
     fetching_ = false;
     if (! stopping_)
-        setTimer ();
+        setTimer (lock_state);
     cv_.notify_all();
 }
 

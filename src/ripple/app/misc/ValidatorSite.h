@@ -189,8 +189,9 @@ public:
 
 private:
     /// Queue next site to be fetched
+    /// lock over state_mutex_ required
     void
-    setTimer ();
+    setTimer (std::lock_guard<std::mutex>&);
 
     /// request took too long
     void

@@ -50,6 +50,8 @@ constexpr const char* realValidatorContents()
 }
 )vl";
 }
+
+auto constexpr default_expires = std::chrono::seconds{3600};
 }
 
 class ValidatorSite_test : public beast::unit_test::suite
@@ -187,25 +189,24 @@ private:
         }
     };
 
-    struct fetchListConfig
+    struct FetchListConfig
     {
-        std::string path_;
-        std::string msg_;
-        bool failFetch_ = false;
-        bool failApply_ = false;
-        int serverVersion_ = 1;
-        std::chrono::seconds expiresFromNow_ = std::chrono::seconds{3600};
+        std::string path;
+        std::string msg;
+        bool failFetch = false;
+        bool failApply = false;
+        int serverVersion = 1;
+        std::chrono::seconds expiresFromNow = detail::default_expires;
+        int expectedRefreshMin = 0;
     };
     void
-    testFetchList (std::vector<fetchListConfig> const& paths)
+    testFetchList (std::vector<FetchListConfig> const& paths)
     {
-        using M = std::decay<decltype(paths)>::type;
         testcase << "Fetch list - " <<
             boost::algorithm::join (paths |
                 boost::adaptors::transformed(
-                    [](M::value_type t){ return t.path_; }),
+                    [](FetchListConfig const& cfg){ return cfg.path; }),
                 ", ");
-
         using namespace jtx;
 
         Env env (*this);
@@ -218,18 +219,16 @@ private:
         std::vector<std::string> emptyCfgKeys;
         struct publisher
         {
+            publisher(FetchListConfig const& c) : cfg{c} {}
             std::unique_ptr<TrustedPublisherServer> server;
             std::vector<Validator> list;
             std::string uri;
-            std::string expectMsg;
-            bool failFetch;
-            bool failApply;
+            FetchListConfig const& cfg;
             bool isRetry;
         };
         std::vector<publisher> servers;
 
         auto const sequence = 1;
-        using namespace std::chrono_literals;
         auto constexpr listSize = 20;
         std::vector<std::string> cfgPublishers;
 
@@ -245,12 +244,9 @@ private:
                 publisherPublic, publisherSecret,
                 pubSigningKeys.first, pubSigningKeys.second, 1);
 
-            servers.push_back({});
+            servers.push_back(cfg);
             auto& item = servers.back();
-            item.failFetch = cfg.failFetch_;
-            item.failApply = cfg.failApply_;
-            item.isRetry = cfg.path_ == "/bad-resource";
-            item.expectMsg = cfg.msg_;
+            item.isRetry = cfg.path == "/bad-resource";
             item.list.reserve (listSize);
             while (item.list.size () < listSize)
                 item.list.push_back (randomValidator());
@@ -260,18 +256,19 @@ private:
                 pubSigningKeys,
                 manifest,
                 sequence,
-                env.timeKeeper().now() + cfg.expiresFromNow_,
-                cfg.serverVersion_,
+                env.timeKeeper().now() + cfg.expiresFromNow,
+                cfg.serverVersion,
                 item.list);
 
             std::stringstream uri;
-            uri << "http://" << item.server->local_endpoint() << cfg.path_;
+            uri << "http://" << item.server->local_endpoint() << cfg.path;
             item.uri = uri.str();
         }
 
         BEAST_EXPECT(trustedKeys.load (
             emptyLocalKey, emptyCfgKeys, cfgPublishers));
 
+        using namespace std::chrono_literals;
         auto sites = std::make_unique<ValidatorSite> (
             env.app().getIOService(),
             env.app().validators(),
@@ -285,34 +282,43 @@ private:
         sites->start();
         sites->join();
 
+        auto const jv = sites->getJson();
         for (auto const& u : servers)
         {
             for (auto const& val : u.list)
             {
                 BEAST_EXPECT(
-                    trustedKeys.listed (val.masterPublic) != u.failApply);
+                    trustedKeys.listed (val.masterPublic) != u.cfg.failApply);
                 BEAST_EXPECT(
-                    trustedKeys.listed (val.signingPublic) != u.failApply);
+                    trustedKeys.listed (val.signingPublic) != u.cfg.failApply);
             }
 
-            auto const jv = sites->getJson();
             Json::Value myStatus;
             for (auto const& vs : jv[jss::validator_sites])
                 if (vs[jss::uri].asString().find(u.uri) != std::string::npos)
                     myStatus = vs;
             BEAST_EXPECTS(
                 myStatus[jss::last_refresh_message].asString().empty()
-                    != u.failFetch,
+                    != u.cfg.failFetch,
                 to_string(myStatus) + "\n" + sink.strm_.str());
 
-            if (! u.expectMsg.empty())
+            if (! u.cfg.msg.empty())
             {
                 BEAST_EXPECTS(
-                    sink.strm_.str().find(u.expectMsg) != std::string::npos,
+                    sink.strm_.str().find(u.cfg.msg) != std::string::npos,
                     sink.strm_.str());
             }
 
-            if (u.failFetch)
+
+            if (u.cfg.expectedRefreshMin)
+            {
+                BEAST_EXPECTS(
+                    myStatus[jss::refresh_interval_min].asInt()
+                        == u.cfg.expectedRefreshMin,
+                    to_string(myStatus));
+            }
+
+            if (u.cfg.failFetch)
             {
                 using namespace std::chrono;
                 log << " -- Msg: " <<
@@ -490,14 +496,10 @@ public:
         // bad manifest version
         testFetchList ({
             {"/validators", "Unsupported version", false, true, 4}});
+        using namespace std::chrono_literals;
         // get old validator list
         testFetchList ({
-            {"/validators",
-            "Stale validator list",
-            false,
-            true,
-            1,
-            std::chrono::seconds{0}}});
+            {"/validators", "Stale validator list", false, true, 1, 0s}});
         // force an out-of-range expiration value
         testFetchList ({
             {"/validators",
@@ -506,6 +508,31 @@ public:
             true,
             1,
             std::chrono::seconds{Json::Value::maxInt + 1}}});
+        // verify refresh intervals are properly clamped
+        testFetchList ({
+            {"/validators/refresh/0",
+            "",
+            false,
+            false,
+            1,
+            detail::default_expires,
+            1}}); // minimum of 1 minute
+        testFetchList ({
+            {"/validators/refresh/10",
+            "",
+            false,
+            false,
+            1,
+            detail::default_expires,
+            10}}); // 10 minutes is fine
+        testFetchList ({
+            {"/validators/refresh/2000",
+            "",
+            false,
+            false,
+            1,
+            detail::default_expires,
+            60*24}}); // max of 24 hours
         testFileURLs();
     }
 };
