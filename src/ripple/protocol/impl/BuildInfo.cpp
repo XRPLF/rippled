@@ -30,7 +30,7 @@ namespace BuildInfo {
 //  The build version number. You must edit this for each release
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
-char const* const versionString = "1.2.3"
+char const* const versionString = "1.2.4"
 
 #if defined(DEBUG) || defined(SANITIZER)
        "+"
