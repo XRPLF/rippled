@@ -359,15 +359,25 @@ Transactor::checkSingleSign (PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(fixDisabledRegularKey))
     {
 
-        if ((*sleAccount)[~sfRegularKey] == idSigner
-                || (!isMasterDisabled && idAccount == idSigner))
+        // Signed with regular key.
+        if ((*sleAccount)[~sfRegularKey] == idSigner)
         {
             return tesSUCCESS;
         }
+
+        // Signed with enabled mater key.
+        if (!isMasterDisabled && idAccount == idSigner)
+        {
+            return tesSUCCESS;
+        }
+
+        // Signed with disabled master key.
         if (isMasterDisabled && idAccount == idSigner)
         {
             return tefMASTER_DISABLED;
         }
+
+        // Signed with any other key.
         return tefBAD_AUTH;
 
     }
