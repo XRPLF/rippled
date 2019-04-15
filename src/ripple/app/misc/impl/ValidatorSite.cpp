@@ -177,7 +177,15 @@ ValidatorSite::stop()
         sp->cancel();
     cv_.wait(lock, [&]{ return ! fetching_; });
 
-    timer_.cancel();
+    // docs indicate cancel() can throw, but this should be
+    // reconsidered if it changes to noexcept
+    try
+    {
+        timer_.cancel();
+    }
+    catch (boost::system::system_error const&)
+    {
+    }
     stopping_ = false;
     pending_ = false;
     cv_.notify_all();
@@ -220,7 +228,15 @@ ValidatorSite::makeRequest (
         [this] ()
         {
             std::lock_guard <std::mutex> lock_state{state_mutex_};
-            timer_.cancel_one();
+            // docs indicate cancel_one() can throw, but this
+            // should be reconsidered if it changes to noexcept
+            try
+            {
+                timer_.cancel_one();
+            }
+            catch (boost::system::system_error const&)
+            {
+            }
         };
     auto onFetch =
         [this, siteIdx, timeoutCancel] (
