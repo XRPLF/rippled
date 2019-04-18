@@ -30,10 +30,7 @@ Json::Value doConsensusInfo (RPC::Context& context)
 {
     Json::Value ret (Json::objectValue);
 
-    {
-        auto lock = make_lock(context.app.getMasterMutex());
-        ret[jss::info] = context.netOps.getConsensusInfo ();
-    }
+    ret[jss::info] = context.netOps.getConsensusInfo ();
 
     return ret;
 }

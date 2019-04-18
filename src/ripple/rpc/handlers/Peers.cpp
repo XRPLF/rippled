@@ -33,8 +33,6 @@ Json::Value doPeers (RPC::Context& context)
     Json::Value jvResult (Json::objectValue);
 
     {
-        auto lock = make_lock(context.app.getMasterMutex());
-
         jvResult[jss::peers] = context.app.overlay ().json ();
 
         auto const now = context.app.timeKeeper().now();
