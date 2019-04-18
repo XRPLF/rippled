@@ -749,6 +749,8 @@ void NetworkOPsImp::processHeartbeatTimer ()
                     << "below required minimum (" << minPeerCount_ << ").";
             }
 
+            // MasterMutex lock need not be held to call setHeartbeatTimer()
+            lock.unlock();
             // We do not call mConsensus.timerEntry until there are enough
             // peers providing meaningful inputs to consensus
             setHeartbeatTimer ();
@@ -1029,11 +1031,11 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
     batchLock.unlock();
 
     {
-        auto lock = make_lock(app_.getMasterMutex());
+        auto masterLock = make_lock(app_.getMasterMutex(), std::defer_lock);
         bool changed = false;
         {
-            std::lock_guard <std::recursive_mutex> lock (
-                m_ledgerMaster.peekMutex());
+            auto ledgerLock = make_lock(m_ledgerMaster.peekMutex(), std::defer_lock);
+            std::lock(masterLock, ledgerLock);
 
             app_.openLedger().modify(
                 [&](OpenView& view, beast::Journal j)
