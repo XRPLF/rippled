@@ -844,23 +844,18 @@ public:
             mWalletDB.get () != nullptr;
     }
 
-    void signalled(const boost::system::error_code& ec, int signal_number)
+    void signalled(boost::system::error_code const& ec, int const signal_number)
     {
-        if (ec == boost::asio::error::operation_aborted)
-        {
-            // Indicates the signal handler has been aborted
-            // do nothing
-        }
-        else if (ec)
+        if (ec && ec != boost::asio::error::operation_aborted)
         {
             JLOG(m_journal.error()) << "Received signal: " << signal_number
-                                  << " with error: " << ec.message();
+                                    << " with error: " << ec.message();
+            m_signals.async_wait(std::bind(&ApplicationImp::signalled, this,
+                std::placeholders::_1, std::placeholders::_2));
+            return;
         }
-        else
-        {
-            JLOG(m_journal.debug()) << "Received signal: " << signal_number;
-            signalStop();
-        }
+        JLOG(m_journal.debug()) << "Received signal: " << signal_number;
+        signalStop();
     }
 
     //--------------------------------------------------------------------------
