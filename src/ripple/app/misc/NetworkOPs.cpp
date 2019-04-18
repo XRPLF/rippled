@@ -749,6 +749,8 @@ void NetworkOPsImp::processHeartbeatTimer ()
                     << "below required minimum (" << minPeerCount_ << ").";
             }
 
+            // MasterMutex lock need not be held to call setHeartbeatTimer()
+            lock.unlock();
             // We do not call mConsensus.timerEntry until there are enough
             // peers providing meaningful inputs to consensus
             setHeartbeatTimer ();
