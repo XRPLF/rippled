@@ -456,7 +456,8 @@ PeerImp::fail(std::string const& name, error_code ec)
     assert(strand_.running_in_this_thread());
     if (socket_.is_open())
     {
-        JLOG(journal_.warn()) << name << ": " << ec.message();
+        JLOG(journal_.warn()) << "[" << name << "] " <<
+            remote_address_.to_string() << ": " << ec.message();
     }
     close();
 }
