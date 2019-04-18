@@ -27,7 +27,6 @@ namespace ripple {
 
 Json::Value doUnlList (RPC::Context& context)
 {
-    auto lock = make_lock(context.app.getMasterMutex());
     Json::Value obj (Json::objectValue);
 
     context.app.validators().for_each_listed (
@@ -41,7 +40,7 @@ Json::Value doUnlList (RPC::Context& context)
                 TokenType::NodePublic, publicKey);
             node[jss::trusted] = trusted;
 
-            unl.append (node);
+            unl.append (std::move (node));
         });
 
     return obj;
