@@ -242,6 +242,7 @@ try {
 
                     withEnv(env_vars) {
                         myStage(bldlabel)
+                        def thrown = '';
                         try {
                             timeout(
                               time: max_minutes * 2,
@@ -272,6 +273,10 @@ try {
                                 }
                             }
                         }
+                        catch(e) {
+                           thrown = "${e}"
+                           throw e
+                        }
                         finally {
                             if (bldtype == 'docs') {
                                 publishHTML(
@@ -299,9 +304,12 @@ try {
                             if (cmake_txt != '') {
                                 cmake_txt = " <br/>" + cmake_txt
                             }
-                            def st = reportStatus(bldlabel, bldtype + cmake_txt + envs, env.BUILD_URL)
+                            def st = reportStatus(bldlabel, bldtype + cmake_txt + envs, env.BUILD_URL, thrown)
                             lock('rippled_dev_status') {
                                 all_status[bldlabel] = st
+                            }
+                            if (thrown == '') {
+                                assert st[0] : "Unit Test Failures"
                             }
                         } //try-catch-finally
                     } //withEnv
@@ -328,19 +336,27 @@ try {
                         "git_remote=${remote}",
                         "rpm_release=${env.BUILD_ID}"])
                     {
+                        def thrown = '';
                         try {
                             sh "rm -fv ${bldlabel}.txt"
                             sh "if [ -d rpm-out ]; then rm -rf rpm-out; fi"
                             sh rpmBuildCmd(bldlabel)
                         }
+                        catch(e) {
+                           thrown = "${e}"
+                           throw e
+                        }
                         finally {
-                            def st = reportStatus(bldlabel, bldlabel, env.BUILD_URL)
+                            def st = reportStatus(bldlabel, bldlabel, env.BUILD_URL, thrown)
                             lock('rippled_dev_status') {
                                 all_status[bldlabel] = st
                             }
                             archiveArtifacts(
                                 artifacts: 'rpm-out/*.rpm',
                                 allowEmptyArchive: true)
+                            if (thrown == '') {
+                                assert st[0] : "Unit Test Failures"
+                            }
                         }
                     } //withEnv
                 } //withCredentials
@@ -515,9 +531,9 @@ def getFailures(text, label) {
         text == '' ?
         manager.getLogMatcher(/\[${label}\].+?(\d+) test[s]? total, (\d+) (failure(s?))/) :
         text =~ /(\d+) test[s]? total, (\d+) (failure(s?))/
-    // if we didn't match, then return 1 since something is
+    // if we didn't match, then return -1 since something is
     // probably wrong, e.g. maybe the build failed...
-    matcher ? matcher[0][2] as Integer : 1i
+    matcher ? matcher[0][2] as Integer : -1i
 }
 
 @NonCPS
@@ -734,7 +750,7 @@ centos:latest
 //   * archives the log file
 //   * adds short description/status to build status
 //   * returns an array of result info to add to the all_build summary
-def reportStatus(label, type, bldurl) {
+def reportStatus(label, type, bldurl, errmsg) {
     def outstr = ''
     def loglink = "[console](${bldurl}/console)"
     def logfile = "${label}.txt"
@@ -748,7 +764,7 @@ def reportStatus(label, type, bldurl) {
     def fail_count = getFailures(outstr, label)
     outstr = null
     def txtcolor =
-        fail_count == 0 ? 'DarkGreen' : 'Crimson'
+        (fail_count == 0 && errmsg == '') ? 'DarkGreen' : 'Crimson'
     def shortbld = label
     // this is just an attempt to shorten the
     // summary text label to the point of absurdity..
@@ -768,12 +784,16 @@ def reportStatus(label, type, bldurl) {
     shortbld = shortbld.replace('DEBUGGER', 'gdb')
     shortbld = shortbld.replace('ON', 'Y')
     shortbld = shortbld.replace('OFF', 'N')
+    def stattext = "${st}, t: ${time}"
+    if (fail_count <= 0 && errmsg != '') {
+        stattext += " [BAD EXIT]"
+    }
     manager.addShortText(
-        "${shortbld}: ${st}, t: ${time}",
+        "${shortbld}: ${stattext}",
         txtcolor,
         'white',
         '0px',
         'white')
-    [fail_count == 0, type, "${st}, t: ${time}", loglink]
+    [fail_count == 0 && errmsg == '', type, stattext, loglink]
 }
 
