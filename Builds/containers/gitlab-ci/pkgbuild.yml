@@ -13,7 +13,7 @@ variables:
   ARTIFACTORY_HOST: "artifactory.ops.ripple.com"
   ARTIFACTORY_HUB: "${ARTIFACTORY_HOST}:6555"
   GIT_SIGN_PUBKEYS_URL: "https://gitlab.ops.ripple.com/snippets/11/raw"
-  PUBLIC_REPO_ROOT: "https://mirrors1.ripple.com/repos"
+  PUBLIC_REPO_ROOT: "https://repos.ripple.com/repos"
   # also need to define this variable ONLY for the primary
   # build/publish pipeline on the mainline repo:
   #   IS_PRIMARY_REPO = "true"
