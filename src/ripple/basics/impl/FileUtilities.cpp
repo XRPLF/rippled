@@ -60,4 +60,28 @@ std::string getFileContents(boost::system::error_code& ec,
     return result;
 }
 
+void writeFileContents(boost::system::error_code& ec,
+    boost::filesystem::path const& destPath,
+    std::string const& contents)
+{
+    using namespace boost::filesystem;
+    using namespace boost::system::errc;
+
+    ofstream fileStream(destPath, std::ios::out | std::ios::trunc);
+
+    if (!fileStream)
+    {
+        ec = make_error_code(static_cast<errc_t>(errno));
+        return;
+    }
+
+    fileStream << contents;
+
+    if (fileStream.bad ())
+    {
+        ec = make_error_code(static_cast<errc_t>(errno));
+        return;
+    }
+}
+
 }

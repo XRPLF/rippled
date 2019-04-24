@@ -80,6 +80,7 @@ public:
         int ipLimit = 0;
         std::uint32_t crawlOptions = 0;
         boost::optional<std::uint32_t> networkID;
+        bool vlEnabled = true;
     };
 
     using PeerSequence = std::vector <std::shared_ptr<Peer>>;

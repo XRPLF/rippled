@@ -27,12 +27,13 @@
 namespace ripple
 {
 
-// TODO: Should this one function have its own file, or can it
-// be absorbed somewhere else?
-
 std::string getFileContents(boost::system::error_code& ec,
     boost::filesystem::path const& sourcePath,
     boost::optional<std::size_t> maxSize = boost::none);
+
+void writeFileContents(boost::system::error_code& ec,
+    boost::filesystem::path const& destPath,
+    std::string const& contents);
 
 }
 

@@ -35,6 +35,10 @@ class Charge;
 // Maximum hops to attempt when crawling shards. cs = crawl shards
 static constexpr std::uint32_t csHopLimit = 3;
 
+enum class ProtocolFeature {
+    ValidatorListPropagation,
+};
+
 /** Represents a peer connection in the overlay. */
 class Peer
 {
@@ -94,6 +98,17 @@ public:
 
     virtual
     Json::Value json() = 0;
+
+    virtual bool
+    supportsFeature(ProtocolFeature f) const = 0;
+
+    virtual
+    boost::optional<std::size_t>
+    publisherListSequence(PublicKey const&) const = 0;
+
+    virtual
+    void
+    setPublisherListSequence(PublicKey const&, std::size_t const) = 0;
 
     //
     // Ledger

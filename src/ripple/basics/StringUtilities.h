@@ -25,6 +25,7 @@
 
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
+#include <boost/utility/string_view.hpp>
 #include <sstream>
 #include <string>
 
@@ -63,7 +64,60 @@ inline static std::string sqlEscape (Blob const& vecSrc)
 
 uint64_t uintFromHex (std::string const& strSrc);
 
-boost::optional<Blob> strUnHex (std::string const& strSrc);
+template <class Iterator>
+boost::optional<Blob>
+strUnHex(std::size_t strSize, Iterator begin, Iterator end)
+{
+    Blob out;
+
+    out.reserve((strSize + 1) / 2);
+
+    auto iter = begin;
+
+    if (strSize & 1)
+    {
+        int c = charUnHex(*iter);
+
+        if (c < 0)
+            return {};
+
+        out.push_back(c);
+        ++iter;
+    }
+
+    while (iter != end)
+    {
+        int cHigh = charUnHex(*iter);
+        ++iter;
+
+        if (cHigh < 0)
+            return {};
+
+        int cLow = charUnHex(*iter);
+        ++iter;
+
+        if (cLow < 0)
+            return {};
+
+        out.push_back(static_cast<unsigned char>((cHigh << 4) | cLow));
+    }
+
+    return {std::move(out)};
+}
+
+inline
+boost::optional<Blob>
+strUnHex (std::string const& strSrc)
+{
+    return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
+}
+
+inline
+boost::optional<Blob>
+strViewUnHex (boost::string_view const& strSrc)
+{
+    return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
+}
 
 struct parsedURL
 {

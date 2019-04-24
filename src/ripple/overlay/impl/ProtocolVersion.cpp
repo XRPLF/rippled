@@ -36,7 +36,8 @@ constexpr
 ProtocolVersion const supportedProtocolList[]
 {
     { 1, 2 },
-    { 2, 0 }
+    { 2, 0 },
+    { 2, 1 }
 };
 
 // This ugly construct ensures that supportedProtocolList is sorted in strictly
@@ -130,10 +131,8 @@ parseProtocolVersions(boost::beast::string_view const& value)
 }
 
 boost::optional<ProtocolVersion>
-negotiateProtocolVersion(boost::beast::string_view const& versions)
+negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
 {
-    auto const them = parseProtocolVersions(versions);
-
     boost::optional<ProtocolVersion> result;
 
     // The protocol version we want to negotiate is the largest item in the
@@ -148,11 +147,19 @@ negotiateProtocolVersion(boost::beast::string_view const& versions)
         };
 
     std::set_intersection(
-        std::begin(them), std::end(them),
+        std::begin(versions), std::end(versions),
         std::begin(supportedProtocolList), std::end(supportedProtocolList),
         boost::make_function_output_iterator(pickVersion));
 
     return result;
+}
+
+boost::optional<ProtocolVersion>
+negotiateProtocolVersion(boost::beast::string_view const& versions)
+{
+    auto const them = parseProtocolVersions(versions);
+
+    return negotiateProtocolVersion(them);
 }
 
 std::string const&

@@ -75,6 +75,7 @@ public:
         transaction,
         proposal,
         validation,
+        validatorlist,
         shards,         // shard-related traffic
 
         // TMHaveSet message:
@@ -189,6 +190,7 @@ protected:
         {"transactions"},                                    // category::transaction
         {"proposals"},                                       // category::proposal
         {"validations"},                                     // category::validation
+        {"validator_lists"},                                 // category::validatorlist
         {"shards"},                                          // category::shards
         {"set_get"},                                         // category::get_set
         {"set_share"},                                       // category::share_set

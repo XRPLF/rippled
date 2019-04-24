@@ -365,7 +365,7 @@ public:
     std::unique_ptr <ServerHandler> serverHandler_;
     std::unique_ptr <AmendmentTable> m_amendmentTable;
     std::unique_ptr <LoadFeeTrack> mFeeTrack;
-    std::unique_ptr <HashRouter> mHashRouter;
+    std::unique_ptr <HashRouter> hashRouter_;
     RCLValidations mValidations;
     std::unique_ptr <LoadManager> m_loadManager;
     std::unique_ptr <TxQ> txQ_;
@@ -377,7 +377,7 @@ public:
     std::unique_ptr <DatabaseCon> mTxnDB;
     std::unique_ptr <DatabaseCon> mLedgerDB;
     std::unique_ptr <DatabaseCon> mWalletDB;
-    std::unique_ptr <Overlay> m_overlay;
+    std::unique_ptr <Overlay> overlay_;
     std::vector <std::unique_ptr<Stoppable>> websocketServers_;
 
     boost::asio::signal_set m_signals;
@@ -520,7 +520,8 @@ public:
             logs_->journal("ManifestCache")))
 
         , validators_ (std::make_unique<ValidatorList> (
-            *validatorManifests_, *publisherManifests_, *timeKeeper_,
+            *validatorManifests_, *publisherManifests_,
+            *timeKeeper_, config_->legacy("database_path"),
             logs_->journal("ValidatorList"), config_->VALIDATION_QUORUM))
 
         , validatorSites_ (std::make_unique<ValidatorSite> (*this))
@@ -531,7 +532,7 @@ public:
 
         , mFeeTrack (std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
 
-        , mHashRouter (std::make_unique<HashRouter>(
+        , hashRouter_ (std::make_unique<HashRouter>(
             stopwatch(), HashRouter::getDefaultHoldTime (),
             HashRouter::getDefaultRecoverLimit ()))
 
@@ -760,7 +761,7 @@ public:
 
     HashRouter& getHashRouter () override
     {
-        return *mHashRouter;
+        return *hashRouter_;
     }
 
     RCLValidations& getValidations () override
@@ -828,7 +829,8 @@ public:
 
     Overlay& overlay () override
     {
-        return *m_overlay;
+        assert(overlay_);
+        return *overlay_;
     }
 
     TxQ& getTxQ() override
@@ -1480,10 +1482,10 @@ bool ApplicationImp::setup()
     //             move the instantiation inside a conditional:
     //
     //             if (!config_.standalone())
-    m_overlay = make_Overlay (*this, setup_Overlay(*config_), *m_jobQueue,
+    overlay_ = make_Overlay (*this, setup_Overlay(*config_), *m_jobQueue,
         *serverHandler_, *m_resourceManager, *m_resolver, get_io_service(),
         *config_, m_collectorManager->collector ());
-    add (*m_overlay); // add to PropertyStream
+    add (*overlay_); // add to PropertyStream
 
     if (!config_->standalone())
     {
@@ -1675,7 +1677,7 @@ int ApplicationImp::fdRequired() const
     int needed = 128;
 
     // 1.5 times the configured peer limit for peer connections:
-    needed += static_cast<int>(0.5 + (1.5 * m_overlay->limit()));
+    needed += static_cast<int>(0.5 + (1.5 * overlay_->limit()));
 
     // the number of fds needed by the backend (internally
     // doubled if online delete is enabled).
@@ -2131,7 +2133,7 @@ ApplicationImp::journal (std::string const& name)
 
 bool ApplicationImp::nodeToShards()
 {
-    assert(m_overlay);
+    assert(overlay_);
     assert(!config_->standalone());
 
     if (config_->section(ConfigSection::shardDatabase()).empty())
@@ -2152,7 +2154,7 @@ bool ApplicationImp::nodeToShards()
 
 bool ApplicationImp::validateShards()
 {
-    assert(m_overlay);
+    assert(overlay_);
     assert(!config_->standalone());
 
     if (config_->section(ConfigSection::shardDatabase()).empty())

@@ -37,6 +37,7 @@ namespace ripple {
 using ProtocolVersion = std::pair<std::uint16_t, std::uint16_t>;
 
 inline
+constexpr
 ProtocolVersion
 make_protocol(std::uint16_t major, std::uint16_t minor)
 {
@@ -61,6 +62,10 @@ to_string(ProtocolVersion const& p);
 */
 std::vector<ProtocolVersion>
 parseProtocolVersions(boost::beast::string_view const& s);
+
+/** Given a list of supported protocol versions, choose the one we prefer. */
+boost::optional<ProtocolVersion>
+negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions);
 
 /** Given a list of supported protocol versions, choose the one we prefer. */
 boost::optional<ProtocolVersion>
