@@ -194,6 +194,9 @@ private:
     int large_sendq_ = 0;
     int no_ping_ = 0;
     std::unique_ptr <LoadEvent> load_event_;
+    // The highest sequence of each PublisherList that has
+    // been sent to or received from this peer.
+    hash_map<PublicKey, std::size_t> publisherListSequences_;
 
     std::mutex mutable shardInfoMutex_;
     hash_map<PublicKey, ShardInfo> shardInfo_;
@@ -342,6 +345,29 @@ public:
     Json::Value
     json() override;
 
+    bool
+    supportsFeature(ProtocolFeature f) const override;
+
+    boost::optional<std::size_t>
+    publisherListSequence(PublicKey const& pubKey) const override
+    {
+        std::lock_guard<std::mutex> sl(recentLock_);
+
+        auto iter = publisherListSequences_.find(pubKey);
+        if (iter != publisherListSequences_.end())
+            return iter->second;
+        return {};
+    }
+
+    void
+    setPublisherListSequence(PublicKey const& pubKey, std::size_t const seq)
+    override
+    {
+        std::lock_guard<std::mutex> sl(recentLock_);
+
+        publisherListSequences_[pubKey] = seq;
+    }
+
     //
     // Ledger
     //
@@ -488,6 +514,7 @@ public:
     void onMessage (std::shared_ptr <protocol::TMProposeSet> const& m);
     void onMessage (std::shared_ptr <protocol::TMStatusChange> const& m);
     void onMessage (std::shared_ptr <protocol::TMHaveTransactionSet> const& m);
+    void onMessage (std::shared_ptr <protocol::TMValidatorList> const& m);
     void onMessage (std::shared_ptr <protocol::TMValidation> const& m);
     void onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m);
 

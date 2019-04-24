@@ -244,6 +244,11 @@ private:
         detail::response_type& res,
         std::size_t siteIdx,
         std::lock_guard<std::mutex>& lock);
+
+    /// If no sites are provided, or a site fails to load,
+    /// get a list of local cache files from the ValidatorList.
+    bool
+    missingSite();
 };
 
 } // ripple

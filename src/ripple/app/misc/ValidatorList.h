@@ -35,6 +35,10 @@
 
 namespace ripple {
 
+// predeclaration
+class Overlay;
+class HashRouter;
+
 enum class ListDisposition
 {
     /// List is valid
@@ -123,11 +127,17 @@ class ValidatorList
         std::size_t sequence;
         TimeKeeper::time_point expiration;
         std::string siteUri;
+        std::string rawManifest;
+        std::string rawBlob;
+        std::string rawSignature;
+        std::uint32_t rawVersion;
+        uint256 hash;
     };
 
     ManifestCache& validatorManifests_;
     ManifestCache& publisherManifests_;
     TimeKeeper& timeKeeper_;
+    boost::filesystem::path const dataPath_;
     beast::Journal const j_;
     std::shared_timed_mutex mutable mutex_;
 
@@ -147,15 +157,44 @@ class ValidatorList
 
     // Currently supported version of publisher list format
     static constexpr std::uint32_t requiredListVersion = 1;
+    static const std::string filePrefix_;
 
 public:
     ValidatorList (
         ManifestCache& validatorManifests,
         ManifestCache& publisherManifests,
         TimeKeeper& timeKeeper,
+        std::string const& databasePath,
         beast::Journal j,
         boost::optional<std::size_t> minimumQuorum = boost::none);
     ~ValidatorList () = default;
+
+    /** Describes the result of processing a Validator List (UNL),
+    including some of the information from the list which can
+    be used by the caller to know which list publisher is
+    involved.
+    */
+    struct PublisherListStats
+    {
+        explicit PublisherListStats(ListDisposition d)
+            : disposition(d)
+        {
+        }
+
+        PublisherListStats(ListDisposition d, PublicKey key,
+            bool avail, std::size_t seq)
+            : disposition(d)
+            , publisherKey(key)
+            , available(avail)
+            , sequence(seq)
+        {
+        }
+
+        ListDisposition disposition;
+        boost::optional<PublicKey> publisherKey;
+        bool available = false;
+        boost::optional<std::size_t> sequence;
+    };
 
     /** Load configured trusted keys.
 
@@ -180,6 +219,44 @@ public:
         std::vector<std::string> const& configKeys,
         std::vector<std::string> const& publisherKeys);
 
+    /** Apply published list of public keys, then broadcast it to all
+        peers that have not seen it or sent it.
+
+        @param manifest base64-encoded publisher key manifest
+
+        @param blob base64-encoded json containing published validator list
+
+        @param signature Signature of the decoded blob
+
+        @param version Version of published list format
+
+        @param siteUri Uri of the site from which the list was validated
+
+        @param hash Hash of the data parameters
+
+        @param overlay Overlay object which will handle sending the message
+
+        @param hashRouter HashRouter object which will determine which
+            peers not to send to
+
+        @return `ListDisposition::accepted`, plus some of the publisher
+            information, if list was successfully applied
+
+        @par Thread Safety
+
+        May be called concurrently
+    */
+    PublisherListStats
+    applyListAndBroadcast (
+        std::string const& manifest,
+        std::string const& blob,
+        std::string const& signature,
+        std::uint32_t version,
+        std::string siteUri,
+        uint256 const& hash,
+        Overlay& overlay,
+        HashRouter& hashRouter);
+
     /** Apply published list of public keys
 
         @param manifest base64-encoded publisher key manifest
@@ -190,19 +267,38 @@ public:
 
         @param version Version of published list format
 
-        @return `ListDisposition::accepted` if list was successfully applied
+        @param siteUri Uri of the site from which the list was validated
+
+        @param hash Optional hash of the data parameters.
+            Defaults to uninitialized
+
+        @return `ListDisposition::accepted`, plus some of the publisher
+            information, if list was successfully applied
 
         @par Thread Safety
 
         May be called concurrently
     */
-    ListDisposition
+    PublisherListStats
     applyList (
         std::string const& manifest,
         std::string const& blob,
         std::string const& signature,
         std::uint32_t version,
-        std::string siteUri);
+        std::string siteUri,
+        boost::optional<uint256> const& hash = {});
+
+    /* Attempt to read previously stored list files. Expected to only be
+       called when loading from URL fails.
+
+       @return A list of valid file:// URLs, if any.
+
+       @par Thread Safety
+
+       May be called concurrently
+    */
+    std::vector<std::string>
+    loadLists();
 
     /** Update trusted nodes
 
@@ -333,6 +429,47 @@ public:
     for_each_listed (
         std::function<void(PublicKey const&, bool)> func) const;
 
+    /** Invokes the callback once for every available publisher list's raw
+        data members
+
+        @note Undefined behavior results when calling ValidatorList members
+        from within the callback
+
+        The arguments passed into the lambda are:
+
+        @li The raw manifest string
+
+        @li The raw "blob" string containing the values for the validator list
+
+        @li The signature string used to sign the blob
+
+        @li The version number
+
+        @li The `PublicKey` of the blob signer (matches the value from
+            [validator_list_keys])
+
+        @li The sequence number of the "blob"
+
+        @li The precomputed hash of the original / raw elements
+
+        @par Thread Safety
+
+        May be called concurrently
+    */
+    void
+    for_each_available (
+        std::function<void(std::string const& manifest,
+            std::string const& blob, std::string const& signature,
+            std::uint32_t version,
+            PublicKey const& pubKey, std::size_t sequence,
+            uint256 const& hash)> func) const;
+
+    /** Returns the current valid list for the given publisher key,
+        if available, as a Json object.
+    */
+    boost::optional<Json::Value>
+    getAvailable(boost::beast::string_view const& pubKey);
+
     /** Return the number of configured validator list sites. */
     std::size_t
     count() const;
@@ -371,6 +508,17 @@ public:
 
 
 private:
+    /** Get the filename used for caching UNLs
+    */
+    boost::filesystem::path
+    GetCacheFileName(PublicKey const& pubKey);
+
+    /** Write a JSON UNL to a cache file
+    */
+    void
+    CacheValidatorFile(PublicKey const& pubKey,
+        PublisherList const& publisher);
+
     /** Check response for trusted valid published list
 
         @return `ListDisposition::accepted` if list can be applied

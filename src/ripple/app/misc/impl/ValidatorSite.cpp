@@ -25,6 +25,7 @@
 #include <ripple/basics/base64.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
 #include <boost/algorithm/clamp.hpp>
 #include <boost/regex.hpp>
@@ -117,9 +118,22 @@ ValidatorSite::~ValidatorSite()
 }
 
 bool
+ValidatorSite::missingSite()
+{
+    auto const sites = app_.validators().loadLists();
+    return sites.empty() || load(sites);
+}
+
+bool
 ValidatorSite::load (
     std::vector<std::string> const& siteURIs)
 {
+    // If no sites are provided, act as if a site failed to load.
+    if (siteURIs.empty())
+    {
+        return missingSite();
+    }
+
     JLOG (j_.debug()) <<
         "Loading configured validator list sites";
 
@@ -374,54 +388,59 @@ ValidatorSite::parseJsonResponse (
         throw std::runtime_error{"missing fields"};
     }
 
-    auto const disp = app_.validators().applyList (
-        body["manifest"].asString (),
-        body["blob"].asString (),
-        body["signature"].asString(),
-        body["version"].asUInt(),
-        sites_[siteIdx].activeResource->uri);
+    auto const manifest = body["manifest"].asString ();
+    auto const blob = body["blob"].asString ();
+    auto const signature = body["signature"].asString();
+    auto const version = body["version"].asUInt();
+    auto const& uri = sites_[siteIdx].activeResource->uri;
+    auto const hash = sha512Half(manifest, blob, signature, version);
+    auto const applyResult = app_.validators().applyListAndBroadcast (
+        manifest,
+        blob,
+        signature,
+        version,
+        uri,
+        hash,
+        app_.overlay(),
+        app_.getHashRouter());
+    auto const disp = applyResult.disposition;
 
     sites_[siteIdx].lastRefreshStatus.emplace(
         Site::Status{clock_type::now(), disp, ""});
 
-    if (ListDisposition::accepted == disp)
+    switch (disp)
     {
+    case ListDisposition::accepted:
         JLOG (j_.debug()) <<
             "Applied new validator list from " <<
-            sites_[siteIdx].activeResource->uri;
-    }
-    else if (ListDisposition::same_sequence == disp)
-    {
+            uri;
+        break;
+    case ListDisposition::same_sequence:
         JLOG (j_.debug()) <<
             "Validator list with current sequence from " <<
-            sites_[siteIdx].activeResource->uri;
-    }
-    else if (ListDisposition::stale == disp)
-    {
+            uri;
+        break;
+    case ListDisposition::stale:
         JLOG (j_.warn()) <<
             "Stale validator list from " <<
-            sites_[siteIdx].activeResource->uri;
-    }
-    else if (ListDisposition::untrusted == disp)
-    {
+            uri;
+        break;
+    case ListDisposition::untrusted:
         JLOG (j_.warn()) <<
             "Untrusted validator list from " <<
-            sites_[siteIdx].activeResource->uri;
-    }
-    else if (ListDisposition::invalid == disp)
-    {
+            uri;
+        break;
+    case ListDisposition::invalid:
         JLOG (j_.warn()) <<
             "Invalid validator list from " <<
-            sites_[siteIdx].activeResource->uri;
-    }
-    else if (ListDisposition::unsupported_version == disp)
-    {
+            uri;
+        break;
+    case ListDisposition::unsupported_version:
         JLOG (j_.warn()) <<
             "Unsupported version validator list from " <<
-            sites_[siteIdx].activeResource->uri;
-    }
-    else
-    {
+            uri;
+        break;
+    default:
         BOOST_ASSERT(false);
     }
 
@@ -509,6 +528,10 @@ ValidatorSite::onSiteFetch(
             if (retry)
                 sites_[siteIdx].nextRefresh =
                         clock_type::now() + error_retry_interval;
+
+            // See if there's a copy saved locally from last time we
+            // saw the list.
+            missingSite();
         };
         if (ec)
         {
@@ -592,7 +615,7 @@ ValidatorSite::onTextFetch(
                     sites_[siteIdx].activeResource->uri <<
                     " " <<
                     ec.value() <<
-                    ":" <<
+                    ": " <<
                     ec.message();
                 throw std::runtime_error{"fetch error"};
             }

@@ -197,8 +197,10 @@ public:
     boost::optional<std::set<PeerShortID>> shouldRelay(uint256 const& key);
 
     /** Determines whether the hashed item should be recovered
+        from the open ledger into the next open ledger or the transaction
+        queue.
 
-        @return `bool` indicates whether the item should be relayed
+        @return `bool` indicates whether the item should be recovered
     */
     bool shouldRecover(uint256 const& key);
 

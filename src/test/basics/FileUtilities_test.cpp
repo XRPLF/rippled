@@ -36,10 +36,13 @@ public:
             "This file is very short. That's all we need.";
 
         FileDirGuard file(*this, "test_file", "test.txt",
-            expectedContents);
+            "This is temporary text that should get overwritten");
 
         error_code ec;
         auto const path = file.file();
+
+        writeFileContents(ec, path, expectedContents);
+        BEAST_EXPECT(!ec);
 
         {
             // Test with no max

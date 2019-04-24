@@ -22,6 +22,7 @@ enum MessageType
     mtSHARD_INFO            = 51;
     mtGET_PEER_SHARD_INFO   = 52;
     mtPEER_SHARD_INFO       = 53;
+    mtVALIDATORLIST         = 54;
 }
 
 // token, iterations, target, challenge = issue demand for proof of work
@@ -197,6 +198,14 @@ message TMHaveTransactionSet
     required bytes hash             = 2;
 }
 
+// Validator list
+message TMValidatorList
+{
+    required bytes manifest         = 1;
+    required bytes blob             = 2;
+    required bytes signature        = 3;
+    required uint32 version         = 4;
+}
 
 // Used to sign a final closed ledger after reprocessing
 message TMValidation

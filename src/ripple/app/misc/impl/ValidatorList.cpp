@@ -18,11 +18,15 @@
 //==============================================================================
 
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/app/misc/HashRouter.h>
 #include <ripple/basics/base64.h>
+#include <ripple/basics/FileUtilities.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/overlay/Overlay.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/protocol/messages.h>
 #include <boost/regex.hpp>
 
 #include <date/date.h>
@@ -54,15 +58,19 @@ to_string(ListDisposition disposition)
     return "unknown";
 }
 
+const std::string ValidatorList::filePrefix_ = "cache.";
+
 ValidatorList::ValidatorList (
     ManifestCache& validatorManifests,
     ManifestCache& publisherManifests,
     TimeKeeper& timeKeeper,
+    std::string const& databasePath,
     beast::Journal j,
     boost::optional<std::size_t> minimumQuorum)
     : validatorManifests_ (validatorManifests)
     , publisherManifests_ (publisherManifests)
     , timeKeeper_ (timeKeeper)
+    , dataPath_(databasePath)
     , j_ (j)
     , quorum_ (minimumQuorum.value_or(1)) // Genesis ledger quorum
     , minimumQuorum_ (minimumQuorum)
@@ -192,16 +200,122 @@ ValidatorList::load (
     return true;
 }
 
-ListDisposition
+boost::filesystem::path
+ValidatorList::GetCacheFileName(PublicKey const& pubKey)
+{
+    return dataPath_ / (filePrefix_ + strHex(pubKey));
+}
+
+void
+ValidatorList::CacheValidatorFile(PublicKey const& pubKey,
+    PublisherList const& publisher)
+{
+    if (dataPath_.empty())
+        return;
+
+    boost::filesystem::path const filename =
+        GetCacheFileName(pubKey);
+
+    boost::system::error_code ec;
+
+    Json::Value value(Json::objectValue);
+
+    value["manifest"] = publisher.rawManifest;
+    value["blob"] = publisher.rawBlob;
+    value["signature"] = publisher.rawSignature;
+    value["version"] = publisher.rawVersion;
+
+    writeFileContents(ec, filename, value.toStyledString());
+
+    if (ec)
+    {
+        // Log and ignore any file I/O exceptions
+        JLOG(j_.error()) <<
+            "Problem writing " <<
+            filename <<
+            " " <<
+            ec.value() <<
+            ": " <<
+            ec.message();
+    }
+}
+
+ValidatorList::PublisherListStats
+ValidatorList::applyListAndBroadcast(
+    std::string const& manifest,
+    std::string const& blob,
+    std::string const& signature,
+    std::uint32_t version,
+    std::string siteUri,
+    uint256 const& hash,
+    Overlay& overlay,
+    HashRouter& hashRouter)
+{
+    auto const result = applyList(manifest, blob, signature,
+        version, std::move(siteUri), hash);
+    auto const disposition = result.disposition;
+
+    bool broadcast = disposition == ListDisposition::accepted ||
+        disposition == ListDisposition::same_sequence;
+
+    if (broadcast)
+    {
+        assert(result.available && result.publisherKey && result.sequence);
+        auto const toSkip = hashRouter.shouldRelay(hash);
+
+        if (toSkip)
+        {
+            protocol::TMValidatorList msg;
+            msg.set_manifest(manifest);
+            msg.set_blob(blob);
+            msg.set_signature(signature);
+            msg.set_version(version);
+
+            auto const& publisherKey = *result.publisherKey;
+            auto const sequence = *result.sequence;
+
+            // Can't use overlay.foreach here because we need to modify
+            // the peer, and foreach provides a const&
+            auto message =
+                std::make_shared<Message>(msg, protocol::mtVALIDATORLIST);
+            for (auto& peer : overlay.getActivePeers())
+            {
+                if (toSkip->count(peer->id()) == 0 &&
+                    peer->supportsFeature(
+                        ProtocolFeature::ValidatorListPropagation) &&
+                    peer->publisherListSequence(publisherKey) < sequence)
+                {
+                    peer->send(message);
+
+                    JLOG(j_.debug())
+                        << "Sent validator list for " << strHex(publisherKey)
+                        << " with sequence " << sequence << " to "
+                        << peer->getRemoteAddress().to_string() << " ("
+                        << peer->id() << ")";
+                    // Don't send it next time.
+                    hashRouter.addSuppressionPeer(hash, peer->id());
+                    peer->setPublisherListSequence(publisherKey, sequence);
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+ValidatorList::PublisherListStats
 ValidatorList::applyList (
     std::string const& manifest,
     std::string const& blob,
     std::string const& signature,
     std::uint32_t version,
-    std::string siteUri)
+    std::string siteUri,
+    boost::optional<uint256> const& hash)
 {
+    using namespace std::string_literals;
+
     if (version != requiredListVersion)
-        return ListDisposition::unsupported_version;
+        return PublisherListStats{ ListDisposition::unsupported_version };
 
     std::unique_lock<std::shared_timed_mutex> lock{mutex_};
 
@@ -209,16 +323,37 @@ ValidatorList::applyList (
     PublicKey pubKey;
     auto const result = verify (list, pubKey, manifest, blob, signature);
     if (result != ListDisposition::accepted)
-        return result;
+    {
+        if (result == ListDisposition::same_sequence &&
+            publisherLists_.count(pubKey))
+        {
+            // We've seen this valid list already, so return
+            // what we know about it.
+            auto const& publisher = publisherLists_[pubKey];
+            return PublisherListStats{ result, pubKey,
+                publisher.available, publisher.sequence };
+        }
+        return PublisherListStats{ result };
+    }
 
     // Update publisher's list
     Json::Value const& newList = list["validators"];
-    publisherLists_[pubKey].available = true;
-    publisherLists_[pubKey].sequence = list["sequence"].asUInt ();
-    publisherLists_[pubKey].expiration = TimeKeeper::time_point{
+    auto& publisher = publisherLists_[pubKey];
+    publisher.available = true;
+    publisher.sequence = list["sequence"].asUInt ();
+    publisher.expiration = TimeKeeper::time_point{
         TimeKeeper::duration{list["expiration"].asUInt()}};
-    publisherLists_[pubKey].siteUri = std::move(siteUri);
-    std::vector<PublicKey>& publisherList = publisherLists_[pubKey].list;
+    publisher.siteUri = std::move(siteUri);
+    publisher.rawManifest = manifest;
+    publisher.rawBlob = blob;
+    publisher.rawSignature = signature;
+    publisher.rawVersion = version;
+    if(hash)
+        publisher.hash = *hash;
+    std::vector<PublicKey>& publisherList = publisher.list;
+
+    PublisherListStats const applyResult{ result, pubKey,
+        publisher.available, publisher.sequence };
 
     std::vector<PublicKey> oldList = publisherList;
     publisherList.clear ();
@@ -311,7 +446,65 @@ ValidatorList::applyList (
         }
     }
 
-    return ListDisposition::accepted;
+    // Cache the validator list in a file
+    CacheValidatorFile(pubKey, publisher);
+
+    return applyResult;
+}
+
+std::vector<std::string>
+ValidatorList::loadLists()
+{
+    using namespace std::string_literals;
+    using namespace boost::filesystem;
+    using namespace boost::system::errc;
+
+    std::unique_lock<std::shared_timed_mutex> lock{mutex_};
+
+    std::vector<std::string> sites;
+    sites.reserve(publisherLists_.size());
+    for (auto const& [pubKey, publisher] : publisherLists_)
+    {
+        boost::system::error_code ec;
+
+        if (publisher.available)
+            continue;
+
+        boost::filesystem::path const filename =
+            GetCacheFileName(pubKey);
+
+        auto const fullPath{ canonical(filename, ec) };
+        if (ec)
+            continue;
+
+        auto size = file_size(fullPath, ec);
+        if (!ec && !size)
+        {
+            // Treat an empty file as a missing file, because
+            // nobody else is going to write it.
+            ec = make_error_code(no_such_file_or_directory);
+        }
+        if (ec)
+            continue;
+
+        std::string const prefix = [&fullPath]() {
+#if _MSC_VER    // MSVC: Windows paths need a leading / added
+            {
+                return fullPath.root_path() == "/"s ?
+                    "file://" : "file:///";
+            }
+#else
+            {
+                (void)fullPath;
+                return "file://";
+            }
+#endif
+        }();
+        sites.emplace_back(prefix + fullPath.string());
+    }
+
+    // Then let the ValidatorSites do the rest of the work.
+    return sites;
 }
 
 ListDisposition
@@ -592,6 +785,57 @@ ValidatorList::for_each_listed (
 
     for (auto const& v : keyListings_)
         func (v.first, trusted(v.first));
+}
+
+void
+ValidatorList::for_each_available (
+    std::function<void(std::string const& manifest,
+        std::string const& blob, std::string const& signature,
+        std::uint32_t version,
+        PublicKey const& pubKey, std::size_t sequence,
+        uint256 const& hash)> func) const
+{
+    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+
+    for (auto const& [key, pl] : publisherLists_)
+    {
+        if (!pl.available)
+            continue;
+        func(pl.rawManifest, pl.rawBlob, pl.rawSignature, pl.rawVersion,
+            key, pl.sequence, pl.hash);
+    }
+}
+
+boost::optional<Json::Value>
+ValidatorList::getAvailable(boost::beast::string_view const& pubKey)
+{
+    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+
+    auto const keyBlob = strViewUnHex (pubKey);
+
+    if (! keyBlob || ! publicKeyType(makeSlice(*keyBlob)))
+    {
+        JLOG (j_.info()) <<
+            "Invalid requested validator list publisher key: " << pubKey;
+        return {};
+    }
+
+    auto id = PublicKey(makeSlice(*keyBlob));
+
+    auto iter = publisherLists_.find(id);
+
+    if (iter == publisherLists_.end()
+        || !iter->second.available)
+        return {};
+
+    Json::Value value(Json::objectValue);
+
+    value["manifest"] = iter->second.rawManifest;
+    value["blob"] = iter->second.rawBlob;
+    value["signature"] = iter->second.rawSignature;
+    value["version"] = iter->second.rawVersion;
+
+    return value;
 }
 
 std::size_t

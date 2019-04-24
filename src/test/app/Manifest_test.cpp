@@ -254,8 +254,11 @@ public:
                 sort (getPopulatedManifests (m)));
 
             jtx::Env env (*this);
+            auto& app = env.app();
             auto unl = std::make_unique<ValidatorList> (
-                m, m, env.timeKeeper(), env.journal);
+                m, m, env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
 
             {
                 // save should not store untrusted master keys to db

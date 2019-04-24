@@ -56,6 +56,7 @@ protocolMessageName (int type)
     case protocol::mtPROPOSE_LEDGER:        return "propose";
     case protocol::mtSTATUS_CHANGE:         return "status";
     case protocol::mtHAVE_SET:              return "have_set";
+    case protocol::mtVALIDATORLIST:         return "validator_list";
     case protocol::mtVALIDATION:            return "validation";
     case protocol::mtGET_OBJECTS:           return "get_objects";
     default:
@@ -229,6 +230,9 @@ invokeProtocolMessage (Buffers const& buffers, Handler& handler)
         break;
     case protocol::mtVALIDATION:
         success = detail::invoke<protocol::TMValidation>(*header, buffers, handler);
+        break;
+    case protocol::mtVALIDATORLIST:
+        success = detail::invoke<protocol::TMValidatorList> (*header, buffers, handler);
         break;
     case protocol::mtGET_OBJECTS:
         success = detail::invoke<protocol::TMGetObjectByHash>(*header, buffers, handler);

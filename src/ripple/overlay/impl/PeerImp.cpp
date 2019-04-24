@@ -405,6 +405,17 @@ PeerImp::json()
     return ret;
 }
 
+bool
+PeerImp::supportsFeature(ProtocolFeature f) const
+{
+    switch (f)
+    {
+        case ProtocolFeature::ValidatorListPropagation:
+            return protocol_ >= make_protocol(2, 1);
+    }
+    return false;
+}
+
 //------------------------------------------------------------------------------
 
 bool
@@ -802,6 +813,36 @@ void
 PeerImp::doProtocolStart()
 {
     onReadMessage(error_code(), 0);
+
+    // Send all the validator lists that have been loaded
+    if (supportsFeature(ProtocolFeature::ValidatorListPropagation))
+    {
+        app_.validators().for_each_available(
+            [&](std::string const& manifest,
+                std::string const& blob, std::string const& signature,
+                std::uint32_t version,
+                PublicKey const& pubKey, std::size_t sequence,
+                uint256 const& hash)
+            {
+                protocol::TMValidatorList vl;
+
+                vl.set_manifest(manifest);
+                vl.set_blob(blob);
+                vl.set_signature(signature);
+                vl.set_version(version);
+
+                JLOG(p_journal_.debug()) << "Sending validator list for " <<
+                    strHex(pubKey) << " with sequence " <<
+                    sequence << " to " <<
+                    remote_address_.to_string() << " (" << id_ << ")";
+                auto m = std::make_shared<Message>(vl, protocol::mtVALIDATORLIST);
+                send(m);
+                // Don't send it next time.
+                app_.getHashRouter().addSuppressionPeer(hash, id_);
+                setPublisherListSequence(pubKey, sequence);
+            }
+        );
+    }
 
     protocol::TMManifests tm;
 
@@ -1962,6 +2003,137 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMHaveTransactionSet> const& m)
             recentTxSets_.pop_front ();
 
         recentTxSets_.push_back (hash);
+    }
+}
+
+void
+PeerImp::onMessage (std::shared_ptr <protocol::TMValidatorList> const& m)
+{
+    try
+    {
+        if (!supportsFeature(ProtocolFeature::ValidatorListPropagation))
+        {
+            JLOG(p_journal_.debug())
+                << "ValidatorList: received validator list from peer using "
+                << "protocol version " << to_string(protocol_)
+                << " which shouldn't support this feature.";
+            fee_ = Resource::feeUnwantedData;
+            return;
+        }
+        auto const& manifest = m->manifest();
+        auto const& blob = m->blob();
+        auto const& signature = m->signature();
+        auto const version = m->version();
+        auto const hash = sha512Half(manifest, blob, signature, version);
+
+        JLOG(p_journal_.debug()) << "Received validator list from " <<
+            remote_address_.to_string() << " (" << id_ << ")";
+
+        if (! app_.getHashRouter ().addSuppressionPeer(hash, id_))
+        {
+            JLOG(p_journal_.debug()) <<
+                "ValidatorList: received duplicate validator list";
+            // Charging this fee here won't hurt the peer in the normal
+            // course of operation (ie. refresh every 5 minutes), but
+            // will add up if the peer is misbehaving.
+            fee_ = Resource::feeUnwantedData;
+            return;
+        }
+
+        auto const applyResult = app_.validators().applyListAndBroadcast (
+            manifest,
+            blob,
+            signature,
+            version,
+            remote_address_.to_string(),
+            hash,
+            app_.overlay(),
+            app_.getHashRouter());
+        auto const disp = applyResult.disposition;
+
+        JLOG(p_journal_.debug()) << "Processed validator list from " <<
+            (applyResult.publisherKey ? strHex(*applyResult.publisherKey) :
+            "unknown or invalid publisher") << " from " <<
+            remote_address_.to_string() << " (" << id_ << ") with result " <<
+            to_string(disp);
+
+        switch (disp)
+        {
+        case ListDisposition::accepted:
+            JLOG (p_journal_.debug()) <<
+                "Applied new validator list from peer " << remote_address_;
+            {
+                std::lock_guard<std::mutex> sl(recentLock_);
+
+                assert(applyResult.sequence && applyResult.publisherKey);
+                auto const& pubKey = *applyResult.publisherKey;
+#ifndef NDEBUG
+                if (auto const iter = publisherListSequences_.find(pubKey);
+                    iter != publisherListSequences_.end())
+                {
+                    assert(iter->second < *applyResult.sequence);
+                }
+#endif
+                publisherListSequences_[pubKey] = *applyResult.sequence;
+            }
+            break;
+        case ListDisposition::same_sequence:
+            JLOG (p_journal_.warn()) <<
+                "Validator list with current sequence from peer " <<
+                remote_address_;
+            // Charging this fee here won't hurt the peer in the normal
+            // course of operation (ie. refresh every 5 minutes), but
+            // will add up if the peer is misbehaving.
+            fee_ = Resource::feeUnwantedData;
+#ifndef NDEBUG
+            {
+                std::lock_guard<std::mutex> sl(recentLock_);
+                assert(applyResult.sequence && applyResult.publisherKey);
+                assert(publisherListSequences_[*applyResult.publisherKey]
+                    == *applyResult.sequence);
+            }
+#endif // !NDEBUG
+
+            break;
+        case ListDisposition::stale:
+            JLOG (p_journal_.warn()) <<
+                "Stale validator list from peer " << remote_address_;
+            // There are very few good reasons for a peer to send an
+            // old list, particularly more than once.
+            fee_ = Resource::feeBadData;
+            break;
+        case ListDisposition::untrusted:
+            JLOG (p_journal_.warn()) <<
+                "Untrusted validator list from peer " << remote_address_;
+            // Charging this fee here won't hurt the peer in the normal
+            // course of operation (ie. refresh every 5 minutes), but
+            // will add up if the peer is misbehaving.
+            fee_ = Resource::feeUnwantedData;
+            break;
+        case ListDisposition::invalid:
+            JLOG (p_journal_.warn()) <<
+                "Invalid validator list from peer " << remote_address_;
+            // This shouldn't ever happen with a well-behaved peer
+            fee_ = Resource::feeInvalidSignature;
+            break;
+        case ListDisposition::unsupported_version:
+            JLOG (p_journal_.warn()) <<
+                "Unsupported version validator list from peer " <<
+                remote_address_;
+            // During a version transition, this may be legitimate.
+            // If it happens frequently, that's probably bad.
+            fee_ = Resource::feeBadData;
+            break;
+        default:
+            assert(false);
+        }
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(p_journal_.warn()) <<
+            "ValidatorList: Exception, " << e.what() <<
+            " from peer " << remote_address_;
+        fee_ = Resource::feeBadData;
     }
 }
 

@@ -1016,7 +1016,7 @@ OverlayImpl::json ()
 }
 
 bool
-OverlayImpl::processRequest (http_request_type const& req,
+OverlayImpl::processCrawl (http_request_type const& req,
     Handoff& handoff)
 {
     if (req.target() != "/crawl" || setup_.crawlOptions == CrawlOptions::Disabled)
@@ -1050,6 +1050,62 @@ OverlayImpl::processRequest (http_request_type const& req,
     msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return true;
+}
+
+bool
+OverlayImpl::processValidatorList (http_request_type const& req,
+    Handoff& handoff)
+{
+    // If the target is in the form "/vl/<validator_list_public_key>",
+    // return the most recent validator list for that key.
+    if (!req.target().starts_with("/vl/") ||
+            !setup_.vlEnabled)
+        return false;
+
+    auto key = req.target();
+    if (key.starts_with("/vl/"))
+        key.remove_prefix(strlen("/vl/"));
+    else
+        key.remove_prefix(strlen("/unl/"));
+    if(key.empty())
+        return false;
+
+    // find the list
+    auto vl = app_.validators().getAvailable(key);
+
+    boost::beast::http::response<json_body> msg;
+    msg.version(req.version());
+    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Content-Type", "application/json");
+    msg.insert("Connection", "close");
+
+    if (!vl)
+    {
+        // 404 not found
+        msg.result(boost::beast::http::status::not_found);
+        msg.insert("Content-Length", "0");
+
+        msg.body() = Json::nullValue;
+    }
+    else
+    {
+        msg.result(boost::beast::http::status::ok);
+
+        msg.body() = *vl;
+    }
+
+    msg.prepare_payload();
+    handoff.response = std::make_shared<SimpleWriter>(msg);
+    return true;
+}
+
+bool
+OverlayImpl::processRequest (http_request_type const& req,
+    Handoff& handoff)
+{
+    // Take advantage of || short-circuiting
+    return processCrawl(req, handoff) ||
+        processValidatorList(req, handoff);
 }
 
 Overlay::PeerSequence
@@ -1330,6 +1386,11 @@ setup_Overlay (BasicConfig const& config)
                 setup.crawlOptions |= CrawlOptions::Unl;
             }
         }
+    }
+    {
+        auto const& section = config.section("vl");
+
+        set(setup.vlEnabled, "enabled", section);
     }
 
     try

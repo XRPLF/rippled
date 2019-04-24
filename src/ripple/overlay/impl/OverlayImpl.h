@@ -385,6 +385,30 @@ private:
         http_request_type const& request, address_type remote_address,
         std::string msg);
 
+    /** Handles crawl requests. Crawl returns information about the
+        node and its peers so crawlers can map the network.
+
+        @return true if the request was handled.
+    */
+    bool
+    processCrawl (http_request_type const& req,
+        Handoff& handoff);
+
+    /** Handles validator list requests.
+        Using a /vl/<hex-encoded public key> URL, will retrieve the
+        latest valdiator list (or UNL) that this node has for that
+        public key, if the node trusts that public key.
+
+        @return true if the request was handled.
+    */
+    bool
+    processValidatorList (http_request_type const& req,
+        Handoff& handoff);
+
+    /** Handles non-peer protocol requests.
+
+        @return true if the request was handled.
+    */
     bool
     processRequest (http_request_type const& req,
         Handoff& handoff);

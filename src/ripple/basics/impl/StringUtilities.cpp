@@ -30,45 +30,6 @@
 
 namespace ripple {
 
-boost::optional<Blob> strUnHex (std::string const& strSrc)
-{
-    Blob out;
-
-    out.reserve ((strSrc.size () + 1) / 2);
-
-    auto iter = strSrc.cbegin ();
-
-    if (strSrc.size () & 1)
-    {
-        int c = charUnHex (*iter);
-
-        if (c < 0)
-            return {};
-
-        out.push_back(c);
-        ++iter;
-    }
-
-    while (iter != strSrc.cend ())
-    {
-        int cHigh = charUnHex (*iter);
-        ++iter;
-
-        if (cHigh < 0)
-            return {};
-
-        int cLow = charUnHex (*iter);
-        ++iter;
-
-        if (cLow < 0)
-            return {};
-
-        out.push_back (static_cast<unsigned char>((cHigh << 4) | cLow));
-    }
-
-    return {std::move(out)};
-}
-
 uint64_t uintFromHex (std::string const& strSrc)
 {
     uint64_t uValue (0);
