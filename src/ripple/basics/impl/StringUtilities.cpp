@@ -110,36 +110,34 @@ bool parseUrl (parsedURL& pUrl, std::string const& strUrl)
         "\\s*?\\'");
     boost::smatch smMatch;
 
-    bool bMatch = false;
+    // Bail if there is no match.
     try {
-      bMatch = boost::regex_match (strUrl, smMatch, reUrl); // Match status code.
+        if (! boost::regex_match (strUrl, smMatch, reUrl))
+            return false;
     } catch (...) {
-      return false;
+        return false;
     }
 
-    if (bMatch)
+    pUrl.scheme = smMatch[1];
+    boost::algorithm::to_lower (pUrl.scheme);
+    pUrl.username = smMatch[2];
+    pUrl.password = smMatch[3];
+    const std::string domain = smMatch[4];
+    // We need to use Endpoint to parse the domain to
+    // strip surrounding brackets from IPv6 addresses,
+    // e.g. [::1] => ::1.
+    const auto result {beast::IP::Endpoint::from_string_checked (domain)};
+    pUrl.domain = result.second
+        ? result.first.address().to_string()
+        : domain;
+    const std::string port = smMatch[5];
+    if (!port.empty())
     {
-        pUrl.scheme = smMatch[1];
-        boost::algorithm::to_lower (pUrl.scheme);
-        pUrl.username = smMatch[2];
-        pUrl.password = smMatch[3];
-        const std::string domain = smMatch[4];
-        // We need to use Endpoint to parse the domain to
-        // strip surrounding brackets from IPv6 addresses,
-        // e.g. [::1] => ::1.
-        const auto result {beast::IP::Endpoint::from_string_checked (domain)};
-        pUrl.domain = result.second
-          ? result.first.address().to_string()
-          : domain;
-        const std::string port = smMatch[5];
-        if (!port.empty())
-        {
-          pUrl.port = beast::lexicalCast <std::uint16_t> (port);
-        }
-        pUrl.path = smMatch[6];
+        pUrl.port = beast::lexicalCast <std::uint16_t> (port);
     }
+    pUrl.path = smMatch[6];
 
-    return bMatch;
+    return true;
 }
 
 std::string trim_whitespace (std::string str)
