@@ -289,12 +289,9 @@ public:
         }
 
         {
-          std::string strUrl("s://");
-          for (size_t i = 0; i < 8192; i++) {
-            strUrl += ":";
-          }
-          parsedURL pUrl;
-          BEAST_EXPECT(! parseUrl (pUrl, strUrl));
+            std::string strUrl("s://" + std::string(8192, ':'));
+            parsedURL pUrl;
+            BEAST_EXPECT(! parseUrl (pUrl, strUrl));
         }
     }
 
