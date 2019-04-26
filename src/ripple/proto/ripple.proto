@@ -21,6 +21,8 @@ enum MessageType
     mtGET_OBJECTS           = 42;
     mtGET_SHARD_INFO        = 50;
     mtSHARD_INFO            = 51;
+    mtGET_PEER_SHARD_INFO   = 52;
+    mtPEER_SHARD_INFO       = 53;
 
     // <available>          = 10;
     // <available>          = 11;
@@ -132,19 +134,43 @@ message TMCluster
 // Request info on shards held
 message TMGetShardInfo
 {
-    required uint32 hops            = 1; // number of hops to travel
-    optional bool lastLink          = 2; // true if last link in the peer chain
-    repeated uint32 peerchain       = 3;
+    required uint32 hops            = 1 [deprecated=true]; // number of hops to travel
+    optional bool lastLink          = 2 [deprecated=true]; // true if last link in the peer chain
+    repeated uint32 peerchain       = 3 [deprecated=true]; // IDs used to route messages
 }
 
 // Info about shards held
 message TMShardInfo
 {
+    required string shardIndexes    = 1 [deprecated=true]; // rangeSet of shard indexes
+    optional bytes nodePubKey       = 2 [deprecated=true]; // The node's public key
+    optional string endpoint        = 3 [deprecated=true]; // ipv6 or ipv4 address
+    optional bool lastLink          = 4 [deprecated=true]; // true if last link in the peer chain
+    repeated uint32 peerchain       = 5 [deprecated=true]; // IDs used to route messages
+}
+
+// Node public key
+message TMLink
+{
+    required bytes nodePubKey       = 1; // node public key
+}
+
+// Request info on shards held
+message TMGetPeerShardInfo
+{
+    required uint32 hops            = 1; // number of hops to travel
+    optional bool lastLink          = 2; // true if last link in the peer chain
+    repeated TMLink peerChain       = 3; // public keys used to route messages
+}
+
+// Info about shards held
+message TMPeerShardInfo
+{
     required string shardIndexes    = 1; // rangeSet of shard indexes
-    optional bytes nodePubKey       = 2; // The node's public key
+    optional bytes nodePubKey       = 2; // node public key
     optional string endpoint        = 3; // ipv6 or ipv4 address
     optional bool lastLink          = 4; // true if last link in the peer chain
-    repeated uint32 peerchain       = 5; // List of IDs used to route messages
+    repeated TMLink peerChain       = 5; // public keys used to route messages
 }
 
 // A transaction can have only one input and one output.

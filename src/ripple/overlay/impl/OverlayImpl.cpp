@@ -769,10 +769,10 @@ OverlayImpl::crawlShards(bool pubKey, std::uint32_t hops)
                 }
 
                 // Relay request to active peers
-                protocol::TMGetShardInfo tmGS;
-                tmGS.set_hops(hops);
+                protocol::TMGetPeerShardInfo tmGPS;
+                tmGPS.set_hops(hops);
                 foreach(send_always(std::make_shared<Message>(
-                    tmGS, protocol::mtGET_SHARD_INFO)));
+                    tmGPS, protocol::mtGET_PEER_SHARD_INFO)));
 
                 if (csCV_.wait_for(l, timeout) == std::cv_status::timeout)
                 {
@@ -1079,6 +1079,23 @@ OverlayImpl::findPeerByShortID (Peer::id_t const& id)
     auto const iter = ids_.find (id);
     if (iter != ids_.end ())
         return iter->second.lock();
+    return {};
+}
+
+// A public key hash map was not used due to the peer connect/disconnect
+// update overhead outweighing the performance of a small set linear search.
+std::shared_ptr<Peer>
+OverlayImpl::findPeerByPublicKey (PublicKey const& pubKey)
+{
+    std::lock_guard <decltype(mutex_)> lock(mutex_);
+    for (auto const& e : ids_)
+    {
+        if (auto peer = e.second.lock())
+        {
+            if (peer->getNodePublic() == pubKey)
+                return peer;
+        }
+    }
     return {};
 }
 

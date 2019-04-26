@@ -28,6 +28,8 @@
 #include <boost/asio.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/http.hpp>
+#include <boost/lexical_cast.hpp>
+#include <thread>
 
 namespace ripple {
 namespace test {
@@ -44,8 +46,7 @@ class TrustedPublisherServer
 
     socket_type sock_;
     boost::asio::ip::tcp::acceptor acceptor_;
-
-    std::string list_;
+    std::function<std::string(int)> getList_;
 
 public:
 
@@ -82,14 +83,16 @@ public:
         data.pop_back();
         data += "]}";
         std::string blob = base64_encode(data);
-
-        list_ = "{\"blob\":\"" + blob + "\"";
-
         auto const sig = sign(keys.first, keys.second, makeSlice(data));
-
-        list_ += ",\"signature\":\"" + strHex(sig) + "\"";
-        list_ += ",\"manifest\":\"" + manifest + "\"";
-        list_ += ",\"version\":" + std::to_string(version) + '}';
+        getList_ = [blob, sig, manifest, version](int interval) {
+            std::stringstream l;
+            l << "{\"blob\":\"" << blob << "\"" <<
+                ",\"signature\":\"" << strHex(sig) << "\"" <<
+                ",\"manifest\":\"" << manifest << "\"" <<
+                ",\"refresh_interval\": " << interval <<
+                ",\"version\":" << version  << '}';
+            return l.str();
+        };
 
         acceptor_.open(ep.protocol());
         error_code ec;
@@ -163,61 +166,75 @@ private:
         error_code ec;
         for (;;)
         {
-            req_type req;
-            http::read(sock, sb, req, ec);
-            if (ec)
-                break;
-            auto path = req.target().to_string();
             resp_type res;
-            res.insert("Server", "TrustedPublisherServer");
-            res.version(req.version());
-
-            if (boost::starts_with(path, "/validators"))
-            {
-                res.result(http::status::ok);
-                res.insert("Content-Type", "application/json");
-                if (path == "/validators/bad")
-                    res.body() = "{ 'bad': \"1']" ;
-                else if (path == "/validators/missing")
-                    res.body() = "{\"version\": 1}";
-                else
-                    res.body() = list_;
-            }
-            else if (boost::starts_with(path, "/redirect"))
-            {
-                if (boost::ends_with(path, "/301"))
-                    res.result(http::status::moved_permanently);
-                else if (boost::ends_with(path, "/302"))
-                    res.result(http::status::found);
-                else if (boost::ends_with(path, "/307"))
-                    res.result(http::status::temporary_redirect);
-                else if (boost::ends_with(path, "/308"))
-                    res.result(http::status::permanent_redirect);
-
-                std::stringstream location;
-                if (boost::starts_with(path, "/redirect_to/"))
-                {
-                    location << path.substr(13);
-                }
-                else if (! boost::starts_with(path, "/redirect_nolo"))
-                {
-                    location << "http://" << local_endpoint() <<
-                        (boost::starts_with(path, "/redirect_forever/") ?
-                            path : "/validators");
-                }
-                if (! location.str().empty())
-                    res.insert("Location", location.str());
-            }
-            else
-            {
-                // unknown request
-                res.result(boost::beast::http::status::not_found);
-                res.insert("Content-Type", "text/html");
-                res.body() = "The file '" + path + "' was not found";
-            }
-
+            req_type req;
             try
             {
+                http::read(sock, sb, req, ec);
+                if (ec)
+                    break;
+                auto path = req.target().to_string();
+                res.insert("Server", "TrustedPublisherServer");
+                res.version(req.version());
+
+                if (boost::starts_with(path, "/validators"))
+                {
+                    res.result(http::status::ok);
+                    res.insert("Content-Type", "application/json");
+                    if (path == "/validators/bad")
+                        res.body() = "{ 'bad': \"1']" ;
+                    else if (path == "/validators/missing")
+                        res.body() = "{\"version\": 1}";
+                    else
+                    {
+                        int refresh = 5;
+                        if (boost::starts_with(path, "/validators/refresh"))
+                            refresh =
+                                boost::lexical_cast<unsigned int>(
+                                    path.substr(20));
+                        res.body() = getList_(refresh);
+                    }
+                }
+                else if (boost::starts_with(path, "/sleep/"))
+                {
+                    auto const sleep_sec =
+                        boost::lexical_cast<unsigned int>(path.substr(7));
+                    std::this_thread::sleep_for(
+                        std::chrono::seconds{sleep_sec});
+                }
+                else if (boost::starts_with(path, "/redirect"))
+                {
+                    if (boost::ends_with(path, "/301"))
+                        res.result(http::status::moved_permanently);
+                    else if (boost::ends_with(path, "/302"))
+                        res.result(http::status::found);
+                    else if (boost::ends_with(path, "/307"))
+                        res.result(http::status::temporary_redirect);
+                    else if (boost::ends_with(path, "/308"))
+                        res.result(http::status::permanent_redirect);
+
+                    std::stringstream location;
+                    if (boost::starts_with(path, "/redirect_to/"))
+                    {
+                        location << path.substr(13);
+                    }
+                    else if (! boost::starts_with(path, "/redirect_nolo"))
+                    {
+                        location << "http://" << local_endpoint() <<
+                            (boost::starts_with(path, "/redirect_forever/") ?
+                                path : "/validators");
+                    }
+                    if (! location.str().empty())
+                        res.insert("Location", location.str());
+                }
+                else
+                {
+                    // unknown request
+                    res.result(boost::beast::http::status::not_found);
+                    res.insert("Content-Type", "text/html");
+                    res.body() = "The file '" + path + "' was not found";
+                }
+
                 res.prepare_payload();
             }
             catch (std::exception const& e)

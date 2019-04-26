@@ -137,6 +137,11 @@ public:
     std::shared_ptr<Peer>
     findPeerByShortID (Peer::id_t const& id) = 0;
 
+    /** Returns the peer with the matching public key, or null. */
+    virtual
+    std::shared_ptr<Peer>
+    findPeerByPublicKey (PublicKey const& pubKey) = 0;
+
     /** Broadcast a proposal. */
     virtual
     void

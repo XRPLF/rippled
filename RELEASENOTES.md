@@ -14,6 +14,31 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 1.2.4
+
+The `rippled` 1.2.4 release improves the way that shard crawl requests are routed and the robustness of configured validator list retrieval by imposing a 20 second timeout.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- Use public keys when routing shard crawl requests
+- Enforce a 20s timeout when making validator list requests (RIPD-1737)
+
+## Version 1.2.3
+
+The `rippled` 1.2.3 release corrects a technical flaw which in some circumstances can cause a null pointer dereference that can crash the server.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- Fix a technical flaw which in some circumstances can cause a null pointer dereference that can crash the server.
+
 ## Version 1.2.2
 
 The `rippled` 1.2.2 release corrects a technical flaw in the fee escalation

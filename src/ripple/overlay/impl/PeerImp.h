@@ -423,6 +423,8 @@ public:
     void onMessage (std::shared_ptr <protocol::TMCluster> const& m);
     void onMessage (std::shared_ptr <protocol::TMGetShardInfo> const& m);
     void onMessage (std::shared_ptr <protocol::TMShardInfo> const& m);
+    void onMessage (std::shared_ptr <protocol::TMGetPeerShardInfo> const& m);
+    void onMessage (std::shared_ptr <protocol::TMPeerShardInfo> const& m);
     void onMessage (std::shared_ptr <protocol::TMGetPeers> const& m);
     void onMessage (std::shared_ptr <protocol::TMPeers> const& m);
     void onMessage (std::shared_ptr <protocol::TMEndpoints> const& m);

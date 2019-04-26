@@ -194,6 +194,9 @@ public:
     std::shared_ptr<Peer>
     findPeerByShortID (Peer::id_t const& id) override;
 
+    std::shared_ptr<Peer>
+    findPeerByPublicKey (PublicKey const& pubKey) override;
+
     void
     send (protocol::TMProposeSet& m) override;
 

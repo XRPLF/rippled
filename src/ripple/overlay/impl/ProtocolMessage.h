@@ -41,24 +41,26 @@ protocolMessageName (int type)
 {
     switch (type)
     {
-    case protocol::mtHELLO:             return "hello";
-    case protocol::mtMANIFESTS:         return "manifests";
-    case protocol::mtPING:              return "ping";
-    case protocol::mtPROOFOFWORK:       return "proof_of_work";
-    case protocol::mtCLUSTER:           return "cluster";
-    case protocol::mtGET_SHARD_INFO:    return "get_shard_info";
-    case protocol::mtSHARD_INFO:        return "shard_info";
-    case protocol::mtGET_PEERS:         return "get_peers";
-    case protocol::mtPEERS:             return "peers";
-    case protocol::mtENDPOINTS:         return "endpoints";
-    case protocol::mtTRANSACTION:       return "tx";
-    case protocol::mtGET_LEDGER:        return "get_ledger";
-    case protocol::mtLEDGER_DATA:       return "ledger_data";
-    case protocol::mtPROPOSE_LEDGER:    return "propose";
-    case protocol::mtSTATUS_CHANGE:     return "status";
-    case protocol::mtHAVE_SET:          return "have_set";
-    case protocol::mtVALIDATION:        return "validation";
-    case protocol::mtGET_OBJECTS:       return "get_objects";
+    case protocol::mtHELLO:                 return "hello";
+    case protocol::mtMANIFESTS:             return "manifests";
+    case protocol::mtPING:                  return "ping";
+    case protocol::mtPROOFOFWORK:           return "proof_of_work";
+    case protocol::mtCLUSTER:               return "cluster";
+    case protocol::mtGET_SHARD_INFO:        return "get_shard_info";
+    case protocol::mtSHARD_INFO:            return "shard_info";
+    case protocol::mtGET_PEER_SHARD_INFO:   return "get_peer_shard_info";
+    case protocol::mtPEER_SHARD_INFO:       return "peer_shard_info";
+    case protocol::mtGET_PEERS:             return "get_peers";
+    case protocol::mtPEERS:                 return "peers";
+    case protocol::mtENDPOINTS:             return "endpoints";
+    case protocol::mtTRANSACTION:           return "tx";
+    case protocol::mtGET_LEDGER:            return "get_ledger";
+    case protocol::mtLEDGER_DATA:           return "ledger_data";
+    case protocol::mtPROPOSE_LEDGER:        return "propose";
+    case protocol::mtSTATUS_CHANGE:         return "status";
+    case protocol::mtHAVE_SET:              return "have_set";
+    case protocol::mtVALIDATION:            return "validation";
+    case protocol::mtGET_OBJECTS:           return "get_objects";
     default:
         break;
     };
@@ -128,23 +130,25 @@ invokeProtocolMessage (Buffers const& buffers, Handler& handler)
 
     switch (type)
     {
-    case protocol::mtHELLO:         ec = detail::invoke<protocol::TMHello> (type, buffers, handler); break;
-    case protocol::mtMANIFESTS:     ec = detail::invoke<protocol::TMManifests> (type, buffers, handler); break;
-    case protocol::mtPING:          ec = detail::invoke<protocol::TMPing> (type, buffers, handler); break;
-    case protocol::mtCLUSTER:       ec = detail::invoke<protocol::TMCluster> (type, buffers, handler); break;
-    case protocol::mtGET_SHARD_INFO:ec = detail::invoke<protocol::TMGetShardInfo> (type, buffers, handler); break;
-    case protocol::mtSHARD_INFO:    ec = detail::invoke<protocol::TMShardInfo>(type, buffers, handler); break;
-    case protocol::mtGET_PEERS:     ec = detail::invoke<protocol::TMGetPeers> (type, buffers, handler); break;
-    case protocol::mtPEERS:         ec = detail::invoke<protocol::TMPeers> (type, buffers, handler); break;
-    case protocol::mtENDPOINTS:     ec = detail::invoke<protocol::TMEndpoints> (type, buffers, handler); break;
-    case protocol::mtTRANSACTION:   ec = detail::invoke<protocol::TMTransaction> (type, buffers, handler); break;
-    case protocol::mtGET_LEDGER:    ec = detail::invoke<protocol::TMGetLedger> (type, buffers, handler); break;
-    case protocol::mtLEDGER_DATA:   ec = detail::invoke<protocol::TMLedgerData> (type, buffers, handler); break;
-    case protocol::mtPROPOSE_LEDGER:ec = detail::invoke<protocol::TMProposeSet> (type, buffers, handler); break;
-    case protocol::mtSTATUS_CHANGE: ec = detail::invoke<protocol::TMStatusChange> (type, buffers, handler); break;
-    case protocol::mtHAVE_SET:      ec = detail::invoke<protocol::TMHaveTransactionSet> (type, buffers, handler); break;
-    case protocol::mtVALIDATION:    ec = detail::invoke<protocol::TMValidation> (type, buffers, handler); break;
-    case protocol::mtGET_OBJECTS:   ec = detail::invoke<protocol::TMGetObjectByHash> (type, buffers, handler); break;
+    case protocol::mtHELLO:                 ec = detail::invoke<protocol::TMHello> (type, buffers, handler); break;
+    case protocol::mtMANIFESTS:             ec = detail::invoke<protocol::TMManifests> (type, buffers, handler); break;
+    case protocol::mtPING:                  ec = detail::invoke<protocol::TMPing> (type, buffers, handler); break;
+    case protocol::mtCLUSTER:               ec = detail::invoke<protocol::TMCluster> (type, buffers, handler); break;
+    case protocol::mtGET_SHARD_INFO:        ec = detail::invoke<protocol::TMGetShardInfo> (type, buffers, handler); break;
+    case protocol::mtSHARD_INFO:            ec = detail::invoke<protocol::TMShardInfo>(type, buffers, handler); break;
+    case protocol::mtGET_PEER_SHARD_INFO:   ec = detail::invoke<protocol::TMGetPeerShardInfo> (type, buffers, handler); break;
+    case protocol::mtPEER_SHARD_INFO:       ec = detail::invoke<protocol::TMPeerShardInfo>(type, buffers, handler); break;
+    case protocol::mtGET_PEERS:             ec = detail::invoke<protocol::TMGetPeers> (type, buffers, handler); break;
+    case protocol::mtPEERS:                 ec = detail::invoke<protocol::TMPeers> (type, buffers, handler); break;
+    case protocol::mtENDPOINTS:             ec = detail::invoke<protocol::TMEndpoints> (type, buffers, handler); break;
+    case protocol::mtTRANSACTION:           ec = detail::invoke<protocol::TMTransaction> (type, buffers, handler); break;
+    case protocol::mtGET_LEDGER:            ec = detail::invoke<protocol::TMGetLedger> (type, buffers, handler); break;
+    case protocol::mtLEDGER_DATA:           ec = detail::invoke<protocol::TMLedgerData> (type, buffers, handler); break;
+    case protocol::mtPROPOSE_LEDGER:        ec = detail::invoke<protocol::TMProposeSet> (type, buffers, handler); break;
+    case protocol::mtSTATUS_CHANGE:         ec = detail::invoke<protocol::TMStatusChange> (type, buffers, handler); break;
+    case protocol::mtHAVE_SET:              ec = detail::invoke<protocol::TMHaveTransactionSet> (type, buffers, handler); break;
+    case protocol::mtVALIDATION:            ec = detail::invoke<protocol::TMValidation> (type, buffers, handler); break;
+    case protocol::mtGET_OBJECTS:           ec = detail::invoke<protocol::TMGetObjectByHash> (type, buffers, handler); break;
     default:
         ec = handler.onMessageUnknown (type);
         break;
