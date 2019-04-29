@@ -34,7 +34,8 @@ if [ "${pkgtype}" = "dpkg" ] ; then
         echo "deb ${REPO_ROOT}/${DEB_REPO} ${DISTRO} ${COMPONENT}" >> /etc/apt/sources.list
         # sometimes update fails and requires a cleanup
         if ! apt -y update ; then
-          rm -vf /var/lib/apt/lists/*
+          rm -rvf /var/lib/apt/lists/*
+          apt-get clean
           apt -y update
         fi
         apt-get -y install rippled
