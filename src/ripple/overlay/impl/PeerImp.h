@@ -38,6 +38,7 @@
 #include <cstdint>
 #include <deque>
 #include <queue>
+#include <shared_mutex>
 
 namespace ripple {
 
@@ -48,7 +49,7 @@ class PeerImp
 {
 public:
     /** Type of connection.
-        The affects how messages are routed.
+        This affects how messages are routed.
     */
     enum class Type
     {
@@ -121,15 +122,15 @@ private:
     // These are up here to prevent warnings about order of initializations
     //
     OverlayImpl& overlay_;
-    bool m_inbound;
+    bool const m_inbound;
     State state_;          // Current state
     std::atomic<Sanity> sanity_;
     clock_type::time_point insaneTime_;
     bool detaching_ = false;
     // Node public key of peer.
-    PublicKey publicKey_;
+    PublicKey const publicKey_;
     std::string name_;
-    uint256 sharedValue_;
+    std::shared_timed_mutex mutable nameMutex_;
 
     // The indices of the smallest and largest ledgers this peer has available
     //
@@ -143,14 +144,44 @@ private:
     boost::optional<std::chrono::milliseconds> latency_;
     boost::optional<std::uint32_t> lastPingSeq_;
     clock_type::time_point lastPingTime_;
-    clock_type::time_point creationTime_;
+    clock_type::time_point const creationTime_;
+
+    // Notes on thread locking:
+    //
+    // During an audit it was noted that some member variables that looked
+    // like they need thread protection were not receiving it.  And, indeed,
+    // that was correct.  But the multi-phase initialization of PeerImp
+    // makes such an audit difficult.  A further audit suggests that the
+    // locking is now protecting variables that don't need it.  We're
+    // leaving that locking in place (for now) as a form of future proofing.
+    //
+    // Here are the variables that appear to need locking currently:
+    //
+    // o closedLedgerHash_
+    // o previousLedgerHash_
+    // o minLedger_
+    // o maxLedger_
+    // o recentLedgers_
+    // o recentTxSets_
+    // o insaneTime_
+    // o latency_
+    //
+    // The following variables are being protected preemptively:
+    //
+    // o name_
+    // o last_status_
+    // o lastPingSeq_
+    // o lastPingTime_
+    // o no_ping_
+    // 
+    // June 2019
 
     std::mutex mutable recentLock_;
     protocol::TMStatusChange last_status_;
-    protocol::TMHello hello_;
+    protocol::TMHello const hello_;
     Resource::Consumer usage_;
     Resource::Charge fee_;
-    PeerFinder::Slot::ptr slot_;
+    PeerFinder::Slot::ptr const slot_;
     boost::beast::multi_buffer read_buffer_;
     http_request_type request_;
     http_response_type response_;
@@ -375,6 +406,10 @@ private:
     void
     onWriteResponse (error_code ec, std::size_t bytes_transferred);
 
+    // A thread-safe way of getting the name.
+    std::string
+    getName() const;
+
     //
     // protocol message loop
     //
@@ -451,8 +486,11 @@ private:
 
     //--------------------------------------------------------------------------
 
+    // lockedRecentLock is passed as a reminder to callers that recentLock_
+    // must be locked.
     void
-    addLedger (uint256 const& hash);
+    addLedger (uint256 const& hash,
+        std::lock_guard<std::mutex> const& lockedRecentLock);
 
     void
     doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
