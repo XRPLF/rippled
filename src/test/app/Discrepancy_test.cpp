@@ -117,7 +117,7 @@ class Discrepancy_test : public beast::unit_test::suite
             else if(an.isMember(sfDeletedNode.fieldName))
                 node = an[sfDeletedNode.fieldName];
 
-            if(node && node[sfLedgerEntryType.fieldName] == "AccountRoot")
+            if(node && node[sfLedgerEntryType.fieldName] == jss::AccountRoot)
             {
                 Json::Value prevFields =
                     node.isMember(sfPreviousFields.fieldName) ?

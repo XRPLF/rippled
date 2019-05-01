@@ -155,7 +155,7 @@ static Json::Value checkPayment(
     bool doPath)
 {
     // Only path find for Payments.
-    if (tx_json[jss::TransactionType].asString () != "Payment")
+    if (tx_json[jss::TransactionType].asString () != jss::Payment)
         return Json::Value();
 
     if (!tx_json.isMember (jss::Amount))

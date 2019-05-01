@@ -270,7 +270,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
                 [](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
-                    return t[jss::TransactionType] == "Payment";
+                    return t[jss::TransactionType] == jss::Payment;
                 }));
             BEAST_EXPECT(wsc->findMsg(5s,
                 [](auto const& jv)
@@ -477,7 +477,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
             {
                 auto const& t = jv[jss::transaction];
                 return
-                    t[jss::TransactionType] == "Payment" &&
+                    t[jss::TransactionType] == jss::Payment &&
                     t[sfInvoiceID.fieldName] ==
                         "0000000000000000"
                         "0000000000000000"

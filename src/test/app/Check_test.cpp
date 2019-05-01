@@ -40,7 +40,7 @@ create (jtx::Account const& account,
     jv[sfAccount.jsonName] = account.human();
     jv[sfSendMax.jsonName] = sendMax.getJson(0);
     jv[sfDestination.jsonName] = dest.human();
-    jv[sfTransactionType.jsonName] = "CheckCreate";
+    jv[sfTransactionType.jsonName] = jss::CheckCreate;
     jv[sfFlags.jsonName] = tfUniversal;
     return jv;
 }
@@ -62,7 +62,7 @@ cash (jtx::Account const& dest,
     jv[sfAccount.jsonName] = dest.human();
     jv[sfAmount.jsonName]  = amount.getJson(0);
     jv[sfCheckID.jsonName] = to_string (checkId);
-    jv[sfTransactionType.jsonName] = "CheckCash";
+    jv[sfTransactionType.jsonName] = jss::CheckCash;
     jv[sfFlags.jsonName] = tfUniversal;
     return jv;
 }
@@ -75,7 +75,7 @@ cash (jtx::Account const& dest,
     jv[sfAccount.jsonName] = dest.human();
     jv[sfDeliverMin.jsonName]  = atLeast.value.getJson(0);
     jv[sfCheckID.jsonName] = to_string (checkId);
-    jv[sfTransactionType.jsonName] = "CheckCash";
+    jv[sfTransactionType.jsonName] = jss::CheckCash;
     jv[sfFlags.jsonName] = tfUniversal;
     return jv;
 }
@@ -87,7 +87,7 @@ cancel (jtx::Account const& dest, uint256 const& checkId)
     Json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
     jv[sfCheckID.jsonName] = to_string (checkId);
-    jv[sfTransactionType.jsonName] = "CheckCancel";
+    jv[sfTransactionType.jsonName] = jss::CheckCancel;
     jv[sfFlags.jsonName] = tfUniversal;
     return jv;
 }

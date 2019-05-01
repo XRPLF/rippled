@@ -342,7 +342,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             jv[sfAccount.jsonName] = account.human();
             jv[sfSendMax.jsonName] = sendMax.getJson(0);
             jv[sfDestination.jsonName] = dest.human();
-            jv[sfTransactionType.jsonName] = "CheckCreate";
+            jv[sfTransactionType.jsonName] = jss::CheckCreate;
             jv[sfFlags.jsonName] = tfUniversal;
             return jv;
         };
@@ -358,7 +358,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_hash] = ledgerHash;
             Json::Value const jrr = env.rpc (
                 "json", "ledger_entry", to_string (jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == "Check");
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Check);
             BEAST_EXPECT(jrr[jss::node][sfSendMax.jsonName] == "100000000");
         }
         {
@@ -407,7 +408,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 "json", "ledger_entry", to_string (jvParams))[jss::result];
 
             BEAST_EXPECT(
-                jrr[jss::node][sfLedgerEntryType.jsonName] == "DepositPreauth");
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::DepositPreauth);
             BEAST_EXPECT(jrr[jss::node][sfAccount.jsonName] == alice.human());
             BEAST_EXPECT(jrr[jss::node][sfAuthorize.jsonName] == becky.human());
             depositPreauthIndex = jrr[jss::node][jss::index].asString();
@@ -420,8 +421,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             Json::Value const jrr = env.rpc (
                 "json", "ledger_entry", to_string (jvParams))[jss::result];
 
-            BEAST_EXPECT(
-                jrr[jss::node][sfLedgerEntryType.jsonName] == "DepositPreauth");
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] ==
+                jss::DepositPreauth);
             BEAST_EXPECT(jrr[jss::node][sfAccount.jsonName] == alice.human());
             BEAST_EXPECT(jrr[jss::node][sfAuthorize.jsonName] == becky.human());
         }
@@ -660,7 +661,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             STAmount const& amount, NetClock::time_point const& cancelAfter)
         {
             Json::Value jv;
-            jv[jss::TransactionType] = "EscrowCreate";
+            jv[jss::TransactionType] = jss::EscrowCreate;
             jv[jss::Flags] = tfUniversal;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
@@ -849,7 +850,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             PublicKey const& pk)
         {
             Json::Value jv;
-            jv[jss::TransactionType] = "PaymentChannelCreate";
+            jv[jss::TransactionType] = jss::PaymentChannelCreate;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
             jv[jss::Amount] = amount.getJson (0);
@@ -1358,7 +1359,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(txj.isMember(jss::tx));
             auto const& tx = txj[jss::tx];
             BEAST_EXPECT(tx[jss::Account] == alice.human());
-            BEAST_EXPECT(tx[jss::TransactionType] == "OfferCreate");
+            BEAST_EXPECT(tx[jss::TransactionType] == jss::OfferCreate);
             txid1 = tx[jss::hash].asString();
         }
 
@@ -1442,7 +1443,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(txj.isMember(jss::tx));
             auto const& tx = txj[jss::tx];
             BEAST_EXPECT(tx[jss::Account] == alice.human());
-            BEAST_EXPECT(tx[jss::TransactionType] == "AccountSet");
+            BEAST_EXPECT(tx[jss::TransactionType] == jss::AccountSet);
             BEAST_EXPECT(tx[jss::hash] == txid2);
         }
     }
@@ -1470,7 +1471,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 1u);
             BEAST_EXPECT(
                 jrr[jss::ledger][jss::accountState][0u]["LedgerEntryType"]
-                == "LedgerHashes");
+                == jss::LedgerHashes);
             index = jrr[jss::ledger][jss::accountState][0u]["index"].asString();
         }
         {

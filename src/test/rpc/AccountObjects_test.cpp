@@ -386,7 +386,7 @@ public:
             jvCheck[sfAccount.jsonName] = gw.human();
             jvCheck[sfSendMax.jsonName] = USD(10).value().getJson(0);
             jvCheck[sfDestination.jsonName] = alice.human();
-            jvCheck[sfTransactionType.jsonName] = "CheckCreate";
+            jvCheck[sfTransactionType.jsonName] = jss::CheckCreate;
             jvCheck[sfFlags.jsonName] = tfUniversal;
             env (jvCheck);
             env.close();
@@ -416,7 +416,7 @@ public:
         {
             // gw creates an escrow that we can look for in the ledger.
             Json::Value jvEscrow;
-            jvEscrow[jss::TransactionType] = "EscrowCreate";
+            jvEscrow[jss::TransactionType] = jss::EscrowCreate;
             jvEscrow[jss::Flags] = tfUniversal;
             jvEscrow[jss::Account] = gw.human();
             jvEscrow[jss::Destination] = gw.human();
@@ -452,7 +452,7 @@ public:
         {
             // Create a payment channel from qw to alice that we can look for.
             Json::Value jvPayChan;
-            jvPayChan[jss::TransactionType] = "PaymentChannelCreate";
+            jvPayChan[jss::TransactionType] = jss::PaymentChannelCreate;
             jvPayChan[jss::Flags] = tfUniversal;
             jvPayChan[jss::Account] = gw.human ();
             jvPayChan[jss::Destination] = alice.human ();
@@ -497,7 +497,7 @@ public:
 
             auto const& ticket = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT (ticket[sfAccount.jsonName] == gw.human());
-            BEAST_EXPECT (ticket[sfLedgerEntryType.jsonName] == "Ticket");
+            BEAST_EXPECT (ticket[sfLedgerEntryType.jsonName] == jss::Ticket);
             BEAST_EXPECT (ticket[sfSequence.jsonName].asUInt() == 9);
         }
         // Run up the number of directory entries so gw has two

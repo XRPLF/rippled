@@ -221,7 +221,7 @@ public:
             Json::Value cancelOffer;
             cancelOffer[jss::Account] = alice.human();
             cancelOffer[jss::OfferSequence] = offer4Seq;
-            cancelOffer[jss::TransactionType] = "OfferCancel";
+            cancelOffer[jss::TransactionType] = jss::OfferCancel;
             env (cancelOffer);
         }
         env.close();
@@ -1180,7 +1180,7 @@ public:
         Json::Value cancelOffer;
         cancelOffer[jss::Account] = account_to_test.human();
         cancelOffer[jss::OfferSequence] = secondLegSeq;
-        cancelOffer[jss::TransactionType] = "OfferCancel";
+        cancelOffer[jss::TransactionType] = jss::OfferCancel;
         env (cancelOffer);
         env.require (offers (account_to_test, 0));
 
@@ -1432,7 +1432,7 @@ public:
         Json::Value cancelOffer;
         cancelOffer[jss::Account] = env.master.human();
         cancelOffer[jss::OfferSequence] = nextOfferSeq;
-        cancelOffer[jss::TransactionType] = "OfferCancel";
+        cancelOffer[jss::TransactionType] = jss::OfferCancel;
         env (cancelOffer);
         BEAST_EXPECT(env.seq (env.master) == nextOfferSeq + 2);
 
@@ -1464,7 +1464,7 @@ public:
         Json::Value cancelOffer;
         cancelOffer[jss::Account] = env.master.human();
         cancelOffer[jss::OfferSequence] = nextOfferSeq;
-        cancelOffer[jss::TransactionType] = "OfferCancel";
+        cancelOffer[jss::TransactionType] = jss::OfferCancel;
         env (cancelOffer);
 
         cancelOffer[jss::OfferSequence] = env.seq (env.master);

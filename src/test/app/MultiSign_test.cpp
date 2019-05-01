@@ -481,7 +481,7 @@ public:
         auto setup_tx = [&]() -> Json::Value {
             Json::Value jv;
             jv[jss::tx_json][jss::Account]         = alice.human();
-            jv[jss::tx_json][jss::TransactionType] = "AccountSet";
+            jv[jss::tx_json][jss::TransactionType] = jss::AccountSet;
             jv[jss::tx_json][jss::Fee]             = static_cast<uint32_t>(8 * baseFee);
             jv[jss::tx_json][jss::Sequence]        = env.seq(alice);
             jv[jss::tx_json][jss::SigningPubKey]   = "";
@@ -951,7 +951,7 @@ public:
             Json::Value cancelOffer;
             cancelOffer[jss::Account] = alice.human();
             cancelOffer[jss::OfferSequence] = offerSeq;
-            cancelOffer[jss::TransactionType] = "OfferCancel";
+            cancelOffer[jss::TransactionType] = jss::OfferCancel;
             env (cancelOffer, seq (aliceSeq),
                 msig (becky, bogie), fee(3 * baseFee));
             env.close();
@@ -1220,7 +1220,7 @@ public:
         jvSig1[jss::tx_json][jss::Destination]     = env.master.human();
         jvSig1[jss::tx_json][jss::Fee]             = 3 * baseFee;
         jvSig1[jss::tx_json][jss::Sequence]        = env.seq(alice);
-        jvSig1[jss::tx_json][jss::TransactionType] = "Payment";
+        jvSig1[jss::tx_json][jss::TransactionType] = jss::Payment;
 
         Json::Value jvSig2 = env.rpc (
             "json", "sign_for", to_string (jvSig1));

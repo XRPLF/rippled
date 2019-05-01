@@ -85,7 +85,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         retval.hashes = [&] {
             for(auto const& it : retval.ledger[jss::ledger][jss::accountState])
             {
-                if(it[sfLedgerEntryType.fieldName] == "LedgerHashes")
+                if(it[sfLedgerEntryType.fieldName] == jss::LedgerHashes)
                     return it[sfHashes.fieldName];
             }
             return Json::Value {};

@@ -36,7 +36,7 @@ signers (Account const& account,
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::TransactionType] = "SignerListSet";
+    jv[jss::TransactionType] = jss::SignerListSet;
     jv[sfSignerQuorum.getJsonName()] = quorum;
     auto& ja = jv[sfSignerEntries.getJsonName()];
     ja.resize(v.size());
@@ -55,7 +55,7 @@ signers (Account const& account, none_t)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::TransactionType] = "SignerListSet";
+    jv[jss::TransactionType] = jss::SignerListSet;
     jv[sfSignerQuorum.getJsonName()] = 0;
     return jv;
 }

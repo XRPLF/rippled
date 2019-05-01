@@ -35,29 +35,61 @@ namespace jss {
 
 JSS ( AL_hit_rate );                // out: GetCounts
 JSS ( Account );                    // in: TransactionSign; field.
+JSS ( AccountRoot );                // ledger type.
+JSS ( AccountSet );                 // transaction type.
+JSS ( Amendments );                 // ledger type.
 JSS ( Amount );                     // in: TransactionSign; field.
+JSS ( Check );                      // ledger type.
+JSS ( CheckCancel );                // transaction type.
+JSS ( CheckCash );                  // transaction type.
+JSS ( CheckCreate );                // transaction type.
 JSS ( ClearFlag );                  // field.
-JSS ( Destination );                // in: TransactionSign; field.
 JSS ( DeliverMin );                 // in: TransactionSign
+JSS ( DepositPreauth );             // transaction and ledger type.
+JSS ( Destination );                // in: TransactionSign; field.
+JSS ( DirectoryNode );              // ledger type.
+JSS ( EnableAmendment );            // transaction type.
+JSS ( Escrow );                     // ledger type.
+JSS ( EscrowCancel );               // transaction type.
+JSS ( EscrowCreate );               // transaction type.
+JSS ( EscrowFinish );               // transaction type.
 JSS ( Fee );                        // in/out: TransactionSign; field.
+JSS ( FeeSettings );                // ledger type.
 JSS ( Flags );                      // in/out: TransactionSign; field.
 JSS ( Invalid );                    //
 JSS ( LastLedgerSequence );         // in: TransactionSign; field
+JSS ( LedgerHashes );               // ledger type.
 JSS ( LimitAmount );                // field.
+JSS ( Offer );                      // ledger type.
+JSS ( OfferCancel );                // transaction type.
+JSS ( OfferCreate );                // transaction type.
 JSS ( OfferSequence );              // field.
 JSS ( Paths );                      // in/out: TransactionSign
-JSS ( TransferRate );               // in: TransferRate
-JSS ( historical_perminute );       // historical_perminute
-JSS ( SLE_hit_rate );               // out: GetCounts
+JSS ( PayChannel );                 // ledger type.
+JSS ( Payment );                    // transaction type.
+JSS ( PaymentChannelClaim );        // transaction type.
+JSS ( PaymentChannelCreate );       // transaction type.
+JSS ( PaymentChannelFund );         // transaction type.
+JSS ( RippleState );                // ledger type.
+JSS ( SLE_hit_rate );               // out: GetCounts.
+JSS ( SetFee );                     // transaction type.
 JSS ( SettleDelay );                // in: TransactionSign
 JSS ( SendMax );                    // in: TransactionSign
 JSS ( Sequence );                   // in/out: TransactionSign; field.
 JSS ( SetFlag );                    // field.
-JSS ( SigningPubKey );              // field
+JSS ( SetRegularKey );              // transaction type.
+JSS ( SignerList );                 // ledger type.
+JSS ( SignerListSet );              // transaction type.
+JSS ( SigningPubKey );              // field.
 JSS ( TakerGets );                  // field.
 JSS ( TakerPays );                  // field.
-JSS ( TxnSignature );               // field
-JSS ( TransactionType );            // in: TransactionSign
+JSS ( Ticket );                     // ledger type.
+JSS ( TicketCancel );               // transaction type.
+JSS ( TicketCreate );               // transaction type.
+JSS ( TxnSignature );               // field.
+JSS ( TransactionType );            // in: TransactionSign.
+JSS ( TransferRate );               // in: TransferRate.
+JSS ( TrustSet );                   // transaction type.
 JSS ( aborted );                    // out: InboundLedger
 JSS ( accepted );                   // out: LedgerToJson, OwnerInfo
 JSS ( account );                    // in/out: many
@@ -202,6 +234,7 @@ JSS ( have_header );                // out: InboundLedger
 JSS ( have_state );                 // out: InboundLedger
 JSS ( have_transactions );          // out: InboundLedger
 JSS ( highest_sequence );           // out: AccountInfo
+JSS ( historical_perminute );       // historical_perminute.
 JSS ( hostid );                     // out: NetworkOPs
 JSS ( hotwallet );                  // in: GatewayBalances
 JSS ( id );                         // websocket.

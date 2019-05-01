@@ -415,7 +415,7 @@ class Freeze_test : public beast::unit_test::suite
 
         auto let =
             affected[0u][sfModifiedNode.fieldName][sfLedgerEntryType.fieldName];
-        BEAST_EXPECT(let == "AccountRoot");
+        BEAST_EXPECT(let == jss::AccountRoot);
     }
 
     void

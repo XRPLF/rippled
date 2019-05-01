@@ -52,7 +52,7 @@ class Ticket_test : public beast::unit_test::suite
     {
         using namespace std::string_literals;
         auto const& tx = env.tx ()->getJson (0);
-        bool is_cancel = tx[jss::TransactionType] == "TicketCancel";
+        bool is_cancel = tx[jss::TransactionType] == jss::TicketCancel;
 
         auto const& jvm = env.meta ()->getJson (0);
         std::array<Json::Value, 4> retval;
@@ -61,32 +61,26 @@ class Ticket_test : public beast::unit_test::suite
         // a few different scenarios.
         // tuple is index, field name, and label (LedgerEntryType)
         std::vector<
-            std::tuple<std::size_t, std::string, std::string>
+            std::tuple<std::size_t, std::string, Json::StaticString>
         > expected_nodes;
 
         if (is_cancel && other_target)
         {
             expected_nodes = {
-                std::make_tuple(0, sfModifiedNode.fieldName, "AccountRoot"s),
-                std::make_tuple(
-                    expiration ? 2: 1, sfModifiedNode.fieldName, "AccountRoot"s),
-                std::make_tuple(
-                    expiration ? 1: 2, sfDeletedNode.fieldName, "Ticket"s),
-                std::make_tuple(3, sfDeletedNode.fieldName, "DirectoryNode"s)
+                {0, sfModifiedNode.fieldName, jss::AccountRoot},
+                {expiration ? 2: 1, sfModifiedNode.fieldName, jss::AccountRoot},
+                {expiration ? 1: 2, sfDeletedNode.fieldName, jss::Ticket},
+                {3, sfDeletedNode.fieldName, jss::DirectoryNode}
             };
         }
         else
         {
             expected_nodes = {
-                std::make_tuple(0, sfModifiedNode.fieldName, "AccountRoot"s),
-                std::make_tuple(1,
-                    is_cancel ?
-                        sfDeletedNode.fieldName : sfCreatedNode.fieldName,
-                    "Ticket"s),
-                std::make_tuple(2,
-                    is_cancel ?
-                        sfDeletedNode.fieldName : sfCreatedNode.fieldName,
-                 "DirectoryNode"s)
+                {0, sfModifiedNode.fieldName, jss::AccountRoot},
+                {1, is_cancel ? sfDeletedNode.fieldName :
+                    sfCreatedNode.fieldName, jss::Ticket},
+                {2, is_cancel ? sfDeletedNode.fieldName :
+                    sfCreatedNode.fieldName, jss::DirectoryNode}
             };
         }
 
@@ -241,7 +235,7 @@ class Ticket_test : public beast::unit_test::suite
         auto const& jticket = cr[1];
         BEAST_EXPECT(
             jacct[sfFinalFields.fieldName][sfOwnerCount.fieldName] == 1);
-        BEAST_EXPECT(jticket[sfLedgerEntryType.fieldName] == "Ticket");
+        BEAST_EXPECT(jticket[sfLedgerEntryType.fieldName] == jss::Ticket);
         BEAST_EXPECT(jticket[sfLedgerIndex.fieldName] ==
             "C231BA31A0E13A4D524A75F990CE0D6890B800FF1AE75E51A2D33559547AC1A2");
         BEAST_EXPECT(jticket[sfNewFields.fieldName][jss::Account] ==
@@ -330,7 +324,7 @@ class Ticket_test : public beast::unit_test::suite
         auto const& jacct =
             jvm[sfAffectedNodes.fieldName][0u][sfModifiedNode.fieldName];
         BEAST_EXPECT(
-            jacct[sfLedgerEntryType.fieldName] == "AccountRoot");
+            jacct[sfLedgerEntryType.fieldName] == jss::AccountRoot);
         BEAST_EXPECT(jacct[sfFinalFields.fieldName][jss::Account] ==
             env.master.human());
     }

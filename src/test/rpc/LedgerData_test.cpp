@@ -299,7 +299,7 @@ public:
 
         {
             Json::Value jv;
-            jv[jss::TransactionType] = "EscrowCreate";
+            jv[jss::TransactionType] = jss::EscrowCreate;
             jv[jss::Flags] = tfUniversal;
             jv[jss::Account] = Account{"bob5"}.human();
             jv[jss::Destination] = Account{"bob6"}.human();
@@ -312,7 +312,7 @@ public:
 
         {
             Json::Value jv;
-            jv[jss::TransactionType] = "PaymentChannelCreate";
+            jv[jss::TransactionType] = jss::PaymentChannelCreate;
             jv[jss::Flags] = tfUniversal;
             jv[jss::Account] = Account{"bob6"}.human ();
             jv[jss::Destination] = Account{"bob7"}.human ();
@@ -322,6 +322,16 @@ public:
             jv[sfCancelAfter.fieldName] =
                 NetClock::time_point{env.now() + 300s}
                     .time_since_epoch().count();
+            env(jv);
+        }
+
+        {
+            Json::Value jv;
+            jv[sfAccount.jsonName] = Account{"bob6"}.human ();
+            jv[sfSendMax.jsonName] = "100000000";
+            jv[sfDestination.jsonName] = Account{"bob7"}.human ();
+            jv[sfTransactionType.jsonName] = jss::CheckCreate;
+            jv[sfFlags.jsonName] = tfUniversal;
             env(jv);
         }
 
@@ -344,84 +354,91 @@ public:
         auto const jrr = makeRequest(jss::account);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 12) );
         for (auto const& j : jrr[jss::state])
-            BEAST_EXPECT( j["LedgerEntryType"] == "AccountRoot" );
+            BEAST_EXPECT( j["LedgerEntryType"] == jss::AccountRoot );
         }
 
         {  // jvParams[jss::type] = "amendments";
         auto const jrr = makeRequest(jss::amendments);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
-            BEAST_EXPECT( j["LedgerEntryType"] == "Amendments" );
+            BEAST_EXPECT( j["LedgerEntryType"] == jss::Amendments );
+        }
+
+        {  // jvParams[jss::type] = "check";
+        auto const jrr = makeRequest(jss::check);
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
+        for (auto const& j : jrr[jss::state])
+            BEAST_EXPECT( j["LedgerEntryType"] == jss::Check );
         }
 
         {  // jvParams[jss::type] = "directory";
         auto const jrr = makeRequest(jss::directory);
-        BEAST_EXPECT( checkArraySize(jrr[jss::state], 8) );
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], 9) );
         for (auto const& j : jrr[jss::state])
-            BEAST_EXPECT( j["LedgerEntryType"] == "DirectoryNode" );
+            BEAST_EXPECT( j["LedgerEntryType"] == jss::DirectoryNode );
         }
 
         {  // jvParams[jss::type] = "fee";
         auto const jrr = makeRequest(jss::fee);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
-            BEAST_EXPECT( j["LedgerEntryType"] == "FeeSettings" );
+            BEAST_EXPECT( j["LedgerEntryType"] == jss::FeeSettings );
         }
 
         {  // jvParams[jss::type] = "hashes";
         auto const jrr = makeRequest(jss::hashes);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 2) );
         for (auto const& j : jrr[jss::state])
-            BEAST_EXPECT( j["LedgerEntryType"] == "LedgerHashes" );
+            BEAST_EXPECT( j["LedgerEntryType"] == jss::LedgerHashes );
         }
 
         {  // jvParams[jss::type] = "offer";
         auto const jrr = makeRequest(jss::offer);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
-            BEAST_EXPECT( j["LedgerEntryType"] == "Offer" );
+            BEAST_EXPECT( j["LedgerEntryType"] == jss::Offer );
         }
 
         {  // jvParams[jss::type] = "signer_list";
         auto const jrr = makeRequest(jss::signer_list);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
-            BEAST_EXPECT( j["LedgerEntryType"] == "SignerList" );
+            BEAST_EXPECT( j["LedgerEntryType"] == jss::SignerList );
         }
 
         {  // jvParams[jss::type] = "state";
         auto const jrr = makeRequest(jss::state);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
-            BEAST_EXPECT( j["LedgerEntryType"] == "RippleState" );
+            BEAST_EXPECT( j["LedgerEntryType"] == jss::RippleState );
         }
 
         {  // jvParams[jss::type] = "ticket";
         auto const jrr = makeRequest(jss::ticket);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
-            BEAST_EXPECT( j["LedgerEntryType"] == "Ticket" );
+            BEAST_EXPECT( j["LedgerEntryType"] == jss::Ticket );
         }
 
         {  // jvParams[jss::type] = "escrow";
         auto const jrr = makeRequest(jss::escrow);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
-            BEAST_EXPECT( j["LedgerEntryType"] == "Escrow" );
+            BEAST_EXPECT( j["LedgerEntryType"] == jss::Escrow );
         }
 
         {  // jvParams[jss::type] = "payment_channel";
         auto const jrr = makeRequest(jss::payment_channel);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 1) );
         for (auto const& j : jrr[jss::state])
-            BEAST_EXPECT( j["LedgerEntryType"] == "PayChannel" );
+            BEAST_EXPECT( j["LedgerEntryType"] == jss::PayChannel );
         }
 
         {  // jvParams[jss::type] = "deposit_preauth";
         auto const jrr = makeRequest(jss::deposit_preauth);
         BEAST_EXPECT( checkArraySize(jrr[jss::state], 2) );
         for (auto const& j : jrr[jss::state])
-            BEAST_EXPECT( j["LedgerEntryType"] == "DepositPreauth" );
+            BEAST_EXPECT( j["LedgerEntryType"] == jss::DepositPreauth );
         }
 
         {  // jvParams[jss::type] = "misspelling";

@@ -1756,7 +1756,7 @@ public:
             Json::Value cancelOffer;
             cancelOffer[jss::Account] = alice.human();
             cancelOffer[jss::OfferSequence] = 3;
-            cancelOffer[jss::TransactionType] = "OfferCancel";
+            cancelOffer[jss::TransactionType] = jss::OfferCancel;
             auto const jtx = env.jt(cancelOffer,
                 seq(1), fee(10));
             auto const pf = preflight(env.app(), env.current()->rules(),
@@ -1798,7 +1798,7 @@ public:
             Json::Value cancelTicket;
             cancelTicket[jss::Account] = alice.human();
             cancelTicket["TicketID"] = to_string(uint256());
-            cancelTicket[jss::TransactionType] = "TicketCancel";
+            cancelTicket[jss::TransactionType] = jss::TicketCancel;
             auto const jtx = env.jt(cancelTicket,
                 seq(1), fee(10));
             auto const pf = preflight(env.app(), env.current()->rules(),

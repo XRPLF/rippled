@@ -33,7 +33,7 @@ auth (jtx::Account const& account, jtx::Account const& auth)
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfAuthorize.jsonName] = auth.human();
-    jv[sfTransactionType.jsonName] = "DepositPreauth";
+    jv[sfTransactionType.jsonName] = jss::DepositPreauth;
     return jv;
 }
 
@@ -44,7 +44,7 @@ unauth (jtx::Account const& account, jtx::Account const& unauth)
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfUnauthorize.jsonName] = unauth.human();
-    jv[sfTransactionType.jsonName] = "DepositPreauth";
+    jv[sfTransactionType.jsonName] = jss::DepositPreauth;
     return jv;
 }
 

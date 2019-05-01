@@ -121,7 +121,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
         if (transactions)
         {
             Json::Value& tx = jvTransactions.append (Json::objectValue);
-            tx["TransactionType"] = "AccountSet";
+            tx["TransactionType"] = jss::AccountSet;
             tx["SetFlag"] = 8;
             fillTransaction (context, tx, accountID, seq, *ledger);
         }
@@ -164,7 +164,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
                     limitAmount.setIssuer (peer);
 
                     Json::Value& tx = jvTransactions.append (Json::objectValue);
-                    tx["TransactionType"] = "TrustSet";
+                    tx["TransactionType"] = jss::TrustSet;
                     tx["LimitAmount"] = limitAmount.getJson (0);
                     tx["Flags"] = bNoRipple ? tfClearNoRipple : tfSetNoRipple;
                     fillTransaction(context, tx, accountID, seq, *ledger);
