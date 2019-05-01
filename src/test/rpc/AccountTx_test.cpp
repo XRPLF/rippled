@@ -46,9 +46,9 @@ class AccountTX_test : public beast::unit_test::suite
                 (j[jss::result][jss::status] == "success") &&
                 (j[jss::result][jss::transactions].size() == 2) &&
                 (j[jss::result][jss::transactions][0u][jss::tx]
-                  [jss::TransactionType] == "AccountSet") &&
+                  [jss::TransactionType] == jss::AccountSet) &&
                 (j[jss::result][jss::transactions][1u][jss::tx]
-                  [jss::TransactionType] == "Payment");
+                  [jss::TransactionType] == jss::Payment);
         };
 
         auto noTxs = [](Json::Value const& j) {

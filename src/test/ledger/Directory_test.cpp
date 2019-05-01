@@ -315,7 +315,7 @@ struct Directory_test : public beast::unit_test::suite
                 cancelOffer[jss::Account] = alice.human();
                 cancelOffer[jss::OfferSequence] =
                     Json::UInt(firstOfferSeq + page * dirNodeMaxEntries + i);
-                cancelOffer[jss::TransactionType] = "OfferCancel";
+                cancelOffer[jss::TransactionType] = jss::OfferCancel;
                 env(cancelOffer);
                 env.close();
             }

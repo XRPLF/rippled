@@ -125,10 +125,10 @@ class TransactionHistory_test : public beast::unit_test::suite
             }
         }
         BEAST_EXPECT(total == 117);
-        BEAST_EXPECT(typeCounts["AccountSet"] == 20);
-        BEAST_EXPECT(typeCounts["TrustSet"] == 19);
-        BEAST_EXPECT(typeCounts["Payment"] == 58);
-        BEAST_EXPECT(typeCounts["OfferCreate"] == 20);
+        BEAST_EXPECT(typeCounts[jss::AccountSet.c_str()] == 20);
+        BEAST_EXPECT(typeCounts[jss::TrustSet.c_str()] == 19);
+        BEAST_EXPECT(typeCounts[jss::Payment.c_str()] == 58);
+        BEAST_EXPECT(typeCounts[jss::OfferCreate.c_str()] == 20);
 
         // also, try a request with max non-admin start value
         {

@@ -109,7 +109,7 @@ struct PayChan_test : public beast::unit_test::suite
     {
         using namespace jtx;
         Json::Value jv;
-        jv[jss::TransactionType] = "PaymentChannelCreate";
+        jv[jss::TransactionType] = jss::PaymentChannelCreate;
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human ();
         jv[jss::Destination] = to.human ();
@@ -132,7 +132,7 @@ struct PayChan_test : public beast::unit_test::suite
     {
         using namespace jtx;
         Json::Value jv;
-        jv[jss::TransactionType] = "PaymentChannelFund";
+        jv[jss::TransactionType] = jss::PaymentChannelFund;
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human ();
         jv["Channel"] = to_string (channel);
@@ -153,7 +153,7 @@ struct PayChan_test : public beast::unit_test::suite
     {
         using namespace jtx;
         Json::Value jv;
-        jv[jss::TransactionType] = "PaymentChannelClaim";
+        jv[jss::TransactionType] = jss::PaymentChannelClaim;
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human ();
         jv["Channel"] = to_string (channel);

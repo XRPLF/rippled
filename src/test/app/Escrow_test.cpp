@@ -171,7 +171,7 @@ struct Escrow_test : public beast::unit_test::suite
     {
         using namespace jtx;
         Json::Value jv;
-        jv[jss::TransactionType] = "EscrowCreate";
+        jv[jss::TransactionType] = jss::EscrowCreate;
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human();
         jv[jss::Destination] = to.human();
@@ -185,7 +185,7 @@ struct Escrow_test : public beast::unit_test::suite
         jtx::Account const& from, std::uint32_t seq)
     {
         Json::Value jv;
-        jv[jss::TransactionType] = "EscrowFinish";
+        jv[jss::TransactionType] = jss::EscrowFinish;
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human();
         jv[sfOwner.jsonName] = from.human();
@@ -199,7 +199,7 @@ struct Escrow_test : public beast::unit_test::suite
         jtx::Account const& from, std::uint32_t seq)
     {
         Json::Value jv;
-        jv[jss::TransactionType] = "EscrowCancel";
+        jv[jss::TransactionType] = jss::EscrowCancel;
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human();
         jv[sfOwner.jsonName] = from.human();

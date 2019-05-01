@@ -103,7 +103,7 @@ public:
     bool
     checkTxn(Json::Value const& t, Json::Value const& metaData)
     {
-        if (t[jss::TransactionType].asString() != "Payment")
+        if (t[jss::TransactionType].asString() != jss::Payment)
             return true;
 
         bool isSet = metaData.isMember(jss::delivered_amount);

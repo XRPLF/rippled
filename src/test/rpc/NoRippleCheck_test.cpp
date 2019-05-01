@@ -208,7 +208,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             if (! user)
             {
                 BEAST_EXPECT (txs[0u][jss::Account] == alice.human());
-                BEAST_EXPECT (txs[0u][jss::TransactionType] == "AccountSet");
+                BEAST_EXPECT (txs[0u][jss::TransactionType] == jss::AccountSet);
             }
 
             BEAST_EXPECT (
@@ -216,7 +216,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
                 alice.human());
             BEAST_EXPECT (
                 result[jss::transactions][txs.size()-1][jss::TransactionType] ==
-                "TrustSet");
+                jss::TrustSet);
             BEAST_EXPECT (
                 result[jss::transactions][txs.size()-1][jss::LimitAmount] ==
                 gw["USD"](100).value ().getJson (0));
