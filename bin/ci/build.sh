@@ -10,7 +10,9 @@ COMPILER=${COMPILER:-gcc}
 # The build type. Either 'Debug' or 'Release'.
 BUILD_TYPE=${BUILD_TYPE:-Debug}
 # Additional arguments to CMake.
-CMAKE_ARGS=${CMAKE_ARGS:-}
+# We use the `-` substitution here instead of `:-` so that callers can erase
+# the default by setting `$CMAKE_ARGS` to the empty string.
+CMAKE_ARGS=${CMAKE_ARGS-'-Dwerr=ON'}
 
 if [[ ${COMPILER} == 'gcc' ]]; then
   export CC='gcc'
