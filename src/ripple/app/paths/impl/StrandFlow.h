@@ -144,14 +144,21 @@ flow (
                         *sb, *afView, ofrsToRm, EitherAmount (*maxIn));
                     limitStepOut = r.second;
 
-                    if (strand[i]->isZero (r.second) ||
-                        get<TInAmt> (r.first) != *maxIn)
+                    if (strand[i]->isZero(r.second))
+                    {
+                        JLOG(j.trace()) << "First step found dry";
+                        return {tecPATH_DRY, std::move(ofrsToRm)};
+                    }
+                    if (get<TInAmt> (r.first) != *maxIn)
                     {
                         // Something is very wrong
                         // throwing out the sandbox can only increase liquidity
                         // yet the limiting is still limiting
-                        JLOG (j.fatal()) << "Re-executed limiting step failed";
-                        assert (0);
+                        JLOG(j.fatal())
+                            << "Re-executed limiting step failed. r.first: "
+                            << to_string(get<TInAmt>(r.first))
+                            << " maxIn: " << to_string(*maxIn);
+                        assert(0);
                         return {telFAILED_PROCESSING, std::move (ofrsToRm)};
                     }
                 }
@@ -168,13 +175,25 @@ flow (
                     r = strand[i]->rev (*sb, *afView, ofrsToRm, stepOut);
                     limitStepOut = r.second;
 
-                    if (strand[i]->isZero (r.second) ||
-                        !strand[i]->equalOut (r.second, stepOut))
+                    if (strand[i]->isZero(r.second))
+                    {
+                        // A tiny input amount can cause this step to output zero.
+                        // I.e. 10^-80 IOU into an IOU -> XRP offer.
+                        JLOG(j.trace()) << "Limiting step found dry";
+                        return {tecPATH_DRY, std::move(ofrsToRm)};
+                    }
+                    if (!strand[i]->equalOut (r.second, stepOut))
                     {
                         // Something is very wrong
                         // throwing out the sandbox can only increase liquidity
                         // yet the limiting is still limiting
+#ifndef NDEBUG
+                        JLOG(j.fatal())
+                            << "Re-executed limiting step failed. r.second: "
+                            << r.second << " stepOut: " << stepOut;
+#else
                         JLOG (j.fatal()) << "Re-executed limiting step failed";
+#endif
                         assert (0);
                         return {telFAILED_PROCESSING, std::move (ofrsToRm)};
                     }
@@ -189,13 +208,25 @@ flow (
             EitherAmount stepIn (limitStepOut);
             for (auto i = limitingStep + 1; i < s; ++i)
             {
-                auto const r = strand[i]->fwd (*sb, *afView, ofrsToRm, stepIn);
-                if (strand[i]->isZero (r.second) ||
-                    !strand[i]->equalIn (r.first, stepIn))
+                auto const r = strand[i]->fwd(*sb, *afView, ofrsToRm, stepIn);
+                if (strand[i]->isZero(r.second))
+                {
+                    // A tiny input amount can cause this step to output zero.
+                    // I.e. 10^-80 IOU into an IOU -> XRP offer.
+                    JLOG(j.trace()) << "Non-limiting step found dry";
+                    return {tecPATH_DRY, std::move(ofrsToRm)};
+                }
+                if (!strand[i]->equalIn (r.first, stepIn))
                 {
                     // The limits should already have been found, so executing a strand forward
                     // from the limiting step should not find a new limit
+#ifndef NDEBUG
+                    JLOG(j.fatal())
+                        << "Re-executed forward pass failed. r.first: "
+                        << r.first << " stepIn: " << stepIn;
+#else
                     JLOG (j.fatal()) << "Re-executed forward pass failed";
+#endif
                     assert (0);
                     return {telFAILED_PROCESSING, std::move (ofrsToRm)};
                 }
