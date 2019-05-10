@@ -15,7 +15,7 @@ if docker pull "${ARTIFACTORY_HUB}/${container_name}:${CI_COMMIT_SHA}"; then
     exit 0
 else
     echo "no existing ${pkgtype} container for this branch - searching history."
-    for CID_PREV in $(git log --pretty=%H -n5) ; do
+    for CID_PREV in $(git log --pretty=%H -n30) ; do
         if docker pull "${ARTIFACTORY_HUB}/${container_name}:${CID_PREV}"; then
             echo "found container for previous commit ${CID_PREV}" \
                 "- using as cache."
