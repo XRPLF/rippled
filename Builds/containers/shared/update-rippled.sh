@@ -33,8 +33,6 @@ if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]] ; then
   }
 elif [[ "$ID" == "fedora" || "$ID" == "centos" || "$ID" == "rhel" || "$ID" == "scientific" ]] ; then
   RIPPLE_REPO=${RIPPLE_REPO-stable}
-  # Update ripple.repo file
-  rpm -Uvh --replacepkgs https://mirrors.ripple.com/ripple-repo-el7.rpm
   yum --disablerepo=* --enablerepo=ripple-$RIPPLE_REPO clean expire-cache
 
   yum check-update -q --enablerepo=ripple-$RIPPLE_REPO rippled || can_update=true
