@@ -84,10 +84,8 @@ private:
     // minimum # of ledgers required for standalone mode.
     static std::uint32_t const minimumDeletionIntervalSA_ = 8;
 
-    Setup setup_;
     NodeStore::Scheduler& scheduler_;
     beast::Journal journal_;
-    beast::Journal nodeStoreJournal_;
     NodeStore::DatabaseRotating* dbRotating_ = nullptr;
     SavedStateDB state_db_;
     std::thread thread_;
@@ -98,8 +96,15 @@ private:
     mutable std::mutex mutex_;
     std::shared_ptr<Ledger const> newLedger_;
     std::atomic<bool> working_;
-    TransactionMaster& transactionMaster_;
     std::atomic <LedgerIndex> canDelete_;
+    int fdlimit_ = 0;
+
+    std::uint32_t deleteInterval_ = 0;
+    bool advisoryDelete_ = false;
+    std::uint32_t deleteBatch_ = 100;
+    std::uint32_t backOff_ = 100;
+    std::int32_t ageThreshold_ = 60;
+
     // these do not exist upon SHAMapStore creation, but do exist
     // as of onPrepare() or before
     NetworkOPs* netOPs_ = nullptr;
@@ -108,17 +113,15 @@ private:
     TreeNodeCache* treeNodeCache_ = nullptr;
     DatabaseCon* transactionDb_ = nullptr;
     DatabaseCon* ledgerDb_ = nullptr;
-    int fdlimit_ = 0;
+
+    static constexpr auto nodeStoreName_ = "NodeStore";
 
 public:
-    SHAMapStoreImp (Application& app,
-            Setup const& setup,
-            Stoppable& parent,
-            NodeStore::Scheduler& scheduler,
-            beast::Journal journal,
-            beast::Journal nodeStoreJournal,
-            TransactionMaster& transactionMaster,
-            BasicConfig const& config);
+    SHAMapStoreImp(
+        Application& app,
+        Stoppable& parent,
+        NodeStore::Scheduler& scheduler,
+        beast::Journal journal);
 
     ~SHAMapStoreImp()
     {
@@ -129,22 +132,17 @@ public:
     std::uint32_t
     clampFetchDepth (std::uint32_t fetch_depth) const override
     {
-        return setup_.deleteInterval ? std::min (fetch_depth,
-                setup_.deleteInterval) : fetch_depth;
+        return deleteInterval_ ? std::min (fetch_depth,
+            deleteInterval_) : fetch_depth;
     }
 
-    std::unique_ptr <NodeStore::Database> makeDatabase (
-            std::string const&name,
-            std::int32_t readThreads, Stoppable& parent) override;
-
-    std::unique_ptr <NodeStore::DatabaseShard>
-    makeDatabaseShard(std::string const& name,
-        std::int32_t readThreads, Stoppable& parent) override;
+    std::unique_ptr <NodeStore::Database>
+    makeNodeStore(std::string const& name, std::int32_t readThreads) override;
 
     LedgerIndex
     setCanDelete (LedgerIndex seq) override
     {
-        if (setup_.advisoryDelete)
+        if (advisoryDelete_)
             canDelete_ = seq;
         return state_db_.setCanDelete (seq);
     }
@@ -152,7 +150,7 @@ public:
     bool
     advisoryDelete() const override
     {
-        return setup_.advisoryDelete;
+        return advisoryDelete_;
     }
 
     // All ledgers prior to this one are eligible
@@ -230,7 +228,7 @@ private:
     void
     onStart() override
     {
-        if (setup_.deleteInterval)
+        if (deleteInterval_)
             thread_ = std::thread (&SHAMapStoreImp::run, this);
     }
 

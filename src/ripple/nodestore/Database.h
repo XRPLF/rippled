@@ -60,7 +60,8 @@ public:
         @param name The Stoppable name for this Database.
         @param parent The parent Stoppable.
         @param scheduler The scheduler to use for performing asynchronous tasks.
-        @param readThreads The number of async read threads to create.
+        @param readThreads The number of asynchronous read threads to create.
+        @param config The configuration settings
         @param journal Destination for logging output.
     */
     Database(std::string name, Stoppable& parent, Scheduler& scheduler,
@@ -282,7 +283,7 @@ private:
 
     // The default is 32570 to match the XRP ledger network's earliest
     // allowed sequence. Alternate networks may set this value.
-    std::uint32_t earliestSeq_ {XRP_LEDGER_EARLIEST_SEQ};
+    std::uint32_t const earliestSeq_;
 
     virtual
     std::shared_ptr<NodeObject>

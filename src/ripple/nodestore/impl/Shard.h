@@ -152,8 +152,12 @@ private:
     // Path to control file
     boost::filesystem::path const control_;
 
+    // Disk space utilized by the shard
     std::uint64_t fileSize_ {0};
+
+    // NuDB key/value store for node objects
     std::shared_ptr<Backend> backend_;
+
     beast::Journal j_;
 
     // True if shard has its entire ledger range stored

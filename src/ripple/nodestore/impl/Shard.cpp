@@ -65,14 +65,7 @@ Shard::open(Section config, Scheduler& scheduler, nudb::context& ctx)
         return false;
     }
 
-    boost::system::error_code ec;
-    auto const preexist {exists(dir_, ec)};
-    if (ec)
-    {
-        JLOG(j_.error()) <<
-            "shard " << index_ << ": " << ec.message();
-        return false;
-    }
+    auto const preexist {exists(dir_)};
 
     config.set("path", dir_.string());
     backend_ = factory->createInstance(
@@ -85,6 +78,8 @@ Shard::open(Section config, Scheduler& scheduler, nudb::context& ctx)
             JLOG(j_.error()) <<
                 "shard " << index_ << ": " << msg;
         }
+        if (backend_)
+            backend_->close();
         if (!preexist)
             removeAll(dir_, j_);
         return false;
@@ -92,6 +87,7 @@ Shard::open(Section config, Scheduler& scheduler, nudb::context& ctx)
 
     try
     {
+        // Open/Create the NuDB key/value store for node objects
         backend_->open(!preexist);
 
         if (!backend_->backed())
