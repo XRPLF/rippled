@@ -42,8 +42,8 @@ public:
         @param name The Stoppable name for this Database
         @param parent The parent Stoppable
         @param scheduler The scheduler to use for performing asynchronous tasks
-        @param readThreads The number of async read threads to create
-        @param config The configuration for the database
+        @param readThreads The number of asynchronous read threads to create
+        @param config The shard configuration section for the database
         @param journal Destination for logging output
     */
     DatabaseShard(
@@ -89,9 +89,9 @@ public:
     bool
     prepareShard(std::uint32_t shardIndex) = 0;
 
-    /** Remove shard indexes from prepared import
+    /** Remove a previously prepared shard index for import
 
-        @param indexes Shard indexes to be removed from import
+        @param shardIndex Shard index to be removed from import
     */
     virtual
     void
@@ -218,6 +218,15 @@ seqToShardIndex(std::uint32_t seq,
 {
     return (seq - 1) / ledgersPerShard;
 }
+
+extern
+std::unique_ptr<DatabaseShard>
+make_ShardStore(
+    Application& app,
+    Stoppable& parent,
+    Scheduler& scheduler,
+    int readThreads,
+    beast::Journal j);
 
 }
 }

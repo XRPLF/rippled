@@ -17,12 +17,13 @@
 */
 //==============================================================================
 
-
 #include <ripple/nodestore/impl/DatabaseShardImp.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/random.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/overlay/Overlay.h>
@@ -32,30 +33,24 @@
 namespace ripple {
 namespace NodeStore {
 
-constexpr std::uint32_t DatabaseShard::ledgersPerShardDefault;
-
 DatabaseShardImp::DatabaseShardImp(
     Application& app,
-    std::string const& name,
     Stoppable& parent,
+    std::string const& name,
     Scheduler& scheduler,
     int readThreads,
-    Section const& config,
     beast::Journal j)
-    : DatabaseShard(name, parent, scheduler, readThreads, config, j)
+    : DatabaseShard(
+        name,
+        parent,
+        scheduler,
+        readThreads,
+        app.config().section(ConfigSection::shardDatabase()),
+        j)
     , app_(app)
-    , ctx_(std::make_unique<nudb::context>())
-    , config_(config)
-    , dir_(get<std::string>(config, "path"))
-    , backendName_(Manager::instance().find(
-        get<std::string>(config, "type", "nudb"))->getName())
-    , maxDiskSpace_(get<std::uint64_t>(config, "max_size_gb") << 30)
-    , ledgersPerShard_(get<std::uint32_t>(
-        config, "ledgers_per_shard", ledgersPerShardDefault))
     , earliestShardIndex_(seqToShardIndex(earliestSeq()))
-    , avgShardSz_(ledgersPerShard_ * (192 * 1024))
+    , avgShardSz_(ledgersPerShard_ * kilobytes(192))
 {
-    ctx_->start();
 }
 
 DatabaseShardImp::~DatabaseShardImp()
@@ -85,36 +80,94 @@ DatabaseShardImp::init()
             "Already initialized";
         return false;
     }
-    if (ledgersPerShard_ == 0 || ledgersPerShard_ % 256 != 0)
+
+    auto fail = [&](std::string const& msg)
     {
         JLOG(j_.error()) <<
-            "ledgers_per_shard must be a multiple of 256";
+            "[" << ConfigSection::shardDatabase() << "] " << msg;
         return false;
+    };
+
+    Config const& config {app_.config()};
+    Section const& section {config.section(ConfigSection::shardDatabase())};
+    if (section.empty())
+        return fail("missing configuration");
+
+    {
+        // Node and shard stores must use same earliest ledger sequence
+        std::uint32_t seq;
+        if (get_if_exists<std::uint32_t>(
+                config.section(ConfigSection::nodeDatabase()),
+                "earliest_seq",
+                seq))
+        {
+            std::uint32_t seq2;
+            if (get_if_exists<std::uint32_t>(section, "earliest_seq", seq2) &&
+                seq != seq2)
+            {
+                return fail("and [" + ConfigSection::shardDatabase() +
+                    "] both define 'earliest_seq'");
+            }
+        }
+    }
+
+    if (!get_if_exists<boost::filesystem::path>(section, "path", dir_))
+        return fail("'path' missing");
+
+    if (boost::filesystem::exists(dir_))
+    {
+        if (!boost::filesystem::is_directory(dir_))
+            return fail("'path' must be a directory");
+    }
+    else
+        boost::filesystem::create_directories(dir_);
+
+    {
+        std::uint64_t i;
+        if (!get_if_exists<std::uint64_t>(section, "max_size_gb", i))
+            return fail("'max_size_gb' missing");
+
+        // Minimum disk space required (in gigabytes)
+        static constexpr auto minDiskSpace = 10;
+        if (i < minDiskSpace)
+        {
+            return fail("'max_size_gb' must be at least " +
+                std::to_string(minDiskSpace));
+        }
+
+        if ((i << 30) < i)
+            return fail("'max_size_gb' overflow");
+
+        // Convert to bytes
+        maxDiskSpace_ = i << 30;
+    }
+
+    if (section.exists("ledgers_per_shard"))
+    {
+        // To be set only in standalone for testing
+        if (!config.standalone())
+            return fail("'ledgers_per_shard' only honored in stand alone");
+
+        ledgersPerShard_ = get<std::uint32_t>(section, "ledgers_per_shard");
+        if (ledgersPerShard_ == 0 || ledgersPerShard_ % 256 != 0)
+            return fail("'ledgers_per_shard' must be a multiple of 256");
     }
 
     // NuDB is the default and only supported permanent storage backend
     // "Memory" and "none" types are supported for tests
+    backendName_ = get<std::string>(section, "type", "nudb");
     if (!iequals(backendName_, "NuDB") &&
         !iequals(backendName_, "Memory") &&
         !iequals(backendName_, "none"))
     {
-        JLOG(j_.error()) <<
-            "Unsupported shard store type: " << backendName_;
-        return false;
+        return fail("'type' value unsupported");
     }
 
+    // Find backend file handle requirement
+    if (auto factory = Manager::instance().find(backendName_))
     {
-        // Find backend file handle requirement
-        auto factory {Manager::instance().find(backendName_)};
-        if (!factory)
-        {
-            JLOG(j_.error()) <<
-                "Failed to create shard store type " << backendName_;
-            return false;
-        }
-
-        auto backend {factory->createInstance(NodeObject::keyBytes,
-            config_, scheduler_, *ctx_, j_)};
+        auto backend {factory->createInstance(
+            NodeObject::keyBytes, section, scheduler_, j_)};
         backed_ = backend->backed();
         if (!backed_)
         {
@@ -123,9 +176,14 @@ DatabaseShardImp::init()
         }
         fdLimit_ = backend->fdlimit();
     }
+    else
+        return fail("'type' value unsupported");
 
     try
     {
+        ctx_ = std::make_unique<nudb::context>();
+        ctx_->start();
+
         // Find shards
         for (auto const& d : directory_iterator(dir_))
         {
@@ -166,7 +224,7 @@ DatabaseShardImp::init()
 
             auto shard {std::make_unique<Shard>(
                 *this, shardIndex, cacheSz_, cacheAge_, j_)};
-            if (!shard->open(config_, scheduler_, *ctx_))
+            if (!shard->open(section, scheduler_, *ctx_))
                 return false;
 
             usedDiskSpace_ += shard->fileSize();
@@ -250,7 +308,10 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
         1, static_cast<int>(complete_.size() + 1)))};
     incomplete_ = std::make_unique<Shard>(
         *this, *shardIndex, sz, cacheAge_, j_);
-    if (!incomplete_->open(config_, scheduler_, *ctx_))
+    if (!incomplete_->open(
+            app_.config().section(ConfigSection::shardDatabase()),
+            scheduler_,
+            *ctx_))
     {
         incomplete_.reset();
         return boost::none;
@@ -422,7 +483,7 @@ DatabaseShardImp::importShard(std::uint32_t shardIndex,
     // Create the new shard
     auto shard {std::make_unique<Shard>(
         *this, shardIndex, cacheSz_, cacheAge_, j_)};
-    auto fail = [&](std::string msg)
+    auto fail = [&](std::string const& msg)
     {
         if (!msg.empty())
         {
@@ -434,8 +495,13 @@ DatabaseShardImp::importShard(std::uint32_t shardIndex,
         return false;
     };
 
-    if (!shard->open(config_, scheduler_, *ctx_))
+    if (!shard->open(
+            app_.config().section(ConfigSection::shardDatabase()),
+            scheduler_,
+            *ctx_))
+    {
         return fail({});
+    }
     if (!shard->complete())
         return fail("incomplete shard");
 
@@ -750,7 +816,10 @@ DatabaseShardImp::import(Database& source)
         auto const shardDir {dir_ / std::to_string(shardIndex)};
         auto shard = std::make_unique<Shard>(
             *this, shardIndex, shardCacheSz, cacheAge_, j_);
-        if (!shard->open(config_, scheduler_, *ctx_))
+        if (!shard->open(
+                app_.config().section(ConfigSection::shardDatabase()),
+                scheduler_,
+                *ctx_))
         {
             shard.reset();
             continue;
@@ -1190,6 +1259,37 @@ DatabaseShardImp::available() const
             "exception: " << e.what();
         return 0;
     }
+}
+
+//------------------------------------------------------------------------------
+
+std::unique_ptr<DatabaseShard>
+make_ShardStore(
+    Application& app,
+    Stoppable& parent,
+    Scheduler& scheduler,
+    int readThreads,
+    beast::Journal j)
+{
+    // The shard store is optional. Future changes will require it.
+    Section const& section {
+        app.config().section(ConfigSection::shardDatabase())};
+    if (section.empty())
+        return nullptr;
+
+    auto shardStore = std::make_unique<DatabaseShardImp>(
+        app,
+        parent,
+        "ShardStore",
+        scheduler,
+        readThreads,
+        j);
+    if (shardStore->init())
+        shardStore->setParent(parent);
+    else
+        shardStore.reset();
+
+    return shardStore;
 }
 
 } // NodeStore

@@ -33,17 +33,16 @@ Database::Database(
     int readThreads,
     Section const& config,
     beast::Journal journal)
-    : Stoppable(name, parent)
+    : Stoppable(name, parent.getRoot())
     , j_(journal)
     , scheduler_(scheduler)
+    , earliestSeq_(get<std::uint32_t>(
+        config,
+        "earliest_seq",
+        XRP_LEDGER_EARLIEST_SEQ))
 {
-    std::uint32_t seq;
-    if (get_if_exists<std::uint32_t>(config, "earliest_seq", seq))
-    {
-        if (seq < 1)
-            Throw<std::runtime_error>("Invalid earliest_seq");
-        earliestSeq_ = seq;
-    }
+    if (earliestSeq_ < 1)
+        Throw<std::runtime_error>("Invalid earliest_seq");
 
     while (readThreads-- > 0)
         readThreads_.emplace_back(&Database::threadEntry, this);

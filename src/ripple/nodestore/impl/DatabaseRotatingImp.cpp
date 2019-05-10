@@ -45,6 +45,7 @@ DatabaseRotatingImp::DatabaseRotatingImp(
         fdLimit_ += writableBackend_->fdlimit();
     if (archiveBackend_)
         fdLimit_ += archiveBackend_->fdlimit();
+    setParent(parent);
 }
 
 // Make sure to call it already locked!

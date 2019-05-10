@@ -37,11 +37,10 @@ public:
 
     DatabaseShardImp(
         Application& app,
-        std::string const& name,
         Stoppable& parent,
+        std::string const& name,
         Scheduler& scheduler,
         int readThreads,
-        Section const& config,
         beast::Journal j);
 
     ~DatabaseShardImp() override;
@@ -180,8 +179,8 @@ private:
     // Shards prepared for import
     std::map<std::uint32_t, Shard*> preShards_;
 
-    Section const config_;
-    boost::filesystem::path const dir_;
+    // The shard store root directory
+    boost::filesystem::path dir_;
 
     // If new shards can be stored
     bool canAdd_ {true};
@@ -193,10 +192,10 @@ private:
     bool backed_;
 
     // The name associated with the backend used with the shard store
-    std::string const backendName_;
+    std::string backendName_;
 
     // Maximum disk space the DB can use (in bytes)
-    std::uint64_t const maxDiskSpace_;
+    std::uint64_t maxDiskSpace_;
 
     // Disk space used to store the shards (in bytes)
     std::uint64_t usedDiskSpace_ {0};
@@ -204,7 +203,7 @@ private:
     // Each shard stores 16384 ledgers. The earliest shard may store
     // less if the earliest ledger sequence truncates its beginning.
     // The value should only be altered for unit tests.
-    std::uint32_t const ledgersPerShard_;
+    std::uint32_t ledgersPerShard_ = ledgersPerShardDefault;
 
     // The earliest shard index
     std::uint32_t const earliestShardIndex_;
@@ -218,7 +217,7 @@ private:
 
     // File name used to mark shards being imported from node store
     static constexpr auto importMarker_ = "import";
-
+    
     std::shared_ptr<NodeObject>
     fetchFrom(uint256 const& hash, std::uint32_t seq) override;
 

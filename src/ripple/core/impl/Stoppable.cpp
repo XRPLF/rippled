@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/basics/contract.h>
 #include <ripple/core/Stoppable.h>
+
 #include <cassert>
 
 namespace ripple {
@@ -34,14 +36,21 @@ Stoppable::Stoppable (std::string name, Stoppable& parent)
     , m_root (parent.m_root)
     , m_child (this)
 {
-    // Must not have stopping parent.
-    assert (! parent.isStopping());
-
-    parent.m_children.push_front (&m_child);
+    setParent(parent);
 }
 
 Stoppable::~Stoppable ()
 {
+}
+
+void Stoppable::setParent (Stoppable& parent)
+{
+    assert(!hasParent_);
+    assert(!parent.isStopping());
+    assert(std::addressof(m_root) == std::addressof(parent.m_root));
+
+    parent.m_children.push_front(&m_child);
+    hasParent_ = true;
 }
 
 bool Stoppable::isStopping() const

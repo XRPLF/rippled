@@ -49,6 +49,7 @@ public:
         , backend_(std::move(backend))
     {
         assert(backend_);
+        setParent(parent);
     }
 
     ~DatabaseNodeImp() override

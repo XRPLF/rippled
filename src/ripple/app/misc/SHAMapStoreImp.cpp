@@ -24,7 +24,8 @@
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/impl/DatabaseRotatingImp.h>
-#include <ripple/nodestore/impl/DatabaseShardImp.h>
+
+#include <boost/beast/core/string.hpp>
 
 namespace ripple {
 void SHAMapStoreImp::SavedStateDB::init (BasicConfig const& config,
@@ -160,100 +161,78 @@ SHAMapStoreImp::SavedStateDB::setLastRotated (LedgerIndex seq)
 
 //------------------------------------------------------------------------------
 
-SHAMapStoreImp::SHAMapStoreImp (
-        Application& app,
-        Setup const& setup,
-        Stoppable& parent,
-        NodeStore::Scheduler& scheduler,
-        beast::Journal journal,
-        beast::Journal nodeStoreJournal,
-        TransactionMaster& transactionMaster,
-        BasicConfig const& config)
+SHAMapStoreImp::SHAMapStoreImp(
+    Application& app,
+    Stoppable& parent,
+    NodeStore::Scheduler& scheduler,
+    beast::Journal journal)
     : SHAMapStore (parent)
     , app_ (app)
-    , setup_ (setup)
     , scheduler_ (scheduler)
     , journal_ (journal)
-    , nodeStoreJournal_ (nodeStoreJournal)
     , working_(true)
-    , transactionMaster_ (transactionMaster)
     , canDelete_ (std::numeric_limits <LedgerIndex>::max())
 {
-    if (setup_.deleteInterval)
+    Config& config {app.config()};
+    Section& section {config.section(ConfigSection::nodeDatabase())};
+    if (section.empty())
     {
-        auto const minInterval = setup.standalone ?
-            minimumDeletionIntervalSA_ : minimumDeletionInterval_;
-        if (setup_.deleteInterval < minInterval)
+        Throw<std::runtime_error>(
+            "Missing [" + ConfigSection::nodeDatabase() +
+            "] entry in configuration file");
+
+    }
+
+    // RocksDB only. Use sensible defaults if no values specified.
+    if (boost::beast::detail::iequals(
+        get<std::string>(section, "type"), "RocksDB"))
+    {
+        if (!section.exists("cache_mb"))
         {
-            Throw<std::runtime_error> ("online_delete must be at least " +
+            section.set("cache_mb", std::to_string(
+                config.getSize(siHashNodeDBCache)));
+        }
+
+        if (!section.exists("filter_bits") && (config.NODE_SIZE >= 2))
+            section.set("filter_bits", "10");
+    }
+
+    get_if_exists(section, "delete_batch", deleteBatch_);
+    get_if_exists(section, "backOff", backOff_);
+    get_if_exists(section, "age_threshold", ageThreshold_);
+    get_if_exists(section, "online_delete", deleteInterval_);
+
+    if (deleteInterval_)
+    {
+        get_if_exists(section, "advisory_delete", advisoryDelete_);
+
+        auto const minInterval = config.standalone() ?
+            minimumDeletionIntervalSA_ : minimumDeletionInterval_;
+        if (deleteInterval_ < minInterval)
+        {
+            Throw<std::runtime_error>("online_delete must be at least " +
                 std::to_string (minInterval));
         }
 
-        if (setup_.ledgerHistory > setup_.deleteInterval)
+        if (config.LEDGER_HISTORY > deleteInterval_)
         {
-            Throw<std::runtime_error> (
+            Throw<std::runtime_error>(
                 "online_delete must not be less than ledger_history (currently " +
-                std::to_string (setup_.ledgerHistory) + ")");
+                std::to_string (config.LEDGER_HISTORY) + ")");
         }
 
-        state_db_.init (config, dbName_);
-
+        state_db_.init(config, dbName_);
         dbPaths();
-    }
-    if (! setup_.shardDatabase.empty())
-    {
-        // The node and shard stores must use
-        // the same earliest ledger sequence
-        std::array<std::uint32_t, 2> seq;
-        if (get_if_exists<std::uint32_t>(
-            setup_.nodeDatabase, "earliest_seq", seq[0]))
-        {
-            if (get_if_exists<std::uint32_t>(
-                setup_.shardDatabase, "earliest_seq", seq[1]) &&
-                seq[0] != seq[1])
-            {
-                Throw<std::runtime_error>("earliest_seq set more than once");
-            }
-        }
-
-        boost::filesystem::path dbPath =
-            get<std::string>(setup_.shardDatabase, "path");
-        if (dbPath.empty())
-            Throw<std::runtime_error>("shard path missing");
-        if (boost::filesystem::exists(dbPath))
-        {
-            if (! boost::filesystem::is_directory(dbPath))
-                Throw<std::runtime_error>("shard db path must be a directory.");
-        }
-        else
-            boost::filesystem::create_directories(dbPath);
-
-        auto const maxDiskSpace = get<std::uint64_t>(
-            setup_.shardDatabase, "max_size_gb", 0);
-        // Must be large enough for one shard
-        if (maxDiskSpace < 3)
-            Throw<std::runtime_error>("max_size_gb too small");
-        if ((maxDiskSpace << 30) < maxDiskSpace)
-            Throw<std::runtime_error>("overflow max_size_gb");
-
-        std::uint32_t lps;
-        if (get_if_exists<std::uint32_t>(
-                setup_.shardDatabase, "ledgers_per_shard", lps))
-        {
-            // ledgers_per_shard to be set only in standalone for testing
-            if (! setup_.standalone)
-                Throw<std::runtime_error>(
-                    "ledgers_per_shard only honored in stand alone");
-        }
     }
 }
 
 std::unique_ptr <NodeStore::Database>
-SHAMapStoreImp::makeDatabase (std::string const& name,
-        std::int32_t readThreads, Stoppable& parent)
+SHAMapStoreImp::makeNodeStore(std::string const& name, std::int32_t readThreads)
 {
+    // Anything which calls addJob must be a descendant of the JobQueue.
+    // Therefore Database objects use the JobQueue as Stoppable parent.
     std::unique_ptr <NodeStore::Database> db;
-    if (setup_.deleteInterval)
+    if (deleteInterval_)
     {
         SavedState state = state_db_.getState();
         auto writableBackend = makeBackendRotating(state.writableDb);
@@ -267,36 +246,28 @@ SHAMapStoreImp::makeDatabase (std::string const& name,
 
         // Create NodeStore with two backends to allow online deletion of data
         auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
-            "NodeStore.main", scheduler_, readThreads, parent,
-                std::move(writableBackend), std::move(archiveBackend),
-                    setup_.nodeDatabase, nodeStoreJournal_);
+            name,
+            scheduler_,
+            readThreads,
+            app_.getJobQueue(),
+            std::move(writableBackend),
+            std::move(archiveBackend),
+            app_.config().section(ConfigSection::nodeDatabase()),
+            app_.logs().journal(nodeStoreName_));
         fdlimit_ += dbr->fdlimit();
         dbRotating_ = dbr.get();
         db.reset(dynamic_cast<NodeStore::Database*>(dbr.release()));
     }
     else
     {
-        db = NodeStore::Manager::instance().make_Database (name, scheduler_,
-            readThreads, parent, setup_.nodeDatabase, nodeStoreJournal_);
+        db = NodeStore::Manager::instance().make_Database(
+            name,
+            scheduler_,
+            readThreads,
+            app_.getJobQueue(),
+            app_.config().section(ConfigSection::nodeDatabase()),
+            app_.logs().journal(nodeStoreName_));
         fdlimit_ += db->fdlimit();
-    }
-    return db;
-}
-
-std::unique_ptr<NodeStore::DatabaseShard>
-SHAMapStoreImp::makeDatabaseShard(std::string const& name,
-    std::int32_t readThreads, Stoppable& parent)
-{
-    std::unique_ptr<NodeStore::DatabaseShard> db;
-    if(! setup_.shardDatabase.empty())
-    {
-        db = std::make_unique<NodeStore::DatabaseShardImp>(
-            app_, name, parent, scheduler_, readThreads,
-                setup_.shardDatabase, app_.journal("ShardStore"));
-        if (db->init())
-            fdlimit_ += db->fdlimit();
-        else
-            db.reset();
     }
     return db;
 }
@@ -359,7 +330,7 @@ SHAMapStoreImp::run()
     transactionDb_ = &app_.getTxnDB();
     ledgerDb_ = &app_.getLedgerDB();
 
-    if (setup_.advisoryDelete)
+    if (advisoryDelete_)
         canDelete_ = state_db_.getCanDelete ();
 
     while (1)
@@ -393,12 +364,12 @@ SHAMapStoreImp::run()
         }
 
         // will delete up to (not including) lastRotated)
-        if (validatedSeq >= lastRotated + setup_.deleteInterval
+        if (validatedSeq >= lastRotated + deleteInterval_
                 && canDelete_ >= lastRotated - 1)
         {
             JLOG(journal_.debug()) << "rotating  validatedSeq " << validatedSeq
                     << " lastRotated " << lastRotated << " deleteInterval "
-                    << setup_.deleteInterval << " canDelete_ " << canDelete_;
+                    << deleteInterval_ << " canDelete_ " << canDelete_;
 
             switch (health())
             {
@@ -498,8 +469,8 @@ SHAMapStoreImp::run()
 void
 SHAMapStoreImp::dbPaths()
 {
-    boost::filesystem::path dbPath =
-            get<std::string>(setup_.nodeDatabase, "path");
+    Section section {app_.config().section(ConfigSection::nodeDatabase())};
+    boost::filesystem::path dbPath = get<std::string>(section, "path");
 
     if (boost::filesystem::exists (dbPath))
     {
@@ -536,7 +507,8 @@ SHAMapStoreImp::dbPaths()
             (writableDbExists != archiveDbExists) ||
             state.writableDb.empty() != state.archiveDb.empty())
     {
-        boost::filesystem::path stateDbPathName = setup_.databasePath;
+        boost::filesystem::path stateDbPathName =
+            app_.config().legacy("database_path");
         stateDbPathName /= dbName_;
         stateDbPathName += "*";
 
@@ -550,7 +522,7 @@ SHAMapStoreImp::dbPaths()
                 << "remove the files matching "
                 << stateDbPathName.string()
                 << " and contents of the directory "
-                << get<std::string>(setup_.nodeDatabase, "path")
+                << dbPath
                 << std::endl;
 
         Throw<std::runtime_error> ("state db error");
@@ -560,8 +532,8 @@ SHAMapStoreImp::dbPaths()
 std::unique_ptr <NodeStore::Backend>
 SHAMapStoreImp::makeBackendRotating (std::string path)
 {
+    Section section {app_.config().section(ConfigSection::nodeDatabase())};
     boost::filesystem::path newPath;
-    Section parameters = setup_.nodeDatabase;
 
     if (path.size())
     {
@@ -569,15 +541,15 @@ SHAMapStoreImp::makeBackendRotating (std::string path)
     }
     else
     {
-        boost::filesystem::path p = get<std::string>(parameters, "path");
+        boost::filesystem::path p = get<std::string>(section, "path");
         p /= dbPrefix_;
         p += ".%%%%";
         newPath = boost::filesystem::unique_path (p);
     }
-    parameters.set("path", newPath.string());
+    section.set("path", newPath.string());
 
     auto backend {NodeStore::Manager::instance().make_Backend(
-        parameters, scheduler_, nodeStoreJournal_)};
+        section, scheduler_, app_.logs().journal(nodeStoreName_))};
     backend->open();
     return backend;
 }
@@ -608,7 +580,7 @@ SHAMapStoreImp::clearSql (DatabaseCon& database,
         "start: " << deleteQuery << " from " << min << " to " << lastRotated;
     while (min < lastRotated)
     {
-        min = std::min(lastRotated, min + setup_.deleteBatch);
+        min = std::min(lastRotated, min + deleteBatch_);
         {
             auto db =  database.checkoutDb ();
             *db << boost::str (formattedDeleteQuery % min);
@@ -617,7 +589,7 @@ SHAMapStoreImp::clearSql (DatabaseCon& database,
             return true;
         if (min < lastRotated)
             std::this_thread::sleep_for (
-                    std::chrono::milliseconds (setup_.backOff));
+                    std::chrono::milliseconds (backOff_));
     }
     JLOG(journal_.debug()) << "finished: " << deleteQuery;
     return true;
@@ -637,7 +609,7 @@ SHAMapStoreImp::freshenCaches()
         return;
     if (freshenCache (*treeNodeCache_))
         return;
-    if (freshenCache (transactionMaster_.getCache()))
+    if (freshenCache (app_.getMasterTransaction().getCache()))
         return;
 }
 
@@ -684,11 +656,11 @@ SHAMapStoreImp::health()
     NetworkOPs::OperatingMode mode = netOPs_->getOperatingMode();
 
     auto age = ledgerMaster_->getValidatedLedgerAge();
-    if (mode != NetworkOPs::omFULL || age.count() >= setup_.ageThreshold)
+    if (mode != NetworkOPs::omFULL || age.count() >= ageThreshold_)
     {
         JLOG(journal_.warn()) << "Not deleting. state: " << mode
                                << " age " << age.count()
-                               << " age threshold " << setup_.ageThreshold;
+                               << " age threshold " << ageThreshold_;
         healthy_ = false;
     }
 
@@ -701,7 +673,7 @@ SHAMapStoreImp::health()
 void
 SHAMapStoreImp::onStop()
 {
-    if (setup_.deleteInterval)
+    if (deleteInterval_)
     {
         {
             std::lock_guard <std::mutex> lock (mutex_);
@@ -718,7 +690,7 @@ SHAMapStoreImp::onStop()
 void
 SHAMapStoreImp::onChildrenStopped()
 {
-    if (setup_.deleteInterval)
+    if (deleteInterval_)
     {
         {
             std::lock_guard <std::mutex> lock (mutex_);
@@ -733,52 +705,15 @@ SHAMapStoreImp::onChildrenStopped()
 }
 
 //------------------------------------------------------------------------------
-SHAMapStore::Setup
-setup_SHAMapStore (Config const& c)
-{
-    SHAMapStore::Setup setup;
-
-    setup.standalone = c.standalone();
-
-    // Get existing settings and add some default values if not specified:
-    setup.nodeDatabase = c.section (ConfigSection::nodeDatabase ());
-
-    // These two parameters apply only to RocksDB. We want to give them sensible
-    // defaults if no values are specified.
-    if (!setup.nodeDatabase.exists ("cache_mb"))
-        setup.nodeDatabase.set ("cache_mb", std::to_string (c.getSize (siHashNodeDBCache)));
-
-    if (!setup.nodeDatabase.exists ("filter_bits") && (c.NODE_SIZE >= 2))
-        setup.nodeDatabase.set ("filter_bits", "10");
-
-    get_if_exists (setup.nodeDatabase, "online_delete", setup.deleteInterval);
-
-    if (setup.deleteInterval)
-        get_if_exists (setup.nodeDatabase, "advisory_delete", setup.advisoryDelete);
-
-    setup.ledgerHistory = c.LEDGER_HISTORY;
-    setup.databasePath = c.legacy("database_path");
-
-    get_if_exists (setup.nodeDatabase, "delete_batch", setup.deleteBatch);
-    get_if_exists (setup.nodeDatabase, "backOff", setup.backOff);
-    get_if_exists (setup.nodeDatabase, "age_threshold", setup.ageThreshold);
-
-    setup.shardDatabase = c.section(ConfigSection::shardDatabase());
-    return setup;
-}
 
 std::unique_ptr<SHAMapStore>
-make_SHAMapStore (Application& app,
-        SHAMapStore::Setup const& setup,
-        Stoppable& parent,
-        NodeStore::Scheduler& scheduler,
-        beast::Journal journal,
-        beast::Journal nodeStoreJournal,
-        TransactionMaster& transactionMaster,
-        BasicConfig const& config)
+make_SHAMapStore(
+    Application& app,
+    Stoppable& parent,
+    NodeStore::Scheduler& scheduler,
+    beast::Journal journal)
 {
-    return std::make_unique<SHAMapStoreImp>(app, setup, parent, scheduler,
-        journal, nodeStoreJournal, transactionMaster, config);
+    return std::make_unique<SHAMapStoreImp>(app, parent, scheduler, journal);
 }
 
 }

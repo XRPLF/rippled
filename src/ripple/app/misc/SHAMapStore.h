@@ -31,28 +31,12 @@ class TransactionMaster;
 
 /**
  * class to create database, launch online delete thread, and
- * related sqlite databse
+ * related SQLite database
  */
 class SHAMapStore
     : public Stoppable
 {
 public:
-    struct Setup
-    {
-        explicit Setup() = default;
-
-        bool standalone = false;
-        std::uint32_t deleteInterval = 0;
-        bool advisoryDelete = false;
-        std::uint32_t ledgerHistory = 0;
-        Section nodeDatabase;
-        std::string databasePath;
-        std::uint32_t deleteBatch = 100;
-        std::uint32_t backOff = 100;
-        std::int32_t ageThreshold = 60;
-        Section shardDatabase;
-    };
-
     SHAMapStore (Stoppable& parent) : Stoppable ("SHAMapStore", parent) {}
 
     /** Called by LedgerMaster every time a ledger validates. */
@@ -62,13 +46,9 @@ public:
 
     virtual std::uint32_t clampFetchDepth (std::uint32_t fetch_depth) const = 0;
 
-    virtual std::unique_ptr <NodeStore::Database> makeDatabase (
-            std::string const& name,
-            std::int32_t readThreads, Stoppable& parent) = 0;
-
-    virtual std::unique_ptr <NodeStore::DatabaseShard> makeDatabaseShard(
-        std::string const& name, std::int32_t readThreads,
-            Stoppable& parent) = 0;
+    virtual
+    std::unique_ptr <NodeStore::Database>
+    makeNodeStore(std::string const& name, std::int32_t readThreads) = 0;
 
     /** Highest ledger that may be deleted. */
     virtual LedgerIndex setCanDelete (LedgerIndex canDelete) = 0;
@@ -88,19 +68,12 @@ public:
 
 //------------------------------------------------------------------------------
 
-SHAMapStore::Setup
-setup_SHAMapStore(Config const& c);
-
 std::unique_ptr<SHAMapStore>
 make_SHAMapStore(
     Application& app,
-    SHAMapStore::Setup const& s,
     Stoppable& parent,
     NodeStore::Scheduler& scheduler,
-    beast::Journal journal,
-    beast::Journal nodeStoreJournal,
-    TransactionMaster& transactionMaster,
-    BasicConfig const& conf);
+    beast::Journal journal);
 }
 
 #endif
