@@ -534,11 +534,12 @@ OverlayImpl::onPrepare()
             {
                 if (addr.port () == 0)
                 {
-                    Throw<std::runtime_error> ("Port not specified for "
-                        "address:" + addr.to_string ());
+                    ips.push_back (to_string (addr.at_port(51235)));
                 }
-
-                ips.push_back (to_string (addr));
+                else
+                {
+                    ips.push_back (to_string (addr));
+                }
             }
 
             std::string const base ("config: ");

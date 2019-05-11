@@ -188,12 +188,11 @@ public:
             return;
         }
 
-        for (auto const& remote_address : addresses)
+        for (auto remote_address : addresses)
         {
             if (remote_address.port () == 0)
             {
-                Throw<std::runtime_error> ("Port not specified for address:" +
-                    remote_address.to_string ());
+              remote_address = remote_address.at_port(51235);
             }
 
             auto result (fixed_.emplace (std::piecewise_construct,
