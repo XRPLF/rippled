@@ -639,7 +639,6 @@ RCLConsensus::Adaptor::doAccept(
 
         for (auto const& p : rawCloseTimes.peers)
         {
-            // FIXME: Use median, not average
             JLOG(j_.info())
                 << std::to_string(p.second) << " time votes for "
                 << std::to_string(p.first.time_since_epoch().count());
