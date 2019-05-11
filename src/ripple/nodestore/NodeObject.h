@@ -34,13 +34,12 @@ enum NodeObjectType
 {
     hotUNKNOWN = 0,
     hotLEDGER = 1,
-    //hotTRANSACTION = 2        // Not used
     hotACCOUNT_NODE = 3,
     hotTRANSACTION_NODE = 4
 };
 
 /** A simple object that the Ledger uses to store entries.
-    NodeObjects are comprised of a type, a hash, a ledger index and a blob.
+    NodeObjects are comprised of a type, a hash, and a blob.
     They can be uniquely identified by the hash, which is a half-SHA512 of
     the blob. The blob is a variable length block of serialized data. The
     type identifies what the blob contains.
@@ -53,16 +52,7 @@ class NodeObject : public CountedObject <NodeObject>
 public:
     static char const* getCountedObjectName () { return "NodeObject"; }
 
-    enum
-    {
-        /** Size of the fixed keys, in bytes.
-
-            We use a 256-bit hash for the keys.
-
-            @see NodeObject
-        */
-        keyBytes = 32,
-    };
+    static constexpr std::size_t keyBytes = 32;
 
 private:
     // This hack is used to make the constructor effectively private

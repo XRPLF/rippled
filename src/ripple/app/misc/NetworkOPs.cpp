@@ -194,8 +194,6 @@ class NetworkOPsImp final
 
 
 public:
-    // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
-    //
     NetworkOPsImp (Application& app, NetworkOPs::clock_type& clock,
         bool standalone, std::size_t minPeerCount, bool start_valid,
         JobQueue& job_queue, LedgerMaster& ledgerMaster, Stoppable& parent,
@@ -322,9 +320,6 @@ public:
         bool fromAcquire) override;
 
     // Network state machine.
-
-    // VFALCO TODO Try to make all these private since they seem to be...private
-    //
 
     // Used for the "jump" case.
 private:
