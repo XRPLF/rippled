@@ -156,11 +156,7 @@ public:
                 m_options.max_background_flushes = highThreads;
         }
 
-        if (keyValues.exists ("compression") &&
-            (get<int>(keyValues, "compression") == 0))
-        {
-            m_options.compression = rocksdb::kNoCompression;
-        }
+        m_options.compression = rocksdb::kSnappyCompression;
 
         get_if_exists (keyValues, "block_size", table_options.block_size);
 

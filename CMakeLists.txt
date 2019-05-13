@@ -2161,7 +2161,6 @@ else ()
     src/ripple/nodestore/backend/NuDBFactory.cpp
     src/ripple/nodestore/backend/NullFactory.cpp
     src/ripple/nodestore/backend/RocksDBFactory.cpp
-    src/ripple/nodestore/backend/RocksDBQuickFactory.cpp
     src/ripple/nodestore/impl/BatchWriter.cpp
     src/ripple/nodestore/impl/Database.cpp
     src/ripple/nodestore/impl/DatabaseNodeImp.cpp

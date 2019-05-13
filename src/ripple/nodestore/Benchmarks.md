@@ -1,21 +1,16 @@
 #Benchmarks
 
-```
-$rippled --unittest=NodeStoreTiming --unittest-arg="type=rocksdb,num_objects=2000000,open_files=2000,filter_bits=12,cache_mb=256,file_size_mb=8,file_size_mult=2;type=rocksdbquick,num_objects=2000000"
-2014-Nov-01 21:49:02 Validators:NFO Validators constructed (info)
-ripple.bench.NodeStoreTiming repeatableObject
- Config Run       Inserts  Batch Insert   Fetch 50/50 Ordered Fetch  Fetch Random Fetch Missing
-      0   0        160.57        699.08         50.88         51.17         29.99         14.05
-      0   1        406.70        797.47         32.53         60.18         46.63         14.94
-      0   2        408.81        743.89         42.79         72.99         49.03         14.93
-      1   0        111.03        151.06         28.89         53.44         31.88         18.46
-      1   1         92.63        160.75         19.64         41.60         28.17         10.40
-      1   2        101.31        122.83         30.66         55.65         32.69         16.15
+The `NodeStore.Timing` test is used to execute a set of read/write workloads to compare current available nodestore backends. It can be executed with:
 
-Configs:
- 0: type=rocksdb,num_objects=2000000,open_files=2000,filter_bits=12,cache_mb=256,file_size_mb=8,file_size_mult=2
- 1: type=rocksdbquick,num_objects=2000000
 ```
+$rippled --unittest=NodeStoreTiming 
+```
+
+It is also possible to use alternate DB config params by passing config strings as `--unittest-arg`.
+
+##Addendum
+
+The discussion below refers to a `RocksDBQuick` backend that has since been removed from the code as it was not working and not maintained. That backend primarily used one of the several rocks `Optimize*` methods to setup the majority of the DB options/params, whereas the primary RocksDB backend exposes many of the available config options directly. The code for RocksDBQuick can be found in versions of this repo 1.2 and earlier if you need to refer back to it. The conclusions below date from about 2014 and may need revisiting based on newer versions of RocksDB (TBD).
 
 ##Discussion
 
