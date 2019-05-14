@@ -41,7 +41,7 @@ public:
         , m_out_active (0)
         , m_fixed (0)
         , m_fixed_active (0)
-        , m_cluster (0)
+        , m_reserved (0)
 
         , m_acceptCount (0)
         , m_closingCount (0)
@@ -71,7 +71,7 @@ public:
         // Must be handshaked and in the right state
         assert (s.state() == Slot::connected || s.state() == Slot::accept);
 
-        if (s.fixed () || s.cluster ())
+        if (s.fixed () || s.reserved ())
             return true;
 
         if (s.inbound ())
@@ -231,7 +231,7 @@ public:
         map ["in"]      << m_in_active << "/" << m_in_max;
         map ["out"]     << m_out_active << "/" << m_out_max;
         map ["fixed"]   = m_fixed_active;
-        map ["cluster"] = m_cluster;
+        map ["reserved"] = m_reserved;
         map ["total"]   = m_active;
     }
 
@@ -256,8 +256,8 @@ private:
         if (s.fixed ())
             m_fixed += n;
 
-        if (s.cluster ())
-            m_cluster += n;
+        if (s.reserved ())
+            m_reserved += n;
 
         switch (s.state ())
         {
@@ -275,7 +275,7 @@ private:
         case Slot::active:
             if (s.fixed ())
                 m_fixed_active += n;
-            if (! s.fixed () && ! s.cluster ())
+            if (! s.fixed () && ! s.reserved ())
             {
                 if (s.inbound ())
                     m_in_active += n;
@@ -299,7 +299,7 @@ private:
     /** Outbound connection attempts. */
     int m_attempts;
 
-    /** Active connections, including fixed and cluster. */
+    /** Active connections, including fixed and reserved. */
     std::size_t m_active;
 
     /** Total number of inbound slots. */
@@ -320,9 +320,8 @@ private:
     /** Active fixed connections. */
     std::size_t m_fixed_active;
 
-    /** Cluster connections. */
-    std::size_t m_cluster;
-
+    /** Reserved connections. */
+    std::size_t m_reserved;
 
 
 

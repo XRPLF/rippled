@@ -52,6 +52,7 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/overlay/Cluster.h>
+#include <ripple/overlay/PeerReservationTable.h>
 #include <ripple/overlay/make_Overlay.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
@@ -349,6 +350,7 @@ public:
     TaggedCache <uint256, AcceptedLedger> m_acceptedLedgerCache;
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <Cluster> cluster_;
+    std::unique_ptr <overlay::PeerReservationTable> peerReservations_;
     std::unique_ptr <ManifestCache> validatorManifests_;
     std::unique_ptr <ManifestCache> publisherManifests_;
     std::unique_ptr <ValidatorList> validators_;
@@ -489,6 +491,8 @@ public:
 
         , cluster_ (std::make_unique<Cluster> (
             logs_->journal("Overlay")))
+
+        , peerReservations_ (std::make_unique<overlay::PeerReservationTable>())
 
         , validatorManifests_ (std::make_unique<ManifestCache> (
             logs_->journal("ManifestCache")))
@@ -763,6 +767,11 @@ public:
     Cluster& cluster () override
     {
         return *cluster_;
+    }
+
+    overlay::PeerReservationTable& peerReservations () override
+    {
+        return *peerReservations_;
     }
 
     SHAMapStore& getSHAMapStore () override

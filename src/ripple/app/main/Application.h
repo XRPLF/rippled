@@ -26,6 +26,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/beast/utility/PropertyStream.h>
+#include <ripple/overlay/PeerReservationTable.h>
 #include <boost/asio.hpp>
 #include <memory>
 #include <mutex>
@@ -139,6 +140,7 @@ public:
     virtual ManifestCache&              validatorManifests () = 0;
     virtual ManifestCache&              publisherManifests () = 0;
     virtual Cluster&                    cluster () = 0;
+    virtual overlay::PeerReservationTable& peerReservations () = 0;
     virtual RCLValidations&             getValidations () = 0;
     virtual NodeStore::Database&        getNodeStore () = 0;
     virtual NodeStore::DatabaseShard*   getShardStore() = 0;

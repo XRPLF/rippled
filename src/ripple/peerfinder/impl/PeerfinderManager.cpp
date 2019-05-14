@@ -173,11 +173,10 @@ public:
     }
 
     Result
-    activate (Slot::ptr const& slot,
-        PublicKey const& key, bool cluster) override
+    activate (Slot::ptr const& slot, PublicKey const& key, bool reserved) override
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
-        return m_logic.activate (impl, key, cluster);
+        return m_logic.activate (impl, key, reserved);
     }
 
     std::vector <Endpoint>
