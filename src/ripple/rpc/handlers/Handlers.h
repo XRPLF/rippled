@@ -64,6 +64,9 @@ Json::Value doPeers                 (RPC::Context&);
 Json::Value doPing                  (RPC::Context&);
 Json::Value doPrint                 (RPC::Context&);
 Json::Value doRandom                (RPC::Context&);
+Json::Value doPeerReservationsAdd   (RPC::Context&);
+Json::Value doPeerReservationsDel   (RPC::Context&);
+Json::Value doPeerReservationsList  (RPC::Context&);
 Json::Value doRipplePathFind        (RPC::Context&);
 Json::Value doServerInfo            (RPC::Context&); // for humans
 Json::Value doServerState           (RPC::Context&); // for machines

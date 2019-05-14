@@ -372,12 +372,11 @@ public:
     }
 
     Result
-    activate (SlotImp::ptr const& slot,
-        PublicKey const& key, bool cluster)
+    activate (SlotImp::ptr const& slot, PublicKey const& key, bool reserved)
     {
         JLOG(m_journal.debug()) << beast::leftw (18) <<
             "Logic handshake " << slot->remote_endpoint () <<
-            " with " << (cluster ? "clustered " : "") << "key " << key;
+            " with " << (reserved ? "reserved " : "") << "key " << key;
 
         std::lock_guard<std::recursive_mutex> _(lock_);
 
@@ -392,9 +391,10 @@ public:
         if (keys_.find (key) != keys_.end())
             return Result::duplicate;
 
-        // If the peer belongs to a cluster, update the slot to reflect that.
+        // If the peer belongs to a cluster or is reserved,
+        // update the slot to reflect that.
         counts_.remove (*slot);
-        slot->cluster (cluster);
+        slot->reserved (reserved);
         counts_.add (*slot);
 
         // See if we have an open space for this slot
@@ -1088,8 +1088,8 @@ public:
                 item ["inbound"]    = "yes";
             if (slot.fixed())
                 item ["fixed"]      = "yes";
-            if (slot.cluster())
-                item ["cluster"]    = "yes";
+            if (slot.reserved())
+                item ["reserved"]   = "yes";
 
             item ["state"] = stateString (slot.state());
         }

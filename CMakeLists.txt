@@ -2176,6 +2176,7 @@ else ()
     src/ripple/overlay/impl/Message.cpp
     src/ripple/overlay/impl/OverlayImpl.cpp
     src/ripple/overlay/impl/PeerImp.cpp
+    src/ripple/overlay/impl/PeerReservationTable.cpp
     src/ripple/overlay/impl/PeerSet.cpp
     src/ripple/overlay/impl/TMHello.cpp
     src/ripple/overlay/impl/TrafficCount.cpp
@@ -2242,6 +2243,7 @@ else ()
     src/ripple/rpc/handlers/Ping.cpp
     src/ripple/rpc/handlers/Print.cpp
     src/ripple/rpc/handlers/Random.cpp
+    src/ripple/rpc/handlers/Reservations.cpp
     src/ripple/rpc/handlers/RipplePathFind.cpp
     src/ripple/rpc/handlers/ServerInfo.cpp
     src/ripple/rpc/handlers/ServerState.cpp

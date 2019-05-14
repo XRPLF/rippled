@@ -51,7 +51,8 @@ DatabaseCon::DatabaseCon (
         }
         catch (soci::soci_error&)
         {
-            // ignore errors
+            // TODO: We should at least log this error. It is annoying to wire
+            // a logger into every context, but there are other solutions.
         }
     }
 }

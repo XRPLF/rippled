@@ -278,18 +278,25 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         return handoff;
     }
 
-    auto const result = m_peerFinder->activate (slot, *publicKey,
-        static_cast<bool>(app_.cluster().member(*publicKey)));
-    if (result != PeerFinder::Result::success)
     {
-        m_peerFinder->on_closed(slot);
-        JLOG(journal.debug()) <<
-            "Peer " << remote_endpoint << " redirected, slots full";
-        handoff.moved = false;
-        handoff.response = makeRedirectResponse(slot, request,
-            remote_endpoint.address());
-        handoff.keep_alive = beast::rfc2616::is_keep_alive(request);
-        return handoff;
+        // The node gets a reserved slot if it is in our cluster
+        // or if it has a reservation.
+        bool const reserved {
+            static_cast<bool>(app_.cluster().member(*publicKey))
+            || app_.peerReservations().contains(*publicKey)
+        };
+        auto const result = m_peerFinder->activate(slot, *publicKey, reserved);
+        if (result != PeerFinder::Result::success)
+        {
+            m_peerFinder->on_closed(slot);
+            JLOG(journal.debug())
+                << "Peer " << remote_endpoint << " redirected, slots full";
+            handoff.moved = false;
+            handoff.response = makeRedirectResponse(
+                    slot, request, remote_endpoint.address());
+            handoff.keep_alive = beast::rfc2616::is_keep_alive(request);
+            return handoff;
+        }
     }
 
     auto const peer = std::make_shared<PeerImp>(app_, id,

@@ -53,6 +53,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
+#include <ripple/overlay/PeerReservationTable.h>
 #include <ripple/overlay/make_Overlay.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
@@ -350,6 +351,7 @@ public:
     TaggedCache <uint256, AcceptedLedger> m_acceptedLedgerCache;
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <Cluster> cluster_;
+    std::unique_ptr <PeerReservationTable> peerReservations_;
     std::unique_ptr <ManifestCache> validatorManifests_;
     std::unique_ptr <ManifestCache> publisherManifests_;
     std::unique_ptr <ValidatorList> validators_;
@@ -493,6 +495,8 @@ public:
 
         , cluster_ (std::make_unique<Cluster> (
             logs_->journal("Overlay")))
+
+        , peerReservations_(std::make_unique<PeerReservationTable>(logs_->journal("PeerReservationTable")))
 
         , validatorManifests_ (std::make_unique<ManifestCache> (
             logs_->journal("ManifestCache")))
@@ -772,6 +776,11 @@ public:
     Cluster& cluster () override
     {
         return *cluster_;
+    }
+
+    PeerReservationTable& peerReservations () override
+    {
+        return *peerReservations_;
     }
 
     SHAMapStore& getSHAMapStore () override
@@ -1311,6 +1320,12 @@ bool ApplicationImp::setup()
 
     if (!initSQLiteDBs() || !initNodeStoreDBs())
         return false;
+
+    if (!peerReservations_->load(getWalletDB()))
+    {
+        JLOG(m_journal.fatal()) << "Cannot find peer reservations!";
+        return false;
+    }
 
     if (validatorKeys_.publicKey.size())
         setMaxDisallowedLedger();

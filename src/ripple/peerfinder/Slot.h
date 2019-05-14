@@ -54,10 +54,11 @@ public:
     */
     virtual bool fixed () const = 0;
 
-    /** Returns `true` if this is a cluster connection.
+    /** Returns `true` if this is a reserved connection.
+        It might be a cluster peer, or a peer with a reservation.
         This is only known after then handshake completes.
-    */
-    virtual bool cluster () const = 0;
+     */
+    virtual bool reserved () const = 0;
 
     /** Returns the state of the connection. */
     virtual State state () const = 0;
