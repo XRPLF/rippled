@@ -29,8 +29,16 @@ namespace jss {
 
 #define JSS(x) constexpr ::Json::StaticString x ( #x )
 
-/* The "StaticString" field names are used instead of string literals to
-   optimize the performance of accessing members of Json::Value objects.
+/* These "StaticString" field names are used instead of string literals to
+   optimize the performance of accessing properties of Json::Value objects.
+
+   Most strings have a trailing comment. Here is the legend:
+
+   in: Read by the given RPC handler from its `Json::Value` parameter.
+   out: Assigned by the given RPC handler in the `Json::Value` it returns.
+   field: A field of at least one type of transaction.
+   RPC: Common properties of RPC requests and responses.
+   error: Common properties of RPC error responses.
 */
 
 JSS ( AL_hit_rate );                // out: GetCounts
@@ -177,6 +185,7 @@ JSS ( deposit_authorized );         // out: deposit_authorized
 JSS ( deposit_preauth );            // in: AccountObjects, LedgerData
 JSS ( deprecated );                 // out
 JSS ( descending );                 // in: AccountTx*
+JSS ( description );                // in/out: Reservations
 JSS ( destination_account );        // in: PathRequest, RipplePathFind, account_lines
                                     // out: AccountChannels
 JSS ( destination_amount );         // in: PathRequest, RipplePathFind
@@ -225,7 +234,7 @@ JSS ( freeze_peer );                // out: AccountLines
 JSS ( frozen_balances );            // out: GatewayBalances
 JSS ( full );                       // in: LedgerClearer, handlers/Ledger
 JSS ( full_reply );                 // out: PathFind
-JSS ( fullbelow_size );             // in: GetCounts
+JSS ( fullbelow_size );             // out: GetCounts
 JSS ( good );                       // out: RPCVersion
 JSS ( hash );                       // out: NetworkOPs, InboundLedger,
                                     //      LedgerToJson, STTx; field
@@ -378,6 +387,7 @@ JSS ( peer_disconnects );           // Severed peer connection counter.
 JSS ( peer_disconnects_resources ); // Severed peer connections because of
                                     // excess resource consumption.
 JSS ( port );                       // in: Connect
+JSS ( previous );                   // out: Reservations
 JSS ( previous_ledger );            // out: LedgerPropose
 JSS ( proof );                      // in: BookOffers
 JSS ( propose_seq );                // out: LedgerPropose
@@ -406,6 +416,7 @@ JSS ( refresh_interval_min );       // out: ValidatorSites
 JSS ( regular_seed );               // in/out: LedgerEntry
 JSS ( remote );                     // out: Logic.h
 JSS ( request );                    // RPC
+JSS ( reservations );               // out: Reservations
 JSS ( reserve_base );               // out: NetworkOPs
 JSS ( reserve_base_xrp );           // out: NetworkOPs
 JSS ( reserve_inc );                // out: NetworkOPs

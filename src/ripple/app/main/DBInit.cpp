@@ -115,6 +115,12 @@ const char* WalletDBInit[] =
         PrivateKey      CHARACTER(52)               \
     );",
 
+    // Peer reservations.
+    "CREATE TABLE IF NOT EXISTS PeerReservations (     \
+        PublicKey       CHARACTER(53) UNIQUE NOT NULL, \
+        Description     CHARACTER(64) NOT NULL         \
+    );",
+
     // Validator Manifests
     "CREATE TABLE IF NOT EXISTS ValidatorManifests ( \
         RawData          BLOB NOT NULL               \

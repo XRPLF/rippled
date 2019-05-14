@@ -57,9 +57,9 @@ public:
         return m_fixed;
     }
 
-    bool cluster () const override
+    bool reserved () const override
     {
-        return m_cluster;
+        return m_reserved;
     }
 
     State state () const override
@@ -110,9 +110,9 @@ public:
         m_public_key = key;
     }
 
-    void cluster (bool cluster_)
+    void reserved (bool reserved_)
     {
-        m_cluster = cluster_;
+        m_reserved = reserved_;
     }
 
     //--------------------------------------------------------------------------
@@ -155,7 +155,7 @@ public:
 private:
     bool const m_inbound;
     bool const m_fixed;
-    bool m_cluster;
+    bool m_reserved;
     State m_state;
     beast::IP::Endpoint m_remote_endpoint;
     boost::optional <beast::IP::Endpoint> m_local_endpoint;
