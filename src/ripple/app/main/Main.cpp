@@ -151,7 +151,6 @@ void printHelp (const po::options_description& desc)
            "     random\n"
            "     ripple ...\n"
            "     ripple_path_find <json> [<ledger>]\n"
-           "     version\n"
            "     server_info [counters]\n"
            "     server_state [counters]\n"
            "     sign <private_key> <tx_json> [offline]\n"
@@ -161,6 +160,9 @@ void printHelp (const po::options_description& desc)
            "     submit_multisigned <tx_json>\n"
            "     tx <id>\n"
            "     validation_create [<seed>|<pass_phrase>|<key>]\n"
+           "     validators\n"
+           "     validator_list_sites\n"
+           "     version\n"
            "     wallet_propose [<passphrase>]\n";
 }
 
