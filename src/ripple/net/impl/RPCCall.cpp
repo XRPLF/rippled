@@ -849,6 +849,20 @@ private:
         return jvRequest;
     }
 
+    // reservations_add <public_key> [<name>]
+    Json::Value parseReservationsAdd (Json::Value const& jvParams)
+    {
+        Json::Value jvRequest{Json::objectValue};
+        return jvRequest;
+    }
+
+    // reservations_del <public_key>
+    Json::Value parseReservationsDel (Json::Value const& jvParams)
+    {
+        Json::Value jvRequest{Json::objectValue};
+        return jvRequest;
+    }
+
     // ripple_path_find <json> [<ledger>]
     Json::Value parseRipplePathFind (Json::Value const& jvParams)
     {
@@ -1127,6 +1141,9 @@ public:
             {   "print",                &RPCParser::parseAsIs,                  0,  1   },
     //      {   "profile",              &RPCParser::parseProfile,               1,  9   },
             {   "random",               &RPCParser::parseAsIs,                  0,  0   },
+            {   "reservations_add",     &RPCParser::parseReservationsAdd,       1,  2   },
+            {   "reservations_del",     &RPCParser::parseReservationsDel,       1,  1   },
+            {   "reservations_ls",      &RPCParser::parseAsIs,                  0,  0   },
             {   "ripple_path_find",     &RPCParser::parseRipplePathFind,        1,  2   },
             {   "sign",                 &RPCParser::parseSignSubmit,            2,  3   },
             {   "sign_for",             &RPCParser::parseSignFor,               3,  4   },

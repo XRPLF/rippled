@@ -20,10 +20,11 @@
 #ifndef RIPPLE_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
 #define RIPPLE_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
 
-#include <string>
-#include <unordered_map>
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/protocol/PublicKey.h>
+#include <boost/optional.hpp>
+#include <string>
+#include <unordered_map>
 
 namespace ripple {
 // The rest of this directory is just in the `ripple` namespace.
@@ -37,7 +38,7 @@ struct PeerReservation
 {
 public:
     PublicKey const identity_;
-    std::string name_;
+    boost::optional<std::string> name_;
 };
 
 using PeerReservationTable = std::unordered_map<PublicKey, PeerReservation, beast::uhash<>>;

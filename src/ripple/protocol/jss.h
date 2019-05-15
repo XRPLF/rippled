@@ -29,8 +29,16 @@ namespace jss {
 
 #define JSS(x) constexpr ::Json::StaticString x ( #x )
 
-/* The "StaticString" field names are used instead of string literals to
-   optimize the performance of accessing members of Json::Value objects.
+/* These "StaticString" field names are used instead of string literals to
+   optimize the performance of accessing properties of Json::Value objects.
+
+   Most strings have a trailing comment. Here is the legend:
+
+   in: Read by the given RPC handler from its `Json::Value` parameter.
+   out: Assigned by the given RPC handler in the `Json::Value` it returns.
+   field: A field of at least one type of transaction.
+   RPC: ???
+   error: ???
 */
 
 JSS ( AL_hit_rate );                // out: GetCounts
@@ -225,7 +233,7 @@ JSS ( freeze_peer );                // out: AccountLines
 JSS ( frozen_balances );            // out: GatewayBalances
 JSS ( full );                       // in: LedgerClearer, handlers/Ledger
 JSS ( full_reply );                 // out: PathFind
-JSS ( fullbelow_size );             // in: GetCounts
+JSS ( fullbelow_size );             // out: GetCounts
 JSS ( good );                       // out: RPCVersion
 JSS ( hash );                       // out: NetworkOPs, InboundLedger,
                                     //      LedgerToJson, STTx; field
