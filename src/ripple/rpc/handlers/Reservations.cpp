@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/Result.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -30,42 +31,31 @@
 
 namespace ripple {
 
-/* Returns `true` and assigns `error` if there was an error.
-   Returns `false` and assigns `pk` if there was not.
-*/
-// Alas, our no-exception RPC framework makes it difficult to
-// abstract functions.
-bool
-parsePublicKey(
-    Json::Value& error,
-    PublicKey& pk,
-    std::string const& string,
-    TokenType tokenType)
+template <typename T>
+using RPCResult = Result<T, ripple::error_code_i>;
+
+RPCResult<PublicKey>
+parsePublicKey(std::string const& string, TokenType tokenType)
 {
+    using Result = RPCResult<PublicKey>;
+
     // channel_verify takes a key in both base58 and hex.
     // Am I understanding that right? We do the same.
     // TODO: Share this function with channel_verify
     // (by putting it in PublicKey.h).
     boost::optional<PublicKey> optPk = parseBase58<PublicKey>(tokenType, string);
-
-    if (optPk)
-    {
-        pk = *optPk;
-    } else {
-        std::pair<Blob, bool> pair{strUnHex(string)};
-        if (!pair.second) {
-            error = rpcError(rpcPUBLIC_MALFORMED);
-            return true;
-        }
-        auto const pkType = publicKeyType(makeSlice(pair.first));
-        if (!pkType) {
-            error = rpcError(rpcPUBLIC_MALFORMED);
-            return true;
-        }
-        pk = PublicKey(makeSlice(pair.first));
+    if (optPk) {
+        return Result::ok(std::move(*optPk));
     }
 
-    return false;
+    std::pair<Blob, bool> pair{strUnHex(string)};
+    if (!pair.second)
+        return Result::err(rpcPUBLIC_MALFORMED);
+    auto const pkType = publicKeyType(makeSlice(pair.first));
+    if (!pkType)
+        return Result::err(rpcPUBLIC_MALFORMED);
+
+    return Result::ok(PublicKey(makeSlice(pair.first)));
 }
 
 Json::Value
@@ -80,16 +70,15 @@ doReservationsAdd(RPC::Context& context)
 
     Json::Value result;
 
-    PublicKey identity;
-    if (parsePublicKey(
-            result,
-            identity,
-            // TODO: Can asString() fail?
-            params["public_key"].asString(),
-            TokenType::NodePublic))
-        return result;
+    RPCResult<PublicKey> resPk = parsePublicKey(
+        // TODO: Can asString() fail?
+        params["public_key"].asString(),
+        TokenType::NodePublic);
+    if (resPk.is_err())
+        return resPk.unwrap_err();
+    PublicKey const& identity = resPk.unwrap();
 
-    const boost::optional<std::string> name = params.isMember("name")
+    boost::optional<std::string> const name = params.isMember("name")
         ? boost::make_optional(params["name"].asString())
         : boost::none;
 

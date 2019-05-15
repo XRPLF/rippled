@@ -49,27 +49,27 @@ public:
     }
 
     bool is_ok() const {
-        return value_or_error_.index() == 0;
+        return value_or_error_.which() == 0;
     }
 
     bool is_err() const {
-        return value_or_error_.index() == 1;
+        return value_or_error_.which() == 1;
     }
 
     T& unwrap() {
-        return boost::get<0>(value_or_error_);
+        return boost::get<T>(value_or_error_);
     }
 
     T const& unwrap() const {
-        return boost::get<0>(value_or_error_);
+        return boost::get<T>(value_or_error_);
     }
 
     E& unwrap_err() {
-        return boost::get<1>(value_or_error_);
+        return boost::get<E>(value_or_error_);
     }
 
     E const& unwrap_err() const {
-        return boost::get<1>(value_or_error_);
+        return boost::get<E>(value_or_error_);
     }
 
 };
