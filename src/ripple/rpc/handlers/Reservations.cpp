@@ -18,22 +18,90 @@
 //==============================================================================
 
 #include <ripple/net/RPCErr.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/handlers/Handlers.h>
 
+#include <boost/optional.hpp>
+
+#include <string>
+#include <utility> // make_pair
+
 namespace ripple {
+
+/* Returns `true` and assigns `error` if there was an error.
+   Returns `false` and assigns `pk` if there was not.
+*/
+// Alas, our no-exception RPC framework makes it difficult to
+// abstract functions.
+bool
+parsePublicKey(
+    Json::Value& error,
+    PublicKey& pk,
+    std::string const& string,
+    TokenType tokenType)
+{
+    // channel_verify takes a key in both base58 and hex.
+    // Am I understanding that right? We do the same.
+    // TODO: Share this function with channel_verify
+    // (by putting it in PublicKey.h).
+    boost::optional<PublicKey> optPk = parseBase58<PublicKey>(tokenType, string);
+
+    if (optPk)
+    {
+        pk = *optPk;
+    } else {
+        std::pair<Blob, bool> pair{strUnHex(string)};
+        if (!pair.second) {
+            error = rpcError(rpcPUBLIC_MALFORMED);
+            return true;
+        }
+        auto const pkType = publicKeyType(makeSlice(pair.first));
+        if (!pkType) {
+            error = rpcError(rpcPUBLIC_MALFORMED);
+            return true;
+        }
+        pk = PublicKey(makeSlice(pair.first));
+    }
+
+    return false;
+}
 
 Json::Value
 doReservationsAdd(RPC::Context& context)
 {
-    // TODO:
-    // 1. Get the parameters of the method.
-    // 2. Check that the parameters have the right types.
-    // 3. Check if the node already has a reservation.
-    // 4. Add the reservation to context.app.peerReservations().
+    auto const& params = context.params;
+
+    if (!params.isMember("public_key"))
+    {
+        return RPC::missing_field_error("public_key");
+    }
+
     Json::Value result;
+
+    PublicKey identity;
+    if (parsePublicKey(
+            result,
+            identity,
+            // TODO: Can asString() fail?
+            params["public_key"].asString(),
+            TokenType::NodePublic))
+        return result;
+
+    const boost::optional<std::string> name = params.isMember("name")
+        ? boost::make_optional(params["name"].asString())
+        : boost::none;
+
+    // I think most people just want to overwrite existing reservations.
+    // TODO: Make a formal team decision that we do not want to raise an
+    // error upon a collision.
+    auto emplaced = context.app.peerReservations().emplace(
+        std::make_pair(identity, overlay::PeerReservation{identity, name}));
+    if (!emplaced.second)
+        // The public key already has a reservation. Overwrite it.
+        emplaced.first->second.name_ = name;
+
     return result;
 }
 

@@ -22,7 +22,9 @@
 
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/protocol/PublicKey.h>
+
 #include <boost/optional.hpp>
+
 #include <string>
 #include <unordered_map>
 
