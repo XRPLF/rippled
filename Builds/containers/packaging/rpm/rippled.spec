@@ -34,19 +34,25 @@ cd rippled
 mkdir -p bld.release
 cd bld.release
 cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_BUILD_TYPE=Release -Dstatic=true -DCMAKE_VERBOSE_MAKEFILE=ON -Dlocal_protobuf=ON
-rm -rf $RPM_BUILD_ROOT
-DESTDIR=$RPM_BUILD_ROOT cmake --build . --parallel --target install -- -v
-
+# build VK
 cd ../../validator-keys-tool
 mkdir -p bld.release
 cd bld.release
-cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$RPM_BUILD_ROOT%{_prefix}/ -Dstatic=true -DCMAKE_VERBOSE_MAKEFILE=ON
+# Install a copy of the rippled artifacts into a local VK build dir so that it
+# can use them to build against (VK needs xrpl_core lib to build). We install
+# into a local build dir instead of buildroot because we want VK to have
+# relative paths embedded in debug info, otherwise check-buildroot (rpmbuild)
+# will complain
+mkdir xrpl_dir
+DESTDIR="%{_builddir}/validator-keys-tool/bld.release/xrpl_dir"  cmake --build ../../rippled/bld.release --target install -- -v
+cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=%{_builddir}/validator-keys-tool/bld.release/xrpl_dir/opt/ripple -Dstatic=true -DCMAKE_VERBOSE_MAKEFILE=ON
 cmake --build . --parallel -- -v
 
 %pre
 test -e /etc/pki/tls || { mkdir -p /etc/pki; ln -s /usr/lib/ssl /etc/pki/tls; }
 
 %install
+rm -rf $RPM_BUILD_ROOT
 DESTDIR=$RPM_BUILD_ROOT cmake --build rippled/bld.release --target install -- -v
 install -d ${RPM_BUILD_ROOT}/etc/opt/ripple
 install -d ${RPM_BUILD_ROOT}/usr/local/bin
@@ -100,6 +106,9 @@ chown -R root:$GROUP_NAME %{_prefix}/etc/update-rippled-cron
 %{_prefix}/lib/cmake/ripple
 
 %changelog
+* Wed May 15 2019 Mike Ellery <mellery451@gmail.com>
+- Make validator-keys use local rippled build for core lib
+
 * Wed Aug 01 2018 Mike Ellery <mellery451@gmail.com>
 - add devel package for signing library
 
