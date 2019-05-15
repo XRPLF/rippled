@@ -26,7 +26,7 @@
 #include <boost/optional.hpp>
 
 #include <string>
-#include <utility> // make_pair
+#include <utility>
 
 namespace ripple {
 
