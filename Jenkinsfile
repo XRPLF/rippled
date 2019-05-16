@@ -70,8 +70,10 @@ try {
 
                 if (! collab_found) {
                     echo "$CHANGE_AUTHOR is not a collaborator - waiting for manual approval."
+                    sendToSlack("A <${env.BUILD_URL}|jenkins job (PR)> is waiting for approval - please review.")
+
                     try {
-                        response = httpRequest(
+                        httpRequest(
                             timeout: 10,
                             authentication: github_cred,
                             url: getCommentURL(),
@@ -106,6 +108,11 @@ try {
                 }
             }
         }
+
+        // UNCOMMENT the following if we want one message for every job...
+        //node('rippled-dev') {
+        //    sendToSlack("<${env.BUILD_URL}|Job ${env.BUILD_TAG}> has started.")
+        //}
     }
 
     stage ('Parallel Build') {
@@ -316,52 +323,6 @@ try {
                 } //node
             } //builds item
         } //for variants
-
-        // Also add a single build job for doing the RPM build
-        // on a docker node
-        builds['rpm'] = {
-            node('docker') {
-                def bldlabel = 'rpm'
-                def remote =
-                    (git_fork == 'ripple') ? 'origin' : git_fork
-
-                withCredentials(
-                    [string(
-                        credentialsId: 'RIPPLED_RPM_ROLE_ID',
-                        variable: 'ROLE_ID')])
-                {
-                    withEnv([
-                        'docker_image=artifactory.ops.ripple.com:6555/rippled-rpm-builder:latest',
-                        "git_commit=${commit_id}",
-                        "git_remote=${remote}",
-                        "rpm_release=${env.BUILD_ID}"])
-                    {
-                        def thrown = '';
-                        try {
-                            sh "rm -fv ${bldlabel}.txt"
-                            sh "if [ -d rpm-out ]; then rm -rf rpm-out; fi"
-                            sh rpmBuildCmd(bldlabel)
-                        }
-                        catch(e) {
-                           thrown = "${e}"
-                           throw e
-                        }
-                        finally {
-                            def st = reportStatus(bldlabel, bldlabel, env.BUILD_URL, thrown)
-                            lock('rippled_dev_status') {
-                                all_status[bldlabel] = st
-                            }
-                            archiveArtifacts(
-                                artifacts: 'rpm-out/*.rpm',
-                                allowEmptyArchive: true)
-                            if (thrown == '') {
-                                assert st[0] : "Unit Test Failures"
-                            }
-                        }
-                    } //withEnv
-                } //withCredentials
-            } //node
-        }
 
         // this actually executes all the builds we just defined
         // above, in parallel as slaves are available
@@ -591,6 +552,30 @@ def upDir(path) {
     matcher ? matcher[0][1] : path
 }
 
+def sendToSlack(message) {
+    try {
+        withCredentials( [string( credentialsId: 'RIPPLED_SLACK_INCOMING_URL', variable: 'SLACK_URL')]) {
+            // I was unable to make httpRequest method work with the
+            // formdata required by slack API, so resorting
+            // to curl commands...
+            sh '''\
+CONTENT=$(tr -d '[\n]' <<JSON
+  payload={
+    "channel": "#cpp-notifications",
+    "username": "JenkinsCI",
+    "text": "''' + message + '''",
+    "icon_emoji": ":jenkins:"}
+JSON
+)
+curl ${SLACK_URL} --data-urlencode "${CONTENT}"
+'''
+        }
+    }
+    catch (e) {
+        echo "had a problem posting to slack: ${e}"
+    }
+}
+
 // the shell command used for building on redhat
 def redhatBuildCmd(bldlabel) {
 '''\
@@ -605,7 +590,7 @@ ccache -s
 '''
 }
 
-// the powershell command used for building an RPM
+// the powershell command used for building
 def windowsBuildCmd() {
 '''
 # Enable streams 3-6
@@ -663,86 +648,6 @@ finally {
     $sw.Elapsed
     Pop-Location
 }
-'''
-}
-
-// the shell command used for building an RPM
-def rpmBuildCmd(bldlabel) {
-'''\
-#!/bin/bash
-set -ex
-log_file=''' + "${bldlabel}.txt" + '''
-exec 3>&1 1>>${log_file} 2>&1
-
-# Vault Steps
-SECRET_ID=$(cat /.vault/rippled-build-role/secret-id)
-export VAULT_TOKEN=$(/usr/local/ripple/ops-toolbox/vault/vault_approle_auth -r ${ROLE_ID} -s ${SECRET_ID} -t)
-/usr/local/ripple/ops-toolbox/vault/vault_get_sts_token.py -r rippled-build-role
-
-mkdir -p rpm-out
-
-docker pull "${docker_image}"
-
-echo "Running build container"
-
-docker run --rm \
--v $PWD/rpm-out:/opt/rippled-rpm/out \
--e "GIT_COMMIT=$git_commit" \
--e "GIT_REMOTE=$git_remote" \
--e "RPM_RELEASE=$rpm_release" \
-"${docker_image}"
-
-. rpm-out/build_vars
-
-cd rpm-out
-tar xvf rippled-*.tar.gz
-ls -la *.rpm
-#################################
-## for now we don't want the src
-## and debugsource rpms for testing
-## or archiving...
-#################################
-rm rippled-debugsource*.rpm
-rm *.src.rpm
-mkdir rpm-main
-cp *.rpm rpm-main
-cd rpm-main
-cd ../..
-
-cat > test_rpm.sh << "EOL"
-#!/bin/bash
-
-function error {
-  echo $1
-  exit 1
-}
-
-yum install -y yum-utils openssl-static zlib-static
-rpm -i /opt/rippled-rpm/*.rpm
-rc=$?; if [[ $rc != 0 ]]; then
-  error "error installing rpms"
-fi
-
-/opt/ripple/bin/rippled --unittest
-rc=$?; if [[ $rc != 0 ]]; then
-  error "rippled --unittest failed"
-fi
-
-/opt/ripple/bin/validator-keys --unittest
-rc=$?; if [[ $rc != 0 ]]; then
-  error "validator-keys --unittest failed"
-fi
-
-EOL
-
-chmod +x test_rpm.sh
-
-echo "Running test container"
-
-docker run --rm \
--v $PWD/rpm-out/rpm-main:/opt/rippled-rpm \
--v $PWD:/opt/rippled --entrypoint /opt/rippled/test_rpm.sh \
-centos:latest
 '''
 }
 
