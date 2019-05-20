@@ -8,20 +8,22 @@ COPY centos-builder/centos_setup.sh /tmp/
 COPY shared/build_deps.sh /tmp/
 COPY shared/install_cmake.sh /tmp/
 COPY centos-builder/extras.sh /tmp/
+COPY shared/install_boost.sh /tmp/
 RUN chmod +x /tmp/centos_setup.sh && \
     chmod +x /tmp/build_deps.sh && \
+    chmod +x /tmp/install_boost.sh && \
     chmod +x /tmp/install_cmake.sh && \
     chmod +x /tmp/extras.sh
 RUN /tmp/centos_setup.sh
 RUN /tmp/install_cmake.sh
 ENV PATH="/opt/local/cmake/bin:$PATH"
-RUN source scl_source enable devtoolset-6 python27 && \
+RUN source scl_source enable devtoolset-7 python27 && \
      /tmp/build_deps.sh
+ENV BOOST_ROOT="/opt/local/boost/_INSTALLED_"
 ENV PLANTUML_JAR="/opt/plantuml/plantuml.jar"
-ENV BOOST_ROOT="/opt/local/boost"
 ENV OPENSSL_ROOT="/opt/local/openssl"
 ENV GDB_ROOT="/opt/local/gdb"
-RUN source scl_source enable devtoolset-6 python27 && \
+RUN source scl_source enable devtoolset-7 python27 && \
      /tmp/extras.sh
 
 # prep files for package building
