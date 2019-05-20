@@ -6,20 +6,15 @@ function build_boost()
     local boost_ver=$1
     local do_link=$2
     local boost_path=$(echo "${boost_ver}" | sed -e 's!\.!_!g')
-    cd /tmp
-    wget https://dl.bintray.com/boostorg/release/${boost_ver}/source/boost_${boost_path}.tar.bz2
     mkdir -p /opt/local
     cd /opt/local
-    tar xf /tmp/boost_${boost_path}.tar.bz2
+    BOOST_ROOT=/opt/local/boost_${boost_path}
+    BOOST_URL="https://dl.bintray.com/boostorg/release/${boost_ver}/source/boost_${boost_path}.tar.bz2"
+    BOOST_BUILD_ALL=true
+    . /tmp/install_boost.sh
     if [ "$do_link" = true ] ; then
         ln -s ./boost_${boost_path} boost
     fi
-    cd boost_${boost_path}
-    ./bootstrap.sh
-    ./b2 -j$(nproc)
-    ./b2 stage
-    cd ..
-    rm -f /tmp/boost_${boost_path}.tar.bz2
 }
 
 build_boost "1.70.0" true
@@ -39,7 +34,7 @@ make install
 cd ..
 rm -f openssl-${OPENSSL_VER}.tar.gz
 rm -rf openssl-${OPENSSL_VER}
-LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/local/openssl/lib /opt/local/openssl/bin/openssl version -a
+LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}:/opt/local/openssl/lib /opt/local/openssl/bin/openssl version -a
 
 if [ "${CI_USE}" = true ] ; then
     cd /tmp
@@ -59,20 +54,25 @@ if [ "${CI_USE}" = true ] ; then
     wget -O /opt/plantuml/plantuml.jar https://downloads.sourceforge.net/project/plantuml/plantuml.jar
 
     cd /tmp
-    wget https://github.com/linux-test-project/lcov/releases/download/v1.13/lcov-1.13.tar.gz
-    tar xfz lcov-1.13.tar.gz
-    cd lcov-1.13
+    wget https://github.com/linux-test-project/lcov/releases/download/v1.14/lcov-1.14.tar.gz
+    tar xfz lcov-1.14.tar.gz
+    cd lcov-1.14
     make install PREFIX=/usr/local
     cd ..
-    rm -r lcov-1.13 lcov-1.13.tar.gz
+    rm -r lcov-1.14 lcov-1.14.tar.gz
+
+    cd /tmp
+    wget https://github.com/ccache/ccache/releases/download/v3.7.1/ccache-3.7.1.tar.gz
+    tar xf ccache-3.7.1.tar.gz
+    cd ccache-3.7.1
+    ./configure --prefix=/usr/local
+    make
+    make install
+    cd ..
+    rm -f ccache-3.7.1.tar.gz
+    rm -rf ccache-3.7.1
 
     pip install requests
     pip install https://github.com/codecov/codecov-python/archive/master.zip
-
-    set +e
-    mkdir -p /opt/local/nih_cache
-    mkdir -p /opt/jenkins
-    set -e
 fi
-
 

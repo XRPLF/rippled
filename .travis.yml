@@ -1,62 +1,309 @@
-sudo: false
 language: cpp
 dist: xenial
 
+services:
+  - docker
+
 env:
   global:
-    # Maintenance note: to move to a new version
-    # of boost, update both BOOST_ROOT and BOOST_URL.
-    # Note that for simplicity, BOOST_ROOT's final
-    # namepart must match the folder name internal
-    # to boost's .tar.gz.
-    - LCOV_ROOT=$HOME/lcov
-    - GDB_ROOT=$HOME/gdb
-    - BOOST_ROOT=$HOME/boost_1_70_0
-    - BOOST_URL='http://sourceforge.net/projects/boost/files/boost/1.70.0/boost_1_70_0.tar.gz'
-
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-      - llvm-toolchain-xenial-7
-    packages:
-      - gcc-7
-      - g++-7
-      - gcc-8
-      - g++-8
-      - python-software-properties
-      - protobuf-compiler
-      - libprotobuf-dev
-      - libssl-dev
-      - libstdc++6
-      - binutils-gold
-      - cmake
-      - lcov
-      - llvm-7
-      - clang-7
-
-matrix:
-  include:
-    - compiler: gcc
-      env: GCC_VER=7 BUILD_TYPE=Debug
-    - compiler: clang
-      env: GCC_VER=7 BUILD_TYPE=Debug
-
-cache:
-  directories:
-  - $BOOST_ROOT
-  - .nih_c
+    - DOCKER_IMAGE="mellery451/rippled-ci-builder:2019-07-18"
+    - CMAKE_EXTRA_ARGS="-Dwerr=ON"
+    - NINJA_BUILD=true
+    # change this if we get more VM capacity
+    - MAX_TIME_MIN=80
+    - CACHE_DIR=${TRAVIS_HOME}/_cache
+    - NIH_CACHE_ROOT=${CACHE_DIR}/nih_c
+    - PARALLEL_TESTS=true
+    # this is NOT used by linux container based builds (which already have boost installed)
+    - BOOST_URL='https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.bz2'
+    - VCPKG_DIR=${CACHE_DIR}/vcpkg
+    - USE_CCACHE=true
+    - CCACHE_BASEDIR=${TRAVIS_HOME}"
+    - CCACHE_NOHASHDIR=true
+    - CCACHE_DIR=${CACHE_DIR}/ccache
 
 before_install:
-  - bin/ci/ubuntu/install-dependencies.sh
+  - if [ "$(uname)" = "Darwin" ] ; then export NUM_PROCESSORS=$(sysctl -n hw.physicalcpu); else export NUM_PROCESSORS=$(nproc); fi
+  - echo "NUM PROC is ${NUM_PROCESSORS}"
+  - if [ "$(uname)" = "Linux" ] ; then docker pull ${DOCKER_IMAGE}; fi
+  - if [ "${MATRIX_EVAL}" != "" ] ; then eval "${MATRIX_EVAL}"; fi
+  - if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} ${CMAKE_ADD}"; fi
+  - bin/ci/ubuntu/travis-cache-start.sh
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    # TODO these all need more investigation
+    #
+    # current tsan failure might be related to:
+    # https://github.com/google/sanitizers/issues/1104
+    - name: tsan, clang-8
+    # there are a number of UBs caught currently that need triage
+    - name: ubsan, clang-8
+    # all of the windows builds are unreliable
+    # because the travis VMs are currently slow and unreliable
+    - name: windows, debug
+    - name: windows, release
+    - name: windows, visual studio, debug
+
+  # these builds are ordered approximately by
+  # descending build time so that the longest
+  # builds start first
+  include:
+    # windows
+    - &windows
+      os: windows
+      name: windows, debug
+      env:
+        # caching is pretty flakey on windows...
+        # put NIH in a non-cached location until
+        # we come up with a way to stabilize that
+        # cache on windows (minimize incremental changes)
+        - NIH_CACHE_ROOT=${TRAVIS_BUILD_DIR}/nih_c
+        - VCPKG_DEFAULT_TRIPLET="x64-windows-static"
+        - BOOST_ROOT=${CACHE_DIR}/boost_1_70_0
+        - MATRIX_EVAL="CC=cl.exe && CXX=cl.exe"
+        - >-
+          CMAKE_ADD="
+          -DBOOST_ROOT=${BOOST_ROOT}/_INSTALLED_
+          -DCMAKE_VERBOSE_MAKEFILE=ON
+          -DCMAKE_TOOLCHAIN_FILE=${VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake
+          -DVCPKG_TARGET_TRIPLET=x64-windows-static"
+      install:
+        - choco upgrade cmake.install
+        - choco install ninja visualstudio2017-workload-vctools -y
+        - travis_wait 30 bin/sh/install-vcpkg.sh
+        - travis_wait ${MAX_TIME_MIN} Builds/containers/shared/install_boost.sh
+      before_script:
+        - export BLD_CONFIG=Debug
+      script:
+        - . ./bin/sh/setup-msvc.sh
+        - mkdir -p build.ms && cd build.ms
+        - cmake -G Ninja ${CMAKE_EXTRA_ARGS} -DCMAKE_BUILD_TYPE=${BLD_CONFIG} ..
+        - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel ${NUM_PROCESSORS} --verbose
+        - ./rippled.exe --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
+    - <<: *windows
+      name: windows, release
+      before_script:
+        - export BLD_CONFIG=Release
+    - <<: *windows
+      name: windows, visual studio, debug
+      script:
+        - mkdir -p build.ms && cd build.ms
+        - cmake -G "Visual Studio 15 2017 Win64" ${CMAKE_EXTRA_ARGS} ..
+        - export DESTDIR=${PWD}/_installed_
+        - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel ${NUM_PROCESSORS} --verbose --config ${BLD_CONFIG} --target install
+        - >-
+          "./_installed_/Program Files/rippled/bin/rippled.exe" --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
+    # asan
+    - compiler: clang-8
+      name: asan, clang-8
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Release
+        - CMAKE_ADD="-Dsan=address"
+        - ASAN_OPTIONS="print_stats=true:atexit=true"
+        #- LSAN_OPTIONS="verbosity=1:log_threads=1"
+        - PARALLEL_TESTS=false
+    # ubsan
+    - compiler: clang-8
+      name: ubsan, clang-8
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Release
+        - CMAKE_ADD="-Dsan=undefined"
+        # once we can run clean under ubsan, add halt_on_error=1 to options below
+        - UBSAN_OPTIONS="print_stacktrace=1:report_error_type=1"
+        - PARALLEL_TESTS=false
+    # tsan
+    - compiler: clang-8
+      name: tsan, clang-8
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Release
+        - CMAKE_ADD="-Dsan=thread"
+        - TSAN_OPTIONS="history_size=3 external_symbolizer_path=/usr/bin/llvm-symbolizer verbosity=1"
+        - PARALLEL_TESTS=false
+    # coverage builds
+    - compiler: gcc-8
+      name: coverage, gcc-8
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dcoverage=ON"
+        - TARGET=coverage_report
+        - SKIP_TESTS=true
+    - compiler: clang-8
+      name: coverage, clang-8
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dcoverage=ON"
+        - TARGET=coverage_report
+        - SKIP_TESTS=true
+    # nounity
+    - compiler: gcc-8
+      name: non-unity, gcc-8
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dunity=OFF"
+    - compiler: clang-8
+      name: non-unity, clang-8
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dunity=OFF"
+    # manual tests
+    - compiler: gcc-8
+      name: manual tests, gcc-8, debug
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Debug
+        - MANUAL_TESTS=true
+    # manual tests
+    - compiler: gcc-8
+      name: manual tests, gcc-8, release
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Release
+        - CMAKE_ADD="-Dassert=ON"
+        - MANUAL_TESTS=true
+    # release builds
+    - compiler: gcc-8
+      name: gcc-8, release
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Release
+        - CMAKE_ADD="-Dassert=ON"
+    - compiler: clang-8
+      name: clang-8, release
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Release
+        - CMAKE_ADD="-Dassert=ON"
+    # debug builds
+    - compiler: gcc-8
+      name: gcc-8, debug
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Debug
+    - compiler: clang-8
+      name: clang-8, debug
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Debug
+    # dynamic lib builds
+    - compiler: gcc-8
+      name: non-static, gcc-8
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dstatic=OFF"
+    - compiler: gcc-8
+      name: non-static + BUILD_SHARED_LIBS, gcc-8
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dstatic=OFF -DBUILD_SHARED_LIBS=ON"
+    # makefile
+    - compiler: gcc-8
+      name: makefile generator, gcc-8
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Debug
+        - NINJA_BUILD=false
+    # misc alternative compilers
+    - compiler: gcc-6
+      name: gcc-6
+      env:
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+        - BUILD_TYPE=Debug
+    - compiler: gcc-7
+      name: gcc-7
+      env:
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+        - BUILD_TYPE=Debug
+    - compiler: gcc-9
+      name: gcc-9
+      env:
+        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+        - BUILD_TYPE=Debug
+    - compiler: clang-6.0
+      name: clang-6
+      env:
+        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+        - BUILD_TYPE=Debug
+    - compiler: clang-7
+      name: clang-7
+      env:
+        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+        - BUILD_TYPE=Debug
+    - compiler: clang-9
+      name: clang-9
+      env:
+        - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
+        - BUILD_TYPE=Debug
+    # macos
+    - &macos
+      os: osx
+      osx_image: xcode10.2
+      name: xcode10, debug
+      env:
+        - BLD_CONFIG=Debug
+        - BOOST_ROOT=${CACHE_DIR}/boost_1_70_0
+        - >-
+          CMAKE_ADD="
+          -DBOOST_ROOT=${BOOST_ROOT}/_INSTALLED_
+          -DBoost_ARCHITECTURE=-x64
+          -DBoost_NO_SYSTEM_PATHS=ON
+          -DCMAKE_VERBOSE_MAKEFILE=ON"
+      addons:
+        homebrew:
+          packages:
+            - bash
+            - ninja
+            - cmake
+            - openssl@1.1
+          update: true
+      install:
+        - export OPENSSL_ROOT=$(brew --prefix openssl@1.1)
+        - travis_wait ${MAX_TIME_MIN} Builds/containers/shared/install_boost.sh
+      script:
+        - mkdir -p build.macos && cd build.macos
+        - cmake -G Ninja ${CMAKE_EXTRA_ARGS} -DCMAKE_BUILD_TYPE=${BLD_CONFIG} ..
+        - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel ${NUM_PROCESSORS} --verbose
+        - ./rippled --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
+    - <<: *macos
+      name: xcode10, release
+      before_script:
+        - export BLD_CONFIG=Release
+    - <<: *macos
+      osx_image: xcode9.4
+      name: xcode9, debug
+      before_script:
+        # turn off warnings as err for this build
+        - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -Dwerr=OFF"
+    - <<: *macos
+      osx_image: xcode11
+      name: xcode11, debug
+
+cache:
+  timeout: 900
+  directories:
+    - $CACHE_DIR
+before_cache:
+  - if [ $(uname) = "Linux" ] ; then SUDO="sudo"; else SUDO=""; fi
+  - cd ${TRAVIS_HOME}
+  - if [ -f cache_ignore.tar ] ; then $SUDO tar xvf cache_ignore.tar; fi
+  - cd ${TRAVIS_BUILD_DIR}
 
 script:
-  - travis_wait 35 bin/ci/ubuntu/build-and-test.sh
+  - sudo chmod -R a+rw ${CACHE_DIR}
+  - ccache -s
+  - travis_wait ${MAX_TIME_MIN} bin/ci/ubuntu/build-in-docker.sh
+  - ccache -s
 
 notifications:
-  email:
-    false
-  irc:
-    channels:
-      - "chat.freenode.net#ripple-dev"
+  email: false
 
