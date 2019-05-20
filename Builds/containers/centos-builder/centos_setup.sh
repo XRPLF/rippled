@@ -18,7 +18,7 @@ yum -y install \
     llvm-toolset-7-lldb-devel llvm-toolset-7-python-lldb \
     flex flex-devel bison bison-devel \
     ncurses ncurses-devel ncurses-libs graphviz graphviz-devel \
-    lzip p7zip bzip2 \
+    lzip p7zip bzip2 bzip2-devel lzma-sdk lzma-sdk-devel xz-devel \
     zlib zlib-devel zlib-static texinfo openssl-static \
     jemalloc jemalloc-devel \
     libicu-devel htop \

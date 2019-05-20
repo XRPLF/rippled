@@ -32,7 +32,8 @@ apt-get -y update
 
 apt-get -y --fix-missing install  \
     make cmake ninja-build ccache \
-    protobuf-compiler libprotobuf-dev libssl-dev libzstd-dev \
+    protobuf-compiler libprotobuf-dev libssl-dev \
+    liblzma-dev libbz2-dev zlib1g-dev \
     libjemalloc-dev \
     python-pip \
     gdb gdbserver \

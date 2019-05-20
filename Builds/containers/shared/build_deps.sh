@@ -22,8 +22,7 @@ function build_boost()
     rm -f /tmp/boost_${boost_path}.tar.bz2
 }
 
-build_boost "1.67.0" true
-build_boost "1.68.0" false
+build_boost "1.70.0" true
 
 # installed in opt, so won't be used
 # unless specified by OPENSSL_ROOT_DIR
