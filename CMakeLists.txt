@@ -77,6 +77,12 @@ else ()
   set (is_linux FALSE)
 endif ()
 
+if ("$ENV{CI}" STREQUAL "true" OR "$ENV{CONTINUOUS_INTEGRATION}" STREQUAL "true")
+  set (is_ci TRUE)
+else ()
+  set (is_ci FALSE)
+endif ()
+
 # check for in-source build and fail
 if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
   message (FATAL_ERROR "Builds (in-source) are not allowed in "
@@ -150,6 +156,11 @@ else ()
   set (static ON CACHE BOOL "static link, linux only. ON for WIN/macos" FORCE)
   set (perf OFF CACHE BOOL "perf flags, linux only" FORCE)
   set (use_gold OFF CACHE BOOL "gold linker, linux only" FORCE)
+endif ()
+if (is_clang)
+  option (use_lld "enables detection of lld linker" ON)
+else ()
+  set (use_lld OFF CACHE BOOL "try lld linker, clang only" FORCE)
 endif ()
 option (jemalloc "Enables jemalloc for heap profiling" OFF)
 option (werr "treat warnings as errors" OFF)
@@ -396,6 +407,45 @@ if (is_root_project)
     if (NOT have_package_container)
       add_dependencies(dpkg dpkg_container)
     endif ()
+    #[===================================================================[
+        ci container
+    #]===================================================================]
+    # now use the same ubuntu image for our travis-ci docker images,
+    # but we use a newer distro (18.04 vs 16.04).
+    #
+    # steps for publishing a new CI image when you make changes:
+    #
+    #   mkdir bld.ci && cd bld.ci && cmake -Dpackages_only=ON -Dcontainer_label=CI_LATEST
+    #   cmake --build . --target ci_container --verbose
+    #   docker tag rippled-ci-builder:CI_LATEST <DOCKERHUB_USER>/rippled-ci-builder:YYYY-MM-DD
+    #       (change YYYY-MM-DD to match current date..or use a different
+    #        tag/label scheme if you prefer)
+    #   docker push <DOCKERHUB_USER>/rippled-ci-builder:YYYY-MM-DD
+    #
+    # ...then change the DOCKER_IMAGE line in .travis.yml :
+    #     - DOCKER_IMAGE="<DOCKERHUB_USER>/rippled-ci-builder:YYYY-MM-DD"
+    add_custom_target (ci_container
+      docker build
+        --pull
+        --build-arg DIST_TAG=18.04
+        --build-arg GIT_COMMIT=${commit_hash}
+        --build-arg CI_USE=true
+        -t rippled-ci-builder:${container_label}
+        $<$<BOOL:${ci_cache_from}>:--cache-from=${ci_cache_from}>
+        -f ubuntu-builder/Dockerfile .
+      WORKING_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR}/Builds/containers
+      VERBATIM
+      USES_TERMINAL
+      COMMAND_EXPAND_LISTS
+      SOURCES
+        Builds/containers/ubuntu-builder/Dockerfile
+        Builds/containers/ubuntu-builder/ubuntu_setup.sh
+        Builds/containers/shared/build_deps.sh
+        Builds/containers/shared/rippled.service
+        Builds/containers/shared/update_sources.sh
+        Builds/containers/shared/update-rippled.sh
+    )
+    exclude_from_default (ci_container)
   else ()
     message (STATUS "docker NOT found -- won't be able to build containers for packaging")
   endif ()
@@ -515,7 +565,11 @@ else ()
   target_link_libraries (common
     INTERFACE
       -rdynamic
-      $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>>:-static-libstdc++>)
+      # link to static libc/c++ iff:
+      #   * static option set and
+      #   * NOT APPLE (AppleClang does not support static libc/c++) and
+      #   * NOT san (sanitizers typically don't work with static libc/c++)
+      $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>,$<NOT:$<BOOL:${san}>>>:-static-libstdc++>)
 endif ()
 
 if (use_gold AND is_gcc)
@@ -552,7 +606,7 @@ if (use_gold AND is_gcc)
   unset (LD_VERSION)
 endif ()
 
-if (is_clang)
+if (use_lld)
   # use lld linker if available
   execute_process (
     COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=lld -Wl,--version
@@ -627,6 +681,8 @@ endif ()
 if (san)
   target_compile_options (opts
     INTERFACE
+      # sanitizers recommend minimum of -O1 for reasonable performance
+      $<$<CONFIG:Debug>:-O1>
       ${SAN_FLAG}
       -fno-omit-frame-pointer)
   target_compile_definitions (opts
@@ -748,6 +804,26 @@ target_link_libraries (ripple_boost
     Boost::serialization
     Boost::system
     Boost::thread)
+if (san)
+  if (NOT Boost_INCLUDE_DIRS AND TARGET Boost::headers)
+    get_target_property (Boost_INCLUDE_DIRS Boost::headers INTERFACE_INCLUDE_DIRECTORIES)
+  endif ()
+  message(STATUS "Adding [${Boost_INCLUDE_DIRS}] to sanitizer blacklist")
+  file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/san_bl.txt "src:${Boost_INCLUDE_DIRS}/*")
+  target_compile_options (opts
+    INTERFACE
+      # ignore boost headers for sanitizing
+      -fsanitize-blacklist=${CMAKE_CURRENT_BINARY_DIR}/san_bl.txt)
+endif ()
+
+# workaround for xcode 10.2 and boost < 1.69
+# once we require Boost 1.69 or higher, this can be removed
+# see:  https://github.com/boostorg/asio/commit/43874d5
+if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND
+    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0.1.10010043 AND
+    Boost_VERSION LESS 106900)
+  target_compile_definitions (opts INTERFACE BOOST_ASIO_HAS_STD_STRING_VIEW)
+endif ()
 
 #[===================================================================[
    NIH dep: openssl
@@ -773,12 +849,7 @@ if (static)
   set (OPENSSL_USE_STATIC_LIBS ON)
 endif ()
 set (OPENSSL_MSVC_STATIC_RT ON)
-set (_ssl_min_ver 1.0.2)
-# HACK for travis
-if ("$ENV{CI}" STREQUAL "true" AND "$ENV{TRAVIS}" STREQUAL "true")
-  set (_ssl_min_ver 1.0.1)
-endif ()
-find_package (OpenSSL ${_ssl_min_ver} REQUIRED)
+find_package (OpenSSL 1.0.2 REQUIRED)
 target_link_libraries (ripple_libs
   INTERFACE
     OpenSSL::SSL
@@ -1239,7 +1310,7 @@ ExternalProject_Add (snappy
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON
     -DSNAPPY_BUILD_TESTS=OFF
     $<$<BOOL:${MSVC}>:
-      "-DCMAKE_CXX_FLAGS=-GR -Gd -fp:precise -FS -MP"
+      "-DCMAKE_CXX_FLAGS=-GR -Gd -fp:precise -FS -EHa -MP"
       "-DCMAKE_CXX_FLAGS_DEBUG=-MTd"
       "-DCMAKE_CXX_FLAGS_RELEASE=-MT"
     >
@@ -2579,6 +2650,12 @@ target_link_libraries (rippled
   Ripple::libs
   Ripple::xrpl_core)
 exclude_if_included (rippled)
+# define a macro for tests that might need to
+# be exluded or run differently in CI environment
+if (is_ci)
+  target_compile_definitions(rippled PRIVATE RIPPLED_RUNNING_IN_CI)
+endif ()
+
 
 #[===================================================================[
    install stuff
@@ -2673,6 +2750,11 @@ if (coverage)
         COMMAND rippled --unittest$<$<BOOL:${coverage_test}>:=${coverage_test}> --quiet --unittest-log
         COMMAND ${LLVM_PROFDATA}
           merge -sparse default.profraw -o rip.profdata
+        COMMAND ${CMAKE_COMMAND} -E echo "Summary of coverage:"
+        COMMAND ${LLVM_COV}
+          report -instr-profile=rip.profdata
+          $<TARGET_FILE:rippled> ${extract_pattern}
+        # generate html report
         COMMAND ${LLVM_COV}
           show -format=html -output-dir=${CMAKE_BINARY_DIR}/coverage
           -instr-profile=rip.profdata
@@ -2716,6 +2798,8 @@ if (coverage)
         # extract our files
         COMMAND ${LCOV}
           -e lcov-all.info "${extract_pattern}" -o lcov.info
+        COMMAND ${CMAKE_COMMAND} -E echo "Summary of coverage:"
+        COMMAND ${LCOV} --summary lcov.info
         # generate HTML report
         COMMAND ${GENHTML}
           -o ${CMAKE_BINARY_DIR}/coverage lcov.info

@@ -5,11 +5,13 @@
   IN_FILE variable.
 #]=========================================================]
 
-file (READ ${IN_FILE} contents)
-## only print files that actually have some text in them
-if (contents MATCHES "[a-z0-9A-Z]+")
-  execute_process(
-    COMMAND
-      ${CMAKE_COMMAND} -E echo "${contents}")
+if (EXISTS ${IN_FILE})
+  file (READ ${IN_FILE} contents)
+  ## only print files that actually have some text in them
+  if (contents MATCHES "[a-z0-9A-Z]+")
+    execute_process(
+      COMMAND
+        ${CMAKE_COMMAND} -E echo "${contents}")
+  endif ()
 endif ()
 
