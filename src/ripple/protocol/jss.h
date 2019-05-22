@@ -37,8 +37,8 @@ namespace jss {
    in: Read by the given RPC handler from its `Json::Value` parameter.
    out: Assigned by the given RPC handler in the `Json::Value` it returns.
    field: A field of at least one type of transaction.
-   RPC: ???
-   error: ???
+   RPC: Common properties of RPC requests and responses.
+   error: Common properties of RPC error responses.
 */
 
 JSS ( AL_hit_rate );                // out: GetCounts

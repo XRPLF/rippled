@@ -29,11 +29,6 @@
 #include <unordered_map>
 
 namespace ripple {
-// The rest of this directory is just in the `ripple` namespace.
-// Do we want to stick with that pattern, or do we want the namespace to
-// match the directory structure (to avoid name collisions and abide by
-// the principle of least surprise)?
-namespace overlay {
 
 // Value type for reservations.
 struct PeerReservation
@@ -45,7 +40,6 @@ public:
 
 using PeerReservationTable = std::unordered_map<PublicKey, PeerReservation, beast::uhash<>>;
 
-}
 }
 
 #endif

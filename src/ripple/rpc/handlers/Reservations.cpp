@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Result.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -31,31 +30,26 @@
 
 namespace ripple {
 
-template <typename T>
-using RPCResult = Result<T, ripple::error_code_i>;
-
-RPCResult<PublicKey>
+boost::optional<PublicKey>
 parsePublicKey(std::string const& string, TokenType tokenType)
 {
-    using Result = RPCResult<PublicKey>;
-
     // channel_verify takes a key in both base58 and hex.
     // Am I understanding that right? We do the same.
     // TODO: Share this function with channel_verify
     // (by putting it in PublicKey.h).
     boost::optional<PublicKey> optPk = parseBase58<PublicKey>(tokenType, string);
     if (optPk) {
-        return Result::ok(std::move(*optPk));
+        return optPk;
     }
 
     std::pair<Blob, bool> pair{strUnHex(string)};
     if (!pair.second)
-        return Result::err(rpcPUBLIC_MALFORMED);
+        return boost::none;
     auto const pkType = publicKeyType(makeSlice(pair.first));
     if (!pkType)
-        return Result::err(rpcPUBLIC_MALFORMED);
+        return boost::none;
 
-    return Result::ok(PublicKey(makeSlice(pair.first)));
+    return PublicKey(makeSlice(pair.first));
 }
 
 Json::Value
@@ -63,34 +57,53 @@ doReservationsAdd(RPC::Context& context)
 {
     auto const& params = context.params;
 
-    if (!params.isMember("public_key"))
+    if (!params.isMember(jss::public_key))
+        return RPC::missing_field_error(jss::public_key);
+
+    // Returning JSON from every function ruins any attempt to encapsulate
+    // the pattern of "get field F as type T, and diagnose an error if it is
+    // missing or malformed":
+    // - It is costly to copy whole JSON objects around just to check whether an
+    //   error code is present.
+    // - It is not as easy to read when cluttered by code to pack and unpack the
+    //   JSON object.
+    // - It is not as easy to write when you have to include all the packing and
+    //   unpacking code.
+    // Exceptions would be easier to use, but have a terrible cost for control flow.
+    // An error monad is purpose-built for this situation; it is essentially
+    // an optional (the "maybe monad" in Haskell) with a non-unit type for the
+    // failure case to capture more information.
+    if (!params[jss::public_key].isString())
+        return RPC::expected_field_error(jss::public_key, "a string");
+
+    // Same for the pattern of "if field F is present, make sure it has type T
+    // and get it".
+    boost::optional<std::string> name;
+    if (params.isMember(jss::name))
     {
-        return RPC::missing_field_error("public_key");
+        if (!params[jss::name].isString())
+            return RPC::expected_field_error(jss::name, "a string");
+        name = params[jss::name].asString();
     }
 
-    Json::Value result;
-
-    RPCResult<PublicKey> resPk = parsePublicKey(
-        // TODO: Can asString() fail?
-        params["public_key"].asString(),
+    boost::optional<PublicKey> optPk = parsePublicKey(
+        params[jss::public_key].asString(),
         TokenType::NodePublic);
-    if (resPk.is_err())
-        return resPk.unwrap_err();
-    PublicKey const& identity = resPk.unwrap();
-
-    boost::optional<std::string> const name = params.isMember("name")
-        ? boost::make_optional(params["name"].asString())
-        : boost::none;
+    if (!optPk)
+        return rpcError(rpcPUBLIC_MALFORMED);
+    PublicKey const& identity = *optPk;
 
     // I think most people just want to overwrite existing reservations.
     // TODO: Make a formal team decision that we do not want to raise an
     // error upon a collision.
     auto emplaced = context.app.peerReservations().emplace(
-        std::make_pair(identity, overlay::PeerReservation{identity, name}));
+        std::make_pair(identity, PeerReservation{identity, name}));
     if (!emplaced.second)
         // The public key already has a reservation. Overwrite it.
         emplaced.first->second.name_ = name;
 
+    Json::Value result;
+    // TODO: Need to indicate whether it was inserted or overwritten.
     return result;
 }
 
@@ -114,9 +127,9 @@ doReservationsLs(RPC::Context& context)
         auto const& reservation = pair.second;
         Json::Value jaReservation;
         // TODO: Base58 encode the public key?
-        // jaReservation["public_key"] = reservation.identity_;
+        // jaReservation[jss::public_key] = reservation.identity_;
         if (reservation.name_) {
-            jaReservation["name"] = *reservation.name_;
+            jaReservation[jss::name] = *reservation.name_;
         }
         jaReservations.append(jaReservation);
     }

@@ -350,7 +350,7 @@ public:
     TaggedCache <uint256, AcceptedLedger> m_acceptedLedgerCache;
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <Cluster> cluster_;
-    std::unique_ptr <overlay::PeerReservationTable> peerReservations_;
+    std::unique_ptr <PeerReservationTable> peerReservations_;
     std::unique_ptr <ManifestCache> validatorManifests_;
     std::unique_ptr <ManifestCache> publisherManifests_;
     std::unique_ptr <ValidatorList> validators_;
@@ -492,7 +492,7 @@ public:
         , cluster_ (std::make_unique<Cluster> (
             logs_->journal("Overlay")))
 
-        , peerReservations_ (std::make_unique<overlay::PeerReservationTable>())
+        , peerReservations_ (std::make_unique<PeerReservationTable>())
 
         , validatorManifests_ (std::make_unique<ManifestCache> (
             logs_->journal("ManifestCache")))
@@ -769,7 +769,7 @@ public:
         return *cluster_;
     }
 
-    overlay::PeerReservationTable& peerReservations () override
+    PeerReservationTable& peerReservations () override
     {
         return *peerReservations_;
     }

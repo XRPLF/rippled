@@ -140,7 +140,7 @@ public:
     virtual ManifestCache&              validatorManifests () = 0;
     virtual ManifestCache&              publisherManifests () = 0;
     virtual Cluster&                    cluster () = 0;
-    virtual overlay::PeerReservationTable& peerReservations () = 0;
+    virtual PeerReservationTable&       peerReservations () = 0;
     virtual RCLValidations&             getValidations () = 0;
     virtual NodeStore::Database&        getNodeStore () = 0;
     virtual NodeStore::DatabaseShard*   getShardStore() = 0;
