@@ -51,7 +51,7 @@ public:
     void restart (bool multiQuality)
     {
         if (multiQuality)
-            current = 0;             // Restart book searching.
+            current = beast::zero;             // Restart book searching.
         else
             restartNeeded  = true;   // Restart at same quality.
     }
@@ -61,8 +61,8 @@ public:
         if (current != beast::zero)
             return false;
 
-        current.copyFrom (getBookBase (book));
-        next.copyFrom (getQualityNext (current));
+        current = getBookBase(book);
+        next = getQualityNext(current);
 
         // TODO(tom): it seems impossible that any actual offers with
         // quality == 0 could occur - we should disallow them, and clear

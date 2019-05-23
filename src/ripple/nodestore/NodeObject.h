@@ -20,6 +20,7 @@
 #ifndef RIPPLE_NODESTORE_NODEOBJECT_H_INCLUDED
 #define RIPPLE_NODESTORE_NODEOBJECT_H_INCLUDED
 
+#include <ripple/basics/Blob.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Protocol.h>
 

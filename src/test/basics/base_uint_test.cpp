@@ -18,9 +18,11 @@
 //==============================================================================
 
 #include <ripple/basics/base_uint.h>
+#include <ripple/basics/Blob.h>
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/beast/unit_test.h>
 #include <boost/algorithm/string.hpp>
+#include <complex>
 
 #include <type_traits>
 
@@ -57,6 +59,8 @@ struct base_uint_test : beast::unit_test::suite
 
     void run() override
     {
+        static_assert(!std::is_constructible<test96, std::complex<double>>::value, "");
+        static_assert(!std::is_assignable<test96&, std::complex<double>>::value, "");
         // used to verify set insertion (hashing required)
         std::unordered_set<test96, hardened_hash<>> uset;
 

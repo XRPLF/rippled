@@ -89,7 +89,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 JLOG (j_.trace())
                     << "advanceNode: No more offers.";
 
-                node().offerIndex_ = 0;
+                node().offerIndex_ = beast::zero;
                 break;
             }
             else
@@ -177,7 +177,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
             {
                 // Ran off end of offers.
                 node().bEntryAdvance   = false;        // Done.
-                node().offerIndex_ = 0;            // Report no more entries.
+                node().offerIndex_ = beast::zero;      // Report no more entries.
             }
         }
         else

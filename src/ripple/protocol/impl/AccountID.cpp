@@ -148,7 +148,7 @@ calcAccountID (PublicKey const& pk)
 AccountID const&
 xrpAccount()
 {
-    static AccountID const account(0);
+    static AccountID const account(beast::zero);
     return account;
 }
 

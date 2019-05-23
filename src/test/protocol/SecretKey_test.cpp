@@ -77,7 +77,7 @@ public:
     {
         blob b;
         hex_to_binary (s.begin (), s.end (), b);
-        return uint256::fromVoid(b.data());
+        return uint256{b};
     }
 
     static
