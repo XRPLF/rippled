@@ -1578,8 +1578,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
         return;
     }
 
-    auto const proposeHash = uint256::fromVoid(set.currenttxhash().data());
-    auto const prevLedger = uint256::fromVoid(set.previousledger().data());
+    uint256 const proposeHash{set.currenttxhash()};
+    uint256 const prevLedger{set.previousledger()};
 
     PublicKey const publicKey {makeSlice(set.nodepubkey())};
     NetClock::time_point const closeTime { NetClock::duration{set.closetime()} };

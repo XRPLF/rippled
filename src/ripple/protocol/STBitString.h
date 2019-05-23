@@ -102,7 +102,7 @@ public:
     template <typename Tag>
     void setValue (base_uint<Bits, Tag> const& v)
     {
-        value_.copyFrom(v);
+        value_ = v;
     }
 
     value_type const&

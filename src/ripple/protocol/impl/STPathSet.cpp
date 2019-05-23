@@ -91,13 +91,13 @@ STPathSet::STPathSet (SerialIter& sit, SField const& name)
             AccountID issuer;
 
             if (hasAccount)
-                account.copyFrom (sit.get160 ());
+                account = sit.get160();
 
             if (hasCurrency)
-                currency.copyFrom (sit.get160 ());
+                currency = sit.get160();
 
             if (hasIssuer)
-                issuer.copyFrom (sit.get160 ());
+                issuer = sit.get160();
 
             path.emplace_back (account, currency, issuer, hasCurrency);
         }

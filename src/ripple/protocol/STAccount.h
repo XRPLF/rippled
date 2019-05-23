@@ -34,7 +34,7 @@ private:
     // But an STAccount is always 160 bits, so we can store it with less
     // overhead in a ripple::uint160.  However, so the serialized format of the
     // STAccount stays unchanged, we serialize and deserialize like an STBlob.
-    uint160 value_;
+    AccountID value_;
     bool default_;
 
 public:
@@ -101,14 +101,12 @@ public:
     AccountID
     value() const noexcept
     {
-        AccountID result;
-        result.copyFrom (value_);
-        return result;
+        return value_;
     }
 
     void setValue (AccountID const& v)
     {
-        value_.copyFrom (v);
+        value_ = v;
         default_ = false;
     }
 };

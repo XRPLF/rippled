@@ -26,6 +26,7 @@
 #define RIPPLE_CRYPTO_GENERATEDETERMINISTICKEY_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
+#include <ripple/basics/Blob.h>
 
 namespace ripple {
 

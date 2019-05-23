@@ -110,7 +110,7 @@ Currency to_currency(std::string const& code)
 
 Currency const& xrpCurrency()
 {
-    static Currency const currency(0);
+    static Currency const currency(beast::zero);
     return currency;
 }
 

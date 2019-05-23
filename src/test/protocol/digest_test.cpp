@@ -22,6 +22,7 @@
 #include <ripple/beast/xor_shift_engine.h>
 #include <ripple/beast/unit_test.h>
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <numeric>
@@ -115,12 +116,12 @@ public:
     digest_test ()
     {
         beast::xor_shift_engine g(19207813);
-        std::uint8_t buf[32];
+        std::array<std::uint8_t, 32> buf;
 
         for (int i = 0; i < 1000000; i++)
         {
-            beast::rngfill (buf, sizeof(buf), g);
-            dataset1.push_back (uint256::fromVoid (buf));
+            beast::rngfill (buf.data(), buf.size(), g);
+            dataset1.push_back (uint256{buf});
         }
     }
 

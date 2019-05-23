@@ -114,14 +114,10 @@ void OrderBookDB::update(
                 sle->getFieldH256 (sfRootIndex) == sle->key())
             {
                 Book book;
-                book.in.currency.copyFrom(sle->getFieldH160(
-                    sfTakerPaysCurrency));
-                book.in.account.copyFrom(sle->getFieldH160 (
-                    sfTakerPaysIssuer));
-                book.out.account.copyFrom(sle->getFieldH160(
-                    sfTakerGetsIssuer));
-                book.out.currency.copyFrom (sle->getFieldH160(
-                    sfTakerGetsCurrency));
+                book.in.currency = sle->getFieldH160(sfTakerPaysCurrency);
+                book.in.account = sle->getFieldH160(sfTakerPaysIssuer);
+                book.out.account = sle->getFieldH160(sfTakerGetsIssuer);
+                book.out.currency = sle->getFieldH160(sfTakerGetsCurrency);
 
                 uint256 index = getBookBase (book);
                 if (seen.insert (index).second)

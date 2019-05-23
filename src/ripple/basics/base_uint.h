@@ -25,9 +25,9 @@
 #ifndef RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 #define RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 
-#include <ripple/basics/Blob.h>
 #include <ripple/basics/strHex.h>
 #include <ripple/basics/hardened_hash.h>
+#include <ripple/beast/cxx17/type_traits.h>
 #include <ripple/beast/utility/Zero.h>
 #include <boost/endian/conversion.hpp>
 #include <boost/functional/hash.hpp>
@@ -36,6 +36,27 @@
 #include <type_traits>
 
 namespace ripple {
+
+namespace detail
+{
+
+template <class Container, class = std::void_t<>>
+struct is_contiguous_container
+    : std::false_type
+{};
+
+template <class Container>
+struct is_contiguous_container<Container,
+                               std::void_t
+                               <
+                                  decltype(std::declval<Container const>().size()),
+                                  decltype(std::declval<Container const>().data()),
+                                  typename Container::value_type
+                               >>
+    : std::true_type
+{};
+
+}  // namespace detail
 
 // This class stores its values internally in big-endian form
 
@@ -48,14 +69,12 @@ class base_uint
     static_assert (Bits >= 64,
         "The length of a base_uint in bits must be at least 64.");
 
-protected:
     static constexpr std::size_t WIDTH = Bits / 32;
 
     // This is really big-endian in byte order.
     // We sometimes use std::uint32_t for speed.
 
-    using array_type = std::array<std::uint32_t, WIDTH>;
-    array_type pn;
+    std::array<std::uint32_t, WIDTH> data_;
 
 public:
     //--------------------------------------------------------------------------
@@ -64,7 +83,7 @@ public:
     //
 
     static std::size_t constexpr bytes = Bits / 8;
-    static_assert(sizeof(array_type) == bytes, "");
+    static_assert(sizeof(data_) == bytes, "");
 
     using size_type              = std::size_t;
     using difference_type        = std::ptrdiff_t;
@@ -79,8 +98,8 @@ public:
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     using tag_type               = Tag;
 
-    pointer data() { return reinterpret_cast<pointer>(pn.data ()); }
-    const_pointer data() const { return reinterpret_cast<const_pointer>(pn.data ()); }
+    pointer data() { return reinterpret_cast<pointer>(data_.data ()); }
+    const_pointer data() const { return reinterpret_cast<const_pointer>(data_.data ()); }
 
 
     iterator begin() { return data(); }
@@ -112,7 +131,7 @@ private:
 
     explicit base_uint (void const* data, VoidHelper)
     {
-        memcpy (pn.data (), data, bytes);
+        memcpy (data_.data (), data, bytes);
     }
 
 public:
@@ -126,25 +145,35 @@ public:
         *this = beast::zero;
     }
 
-    explicit base_uint (Blob const& vch)
-    {
-        assert (vch.size () == size ());
-
-        if (vch.size () == size ())
-            memcpy (pn.data (), vch.data (), size ());
-        else
-            *this = beast::zero;
-    }
-
     explicit base_uint (std::uint64_t b)
     {
         *this = b;
     }
 
-    template <class OtherTag>
-    void copyFrom (base_uint<Bits, OtherTag> const& other)
+    template <class Container,
+              class = std::enable_if_t
+              <
+                  detail::is_contiguous_container<Container>::value &&
+                  std::is_trivially_copyable<typename Container::value_type>::value
+              >>
+    explicit base_uint(Container const& c)
     {
-        memcpy (pn.data (), other.data(), bytes);
+        assert(c.size()*sizeof(typename Container::value_type) == size());
+        std::memcpy(data_.data(), c.data(), size());
+    }
+
+    template <class Container>
+     std::enable_if_t
+     <
+         detail::is_contiguous_container<Container>::value &&
+         std::is_trivially_copyable<typename Container::value_type>::value,
+         base_uint&
+     >
+    operator=(Container const& c)
+    {
+        assert(c.size()*sizeof(typename Container::value_type) == size());
+        std::memcpy(data_.data(), c.data(), size());
+        return *this;
     }
 
     /* Construct from a raw pointer.
@@ -159,7 +188,7 @@ public:
     int signum() const
     {
         for (int i = 0; i < WIDTH; i++)
-            if (pn[i] != 0)
+            if (data_[i] != 0)
                 return 1;
 
         return 0;
@@ -175,7 +204,7 @@ public:
         base_uint ret;
 
         for (int i = 0; i < WIDTH; i++)
-            ret.pn[i] = ~pn[i];
+            ret.data_[i] = ~data_[i];
 
         return ret;
     }
@@ -190,15 +219,15 @@ public:
         };
         // Put in least significant bits.
         ul = boost::endian::native_to_big(uHost);
-        pn[WIDTH-2] = u[0];
-        pn[WIDTH-1] = u[1];
+        data_[WIDTH-2] = u[0];
+        data_[WIDTH-1] = u[1];
         return *this;
     }
 
     base_uint& operator^= (const base_uint& b)
     {
         for (int i = 0; i < WIDTH; i++)
-            pn[i] ^= b.pn[i];
+            data_[i] ^= b.data_[i];
 
         return *this;
     }
@@ -206,7 +235,7 @@ public:
     base_uint& operator&= (const base_uint& b)
     {
         for (int i = 0; i < WIDTH; i++)
-            pn[i] &= b.pn[i];
+            data_[i] &= b.data_[i];
 
         return *this;
     }
@@ -214,7 +243,7 @@ public:
     base_uint& operator|= (const base_uint& b)
     {
         for (int i = 0; i < WIDTH; i++)
-            pn[i] |= b.pn[i];
+            data_[i] |= b.data_[i];
 
         return *this;
     }
@@ -224,9 +253,9 @@ public:
         // prefix operator
         for (int i = WIDTH - 1; i >= 0; --i)
         {
-            pn[i] = boost::endian::native_to_big (boost::endian::big_to_native(pn[i]) + 1);
-
-            if (pn[i] != 0)
+            data_[i] = boost::endian::native_to_big
+                (boost::endian::big_to_native(data_[i]) + 1);
+            if (data_[i] != 0)
                 break;
         }
 
@@ -246,8 +275,9 @@ public:
     {
         for (int i = WIDTH - 1; i >= 0; --i)
         {
-            auto prev = pn[i];
-            pn[i] = boost::endian::native_to_big (boost::endian::big_to_native(pn[i]) - 1);
+            auto prev = data_[i];
+            data_[i] =
+                boost::endian::native_to_big(boost::endian::big_to_native(data_[i]) - 1);
 
             if (prev != 0)
                 break;
@@ -271,23 +301,22 @@ public:
 
         for (int i = WIDTH; i--;)
         {
-            std::uint64_t n = carry + boost::endian::big_to_native(pn[i]) +
-                boost::endian::big_to_native(b.pn[i]);
+            std::uint64_t n = carry + boost::endian::big_to_native(data_[i]) +
+                boost::endian::big_to_native(b.data_[i]);
 
-            pn[i] = boost::endian::native_to_big (static_cast<std::uint32_t>(n));
+            data_[i] = boost::endian::native_to_big (static_cast<std::uint32_t>(n));
             carry = n >> 32;
         }
 
         return *this;
     }
 
-    template <class Hasher,
-              class = std::enable_if_t<Hasher::endian != beast::endian::native>>
+    template <class Hasher>
     friend void hash_append(
         Hasher& h, base_uint const& a) noexcept
     {
         // Do not allow any endian transformations on this memory
-        h(a.pn.data (), sizeof(a.pn));
+        h(a.data_.data (), sizeof(a.data_));
     }
 
     /** Parse a hex string into a base_uint
@@ -298,7 +327,7 @@ public:
     {
         unsigned char* pOut  = begin ();
 
-        for (int i = 0; i < sizeof (pn); ++i)
+        for (int i = 0; i < sizeof (data_); ++i)
         {
             auto hi = charUnHex(*psz++);
             if (hi == -1)
@@ -391,7 +420,7 @@ public:
 
     base_uint<Bits, Tag>& operator=(beast::Zero)
     {
-        pn.fill(0);
+        data_.fill(0);
         return *this;
     }
 

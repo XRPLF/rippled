@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_SERIALIZER_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
+#include <ripple/basics/Blob.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Buffer.h>
 #include <ripple/basics/safe_cast.h>
