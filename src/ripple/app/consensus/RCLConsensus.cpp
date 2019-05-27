@@ -633,29 +633,31 @@ RCLConsensus::Adaptor::doAccept(
         JLOG(j_.info()) << "We closed at "
                         << closeTime.time_since_epoch().count();
         using usec64_t = std::chrono::duration<std::uint64_t>;
-        usec64_t closeTotal =
-            std::chrono::duration_cast<usec64_t>(closeTime.time_since_epoch());
+        std::vector<usec64_t> closeTimes;
         int closeCount = 1;
 
         for (auto const& p : rawCloseTimes.peers)
         {
-            // FIXME: Use median, not average
             JLOG(j_.info())
                 << std::to_string(p.second) << " time votes for "
                 << std::to_string(p.first.time_since_epoch().count());
+
             closeCount += p.second;
-            closeTotal += std::chrono::duration_cast<usec64_t>(
-                              p.first.time_since_epoch()) *
-                p.second;
+
+            auto time = std::chrono::duration_cast<usec64_t>(p.first.time_since_epoch());
+            for(int pi = 0; pi < p.second; ++pi)
+              closeTimes.push_back(time);
         }
 
-        closeTotal += usec64_t(closeCount / 2);  // for round to nearest
-        closeTotal /= closeCount;
+        auto our_time = std::chrono::duration_cast<usec64_t>(closeTime.time_since_epoch());
+        closeTimes.insert(std::upper_bound(closeTimes.begin(), closeTimes.end(), our_time), our_time);
 
         // Use signed times since we are subtracting
         using duration = std::chrono::duration<std::int32_t>;
         using time_point = std::chrono::time_point<NetClock, duration>;
-        auto offset = time_point{closeTotal} -
+
+        // Use median time
+        auto offset = time_point{closeTimes[closeTimes.size()/2]} -
             std::chrono::time_point_cast<duration>(closeTime);
         JLOG(j_.info()) << "Our close offset is estimated at " << offset.count()
                         << " (" << closeCount << ")";
