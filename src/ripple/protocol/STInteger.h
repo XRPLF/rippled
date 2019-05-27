@@ -58,7 +58,7 @@ public:
     getSType () const override;
 
     Json::Value
-    getJson (int) const override;
+    getJson (JsonOption) const override;
 
     std::string
     getText () const override;

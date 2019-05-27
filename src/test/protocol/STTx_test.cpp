@@ -1477,8 +1477,8 @@ public:
         if (copy != j)
         {
             log <<
-                "j=" << j.getJson (0) << '\n' <<
-                "copy=" << copy.getJson (0) << std::endl;
+                "j=" << j.getJson (JsonOption::none) << '\n' <<
+                "copy=" << copy.getJson (JsonOption::none) << std::endl;
             fail ("Transaction fails serialize/deserialize test");
         }
         else
@@ -1486,15 +1486,15 @@ public:
             pass ();
         }
 
-        STParsedJSONObject parsed ("test", j.getJson (0));
+        STParsedJSONObject parsed ("test", j.getJson (JsonOption::none));
         if (!parsed.object)
             fail ("Unable to build object from json");
 
         if (STObject (j) != parsed.object)
         {
             log <<
-                "ORIG: " << j.getJson (0) << '\n' <<
-                "BUILT " << parsed.object->getJson (0) << std::endl;
+                "ORIG: " << j.getJson (JsonOption::none) << '\n' <<
+                "BUILT " << parsed.object->getJson (JsonOption::none) << std::endl;
             fail ("Built a different transaction");
         }
         else

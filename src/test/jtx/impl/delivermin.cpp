@@ -27,7 +27,7 @@ namespace jtx {
 void
 delivermin::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[jss::DeliverMin] = amount_.getJson(0);
+    jt.jv[jss::DeliverMin] = amount_.getJson(JsonOption::none);
 }
 
 } // jtx

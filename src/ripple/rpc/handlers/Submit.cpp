@@ -134,7 +134,7 @@ Json::Value doSubmit (RPC::Context& context)
 
     try
     {
-        jvResult[jss::tx_json] = tpTrans->getJson (0);
+        jvResult[jss::tx_json] = tpTrans->getJson (JsonOption::none);
         jvResult[jss::tx_blob] = strHex (
             tpTrans->getSTransaction ()->getSerializer ().peekData ());
 

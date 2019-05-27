@@ -288,7 +288,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
         }
         else
         {
-            jvResult[jss::node]        = sleNode->getJson (0);
+            jvResult[jss::node]        = sleNode->getJson (JsonOption::none);
             jvResult[jss::index]       = to_string (uNodeIndex);
         }
     }

@@ -38,7 +38,7 @@ create (jtx::Account const& account,
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
-    jv[sfSendMax.jsonName] = sendMax.getJson(0);
+    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOption::none);
     jv[sfDestination.jsonName] = dest.human();
     jv[sfTransactionType.jsonName] = "CheckCreate";
     jv[sfFlags.jsonName] = tfUniversal;
@@ -60,7 +60,7 @@ cash (jtx::Account const& dest,
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
-    jv[sfAmount.jsonName]  = amount.getJson(0);
+    jv[sfAmount.jsonName]  = amount.getJson(JsonOption::none);
     jv[sfCheckID.jsonName] = to_string (checkId);
     jv[sfTransactionType.jsonName] = "CheckCash";
     jv[sfFlags.jsonName] = tfUniversal;
@@ -73,7 +73,7 @@ cash (jtx::Account const& dest,
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
-    jv[sfDeliverMin.jsonName]  = atLeast.value.getJson(0);
+    jv[sfDeliverMin.jsonName]  = atLeast.value.getJson(JsonOption::none);
     jv[sfCheckID.jsonName] = to_string (checkId);
     jv[sfTransactionType.jsonName] = "CheckCash";
     jv[sfFlags.jsonName] = tfUniversal;
@@ -206,7 +206,7 @@ class Check_test : public beast::unit_test::suite
     void verifyDeliveredAmount (test::jtx::Env& env, STAmount const& amount)
     {
         // Get the hash for the most recent transaction.
-        std::string const txHash {env.tx()->getJson (0)[jss::hash].asString()};
+        std::string const txHash {env.tx()->getJson (JsonOption::none)[jss::hash].asString()};
 
         // Verify DeliveredAmount and delivered_amount metadata are correct.
         env.close();
@@ -218,8 +218,8 @@ class Check_test : public beast::unit_test::suite
 
         // DeliveredAmount and delivered_amount should both be present and
         // equal amount.
-        BEAST_EXPECT (meta[sfDeliveredAmount.jsonName] == amount.getJson (0));
-        BEAST_EXPECT (meta[jss::delivered_amount] == amount.getJson (0));
+        BEAST_EXPECT (meta[sfDeliveredAmount.jsonName] == amount.getJson (JsonOption::none));
+        BEAST_EXPECT (meta[jss::delivered_amount] == amount.getJson (JsonOption::none));
     }
 
     void testEnabled()
@@ -1407,7 +1407,7 @@ class Check_test : public beast::unit_test::suite
             // Both Amount and DeliverMin present.
             {
                 Json::Value tx {check::cash (bob, chkId, amount)};
-                tx[sfDeliverMin.jsonName]  = amount.getJson(0);
+                tx[sfDeliverMin.jsonName]  = amount.getJson(JsonOption::none);
                 env (tx, ter (temMALFORMED));
                 env.close();
             }
@@ -1826,7 +1826,7 @@ class Check_test : public beast::unit_test::suite
 
             // Get the hash for the most recent transaction.
             std::string const txHash {
-                env.tx()->getJson (0)[jss::hash].asString()};
+                env.tx()->getJson (JsonOption::none)[jss::hash].asString()};
 
             // DeliveredAmount and delivered_amount are either present or
             // not present in the metadata returned by "tx" based on fix1623.

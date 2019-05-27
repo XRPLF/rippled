@@ -237,9 +237,9 @@ public:
         params[jss::command] = "ripple_path_find";
         params[jss::source_account] = toBase58 (src);
         params[jss::destination_account] = toBase58 (dst);
-        params[jss::destination_amount] = saDstAmount.getJson(0);
+        params[jss::destination_amount] = saDstAmount.getJson(JsonOption::none);
         if(saSendMax)
-            params[jss::send_max] = saSendMax->getJson(0);
+            params[jss::send_max] = saSendMax->getJson(JsonOption::none);
         if(saSrcCurrency)
         {
             auto& sc = params[jss::source_currencies] = Json::arrayValue;
@@ -803,7 +803,7 @@ public:
             })", jv);
 
         auto const jv_l = env.le(keylet::line(Account("bob").id(),
-            Account("alice")["USD"].issue()))->getJson(0);
+            Account("alice")["USD"].issue()))->getJson(JsonOption::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
     }
@@ -842,7 +842,7 @@ public:
             })", jv);
 
         auto const jv_l = env.le(keylet::line(Account("bob").id(),
-            Account("alice")["USD"].issue()))->getJson(0);
+            Account("alice")["USD"].issue()))->getJson(JsonOption::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
 
@@ -890,7 +890,7 @@ public:
             })", jv);
 
         auto const jv_l = env.le(keylet::line(Account("alice").id(),
-            Account("bob")["USD"].issue()))->getJson(0);
+            Account("bob")["USD"].issue()))->getJson(JsonOption::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
 

@@ -91,7 +91,7 @@ class TransactionHistory_test : public beast::unit_test::suite
 
             // search for a tx in history matching the last offer
             bool const txFound = [&] {
-                auto const toFind = env.tx()->getJson(0);
+                auto const toFind = env.tx()->getJson(JsonOption::none);
                 for (auto tx : result[jss::txs])
                 {
                     tx.removeMember(jss::inLedger);

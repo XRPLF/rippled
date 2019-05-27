@@ -340,7 +340,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         {
             Json::Value jv;
             jv[sfAccount.jsonName] = account.human();
-            jv[sfSendMax.jsonName] = sendMax.getJson(0);
+            jv[sfSendMax.jsonName] = sendMax.getJson(JsonOption::none);
             jv[sfDestination.jsonName] = dest.human();
             jv[sfTransactionType.jsonName] = "CheckCreate";
             jv[sfFlags.jsonName] = tfUniversal;
@@ -664,7 +664,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             jv[jss::Flags] = tfUniversal;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(0);
+            jv[jss::Amount] = amount.getJson(JsonOption::none);
             jv[sfFinishAfter.jsonName] =
                 cancelAfter.time_since_epoch().count() + 2;
             return jv;
@@ -852,7 +852,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             jv[jss::TransactionType] = "PaymentChannelCreate";
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson (0);
+            jv[jss::Amount] = amount.getJson (JsonOption::none);
             jv[sfSettleDelay.jsonName] = settleDelay.count();
             jv[sfPublicKey.jsonName] = strHex (pk.slice());
             return jv;

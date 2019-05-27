@@ -110,13 +110,13 @@ class Freeze_test : public beast::unit_test::suite
             // Is created via a TrustSet with SetFreeze flag
             //   test: sets LowFreeze | HighFreeze flags
             env(trust(G1, bob["USD"](0), tfSetFreeze));
-            auto affected = env.meta()->getJson(0)[sfAffectedNodes.fieldName];
+            auto affected = env.meta()->getJson(JsonOption::none)[sfAffectedNodes.fieldName];
             if(! BEAST_EXPECT(checkArraySize(affected, 2u)))
                 return;
             auto ff =
                 affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
-                ff[sfLowLimit.fieldName] == G1["USD"](0).value().getJson(0));
+                ff[sfLowLimit.fieldName] == G1["USD"](0).value().getJson(JsonOption::none));
             BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfLowFreeze);
             BEAST_EXPECT(! (ff[jss::Flags].asUInt() & lsfHighFreeze));
             env.close();
@@ -126,16 +126,16 @@ class Freeze_test : public beast::unit_test::suite
             // Account with line frozen by issuer
             //    test: can buy more assets on that line
             env(offer(bob, G1["USD"](5), XRP(25)));
-            auto affected = env.meta()->getJson(0)[sfAffectedNodes.fieldName];
+            auto affected = env.meta()->getJson(JsonOption::none)[sfAffectedNodes.fieldName];
             if(! BEAST_EXPECT(checkArraySize(affected, 5u)))
                 return;
             auto ff =
                 affected[3u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
-                ff[sfHighLimit.fieldName] == bob["USD"](100).value().getJson(0));
+                ff[sfHighLimit.fieldName] == bob["USD"](100).value().getJson(JsonOption::none));
             auto amt =
                 STAmount{Issue{to_currency("USD"), noAccount()}, -15}
-                    .value().getJson(0);
+                    .value().getJson(JsonOption::none);
             BEAST_EXPECT(ff[sfBalance.fieldName] == amt);
             env.close();
         }
@@ -193,13 +193,13 @@ class Freeze_test : public beast::unit_test::suite
             //Is cleared via a TrustSet with ClearFreeze flag
             //    test: sets LowFreeze | HighFreeze flags
             env(trust(G1, bob["USD"](0), tfClearFreeze));
-            auto affected = env.meta()->getJson(0)[sfAffectedNodes.fieldName];
+            auto affected = env.meta()->getJson(JsonOption::none)[sfAffectedNodes.fieldName];
             if(! BEAST_EXPECT(checkArraySize(affected, 2u)))
                 return;
             auto ff =
                 affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
-                ff[sfLowLimit.fieldName] == G1["USD"](0).value().getJson(0));
+                ff[sfLowLimit.fieldName] == G1["USD"](0).value().getJson(JsonOption::none));
             BEAST_EXPECT(! (ff[jss::Flags].asUInt() & lsfLowFreeze));
             BEAST_EXPECT(! (ff[jss::Flags].asUInt() & lsfHighFreeze));
             env.close();
@@ -409,7 +409,7 @@ class Freeze_test : public beast::unit_test::suite
 
         //    test: trustlines can't be frozen
         env(trust(G1, A1["USD"](0), tfSetFreeze));
-        auto affected = env.meta()->getJson(0)[sfAffectedNodes.fieldName];
+        auto affected = env.meta()->getJson(JsonOption::none)[sfAffectedNodes.fieldName];
         if(! BEAST_EXPECT(checkArraySize(affected, 1u)))
             return;
 
@@ -457,7 +457,7 @@ class Freeze_test : public beast::unit_test::suite
         if(! BEAST_EXPECT(checkArraySize(offers, 1u)))
             return;
         BEAST_EXPECT(
-            offers[0u][jss::taker_gets] == G1["USD"](999).value().getJson(0));
+            offers[0u][jss::taker_gets] == G1["USD"](999).value().getJson(JsonOption::none));
 
         //    test: someone else creates an offer providing liquidity
         env(offer(A4, XRP(999), G1["USD"](999)));
@@ -465,13 +465,13 @@ class Freeze_test : public beast::unit_test::suite
 
         //    test: owner of partially consumed offers line is frozen
         env(trust(G1, A3["USD"](0), tfSetFreeze));
-        auto affected = env.meta()->getJson(0)[sfAffectedNodes.fieldName];
+        auto affected = env.meta()->getJson(JsonOption::none)[sfAffectedNodes.fieldName];
         if(! BEAST_EXPECT(checkArraySize(affected, 2u)))
             return;
         auto ff =
             affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
         BEAST_EXPECT(
-            ff[sfHighLimit.fieldName] == G1["USD"](0).value().getJson(0));
+            ff[sfHighLimit.fieldName] == G1["USD"](0).value().getJson(JsonOption::none));
         BEAST_EXPECT(! (ff[jss::Flags].asUInt() & lsfLowFreeze));
         BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfHighFreeze);
         env.close();
@@ -493,20 +493,20 @@ class Freeze_test : public beast::unit_test::suite
         // removal buy successful OfferCreate
         //    test: freeze the new offer
         env(trust(G1, A4["USD"](0), tfSetFreeze));
-        affected = env.meta()->getJson(0)[sfAffectedNodes.fieldName];
+        affected = env.meta()->getJson(JsonOption::none)[sfAffectedNodes.fieldName];
         if(! BEAST_EXPECT(checkArraySize(affected, 2u)))
             return;
         ff =
             affected[0u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
         BEAST_EXPECT(
-            ff[sfLowLimit.fieldName] == G1["USD"](0).value().getJson(0));
+            ff[sfLowLimit.fieldName] == G1["USD"](0).value().getJson(JsonOption::none));
         BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfLowFreeze);
         BEAST_EXPECT(! (ff[jss::Flags].asUInt() & lsfHighFreeze));
         env.close();
 
         //    test: can no longer create a crossing offer
         env(offer(A2, G1["USD"](999), XRP(999)));
-        affected = env.meta()->getJson(0)[sfAffectedNodes.fieldName];
+        affected = env.meta()->getJson(JsonOption::none)[sfAffectedNodes.fieldName];
         if(! BEAST_EXPECT(checkArraySize(affected, 8u)))
             return;
         auto created = affected[5u][sfCreatedNode.fieldName];

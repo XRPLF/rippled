@@ -102,7 +102,7 @@ public:
     boost::container::flat_set<AccountID>
     getAffectedAccounts(beast::Journal j) const;
 
-    Json::Value getJson (int p) const
+    Json::Value getJson (JsonOption p) const
     {
         return getAsObject ().getJson (p);
     }

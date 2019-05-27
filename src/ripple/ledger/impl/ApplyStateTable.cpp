@@ -246,7 +246,7 @@ ApplyStateTable::apply (OpenView& to,
         // VFALCO For diagnostics do we want to show
         //        metadata even when the base view is open?
         JLOG(j.trace()) <<
-            "metadata " << meta.getJson (0);
+            "metadata " << meta.getJson (JsonOption::none);
     }
     to.rawTxInsert(
         tx.getTransactionID(),

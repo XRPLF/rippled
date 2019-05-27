@@ -116,7 +116,7 @@ Json::Value doLedgerData (RPC::Context& context)
             }
             else
             {
-                Json::Value& entry = nodes.append (sle->getJson (0));
+                Json::Value& entry = nodes.append (sle->getJson (JsonOption::none));
                 entry[jss::index] = to_string(sle->key());
             }
         }

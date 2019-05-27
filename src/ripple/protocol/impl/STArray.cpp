@@ -138,7 +138,7 @@ std::string STArray::getText () const
     return r;
 }
 
-Json::Value STArray::getJson (int p) const
+Json::Value STArray::getJson (JsonOption p) const
 {
     Json::Value v = Json::arrayValue;
     for (auto const& object: v_)

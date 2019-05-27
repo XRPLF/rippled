@@ -51,10 +51,10 @@ class Ticket_test : public beast::unit_test::suite
         bool expiration = false)
     {
         using namespace std::string_literals;
-        auto const& tx = env.tx ()->getJson (0);
+        auto const& tx = env.tx ()->getJson (JsonOption::none);
         bool is_cancel = tx[jss::TransactionType] == "TicketCancel";
 
-        auto const& jvm = env.meta ()->getJson (0);
+        auto const& jvm = env.meta ()->getJson (JsonOption::none);
         std::array<Json::Value, 4> retval;
 
         // these are the affected nodes that we expect for
@@ -321,7 +321,7 @@ class Ticket_test : public beast::unit_test::suite
         env (ticket::create (env.master, expire));
         // in the case of past expiration, we only get
         // one meta node entry returned
-        auto const& jvm = env.meta ()->getJson (0);
+        auto const& jvm = env.meta ()->getJson (JsonOption::none);
         BEAST_EXPECT(jvm.isMember(sfAffectedNodes.fieldName));
         BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].isArray());
         BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].size() == 1);

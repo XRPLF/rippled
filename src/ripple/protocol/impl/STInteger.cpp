@@ -61,7 +61,7 @@ STUInt8::getText () const
 
 template <>
 Json::Value
-STUInt8::getJson (int) const
+STUInt8::getJson (JsonOption) const
 {
     if (getFName () == sfTransactionResult)
     {
@@ -119,7 +119,7 @@ STUInt16::getText () const
 
 template <>
 Json::Value
-STUInt16::getJson (int) const
+STUInt16::getJson (JsonOption) const
 {
     if (getFName () == sfLedgerEntryType)
     {
@@ -166,7 +166,7 @@ STUInt32::getText () const
 
 template <>
 Json::Value
-STUInt32::getJson (int) const
+STUInt32::getJson (JsonOption) const
 {
     return value_;
 }
@@ -195,7 +195,7 @@ STUInt64::getText () const
 
 template <>
 Json::Value
-STUInt64::getJson (int) const
+STUInt64::getJson (JsonOption) const
 {
     return strHex (value_);
 }

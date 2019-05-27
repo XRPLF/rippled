@@ -81,7 +81,7 @@ Json::Value doTxHistory (RPC::Context& context)
 
             if (auto trans = Transaction::transactionFromSQL (
                     ledgerSeq, status, rawTxn, context.app))
-                txs.append (trans->getJson (0));
+                txs.append (trans->getJson (JsonOption::none));
         }
     }
 

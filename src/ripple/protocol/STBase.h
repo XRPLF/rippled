@@ -23,6 +23,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/Serializer.h>
+#include <ripple/protocol/json_options.h>
 #include <ostream>
 #include <memory>
 #include <string>
@@ -121,7 +122,7 @@ public:
 
     virtual
     Json::Value
-    getJson (int /*options*/) const;
+    getJson (JsonOption /*options*/) const;
 
     virtual
     void

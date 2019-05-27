@@ -177,13 +177,13 @@ Json::Value doAccountTxOld (RPC::Context& context)
                 Json::Value&    jvObj = jvTxns.append (Json::objectValue);
 
                 if (it->first)
-                    jvObj[jss::tx]             = it->first->getJson (1);
+                    jvObj[jss::tx]             = it->first->getJson (JsonOption::include_date);
 
                 if (it->second)
                 {
                     std::uint32_t uLedgerIndex = it->second->getLgrSeq ();
 
-                    auto meta = it->second->getJson(0);
+                    auto meta = it->second->getJson(JsonOption::none);
                     insertDeliveredAmount(meta, context, it->first, *it->second);
                     jvObj[jss::meta] = std::move(meta);
 

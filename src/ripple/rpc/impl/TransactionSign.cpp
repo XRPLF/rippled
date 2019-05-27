@@ -227,10 +227,10 @@ static Json::Value checkPayment(
             auto j = app.journal ("RPCHandler");
             JLOG (j.debug())
                 << "transactionSign: build_path: "
-                << result.getJson (0);
+                << result.getJson (JsonOption::none);
 
             if (! result.empty ())
-                tx_json[jss::Paths] = result.getJson (0);
+                tx_json[jss::Paths] = result.getJson (JsonOption::none);
         }
     }
     return Json::Value();
@@ -629,7 +629,7 @@ static Json::Value transactionFormatResultImpl (Transaction::pointer tpTrans)
     Json::Value jvResult;
     try
     {
-        jvResult[jss::tx_json] = tpTrans->getJson (0);
+        jvResult[jss::tx_json] = tpTrans->getJson (JsonOption::none);
         jvResult[jss::tx_blob] = strHex (
             tpTrans->getSTransaction ()->getSerializer ().peekData ());
 

@@ -89,7 +89,7 @@ public:
             STParsedJSONObject parsed ("test", jsonObject);
             BEAST_EXPECT(parsed.object);
             std::string const& serialized (
-                to_string (parsed.object->getJson(0)));
+                to_string (parsed.object->getJson(JsonOption::none)));
             BEAST_EXPECT(serialized == json);
         }
         else
@@ -114,7 +114,7 @@ public:
                 if (BEAST_EXPECT(parsed.object))
                 {
                     std::string const& serialized(
-                        to_string(parsed.object->getJson(0)));
+                        to_string(parsed.object->getJson(JsonOption::none)));
                     BEAST_EXPECT(serialized == goodJson);
                 }
             }
@@ -138,7 +138,7 @@ public:
                 if (BEAST_EXPECT(parsed.object))
                 {
                     std::string const& serialized(
-                        to_string(parsed.object->getJson(0)));
+                        to_string(parsed.object->getJson(JsonOption::none)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
             }
@@ -311,8 +311,8 @@ public:
         if (object1.getSerializer () == object2.getSerializer ())
         {
             log <<
-                "O1: " << object1.getJson (0) << '\n' <<
-                "O2: " << object2.getJson (0) << std::endl;
+                "O1: " << object1.getJson (JsonOption::none) << '\n' <<
+                "O2: " << object2.getJson (JsonOption::none) << std::endl;
             fail ("STObject error 4");
         }
         else

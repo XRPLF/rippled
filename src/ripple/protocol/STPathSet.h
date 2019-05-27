@@ -241,7 +241,7 @@ public:
         AccountID const& issuer) const;
 
     Json::Value
-    getJson (int) const;
+    getJson (JsonOption) const;
 
     std::vector<STPathElement>::const_iterator
     begin () const
@@ -322,7 +322,7 @@ public:
     add (Serializer& s) const override;
 
     Json::Value
-    getJson (int) const override;
+    getJson (JsonOption) const override;
 
     SerializedTypeID
     getSType () const override
