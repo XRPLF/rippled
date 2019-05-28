@@ -25,24 +25,33 @@ case ${ID} in
         ;;
 esac
 
+# this script provides info variables about pkg version
+. build/${pkgtype}/packages/build_vars
+
 if [ "${pkgtype}" = "dpkg" ] ; then
+    # sometimes update fails and requires a cleanup
+    updateWithRetry()
+    {
+        if ! apt-get -y update ; then
+            rm -rvf /var/lib/apt/lists/*
+            apt-get -y clean
+            apt-get -y update
+        fi
+    }
     if [ "${install_from}" = "repo" ] ; then
-        apt -y upgrade
-        apt -y update
-        apt -y install apt apt-transport-https ca-certificates coreutils util-linux wget gnupg
+        apt-get -y upgrade
+        updateWithRetry
+        apt-get -y install apt apt-transport-https ca-certificates coreutils util-linux wget gnupg
         wget -q -O - "${REPO_ROOT}/api/gpg/key/public" | apt-key add -
         echo "deb ${REPO_ROOT}/${DEB_REPO} ${DISTRO} ${COMPONENT}" >> /etc/apt/sources.list
-        # sometimes update fails and requires a cleanup
-        if ! apt -y update ; then
-          rm -rvf /var/lib/apt/lists/*
-          apt-get clean
-          apt -y update
-        fi
-        apt-get -y install rippled
+        updateWithRetry
+        # uncomment this next line if you want to see the available package versions
+        # apt-cache policy rippled
+        apt-get -y install rippled=${dpkg_full_version}
     elif [ "${install_from}" = "local" ] ; then
         # cached pkg install
-        apt -y update
-        apt -y install libprotobuf-dev libssl-dev
+        updateWithRetry
+        apt-get -y install libprotobuf-dev libssl-dev
         rm -f build/dpkg/packages/rippled-dbgsym*.*
         dpkg --no-debsig -i build/dpkg/packages/*.deb
     else
@@ -62,7 +71,9 @@ else
         echo "gpgkey=${REPO_ROOT}/${RPM_REPO}/${COMPONENT}/repodata/repomd.xml.key" >> ${REPOFILE}
         echo "repo_gpgcheck=1" >> ${REPOFILE}
         yum -y update
-        yum -y install rippled
+        # uncomment this next line if you want to see the available package versions
+        # yum --showduplicates list rippled
+        yum -y install ${rpm_version_release}
     elif [ "${install_from}" = "local" ] ; then
         # cached pkg install
         yum install -y yum-utils openssl-static zlib-static
@@ -77,7 +88,6 @@ fi
 
 # verify installed version
 INSTALLED=$(/opt/ripple/bin/rippled --version | awk '{print $NF}')
-. build/${pkgtype}/packages/build_vars
 if [ "${rippled_version}" != "${INSTALLED}" ] ; then
     echo "INSTALLED version ${INSTALLED} does not match ${rippled_version}"
     exit 1
