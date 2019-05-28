@@ -61,6 +61,7 @@ stages:
       - $IS_PRIMARY_REPO == "true"
       - $REQUIRE_APPROVAL == "true"
   when: manual
+  allow_failure: false
 
 .smoketest_local_template: &run_local_smoketest
   tags:
