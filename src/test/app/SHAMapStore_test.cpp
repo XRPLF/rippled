@@ -125,18 +125,6 @@ class SHAMapStore_test : public beast::unit_test::suite
         return json[jss::result][jss::ledger][jss::hash].asString();
     }
 
-    void validationCheck(jtx::Env& env, int const expected)
-    {
-        auto db = env.app().getLedgerDB().checkoutDb();
-
-        int actual;
-        *db << "SELECT count(*) AS rows FROM Validations;",
-            soci::into(actual);
-
-        BEAST_EXPECT(actual == expected);
-
-    }
-
     void ledgerCheck(jtx::Env& env, int const rows,
         int const first)
     {
@@ -214,7 +202,6 @@ public:
         auto& store = env.app().getSHAMapStore();
         env.fund(XRP(10000), noripple("alice"));
 
-        validationCheck(env, 0);
         ledgerCheck(env, 1, 2);
         transactionCheck(env, 0);
         accountTransactionCheck(env, 0);
@@ -260,67 +247,6 @@ public:
                 getHash(ledgers[i]).length());
         }
 
-        validationCheck(env, 0);
-        ledgerCheck(env, deleteInterval + 1, 2);
-        transactionCheck(env, deleteInterval);
-        accountTransactionCheck(env, 2 * deleteInterval);
-
-        {
-            // Since standalone doesn't _do_ validations, manually
-            // insert some into the table. Create some with the
-            // hashes from our real ledgers, and some with fake
-            // hashes to represent validations that never ended up
-            // in a validated ledger.
-            char lh[65];
-            memset(lh, 'a', 64);
-            lh[64] = '\0';
-            std::vector<std::string> preSeqLedgerHashes({
-                lh
-            });
-            std::vector<std::string> badLedgerHashes;
-            std::vector<LedgerIndex> badLedgerSeqs;
-            std::vector<std::string> ledgerHashes;
-            std::vector<LedgerIndex> ledgerSeqs;
-            for (auto const& lgr : ledgers)
-            {
-                ledgerHashes.emplace_back(getHash(lgr.second));
-                ledgerSeqs.emplace_back(lgr.second[jss::result][jss::ledger_index].asUInt());
-            }
-            for (auto i = 0; i < 10; ++i)
-            {
-                ++lh[30];
-                preSeqLedgerHashes.emplace_back(lh);
-                ++lh[20];
-                badLedgerHashes.emplace_back(lh);
-                badLedgerSeqs.emplace_back(i + 1);
-            }
-
-            auto db = env.app().getLedgerDB().checkoutDb();
-
-            // Pre-migration validation - no sequence numbers.
-            *db << "INSERT INTO Validations "
-                "(LedgerHash) "
-                "VALUES "
-                "(:ledgerHash);",
-                soci::use(preSeqLedgerHashes);
-            // Post-migration orphan validation - InitalSeq,
-            // but no LedgerSeq
-            *db << "INSERT INTO Validations "
-                "(LedgerHash, InitialSeq) "
-                "VALUES "
-                "(:ledgerHash, :initialSeq);",
-                soci::use(badLedgerHashes),
-                soci::use(badLedgerSeqs);
-            // Post-migration validated ledger.
-            *db << "INSERT INTO Validations "
-                "(LedgerHash, LedgerSeq) "
-                "VALUES "
-                "(:ledgerHash, :ledgerSeq);",
-                soci::use(ledgerHashes),
-                soci::use(ledgerSeqs);
-        }
-
-        validationCheck(env, deleteInterval + 23);
         ledgerCheck(env, deleteInterval + 1, 2);
         transactionCheck(env, deleteInterval);
         accountTransactionCheck(env, 2 * deleteInterval);
@@ -340,7 +266,6 @@ public:
         BEAST_EXPECT(lastRotated == 11);
 
         // That took care of the fake hashes
-        validationCheck(env, deleteInterval + 8);
         ledgerCheck(env, deleteInterval + 1, 3);
         transactionCheck(env, deleteInterval);
         accountTransactionCheck(env, 2 * deleteInterval);
@@ -348,8 +273,6 @@ public:
         // The last iteration of this loop should trigger a rotate
         for (auto i = lastRotated - 1; i < lastRotated + deleteInterval - 1; ++i)
         {
-            validationCheck(env, deleteInterval + i + 1 - lastRotated + 8);
-
             env.close();
 
             ledgerTmp = env.rpc("ledger", "current");
@@ -361,28 +284,12 @@ public:
                 i == lastRotated + deleteInterval - 2);
             BEAST_EXPECT(goodLedger(env, ledgers[i], to_string(i), true) &&
                 getHash(ledgers[i]).length());
-
-            std::vector<std::string> ledgerHashes({
-                getHash(ledgers[i])
-            });
-            std::vector<LedgerIndex> ledgerSeqs({
-                ledgers[i][jss::result][jss::ledger_index].asUInt()
-            });
-            auto db = env.app().getLedgerDB().checkoutDb();
-
-            *db << "INSERT INTO Validations "
-                "(LedgerHash, LedgerSeq) "
-                "VALUES "
-                "(:ledgerHash, :ledgerSeq);",
-                soci::use(ledgerHashes),
-                soci::use(ledgerSeqs);
         }
 
         store.rendezvous();
 
         BEAST_EXPECT(store.getLastRotated() == deleteInterval + lastRotated);
 
-        validationCheck(env, deleteInterval - 1);
         ledgerCheck(env, deleteInterval + 1, lastRotated);
         transactionCheck(env, 0);
         accountTransactionCheck(env, 0);
@@ -421,7 +328,6 @@ public:
 
         // The database will always have back to ledger 2,
         // regardless of lastRotated.
-        validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - 2, 2);
         BEAST_EXPECT(lastRotated == store.getLastRotated());
 
@@ -435,7 +341,6 @@ public:
 
         store.rendezvous();
 
-        validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
         BEAST_EXPECT(lastRotated != store.getLastRotated());
 
@@ -452,7 +357,6 @@ public:
 
         store.rendezvous();
 
-        validationCheck(env, 0);
         ledgerCheck(env, deleteInterval + 1, lastRotated);
         BEAST_EXPECT(lastRotated != store.getLastRotated());
     }
@@ -491,7 +395,6 @@ public:
 
         store.rendezvous();
 
-        validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - 2, 2);
         BEAST_EXPECT(lastRotated == store.getLastRotated());
 
@@ -504,7 +407,6 @@ public:
 
         store.rendezvous();
 
-        validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - 2, 2);
         BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
@@ -518,7 +420,6 @@ public:
 
         store.rendezvous();
 
-        validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
         BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
@@ -547,7 +448,6 @@ public:
 
         store.rendezvous();
 
-        validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - firstBatch, firstBatch);
 
         BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
@@ -582,7 +482,6 @@ public:
 
         store.rendezvous();
 
-        validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
         BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
@@ -616,7 +515,6 @@ public:
 
         store.rendezvous();
 
-        validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
         BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
