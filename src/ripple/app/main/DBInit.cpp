@@ -66,10 +66,10 @@ const char* TxnDBInit[] =
 
     "END TRANSACTION;"
 };
-
 int TxnDBCount = std::extent<decltype(TxnDBInit)>::value;
 
 // Ledger database holds ledgers and ledger confirmations
+const char* LedgerDBName = "ledger.db";
 const char* LedgerDBInit[] =
 {
     "PRAGMA synchronous=NORMAL;",
@@ -78,7 +78,7 @@ const char* LedgerDBInit[] =
 
     "BEGIN TRANSACTION;",
 
-    "CREATE TABLE IF NOT EXISTS Ledgers (                         \
+    "CREATE TABLE IF NOT EXISTS Ledgers (           \
         LedgerHash      CHARACTER(64) PRIMARY KEY,  \
         LedgerSeq       BIGINT UNSIGNED,            \
         PrevHash        CHARACTER(64),              \
@@ -92,30 +92,14 @@ const char* LedgerDBInit[] =
     );",
     "CREATE INDEX IF NOT EXISTS SeqLedger ON Ledgers(LedgerSeq);",
 
-    // InitialSeq field is the current ledger seq when the row
-    // is inserted. Only relevant during online delete
-    "CREATE TABLE IF NOT EXISTS Validations   (                   \
-        LedgerSeq   BIGINT UNSIGNED,                \
-        InitialSeq  BIGINT UNSIGNED,                \
-        LedgerHash  CHARACTER(64),                  \
-        NodePubKey  CHARACTER(56),                  \
-        SignTime    BIGINT UNSIGNED,                \
-        RawData     BLOB                            \
-    );",
-    "CREATE INDEX IF NOT EXISTS ValidationsByHash ON              \
-        Validations(LedgerHash);",
-    "CREATE INDEX IF NOT EXISTS ValidationsBySeq ON              \
-        Validations(LedgerSeq);",
-    "CREATE INDEX IF NOT EXISTS ValidationsByInitialSeq ON              \
-        Validations(InitialSeq, LedgerSeq);",
-    "CREATE INDEX IF NOT EXISTS ValidationsByTime ON              \
-        Validations(SignTime);",
+    // Old table and indexes no longer needed
+    "DROP TABLE IF EXISTS Validations;",
 
     "END TRANSACTION;"
 };
-
 int LedgerDBCount = std::extent<decltype(LedgerDBInit)>::value;
 
+const char* WalletDBName = "wallet.db";
 const char* WalletDBInit[] =
 {
     "BEGIN TRANSACTION;",
@@ -154,7 +138,6 @@ const char* WalletDBInit[] =
 
     "END TRANSACTION;"
 };
-
 int WalletDBCount = std::extent<decltype(WalletDBInit)>::value;
 
 } // ripple

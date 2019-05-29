@@ -310,14 +310,7 @@ public:
                 LedgerHash      CHARACTER(64) PRIMARY KEY,  \
                 LedgerSeq       BIGINT UNSIGNED             \
             );",
-                "CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);",
-
-                "CREATE TABLE Validations   (  \
-                LedgerHash  CHARACTER(64)      \
-            );",
-                "CREATE INDEX ValidationsByHash ON \
-                Validations(LedgerHash);",
-                "END TRANSACTION;"};
+                "CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);"};
             int dbInitCount = std::extent<decltype(dbInit)>::value;
             for (int i = 0; i < dbInitCount; ++i)
             {
@@ -343,16 +336,10 @@ public:
             s << "INSERT INTO Ledgers (LedgerHash, LedgerSeq) VALUES "
                  "(:lh, :li);",
                 soci::use (ledgerHashes), soci::use (ledgerIndexes);
-            s << "INSERT INTO Validations (LedgerHash) VALUES "
-                 "(:lh);", soci::use (ledgerHashes);
 
             std::vector<int> ledgersLS (numRows * 2);
-            std::vector<std::string> validationsLH (numRows * 2);
             s << "SELECT LedgerSeq FROM Ledgers;", soci::into (ledgersLS);
-            s << "SELECT LedgerHash FROM Validations;",
-                soci::into (validationsLH);
-            BEAST_EXPECT(ledgersLS.size () == numRows &&
-                    validationsLH.size () == numRows);
+            BEAST_EXPECT(ledgersLS.size () == numRows);
         }
         namespace bfs = boost::filesystem;
         // Remove the database

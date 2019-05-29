@@ -948,9 +948,6 @@ static bool saveValidatedLedger (
             VALUES
                 (:ledgerHash,:ledgerSeq,:prevHash,:totalCoins,:closingTime,:prevClosingTime,
                 :closeTimeRes,:closeFlags,:accountSetHash,:transSetHash);)sql");
-        static std::string updateVal(
-            R"sql(UPDATE Validations SET LedgerSeq = :ledgerSeq, InitialSeq = :initialSeq
-                WHERE LedgerHash = :ledgerHash;)sql");
 
         auto db (app.getLedgerDB ().checkoutDb ());
 
@@ -980,12 +977,6 @@ static bool saveValidatedLedger (
             soci::use(closeFlags),
             soci::use(accountHash),
             soci::use(txHash);
-
-
-        *db << updateVal,
-            soci::use(seq),
-            soci::use(seq),
-            soci::use(hash);
 
         tr.commit();
     }

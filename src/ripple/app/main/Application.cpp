@@ -825,24 +825,149 @@ public:
     beast::Journal journal (std::string const& name) override;
 
     //--------------------------------------------------------------------------
-    bool initSqliteDbs ()
+
+    bool
+    initSQLiteDBs()
     {
         assert (mTxnDB.get () == nullptr);
         assert (mLedgerDB.get () == nullptr);
         assert (mWalletDB.get () == nullptr);
 
-        DatabaseCon::Setup setup = setup_DatabaseCon (*config_);
-        mTxnDB = std::make_unique <DatabaseCon> (setup, TxnDBName,
-                TxnDBInit, TxnDBCount);
-        mLedgerDB = std::make_unique <DatabaseCon> (setup, "ledger.db",
-                LedgerDBInit, LedgerDBCount);
-        mWalletDB = std::make_unique <DatabaseCon> (setup, "wallet.db",
-                WalletDBInit, WalletDBCount);
+        try
+        {
+            auto const setup = setup_DatabaseCon(*config_);
 
-        return
-            mTxnDB.get () != nullptr &&
-            mLedgerDB.get () != nullptr &&
-            mWalletDB.get () != nullptr;
+            // transaction database
+            mTxnDB = std::make_unique <DatabaseCon>(
+                setup,
+                TxnDBName,
+                TxnDBInit,
+                TxnDBCount);
+            mTxnDB->getSession() <<
+                boost::str(boost::format("PRAGMA cache_size=-%d;") %
+                (config_->getSize(siTxnDBCache) * kilobytes(1)));
+            mTxnDB->setupCheckpointing(m_jobQueue.get(), logs());
+
+            if (!setup.standAlone ||
+                setup.startUp == Config::LOAD ||
+                setup.startUp == Config::LOAD_FILE ||
+                setup.startUp == Config::REPLAY)
+            {
+                // perform any needed table updates
+                updateTxnDB();
+
+                // Check if AccountTransactions has primary key
+                std::string cid, name, type;
+                std::size_t notnull, dflt_value, pk;
+                soci::indicator ind;
+                soci::statement st = (mTxnDB->getSession().prepare <<
+                    ("PRAGMA table_info(AccountTransactions);"),
+                    soci::into(cid),
+                    soci::into(name),
+                    soci::into(type),
+                    soci::into(notnull),
+                    soci::into(dflt_value, ind),
+                    soci::into(pk));
+
+                st.execute();
+                while (st.fetch())
+                {
+                    if (pk == 1)
+                    {
+                        JLOG(m_journal.fatal()) <<
+                            "AccountTransactions database "
+                            "should not have a primary key";
+                        return false;
+                    }
+                }
+            }
+
+            // ledger database
+            mLedgerDB = std::make_unique <DatabaseCon>(
+                setup,
+                LedgerDBName,
+                LedgerDBInit,
+                LedgerDBCount);
+            mLedgerDB->getSession() <<
+                boost::str(boost::format("PRAGMA cache_size=-%d;") %
+                (config_->getSize(siLgrDBCache) * kilobytes(1)));
+            mLedgerDB->setupCheckpointing(m_jobQueue.get(), logs());
+
+            // wallet database
+            mWalletDB = std::make_unique <DatabaseCon>(
+                setup,
+                WalletDBName,
+                WalletDBInit,
+                WalletDBCount);
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(m_journal.fatal()) <<
+                "Failed to initialize SQLite databases: " << e.what();
+            return false;
+        }
+
+        return true;
+    }
+
+    bool
+    initNodeStoreDBs()
+    {
+        if (config_->section(ConfigSection::nodeDatabase()).empty())
+        {
+            JLOG(m_journal.fatal()) <<
+                "The [node_db] configuration setting " <<
+                "has been updated and must be set";
+            return false;
+        }
+
+        if (config_->doImport)
+        {
+            auto j = logs_->journal("NodeObject");
+            NodeStore::DummyScheduler scheduler;
+            std::unique_ptr <NodeStore::Database> source =
+                NodeStore::Manager::instance().make_Database(
+                    "NodeStore.import",
+                    scheduler,
+                    0,
+                    *m_jobQueue,
+                    config_->section(ConfigSection::importNodeDatabase()),
+                    j);
+
+            JLOG(j.warn()) <<
+                "Node import from '" << source->getName() << "' to '" <<
+                getNodeStore().getName() << "'.";
+
+            getNodeStore().import(*source);
+        }
+
+        // tune caches
+        using namespace std::chrono;
+        m_nodeStore->tune(
+            config_->getSize(siNodeCacheSize),
+            seconds{config_->getSize(siNodeCacheAge)});
+
+        m_ledgerMaster->tune(
+            config_->getSize(siLedgerSize),
+            seconds{config_->getSize(siLedgerAge)});
+
+        family().treecache().setTargetSize(
+            config_->getSize (siTreeCacheSize));
+        family().treecache().setTargetAge(
+            seconds{config_->getSize(siTreeCacheAge)});
+
+        if (shardStore_)
+        {
+            shardStore_->tune(
+                config_->getSize(siNodeCacheSize),
+                seconds{config_->getSize(siNodeCacheAge)});
+            sFamily_->treecache().setTargetSize(
+                config_->getSize(siTreeCacheSize));
+            sFamily_->treecache().setTargetAge(
+                seconds{config_->getSize(siTreeCacheAge)});
+        }
+
+        return true;
     }
 
     void signalled(const boost::system::error_code& ec, int signal_number)
@@ -936,9 +1061,7 @@ public:
         using namespace std::chrono_literals;
         waitHandlerCounter_.join("Application", 1s, m_journal);
 
-        JLOG(m_journal.debug()) << "Flushing validations";
         mValidations.flush ();
-        JLOG(m_journal.debug()) << "Validations flushed";
 
         validatorSites_->stop ();
 
@@ -1128,9 +1251,7 @@ private:
     // and new validations must be greater than this.
     std::atomic<LedgerIndex> maxDisallowedLedger_ {0};
 
-    void addTxnSeqField();
-    void addValidationSeqFields();
-    bool updateTables ();
+    void updateTxnDB ();
     bool nodeToShards ();
     bool validateShards ();
     void startGenesisLedger ();
@@ -1191,28 +1312,11 @@ bool ApplicationImp::setup()
     if (!config_->standalone())
         timeKeeper_->run(config_->SNTP_SERVERS);
 
-    if (!initSqliteDbs ())
-    {
-        JLOG(m_journal.fatal()) << "Cannot create database connections!";
+    if (!initSQLiteDBs() || !initNodeStoreDBs())
         return false;
-    }
 
     if (validatorKeys_.publicKey.size())
         setMaxDisallowedLedger();
-
-    getLedgerDB ().getSession ()
-        << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                        (config_->getSize (siLgrDBCache) * kilobytes(1)));
-
-    getTxnDB ().getSession ()
-            << boost::str (boost::format ("PRAGMA cache_size=-%d;") %
-                            (config_->getSize (siTxnDBCache) * kilobytes(1)));
-
-    mTxnDB->setupCheckpointing (m_jobQueue.get(), logs());
-    mLedgerDB->setupCheckpointing (m_jobQueue.get(), logs());
-
-    if (!updateTables ())
-        return false;
 
     // Configure the amendments the server supports
     {
@@ -1321,23 +1425,6 @@ bool ApplicationImp::setup()
         JLOG(m_journal.fatal()) <<
             "Invalid entry in [" << SECTION_VALIDATOR_LIST_SITES << "]";
         return false;
-    }
-
-    using namespace std::chrono;
-    m_nodeStore->tune(config_->getSize(siNodeCacheSize),
-                      seconds{config_->getSize(siNodeCacheAge)});
-    m_ledgerMaster->tune(config_->getSize(siLedgerSize),
-                         seconds{config_->getSize(siLedgerAge)});
-    family().treecache().setTargetSize(config_->getSize (siTreeCacheSize));
-    family().treecache().setTargetAge(
-        seconds{config_->getSize(siTreeCacheAge)});
-    if (shardStore_)
-    {
-        shardStore_->tune(config_->getSize(siNodeCacheSize),
-            seconds{config_->getSize(siNodeCacheAge)});
-        sFamily_->treecache().setTargetSize(config_->getSize(siTreeCacheSize));
-        sFamily_->treecache().setTargetAge(
-            seconds{config_->getSize(siTreeCacheAge)});
     }
 
     //----------------------------------------------------------------------
@@ -1981,49 +2068,31 @@ ApplicationImp::journal (std::string const& name)
     return logs_->journal (name);
 }
 
-//VFALCO TODO clean this up since it is just a file holding a single member function definition
-
-static
-std::vector<std::string>
-getSchema (DatabaseCon& dbc, std::string const& dbName)
+void
+ApplicationImp::updateTxnDB()
 {
-    std::vector<std::string> schema;
-    schema.reserve(32);
-
-    std::string sql = "SELECT sql FROM sqlite_master WHERE tbl_name='";
-    sql += dbName;
-    sql += "';";
-
-    std::string r;
-    soci::statement st = (dbc.getSession ().prepare << sql,
-                          soci::into(r));
-    st.execute ();
-    while (st.fetch ())
+    auto schemaHas = [&](std::string const& column)
     {
-        schema.emplace_back (r);
-    }
+        std::string cid, name;
+        soci::statement st = (mTxnDB->getSession().prepare <<
+            ("PRAGMA table_info(AccountTransactions);"),
+            soci::into(cid),
+            soci::into(name));
 
-    return schema;
-}
+        st.execute();
+        while (st.fetch())
+        {
+            if (name == column)
+                return true;
+        }
 
-static bool schemaHas (
-    DatabaseCon& dbc, std::string const& dbName, int line,
-    std::string const& content, beast::Journal j)
-{
-    std::vector<std::string> schema = getSchema (dbc, dbName);
+        return false;
+    };
 
-    if (static_cast<int> (schema.size ()) <= line)
-    {
-        JLOG (j.fatal()) << "Schema for " << dbName << " has too few lines";
-        Throw<std::runtime_error> ("bad schema");
-    }
+    assert(schemaHas("TransID"));
+    assert(!schemaHas("foobar"));
 
-    return schema[line].find (content) != std::string::npos;
-}
-
-void ApplicationImp::addTxnSeqField ()
-{
-    if (schemaHas (getTxnDB (), "AccountTransactions", 0, "TxnSeq", m_journal))
+    if (schemaHas("TxnSeq"))
         return;
 
     JLOG (m_journal.warn()) << "Transaction sequence field is missing";
@@ -2102,79 +2171,6 @@ void ApplicationImp::addTxnSeqField ()
     session << "CREATE INDEX AcctTxIndex ON AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);";
 
     tr.commit ();
-}
-
-void ApplicationImp::addValidationSeqFields ()
-{
-    if (schemaHas(getLedgerDB(), "Validations", 0, "LedgerSeq", m_journal))
-    {
-        assert(schemaHas(getLedgerDB(), "Validations", 0, "InitialSeq", m_journal));
-        return;
-    }
-
-    JLOG(m_journal.warn()) << "Validation sequence fields are missing";
-    assert(!schemaHas(getLedgerDB(), "Validations", 0, "InitialSeq", m_journal));
-
-    auto& session = getLedgerDB().getSession();
-
-    soci::transaction tr(session);
-
-    JLOG(m_journal.info()) << "Altering table";
-    session << "ALTER TABLE Validations "
-        "ADD COLUMN LedgerSeq       BIGINT UNSIGNED;";
-    session << "ALTER TABLE Validations "
-        "ADD COLUMN InitialSeq      BIGINT UNSIGNED;";
-
-    // Create the indexes, too, so we don't have to
-    // wait for the next startup, which may be a while.
-    // These should be identical to those in LedgerDBInit
-    JLOG(m_journal.info()) << "Building new indexes";
-    session << "CREATE INDEX IF NOT EXISTS "
-        "ValidationsBySeq ON Validations(LedgerSeq);";
-    session << "CREATE INDEX IF NOT EXISTS ValidationsByInitialSeq "
-        "ON Validations(InitialSeq, LedgerSeq);";
-
-    tr.commit();
-}
-
-bool ApplicationImp::updateTables ()
-{
-    if (config_->section (ConfigSection::nodeDatabase ()).empty ())
-    {
-        JLOG (m_journal.fatal()) << "The [node_db] configuration setting has been updated and must be set";
-        return false;
-    }
-
-    // perform any needed table updates
-    assert (schemaHas (getTxnDB (), "AccountTransactions", 0, "TransID", m_journal));
-    assert (!schemaHas (getTxnDB (), "AccountTransactions", 0, "foobar", m_journal));
-    addTxnSeqField ();
-
-    if (schemaHas (getTxnDB (), "AccountTransactions", 0, "PRIMARY", m_journal))
-    {
-        JLOG (m_journal.fatal()) << "AccountTransactions database should not have a primary key";
-        return false;
-    }
-
-    addValidationSeqFields ();
-
-    if (config_->doImport)
-    {
-        auto j = logs_->journal("NodeObject");
-        NodeStore::DummyScheduler scheduler;
-        std::unique_ptr <NodeStore::Database> source =
-            NodeStore::Manager::instance().make_Database ("NodeStore.import",
-                scheduler, 0, *m_jobQueue,
-                config_->section(ConfigSection::importNodeDatabase ()), j);
-
-        JLOG (j.warn())
-            << "Node import from '" << source->getName () << "' to '"
-            << getNodeStore ().getName () << "'.";
-
-        getNodeStore().import (*source);
-    }
-
-    return true;
 }
 
 bool ApplicationImp::nodeToShards()

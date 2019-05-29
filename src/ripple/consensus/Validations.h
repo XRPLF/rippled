@@ -260,14 +260,6 @@ to_string(ValStatus m)
         using Validation = Validation;
         using Ledger = Ledger;
 
-        // Handle a newly stale validation, this should do minimal work since
-        // it is called by Validations while it may be iterating Validations
-        // under lock
-        void onStale(Validation && );
-
-        // Flush the remaining validations (typically done on shutdown)
-        void flush(hash_map<NodeID,Validation> && remaining);
-
         // Return the current network time (used to determine staleness)
         NetClock::time_point now() const;
 
@@ -494,7 +486,6 @@ private:
                     parms_, t, it->second.signTime(), it->second.seenTime()))
             {
                 removeTrie(lock, it->first, it->second);
-                adaptor_.onStale(std::move(it->second));
                 it = current_.erase(it);
             }
             else
@@ -617,7 +608,6 @@ public:
                 if (val.signTime() > oldVal.signTime())
                 {
                     std::pair<Seq, ID> old(oldVal.seq(), oldVal.ledgerID());
-                    adaptor_.onStale(std::move(oldVal));
                     ins.first->second = val;
                     if (val.trusted())
                         updateTrie(lock, nodeID, val, old);
@@ -966,17 +956,8 @@ public:
     void
     flush()
     {
-        hash_map<NodeID, Validation> flushed;
-        {
-            ScopedLock lock{mutex_};
-            for (auto it : current_)
-            {
-                flushed.emplace(it.first, std::move(it.second));
-            }
-            current_.clear();
-        }
-
-        adaptor_.flush(std::move(flushed));
+        ScopedLock lock{mutex_};
+        current_.clear();
     }
 
     /** Return quantity of lagging proposers, and remove online proposers

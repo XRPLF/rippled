@@ -165,18 +165,9 @@ class Validations_test : public beast::unit_test::suite
         }
     };
 
-    // Saved StaleData for inspection in test
-    struct StaleData
-    {
-        std::vector<Validation> stale;
-        hash_map<PeerID, Validation> flushed;
-    };
-
-    // Generic Validations adaptor that saves stale/flushed data into
-    // a StaleData instance.
+    // Generic Validations adaptor
     class Adaptor
     {
-        StaleData& staleData_;
         clock_type& c_;
         LedgerOracle& oracle_;
 
@@ -198,8 +189,8 @@ class Validations_test : public beast::unit_test::suite
         using Validation = csf::Validation;
         using Ledger = csf::Ledger;
 
-        Adaptor(StaleData& sd, clock_type& c, LedgerOracle& o)
-            : staleData_{sd}, c_{c}, oracle_{o}
+        Adaptor(clock_type& c, LedgerOracle& o)
+            : c_{c}, oracle_{o}
         {
         }
 
@@ -207,18 +198,6 @@ class Validations_test : public beast::unit_test::suite
         now() const
         {
             return toNetClock(c_);
-        }
-
-        void
-        onStale(Validation&& v)
-        {
-            staleData_.stale.emplace_back(std::move(v));
-        }
-
-        void
-        flush(hash_map<PeerID, Validation>&& remaining)
-        {
-            staleData_.flushed = std::move(remaining);
         }
 
         boost::optional<Ledger>
@@ -235,7 +214,6 @@ class Validations_test : public beast::unit_test::suite
     // accessors for simplifying test logic
     class TestHarness
     {
-        StaleData staleData_;
         ValidationParms p_;
         beast::manual_clock<std::chrono::steady_clock> clock_;
         TestValidations tv_;
@@ -243,7 +221,7 @@ class Validations_test : public beast::unit_test::suite
 
     public:
         explicit TestHarness(LedgerOracle& o)
-            : tv_(p_, clock_, staleData_, clock_, o)
+            : tv_(p_, clock_, clock_, o)
         {
         }
 
@@ -275,18 +253,6 @@ class Validations_test : public beast::unit_test::suite
         clock()
         {
             return clock_;
-        }
-
-        std::vector<Validation> const&
-        stale() const
-        {
-            return staleData_.stale;
-        }
-
-        hash_map<PeerID, Validation> const&
-        flushed() const
-        {
-            return staleData_.flushed;
         }
     };
 
@@ -320,15 +286,9 @@ class Validations_test : public beast::unit_test::suite
             BEAST_EXPECT(ValStatus::badSeq == harness.add(v));
 
             harness.clock().advance(1s);
-            // Replace with a new validation and ensure the old one is stale
-            BEAST_EXPECT(harness.stale().empty());
 
             BEAST_EXPECT(
                 ValStatus::current == harness.add(n.validate(ledgerAB)));
-
-            BEAST_EXPECT(harness.stale().size() == 1);
-
-            BEAST_EXPECT(harness.stale()[0].ledgerID() == ledgerA.id());
 
             // Test the node changing signing key
 
@@ -476,14 +436,11 @@ class Validations_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 harness.vals().getPreferred(genesisLedger) ==
                 std::make_pair(ledgerAB.seq(), ledgerAB.id()));
-            BEAST_EXPECT(harness.stale().empty());
             harness.clock().advance(harness.parms().validationCURRENT_LOCAL);
 
             // trigger check for stale
             trigger(harness.vals());
 
-            BEAST_EXPECT(harness.stale().size() == 1);
-            BEAST_EXPECT(harness.stale()[0].ledgerID() == ledgerAB.id());
             BEAST_EXPECT(
                 harness.vals().getNodesAfter(ledgerA, ledgerA.id()) == 0);
             BEAST_EXPECT(
@@ -780,7 +737,6 @@ class Validations_test : public beast::unit_test::suite
             BEAST_EXPECT(ValStatus::current == harness.add(val));
             expected.emplace(node.nodeID(), val);
         }
-        Validation staleA = expected.find(a.nodeID())->second;
 
         // Send in a new validation for a, saving the new one into the expected
         // map after setting the proper prior ledger ID it replaced
@@ -788,18 +744,6 @@ class Validations_test : public beast::unit_test::suite
         auto newVal = a.validate(ledgerAB);
         BEAST_EXPECT(ValStatus::current == harness.add(newVal));
         expected.find(a.nodeID())->second = newVal;
-
-        // Now flush
-        harness.vals().flush();
-
-        // Original a validation was stale
-        BEAST_EXPECT(harness.stale().size() == 1);
-        BEAST_EXPECT(harness.stale()[0] == staleA);
-        BEAST_EXPECT(harness.stale()[0].nodeID() == a.nodeID());
-
-        auto const& flushed = harness.flushed();
-
-        BEAST_EXPECT(flushed == expected);
     }
 
     void

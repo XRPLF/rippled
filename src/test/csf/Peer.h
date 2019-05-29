@@ -144,16 +144,6 @@ struct Peer
             return p_.now();
         }
 
-        void
-        onStale(Validation&& v)
-        {
-        }
-
-        void
-        flush(hash_map<PeerID, Validation>&& remaining)
-        {
-        }
-
         boost::optional<Ledger>
         acquire(Ledger::ID const & id)
         {

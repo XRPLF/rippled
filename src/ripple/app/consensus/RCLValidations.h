@@ -211,24 +211,6 @@ public:
     NetClock::time_point
     now() const;
 
-    /** Handle a newly stale validation.
-
-        @param v The newly stale validation
-
-        @warning This should do minimal work, as it is expected to be called
-                 by the generic Validations code while it may be holding an
-                 internal lock
-    */
-    void
-    onStale(RCLValidation&& v);
-
-    /** Flush current validations to disk before shutdown.
-
-        @param remaining The remaining validations to flush
-    */
-    void
-    flush(hash_map<NodeID, RCLValidation>&& remaining);
-
     /** Attempt to acquire the ledger with given id from the network */
     boost::optional<RCLValidatedLedger>
     acquire(LedgerHash const & id);
@@ -245,17 +227,6 @@ private:
 
     Application& app_;
     beast::Journal j_;
-
-    // Lock for managing staleValidations_ and writing_
-    std::mutex staleLock_;
-    std::vector<RCLValidation> staleValidations_;
-    bool staleWriting_ = false;
-
-    // Write the stale validations to sqlite DB, the scoped lock argument
-    // is used to remind callers that the staleLock_ must be *locked* prior
-    // to making the call
-    void
-    doStaleWrite(ScopedLockType&);
 };
 
 /// Alias for RCL-specific instantiation of generic Validations
