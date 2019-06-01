@@ -1,6 +1,6 @@
+FROM centos:7
 ARG GIT_COMMIT=unknown
 
-FROM centos:7
 LABEL git-commit=$GIT_COMMIT
 
 COPY centos-builder/centos_setup.sh /tmp/
