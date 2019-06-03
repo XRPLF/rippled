@@ -30,28 +30,6 @@
 
 namespace ripple {
 
-boost::optional<PublicKey>
-parsePublicKey(std::string const& string, TokenType tokenType)
-{
-    // channel_verify takes a key in both base58 and hex.
-    // Am I understanding that right? We do the same.
-    // TODO: Share this function with channel_verify
-    // (by putting it in PublicKey.h).
-    boost::optional<PublicKey> optPk = parseBase58<PublicKey>(tokenType, string);
-    if (optPk) {
-        return optPk;
-    }
-
-    std::pair<Blob, bool> pair{strUnHex(string)};
-    if (!pair.second)
-        return boost::none;
-    auto const pkType = publicKeyType(makeSlice(pair.first));
-    if (!pkType)
-        return boost::none;
-
-    return PublicKey(makeSlice(pair.first));
-}
-
 Json::Value
 doReservationsAdd(RPC::Context& context)
 {
@@ -86,9 +64,11 @@ doReservationsAdd(RPC::Context& context)
         name = params[jss::name].asString();
     }
 
-    boost::optional<PublicKey> optPk = parsePublicKey(
-        params[jss::public_key].asString(),
-        TokenType::NodePublic);
+    // channel_verify takes a key in both base58 and hex.
+    // @nikb prefers that we take only base58.
+    boost::optional<PublicKey> optPk = parseBase58<PublicKey>(
+        TokenType::NodePublic,
+        params[jss::public_key].asString());
     if (!optPk)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& identity = *optPk;
@@ -115,7 +95,7 @@ doReservationsDel(RPC::Context& context)
 }
 
 Json::Value
-doReservationsLs(RPC::Context& context)
+doReservationsList(RPC::Context& context)
 {
     auto const& reservations = context.app.peerReservations();
     // Enumerate the reservations in context.app.peerReservations()

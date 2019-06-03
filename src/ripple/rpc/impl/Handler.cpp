@@ -99,7 +99,7 @@ Handler const handlerArray[] {
     {   "random",               byRef (&doRandom),              Role::USER,  NO_CONDITION     },
     {   "reservations_add",     byRef (&doReservationsAdd),     Role::ADMIN,  NO_CONDITION  },
     {   "reservations_del",     byRef (&doReservationsDel),     Role::ADMIN,  NO_CONDITION  },
-    {   "reservations_ls",      byRef (&doReservationsLs),      Role::ADMIN,  NO_CONDITION  },
+    {   "reservations_list",    byRef (&doReservationsList),    Role::ADMIN,  NO_CONDITION  },
     {   "ripple_path_find",     byRef (&doRipplePathFind),      Role::USER,  NO_CONDITION  },
     {   "sign",                 byRef (&doSign),                Role::USER,  NO_CONDITION     },
     {   "sign_for",             byRef (&doSignFor),             Role::USER,  NO_CONDITION     },
