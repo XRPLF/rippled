@@ -455,6 +455,7 @@ extern SF_Blob const sfMemoFormat;
 extern SF_Blob const sfFulfillment;
 extern SF_Blob const sfCondition;
 extern SF_Blob const sfMasterSignature;
+extern SF_Blob const sfRegularKeyReset;
 
 // account
 extern SF_Account const sfAccount;

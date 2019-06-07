@@ -53,6 +53,7 @@ LedgerFormats::LedgerFormats ()
             { sfTransferRate,        soeOPTIONAL },
             { sfDomain,              soeOPTIONAL },
             { sfTickSize,            soeOPTIONAL },
+            { sfRegularKeyReset,     soeOPTIONAL },
         },
         commonFields);
 

@@ -161,6 +161,9 @@ SetAccount::preflight (PreflightContext const& ctx)
         return telBAD_DOMAIN;
     }
 
+    if (ctx.tx[~sfCondition] && !ctx.rules.enabled(featureResetRegularKey))
+        return temDISABLED;
+
     return preflight2(ctx);
 }
 
@@ -192,6 +195,17 @@ SetAccount::preclaim(PreclaimContext const& ctx)
             JLOG(ctx.j.trace()) << "Retry: Owner directory not empty.";
             return (ctx.flags & tapRETRY) ? TER {terOWNERS} : TER {tecOWNERS};
         }
+    }
+
+    if (auto const cb = ctx.tx[~sfCondition])
+    {
+        using namespace ripple::cryptoconditions;
+
+        std::error_code ec;
+
+        auto c = Condition::deserialize(*cb, ec);
+        if (!c || c->type != Type::preimageSha256)
+            return tecCRYPTOCONDITION_ERROR;
     }
 
     return tesSUCCESS;
@@ -462,6 +476,19 @@ SetAccount::doApply ()
             JLOG(j_.trace()) << "set domain";
             sle->setFieldVL (sfDomain, domain);
         }
+    }
+
+    if (tx.isFieldPresent(sfRegularKeyReset))
+    {
+        if (!sigWithMaster)
+            return tecNEED_MASTER_KEY;
+
+        Blob const c = tx.getFieldVL(sfRegularKeyReset);
+
+        if (c.empty())
+            sle->makeFieldAbsent(sfRegularKeyReset);
+        else
+            sle->setFieldVL(sfRegularKeyReset, c);
     }
 
     //

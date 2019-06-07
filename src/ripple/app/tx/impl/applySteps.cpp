@@ -30,6 +30,7 @@
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/Escrow.h>
 #include <ripple/app/tx/impl/Payment.h>
+#include <ripple/app/tx/impl/ResetRegularKey.h>
 #include <ripple/app/tx/impl/SetAccount.h>
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
@@ -63,6 +64,7 @@ invoke_preflight (PreflightContext const& ctx)
     case ttTICKET_CANCEL:        return CancelTicket      ::preflight(ctx);
     case ttTICKET_CREATE:        return CreateTicket      ::preflight(ctx);
     case ttTRUST_SET:            return SetTrust          ::preflight(ctx);
+    case ttREGULAR_KEY_RESET:    return ResetRegularKey   ::preflight(ctx);
     case ttAMENDMENT:
     case ttFEE:                  return Change            ::preflight(ctx);
     default:
@@ -132,6 +134,7 @@ invoke_preclaim (PreclaimContext const& ctx)
     case ttTICKET_CANCEL:        return invoke_preclaim<CancelTicket>(ctx);
     case ttTICKET_CREATE:        return invoke_preclaim<CreateTicket>(ctx);
     case ttTRUST_SET:            return invoke_preclaim<SetTrust>(ctx);
+    case ttREGULAR_KEY_RESET:    return invoke_preclaim<ResetRegularKey>(ctx);
     case ttAMENDMENT:
     case ttFEE:                  return invoke_preclaim<Change>(ctx);
     default:
@@ -167,6 +170,7 @@ invoke_calculateBaseFee(
     case ttTICKET_CANCEL:        return CancelTicket::calculateBaseFee(view, tx);
     case ttTICKET_CREATE:        return CreateTicket::calculateBaseFee(view, tx);
     case ttTRUST_SET:            return SetTrust::calculateBaseFee(view, tx);
+    case ttREGULAR_KEY_RESET:    return ResetRegularKey::calculateBaseFee(view, tx);
     case ttAMENDMENT:
     case ttFEE:                  return Change::calculateBaseFee(view, tx);
     default:
@@ -213,6 +217,7 @@ invoke_calculateConsequences(STTx const& tx)
     case ttTICKET_CANCEL:        return invoke_calculateConsequences<CancelTicket>(tx);
     case ttTICKET_CREATE:        return invoke_calculateConsequences<CreateTicket>(tx);
     case ttTRUST_SET:            return invoke_calculateConsequences<SetTrust>(tx);
+    case ttREGULAR_KEY_RESET:    return invoke_calculateConsequences<ResetRegularKey>(tx);
     case ttAMENDMENT:
     case ttFEE:
         // fall through to default
@@ -248,6 +253,7 @@ invoke_apply (ApplyContext& ctx)
     case ttTICKET_CANCEL:        { CancelTicket       p(ctx); return p(); }
     case ttTICKET_CREATE:        { CreateTicket       p(ctx); return p(); }
     case ttTRUST_SET:            { SetTrust           p(ctx); return p(); }
+    case ttREGULAR_KEY_RESET:    { ResetRegularKey    p(ctx); return p(); }
     case ttAMENDMENT:
     case ttFEE:                { Change           p(ctx); return p(); }
     default:

@@ -55,6 +55,7 @@ enum TxType
     ttCHECK_CANCEL       =  18,
     ttDEPOSIT_PREAUTH    =  19,
     ttTRUST_SET          =  20,
+    ttREGULAR_KEY_RESET  =  21,
 
     ttAMENDMENT          = 100,
     ttFEE                = 101,

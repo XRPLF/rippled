@@ -35,6 +35,7 @@
 #include <ripple/app/tx/impl/OfferStream.cpp>
 #include <ripple/app/tx/impl/Payment.cpp>
 #include <ripple/app/tx/impl/PayChan.cpp>
+#include <ripple/app/tx/impl/ResetRegularKey.cpp>
 #include <ripple/app/tx/impl/SetAccount.cpp>
 #include <ripple/app/tx/impl/SetRegularKey.cpp>
 #include <ripple/app/tx/impl/SetSignerList.cpp>

@@ -54,6 +54,7 @@ TxFormats::TxFormats ()
             { sfSetFlag,             soeOPTIONAL },
             { sfClearFlag,           soeOPTIONAL },
             { sfTickSize,            soeOPTIONAL },
+            { sfRegularKeyReset,     soeOPTIONAL },
         },
         commonFields);
 
@@ -221,6 +222,13 @@ TxFormats::TxFormats ()
         {
             { sfAuthorize,           soeOPTIONAL },
             { sfUnauthorize,         soeOPTIONAL },
+        },
+        commonFields);
+
+    add (jss::ResetRegularKey, ttREGULAR_KEY_RESET,
+        {
+            { sfTarget,               soeREQUIRED },
+            { sfRegularKeyReset,      soeREQUIRED },
         },
         commonFields);
 }

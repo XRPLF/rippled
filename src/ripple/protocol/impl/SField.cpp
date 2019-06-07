@@ -187,6 +187,7 @@ SF_Blob const sfMemoFormat      (access, STI_VL, 14, "MemoFormat");
 SF_Blob const sfFulfillment     (access, STI_VL, 16, "Fulfillment");
 SF_Blob const sfCondition       (access, STI_VL, 17, "Condition");
 SF_Blob const sfMasterSignature (access, STI_VL, 18, "MasterSignature", SField::sMD_Default, SField::notSigning);
+SF_Blob const sfRegularKeyReset (access, STI_VL, 19, "RegularKeyReset");
 
 // account
 SF_Account const sfAccount     (access, STI_ACCOUNT, 1, "Account");

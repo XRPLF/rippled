@@ -2075,6 +2075,7 @@ else ()
     src/ripple/app/tx/impl/OfferStream.cpp
     src/ripple/app/tx/impl/PayChan.cpp
     src/ripple/app/tx/impl/Payment.cpp
+    src/ripple/app/tx/impl/ResetRegularKey.cpp
     src/ripple/app/tx/impl/SetAccount.cpp
     src/ripple/app/tx/impl/SetRegularKey.cpp
     src/ripple/app/tx/impl/SetSignerList.cpp

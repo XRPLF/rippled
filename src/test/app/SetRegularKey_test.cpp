@@ -182,8 +182,14 @@ public:
         env(jv, ter(temINVALID_FLAG));
     }
 
+    void testResetReglarKey()
+    {
+        // need help to do the test of the change in code
+    }
+
     void run() override
     {
+        testResetReglarKey();
         testDisableMasterKey();
         testDisableMasterKeyAfterFix();
         testDisabledRegularKey();
