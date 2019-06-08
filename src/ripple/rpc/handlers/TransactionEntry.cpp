@@ -65,9 +65,10 @@ Json::Value doTransactionEntry (RPC::Context& context)
         }
         else
         {
-            jvResult[jss::tx_json]     = tx.first->getJson (0);
+            jvResult[jss::tx_json] = tx.first->getJson (JsonOptions::none);
             if (tx.second)
-                jvResult[jss::metadata]    = tx.second->getJson (0);
+                jvResult[jss::metadata] =
+                    tx.second->getJson (JsonOptions::none);
             // 'accounts'
             // 'engine_...'
             // 'ledger_...'

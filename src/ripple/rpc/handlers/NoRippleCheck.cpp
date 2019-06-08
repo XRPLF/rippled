@@ -165,7 +165,8 @@ Json::Value doNoRippleCheck (RPC::Context& context)
 
                     Json::Value& tx = jvTransactions.append (Json::objectValue);
                     tx["TransactionType"] = jss::TrustSet;
-                    tx["LimitAmount"] = limitAmount.getJson (0);
+                    tx["LimitAmount"] =
+                        limitAmount.getJson (JsonOptions::none);
                     tx["Flags"] = bNoRipple ? tfClearNoRipple : tfSetNoRipple;
                     fillTransaction(context, tx, accountID, seq, *ledger);
 

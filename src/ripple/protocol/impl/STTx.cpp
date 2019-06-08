@@ -203,14 +203,14 @@ std::pair<bool, std::string> STTx::checkSign(bool allowMultiSign) const
     return ret;
 }
 
-Json::Value STTx::getJson (int) const
+Json::Value STTx::getJson (JsonOptions) const
 {
-    Json::Value ret = STObject::getJson (0);
+    Json::Value ret = STObject::getJson (JsonOptions::none);
     ret[jss::hash] = to_string (getTransactionID ());
     return ret;
 }
 
-Json::Value STTx::getJson (int options, bool binary) const
+Json::Value STTx::getJson (JsonOptions options, bool binary) const
 {
     if (binary)
     {

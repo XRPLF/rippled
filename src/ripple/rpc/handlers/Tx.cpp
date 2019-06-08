@@ -103,7 +103,7 @@ Json::Value doTx (RPC::Context& context)
     if (!txn)
         return rpcError (rpcTXN_NOT_FOUND);
 
-    Json::Value ret = txn->getJson (1, binary);
+    Json::Value ret = txn->getJson (JsonOptions::include_date, binary);
 
     if (txn->getLedger () == 0)
         return ret;
@@ -130,7 +130,7 @@ Json::Value doTx (RPC::Context& context)
                 auto txMeta = std::make_shared<TxMeta>(
                     txn->getID(), lgr->seq(), *rawMeta);
                 okay = true;
-                auto meta = txMeta->getJson (0);
+                auto meta = txMeta->getJson (JsonOptions::none);
                 insertDeliveredAmount (meta, context, txn, *txMeta);
                 ret[jss::meta] = std::move(meta);
             }

@@ -76,14 +76,16 @@ public:
         if (publicKeyType(makeSlice(spk)) != KeyType::secp256k1)
         {
             JLOG (debugLog().error())
-                << "Invalid public key in validation" << getJson (0);
+                << "Invalid public key in validation"
+                << getJson (JsonOptions::none);
             Throw<std::runtime_error> ("Invalid public key in validation");
         }
 
         if  (checkSignature && !isValid ())
         {
             JLOG (debugLog().error())
-                << "Invalid signature in validation" << getJson (0);
+                << "Invalid signature in validation"
+                << getJson (JsonOptions::none);
             Throw<std::runtime_error> ("Invalid signature in validation");
         }
 

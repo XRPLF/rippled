@@ -30,8 +30,8 @@ offer (Account const& account,
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::TakerPays] = in.getJson(0);
-    jv[jss::TakerGets] = out.getJson(0);
+    jv[jss::TakerPays] = in.getJson(JsonOptions::none);
+    jv[jss::TakerGets] = out.getJson(JsonOptions::none);
     if (flags)
         jv[jss::Flags] = flags;
     jv[jss::TransactionType] = jss::OfferCreate;

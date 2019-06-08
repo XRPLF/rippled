@@ -104,7 +104,7 @@ public:
     {
         Json::Value jv;
         jv[jss::Account] = a.human();
-        jv[jss::LimitAmount] = amt.getJson(0);
+        jv[jss::LimitAmount] = amt.getJson(JsonOptions::none);
         jv[jss::TransactionType] = jss::TrustSet;
         jv[jss::Flags] = 0;
         return jv;

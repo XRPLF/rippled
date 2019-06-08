@@ -303,7 +303,7 @@ public:
             jv[jss::Flags] = tfUniversal;
             jv[jss::Account] = Account{"bob5"}.human();
             jv[jss::Destination] = Account{"bob6"}.human();
-            jv[jss::Amount] = XRP(50).value().getJson(0);
+            jv[jss::Amount] = XRP(50).value().getJson(JsonOptions::none);
             jv[sfFinishAfter.fieldName] =
                 NetClock::time_point{env.now() + 10s}
                     .time_since_epoch().count();
@@ -316,7 +316,7 @@ public:
             jv[jss::Flags] = tfUniversal;
             jv[jss::Account] = Account{"bob6"}.human ();
             jv[jss::Destination] = Account{"bob7"}.human ();
-            jv[jss::Amount] = XRP(100).value().getJson (0);
+            jv[jss::Amount] = XRP(100).value().getJson (JsonOptions::none);
             jv[jss::SettleDelay] = NetClock::duration{10s}.count();
             jv[sfPublicKey.fieldName] = strHex (Account{"bob6"}.pk().slice ());
             jv[sfCancelAfter.fieldName] =

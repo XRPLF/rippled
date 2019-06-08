@@ -122,8 +122,8 @@ public:
         return tid_;
     }
 
-    Json::Value getJson (int options) const override;
-    Json::Value getJson (int options, bool binary) const;
+    Json::Value getJson (JsonOptions options) const override;
+    Json::Value getJson (JsonOptions options, bool binary) const;
 
     void sign (
         PublicKey const& publicKey,

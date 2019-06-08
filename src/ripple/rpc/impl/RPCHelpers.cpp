@@ -119,7 +119,7 @@ getAccountObjects(ReadView const& ledger, AccountID const& account,
             auto const sleNode = ledger.read(keylet::child(*iter));
             if (type == ltINVALID || sleNode->getType () == type)
             {
-                jvObjects.append (sleNode->getJson (0));
+                jvObjects.append (sleNode->getJson (JsonOptions::none));
 
                 if (++i == limit)
                 {
@@ -397,7 +397,7 @@ parseAccountIds(Json::Value const& jvArray)
 void
 injectSLE(Json::Value& jv, SLE const& sle)
 {
-    jv = sle.getJson(0);
+    jv = sle.getJson(JsonOptions::none);
     if (sle.getType() == ltACCOUNT_ROOT)
     {
         if (sle.isFieldPresent(sfEmailHash))

@@ -154,7 +154,7 @@ public:
         mApplying = false;
     }
 
-    Json::Value getJson (int options, bool binary = false) const;
+    Json::Value getJson (JsonOptions options, bool binary = false) const;
 
     static Transaction::pointer load (uint256 const& id, Application& app);
 

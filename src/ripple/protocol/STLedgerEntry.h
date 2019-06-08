@@ -76,7 +76,7 @@ public:
 
     std::string getText () const override;
 
-    Json::Value getJson (int options) const override;
+    Json::Value getJson (JsonOptions options) const override;
 
     /** Returns the 'key' (or 'index') of this item.
         The key identifies this entry's position in

@@ -153,7 +153,7 @@ log_one(
     {
         JLOG (j.debug()) << "MISMATCH on TX " << tx <<
             ": " << msg << " is missing this transaction:\n" <<
-            metaData->getJson (0);
+            metaData->getJson (JsonOptions::none);
     }
     else
     {
@@ -242,9 +242,9 @@ log_metadata_difference(
                 JLOG (j.debug()) << "MISMATCH on TX " << tx <<
                     ": Different result, index and nodes!";
                 JLOG (j.debug()) << " Built:\n" <<
-                    builtMetaData->getJson (0);
+                    builtMetaData->getJson (JsonOptions::none);
                 JLOG (j.debug()) << " Valid:\n" <<
-                    validMetaData->getJson (0);
+                    validMetaData->getJson (JsonOptions::none);
             }
             else if (result_diff)
             {
@@ -252,10 +252,10 @@ log_metadata_difference(
                     ": Different result and nodes!";
                 JLOG (j.debug()) << " Built:" <<
                     " Result: " << builtMetaData->getResult () <<
-                    " Nodes:\n" << builtNodes.getJson (0);
+                    " Nodes:\n" << builtNodes.getJson (JsonOptions::none);
                 JLOG (j.debug()) << " Valid:" <<
                     " Result: " << validMetaData->getResult () <<
-                    " Nodes:\n" << validNodes.getJson (0);
+                    " Nodes:\n" << validNodes.getJson (JsonOptions::none);
             }
             else if (index_diff)
             {
@@ -263,19 +263,19 @@ log_metadata_difference(
                     ": Different index and nodes!";
                 JLOG (j.debug()) << " Built:" <<
                     " Index: " << builtMetaData->getIndex () <<
-                    " Nodes:\n" << builtNodes.getJson (0);
+                    " Nodes:\n" << builtNodes.getJson (JsonOptions::none);
                 JLOG (j.debug()) << " Valid:" <<
                     " Index: " << validMetaData->getIndex () <<
-                    " Nodes:\n" << validNodes.getJson (0);
+                    " Nodes:\n" << validNodes.getJson (JsonOptions::none);
             }
             else // nodes_diff
             {
                 JLOG (j.debug()) << "MISMATCH on TX " << tx <<
                     ": Different nodes!";
                 JLOG (j.debug()) << " Built:" <<
-                    " Nodes:\n" << builtNodes.getJson (0);
+                    " Nodes:\n" << builtNodes.getJson (JsonOptions::none);
                 JLOG (j.debug()) << " Valid:" <<
-                    " Nodes:\n" << validNodes.getJson (0);
+                    " Nodes:\n" << validNodes.getJson (JsonOptions::none);
             }
         }
     }
@@ -283,13 +283,13 @@ log_metadata_difference(
     {
         JLOG (j.error()) << "MISMATCH on TX " << tx <<
             ": Metadata Difference (built has none)\n" <<
-            validMetaData->getJson (0);
+            validMetaData->getJson (JsonOptions::none);
     }
     else // builtMetaData != nullptr
     {
         JLOG (j.error()) << "MISMATCH on TX " << tx <<
             ": Metadata Difference (valid has none)\n" <<
-            builtMetaData->getJson (0);
+            builtMetaData->getJson (JsonOptions::none);
     }
 }
 

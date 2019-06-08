@@ -70,7 +70,7 @@ public:
     add (Serializer& s) const override;
 
     Json::Value
-    getJson (int) const override;
+    getJson (JsonOptions) const override;
 
     bool
     isEquivalent (const STBase& t) const override;

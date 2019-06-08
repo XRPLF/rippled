@@ -384,7 +384,8 @@ public:
             // gw writes a check for USD(10) to alice.
             Json::Value jvCheck;
             jvCheck[sfAccount.jsonName] = gw.human();
-            jvCheck[sfSendMax.jsonName] = USD(10).value().getJson(0);
+            jvCheck[sfSendMax.jsonName] =
+                USD(10).value().getJson(JsonOptions::none);
             jvCheck[sfDestination.jsonName] = alice.human();
             jvCheck[sfTransactionType.jsonName] = jss::CheckCreate;
             jvCheck[sfFlags.jsonName] = tfUniversal;
@@ -420,7 +421,8 @@ public:
             jvEscrow[jss::Flags] = tfUniversal;
             jvEscrow[jss::Account] = gw.human();
             jvEscrow[jss::Destination] = gw.human();
-            jvEscrow[jss::Amount] = XRP(100).value().getJson(0);
+            jvEscrow[jss::Amount] =
+                XRP(100).value().getJson(JsonOptions::none);
             jvEscrow[sfFinishAfter.jsonName] =
                 env.now().time_since_epoch().count() + 1;
             env (jvEscrow);
@@ -456,7 +458,8 @@ public:
             jvPayChan[jss::Flags] = tfUniversal;
             jvPayChan[jss::Account] = gw.human ();
             jvPayChan[jss::Destination] = alice.human ();
-            jvPayChan[jss::Amount] = XRP (300).value().getJson (0);
+            jvPayChan[jss::Amount] =
+                XRP (300).value().getJson (JsonOptions::none);
             jvPayChan[sfSettleDelay.jsonName] = 24 * 60 * 60;
             jvPayChan[sfPublicKey.jsonName] = strHex (gw.pk().slice ());
             env (jvPayChan);

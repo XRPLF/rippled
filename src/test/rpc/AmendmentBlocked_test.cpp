@@ -66,7 +66,8 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         pf_req[jss::subcommand] = "create";
         pf_req[jss::source_account] = alice.human();
         pf_req[jss::destination_account] = bob.human();
-        pf_req[jss::destination_amount] = bob["USD"](20).value ().getJson (0);
+        pf_req[jss::destination_amount] =
+            bob["USD"](20).value ().getJson (JsonOptions::none);
         jr = wsc->invoke("path_find", pf_req) [jss::result];
         BEAST_EXPECT (jr.isMember (jss::alternatives) &&
             jr[jss::alternatives].isArray() &&

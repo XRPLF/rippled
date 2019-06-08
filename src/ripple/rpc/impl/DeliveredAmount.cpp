@@ -72,7 +72,8 @@ insertDeliveredAmount(
     if (transactionMeta.hasDeliveredAmount())
     {
         meta[jss::delivered_amount] =
-            transactionMeta.getDeliveredAmount().getJson(1);
+            transactionMeta.getDeliveredAmount()
+                .getJson(JsonOptions::include_date);
         return;
     }
 
@@ -92,7 +93,8 @@ insertDeliveredAmount(
             getCloseTime() > NetClock::time_point{446000000s})
         {
             meta[jss::delivered_amount] =
-                serializedTx->getFieldAmount(sfAmount).getJson(1);
+                serializedTx->getFieldAmount(sfAmount)
+                   .getJson(JsonOptions::include_date);
             return;
         }
     }
