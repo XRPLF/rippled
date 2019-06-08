@@ -120,10 +120,10 @@ fillJsonTx(
     }
     else
     {
-        copyFrom(txJson, txn->getJson(0));
+        copyFrom(txJson, txn->getJson(JsonOptions::none));
         if (stMeta)
         {
-            txJson[jss::metaData] = stMeta->getJson(0);
+            txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
             {
                 // Insert delivered amount
@@ -197,7 +197,7 @@ void fillJsonState(Object& json, LedgerFill const& fill)
                 obj[jss::tx_blob] = serializeHex(*sle);
             }
             else if (expanded)
-                array.append(sle->getJson(0));
+                array.append(sle->getJson(JsonOptions::none));
             else
                 array.append(to_string(sle->key()));
         }

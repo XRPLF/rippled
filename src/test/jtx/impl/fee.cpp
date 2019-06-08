@@ -32,7 +32,7 @@ fee::operator()(Env&, JTx& jt) const
     jt.fill_fee = false;
     if (amount_)
         jt[jss::Fee] =
-            amount_->getJson(0);
+            amount_->getJson(JsonOptions::none);
 }
 
 } // jtx

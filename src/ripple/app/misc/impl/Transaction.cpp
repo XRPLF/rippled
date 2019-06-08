@@ -144,16 +144,16 @@ Transaction::pointer Transaction::load(uint256 const& id, Application& app)
 }
 
 // options 1 to include the date of the transaction
-Json::Value Transaction::getJson (int options, bool binary) const
+Json::Value Transaction::getJson (JsonOptions options, bool binary) const
 {
-    Json::Value ret (mTransaction->getJson (0, binary));
+    Json::Value ret (mTransaction->getJson (JsonOptions::none, binary));
 
     if (mInLedger)
     {
         ret[jss::inLedger] = mInLedger;        // Deprecated.
         ret[jss::ledger_index] = mInLedger;
 
-        if (options == 1)
+        if (options == JsonOptions::include_date)
         {
             auto ct = mApp.getLedgerMaster().
                 getCloseTimeBySeq (mInLedger);

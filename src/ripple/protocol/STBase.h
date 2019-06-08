@@ -31,6 +31,11 @@
 #include <type_traits>
 namespace ripple {
 
+enum class JsonOptions {
+    none         = 0,
+    include_date = 1
+};
+
 // VFALCO TODO fix this restriction on copy assignment.
 //
 // CAUTION: Do not create a vector (or similar container) of any object derived
@@ -121,7 +126,7 @@ public:
 
     virtual
     Json::Value
-    getJson (int /*options*/) const;
+    getJson (JsonOptions /*options*/) const;
 
     virtual
     void

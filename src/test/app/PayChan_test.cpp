@@ -113,7 +113,7 @@ struct PayChan_test : public beast::unit_test::suite
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human ();
         jv[jss::Destination] = to.human ();
-        jv[jss::Amount] = amount.getJson (0);
+        jv[jss::Amount] = amount.getJson (JsonOptions::none);
         jv["SettleDelay"] = settleDelay.count ();
         jv["PublicKey"] = strHex (pk.slice ());
         if (cancelAfter)
@@ -136,7 +136,7 @@ struct PayChan_test : public beast::unit_test::suite
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human ();
         jv["Channel"] = to_string (channel);
-        jv[jss::Amount] = amount.getJson (0);
+        jv[jss::Amount] = amount.getJson (JsonOptions::none);
         if (expiration)
             jv["Expiration"] = expiration->time_since_epoch ().count ();
         return jv;
@@ -158,9 +158,9 @@ struct PayChan_test : public beast::unit_test::suite
         jv[jss::Account] = account.human ();
         jv["Channel"] = to_string (channel);
         if (amount)
-            jv[jss::Amount] = amount->getJson (0);
+            jv[jss::Amount] = amount->getJson (JsonOptions::none);
         if (balance)
-            jv["Balance"] = balance->getJson (0);
+            jv["Balance"] = balance->getJson (JsonOptions::none);
         if (signature)
             jv["Signature"] = strHex (*signature);
         if (pk)

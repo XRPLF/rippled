@@ -95,7 +95,7 @@ STBase::getText() const
 }
 
 Json::Value
-STBase::getJson (int /*options*/) const
+STBase::getJson (JsonOptions /*options*/) const
 {
     return getText();
 }

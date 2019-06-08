@@ -175,7 +175,7 @@ struct Escrow_test : public beast::unit_test::suite
         jv[jss::Flags] = tfUniversal;
         jv[jss::Account] = account.human();
         jv[jss::Destination] = to.human();
-        jv[jss::Amount] = amount.getJson(0);
+        jv[jss::Amount] = amount.getJson(JsonOptions::none);
         return jv;
     }
 

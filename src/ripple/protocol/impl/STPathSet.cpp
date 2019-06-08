@@ -149,7 +149,7 @@ STPath::hasSeen (
 }
 
 Json::Value
-STPath::getJson (int) const
+STPath::getJson (JsonOptions) const
 {
     Json::Value ret (Json::arrayValue);
 
@@ -177,7 +177,7 @@ STPath::getJson (int) const
 }
 
 Json::Value
-STPathSet::getJson (int options) const
+STPathSet::getJson (JsonOptions options) const
 {
     Json::Value ret (Json::arrayValue);
     for (auto it: value)

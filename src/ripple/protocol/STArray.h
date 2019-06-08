@@ -147,7 +147,7 @@ public:
     virtual std::string getFullText () const override;
     virtual std::string getText () const override;
 
-    virtual Json::Value getJson (int index) const override;
+    virtual Json::Value getJson (JsonOptions index) const override;
     virtual void add (Serializer & s) const override;
 
     void sort (bool (*compare) (const STObject & o1, const STObject & o2));

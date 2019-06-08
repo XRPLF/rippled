@@ -77,11 +77,11 @@ std::string AcceptedLedgerTx::getEscMeta () const
 void AcceptedLedgerTx::buildJson ()
 {
     mJson = Json::objectValue;
-    mJson[jss::transaction] = mTxn->getJson (0);
+    mJson[jss::transaction] = mTxn->getJson (JsonOptions::none);
 
     if (mMeta)
     {
-        mJson[jss::meta] = mMeta->getJson (0);
+        mJson[jss::meta] = mMeta->getJson (JsonOptions::none);
         mJson[jss::raw_meta] = strHex (mRawMeta);
     }
 

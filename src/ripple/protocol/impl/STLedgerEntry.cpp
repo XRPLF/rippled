@@ -106,7 +106,7 @@ std::string STLedgerEntry::getText () const
                 % STObject::getText ());
 }
 
-Json::Value STLedgerEntry::getJson (int options) const
+Json::Value STLedgerEntry::getJson (JsonOptions options) const
 {
     Json::Value ret (STObject::getJson (options));
 

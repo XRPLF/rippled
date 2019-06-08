@@ -358,7 +358,7 @@ public:
     virtual std::string getText () const override;
 
     // TODO(tom): options should be an enum.
-    virtual Json::Value getJson (int options) const override;
+    virtual Json::Value getJson (JsonOptions options) const override;
 
     template <class... Args>
     std::size_t

@@ -27,7 +27,7 @@ namespace jtx {
 void
 sendmax::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[jss::SendMax] = amount_.getJson(0);
+    jt.jv[jss::SendMax] = amount_.getJson(JsonOptions::none);
 }
 
 } // jtx

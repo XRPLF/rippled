@@ -585,11 +585,13 @@ PathRequest::findPaths (std::shared_ptr<RippleLineCache> const& cache,
         {
             Json::Value jvEntry (Json::objectValue);
             rc.actualAmountIn.setIssuer (sourceAccount);
-            jvEntry[jss::source_amount] = rc.actualAmountIn.getJson (0);
-            jvEntry[jss::paths_computed] = ps.getJson(0);
+            jvEntry[jss::source_amount] =
+                rc.actualAmountIn.getJson (JsonOptions::none);
+            jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::none);
 
             if (convert_all_)
-                jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(0);
+                jvEntry[jss::destination_amount] =
+                    rc.actualAmountOut.getJson(JsonOptions::none);
 
             if (hasCompletion ())
             {
@@ -643,7 +645,8 @@ Json::Value PathRequest::doUpdate(
 
     newStatus[jss::source_account] = app_.accountIDCache().toBase58(*raSrcAccount);
     newStatus[jss::destination_account] = app_.accountIDCache().toBase58(*raDstAccount);
-    newStatus[jss::destination_amount] = saDstAmount.getJson (0);
+    newStatus[jss::destination_amount] =
+        saDstAmount.getJson (JsonOptions::none);
     newStatus[jss::full_reply] = ! fast;
 
     if (jvId)

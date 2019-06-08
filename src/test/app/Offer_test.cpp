@@ -1516,7 +1516,8 @@ public:
         BEAST_EXPECT(
             jro[jss::node][jss::TakerGets] == XRP (500).value ().getText ());
         BEAST_EXPECT(
-            jro[jss::node][jss::TakerPays] == USD (100).value ().getJson (0));
+            jro[jss::node][jss::TakerPays] ==
+            USD (100).value ().getJson (JsonOptions::none));
 
         env (pay (alice, alice, XRP (500)), sendmax (USD (100)));
 
@@ -1610,7 +1611,8 @@ public:
         BEAST_EXPECT(
             jro[jss::node][jss::TakerGets] == XRP (300).value ().getText ());
         BEAST_EXPECT(
-            jro[jss::node][jss::TakerPays] == USD (60).value ().getJson (0));
+            jro[jss::node][jss::TakerPays] ==
+            USD (60).value ().getJson (JsonOptions::none));
 
         // the balance between alice and gw is 160 USD..200 less the 40 taken
         // by the offer
@@ -1706,7 +1708,8 @@ public:
 
         auto jro = ledgerEntryOffer (env, carol, carolOfferSeq);
         BEAST_EXPECT(
-            jro[jss::node][jss::TakerGets] == USD (25).value ().getJson (0));
+            jro[jss::node][jss::TakerGets] ==
+            USD (25).value ().getJson (JsonOptions::none));
         BEAST_EXPECT(
             jro[jss::node][jss::TakerPays] == XRP (250).value ().getText ());
     }
@@ -1760,7 +1763,8 @@ public:
         BEAST_EXPECT(
             jro[jss::node][jss::TakerGets] == XRP (250).value ().getText ());
         BEAST_EXPECT(
-            jro[jss::node][jss::TakerPays] == USD (25).value ().getJson (0));
+            jro[jss::node][jss::TakerPays] ==
+            USD (25).value ().getJson (JsonOptions::none));
     }
 
     void
@@ -1823,12 +1827,13 @@ public:
         BEAST_EXPECT(
             jro[jss::node][jss::TakerGets] == XRP (200).value ().getText ());
         BEAST_EXPECT(
-            jro[jss::node][jss::TakerPays] == USD (20).value ().getJson (0));
+            jro[jss::node][jss::TakerPays] ==
+            USD (20).value ().getJson (JsonOptions::none));
 
         jro = ledgerEntryOffer (env, dan, danOfferSeq);
         BEAST_EXPECT(
             jro[jss::node][jss::TakerGets] ==
-            gw2["EUR"] (20).value ().getJson (0));
+            gw2["EUR"] (20).value ().getJson (JsonOptions::none));
         BEAST_EXPECT(
             jro[jss::node][jss::TakerPays] == XRP (200).value ().getText ());
     }
@@ -2151,7 +2156,7 @@ public:
         payment[jss::tx_json][jss::Fee] =
             std::to_string( env.current ()->fees ().base);
         payment[jss::tx_json][jss::SendMax] =
-            bob ["XTS"] (1.5).value ().getJson (0);
+            bob ["XTS"] (1.5).value ().getJson (JsonOptions::none);
         auto jrr = wsc->invoke("submit", payment);
         BEAST_EXPECT(jrr[jss::status] == "success");
         BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "tesSUCCESS");

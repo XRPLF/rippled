@@ -33,7 +33,7 @@ pay (Account const& account,
     amount.to(to);
     Json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::Amount] = amount.value.getJson(0);
+    jv[jss::Amount] = amount.value.getJson(JsonOptions::none);
     jv[jss::Destination] = to.human();
     jv[jss::TransactionType] = jss::Payment;
     jv[jss::Flags] = tfUniversal;

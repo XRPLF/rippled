@@ -928,7 +928,7 @@ static bool saveValidatedLedger (
                     << "Transaction in ledger " << seq
                     << " affects no accounts";
                 JLOG (j.warn())
-                    << vt.second->getTxn()->getJson(0);
+                    << vt.second->getTxn()->getJson(JsonOptions::none);
             }
 
             *db <<

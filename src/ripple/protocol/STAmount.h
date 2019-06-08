@@ -270,7 +270,7 @@ public:
     getText() const override;
 
     Json::Value
-    getJson (int) const override;
+    getJson (JsonOptions) const override;
 
     void
     add (Serializer& s) const override;

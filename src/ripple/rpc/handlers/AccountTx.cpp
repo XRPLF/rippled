@@ -162,11 +162,12 @@ Json::Value doAccountTx (RPC::Context& context)
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
 
                 if (it.first)
-                    jvObj[jss::tx] = it.first->getJson (1);
+                    jvObj[jss::tx] =
+                        it.first->getJson (JsonOptions::include_date);
 
                 if (it.second)
                 {
-                    auto meta = it.second->getJson (1);
+                    auto meta = it.second->getJson (JsonOptions::include_date);
                     insertDeliveredAmount (meta, context, it.first, *it.second);
                     jvObj[jss::meta] = std::move(meta);
 

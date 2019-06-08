@@ -432,7 +432,7 @@ TER PathState::expandPath (
     // Sender is always issuer for non-XRP.
 
     JLOG (j_.trace())
-        << "expandPath> " << spSourcePath.getJson (0);
+        << "expandPath> " << spSourcePath.getJson (JsonOptions::none);
 
     terStatus = tesSUCCESS;
 
@@ -835,22 +835,22 @@ Json::Value PathState::getJson () const
     jvPathState[jss::nodes]    = jvNodes;
 
     if (saInReq)
-        jvPathState["in_req"]   = saInReq.getJson (0);
+        jvPathState["in_req"]   = saInReq.getJson (JsonOptions::none);
 
     if (saInAct)
-        jvPathState["in_act"]   = saInAct.getJson (0);
+        jvPathState["in_act"]   = saInAct.getJson (JsonOptions::none);
 
     if (saInPass)
-        jvPathState["in_pass"]  = saInPass.getJson (0);
+        jvPathState["in_pass"]  = saInPass.getJson (JsonOptions::none);
 
     if (saOutReq)
-        jvPathState["out_req"]  = saOutReq.getJson (0);
+        jvPathState["out_req"]  = saOutReq.getJson (JsonOptions::none);
 
     if (saOutAct)
-        jvPathState["out_act"]  = saOutAct.getJson (0);
+        jvPathState["out_act"]  = saOutAct.getJson (JsonOptions::none);
 
     if (saOutPass)
-        jvPathState["out_pass"] = saOutPass.getJson (0);
+        jvPathState["out_pass"] = saOutPass.getJson (JsonOptions::none);
 
     if (uQuality)
         jvPathState["uQuality"] = boost::lexical_cast<std::string>(uQuality);
