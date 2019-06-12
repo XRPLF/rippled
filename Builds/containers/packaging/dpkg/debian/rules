@@ -41,5 +41,6 @@ override_dh_auto_install:
 	install -D bld_vl/validator-keys debian/tmp/opt/ripple/bin/validator-keys
 	install -D Builds/containers/shared/update-rippled.sh debian/tmp/opt/ripple/bin/update-rippled.sh
 	install -D Builds/containers/shared/update-rippled-cron debian/tmp/opt/ripple/etc/update-rippled-cron
+	install -D Builds/containers/shared/rippled-logrotate debian/tmp/etc/logrotate.d/rippled
 	rm -rf bld
 	rm -rf bld_vl

@@ -64,6 +64,7 @@ install -D ./rippled/Builds/containers/shared/rippled.service ${RPM_BUILD_ROOT}/
 install -D ./rippled/Builds/containers/packaging/rpm/50-rippled.preset ${RPM_BUILD_ROOT}/usr/lib/systemd/system-preset/50-rippled.preset
 install -D ./rippled/Builds/containers/shared/update-rippled.sh ${RPM_BUILD_ROOT}%{_bindir}/update-rippled.sh
 install -D ./rippled/Builds/containers/shared/update-rippled-cron ${RPM_BUILD_ROOT}%{_prefix}/etc/update-rippled-cron
+install -D ./rippled/Builds/containers/shared/rippled-logrotate ${RPM_BUILD_ROOT}/etc/logrotate.d/rippled
 install -d $RPM_BUILD_ROOT/var/log/rippled
 install -d $RPM_BUILD_ROOT/var/lib/rippled
 
@@ -82,6 +83,7 @@ chmod 755 /var/log/rippled/
 chmod 755 /var/lib/rippled/
 
 chmod 644 %{_prefix}/etc/update-rippled-cron
+chmod 644 /etc/logrotate.d/rippled
 chown -R root:$GROUP_NAME %{_prefix}/etc/update-rippled-cron
 
 %files
@@ -95,6 +97,7 @@ chown -R root:$GROUP_NAME %{_prefix}/etc/update-rippled-cron
 %config(noreplace) /etc/opt/ripple/rippled.cfg
 %config(noreplace) %{_prefix}/etc/validators.txt
 %config(noreplace) /etc/opt/ripple/validators.txt
+%config(noreplace) /etc/logrotate.d/rippled
 %config(noreplace) /usr/lib/systemd/system/rippled.service
 %config(noreplace) /usr/lib/systemd/system-preset/50-rippled.preset
 %dir /var/log/rippled/
