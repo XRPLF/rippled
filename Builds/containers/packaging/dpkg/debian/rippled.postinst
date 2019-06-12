@@ -16,6 +16,7 @@ case "$1" in
         chmod 755 /var/log/rippled/
         chmod 755 /var/lib/rippled/
         chmod 644 /opt/ripple/etc/update-rippled-cron
+        chmod 644 /etc/logrotate.d/rippled
         chown -R root:$GROUP_NAME /opt/ripple/etc/update-rippled-cron
     ;;
 
