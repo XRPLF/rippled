@@ -1869,6 +1869,10 @@ install (
   DESTINATION include/ripple/beast/crypto)
 install (
   FILES
+    src/ripple/beast/cxx17/type_traits.h
+  DESTINATION include/ripple/beast/cxx17)
+install (
+  FILES
     src/ripple/beast/hash/endian.h
     src/ripple/beast/hash/hash_append.h
     src/ripple/beast/hash/meta.h
