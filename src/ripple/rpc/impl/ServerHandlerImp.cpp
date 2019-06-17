@@ -359,7 +359,7 @@ ServerHandlerImp::onWSMessage(
     if (postResult == nullptr)
     {
         // The coroutine was rejected, probably because we're shutting down.
-        session->close();
+        session->close({boost::beast::websocket::going_away, "Shutting Down"});
     }
 }
 
@@ -388,7 +388,7 @@ ServerHandlerImp::processSession(
     auto is = std::static_pointer_cast<WSInfoSub> (session->appDefined);
     if (is->getConsumer().disconnect())
     {
-        session->close();
+        session->close({boost::beast::websocket::policy_error, "threshold exceeded"});
         // FIX: This rpcError is not delivered since the session
         // was just closed.
         return rpcError(rpcSLOW_DOWN);
