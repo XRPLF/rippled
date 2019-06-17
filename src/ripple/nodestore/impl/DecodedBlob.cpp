@@ -31,8 +31,7 @@ DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
 
         Bytes
 
-        0...3       Unused
-        4...7       Unused
+        0...7       Unused
         8           char            One of NodeObjectType
         9...end                     The body of the object data
     */

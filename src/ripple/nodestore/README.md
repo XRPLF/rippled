@@ -39,8 +39,7 @@ contains. The fields are as follows:
  
 |Byte   |                     |                          |
 |:------|:--------------------|:-------------------------|
-|0...3  |unused               |32-bit big endian integer |
-|4...7  |unused               |32-bit big endian integer |
+|0...7  |unused               |                          |
 |8      |type                 |NodeObjectType enumeration|
 |9...end|data                 |body of the object data   |
 ---    

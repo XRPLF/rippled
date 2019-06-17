@@ -34,7 +34,6 @@ enum NodeObjectType
 {
     hotUNKNOWN = 0,
     hotLEDGER = 1,
-    //hotTRANSACTION = 2        // Not used
     hotACCOUNT_NODE = 3,
     hotTRANSACTION_NODE = 4
 };
@@ -53,16 +52,7 @@ class NodeObject : public CountedObject <NodeObject>
 public:
     static char const* getCountedObjectName () { return "NodeObject"; }
 
-    enum
-    {
-        /** Size of the fixed keys, in bytes.
-
-            We use a 256-bit hash for the keys.
-
-            @see NodeObject
-        */
-        keyBytes = 32,
-    };
+    static constexpr std::size_t keyBytes = 32;
 
 private:
     // This hack is used to make the constructor effectively private
