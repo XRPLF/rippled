@@ -105,6 +105,9 @@ public:
     close() override;
 
     void
+    close(boost::beast::websocket::close_reason const& reason) override;
+
+    void
     complete() override;
 
 protected:
@@ -224,13 +227,12 @@ send(std::shared_ptr<WSMsg> w)
         return;
     if(wq_.size() > port().ws_queue_limit)
     {
-        JLOG(this->j_.info()) <<
-            "closing slow client";
         cr_.code = safe_cast<decltype(cr_.code)>
                       (boost::beast::websocket::close_code::policy_error);
         cr_.reason = "Policy error: client is too slow.";
+        JLOG(this->j_.info()) << cr_.reason;
         wq_.erase(std::next(wq_.begin()), wq_.end());
-        close();
+        close(cr_);
         return;
     }
     wq_.emplace_back(std::move(w));
@@ -238,24 +240,38 @@ send(std::shared_ptr<WSMsg> w)
         on_write({});
 }
 
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BaseWSPeer<Handler, Impl>::
-close()
+BaseWSPeer<Handler, Impl>::close()
 {
-    if(! strand_.running_in_this_thread())
-        return post(
-            strand_, std::bind(&BaseWSPeer::close, impl().shared_from_this()));
+    close(boost::beast::websocket::close_reason{});
+}
+
+template <class Handler, class Impl>
+void
+BaseWSPeer<Handler, Impl>::close(
+    boost::beast::websocket::close_reason const& reason)
+{
+    if (!strand_.running_in_this_thread())
+        return post(strand_, [self = impl().shared_from_this(), reason] {
+            self->close(reason);
+        });
     do_close_ = true;
-    if(wq_.empty())
+    if (wq_.empty())
+    {
         impl().ws_.async_close(
-            {},
+            reason,
             bind_executor(
                 strand_,
-                std::bind(
-                    &BaseWSPeer::on_close,
-                    impl().shared_from_this(),
-                    std::placeholders::_1)));
+                [self = impl().shared_from_this()](
+                    boost::beast::error_code const& ec) {
+                    self->on_close(ec);
+                }));
+    }
+    else
+    {
+        cr_ = reason;
+    }
 }
 
 template<class Handler, class Impl>

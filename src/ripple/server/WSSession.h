@@ -136,9 +136,12 @@ struct WSSession
     void
     send(std::shared_ptr<WSMsg> w) = 0;
 
+    virtual void
+    close() = 0;
+
     virtual
     void
-    close() = 0;
+    close(boost::beast::websocket::close_reason const& reason) = 0;
 
     /** Indicate that the response is complete.
         The handler should call this when it has completed writing
