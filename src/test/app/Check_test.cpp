@@ -20,79 +20,10 @@
 #include <test/jtx.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
-#include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
-
-// For the time being Checks seem pretty much self contained.  So the
-// functions that operate on jtx are defined here, locally.  If they are
-// needed by other unit tests they could put in another file.
 namespace test {
 namespace jtx {
-namespace check {
-
-// Create a check.
-Json::Value
-create (jtx::Account const& account,
-    jtx::Account const& dest, STAmount const& sendMax)
-{
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::none);
-    jv[sfDestination.jsonName] = dest.human();
-    jv[sfTransactionType.jsonName] = jss::CheckCreate;
-    jv[sfFlags.jsonName] = tfUniversal;
-    return jv;
-}
-
-// Type used to specify DeliverMin for cashing a check.
-struct DeliverMin
-{
-    STAmount value;
-    explicit DeliverMin (STAmount const& deliverMin)
-    : value (deliverMin) { }
-};
-
-// Cash a check.
-Json::Value
-cash (jtx::Account const& dest,
-    uint256 const& checkId, STAmount const& amount)
-{
-    Json::Value jv;
-    jv[sfAccount.jsonName] = dest.human();
-    jv[sfAmount.jsonName]  = amount.getJson(JsonOptions::none);
-    jv[sfCheckID.jsonName] = to_string (checkId);
-    jv[sfTransactionType.jsonName] = jss::CheckCash;
-    jv[sfFlags.jsonName] = tfUniversal;
-    return jv;
-}
-
-Json::Value
-cash (jtx::Account const& dest,
-    uint256 const& checkId, DeliverMin const& atLeast)
-{
-    Json::Value jv;
-    jv[sfAccount.jsonName] = dest.human();
-    jv[sfDeliverMin.jsonName]  = atLeast.value.getJson(JsonOptions::none);
-    jv[sfCheckID.jsonName] = to_string (checkId);
-    jv[sfTransactionType.jsonName] = jss::CheckCash;
-    jv[sfFlags.jsonName] = tfUniversal;
-    return jv;
-}
-
-// Cancel a check.
-Json::Value
-cancel (jtx::Account const& dest, uint256 const& checkId)
-{
-    Json::Value jv;
-    jv[sfAccount.jsonName] = dest.human();
-    jv[sfCheckID.jsonName] = to_string (checkId);
-    jv[sfTransactionType.jsonName] = jss::CheckCancel;
-    jv[sfFlags.jsonName] = tfUniversal;
-    return jv;
-}
-
-} // namespace check
 
 /** Set Expiration on a JTx. */
 class expiration

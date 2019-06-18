@@ -380,18 +380,9 @@ public:
             BEAST_EXPECT (state[sfBalance.jsonName][jss::value].asInt() == -5);
             BEAST_EXPECT (state[sfHighLimit.jsonName][jss::value].asUInt() == 1000);
         }
-        {
-            // gw writes a check for USD(10) to alice.
-            Json::Value jvCheck;
-            jvCheck[sfAccount.jsonName] = gw.human();
-            jvCheck[sfSendMax.jsonName] =
-                USD(10).value().getJson(JsonOptions::none);
-            jvCheck[sfDestination.jsonName] = alice.human();
-            jvCheck[sfTransactionType.jsonName] = jss::CheckCreate;
-            jvCheck[sfFlags.jsonName] = tfUniversal;
-            env (jvCheck);
-            env.close();
-        }
+        // gw writes a check for USD(10) to alice.
+        env (check::create (gw, alice, USD(10)));
+        env.close();
         {
             // Find the check.
             Json::Value const resp = acct_objs (gw, jss::check);
