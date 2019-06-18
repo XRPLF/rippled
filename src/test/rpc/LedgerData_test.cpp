@@ -325,15 +325,7 @@ public:
             env(jv);
         }
 
-        {
-            Json::Value jv;
-            jv[sfAccount.jsonName] = Account{"bob6"}.human ();
-            jv[sfSendMax.jsonName] = "100000000";
-            jv[sfDestination.jsonName] = Account{"bob7"}.human ();
-            jv[sfTransactionType.jsonName] = jss::CheckCreate;
-            jv[sfFlags.jsonName] = tfUniversal;
-            env(jv);
-        }
+        env (check::create ("bob6", "bob7", XRP (100)));
 
         // bob9 DepositPreauths bob4 and bob8.
         env (deposit::auth (Account {"bob9"}, Account {"bob4"}));

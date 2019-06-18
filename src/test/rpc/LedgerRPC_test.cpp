@@ -334,20 +334,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         uint256 const checkId {
             getCheckIndex (env.master, env.seq (env.master))};
 
-        // Lambda to create a check.
-        auto checkCreate = [] (test::jtx::Account const& account,
-            test::jtx::Account const& dest, STAmount const& sendMax)
-        {
-            Json::Value jv;
-            jv[sfAccount.jsonName] = account.human();
-            jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::none);
-            jv[sfDestination.jsonName] = dest.human();
-            jv[sfTransactionType.jsonName] = jss::CheckCreate;
-            jv[sfFlags.jsonName] = tfUniversal;
-            return jv;
-        };
-
-        env (checkCreate (env.master, alice, XRP(100)));
+        env (check::create (env.master, alice, XRP(100)));
         env.close();
 
         std::string const ledgerHash {to_string (env.closed()->info().hash)};
