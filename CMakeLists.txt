@@ -2505,6 +2505,7 @@ else ()
     src/test/jtx/impl/WSClient.cpp
     src/test/jtx/impl/amount.cpp
     src/test/jtx/impl/balance.cpp
+    src/test/jtx/impl/check.cpp
     src/test/jtx/impl/delivermin.cpp
     src/test/jtx/impl/deposit.cpp
     src/test/jtx/impl/envconfig.cpp
