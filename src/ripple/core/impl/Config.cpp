@@ -69,6 +69,9 @@ parseIniFile (std::string const& strInput, const bool bTrim)
     // Parse each line.
     for (auto& strValue : vLines)
     {
+        if (bTrim)
+            boost::algorithm::trim (strValue);
+
         if (strValue.empty () || strValue[0] == '#')
         {
             // Blank line or comment, do nothing.
@@ -82,9 +85,6 @@ parseIniFile (std::string const& strInput, const bool bTrim)
         else
         {
             // Another line for Section.
-            if (bTrim)
-                boost::algorithm::trim (strValue);
-
             if (!strValue.empty ())
                 secResult[strSection].push_back (strValue);
         }
