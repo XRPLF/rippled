@@ -751,6 +751,42 @@ trustthesevalidators.gov
         BEAST_EXPECT(wss.admin_ip && (wss.admin_ip .get().size() == 1));
     }
 
+    void testWhitespace()
+    {
+        Config cfg;
+        /* NOTE: this string includes some explicit
+         * space chars in order to verify proper trimming */
+        std::string toLoad(R"(
+[port_rpc])" "\x20" R"(
+# comment
+    # indented comment
+)" "\x20\x20" R"(
+[ips])" "\x20" R"(
+r.ripple.com 51235
+
+  [ips_fixed])" "\x20\x20" R"(
+    # COMMENT
+    s1.ripple.com 51235
+    s2.ripple.com 51235
+
+)");
+        cfg.loadFromString (toLoad);
+        BEAST_EXPECT (
+            cfg.exists ("port_rpc") &&
+            cfg.section ("port_rpc").lines ().empty () &&
+            cfg.section ("port_rpc").values ().empty ());
+        BEAST_EXPECT (
+            cfg.exists (SECTION_IPS) &&
+            cfg.section (SECTION_IPS).lines ().size () == 1 &&
+            cfg.section (SECTION_IPS).values ().size () == 1);
+        BEAST_EXPECT (
+            cfg.exists (SECTION_IPS_FIXED) &&
+            cfg.section (SECTION_IPS_FIXED).lines ().size () == 2 &&
+            cfg.section (SECTION_IPS_FIXED).values ().size () == 2);
+
+    }
+
+
     void run () override
     {
         testLegacy ();
@@ -760,6 +796,7 @@ trustthesevalidators.gov
         testSetup (false);
         testSetup (true);
         testPort ();
+        testWhitespace ();
     }
 };
 
