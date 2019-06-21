@@ -25,30 +25,48 @@ const char* TrafficCount::getName (category c)
 {
     switch (c)
     {
-        case category::CT_base:
-            return "overhead";
-        case category::CT_overlay:
-            return "overlay";
-        case category::CT_transaction:
-            return "transactions";
-        case category::CT_proposal:
-            return "proposals";
-        case category::CT_validation:
-            return "validations";
-        case category::CT_get_ledger:
-            return "ledger_get";
-        case category::CT_share_ledger:
-            return "ledger_share";
-        case category::CT_get_trans:
-            return "transaction_set_get";
-        case category::CT_share_trans:
-            return "transaction_set_share";
-        case category::CT_unknown:
-            assert (false);
-            return "unknown";
-        default:
-            assert (false);
-            return "truly_unknow";
+    case category::base:              return "overhead";
+    case category::cluster:           return "cluster management";
+    case category::overlay:           return "overlay management";
+    case category::manifests:         return "manifest management";
+    case category::transaction:       return "transactions";
+    case category::proposal:          return "proposals management";
+    case category::validation:        return "validations";
+    case category::shards:            return "shards";
+    case category::get_set:           return "set management (get)";
+    case category::share_set:         return "set management(share)";
+    case category::ld_tsc_get:        return "ledger data: Transaction Set candidate (get)";
+    case category::ld_tsc_share:      return "ledger data: Transaction Set candidate (share)";
+    case category::ld_txn_get:        return "ledger data: Transaction Node (get)";
+    case category::ld_txn_share:      return "ledger data: Transaction Node (share)";
+    case category::ld_asn_get:        return "ledger data: Account State Node (get)";
+    case category::ld_asn_share:      return "ledger data: Account State Node (share)";
+    case category::ld_get:            return "ledger data (get)";
+    case category::ld_share:          return "ledger data (share)";
+    case category::gl_tsc_share:      return "ledger: Transaction Set candidate (share)";
+    case category::gl_tsc_get:        return "ledger: Transaction Set candidate (get)";
+    case category::gl_txn_share:      return "ledger: Transaction node (share)";
+    case category::gl_txn_get:        return "ledger: Transaction node (get)";
+    case category::gl_asn_share:      return "ledger: Account State node (share)";
+    case category::gl_asn_get:        return "ledger: Account State node (get)";
+    case category::gl_share:          return "ledger (share)";
+    case category::gl_get:            return "ledger (get)";
+    case category::share_hash_ledger: return "getobject: Ledger (share)";
+    case category::get_hash_ledger:   return "getobject: Ledger (get)";
+    case category::share_hash_tx:     return "getobject: Transaction (share)";
+    case category::get_hash_tx:       return "getobject: Transaction (get)";
+    case category::share_hash_txnode: return "getobject: Transaction node (share)";
+    case category::get_hash_txnode:   return "getobject: Transaction node (get)";
+    case category::share_hash_asnode: return "getobject: Account State node (share)";
+    case category::get_hash_asnode:   return "getobject: Account State node (get)";
+    case category::share_cas_object:  return "getobject: CAS (share)";
+    case category::get_cas_object:    return "getobject: CAS (get)";
+    case category::share_fetch_pack:  return "getobject: Fetch Pack (share)";
+    case category::get_fetch_pack:    return "getobject: Fetch Pack (get)";
+    case category::share_hash:        return "getobject (share)";
+    case category::get_hash:          return "getobject (get)";
+    default:
+    case category::unknown:           return "unknown";
     }
 }
 
@@ -58,81 +76,122 @@ TrafficCount::category TrafficCount::categorize (
 {
     if ((type == protocol::mtHELLO) ||
             (type == protocol::mtPING) ||
-            (type == protocol::mtCLUSTER) ||
             (type == protocol::mtSTATUS_CHANGE))
-        return TrafficCount::category::CT_base;
+        return TrafficCount::category::base;
 
-    if ((type == protocol::mtMANIFESTS) ||
-            (type == protocol::mtENDPOINTS) ||
-            (type == protocol::mtGET_SHARD_INFO) ||
-            (type == protocol::mtSHARD_INFO) ||
-            (type == protocol::mtGET_PEER_SHARD_INFO) ||
-            (type == protocol::mtPEER_SHARD_INFO) ||
+    if (type == protocol::mtCLUSTER)
+        return TrafficCount::category::cluster;
+
+    if (type == protocol::mtMANIFESTS)
+        return TrafficCount::category::manifests;
+
+    if ((type == protocol::mtENDPOINTS) ||
             (type == protocol::mtPEERS) ||
             (type == protocol::mtGET_PEERS))
-        return TrafficCount::category::CT_overlay;
+        return TrafficCount::category::overlay;
+
+    if ((type == protocol::mtGET_SHARD_INFO) ||
+            (type == protocol::mtSHARD_INFO) ||
+            (type == protocol::mtGET_PEER_SHARD_INFO) ||
+            (type == protocol::mtPEER_SHARD_INFO))
+        return TrafficCount::category::shards;
 
     if (type == protocol::mtTRANSACTION)
-        return TrafficCount::category::CT_transaction;
+        return TrafficCount::category::transaction;
 
     if (type == protocol::mtVALIDATION)
-        return TrafficCount::category::CT_validation;
+        return TrafficCount::category::validation;
 
     if (type == protocol::mtPROPOSE_LEDGER)
-        return TrafficCount::category::CT_proposal;
+        return TrafficCount::category::proposal;
 
     if (type == protocol::mtHAVE_SET)
-        return inbound ? TrafficCount::category::CT_get_trans :
-            TrafficCount::category::CT_share_trans;
+        return inbound ?
+            TrafficCount::category::get_set:
+            TrafficCount::category::share_set;
 
+    if (auto msg = dynamic_cast<protocol::TMLedgerData const*>(&message))
     {
-        auto msg = dynamic_cast
-            <protocol::TMLedgerData const*> (&message);
-        if (msg)
-        {
-            // We have received ledger data
-            if (msg->type() == protocol::liTS_CANDIDATE)
-                return (inbound && !msg->has_requestcookie()) ?
-                    TrafficCount::category::CT_get_trans :
-                    TrafficCount::category::CT_share_trans;
+        if (msg->type() == protocol::liTS_CANDIDATE)
             return (inbound && !msg->has_requestcookie()) ?
-                TrafficCount::category::CT_get_ledger :
-                TrafficCount::category::CT_share_ledger;
-        }
+                TrafficCount::category::ld_tsc_get:
+                TrafficCount::category::ld_tsc_share;
+
+        if (msg->type() == protocol::liTX_NODE)
+            return (inbound && !msg->has_requestcookie()) ?
+                TrafficCount::category::ld_txn_get :
+                TrafficCount::category::ld_txn_share;
+
+        if (msg->type() == protocol::liAS_NODE)
+            return (inbound && !msg->has_requestcookie()) ?
+                TrafficCount::category::ld_asn_get :
+                TrafficCount::category::ld_asn_share;
+
+        return (inbound && !msg->has_requestcookie()) ?
+               TrafficCount::category::ld_get :
+               TrafficCount::category::ld_share;
     }
 
+    if (auto msg = dynamic_cast<protocol::TMGetLedger const*>(&message))
     {
-        auto msg =
-            dynamic_cast <protocol::TMGetLedger const*>
-                (&message);
-        if (msg)
-        {
-            if (msg->itype() == protocol::liTS_CANDIDATE)
-                return (inbound || msg->has_requestcookie()) ?
-                    TrafficCount::category::CT_share_trans :
-                    TrafficCount::category::CT_get_trans;
+        if (msg->itype() == protocol::liTS_CANDIDATE)
             return (inbound || msg->has_requestcookie()) ?
-                TrafficCount::category::CT_share_ledger :
-                TrafficCount::category::CT_get_ledger;
-        }
+                TrafficCount::category::gl_tsc_share :
+                TrafficCount::category::gl_tsc_get;
+
+        if (msg->itype() == protocol::liTX_NODE)
+            return (inbound || msg->has_requestcookie()) ?
+                TrafficCount::category::gl_txn_share :
+                TrafficCount::category::gl_txn_get;
+
+        if (msg->itype() == protocol::liAS_NODE)
+            return (inbound || msg->has_requestcookie()) ?
+                TrafficCount::category::gl_asn_share :
+                TrafficCount::category::gl_asn_get;
+
+        return (inbound || msg->has_requestcookie()) ?
+            TrafficCount::category::gl_share :
+            TrafficCount::category::gl_get;
     }
 
+    if (auto msg = dynamic_cast<protocol::TMGetObjectByHash const*>(&message))
     {
-        auto msg =
-            dynamic_cast <protocol::TMGetObjectByHash const*>
-                (&message);
-        if (msg)
-        {
-            // inbound queries and outbound responses are sharing
-            // outbound queries and inbound responses are getting
+        if (msg->type() == protocol::TMGetObjectByHash::otLEDGER)
             return (msg->query() == inbound) ?
-                TrafficCount::category::CT_share_ledger :
-                TrafficCount::category::CT_get_ledger;
-        }
+                TrafficCount::category::share_hash_ledger :
+                TrafficCount::category::get_hash_ledger;
+
+        if (msg->type() == protocol::TMGetObjectByHash::otTRANSACTION)
+            return (msg->query() == inbound) ?
+                TrafficCount::category::share_hash_tx :
+                TrafficCount::category::get_hash_tx;
+
+        if (msg->type() == protocol::TMGetObjectByHash::otTRANSACTION_NODE)
+            return (msg->query() == inbound) ?
+                TrafficCount::category::share_hash_txnode :
+                TrafficCount::category::get_hash_txnode;
+
+        if (msg->type() == protocol::TMGetObjectByHash::otSTATE_NODE)
+            return (msg->query() == inbound) ?
+                TrafficCount::category::share_hash_asnode :
+                TrafficCount::category::get_hash_asnode;
+
+        if (msg->type() == protocol::TMGetObjectByHash::otCAS_OBJECT)
+            return (msg->query() == inbound) ?
+                TrafficCount::category::share_cas_object :
+                TrafficCount::category::get_cas_object;
+
+        if (msg->type() == protocol::TMGetObjectByHash::otFETCH_PACK)
+            return (msg->query() == inbound) ?
+                TrafficCount::category::share_fetch_pack :
+                TrafficCount::category::get_fetch_pack;
+
+        return (msg->query() == inbound) ?
+            TrafficCount::category::share_hash :
+            TrafficCount::category::get_hash;
     }
 
-    assert (false);
-    return TrafficCount::category::CT_unknown;
+    return TrafficCount::category::unknown;
 }
 
 } // ripple

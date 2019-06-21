@@ -24,36 +24,32 @@
 #include <ripple/protocol/messages.h>
 
 #include <atomic>
+#include <cstdint>
 #include <map>
 
 namespace ripple {
 
 class TrafficCount
 {
-
 public:
-
-    using count_t = std::atomic <unsigned long>;
-
     class TrafficStats
     {
         public:
 
-        count_t bytesIn;
-        count_t bytesOut;
-        count_t messagesIn;
-        count_t messagesOut;
+        std::atomic<std::uint64_t> bytesIn {0};
+        std::atomic<std::uint64_t> bytesOut {0};
+        std::atomic<std::uint64_t> messagesIn {0};
+        std::atomic<std::uint64_t> messagesOut {0};
 
-        TrafficStats() : bytesIn(0), bytesOut(0),
-            messagesIn(0), messagesOut(0)
-        { ; }
+        TrafficStats() = default;
 
         TrafficStats(const TrafficStats& ts)
             : bytesIn (ts.bytesIn.load())
             , bytesOut (ts.bytesOut.load())
             , messagesIn (ts.messagesIn.load())
             , messagesOut (ts.messagesOut.load())
-        { ; }
+        {
+        }
 
         operator bool () const
         {
@@ -64,16 +60,81 @@ public:
 
     enum class category
     {
-        CT_base,           // basic peer overhead, must be first
-        CT_overlay,        // overlay management
-        CT_transaction,
-        CT_proposal,
-        CT_validation,
-        CT_get_ledger,     // ledgers we try to get
-        CT_share_ledger,   // ledgers we share
-        CT_get_trans,      // transaction sets we try to get
-        CT_share_trans,    // transaction sets we get
-        CT_unknown         // must be last
+        base,           // basic peer overhead, must be first
+
+        cluster,        // cluster overhead
+        overlay,        // overlay management
+        manifests,      // manifest management
+        transaction,
+        proposal,
+        validation,
+        shards,         // shard-related traffic
+
+        // TMHaveSet message:
+        get_set,        // transaction sets we try to get
+        share_set,      // transaction sets we get
+
+        // TMLedgerData: transaction set candidate
+        ld_tsc_get,
+        ld_tsc_share,
+
+        // TMLedgerData: transaction node
+        ld_txn_get,
+        ld_txn_share,
+
+        // TMLedgerData: account state node
+        ld_asn_get,
+        ld_asn_share,
+
+        // TMLedgerData: generic
+        ld_get,
+        ld_share,
+
+        // TMGetLedger: transaction set candidate
+        gl_tsc_share,
+        gl_tsc_get,
+
+        // TMGetLedger: transaction node
+        gl_txn_share,
+        gl_txn_get,
+
+        // TMGetLedger: account state node
+        gl_asn_share,
+        gl_asn_get,
+
+        // TMGetLedger: generic
+        gl_share,
+        gl_get,
+
+        // TMGetObjectByHash:
+        share_hash_ledger,
+        get_hash_ledger,
+
+        // TMGetObjectByHash:
+        share_hash_tx,
+        get_hash_tx,
+
+        // TMGetObjectByHash: transaction node
+        share_hash_txnode,
+        get_hash_txnode,
+
+        // TMGetObjectByHash: account state node
+        share_hash_asnode,
+        get_hash_asnode,
+
+        // TMGetObjectByHash: CAS
+        share_cas_object,
+        get_cas_object,
+
+        // TMGetObjectByHash: fetch packs
+        share_fetch_pack,
+        get_fetch_pack,
+
+        // TMGetObjectByHash: generic
+        share_hash,
+        get_hash,
+
+        unknown         // must be last
     };
 
     static const char* getName (category c);
@@ -98,8 +159,8 @@ public:
 
     TrafficCount()
     {
-        for (category i = category::CT_base;
-            i <= category::CT_unknown;
+        for (category i = category::base;
+            i <= category::unknown;
             i = safe_cast<category>(safe_cast<std::underlying_type_t<category>>(i) + 1))
         {
             counts_[i];
@@ -122,9 +183,8 @@ public:
         return ret;
     }
 
-    protected:
-
-    std::map <category, TrafficStats> counts_;
+protected:
+    std::map<category, TrafficStats> counts_;
 };
 
 }
