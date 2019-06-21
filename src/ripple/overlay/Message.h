@@ -75,7 +75,7 @@ public:
     }
 
     /** Get the traffic category */
-    int
+    std::size_t
     getCategory () const
     {
         return mCategory;
@@ -167,7 +167,7 @@ private:
 
     std::vector <uint8_t> mBuffer;
 
-    int mCategory;
+    std::size_t mCategory;
 };
 
 }

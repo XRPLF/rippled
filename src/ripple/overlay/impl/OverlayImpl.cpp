@@ -593,26 +593,18 @@ void
 OverlayImpl::onWrite (beast::PropertyStream::Map& stream)
 {
     beast::PropertyStream::Set set ("traffic", stream);
-    auto stats = m_traffic.getCounts();
-    for (auto& i : stats)
+    auto const stats = m_traffic.getCounts();
+    for (auto const& i : stats)
     {
-        if (! i.second.messagesIn && ! i.second.messagesOut)
-            continue;
-
-        beast::PropertyStream::Map item (set);
-        item["category"] = i.first;
-        item["bytes_in"] =
-            beast::lexicalCast<std::string>
-                (i.second.bytesIn.load());
-        item["messages_in"] =
-            beast::lexicalCast<std::string>
-                (i.second.messagesIn.load());
-        item["bytes_out"] =
-            beast::lexicalCast<std::string>
-                (i.second.bytesOut.load());
-        item["messages_out"] =
-            beast::lexicalCast<std::string>
-                (i.second.messagesOut.load());
+        if (i)
+        {
+            beast::PropertyStream::Map item(set);
+            item["category"] = i.name;
+            item["bytes_in"] = std::to_string(i.bytesIn.load());
+            item["messages_in"] = std::to_string(i.messagesIn.load());
+            item["bytes_out"] = std::to_string(i.bytesOut.load());
+            item["messages_out"] = std::to_string(i.messagesOut.load());
+        }
     }
 }
 
