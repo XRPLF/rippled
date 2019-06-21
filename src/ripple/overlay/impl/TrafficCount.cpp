@@ -21,55 +21,6 @@
 
 namespace ripple {
 
-const char* TrafficCount::getName (category c)
-{
-    switch (c)
-    {
-    case category::base:              return "overhead";
-    case category::cluster:           return "cluster management";
-    case category::overlay:           return "overlay management";
-    case category::manifests:         return "manifest management";
-    case category::transaction:       return "transactions";
-    case category::proposal:          return "proposals management";
-    case category::validation:        return "validations";
-    case category::shards:            return "shards";
-    case category::get_set:           return "set management (get)";
-    case category::share_set:         return "set management(share)";
-    case category::ld_tsc_get:        return "ledger data: Transaction Set candidate (get)";
-    case category::ld_tsc_share:      return "ledger data: Transaction Set candidate (share)";
-    case category::ld_txn_get:        return "ledger data: Transaction Node (get)";
-    case category::ld_txn_share:      return "ledger data: Transaction Node (share)";
-    case category::ld_asn_get:        return "ledger data: Account State Node (get)";
-    case category::ld_asn_share:      return "ledger data: Account State Node (share)";
-    case category::ld_get:            return "ledger data (get)";
-    case category::ld_share:          return "ledger data (share)";
-    case category::gl_tsc_share:      return "ledger: Transaction Set candidate (share)";
-    case category::gl_tsc_get:        return "ledger: Transaction Set candidate (get)";
-    case category::gl_txn_share:      return "ledger: Transaction node (share)";
-    case category::gl_txn_get:        return "ledger: Transaction node (get)";
-    case category::gl_asn_share:      return "ledger: Account State node (share)";
-    case category::gl_asn_get:        return "ledger: Account State node (get)";
-    case category::gl_share:          return "ledger (share)";
-    case category::gl_get:            return "ledger (get)";
-    case category::share_hash_ledger: return "getobject: Ledger (share)";
-    case category::get_hash_ledger:   return "getobject: Ledger (get)";
-    case category::share_hash_tx:     return "getobject: Transaction (share)";
-    case category::get_hash_tx:       return "getobject: Transaction (get)";
-    case category::share_hash_txnode: return "getobject: Transaction node (share)";
-    case category::get_hash_txnode:   return "getobject: Transaction node (get)";
-    case category::share_hash_asnode: return "getobject: Account State node (share)";
-    case category::get_hash_asnode:   return "getobject: Account State node (get)";
-    case category::share_cas_object:  return "getobject: CAS (share)";
-    case category::get_cas_object:    return "getobject: CAS (get)";
-    case category::share_fetch_pack:  return "getobject: Fetch Pack (share)";
-    case category::get_fetch_pack:    return "getobject: Fetch Pack (get)";
-    case category::share_hash:        return "getobject (share)";
-    case category::get_hash:          return "getobject (get)";
-    default:
-    case category::unknown:           return "unknown";
-    }
-}
-
 TrafficCount::category TrafficCount::categorize (
     ::google::protobuf::Message const& message,
     int type, bool inbound)

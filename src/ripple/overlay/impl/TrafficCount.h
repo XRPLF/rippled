@@ -23,9 +23,9 @@
 #include <ripple/basics/safe_cast.h>
 #include <ripple/protocol/messages.h>
 
+#include <array>
 #include <atomic>
 #include <cstdint>
-#include <map>
 
 namespace ripple {
 
@@ -34,17 +34,22 @@ class TrafficCount
 public:
     class TrafficStats
     {
-        public:
+    public:
+        std::string const name;
 
         std::atomic<std::uint64_t> bytesIn {0};
         std::atomic<std::uint64_t> bytesOut {0};
         std::atomic<std::uint64_t> messagesIn {0};
         std::atomic<std::uint64_t> messagesOut {0};
 
-        TrafficStats() = default;
+        TrafficStats(char const* n)
+            : name (n)
+        {
+        }
 
-        TrafficStats(const TrafficStats& ts)
-            : bytesIn (ts.bytesIn.load())
+        TrafficStats(TrafficStats const& ts)
+            : name (ts.name)
+            , bytesIn (ts.bytesIn.load())
             , bytesOut (ts.bytesOut.load())
             , messagesIn (ts.messagesIn.load())
             , messagesOut (ts.messagesOut.load())
@@ -57,8 +62,10 @@ public:
         }
     };
 
-
-    enum class category
+    // If you add entries to this enum, you need to update the initialization
+    // of the array at the bottom of this file which maps array numbers to
+    // human-readable names.
+    enum category : std::size_t
     {
         base,           // basic peer overhead, must be first
 
@@ -137,54 +144,85 @@ public:
         unknown         // must be last
     };
 
-    static const char* getName (category c);
-
+    /** Given a protocol message, determine which traffic category it belongs to */
     static category categorize (
         ::google::protobuf::Message const& message,
         int type, bool inbound);
 
-    void addCount (category cat, bool inbound, int number)
+    /** Account for traffic associated with the given category */
+    void addCount (category cat, bool inbound, int bytes)
     {
+        assert (cat <= category::unknown);
+
         if (inbound)
         {
-            counts_[cat].bytesIn += number;
+            counts_[cat].bytesIn += bytes;
             ++counts_[cat].messagesIn;
         }
         else
         {
-            counts_[cat].bytesOut += number;
+            counts_[cat].bytesOut += bytes;
             ++counts_[cat].messagesOut;
         }
     }
 
-    TrafficCount()
-    {
-        for (category i = category::base;
-            i <= category::unknown;
-            i = safe_cast<category>(safe_cast<std::underlying_type_t<category>>(i) + 1))
-        {
-            counts_[i];
-        }
-    }
+    TrafficCount() = default;
 
-    std::map <std::string, TrafficStats>
+    /** An up-to-date copy of all the counters
+
+        @return an object which satisfies the requirements of Container
+     */
+    auto
     getCounts () const
     {
-        std::map <std::string, TrafficStats> ret;
-
-        for (auto& i : counts_)
-        {
-            if (i.second)
-                ret.emplace (std::piecewise_construct,
-                    std::forward_as_tuple (getName (i.first)),
-                    std::forward_as_tuple (i.second));
-        }
-
-        return ret;
+        return counts_;
     }
 
 protected:
-    std::map<category, TrafficStats> counts_;
+    std::array<TrafficStats, category::unknown + 1> counts_
+    {{
+        { "overhead" },                                           // category::base
+        { "overhead: cluster" },                                  // category::cluster
+        { "overhead: overlay" },                                  // category::overlay
+        { "overhead: manifest" },                                 // category::manifests
+        { "transactions" },                                       // category::transaction
+        { "proposals" },                                          // category::proposal
+        { "validations" },                                        // category::validation
+        { "shards" },                                             // category::shards
+        { "set (get)" },                                          // category::get_set
+        { "set (share)" },                                        // category::share_set
+        { "ledger data: Transaction Set candidate (get)" },       // category::ld_tsc_get
+        { "ledger data: Transaction Set candidate (share)" },     // category::ld_tsc_share
+        { "ledger data: Transaction Node (get)" },                // category::ld_txn_get
+        { "ledger data: Transaction Node (share)" },              // category::ld_txn_share
+        { "ledger data: Account State Node (get)" },              // category::ld_asn_get
+        { "ledger data: Account State Node (share)" },            // category::ld_asn_share
+        { "ledger data (get)" },                                  // category::ld_get
+        { "ledger data (share)" },                                // category::ld_share
+        { "ledger: Transaction Set candidate (share)" },          // category::gl_tsc_share
+        { "ledger: Transaction Set candidate (get)" },            // category::gl_tsc_get
+        { "ledger: Transaction node (share)" },                   // category::gl_txn_share
+        { "ledger: Transaction node (get)" },                     // category::gl_txn_get
+        { "ledger: Account State node (share)" },                 // category::gl_asn_share
+        { "ledger: Account State node (get)" },                   // category::gl_asn_get
+        { "ledger (share)" },                                     // category::gl_share
+        { "ledger (get)" },                                       // category::gl_get
+        { "getobject: Ledger (share)" },                          // category::share_hash_ledger
+        { "getobject: Ledger (get)" },                            // category::get_hash_ledger
+        { "getobject: Transaction (share)" },                     // category::share_hash_tx
+        { "getobject: Transaction (get)" },                       // category::get_hash_tx
+        { "getobject: Transaction node (share)" },                // category::share_hash_txnode
+        { "getobject: Transaction node (get)" },                  // category::get_hash_txnode
+        { "getobject: Account State node (share)" },              // category::share_hash_asnode
+        { "getobject: Account State node (get)" },                // category::get_hash_asnode
+        { "getobject: CAS (share)" },                             // category::share_cas_object
+        { "getobject: CAS (get)" },                               // category::get_cas_object
+        { "getobject: Fetch Pack (share)" },                      // category::share_fetch_pack
+        { "getobject: Fetch Pack (get)" },                        // category::get_fetch_pack
+        { "getobject (share)" },                                  // category::share_hash
+        { "getobject (get)" },                                    // category::get_hash
+        { "unknown" }                                             // category::unknown
+    }};
 };
 
 }
