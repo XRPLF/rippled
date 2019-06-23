@@ -29,6 +29,7 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/basics/base64.h>
 #include <ripple/basics/random.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/basics/UptimeClock.h>
@@ -53,10 +54,10 @@ using namespace std::chrono_literals;
 
 namespace ripple {
 
-PeerImp::PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
-    PeerFinder::Slot::ptr const& slot, http_request_type&& request,
-        protocol::TMHello const& hello, PublicKey const& publicKey,
-            Resource::Consumer consumer,
+PeerImp::PeerImp (Application& app, id_t id,
+    std::shared_ptr<PeerFinder::Slot> const& slot, http_request_type&& request,
+        PublicKey const& publicKey,
+            ProtocolVersion protocol, Resource::Consumer consumer,
                 std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
                     OverlayImpl& overlay)
     : Child (overlay)
@@ -71,16 +72,15 @@ PeerImp::PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
     , stream_ (ssl_bundle_->stream)
     , strand_ (socket_.get_executor())
     , timer_ (beast::create_waitable_timer<waitable_timer>(socket_))
-    , remote_address_ (
-        beast::IPAddressConversion::from_asio(remote_endpoint))
+    , remote_address_ (slot->remote_endpoint())
     , overlay_ (overlay)
     , m_inbound (true)
+    , protocol_ (protocol)
     , state_ (State::active)
     , sanity_ (Sanity::unknown)
     , insaneTime_ (clock_type::now())
     , publicKey_(publicKey)
     , creationTime_ (clock_type::now())
-    , hello_(hello)
     , usage_(consumer)
     , fee_ (Resource::feeLightPeer)
     , slot_ (slot)
@@ -116,8 +116,59 @@ void
 PeerImp::run()
 {
     if(! strand_.running_in_this_thread())
-        return post(strand_, std::bind (
-            &PeerImp::run, shared_from_this()));
+        return post(strand_, std::bind(&PeerImp::run, shared_from_this()));
+
+    // We need to decipher
+    auto parseLedgerHash = [](std::string const& value) -> boost::optional<uint256>
+    {
+        uint256 ret;
+        if (ret.SetHexExact(value))
+            return { ret };
+
+        auto const s = base64_decode(value);
+        if (s.size() != uint256::size())
+            return boost::none;
+        return uint256{ s };
+    };
+
+    boost::optional<uint256> closed;
+    boost::optional<uint256> previous;
+
+    {
+        auto const iter = headers_.find("Closed-Ledger");
+
+        if (iter != headers_.end())
+        {
+            closed = parseLedgerHash(iter->value().to_string());
+
+            if (!closed)
+                fail("Malformed handshake data (1)");
+        }
+    }
+
+    {
+        auto const iter = headers_.find("Previous-Ledger");
+
+        if (iter != headers_.end())
+        {
+            previous = parseLedgerHash(iter->value().to_string());
+
+            if (!previous)
+                fail("Malformed handshake data (2)");
+        }
+    }
+
+    if (previous && !closed)
+        fail("Malformed handshake data (3)");
+
+    {
+        std::lock_guard<std::mutex> sl(recentLock_);
+        if (closed)
+            closedLedgerHash_ = *closed;
+        if (previous)
+            previousLedgerHash_ = *previous;
+    }
+
     if (m_inbound)
     {
         doAccept();
@@ -127,27 +178,6 @@ PeerImp::run()
         assert (state_ == State::active);
         // XXX Set timer: connection is in grace period to be useful.
         // XXX Set timer: connection idle (idle may vary depending on connection type.)
-        if (hello_.has_ledgerclosed() && 
-            stringIsUint256Sized (hello_.ledgerclosed()))
-        {
-            // Operations on closedLedgerHash_ and previousLedgerHash_ must be
-            // guarded by recentLock_.
-            std::lock_guard sl(recentLock_);
-
-            closedLedgerHash_ = hello_.ledgerclosed();
-
-            if (hello_.has_ledgerprevious() &&
-                stringIsUint256Sized (hello_.ledgerprevious()))
-            {
-                previousLedgerHash_ = hello_.ledgerprevious();
-
-                addLedger (previousLedgerHash_, sl);
-            }
-            else
-            {
-                previousLedgerHash_.zero();
-            }
-        }
         doProtocolStart();
     }
 
@@ -186,7 +216,7 @@ PeerImp::stop()
 //------------------------------------------------------------------------------
 
 void
-PeerImp::send (Message::pointer const& m)
+PeerImp::send (std::shared_ptr<Message> const& m)
 {
     if (! strand_.running_in_this_thread())
         return post(strand_, std::bind(&PeerImp::send, shared_from_this(), m));
@@ -266,10 +296,9 @@ PeerImp::cluster() const
 std::string
 PeerImp::getVersion() const
 {
-    if (hello_.has_fullversion ())
-        return hello_.fullversion ();
-
-    return std::string ();
+    if (m_inbound)
+        return headers_["User-Agent"].to_string();
+    return headers_["Server"].to_string();
 }
 
 Json::Value
@@ -295,16 +324,13 @@ PeerImp::json()
 
     ret[jss::load] = usage_.balance ();
 
-    if (hello_.has_fullversion ())
-        ret[jss::version] = hello_.fullversion ();
-
-    if (hello_.has_protoversion ())
     {
-        auto protocol = BuildInfo::make_protocol (hello_.protoversion ());
-
-        if (protocol != BuildInfo::getCurrentProtocol())
-            ret[jss::protocol] = to_string (protocol);
+        auto const version = getVersion();
+        if (!version.empty())
+            ret[jss::version] = version;
     }
+
+    ret[jss::protocol] = to_string (protocol_);
 
     {
         std::lock_guard sl (recentLock_);
@@ -442,12 +468,6 @@ PeerImp::cycleStatus ()
     std::lock_guard sl(recentLock_);
     previousLedgerHash_ = closedLedgerHash_;
     closedLedgerHash_.zero ();
-}
-
-bool
-PeerImp::supportsVersion (int version)
-{
-    return hello_.has_protoversion () && (hello_.protoversion () >= version);
 }
 
 bool
@@ -682,12 +702,11 @@ PeerImp::onShutdown(error_code ec)
 void PeerImp::doAccept()
 {
     assert(read_buffer_.size() == 0);
-//     assert(request_.upgrade);
 
     JLOG(journal_.debug()) << "doAccept: " << remote_address_;
 
-    auto sharedValue = makeSharedValue(
-        ssl_bundle_->stream.native_handle(), journal_);
+    auto sharedValue = makeSharedValue(*ssl_bundle_, journal_);
+
     // This shouldn't fail since we already computed
     // the shared value successfully in OverlayImpl
     if(! sharedValue)
@@ -697,14 +716,13 @@ void PeerImp::doAccept()
 
     boost::beast::ostream(write_buffer_) << makeResponse(
         ! overlay_.peerFinder().config().peerPrivate,
-            request_, remote_address_, *sharedValue);
+        request_, remote_address_.address(), *sharedValue);
 
-    auto const protocol = BuildInfo::make_protocol(hello_.protoversion());
-    JLOG(journal_.info()) << "Protocol: " << to_string(protocol);
-    JLOG(journal_.info()) <<
-        "Public Key: " << toBase58 (
-            TokenType::NodePublic,
-            publicKey_);
+    JLOG(journal_.info()) << "Protocol: " <<
+        to_string(protocol_);
+    JLOG(journal_.info()) << "Public Key: " <<
+        toBase58 (TokenType::NodePublic, publicKey_);
+
     if (auto member = app_.cluster().member(publicKey_))
     {
         {
@@ -718,26 +736,6 @@ void PeerImp::doAccept()
 
     // XXX Set timer: connection is in grace period to be useful.
     // XXX Set timer: connection idle (idle may vary depending on connection type.)
-    if (hello_.has_ledgerclosed() &&
-        stringIsUint256Sized (hello_.ledgerclosed()))
-    {
-        // Operations on closedLedgerHash_ and previousLedgerHash_ must be
-        // guarded by recentLock_.
-        std::lock_guard sl(recentLock_);
-
-        closedLedgerHash_ = hello_.ledgerclosed();
-
-        if (hello_.has_ledgerprevious() &&
-            stringIsUint256Sized (hello_.ledgerprevious()))
-        {
-            previousLedgerHash_ = hello_.ledgerprevious();
-            addLedger (previousLedgerHash_, sl);
-        }
-        else
-        {
-            previousLedgerHash_.zero();
-        }
-    }
 
     onWriteResponse(error_code(), 0);
 }
@@ -745,20 +743,21 @@ void PeerImp::doAccept()
 http_response_type
 PeerImp::makeResponse (bool crawl,
     http_request_type const& req,
-    beast::IP::Endpoint remote,
+    beast::IP::Address remote_ip,
     uint256 const& sharedValue)
 {
     http_response_type resp;
     resp.result(boost::beast::http::status::switching_protocols);
     resp.version(req.version());
     resp.insert("Connection", "Upgrade");
-    resp.insert("Upgrade", "RTXP/1.2");
+    resp.insert("Upgrade", to_string(protocol_));
     resp.insert("Connect-As", "Peer");
     resp.insert("Server", BuildInfo::getFullVersionString());
     resp.insert("Crawl", crawl ? "public" : "private");
-    protocol::TMHello hello = buildHello(sharedValue,
-        overlay_.setup().public_ip, remote, app_);
-    appendHello(resp, hello);
+
+    buildHandshake(resp, sharedValue, overlay_.setup().networkID,
+        overlay_.setup().public_ip, remote_ip, app_);
+
     return resp;
 }
 
@@ -940,15 +939,13 @@ PeerImp::onWriteMessage (error_code ec, std::size_t bytes_transferred)
 //
 //------------------------------------------------------------------------------
 
-PeerImp::error_code
+void
 PeerImp::onMessageUnknown (std::uint16_t type)
 {
-    error_code ec;
     // TODO
-    return ec;
 }
 
-PeerImp::error_code
+void
 PeerImp::onMessageBegin (std::uint16_t type,
     std::shared_ptr <::google::protobuf::Message> const& m,
     std::size_t size)
@@ -958,7 +955,6 @@ PeerImp::onMessageBegin (std::uint16_t type,
     fee_ = Resource::feeLightPeer;
     overlay_.reportTraffic (TrafficCount::categorize (*m, type, true),
         true, static_cast<int>(size));
-    return error_code{};
 }
 
 void
@@ -967,12 +963,6 @@ PeerImp::onMessageEnd (std::uint16_t,
 {
     load_event_.reset();
     charge (fee_);
-}
-
-void
-PeerImp::onMessage (std::shared_ptr <protocol::TMHello> const& m)
-{
-    fail("Deprecated TMHello");
 }
 
 void
@@ -1364,20 +1354,6 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMPeerShardInfo> const& m)
 
     if (m->has_lastlink())
         overlay_.lastLink(id_);
-}
-
-void
-PeerImp::onMessage (std::shared_ptr <protocol::TMGetPeers> const& m)
-{
-    // This message is obsolete due to PeerFinder and
-    // we no longer provide a response to it.
-}
-
-void
-PeerImp::onMessage (std::shared_ptr <protocol::TMPeers> const& m)
-{
-    // This message is obsolete due to PeerFinder and
-    // we no longer process it.
 }
 
 void
@@ -2701,7 +2677,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                 }
             }
 
-            Message::pointer oPacket = std::make_shared<Message> (
+            auto oPacket = std::make_shared<Message> (
                 reply, protocol::mtLEDGER_DATA);
             send (oPacket);
             return;
@@ -2806,7 +2782,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         "Got request for " << packet.nodeids().size() << " nodes at depth " <<
         depth << ", return " << reply.nodes().size() << " nodes";
 
-    Message::pointer oPacket = std::make_shared<Message> (
+    auto oPacket = std::make_shared<Message> (
         reply, protocol::mtLEDGER_DATA);
     send (oPacket);
 }

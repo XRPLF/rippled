@@ -238,88 +238,84 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         }
     }
 
-    auto hello = parseHello (true, request, journal);
-    if(! hello)
+    auto negotiatedVersion = negotiateProtocolVersion(request["Upgrade"]);
+    if (!negotiatedVersion)
     {
         m_peerFinder->on_closed(slot);
         handoff.moved = false;
         handoff.response = makeErrorResponse (slot, request,
-            remote_endpoint.address(),
-            "Unable to parse HELLO message");
+            remote_endpoint.address(), "Unable to agree on a protocol version");
         handoff.keep_alive = false;
         return handoff;
     }
 
-    auto sharedValue = makeSharedValue(
-        ssl_bundle->stream.native_handle(), journal);
+    auto sharedValue = makeSharedValue(*ssl_bundle, journal);
     if(! sharedValue)
     {
         m_peerFinder->on_closed(slot);
         handoff.moved = false;
         handoff.response = makeErrorResponse (slot, request,
-            remote_endpoint.address(),
-            "Incorrect security cookie (possible MITM detected)");
+            remote_endpoint.address(), "Incorrect security cookie");
         handoff.keep_alive = false;
         return handoff;
     }
 
-    auto publicKey = verifyHello (*hello,
-        *sharedValue,
-        setup_.public_ip,
-        beast::IPAddressConversion::from_asio(
-            remote_endpoint), journal, app_);
-    if(! publicKey)
+    try
     {
+        auto publicKey = verifyHandshake(request, *sharedValue,
+            setup_.networkID, setup_.public_ip, remote_endpoint.address(), app_);
+
+        {
+            // The node gets a reserved slot if it is in our cluster
+            // or if it has a reservation.
+            bool const reserved =
+                static_cast<bool>(app_.cluster().member(publicKey))
+                    || app_.peerReservations().contains(publicKey);
+            auto const result = m_peerFinder->activate(slot, publicKey, reserved);
+            if (result != PeerFinder::Result::success)
+            {
+                m_peerFinder->on_closed(slot);
+                JLOG(journal.debug()) << "Peer " << remote_endpoint << " redirected, slots full";
+                handoff.moved = false;
+                handoff.response = makeRedirectResponse(slot, request,
+                    remote_endpoint.address());
+                handoff.keep_alive = false;
+                return handoff;
+            }
+        }
+
+        auto const peer = std::make_shared<PeerImp>(app_, id, slot,
+            std::move(request), publicKey, *negotiatedVersion, consumer,
+            std::move(ssl_bundle), *this);
+        {
+            // As we are not on the strand, run() must be called
+            // while holding the lock, otherwise new I/O can be
+            // queued after a call to stop().
+            std::lock_guard <decltype(mutex_)> lock (mutex_);
+            {
+                auto const result = m_peers.emplace (peer->slot(), peer);
+                assert (result.second);
+                (void) result.second;
+            }
+            list_.emplace(peer.get(), peer);
+
+            peer->run();
+        }
+        handoff.moved = true;
+        return handoff;
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(journal.debug()) << "Peer " << remote_endpoint <<
+            " fails handshake (" << e.what() << ")";
+
         m_peerFinder->on_closed(slot);
         handoff.moved = false;
         handoff.response = makeErrorResponse (slot, request,
-            remote_endpoint.address(),
-            "Unable to verify HELLO message");
+            remote_endpoint.address(), e.what());
         handoff.keep_alive = false;
         return handoff;
     }
-
-    {
-        // The node gets a reserved slot if it is in our cluster
-        // or if it has a reservation.
-        bool const reserved {
-            static_cast<bool>(app_.cluster().member(*publicKey))
-            || app_.peerReservations().contains(*publicKey)
-        };
-        auto const result = m_peerFinder->activate(slot, *publicKey, reserved);
-        if (result != PeerFinder::Result::success)
-        {
-            m_peerFinder->on_closed(slot);
-            JLOG(journal.debug())
-                << "Peer " << remote_endpoint << " redirected, slots full";
-            handoff.moved = false;
-            handoff.response = makeRedirectResponse(
-                    slot, request, remote_endpoint.address());
-            handoff.keep_alive = beast::rfc2616::is_keep_alive(request);
-            return handoff;
-        }
-    }
-
-    auto const peer = std::make_shared<PeerImp>(app_, id,
-        remote_endpoint, slot, std::move(request), *hello,
-            *publicKey, consumer, std::move(ssl_bundle), *this);
-    {
-        // As we are not on the strand, run() must be called
-        // while holding the lock, otherwise new I/O can be
-        // queued after a call to stop().
-        std::lock_guard lock (mutex_);
-        {
-            auto const result =
-                m_peers.emplace (peer->slot(), peer);
-            assert (result.second);
-            (void) result.second;
-        }
-        list_.emplace(peer.get(), peer);
-
-        peer->run();
-    }
-    handoff.moved = true;
-    return handoff;
 }
 
 //------------------------------------------------------------------------------
@@ -329,11 +325,8 @@ OverlayImpl::isPeerUpgrade(http_request_type const& request)
 {
     if (! is_upgrade(request))
         return false;
-    auto const versions = parse_ProtocolVersions(
-        request["Upgrade"]);
-    if (versions.size() == 0)
-        return false;
-    return true;
+    auto const versions = parseProtocolVersions(request["Upgrade"]);
+    return !versions.empty();
 }
 
 std::string
@@ -345,7 +338,7 @@ OverlayImpl::makePrefix (std::uint32_t id)
 }
 
 std::shared_ptr<Writer>
-OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
+OverlayImpl::makeRedirectResponse (std::shared_ptr<PeerFinder::Slot> const& slot,
     http_request_type const& request, address_type remote_address)
 {
     boost::beast::http::response<json_body> msg;
@@ -367,18 +360,18 @@ OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
 }
 
 std::shared_ptr<Writer>
-OverlayImpl::makeErrorResponse (PeerFinder::Slot::ptr const& slot,
+OverlayImpl::makeErrorResponse (std::shared_ptr<PeerFinder::Slot> const& slot,
     http_request_type const& request,
     address_type remote_address,
     std::string text)
 {
-    boost::beast::http::response<boost::beast::http::string_body> msg;
+    boost::beast::http::response<boost::beast::http::empty_body> msg;
     msg.version(request.version());
     msg.result(boost::beast::http::status::bad_request);
+    msg.reason("Bad Request (" + text + ")");
     msg.insert("Server", BuildInfo::getFullVersionString());
     msg.insert("Remote-Address", remote_address.to_string());
     msg.insert(boost::beast::http::field::connection, "close");
-    msg.body() = text;
     msg.prepare_payload();
     return std::make_shared<SimpleWriter>(msg);
 }
@@ -454,7 +447,7 @@ OverlayImpl::add_active (std::shared_ptr<PeerImp> const& peer)
 }
 
 void
-OverlayImpl::remove (PeerFinder::Slot::ptr const& slot)
+OverlayImpl::remove (std::shared_ptr<PeerFinder::Slot> const& slot)
 {
     std::lock_guard lock (mutex_);
     auto const iter = m_peers.find (slot);
@@ -1275,6 +1268,7 @@ setup_Overlay (BasicConfig const& config)
                 Throw<std::runtime_error>("Configured public IP is invalid");
         }
     }
+
     {
         auto const& section = config.section("crawl");
         auto const& values = section.values();
@@ -1320,6 +1314,28 @@ setup_Overlay (BasicConfig const& config)
                 setup.crawlOptions |= CrawlOptions::Unl;
             }
         }
+    }
+
+    try
+    {
+        auto id = config.legacy("network_id");
+
+        if (!id.empty())
+        {
+            if (id == "main")
+                id = "0";
+
+            if (id == "testnet")
+                id = "1";
+
+            setup.networkID = beast::lexicalCastThrow<std::uint32_t>(id);
+        }
+    }
+    catch (...)
+    {
+        Throw<std::runtime_error>(
+            "Configured [network_id] section is invalid: "
+            "must be a number or one of the strings 'main' or 'testnet'");
     }
 
     return setup;

@@ -32,9 +32,9 @@ struct send_always
 {
     using return_type = void;
 
-    Message::pointer const& msg;
+    std::shared_ptr<Message> const& msg;
 
-    send_always(Message::pointer const& m)
+    send_always(std::shared_ptr<Message> const& m)
         : msg(m)
     { }
 
@@ -52,10 +52,10 @@ struct send_if_pred
 {
     using return_type = void;
 
-    Message::pointer const& msg;
+    std::shared_ptr<Message> const& msg;
     Predicate const& predicate;
 
-    send_if_pred(Message::pointer const& m, Predicate const& p)
+    send_if_pred(std::shared_ptr<Message> const& m, Predicate const& p)
     : msg(m), predicate(p)
     { }
 
@@ -69,7 +69,7 @@ struct send_if_pred
 /** Helper function to aid in type deduction */
 template <typename Predicate>
 send_if_pred<Predicate> send_if (
-    Message::pointer const& m,
+    std::shared_ptr<Message> const& m,
         Predicate const &f)
 {
     return send_if_pred<Predicate>(m, f);
@@ -83,10 +83,10 @@ struct send_if_not_pred
 {
     using return_type = void;
 
-    Message::pointer const& msg;
+    std::shared_ptr<Message> const& msg;
     Predicate const& predicate;
 
-    send_if_not_pred(Message::pointer const& m, Predicate const& p)
+    send_if_not_pred(std::shared_ptr<Message> const& m, Predicate const& p)
         : msg(m), predicate(p)
     { }
 
@@ -100,7 +100,7 @@ struct send_if_not_pred
 /** Helper function to aid in type deduction */
 template <typename Predicate>
 send_if_not_pred<Predicate> send_if_not (
-    Message::pointer const& m,
+    std::shared_ptr<Message> const& m,
         Predicate const &f)
 {
     return send_if_not_pred<Predicate>(m, f);

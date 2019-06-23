@@ -25,8 +25,6 @@
 
 namespace ripple {
 
-/** Describes a Ripple/RTXP protocol version. */
-using ProtocolVersion = std::pair<std::uint16_t, std::uint16_t>;
 
 /** Versioning information for this build. */
 // VFALCO The namespace is deprecated
@@ -46,24 +44,7 @@ getVersionString();
 std::string const&
 getFullVersionString();
 
-/** Construct a protocol version from a packed 32-bit protocol identifier */
-ProtocolVersion
-make_protocol (std::uint32_t version);
-
-/** The protocol version we speak and prefer. */
-ProtocolVersion const&
-getCurrentProtocol();
-
-/** The oldest protocol version we will accept. */
-ProtocolVersion const& getMinimumProtocol ();
-
 } // BuildInfo (DEPRECATED)
-
-std::string
-to_string (ProtocolVersion const& p);
-
-std::uint32_t
-to_packed (ProtocolVersion const& p);
 
 } // ripple
 

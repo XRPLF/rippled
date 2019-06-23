@@ -32,6 +32,7 @@
 #include <type_traits>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/optional.hpp>
 #include <functional>
 
 namespace boost { namespace asio { namespace ssl { class context; } } }
@@ -71,6 +72,7 @@ public:
         beast::IP::Address public_ip;
         int ipLimit = 0;
         std::uint32_t crawlOptions = 0;
+        boost::optional<std::uint32_t> networkID;
     };
 
     using PeerSequence = std::vector <std::shared_ptr<Peer>>;

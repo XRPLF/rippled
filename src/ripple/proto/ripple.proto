@@ -1,12 +1,12 @@
 syntax = "proto2";
 package protocol;
 
+// Unused numbers were previously reused. Please don't reuse unless 100% certain
+// that there won't be a conflict.
 enum MessageType
 {
-    mtHELLO                 = 1;
     mtMANIFESTS             = 2;
     mtPING                  = 3;
-    mtPROOFOFWORK           = 4;
     mtCLUSTER               = 5;
     mtGET_PEERS             = 12;
     mtPEERS                 = 13;
@@ -55,56 +55,6 @@ message TMManifests
 }
 
 //------------------------------------------------------------------------------
-
-/*  Requests or responds to a proof of work.
-    Unimplemented and unused currently.
-*/
-message TMProofWork
-{
-    required string token       = 1;
-    optional uint32 iterations  = 2;
-    optional bytes target       = 3;
-    optional bytes challenge    = 4;
-    optional bytes response     = 5;
-
-    enum PowResult
-    {
-        powrOK          = 0;
-        powrREUSED      = 1;
-        powrEXPIRED     = 2;    // You took too long solving
-        powrTOOEASY     = 3;    // Difficulty went way up, sorry
-        powrINVALID     = 4;
-        powrDISCONNECT  = 5;    // We are disconnecting
-    }
-    optional PowResult result   = 6;
-}
-
-//------------------------------------------------------------------------------
-
-// Sent on connect
-message TMHello
-{
-    // VFALCO NOTE The major and minor parts of the version number are
-    //             encoded in the high and low order 16 bits of the uint32.
-    //
-    required uint32         protoVersion    = 1;
-    required uint32         protoVersionMin = 2;
-    required bytes          nodePublic      = 3;
-    required bytes          nodeProof       = 4;
-    optional string         fullVersion     = 5;
-    optional uint64         netTime         = 6;
-    optional uint32         ipv4Port        = 7;  // NOT USED
-    optional uint32         ledgerIndex     = 8;
-    optional bytes          ledgerClosed    = 9;  // our last closed ledger
-    optional bytes          ledgerPrevious  = 10; // the ledger before the last closed ledger
-    optional bool           nodePrivate     = 11; // Request to not forward IP.
-    optional TMProofWork    proofOfWork     = 12; // request/provide proof of work
-    optional bool           testNet         = 13; // Running as testnet.
-    optional uint32         local_ip        = 14; // NOT USED -- our public IP
-    optional uint32         remote_ip       = 15; // NOT USED -- IP we see connection from
-    optional string         local_ip_str    = 16; // our public IP
-    optional string         remote_ip_str   = 17; // IP we see connection from
-}
 
 // The status of a node in our cluster
 message TMClusterNode
@@ -265,11 +215,6 @@ message TMValidation
     optional uint32 hops            = 3;    // Number of hops traveled
 }
 
-message TMGetPeers
-{
-    required uint32 doWeNeedThis    = 1;  // yes since you are asserting that the packet size isn't 0 in Message
-}
-
 message TMIPv4Endpoint
 {
     required uint32 ipv4            = 1;
@@ -278,12 +223,6 @@ message TMIPv4Endpoint
     //             so we use a uint32 to represent the port.
     //
     required uint32 ipv4Port        = 2;
-}
-
-// this message is obsolete/no longer procesed
-message TMPeers
-{
-    repeated TMIPv4Endpoint nodes   = 1;
 }
 
 // An Endpoint describes a network peer that can accept incoming connections

@@ -573,10 +573,10 @@ public:
         return none;
     }
 
-    std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>>
+    std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>>
     buildEndpointsForPeers()
     {
-        std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>> result;
+        std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>> result;
 
         std::lock_guard _(lock_);
 

@@ -29,7 +29,7 @@
 #include <ripple/basics/Resolver.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/UnorderedContainers.h>
-#include <ripple/overlay/impl/TMHello.h>
+#include <ripple/overlay/impl/Handshake.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/resource/ResourceManager.h>
 #include <boost/asio/ip/tcp.hpp>
@@ -37,6 +37,7 @@
 #include <boost/asio/strand.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/container/flat_map.hpp>
+#include <boost/optional.hpp>
 #include <atomic>
 #include <cassert>
 #include <chrono>
@@ -111,7 +112,7 @@ private:
     Resource::Manager& m_resourceManager;
     std::unique_ptr <PeerFinder::Manager> m_peerFinder;
     TrafficCount m_traffic;
-    hash_map <PeerFinder::Slot::ptr,
+    hash_map <std::shared_ptr<PeerFinder::Slot>,
         std::weak_ptr <PeerImp>> m_peers;
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
     Resolver& m_resolver;
@@ -127,6 +128,8 @@ private:
     std::condition_variable csCV_;
     // Peer IDs expecting to receive a last link notification
     std::set<std::uint32_t> csIDs_;
+
+    boost::optional<std::uint32_t> networkID_;
 
     //--------------------------------------------------------------------------
 
@@ -220,7 +223,7 @@ public:
     add_active (std::shared_ptr<PeerImp> const& peer);
 
     void
-    remove (PeerFinder::Slot::ptr const& slot);
+    remove (std::shared_ptr<PeerFinder::Slot> const& slot);
 
     /** Called when a peer has connected successfully
         This is called after the peer handshake has been completed and during
@@ -281,13 +284,7 @@ public:
     {
         if (! is_upgrade(response))
             return false;
-        if(response.result() != boost::beast::http::status::switching_protocols)
-            return false;
-        auto const versions = parse_ProtocolVersions(
-            response["Upgrade"]);
-        if (versions.size() == 0)
-            return false;
-        return true;
+        return response.result() == boost::beast::http::status::switching_protocols;
     }
 
     template<class Fields>
@@ -375,11 +372,11 @@ public:
 
 private:
     std::shared_ptr<Writer>
-    makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
+    makeRedirectResponse (std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request, address_type remote_address);
 
     std::shared_ptr<Writer>
-    makeErrorResponse (PeerFinder::Slot::ptr const& slot,
+    makeErrorResponse (std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request, address_type remote_address,
         std::string msg);
 

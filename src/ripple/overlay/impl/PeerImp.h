@@ -26,6 +26,7 @@
 #include <ripple/beast/asio/waitable_timer.h>
 #include <ripple/beast/utility/WrappedSink.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
+#include <ripple/overlay/impl/ProtocolVersion.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/protocol/Protocol.h>
@@ -99,9 +100,6 @@ private:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using waitable_timer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
 
-    // The length of the smallest valid finished message
-    static const size_t sslMinimumFinishedLength = 12;
-
     Application& app_;
     id_t const id_;
     beast::WrappedSink sink_;
@@ -124,6 +122,10 @@ private:
     //
     OverlayImpl& overlay_;
     bool const m_inbound;
+
+    // Protocol version to use for this link
+    ProtocolVersion protocol_;
+
     State state_;          // Current state
     std::atomic<Sanity> sanity_;
     clock_type::time_point insaneTime_;
@@ -179,16 +181,15 @@ private:
 
     std::mutex mutable recentLock_;
     protocol::TMStatusChange last_status_;
-    protocol::TMHello const hello_;
     Resource::Consumer usage_;
     Resource::Charge fee_;
-    PeerFinder::Slot::ptr const slot_;
+    std::shared_ptr<PeerFinder::Slot> const slot_;
     boost::beast::multi_buffer read_buffer_;
     http_request_type request_;
     http_response_type response_;
     boost::beast::http::fields const& headers_;
     boost::beast::multi_buffer write_buffer_;
-    std::queue<Message::pointer> send_queue_;
+    std::queue<std::shared_ptr<Message>> send_queue_;
     bool gracefulClose_ = false;
     int large_sendq_ = 0;
     int no_ping_ = 0;
@@ -230,10 +231,10 @@ public:
     PeerImp& operator= (PeerImp const&) = delete;
 
     /** Create an active incoming peer from an established ssl connection. */
-    PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
-        PeerFinder::Slot::ptr const& slot, http_request_type&& request,
-            protocol::TMHello const& hello, PublicKey const& publicKey,
-                Resource::Consumer consumer,
+    PeerImp (Application& app, id_t id,
+        std::shared_ptr<PeerFinder::Slot> const& slot, http_request_type&& request,
+            PublicKey const& publicKey,
+                ProtocolVersion protocol, Resource::Consumer consumer,
                     std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
                         OverlayImpl& overlay);
 
@@ -241,11 +242,10 @@ public:
     // VFALCO legacyPublicKey should be implied by the Slot
     template <class Buffers>
     PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-        Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
+        Buffers const& buffers, std::shared_ptr<PeerFinder::Slot>&& slot,
             http_response_type&& response, Resource::Consumer usage,
-                protocol::TMHello const& hello,
-                    PublicKey const& publicKey, id_t id,
-                        OverlayImpl& overlay);
+                PublicKey const& publicKey,
+                    ProtocolVersion protocol, id_t id, OverlayImpl& overlay);
 
     virtual
     ~PeerImp();
@@ -256,7 +256,7 @@ public:
         return p_journal_;
     }
 
-    PeerFinder::Slot::ptr const&
+    std::shared_ptr<PeerFinder::Slot> const&
     slot()
     {
         return slot_;
@@ -275,7 +275,7 @@ public:
     //
 
     void
-    send (Message::pointer const& m) override;
+    send (std::shared_ptr<Message> const& m) override;
 
     /** Send a set of PeerFinder endpoints as a protocol message. */
     template <class FwdIt, class = typename std::enable_if_t<std::is_same<
@@ -368,9 +368,6 @@ public:
     cycleStatus () override;
 
     bool
-    supportsVersion (int version) override;
-
-    bool
     hasRange (std::uint32_t uMin, std::uint32_t uMax) override;
 
     // Called to determine our priority for querying
@@ -424,7 +421,7 @@ private:
 
     http_response_type
     makeResponse (bool crawl, http_request_type const& req,
-        beast::IP::Endpoint remoteAddress,
+        beast::IP::Address remote_ip,
         uint256 const& sharedValue);
 
     void
@@ -465,10 +462,10 @@ public:
             boost::system::errc::invalid_argument);
     }
 
-    error_code
+    void
     onMessageUnknown (std::uint16_t type);
 
-    error_code
+    void
     onMessageBegin (std::uint16_t type,
         std::shared_ptr <::google::protobuf::Message> const& m,
         std::size_t size);
@@ -477,7 +474,6 @@ public:
     onMessageEnd (std::uint16_t type,
         std::shared_ptr <::google::protobuf::Message> const& m);
 
-    void onMessage (std::shared_ptr <protocol::TMHello> const& m);
     void onMessage (std::shared_ptr <protocol::TMManifests> const& m);
     void onMessage (std::shared_ptr <protocol::TMPing> const& m);
     void onMessage (std::shared_ptr <protocol::TMCluster> const& m);
@@ -485,8 +481,6 @@ public:
     void onMessage (std::shared_ptr <protocol::TMShardInfo> const& m);
     void onMessage (std::shared_ptr <protocol::TMGetPeerShardInfo> const& m);
     void onMessage (std::shared_ptr <protocol::TMPeerShardInfo> const& m);
-    void onMessage (std::shared_ptr <protocol::TMGetPeers> const& m);
-    void onMessage (std::shared_ptr <protocol::TMPeers> const& m);
     void onMessage (std::shared_ptr <protocol::TMEndpoints> const& m);
     void onMessage (std::shared_ptr <protocol::TMTransaction> const& m);
     void onMessage (std::shared_ptr <protocol::TMGetLedger> const& m);
@@ -509,6 +503,8 @@ private:
     }
 
     //--------------------------------------------------------------------------
+    void
+    setLedgerState();
 
     // lockedRecentLock is passed as a reminder to callers that recentLock_
     // must be locked.
@@ -547,11 +543,10 @@ private:
 
 template <class Buffers>
 PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-    Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
+    Buffers const& buffers, std::shared_ptr<PeerFinder::Slot>&& slot,
         http_response_type&& response, Resource::Consumer usage,
-            protocol::TMHello const& hello,
-                PublicKey const& publicKey, id_t id,
-                    OverlayImpl& overlay)
+            PublicKey const& publicKey,
+                ProtocolVersion protocol, id_t id, OverlayImpl& overlay)
     : Child (overlay)
     , app_ (app)
     , id_ (id)
@@ -567,12 +562,12 @@ PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& s
     , remote_address_ (slot->remote_endpoint())
     , overlay_ (overlay)
     , m_inbound (false)
+    , protocol_ (protocol)
     , state_ (State::active)
     , sanity_ (Sanity::unknown)
     , insaneTime_ (clock_type::now())
     , publicKey_ (publicKey)
     , creationTime_ (clock_type::now())
-    , hello_ (hello)
     , usage_ (usage)
     , fee_ (Resource::feeLightPeer)
     , slot_ (std::move(slot))

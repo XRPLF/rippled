@@ -19,6 +19,7 @@
 
 #include <ripple/overlay/impl/ConnectAttempt.h>
 #include <ripple/overlay/impl/PeerImp.h>
+#include <ripple/overlay/impl/ProtocolVersion.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/json/json_reader.h>
 
@@ -27,7 +28,7 @@ namespace ripple {
 ConnectAttempt::ConnectAttempt (Application& app, boost::asio::io_service& io_service,
     endpoint_type const& remote_endpoint, Resource::Consumer usage,
         beast::asio::ssl_bundle::shared_context const& context,
-            std::uint32_t id, PeerFinder::Slot::ptr const& slot,
+            std::uint32_t id, std::shared_ptr<PeerFinder::Slot> const& slot,
                 beast::Journal journal, OverlayImpl& overlay)
     : Child (overlay)
     , app_ (app)
@@ -89,32 +90,21 @@ ConnectAttempt::close()
         error_code ec;
         timer_.cancel(ec);
         socket_.close(ec);
-        JLOG(journal_.debug()) <<
-            "Closed";
+        JLOG(journal_.debug()) << "Closed";
     }
 }
 
 void
 ConnectAttempt::fail (std::string const& reason)
 {
-    assert(strand_.running_in_this_thread());
-    if (stream_.next_layer().is_open())
-    {
-        JLOG(journal_.debug()) <<
-            reason;
-    }
+    JLOG(journal_.debug()) << reason;
     close();
 }
 
 void
 ConnectAttempt::fail (std::string const& name, error_code ec)
 {
-    assert(strand_.running_in_this_thread());
-    if (stream_.next_layer().is_open())
-    {
-        JLOG(journal_.debug()) <<
-            name << ": " << ec.message();
-    }
+    JLOG(journal_.debug()) << name << ": " << ec.message();
     close();
 }
 
@@ -203,19 +193,14 @@ ConnectAttempt::onHandshake (error_code ec)
             beast::IPAddressConversion::from_asio (local_endpoint)))
         return fail("Duplicate connection");
 
-    auto sharedValue = makeSharedValue(
-        stream_.native_handle(), journal_);
+    auto sharedValue = makeSharedValue(*ssl_bundle_, journal_);
     if (! sharedValue)
         return close(); // makeSharedValue logs
 
-    req_ = makeRequest(! overlay_.peerFinder().config().peerPrivate,
-        remote_endpoint_.address());
-    auto const hello = buildHello (
-        *sharedValue,
-        overlay_.setup().public_ip,
-        beast::IPAddressConversion::from_asio(remote_endpoint_),
-        app_);
-    appendHello (req_, hello);
+    req_ = makeRequest(!overlay_.peerFinder().config().peerPrivate);
+
+    buildHandshake(req_, *sharedValue, overlay_.setup().networkID,
+        overlay_.setup().public_ip, remote_endpoint_.address(), app_);
 
     setTimer();
     boost::beast::http::async_write(stream_, req_,
@@ -279,17 +264,14 @@ ConnectAttempt::onShutdown (error_code ec)
 //--------------------------------------------------------------------------
 
 auto
-ConnectAttempt::makeRequest (bool crawl,
-    boost::asio::ip::address const& remote_address) ->
-        request_type
+ConnectAttempt::makeRequest (bool crawl) -> request_type
 {
     request_type m;
     m.method(boost::beast::http::verb::get);
     m.target("/");
     m.version(11);
     m.insert ("User-Agent", BuildInfo::getFullVersionString());
-    m.insert ("Upgrade", "RTXP/1.2");
-        //std::string("RTXP/") + to_string (BuildInfo::getCurrentProtocol()));
+    m.insert ("Upgrade", supportedProtocolVersions());
     m.insert ("Connection", "Upgrade");
     m.insert ("Connect-As", "Peer");
     m.insert ("Crawl", crawl ? "public" : "private");
@@ -305,7 +287,7 @@ ConnectAttempt::processResponse()
         Json::Reader r;
         std::string s;
         s.reserve(boost::asio::buffer_size(response_.body().data()));
-        for(auto const& buffer : response_.body().data())
+        for (auto const& buffer : response_.body().data())
             s.append(
                 boost::asio::buffer_cast<char const*>(buffer),
                 boost::asio::buffer_size(buffer));
@@ -329,64 +311,70 @@ ConnectAttempt::processResponse()
                                 eps.push_back(ep);
                         }
                     }
-                    overlay_.peerFinder().onRedirects(
-                        remote_endpoint_, eps);
+                    overlay_.peerFinder().onRedirects(remote_endpoint_, eps);
                 }
             }
         }
     }
 
-    if (! OverlayImpl::isPeerUpgrade(response_))
+    if (!OverlayImpl::isPeerUpgrade(response_))
     {
-        JLOG(journal_.info()) <<
-            "HTTP Response: " << response_.result() << " " << response_.reason();
+        JLOG(journal_.info()) << "Unable to upgrade to peer protocol: " <<
+            response_.result() << " (" << response_.reason() << ")";
         return close();
     }
 
-    auto hello = parseHello (false, response_, journal_);
-    if(! hello)
-        return fail("processResponse: Bad TMHello");
+    // Just because our peer selected a particular protocol version doesn't
+    // mean that it's acceptable to us. Check that it is:
+    boost::optional<ProtocolVersion> negotiatedProtocol;
 
-    auto sharedValue = makeSharedValue(
-        ssl_bundle_->stream.native_handle(), journal_);
+    {
+        auto const pvs = parseProtocolVersions(response_["Upgrade"]);
+
+        if (pvs.size() == 1 && isProtocolSupported(pvs[0]))
+            negotiatedProtocol = pvs[0];
+
+        if (!negotiatedProtocol)
+            return fail("processResponse: Unable to negotiate protocol version");
+    }
+
+    auto sharedValue = makeSharedValue(*ssl_bundle_, journal_);
     if(! sharedValue)
         return close(); // makeSharedValue logs
 
-    auto publicKey = verifyHello (*hello,
-        *sharedValue,
-        overlay_.setup().public_ip,
-        beast::IPAddressConversion::from_asio(remote_endpoint_),
-        journal_, app_);
-    if(! publicKey)
-        return close(); // verifyHello logs
-    JLOG(journal_.info()) <<
-        "Public Key: " << toBase58 (
-            TokenType::NodePublic,
-            *publicKey);
-
-    auto const protocol =
-        BuildInfo::make_protocol(hello->protoversion());
-    JLOG(journal_.info()) <<
-        "Protocol: " << to_string(protocol);
-
-    auto member = app_.cluster().member(*publicKey);
-    if (member)
+    try
     {
+        auto publicKey = verifyHandshake(response_, *sharedValue,
+            overlay_.setup().networkID, overlay_.setup().public_ip,
+            remote_endpoint_.address(), app_);
+
         JLOG(journal_.info()) <<
-            "Cluster name: " << *member;
+            "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
+
+        JLOG(journal_.debug()) <<
+            "Protocol: " << to_string(*negotiatedProtocol);
+
+        auto const member = app_.cluster().member(publicKey);
+        if (member)
+        {
+            JLOG(journal_.info()) << "Cluster name: " << *member;
+        }
+
+        auto const result = overlay_.peerFinder().activate (slot_,
+            publicKey, static_cast<bool>(member));
+        if (result != PeerFinder::Result::success)
+            return fail("Outbound slots full");
+
+        auto const peer = std::make_shared<PeerImp>(app_, std::move(ssl_bundle_),
+            read_buf_.data(), std::move(slot_), std::move(response_), usage_,
+            publicKey, *negotiatedProtocol, id_, overlay_);
+
+        overlay_.add_active (peer);
     }
-
-    auto const result = overlay_.peerFinder().activate (slot_,
-        *publicKey, static_cast<bool>(member));
-    if (result != PeerFinder::Result::success)
-        return fail("Outbound slots full");
-
-    auto const peer = std::make_shared<PeerImp>(app_,
-        std::move(ssl_bundle_), read_buf_.data(),
-            std::move(slot_), std::move(response_),
-                usage_, *hello, *publicKey, id_, overlay_);
-
-    overlay_.add_active (peer);
+    catch (std::exception const& e)
+    {
+        return fail(std::string("Handshake failure (")+ e.what() + ")");
+    }
 }
 
 } // ripple

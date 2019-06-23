@@ -25,70 +25,28 @@
 namespace ripple {
 
 Message::Message (::google::protobuf::Message const& message, int type)
+    : mCategory(TrafficCount::categorize(message, type, false))
 {
     unsigned const messageBytes = message.ByteSize ();
-
     assert (messageBytes != 0);
 
-    mBuffer.resize (kHeaderBytes + messageBytes);
+    /** Number of bytes in a message header. */
+    std::size_t constexpr headerBytes = 6;
 
-    encodeHeader (messageBytes, type);
+    mBuffer.resize (headerBytes + messageBytes);
+
+    auto ptr = mBuffer.data();
+
+    *ptr++ = static_cast<std::uint8_t>((messageBytes >> 24) & 0xFF);
+    *ptr++ = static_cast<std::uint8_t>((messageBytes >> 16) & 0xFF);
+    *ptr++ = static_cast<std::uint8_t>((messageBytes >> 8) & 0xFF);
+    *ptr++ = static_cast<std::uint8_t>(messageBytes & 0xFF);
+
+    *ptr++ = static_cast<std::uint8_t>((type >> 8) & 0xFF);
+    *ptr++ = static_cast<std::uint8_t> (type & 0xFF);
 
     if (messageBytes != 0)
-    {
-        message.SerializeToArray (&mBuffer [Message::kHeaderBytes], messageBytes);
-    }
-
-    mCategory = TrafficCount::categorize(message, type, false);
-}
-
-bool Message::operator== (Message const& other) const
-{
-    return mBuffer == other.mBuffer;
-}
-
-unsigned Message::getLength (std::vector <uint8_t> const& buf)
-{
-    unsigned result;
-
-    if (buf.size () >= Message::kHeaderBytes)
-    {
-        result = buf [0];
-        result <<= 8;
-        result |= buf [1];
-        result <<= 8;
-        result |= buf [2];
-        result <<= 8;
-        result |= buf [3];
-    }
-    else
-    {
-        result = 0;
-    }
-
-    return result;
-}
-
-int Message::getType (std::vector<uint8_t> const& buf)
-{
-    if (buf.size () < Message::kHeaderBytes)
-        return 0;
-
-    int ret = buf[4];
-    ret <<= 8;
-    ret |= buf[5];
-    return ret;
-}
-
-void Message::encodeHeader (unsigned size, int type)
-{
-    assert (mBuffer.size () >= Message::kHeaderBytes);
-    mBuffer[0] = static_cast<std::uint8_t> ((size >> 24) & 0xFF);
-    mBuffer[1] = static_cast<std::uint8_t> ((size >> 16) & 0xFF);
-    mBuffer[2] = static_cast<std::uint8_t> ((size >> 8) & 0xFF);
-    mBuffer[3] = static_cast<std::uint8_t> (size & 0xFF);
-    mBuffer[4] = static_cast<std::uint8_t> ((type >> 8) & 0xFF);
-    mBuffer[5] = static_cast<std::uint8_t> (type & 0xFF);
+        message.SerializeToArray(ptr, messageBytes);
 }
 
 }

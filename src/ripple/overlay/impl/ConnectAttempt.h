@@ -20,7 +20,6 @@
 #ifndef RIPPLE_OVERLAY_CONNECTATTEMPT_H_INCLUDED
 #define RIPPLE_OVERLAY_CONNECTATTEMPT_H_INCLUDED
 
-#include <ripple/protocol/messages.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/Tuning.h>
 
@@ -55,14 +54,14 @@ private:
     beast::asio::ssl_bundle::stream_type& stream_;
     boost::beast::multi_buffer read_buf_;
     response_type response_;
-    PeerFinder::Slot::ptr slot_;
+    std::shared_ptr<PeerFinder::Slot> slot_;
     request_type req_;
 
 public:
     ConnectAttempt (Application& app, boost::asio::io_service& io_service,
         endpoint_type const& remote_endpoint, Resource::Consumer usage,
             beast::asio::ssl_bundle::shared_context const& context,
-                std::uint32_t id, PeerFinder::Slot::ptr const& slot,
+                std::uint32_t id, std::shared_ptr<PeerFinder::Slot> const& slot,
                     beast::Journal journal, OverlayImpl& overlay);
 
     ~ConnectAttempt();
@@ -89,8 +88,7 @@ private:
 
     static
     request_type
-    makeRequest (bool crawl,
-        boost::asio::ip::address const& remote_address);
+    makeRequest (bool crawl);
 
     void processResponse();
 
