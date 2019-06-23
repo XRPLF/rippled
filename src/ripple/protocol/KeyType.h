@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CRYPTO_KEYTYPE_H_INCLUDED
-#define RIPPLE_CRYPTO_KEYTYPE_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_KEYTYPE_H_INCLUDED
+#define RIPPLE_PROTOCOL_KEYTYPE_H_INCLUDED
 
 #include <string>
 #include <boost/optional.hpp>

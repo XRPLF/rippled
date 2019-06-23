@@ -33,7 +33,7 @@ namespace BuildInfo {
 char const* const versionString = "1.4.0"
 
 #if defined(DEBUG) || defined(SANITIZER)
-       "+"
+        "+"
 #ifdef DEBUG
         "DEBUG"
 #ifdef SANITIZER
@@ -49,46 +49,9 @@ char const* const versionString = "1.4.0"
     //--------------------------------------------------------------------------
     ;
 
-ProtocolVersion const&
-getCurrentProtocol ()
-{
-    static ProtocolVersion currentProtocol (
-    //--------------------------------------------------------------------------
-    //
-    // The protocol version we speak and prefer (edit this if necessary)
-    //
-        1,  // major
-        2   // minor
-    //
-    //--------------------------------------------------------------------------
-    );
-
-    return currentProtocol;
-}
-
-ProtocolVersion const&
-getMinimumProtocol ()
-{
-    static ProtocolVersion minimumProtocol (
-
-    //--------------------------------------------------------------------------
-    //
-    // The oldest protocol version we will accept. (edit this if necessary)
-    //
-        1,  // major
-        2   // minor
-    //
-    //--------------------------------------------------------------------------
-    );
-
-    return minimumProtocol;
-}
-
-//
 //
 // Don't touch anything below this line
 //
-//------------------------------------------------------------------------------
 
 std::string const&
 getVersionString ()
@@ -110,26 +73,6 @@ std::string const& getFullVersionString ()
     return value;
 }
 
-ProtocolVersion
-make_protocol (std::uint32_t version)
-{
-    return ProtocolVersion(
-        static_cast<std::uint16_t> ((version >> 16) & 0xffff),
-        static_cast<std::uint16_t> (version & 0xffff));
-}
-
-}
-
-std::string
-to_string (ProtocolVersion const& p)
-{
-    return std::to_string (p.first) + "." + std::to_string (p.second);
-}
-
-std::uint32_t
-to_packed (ProtocolVersion const& p)
-{
-    return (static_cast<std::uint32_t> (p.first) << 16) + p.second;
-}
+} // BuildInfo
 
 } // ripple

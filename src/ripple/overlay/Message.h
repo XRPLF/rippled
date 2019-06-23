@@ -24,6 +24,7 @@
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <iterator>
 #include <memory>
@@ -47,26 +48,9 @@ namespace ripple {
 class Message : public std::enable_shared_from_this <Message>
 {
 public:
-    using pointer = std::shared_ptr<Message>;
-
-public:
-    /** Number of bytes in a message header.
-
-        A message will not be processed unless a full header is received and
-        no messages smaller than this will be serialized.
-    */
-    static std::size_t constexpr kHeaderBytes = 6;
-
-    /** The largest size that a message can be.
-
-        Sending a message whose size exceeds this may result in the connection
-        being dropped. A larger message size may be supported in the future or
-        negotiated as part of a protocol upgrade.
-     */
-    static std::size_t constexpr kMaxMessageSize = 64 * 1024 * 1024;
-
     Message (::google::protobuf::Message const& message, int type);
 
+public:
     /** Retrieve the packed message data. */
     std::vector <uint8_t> const&
     getBuffer () const
@@ -81,92 +65,8 @@ public:
         return mCategory;
     }
 
-    /** Determine bytewise equality. */
-    bool operator == (Message const& other) const;
-
-    /** Calculate the length of a packed message. */
-    /** @{ */
-    static unsigned getLength (std::vector <uint8_t> const& buf);
-
-    template <class FwdIter>
-    static
-    std::enable_if_t<std::is_same<typename
-        FwdIter::value_type, std::uint8_t>::value, std::size_t>
-    size (FwdIter first, FwdIter last)
-    {
-        if (std::distance(first, last) <
-                Message::kHeaderBytes)
-            return 0;
-        std::size_t n;
-        n  = std::size_t{*first++} << 24;
-        n += std::size_t{*first++} << 16;
-        n += std::size_t{*first++} <<  8;
-        n += std::size_t{*first};
-        return n;
-    }
-
-    template <class BufferSequence>
-    static
-    std::size_t
-    size (BufferSequence const& buffers)
-    {
-        return size(buffers_begin(buffers),
-            buffers_end(buffers));
-    }
-    /** @} */
-
-    /** Determine the type of a packed message. */
-    /** @{ */
-    static int getType (std::vector <uint8_t> const& buf);
-
-    template <class FwdIter>
-    static
-    std::enable_if_t<std::is_same<typename
-        FwdIter::value_type, std::uint8_t>::value, int>
-    type (FwdIter first, FwdIter last)
-    {
-        if (std::distance(first, last) <
-                Message::kHeaderBytes)
-            return 0;
-        return (int{*std::next(first, 4)} << 8) |
-            *std::next(first, 5);
-    }
-
-    template <class BufferSequence>
-    static
-    int
-    type (BufferSequence const& buffers)
-    {
-        return type(buffers_begin(buffers),
-            buffers_end(buffers));
-    }
-    /** @} */
-
 private:
-    template <class BufferSequence, class Value = std::uint8_t>
-    static
-    boost::asio::buffers_iterator<BufferSequence, Value>
-    buffers_begin (BufferSequence const& buffers)
-    {
-        return boost::asio::buffers_iterator<
-            BufferSequence, Value>::begin (buffers);
-    }
-
-    template <class BufferSequence, class Value = std::uint8_t>
-    static
-    boost::asio::buffers_iterator<BufferSequence, Value>
-    buffers_end (BufferSequence const& buffers)
-    {
-        return boost::asio::buffers_iterator<
-            BufferSequence, Value>::end (buffers);
-    }
-
-        // Encodes the size and type into a header at the beginning of buf
-    //
-    void encodeHeader (unsigned size, int type);
-
     std::vector <uint8_t> mBuffer;
-
     std::size_t mCategory;
 };
 

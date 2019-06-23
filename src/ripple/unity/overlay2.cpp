@@ -18,10 +18,11 @@
 //==============================================================================
 
 
+#include <ripple/overlay/impl/Handshake.cpp>
 #include <ripple/overlay/impl/PeerImp.cpp>
 #include <ripple/overlay/impl/PeerReservationTable.cpp>
 #include <ripple/overlay/impl/PeerSet.cpp>
-#include <ripple/overlay/impl/TMHello.cpp>
+#include <ripple/overlay/impl/ProtocolVersion.cpp>
 #include <ripple/overlay/impl/TrafficCount.cpp>
 
 #if DOXYGEN

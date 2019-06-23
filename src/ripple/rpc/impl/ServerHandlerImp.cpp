@@ -284,8 +284,7 @@ ServerHandlerImp::onRequest (Session& session)
     }
 
     // Check user/password authorization
-    if (! authorized (
-            session.port(), build_map(session.request())))
+    if (! authorized (session.port(), build_map(session.request())))
     {
         HTTPReply (403, "Forbidden", makeOutput (session), app_.journal ("RPC"));
         session.close (true);

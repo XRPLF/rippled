@@ -2,17 +2,18 @@
 
 ## Introduction
 
-The _Ripple payment network_ consists of a collection of _peers_ running
-**rippled**. Each peer maintains multiple outgoing connections and optional
-incoming connections to other peers. These connections are made over both
-the public Internet and private local area networks. This network defines a
-fully connected directed graph of nodes where vertices are instances of rippled
-and edges are persistent TCP/IP connections. Peers send and receive messages to
-other connected peers. This peer to peer network, layered on top of the public
-and private Internet, forms an [_overlay network_][overlay_network]. The
-contents of the messages and the behavior of peers in response to the messages,
-plus the information exchanged during the handshaking phase of connection
-establishment, defines the _Ripple peer protocol_ (_protocol_ in this context).
+The _XRP Ledger network_ consists of a collection of _peers_ running
+**`rippled`** or other compatible software. Each peer maintains multiple
+outgoing connections and optional incoming connections to other peers.
+These connections are made over both the public Internet and private local
+area networks. This network defines a connected directed graph of nodes
+where vertices are instances of `rippled` and edges are persistent TCP/IP
+connections. Peers send and receive messages to other connected peers. This
+peer to peer network, layered on top of the public and private Internet,
+forms an [_overlay network_][overlay_network]. The contents of the messages
+and the behavior of peers in response to the messages, plus the information
+exchanged during the handshaking phase of connection establishment, defines
+the _XRP Ledger peer protocol_ (or _protocol_ in this context).
 
 ## Overview
 
@@ -24,71 +25,69 @@ messages are exchanged between peers and serialized using
 ### Structure
 
 Each connection between peers is identified by its connection type, which
-affects the behavior of message routing:
-
-* Leaf
-
-* Peer
-
-## Roles
-
-Depending on the type of connection desired, the peers will modify their
-behavior according to certain roles:
-
-### Leaf or Superpeer
-
-A peer in the leaf role does not route messages. In the superpeer role, a
-peer accepts incoming connections from other leaves and superpeers up to the
-configured slot limit. It also routes messages. For a particular connection,
-the choice of leaf or superpeer is mutually exclusive. However, a peer can
-operate in both the leaf and superpeer role for different connections. One of
-the requirements 
-
-### Client Handler
-
-While not part of the responsibilities of the Overlay module, a peer
-operating in the Client Handler role accepts incoming connections from clients
-and services them through the JSON-RPC interface. A peer can operate in either
-the leaf or superpeer roles while also operating as a client handler.
+affects the behavior of message routing. At present, only a single connection
+type is supported: **Peer**.
 
 ## Handshake
 
 To establish a protocol connection, a peer makes an outgoing TLS encrypted
-connection to a remote peer, then sends a HTTP request with no message body.
-The request uses the [_HTTP/1.1 Upgrade_][upgrade_header] mechanism with some
-custom fields to communicate protocol specific information:
+connection to a remote peer, then sends an HTTP request with no message body.
+
+### HTTP
+
+The HTTP [request](https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html) must:
+
+- Use HTTP version 1.1.
+- Specify a request URI consisting of a single forward slash character ("/")
+indicating the server root. Requests using different URIs are reserved for
+future protocol implementations.
+- Use the [_HTTP/1.1 Upgrade_][upgrade_header] mechanism with additional custom
+fields to communicate protocol specific information related to the upgrade.
+
+HTTP requests which do not conform to this requirements must generate an
+appropriate HTTP error and result in the connection being closed.
+
+Upon receipt of a well-formed HTTP upgrade request, and validation of the
+protocol specific parameters, a peer will either send back a HTTP 101 response
+and switch to the requested protocol, or a message indicating that the request
+failed (e.g. by sending HTTP 400 "Bad Request" or HTTP 503 "Service Unavailable").
+
+##### Example HTTP Upgrade Request
 
 ```
 GET / HTTP/1.1
-User-Agent: rippled-0.27.0
-Local-Address: 192.168.0.101:8421
-Upgrade: RTXP/1.2, RTXP/1.3
+User-Agent: rippled-1.4.0-b1+DEBUG
+Upgrade: RTXP/1.2, XRPL/2.0
 Connection: Upgrade
-Connect-As: Leaf, Peer
-Accept-Encoding: identity, zlib, snappy
-Public-Key: aBRoQibi2jpDofohooFuzZi9nEzKw9Zdfc4ExVNmuXHaJpSPh8uJ
-Session-Signature: 71ED064155FFADFA38782C5E0158CB26
+Connect-As: Peer
+Crawl: public
+Network-ID: 1
+Network-Time: 619234489
+Public-Key: n94MvLTiHQJjByfGZzvQewTxQP2qjF6shQcuHwCjh5WoiozBrdpX
+Session-Signature: MEUCIQCOO8tHOh/tgCSRNe6WwOwmIF6urZ5uSB8l9aAf5q7iRAIgA4aONKBZhpP5RuOuhJP2dP+2UIRioEJcfU4/m4gZdYo=
+Remote-IP: 192.0.2.79
+Closed-Ledger: llRZSKqvNieGpPqbFGnm358pmF1aW96SDIUQcnMh6HI=
+Previous-Ledger: q4aKbP7sd5wv+EXArwCmQiWZhq9AwBl2p/hCtpGJNsc=
 ```
 
-Upon receipt of a well-formed HTTP request the remote peer will send back a
-HTTP response indicating the connection status:
+##### Example HTTP Upgrade Response (Success)
+
 
 ```
 HTTP/1.1 101 Switching Protocols
-Server: rippled-0.27.0
-Remote-Address: 63.104.209.13
-Upgrade: RTXP/1.2
 Connection: Upgrade
-Connect-As: Leaf
-Transfer-Encoding: snappy
-Public-Key: aBRoQibi2jpDofohooFuzZi9nEzKw9Zdfc4ExVNmuXHaJpSPh8uJ
-Session-Signature: 71ED064155FFADFA38782C5E0158CB26
+Upgrade: RTXP/1.2
+Connect-As: Peer
+Server: rippled-1.3.1
+Crawl: public
+Public-Key: n9K1ZXXXzzA3dtgKBuQUnZXkhygMRgZbSo3diFNPVHLMsUG5osJM
+Session-Signature: MEQCIHMlLGTcGyPvHji7WY2nRM2B0iSBnw9xeDUGW7bPq7IjAiAmy+ofEu+8nOq2eChRTr3wjoKi3EYRqLgzP+q+ORFcig==
+Network-Time: 619234797
+Closed-Ledger: h7HL85W9ywkex+G7p42USVeV5kE04CWK+4DVI19Of8I=
+Previous-Ledger: EPvIpAD2iavGFyyZYi8REexAXyKGXsi1jMF7OIBY6/Y=
 ```
 
-If the remote peer has no available slots, the HTTP status code 503 (Service
-Unavailable) is returned, with an optional content body in JSON format that
-may contain additional information such as IP and port addresses of other
-servers that may have open slots:
+##### Example HTTP Upgrade Response (Failure: no slots available)
 
 ```
 HTTP/1.1 503 Service Unavailable
@@ -101,87 +100,252 @@ Content-Type: application/json
 "85.127.34.221:51235","50.43.33.236:51235","54.187.138.75:51235"]}
 ```
 
-### Fields
+#### Standard Fields
 
-* *URL*
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `User-Agent`        	| :heavy_check_mark: 	|                   	|
 
-    The URL in the request line must be a single forward slash character
-    ("/"). Requests with any other URL must be rejected. Different URL strings
-    are reserved for future protocol implementations.
+The `User-Agent` field indicates the version of the software that the
+peer that is making the HTTP request is using. No semantic meaning is
+assigned to the value in this field but it is recommended that implementations
+specify the version of the software that is used.
 
-* *HTTP Version*
+See [RFC2616 &sect;14.43](https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.43).
 
-    The minimum required HTTP version is 1.1. Requests for HTTP versions
-    earlier than 1.1 must be rejected.
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Server`            	|                   	| :heavy_check_mark: 	|
 
-* `User-Agent`
+The `Server` field indicates the version of the software that the
+peer that is processing the HTTP request is using. No semantic meaning is
+assigned to the value in this field but it is recommended that implementations
+specify the version of the software that is used.
 
-    Contains information about the software originating the request.
-    The specification is identical to RFC2616 Section 14.43.
+See [RFC2616 &sect;14.38](https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.38).
 
-* `Server`
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Connection`        	| :heavy_check_mark: 	| :heavy_check_mark: 	|
 
-    Contains information about the software providing the response. The
-    specification is identical to RFC2616 Section 14.38.
+The `Connection` field should have a value of `Upgrade` to indicate that a
+request to upgrade the connection is being performed.
 
-* `Remote-Address` (optional)
+See [RFC2616 &sect;14.10](https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.10).
 
-    This optional field contains the string representation of the IP
-    address of the remote end of the connection as seen by the peer.
-    By observing values of this field from a sufficient number of different
-    servers, a peer making outgoing connections can deduce its own IP address.
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Upgrade`           	| :heavy_check_mark: 	| :heavy_check_mark: 	|
 
-* `Upgrade`
+The `Upgrade` field is part of the standard connection upgrade mechanism and
+must be present in both requests and responses. It is used to negotiate the
+version of the protocol that will be used after the upgrade request completes.
 
-    This field must be present and for requests consist of a comma delimited
-    list of at least one element where each element is of the form "RTXP/"
-    followed by the dotted major and minor protocol version number. For
-    responses the value must be a single element matching one of the elements
-    provided in the corresponding request field. If the server does not
-    understand any of the requested protocols, the request is rejected.
+For requests, it should consist of a comma delimited list of at least one
+element, where each element specifies a protocol version that the requesting
+server is willing to use.
 
-* `Connection`
+For responses, it should a consist of _single element_ matching one of the
+elements provided in the corresponding request. If the server does not understand
+any of the available protocol versions, the upgrade request should fail with an
+appropriate HTTP error code (e.g. by sending an HTTP 400 "Bad Request" response).
 
-    This field must be present, containing the value 'Upgrade'.
+Protocol versions are string of the form `XRPL/` followed by a dotted major
+and minor protocol version number, where the major number is greater than or
+equal to 2 and the minor is greater than or equal to 0. The legacy version
+`RTXP/1.2` is also supported at this time and is an alias for `XRPL/2.0`.
 
-* `Connect-As`
+See [RFC 2616 &sect;14.42](https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.42)
 
-    For requests the value consists of a comma delimited list of elements
-    where each element describes a possible connection type. Current connection
-    types are:
 
-    - leaf
-    - peer
+#### Custom Fields
 
-    If this field is omitted or the value is the empty string, then 'leaf' is
-    assumed.
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Connect-As`        	| :heavy_check_mark: 	| :heavy_check_mark: 	|
 
-    For responses, the value must consist of exactly one element from the list
-    of elements specified in the request. If a server does not recognize any
-    of the connection types it must return a HTTP error response.
+The mandatory `Connect-As` field is used to specify that type of connection
+that is being requested.
 
-* `Public-Key`
+For requests the value consists of a comma delimited list of elements, where
+each element describes a possible connection type. Only one connection types
+is supported at present: **`peer`**.
 
-    This field value must be present, and contain a base 64 encoded value used
-    as a server public key identifier.
+For responses, the value must consist of exactly one element from the list of
+elements specified in the request. If a server processing a request does not
+recognize any of the connection types, the request should fail with an
+appropriate HTTP error code (e.g. by sending an HTTP 400 "Bad Request" response).
 
-* `Session-Signature`
 
-    This field must be present. It contains a cryptographic token formed
-    from the SHA512 hash of the shared data exchanged during SSL handshaking.
-    For more details see the corresponding source code.
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Remote-IP`         	| :white_check_mark: 	| :white_check_mark: 	|
 
-* `Crawl` (optional)
+The optional `Remote-IP` field contains the string representation of the IP
+address of the remote end of the connection as seen from the peer that is
+sending the field.
 
-    If present, and the value is "public" then neighbors will report the IP
-    address to crawler requests. If absent, neighbor's default behavior is to
-    not report IP addresses.
+By observing values of this field from a sufficient number of different
+servers, a peer making outgoing connections can deduce its own IP address.
 
-* _User Defined_ (Unimplemented)
 
-    The rippled operator may specify additional, optional fields and values
-    through the configuration. These headers will be transmitted in the
-    corresponding request or response messages.
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Local-IP`          	| :white_check_mark: 	| :white_check_mark: 	|
+
+The optional `Local-IP` field contains the string representation of the IP
+address that the peer sending the field believes to be its own.
+
+Servers receiving this field can detect IP address mismatches, which may
+indicate a potential man-in-the-middle attack.
+
+
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Network-ID`        	| :white_check_mark: 	| :white_check_mark: 	|
+
+The optional `Network-ID` can be used to identify to which of several
+[parallel networks](https://xrpl.org/parallel-networks.html) the server
+sending the field is joined.
+
+The value, if the field is present, is a 32-bit unsigned integer. The
+following well-known values are in use:
+
+- **0**: The "main net"
+- **1**: The Ripple-operated [Test Net](https://xrpl.org/xrp-test-net-faucet.html).
+
+If a server configured to join one network receives a connection request from a
+server configured to join another network, the request should fail with an
+appropriate HTTP error code (e.g. by sending an HTTP 400 "Bad Request" response).
+
+
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Network-Time`      	| :white_check_mark: 	| :white_check_mark: 	|
+
+The optional `Network-Time` field reports the current [time](https://xrpl.org/basic-data-types.html#specifying-time)
+according to sender's internal clock.
+
+Servers should fail a connection if their clocks are not within 20 seconds of
+each other with an appropriate HTTP error code (e.g. by sending an HTTP 400
+"Bad Request" response).
+
+It is highly recommended that servers synchronize their clocks using time
+synchronization software. For more on this topic, please visit [ntp.org](http://www.ntp.org/).
+
+
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Public-Key`        	| :heavy_check_mark: 	| :heavy_check_mark: 	|
+
+The mandatory `Public-Key` field identifies the sending server's public key,
+encoded in base58 using the standard encoding for node public keys.
+
+See: https://xrpl.org/base58-encodings.html
+
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Session-Signature` 	| :heavy_check_mark: 	| :heavy_check_mark: 	|
+
+The `Session-Signature` field is mandatory and is used to secure the peer link
+against certain types of attack. For more details see "Session Signature" below.
+
+The value is presently encoded using **Base64** encoding, but implementations
+should support both **Base64** and **HEX** encoding for this value.
+
+For more details on this field, please see **Session Signature** below.
+    
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Crawl`             	| :white_check_mark: 	| :white_check_mark: 	|
+
+The optional `Crawl` field can be used by a server to indicate whether peers
+should include it in crawl reports.
+
+The field can take two values:
+- **`Public`**: The server's IP address and port should be included in crawl
+reports.
+- **`Private`**: The server's IP address and port should not be included in
+crawl reports. _This is the default, if the field is omitted._
+
+For more on the Peer Crawler, please visit https://xrpl.org/peer-crawler.html.
+
+
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Closed-Ledger`     	| :white_check_mark: 	| :white_check_mark: 	|
+
+If present, identifies the hash of the last ledger that the sending server
+considers to be closed.
+
+The value is presently encoded using **Base64** encoding, but implementations
+should support both **Base64** and **HEX** encoding for this value.
+    
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Previous-Ledger`   	| :white_check_mark: 	| :white_check_mark: 	|
+
+If present, identifies the hash of the parent ledger that the sending server
+considers to be closed.
+
+The value is presently encoded using **Base64** encoding, but implementations
+should support both **Base64** and **HEX** encoding for this value.
+
+#### Additional Headers
+
+An implementation or operator may specify additional, optional fields
+and values in both requests and responses.
+
+Implementations should not reject requests because of the presence of fields
+that they do not understand.
+
+
+### Session Signature
+
+Even for SSL/TLS encrypted connections, it is possible for an attacker to mount
+relatively inexpensive MITM attacks that can be extremely hard to detect and
+may afford the attacker the ability to intelligently tamper with messages
+exchanged between the two endpoints.
+
+This risk can be mitigated if at least one side has a certificate from a certificate
+authority trusted by the other endpoint, but having a certificate is not always
+possible (or even desirable) in a decentralized and permissionless network.
+
+Ultimately, the goal is to ensure that two endpoints A and B know that they are
+talking directly to each other over a single end-to-end SSL/TLS session instead
+of two separate SSL/TLS sessions, with an attacker acting as a proxy.
+
+The XRP Ledger protocol prevents this attack by leveraging the fact that the two
+servers each have a node identity, in the form of **`secp256k1`** keypairs, and
+use that to strongly bind the SSL/TLS session to the node identities of each of
+the two servers at the end of the SSL/TLS session.
+
+To do this we "reach into" the SSL/TLS session, and extract the **`finished`**
+messages for the local and remote endpoints, and combine them to generate a unique
+"fingerprint". By design, this fingerprint should be the same for both SSL/TLS
+endpoints.
+
+That fingerprint, which is never shared over the wire (since each endpoint will
+calculate it independently), is then signed by each server using its public
+**`secp256k1`** node identity and the signature is transferred over the SSL/TLS
+encrypted link during the protocol handshake phase.
+
+Each side of the link will verify that the provided signature is from the claimed
+public key against the session's unique fingerprint. If this signature check fails
+then the link **MUST** be dropped.
+
+If an attacker, Eve, establishes two separate SSL sessions with Alice and Bob, the
+fingerprints of the two sessions will be different, and Eve will not be able to
+sign the fingerprint of her session with Bob with Alice's private key, or the
+fingerprint of her session with Alice with Bob's private key, and so both A and
+B will know that an active MITM attack is in progress and will close their
+connections.
+
+If Eve simply proxies the raw bytes, she will be unable to decrypt the data being
+transferred between A and B and will not be able to intelligently tamper with the
+message stream between Alice and Bob, although she may be still be able to inject
+delays or terminate the link.
+
 
 # Ripple Clustering #
 

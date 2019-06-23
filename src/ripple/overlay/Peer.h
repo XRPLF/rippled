@@ -56,7 +56,7 @@ public:
 
     virtual
     void
-    send (Message::pointer const& m) = 0;
+    send (std::shared_ptr<Message> const& m) = 0;
 
     virtual
     beast::IP::Endpoint
@@ -105,7 +105,6 @@ public:
     virtual bool hasShard (std::uint32_t shardIndex) const = 0;
     virtual bool hasTxSet (uint256 const& hash) const = 0;
     virtual void cycleStatus () = 0;
-    virtual bool supportsVersion (int version) = 0;
     virtual bool hasRange (std::uint32_t uMin, std::uint32_t uMax) = 0;
 };
 

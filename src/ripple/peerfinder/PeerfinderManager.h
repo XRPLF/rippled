@@ -174,7 +174,7 @@ public:
         If nullptr is returned, then the slot could not be assigned.
         Usually this is because of a detected self-connection.
     */
-    virtual Slot::ptr new_inbound_slot (
+    virtual std::shared_ptr<Slot> new_inbound_slot (
         beast::IP::Endpoint const& local_endpoint,
             beast::IP::Endpoint const& remote_endpoint) = 0;
 
@@ -182,21 +182,21 @@ public:
         If nullptr is returned, then the slot could not be assigned.
         Usually this is because of a duplicate connection.
     */
-    virtual Slot::ptr new_outbound_slot (
+    virtual std::shared_ptr<Slot> new_outbound_slot (
         beast::IP::Endpoint const& remote_endpoint) = 0;
 
     /** Called when mtENDPOINTS is received. */
-    virtual void on_endpoints (Slot::ptr const& slot,
+    virtual void on_endpoints (std::shared_ptr<Slot> const& slot,
         Endpoints const& endpoints) = 0;
 
     /** Called when the slot is closed.
         This always happens when the socket is closed, unless the socket
         was canceled.
     */
-    virtual void on_closed (Slot::ptr const& slot) = 0;
+    virtual void on_closed (std::shared_ptr<Slot> const& slot) = 0;
 
     /** Called when an outbound connection is deemed to have failed */
-    virtual void on_failure (Slot::ptr const& slot) = 0;
+    virtual void on_failure (std::shared_ptr<Slot> const& slot) = 0;
 
     /** Called when we received redirect IPs from a busy peer. */
     virtual
@@ -215,19 +215,19 @@ public:
     */
     virtual
     bool
-    onConnected (Slot::ptr const& slot,
+    onConnected (std::shared_ptr<Slot> const& slot,
         beast::IP::Endpoint const& local_endpoint) = 0;
 
     /** Request an active slot type. */
     virtual
     Result
-    activate (Slot::ptr const& slot,
+    activate (std::shared_ptr<Slot> const& slot,
         PublicKey const& key, bool reserved) = 0;
 
     /** Returns a set of endpoints suitable for redirection. */
     virtual
     std::vector <Endpoint>
-    redirect (Slot::ptr const& slot) = 0;
+    redirect (std::shared_ptr<Slot> const& slot) = 0;
 
     /** Return a set of addresses we should connect to. */
     virtual
@@ -235,7 +235,7 @@ public:
     autoconnect() = 0;
 
     virtual
-    std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>>
+    std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>>
     buildEndpointsForPeers() = 0;
 
     /** Perform periodic activity.

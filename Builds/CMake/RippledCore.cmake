@@ -176,7 +176,6 @@ install (
 install (
   FILES
     src/ripple/crypto/GenerateDeterministicKey.h
-    src/ripple/crypto/KeyType.h
     src/ripple/crypto/RFC1751.h
     src/ripple/crypto/csprng.h
   DESTINATION include/ripple/crypto)
@@ -214,6 +213,7 @@ install (
     src/ripple/protocol/Indexes.h
     src/ripple/protocol/InnerObjectFormats.h
     src/ripple/protocol/Issue.h
+    src/ripple/protocol/KeyType.h
     src/ripple/protocol/Keylet.h
     src/ripple/protocol/KnownFormats.h
     src/ripple/protocol/LedgerFormats.h
@@ -602,12 +602,13 @@ else ()
     #]===============================]
     src/ripple/overlay/impl/Cluster.cpp
     src/ripple/overlay/impl/ConnectAttempt.cpp
+    src/ripple/overlay/impl/Handshake.cpp
     src/ripple/overlay/impl/Message.cpp
     src/ripple/overlay/impl/OverlayImpl.cpp
     src/ripple/overlay/impl/PeerImp.cpp
     src/ripple/overlay/impl/PeerReservationTable.cpp
     src/ripple/overlay/impl/PeerSet.cpp
-    src/ripple/overlay/impl/TMHello.cpp
+    src/ripple/overlay/impl/ProtocolVersion.cpp
     src/ripple/overlay/impl/TrafficCount.cpp
     #[===============================[
        nounity, main sources:
@@ -920,7 +921,7 @@ else ()
        nounity, test sources:
          subdir: overlay
     #]===============================]
-    src/test/overlay/TMHello_test.cpp
+    src/test/overlay/ProtocolVersion_test.cpp
     src/test/overlay/cluster_test.cpp
     src/test/overlay/short_read_test.cpp
     #[===============================[
@@ -933,7 +934,6 @@ else ()
        nounity, test sources:
          subdir: protocol
     #]===============================]
-    src/test/protocol/BuildInfo_test.cpp
     src/test/protocol/IOUAmount_test.cpp
     src/test/protocol/InnerObjectFormats_test.cpp
     src/test/protocol/Issue_test.cpp

@@ -25,9 +25,7 @@ TrafficCount::category TrafficCount::categorize (
     ::google::protobuf::Message const& message,
     int type, bool inbound)
 {
-    if ((type == protocol::mtHELLO) ||
-            (type == protocol::mtPING) ||
-            (type == protocol::mtSTATUS_CHANGE))
+    if ((type == protocol::mtPING) || (type == protocol::mtSTATUS_CHANGE))
         return TrafficCount::category::base;
 
     if (type == protocol::mtCLUSTER)
@@ -36,9 +34,7 @@ TrafficCount::category TrafficCount::categorize (
     if (type == protocol::mtMANIFESTS)
         return TrafficCount::category::manifests;
 
-    if ((type == protocol::mtENDPOINTS) ||
-            (type == protocol::mtPEERS) ||
-            (type == protocol::mtGET_PEERS))
+    if (type == protocol::mtENDPOINTS)
         return TrafficCount::category::overlay;
 
     if ((type == protocol::mtGET_SHARD_INFO) ||
