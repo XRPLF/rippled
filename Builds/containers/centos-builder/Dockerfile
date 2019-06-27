@@ -1,5 +1,6 @@
 FROM centos:7
 ARG GIT_COMMIT=unknown
+ARG CI_USE=false
 
 LABEL git-commit=$GIT_COMMIT
 
