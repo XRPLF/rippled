@@ -21,6 +21,7 @@
 #define RIPPLE_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
 
 #include <ripple/beast/hash/uhash.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/protocol/PublicKey.h>
 
 #include <boost/optional.hpp>
@@ -31,6 +32,7 @@
 namespace ripple {
 
 // Value type for reservations.
+// REVIEWER: What is the preferred naming convention for member variables?
 struct PeerReservation
 {
 public:
@@ -38,7 +40,32 @@ public:
     boost::optional<std::string> name_;
 };
 
-using PeerReservationTable = std::unordered_map<PublicKey, PeerReservation, beast::uhash<>>;
+class PeerReservationTable {
+public:
+    using table_type = std::unordered_map<PublicKey, PeerReservation, beast::uhash<>>;
+
+    explicit
+    PeerReservationTable(beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+        : journal_ (journal)
+    {
+    }
+
+    table_type const& table() const {
+        return table_;
+    }
+
+    // Because `ApplicationImp` has two-phase initialization, so must we.
+    // Our dependencies are not prepared until the second phase.
+    bool init(DatabaseCon& connection);
+
+private:
+    beast::Journal mutable journal_;
+    // REVIEWER: What is the policy on forward declarations? We can use one
+    // for DatabaseCon.
+    DatabaseCon* connection_;
+    table_type table_;
+
+};
 
 }
 

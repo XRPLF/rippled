@@ -492,7 +492,7 @@ public:
         , cluster_ (std::make_unique<Cluster> (
             logs_->journal("Overlay")))
 
-        , peerReservations_ (std::make_unique<PeerReservationTable>())
+        , peerReservations_(std::make_unique<PeerReservationTable>(logs_->journal("PeerReservationTable")))
 
         , validatorManifests_ (std::make_unique<ManifestCache> (
             logs_->journal("ManifestCache")))
@@ -1203,6 +1203,12 @@ bool ApplicationImp::setup()
     if (!initSqliteDbs ())
     {
         JLOG(m_journal.fatal()) << "Cannot create database connections!";
+        return false;
+    }
+
+    if (!peerReservations->load(getWalletDB()))
+    {
+        JLOG(m_journal.fatal()) << "Cannot find peer reservations!";
         return false;
     }
 
