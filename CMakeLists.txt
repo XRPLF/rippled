@@ -278,7 +278,7 @@ if (is_root_project)
 
     file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/packages)
     file (MAKE_DIRECTORY ${NIH_CACHE_ROOT}/pkgbuild)
-    if (UNIX)
+    if (is_linux)
       execute_process (COMMAND id -u
         OUTPUT_VARIABLE DOCKER_USER_ID
         OUTPUT_STRIP_TRAILING_WHITESPACE)

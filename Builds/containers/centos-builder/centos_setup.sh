@@ -19,7 +19,7 @@ yum -y install \
     flex flex-devel bison bison-devel \
     ncurses ncurses-devel ncurses-libs graphviz graphviz-devel \
     lzip p7zip bzip2 bzip2-devel lzma-sdk lzma-sdk-devel xz-devel \
-    zlib zlib-devel zlib-static texinfo openssl-static \
+    zlib zlib-devel zlib-static texinfo openssl openssl-static \
     jemalloc jemalloc-devel \
     libicu-devel htop \
     python27-python rh-python35-python \
