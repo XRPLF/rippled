@@ -35,7 +35,7 @@ namespace ripple {
 bool
 PeerReservationTable::load(DatabaseCon& connection)
 {
-    auto db = connection.checkoutDb();
+    auto db = connection_->checkoutDb();
 
     boost::optional<std::string> valPubKey, valName;
     // REVIEWER: We should really abstract the table and column names into
@@ -62,11 +62,44 @@ PeerReservationTable::load(DatabaseCon& connection)
             }
             // TODO: Remove any invalid public keys?
         }
-        PeerReservation const res{.identity_ = *pk, .name_ = valName};
+        PeerReservation const res{.nodeId_ = *pk, .name_ = valName};
         table_.emplace(*pk, res);
     }
 
     return true;
+}
+
+bool PeerReservationTable::upsert(
+        PublicKey const& nodeId,
+        boost::optional<std::string> const& name
+)
+{
+    auto emplaced = table_.emplace(
+        std::make_pair(nodeId, PeerReservation{nodeId, name}));
+    if (!emplaced.second)
+        // The node already has a reservation.
+        // I think most people just want to overwrite existing reservations.
+        // TODO: Make a formal team decision that we do not want to raise an
+        // error upon a collision.
+        emplaced.first->second.name_ = name;
+
+    auto db = connection_->checkoutDb();
+    *db << "INSERT INTO PeerReservations (PublicKey, Name) "
+        "VALUES (:nodeId, :name) "
+        "ON CONFLICT(PublicKey) DO UPDATE SET Name=excluded.Name",
+        use(nodeId), use(name);
+
+    return emplaced.second;
+}
+
+bool PeerReservationTable::erase(PublicKey const& nodeId)
+{
+    bool const removed = table_.erase(nodeId) > 0;
+
+    auto db = connection_->checkoutDb();
+    *db << "DELETE FROM PeerReservations WHERE PublicKey = :nodeId", use(nodeId);
+
+    return removed;
 }
 
 }  // namespace ripple

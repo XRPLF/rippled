@@ -71,26 +71,37 @@ doReservationsAdd(RPC::Context& context)
         params[jss::public_key].asString());
     if (!optPk)
         return rpcError(rpcPUBLIC_MALFORMED);
-    PublicKey const& identity = *optPk;
+    PublicKey const& nodeId = *optPk;
 
-    // I think most people just want to overwrite existing reservations.
-    // TODO: Make a formal team decision that we do not want to raise an
-    // error upon a collision.
-    auto emplaced = context.app.peerReservations().emplace(
-        std::make_pair(identity, PeerReservation{identity, name}));
-    if (!emplaced.second)
-        // The public key already has a reservation. Overwrite it.
-        emplaced.first->second.name_ = name;
+    bool const added = context.app.peerReservations().upsert(nodeId, name);
 
     Json::Value result;
-    // TODO: Need to indicate whether it was inserted or overwritten.
+    // TODO: Should we indicate whether it was inserted or overwritten?
     return result;
 }
 
 Json::Value
 doReservationsDel(RPC::Context& context)
 {
+    auto const& params = context.params;
+
+    // We repeat much of the parameter parsing from `doReservationsAdd`.
+    if (!params.isMember(jss::public_key))
+        return RPC::missing_field_error(jss::public_key);
+    if (!params[jss::public_key].isString())
+        return RPC::expected_field_error(jss::public_key, "a string");
+
+    boost::optional<PublicKey> optPk = parseBase58<PublicKey>(
+        TokenType::NodePublic,
+        params[jss::public_key].asString());
+    if (!optPk)
+        return rpcError(rpcPUBLIC_MALFORMED);
+    PublicKey const& nodeId = *optPk;
+
+    context.app.peerReservations().erase(nodeId);
+
     Json::Value result;
+    // TODO: Should we indicate whether it existed before?
     return result;
 }
 

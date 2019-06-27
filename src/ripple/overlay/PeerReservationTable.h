@@ -36,7 +36,7 @@ namespace ripple {
 struct PeerReservation
 {
 public:
-    PublicKey const identity_;
+    PublicKey const nodeId_;
     boost::optional<std::string> name_;
 };
 
@@ -57,6 +57,22 @@ public:
     // Because `ApplicationImp` has two-phase initialization, so must we.
     // Our dependencies are not prepared until the second phase.
     bool init(DatabaseCon& connection);
+
+    /**
+     * @return true iff the node did not already have a reservation
+     */
+    // REVIEWER: Without taking any special effort, this function can throw
+    // because its dependencies can throw. Do we want to try a different error
+    // mechanism? Perhaps Boost.Outcome in anticipation of Herbceptions?
+    bool upsert(
+            PublicKey const& nodeId,
+            boost::optional<std::string> const& name
+    );
+
+    /**
+     * @return true iff the node had a reservation.
+     */
+    bool erase(PublicKey const& nodeId);
 
 private:
     beast::Journal mutable journal_;
