@@ -282,7 +282,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
     // or if it has a reservation. Until `std::unordered_map::contains`
     // comes (with C++20), use `std::unordered_map::find`.
     bool const reserved = static_cast<bool>(app_.cluster().member(*publicKey))
-        || (app_.peerReservations().find(*publicKey) != app_.peerReservations().end());
+        || app_.peerReservations().contains(*publicKey);
     auto const result = m_peerFinder->activate (slot, *publicKey, reserved);
     if (result != PeerFinder::Result::success)
     {

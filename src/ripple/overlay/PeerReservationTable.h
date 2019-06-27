@@ -43,6 +43,8 @@ public:
 class PeerReservationTable {
 public:
     using table_type = std::unordered_map<PublicKey, PeerReservation, beast::uhash<>>;
+    using iterator = table_type::iterator;
+    using const_iterator = table_type::const_iterator;
 
     explicit
     PeerReservationTable(beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
@@ -54,9 +56,37 @@ public:
         return table_;
     }
 
+    iterator begin() noexcept {
+        return table_.begin();
+    }
+
+    const_iterator begin() const noexcept {
+        return table_.begin();
+    }
+
+    const_iterator cbegin() const noexcept {
+        return table_.cbegin();
+    }
+
+    iterator end() noexcept {
+        return table_.end();
+    }
+
+    const_iterator end() const noexcept {
+        return table_.end();
+    }
+
+    const_iterator cend() const noexcept {
+        return table_.cend();
+    }
+
+    bool contains(PublicKey const& nodeId) {
+        return table_.find(nodeId) != table_.end();
+    }
+
     // Because `ApplicationImp` has two-phase initialization, so must we.
     // Our dependencies are not prepared until the second phase.
-    bool init(DatabaseCon& connection);
+    bool load(DatabaseCon& connection);
 
     /**
      * @return true iff the node did not already have a reservation

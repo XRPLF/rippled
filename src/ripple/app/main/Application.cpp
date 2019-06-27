@@ -1206,7 +1206,7 @@ bool ApplicationImp::setup()
         return false;
     }
 
-    if (!peerReservations->load(getWalletDB()))
+    if (!peerReservations_->load(getWalletDB()))
     {
         JLOG(m_journal.fatal()) << "Cannot find peer reservations!";
         return false;

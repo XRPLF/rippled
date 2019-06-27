@@ -2176,6 +2176,7 @@ else ()
     src/ripple/overlay/impl/Message.cpp
     src/ripple/overlay/impl/OverlayImpl.cpp
     src/ripple/overlay/impl/PeerImp.cpp
+    src/ripple/overlay/impl/PeerReservationTable.cpp
     src/ripple/overlay/impl/PeerSet.cpp
     src/ripple/overlay/impl/TMHello.cpp
     src/ripple/overlay/impl/TrafficCount.cpp

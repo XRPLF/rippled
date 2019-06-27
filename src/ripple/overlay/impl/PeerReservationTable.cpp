@@ -22,6 +22,10 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/protocol/PublicKey.h>
 
+#include <boost/optional.hpp>
+
+#include <string>
+
 namespace ripple {
 
 // See `ripple/app/main/DBInit.cpp` for the `CREATE TABLE` statement.
@@ -50,20 +54,24 @@ PeerReservationTable::load(DatabaseCon& connection)
     }
     while (st.fetch())
     {
-        auto const pk = parseBase58<PublicKey>(
-            TokenType::NodePublic, valPubKey.value_or(""));
-        if (!pk)
+        if (!valPubKey) {
+            // REVIEWER: How to signal unreachable? This represents a `NULL`
+            // in a `NOT NULL` column.
+        }
+        auto const optNodeId = parseBase58<PublicKey>(
+            TokenType::NodePublic, *valPubKey);
+        if (!optNodeId)
         {
             // REVIEWER: Does the call site filter the level?
             // Where is the documentation for "how to use Journal"?
             if (auto stream = journal_.warn())
             {
-                stream << "load: not a public key: " << varPubKey;
+                stream << "load: not a public key: " << valPubKey;
             }
             // TODO: Remove any invalid public keys?
         }
-        PeerReservation const res{.nodeId_ = *pk, .name_ = valName};
-        table_.emplace(*pk, res);
+        auto const& nodeId = *optNodeId;
+        table_.emplace(nodeId, PeerReservation{nodeId, valName});
     }
 
     return true;
@@ -74,8 +82,7 @@ bool PeerReservationTable::upsert(
         boost::optional<std::string> const& name
 )
 {
-    auto emplaced = table_.emplace(
-        std::make_pair(nodeId, PeerReservation{nodeId, name}));
+    auto emplaced = table_.emplace(nodeId, PeerReservation{nodeId, name});
     if (!emplaced.second)
         // The node already has a reservation.
         // I think most people just want to overwrite existing reservations.
@@ -86,8 +93,8 @@ bool PeerReservationTable::upsert(
     auto db = connection_->checkoutDb();
     *db << "INSERT INTO PeerReservations (PublicKey, Name) "
         "VALUES (:nodeId, :name) "
-        "ON CONFLICT(PublicKey) DO UPDATE SET Name=excluded.Name",
-        use(nodeId), use(name);
+        "ON CONFLICT (PublicKey) DO UPDATE SET Name=excluded.Name",
+        soci::use(nodeId), soci::use(name);
 
     return emplaced.second;
 }
@@ -97,7 +104,8 @@ bool PeerReservationTable::erase(PublicKey const& nodeId)
     bool const removed = table_.erase(nodeId) > 0;
 
     auto db = connection_->checkoutDb();
-    *db << "DELETE FROM PeerReservations WHERE PublicKey = :nodeId", use(nodeId);
+    *db << "DELETE FROM PeerReservations WHERE PublicKey = :nodeId",
+        soci::use(nodeId);
 
     return removed;
 }
