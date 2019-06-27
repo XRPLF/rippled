@@ -94,7 +94,8 @@ bool PeerReservationTable::upsert(
     *db << "INSERT INTO PeerReservations (PublicKey, Name) "
         "VALUES (:nodeId, :name) "
         "ON CONFLICT (PublicKey) DO UPDATE SET Name=excluded.Name",
-        soci::use(nodeId), soci::use(name);
+        soci::use(toBase58(TokenType::NodePublic, nodeId)),
+        soci::use(name);
 
     return emplaced.second;
 }
@@ -105,7 +106,7 @@ bool PeerReservationTable::erase(PublicKey const& nodeId)
 
     auto db = connection_->checkoutDb();
     *db << "DELETE FROM PeerReservations WHERE PublicKey = :nodeId",
-        soci::use(nodeId);
+        soci::use(toBase58(TokenType::NodePublic, nodeId));
 
     return removed;
 }

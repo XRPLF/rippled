@@ -24,6 +24,8 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/protocol/PublicKey.h>
 
+#define SOCI_USE_BOOST
+#include <soci/soci.h>
 #include <boost/optional.hpp>
 
 #include <string>
