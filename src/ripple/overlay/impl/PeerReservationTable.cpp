@@ -39,6 +39,7 @@ namespace ripple {
 bool
 PeerReservationTable::load(DatabaseCon& connection)
 {
+    connection_ = &connection;
     auto db = connection_->checkoutDb();
 
     boost::optional<std::string> valPubKey, valName;
@@ -48,10 +49,7 @@ PeerReservationTable::load(DatabaseCon& connection)
         (db->prepare << "SELECT PublicKey, Name FROM PeerReservations;",
          soci::into(valPubKey),
          soci::into(valName));
-    if (!st.execute())
-    {
-        return false;
-    }
+    st.execute();
     while (st.fetch())
     {
         if (!valPubKey) {
