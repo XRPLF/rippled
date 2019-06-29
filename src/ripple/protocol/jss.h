@@ -387,6 +387,7 @@ JSS ( peer_disconnects );           // Severed peer connection counter.
 JSS ( peer_disconnects_resources ); // Severed peer connections because of
                                     // excess resource consumption.
 JSS ( port );                       // in: Connect
+JSS ( previous );                   // out: Reservations
 JSS ( previous_ledger );            // out: LedgerPropose
 JSS ( proof );                      // in: BookOffers
 JSS ( propose_seq );                // out: LedgerPropose

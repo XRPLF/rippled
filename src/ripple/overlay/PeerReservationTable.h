@@ -22,11 +22,12 @@
 
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/json/forwards.h>
 #include <ripple/protocol/PublicKey.h>
 
 #define SOCI_USE_BOOST
-#include <soci/soci.h>
 #include <boost/optional.hpp>
+#include <soci/soci.h>
 
 #include <string>
 #include <unordered_map>
@@ -40,71 +41,93 @@ struct PeerReservation
 public:
     PublicKey const nodeId_;
     boost::optional<std::string> description_;
+
+    auto
+    toJson() const -> Json::Value;
 };
 
-class PeerReservationTable {
+class PeerReservationTable
+{
 public:
-    using table_type = std::unordered_map<PublicKey, PeerReservation, beast::uhash<>>;
+    using table_type =
+        std::unordered_map<PublicKey, PeerReservation, beast::uhash<>>;
     using iterator = table_type::iterator;
     using const_iterator = table_type::const_iterator;
 
-    explicit
-    PeerReservationTable(beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
-        : journal_ (journal)
+    explicit PeerReservationTable(
+        beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+        : journal_(journal)
     {
     }
 
-    table_type const& table() const {
+    table_type const&
+    table() const
+    {
         return table_;
     }
 
-    iterator begin() noexcept {
+    iterator
+    begin() noexcept
+    {
         return table_.begin();
     }
 
-    const_iterator begin() const noexcept {
+    const_iterator
+    begin() const noexcept
+    {
         return table_.begin();
     }
 
-    const_iterator cbegin() const noexcept {
+    const_iterator
+    cbegin() const noexcept
+    {
         return table_.cbegin();
     }
 
-    iterator end() noexcept {
+    iterator
+    end() noexcept
+    {
         return table_.end();
     }
 
-    const_iterator end() const noexcept {
+    const_iterator
+    end() const noexcept
+    {
         return table_.end();
     }
 
-    const_iterator cend() const noexcept {
+    const_iterator
+    cend() const noexcept
+    {
         return table_.cend();
     }
 
-    bool contains(PublicKey const& nodeId) {
+    bool
+    contains(PublicKey const& nodeId)
+    {
         return table_.find(nodeId) != table_.end();
     }
 
     // Because `ApplicationImp` has two-phase initialization, so must we.
     // Our dependencies are not prepared until the second phase.
-    bool load(DatabaseCon& connection);
+    bool
+    load(DatabaseCon& connection);
 
     /**
-     * @return true iff the node did not already have a reservation
+     * @return the replaced reservation if it existed
      */
     // REVIEWER: Without taking any special effort, this function can throw
     // because its dependencies can throw. Do we want to try a different error
     // mechanism? Perhaps Boost.Outcome in anticipation of Herbceptions?
-    bool upsert(
-            PublicKey const& nodeId,
-            boost::optional<std::string> const& desc
-    );
+    auto
+    upsert(PublicKey const& nodeId, boost::optional<std::string> const& desc)
+        -> boost::optional<PeerReservation>;
 
     /**
-     * @return true iff the node had a reservation.
+     * @return the erased reservation if it existed
      */
-    bool erase(PublicKey const& nodeId);
+    auto
+    erase(PublicKey const& nodeId) -> boost::optional<PeerReservation>;
 
 private:
     beast::Journal mutable journal_;
@@ -112,9 +135,8 @@ private:
     // for DatabaseCon.
     DatabaseCon* connection_;
     table_type table_;
-
 };
 
-}
+}  // namespace ripple
 
 #endif

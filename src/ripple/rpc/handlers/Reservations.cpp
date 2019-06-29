@@ -17,9 +17,11 @@
 */
 //==============================================================================
 
+#include <ripple/json/json_value.h>
 #include <ripple/net/RPCErr.h>
-#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/handlers/Handlers.h>
 
@@ -47,10 +49,10 @@ doReservationsAdd(RPC::Context& context)
     //   JSON object.
     // - It is not as easy to write when you have to include all the packing and
     //   unpacking code.
-    // Exceptions would be easier to use, but have a terrible cost for control flow.
-    // An error monad is purpose-built for this situation; it is essentially
-    // an optional (the "maybe monad" in Haskell) with a non-unit type for the
-    // failure case to capture more information.
+    // Exceptions would be easier to use, but have a terrible cost for control
+    // flow. An error monad is purpose-built for this situation; it is
+    // essentially an optional (the "maybe monad" in Haskell) with a non-unit
+    // type for the failure case to capture more information.
     if (!params[jss::public_key].isString())
         return RPC::expected_field_error(jss::public_key, "a string");
 
@@ -67,16 +69,18 @@ doReservationsAdd(RPC::Context& context)
     // channel_verify takes a key in both base58 and hex.
     // @nikb prefers that we take only base58.
     boost::optional<PublicKey> optPk = parseBase58<PublicKey>(
-        TokenType::NodePublic,
-        params[jss::public_key].asString());
+        TokenType::NodePublic, params[jss::public_key].asString());
     if (!optPk)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& nodeId = *optPk;
 
-    bool const added = context.app.peerReservations().upsert(nodeId, desc);
+    auto const previous = context.app.peerReservations().upsert(nodeId, desc);
 
     Json::Value result{Json::objectValue};
-    // TODO: Should we indicate whether it was inserted or overwritten?
+    if (previous)
+    {
+        result[jss::previous] = previous->toJson();
+    }
     return result;
 }
 
@@ -92,16 +96,18 @@ doReservationsDel(RPC::Context& context)
         return RPC::expected_field_error(jss::public_key, "a string");
 
     boost::optional<PublicKey> optPk = parseBase58<PublicKey>(
-        TokenType::NodePublic,
-        params[jss::public_key].asString());
+        TokenType::NodePublic, params[jss::public_key].asString());
     if (!optPk)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& nodeId = *optPk;
 
-    context.app.peerReservations().erase(nodeId);
+    auto const previous = context.app.peerReservations().erase(nodeId);
 
     Json::Value result{Json::objectValue};
-    // TODO: Should we indicate whether it existed before?
+    if (previous)
+    {
+        result[jss::previous] = previous->toJson();
+    }
     return result;
 }
 
@@ -119,7 +125,8 @@ doReservationsList(RPC::Context& context)
         Json::Value jaReservation;
         jaReservation[jss::public_key] =
             toBase58(TokenType::NodePublic, reservation.nodeId_);
-        if (reservation.description_) {
+        if (reservation.description_)
+        {
             jaReservation[jss::description] = *reservation.description_;
         }
         jaReservations.append(jaReservation);
@@ -127,4 +134,4 @@ doReservationsList(RPC::Context& context)
     return result;
 }
 
-}
+}  // namespace ripple
