@@ -111,11 +111,11 @@ struct ErrorInfoArray
 
 // Sort and validate unorderedErrorInfos at compile time.  Should be
 // converted to consteval when get to C++20.
-template<int N>
+template<int M, int N>
 constexpr auto
-sortErrorInfos (ErrorInfo const (&unordered)[N]) -> ErrorInfoArray<N>
+sortErrorInfos (ErrorInfo const (&unordered)[N]) -> ErrorInfoArray<M>
 {
-    ErrorInfoArray<N> ret;
+    ErrorInfoArray<M> ret;
 
     for (ErrorInfo const& info : unordered)
     {
@@ -136,19 +136,31 @@ sortErrorInfos (ErrorInfo const (&unordered)[N]) -> ErrorInfoArray<N>
 
     // Verify that all entries are filled in starting with 1 and proceeding
     // to rpcLAST.
-    int expect = 0;
+    //
+    // It's okay for there to be missing entries; they will contain the code
+    // rpcUNKNOWN.  But other than that all entries should match their index.
+    int codeCount {0};
+    int expect {rpcBAD_SYNTAX - 1};
     for (ErrorInfo const& info : ret.infos)
     {
-        if (info.code != ++expect)
+        ++expect;
+        if (info.code == rpcUNKNOWN)
+            continue;
+
+        if (info.code != expect)
             throw (std::invalid_argument ("Empty error_code_i in list"));
+        ++codeCount;
     }
     if (expect != rpcLAST)
         throw (std::invalid_argument ("Insufficient list entries"));
+    if (codeCount != N)
+        throw (std::invalid_argument ("Bad handling of unorderedErrorInfos"));
 
     return ret;
 }
 
-constexpr auto sortedErrorInfos {sortErrorInfos(unorderedErrorInfos)};
+constexpr auto sortedErrorInfos {sortErrorInfos<rpcLAST>(unorderedErrorInfos)};
+
 constexpr ErrorInfo unknownError;
 
 } // detail

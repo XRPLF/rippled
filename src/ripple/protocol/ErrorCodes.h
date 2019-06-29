@@ -27,82 +27,110 @@ namespace ripple {
 
 // VFALCO NOTE These are outside the RPC namespace
 
+// NOTE: Although the precise numeric values of these codes were never
+// intended to be stable, several API endpoints include the numeric values.
+// Some users came to rely on the values, meaning that renumbering would be
+// a breaking change for those users.
+//
+// We therefore treat the range of values as stable although they are not
+// and are subject to change.
+//
+// Please only append to this table. Do not "fill-in" gaps and do not re-use
+// or repurpose error code values.
 enum error_code_i
 {
-    rpcUNKNOWN = -1,     // Represents codes not listed in this enumeration
+    // -1 represents codes not listed in this enumeration
+    rpcUNKNOWN               = -1,
 
-    rpcSUCCESS = 0,
+    rpcSUCCESS               = 0,
 
-    rpcBAD_SYNTAX,  // Must be 1 to print usage to command line.
-    rpcJSON_RPC,
-    rpcFORBIDDEN,
-
-    // Error numbers beyond this line are not stable between versions.
-    // Programs should use error tokens.
+    rpcBAD_SYNTAX            = 1,
+    rpcJSON_RPC              = 2,
+    rpcFORBIDDEN             = 3,
 
     // Misc failure
-    rpcNO_PERMISSION,
-    rpcNO_EVENTS,
-    rpcTOO_BUSY,
-    rpcSLOW_DOWN,
-    rpcHIGH_FEE,
-    rpcNOT_ENABLED,
-    rpcNOT_READY,
-    rpcAMENDMENT_BLOCKED,
+    // unused                  4,
+    // unused                  5,
+    rpcNO_PERMISSION         = 6,
+    rpcNO_EVENTS             = 7,
+    // unused                  8,
+    rpcTOO_BUSY              = 9,
+    rpcSLOW_DOWN             = 10,
+    rpcHIGH_FEE              = 11,
+    rpcNOT_ENABLED           = 12,
+    rpcNOT_READY             = 13,
+    rpcAMENDMENT_BLOCKED     = 14,
 
     // Networking
-    rpcNO_CLOSED,
-    rpcNO_CURRENT,
-    rpcNO_NETWORK,
+    rpcNO_CLOSED             = 15,
+    rpcNO_CURRENT            = 16,
+    rpcNO_NETWORK            = 17,
 
     // Ledger state
-    rpcACT_NOT_FOUND,
-    rpcLGR_NOT_FOUND,
-    rpcLGR_NOT_VALIDATED,
-    rpcMASTER_DISABLED,
-    rpcTXN_NOT_FOUND,
+    // unused                  18,
+    rpcACT_NOT_FOUND         = 19,
+    // unused                  20,
+    rpcLGR_NOT_FOUND         = 21,
+    rpcLGR_NOT_VALIDATED     = 22,
+    rpcMASTER_DISABLED       = 23,
+    // unused                  24,
+    // unused                  25,
+    // unused                  26,
+    // unused                  27,
+    // unused                  28,
+    rpcTXN_NOT_FOUND         = 29,
+    // unused                  30,
 
     // Malformed command
-    rpcINVALID_PARAMS,
-    rpcUNKNOWN_COMMAND,
-    rpcNO_PF_REQUEST,
+    rpcINVALID_PARAMS        = 31,
+    rpcUNKNOWN_COMMAND       = 32,
+    rpcNO_PF_REQUEST         = 33,
 
     // Bad parameter
-    rpcACT_BITCOIN,
-    rpcACT_MALFORMED,
-    rpcALREADY_MULTISIG,
-    rpcALREADY_SINGLE_SIG,
-    rpcBAD_FEATURE,
-    rpcBAD_ISSUER,
-    rpcBAD_MARKET,
-    rpcBAD_SECRET,
-    rpcBAD_SEED,
-    rpcCHANNEL_MALFORMED,
-    rpcCHANNEL_AMT_MALFORMED,
-    rpcCOMMAND_MISSING,
-    rpcDST_ACT_MALFORMED,
-    rpcDST_ACT_MISSING,
-    rpcDST_ACT_NOT_FOUND,
-    rpcDST_AMT_MALFORMED,
-    rpcDST_AMT_MISSING,
-    rpcDST_ISR_MALFORMED,
-    rpcLGR_IDXS_INVALID,
-    rpcLGR_IDX_MALFORMED,
-    rpcPUBLIC_MALFORMED,
-    rpcSIGNING_MALFORMED,
-    rpcSENDMAX_MALFORMED,
-    rpcSRC_ACT_MALFORMED,
-    rpcSRC_ACT_MISSING,
-    rpcSRC_ACT_NOT_FOUND,
-    rpcSRC_CUR_MALFORMED,
-    rpcSRC_ISR_MALFORMED,
-    rpcSTREAM_MALFORMED,
-    rpcATX_DEPRECATED,
+    rpcACT_BITCOIN           = 34,
+    rpcACT_MALFORMED         = 35,
+    rpcALREADY_MULTISIG      = 36,
+    rpcALREADY_SINGLE_SIG    = 37,
+    // unused                  38,
+    // unused                  39,
+    rpcBAD_FEATURE           = 40,
+    rpcBAD_ISSUER            = 41,
+    rpcBAD_MARKET            = 42,
+    rpcBAD_SECRET            = 43,
+    rpcBAD_SEED              = 44,
+    rpcCHANNEL_MALFORMED     = 45,
+    rpcCHANNEL_AMT_MALFORMED = 46,
+    rpcCOMMAND_MISSING       = 47,
+    rpcDST_ACT_MALFORMED     = 48,
+    rpcDST_ACT_MISSING       = 49,
+    rpcDST_ACT_NOT_FOUND     = 50,
+    rpcDST_AMT_MALFORMED     = 51,
+    rpcDST_AMT_MISSING       = 52,
+    rpcDST_ISR_MALFORMED     = 53,
+    // unused                  54,
+    // unused                  55,
+    // unused                  56,
+    rpcLGR_IDXS_INVALID      = 57,
+    rpcLGR_IDX_MALFORMED     = 58,
+    // unused                  59,
+    // unused                  60,
+    // unused                  61,
+    rpcPUBLIC_MALFORMED      = 62,
+    rpcSIGNING_MALFORMED     = 63,
+    rpcSENDMAX_MALFORMED     = 64,
+    rpcSRC_ACT_MALFORMED     = 65,
+    rpcSRC_ACT_MISSING       = 66,
+    rpcSRC_ACT_NOT_FOUND     = 67,
+    // unused                  68,
+    rpcSRC_CUR_MALFORMED     = 69,
+    rpcSRC_ISR_MALFORMED     = 70,
+    rpcSTREAM_MALFORMED      = 71,
+    rpcATX_DEPRECATED        = 72,
 
     // Internal error (should never happen)
-    rpcINTERNAL,        // Generic internal error.
-    rpcNOT_IMPL,
-    rpcNOT_SUPPORTED,
+    rpcINTERNAL              = 73,  // Generic internal error.
+    rpcNOT_IMPL              = 74,
+    rpcNOT_SUPPORTED         = 75,
     rpcLAST = rpcNOT_SUPPORTED   // rpcLAST should always equal the last code.
 };
 
