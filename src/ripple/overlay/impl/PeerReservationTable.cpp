@@ -42,13 +42,13 @@ PeerReservationTable::load(DatabaseCon& connection)
     connection_ = &connection;
     auto db = connection_->checkoutDb();
 
-    boost::optional<std::string> valPubKey, valName;
+    boost::optional<std::string> valPubKey, valDesc;
     // REVIEWER: We should really abstract the table and column names into
     // constants, but no one else does. Because it is too tedious?
     soci::statement st =
-        (db->prepare << "SELECT PublicKey, Name FROM PeerReservations;",
+        (db->prepare << "SELECT PublicKey, Description FROM PeerReservations;",
          soci::into(valPubKey),
-         soci::into(valName));
+         soci::into(valDesc));
     st.execute();
     while (st.fetch())
     {
@@ -69,7 +69,7 @@ PeerReservationTable::load(DatabaseCon& connection)
             // TODO: Remove any invalid public keys?
         }
         auto const& nodeId = *optNodeId;
-        table_.emplace(nodeId, PeerReservation{nodeId, valName});
+        table_.emplace(nodeId, PeerReservation{nodeId, valDesc});
     }
 
     return true;
@@ -77,23 +77,23 @@ PeerReservationTable::load(DatabaseCon& connection)
 
 bool PeerReservationTable::upsert(
         PublicKey const& nodeId,
-        boost::optional<std::string> const& name
+        boost::optional<std::string> const& desc
 )
 {
-    auto emplaced = table_.emplace(nodeId, PeerReservation{nodeId, name});
+    auto emplaced = table_.emplace(nodeId, PeerReservation{nodeId, desc});
     if (!emplaced.second)
         // The node already has a reservation.
         // I think most people just want to overwrite existing reservations.
         // TODO: Make a formal team decision that we do not want to raise an
         // error upon a collision.
-        emplaced.first->second.name_ = name;
+        emplaced.first->second.description_ = desc;
 
     auto db = connection_->checkoutDb();
-    *db << "INSERT INTO PeerReservations (PublicKey, Name) "
-        "VALUES (:nodeId, :name) "
-        "ON CONFLICT (PublicKey) DO UPDATE SET Name=excluded.Name",
+    *db << "INSERT INTO PeerReservations (PublicKey, Description) "
+        "VALUES (:nodeId, :desc) "
+        "ON CONFLICT (PublicKey) DO UPDATE SET Description=excluded.Description",
         soci::use(toBase58(TokenType::NodePublic, nodeId)),
-        soci::use(name);
+        soci::use(desc);
 
     return emplaced.second;
 }

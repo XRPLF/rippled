@@ -185,6 +185,7 @@ JSS ( deposit_authorized );         // out: deposit_authorized
 JSS ( deposit_preauth );            // in: AccountObjects, LedgerData
 JSS ( deprecated );                 // out
 JSS ( descending );                 // in: AccountTx*
+JSS ( description );                // in/out: Reservations
 JSS ( destination_account );        // in: PathRequest, RipplePathFind, account_lines
                                     // out: AccountChannels
 JSS ( destination_amount );         // in: PathRequest, RipplePathFind
@@ -414,6 +415,7 @@ JSS ( refresh_interval_min );       // out: ValidatorSites
 JSS ( regular_seed );               // in/out: LedgerEntry
 JSS ( remote );                     // out: Logic.h
 JSS ( request );                    // RPC
+JSS ( reservations );               // out: Reservations
 JSS ( reserve_base );               // out: NetworkOPs
 JSS ( reserve_base_xrp );           // out: NetworkOPs
 JSS ( reserve_inc );                // out: NetworkOPs

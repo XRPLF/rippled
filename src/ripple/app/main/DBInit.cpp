@@ -135,7 +135,7 @@ const char* WalletDBInit[] =
     // REVIEWER: How do we handle table migrations if we need to add a column?
     "CREATE TABLE IF NOT EXISTS PeerReservations (     \
         PublicKey       CHARACTER(53) UNIQUE NOT NULL, \
-        Name            CHARACTER(32) NULL             \
+        Description     CHARACTER(64) NULL             \
     );",
 
     // Validator Manifests

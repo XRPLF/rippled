@@ -39,7 +39,7 @@ struct PeerReservation
 {
 public:
     PublicKey const nodeId_;
-    boost::optional<std::string> name_;
+    boost::optional<std::string> description_;
 };
 
 class PeerReservationTable {
@@ -98,7 +98,7 @@ public:
     // mechanism? Perhaps Boost.Outcome in anticipation of Herbceptions?
     bool upsert(
             PublicKey const& nodeId,
-            boost::optional<std::string> const& name
+            boost::optional<std::string> const& desc
     );
 
     /**

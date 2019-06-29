@@ -56,12 +56,12 @@ doReservationsAdd(RPC::Context& context)
 
     // Same for the pattern of "if field F is present, make sure it has type T
     // and get it".
-    boost::optional<std::string> name;
-    if (params.isMember(jss::name))
+    boost::optional<std::string> desc;
+    if (params.isMember(jss::description))
     {
-        if (!params[jss::name].isString())
-            return RPC::expected_field_error(jss::name, "a string");
-        name = params[jss::name].asString();
+        if (!params[jss::description].isString())
+            return RPC::expected_field_error(jss::description, "a string");
+        desc = params[jss::description].asString();
     }
 
     // channel_verify takes a key in both base58 and hex.
@@ -73,9 +73,9 @@ doReservationsAdd(RPC::Context& context)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& nodeId = *optPk;
 
-    bool const added = context.app.peerReservations().upsert(nodeId, name);
+    bool const added = context.app.peerReservations().upsert(nodeId, desc);
 
-    Json::Value result;
+    Json::Value result{Json::objectValue};
     // TODO: Should we indicate whether it was inserted or overwritten?
     return result;
 }
@@ -100,7 +100,7 @@ doReservationsDel(RPC::Context& context)
 
     context.app.peerReservations().erase(nodeId);
 
-    Json::Value result;
+    Json::Value result{Json::objectValue};
     // TODO: Should we indicate whether it existed before?
     return result;
 }
@@ -111,16 +111,16 @@ doReservationsList(RPC::Context& context)
     auto const& reservations = context.app.peerReservations();
     // Enumerate the reservations in context.app.peerReservations()
     // as a Json::Value.
-    Json::Value result;
-    Json::Value& jaReservations = (result["reservations"] = Json::arrayValue);
+    Json::Value result{Json::objectValue};
+    Json::Value& jaReservations = result[jss::reservations] = Json::arrayValue;
     for (auto const& pair : reservations)
     {
         auto const& reservation = pair.second;
         Json::Value jaReservation;
-        // TODO: Base58 encode the public key?
-        // jaReservation[jss::public_key] = reservation.identity_;
-        if (reservation.name_) {
-            jaReservation[jss::name] = *reservation.name_;
+        jaReservation[jss::public_key] =
+            toBase58(TokenType::NodePublic, reservation.nodeId_);
+        if (reservation.description_) {
+            jaReservation[jss::description] = *reservation.description_;
         }
         jaReservations.append(jaReservation);
     }

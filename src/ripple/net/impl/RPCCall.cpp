@@ -853,10 +853,10 @@ private:
     Json::Value parseReservationsAdd (Json::Value const& jvParams)
     {
         Json::Value jvRequest;
-        jvRequest["public_key"] = jvParams[0u].asString();
+        jvRequest[jss::public_key] = jvParams[0u].asString();
         if (jvParams.size() > 1)
         {
-            jvRequest["name"] = jvParams[1u].asString();
+            jvRequest[jss::description] = jvParams[1u].asString();
         }
         return jvRequest;
     }
@@ -865,7 +865,7 @@ private:
     Json::Value parseReservationsDel (Json::Value const& jvParams)
     {
         Json::Value jvRequest;
-        jvRequest["public_key"] = jvParams[0u].asString();
+        jvRequest[jss::public_key] = jvParams[0u].asString();
         return jvRequest;
     }
 
