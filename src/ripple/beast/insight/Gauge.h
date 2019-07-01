@@ -20,7 +20,6 @@
 #ifndef BEAST_INSIGHT_GAUGE_H_INCLUDED
 #define BEAST_INSIGHT_GAUGE_H_INCLUDED
 
-#include <ripple/beast/insight/Base.h>
 #include <ripple/beast/insight/GaugeImpl.h>
 
 #include <memory>
@@ -37,7 +36,7 @@ namespace insight {
     This is a lightweight reference wrapper which is cheap to copy and assign.
     When the last reference goes away, the metric is no longer collected.
 */
-class Gauge : public Base
+class Gauge final
 {
 public:
     using value_type = GaugeImpl::value_type;

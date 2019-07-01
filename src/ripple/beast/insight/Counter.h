@@ -20,7 +20,6 @@
 #ifndef BEAST_INSIGHT_COUNTER_H_INCLUDED
 #define BEAST_INSIGHT_COUNTER_H_INCLUDED
 
-#include <ripple/beast/insight/Base.h>
 #include <ripple/beast/insight/CounterImpl.h>
 
 #include <memory>
@@ -36,7 +35,7 @@ namespace insight {
     This is a lightweight reference wrapper which is cheap to copy and assign.
     When the last reference goes away, the metric is no longer collected.
 */
-class Counter : public Base
+class Counter final
 {
 public:
     using value_type = CounterImpl::value_type;
@@ -107,13 +106,6 @@ public:
     {
         increment (-1);
         return *this;
-    }
-    /** @} */
-
-    std::shared_ptr <CounterImpl> const&
-    impl () const
-    {
-        return m_impl;
     }
 
 private:

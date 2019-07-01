@@ -22,7 +22,6 @@
 
 #include <memory>
 
-#include <ripple/beast/insight/Base.h>
 #include <ripple/beast/insight/MeterImpl.h>
 
 namespace beast {
@@ -35,7 +34,7 @@ namespace insight {
     This is a lightweight reference wrapper which is cheap to copy and assign.
     When the last reference goes away, the metric is no longer collected.
 */
-class Meter : public Base
+class Meter final
 {
 public:
     using value_type = MeterImpl::value_type;
