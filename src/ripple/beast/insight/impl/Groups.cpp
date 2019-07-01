@@ -33,7 +33,6 @@ class GroupImp
     , public Group
 {
 public:
-    using Items = std::vector <std::shared_ptr <BaseImpl>>;
 
     std::string const m_name;
     Collector::ptr m_collector;

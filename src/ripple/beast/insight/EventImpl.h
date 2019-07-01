@@ -20,7 +20,8 @@
 #ifndef BEAST_INSIGHT_EVENTIMPL_H_INCLUDED
 #define BEAST_INSIGHT_EVENTIMPL_H_INCLUDED
 
-#include <ripple/beast/insight/BaseImpl.h>
+#include <chrono>
+#include <memory>
 
 namespace beast {
 namespace insight {
@@ -29,7 +30,6 @@ class Event;
 
 class EventImpl
     : public std::enable_shared_from_this <EventImpl>
-    , public BaseImpl
 {
 public:
     using value_type = std::chrono::milliseconds;
