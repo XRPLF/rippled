@@ -22,7 +22,7 @@
 
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/core/DatabaseCon.h>
-#include <ripple/json/forwards.h>
+#include <ripple/json/json_forwards.h>
 #include <ripple/protocol/PublicKey.h>
 
 #define SOCI_USE_BOOST
@@ -39,7 +39,7 @@ namespace ripple {
 struct PeerReservation
 {
 public:
-    PublicKey const nodeId_;
+    PublicKey nodeId_;
     boost::optional<std::string> description_;
 
     auto

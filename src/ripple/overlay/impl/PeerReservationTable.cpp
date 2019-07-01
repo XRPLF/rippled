@@ -34,10 +34,10 @@ auto
 PeerReservation::toJson() const -> Json::Value
 {
     Json::Value result{Json::objectValue};
-    result[jss::node] = toBase58(TokenType::PublicKey, nodeId_);
+    result[jss::node] = toBase58(TokenType::NodePublic, nodeId_);
     if (description_)
     {
-        result[jss::description] = description_;
+        result[jss::description] = *description_;
     }
     return result;
 }
@@ -126,7 +126,7 @@ PeerReservationTable::erase(PublicKey const& nodeId)
 {
     boost::optional<PeerReservation> previous;
 
-    auto it const = table_.find(nodeId);
+    auto const it = table_.find(nodeId);
     if (it != table_.end())
     {
         previous = it->second;
