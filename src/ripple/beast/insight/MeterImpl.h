@@ -20,7 +20,8 @@
 #ifndef BEAST_INSIGHT_METERIMPL_H_INCLUDED
 #define BEAST_INSIGHT_METERIMPL_H_INCLUDED
 
-#include <ripple/beast/insight/BaseImpl.h>
+#include <cstdint>
+#include <memory>
 
 namespace beast {
 namespace insight {
@@ -29,7 +30,6 @@ class Meter;
 
 class MeterImpl
     : public std::enable_shared_from_this <MeterImpl>
-    , public BaseImpl
 {
 public:
     using value_type = std::uint64_t;
