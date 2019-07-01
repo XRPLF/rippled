@@ -20,7 +20,6 @@
 #ifndef BEAST_INSIGHT_EVENT_H_INCLUDED
 #define BEAST_INSIGHT_EVENT_H_INCLUDED
 
-#include <ripple/beast/insight/Base.h>
 #include <ripple/beast/insight/EventImpl.h>
 
 #include <ripple/basics/date.h>
@@ -40,7 +39,7 @@ namespace insight {
     This is a lightweight reference wrapper which is cheap to copy and assign.
     When the last reference goes away, the metric is no longer collected.
 */
-class Event : public Base
+class Event final
 {
 public:
     using value_type = EventImpl::value_type;

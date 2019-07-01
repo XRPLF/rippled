@@ -20,7 +20,6 @@
 #ifndef BEAST_INSIGHT_HOOK_H_INCLUDED
 #define BEAST_INSIGHT_HOOK_H_INCLUDED
 
-#include <ripple/beast/insight/Base.h>
 #include <ripple/beast/insight/HookImpl.h>
 
 #include <memory>
@@ -29,7 +28,7 @@ namespace beast {
 namespace insight {
 
 /** A reference to a handler for performing polled collection. */
-class Hook : public Base
+class Hook final
 {
 public:
     /** Create a null hook.
