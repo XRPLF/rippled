@@ -1580,10 +1580,12 @@ void NetworkOPsImp::pubManifest (Manifest const& mo)
         jvObj [jss::type]             = "manifestReceived";
         jvObj [jss::master_key]       = toBase58(
             TokenType::NodePublic, mo.masterKey);
-        jvObj [jss::signing_key]      = toBase58(
-            TokenType::NodePublic, mo.signingKey);
+        if (!mo.signingKey.empty())
+            jvObj[jss::signing_key] =
+                toBase58(TokenType::NodePublic, mo.signingKey);
         jvObj [jss::seq]              = Json::UInt (mo.sequence);
-        jvObj [jss::signature]        = strHex (mo.getSignature ());
+        if (auto sig = mo.getSignature())
+            jvObj [jss::signature] = strHex (*sig);
         jvObj [jss::master_signature] = strHex (mo.getMasterSignature ());
 
         for (auto i = mStreamMaps[sManifests].begin ();

@@ -215,11 +215,13 @@ bool Manifest::revoked () const
     return sequence == std::numeric_limits<std::uint32_t>::max ();
 }
 
-Blob Manifest::getSignature () const
+boost::optional<Blob> Manifest::getSignature () const
 {
     STObject st (sfGeneric);
     SerialIter sit (serialized.data (), serialized.size ());
     st.set (sit);
+    if (!get(st, sfSignature))
+        return boost::none;
     return st.getFieldVL (sfSignature);
 }
 

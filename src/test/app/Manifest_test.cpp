@@ -383,7 +383,7 @@ public:
         ss.add32(HashPrefix::manifest);
         st.addWithoutSigningFields(ss);
         auto const sig = sign(KeyType::secp256k1, kp.second, ss.slice());
-        BEAST_EXPECT(strHex(sig) == strHex(m.getSignature()));
+        BEAST_EXPECT(strHex(sig) == strHex(*m.getSignature()));
 
         auto const masterSig = sign(KeyType::ed25519, sk, ss.slice());
         BEAST_EXPECT(strHex(masterSig) == strHex(m.getMasterSignature()));

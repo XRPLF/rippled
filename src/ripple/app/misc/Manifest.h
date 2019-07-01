@@ -108,7 +108,7 @@ struct Manifest
     bool revoked () const;
 
     /// Returns manifest signature
-    Blob getSignature () const;
+    boost::optional<Blob> getSignature () const;
 
     /// Returns manifest master key signature
     Blob getMasterSignature () const;
