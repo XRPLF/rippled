@@ -34,7 +34,7 @@ git archive --format tar.gz --prefix rippled/ -o ../rpmbuild/SOURCES/rippled.tar
 cd ..
 tar -zc --exclude-vcs -f ./rpmbuild/SOURCES/validator-keys.tar.gz validator-keys-tool/
 
-source /opt/rh/devtoolset-7/enable
+source /opt/rh/devtoolset-8/enable
 
 rpmbuild --define "_topdir ${PWD}/rpmbuild" -ba rippled.spec
 rc=$?; if [[ $rc != 0 ]]; then

@@ -30,5 +30,7 @@ COPY shared/update_sources.sh ./
 COPY shared/rippled.service /opt/rippled_bld/pkg/debian/
 
 COPY packaging/dpkg/build_dpkg.sh ./
+RUN update-alternatives --set gcc /usr/bin/gcc-8
+
 CMD ./build_dpkg.sh
 

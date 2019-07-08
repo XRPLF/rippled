@@ -40,6 +40,8 @@ CHANGELOG
 # PATH must be preserved for our more modern cmake in /opt/local
 # TODO : consider allowing lintian to run in future ?
 export DH_BUILD_DDEBS=1
+export CC=gcc-8
+export CXX=g++-8
 debuild --no-lintian --preserve-envvar PATH --preserve-env -us -uc
 rc=$?; if [[ $rc != 0 ]]; then
     error "error building dpkg"
