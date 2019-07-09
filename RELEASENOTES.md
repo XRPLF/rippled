@@ -14,6 +14,18 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 1.3.0
+The `rippled` 1.3.0 release introduces several new features and overall improvements to the codebase, including the `fixMasterKeyAsRegularKey` amendment, code to adjust the timing of the consensus process and support for decentralized validator domain verification. The release also includes miscellaneous improvements including in the transaction censorship detection code, transaction validation code, manifest parsing code, configuration file parsing code, log file rotation code, and in the build, continuous integration, testing and package building pipelines.
+
+**New and Updated Features**
+- The `fixMasterKeyAsRegularKey` amendment which, if enabled, will correct a technical flaw that allowed setting an account's regular key to the account's master key.
+- Code that allows validators to adjust the timing of the consensus process in near-real-time to account for connection delays.
+- Support for decentralized validator domain verification by adding support for a "domain" field in manifests.
+
+**Bug Fixes**
+- Improve ledger trie ancestry tracking to reduce unnecessary error messages.
+- More efficient detection of dry paths in the payment engine. Although not a transaction-breaking change, this should reduces spurious error messages in the log files.
+
 ## Version 1.2.4
 
 The `rippled` 1.2.4 release improves the way that shard crawl requests are routed and the robustness of configured validator list retrieval by imposing a 20 second timeout.
