@@ -19,6 +19,7 @@
 
 #include <ripple/overlay/PeerReservationTable.h>
 
+#include <ripple/basics/Log.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/PublicKey.h>
@@ -34,22 +35,20 @@ auto
 PeerReservation::toJson() const -> Json::Value
 {
     Json::Value result{Json::objectValue};
-    result[jss::node] = toBase58(TokenType::NodePublic, nodeId_);
-    if (description_)
+    result[jss::node] = toBase58(TokenType::NodePublic, nodeId);
+    if (description)
     {
-        result[jss::description] = *description_;
+        result[jss::description] = *description;
     }
     return result;
 }
 
 // See `ripple/app/main/DBInit.cpp` for the `CREATE TABLE` statement.
-// REVIEWER: It is unfortunate that we do not get to define a function for it.
+// It is unfortunate that we do not get to define a function for it.
 
-// REVIEWER: We choose a `bool` return type to fit in with the error handling
-// scheme of other functions called from `ApplicationImp::setup`, but we
-// always return "no error" (`true`) because we can always return an empty
-// table.
-
+// We choose a `bool` return type to fit in with the error handling scheme
+// of other functions called from `ApplicationImp::setup`, but we always
+// return "no error" (`true`) because we can always return an empty table.
 bool
 PeerReservationTable::load(DatabaseCon& connection)
 {
@@ -75,12 +74,7 @@ PeerReservationTable::load(DatabaseCon& connection)
             parseBase58<PublicKey>(TokenType::NodePublic, *valPubKey);
         if (!optNodeId)
         {
-            // REVIEWER: Does the call site filter the level?
-            // Where is the documentation for "how to use Journal"?
-            if (auto stream = journal_.warn())
-            {
-                stream << "load: not a public key: " << valPubKey;
-            }
+            JLOG(journal_.warn()) << "load: not a public key: " << valPubKey;
             // TODO: Remove any invalid public keys?
         }
         auto const& nodeId = *optNodeId;

@@ -21,7 +21,7 @@
 #define RIPPLE_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
 
 #include <ripple/beast/hash/uhash.h>
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/beast/utility/Journal.h>
 #include <ripple/json/json_forwards.h>
 #include <ripple/protocol/PublicKey.h>
 
@@ -34,13 +34,14 @@
 
 namespace ripple {
 
+class DatabaseCon;
+
 // Value type for reservations.
-// REVIEWER: What is the preferred naming convention for member variables?
 struct PeerReservation
 {
 public:
-    PublicKey nodeId_;
-    boost::optional<std::string> description_;
+    PublicKey nodeId;
+    boost::optional<std::string> description;
 
     auto
     toJson() const -> Json::Value;
@@ -51,25 +52,12 @@ class PeerReservationTable
 public:
     using table_type =
         std::unordered_map<PublicKey, PeerReservation, beast::uhash<>>;
-    using iterator = table_type::iterator;
     using const_iterator = table_type::const_iterator;
 
     explicit PeerReservationTable(
         beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
         : journal_(journal)
     {
-    }
-
-    table_type const&
-    table() const
-    {
-        return table_;
-    }
-
-    iterator
-    begin() noexcept
-    {
-        return table_.begin();
     }
 
     const_iterator
@@ -82,12 +70,6 @@ public:
     cbegin() const noexcept
     {
         return table_.cbegin();
-    }
-
-    iterator
-    end() noexcept
-    {
-        return table_.end();
     }
 
     const_iterator
@@ -115,10 +97,8 @@ public:
 
     /**
      * @return the replaced reservation if it existed
+     * @throw soci::soci_error
      */
-    // REVIEWER: Without taking any special effort, this function can throw
-    // because its dependencies can throw. Do we want to try a different error
-    // mechanism? Perhaps Boost.Outcome in anticipation of Herbceptions?
     auto
     upsert(PublicKey const& nodeId, boost::optional<std::string> const& desc)
         -> boost::optional<PeerReservation>;
@@ -131,8 +111,6 @@ public:
 
 private:
     beast::Journal mutable journal_;
-    // REVIEWER: What is the policy on forward declarations? We can use one
-    // for DatabaseCon.
     DatabaseCon* connection_;
     table_type table_;
 };

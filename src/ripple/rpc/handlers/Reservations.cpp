@@ -124,10 +124,10 @@ doReservationsList(RPC::Context& context)
         auto const& reservation = pair.second;
         Json::Value jaReservation;
         jaReservation[jss::public_key] =
-            toBase58(TokenType::NodePublic, reservation.nodeId_);
-        if (reservation.description_)
+            toBase58(TokenType::NodePublic, reservation.nodeId);
+        if (reservation.description)
         {
-            jaReservation[jss::description] = *reservation.description_;
+            jaReservation[jss::description] = *reservation.description;
         }
         jaReservations.append(jaReservation);
     }
