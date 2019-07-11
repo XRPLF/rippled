@@ -14,6 +14,9 @@ BUILD_TYPE=${BUILD_TYPE:-Debug}
 # the default by setting `$CMAKE_ARGS` to the empty string.
 CMAKE_ARGS=${CMAKE_ARGS-'-Dwerr=ON'}
 
+# https://gitlab.kitware.com/cmake/cmake/issues/18865
+CMAKE_ARGS="-DBoost_NO_BOOST_CMAKE=ON ${CMAKE_ARGS}"
+
 if [[ ${COMPILER} == 'gcc' ]]; then
   export CC='gcc'
   export CXX='g++'
