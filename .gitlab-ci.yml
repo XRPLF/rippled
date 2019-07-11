@@ -18,7 +18,7 @@
   tags:
     - linux
     - c5.2xlarge
-  image: thejohnfreeman/rippled-build-ubuntu:1bc7230e5b97
+  image: thejohnfreeman/rippled-build-ubuntu:4b73694e07f0
   script:
     - bin/ci/build.sh
     - bin/ci/test.sh
@@ -41,7 +41,7 @@
     COMPILER: gcc
     BUILD_TYPE: Debug
   cache:
-    key: ae412fb0-5fc8-4fd5-8e48-e3a60e91ed46
+    key: 62ada41c-fc9e-4949-9533-736d4d6512b6
     policy: pull-push
 
 'build+test Ninja GCC Debug':
@@ -51,7 +51,7 @@
     COMPILER: gcc
     BUILD_TYPE: Debug
   cache:
-    key: 3a314872-4faa-4712-b8ab-a8d54ac83342
+    key: 1665d3eb-6233-4eef-9f57-172636899faa
     policy: pull-push
 
 'build+test Ninja GCC Debug -Dstatic=OFF':
@@ -62,7 +62,7 @@
     BUILD_TYPE: Debug
     CMAKE_ARGS: '-Dstatic=OFF'
   cache:
-    key: 3a314872-4faa-4712-b8ab-a8d54ac83342
+    key: 1665d3eb-6233-4eef-9f57-172636899faa
 
 'build+test Ninja GCC Debug -Dstatic=OFF -DBUILD_SHARED_LIBS=ON':
   extends: .job_linux_build_test
@@ -72,7 +72,7 @@
     BUILD_TYPE: Debug
     CMAKE_ARGS: '-Dstatic=OFF -DBUILD_SHARED_LIBS=ON'
   cache:
-    key: 3a314872-4faa-4712-b8ab-a8d54ac83342
+    key: 1665d3eb-6233-4eef-9f57-172636899faa
 
 'build+test Ninja GCC Debug -Dunity=OFF':
   extends: .job_linux_build_test
@@ -82,7 +82,7 @@
     BUILD_TYPE: Debug
     CMAKE_ARGS: '-Dunity=OFF'
   cache:
-    key: 3a314872-4faa-4712-b8ab-a8d54ac83342
+    key: 1665d3eb-6233-4eef-9f57-172636899faa
 
 'build+test Ninja GCC Release -Dassert=ON':
   extends: .job_linux_build_test
@@ -92,7 +92,7 @@
     BUILD_TYPE: Release
     CMAKE_ARGS: '-Dassert=ON'
   cache:
-    key: ac5e7a8a-bfcb-4480-a3cc-07d0336f4408
+    key: c45ec125-9625-4c19-acf7-4e889d5f90bd
     policy: pull-push
 
 'build+test(manual) Ninja GCC Release -Dassert=ON':
@@ -104,7 +104,7 @@
     CMAKE_ARGS: '-Dassert=ON'
     MANUAL_TEST: 'true'
   cache:
-    key: ac5e7a8a-bfcb-4480-a3cc-07d0336f4408
+    key: c45ec125-9625-4c19-acf7-4e889d5f90bd
 
 'build+test Make clang Debug':
   extends: .job_linux_build_test
@@ -113,7 +113,7 @@
     COMPILER: clang
     BUILD_TYPE: Debug
   cache:
-    key: 09cec2ce-83f5-4ce9-8a3b-23737edefd4f
+    key: bf578dc2-5277-4580-8de5-6b9523118b19
     policy: pull-push
 
 'build+test Ninja clang Debug':
@@ -123,7 +123,7 @@
     COMPILER: clang
     BUILD_TYPE: Debug
   cache:
-    key: c6e29541-e539-4d57-86c5-57d923521f35
+    key: 762514c5-3d4c-4c7c-8da2-2df9d8839cbe
     policy: pull-push
 
 'build+test Ninja clang Debug -Dunity=OFF':
@@ -134,7 +134,7 @@
     BUILD_TYPE: Debug
     CMAKE_ARGS: '-Dunity=OFF'
   cache:
-    key: c6e29541-e539-4d57-86c5-57d923521f35
+    key: 762514c5-3d4c-4c7c-8da2-2df9d8839cbe
 
 'build+test Ninja clang Debug -Dunity=OFF -Dsan=address':
   extends: .job_linux_build_test
@@ -145,7 +145,7 @@
     CMAKE_ARGS: '-Dunity=OFF -Dsan=address'
     CONCURRENT_TESTS: 1
   cache:
-    key: c6e29541-e539-4d57-86c5-57d923521f35
+    key: 762514c5-3d4c-4c7c-8da2-2df9d8839cbe
 
 'build+test Ninja clang Debug -Dunity=OFF -Dsan=undefined':
   extends: .job_linux_build_test
@@ -155,7 +155,7 @@
     BUILD_TYPE: Debug
     CMAKE_ARGS: '-Dunity=OFF -Dsan=undefined'
   cache:
-    key: c6e29541-e539-4d57-86c5-57d923521f35
+    key: 762514c5-3d4c-4c7c-8da2-2df9d8839cbe
 
 'build+test Ninja clang Release -Dassert=ON':
   extends: .job_linux_build_test
@@ -165,5 +165,5 @@
     BUILD_TYPE: Release
     CMAKE_ARGS: '-Dassert=ON'
   cache:
-    key: 2e48f4d8-e0d7-4aa9-b646-499cef6c1a87
+    key: 7751be37-2358-4f08-b1d0-7e72e0ad266d
     policy: pull-push
