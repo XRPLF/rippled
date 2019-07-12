@@ -77,8 +77,7 @@ PeerReservationTable::load(DatabaseCon& connection)
             JLOG(journal_.warn()) << "load: not a public key: " << valPubKey;
             // TODO: Remove any invalid public keys?
         }
-        auto const& nodeId = *optNodeId;
-        table_.emplace(nodeId, PeerReservation{nodeId, valDesc});
+        table_.insert(PeerReservation{*optNodeId, valDesc});
     }
 
     return true;
@@ -90,18 +89,19 @@ PeerReservationTable::upsert(
     boost::optional<std::string> const& desc)
     -> boost::optional<PeerReservation>
 {
-    PeerReservation const rvn{nodeId, desc};
     boost::optional<PeerReservation> previous;
 
-    auto emplaced = table_.emplace(nodeId, rvn);
-    if (!emplaced.second)
+    // TODO: When C++17 arrives, replace with a structured binding to better
+    // variable names.
+    auto inserted = table_.insert(PeerReservation{nodeId, desc});
+    if (!inserted.second)
     {
-        // The node already has a reservation.
-        // I think most people just want to overwrite existing reservations.
-        // TODO: Make a formal team decision that we do not want to raise an
-        // error upon a collision.
-        previous = emplaced.first->second;
-        emplaced.first->second = rvn;
+        // The node already has a reservation. Overwrite its description.
+        // `std::unordered_set` does not have an `upsert` method, and sadly
+        // makes it impossible for us to implement one efficiently:
+        // https://stackoverflow.com/q/49651835/618906
+        previous = *inserted.first;
+        inserted.first->description = desc;
     }
 
     auto db = connection_->checkoutDb();
@@ -120,10 +120,10 @@ PeerReservationTable::erase(PublicKey const& nodeId)
 {
     boost::optional<PeerReservation> previous;
 
-    auto const it = table_.find(nodeId);
+    auto const it = table_.find({nodeId});
     if (it != table_.end())
     {
-        previous = it->second;
+        previous = *it;
         table_.erase(it);
         auto db = connection_->checkoutDb();
         *db << "DELETE FROM PeerReservations WHERE PublicKey = :nodeId",

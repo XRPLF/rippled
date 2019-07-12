@@ -21,6 +21,7 @@
 #define RIPPLE_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
 
 #include <ripple/beast/hash/uhash.h>
+#include <ripple/beast/hash/hash_append.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/json/json_forwards.h>
 #include <ripple/protocol/PublicKey.h>
@@ -30,7 +31,7 @@
 #include <soci/soci.h>
 
 #include <string>
-#include <unordered_map>
+#include <unordered_set>
 
 namespace ripple {
 
@@ -41,17 +42,35 @@ struct PeerReservation
 {
 public:
     PublicKey nodeId;
-    boost::optional<std::string> description;
+    mutable boost::optional<std::string> description;
 
     auto
     toJson() const -> Json::Value;
+
+    template <typename Hasher>
+    friend void hash_append(Hasher& h, PeerReservation const& x) noexcept
+    {
+        using beast::hash_append;
+        hash_append(h, x.nodeId);
+    }
+};
+
+// TODO: When C++20 arrives, take advantage of "equivalence" instead of
+// "equality". Add an overload for `(PublicKey, PeerReservation)`, and just
+// pass a `PublicKey` directly to `unordered_set.find`.
+struct KeyEqual {
+    bool operator() (
+            PeerReservation const& lhs, PeerReservation const& rhs) const
+    {
+        return lhs.nodeId == rhs.nodeId;
+    }
 };
 
 class PeerReservationTable
 {
 public:
-    using table_type =
-        std::unordered_map<PublicKey, PeerReservation, beast::uhash<>>;
+    using table_type = std::unordered_set<
+        PeerReservation, beast::uhash<>, KeyEqual>;
     using const_iterator = table_type::const_iterator;
 
     explicit PeerReservationTable(
@@ -87,7 +106,7 @@ public:
     bool
     contains(PublicKey const& nodeId)
     {
-        return table_.find(nodeId) != table_.end();
+        return table_.find({nodeId}) != table_.end();
     }
 
     // Because `ApplicationImp` has two-phase initialization, so must we.

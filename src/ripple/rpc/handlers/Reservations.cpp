@@ -119,9 +119,8 @@ doReservationsList(RPC::Context& context)
     // as a Json::Value.
     Json::Value result{Json::objectValue};
     Json::Value& jaReservations = result[jss::reservations] = Json::arrayValue;
-    for (auto const& pair : reservations)
+    for (auto const& reservation : reservations)
     {
-        auto const& reservation = pair.second;
         Json::Value jaReservation;
         jaReservation[jss::public_key] =
             toBase58(TokenType::NodePublic, reservation.nodeId);
