@@ -1,12 +1,15 @@
 # Set environment variables.
 environment:
 
-  # We bundle up protoc.exe and only the parts of boost and openssl we need so
+  # We bundle up only the parts of boost and openssl we need so
   # that it's a small download. We also use appveyor's free cache, avoiding fees
   # downloading from S3 each time.
   # TODO: script to create this package.
-  RIPPLED_DEPS_PATH: rippled_deps17.04
-  RIPPLED_DEPS_URL: https://ripple.github.io/Downloads/appveyor/%RIPPLED_DEPS_PATH%.zip
+  RIPPLED_DEPS_PATH: rippled_deps17.05
+  RIPPLED_DEPS_BASE_URL: https://ripple.github.io/Downloads/appveyor
+  RIPPLED_OPENSSL: rippled_deps.openssl.1.0.2j.zip
+  RIPPLED_BOOST: rippled_deps.boost.1.70.zip
+  RIPPLED_BOOST_STAGE: rippled_deps.boost.stage.1.70.zip
 
   # CMake honors these environment variables, setting the include/lib paths.
   BOOST_ROOT: C:/%RIPPLED_DEPS_PATH%/boost
@@ -36,25 +39,34 @@ cache:
 shallow_clone: true
 
 install:
-  # We want  protoc.exe on PATH.
-  - SET PATH=C:/%RIPPLED_DEPS_PATH%;%PATH%
-
   # Download dependencies if appveyor didn't restore them from the cache.
   # Use 7zip to unzip.
   - ps: |
-        if (-not(Test-Path 'C:/$env:RIPPLED_DEPS_PATH')) {
-            echo "Download from $env:RIPPLED_DEPS_URL"
-            Start-FileDownload "$env:RIPPLED_DEPS_URL"
-            7z x "$($env:RIPPLED_DEPS_PATH).zip" -oC:\ -y > $null
-            if ($LastExitCode -ne 0) { throw "7z failed" }
+        if (-not(Test-Path "C:/$env:RIPPLED_DEPS_PATH")) {
+            $files = @(
+              "$env:RIPPLED_BOOST",
+              "$env:RIPPLED_BOOST_STAGE",
+              "$env:RIPPLED_OPENSSL"
+              )
+            For ($i=0; $i -lt $files.Length; $i++) {
+                $file = $files[$i]
+                $url = "$env:RIPPLED_DEPS_BASE_URL/$file"
+                echo "Download $file from $url"
+                Start-FileDownload "$url"
+                7z x "$file" -o"C:\$env:RIPPLED_DEPS_PATH" -y > $null
+                if ($LastExitCode -ne 0) { throw "7z failed" }
+            }
+        }
+        else
+        {
+            "Dependencies are in cache"
+            ls "C:/$env:RIPPLED_DEPS_PATH"
         }
 
   # Newer DEPS include a versions file.
   # Dump it so we can verify correct behavior.
   - ps: |
-        if (Test-Path "C:/$env:RIPPLED_DEPS_PATH/versions.txt") {
-          cat "C:/$env:RIPPLED_DEPS_PATH/versions.txt"
-        }
+        cat "C:/$env:RIPPLED_DEPS_PATH/version*.txt"
 
 # TODO: This is giving me grief
 # artifacts:
