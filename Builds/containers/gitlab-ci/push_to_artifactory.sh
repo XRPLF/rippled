@@ -31,10 +31,10 @@ for deb in ${RIPPLED_PKG} ${RIPPLED_DEV_PKG} ${RIPPLED_DBG_PKG} ; do
     echo "\"${deb}\"": | tee -a "${TOPDIR}/files.info"
     ca="${CURLARGS}"
     if [ "${action}" = "PUT" ] ; then
-        url="https://${ARTIFACTORY_HOST}/artifactory/${DEB_REPO}/pool/${deb}${DEB_MATRIX}"
+        url="https://${ARTIFACTORY_HOST}/artifactory/${DEB_REPO}/pool/${COMPONENT}/${deb}${DEB_MATRIX}"
         ca="${ca} -T${deb}"
     elif [ "${action}" = "GET" ] ; then
-        url="https://${ARTIFACTORY_HOST}/artifactory/api/storage/${DEB_REPO}/pool/${deb}"
+        url="https://${ARTIFACTORY_HOST}/artifactory/api/storage/${DEB_REPO}/pool/${COMPONENT}/${deb}"
     fi
     echo "file info request url --> ${url}"
     eval "curl ${ca} \"${url}\"" | jq -M "${filter}" | tee -a "${TOPDIR}/files.info"

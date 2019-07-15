@@ -17,9 +17,6 @@ variables:
   # also need to define this variable ONLY for the primary
   # build/publish pipeline on the mainline repo:
   #   IS_PRIMARY_REPO = "true"
-  # and if you want to pause for manual approval before
-  # pushing to pkg repos:
-  #   REQUIRE_APPROVAL = "true"
 
 stages:
   - build_containers
@@ -42,7 +39,9 @@ stages:
   image:
     name: docker:latest
   services:
-    - docker:dind
+    # workaround for TLS issues - consider going back
+    # back to unversioned `dind` when issues are resolved
+    - docker:18-dind
   tags:
     - docker-4xlarge
 
@@ -52,16 +51,6 @@ stages:
       - /^(master|release|develop)$/
     variables:
       - $IS_PRIMARY_REPO == "true"
-
-.only_primary_manual_template: &only_primary_manual
-  only:
-    refs:
-      - /^(master|release|develop)$/
-    variables:
-      - $IS_PRIMARY_REPO == "true"
-      - $REQUIRE_APPROVAL == "true"
-  when: manual
-  allow_failure: false
 
 .smoketest_local_template: &run_local_smoketest
   tags:
@@ -253,7 +242,9 @@ tag_bld_images:
   image:
     name: docker:latest
   services:
-    - docker:dind
+    # workaround for TLS issues - consider going back
+    # back to unversioned `dind` when issues are resolved
+    - docker:18-dind
   tags:
     - docker-large
   dependencies:
@@ -396,17 +387,18 @@ debian_9_verify_repo_test:
 ##                                                                     ##
 ##  wait for manual approval before proceeding to next stage           ##
 ##  which pushes to prod repo.                                         ##
-##  ONLY RUNS FOR PRIMARY BRANCHES/REPO and when                       ##
-##  REQUIRE_APPROVAL is set to true.                                   ##
+##  ONLY RUNS FOR PRIMARY BRANCHES/REPO                                ##
 ##                                                                     ##
 #########################################################################
 wait_before_push_prod:
   stage: wait_approval_prod
   image:
     name: alpine:latest
-  <<: *only_primary_manual
+  <<: *only_primary
   script:
     - echo "proceeding to next stage"
+  when: manual
+  allow_failure: false
 
 #########################################################################
 ##                                                                     ##
