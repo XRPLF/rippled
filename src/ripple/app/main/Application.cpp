@@ -53,6 +53,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/make_Overlay.h>
+#include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/Protocol.h>
@@ -1157,9 +1158,6 @@ private:
 //
 bool ApplicationImp::setup()
 {
-    // VFALCO NOTE: 0 means use heuristics to determine the thread count.
-    m_jobQueue->setThreadCount (config_->WORKERS, config_->standalone());
-
     // We want to intercept and wait for CTRL-C to terminate the process
     m_signals.add (SIGINT);
 
@@ -1182,8 +1180,13 @@ bool ApplicationImp::setup()
         if (logs_->threshold() > kDebug)
             logs_->threshold (kDebug);
     }
+    JLOG(m_journal.info()) << "process starting: "
+        << BuildInfo::getFullVersionString();
 
+    // Optionally turn off logging to console.
     logs_->silent (config_->silent());
+
+    m_jobQueue->setThreadCount (config_->WORKERS, config_->standalone());
 
     if (!config_->standalone())
         timeKeeper_->run(config_->SNTP_SERVERS);
