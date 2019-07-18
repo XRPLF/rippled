@@ -134,11 +134,15 @@ void LoadManager::run ()
                         << timeSpentDeadlocked.count() << " seconds.";
                 }
 
-                // If we go over 500 seconds spent deadlocked, it means that
+                // If we go over 90 seconds spent deadlocked, it means that
                 // the deadlock resolution code has failed, which qualifies
                 // as undefined behavior.
                 //
-                assert (timeSpentDeadlocked < 500s);
+                constexpr auto deadlockTimeLimit = 90s;
+                assert (timeSpentDeadlocked < deadlockTimeLimit);
+
+                if (timeSpentDeadlocked >= deadlockTimeLimit)
+                    LogicError("Deadlock detected");
             }
         }
 
