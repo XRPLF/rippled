@@ -99,7 +99,7 @@ public:
     BatchWriter m_batch;
     std::string m_name;
     std::unique_ptr <rocksdb::DB> m_db;
-    int fdlimit_ = 2048;
+    int fdRequired_ = 2048;
     rocksdb::Options m_options;
 
     RocksDBBackend (int keyBytes, Section const& keyValues,
@@ -128,7 +128,7 @@ public:
         }
 
         if (get_if_exists (keyValues, "open_files", m_options.max_open_files))
-            fdlimit_ = m_options.max_open_files;
+            fdRequired_ = m_options.max_open_files;
 
         if (keyValues.exists ("file_size_mb"))
         {
@@ -405,11 +405,11 @@ public:
     {
     }
 
-    /** Returns the number of file handles the backend expects to need */
+    /** Returns the number of file descriptors the backend expects to need */
     int
-    fdlimit() const override
+    fdRequired() const override
     {
-        return fdlimit_;
+        return fdRequired_;
     }
 };
 

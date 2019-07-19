@@ -582,7 +582,7 @@ public:
     void signalStop() override;
     bool checkSigs() const override;
     void checkSigs(bool) override;
-    int fdlimit () const override;
+    int fdRequired() const override;
 
     //--------------------------------------------------------------------------
 
@@ -858,12 +858,12 @@ public:
             // transaction database
             mTxnDB = std::make_unique <DatabaseCon>(
                 setup,
-                TxnDBName,
-                TxnDBInit,
-                TxnDBCount);
+                TxDBName,
+                TxDBPragma,
+                TxDBInit);
             mTxnDB->getSession() <<
                 boost::str(boost::format("PRAGMA cache_size=-%d;") %
-                (config_->getSize(siTxnDBCache) * kilobytes(1)));
+                kilobytes(config_->getSize(siTxnDBCache)));
             mTxnDB->setupCheckpointing(m_jobQueue.get(), logs());
 
             if (!setup.standAlone ||
@@ -900,20 +900,20 @@ public:
             // ledger database
             mLedgerDB = std::make_unique <DatabaseCon>(
                 setup,
-                LedgerDBName,
-                LedgerDBInit,
-                LedgerDBCount);
+                LgrDBName,
+                LgrDBPragma,
+                LgrDBInit);
             mLedgerDB->getSession() <<
                 boost::str(boost::format("PRAGMA cache_size=-%d;") %
-                (config_->getSize(siLgrDBCache) * kilobytes(1)));
+                kilobytes(config_->getSize(siLgrDBCache)));
             mLedgerDB->setupCheckpointing(m_jobQueue.get(), logs());
 
             // wallet database
             mWalletDB = std::make_unique <DatabaseCon>(
                 setup,
                 WalletDBName,
-                WalletDBInit,
-                WalletDBCount);
+                std::array<char const*, 0>(),
+                WalletDBInit);
         }
         catch (std::exception const& e)
         {
@@ -963,11 +963,8 @@ public:
         family().treecache().setTargetAge(
             seconds{config_->getSize(siTreeCacheAge)});
 
-        if (shardStore_)
+        if (sFamily_)
         {
-            shardStore_->tune(
-                config_->getSize(siNodeCacheSize),
-                seconds{config_->getSize(siNodeCacheAge)});
             sFamily_->treecache().setTargetSize(
                 config_->getSize(siTreeCacheSize));
             sFamily_->treecache().setTargetAge(
@@ -1174,9 +1171,10 @@ public:
             }
 
             DatabaseCon::Setup dbSetup = setup_DatabaseCon(*config_);
-            boost::filesystem::path dbPath = dbSetup.dataDir / TxnDBName;
+            boost::filesystem::path dbPath = dbSetup.dataDir / TxDBName;
             boost::system::error_code ec;
-            boost::optional<std::uint64_t> dbSize = boost::filesystem::file_size(dbPath, ec);
+            boost::optional<std::uint64_t> dbSize =
+                boost::filesystem::file_size(dbPath, ec);
             if (ec)
             {
                 JLOG(m_journal.error())
@@ -1632,7 +1630,7 @@ void ApplicationImp::checkSigs(bool check)
     checkSigs_ = check;
 }
 
-int ApplicationImp::fdlimit() const
+int ApplicationImp::fdRequired() const
 {
     // Standard handles, config file, misc I/O etc:
     int needed = 128;
@@ -1642,10 +1640,10 @@ int ApplicationImp::fdlimit() const
 
     // the number of fds needed by the backend (internally
     // doubled if online delete is enabled).
-    needed += std::max(5, m_shaMapStore->fdlimit());
+    needed += std::max(5, m_shaMapStore->fdRequired());
 
     if (shardStore_)
-        needed += shardStore_->fdlimit();
+        needed += shardStore_->fdRequired();
 
     // One fd per incoming connection a port can accept, or
     // if no limit is set, assume it'll handle 256 clients.

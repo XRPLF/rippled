@@ -227,7 +227,11 @@ public:
         {
             DatabaseCon::Setup setup;
             setup.dataDir = getDatabasePath ();
-            DatabaseCon dbCon(setup, dbName, WalletDBInit, WalletDBCount);
+            DatabaseCon dbCon(
+                setup,
+                dbName.data(),
+                std::array<char const*, 0>(),
+                WalletDBInit);
 
             auto getPopulatedManifests =
                 [](ManifestCache const& cache) -> std::vector<Manifest const*>

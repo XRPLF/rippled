@@ -157,7 +157,7 @@ public:
     getCacheHitRate() override;
 
     void
-    tune(int size, std::chrono::seconds age) override;
+    tune(int size, std::chrono::seconds age) override {};
 
     void
     sweep() override;
@@ -194,11 +194,11 @@ private:
     // The name associated with the backend used with the shard store
     std::string backendName_;
 
-    // Maximum disk space the DB can use (in bytes)
-    std::uint64_t maxDiskSpace_;
+    // Maximum storage space the shard store can utilize (in bytes)
+    std::uint64_t maxFileSz_;
 
-    // Disk space used to store the shards (in bytes)
-    std::uint64_t usedDiskSpace_ {0};
+    // Storage space utilized by the shard store (in bytes)
+    std::uint64_t fileSz_ {0};
 
     // Each shard stores 16384 ledgers. The earliest shard may store
     // less if the earliest ledger sequence truncates its beginning.
@@ -208,16 +208,12 @@ private:
     // The earliest shard index
     std::uint32_t const earliestShardIndex_;
 
-    // Average disk space a shard requires (in bytes)
-    std::uint64_t avgShardSz_;
-
-    // Shard cache tuning
-    int cacheSz_ {shardCacheSz};
-    std::chrono::seconds cacheAge_ {shardCacheAge};
+    // Average storage space required by a shard (in bytes)
+    std::uint64_t avgShardFileSz_;
 
     // File name used to mark shards being imported from node store
     static constexpr auto importMarker_ = "import";
-    
+
     std::shared_ptr<NodeObject>
     fetchFrom(uint256 const& hash, std::uint32_t seq) override;
 
@@ -233,22 +229,18 @@ private:
     findShardIndexToAdd(std::uint32_t validLedgerSeq,
         std::lock_guard<std::mutex>&);
 
-    // Updates stats
+    // Set storage and file descriptor usage stats
     // Lock must be held
     void
-    updateStats(std::lock_guard<std::mutex>&);
+    setFileStats(std::lock_guard<std::mutex>&);
+
+    // Update status string
+    // Lock must be held
+    void
+    updateStatus(std::lock_guard<std::mutex>&);
 
     std::pair<std::shared_ptr<PCache>, std::shared_ptr<NCache>>
     selectCache(std::uint32_t seq);
-
-    // Returns the tune cache size divided by the number of shards
-    // Lock must be held
-    int
-    calcTargetCacheSz(std::lock_guard<std::mutex>&) const
-    {
-        return std::max(shardCacheSz, cacheSz_ / std::max(
-            1, static_cast<int>(complete_.size() + (incomplete_ ? 1 : 0))));
-    }
 
     // Returns available storage space
     std::uint64_t

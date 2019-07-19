@@ -98,9 +98,9 @@ public:
     {
     }
 
-    /** Returns the number of file handles the backend expects to need */
+    /** Returns the number of file descriptors the backend expects to need */
     int
-    fdlimit() const override
+    fdRequired() const override
     {
         return 0;
     }

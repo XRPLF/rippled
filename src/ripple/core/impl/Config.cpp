@@ -559,42 +559,6 @@ void Config::loadFromString (std::string const& fileContents)
     }
 }
 
-int Config::getSize (SizedItemName item) const
-{
-    SizedItem sizeTable[] =   //    tiny    small   medium  large       huge
-    {
-
-        { siSweepInterval,      {   10,     30,     60,     90,         120     } },
-
-        { siLedgerFetch,        {   2,      3,      5,      5,          8       } },
-
-        { siNodeCacheSize,      {   16384,  32768,  131072, 262144,     524288  } },
-        { siNodeCacheAge,       {   60,     90,     120,    900,        1800    } },
-
-        { siTreeCacheSize,      {   128000, 256000, 512000, 768000,     2048000 } },
-        { siTreeCacheAge,       {   30,     60,     90,     120,        900     } },
-
-        { siSLECacheSize,       {   4096,   8192,   16384,  65536,      131072  } },
-        { siSLECacheAge,        {   30,     60,     90,     120,        300     } },
-
-        { siLedgerSize,         {   32,     128,    256,    384,        768     } },
-        { siLedgerAge,          {   30,     90,     180,    240,        900     } },
-
-        { siHashNodeDBCache,    {   4,      12,     24,     64,         128     } },
-        { siTxnDBCache,         {   4,      12,     24,     64,         128     } },
-        { siLgrDBCache,         {   4,      8,      16,     32,         128     } },
-    };
-
-    for (int i = 0; i < (sizeof (sizeTable) / sizeof (SizedItem)); ++i)
-    {
-        if (sizeTable[i].item == item)
-            return sizeTable[i].sizes[NODE_SIZE];
-    }
-
-    assert (false);
-    return -1;
-}
-
 boost::filesystem::path Config::getDebugLogFile () const
 {
     auto log_file = DEBUG_LOGFILE;

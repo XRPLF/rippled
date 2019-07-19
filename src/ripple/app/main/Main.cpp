@@ -489,9 +489,12 @@ int run (int argc, char** argv)
             std::cerr << "vacuum not applicable in standalone mode.\n";
             return -1;
         }
-        boost::filesystem::path dbPath = dbSetup.dataDir / TxnDBName;
-        auto txnDB = std::make_unique<DatabaseCon> (dbSetup, TxnDBName,
-            TxnDBInit, TxnDBCount);
+        boost::filesystem::path dbPath = dbSetup.dataDir / TxDBName;
+        auto txnDB = std::make_unique<DatabaseCon>(
+            dbSetup,
+            TxDBName,
+            TxDBPragma,
+            TxDBInit);
         if (txnDB.get() == nullptr)
         {
             std::cerr << "Cannot create connection to " << dbPath.string() <<
@@ -711,7 +714,7 @@ int run (int argc, char** argv)
         // With our configuration parsed, ensure we have
         // enough file descriptors available:
         if (!adjustDescriptorLimit(
-            app->fdlimit(),
+            app->fdRequired(),
             app->logs().journal("Application")))
         {
             StopSustain();

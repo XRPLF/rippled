@@ -62,8 +62,8 @@ public:
     /** Highest ledger that may be deleted. */
     virtual LedgerIndex getCanDelete() = 0;
 
-    /** The number of files that are needed. */
-    virtual int fdlimit() const = 0;
+    /** Returns the number of file descriptors that are needed. */
+    virtual int fdRequired() const = 0;
 };
 
 //------------------------------------------------------------------------------

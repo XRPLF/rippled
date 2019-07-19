@@ -112,14 +112,14 @@ public:
     /** Perform consistency checks on database. */
     virtual void verify() = 0;
 
-    /** Returns the number of file handles the backend expects to need. */
-    virtual int fdlimit() const = 0;
+    /** Returns the number of file descriptors the backend expects to need. */
+    virtual int fdRequired() const = 0;
 
     /** Returns true if the backend uses permanent storage. */
     bool
     backed() const
     {
-        return fdlimit();
+        return fdRequired();
     }
 };
 

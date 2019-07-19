@@ -2086,7 +2086,6 @@ else ()
     src/ripple/app/main/Application.cpp
     src/ripple/app/main/BasicApp.cpp
     src/ripple/app/main/CollectorManager.cpp
-    src/ripple/app/main/DBInit.cpp
     src/ripple/app/main/LoadManager.cpp
     src/ripple/app/main/Main.cpp
     src/ripple/app/main/NodeIdentity.cpp

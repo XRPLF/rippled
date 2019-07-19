@@ -42,9 +42,9 @@ DatabaseRotatingImp::DatabaseRotatingImp(
     , archiveBackend_(std::move(archiveBackend))
 {
     if (writableBackend_)
-        fdLimit_ += writableBackend_->fdlimit();
+        fdRequired_ += writableBackend_->fdRequired();
     if (archiveBackend_)
-        fdLimit_ += archiveBackend_->fdlimit();
+        fdRequired_ += archiveBackend_->fdRequired();
     setParent(parent);
 }
 

@@ -25,38 +25,6 @@
 
 namespace ripple {
 
-DatabaseCon::DatabaseCon (
-    Setup const& setup,
-    std::string const& strName,
-    const char* initStrings[],
-    int initCount)
-{
-    auto const useTempFiles  // Use temporary files or regular DB files?
-        = setup.standAlone &&
-          setup.startUp != Config::LOAD &&
-          setup.startUp != Config::LOAD_FILE &&
-          setup.startUp != Config::REPLAY;
-    boost::filesystem::path pPath = useTempFiles
-        ? "" : (setup.dataDir / strName);
-
-    open (session_, "sqlite", pPath.string());
-
-    for (int i = 0; i < initCount; ++i)
-    {
-        try
-        {
-            soci::statement st = session_.prepare <<
-                initStrings[i];
-            st.execute(true);
-        }
-        catch (soci::soci_error&)
-        {
-            // TODO: We should at least log this error. It is annoying to wire
-            // a logger into every context, but there are other solutions.
-        }
-    }
-}
-
 DatabaseCon::Setup setup_DatabaseCon (Config const& c)
 {
     DatabaseCon::Setup setup;

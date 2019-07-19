@@ -20,12 +20,12 @@
 #ifndef RIPPLE_APP_DATA_DATABASECON_H_INCLUDED
 #define RIPPLE_APP_DATA_DATABASECON_H_INCLUDED
 
+#include <ripple/app/main/DBInit.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/SociDB.h>
 #include <boost/filesystem/path.hpp>
 #include <mutex>
 #include <string>
-
 
 namespace soci {
     class session;
@@ -86,10 +86,43 @@ public:
         boost::filesystem::path dataDir;
     };
 
-    DatabaseCon (Setup const& setup,
-                 std::string const& name,
-                 const char* initString[],
-                 int countInit);
+    template<std::size_t N, std::size_t M>
+    DatabaseCon(
+        Setup const& setup,
+        std::string const& DBName,
+        std::array<char const*, N> const& pragma,
+        std::array<char const*, M> const& initSQL)
+    {
+        // Use temporary files or regular DB files?
+        auto const useTempFiles =
+            setup.standAlone &&
+            setup.startUp != Config::LOAD &&
+            setup.startUp != Config::LOAD_FILE &&
+            setup.startUp != Config::REPLAY;
+        boost::filesystem::path pPath =
+            useTempFiles ? "" : (setup.dataDir / DBName);
+
+        open(session_, "sqlite", pPath.string());
+
+        try
+        {
+            for (auto const& p : pragma)
+            {
+                soci::statement st = session_.prepare << p;
+                st.execute(true);
+            }
+            for (auto const& sql : initSQL)
+            {
+                soci::statement st = session_.prepare << sql;
+                st.execute(true);
+            }
+        }
+        catch (soci::soci_error&)
+        {
+            // TODO: We should at least log this error. It is annoying to wire
+            // a logger into every context, but there are other solutions.
+        }
+    }
 
     soci::session& getSession()
     {
