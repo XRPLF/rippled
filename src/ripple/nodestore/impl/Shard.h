@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/RangeSet.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/nodestore/Scheduler.h>
 
@@ -66,14 +67,17 @@ class DatabaseShard;
 class Shard
 {
 public:
-    Shard(DatabaseShard const& db, std::uint32_t index, int cacheSz,
-        std::chrono::seconds cacheAge, beast::Journal& j);
+    Shard(
+        Application& app,
+        DatabaseShard const& db,
+        std::uint32_t index,
+        beast::Journal& j);
 
     bool
-    open(Section config, Scheduler& scheduler, nudb::context& ctx);
+    open(Scheduler& scheduler, nudb::context& ctx);
 
     bool
-    setStored(std::shared_ptr<Ledger const> const& l);
+    setStored(std::shared_ptr<Ledger const> const& ledger);
 
     boost::optional<std::uint32_t>
     prepare();
@@ -81,40 +85,35 @@ public:
     bool
     contains(std::uint32_t seq) const;
 
+    void
+    sweep();
+
     bool
-    validate(Application& app);
+    validate();
 
     std::uint32_t
     index() const {return index_;}
 
     bool
-    complete() const {return complete_;}
+    complete() const {assert(backend_); return complete_;}
 
     std::shared_ptr<PCache>&
-    pCache() {return pCache_;}
+    pCache() {assert(backend_); return pCache_;}
 
     std::shared_ptr<NCache>&
-    nCache() {return nCache_;}
+    nCache() {assert(backend_); return nCache_;}
 
     std::uint64_t
-    fileSize() const {return fileSize_;}
-
-    std::shared_ptr<Backend> const&
-    getBackend() const
-    {
-        assert(backend_);
-        return backend_;
-    }
+    fileSize() const {assert(backend_); return fileSz_;}
 
     std::uint32_t
-    fdlimit() const
-    {
-        assert(backend_);
-        return backend_->fdlimit();
-    }
+    fdRequired() const {assert(backend_); return fdRequired_;}
+
+    std::shared_ptr<Backend> const&
+    getBackend() const {assert(backend_); return backend_;}
 
     std::shared_ptr<Ledger const>
-    lastStored() {return lastStored_;}
+    lastStored() {assert(backend_); return lastStored_;}
 
 private:
     friend class boost::serialization::access;
@@ -125,6 +124,8 @@ private:
     }
 
     static constexpr auto controlFileName = "control.txt";
+
+    Application& app_;
 
     // Shard Index
     std::uint32_t const index_;
@@ -152,11 +153,20 @@ private:
     // Path to control file
     boost::filesystem::path const control_;
 
-    // Disk space utilized by the shard
-    std::uint64_t fileSize_ {0};
+    // Storage space utilized by the shard
+    std::uint64_t fileSz_;
+
+    // Number of file descriptors required by the shard
+    std::uint32_t fdRequired_;
 
     // NuDB key/value store for node objects
     std::shared_ptr<Backend> backend_;
+
+    // Ledger SQLite database used for indexes
+    std::unique_ptr<DatabaseCon> lgrSQLiteDB_;
+
+    // Transaction SQLite database used for indexes
+    std::unique_ptr<DatabaseCon> txSQLiteDB_;
 
     beast::Journal j_;
 
@@ -172,7 +182,7 @@ private:
     // Validate this ledger by walking its SHAMaps
     // and verifying each merkle tree
     bool
-    valLedger(std::shared_ptr<Ledger const> const& l,
+    valLedger(std::shared_ptr<Ledger const> const& ledger,
         std::shared_ptr<Ledger const> const& next);
 
     // Fetches from the backend and will log
@@ -180,9 +190,25 @@ private:
     std::shared_ptr<NodeObject>
     valFetch(uint256 const& hash);
 
-    // Calculate the file foot print of the backend files
+    // Marks shard immutable, having stored all of its ledgers
     void
-    updateFileSize();
+    setComplete();
+
+    // Set the backend cache
+    void
+    setCache();
+
+    // Open/Create SQLite databases
+    bool
+    initSQLite();
+
+    // Create SQLite entries for a ledger stored in this shard's backend
+    bool
+    setSQLiteStored(std::shared_ptr<Ledger const> const& ledger);
+
+    // Set storage and file descriptor usage stats
+    bool
+    setFileStats();
 
     // Save the control file for an incomplete shard
     bool

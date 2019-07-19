@@ -254,7 +254,7 @@ SHAMapStoreImp::makeNodeStore(std::string const& name, std::int32_t readThreads)
             std::move(archiveBackend),
             app_.config().section(ConfigSection::nodeDatabase()),
             app_.logs().journal(nodeStoreName_));
-        fdlimit_ += dbr->fdlimit();
+        fdRequired_ += dbr->fdRequired();
         dbRotating_ = dbr.get();
         db.reset(dynamic_cast<NodeStore::Database*>(dbr.release()));
     }
@@ -267,7 +267,7 @@ SHAMapStoreImp::makeNodeStore(std::string const& name, std::int32_t readThreads)
             app_.getJobQueue(),
             app_.config().section(ConfigSection::nodeDatabase()),
             app_.logs().journal(nodeStoreName_));
-        fdlimit_ += db->fdlimit();
+        fdRequired_ += db->fdRequired();
     }
     return db;
 }
@@ -298,9 +298,9 @@ SHAMapStoreImp::rendezvous() const
 }
 
 int
-SHAMapStoreImp::fdlimit () const
+SHAMapStoreImp::fdRequired() const
 {
-    return fdlimit_;
+    return fdRequired_;
 }
 
 bool

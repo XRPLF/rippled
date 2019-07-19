@@ -183,8 +183,8 @@ public:
 
     virtual beast::Journal journal (std::string const& name) = 0;
 
-    /* Returns the number of file descriptors the application wants */
-    virtual int fdlimit () const = 0;
+    /* Returns the number of file descriptors the application needs */
+    virtual int fdRequired() const = 0;
 
     /** Retrieve the "wallet database" */
     virtual DatabaseCon& getWalletDB () = 0;

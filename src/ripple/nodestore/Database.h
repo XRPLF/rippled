@@ -204,9 +204,9 @@ public:
     std::uint32_t
     getFetchSize() const { return fetchSz_; }
 
-    /** Return the number of files needed by our backend(s) */
+    /** Returns the number of file descriptors the database expects to need */
     int
-    fdlimit() const { return fdLimit_; }
+    fdRequired() const { return fdRequired_; }
 
     void
     onStop() override;
@@ -222,7 +222,7 @@ public:
 protected:
     beast::Journal j_;
     Scheduler& scheduler_;
-    int fdLimit_ {0};
+    int fdRequired_ {0};
 
     void
     stopThreads();

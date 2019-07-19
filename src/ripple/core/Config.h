@@ -44,7 +44,7 @@ class Rules;
 
 enum SizedItemName
 {
-    siSweepInterval,
+    siSweepInterval = 0,
     siNodeCacheSize,
     siNodeCacheAge,
     siTreeCacheSize,
@@ -56,14 +56,32 @@ enum SizedItemName
     siLedgerFetch,
     siHashNodeDBCache,
     siTxnDBCache,
-    siLgrDBCache,
+    siLgrDBCache
 };
 
-struct SizedItem
-{
-    SizedItemName   item;
-    int             sizes[5];
-};
+static constexpr
+std::array<std::array<int, 5>, 13> sizedItems
+{{
+    //  tiny      small   medium  large   huge
+    {{  10,       30,     60,     90,     120     }}, // siSweepInterval
+    {{  2,        3,      5,      5,      8       }}, // siLedgerFetch
+
+    {{  16384,    32768,  131072, 262144, 524288  }}, // siNodeCacheSize
+    {{  60,       90,     120,    900,    1800    }}, // siNodeCacheAge
+
+    {{  128000,   256000, 512000, 768000, 2048000 }}, // siTreeCacheSize
+    {{  30,       60,     90,     120,    900     }}, // siTreeCacheAge
+
+    {{  4096,     8192,   16384,  65536,  131072  }}, // siSLECacheSize
+    {{  30,       60,     90,     120,    300     }}, // siSLECacheAge
+
+    {{  32,       128,    256,    384,    768     }}, // siLedgerSize
+    {{  30,       90,     180,    240,    900     }}, // siLedgerAge
+
+    {{  4,        12,     24,     64,     128     }}, // siHashNodeDBCache
+    {{  4,        12,     24,     64,     128     }}, // siTxnDBCache
+    {{  4,        8,      16,     32,     128     }}  // siLgrDBCache
+}};
 
 //  This entire derived class is deprecated.
 //  For new config information use the style implied
@@ -182,11 +200,23 @@ public:
     std::unordered_set<uint256, beast::uhash<>> features;
 
 public:
-    Config()
-    : j_ {beast::Journal::getNullSink()}
-    { }
+    Config() : j_ {beast::Journal::getNullSink()} {}
 
-    int getSize (SizedItemName) const;
+    static
+    int
+    getSize(SizedItemName item, std::uint32_t nodeSize)
+    {
+        assert(item < sizedItems.size() && nodeSize < sizedItems[item].size());
+        return sizedItems[item][nodeSize];
+    }
+
+    int
+    getSize(SizedItemName item) const
+    {
+        assert(item < sizedItems.size());
+        return getSize(item, NODE_SIZE);
+    }
+
     /* Be very careful to make sure these bool params
         are in the right order. */
     void setup (std::string const& strConf, bool bQuiet,

@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DatabaseRotating.h>
+
 #include <condition_variable>
 #include <thread>
 
@@ -97,7 +98,7 @@ private:
     std::shared_ptr<Ledger const> newLedger_;
     std::atomic<bool> working_;
     std::atomic <LedgerIndex> canDelete_;
-    int fdlimit_ = 0;
+    int fdRequired_ = 0;
 
     std::uint32_t deleteInterval_ = 0;
     bool advisoryDelete_ = false;
@@ -172,7 +173,7 @@ public:
     void onLedgerClosed (std::shared_ptr<Ledger const> const& ledger) override;
 
     void rendezvous() const override;
-    int fdlimit() const override;
+    int fdRequired() const override;
 
 private:
     // callback for visitNodes

@@ -297,7 +297,7 @@ public:
     }
 
     int
-    fdlimit() const override
+    fdRequired() const override
     {
         return 3;
     }
