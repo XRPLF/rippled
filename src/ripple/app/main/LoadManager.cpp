@@ -139,7 +139,7 @@ void LoadManager::run ()
                 // as undefined behavior.
                 //
                 constexpr auto deadlockTimeLimit = 90s;
-                assert (timeSpentDeadlocked < deadlockTimeLimits);
+                assert (timeSpentDeadlocked < deadlockTimeLimit);
 
                 if (timeSpentDeadlocked > deadlockTimeLimit)
                     LogicError("Deadlock detected");
