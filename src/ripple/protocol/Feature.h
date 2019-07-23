@@ -374,6 +374,7 @@ extern uint256 const fix1578;
 extern uint256 const featureMultiSignReserve;
 extern uint256 const fixTakerDryOfferRemoval;
 extern uint256 const fixMasterKeyAsRegularKey;
+extern uint256 const featureMemoFee;
 
 } // ripple
 
