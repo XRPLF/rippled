@@ -89,8 +89,14 @@ public:
         return cached ();
     }
 
+    DebtDirection
+    debtDirection(ReadView const& sb, StrandDirection dir) const override
+    {
+        return DebtDirection::issues;
+    }
+
     boost::optional<Quality>
-    qualityUpperBound(ReadView const& v, bool& redeems) const override;
+    qualityUpperBound(ReadView const& v, DebtDirection& dir) const override;
 
     std::pair<XRPAmount, XRPAmount>
     revImp (
@@ -237,9 +243,9 @@ inline bool operator==(XRPEndpointStep<TDerived> const& lhs,
 template <class TDerived>
 boost::optional<Quality>
 XRPEndpointStep<TDerived>::qualityUpperBound(
-    ReadView const& v, bool& redeems) const
+    ReadView const& v, DebtDirection& dir) const
 {
-    redeems = this->redeems(v, true);
+    dir = this->debtDirection(v, StrandDirection::forward);
     return Quality{STAmount::uRateOne};
 }
 
