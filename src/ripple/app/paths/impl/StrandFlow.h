@@ -401,10 +401,10 @@ boost::optional<Quality>
 qualityUpperBound(ReadView const& v, Strand const& strand)
 {
     Quality q{STAmount::uRateOne};
-    bool redeems = false;
-    for(auto const& step : strand)
+    DebtDirection dir = DebtDirection::issues;
+    for (auto const& step : strand)
     {
-        if (auto const stepQ = step->qualityUpperBound(v, redeems))
+        if (auto const stepQ = step->qualityUpperBound(v, dir))
             q = composed_quality(q, *stepQ);
         else
             return boost::none;
