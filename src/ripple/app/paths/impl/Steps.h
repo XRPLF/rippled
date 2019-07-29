@@ -34,6 +34,24 @@ class PaymentSandbox;
 class ReadView;
 class ApplyView;
 
+enum class DebtDirection { issues, redeems };
+enum class QualityDirection { in, out };
+enum class StrandDirection { forward, reverse };
+
+inline
+bool
+redeems(DebtDirection dir)
+{
+    return dir == DebtDirection::redeems;
+}
+
+inline
+bool
+issues(DebtDirection dir)
+{
+    return dir == DebtDirection::issues;
+}
+
 /**
    A step in a payment path
 
@@ -63,8 +81,7 @@ class ApplyView;
 class Step
 {
 public:
-    /** Step destructor. */
-    virtual ~Step () = default;
+    virtual ~Step() = default;
 
     /**
        Find the amount we need to put into the step to get the requested out
@@ -145,13 +162,10 @@ public:
        otherwise return true.
 
        @param sb view with the strand's state of balances and offers
-       @param fwd false -> called from rev(); true -> called from fwd().
+       @param dir reverse -> called from rev(); forward -> called from fwd().
     */
-    virtual bool
-    redeems (ReadView const& sb, bool fwd) const
-    {
-        return false;
-    }
+    virtual DebtDirection
+    debtDirection (ReadView const& sb, StrandDirection dir) const = 0;
 
     /**
         If this step is a DirectStepI, return the quality in of the dst account.
@@ -166,14 +180,14 @@ public:
        Find an upper bound of quality for the step
 
        @param v view to query the ledger state from
-       @param redeems in/out param. Set to true if the previous step redeems.
-       Will be set to true if this step redeems; Will be set to false if this
-       step does not redeem.
+       @param dir in/out param. Set to DebtDirection::redeems if the previous step redeems.
+       Will be set to DebtDirection::redeems if this step redeems; Will be set to DebtDirection::issues if this
+       step does not redeem
        @return The upper bound of quality for the step, or boost::none if the
        step is dry.
      */
     virtual boost::optional<Quality>
-    qualityUpperBound(ReadView const& v, bool& redeems) const = 0;
+    qualityUpperBound(ReadView const& v, DebtDirection& dir) const = 0;
 
     /**
        If this step is a BookStep, return the book.
