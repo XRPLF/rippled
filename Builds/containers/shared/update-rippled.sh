@@ -2,6 +2,13 @@
 
 # auto-update script for rippled daemon
 
+# Check for sudo/root permissions
+if [ `id -u` -ne 0 ]; then
+   echo "This update script must be run as root or sudo"
+   exit 1
+fi
+
+
 LOCKDIR=/tmp/rippleupdate.lock
 UPDATELOG=/var/log/rippled/update.log
 
