@@ -110,10 +110,11 @@ public:
         return EitherAmount (cache_->out);
     }
 
-    bool
-    redeems (ReadView const& sb, bool fwd) const override
+    DebtDirection
+    debtDirection(ReadView const& sb, StrandDirection dir) const override
     {
-        return !ownerPaysTransferFee_;
+        return ownerPaysTransferFee_ ? DebtDirection::issues
+                                     : DebtDirection::redeems;
     }
 
     boost::optional<Book>
@@ -123,7 +124,7 @@ public:
     }
 
     boost::optional<Quality>
-    qualityUpperBound(ReadView const& v, bool& redeems) const override;
+    qualityUpperBound(ReadView const& v, DebtDirection& dir) const override;
 
     std::pair<TIn, TOut>
     revImp (
@@ -188,7 +189,7 @@ private:
     forEachOffer (
         PaymentSandbox& sb,
         ApplyView& afView,
-        bool prevStepRedeems,
+        DebtDirection prevStepDebtDir,
         Callback& callback) const;
 
     void consumeOffer (PaymentSandbox& sb,
@@ -248,7 +249,7 @@ public:
     Quality
     qualityUpperBound(ReadView const& v,
         Quality const& ofrQ,
-        bool prevStepRedeems) const
+        DebtDirection prevStepDir) const
     {
         // Charge the offer owner, not the sender
         // Charge a fee even if the owner is the same as the issuer
@@ -262,7 +263,7 @@ public:
         };
 
         auto const trIn =
-            prevStepRedeems ? rate(this->book_.in.account) : parityRate;
+            redeems(prevStepDir) ? rate(this->book_.in.account) : parityRate;
         // Always charge the transfer fee, even if the owner is the issuer
         auto const trOut =
             this->ownerPaysTransferFee_
@@ -393,7 +394,7 @@ public:
     Quality
     qualityUpperBound(ReadView const& v,
         Quality const& ofrQ,
-        bool prevStepRedeems) const
+        DebtDirection prevStepDir) const
     {
         // Offer x-ing does not charge a transfer fee when the offer's owner
         // is the same as the strand dst. It is important that `qualityUpperBound`
@@ -427,10 +428,10 @@ bool BookStep<TIn, TOut, TDerived>::equal (Step const& rhs) const
 template <class TIn, class TOut, class TDerived>
 boost::optional<Quality>
 BookStep<TIn, TOut, TDerived>::qualityUpperBound(
-    ReadView const& v, bool& redeems) const
+    ReadView const& v, DebtDirection& dir) const
 {
-    auto const prevStepRedeems = redeems;
-    redeems = this->redeems(v, true);
+    auto const prevStepDir = dir;
+    dir = this->debtDirection(v, StrandDirection::forward);
 
     // This can be simplified (and sped up) if directories are never empty.
     Sandbox sb(&v, tapNONE);
@@ -439,7 +440,7 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(
         return boost::none;
 
     return static_cast<TDerived const*>(this)->qualityUpperBound(
-        v, bt.quality(), prevStepRedeems);
+        v, bt.quality(), prevStepDir);
 }
 
 // Adjust the offer amount and step amount subject to the given input limit
@@ -493,7 +494,7 @@ std::pair<boost::container::flat_set<uint256>, std::uint32_t>
 BookStep<TIn, TOut, TDerived>::forEachOffer (
     PaymentSandbox& sb,
     ApplyView& afView,
-    bool prevStepRedeems,
+    DebtDirection prevStepDir,
     Callback& callback) const
 {
     // Charge the offer owner, not the sender
@@ -507,9 +508,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer (
         return transferRate (sb, id).value;
     };
 
-    std::uint32_t const trIn = prevStepRedeems
-        ? rate (book_.in.account)
-        : QUALITY_ONE;
+    std::uint32_t const trIn =
+        redeems(prevStepDir) ? rate(book_.in.account) : QUALITY_ONE;
     // Always charge the transfer fee, even if the owner is the issuer
     std::uint32_t const trOut = ownerPaysTransferFee_
         ? rate (book_.out.account)
@@ -726,8 +726,12 @@ BookStep<TIn, TOut, TDerived>::revImp (
     };
 
     {
-        auto const prevStepRedeems = prevStep_ && prevStep_->redeems (sb, false);
-        auto const r = forEachOffer (sb, afView, prevStepRedeems, eachOffer);
+        auto const prevStepDebtDir = [&]{
+            if (prevStep_)
+                return prevStep_->debtDirection (sb, StrandDirection::reverse);
+            return DebtDirection::issues;
+        }();
+        auto const r = forEachOffer (sb, afView, prevStepDebtDir, eachOffer);
         boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         SetUnion(ofrsToRm, toRm);
@@ -887,8 +891,12 @@ BookStep<TIn, TOut, TDerived>::fwdImp (
     };
 
     {
-        auto const prevStepRedeems = prevStep_ && prevStep_->redeems (sb, true);
-        auto const r = forEachOffer (sb, afView, prevStepRedeems, eachOffer);
+        auto const prevStepDebtDir = [&] {
+            if (prevStep_)
+                return prevStep_->debtDirection(sb, StrandDirection::forward);
+            return DebtDirection::issues;
+        }();
+        auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer);
         boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         SetUnion(ofrsToRm, toRm);
