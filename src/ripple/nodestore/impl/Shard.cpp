@@ -65,12 +65,11 @@ Shard::open(Section config, Scheduler& scheduler, nudb::context& ctx)
         return false;
     }
 
-    auto const preexist {exists(dir_)};
-
     config.set("path", dir_.string());
     backend_ = factory->createInstance(
         NodeObject::keyBytes, config, scheduler, ctx, j_);
 
+    auto const preexist {exists(dir_)};
     auto fail = [&](std::string msg)
     {
         if (!msg.empty())
