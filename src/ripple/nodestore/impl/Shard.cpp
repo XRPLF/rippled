@@ -65,20 +65,12 @@ Shard::open(Section config, Scheduler& scheduler, nudb::context& ctx)
         return false;
     }
 
-    boost::system::error_code ec;
-    auto const preexist {exists(dir_, ec)};
-    if (ec)
-    {
-        JLOG(j_.error()) <<
-            "shard " << index_ << ": " << ec.message();
-        return false;
-    }
-
     config.set("path", dir_.string());
     backend_ = factory->createInstance(
         NodeObject::keyBytes, config, scheduler, ctx, j_);
 
-    auto fail = [&](std::string msg)
+    bool const preexist {exists(dir_)};
+    auto fail = [this, preexist](std::string const& msg)
     {
         if (!msg.empty())
         {
