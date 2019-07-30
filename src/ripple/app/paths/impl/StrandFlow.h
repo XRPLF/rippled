@@ -43,7 +43,7 @@ namespace ripple {
 template<class TInAmt, class TOutAmt>
 struct StrandResult
 {
-    TER ter = temUNKNOWN;                         ///< Result code
+    bool success;                                 ///< Strand succeeded
     TInAmt in = beast::zero;                      ///< Currency amount in
     TOutAmt out = beast::zero;                    ///< Currency amount out
     boost::optional<PaymentSandbox> sandbox;      ///< Resulting Sandbox state
@@ -54,22 +54,24 @@ struct StrandResult
     /** Strand result constructor */
     StrandResult () = default;
 
-    StrandResult (TInAmt const& in_,
+    StrandResult(
+        TInAmt const& in_,
         TOutAmt const& out_,
         PaymentSandbox&& sandbox_,
         boost::container::flat_set<uint256> ofrsToRm_,
         bool inactive_)
-        : ter (tesSUCCESS)
-        , in (in_)
-        , out (out_)
-        , sandbox (std::move (sandbox_))
-        , ofrsToRm (std::move (ofrsToRm_))
+        : success(true)
+        , in(in_)
+        , out(out_)
+        , sandbox(std::move(sandbox_))
+        , ofrsToRm(std::move(ofrsToRm_))
         , inactive(inactive_)
     {
     }
 
-    StrandResult (TER ter_, boost::container::flat_set<uint256> ofrsToRm_)
-        : ter (ter_), ofrsToRm (std::move (ofrsToRm_))
+    explicit
+    StrandResult(boost::container::flat_set<uint256> ofrsToRm_)
+        : success(false), ofrsToRm(std::move(ofrsToRm_))
     {
     }
 };
@@ -105,9 +107,7 @@ flow (
 
     if (isDirectXrpToXrp<TInAmt, TOutAmt> (strand))
     {
-        // The current implementation returns NO_LINE for XRP->XRP transfers.
-        // Keep this behavior
-        return {tecNO_LINE, std::move (ofrsToRm)};
+        return Result{std::move (ofrsToRm)};
     }
 
     try
@@ -129,7 +129,7 @@ flow (
                 if (strand[i]->isZero (r.second))
                 {
                     JLOG (j.trace()) << "Strand found dry in rev";
-                    return {tecPATH_DRY, std::move (ofrsToRm)};
+                    return Result{std::move (ofrsToRm)};
                 }
 
                 if (i == 0 && maxIn && *maxIn < get<TInAmt> (r.first))
@@ -147,7 +147,7 @@ flow (
                     if (strand[i]->isZero(r.second))
                     {
                         JLOG(j.trace()) << "First step found dry";
-                        return {tecPATH_DRY, std::move(ofrsToRm)};
+                        return Result{std::move(ofrsToRm)};
                     }
                     if (get<TInAmt> (r.first) != *maxIn)
                     {
@@ -159,7 +159,7 @@ flow (
                             << to_string(get<TInAmt>(r.first))
                             << " maxIn: " << to_string(*maxIn);
                         assert(0);
-                        return {telFAILED_PROCESSING, std::move (ofrsToRm)};
+                        return Result{std::move (ofrsToRm)};
                     }
                 }
                 else if (!strand[i]->equalOut (r.second, stepOut))
@@ -180,7 +180,7 @@ flow (
                         // A tiny input amount can cause this step to output zero.
                         // I.e. 10^-80 IOU into an IOU -> XRP offer.
                         JLOG(j.trace()) << "Limiting step found dry";
-                        return {tecPATH_DRY, std::move(ofrsToRm)};
+                        return Result{std::move(ofrsToRm)};
                     }
                     if (!strand[i]->equalOut (r.second, stepOut))
                     {
@@ -195,7 +195,7 @@ flow (
                         JLOG (j.fatal()) << "Re-executed limiting step failed";
 #endif
                         assert (0);
-                        return {telFAILED_PROCESSING, std::move (ofrsToRm)};
+                        return Result{std::move (ofrsToRm)};
                     }
                 }
 
@@ -214,7 +214,7 @@ flow (
                     // A tiny input amount can cause this step to output zero.
                     // I.e. 10^-80 IOU into an IOU -> XRP offer.
                     JLOG(j.trace()) << "Non-limiting step found dry";
-                    return {tecPATH_DRY, std::move(ofrsToRm)};
+                    return Result{std::move(ofrsToRm)};
                 }
                 if (!strand[i]->equalIn (r.first, stepIn))
                 {
@@ -228,7 +228,7 @@ flow (
                     JLOG (j.fatal()) << "Re-executed forward pass failed";
 #endif
                     assert (0);
-                    return {telFAILED_PROCESSING, std::move (ofrsToRm)};
+                    return Result{std::move (ofrsToRm)};
                 }
                 stepIn = r.second;
             }
@@ -271,9 +271,9 @@ flow (
             std::move(ofrsToRm),
             inactive);
     }
-    catch (FlowException const& e)
+    catch (FlowException const&)
     {
-        return {e.ter, std::move (ofrsToRm)};
+        return Result{std::move (ofrsToRm)};
     }
 }
 
@@ -540,7 +540,7 @@ flow (PaymentSandbox const& baseView,
             // rm bad offers even if the strand fails
             SetUnion(ofrsToRm, f.ofrsToRm);
 
-            if (f.ter != tesSUCCESS || f.out == beast::zero)
+            if (!f.success || f.out == beast::zero)
                 continue;
 
             if (flowDebugInfo)
