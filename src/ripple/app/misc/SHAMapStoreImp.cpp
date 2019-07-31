@@ -527,8 +527,6 @@ SHAMapStoreImp::dbPaths()
             writableDbExists = true;
         else if (! state.archiveDb.compare (it->path().string()))
             archiveDbExists = true;
-        else if (! dbPrefix_.compare (it->path().stem().string()))
-            boost::filesystem::remove_all (it->path());
     }
 
     if ((!writableDbExists && state.writableDb.size()) ||
