@@ -512,18 +512,20 @@ SHAMapStoreImp::dbPaths()
         stateDbPathName /= dbName_;
         stateDbPathName += "*";
 
-        journal_.error() << "state db error: " << std::endl
+        journal_.error() << "state db error:\n"
                 << "  writableDbExists " << writableDbExists
-                << " archiveDbExists " << archiveDbExists << std::endl
+                << " archiveDbExists " << archiveDbExists << '\n'
                 << "  writableDb '" << state.writableDb
-                << "' archiveDb '" << state.archiveDb << "'"
-                << std::endl << std::endl
-                << "To resume operation, make backups of and "
-                << "remove the files matching "
+                << "' archiveDb '" << state.archiveDb << "\n\n"
+                << "The existing data is in a corrupted state.\n"
+                << "To resume operation, remove the files matching "
                 << stateDbPathName.string()
                 << " and contents of the directory "
-                << dbPath
-                << std::endl;
+                << get<std::string>(section, "path") << '\n'
+                << "Optionally, you can move those files to another\n"
+                << "location if you wish to analyze or back up the data.\n"
+                << "However, there is no guarantee that the data in its\n"
+                << "existing form is usable.";
 
         Throw<std::runtime_error> ("state db error");
     }
