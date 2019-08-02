@@ -33,7 +33,7 @@
 namespace ripple {
 
 Json::Value
-doReservationsAdd(RPC::Context& context)
+doPeerReservationsAdd(RPC::Context& context)
 {
     auto const& params = context.params;
 
@@ -86,11 +86,11 @@ doReservationsAdd(RPC::Context& context)
 }
 
 Json::Value
-doReservationsDel(RPC::Context& context)
+doPeerReservationsDel(RPC::Context& context)
 {
     auto const& params = context.params;
 
-    // We repeat much of the parameter parsing from `doReservationsAdd`.
+    // We repeat much of the parameter parsing from `doPeerReservationsAdd`.
     if (!params.isMember(jss::public_key))
         return RPC::missing_field_error(jss::public_key);
     if (!params[jss::public_key].isString())
@@ -113,7 +113,7 @@ doReservationsDel(RPC::Context& context)
 }
 
 Json::Value
-doReservationsList(RPC::Context& context)
+doPeerReservationsList(RPC::Context& context)
 {
     auto const& reservations = context.app.peerReservations();
     // Enumerate the reservations in context.app.peerReservations()

@@ -849,8 +849,8 @@ private:
         return jvRequest;
     }
 
-    // reservations_add <public_key> [<name>]
-    Json::Value parseReservationsAdd (Json::Value const& jvParams)
+    // peer_reservations_add <public_key> [<name>]
+    Json::Value parsePeerReservationsAdd (Json::Value const& jvParams)
     {
         Json::Value jvRequest;
         jvRequest[jss::public_key] = jvParams[0u].asString();
@@ -861,8 +861,8 @@ private:
         return jvRequest;
     }
 
-    // reservations_del <public_key>
-    Json::Value parseReservationsDel (Json::Value const& jvParams)
+    // peer_reservations_del <public_key>
+    Json::Value parsePeerReservationsDel (Json::Value const& jvParams)
     {
         Json::Value jvRequest;
         jvRequest[jss::public_key] = jvParams[0u].asString();
@@ -1147,9 +1147,9 @@ public:
             {   "print",                &RPCParser::parseAsIs,                  0,  1   },
     //      {   "profile",              &RPCParser::parseProfile,               1,  9   },
             {   "random",               &RPCParser::parseAsIs,                  0,  0   },
-            {   "reservations_add",     &RPCParser::parseReservationsAdd,       1,  2   },
-            {   "reservations_del",     &RPCParser::parseReservationsDel,       1,  1   },
-            {   "reservations_ls",      &RPCParser::parseAsIs,                  0,  0   },
+            {   "peer_reservations_add",  &RPCParser::parsePeerReservationsAdd, 1,  2   },
+            {   "peer_reservations_del",  &RPCParser::parsePeerReservationsDel, 1,  1   },
+            {   "peer_reservations_list", &RPCParser::parseAsIs,                0,  0   },
             {   "ripple_path_find",     &RPCParser::parseRipplePathFind,        1,  2   },
             {   "sign",                 &RPCParser::parseSignSubmit,            2,  3   },
             {   "sign_for",             &RPCParser::parseSignFor,               3,  4   },
