@@ -58,7 +58,7 @@ doReservationsAdd(RPC::Context& context)
 
     // Same for the pattern of "if field F is present, make sure it has type T
     // and get it".
-    boost::optional<std::string> desc;
+    std::string desc;
     if (params.isMember(jss::description))
     {
         if (!params[jss::description].isString())
@@ -74,7 +74,8 @@ doReservationsAdd(RPC::Context& context)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& nodeId = *optPk;
 
-    auto const previous = context.app.peerReservations().upsert(nodeId, desc);
+    auto const previous = context.app.peerReservations().insert_or_assign(
+            PeerReservation{nodeId, desc});
 
     Json::Value result{Json::objectValue};
     if (previous)
@@ -121,14 +122,7 @@ doReservationsList(RPC::Context& context)
     Json::Value& jaReservations = result[jss::reservations] = Json::arrayValue;
     for (auto const& reservation : reservations)
     {
-        Json::Value jaReservation;
-        jaReservation[jss::public_key] =
-            toBase58(TokenType::NodePublic, reservation.nodeId);
-        if (reservation.description)
-        {
-            jaReservation[jss::description] = *reservation.description;
-        }
-        jaReservations.append(jaReservation);
+        jaReservations.append(reservation.toJson());
     }
     return result;
 }

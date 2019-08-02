@@ -38,11 +38,11 @@ namespace ripple {
 class DatabaseCon;
 
 // Value type for reservations.
-struct PeerReservation
+struct PeerReservation final
 {
 public:
     PublicKey nodeId;
-    mutable boost::optional<std::string> description;
+    std::string description;
 
     auto
     toJson() const -> Json::Value;
@@ -58,7 +58,8 @@ public:
 // TODO: When C++20 arrives, take advantage of "equivalence" instead of
 // "equality". Add an overload for `(PublicKey, PeerReservation)`, and just
 // pass a `PublicKey` directly to `unordered_set.find`.
-struct KeyEqual {
+struct KeyEqual final
+{
     bool operator() (
             PeerReservation const& lhs, PeerReservation const& rhs) const
     {
@@ -66,7 +67,7 @@ struct KeyEqual {
     }
 };
 
-class PeerReservationTable
+class PeerReservationTable final
 {
 public:
     using table_type = std::unordered_set<
@@ -119,7 +120,7 @@ public:
      * @throw soci::soci_error
      */
     auto
-    upsert(PublicKey const& nodeId, boost::optional<std::string> const& desc)
+    insert_or_assign(PeerReservation const& reservation)
         -> boost::optional<PeerReservation>;
 
     /**

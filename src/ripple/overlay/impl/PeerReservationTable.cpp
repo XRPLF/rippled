@@ -36,9 +36,9 @@ PeerReservation::toJson() const -> Json::Value
 {
     Json::Value result{Json::objectValue};
     result[jss::node] = toBase58(TokenType::NodePublic, nodeId);
-    if (description)
+    if (!description.empty())
     {
-        result[jss::description] = *description;
+        result[jss::description] = description;
     }
     return result;
 }
@@ -65,51 +65,59 @@ PeerReservationTable::load(DatabaseCon& connection)
     st.execute();
     while (st.fetch())
     {
-        if (!valPubKey)
+        if (!valPubKey || !valDesc)
         {
-            // REVIEWER: How to signal unreachable? This represents a `NULL`
-            // in a `NOT NULL` column.
+            // This represents a `NULL` in a `NOT NULL` column. It should be
+            // unreachable.
+            continue;
         }
         auto const optNodeId =
             parseBase58<PublicKey>(TokenType::NodePublic, *valPubKey);
         if (!optNodeId)
         {
             JLOG(journal_.warn()) << "load: not a public key: " << valPubKey;
-            // TODO: Remove any invalid public keys?
+            continue;
         }
-        table_.insert(PeerReservation{*optNodeId, valDesc});
+        table_.insert(PeerReservation{*optNodeId, *valDesc});
     }
 
     return true;
 }
 
 auto
-PeerReservationTable::upsert(
-    PublicKey const& nodeId,
-    boost::optional<std::string> const& desc)
+PeerReservationTable::insert_or_assign(
+        PeerReservation const& reservation)
     -> boost::optional<PeerReservation>
 {
     boost::optional<PeerReservation> previous;
 
-    // TODO: When C++17 arrives, replace with a structured binding to better
-    // variable names.
-    auto inserted = table_.insert(PeerReservation{nodeId, desc});
-    if (!inserted.second)
-    {
-        // The node already has a reservation. Overwrite its description.
-        // `std::unordered_set` does not have an `upsert` method, and sadly
-        // makes it impossible for us to implement one efficiently:
+    auto hint = table_.find(reservation);
+    if (hint != table_.end()) {
+        // The node already has a reservation. Remove it.
+        // `std::unordered_set` does not have an `insert_or_assign` method,
+        // and sadly makes it impossible for us to implement one efficiently:
         // https://stackoverflow.com/q/49651835/618906
-        previous = *inserted.first;
-        inserted.first->description = desc;
+        // Regardless, we don't expect this function to be called often, or
+        // for the table to be very large, so this less-than-ideal
+        // remove-then-insert is acceptable in order to present a better API.
+        previous = *hint;
+        // We should pick an adjacent location for the insertion hint.
+        // Decrementing may be illegal if the found reservation is at the
+        // beginning. Incrementing is always legal; at worst we'll point to
+        // the end.
+        auto const deleteme = hint;
+        ++hint;
+        table_.erase(deleteme);
     }
+    auto existed = table_.insert(hint, reservation);
 
     auto db = connection_->checkoutDb();
     *db << "INSERT INTO PeerReservations (PublicKey, Description) "
            "VALUES (:nodeId, :desc) "
            "ON CONFLICT (PublicKey) DO UPDATE SET "
            "Description=excluded.Description",
-        soci::use(toBase58(TokenType::NodePublic, nodeId)), soci::use(desc);
+        soci::use(toBase58(TokenType::NodePublic, reservation.nodeId)),
+        soci::use(reservation.description);
 
     return previous;
 }
