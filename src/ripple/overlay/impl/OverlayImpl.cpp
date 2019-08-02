@@ -281,12 +281,13 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
     {
         // The node gets a reserved slot if it is in our cluster
         // or if it has a reservation.
-        bool const reserved = (
-                static_cast<bool>(app_.cluster().member(*publicKey))
-                || app_.peerReservations().contains(*publicKey)
-        );
+        bool const reserved {
+            static_cast<bool>(app_.cluster().member(*publicKey))
+            || app_.peerReservations().contains(*publicKey)
+        };
         auto const result = m_peerFinder->activate(slot, *publicKey, reserved);
-        if (result != PeerFinder::Result::success) {
+        if (result != PeerFinder::Result::success)
+        {
             m_peerFinder->on_closed(slot);
             JLOG(journal.debug())
                 << "Peer " << remote_endpoint << " redirected, slots full";
