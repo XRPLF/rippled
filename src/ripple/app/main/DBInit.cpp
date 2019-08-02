@@ -132,7 +132,6 @@ const char* WalletDBInit[] =
     );",
 
     // Peer reservations.
-    // REVIEWER: How do we handle table migrations if we need to add a column?
     "CREATE TABLE IF NOT EXISTS PeerReservations (     \
         PublicKey       CHARACTER(53) UNIQUE NOT NULL, \
         Description     CHARACTER(64) NOT NULL         \

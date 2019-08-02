@@ -56,8 +56,9 @@ PeerReservationTable::load(DatabaseCon& connection)
     auto db = connection_->checkoutDb();
 
     boost::optional<std::string> valPubKey, valDesc;
-    // REVIEWER: We should really abstract the table and column names into
-    // constants, but no one else does. Because it is too tedious?
+    // We should really abstract the table and column names into constants,
+    // but no one else does. Because it is too tedious? It would be easy if we
+    // had a jOOQ for C++.
     soci::statement st =
         (db->prepare << "SELECT PublicKey, Description FROM PeerReservations;",
          soci::into(valPubKey),
