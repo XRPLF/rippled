@@ -91,7 +91,7 @@ export BOOST_ROOT=~/boost_1_70_0
 Alternatively, you can add `DBOOST_ROOT=~/boost_1_70_0` to the command line when
 invoking `cmake`.
 
-### Generate and Build
+### Generate Configuration
 
 All builds should be done in a separate directory from the source tree root 
 (a subdirectory is fine). For example, from the root of the ripple source tree:
@@ -107,6 +107,10 @@ followed by:
 cmake -DCMAKE_BUILD_TYPE=Debug ..
 ```
 
+If your operating system does not provide static libraries (Arch Linux, and 
+Manjaro Linux, for example), you must configure a non-static build by adding
+`-Dstatic=OFF` to the above cmake line.
+
 `CMAKE_BUILD_TYPE` can be changed as desired for `Debug` vs.
 `Release` builds (all four standard cmake build types are supported).
 
@@ -114,20 +118,6 @@ To select a different compiler (most likely gcc will be found by default), pass
 `-DCMAKE_C_COMPILER=<path/to/c-compiler>` and
 `-DCMAKE_CXX_COMPILER=</path/to/cxx-compiler>` when configuring. If you prefer, 
 you can instead set `CC` and `CXX` environment variables which cmake will honor.
-
-Once you have generated the build system, you can run the build via cmake:
-
-```
-cmake --build . -- -j <parallel jobs>
-```
-
-the `-j` parameter in this example tells the build tool to compile several
-files in parallel. This value should be chosen roughly based on the number of
-cores you have available and/or want to use for building.
-
-When the build completes succesfully, you will have a `rippled` executable in
-the current directory, which can be used to connect to the network (when
-properly configured) or to run unit tests.
 
 #### Options During Configuration:
 
@@ -149,6 +139,23 @@ testing and running.
 
 Several other infrequently used options are available - run `ccmake` or
 `cmake-gui` for a list of all options.
+
+### Build
+
+Once you have generated the build system, you can run the build via cmake:
+
+```
+cmake --build . -- -j <parallel jobs>
+```
+
+the `-j` parameter in this example tells the build tool to compile several
+files in parallel. This value should be chosen roughly based on the number of
+cores you have available and/or want to use for building.
+
+When the build completes succesfully, you will have a `rippled` executable in
+the current directory, which can be used to connect to the network (when
+properly configured) or to run unit tests.
+
 
 #### Optional Installation
 
