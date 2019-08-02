@@ -30,8 +30,10 @@
 #include <boost/optional.hpp>
 #include <soci/soci.h>
 
+#include <mutex>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 namespace ripple {
 
@@ -52,6 +54,11 @@ public:
     {
         using beast::hash_append;
         hash_append(h, x.nodeId);
+    }
+
+    friend bool operator<(PeerReservation const& a, PeerReservation const& b)
+    {
+        return a.nodeId < b.nodeId;
     }
 };
 
@@ -80,33 +87,12 @@ public:
     {
     }
 
-    const_iterator
-    begin() const noexcept
-    {
-        return table_.begin();
-    }
-
-    const_iterator
-    cbegin() const noexcept
-    {
-        return table_.cbegin();
-    }
-
-    const_iterator
-    end() const noexcept
-    {
-        return table_.end();
-    }
-
-    const_iterator
-    cend() const noexcept
-    {
-        return table_.cend();
-    }
+    std::vector<PeerReservation> list() const;
 
     bool
     contains(PublicKey const& nodeId)
     {
+        std::lock_guard<std::mutex> lock(this->mutex_);
         return table_.find({nodeId}) != table_.end();
     }
 
@@ -131,6 +117,7 @@ public:
 
 private:
     beast::Journal mutable journal_;
+    std::mutex mutable mutex_;
     DatabaseCon* connection_;
     table_type table_;
 };

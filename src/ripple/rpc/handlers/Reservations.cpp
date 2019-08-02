@@ -115,7 +115,7 @@ doPeerReservationsDel(RPC::Context& context)
 Json::Value
 doPeerReservationsList(RPC::Context& context)
 {
-    auto const& reservations = context.app.peerReservations();
+    auto const& reservations = context.app.peerReservations().list();
     // Enumerate the reservations in context.app.peerReservations()
     // as a Json::Value.
     Json::Value result{Json::objectValue};

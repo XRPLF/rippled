@@ -27,7 +27,11 @@
 
 #include <boost/optional.hpp>
 
+#include <algorithm>
+#include <iterator>
+#include <mutex>
 #include <string>
+#include <vector>
 
 namespace ripple {
 
@@ -43,6 +47,19 @@ PeerReservation::toJson() const -> Json::Value
     return result;
 }
 
+auto
+PeerReservationTable::list() const -> std::vector<PeerReservation>
+{
+    std::vector<PeerReservation> list;
+    list.reserve(table_.size());
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        std::copy(table_.begin(), table_.end(), std::back_inserter(list));
+    }
+    std::sort(list.begin(), list.end());
+    return list;
+}
+
 // See `ripple/app/main/DBInit.cpp` for the `CREATE TABLE` statement.
 // It is unfortunate that we do not get to define a function for it.
 
@@ -52,6 +69,8 @@ PeerReservation::toJson() const -> Json::Value
 bool
 PeerReservationTable::load(DatabaseCon& connection)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
+
     connection_ = &connection;
     auto db = connection_->checkoutDb();
 
@@ -92,6 +111,8 @@ PeerReservationTable::insert_or_assign(
 {
     boost::optional<PeerReservation> previous;
 
+    std::lock_guard<std::mutex> lock(mutex_);
+
     auto hint = table_.find(reservation);
     if (hint != table_.end()) {
         // The node already has a reservation. Remove it.
@@ -128,6 +149,8 @@ PeerReservationTable::erase(PublicKey const& nodeId)
     -> boost::optional<PeerReservation>
 {
     boost::optional<PeerReservation> previous;
+
+    std::lock_guard<std::mutex> lock(mutex_);
 
     auto const it = table_.find({nodeId});
     if (it != table_.end())
