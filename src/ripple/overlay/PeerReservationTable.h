@@ -77,10 +77,6 @@ struct KeyEqual final
 class PeerReservationTable final
 {
 public:
-    using table_type = std::unordered_set<
-        PeerReservation, beast::uhash<>, KeyEqual>;
-    using const_iterator = table_type::const_iterator;
-
     explicit PeerReservationTable(
         beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
         : journal_(journal)
@@ -119,7 +115,7 @@ private:
     beast::Journal mutable journal_;
     std::mutex mutable mutex_;
     DatabaseCon* connection_;
-    table_type table_;
+    std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual> table_;
 };
 
 }  // namespace ripple

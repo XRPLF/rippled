@@ -131,7 +131,7 @@ PeerReservationTable::insert_or_assign(
         ++hint;
         table_.erase(deleteme);
     }
-    auto existed = table_.insert(hint, reservation);
+    table_.insert(hint, reservation);
 
     auto db = connection_->checkoutDb();
     *db << "INSERT INTO PeerReservations (PublicKey, Description) "
