@@ -21,8 +21,9 @@
 #define RIPPLE_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
 
 #include <ripple/app/misc/detail/WorkBase.h>
-#include <ripple/net/RegisterSSLCerts.h>
 #include <ripple/basics/contract.h>
+#include <ripple/core/Config.h>
+#include <ripple/net/HTTPClientSSLContext.h>
 #include <boost/asio/ssl.hpp>
 #include <boost/bind.hpp>
 #include <boost/format.hpp>
@@ -30,24 +31,6 @@
 namespace ripple {
 
 namespace detail {
-
-class SSLContext : public boost::asio::ssl::context
-{
-public:
-    SSLContext(beast::Journal j)
-    : boost::asio::ssl::context(boost::asio::ssl::context::sslv23)
-    {
-        boost::system::error_code ec;
-        registerSSLCerts(*this, ec, j);
-        if (ec)
-        {
-            Throw<std::runtime_error> (
-                boost::str (boost::format (
-                    "Failed to set_default_verify_paths: %s") %
-                    ec.message ()));
-        }
-    }
-};
 
 // Work over SSL
 class WorkSSL : public WorkBase<WorkSSL>
@@ -58,7 +41,7 @@ class WorkSSL : public WorkBase<WorkSSL>
 private:
     using stream_type = boost::asio::ssl::stream<socket_type&>;
 
-    SSLContext context_;
+    HTTPClientSSLContext context_;
     stream_type stream_;
 
 public:
@@ -68,6 +51,7 @@ public:
         std::string const& port,
         boost::asio::io_service& ios,
         beast::Journal j,
+        Config const& config,
         callback_type cb);
     ~WorkSSL() = default;
 
@@ -83,15 +67,6 @@ private:
 
     void
     onHandshake(error_code const& ec);
-
-    static bool
-    rfc2818_verify(
-        std::string const& domain,
-        bool preverified,
-        boost::asio::ssl::verify_context& ctx)
-    {
-        return boost::asio::ssl::rfc2818_verification(domain)(preverified, ctx);
-    }
 };
 
 //------------------------------------------------------------------------------
@@ -102,24 +77,24 @@ WorkSSL::WorkSSL(
     std::string const& port,
     boost::asio::io_service& ios,
     beast::Journal j,
+    Config const& config,
     callback_type cb)
     : WorkBase(host, path, port, ios, cb)
-    , context_(j)
-    , stream_(socket_, context_)
+    , context_(config, j, boost::asio::ssl::context::tlsv12_client)
+    , stream_(socket_, context_.context())
 {
-    // Set SNI hostname
-    SSL_set_tlsext_host_name(stream_.native_handle(), host.c_str());
-    stream_.set_verify_mode (boost::asio::ssl::verify_peer);
-    stream_.set_verify_callback(    std::bind (
-            &WorkSSL::rfc2818_verify, host_,
-            std::placeholders::_1, std::placeholders::_2));
+    auto ec = context_.preConnectVerify(stream_, host_);
+    if (ec)
+        Throw<std::runtime_error> (
+            boost::str (boost::format ("preConnectVerify: %s") % ec.message ()));
 }
 
 void
 WorkSSL::onConnect(error_code const& ec)
 {
-    if (ec)
-        return fail(ec);
+    auto err = ec ? ec : context_.postConnectVerify(stream_, host_);
+    if (err)
+        return fail(err);
 
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,

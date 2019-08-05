@@ -21,8 +21,8 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/net/HTTPClient.h>
+#include <ripple/net/HTTPClientSSLContext.h>
 #include <ripple/net/AutoSocket.h>
-#include <ripple/net/RegisterSSLCerts.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
@@ -32,61 +32,6 @@
 
 namespace ripple {
 
-//
-// Fetch a web page via http or https.
-//
-
-class HTTPClientSSLContext
-{
-public:
-    explicit
-    HTTPClientSSLContext (Config const& config, beast::Journal j)
-        : m_context (boost::asio::ssl::context::sslv23)
-        , verify_ (config.SSL_VERIFY)
-    {
-        boost::system::error_code ec;
-
-        if (config.SSL_VERIFY_FILE.empty ())
-        {
-            registerSSLCerts(m_context, ec, j);
-
-            if (ec && config.SSL_VERIFY_DIR.empty ())
-                Throw<std::runtime_error> (
-                    boost::str (boost::format (
-                        "Failed to set_default_verify_paths: %s") %
-                            ec.message ()));
-        }
-        else
-        {
-            m_context.load_verify_file (config.SSL_VERIFY_FILE);
-        }
-
-        if (! config.SSL_VERIFY_DIR.empty ())
-        {
-            m_context.add_verify_path (config.SSL_VERIFY_DIR, ec);
-
-            if (ec)
-                Throw<std::runtime_error> (
-                    boost::str (boost::format (
-                        "Failed to add verify path: %s") % ec.message ()));
-        }
-    }
-
-    boost::asio::ssl::context& context()
-    {
-        return m_context;
-    }
-
-    bool sslVerify() const
-    {
-        return verify_;
-    }
-
-private:
-    boost::asio::ssl::context m_context;
-    bool verify_;
-};
-
 boost::optional<HTTPClientSSLContext> httpClientSSLContext;
 
 void HTTPClient::initializeSSLContext (Config const& config, beast::Journal j)
@@ -94,6 +39,10 @@ void HTTPClient::initializeSSLContext (Config const& config, beast::Journal j)
     httpClientSSLContext.emplace (config, j);
 }
 
+//------------------------------------------------------------------------------
+//
+// Fetch a web page via http or https.
+//
 //------------------------------------------------------------------------------
 
 class HTTPClientImp
@@ -113,8 +62,6 @@ public:
         , mDeadline (io_service)
         , j_ (j)
     {
-        if (!httpClientSSLContext->sslVerify())
-            mSocket.SSLSocket ().set_verify_mode (boost::asio::ssl::verify_none);
     }
 
     //--------------------------------------------------------------------------
@@ -127,19 +74,24 @@ public:
         osRequest <<
                   "GET " << strPath << " HTTP/1.0\r\n"
                   "Host: " << strHost << "\r\n"
-                  "Accept: */*\r\n"                       // YYY Do we need this line?
+                  "Accept: */*\r\n"                // YYY Do we need this line?
                   "Connection: close\r\n\r\n";
     }
 
     //--------------------------------------------------------------------------
 
-    void request (
+    void
+    request(
         bool bSSL,
         std::deque<std::string> deqSites,
-        std::function<void (boost::asio::streambuf& sb, std::string const& strHost)> build,
+        std::function<void (
+            boost::asio::streambuf& sb,
+            std::string const& strHost)> build,
         std::chrono::seconds timeout,
-        std::function<bool (const boost::system::error_code& ecResult,
-            int iStatus, std::string const& strData)> complete)
+        std::function<bool (
+            const boost::system::error_code& ecResult,
+            int iStatus,
+            std::string const& strData)> complete)
     {
         mSSL        = bSSL;
         mDeqSites   = deqSites;
@@ -152,23 +104,28 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void get (
-        bool bSSL,
+    void
+    get(bool bSSL,
         std::deque<std::string> deqSites,
         std::string const& strPath,
         std::chrono::seconds timeout,
-        std::function<bool (const boost::system::error_code& ecResult, int iStatus,
+        std::function<bool (
+            const boost::system::error_code& ecResult,
+            int iStatus,
             std::string const& strData)> complete)
     {
-
         mComplete   = complete;
         mTimeout    = timeout;
 
         request (
             bSSL,
             deqSites,
-            std::bind (&HTTPClientImp::makeGet, shared_from_this (), strPath,
-                       std::placeholders::_1, std::placeholders::_2),
+            std::bind(
+                &HTTPClientImp::makeGet,
+                shared_from_this(),
+                strPath,
+                std::placeholders::_1,
+                std::placeholders::_2),
             timeout,
             complete);
     }
@@ -225,7 +182,8 @@ public:
         }
         else if (ecResult)
         {
-            JLOG (j_.trace()) << "Deadline error: " << mDeqSites[0] << ": " << ecResult.message ();
+            JLOG (j_.trace()) << "Deadline error: "
+                << mDeqSites[0] << ": " << ecResult.message ();
 
             // Can't do anything sound.
             abort ();
@@ -236,7 +194,9 @@ public:
 
             // Mark us as shutting down.
             // XXX Use our own error code.
-            mShutdown   = boost::system::error_code (boost::system::errc::bad_address, boost::system::system_category ());
+            mShutdown = boost::system::error_code {
+                boost::system::errc::bad_address,
+                boost::system::system_category ()};
 
             // Cancel any resolving.
             mResolver.cancel ();
@@ -256,7 +216,8 @@ public:
     {
         if (ecResult)
         {
-            JLOG (j_.trace()) << "Shutdown error: " << mDeqSites[0] << ": " << ecResult.message ();
+            JLOG (j_.trace()) << "Shutdown error: "
+                << mDeqSites[0] << ": " << ecResult.message ();
         }
     }
 
@@ -266,23 +227,24 @@ public:
     )
     {
         if (!mShutdown)
-            mShutdown   = ecResult;
+        {
+            mShutdown =
+                ecResult ?
+                    ecResult :
+                    httpClientSSLContext->preConnectVerify (
+                        mSocket.SSLSocket(), mDeqSites[0]);
+        }
 
         if (mShutdown)
         {
-            JLOG (j_.trace()) << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message ();
+            JLOG (j_.trace()) << "Resolve error: "
+                << mDeqSites[0] << ": " << mShutdown.message ();
 
             invokeComplete (mShutdown);
         }
         else
         {
             JLOG (j_.trace()) << "Resolve complete.";
-
-            // If we intend  to verify the SSL connection, we need to
-            // set the default domain for server name indication *prior* to
-            // connecting
-            if (httpClientSSLContext->sslVerify())
-                mSocket.setTLSHostName(mDeqSites[0]);
 
             boost::asio::async_connect (
                 mSocket.lowest_layer (),
@@ -308,14 +270,13 @@ public:
         {
             JLOG (j_.trace()) << "Connected.";
 
-            if (httpClientSSLContext->sslVerify ())
-            {
-                mShutdown   = mSocket.verify (mDeqSites[0]);
+            mShutdown = httpClientSSLContext->postConnectVerify (
+                mSocket.SSLSocket(), mDeqSites[0]);
 
-                if (mShutdown)
-                {
-                    JLOG (j_.trace()) << "set_verify_callback: " << mDeqSites[0] << ": " << mShutdown.message ();
-                }
+            if (mShutdown)
+            {
+                JLOG (j_.trace()) << "postConnectVerify: "
+                    << mDeqSites[0] << ": " << mShutdown.message ();
             }
         }
 
@@ -364,7 +325,9 @@ public:
         }
     }
 
-    void handleWrite (const boost::system::error_code& ecResult, std::size_t bytes_transferred)
+    void handleWrite (
+        const boost::system::error_code& ecResult,
+        std::size_t bytes_transferred)
     {
         if (!mShutdown)
             mShutdown   = ecResult;
@@ -389,24 +352,32 @@ public:
         }
     }
 
-    void handleHeader (const boost::system::error_code& ecResult, std::size_t bytes_transferred)
+    void handleHeader (
+        const boost::system::error_code& ecResult,
+        std::size_t bytes_transferred)
     {
-        std::string     strHeader ((std::istreambuf_iterator<char> (&mHeader)), std::istreambuf_iterator<char> ());
+        std::string strHeader {
+            {std::istreambuf_iterator<char> (&mHeader)},
+            std::istreambuf_iterator<char> ()};
         JLOG (j_.trace()) << "Header: \"" << strHeader << "\"";
 
-        static boost::regex reStatus ("\\`HTTP/1\\S+ (\\d{3}) .*\\'");          // HTTP/1.1 200 OK
-        static boost::regex reSize ("\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'");
-        static boost::regex reBody ("\\`.*\\r\\n\\r\\n(.*)\\'");
+        static boost::regex reStatus {
+            "\\`HTTP/1\\S+ (\\d{3}) .*\\'"};      // HTTP/1.1 200 OK
+        static boost::regex reSize {
+            "\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'"};
+        static boost::regex reBody {
+            "\\`.*\\r\\n\\r\\n(.*)\\'"};
 
         boost::smatch   smMatch;
-
-        bool    bMatch  = boost::regex_match (strHeader, smMatch, reStatus);    // Match status code.
-
-        if (!bMatch)
+        // Match status code.
+        if (!boost::regex_match (strHeader, smMatch, reStatus))
         {
             // XXX Use our own error code.
             JLOG (j_.trace()) << "No status code";
-            invokeComplete (boost::system::error_code (boost::system::errc::bad_address, boost::system::system_category ()));
+            invokeComplete (
+                boost::system::error_code {
+                    boost::system::errc::bad_address,
+                    boost::system::system_category ()});
             return;
         }
 
@@ -416,7 +387,8 @@ public:
             mBody = smMatch[1];
 
         if (boost::regex_match (strHeader, smMatch, reSize))
-            mResponseSize = beast::lexicalCastThrow <int> (std::string(smMatch[1]));
+            mResponseSize =
+                beast::lexicalCastThrow <int> (std::string(smMatch[1]));
 
         if (mResponseSize == 0)
         {
@@ -440,7 +412,9 @@ public:
         }
     }
 
-    void handleData (const boost::system::error_code& ecResult, std::size_t bytes_transferred)
+    void handleData (
+        const boost::system::error_code& ecResult,
+        std::size_t bytes_transferred)
     {
         if (!mShutdown)
             mShutdown   = ecResult;
@@ -460,14 +434,19 @@ public:
             else
             {
                 mResponse.commit (bytes_transferred);
-                std::string strBody ((std::istreambuf_iterator<char> (&mResponse)), std::istreambuf_iterator<char> ());
+                std::string strBody {
+                    {std::istreambuf_iterator<char> (&mResponse)},
+                    std::istreambuf_iterator<char> ()};
                 invokeComplete (ecResult, mStatus, mBody + strBody);
             }
         }
     }
 
     // Call cancel the deadline timer and invoke the completion routine.
-    void invokeComplete (const boost::system::error_code& ecResult, int iStatus = 0, std::string const& strData = "")
+    void invokeComplete (
+        const boost::system::error_code& ecResult,
+        int iStatus = 0,
+        std::string const& strData = "")
     {
         boost::system::error_code ecCancel;
 
@@ -475,10 +454,12 @@ public:
 
         if (ecCancel)
         {
-            JLOG (j_.trace()) << "invokeComplete: Deadline cancel error: " << ecCancel.message ();
+            JLOG (j_.trace()) << "invokeComplete: Deadline cancel error: "
+                << ecCancel.message ();
         }
 
-        JLOG (j_.debug()) << "invokeComplete: Deadline popping: " << mDeqSites.size ();
+        JLOG (j_.debug()) << "invokeComplete: Deadline popping: "
+            << mDeqSites.size ();
 
         if (!mDeqSites.empty ())
         {
@@ -492,7 +473,8 @@ public:
             // ecResult: !0 = had an error, last entry
             //    iStatus: result, if no error
             //  strData: data, if no error
-            bAgain  = mComplete && mComplete (ecResult ? ecResult : ecCancel, iStatus, strData);
+            bAgain  = mComplete &&
+                mComplete (ecResult ? ecResult : ecCancel, iStatus, strData);
         }
 
         if (!mDeqSites.empty () && bAgain)
@@ -515,8 +497,12 @@ private:
     const unsigned short                                        mPort;
     int                                                         mResponseSize;
     int                                                         mStatus;
-    std::function<void (boost::asio::streambuf& sb, std::string const& strHost)>         mBuild;
-    std::function<bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> mComplete;
+    std::function<void (boost::asio::streambuf& sb, std::string const& strHost)>
+                                                                mBuild;
+    std::function<bool (
+        const boost::system::error_code& ecResult,
+        int iStatus,
+        std::string const& strData)>                            mComplete;
 
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> mDeadline;
 
@@ -566,15 +552,19 @@ void HTTPClient::get (
     client->get (bSSL, deqSites, strPath, timeout, complete);
 }
 
-void HTTPClient::request (
+void
+HTTPClient::request(
     bool bSSL,
     boost::asio::io_service& io_service,
     std::string strSite,
     const unsigned short port,
-    std::function<void (boost::asio::streambuf& sb, std::string const& strHost)> setRequest,
+    std::function<void (boost::asio::streambuf& sb, std::string const& strHost)>
+        setRequest,
     std::size_t responseMax,
     std::chrono::seconds timeout,
-    std::function<bool (const boost::system::error_code& ecResult, int iStatus,
+    std::function<bool (
+        const boost::system::error_code& ecResult,
+        int iStatus,
         std::string const& strData)> complete,
     beast::Journal& j)
 {

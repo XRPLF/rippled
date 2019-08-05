@@ -38,47 +38,6 @@ class ValidatorRPC_test : public beast::unit_test::suite
 {
     using Validator = TrustedPublisherServer::Validator;
 
-    static
-    Validator
-    randomValidator ()
-    {
-        auto const secret = randomSecretKey();
-        auto const masterPublic =
-            derivePublicKey(KeyType::ed25519, secret);
-        auto const signingKeys = randomKeyPair(KeyType::secp256k1);
-        return { masterPublic, signingKeys.first, makeManifestString (
-            masterPublic, secret, signingKeys.first, signingKeys.second, 1) };
-    }
-
-    static
-    std::string
-    makeManifestString(
-        PublicKey const& pk,
-        SecretKey const& sk,
-        PublicKey const& spk,
-        SecretKey const& ssk,
-        int seq)
-    {
-        STObject st(sfGeneric);
-        st[sfSequence] = seq;
-        st[sfPublicKey] = pk;
-        st[sfSigningPubKey] = spk;
-
-        sign(st, HashPrefix::manifest, *publicKeyType(spk), ssk);
-        sign(
-            st,
-            HashPrefix::manifest,
-            *publicKeyType(pk),
-            sk,
-            sfMasterSignature);
-
-        Serializer s;
-        st.add(s);
-
-        return base64_encode(
-            std::string(static_cast<char const*>(s.data()), s.size()));
-    }
-
 public:
     void
     testPrivileges()
@@ -184,24 +143,29 @@ public:
             return toBase58(TokenType::NodePublic, publicKey);
         };
 
-        // Publisher manifest/signing keys
-        auto const publisherSecret = randomSecretKey();
-        auto const publisherPublic =
-            derivePublicKey(KeyType::ed25519, publisherSecret);
-        auto const publisherSigningKeys = randomKeyPair(KeyType::secp256k1);
-        auto const manifest = makeManifestString(
-            publisherPublic,
-            publisherSecret,
-            publisherSigningKeys.first,
-            publisherSigningKeys.second,
-            1);
-
         // Validator keys that will be in the published list
-        std::vector<Validator> validators = {randomValidator(), randomValidator()};
+        std::vector<Validator> validators = {
+            TrustedPublisherServer::randomValidator(),
+            TrustedPublisherServer::randomValidator()};
         std::set<std::string> expectedKeys;
         for (auto const& val : validators)
             expectedKeys.insert(toStr(val.masterPublic));
 
+        // Manage single thread io_service for server
+        struct Worker : BasicApp
+        {
+            Worker() : BasicApp(1) {}
+        };
+        Worker w;
+        using namespace std::chrono_literals;
+        NetClock::time_point const expiration{3600s};
+        TrustedPublisherServer server{
+            w.get_io_service(),
+            validators,
+            expiration,
+            false,
+            1,
+            false};
 
         //----------------------------------------------------------------------
         // Publisher list site unavailable
@@ -216,7 +180,7 @@ public:
                 envconfig([&](std::unique_ptr<Config> cfg) {
                     cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
                     cfg->section(SECTION_VALIDATOR_LIST_KEYS)
-                        .append(strHex(publisherPublic));
+                        .append(strHex(server.publisherPublic()));
                     return cfg;
                 }),
             };
@@ -253,7 +217,7 @@ public:
                     BEAST_EXPECT(!jp.isMember(jss::expiration));
                     BEAST_EXPECT(!jp.isMember(jss::version));
                     BEAST_EXPECT(
-                        jp[jss::pubkey_publisher] == strHex(publisherPublic));
+                        jp[jss::pubkey_publisher] == strHex(server.publisherPublic()));
                 }
                 BEAST_EXPECT(jrr[jss::signing_keys].size() == 0);
             }
@@ -272,24 +236,7 @@ public:
         //----------------------------------------------------------------------
         // Publisher list site available
         {
-            using namespace std::chrono_literals;
-            NetClock::time_point const expiration{3600s};
-
-            // Manage single thread io_service for server
-            struct Worker : BasicApp
-            {
-                Worker() : BasicApp(1) {}
-            };
-            Worker w;
-
-            TrustedPublisherServer server(
-                w.get_io_service(),
-                publisherSigningKeys,
-                manifest,
-                1,
-                expiration,
-                1,
-                validators);
+            server.start();
 
             std::stringstream uri;
             uri << "http://" << server.local_endpoint() << "/validators";
@@ -300,7 +247,7 @@ public:
                 envconfig([&](std::unique_ptr<Config> cfg) {
                     cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
                     cfg->section(SECTION_VALIDATOR_LIST_KEYS)
-                        .append(strHex(publisherPublic));
+                        .append(strHex(server.publisherPublic()));
                     return cfg;
                 }),
             };
@@ -356,7 +303,7 @@ public:
                     }
                     BEAST_EXPECT(jp[jss::seq].asUInt() == 1);
                     BEAST_EXPECT(
-                        jp[jss::pubkey_publisher] == strHex(publisherPublic));
+                        jp[jss::pubkey_publisher] == strHex(server.publisherPublic()));
                     BEAST_EXPECT(jp[jss::expiration] == to_string(expiration));
                     BEAST_EXPECT(jp[jss::version] == 1);
                 }

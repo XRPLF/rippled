@@ -88,18 +88,16 @@ ValidatorSite::Site::Site (std::string uri)
 }
 
 ValidatorSite::ValidatorSite (
-    boost::asio::io_service& ios,
-    ValidatorList& validators,
-    beast::Journal j,
+    Application& app,
+    boost::optional<beast::Journal> j,
     std::chrono::seconds timeout)
-    : ios_ (ios)
-    , validators_ (validators)
-    , j_ (j)
-    , timer_ (ios_)
-    , fetching_ (false)
-    , pending_ (false)
-    , stopping_ (false)
-    , requestTimeout_ (timeout)
+    : app_ {app}
+    , j_ {j ? *j : app_.logs().journal("ValidatorSite") }
+    , timer_ {app_.getIOService()}
+    , fetching_ {false}
+    , pending_ {false}
+    , stopping_ {false}
+    , requestTimeout_ {timeout}
 {
 }
 
@@ -258,12 +256,14 @@ ValidatorSite::makeRequest (
 
     if (resource->pUrl.scheme == "https")
     {
+        // can throw...
         sp = std::make_shared<detail::WorkSSL>(
             resource->pUrl.domain,
             resource->pUrl.path,
             std::to_string(*resource->pUrl.port),
-            ios_,
+            app_.getIOService(),
             j_,
+            app_.config(),
             onFetch);
     }
     else if(resource->pUrl.scheme == "http")
@@ -272,7 +272,7 @@ ValidatorSite::makeRequest (
             resource->pUrl.domain,
             resource->pUrl.path,
             std::to_string(*resource->pUrl.port),
-            ios_,
+            app_.getIOService(),
             onFetch);
     }
     else
@@ -280,7 +280,7 @@ ValidatorSite::makeRequest (
         BOOST_ASSERT(resource->pUrl.scheme == "file");
         sp = std::make_shared<detail::WorkFile>(
             resource->pUrl.path,
-            ios_,
+            app_.getIOService(),
             onFetchFile);
     }
 
@@ -336,7 +336,7 @@ ValidatorSite::onTimer (
         sites_[siteIdx].nextRefresh =
             clock_type::now() + sites_[siteIdx].refreshInterval;
         sites_[siteIdx].redirCount = 0;
-        // the WorkSSL client can throw if SSL init fails
+        // the WorkSSL client ctor can throw if SSL init fails
         makeRequest(sites_[siteIdx].startingResource, siteIdx, lock);
     }
     catch (std::exception &)
@@ -376,7 +376,7 @@ ValidatorSite::parseJsonResponse (
         throw std::runtime_error{"missing fields"};
     }
 
-    auto const disp = validators_.applyList (
+    auto const disp = app_.validators().applyList (
         body["manifest"].asString (),
         body["blob"].asString (),
         body["signature"].asString(),
