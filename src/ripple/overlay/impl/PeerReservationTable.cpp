@@ -51,9 +51,9 @@ auto
 PeerReservationTable::list() const -> std::vector<PeerReservation>
 {
     std::vector<PeerReservation> list;
-    list.reserve(table_.size());
     {
         std::lock_guard<std::mutex> lock(mutex_);
+        list.reserve(table_.size());
         std::copy(table_.begin(), table_.end(), std::back_inserter(list));
     }
     std::sort(list.begin(), list.end());
