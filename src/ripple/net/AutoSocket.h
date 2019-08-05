@@ -116,40 +116,6 @@ public:
         return lowest_layer ().cancel (ec);
     }
 
-
-    static bool rfc2818_verify (std::string const& domain, bool preverified,
-                                boost::asio::ssl::verify_context& ctx, beast::Journal j)
-    {
-        using namespace ripple;
-
-        if (boost::asio::ssl::rfc2818_verification (domain) (preverified, ctx))
-            return true;
-
-        JLOG (j.warn()) <<
-            "Outbound SSL connection to " << domain <<
-            " fails certificate verification";
-        return false;
-    }
-
-    boost::system::error_code verify (std::string const& strDomain)
-    {
-        boost::system::error_code ec;
-
-        mSocket->set_verify_mode (boost::asio::ssl::verify_peer);
-
-        // XXX Verify semantics of RFC 2818 are what we want.
-        mSocket->set_verify_callback (
-            std::bind (&rfc2818_verify, strDomain,
-                       std::placeholders::_1, std::placeholders::_2, j_), ec);
-
-        return ec;
-    }
-
-    void setTLSHostName(std::string const & host)
-    {
-        SSL_set_tlsext_host_name(mSocket->native_handle(), host.c_str());
-    }
-
     void async_handshake (handshake_type type, callback cbFunc)
     {
         if ((type == ssl_socket::client) || (mSecure))

@@ -22,10 +22,13 @@
 
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/misc/detail/Work.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/core/Config.h>
 #include <ripple/json/json_value.h>
 #include <boost/asio.hpp>
+#include <boost/optional.hpp>
 #include <mutex>
 #include <memory>
 
@@ -106,9 +109,9 @@ private:
         boost::optional<Status> lastRefreshStatus;
     };
 
-    boost::asio::io_service& ios_;
-    ValidatorList& validators_;
+    Application& app_;
     beast::Journal j_;
+
     std::mutex mutable sites_mutex_;
     std::mutex mutable state_mutex_;
 
@@ -131,9 +134,8 @@ private:
 
 public:
     ValidatorSite (
-        boost::asio::io_service& ios,
-        ValidatorList& validators,
-        beast::Journal j,
+        Application& app,
+        boost::optional<beast::Journal> j = boost::none,
         std::chrono::seconds timeout = std::chrono::seconds{20});
     ~ValidatorSite ();
 

@@ -94,6 +94,29 @@ public:
     operator beast::Journal&() { return journal_; }
 };
 
+// this sink can be used to create a custom journal
+// whose log messages will be captured to a stringstream
+// that can be later inspected.
+class StreamSink : public beast::Journal::Sink
+{
+    std::stringstream strm_;
+public:
+    StreamSink (
+        beast::severities::Severity threshold = beast::severities::kDebug)
+    : Sink (threshold, false) {  }
+
+    void
+    write (beast::severities::Severity level,
+        std::string const& text) override
+    {
+        if (level < threshold())
+            return;
+
+        strm_ << text << std::endl;
+    }
+    std::stringstream const& messages() const { return strm_ ; }
+};
+
 } // test
 } // ripple
 

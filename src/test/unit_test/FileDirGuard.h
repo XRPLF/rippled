@@ -111,18 +111,23 @@ class FileDirGuard : public DirGuard
 {
 protected:
     path const file_;
+    bool created_ = false;
 
 public:
     FileDirGuard(beast::unit_test::suite& test,
         path subDir, path file, std::string const& contents,
-        bool useCounter = true)
+        bool useCounter = true, bool create = true)
         : DirGuard(test, subDir, useCounter)
         , file_(file.is_absolute()  ? file : subdir() / file)
     {
         if (!exists (file_))
         {
-            std::ofstream o (file_.string ());
-            o << contents;
+            if (create)
+            {
+                std::ofstream o (file_.string ());
+                o << contents;
+                created_ = true;
+            }
         }
         else
         {
@@ -137,11 +142,16 @@ public:
         try
         {
             using namespace boost::filesystem;
-            if (!exists (file_))
-                test_.log << "Expected " << file_.string ()
-                << " to be an existing file." << std::endl;
-            else
+            if (exists (file_))
+            {
                 remove (file_);
+            }
+            else
+            {
+                if (created_)
+                    test_.log << "Expected " << file_.string ()
+                    << " to be an existing file." << std::endl;
+            }
         }
         catch (std::exception& e)
         {

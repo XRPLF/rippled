@@ -22,6 +22,7 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
+#include <ripple/net/HTTPClientSSLContext.h>
 
 #include <boost/asio/connect.hpp>
 #include <boost/asio/io_service.hpp>
@@ -48,10 +49,8 @@ public:
 
     SSLHTTPDownloader(
         boost::asio::io_service& io_service,
-        beast::Journal j);
-
-    bool
-    init(Config const& config);
+        beast::Journal j,
+        Config const& config);
 
     bool
     download(
@@ -63,12 +62,11 @@ public:
         std::function<void(boost::filesystem::path)> complete);
 
 private:
-    boost::asio::ssl::context ctx_;
+    HTTPClientSSLContext ssl_ctx_;
     boost::asio::io_service::strand strand_;
     boost::optional<
         boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> stream_;
     boost::beast::flat_buffer read_buf_;
-    bool ssl_verify_;
     beast::Journal j_;
 
     void

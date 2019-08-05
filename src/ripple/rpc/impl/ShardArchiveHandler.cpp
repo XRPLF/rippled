@@ -113,6 +113,13 @@ ShardArchiveHandler::start()
 
         // Create temp root download directory
         create_directory(downloadDir_);
+
+        if (!downloader_)
+        {
+            // will throw if can't initialize ssl context
+            downloader_ = std::make_shared<SSLHTTPDownloader>(
+                app_.getIOService(), j_, app_.config());
+        }
     }
     catch (std::exception const& e)
     {
@@ -121,16 +128,6 @@ ShardArchiveHandler::start()
         return false;
     }
 
-    if (!downloader_)
-    {
-        downloader_ = std::make_shared<SSLHTTPDownloader>(
-            app_.getIOService(), j_);
-        if (!downloader_->init(app_.config()))
-        {
-            downloader_.reset();
-            return false;
-        }
-    }
     return next(lock);
 }
 

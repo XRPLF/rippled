@@ -18,52 +18,18 @@
 //==============================================================================
 
 #include <ripple/net/SSLHTTPDownloader.h>
-#include <ripple/net/RegisterSSLCerts.h>
 #include <boost/asio/ssl.hpp>
 
 namespace ripple {
 
 SSLHTTPDownloader::SSLHTTPDownloader(
     boost::asio::io_service& io_service,
-    beast::Journal j)
-    : ctx_(boost::asio::ssl::context::tlsv12_client)
+    beast::Journal j,
+    Config const& config)
+    : ssl_ctx_(config, j, boost::asio::ssl::context::tlsv12_client)
     , strand_(io_service)
     , j_(j)
 {
-}
-
-bool
-SSLHTTPDownloader::init(Config const& config)
-{
-    boost::system::error_code ec;
-    if (config.SSL_VERIFY_FILE.empty())
-    {
-        registerSSLCerts(ctx_, ec, j_);
-        if (ec && config.SSL_VERIFY_DIR.empty())
-        {
-            JLOG(j_.error()) <<
-                "Failed to set_default_verify_paths: " <<
-                ec.message();
-            return false;
-        }
-    }
-    else
-        ctx_.load_verify_file(config.SSL_VERIFY_FILE);
-
-    if (!config.SSL_VERIFY_DIR.empty())
-    {
-        ctx_.add_verify_path(config.SSL_VERIFY_DIR, ec);
-        if (ec)
-        {
-            JLOG(j_.error()) <<
-                "Failed to add verify path: " <<
-                ec.message();
-            return false;
-        }
-    }
-
-    ssl_verify_ = config.SSL_VERIFY;
-    return true;
 }
 
 bool
@@ -139,7 +105,7 @@ SSLHTTPDownloader::do_session(
 
     try
     {
-        stream_.emplace(strand_.context(), ctx_);
+        stream_.emplace(strand_.context(), ssl_ctx_.context());
     }
     catch (std::exception const& e)
     {
@@ -147,40 +113,18 @@ SSLHTTPDownloader::do_session(
             std::string("exception: ") + e.what());
     }
 
-    if (ssl_verify_)
-    {
-        // If we intend to verify the SSL connection, we need to set the
-        // default domain for server name indication *prior* to connecting
-        if (!SSL_set_tlsext_host_name(stream_->native_handle(), host.c_str()))
-        {
-            ec.assign(static_cast<int>(
-                ::ERR_get_error()), boost::asio::error::get_ssl_category());
-            return fail(dstPath, complete, ec, "SSL_set_tlsext_host_name");
-        }
-    }
-    else
-    {
-        stream_->set_verify_mode(boost::asio::ssl::verify_none, ec);
-        if (ec)
-            return fail(dstPath, complete, ec, "set_verify_mode");
-    }
+    ec = ssl_ctx_.preConnectVerify(*stream_, host);
+    if (ec)
+        return fail(dstPath, complete, ec, "preConnectVerify");
 
     boost::asio::async_connect(
         stream_->next_layer(), results.begin(), results.end(), yield[ec]);
     if (ec)
         return fail(dstPath, complete, ec, "async_connect");
 
-    if (ssl_verify_)
-    {
-        stream_->set_verify_mode(boost::asio::ssl::verify_peer, ec);
-        if (ec)
-            return fail(dstPath, complete, ec, "set_verify_mode");
-
-        stream_->set_verify_callback(
-            boost::asio::ssl::rfc2818_verification(host.c_str()), ec);
-        if (ec)
-            return fail(dstPath, complete, ec, "set_verify_callback");
-    }
+    ec = ssl_ctx_.postConnectVerify(*stream_, host);
+    if (ec)
+        return fail(dstPath, complete, ec, "postConnectVerify");
 
     stream_->async_handshake(ssl::stream_base::client, yield[ec]);
     if (ec)

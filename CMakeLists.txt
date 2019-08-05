@@ -2041,6 +2041,7 @@ if (unity)
     src/test/unity/crypto_test_unity.cpp
     src/test/unity/json_test_unity.cpp
     src/test/unity/ledger_test_unity.cpp
+    src/test/unity/net_test_unity.cpp
     src/test/unity/nodestore_test_unity.cpp
     src/test/unity/overlay_test_unity.cpp
     src/test/unity/peerfinder_test_unity.cpp
@@ -2548,6 +2549,11 @@ else ()
     src/test/ledger/SHAMapV2_test.cpp
     src/test/ledger/SkipList_test.cpp
     src/test/ledger/View_test.cpp
+    #[===============================[
+       nounity, test sources:
+         subdir: net
+    #]===============================]
+    src/test/net/SSLHTTPDownloader_test.cpp
     #[===============================[
        nounity, test sources:
          subdir: nodestore

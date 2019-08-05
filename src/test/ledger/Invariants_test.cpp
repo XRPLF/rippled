@@ -30,25 +30,6 @@ namespace ripple {
 
 class Invariants_test : public beast::unit_test::suite
 {
-
-    class TestSink : public beast::Journal::Sink
-    {
-    public:
-        std::stringstream strm_;
-
-        TestSink () : Sink (beast::severities::kWarning, false) {  }
-
-        void
-        write (beast::severities::Severity level,
-            std::string const& text) override
-        {
-            if (level < threshold())
-                return;
-
-            strm_ << text << std::endl;
-        }
-    };
-
     // this is common setup/method for running a failing invariant check. The
     // precheck function is used to manipulate the ApplyContext with view
     // changes that will cause the check to fail.
@@ -87,7 +68,7 @@ class Invariants_test : public beast::unit_test::suite
         auto tx = STTx {ttACCOUNT_SET, [](STObject&){  } };
         txmod(tx);
         OpenView ov {*env.current()};
-        TestSink sink;
+        test::StreamSink sink {beast::severities::kWarning};
         beast::Journal jlog {sink};
         ApplyContext ac {
             env.app(),
@@ -112,20 +93,20 @@ class Invariants_test : public beast::unit_test::suite
                     ? TER {tecINVARIANT_FAILED}
                     : TER {tefINVARIANT_FAILED}));
                 BEAST_EXPECT(
-                    boost::starts_with(sink.strm_.str(), "Invariant failed:") ||
-                    boost::starts_with(sink.strm_.str(),
+                    boost::starts_with(sink.messages().str(), "Invariant failed:") ||
+                    boost::starts_with(sink.messages().str(),
                         "Transaction caused an exception"));
                 //uncomment if you want to log the invariant failure message
-                //log << "   --> " << sink.strm_.str() << std::endl;
+                //log << "   --> " << sink.messages().str() << std::endl;
                 for (auto const& m : expect_logs)
                 {
-                    BEAST_EXPECT(sink.strm_.str().find(m) != std::string::npos);
+                    BEAST_EXPECT(sink.messages().str().find(m) != std::string::npos);
                 }
             }
             else
             {
                 BEAST_EXPECT(tr == tesSUCCESS);
-                BEAST_EXPECT(sink.strm_.str().empty());
+                BEAST_EXPECT(sink.messages().str().empty());
             }
         }
     }
