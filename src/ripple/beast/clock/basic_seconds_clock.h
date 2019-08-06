@@ -51,7 +51,6 @@ class seconds_clock_thread
 public:
     using mutex = std::mutex;
     using cond_var = std::condition_variable;
-    using lock_guard = std::lock_guard <mutex>;
     using unique_lock = std::unique_lock <mutex>;
     using clock_type = std::chrono::steady_clock;
     using seconds = std::chrono::seconds;
@@ -77,13 +76,13 @@ public:
 
     void add (seconds_clock_worker& w)
     {
-        lock_guard lock (mutex_);
+        std::lock_guard lock (mutex_);
         workers_.push_back (&w);
     }
 
     void remove (seconds_clock_worker& w)
     {
-        lock_guard lock (mutex_);
+        std::lock_guard lock (mutex_);
         workers_.erase (std::find (
             workers_.begin (), workers_.end(), &w));
     }
@@ -93,7 +92,7 @@ public:
         if (thread_.joinable())
         {
             {
-                lock_guard lock (mutex_);
+                std::lock_guard lock (mutex_);
                 stop_ = true;
             }
             cond_.notify_all();
@@ -200,13 +199,13 @@ public:
 
             time_point now()
             {
-                std::lock_guard<std::mutex> lock (mutex_);
+                std::lock_guard lock (mutex_);
                 return m_now;
             }
 
             void sample() override
             {
-                std::lock_guard<std::mutex> lock (mutex_);
+                std::lock_guard lock (mutex_);
                 m_now = Clock::now();
             }
         };

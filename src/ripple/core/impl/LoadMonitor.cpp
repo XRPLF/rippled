@@ -128,7 +128,7 @@ void LoadMonitor::addLoadSample (LoadEvent const& s)
 */
 void LoadMonitor::addSamples (int count, std::chrono::milliseconds latency)
 {
-    std::lock_guard<std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
 
     update ();
     mCounts += count;
@@ -159,7 +159,7 @@ bool LoadMonitor::isOverTarget (std::chrono::milliseconds avg,
 
 bool LoadMonitor::isOver ()
 {
-    std::lock_guard<std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
 
     update ();
 
@@ -174,7 +174,7 @@ LoadMonitor::Stats LoadMonitor::getStats ()
     using namespace std::chrono_literals;
     Stats stats;
 
-    std::lock_guard<std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
 
     update ();
 

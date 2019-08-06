@@ -39,7 +39,7 @@ auto
 ManualTimeKeeper::now() const ->
     time_point
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
     return now_;
 }
     
@@ -47,7 +47,7 @@ auto
 ManualTimeKeeper::closeTime() const ->
     time_point
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
     return now_ + closeOffset_;
 }
 
@@ -58,7 +58,7 @@ ManualTimeKeeper::adjustCloseTime(
     // Copied from TimeKeeper::adjustCloseTime
     using namespace std::chrono;
     auto const s = amount.count();
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
     // Take large offsets, ignore small offsets,
     // push the close time towards our wall time.
     if (s > 1)
@@ -78,14 +78,14 @@ ManualTimeKeeper::nowOffset() const
 std::chrono::duration<std::int32_t>
 ManualTimeKeeper::closeOffset() const
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
     return closeOffset_;
 }
 
 void
 ManualTimeKeeper::set (time_point now)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
     now_ = now;
 }
 

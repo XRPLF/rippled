@@ -25,7 +25,6 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/Handler.h>
-#include <ripple/basics/make_lock.h>
 
 namespace ripple {
 

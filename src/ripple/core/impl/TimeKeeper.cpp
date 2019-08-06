@@ -63,14 +63,14 @@ public:
     time_point
     now() const override
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard lock(mutex_);
         return adjust(clock_->now());
     }
 
     time_point
     closeTime() const override
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard lock(mutex_);
         return adjust(clock_->now()) + closeOffset_;
     }
 
@@ -80,7 +80,7 @@ public:
     {
         using namespace std::chrono;
         auto const s = amount.count();
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard lock(mutex_);
         // Take large offsets, ignore small offsets,
         // push the close time towards our wall time.
         if (s > 1)
@@ -111,14 +111,14 @@ public:
     {
         using namespace std::chrono;
         using namespace std;
-        lock_guard<mutex> lock(mutex_);
+        lock_guard lock(mutex_);
         return duration_cast<chrono::duration<int32_t>>(clock_->offset());
     }
 
     std::chrono::duration<std::int32_t>
     closeOffset() const override
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard lock(mutex_);
         return closeOffset_;
     }
 };

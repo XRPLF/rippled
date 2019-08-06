@@ -147,9 +147,7 @@ public:
     std::shared_ptr <PathRequest> const& getPathRequest ();
 
 protected:
-    using LockType = std::mutex;
-    using ScopedLockType = std::lock_guard <LockType>;
-    LockType mLock;
+    std::mutex mLock;
 
 private:
     Consumer                      m_consumer;

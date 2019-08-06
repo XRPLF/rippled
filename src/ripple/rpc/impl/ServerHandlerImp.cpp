@@ -153,7 +153,7 @@ bool
 ServerHandlerImp::onAccept (Session& session,
     boost::asio::ip::tcp::endpoint endpoint)
 {
-    std::lock_guard<std::mutex> lock(countlock_);
+    std::lock_guard lock(countlock_);
 
     auto const c = ++count_[session.port()];
 
@@ -367,7 +367,7 @@ void
 ServerHandlerImp::onClose (Session& session,
     boost::system::error_code const&)
 {
-    std::lock_guard<std::mutex> lock(countlock_);
+    std::lock_guard lock(countlock_);
     --count_[session.port()];
 }
 

@@ -127,7 +127,7 @@ public:
     //
     void load ()
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         bootcache_.load ();
     }
 
@@ -139,7 +139,7 @@ public:
     */
     void stop ()
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         stopping_ = true;
         if (fetchSource_ != nullptr)
             fetchSource_->cancel ();
@@ -154,7 +154,7 @@ public:
     void
     config (Config const& c)
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         config_ = c;
         counts_.onConfig (config_);
     }
@@ -162,7 +162,7 @@ public:
     Config
     config()
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         return config_;
     }
 
@@ -179,7 +179,7 @@ public:
     addFixedPeer (std::string const& name,
         std::vector <beast::IP::Endpoint> const& addresses)
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         if (addresses.empty ())
         {
@@ -220,7 +220,7 @@ public:
         if (ec == boost::asio::error::operation_aborted)
             return;
 
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         auto const iter (slots_.find (remoteAddress));
         if (iter == slots_.end())
         {
@@ -261,7 +261,7 @@ public:
             "Logic accept" << remote_endpoint <<
             " on local " << local_endpoint;
 
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         // Check for duplicate connection
         if (is_public (remote_endpoint))
@@ -302,7 +302,7 @@ public:
         JLOG(m_journal.debug()) << beast::leftw (18) <<
             "Logic connect " << remote_endpoint;
 
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         // Check for duplicate connection
         if (slots_.find (remote_endpoint) !=
@@ -342,7 +342,7 @@ public:
             "Logic connected" << slot->remote_endpoint () <<
             " on local " << local_endpoint;
 
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         // The object must exist in our table
         assert (slots_.find (slot->remote_endpoint ()) !=
@@ -378,7 +378,7 @@ public:
             "Logic handshake " << slot->remote_endpoint () <<
             " with " << (reserved ? "reserved " : "") << "key " << key;
 
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         // The object must exist in our table
         assert (slots_.find (slot->remote_endpoint ()) !=
@@ -445,7 +445,7 @@ public:
     std::vector <Endpoint>
     redirect (SlotImp::ptr const& slot)
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         RedirectHandouts h (slot);
         livecache_.hops.shuffle();
         handout (&h, (&h)+1,
@@ -465,7 +465,7 @@ public:
     {
         std::vector <beast::IP::Endpoint> const none;
 
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         // Count how many more outbound attempts to make
         //
@@ -578,7 +578,7 @@ public:
     {
         std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>> result;
 
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         clock_type::time_point const now = m_clock.now();
         if (m_whenBroadcast <= now)
@@ -663,7 +663,7 @@ public:
 
     void once_per_second()
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         // Expire the Livecache
         livecache_.expire ();
@@ -759,7 +759,7 @@ public:
             " contained " << list.size () <<
             ((list.size() > 1) ? " entries" : " entry");
 
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         // The object must exist in our table
         assert (slots_.find (slot->remote_endpoint ()) !=
@@ -860,7 +860,7 @@ public:
 
     void on_closed (SlotImp::ptr const& slot)
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         remove (slot);
 
@@ -909,7 +909,7 @@ public:
 
     void on_failure (SlotImp::ptr const& slot)
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         bootcache_.on_failure (slot->remote_endpoint ());
     }
@@ -1000,7 +1000,7 @@ public:
     int addBootcacheAddresses (IPAddresses const& list)
     {
         int count (0);
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         for (auto addr : list)
         {
             if (bootcache_.insertStatic (addr))
@@ -1017,7 +1017,7 @@ public:
 
         {
             {
-                std::lock_guard<std::recursive_mutex> _(lock_);
+                std::lock_guard _(lock_);
                 if (stopping_)
                     return;
                 fetchSource_ = source;
@@ -1029,7 +1029,7 @@ public:
             source->fetch (results, m_journal);
 
             {
-                std::lock_guard<std::recursive_mutex> _(lock_);
+                std::lock_guard _(lock_);
                 if (stopping_)
                     return;
                 fetchSource_ = nullptr;
@@ -1098,7 +1098,7 @@ public:
 
     void onWrite (beast::PropertyStream::Map& map)
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         // VFALCO NOTE These ugly casts are needed because
         //             of how std::size_t is declared on some linuxes
@@ -1167,7 +1167,7 @@ void
 Logic<Checker>::onRedirects (FwdIter first, FwdIter last,
     boost::asio::ip::tcp::endpoint const& remote_address)
 {
-    std::lock_guard<std::recursive_mutex> _(lock_);
+    std::lock_guard _(lock_);
     std::size_t n = 0;
     for(;first != last && n < Tuning::maxRedirects; ++first, ++n)
         bootcache_.insert(

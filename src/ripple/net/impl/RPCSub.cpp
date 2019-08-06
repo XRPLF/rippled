@@ -72,7 +72,7 @@ public:
 
     void send (Json::Value const& jvObj, bool broadcast) override
     {
-        ScopedLockType sl (mLock);
+        std::lock_guard sl (mLock);
 
         if (mDeque.size () >= eventQueueMax)
         {
@@ -101,14 +101,14 @@ public:
 
     void setUsername (std::string const& strUsername) override
     {
-        ScopedLockType sl (mLock);
+        std::lock_guard sl (mLock);
 
         mUsername = strUsername;
     }
 
     void setPassword (std::string const& strPassword) override
     {
-        ScopedLockType sl (mLock);
+        std::lock_guard sl (mLock);
 
         mPassword = strPassword;
     }
@@ -124,7 +124,7 @@ private:
         {
             {
                 // Obtain the lock to manipulate the queue and change sending.
-                ScopedLockType sl (mLock);
+                std::lock_guard sl (mLock);
 
                 if (mDeque.empty ())
                 {

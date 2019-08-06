@@ -180,7 +180,7 @@ PropertyStream::Source::Source (std::string const& name)
 
 PropertyStream::Source::~Source ()
 {
-    std::lock_guard<std::recursive_mutex> _(lock_);
+    std::lock_guard _(lock_);
     if (parent_ != nullptr)
         parent_->remove (*this);
     removeAll ();
@@ -194,8 +194,8 @@ std::string const& PropertyStream::Source::name () const
 void PropertyStream::Source::add (Source& source)
 {
     std::lock(lock_, source.lock_);
-    std::lock_guard<std::recursive_mutex> lk1(lock_, std::adopt_lock);
-    std::lock_guard<std::recursive_mutex> lk2(source.lock_, std::adopt_lock);
+    std::lock_guard lk1(lock_, std::adopt_lock);
+    std::lock_guard lk2(source.lock_, std::adopt_lock);
 
     assert (source.parent_ == nullptr);
     children_.push_back (source.item_);
@@ -205,8 +205,8 @@ void PropertyStream::Source::add (Source& source)
 void PropertyStream::Source::remove (Source& child)
 {
     std::lock(lock_, child.lock_);
-    std::lock_guard<std::recursive_mutex> lk1(lock_, std::adopt_lock);
-    std::lock_guard<std::recursive_mutex> lk2(child.lock_, std::adopt_lock);
+    std::lock_guard lk1(lock_, std::adopt_lock);
+    std::lock_guard lk2(child.lock_, std::adopt_lock);
 
     assert (child.parent_ == this);
     children_.erase (
@@ -217,10 +217,10 @@ void PropertyStream::Source::remove (Source& child)
 
 void PropertyStream::Source::removeAll ()
 {
-    std::lock_guard<std::recursive_mutex> _(lock_);
+    std::lock_guard _(lock_);
     for (auto iter = children_.begin(); iter != children_.end(); )
     {
-        std::lock_guard<std::recursive_mutex> _cl((*iter)->lock_);
+        std::lock_guard _cl((*iter)->lock_);
         remove (*(*iter));
     }
 }
@@ -238,7 +238,7 @@ void PropertyStream::Source::write (PropertyStream& stream)
     Map map (m_name, stream);
     onWrite (map);
 
-    std::lock_guard<std::recursive_mutex> _(lock_);
+    std::lock_guard _(lock_);
 
     for (auto& child : children_)
         child.source().write (stream);
@@ -326,7 +326,7 @@ PropertyStream::Source* PropertyStream::Source::find_one_deep (std::string const
     if (found != nullptr)
         return found;
 
-    std::lock_guard<std::recursive_mutex> _(lock_);
+    std::lock_guard _(lock_);
     for (auto& s : children_)
     {
         found = s.source().find_one_deep (name);
@@ -356,7 +356,7 @@ PropertyStream::Source* PropertyStream::Source::find_path (std::string path)
 // If no immediate children match, then return nullptr
 PropertyStream::Source* PropertyStream::Source::find_one (std::string const& name)
 {
-    std::lock_guard<std::recursive_mutex> _(lock_);
+    std::lock_guard _(lock_);
     for (auto& s : children_)
     {
         if (s.source().m_name == name)

@@ -87,7 +87,7 @@ public:
     TransactionAcquire::pointer getAcquire (uint256 const& hash)
     {
         {
-            ScopedLockType sl (mLock);
+            std::lock_guard sl (mLock);
 
             auto it = m_map.find (hash);
 
@@ -104,7 +104,7 @@ public:
         TransactionAcquire::pointer ta;
 
         {
-            ScopedLockType sl (mLock);
+            std::lock_guard sl (mLock);
 
             auto it = m_map.find (hash);
 
@@ -185,7 +185,7 @@ public:
         bool isNew = true;
 
         {
-            ScopedLockType sl (mLock);
+            std::lock_guard sl (mLock);
 
             auto& inboundSet = m_map [hash];
 
@@ -212,7 +212,7 @@ public:
         Json::Value& sets = (ret["sets"] = Json::arrayValue);
 
         {
-            ScopedLockType sl (mLock);
+            std::lock_guard sl (mLock);
 
             ret["seq"] = m_seq;
 
@@ -235,7 +235,7 @@ public:
 
     void newRound (std::uint32_t seq) override
     {
-        ScopedLockType lock (mLock);
+        std::lock_guard lock (mLock);
 
         // Protect zero set from expiration
         m_zeroSet.mSeq = seq;
@@ -263,7 +263,7 @@ public:
 
     void onStop () override
     {
-        ScopedLockType lock (mLock);
+        std::lock_guard lock (mLock);
 
         m_map.clear ();
 
@@ -275,7 +275,6 @@ private:
 
     using MapType = hash_map <uint256, InboundTransactionSet>;
 
-    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
     std::recursive_mutex mLock;
 
     MapType m_map;

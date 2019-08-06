@@ -52,7 +52,7 @@ public:
         void
         signal()
         {
-            std::lock_guard<std::mutex> lk(mutex_);
+            std::lock_guard lk(mutex_);
             signaled_ = true;
             cv_.notify_all();
         }

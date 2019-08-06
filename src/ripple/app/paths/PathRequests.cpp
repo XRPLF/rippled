@@ -38,7 +38,7 @@ PathRequests::getLineCache (
     std::shared_ptr <ReadView const> const& ledger,
     bool authoritative)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard sl (mLock);
 
     std::uint32_t lineSeq = mLineCache ? mLineCache->getLedger()->seq() : 0;
     std::uint32_t lgrSeq = ledger->seq();
@@ -65,7 +65,7 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
 
     // Get the ledger and cache we should be using
     {
-        ScopedLockType sl (mLock);
+        std::lock_guard sl (mLock);
         requests = requests_;
         cache = getLineCache (inLedger, true);
     }
@@ -119,7 +119,7 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
 
             if (remove)
             {
-                ScopedLockType sl (mLock);
+                std::lock_guard sl (mLock);
 
                 // Remove any dangling weak pointers or weak
                 // pointers that refer to this path request.
@@ -165,7 +165,7 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
 
         {
             // Get the latest requests, cache, and ledger for next pass
-            ScopedLockType sl (mLock);
+            std::lock_guard sl (mLock);
 
             if (requests_.empty())
                 break;
@@ -183,7 +183,7 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
 void PathRequests::insertPathRequest (
     PathRequest::pointer const& req)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard sl (mLock);
 
     // Insert after any older unserviced requests but before
     // any serviced requests

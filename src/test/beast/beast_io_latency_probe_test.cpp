@@ -78,7 +78,7 @@ class io_latency_probe_test :
                         wait_err = ec;
                     auto const end {MeasureClock::now()};
                     elapsed_times_.emplace_back (end-start);
-                    std::lock_guard<std::mutex> lk{mtx};
+                    std::lock_guard lk{mtx};
                     done = true;
                     cv.notify_one();
                 });

@@ -30,8 +30,7 @@ CachedSLEs::expire()
     {
         auto const expireTime =
             map_.clock().now() - timeToLive_;
-        std::lock_guard<
-            std::mutex> lock(mutex_);
+        std::lock_guard lock(mutex_);
         for (auto iter = map_.chronological.begin();
             iter != map_.chronological.end(); ++iter)
         {
@@ -50,8 +49,7 @@ CachedSLEs::expire()
 double
 CachedSLEs::rate() const
 {
-    std::lock_guard<
-        std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
     auto const tot = hit_ + miss_;
     if (tot == 0)
         return 0;

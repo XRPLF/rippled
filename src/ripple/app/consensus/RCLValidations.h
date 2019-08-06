@@ -222,7 +222,6 @@ public:
     }
 
 private:
-    using ScopedLockType = std::lock_guard<Mutex>;
     using ScopedUnlockType = GenericScopedUnlock<Mutex>;
 
     Application& app_;

@@ -162,7 +162,7 @@ Workers::Worker::Worker (Workers& workers, std::string const& threadName,
 Workers::Worker::~Worker ()
 {
     {
-        std::lock_guard <std::mutex> lock {mutex_};
+        std::lock_guard lock {mutex_};
         ++wakeCount_;
         shouldExit_ = true;
     }
@@ -173,7 +173,7 @@ Workers::Worker::~Worker ()
 
 void Workers::Worker::notify ()
 {
-    std::lock_guard <std::mutex> lock {mutex_};
+    std::lock_guard lock {mutex_};
     ++wakeCount_;
     wakeup_.notify_one();
 }
@@ -188,7 +188,7 @@ void Workers::Worker::run ()
         //
         if (++m_workers.m_activeCount == 1)
         {
-            std::lock_guard<std::mutex> lk{m_workers.m_mut};
+            std::lock_guard lk{m_workers.m_mut};
             m_workers.m_allPaused = false;
         }
 
@@ -242,7 +242,7 @@ void Workers::Worker::run ()
         //
         if (--m_workers.m_activeCount == 0)
         {
-            std::lock_guard<std::mutex> lk{m_workers.m_mut};
+            std::lock_guard lk{m_workers.m_mut};
             m_workers.m_allPaused = true;
             m_workers.m_cv.notify_all();
         }

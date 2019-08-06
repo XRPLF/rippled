@@ -60,7 +60,7 @@ LedgerHistory::insert(
 
     assert (ledger->stateMap().getHash ().isNonZero ());
 
-    LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
+    std::unique_lock sl (m_ledgers_by_hash.peekMutex ());
 
     const bool alreadyHad = m_ledgers_by_hash.canonicalize (
         ledger->info().hash, ledger, true);
@@ -72,7 +72,7 @@ LedgerHistory::insert(
 
 LedgerHash LedgerHistory::getLedgerHash (LedgerIndex index)
 {
-    LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
+    std::unique_lock sl (m_ledgers_by_hash.peekMutex ());
     auto it = mLedgersByIndex.find (index);
 
     if (it != mLedgersByIndex.end ())
@@ -85,7 +85,7 @@ std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerBySeq (LedgerIndex index)
 {
     {
-        LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
+        std::unique_lock sl (m_ledgers_by_hash.peekMutex ());
         auto it = mLedgersByIndex.find (index);
 
         if (it != mLedgersByIndex.end ())
@@ -105,7 +105,7 @@ LedgerHistory::getLedgerBySeq (LedgerIndex index)
 
     {
         // Add this ledger to the local tracking by index
-        LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
+        std::unique_lock sl (m_ledgers_by_hash.peekMutex ());
 
         assert (ret->isImmutable ());
         m_ledgers_by_hash.canonicalize (ret->info().hash, ret);
@@ -428,7 +428,7 @@ void LedgerHistory::builtLedger (
     LedgerHash hash = ledger->info().hash;
     assert (!hash.isZero());
 
-    ConsensusValidated::ScopedLockType sl (
+    std::unique_lock sl (
         m_consensus_validated.peekMutex());
 
     auto entry = std::make_shared<cv_entry>();
@@ -468,7 +468,7 @@ void LedgerHistory::validatedLedger (
     LedgerHash hash = ledger->info().hash;
     assert (!hash.isZero());
 
-    ConsensusValidated::ScopedLockType sl (
+    std::unique_lock sl (
         m_consensus_validated.peekMutex());
 
     auto entry = std::make_shared<cv_entry>();
@@ -504,7 +504,7 @@ void LedgerHistory::validatedLedger (
 bool LedgerHistory::fixIndex (
     LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
-    LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
+    std::unique_lock sl (m_ledgers_by_hash.peekMutex ());
     auto it = mLedgersByIndex.find (ledgerIndex);
 
     if ((it != mLedgersByIndex.end ()) && (it->second != ledgerHash) )

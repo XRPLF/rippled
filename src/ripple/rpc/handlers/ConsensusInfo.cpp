@@ -22,7 +22,6 @@
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/basics/make_lock.h>
 
 namespace ripple {
 

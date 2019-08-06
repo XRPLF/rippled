@@ -179,7 +179,7 @@ public:
         if (m_stopped.exchange (false) == true)
         {
             {
-                std::lock_guard<std::mutex> lk{m_mut};
+                std::lock_guard lk{m_mut};
                 m_asyncHandlersCompleted = false;
             }
             addReference ();

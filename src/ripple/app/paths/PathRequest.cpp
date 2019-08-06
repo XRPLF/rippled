@@ -113,7 +113,7 @@ PathRequest::~PathRequest()
 
 bool PathRequest::isNew ()
 {
-    ScopedLockType sl (mIndexLock);
+    std::lock_guard sl (mIndexLock);
 
     // does this path request still need its first full path
     return mLastIndex == 0;
@@ -121,7 +121,7 @@ bool PathRequest::isNew ()
 
 bool PathRequest::needsUpdate (bool newOnly, LedgerIndex index)
 {
-    ScopedLockType sl (mIndexLock);
+    std::lock_guard sl (mIndexLock);
 
     if (mInProgress)
     {
@@ -151,7 +151,7 @@ bool PathRequest::hasCompletion ()
 
 void PathRequest::updateComplete ()
 {
-    ScopedLockType sl (mIndexLock);
+    std::lock_guard sl (mIndexLock);
 
     assert (mInProgress);
     mInProgress = false;
@@ -443,14 +443,14 @@ int PathRequest::parseJson (Json::Value const& jvParams)
 Json::Value PathRequest::doClose (Json::Value const&)
 {
     JLOG(m_journal.debug()) << iIdentifier << " closed";
-    ScopedLockType sl (mLock);
+    std::lock_guard sl (mLock);
     jvStatus[jss::closed] = true;
     return jvStatus;
 }
 
 Json::Value PathRequest::doStatus (Json::Value const&)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard sl (mLock);
     jvStatus[jss::status] = jss::success;
     return jvStatus;
 }
@@ -626,7 +626,7 @@ Json::Value PathRequest::doUpdate(
         << " update " << (fast ? "fast" : "normal");
 
     {
-        ScopedLockType sl (mLock);
+        std::lock_guard sl (mLock);
 
         if (!isValid (cache))
             return jvStatus;
@@ -712,7 +712,7 @@ Json::Value PathRequest::doUpdate(
     }
 
     {
-        ScopedLockType sl(mLock);
+        std::lock_guard sl(mLock);
         jvStatus = newStatus;
     }
 

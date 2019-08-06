@@ -148,7 +148,7 @@ public:
         }
 
         {
-            std::lock_guard<std::mutex> lock (mutex_);
+            std::lock_guard lock (mutex_);
             for (auto const& item : servers)
                 servers_.emplace_back(
                     item, sys_seconds::max());
@@ -174,7 +174,7 @@ public:
     time_point
     now() const override
     {
-        std::lock_guard<std::mutex> lock (mutex_);
+        std::lock_guard lock (mutex_);
         using namespace std::chrono;
         auto const when = time_point_cast<seconds>(clock_type::now());
         if ((lastUpdate_ == sys_seconds::max()) ||
@@ -187,7 +187,7 @@ public:
     duration
     offset() const override
     {
-        std::lock_guard<std::mutex> lock (mutex_);
+        std::lock_guard lock (mutex_);
         return offset_;
     }
 
@@ -237,7 +237,7 @@ public:
         {
             JLOG(j_.trace()) <<
                 "SNTP: Packet from " << ep_;
-            std::lock_guard<std::mutex> lock (mutex_);
+            std::lock_guard lock (mutex_);
             auto const query = queries_.find (ep_);
             if (query == queries_.end ())
             {
@@ -288,7 +288,7 @@ public:
 
     void addServer (std::string const& server)
     {
-        std::lock_guard<std::mutex> lock (mutex_);
+        std::lock_guard lock (mutex_);
         servers_.push_back (std::make_pair (server, sys_seconds::max()));
     }
 
@@ -301,7 +301,7 @@ public:
 
     bool doQuery ()
     {
-        std::lock_guard<std::mutex> lock (mutex_);
+        std::lock_guard lock (mutex_);
         auto best = servers_.end ();
 
         for (auto iter = servers_.begin (), end = best;
@@ -366,7 +366,7 @@ public:
 
         if (sel != ip::udp::resolver::iterator ())
         {
-            std::lock_guard<std::mutex> lock (mutex_);
+            std::lock_guard lock (mutex_);
             Query& query = queries_[*sel];
             using namespace std::chrono;
             auto now = time_point_cast<seconds>(clock_type::now());

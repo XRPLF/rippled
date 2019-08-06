@@ -256,7 +256,6 @@ public:
     }
 
 private:
-    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
     using ScopedUnlockType = GenericScopedUnlock <std::recursive_mutex>;
 
     void setValidLedger(
@@ -281,8 +280,8 @@ private:
         bool& progress,
         InboundLedger::Reason reason);
     // Try to publish ledgers, acquire missing ledgers.  Always called with
-    // m_mutex locked.  The passed ScopedLockType is a reminder to callers.
-    void doAdvance(ScopedLockType&);
+    // m_mutex locked.  The passed lock is a reminder to callers.
+    void doAdvance(std::lock_guard<std::recursive_mutex>&);
     bool shouldAcquire(
         std::uint32_t const currentLedger,
         std::uint32_t const ledgerHistory,
@@ -295,8 +294,8 @@ private:
     void updatePaths(Job& job);
 
     // Returns true if work started.  Always called with m_mutex locked.
-    // The passed ScopedLockType is a reminder to callers.
-    bool newPFWork(const char *name, ScopedLockType&);
+    // The passed lock is a reminder to callers.
+    bool newPFWork(const char *name, std::lock_guard<std::recursive_mutex>&);
 
 private:
     Application& app_;

@@ -286,8 +286,6 @@ class Validations
     using WrappedValidationType = std::decay_t<
         std::result_of_t<decltype (&Validation::unwrap)(Validation)>>;
 
-    using ScopedLock = std::lock_guard<Mutex>;
-
     // Manages concurrent access to members
     mutable Mutex mutex_;
 
@@ -328,7 +326,7 @@ class Validations
 private:
     // Remove support of a validated ledger
     void
-    removeTrie(ScopedLock const&, NodeID const& nodeID, Validation const& val)
+    removeTrie(std::lock_guard<Mutex> const&, NodeID const& nodeID, Validation const& val)
     {
         {
             auto it =
@@ -352,7 +350,7 @@ private:
 
     // Check if any pending acquire ledger requests are complete
     void
-    checkAcquired(ScopedLock const& lock)
+    checkAcquired(std::lock_guard<Mutex> const& lock)
     {
         for (auto it = acquiring_.begin(); it != acquiring_.end();)
         {
@@ -371,7 +369,7 @@ private:
 
     // Update the trie to reflect a new validated ledger
     void
-    updateTrie(ScopedLock const&, NodeID const& nodeID, Ledger ledger)
+    updateTrie(std::lock_guard<Mutex> const&, NodeID const& nodeID, Ledger ledger)
     {
         auto ins = lastLedger_.emplace(nodeID, ledger);
         if (!ins.second)
@@ -397,7 +395,7 @@ private:
     */
     void
     updateTrie(
-        ScopedLock const& lock,
+        std::lock_guard<Mutex> const& lock,
         NodeID const& nodeID,
         Validation const& val,
         boost::optional<std::pair<Seq, ID>> prior)
@@ -448,7 +446,7 @@ private:
     */
     template <class F>
     auto
-    withTrie(ScopedLock const& lock, F&& f)
+    withTrie(std::lock_guard<Mutex> const& lock, F&& f)
     {
         // Call current to flush any stale validations
         current(lock, [](auto) {}, [](auto, auto) {});
@@ -474,7 +472,7 @@ private:
 
     template <class Pre, class F>
     void
-    current(ScopedLock const& lock, Pre&& pre, F&& f)
+    current(std::lock_guard<Mutex> const& lock, Pre&& pre, F&& f)
     {
         NetClock::time_point t = adaptor_.now();
         pre(current_.size());
@@ -512,7 +510,7 @@ private:
     */
     template <class Pre, class F>
     void
-    byLedger(ScopedLock const&, ID const& ledgerID, Pre&& pre, F&& f)
+    byLedger(std::lock_guard<Mutex> const&, ID const& ledgerID, Pre&& pre, F&& f)
     {
         auto it = byLedger_.find(ledgerID);
         if (it != byLedger_.end())
@@ -567,7 +565,7 @@ public:
     bool
     canValidateSeq(Seq const s)
     {
-        ScopedLock lock{mutex_};
+        std::lock_guard lock{mutex_};
         return localSeqEnforcer_(byLedger_.clock().now(), s, parms_);
     }
 
@@ -586,7 +584,7 @@ public:
             return ValStatus::stale;
 
         {
-            ScopedLock lock{mutex_};
+            std::lock_guard lock{mutex_};
 
             // Check that validation sequence is greater than any non-expired
             // validations sequence from that validator
@@ -631,7 +629,7 @@ public:
     void
     expire()
     {
-        ScopedLock lock{mutex_};
+        std::lock_guard lock{mutex_};
         beast::expire(byLedger_, parms_.validationSET_EXPIRES);
     }
 
@@ -647,7 +645,7 @@ public:
     void
     trustChanged(hash_set<NodeID> const& added, hash_set<NodeID> const& removed)
     {
-        ScopedLock lock{mutex_};
+        std::lock_guard lock{mutex_};
 
         for (auto& it : current_)
         {
@@ -682,7 +680,7 @@ public:
     Json::Value
     getJsonTrie() const
     {
-        ScopedLock lock{mutex_};
+        std::lock_guard lock{mutex_};
         return trie_.getJson();
     }
 
@@ -701,7 +699,7 @@ public:
     boost::optional<std::pair<Seq, ID>>
     getPreferred(Ledger const& curr)
     {
-        ScopedLock lock{mutex_};
+        std::lock_guard lock{mutex_};
         boost::optional<SpanTip<Ledger>> preferred =
             withTrie(lock, [this](LedgerTrie<Ledger>& trie) {
                 return trie.getPreferred(localSeqEnforcer_.largest());
@@ -825,7 +823,7 @@ public:
     std::size_t
     getNodesAfter(Ledger const& ledger, ID const& ledgerID)
     {
-        ScopedLock lock{mutex_};
+        std::lock_guard lock{mutex_};
 
         // Use trie if ledger is the right one
         if (ledger.id() == ledgerID)
@@ -852,7 +850,7 @@ public:
     currentTrusted()
     {
         std::vector<WrappedValidationType> ret;
-        ScopedLock lock{mutex_};
+        std::lock_guard lock{mutex_};
         current(
             lock,
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
@@ -871,7 +869,7 @@ public:
     getCurrentNodeIDs() -> hash_set<NodeID>
     {
         hash_set<NodeID> ret;
-        ScopedLock lock{mutex_};
+        std::lock_guard lock{mutex_};
         current(
             lock,
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
@@ -889,7 +887,7 @@ public:
     numTrustedForLedger(ID const& ledgerID)
     {
         std::size_t count = 0;
-        ScopedLock lock{mutex_};
+        std::lock_guard lock{mutex_};
         byLedger(
             lock,
             ledgerID,
@@ -910,7 +908,7 @@ public:
     getTrustedForLedger(ID const& ledgerID)
     {
         std::vector<WrappedValidationType> res;
-        ScopedLock lock{mutex_};
+        std::lock_guard lock{mutex_};
         byLedger(
             lock,
             ledgerID,
@@ -933,7 +931,7 @@ public:
     fees(ID const& ledgerID, std::uint32_t baseFee)
     {
         std::vector<std::uint32_t> res;
-        ScopedLock lock{mutex_};
+        std::lock_guard lock{mutex_};
         byLedger(
             lock,
             ledgerID,
@@ -956,7 +954,7 @@ public:
     void
     flush()
     {
-        ScopedLock lock{mutex_};
+        std::lock_guard lock{mutex_};
         current_.clear();
     }
 
@@ -980,7 +978,7 @@ public:
     {
         std::size_t laggards = 0;
 
-        current(ScopedLock{mutex_},
+        current(std::lock_guard{mutex_},
             [](std::size_t) {},
             [&](NodeID const&, Validation const& v) {
                 if (adaptor_.now() <

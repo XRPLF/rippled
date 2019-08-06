@@ -297,8 +297,7 @@ public:
 
     std::size_t fetchRate() override
     {
-        std::lock_guard<
-            std::mutex> lock(fetchRateMutex_);
+        std::lock_guard lock(fetchRateMutex_);
         return 60 * fetchRate_.value(
             m_clock.now());
     }
@@ -307,7 +306,7 @@ public:
     // a reason of history or shard
     void onLedgerFetched() override
     {
-        std::lock_guard<std::mutex> lock(fetchRateMutex_);
+        std::lock_guard lock(fetchRateMutex_);
         fetchRate_.add(1, m_clock.now());
     }
 

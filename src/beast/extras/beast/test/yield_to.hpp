@@ -120,7 +120,7 @@ spawn(F0&& f, FN&&... fn)
         [&](yield_context yield)
         {
             f(yield);
-            std::lock_guard<std::mutex> lock{m_};
+            std::lock_guard lock{m_};
             if(--running_ == 0)
                 cv_.notify_all();
         }

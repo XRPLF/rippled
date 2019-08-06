@@ -101,7 +101,6 @@ public:
     bool hasCompletion ();
 
 private:
-    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
 
     bool isValid (std::shared_ptr<RippleLineCache> const& crCache);
     void setValid ();

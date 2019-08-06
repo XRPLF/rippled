@@ -45,7 +45,7 @@ ShardArchiveHandler::ShardArchiveHandler(Application& app, bool validate)
 
 ShardArchiveHandler::~ShardArchiveHandler()
 {
-    std::lock_guard<std::mutex> lock(m_);
+    std::lock_guard lock(m_);
     timer_.cancel();
     for (auto const& ar : archives_)
         app_.getShardStore()->removePreShard(ar.first);
@@ -66,7 +66,7 @@ ShardArchiveHandler::~ShardArchiveHandler()
 bool
 ShardArchiveHandler::add(std::uint32_t shardIndex, parsedURL&& url)
 {
-    std::lock_guard<std::mutex> lock(m_);
+    std::lock_guard lock(m_);
     if (process_)
     {
         JLOG(j_.error()) <<
@@ -86,7 +86,7 @@ ShardArchiveHandler::add(std::uint32_t shardIndex, parsedURL&& url)
 bool
 ShardArchiveHandler::start()
 {
-    std::lock_guard<std::mutex> lock(m_);
+    std::lock_guard lock(m_);
     if (!app_.getShardStore())
     {
         JLOG(j_.error()) <<
@@ -181,7 +181,7 @@ void
 ShardArchiveHandler::complete(path dstPath)
 {
     {
-        std::lock_guard<std::mutex> lock(m_);
+        std::lock_guard lock(m_);
         try
         {
             if (!is_regular_file(dstPath))
@@ -214,7 +214,7 @@ ShardArchiveHandler::complete(path dstPath)
             auto const mode {ptr->app_.getOPs().getOperatingMode()};
             if (ptr->validate_ && mode != NetworkOPs::omFULL)
             {
-                std::lock_guard<std::mutex> lock(m_);
+                std::lock_guard lock(m_);
                 timer_.expires_from_now(static_cast<std::chrono::seconds>(
                     (NetworkOPs::omFULL - mode) * 10));
                 timer_.async_wait(
@@ -228,7 +228,7 @@ ShardArchiveHandler::complete(path dstPath)
             else
             {
                 ptr->process(dstPath);
-                std::lock_guard<std::mutex> lock(m_);
+                std::lock_guard lock(m_);
                 remove(lock);
                 next(lock);
             }
@@ -240,7 +240,7 @@ ShardArchiveHandler::process(path const& dstPath)
 {
     std::uint32_t shardIndex;
     {
-        std::lock_guard<std::mutex> lock(m_);
+        std::lock_guard lock(m_);
         shardIndex = archives_.begin()->first;
     }
 

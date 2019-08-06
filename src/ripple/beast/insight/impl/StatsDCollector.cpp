@@ -281,13 +281,13 @@ public:
 
     void add (StatsDMetricBase& metric)
     {
-        std::lock_guard<std::recursive_mutex> _(metricsLock_);
+        std::lock_guard _(metricsLock_);
         metrics_.push_back (metric);
     }
 
     void remove (StatsDMetricBase& metric)
     {
-        std::lock_guard<std::recursive_mutex> _(metricsLock_);
+        std::lock_guard _(metricsLock_);
         metrics_.erase (metrics_.iterator_to (metric));
     }
 
@@ -412,7 +412,7 @@ public:
             return;
         }
 
-        std::lock_guard<std::recursive_mutex> _(metricsLock_);
+        std::lock_guard _(metricsLock_);
 
         for (auto& m : metrics_)
             m.do_process();

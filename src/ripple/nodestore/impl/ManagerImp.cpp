@@ -81,14 +81,14 @@ ManagerImp::make_Database (
 void
 ManagerImp::insert (Factory& factory)
 {
-    std::lock_guard<std::mutex> _(mutex_);
+    std::lock_guard _(mutex_);
     list_.push_back(&factory);
 }
 
 void
 ManagerImp::erase (Factory& factory)
 {
-    std::lock_guard<std::mutex> _(mutex_);
+    std::lock_guard _(mutex_);
     auto const iter = std::find_if(list_.begin(), list_.end(),
         [&factory](Factory* other) { return other == &factory; });
     assert(iter != list_.end());
@@ -98,7 +98,7 @@ ManagerImp::erase (Factory& factory)
 Factory*
 ManagerImp::find (std::string const& name)
 {
-    std::lock_guard<std::mutex> _(mutex_);
+    std::lock_guard _(mutex_);
     auto const iter = std::find_if(list_.begin(), list_.end(),
         [&name](Factory* other)
         {

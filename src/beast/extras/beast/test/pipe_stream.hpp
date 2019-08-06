@@ -320,7 +320,7 @@ void
 pipe::stream::
 close()
 {
-    std::lock_guard<std::mutex> lock{out_.m};
+    std::lock_guard lock{out_.m};
     out_.eof = true;
     if(out_.op)
         out_.op.get()->operator()();
