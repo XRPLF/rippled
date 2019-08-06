@@ -103,17 +103,16 @@ ApplyContext::checkInvariantsHelper(
                     std::shared_ptr <SLE const> const& before,
                     std::shared_ptr <SLE const> const& after)
                 {
-                    // Sean Parent for_each_argument trick
-                    (void)std::array<int, sizeof...(Is)>{
-                        {((std::get<Is>(checkers).
-                            visitEntry(index, isDelete, before, after)), 0)...}
-                    };
+                    (..., std::get<Is>(checkers).visitEntry(index, isDelete, before, after));
                 });
 
-            // Sean Parent for_each_argument trick (a fold expression with `&&`
-            // would be really nice here when we move to C++-17)
-            std::array<bool, sizeof...(Is)> finalizers {{
-                std::get<Is>(checkers).finalize(tx, result, fee, journal)...}};
+            // Note: do not replace this logic with a `...&&` fold expression.
+            // The fold expression will only run until the first check fails (it
+            // short-circuits). While the logic is still correct, the log
+            // message won't be. Every failed invariant should write to the log,
+            // not just the first one.
+            std::array<bool, sizeof...(Is)> finalizers{
+                {std::get<Is>(checkers).finalize(tx, result, fee, journal)...}};
 
             // call each check's finalizer to see that it passes
             if (! std::all_of( finalizers.cbegin(), finalizers.cend(),
