@@ -31,7 +31,7 @@ namespace ripple {
 void SHAMapStoreImp::SavedStateDB::init (BasicConfig const& config,
                                          std::string const& dbName)
 {
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     open(session_, config, dbName);
 
@@ -92,7 +92,7 @@ LedgerIndex
 SHAMapStoreImp::SavedStateDB::getCanDelete()
 {
     LedgerIndex seq;
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     session_ <<
             "SELECT CanDeleteSeq FROM CanDelete WHERE Key = 1;"
@@ -105,7 +105,7 @@ SHAMapStoreImp::SavedStateDB::getCanDelete()
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::setCanDelete (LedgerIndex canDelete)
 {
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     session_ <<
             "UPDATE CanDelete SET CanDeleteSeq = :canDelete WHERE Key = 1;"
@@ -120,7 +120,7 @@ SHAMapStoreImp::SavedStateDB::getState()
 {
     SavedState state;
 
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     session_ <<
             "SELECT WritableDb, ArchiveDb, LastRotatedLedger"
@@ -135,7 +135,7 @@ SHAMapStoreImp::SavedStateDB::getState()
 void
 SHAMapStoreImp::SavedStateDB::setState (SavedState const& state)
 {
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
     session_ <<
             "UPDATE DbState"
             " SET WritableDb = :writableDb,"
@@ -151,7 +151,7 @@ SHAMapStoreImp::SavedStateDB::setState (SavedState const& state)
 void
 SHAMapStoreImp::SavedStateDB::setLastRotated (LedgerIndex seq)
 {
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
     session_ <<
             "UPDATE DbState SET LastRotatedLedger = :seq"
             " WHERE Key = 1;"
@@ -277,7 +277,7 @@ SHAMapStoreImp::onLedgerClosed(
     std::shared_ptr<Ledger const> const& ledger)
 {
     {
-        std::lock_guard <std::mutex> lock (mutex_);
+        std::lock_guard lock (mutex_);
         newLedger_ = ledger;
         working_ = true;
     }
@@ -451,7 +451,7 @@ SHAMapStoreImp::run()
             lastRotated = validatedSeq;
             std::unique_ptr<NodeStore::Backend> oldBackend;
             {
-                std::lock_guard <std::mutex> lock (dbRotating_->peekMutex());
+                std::lock_guard lock (dbRotating_->peekMutex());
 
                 state_db_.setState (SavedState {newBackend->getName(),
                         nextArchiveDir, lastRotated});
@@ -646,7 +646,7 @@ SHAMapStoreImp::Health
 SHAMapStoreImp::health()
 {
     {
-        std::lock_guard<std::mutex> lock (mutex_);
+        std::lock_guard lock (mutex_);
         if (stop_)
             return Health::stopping;
     }
@@ -676,7 +676,7 @@ SHAMapStoreImp::onStop()
     if (deleteInterval_)
     {
         {
-            std::lock_guard <std::mutex> lock (mutex_);
+            std::lock_guard lock (mutex_);
             stop_ = true;
         }
         cond_.notify_one();
@@ -693,7 +693,7 @@ SHAMapStoreImp::onChildrenStopped()
     if (deleteInterval_)
     {
         {
-            std::lock_guard <std::mutex> lock (mutex_);
+            std::lock_guard lock (mutex_);
             stop_ = true;
         }
         cond_.notify_one();

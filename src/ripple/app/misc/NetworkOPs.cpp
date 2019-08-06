@@ -942,7 +942,7 @@ void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transactio
 void NetworkOPsImp::doTransactionAsync (std::shared_ptr<Transaction> transaction,
         bool bUnlimited, FailHard failType)
 {
-    std::lock_guard<std::mutex> lock (mMutex);
+    std::lock_guard lock (mMutex);
 
     if (transaction->getApplying())
         return;
@@ -3358,7 +3358,7 @@ void NetworkOPsImp::StateAccounting::mode (OperatingMode om)
 {
     auto now = std::chrono::system_clock::now();
 
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
     ++counters_[om].transitions;
     counters_[mode_].dur += std::chrono::duration_cast<
         std::chrono::microseconds>(now - start_);

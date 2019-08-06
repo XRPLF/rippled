@@ -129,7 +129,7 @@ PeerImp::run()
         {
             // Operations on closedLedgerHash_ and previousLedgerHash_ must be
             // guarded by recentLock_.
-            std::lock_guard<std::mutex> sl(recentLock_);
+            std::lock_guard sl(recentLock_);
 
             closedLedgerHash_ = hello_.ledgerclosed();
 
@@ -304,7 +304,7 @@ PeerImp::json()
     }
 
     {
-        std::lock_guard<std::mutex> sl (recentLock_);
+        std::lock_guard sl (recentLock_);
         if (latency_)
             ret[jss::latency] = static_cast<Json::UInt> (latency_->count());
     }
@@ -337,7 +337,7 @@ PeerImp::json()
     uint256 closedLedgerHash;
     protocol::TMStatusChange last_status;
     {
-        std::lock_guard<std::mutex> sl(recentLock_);
+        std::lock_guard sl(recentLock_);
         closedLedgerHash = closedLedgerHash_;
         last_status = last_status_;
     }
@@ -384,7 +384,7 @@ bool
 PeerImp::hasLedger (uint256 const& hash, std::uint32_t seq) const
 {
     {
-        std::lock_guard<std::mutex> sl(recentLock_);
+        std::lock_guard sl(recentLock_);
         if ((seq != 0) && (seq >= minLedger_) && (seq <= maxLedger_) &&
                 (sanity_.load() == Sanity::sane))
             return true;
@@ -401,7 +401,7 @@ void
 PeerImp::ledgerRange (std::uint32_t& minSeq,
     std::uint32_t& maxSeq) const
 {
-    std::lock_guard<std::mutex> sl(recentLock_);
+    std::lock_guard sl(recentLock_);
 
     minSeq = minLedger_;
     maxSeq = maxLedger_;
@@ -410,7 +410,7 @@ PeerImp::ledgerRange (std::uint32_t& minSeq,
 bool
 PeerImp::hasShard (std::uint32_t shardIndex) const
 {
-    std::lock_guard<std::mutex> l {shardInfoMutex_};
+    std::lock_guard l {shardInfoMutex_};
     auto const it {shardInfo_.find(publicKey_)};
     if (it != shardInfo_.end())
         return boost::icl::contains(it->second.shardIndexes, shardIndex);
@@ -420,7 +420,7 @@ PeerImp::hasShard (std::uint32_t shardIndex) const
 bool
 PeerImp::hasTxSet (uint256 const& hash) const
 {
-    std::lock_guard<std::mutex> sl(recentLock_);
+    std::lock_guard sl(recentLock_);
     return std::find (recentTxSets_.begin(),
         recentTxSets_.end(), hash) != recentTxSets_.end();
 }
@@ -430,7 +430,7 @@ PeerImp::cycleStatus ()
 {
     // Operations on closedLedgerHash_ and previousLedgerHash_ must be
     // guarded by recentLock_.
-    std::lock_guard<std::mutex> sl(recentLock_);
+    std::lock_guard sl(recentLock_);
     previousLedgerHash_ = closedLedgerHash_;
     closedLedgerHash_.zero ();
 }
@@ -444,7 +444,7 @@ PeerImp::supportsVersion (int version)
 bool
 PeerImp::hasRange (std::uint32_t uMin, std::uint32_t uMax)
 {
-    std::lock_guard<std::mutex> sl(recentLock_);
+    std::lock_guard sl(recentLock_);
     return (sanity_ != Sanity::insane) &&
         (uMin >= minLedger_) &&
         (uMax <= maxLedger_);
@@ -511,7 +511,7 @@ PeerImp::fail(std::string const& name, error_code ec)
 boost::optional<RangeSet<std::uint32_t>>
 PeerImp::getShardIndexes() const
 {
-    std::lock_guard<std::mutex> l {shardInfoMutex_};
+    std::lock_guard l {shardInfoMutex_};
     auto it{shardInfo_.find(publicKey_)};
     if (it != shardInfo_.end())
         return it->second.shardIndexes;
@@ -521,7 +521,7 @@ PeerImp::getShardIndexes() const
 boost::optional<hash_map<PublicKey, PeerImp::ShardInfo>>
 PeerImp::getPeerShardInfo() const
 {
-    std::lock_guard<std::mutex> l {shardInfoMutex_};
+    std::lock_guard l {shardInfoMutex_};
     if (!shardInfo_.empty())
         return shardInfo_;
     return boost::none;
@@ -611,7 +611,7 @@ PeerImp::onTimer (error_code const& ec)
     // Operations on lastPingSeq_, lastPingTime_, no_ping_, and latency_
     // must be guarded by recentLock_.
     {
-        std::lock_guard<std::mutex> sl(recentLock_);
+        std::lock_guard sl(recentLock_);
         if (no_ping_++ >= Tuning::noPing)
         {
             failedNoPing = true;
@@ -714,7 +714,7 @@ void PeerImp::doAccept()
     {
         // Operations on closedLedgerHash_ and previousLedgerHash_ must be
         // guarded by recentLock_.
-        std::lock_guard<std::mutex> sl(recentLock_);
+        std::lock_guard sl(recentLock_);
 
         closedLedgerHash_ = hello_.ledgerclosed();
 
@@ -988,7 +988,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMPing> const& m)
     {
         // Operations on lastPingSeq_, lastPingTime_, no_ping_, and latency_
         // must be guarded by recentLock_.
-        std::lock_guard<std::mutex> sl(recentLock_);
+        std::lock_guard sl(recentLock_);
 
         if (m->has_seq() && m->seq() == lastPingSeq_)
         {
@@ -1324,7 +1324,7 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMPeerShardInfo> const& m)
         publicKey = publicKey_;
 
     {
-        std::lock_guard<std::mutex> l {shardInfoMutex_};
+        std::lock_guard l {shardInfoMutex_};
         auto it {shardInfo_.find(publicKey)};
         if (it != shardInfo_.end())
         {
@@ -1709,7 +1709,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
         m->set_networktime (app_.timeKeeper().now().time_since_epoch().count());
 
     {
-        std::lock_guard<std::mutex> sl(recentLock_);
+        std::lock_guard sl(recentLock_);
         if (!last_status_.has_newstatus () || m->has_newstatus ())
             last_status_ = *m;
         else
@@ -1727,7 +1727,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
         {
             // Operations on closedLedgerHash_ and previousLedgerHash_ must be
             // guarded by recentLock_.
-            std::lock_guard<std::mutex> sl(recentLock_);
+            std::lock_guard sl(recentLock_);
             if (!closedLedgerHash_.isZero ())
             {
                 outOfSync = true;
@@ -1750,7 +1750,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
         {
             // Operations on closedLedgerHash_ and previousLedgerHash_ must be
             // guarded by recentLock_.
-            std::lock_guard<std::mutex> sl(recentLock_);
+            std::lock_guard sl(recentLock_);
             if (peerChangedLedgers)
             {
                 closedLedgerHash_ = m->ledgerhash();
@@ -1786,7 +1786,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
 
     if (m->has_firstseq () && m->has_lastseq())
     {
-        std::lock_guard<std::mutex> sl (recentLock_);
+        std::lock_guard sl (recentLock_);
 
         minLedger_ = m->firstseq ();
         maxLedger_ = m->lastseq ();
@@ -1856,7 +1856,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
             {
                 uint256 closedLedgerHash {};
                 {
-                    std::lock_guard<std::mutex> sl(recentLock_);
+                    std::lock_guard sl(recentLock_);
                     closedLedgerHash = closedLedgerHash_;
                 }
                 j[jss::ledger_hash] = to_string (closedLedgerHash);
@@ -1886,7 +1886,7 @@ PeerImp::checkSanity (std::uint32_t validationSeq)
     {
         // Extract the seqeuence number of the highest
         // ledger this peer has
-        std::lock_guard<std::mutex> sl (recentLock_);
+        std::lock_guard sl (recentLock_);
 
         serverSeq = maxLedger_;
     }
@@ -1912,7 +1912,7 @@ PeerImp::checkSanity (std::uint32_t seq1, std::uint32_t seq2)
         if ((diff > Tuning::insaneLedgerLimit) && (sanity_.load() != Sanity::insane))
         {
             // The peer's ledger sequence is way off the validation's
-            std::lock_guard<std::mutex> sl(recentLock_);
+            std::lock_guard sl(recentLock_);
 
             sanity_ = Sanity::insane;
             insaneTime_ = clock_type::now();
@@ -1928,7 +1928,7 @@ void PeerImp::check ()
 
     clock_type::time_point insaneTime;
     {
-        std::lock_guard<std::mutex> sl(recentLock_);
+        std::lock_guard sl(recentLock_);
 
         insaneTime = insaneTime_;
     }
@@ -1968,7 +1968,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMHaveTransactionSet> const& m)
 
     if (m->status () == protocol::tsHAVE)
     {
-        std::lock_guard<std::mutex> sl(recentLock_);
+        std::lock_guard sl(recentLock_);
 
         if (std::find (recentTxSets_.begin (),
             recentTxSets_.end (), hash) != recentTxSets_.end ())
@@ -2202,7 +2202,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
 //--------------------------------------------------------------------------
 
 void
-PeerImp::addLedger (uint256 const& hash,
+PeerImp::addLedger(uint256 const& hash,
     std::lock_guard<std::mutex> const& lockedRecentLock)
 {
     // lockedRecentLock is passed as a reminder that recentLock_ must be
@@ -2830,7 +2830,7 @@ PeerImp::getScore (bool haveItem) const
 
    boost::optional<std::chrono::milliseconds> latency;
    {
-       std::lock_guard<std::mutex> sl (recentLock_);
+       std::lock_guard sl (recentLock_);
        latency = latency_;
    }
 
@@ -2845,7 +2845,7 @@ PeerImp::getScore (bool haveItem) const
 bool
 PeerImp::isHighLatency() const
 {
-    std::lock_guard<std::mutex> sl (recentLock_);
+    std::lock_guard sl (recentLock_);
     return latency_ >= Tuning::peerHighLatency;
 }
 

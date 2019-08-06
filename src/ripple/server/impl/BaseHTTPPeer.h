@@ -360,7 +360,7 @@ on_write(error_code const& ec,
         return fail(ec, "write");
     bytes_out_ += bytes_transferred;
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard lock(mutex_);
         wq2_.clear();
         wq2_.reserve(wq_.size());
         std::swap(wq2_, wq_);
@@ -445,7 +445,7 @@ write(
         return;
     if([&]
         {
-            std::lock_guard<std::mutex> lock(mutex_);
+            std::lock_guard lock(mutex_);
             wq_.emplace_back(buffer, bytes);
             return wq_.size() == 1 && wq2_.size() == 0;
         }())
@@ -507,7 +507,7 @@ complete()
     complete_ = true;
 
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard lock(mutex_);
         if(! wq_.empty() && ! wq2_.empty())
             return;
     }
@@ -542,7 +542,7 @@ close(bool graceful)
     {
         graceful_ = true;
         {
-            std::lock_guard<std::mutex> lock(mutex_);
+            std::lock_guard lock(mutex_);
             if(! wq_.empty() || ! wq2_.empty())
                 return;
         }

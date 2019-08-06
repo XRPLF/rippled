@@ -200,7 +200,7 @@ template <bool IsParent>
 void
 multi_runner_base<IsParent>::inner::add(results const& r)
 {
-    std::lock_guard<boost::interprocess::interprocess_mutex> l{m_};
+    std::lock_guard l{m_};
     results_.merge(r);
 }
 
@@ -209,7 +209,7 @@ template <class S>
 void
 multi_runner_base<IsParent>::inner::print_results(S& s)
 {
-    std::lock_guard<boost::interprocess::interprocess_mutex> l{m_};
+    std::lock_guard l{m_};
     results_.print(s);
 }
 
@@ -341,7 +341,7 @@ void
 multi_runner_base<IsParent>::message_queue_send(MessageType mt, std::string const& s)
 {
     // must use a mutex since the two "sends" must happen in order
-    std::lock_guard<boost::interprocess::interprocess_mutex> l{inner_->m_};
+    std::lock_guard l{inner_->m_};
     message_queue_->send(&mt, sizeof(mt), /*priority*/ 0);
     message_queue_->send(s.c_str(), s.size(), /*priority*/ 0);
 }

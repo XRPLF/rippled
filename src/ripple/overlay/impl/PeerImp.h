@@ -486,11 +486,11 @@ private:
     // lockedRecentLock is passed as a reminder to callers that recentLock_
     // must be locked.
     void
-    addLedger (uint256 const& hash,
+    addLedger(uint256 const& hash,
         std::lock_guard<std::mutex> const& lockedRecentLock);
 
     void
-    doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
+    doFetchPack(const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
 
     void
     checkTransaction (int flags, bool checkSignature,

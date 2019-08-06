@@ -33,7 +33,7 @@ namespace ripple {
 bool
 LoadFeeTrack::raiseLocalFee ()
 {
-    std::lock_guard <std::mutex> sl (lock_);
+    std::lock_guard sl (lock_);
 
     if (++raiseCount_ < 2)
         return false;
@@ -61,7 +61,7 @@ LoadFeeTrack::raiseLocalFee ()
 bool
 LoadFeeTrack::lowerLocalFee ()
 {
-    std::lock_guard <std::mutex> sl (lock_);
+    std::lock_guard sl (lock_);
     std::uint32_t origFee = localTxnLoadFee_;
     raiseCount_ = 0;
 

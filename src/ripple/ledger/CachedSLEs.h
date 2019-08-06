@@ -69,8 +69,7 @@ public:
         Handler const& h)
     {
         {
-            std::lock_guard<
-                std::mutex> lock(mutex_);
+            std::lock_guard lock(mutex_);
             auto iter =
                 map_.find(digest);
             if (iter != map_.end())
@@ -83,8 +82,7 @@ public:
         auto sle = h();
         if (! sle)
             return nullptr;
-        std::lock_guard<
-            std::mutex> lock(mutex_);
+        std::lock_guard lock(mutex_);
         ++miss_;
         auto const result =
             map_.emplace(

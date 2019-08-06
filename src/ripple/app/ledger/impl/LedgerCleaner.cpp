@@ -111,7 +111,7 @@ public:
     {
         JLOG (j_.info()) << "Stopping";
         {
-            std::lock_guard<std::mutex> lock (mutex_);
+            std::lock_guard lock (mutex_);
             shouldExit_ = true;
             wakeup_.notify_one();
         }
@@ -126,7 +126,7 @@ public:
 
     void onWrite (beast::PropertyStream::Map& map) override
     {
-        std::lock_guard<std::mutex> lock (mutex_);
+        std::lock_guard lock (mutex_);
 
         if (maxRange_ == 0)
             map["status"] = "idle";
@@ -155,7 +155,7 @@ public:
         app_.getLedgerMaster().getFullValidatedRange (minRange, maxRange);
 
         {
-            std::lock_guard<std::mutex> lock (mutex_);
+            std::lock_guard lock (mutex_);
 
             maxRange_ = maxRange;
             minRange_ = minRange;
@@ -407,7 +407,7 @@ private:
     {
         auto shouldExit = [this]()
         {
-            std::lock_guard<std::mutex> lock(mutex_);
+            std::lock_guard lock(mutex_);
             return shouldExit_;
         };
 
@@ -429,7 +429,7 @@ private:
             }
 
             {
-                std::lock_guard<std::mutex> lock (mutex_);
+                std::lock_guard lock (mutex_);
                 if ((minRange_ > maxRange_) ||
                     (maxRange_ == 0) || (minRange_ == 0))
                 {
@@ -460,7 +460,7 @@ private:
             if (fail)
             {
                 {
-                    std::lock_guard<std::mutex> lock (mutex_);
+                    std::lock_guard lock (mutex_);
                     ++failures_;
                 }
                 // Wait for acquiring to catch up to us
@@ -469,7 +469,7 @@ private:
             else
             {
                 {
-                    std::lock_guard<std::mutex> lock (mutex_);
+                    std::lock_guard lock (mutex_);
                     if (ledgerIndex == minRange_)
                         ++minRange_;
                     if (ledgerIndex == maxRange_)

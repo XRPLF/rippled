@@ -39,7 +39,7 @@ Cluster::Cluster (beast::Journal j)
 boost::optional<std::string>
 Cluster::member (PublicKey const& identity) const
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
 
     auto iter = nodes_.find (identity);
     if (iter == nodes_.end ())
@@ -50,7 +50,7 @@ Cluster::member (PublicKey const& identity) const
 std::size_t
 Cluster::size() const
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
 
     return nodes_.size();
 }
@@ -62,7 +62,7 @@ Cluster::update (
     std::uint32_t loadFee,
     NetClock::time_point reportTime)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
 
     // We can't use auto here yet due to the libstdc++ issue
     // described at https://gcc.gnu.org/bugzilla/show_bug.cgi?id=68190
@@ -88,7 +88,7 @@ void
 Cluster::for_each (
     std::function<void(ClusterNode const&)> func) const
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
     for (auto const& ni : nodes_)
         func (ni);
 }

@@ -200,13 +200,13 @@ public:
 
             time_point now()
             {
-                std::lock_guard<std::mutex> lock (mutex_);
+                std::lock_guard lock (mutex_);
                 return m_now;
             }
 
             void sample() override
             {
-                std::lock_guard<std::mutex> lock (mutex_);
+                std::lock_guard lock (mutex_);
                 m_now = Clock::now();
             }
         };

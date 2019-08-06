@@ -42,7 +42,7 @@ namespace ripple
 
     for (;;)
     {
-        std::lock_guard<std::mutex> myScopedLock{mut};
+        std::lock_guard myScopedLock{mut};
         // mut is now locked
 
         ... do some stuff with it locked ..

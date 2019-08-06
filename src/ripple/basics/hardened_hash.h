@@ -65,7 +65,7 @@ make_seed_pair() noexcept
         // state_t& operator=(state_t const&) = delete;
     };
     static state_t state;
-    std::lock_guard <std::mutex> lock (state.mutex);
+    std::lock_guard lock(state.mutex);
     return {state.dist(state.gen), state.dist(state.gen)};
 }
 

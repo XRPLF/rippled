@@ -100,7 +100,7 @@ public:
     template <class Handler>
     void sample_one (Handler&& handler)
     {
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         if (m_cancel)
             throw std::logic_error ("io_latency_probe is canceled");
         m_ios.post (sample_op <Handler> (
@@ -115,7 +115,7 @@ public:
     template <class Handler>
     void sample (Handler&& handler)
     {
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         if (m_cancel)
             throw std::logic_error ("io_latency_probe is canceled");
         m_ios.post (sample_op <Handler> (
@@ -145,13 +145,13 @@ private:
 
     void addref ()
     {
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         ++m_count;
     }
 
     void release ()
     {
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         if (--m_count == 0)
             m_cond.notify_all ();
     }
@@ -205,8 +205,7 @@ private:
             m_handler (elapsed);
 
             {
-                std::lock_guard <decltype (m_probe->m_mutex)
-                    > lock (m_probe->m_mutex);
+                std::lock_guard lock (m_probe->m_mutex);
                 if (m_probe->m_cancel)
                     return;
             }

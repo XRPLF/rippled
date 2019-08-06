@@ -199,8 +199,7 @@ std::string
 AccountIDCache::toBase58(
     AccountID const& id) const
 {
-    std::lock_guard<
-        std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
     auto iter = m1_.find(id);
     if (iter != m1_.end())
         return iter->second;

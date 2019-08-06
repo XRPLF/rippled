@@ -61,7 +61,7 @@ JobQueue::Coro::
 yield() const
 {
     {
-        std::lock_guard<std::mutex> lock(jq_.m_mutex);
+        std::lock_guard lock(jq_.m_mutex);
         ++jq_.nSuspend_;
     }
     (*yield_)();
@@ -73,7 +73,7 @@ JobQueue::Coro::
 post()
 {
     {
-        std::lock_guard<std::mutex> lk(mutex_run_);
+        std::lock_guard lk(mutex_run_);
         running_ = true;
     }
 
@@ -88,7 +88,7 @@ post()
     }
 
     // The coroutine will not run.  Clean up running_.
-    std::lock_guard<std::mutex> lk(mutex_run_);
+    std::lock_guard lk(mutex_run_);
     running_ = false;
     cv_.notify_all();
     return false;
@@ -100,21 +100,21 @@ JobQueue::Coro::
 resume()
 {
     {
-        std::lock_guard<std::mutex> lk(mutex_run_);
+        std::lock_guard lk(mutex_run_);
         running_ = true;
     }
     {
-        std::lock_guard<std::mutex> lock(jq_.m_mutex);
+        std::lock_guard lock(jq_.m_mutex);
         --jq_.nSuspend_;
     }
     auto saved = detail::getLocalValues().release();
     detail::getLocalValues().reset(&lvs_);
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
     assert (coro_);
     coro_();
     detail::getLocalValues().release();
     detail::getLocalValues().reset(saved);
-    std::lock_guard<std::mutex> lk(mutex_run_);
+    std::lock_guard lk(mutex_run_);
     running_ = false;
     cv_.notify_all();
 }
@@ -142,7 +142,7 @@ expectEarlyExit()
         //
         // That said, since we're outside the Coro's stack, we need to
         // decrement the nSuspend that the Coro's call to yield caused.
-        std::lock_guard<std::mutex> lock(jq_.m_mutex);
+        std::lock_guard lock(jq_.m_mutex);
         --jq_.nSuspend_;
 #ifndef NDEBUG
         finished_ = true;

@@ -112,7 +112,7 @@ public:
         Entry* entry (nullptr);
 
         {
-            std::lock_guard<std::recursive_mutex> _(lock_);
+            std::lock_guard _(lock_);
             auto result =
                 table_.emplace (std::piecewise_construct,
                     std::make_tuple (kindInbound, address.at_port (0)), // Key
@@ -143,7 +143,7 @@ public:
         Entry* entry (nullptr);
 
         {
-            std::lock_guard<std::recursive_mutex> _(lock_);
+            std::lock_guard _(lock_);
             auto result =
                 table_.emplace (std::piecewise_construct,
                     std::make_tuple (kindOutbound, address),            // Key
@@ -177,7 +177,7 @@ public:
         Entry* entry (nullptr);
 
         {
-            std::lock_guard<std::recursive_mutex> _(lock_);
+            std::lock_guard _(lock_);
             auto result =
                 table_.emplace (std::piecewise_construct,
                     std::make_tuple (kindUnlimited, address.at_port(1)),// Key
@@ -212,7 +212,7 @@ public:
         clock_type::time_point const now (m_clock.now());
 
         Json::Value ret (Json::objectValue);
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         for (auto& inboundEntry : inbound_)
         {
@@ -259,7 +259,7 @@ public:
         clock_type::time_point const now (m_clock.now());
 
         Gossip gossip;
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         gossip.items.reserve (inbound_.size());
 
@@ -283,7 +283,7 @@ public:
     {
         auto const elapsed = m_clock.now();
         {
-            std::lock_guard<std::recursive_mutex> _(lock_);
+            std::lock_guard _(lock_);
             auto result =
                 importTable_.emplace (std::piecewise_construct,
                     std::make_tuple(origin),                  // Key
@@ -339,7 +339,7 @@ public:
     //
     void periodicActivity ()
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         auto const elapsed = m_clock.now();
 
@@ -394,7 +394,7 @@ public:
 
     void erase (Table::iterator iter)
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         Entry& entry (iter->second);
         assert (entry.refcount == 0);
         inactive_.erase (
@@ -404,13 +404,13 @@ public:
 
     void acquire (Entry& entry)
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         ++entry.refcount;
     }
 
     void release (Entry& entry)
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         if (--entry.refcount == 0)
         {
             JLOG(m_journal.debug()) <<
@@ -441,7 +441,7 @@ public:
 
     Disposition charge (Entry& entry, Charge const& fee)
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         clock_type::time_point const now (m_clock.now());
         int const balance (entry.add (fee.cost(), now));
         JLOG(m_journal.trace()) <<
@@ -454,7 +454,7 @@ public:
         if (entry.isUnlimited())
             return false;
 
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         bool notify (false);
         auto const elapsed = m_clock.now();
         if (entry.balance (m_clock.now()) >= warningThreshold &&
@@ -477,7 +477,7 @@ public:
         if (entry.isUnlimited())
             return false;
 
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         bool drop (false);
         clock_type::time_point const now (m_clock.now());
         int const balance (entry.balance (now));
@@ -500,7 +500,7 @@ public:
 
     int balance (Entry& entry)
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
         return entry.balance (m_clock.now());
     }
 
@@ -527,7 +527,7 @@ public:
     {
         clock_type::time_point const now (m_clock.now());
 
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard _(lock_);
 
         {
             beast::PropertyStream::Set s ("inbound", map);

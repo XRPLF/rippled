@@ -45,14 +45,14 @@ HashRouter::emplace (uint256 const& key)
 
 void HashRouter::addSuppression (uint256 const& key)
 {
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     emplace (key);
 }
 
 bool HashRouter::addSuppressionPeer (uint256 const& key, PeerShortID peer)
 {
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     auto result = emplace(key);
     result.first.addPeer(peer);
@@ -61,7 +61,7 @@ bool HashRouter::addSuppressionPeer (uint256 const& key, PeerShortID peer)
 
 bool HashRouter::addSuppressionPeer (uint256 const& key, PeerShortID peer, int& flags)
 {
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     auto result = emplace(key);
     auto& s = result.first;
@@ -73,7 +73,7 @@ bool HashRouter::addSuppressionPeer (uint256 const& key, PeerShortID peer, int& 
 bool HashRouter::shouldProcess (uint256 const& key, PeerShortID peer,
     int& flags, std::chrono::seconds tx_interval)
 {
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     auto result = emplace(key);
     auto& s = result.first;
@@ -84,7 +84,7 @@ bool HashRouter::shouldProcess (uint256 const& key, PeerShortID peer,
 
 int HashRouter::getFlags (uint256 const& key)
 {
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     return emplace(key).first.getFlags ();
 }
@@ -93,7 +93,7 @@ bool HashRouter::setFlags (uint256 const& key, int flags)
 {
     assert (flags != 0);
 
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     auto& s = emplace(key).first;
 
@@ -108,7 +108,7 @@ auto
 HashRouter::shouldRelay (uint256 const& key)
     -> boost::optional<std::set<PeerShortID>>
 {
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     auto& s = emplace(key).first;
 
@@ -121,7 +121,7 @@ HashRouter::shouldRelay (uint256 const& key)
 bool
 HashRouter::shouldRecover(uint256 const& key)
 {
-    std::lock_guard <std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
 
     auto& s = emplace(key).first;
 

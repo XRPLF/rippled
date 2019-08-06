@@ -231,7 +231,7 @@ AmendmentTableImpl::AmendmentTableImpl (
 {
     assert (majorityFraction_ != 0);
 
-    std::lock_guard <std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
 
     for (auto const& a : parseSection(supported))
     {
@@ -300,7 +300,7 @@ AmendmentTableImpl::get (uint256 const& amendmentHash)
 uint256
 AmendmentTableImpl::find (std::string const& name)
 {
-    std::lock_guard <std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
 
     for (auto const& e : amendmentMap_)
     {
@@ -314,7 +314,7 @@ AmendmentTableImpl::find (std::string const& name)
 bool
 AmendmentTableImpl::veto (uint256 const& amendment)
 {
-    std::lock_guard <std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
     auto s = add (amendment);
 
     if (s->vetoed)
@@ -326,7 +326,7 @@ AmendmentTableImpl::veto (uint256 const& amendment)
 bool
 AmendmentTableImpl::unVeto (uint256 const& amendment)
 {
-    std::lock_guard <std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
     auto s = get (amendment);
 
     if (!s || !s->vetoed)
@@ -338,7 +338,7 @@ AmendmentTableImpl::unVeto (uint256 const& amendment)
 bool
 AmendmentTableImpl::enable (uint256 const& amendment)
 {
-    std::lock_guard <std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
     auto s = add (amendment);
 
     if (s->enabled)
@@ -359,7 +359,7 @@ AmendmentTableImpl::enable (uint256 const& amendment)
 bool
 AmendmentTableImpl::disable (uint256 const& amendment)
 {
-    std::lock_guard <std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
     auto s = get (amendment);
 
     if (!s || !s->enabled)
@@ -372,7 +372,7 @@ AmendmentTableImpl::disable (uint256 const& amendment)
 bool
 AmendmentTableImpl::isEnabled (uint256 const& amendment)
 {
-    std::lock_guard <std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
     auto s = get (amendment);
     return s && s->enabled;
 }
@@ -380,7 +380,7 @@ AmendmentTableImpl::isEnabled (uint256 const& amendment)
 bool
 AmendmentTableImpl::isSupported (uint256 const& amendment)
 {
-    std::lock_guard <std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
     auto s = get (amendment);
     return s && s->supported;
 }
@@ -388,7 +388,7 @@ AmendmentTableImpl::isSupported (uint256 const& amendment)
 bool
 AmendmentTableImpl::hasUnsupportedEnabled ()
 {
-    std::lock_guard <std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
     return unsupportedEnabled_;
 }
 
@@ -402,7 +402,7 @@ AmendmentTableImpl::doValidation (
     amendments.reserve (amendmentMap_.size());
 
     {
-        std::lock_guard <std::mutex> sl (mutex_);
+        std::lock_guard sl (mutex_);
         for (auto const& e : amendmentMap_)
         {
             if (e.second.supported && ! e.second.vetoed &&
@@ -471,7 +471,7 @@ AmendmentTableImpl::doVoting (
     std::map <uint256, std::uint32_t> actions;
 
     {
-        std::lock_guard <std::mutex> sl (mutex_);
+        std::lock_guard sl (mutex_);
 
         // process all amendments we know of
         for (auto const& entry : amendmentMap_)
@@ -530,7 +530,7 @@ AmendmentTableImpl::doVoting (
 bool
 AmendmentTableImpl::needValidatedLedger (LedgerIndex ledgerSeq)
 {
-    std::lock_guard <std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
 
     // Is there a ledger in which an amendment could have been enabled
     // between these two ledger sequences?
@@ -579,7 +579,7 @@ AmendmentTableImpl::getJson (int)
 {
     Json::Value ret(Json::objectValue);
     {
-        std::lock_guard <std::mutex> sl(mutex_);
+        std::lock_guard sl(mutex_);
         for (auto const& e : amendmentMap_)
         {
             setJson (ret[to_string (e.first)] = Json::objectValue,
@@ -596,7 +596,7 @@ AmendmentTableImpl::getJson (uint256 const& amendmentID)
     Json::Value& jAmendment = (ret[to_string (amendmentID)] = Json::objectValue);
 
     {
-        std::lock_guard <std::mutex> sl(mutex_);
+        std::lock_guard sl(mutex_);
         auto a = add (amendmentID);
         setJson (jAmendment, amendmentID, *a);
     }

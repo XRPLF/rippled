@@ -70,7 +70,7 @@ bool Stoppable::areChildrenStopped () const
 
 void Stoppable::stopped ()
 {
-    std::lock_guard<std::mutex> lk{m_mut};
+    std::lock_guard lk{m_mut};
     m_is_stopping = true;
     m_cv.notify_all();
 }

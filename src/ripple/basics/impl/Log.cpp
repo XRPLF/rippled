@@ -124,7 +124,7 @@ Logs::open (boost::filesystem::path const& pathToLogFile)
 beast::Journal::Sink&
 Logs::get (std::string const& name)
 {
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
     auto const result =
         sinks_.emplace(name, makeSink(name, thresh_));
     return *result.first->second;
@@ -151,7 +151,7 @@ Logs::threshold() const
 void
 Logs::threshold (beast::severities::Severity thresh)
 {
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
     thresh_ = thresh;
     for (auto& sink : sinks_)
         sink.second->threshold (thresh);
@@ -161,7 +161,7 @@ std::vector<std::pair<std::string, std::string>>
 Logs::partition_severities() const
 {
     std::vector<std::pair<std::string, std::string>> list;
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
     list.reserve (sinks_.size());
     for (auto const& e : sinks_)
         list.push_back(std::make_pair(e.first,
@@ -175,7 +175,7 @@ Logs::write (beast::severities::Severity level, std::string const& partition,
 {
     std::string s;
     format (s, text, level, partition);
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
     file_.writeln (s);
     if (! silent_)
         std::cerr << s << '\n';
@@ -187,7 +187,7 @@ Logs::write (beast::severities::Severity level, std::string const& partition,
 std::string
 Logs::rotate()
 {
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
     bool const wasOpened = file_.closeAndReopen ();
     if (wasOpened)
         return "The log file was closed and reopened.";
@@ -375,7 +375,7 @@ public:
     std::unique_ptr<beast::Journal::Sink>
     set(std::unique_ptr<beast::Journal::Sink> sink)
     {
-        std::lock_guard<std::mutex> _(m_);
+        std::lock_guard _(m_);
 
         using std::swap;
         swap (holder_, sink);
@@ -391,7 +391,7 @@ public:
     beast::Journal::Sink&
     get()
     {
-        std::lock_guard<std::mutex> _(m_);
+        std::lock_guard _(m_);
         return sink_.get();
     }
 };

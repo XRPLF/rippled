@@ -90,7 +90,7 @@ public:
     {
         void processTask(int instance) override
         {
-            std::lock_guard<std::mutex> lk{mut};
+            std::lock_guard lk{mut};
             if (--count == 0)
                 cv.notify_all();
         }

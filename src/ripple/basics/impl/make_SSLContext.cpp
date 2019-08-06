@@ -202,7 +202,7 @@ disallowRenegotiation (SSL const* ssl, bool isNew)
     };
 
     static StaticData sd;
-    std::lock_guard <std::mutex> lock (sd.lock);
+    std::lock_guard lock (sd.lock);
     auto const expired (sd.set.clock().now() - std::chrono::minutes(4));
 
     // Remove expired entries

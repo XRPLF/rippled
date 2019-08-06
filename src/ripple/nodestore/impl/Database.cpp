@@ -90,7 +90,7 @@ void
 Database::stopThreads()
 {
     {
-        std::lock_guard <std::mutex> lock(readLock_);
+        std::lock_guard lock(readLock_);
         if (readShut_) // Only stop threads once.
             return;
 
@@ -109,7 +109,7 @@ Database::asyncFetch(uint256 const& hash, std::uint32_t seq,
         std::shared_ptr<KeyCache<uint256>> const& nCache)
 {
     // Post a read
-    std::lock_guard <std::mutex> lock(readLock_);
+    std::lock_guard lock(readLock_);
     if (read_.emplace(hash, std::make_tuple(seq, pCache, nCache)).second)
         readCondVar_.notify_one();
 }

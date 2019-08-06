@@ -224,7 +224,7 @@ private:
     void scheduleCheckpoint ()
     {
         {
-            std::lock_guard <std::mutex> lock (mutex_);
+            std::lock_guard lock (mutex_);
             if (running_)
                 return;
             running_ = true;
@@ -234,7 +234,7 @@ private:
         if (! jobQueue_.addJob (
             jtWAL, "WAL", [this] (Job&) { checkpoint(); }))
         {
-            std::lock_guard <std::mutex> lock (mutex_);
+            std::lock_guard lock (mutex_);
             running_ = false;
         }
     }
@@ -259,7 +259,7 @@ private:
                 << log << ", written=" << ckpt;
         }
 
-        std::lock_guard <std::mutex> lock (mutex_);
+        std::lock_guard lock (mutex_);
         running_ = false;
     }
 };
