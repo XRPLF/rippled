@@ -131,12 +131,10 @@ scaleFeeLoad(std::uint64_t fee, LoadFeeTrack const& feeTrack,
 {
     if (fee == 0)
         return fee;
-    std::uint32_t feeFactor;
-    std::uint32_t uRemFee;
-    {
-        // Collect the fee rates
-        std::tie(feeFactor, uRemFee) = feeTrack.getScalingFactors();
-    }
+
+    // Collect the fee rates
+    auto [feeFactor, uRemFee] = feeTrack.getScalingFactors();
+
     // Let privileged users pay the normal fee until
     //   the local load exceeds four times the remote.
     if (bUnlimited && (feeFactor > uRemFee) && (feeFactor < (4 * uRemFee)))

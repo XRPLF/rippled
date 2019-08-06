@@ -133,9 +133,7 @@ SHAMap::visitDifferences(SHAMap const* have,
 
     while (! stack.empty())
     {
-        SHAMapInnerNode* node;
-        SHAMapNodeID nodeID;
-        std::tie (node, nodeID) = stack.top ();
+        auto const [node, nodeID] = stack.top ();
         stack.pop ();
 
         // 1) Add this node to the pack
@@ -675,9 +673,7 @@ bool SHAMap::deepCompare (SHAMap& other) const
 
     while (!stack.empty ())
     {
-        SHAMapAbstractNode* node;
-        SHAMapAbstractNode* otherNode;
-        std::tie(node, otherNode) = stack.top ();
+        auto const [node, otherNode] = stack.top ();
         stack.pop ();
 
         if (!node || !otherNode)

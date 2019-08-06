@@ -505,14 +505,10 @@ DirectStepI<TDerived>::revImp (
 {
     cache_.reset ();
 
-    DebtDirection srcDebtDir;
-    IOUAmount maxSrcToDst;
+    auto const [maxSrcToDst, srcDebtDir] =
+        static_cast<TDerived const*>(this)->maxFlow(sb, out);
 
-    std::tie (maxSrcToDst, srcDebtDir) =
-        static_cast<TDerived const*>(this)->maxFlow (sb, out);
-
-    std::uint32_t srcQOut, dstQIn;
-    std::tie (srcQOut, dstQIn) = qualities (sb, srcDebtDir, StrandDirection::reverse);
+    auto const [srcQOut, dstQIn] = qualities (sb, srcDebtDir, StrandDirection::reverse);
     assert (static_cast<TDerived const*>(this)->verifyDstQualityIn (dstQIn));
 
     Issue const srcToDstIss(
@@ -635,8 +631,7 @@ DirectStepI<TDerived>::fwdImp (
     std::tie (maxSrcToDst, srcDebtDir) =
         static_cast<TDerived const*>(this)->maxFlow (sb, cache_->srcToDst);
 
-    std::uint32_t srcQOut, dstQIn;
-    std::tie (srcQOut, dstQIn) = qualities (sb, srcDebtDir, StrandDirection::forward);
+    auto const [srcQOut, dstQIn] = qualities (sb, srcDebtDir, StrandDirection::forward);
 
     Issue const srcToDstIss (currency_, redeems(srcDebtDir) ? dst_ : src_);
 
@@ -716,10 +711,8 @@ DirectStepI<TDerived>::validFwd (
 
     assert (!in.native);
 
-    DebtDirection srcDebtDir;
-    IOUAmount maxSrcToDst;
-    std::tie (maxSrcToDst, srcDebtDir) =
-        static_cast<TDerived const*>(this)->maxFlow (sb, cache_->srcToDst);
+    auto const [maxSrcToDst, srcDebtDir] =
+        static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
 
     try
     {

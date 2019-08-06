@@ -708,12 +708,10 @@ SHAMap::upper_bound(uint256 const& id) const
     // item need not be in tree
     SharedPtrNodeStack stack;
     walkTowardsKey(id, &stack);
-    std::shared_ptr<SHAMapAbstractNode> node;
-    SHAMapNodeID nodeID;
     auto const isv2 = is_v2();
     while (!stack.empty())
     {
-        std::tie(node, nodeID) = stack.top();
+        auto [node, nodeID] = stack.top();
         if (node->isLeaf())
         {
             auto leaf = static_cast<SHAMapTreeNode*>(node.get());

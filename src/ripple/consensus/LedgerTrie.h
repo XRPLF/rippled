@@ -447,9 +447,7 @@ public:
     void
     insert(Ledger const& ledger, std::uint32_t count = 1)
     {
-        Node* loc;
-        Seq diffSeq;
-        std::tie(loc, diffSeq) = find(ledger);
+        auto const [loc, diffSeq] = find(ledger);
 
         // There is always a place to insert
         assert(loc);

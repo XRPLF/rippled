@@ -1691,13 +1691,8 @@ ApplicationImp::getLastFullLedger()
 
     try
     {
-        std::shared_ptr<Ledger> ledger;
-        std::uint32_t seq;
-        uint256 hash;
-
-        std::tie (ledger, seq, hash) =
-            loadLedgerHelper (
-                "order by LedgerSeq desc limit 1", *this);
+        auto const [ledger, seq, hash] =
+            loadLedgerHelper("order by LedgerSeq desc limit 1", *this);
 
         if (!ledger)
             return ledger;
