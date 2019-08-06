@@ -245,7 +245,7 @@ private:
     void onStop() override;
 
     // Signals the service stopped if the stopped condition is met.
-    void checkStopped (std::lock_guard <std::mutex> const& lock);
+    void checkStopped (std::lock_guard<std::mutex> const& lock);
 
     // Adds a reference counted job to the JobQueue.
     //
@@ -270,7 +270,7 @@ private:
     //
     // Invariants:
     //  The calling thread owns the JobLock
-    void queueJob (Job const& job, std::lock_guard <std::mutex> const& lock);
+    void queueJob (Job const& job, std::lock_guard<std::mutex> const& lock);
 
     // Returns the next Job we should run now.
     //

@@ -26,13 +26,14 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/basics/make_lock.h>
+
+#include <mutex>
 
 namespace ripple {
 
 Json::Value doLedgerAccept (RPC::Context& context)
 {
-    auto lock = make_lock(context.app.getMasterMutex());
+    std::unique_lock lock{context.app.getMasterMutex()};
     Json::Value jvResult;
 
     if (!context.app.config().standalone())

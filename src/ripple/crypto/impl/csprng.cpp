@@ -36,7 +36,7 @@ csprng_engine::mix (
     assert (size != 0);
     assert (bitsPerByte != 0);
 
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
     RAND_add (data, size, (size * bitsPerByte) / 8.0);
 }
 
@@ -83,7 +83,7 @@ csprng_engine::operator()()
 {
     result_type ret;
 
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     auto const result = RAND_bytes (
         reinterpret_cast<unsigned char*>(&ret),
@@ -98,7 +98,7 @@ csprng_engine::operator()()
 void
 csprng_engine::operator()(void *ptr, std::size_t count)
 {
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     auto const result = RAND_bytes (
         reinterpret_cast<unsigned char*>(ptr),

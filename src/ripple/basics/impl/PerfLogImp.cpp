@@ -81,7 +81,7 @@ PerfLogImp::Counters::countersJson() const
         {
             auto const sync =
                 [&proc]() ->boost::optional<Counters::Rpc::Sync> {
-                std::lock_guard<std::mutex> lock(proc.second.mut);
+                std::lock_guard lock(proc.second.mut);
                 if (!proc.second.sync.started &&
                     !proc.second.sync.finished &&
                     !proc.second.sync.errored)
@@ -125,7 +125,7 @@ PerfLogImp::Counters::countersJson() const
         {
             auto const sync =
                 [&proc]() ->boost::optional<Counters::Jq::Sync> {
-                std::lock_guard<std::mutex> lock(proc.second.mut);
+                std::lock_guard lock(proc.second.mut);
                 if (!proc.second.sync.queued &&
                     !proc.second.sync.started &&
                     !proc.second.sync.finished)
@@ -181,7 +181,7 @@ PerfLogImp::Counters::currentJson() const
 
     Json::Value jobsArray(Json::arrayValue);
     auto const jobs = [this]{
-        std::lock_guard<std::mutex> lock(jobsMutex_);
+        std::lock_guard lock(jobsMutex_);
         return jobs_;
     }();
 
@@ -207,7 +207,7 @@ PerfLogImp::Counters::currentJson() const
     Json::Value methodsArray(Json::arrayValue);
     std::vector<MethodStart> methods;
     {
-        std::lock_guard<std::mutex> lock(methodsMutex_);
+        std::lock_guard lock(methodsMutex_);
         methods.reserve(methods_.size());
         for (auto const& m : methods_)
             methods.push_back(m.second);
@@ -339,10 +339,10 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
     }
 
     {
-        std::lock_guard<std::mutex> lock(counter->second.mut);
+        std::lock_guard lock(counter->second.mut);
         ++counter->second.sync.started;
     }
-    std::lock_guard<std::mutex> lock(counters_.methodsMutex_);
+    std::lock_guard lock(counters_.methodsMutex_);
     counters_.methods_[requestId] = {
         counter->first.c_str(),
         steady_clock::now()
@@ -362,7 +362,7 @@ PerfLogImp::rpcEnd(std::string const& method,
     }
     steady_time_point startTime;
     {
-        std::lock_guard<std::mutex> lock(counters_.methodsMutex_);
+        std::lock_guard lock(counters_.methodsMutex_);
         auto const e = counters_.methods_.find(requestId);
         if (e != counters_.methods_.end())
         {
@@ -374,7 +374,7 @@ PerfLogImp::rpcEnd(std::string const& method,
             assert(false);
         }
     }
-    std::lock_guard<std::mutex> lock(counter->second.mut);
+    std::lock_guard lock(counter->second.mut);
     if (finish)
         ++counter->second.sync.finished;
     else
@@ -393,7 +393,7 @@ PerfLogImp::jobQueue(JobType const type)
         assert(false);
         return;
     }
-    std::lock_guard<std::mutex> lock(counter->second.mut);
+    std::lock_guard lock(counter->second.mut);
     ++counter->second.sync.queued;
 }
 
@@ -410,11 +410,11 @@ PerfLogImp::jobStart(JobType const type,
         return;
     }
     {
-        std::lock_guard<std::mutex> lock(counter->second.mut);
+        std::lock_guard lock(counter->second.mut);
         ++counter->second.sync.started;
         counter->second.sync.queuedDuration += dur;
     }
-    std::lock_guard<std::mutex> lock(counters_.jobsMutex_);
+    std::lock_guard lock(counters_.jobsMutex_);
     if (instance >= 0 && instance < counters_.jobs_.size())
         counters_.jobs_[instance] = {type, startTime};
 }
@@ -430,11 +430,11 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur,
         return;
     }
     {
-        std::lock_guard<std::mutex> lock(counter->second.mut);
+        std::lock_guard lock(counter->second.mut);
         ++counter->second.sync.finished;
         counter->second.sync.runningDuration += dur;
     }
-    std::lock_guard<std::mutex> lock(counters_.jobsMutex_);
+    std::lock_guard lock(counters_.jobsMutex_);
     if (instance >= 0 && instance < counters_.jobs_.size())
         counters_.jobs_[instance] = {jtINVALID, steady_time_point()};
 }
@@ -442,7 +442,7 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur,
 void
 PerfLogImp::resizeJobs(int const resize)
 {
-    std::lock_guard<std::mutex> lock(counters_.jobsMutex_);
+    std::lock_guard lock(counters_.jobsMutex_);
     counters_.workers_ = resize;
     if (resize > counters_.jobs_.size())
         counters_.jobs_.resize(resize, {jtINVALID, steady_time_point()});
@@ -455,7 +455,7 @@ PerfLogImp::rotate()
     if (setup_.perfLog.empty())
         return;
 
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
     rotate_ = true;
     cond_.notify_one();
 }
@@ -473,7 +473,7 @@ PerfLogImp::onStop()
     if (thread_.joinable())
     {
         {
-            std::lock_guard<std::mutex> lock(mutex_);
+            std::lock_guard lock(mutex_);
             stop_ = true;
             cond_.notify_one();
         }

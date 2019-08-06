@@ -59,7 +59,7 @@ public:
     ~ManagerImp () override
     {
         {
-            std::lock_guard<std::mutex> lock(mutex_);
+            std::lock_guard lock(mutex_);
             stop_ = true;
             cond_.notify_one();
         }

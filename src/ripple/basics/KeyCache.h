@@ -80,7 +80,6 @@ private:
 
     using map_type = hardened_hash_map <key_type, Entry, Hash, KeyEqual>;
     using iterator = typename map_type::iterator;
-    using lock_guard = std::lock_guard <Mutex>;
 
 public:
     using size_type = typename map_type::size_type;
@@ -144,20 +143,20 @@ public:
     /** Returns the number of items in the container. */
     size_type size () const
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         return m_map.size ();
     }
 
     /** Empty the cache */
     void clear ()
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         m_map.clear ();
     }
 
     void reset ()
     {
-        lock_guard lock(m_mutex);
+        std::lock_guard lock(m_mutex);
         m_map.clear();
         m_stats.hits = 0;
         m_stats.misses = 0;
@@ -165,13 +164,13 @@ public:
 
     void setTargetSize (size_type s)
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         m_target_size = s;
     }
 
     void setTargetAge (std::chrono::seconds s)
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         m_target_age = s;
     }
 
@@ -181,7 +180,7 @@ public:
     template <class KeyComparable>
     bool exists (KeyComparable const& key) const
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         typename map_type::const_iterator const iter (m_map.find (key));
         if (iter != m_map.end ())
         {
@@ -198,7 +197,7 @@ public:
     */
     bool insert (Key const& key)
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         clock_type::time_point const now (m_clock.now ());
         std::pair <iterator, bool> result (m_map.emplace (
             std::piecewise_construct, std::forward_as_tuple (key),
@@ -217,7 +216,7 @@ public:
     template <class KeyComparable>
     bool touch_if_exists (KeyComparable const& key)
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         iterator const iter (m_map.find (key));
         if (iter == m_map.end ())
         {
@@ -235,7 +234,7 @@ public:
     */
     bool erase (key_type const& key)
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         if (m_map.erase (key) > 0)
         {
             ++m_stats.hits;
@@ -251,7 +250,7 @@ public:
         clock_type::time_point const now (m_clock.now ());
         clock_type::time_point when_expire;
 
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
 
         if (m_target_size == 0 ||
             (m_map.size () <= m_target_size))
@@ -297,7 +296,7 @@ private:
         {
             beast::insight::Gauge::value_type hit_rate (0);
             {
-                lock_guard lock (m_mutex);
+                std::lock_guard lock (m_mutex);
                 auto const total (m_stats.hits + m_stats.misses);
                 if (total != 0)
                     hit_rate = (m_stats.hits * 100) / total;

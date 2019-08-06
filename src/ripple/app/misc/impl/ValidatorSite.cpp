@@ -127,7 +127,7 @@ ValidatorSite::load (
     JLOG (j_.debug()) <<
         "Loading configured validator list sites";
 
-    std::lock_guard <std::mutex> lock{sites_mutex_};
+    std::lock_guard lock{sites_mutex_};
 
     for (auto const& uri : siteURIs)
     {
@@ -153,7 +153,7 @@ ValidatorSite::load (
 void
 ValidatorSite::start ()
 {
-    std::lock_guard <std::mutex> lock{state_mutex_};
+    std::lock_guard lock{state_mutex_};
     if (timer_.expires_at() == clock_type::time_point{})
         setTimer (lock);
 }
@@ -194,7 +194,7 @@ ValidatorSite::stop()
 void
 ValidatorSite::setTimer (std::lock_guard<std::mutex>& state_lock)
 {
-    std::lock_guard <std::mutex> lock{sites_mutex_};
+    std::lock_guard lock{sites_mutex_};
 
     auto next = std::min_element(sites_.begin(), sites_.end(),
         [](Site const& a, Site const& b)
@@ -227,7 +227,7 @@ ValidatorSite::makeRequest (
     auto timeoutCancel =
         [this] ()
         {
-            std::lock_guard <std::mutex> lock_state{state_mutex_};
+            std::lock_guard lock_state{state_mutex_};
             // docs indicate cancel_one() can throw, but this
             // should be reconsidered if it changes to noexcept
             try
@@ -288,7 +288,7 @@ ValidatorSite::makeRequest (
     sp->run ();
     // start a timer for the request, which shouldn't take more
     // than requestTimeout_ to complete
-    std::lock_guard <std::mutex> lock_state{state_mutex_};
+    std::lock_guard lock_state{state_mutex_};
     timer_.expires_after (requestTimeout_);
     timer_.async_wait ([this, siteIdx] (boost::system::error_code const& ec)
         {
@@ -305,13 +305,13 @@ ValidatorSite::onRequestTimeout (
         return;
 
     {
-        std::lock_guard <std::mutex> lock_site{sites_mutex_};
+        std::lock_guard lock_site{sites_mutex_};
         JLOG (j_.warn()) <<
             "Request for " << sites_[siteIdx].activeResource->uri <<
             " took too long";
     }
 
-    std::lock_guard<std::mutex> lock_state{state_mutex_};
+    std::lock_guard lock_state{state_mutex_};
     if(auto sp = work_.lock())
         sp->cancel();
 }
@@ -332,7 +332,7 @@ ValidatorSite::onTimer (
 
     try
     {
-        std::lock_guard <std::mutex> lock{sites_mutex_};
+        std::lock_guard lock{sites_mutex_};
         sites_[siteIdx].nextRefresh =
             clock_type::now() + sites_[siteIdx].refreshInterval;
         sites_[siteIdx].redirCount = 0;
@@ -499,7 +499,7 @@ ValidatorSite::onSiteFetch(
     std::size_t siteIdx)
 {
     {
-        std::lock_guard <std::mutex> lock_sites{sites_mutex_};
+        std::lock_guard lock_sites{sites_mutex_};
         JLOG (j_.debug()) << "Got completion for "
             << sites_[siteIdx].activeResource->uri;
         auto onError = [&](std::string const& errMsg, bool retry)
@@ -570,7 +570,7 @@ ValidatorSite::onSiteFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::lock_guard <std::mutex> lock_state{state_mutex_};
+    std::lock_guard lock_state{state_mutex_};
     fetching_ = false;
     if (! stopping_)
         setTimer (lock_state);
@@ -584,7 +584,7 @@ ValidatorSite::onTextFetch(
     std::size_t siteIdx)
 {
     {
-        std::lock_guard <std::mutex> lock_sites{sites_mutex_};
+        std::lock_guard lock_sites{sites_mutex_};
         try
         {
             if (ec)
@@ -611,7 +611,7 @@ ValidatorSite::onTextFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::lock_guard <std::mutex> lock_state{state_mutex_};
+    std::lock_guard lock_state{state_mutex_};
     fetching_ = false;
     if (! stopping_)
         setTimer (lock_state);
@@ -627,7 +627,7 @@ ValidatorSite::getJson() const
     Json::Value jrr(Json::objectValue);
     Json::Value& jSites = (jrr[jss::validator_sites] = Json::arrayValue);
     {
-        std::lock_guard<std::mutex> lock{sites_mutex_};
+        std::lock_guard lock{sites_mutex_};
         for (Site const& site : sites_)
         {
             Json::Value& v = jSites.append(Json::objectValue);

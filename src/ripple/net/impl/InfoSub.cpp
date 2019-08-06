@@ -92,7 +92,7 @@ void InfoSub::onSendEmpty ()
 
 void InfoSub::insertSubAccountInfo (AccountID const& account, bool rt)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard sl (mLock);
 
     if (rt)
         realTimeSubscriptions_.insert (account);
@@ -102,7 +102,7 @@ void InfoSub::insertSubAccountInfo (AccountID const& account, bool rt)
 
 void InfoSub::deleteSubAccountInfo (AccountID const& account, bool rt)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard sl (mLock);
 
     if (rt)
         realTimeSubscriptions_.erase (account);

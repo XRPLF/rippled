@@ -288,7 +288,7 @@ ValidatorToken::make_ValidatorToken(std::vector<std::string> const& tokenBlob)
 PublicKey
 ManifestCache::getSigningKey (PublicKey const& pk) const
 {
-    std::lock_guard<std::mutex> lock{read_mutex_};
+    std::lock_guard lock{read_mutex_};
     auto const iter = map_.find (pk);
 
     if (iter != map_.end () && !iter->second.revoked ())
@@ -300,7 +300,7 @@ ManifestCache::getSigningKey (PublicKey const& pk) const
 PublicKey
 ManifestCache::getMasterKey (PublicKey const& pk) const
 {
-    std::lock_guard<std::mutex> lock{read_mutex_};
+    std::lock_guard lock{read_mutex_};
     auto const iter = signingToMasterKeys_.find (pk);
 
     if (iter != signingToMasterKeys_.end ())
@@ -312,7 +312,7 @@ ManifestCache::getMasterKey (PublicKey const& pk) const
 bool
 ManifestCache::revoked (PublicKey const& pk) const
 {
-    std::lock_guard<std::mutex> lock{read_mutex_};
+    std::lock_guard lock{read_mutex_};
     auto const iter = map_.find (pk);
 
     if (iter != map_.end ())
@@ -324,7 +324,7 @@ ManifestCache::revoked (PublicKey const& pk) const
 ManifestDisposition
 ManifestCache::applyManifest (Manifest m)
 {
-    std::lock_guard<std::mutex> applyLock{apply_mutex_};
+    std::lock_guard applyLock{apply_mutex_};
 
     /*
         before we spend time checking the signature, make sure the
@@ -357,7 +357,7 @@ ManifestCache::applyManifest (Manifest m)
         return ManifestDisposition::invalid;
     }
 
-    std::lock_guard<std::mutex> readLock{read_mutex_};
+    std::lock_guard readLock{read_mutex_};
 
     bool const revoked = m.revoked();
 
@@ -508,7 +508,7 @@ void ManifestCache::save (
     DatabaseCon& dbCon, std::string const& dbTable,
     std::function <bool (PublicKey const&)> isTrusted)
 {
-    std::lock_guard<std::mutex> lock{apply_mutex_};
+    std::lock_guard lock{apply_mutex_};
 
     auto db = dbCon.checkoutDb ();
 

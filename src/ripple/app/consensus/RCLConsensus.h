@@ -470,7 +470,7 @@ public:
     RCLCxLedger::ID
     prevLedgerID() const
     {
-        ScopedLockType _{mutex_};
+        std::lock_guard _{mutex_};
         return consensus_.prevLedgerID();
     }
 
@@ -497,7 +497,6 @@ private:
     // guards all calls to consensus_. adaptor_ uses atomics internally
     // to allow concurrent access of its data members that have getters.
     mutable std::recursive_mutex mutex_;
-    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
 
     Adaptor adaptor_;
     Consensus<Adaptor> consensus_;

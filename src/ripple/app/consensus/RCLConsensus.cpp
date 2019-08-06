@@ -32,7 +32,6 @@
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/app/misc/ValidatorList.h>
-#include <ripple/basics/make_lock.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/consensus/LedgerTiming.h>
 #include <ripple/nodestore/DatabaseShard.h>
@@ -40,7 +39,9 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/digest.h>
+
 #include <algorithm>
+#include <mutex>
 
 namespace ripple {
 
@@ -583,8 +584,8 @@ RCLConsensus::Adaptor::doAccept(
         }
 
         // Build new open ledger
-        auto lock = make_lock(app_.getMasterMutex(), std::defer_lock);
-        auto sl = make_lock(ledgerMaster_.peekMutex(), std::defer_lock);
+        std::unique_lock lock{app_.getMasterMutex(), std::defer_lock};
+        std::unique_lock sl{ledgerMaster_.peekMutex(), std::defer_lock};
         std::lock(lock, sl);
 
         auto const lastVal = ledgerMaster_.getValidatedLedger();
@@ -811,7 +812,7 @@ RCLConsensus::getJson(bool full) const
 {
     Json::Value ret;
     {
-      ScopedLockType _{mutex_};
+      std::lock_guard _{mutex_};
       ret = consensus_.getJson(full);
     }
     ret["validating"] = adaptor_.validating();
@@ -823,7 +824,7 @@ RCLConsensus::timerEntry(NetClock::time_point const& now)
 {
     try
     {
-        ScopedLockType _{mutex_};
+        std::lock_guard _{mutex_};
         consensus_.timerEntry(now);
     }
     catch (SHAMapMissingNode const& mn)
@@ -839,7 +840,7 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
 {
     try
     {
-        ScopedLockType _{mutex_};
+        std::lock_guard _{mutex_};
         consensus_.gotTxSet(now, txSet);
     }
     catch (SHAMapMissingNode const& mn)
@@ -858,7 +859,7 @@ RCLConsensus::simulate(
     NetClock::time_point const& now,
     boost::optional<std::chrono::milliseconds> consensusDelay)
 {
-    ScopedLockType _{mutex_};
+    std::lock_guard _{mutex_};
     consensus_.simulate(now, consensusDelay);
 }
 
@@ -867,7 +868,7 @@ RCLConsensus::peerProposal(
     NetClock::time_point const& now,
     RCLCxPeerPos const& newProposal)
 {
-    ScopedLockType _{mutex_};
+    std::lock_guard _{mutex_};
     return consensus_.peerProposal(now, newProposal);
 }
 
@@ -956,7 +957,7 @@ RCLConsensus::startRound(
     RCLCxLedger const& prevLgr,
     hash_set<NodeID> const& nowUntrusted)
 {
-    ScopedLockType _{mutex_};
+    std::lock_guard _{mutex_};
     consensus_.startRound(
         now, prevLgrId, prevLgr, nowUntrusted, adaptor_.preStartRound(prevLgr));
 }

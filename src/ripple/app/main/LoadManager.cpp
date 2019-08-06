@@ -59,14 +59,14 @@ LoadManager::~LoadManager ()
 
 void LoadManager::activateDeadlockDetector ()
 {
-    std::lock_guard<std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
     armed_ = true;
 }
 
 void LoadManager::resetDeadlockDetector ()
 {
     auto const elapsedSeconds = UptimeClock::now();
-    std::lock_guard<std::mutex> sl (mutex_);
+    std::lock_guard sl (mutex_);
     deadLock_ = elapsedSeconds;
 }
 
@@ -90,7 +90,7 @@ void LoadManager::onStop ()
     {
         JLOG(journal_.debug()) << "Stopping";
         {
-            std::lock_guard<std::mutex> sl (mutex_);
+            std::lock_guard sl (mutex_);
             stop_ = true;
         }
         thread_.join();

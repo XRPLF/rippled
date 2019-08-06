@@ -37,7 +37,7 @@ OrderBookDB::OrderBookDB (Application& app, Stoppable& parent)
 
 void OrderBookDB::invalidate ()
 {
-    std::lock_guard <std::recursive_mutex> sl (mLock);
+    std::lock_guard sl (mLock);
     mSeq = 0;
 }
 
@@ -45,7 +45,7 @@ void OrderBookDB::setup(
     std::shared_ptr<ReadView const> const& ledger)
 {
     {
-        std::lock_guard <std::recursive_mutex> sl (mLock);
+        std::lock_guard sl (mLock);
         auto seq = ledger->info().seq;
 
         // Do a full update every 256 ledgers
@@ -104,7 +104,7 @@ void OrderBookDB::update(
             {
                 JLOG (j_.info())
                     << "OrderBookDB::update exiting due to isStopping";
-                std::lock_guard <std::recursive_mutex> sl (mLock);
+                std::lock_guard sl (mLock);
                 mSeq = 0;
                 return;
             }
@@ -136,7 +136,7 @@ void OrderBookDB::update(
     {
         JLOG (j_.info())
             << "OrderBookDB::update encountered a missing node";
-        std::lock_guard <std::recursive_mutex> sl (mLock);
+        std::lock_guard sl (mLock);
         mSeq = 0;
         return;
     }
@@ -144,7 +144,7 @@ void OrderBookDB::update(
     JLOG (j_.debug())
         << "OrderBookDB::update< " << books << " books found";
     {
-        std::lock_guard <std::recursive_mutex> sl (mLock);
+        std::lock_guard sl (mLock);
 
         mXRPBooks.swap(XRPBooks);
         mSourceMap.swap(sourceMap);
@@ -156,7 +156,7 @@ void OrderBookDB::update(
 void OrderBookDB::addOrderBook(Book const& book)
 {
     bool toXRP = isXRP (book.out);
-    std::lock_guard <std::recursive_mutex> sl (mLock);
+    std::lock_guard sl (mLock);
 
     if (toXRP)
     {
@@ -191,26 +191,26 @@ void OrderBookDB::addOrderBook(Book const& book)
 // return list of all orderbooks that want this issuerID and currencyID
 OrderBook::List OrderBookDB::getBooksByTakerPays (Issue const& issue)
 {
-    std::lock_guard <std::recursive_mutex> sl (mLock);
+    std::lock_guard sl (mLock);
     auto it = mSourceMap.find (issue);
     return it == mSourceMap.end () ? OrderBook::List() : it->second;
 }
 
 int OrderBookDB::getBookSize(Issue const& issue) {
-    std::lock_guard <std::recursive_mutex> sl (mLock);
+    std::lock_guard sl (mLock);
     auto it = mSourceMap.find (issue);
     return it == mSourceMap.end () ? 0 : it->second.size();
 }
 
 bool OrderBookDB::isBookToXRP(Issue const& issue)
 {
-    std::lock_guard <std::recursive_mutex> sl (mLock);
+    std::lock_guard sl (mLock);
     return mXRPBooks.count(issue) > 0;
 }
 
 BookListeners::pointer OrderBookDB::makeBookListeners (Book const& book)
 {
-    std::lock_guard <std::recursive_mutex> sl (mLock);
+    std::lock_guard sl (mLock);
     auto ret = getBookListeners (book);
 
     if (!ret)
@@ -227,7 +227,7 @@ BookListeners::pointer OrderBookDB::makeBookListeners (Book const& book)
 BookListeners::pointer OrderBookDB::getBookListeners (Book const& book)
 {
     BookListeners::pointer ret;
-    std::lock_guard <std::recursive_mutex> sl (mLock);
+    std::lock_guard sl (mLock);
 
     auto it0 = mListeners.find (book);
     if (it0 != mListeners.end ())
@@ -242,7 +242,7 @@ void OrderBookDB::processTxn (
     std::shared_ptr<ReadView const> const& ledger,
         const AcceptedLedgerTx& alTx, Json::Value const& jvObj)
 {
-    std::lock_guard <std::recursive_mutex> sl (mLock);
+    std::lock_guard sl (mLock);
     if (alTx.getResult () == tesSUCCESS)
     {
         // For this particular transaction, maintain the set of unique

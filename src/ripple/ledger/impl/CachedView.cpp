@@ -34,7 +34,7 @@ std::shared_ptr<SLE const>
 CachedViewImpl::read(Keylet const& k) const
 {
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard lock(mutex_);
         auto const iter = map_.find(k.key);
         if (iter != map_.end())
         {
@@ -47,7 +47,7 @@ CachedViewImpl::read(Keylet const& k) const
     if (!digest)
         return nullptr;
     auto sle = cache_.fetch(*digest, [&]() { return base_.read(k); });
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
     auto const er = map_.emplace(k.key, sle);
     auto const& iter = er.first;
     bool const inserted = er.second;

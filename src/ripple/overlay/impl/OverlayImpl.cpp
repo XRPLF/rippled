@@ -306,7 +306,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         // As we are not on the strand, run() must be called
         // while holding the lock, otherwise new I/O can be
         // queued after a call to stop().
-        std::lock_guard <decltype(mutex_)> lock (mutex_);
+        std::lock_guard lock (mutex_);
         {
             auto const result =
                 m_peers.emplace (peer->slot(), peer);
@@ -408,7 +408,7 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
             usage, setup_.context, next_id_++, slot,
                 app_.journal("Peer"), *this);
 
-    std::lock_guard<decltype(mutex_)> lock(mutex_);
+    std::lock_guard lock(mutex_);
     list_.emplace(p.get(), p);
     p->run();
 }
@@ -419,7 +419,7 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
 void
 OverlayImpl::add_active (std::shared_ptr<PeerImp> const& peer)
 {
-    std::lock_guard <decltype(mutex_)> lock (mutex_);
+    std::lock_guard lock (mutex_);
 
     {
         auto const result =
@@ -455,7 +455,7 @@ OverlayImpl::add_active (std::shared_ptr<PeerImp> const& peer)
 void
 OverlayImpl::remove (PeerFinder::Slot::ptr const& slot)
 {
-    std::lock_guard <decltype(mutex_)> lock (mutex_);
+    std::lock_guard lock (mutex_);
     auto const iter = m_peers.find (slot);
     assert(iter != m_peers.end ());
     m_peers.erase (iter);
@@ -574,7 +574,7 @@ void
 OverlayImpl::onStart ()
 {
     auto const timer = std::make_shared<Timer>(*this);
-    std::lock_guard <decltype(mutex_)> lock (mutex_);
+    std::lock_guard lock (mutex_);
     list_.emplace(timer.get(), timer);
     timer_ = timer;
     timer->run();
@@ -589,7 +589,7 @@ OverlayImpl::onStop ()
 void
 OverlayImpl::onChildrenStopped ()
 {
-    std::lock_guard <decltype(mutex_)> lock (mutex_);
+    std::lock_guard lock (mutex_);
     checkStopped ();
 }
 
@@ -629,7 +629,7 @@ OverlayImpl::activate (std::shared_ptr<PeerImp> const& peer)
 {
     // Now track this peer
     {
-        std::lock_guard <decltype(mutex_)> lock (mutex_);
+        std::lock_guard lock (mutex_);
         auto const result (ids_.emplace (
             std::piecewise_construct,
                 std::make_tuple (peer->id()),
@@ -652,7 +652,7 @@ OverlayImpl::activate (std::shared_ptr<PeerImp> const& peer)
 void
 OverlayImpl::onPeerDeactivate (Peer::id_t id)
 {
-    std::lock_guard <decltype(mutex_)> lock (mutex_);
+    std::lock_guard lock (mutex_);
     ids_.erase(id);
 }
 
@@ -765,7 +765,7 @@ OverlayImpl::crawlShards(bool pubKey, std::uint32_t hops)
             if (csIDs_.empty())
             {
                 {
-                    std::lock_guard <decltype(mutex_)> lock {mutex_};
+                    std::lock_guard lock {mutex_};
                     for (auto& id : ids_)
                         csIDs_.emplace(id.first);
                 }
@@ -831,7 +831,7 @@ OverlayImpl::lastLink(std::uint32_t id)
     // Notify threads when every peer has received a last link.
     // This doesn't account for every node that might reply but
     // it is adequate.
-    std::lock_guard<std::mutex> l {csMutex_};
+    std::lock_guard l {csMutex_};
     if (csIDs_.erase(id) && csIDs_.empty())
         csCV_.notify_all();
 }
@@ -873,7 +873,7 @@ OverlayImpl::selectPeers (PeerSet& set, std::size_t limit,
 std::size_t
 OverlayImpl::size()
 {
-    std::lock_guard <decltype(mutex_)> lock (mutex_);
+    std::lock_guard lock (mutex_);
     return ids_.size ();
 }
 
@@ -1077,7 +1077,7 @@ OverlayImpl::check ()
 std::shared_ptr<Peer>
 OverlayImpl::findPeerByShortID (Peer::id_t const& id)
 {
-    std::lock_guard <decltype(mutex_)> lock (mutex_);
+    std::lock_guard lock (mutex_);
     auto const iter = ids_.find (id);
     if (iter != ids_.end ())
         return iter->second.lock();
@@ -1089,7 +1089,7 @@ OverlayImpl::findPeerByShortID (Peer::id_t const& id)
 std::shared_ptr<Peer>
 OverlayImpl::findPeerByPublicKey (PublicKey const& pubKey)
 {
-    std::lock_guard <decltype(mutex_)> lock(mutex_);
+    std::lock_guard lock(mutex_);
     for (auto const& e : ids_)
     {
         if (auto peer = e.second.lock())
@@ -1170,7 +1170,7 @@ OverlayImpl::relay (protocol::TMValidation& m, uint256 const& uid)
 void
 OverlayImpl::remove (Child& child)
 {
-    std::lock_guard<decltype(mutex_)> lock(mutex_);
+    std::lock_guard lock(mutex_);
     list_.erase(&child);
     if (list_.empty())
         checkStopped();
@@ -1189,7 +1189,7 @@ OverlayImpl::stop()
     // won't be called until vector<> children leaves scope.
     std::vector<std::shared_ptr<Child>> children;
     {
-        std::lock_guard<decltype(mutex_)> lock(mutex_);
+        std::lock_guard lock(mutex_);
         if (!work_)
             return;
         work_ = boost::none;
@@ -1224,7 +1224,7 @@ OverlayImpl::sendEndpoints()
     {
         std::shared_ptr<PeerImp> peer;
         {
-            std::lock_guard <decltype(mutex_)> lock (mutex_);
+            std::lock_guard lock (mutex_);
             auto const iter = m_peers.find (e.first);
             if (iter != m_peers.end())
                 peer = iter->second.lock();

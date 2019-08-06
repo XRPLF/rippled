@@ -183,8 +183,7 @@ io_list::work::destroy()
         return;
     std::function<void(void)> f;
     {
-        std::lock_guard<
-            std::mutex> lock(ios_->m_);
+        std::lock_guard lock(ios_->m_);
         ios_->map_.erase(this);
         if(--ios_->n_ == 0 &&
             ios_->closed_)
@@ -217,7 +216,7 @@ io_list::emplace(Args&&... args)
         std::forward<Args>(args)...);
     decltype(sp) dead;
 
-    std::lock_guard<std::mutex> lock(m_);
+    std::lock_guard lock(m_);
     if(! closed_)
     {
         ++n_;

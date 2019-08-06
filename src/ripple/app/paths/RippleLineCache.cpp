@@ -36,7 +36,7 @@ RippleLineCache::getRippleLines (AccountID const& accountID)
 {
     AccountKey key (accountID, hasher_ (accountID));
 
-    std::lock_guard <std::mutex> sl (mLock);
+    std::lock_guard sl (mLock);
 
     auto it = lines_.emplace (key,
         std::vector<RippleState::pointer>());

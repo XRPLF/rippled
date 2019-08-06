@@ -51,7 +51,7 @@ public:
     bool
     startWork (LedgerIndex seq)
     {
-        std::lock_guard <std::mutex> lock(mutex_);
+        std::lock_guard lock(mutex_);
 
         auto it = map_.find (seq);
 
@@ -74,7 +74,7 @@ public:
     void
     finishWork (LedgerIndex seq)
     {
-        std::lock_guard <std::mutex> lock(mutex_);
+        std::lock_guard lock(mutex_);
 
         map_.erase (seq);
         await_.notify_all();
@@ -84,7 +84,7 @@ public:
     bool
     pending (LedgerIndex seq)
     {
-        std::lock_guard <std::mutex> lock(mutex_);
+        std::lock_guard lock(mutex_);
         return map_.find(seq) != map_.end();
     }
 
@@ -137,7 +137,7 @@ public:
     std::map <LedgerIndex, bool>
     getSnapshot () const
     {
-        std::lock_guard <std::mutex> lock(mutex_);
+        std::lock_guard lock(mutex_);
 
         return map_;
     }

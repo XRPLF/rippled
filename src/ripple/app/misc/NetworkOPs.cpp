@@ -57,9 +57,10 @@
 #include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/utility/rngfill.h>
-#include <ripple/basics/make_lock.h>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/ip/host_name.hpp>
+
+#include <mutex>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -540,9 +541,6 @@ private:
     using SubInfoMapType = hash_map <AccountID, SubMapType>;
     using subRpcMapType = hash_map<std::string, InfoSub::pointer>;
 
-    // XXX Split into more locks.
-    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
-
     Application& app_;
     clock_type& m_clock;
     beast::Journal m_journal;
@@ -725,7 +723,7 @@ void NetworkOPsImp::setClusterTimer ()
 void NetworkOPsImp::processHeartbeatTimer ()
 {
     {
-        auto lock = make_lock(app_.getMasterMutex());
+        std::unique_lock lock{app_.getMasterMutex()};
 
         // VFALCO NOTE This is for diagnosing a crash on exit
         LoadManager& mgr (app_.getLoadManager ());
@@ -942,7 +940,7 @@ void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transactio
 void NetworkOPsImp::doTransactionAsync (std::shared_ptr<Transaction> transaction,
         bool bUnlimited, FailHard failType)
 {
-    std::lock_guard<std::mutex> lock (mMutex);
+    std::lock_guard lock (mMutex);
 
     if (transaction->getApplying())
         return;
@@ -1026,10 +1024,10 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
     batchLock.unlock();
 
     {
-        auto masterLock = make_lock(app_.getMasterMutex(), std::defer_lock);
+        std::unique_lock masterLock{app_.getMasterMutex(), std::defer_lock};
         bool changed = false;
         {
-            auto ledgerLock = make_lock(m_ledgerMaster.peekMutex(), std::defer_lock);
+            std::unique_lock ledgerLock{m_ledgerMaster.peekMutex(), std::defer_lock};
             std::lock(masterLock, ledgerLock);
 
             app_.openLedger().modify(
@@ -1566,7 +1564,7 @@ void NetworkOPsImp::consensusViewChange ()
 void NetworkOPsImp::pubManifest (Manifest const& mo)
 {
     // VFALCO consider std::shared_mutex
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
 
     if (!mStreamMaps[sManifests].empty ())
     {
@@ -1637,7 +1635,7 @@ void NetworkOPsImp::pubServer ()
     //             list into a local array while holding the lock then release the
     //             lock and call send on everyone.
     //
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
 
     if (!mStreamMaps[sServer].empty ())
     {
@@ -1707,7 +1705,7 @@ void NetworkOPsImp::pubServer ()
 void NetworkOPsImp::pubValidation (STValidation::ref val)
 {
     // VFALCO consider std::shared_mutex
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
 
     if (!mStreamMaps[sValidations].empty ())
     {
@@ -1767,7 +1765,7 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
 void NetworkOPsImp::pubPeerStatus (
     std::function<Json::Value(void)> const& func)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
 
     if (!mStreamMaps[sPeerStatus].empty ())
     {
@@ -2396,7 +2394,7 @@ void NetworkOPsImp::pubProposedTransaction (
     Json::Value jvObj   = transJson (*stTxn, terResult, false, lpCurrent);
 
     {
-        ScopedLockType sl (mSubLock);
+        std::lock_guard sl (mSubLock);
 
         auto it = mStreamMaps[sRTTransactions].begin ();
         while (it != mStreamMaps[sRTTransactions].end ())
@@ -2437,7 +2435,7 @@ void NetworkOPsImp::pubLedger (
     }
 
     {
-        ScopedLockType sl (mSubLock);
+        std::lock_guard sl (mSubLock);
 
         if (!mStreamMaps[sLedger].empty ())
         {
@@ -2571,7 +2569,7 @@ void NetworkOPsImp::pubValidatedTransaction (
     }
 
     {
-        ScopedLockType sl (mSubLock);
+        std::lock_guard sl (mSubLock);
 
         auto it = mStreamMaps[sTransactions].begin ();
         while (it != mStreamMaps[sTransactions].end ())
@@ -2616,7 +2614,7 @@ void NetworkOPsImp::pubAccountTransaction (
     int                             iAccepted   = 0;
 
     {
-        ScopedLockType sl (mSubLock);
+        std::lock_guard sl (mSubLock);
 
         if (!bAccepted && mSubRTAccount.empty ()) return;
 
@@ -2713,7 +2711,7 @@ void NetworkOPsImp::subAccount (
         isrListener->insertSubAccountInfo (naAccountID, rt);
     }
 
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
 
     for (auto const& naAccountID : vnaAccountIDs)
     {
@@ -2755,7 +2753,7 @@ void NetworkOPsImp::unsubAccountInternal (
     hash_set<AccountID> const& vnaAccountIDs,
     bool rt)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
 
     SubInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
 
@@ -2833,7 +2831,7 @@ bool NetworkOPsImp::subLedger (InfoSub::ref isrListener, Json::Value& jvResult)
                 = app_.getLedgerMaster ().getCompleteLedgers ();
     }
 
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sLedger].emplace (
         isrListener->getSeq (), isrListener).second;
 }
@@ -2841,14 +2839,14 @@ bool NetworkOPsImp::subLedger (InfoSub::ref isrListener, Json::Value& jvResult)
 // <-- bool: true=erased, false=was not there
 bool NetworkOPsImp::unsubLedger (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sLedger].erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPsImp::subManifests (InfoSub::ref isrListener)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sManifests].emplace (
         isrListener->getSeq (), isrListener).second;
 }
@@ -2856,7 +2854,7 @@ bool NetworkOPsImp::subManifests (InfoSub::ref isrListener)
 // <-- bool: true=erased, false=was not there
 bool NetworkOPsImp::unsubManifests (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sManifests].erase (uSeq);
 }
 
@@ -2885,7 +2883,7 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult,
         TokenType::NodePublic,
         app_.nodeIdentity().first);
 
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sServer].emplace (
         isrListener->getSeq (), isrListener).second;
 }
@@ -2893,14 +2891,14 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult,
 // <-- bool: true=erased, false=was not there
 bool NetworkOPsImp::unsubServer (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sServer].erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPsImp::subTransactions (InfoSub::ref isrListener)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sTransactions].emplace (
         isrListener->getSeq (), isrListener).second;
 }
@@ -2908,14 +2906,14 @@ bool NetworkOPsImp::subTransactions (InfoSub::ref isrListener)
 // <-- bool: true=erased, false=was not there
 bool NetworkOPsImp::unsubTransactions (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sTransactions].erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPsImp::subRTTransactions (InfoSub::ref isrListener)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sRTTransactions].emplace (
         isrListener->getSeq (), isrListener).second;
 }
@@ -2923,14 +2921,14 @@ bool NetworkOPsImp::subRTTransactions (InfoSub::ref isrListener)
 // <-- bool: true=erased, false=was not there
 bool NetworkOPsImp::unsubRTTransactions (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sRTTransactions].erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPsImp::subValidations (InfoSub::ref isrListener)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sValidations].emplace (
         isrListener->getSeq (), isrListener).second;
 }
@@ -2938,14 +2936,14 @@ bool NetworkOPsImp::subValidations (InfoSub::ref isrListener)
 // <-- bool: true=erased, false=was not there
 bool NetworkOPsImp::unsubValidations (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sValidations].erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPsImp::subPeerStatus (InfoSub::ref isrListener)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sPeerStatus].emplace (
         isrListener->getSeq (), isrListener).second;
 }
@@ -2953,13 +2951,13 @@ bool NetworkOPsImp::subPeerStatus (InfoSub::ref isrListener)
 // <-- bool: true=erased, false=was not there
 bool NetworkOPsImp::unsubPeerStatus (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     return mStreamMaps[sPeerStatus].erase (uSeq);
 }
 
 InfoSub::pointer NetworkOPsImp::findRpcSub (std::string const& strUrl)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
 
     subRpcMapType::iterator it = mRpcSubMap.find (strUrl);
 
@@ -2972,7 +2970,7 @@ InfoSub::pointer NetworkOPsImp::findRpcSub (std::string const& strUrl)
 InfoSub::pointer NetworkOPsImp::addRpcSub (
     std::string const& strUrl, InfoSub::ref rspEntry)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
 
     mRpcSubMap.emplace (strUrl, rspEntry);
 
@@ -2981,7 +2979,7 @@ InfoSub::pointer NetworkOPsImp::addRpcSub (
 
 bool NetworkOPsImp::tryRemoveRpcSub (std::string const& strUrl)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
     auto pInfo = findRpcSub(strUrl);
 
     if (!pInfo)
@@ -3358,7 +3356,7 @@ void NetworkOPsImp::StateAccounting::mode (OperatingMode om)
 {
     auto now = std::chrono::system_clock::now();
 
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard lock (mutex_);
     ++counters_[om].transitions;
     counters_[mode_].dur += std::chrono::duration_cast<
         std::chrono::microseconds>(now - start_);

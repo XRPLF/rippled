@@ -59,9 +59,6 @@ class TaggedCache
 {
 public:
     using mutex_type = Mutex;
-    // VFALCO DEPRECATED The caller can just use std::unique_lock <type>
-    using ScopedLockType = std::unique_lock <mutex_type>;
-    using lock_guard = std::lock_guard <mutex_type>;
     using key_type = Key;
     using mapped_type = T;
     // VFALCO TODO Use std::shared_ptr, std::weak_ptr
@@ -96,13 +93,13 @@ public:
 
     int getTargetSize () const
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         return m_target_size;
     }
 
     void setTargetSize (int s)
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         m_target_size = s;
 
         if (s > 0)
@@ -114,13 +111,13 @@ public:
 
     clock_type::duration getTargetAge () const
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         return m_target_age;
     }
 
     void setTargetAge (clock_type::duration s)
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         m_target_age = s;
         JLOG(m_journal.debug()) <<
             m_name << " target age set to " << m_target_age.count();
@@ -128,33 +125,33 @@ public:
 
     int getCacheSize () const
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         return m_cache_count;
     }
 
     int getTrackSize () const
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         return m_cache.size ();
     }
 
     float getHitRate ()
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         auto const total = static_cast<float> (m_hits + m_misses);
         return m_hits * (100.0f / std::max (1.0f, total));
     }
 
     void clear ()
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         m_cache.clear ();
         m_cache_count = 0;
     }
 
     void reset ()
     {
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         m_cache.clear();
         m_cache_count = 0;
         m_hits = 0;
@@ -176,7 +173,7 @@ public:
             clock_type::time_point const now (m_clock.now());
             clock_type::time_point when_expire;
 
-            lock_guard lock (m_mutex);
+            std::lock_guard lock (m_mutex);
 
             if (m_target_size == 0 ||
                 (static_cast<int> (m_cache.size ()) <= m_target_size))
@@ -257,7 +254,7 @@ public:
     bool del (const key_type& key, bool valid)
     {
         // Remove from cache, if !valid, remove from map too. Returns true if removed from cache
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
 
         cache_iterator cit = m_cache.find (key);
 
@@ -298,7 +295,7 @@ public:
     {
         // Return canonical value, store if needed, refresh in cache
         // Return values: true=we had the data already
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
 
         cache_iterator cit = m_cache.find (key);
 
@@ -358,7 +355,7 @@ public:
     std::shared_ptr<T> fetch (const key_type& key)
     {
         // fetch us a shared pointer to the stored data object
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
 
         cache_iterator cit = m_cache.find (key);
 
@@ -429,7 +426,7 @@ public:
         bool found = false;
 
         // If present, make current in cache
-        lock_guard lock (m_mutex);
+        std::lock_guard lock (m_mutex);
 
         cache_iterator cit = m_cache.find (key);
 
@@ -481,7 +478,7 @@ public:
         std::vector <key_type> v;
 
         {
-            lock_guard lock (m_mutex);
+            std::lock_guard lock (m_mutex);
             v.reserve (m_cache.size());
             for (auto const& _ : m_cache)
                 v.push_back (_.first);
@@ -498,7 +495,7 @@ private:
         {
             beast::insight::Gauge::value_type hit_rate (0);
             {
-                lock_guard lock (m_mutex);
+                std::lock_guard lock (m_mutex);
                 auto const total (m_hits + m_misses);
                 if (total != 0)
                     hit_rate = (m_hits * 100) / total;

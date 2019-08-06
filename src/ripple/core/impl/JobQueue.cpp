@@ -40,7 +40,7 @@ JobQueue::JobQueue (beast::insight::Collector::ptr const& collector,
     job_count = m_collector->make_gauge ("job_count");
 
     {
-        std::lock_guard <std::mutex> lock (m_mutex);
+        std::lock_guard lock (m_mutex);
 
         for (auto const& x : JobTypes::instance())
         {
@@ -65,7 +65,7 @@ JobQueue::~JobQueue ()
 void
 JobQueue::collect ()
 {
-    std::lock_guard <std::mutex> lock (m_mutex);
+    std::lock_guard lock (m_mutex);
     job_count = m_jobSet.size ();
 }
 
@@ -87,7 +87,7 @@ JobQueue::addRefCountedJob (JobType type, std::string const& name,
     assert (type == jtCLIENT || m_workers.getNumberOfThreads () > 0);
 
     {
-        std::lock_guard <std::mutex> lock (m_mutex);
+        std::lock_guard lock (m_mutex);
 
         // If this goes off it means that a child didn't follow
         // the Stoppable API rules. A job may only be added if:
@@ -116,7 +116,7 @@ JobQueue::addRefCountedJob (JobType type, std::string const& name,
 int
 JobQueue::getJobCount (JobType t) const
 {
-    std::lock_guard <std::mutex> lock (m_mutex);
+    std::lock_guard lock (m_mutex);
 
     JobDataMap::const_iterator c = m_jobData.find (t);
 
@@ -128,7 +128,7 @@ JobQueue::getJobCount (JobType t) const
 int
 JobQueue::getJobCountTotal (JobType t) const
 {
-    std::lock_guard <std::mutex> lock (m_mutex);
+    std::lock_guard lock (m_mutex);
 
     JobDataMap::const_iterator c = m_jobData.find (t);
 
@@ -143,7 +143,7 @@ JobQueue::getJobCountGE (JobType t) const
     // return the number of jobs at this priority level or greater
     int ret = 0;
 
-    std::lock_guard <std::mutex> lock (m_mutex);
+    std::lock_guard lock (m_mutex);
 
     for (auto const& x : m_jobData)
     {
@@ -225,7 +225,7 @@ JobQueue::getJson (int c)
 
     Json::Value priorities = Json::arrayValue;
 
-    std::lock_guard <std::mutex> lock (m_mutex);
+    std::lock_guard lock (m_mutex);
 
     for (auto& x : m_jobData)
     {
@@ -414,7 +414,7 @@ JobQueue::processTask (int instance)
         {
             Job job;
             {
-                std::lock_guard <std::mutex> lock (m_mutex);
+                std::lock_guard lock (m_mutex);
                 getNextJob (job);
                 ++m_processCount;
             }
@@ -436,7 +436,7 @@ JobQueue::processTask (int instance)
     }
 
     {
-        std::lock_guard <std::mutex> lock (m_mutex);
+        std::lock_guard lock (m_mutex);
         // Job should be destroyed before calling checkStopped
         // otherwise destructors with side effects can access
         // parent objects that are already destroyed.
@@ -462,7 +462,7 @@ JobQueue::getJobLimit (JobType type)
 void
 JobQueue::onChildrenStopped ()
 {
-    std::lock_guard <std::mutex> lock (m_mutex);
+    std::lock_guard lock (m_mutex);
     checkStopped (lock);
 }
 

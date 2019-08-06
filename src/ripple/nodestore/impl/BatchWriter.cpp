@@ -59,7 +59,7 @@ BatchWriter::store (std::shared_ptr<NodeObject> const& object)
 int
 BatchWriter::getWriteLoad ()
 {
-    std::lock_guard<decltype(mWriteMutex)> sl (mWriteMutex);
+    std::lock_guard sl (mWriteMutex);
 
     return std::max (mWriteLoad, static_cast<int> (mWriteSet.size ()));
 }
@@ -80,7 +80,7 @@ BatchWriter::writeBatch ()
         set.reserve (batchWritePreallocationSize);
 
         {
-            std::lock_guard<decltype(mWriteMutex)> sl (mWriteMutex);
+            std::lock_guard sl (mWriteMutex);
 
             mWriteSet.swap (set);
             assert (mWriteSet.empty ());

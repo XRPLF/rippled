@@ -660,7 +660,7 @@ TxQ::apply(Application& app, OpenView& view,
     boost::optional<TxConsequences const> consequences;
     boost::optional<FeeMultiSet::iterator> replacedItemDeleteIter;
 
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
 
     auto const metricsSnapshot = feeMetrics_.getSnapshot();
 
@@ -1184,7 +1184,7 @@ void
 TxQ::processClosedLedger(Application& app,
     ReadView const& view, bool timeLeap)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
 
     feeMetrics_.update(app, view, timeLeap, setup_);
     auto const& snapshot = feeMetrics_.getSnapshot();
@@ -1266,7 +1266,7 @@ TxQ::accept(Application& app,
 
     auto ledgerChanged = false;
 
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
 
     auto const metricSnapshot = feeMetrics_.getSnapshot();
 
@@ -1380,7 +1380,7 @@ TxQ::getMetrics(OpenView const& view) const
 {
     Metrics result;
 
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
 
     auto const snapshot = feeMetrics_.getSnapshot();
 
@@ -1401,7 +1401,7 @@ auto
 TxQ::getAccountTxs(AccountID const& account, ReadView const& view) const
     -> std::map<TxSeq, AccountTxDetails const>
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
 
     auto accountIter = byAccount_.find(account);
     if (accountIter == byAccount_.end() ||
@@ -1430,7 +1430,7 @@ auto
 TxQ::getTxs(ReadView const& view) const
 -> std::vector<TxDetails>
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard lock(mutex_);
 
     if (byFee_.empty())
         return {};

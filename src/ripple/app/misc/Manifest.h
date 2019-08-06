@@ -346,7 +346,7 @@ public:
     void
     for_each_manifest(Function&& f) const
     {
-        std::lock_guard<std::mutex> lock{read_mutex_};
+        std::lock_guard lock{read_mutex_};
         for (auto const& m : map_)
         {
             f(m.second);
@@ -371,7 +371,7 @@ public:
     void
     for_each_manifest(PreFun&& pf, EachFun&& f) const
     {
-        std::lock_guard<std::mutex> lock{read_mutex_};
+        std::lock_guard lock{read_mutex_};
         pf(map_.size ());
         for (auto const& m : map_)
         {

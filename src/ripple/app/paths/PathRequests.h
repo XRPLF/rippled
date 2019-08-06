@@ -106,7 +106,6 @@ private:
 
     std::atomic<int>                 mLastIdentifier;
 
-    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
     std::recursive_mutex mLock;
 
 };

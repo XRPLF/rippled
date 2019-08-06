@@ -228,7 +228,7 @@ public:
     reset () override
     {
         {
-            std::lock_guard<std::mutex> lock(maxSeqLock);
+            std::lock_guard lock(maxSeqLock);
             maxSeq = 0;
         }
         fullbelow_.reset();
@@ -1610,7 +1610,7 @@ ApplicationImp::signalStop()
 {
     // Unblock the main thread (which is sitting in run()).
     //
-    std::lock_guard<std::mutex> lk{mut_};
+    std::lock_guard lk{mut_};
     isTimeToStop = true;
     cv_.notify_all();
 }
