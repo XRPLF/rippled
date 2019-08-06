@@ -375,10 +375,7 @@ CreateOffer::bridged_cross (
         bool leg2_consumed = false;
         bool direct_consumed = false;
 
-        Quality quality;
-        bool use_direct;
-
-        std::tie (use_direct, quality) = select_path (
+        auto const [use_direct, quality] = select_path (
             have_direct, offers_direct,
             have_bridge, offers_leg1, offers_leg2);
 

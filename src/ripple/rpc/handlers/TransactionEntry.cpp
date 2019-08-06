@@ -58,17 +58,17 @@ Json::Value doTransactionEntry (RPC::Context& context)
         // routine, returning success or failure.
         uTransID.SetHex (context.params[jss::tx_hash].asString ());
 
-        auto tx = lpLedger->txRead (uTransID);
-        if(! tx.first)
+        auto [sttx, stobj] = lpLedger->txRead (uTransID);
+        if(! sttx)
         {
             jvResult[jss::error]   = "transactionNotFound";
         }
         else
         {
-            jvResult[jss::tx_json] = tx.first->getJson (JsonOptions::none);
-            if (tx.second)
+            jvResult[jss::tx_json] = sttx->getJson (JsonOptions::none);
+            if (stobj)
                 jvResult[jss::metadata] =
-                    tx.second->getJson (JsonOptions::none);
+                    stobj->getJson (JsonOptions::none);
             // 'accounts'
             // 'engine_...'
             // 'ledger_...'

@@ -295,10 +295,11 @@ int SField::compare (SField const& f1, SField const& f2)
 SField const&
 SField::getField (std::string const& fieldName)
 {
-    for (auto const & fieldPair : knownCodeToField)
+    for (auto const& [_, f] : knownCodeToField)
     {
-        if (fieldPair.second->fieldName == fieldName)
-            return * (fieldPair.second);
+        (void)_;
+        if (f->fieldName == fieldName)
+            return *f;
     }
     return sfInvalid;
 }

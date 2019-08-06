@@ -371,11 +371,11 @@ private:
     void
     updateTrie(std::lock_guard<Mutex> const&, NodeID const& nodeID, Ledger ledger)
     {
-        auto ins = lastLedger_.emplace(nodeID, ledger);
-        if (!ins.second)
+        auto const [it, inserted] = lastLedger_.emplace(nodeID, ledger);
+        if (!inserted)
         {
-            trie_.remove(ins.first->second);
-            ins.first->second = ledger;
+            trie_.remove(it->second);
+            it->second = ledger;
         }
         trie_.insert(ledger);
     }
@@ -518,8 +518,8 @@ private:
             // Update set time since it is being used
             byLedger_.touch(it);
             pre(it->second.size());
-            for (auto const& keyVal : it->second)
-                f(keyVal.first, keyVal.second);
+            for (auto const& [key, val] : it->second)
+                f(key, val);
         }
     }
 
@@ -595,15 +595,15 @@ public:
 
             byLedger_[val.ledgerID()].insert_or_assign(nodeID, val);
 
-            auto const ins = current_.emplace(nodeID, val);
-            if (!ins.second)
+            auto const [it, inserted] = current_.emplace(nodeID, val);
+            if (!inserted)
             {
                 // Replace existing only if this one is newer
-                Validation& oldVal = ins.first->second;
+                Validation& oldVal = it->second;
                 if (val.signTime() > oldVal.signTime())
                 {
                     std::pair<Seq, ID> old(oldVal.seq(), oldVal.ledgerID());
-                    ins.first->second = val;
+                    it->second = val;
                     if (val.trusted())
                         updateTrie(lock, nodeID, val, old);
                 }
@@ -644,31 +644,32 @@ public:
     {
         std::lock_guard lock{mutex_};
 
-        for (auto& it : current_)
+        for (auto& [nodeId, validation] : current_)
         {
-            if (added.find(it.first) != added.end())
+            if (added.find(nodeId) != added.end())
             {
-                it.second.setTrusted();
-                updateTrie(lock, it.first, it.second, boost::none);
+                validation.setTrusted();
+                updateTrie(lock, nodeId, validation, boost::none);
             }
-            else if (removed.find(it.first) != removed.end())
+            else if (removed.find(nodeId) != removed.end())
             {
-                it.second.setUntrusted();
-                removeTrie(lock, it.first, it.second);
+                validation.setUntrusted();
+                removeTrie(lock, nodeId, validation);
             }
         }
 
-        for (auto& it : byLedger_)
+        for (auto& [_, validationMap] : byLedger_)
         {
-            for (auto& nodeVal : it.second)
+            (void)_;
+            for (auto& [nodeId, validation] : validationMap)
             {
-                if (added.find(nodeVal.first) != added.end())
+                if (added.find(nodeId) != added.end())
                 {
-                    nodeVal.second.setTrusted();
+                    validation.setTrusted();
                 }
-                else if (removed.find(nodeVal.first) != removed.end())
+                else if (removed.find(nodeId) != removed.end())
                 {
-                    nodeVal.second.setUntrusted();
+                    validation.setUntrusted();
                 }
             }
         }

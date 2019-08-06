@@ -641,10 +641,10 @@ class ServerStatus_test :
         }
 
         int readCount = 0;
-        for (auto& c : clients)
+        for (auto& [soc, buf] : clients)
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            async_read(c.first, c.second, resp, yield[ec]);
+            async_read(soc, buf, resp, yield[ec]);
             ++readCount;
             // expect the reads to fail for the clients that connected at or
             // above the limit. If limit is 0, all reads should succeed

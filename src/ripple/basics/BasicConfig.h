@@ -258,12 +258,12 @@ template <class T>
 bool
 set (T& target, std::string const& name, Section const& section)
 {
-    auto const result = section.find (name);
-    if (! result.second)
+    auto const [val, found] = section.find (name);
+    if (! found)
         return false;
     try
     {
-        target = boost::lexical_cast <T> (result.first);
+        target = boost::lexical_cast <T> (val);
         return true;
     }
     catch (boost::bad_lexical_cast&)
@@ -281,13 +281,13 @@ bool
 set (T& target, T const& defaultValue,
     std::string const& name, Section const& section)
 {
-    auto const result = section.find (name);
-    if (! result.second)
+    auto const [val, found] = section.find (name);
+    if (! found)
         return false;
     try
     {
         // VFALCO TODO Use try_lexical_convert (boost 1.56.0)
-        target = boost::lexical_cast <T> (result.first);
+        target = boost::lexical_cast <T> (val);
         return true;
     }
     catch (boost::bad_lexical_cast&)
@@ -307,12 +307,12 @@ T
 get (Section const& section,
     std::string const& name, T const& defaultValue = T{})
 {
-    auto const result = section.find (name);
-    if (! result.second)
+    auto const [val, found] = section.find (name);
+    if (!found)
         return defaultValue;
     try
     {
-        return boost::lexical_cast <T> (result.first);
+        return boost::lexical_cast <T> (val);
     }
     catch (boost::bad_lexical_cast&)
     {
@@ -325,12 +325,12 @@ std::string
 get (Section const& section,
     std::string const& name, const char* defaultValue)
 {
-    auto const result = section.find (name);
-    if (! result.second)
+    auto const [val, found] = section.find (name);
+    if (!found)
         return defaultValue;
     try
     {
-        return boost::lexical_cast <std::string> (result.first);
+        return boost::lexical_cast <std::string> (val);
     }
     catch(std::exception const&)
     {
@@ -343,12 +343,12 @@ bool
 get_if_exists (Section const& section,
     std::string const& name, T& v)
 {
-    auto const result = section.find (name);
-    if (! result.second)
+    auto const [val, found] = section.find (name);
+    if (!found)
         return false;
     try
     {
-        v = boost::lexical_cast <T> (result.first);
+        v = boost::lexical_cast <T> (val);
         return true;
     }
     catch (boost::bad_lexical_cast&)

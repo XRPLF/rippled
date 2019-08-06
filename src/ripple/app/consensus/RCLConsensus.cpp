@@ -552,18 +552,19 @@ RCLConsensus::Adaptor::doAccept(
         // in the previous consensus round.
         //
         bool anyDisputes = false;
-        for (auto& it : result.disputes)
+        for (auto const& [_, dispute] : result.disputes)
         {
-            if (!it.second.getOurVote())
+            (void)_;
+            if (!dispute.getOurVote())
             {
                 // we voted NO
                 try
                 {
                     JLOG(j_.debug())
                         << "Test applying disputed transaction that did"
-                        << " not get in " << it.second.tx().id();
+                        << " not get in " << dispute.tx().id();
 
-                    SerialIter sit(it.second.tx().tx_.slice());
+                    SerialIter sit(dispute.tx().tx_.slice());
                     auto txn = std::make_shared<STTx const>(sit);
 
                     // Disputed pseudo-transactions that were not accepted
@@ -638,15 +639,14 @@ RCLConsensus::Adaptor::doAccept(
             std::chrono::duration_cast<usec64_t>(closeTime.time_since_epoch());
         int closeCount = 1;
 
-        for (auto const& p : rawCloseTimes.peers)
+        for (auto const& [t, v] : rawCloseTimes.peers)
         {
             JLOG(j_.info())
-                << std::to_string(p.second) << " time votes for "
-                << std::to_string(p.first.time_since_epoch().count());
-            closeCount += p.second;
-            closeTotal += std::chrono::duration_cast<usec64_t>(
-                              p.first.time_since_epoch()) *
-                p.second;
+                << std::to_string(v) << " time votes for "
+                << std::to_string(t.time_since_epoch().count());
+            closeCount += v;
+            closeTotal +=
+                std::chrono::duration_cast<usec64_t>(t.time_since_epoch()) * v;
         }
 
         closeTotal += usec64_t(closeCount / 2);  // for round to nearest

@@ -84,17 +84,16 @@ flow (
 
     // convert the paths to a collection of strands. Each strand is the collection
     // of account->account steps and book steps that may be used in this payment.
-    auto sr = toStrands (sb, src, dst, dstIssue, limitQuality, sendMaxIssue,
-        paths, defaultPaths, ownerPaysTransferFee, offerCrossing, j);
+    auto [toStrandsTer, strands] =
+        toStrands(sb, src, dst, dstIssue, limitQuality, sendMaxIssue, paths,
+            defaultPaths, ownerPaysTransferFee, offerCrossing, j);
 
-    if (sr.first != tesSUCCESS)
+    if (toStrandsTer != tesSUCCESS)
     {
         path::RippleCalc::Output result;
-        result.setResult (sr.first);
+        result.setResult (toStrandsTer);
         return result;
     }
-
-    auto& strands = sr.second;
 
     if (j.trace())
     {

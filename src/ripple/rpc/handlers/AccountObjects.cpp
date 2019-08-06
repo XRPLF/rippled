@@ -72,11 +72,11 @@ Json::Value doAccountObjects (RPC::Context& context)
     if (! ledger->exists(keylet::account (accountID)))
         return rpcError (rpcACT_NOT_FOUND);
 
-    auto type = RPC::chooseLedgerEntryType(params);
-    if (type.first)
+    auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
+    if (rpcStatus)
     {
         result.clear();
-        type.first.inject(result);
+        rpcStatus.inject(result);
         return result;
     }
 
@@ -107,7 +107,7 @@ Json::Value doAccountObjects (RPC::Context& context)
             return RPC::invalid_field_error (jss::marker);
     }
 
-    if (! RPC::getAccountObjects (*ledger, accountID, type.second,
+    if (! RPC::getAccountObjects (*ledger, accountID, type,
         dirIndex, entryIndex, limit, result))
     {
         result[jss::account_objects] = Json::arrayValue;

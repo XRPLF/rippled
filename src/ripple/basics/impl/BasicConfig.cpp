@@ -82,8 +82,8 @@ Section::find (std::string const& name) const
 std::ostream&
 operator<< (std::ostream& os, Section const& section)
 {
-    for (auto const& kv : section.cont())
-        os << kv.first << "=" << kv.second << "\n";
+    for (auto const& [k, v] : section.cont())
+        os << k << "=" << v << "\n";
     return os;
 }
 
@@ -154,8 +154,8 @@ BasicConfig::build (IniFileSections const& ifs)
 std::ostream&
 operator<< (std::ostream& ss, BasicConfig const& c)
 {
-    for (auto const& s : c.map_)
-        ss << "[" << s.first << "]\n" << s.second;
+    for (auto const& [k, v] : c.map_)
+        ss << "[" << k << "]\n" << v;
     return ss;
 }
 

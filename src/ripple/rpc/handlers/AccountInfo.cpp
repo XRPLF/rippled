@@ -128,24 +128,24 @@ Json::Value doAccountInfo (RPC::Context& context)
                 boost::optional<bool> anyAuthChanged(false);
                 boost::optional<XRPAmount> totalSpend(0);
 
-                for (auto const& tx : txs)
+                for (auto const& [txSeq, txDetails] : txs)
                 {
                     Json::Value jvTx = Json::objectValue;
 
-                    jvTx[jss::seq] = tx.first;
-                    jvTx[jss::fee_level] = to_string(tx.second.feeLevel);
-                    if (tx.second.lastValid)
-                        jvTx[jss::LastLedgerSequence] = *tx.second.lastValid;
-                    if (tx.second.consequences)
+                    jvTx[jss::seq] = txSeq;
+                    jvTx[jss::fee_level] = to_string(txDetails.feeLevel);
+                    if (txDetails.lastValid)
+                        jvTx[jss::LastLedgerSequence] = *txDetails.lastValid;
+                    if (txDetails.consequences)
                     {
                         jvTx[jss::fee] = to_string(
-                            tx.second.consequences->fee);
-                        auto spend = tx.second.consequences->potentialSpend +
-                            tx.second.consequences->fee;
+                            txDetails.consequences->fee);
+                        auto spend = txDetails.consequences->potentialSpend +
+                            txDetails.consequences->fee;
                         jvTx[jss::max_spend_drops] = to_string(spend);
                         if (totalSpend)
                             *totalSpend += spend;
-                        auto authChanged = tx.second.consequences->category ==
+                        auto authChanged = txDetails.consequences->category ==
                             TxConsequences::blocker;
                         if (authChanged)
                             anyAuthChanged.emplace(authChanged);

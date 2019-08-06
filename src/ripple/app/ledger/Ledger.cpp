@@ -875,19 +875,20 @@ static bool saveValidatedLedger (
 
         std::string const ledgerSeq (std::to_string (seq));
 
-        for (auto const& vt : aLedger->getMap ())
+        for (auto const& [_, acceptedLedgerTx] : aLedger->getMap ())
         {
-            uint256 transactionID = vt.second->getTransactionID ();
+            (void)_;
+            uint256 transactionID = acceptedLedgerTx->getTransactionID ();
 
             app.getMasterTransaction ().inLedger (
                 transactionID, seq);
 
             std::string const txnId (to_string (transactionID));
-            std::string const txnSeq (std::to_string (vt.second->getTxnSeq ()));
+            std::string const txnSeq (std::to_string (acceptedLedgerTx->getTxnSeq ()));
 
             *db << boost::str (deleteAcctTrans % transactionID);
 
-            auto const& accts = vt.second->getAffected ();
+            auto const& accts = acceptedLedgerTx->getAffected ();
 
             if (!accts.empty ())
             {
@@ -930,13 +931,13 @@ static bool saveValidatedLedger (
                     << "Transaction in ledger " << seq
                     << " affects no accounts";
                 JLOG (j.warn())
-                    << vt.second->getTxn()->getJson(JsonOptions::none);
+                    << acceptedLedgerTx->getTxn()->getJson(JsonOptions::none);
             }
 
             *db <<
                (STTx::getMetaSQLInsertReplaceHeader () +
-                vt.second->getTxn ()->getMetaSQL (
-                    seq, vt.second->getEscMeta ()) + ";");
+                acceptedLedgerTx->getTxn ()->getMetaSQL (
+                    seq, acceptedLedgerTx->getEscMeta ()) + ";");
         }
 
         tr.commit ();

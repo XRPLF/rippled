@@ -64,9 +64,9 @@ Json::Value getCountsJson(Application& app, int minObjectCount)
 
     Json::Value ret(Json::objectValue);
 
-    for (auto const& it : objectCounts)
+    for (auto const& [k, v] : objectCounts)
     {
-        ret [it.first] = it.second;
+        ret [k] = v;
     }
 
     int dbKB = getKBUsedAll (app.getLedgerDB ().getSession ());

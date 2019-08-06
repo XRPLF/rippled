@@ -210,16 +210,16 @@ PathRequests::makePathRequest(
     auto req = std::make_shared<PathRequest> (
         app_, subscriber, ++mLastIdentifier, *this, mJournal);
 
-    auto result = req->doCreate (
+    auto [valid, jvRes] = req->doCreate (
         getLineCache (inLedger, false), requestJson);
 
-    if (result.first)
+    if (valid)
     {
         subscriber->setPathRequest (req);
         insertPathRequest (req);
         app_.getLedgerMaster().newPathRequest();
     }
-    return std::move (result.second);
+    return std::move (jvRes);
 }
 
 // Make an old-style ripple_path_find request
@@ -237,10 +237,9 @@ PathRequests::makeLegacyPathRequest(
         app_, completion, consumer, ++mLastIdentifier,
             *this, mJournal);
 
-    auto result = req->doCreate (
-        getLineCache (inLedger, false), request);
+    auto [valid, jvRes] = req->doCreate(getLineCache(inLedger, false), request);
 
-    if (!result.first)
+    if (!valid)
     {
         req.reset();
     }
@@ -250,12 +249,12 @@ PathRequests::makeLegacyPathRequest(
         if (! app_.getLedgerMaster().newPathRequest())
         {
             // The newPathRequest failed.  Tell the caller.
-            result.second = rpcError (rpcTOO_BUSY);
+            jvRes = rpcError (rpcTOO_BUSY);
             req.reset();
         }
     }
 
-    return std::move (result.second);
+    return std::move (jvRes);
 }
 
 Json::Value
@@ -269,10 +268,10 @@ PathRequests::doLegacyPathRequest (
     auto req = std::make_shared<PathRequest> (app_, []{},
         consumer, ++mLastIdentifier, *this, mJournal);
 
-    auto result = req->doCreate (cache, request);
-    if (result.first)
-        result.second = req->doUpdate (cache, false);
-    return std::move (result.second);
+    auto [valid, jvRes] = req->doCreate (cache, request);
+    if (valid)
+        jvRes = req->doUpdate (cache, false);
+    return std::move (jvRes);
 }
 
 } // ripple

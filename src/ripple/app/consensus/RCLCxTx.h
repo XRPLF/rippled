@@ -176,13 +176,13 @@ public:
         map_->compare(*(j.map_), delta, 65536);
 
         std::map<uint256, bool> ret;
-        for (auto const& item : delta)
+        for (auto const& [k, v] : delta)
         {
             assert(
-                (item.second.first && !item.second.second) ||
-                (item.second.second && !item.second.first));
+                (v.first && !v.second) ||
+                (v.second && !v.first));
 
-            ret[item.first] = static_cast<bool>(item.second.first);
+            ret[k] = static_cast<bool>(v.first);
         }
         return ret;
     }

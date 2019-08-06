@@ -195,9 +195,9 @@ Json::Value doGatewayBalances (RPC::Context& context)
     if (! sums.empty())
     {
         Json::Value j;
-        for (auto const& e : sums)
+        for (auto const& [k, v] : sums)
         {
-            j[to_string (e.first)] = e.second.getText ();
+            j[to_string (k)] = v.getText ();
         }
         result [jss::obligations] = std::move (j);
     }
@@ -209,17 +209,17 @@ Json::Value doGatewayBalances (RPC::Context& context)
             if (!array.empty())
             {
                 Json::Value j;
-                for (auto const& account : array)
+                for (auto const& [accId, accBalances] : array)
                 {
                     Json::Value balanceArray;
-                    for (auto const& balance : account.second)
+                    for (auto const& balance : accBalances)
                     {
                         Json::Value entry;
                         entry[jss::currency] = to_string (balance.issue ().currency);
                         entry[jss::value] = balance.getText();
                         balanceArray.append (std::move (entry));
                     }
-                    j [to_string (account.first)] = std::move (balanceArray);
+                    j [to_string (accId)] = std::move (balanceArray);
                 }
                 result [name] = std::move (j);
             }

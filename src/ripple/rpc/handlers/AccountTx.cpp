@@ -157,27 +157,26 @@ Json::Value doAccountTx (RPC::Context& context)
                 *account, uLedgerMin, uLedgerMax, bForward, resumeToken, limit,
                 isUnlimited (context.role));
 
-            for (auto& it: txns)
+            for (auto const& [txn, txMeta]: txns)
             {
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
 
-                if (it.first)
+                if (txn)
                     jvObj[jss::tx] =
-                        it.first->getJson (JsonOptions::include_date);
+                        txn->getJson (JsonOptions::include_date);
 
-                if (it.second)
+                if (txMeta)
                 {
-                    auto meta = it.second->getJson (JsonOptions::include_date);
-                    insertDeliveredAmount (meta, context, it.first, *it.second);
-                    jvObj[jss::meta] = std::move(meta);
+                    auto metaJ = txMeta->getJson (JsonOptions::include_date);
+                    insertDeliveredAmount (metaJ, context, txn, *txMeta);
+                    jvObj[jss::meta] = std::move(metaJ);
 
-                    std::uint32_t uLedgerIndex = it.second->getLgrSeq ();
+                    std::uint32_t uLedgerIndex = txMeta->getLgrSeq ();
 
                     jvObj[jss::validated] = bValidated &&
                         uValidatedMin <= uLedgerIndex &&
                         uValidatedMax >= uLedgerIndex;
                 }
-
             }
         }
 

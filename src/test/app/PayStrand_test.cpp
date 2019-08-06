@@ -887,7 +887,7 @@ struct PayStrand_test : public beast::unit_test::suite
             STPath const& path,
             TER expTer,
             auto&&... expSteps) {
-            auto r = toStrand(
+            auto [ter, strand] = toStrand(
                 *env.current(),
                 alice,
                 bob,
@@ -898,10 +898,10 @@ struct PayStrand_test : public beast::unit_test::suite
                 true,
                 false,
                 env.app().logs().journal("Flow"));
-            BEAST_EXPECT(r.first == expTer);
+            BEAST_EXPECT(ter == expTer);
             if (sizeof...(expSteps) !=0 )
                 BEAST_EXPECT(equal(
-                    r.second, std::forward<decltype(expSteps)>(expSteps)...));
+                    strand, std::forward<decltype(expSteps)>(expSteps)...));
         };
 
         {
@@ -914,7 +914,7 @@ struct PayStrand_test : public beast::unit_test::suite
             {
                 STPath const path =
                     STPath({ipe(bob["USD"]), cpe(EUR.currency)});
-                auto r = toStrand(
+                auto [ter, _] = toStrand(
                     *env.current(),
                     alice,
                     alice,
@@ -925,11 +925,13 @@ struct PayStrand_test : public beast::unit_test::suite
                     true,
                     false,
                     env.app().logs().journal("Flow"));
-                BEAST_EXPECT(r.first == tesSUCCESS);
+                (void)ter;
+                (void)_;
+                BEAST_EXPECT(ter == tesSUCCESS);
             }
             {
                 STPath const path = STPath({ipe(USD), cpe(xrpCurrency())});
-                auto r = toStrand(
+                auto [ter, _] = toStrand(
                     *env.current(),
                     alice,
                     alice,
@@ -940,7 +942,9 @@ struct PayStrand_test : public beast::unit_test::suite
                     true,
                     false,
                     env.app().logs().journal("Flow"));
-                BEAST_EXPECT(r.first == tesSUCCESS);
+                (void)ter;
+                (void)_;
+                BEAST_EXPECT(ter == tesSUCCESS);
             }
             return;
         };
@@ -1210,7 +1214,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(env, USD, boost::none, STPath(), terNO_AUTH);
 
             // Check pure issue redeem still works
-            auto r = toStrand(
+            auto [ter, strand] = toStrand(
                 *env.current(),
                 alice,
                 gw,
@@ -1221,8 +1225,8 @@ struct PayStrand_test : public beast::unit_test::suite
                 true,
                 false,
                 env.app().logs().journal("Flow"));
-            BEAST_EXPECT(r.first == tesSUCCESS);
-            BEAST_EXPECT(equal(r.second, D{alice, gw, usdC}));
+            BEAST_EXPECT(ter == tesSUCCESS);
+            BEAST_EXPECT(equal(strand, D{alice, gw, usdC}));
         }
         {
             // Check path with sendMax and node with correct sendMax already set
@@ -1251,7 +1255,7 @@ struct PayStrand_test : public beast::unit_test::suite
             path.emplace_back(boost::none, USD.currency, USD.account.id());
             path.emplace_back(boost::none, xrpCurrency(), boost::none);
 
-            auto r = toStrand(
+            auto [ter, strand] = toStrand(
                 *env.current(),
                 alice,
                 bob,
@@ -1262,8 +1266,8 @@ struct PayStrand_test : public beast::unit_test::suite
                 false,
                 false,
                 env.app().logs().journal("Flow"));
-            BEAST_EXPECT(r.first == tesSUCCESS);
-            BEAST_EXPECT(equal(r.second, D{alice, gw, usdC}, B{USD.issue(), xrpIssue()}, XRPS{bob}));
+            BEAST_EXPECT(ter == tesSUCCESS);
+            BEAST_EXPECT(equal(strand, D{alice, gw, usdC}, B{USD.issue(), xrpIssue()}, XRPS{bob}));
         }
     }
 

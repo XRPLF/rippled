@@ -85,11 +85,11 @@ Json::Value doLedgerData (RPC::Context& context)
                 LedgerFill::Options::binary : 0));
     }
 
-    auto type = RPC::chooseLedgerEntryType(params);
-    if (type.first)
+    auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
+    if (rpcStatus)
     {
         jvResult.clear();
-        type.first.inject(jvResult);
+        rpcStatus.inject(jvResult);
         return jvResult;
     }
     Json::Value& nodes = jvResult[jss::state];
@@ -106,7 +106,7 @@ Json::Value doLedgerData (RPC::Context& context)
             break;
         }
 
-        if (type.second == ltINVALID || sle->getType () == type.second)
+        if (type == ltINVALID || sle->getType () == type)
         {
             if (isBinary)
             {

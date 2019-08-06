@@ -46,8 +46,8 @@ PerfLogImp::Counters::Counters(std::vector<char const*> const& labels,
         rpc_.reserve(labels.size());
         for (std::string const label : labels)
         {
-            auto const elem = rpc_.emplace(label, Rpc());
-            if (!elem.second)
+            auto const inserted = rpc_.emplace(label, Rpc()).second;
+            if (!inserted)
             {
                 // Ensure that no other function populates this entry.
                 assert(false);
@@ -57,10 +57,10 @@ PerfLogImp::Counters::Counters(std::vector<char const*> const& labels,
     {
         // populateJq
         jq_.reserve(jobTypes.size());
-        for (auto const& job : jobTypes)
+        for (auto const& [jobType, jobTypeInfo] : jobTypes)
         {
-            auto const elem = jq_.emplace(job.first, Jq(job.second.name()));
-            if (!elem.second)
+            auto const inserted = jq_.emplace(jobType, Jq(jobTypeInfo.name())).second;
+            if (!inserted)
             {
                 // Ensure that no other function populates this entry.
                 assert(false);

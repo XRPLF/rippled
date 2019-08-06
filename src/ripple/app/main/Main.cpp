@@ -608,16 +608,16 @@ int run (int argc, char** argv)
     // happen after the config file is loaded.
     if (vm.count ("rpc_ip"))
     {
-        auto res = beast::IP::Endpoint::from_string_checked(
+        auto [endpoint, valid] = beast::IP::Endpoint::from_string_checked(
             vm["rpc_ip"].as<std::string>());
-        if (! res.second)
+        if (! valid)
         {
             std::cerr << "Invalid rpc_ip = " <<
                 vm["rpc_ip"].as<std::string>() << "\n";
             return -1;
         }
 
-        if (res.first.port() == 0)
+        if (endpoint.port() == 0)
         {
             std::cerr << "No port specified in rpc_ip.\n";
             if (vm.count ("rpc_port"))
@@ -625,9 +625,9 @@ int run (int argc, char** argv)
                 std::cerr << "WARNING: using deprecated rpc_port param.\n";
                 try
                 {
-                    res.first = res.first.at_port(
+                    endpoint = endpoint.at_port(
                         vm["rpc_port"].as<std::uint16_t>());
-                    if (res.first.port() == 0)
+                    if (endpoint.port() == 0)
                         throw std::domain_error("0");
                 }
                 catch(std::exception const& e)
@@ -640,7 +640,7 @@ int run (int argc, char** argv)
                 return -1;
         }
 
-        config->rpc_ip = std::move(res.first);
+        config->rpc_ip = std::move(endpoint);
     }
 
     if (vm.count ("quorum"))

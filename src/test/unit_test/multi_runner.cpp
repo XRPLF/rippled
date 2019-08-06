@@ -142,8 +142,8 @@ results::print(S& s)
     if (top.size() > 0)
     {
         s << "Longest suite times:\n";
-        for (auto const& i : top)
-            s << std::setw(8) << fmtdur(i.second) << " " << i.first << '\n';
+        for (auto const& [name, dur] : top)
+            s << std::setw(8) << fmtdur(dur) << " " << name << '\n';
     }
 
     auto const elapsed = clock_type::now() - start;

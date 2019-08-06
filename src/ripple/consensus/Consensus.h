@@ -859,11 +859,11 @@ Consensus<Adaptor>::gotTxSet(
         // so this txSet must differ
         assert(id != result_->position.position());
         bool any = false;
-        for (auto const& it : currPeerPositions_)
+        for (auto const& [nodeId, peerPos] : currPeerPositions_)
         {
-            if (it.second.proposal().position() == id)
+            if (peerPos.proposal().position() == id)
             {
-                updateDisputes(it.first, txSet);
+                updateDisputes(nodeId, txSet);
                 any = true;
             }
         }
@@ -944,9 +944,9 @@ Consensus<Adaptor>::getJson(bool full) const
         {
             Json::Value ppj(Json::objectValue);
 
-            for (auto const& pp : currPeerPositions_)
+            for (auto const& [nodeId, peerPos] : currPeerPositions_)
             {
-                ppj[to_string(pp.first)] = pp.second.getJson();
+                ppj[to_string(nodeId)] = peerPos.getJson();
             }
             ret["peer_positions"] = std::move(ppj);
         }
@@ -964,9 +964,9 @@ Consensus<Adaptor>::getJson(bool full) const
         if (result_ && !result_->disputes.empty())
         {
             Json::Value dsj(Json::objectValue);
-            for (auto const& dt : result_->disputes)
+            for (auto const& [txId, dispute] : result_->disputes)
             {
-                dsj[to_string(dt.first)] = dt.second.getJson();
+                dsj[to_string(txId)] = dispute.getJson();
             }
             ret["disputes"] = std::move(dsj);
         }
@@ -1142,9 +1142,7 @@ Consensus<Adaptor>::shouldPause() const
     auto const& parms = adaptor_.parms();
     std::uint32_t const ahead (previousLedger_.seq() -
         std::min(adaptor_.getValidLedgerIndex(), previousLedger_.seq()));
-    auto quorumKeys = adaptor_.getQuorumKeys();
-    auto const& quorum = quorumKeys.first;
-    auto& trustedKeys = quorumKeys.second;
+    auto [quorum, trustedKeys] = adaptor_.getQuorumKeys();
     std::size_t const totalValidators = trustedKeys.size();
     std::size_t laggards = adaptor_.laggards(previousLedger_.seq(),
         trustedKeys);
@@ -1394,11 +1392,11 @@ Consensus<Adaptor>::updateOurPositions()
     // Update votes on disputed transactions
     {
         boost::optional<typename TxSet_t::MutableTxSet> mutableSet;
-        for (auto& it : result_->disputes)
+        for (auto& [txId, dispute] : result_->disputes)
         {
             // Because the threshold for inclusion increases,
             //  time can change our position on a dispute
-            if (it.second.updateVote(
+            if (dispute.updateVote(
                     convergePercent_,
                     mode_.get()== ConsensusMode::proposing,
                     parms))
@@ -1406,15 +1404,15 @@ Consensus<Adaptor>::updateOurPositions()
                 if (!mutableSet)
                     mutableSet.emplace(result_->txns);
 
-                if (it.second.getOurVote())
+                if (dispute.getOurVote())
                 {
                     // now a yes
-                    mutableSet->insert(it.second.tx());
+                    mutableSet->insert(dispute.tx());
                 }
                 else
                 {
                     // now a no
-                    mutableSet->erase(it.first);
+                    mutableSet->erase(txId);
                 }
             }
         }
@@ -1463,19 +1461,19 @@ Consensus<Adaptor>::updateOurPositions()
                         << " nw:" << neededWeight << " thrV:" << threshVote
                         << " thrC:" << threshConsensus;
 
-        for (auto const& it : closeTimeVotes)
+        for (auto const& [t, v] : closeTimeVotes)
         {
             JLOG(j_.debug())
                 << "CCTime: seq "
                 << static_cast<std::uint32_t>(previousLedger_.seq()) + 1 << ": "
-                << it.first.time_since_epoch().count() << " has " << it.second
+                << t.time_since_epoch().count() << " has " << v
                 << ", " << threshVote << " required";
 
-            if (it.second >= threshVote)
+            if (v >= threshVote)
             {
                 // A close time has enough votes for us to try to agree
-                consensusCloseTime = it.first;
-                threshVote = it.second;
+                consensusCloseTime = t;
+                threshVote = v;
 
                 if (threshVote >= threshConsensus)
                     haveCloseTimeConsensus_ = true;
@@ -1520,11 +1518,11 @@ Consensus<Adaptor>::updateOurPositions()
             if (!result_->position.isBowOut())
                 adaptor_.share(result_->txns);
 
-            for (auto const& it : currPeerPositions_)
+            for (auto const& [nodeId, peerPos] : currPeerPositions_)
             {
-                Proposal_t const& p = it.second.proposal();
+                Proposal_t const& p = peerPos.proposal();
                 if (p.position() == newID)
-                    updateDisputes(it.first, result_->txns);
+                    updateDisputes(nodeId, result_->txns);
             }
         }
 
@@ -1548,9 +1546,9 @@ Consensus<Adaptor>::haveConsensus()
     auto ourPosition = result_->position.position();
 
     // Count number of agreements/disagreements with our position
-    for (auto const& it : currPeerPositions_)
+    for (auto const& [nodeId, peerPos] : currPeerPositions_)
     {
-        Proposal_t const& peerProp = it.second.proposal();
+        Proposal_t const& peerProp = peerPos.proposal();
         if (peerProp.position() == ourPosition)
         {
             ++agree;
@@ -1559,7 +1557,7 @@ Consensus<Adaptor>::haveConsensus()
         {
             using std::to_string;
 
-            JLOG(j_.debug()) << to_string(it.first) << " has "
+            JLOG(j_.debug()) << to_string(nodeId) << " has "
                              << to_string(peerProp.position());
             ++disagree;
         }
@@ -1635,15 +1633,15 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
 
     int dc = 0;
 
-    for (auto& id : differences)
+    for (auto const& [txId, inThisSet] : differences)
     {
         ++dc;
         // create disputed transactions (from the ledger that has them)
         assert(
-            (id.second && result_->txns.find(id.first) && !o.find(id.first)) ||
-            (!id.second && !result_->txns.find(id.first) && o.find(id.first)));
+            (inThisSet && result_->txns.find(txId) && !o.find(txId)) ||
+            (!inThisSet && !result_->txns.find(txId) && o.find(txId)));
 
-        Tx_t tx = id.second ? *result_->txns.find(id.first) : *o.find(id.first);
+        Tx_t tx = inThisSet ? *result_->txns.find(txId) : *o.find(txId);
         auto txID = tx.id();
 
         if (result_->disputes.find(txID) != result_->disputes.end())
@@ -1655,12 +1653,12 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
          std::max(prevProposers_, currPeerPositions_.size()), j_};
 
         // Update all of the available peer's votes on the disputed transaction
-        for (auto const& pit : currPeerPositions_)
+        for (auto const& [nodeId, peerPos] : currPeerPositions_)
         {
-            Proposal_t const& peerProp = pit.second.proposal();
+            Proposal_t const& peerProp = peerPos.proposal();
             auto const cit = acquired_.find(peerProp.position());
             if (cit != acquired_.end())
-                dtx.setVote(pit.first, cit->second.exists(txID));
+                dtx.setVote(nodeId, cit->second.exists(txID));
         }
         adaptor_.share(dtx.tx());
 

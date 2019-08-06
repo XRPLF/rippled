@@ -711,12 +711,11 @@ DatabaseShardImp::import(Database& source)
         auto loadLedger = [&](bool ascendSort = true) ->
             boost::optional<std::uint32_t>
         {
-            std::shared_ptr<Ledger> ledger;
-            std::uint32_t seq;
-            std::tie(ledger, seq, std::ignore) = loadLedgerHelper(
+            auto const [ledger, seq, _] = loadLedgerHelper(
                 "WHERE LedgerSeq >= " + std::to_string(earliestSeq()) +
                 " order by LedgerSeq " + (ascendSort ? "asc" : "desc") +
                 " limit 1", app_, false);
+            (void)_;
             if (!ledger || seq == 0)
             {
                 JLOG(j_.error()) <<

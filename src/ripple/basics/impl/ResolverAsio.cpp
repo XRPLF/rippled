@@ -274,12 +274,13 @@ public:
         // first attempt to parse as an endpoint (IP addr + port).
         // If that doesn't succeed, fall back to generic name + port parsing
 
-        auto result {beast::IP::Endpoint::from_string_checked (str)};
-        if (result.second)
+        if (auto const [result, validResult] =
+                beast::IP::Endpoint::from_string_checked(str);
+            validResult)
         {
             return make_pair (
-                result.first.address().to_string(),
-                std::to_string(result.first.port()));
+                result.address().to_string(),
+                std::to_string(result.port()));
         }
 
         // generic name/port parsing, which doesn't work for
@@ -342,9 +343,9 @@ public:
         if (m_work.front ().names.empty ())
             m_work.pop_front();
 
-        HostAndPort const hp (parseName (name));
+        auto const [host, port] = parseName (name);
 
-        if (hp.first.empty ())
+        if (host.empty ())
         {
             JLOG(m_journal.error()) <<
                 "Unable to parse '" << name << "'";
@@ -357,7 +358,7 @@ public:
         }
 
         boost::asio::ip::tcp::resolver::query query (
-            hp.first, hp.second);
+            host, port);
 
         m_resolver.async_resolve (query, std::bind (
             &ResolverAsioImpl::do_finish, this, name,

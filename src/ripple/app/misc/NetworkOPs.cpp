@@ -859,16 +859,16 @@ void NetworkOPsImp::submitTransaction (std::shared_ptr<STTx const> const& iTrans
 
     try
     {
-        auto const validity = checkValidity(
+        auto const [validity, reason] = checkValidity(
             app_.getHashRouter(), *trans,
                 m_ledgerMaster.getValidatedRules(),
                     app_.config());
 
-        if (validity.first != Validity::Valid)
+        if (validity != Validity::Valid)
         {
             JLOG(m_journal.warn()) <<
                 "Submitted transaction invalid: " <<
-                validity.second;
+                reason;
             return;
         }
     }
@@ -910,17 +910,17 @@ void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transactio
     // but I'm not 100% sure yet.
     // If so, only cost is looking up HashRouter flags.
     auto const view = m_ledgerMaster.getCurrentLedger();
-    auto const validity = checkValidity(
+    auto const [validity, reason] = checkValidity(
         app_.getHashRouter(),
             *transaction->getSTransaction(),
                 view->rules(), app_.config());
-    assert(validity.first == Validity::Valid);
+    assert(validity == Validity::Valid);
 
     // Not concerned with local checks at this point.
-    if (validity.first == Validity::SigBad)
+    if (validity == Validity::SigBad)
     {
         JLOG(m_journal.info()) << "Transaction has bad signature: " <<
-            validity.second;
+            reason;
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
         app_.getHashRouter().setFlags(transaction->getID(),
@@ -2477,10 +2477,11 @@ void NetworkOPsImp::pubLedger (
     }
 
     // Don't lock since pubAcceptedTransaction is locking.
-    for (auto const& vt : alpAccepted->getMap ())
+    for (auto const& [_, accTx] : alpAccepted->getMap ())
     {
-        JLOG(m_journal.trace()) << "pubAccepted: " << vt.second->getJson ();
-        pubValidatedTransaction (lpAccepted, *vt.second);
+        (void)_;
+        JLOG(m_journal.trace()) << "pubAccepted: " << accTx->getJson ();
+        pubValidatedTransaction (lpAccepted, *accTx);
     }
 }
 

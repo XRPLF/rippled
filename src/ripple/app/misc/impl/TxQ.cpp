@@ -1028,10 +1028,8 @@ TxQ::apply(Application& app, OpenView& view,
         JLOG(j_.trace()) << "Applying transaction " <<
             transactionID <<
             " to open ledger.";
-        ripple::TER txnResult;
-        bool didApply;
 
-        std::tie(txnResult, didApply) = doApply(pcresult, app, view);
+        auto const [txnResult, didApply] = doApply(pcresult, app, view);
 
         JLOG(j_.trace()) << "New transaction " <<
             transactionID <<
@@ -1299,9 +1297,7 @@ TxQ::accept(Application& app,
             JLOG(j_.trace()) << "Applying queued transaction " <<
                 candidateIter->txID << " to open ledger.";
 
-            TER txnResult;
-            bool didApply;
-            std::tie(txnResult, didApply) = candidateIter->apply(app, view, j_);
+            auto const [txnResult, didApply] = candidateIter->apply(app, view, j_);
 
             if (didApply)
             {

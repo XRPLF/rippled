@@ -645,8 +645,7 @@ SHAMap::peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const
     stack.pop();
     while (!stack.empty())
     {
-        auto node = stack.top().first;
-        auto nodeID = stack.top().second;
+        auto [node, nodeID] = stack.top();
         assert(!node->isLeaf());
         auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
         for (auto i = nodeID.selectBranch(id) + 1; i < 16; ++i)
@@ -709,12 +708,10 @@ SHAMap::upper_bound(uint256 const& id) const
     // item need not be in tree
     SharedPtrNodeStack stack;
     walkTowardsKey(id, &stack);
-    std::shared_ptr<SHAMapAbstractNode> node;
-    SHAMapNodeID nodeID;
     auto const isv2 = is_v2();
     while (!stack.empty())
     {
-        std::tie(node, nodeID) = stack.top();
+        auto [node, nodeID] = stack.top();
         if (node->isLeaf())
         {
             auto leaf = static_cast<SHAMapTreeNode*>(node.get());
@@ -893,8 +890,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
     if (stack.empty ())
         Throw<SHAMapMissingNode> (type_, tag);
 
-    auto node = stack.top ().first;
-    auto nodeID = stack.top ().second;
+    auto [node, nodeID] = stack.top();
     stack.pop ();
 
     if (node->isLeaf())
@@ -1289,8 +1285,7 @@ void SHAMap::dump (bool hash) const
 
     do
     {
-        auto node = stack.top().first;
-        auto nodeID = stack.top().second;
+        auto [node, nodeID] = stack.top();
         stack.pop();
 
         JLOG(journal_.info()) << node->getString (nodeID);

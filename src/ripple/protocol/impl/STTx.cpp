@@ -428,9 +428,9 @@ isMemoOkay (STObject const& st, std::string& reason)
             }
 
             // The raw data is stored as hex-octets, which we want to decode.
-            auto data = strUnHex (memoElement.getText ());
+            auto [data, validData] = strUnHex (memoElement.getText ());
 
-            if (!data.second)
+            if (!validData)
             {
                 reason = "The MemoType, MemoData and MemoFormat fields may "
                          "only contain hex-encoded data.";
@@ -459,7 +459,7 @@ isMemoOkay (STObject const& st, std::string& reason)
                 return a;
             }();
 
-            for (auto c : data.first)
+            for (auto c : data)
             {
                 if (!allowedSymbols[c])
                 {

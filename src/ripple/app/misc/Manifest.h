@@ -347,9 +347,10 @@ public:
     for_each_manifest(Function&& f) const
     {
         std::lock_guard lock{read_mutex_};
-        for (auto const& m : map_)
+        for (auto const& [_, manifest] : map_)
         {
-            f(m.second);
+            (void)_;
+            f(manifest);
         }
     }
 
@@ -373,9 +374,10 @@ public:
     {
         std::lock_guard lock{read_mutex_};
         pf(map_.size ());
-        for (auto const& m : map_)
+        for (auto const& [_, manifest] : map_)
         {
-            f(m.second);
+            (void)_;
+            f(manifest);
         }
     }
 };
