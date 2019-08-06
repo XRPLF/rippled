@@ -1192,7 +1192,7 @@ get_target_property (_boost_incs Boost::date_time INTERFACE_INCLUDE_DIRECTORIES)
 ExternalProject_Add (soci
   PREFIX ${nih_cache_path}
   GIT_REPOSITORY https://github.com/SOCI/soci.git
-  GIT_TAG 3a1f602b3021b925d38828e3ff95f9e7f8887ff7
+  GIT_TAG 04e1870294918d20761736743bb6136314c42dd5
   # We had an issue with soci integer range checking for boost::optional
   # and needed to remove the exception that SOCI throws in this case.
   # This is *probably* a bug in SOCI, but has never been investigated more
