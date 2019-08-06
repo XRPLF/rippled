@@ -47,7 +47,7 @@ Json::Value doChannelAuthorize (RPC::Context& context)
             return RPC::missing_field_error (p);
 
     Json::Value result;
-    auto const keypair = RPC::keypairForSignature (params, result);
+    auto const [pk, sk] = RPC::keypairForSignature (params, result);
     if (RPC::contains_error (result))
         return result;
 
@@ -70,7 +70,7 @@ Json::Value doChannelAuthorize (RPC::Context& context)
 
     try
     {
-        auto const buf = sign (keypair.first, keypair.second, msg.slice ());
+        auto const buf = sign (pk, sk, msg.slice ());
         result[jss::signature] = strHex (buf);
     }
     catch (std::exception&)
@@ -102,13 +102,13 @@ Json::Value doChannelVerify (RPC::Context& context)
 
         if (!pk)
         {
-            std::pair<Blob, bool> pkHex(strUnHex (strPk));
-            if (!pkHex.second)
+            auto [pkHex, pkHexValid] = strUnHex (strPk);
+            if (!pkHexValid)
                 return rpcError(rpcPUBLIC_MALFORMED);
-            auto const pkType = publicKeyType(makeSlice(pkHex.first));
+            auto const pkType = publicKeyType(makeSlice(pkHex));
             if (!pkType)
                 return rpcError(rpcPUBLIC_MALFORMED);
-            pk.emplace(makeSlice(pkHex.first));
+            pk.emplace(makeSlice(pkHex));
         }
     }
 
@@ -126,8 +126,8 @@ Json::Value doChannelVerify (RPC::Context& context)
 
     std::uint64_t const drops = *optDrops;
 
-    std::pair<Blob, bool> sig(strUnHex (params[jss::signature].asString ()));
-    if (!sig.second || !sig.first.size ())
+    auto [sig, sigHexValid] = strUnHex (params[jss::signature].asString ());
+    if (!sigHexValid || !sig.size ())
         return rpcError (rpcINVALID_PARAMS);
 
     Serializer msg;
@@ -135,7 +135,7 @@ Json::Value doChannelVerify (RPC::Context& context)
 
     Json::Value result;
     result[jss::signature_verified] =
-        verify (*pk, msg.slice (), makeSlice (sig.first), /*canonical*/ true);
+        verify (*pk, msg.slice (), makeSlice (sig), /*canonical*/ true);
     return result;
 }
 

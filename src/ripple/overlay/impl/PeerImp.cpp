@@ -1304,11 +1304,11 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMPeerShardInfo> const& m)
     {
         if (m->endpoint() != "0")
         {
-            auto result {
-                beast::IP::Endpoint::from_string_checked(m->endpoint())};
-            if (!result.second)
+            auto [result, validResult] = 
+                beast::IP::Endpoint::from_string_checked(m->endpoint());
+            if (!validResult)
                 return badData("Invalid incoming endpoint: " + m->endpoint());
-            endpoint = std::move(result.first);
+            endpoint = std::move(result);
         }
     }
     else if (crawl()) // Check if peer will share IP publicly
@@ -1384,8 +1384,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMEndpoints> const& m)
         for (auto const& tm : m->endpoints_v2 ())
         {
             // these endpoint strings support ipv4 and ipv6
-            auto result = beast::IP::Endpoint::from_string_checked(tm.endpoint());
-            if (! result.second)
+            auto [result, validResult] = beast::IP::Endpoint::from_string_checked(tm.endpoint());
+            if (! validResult)
             {
                 JLOG(p_journal_.error()) <<
                     "failed to parse incoming endpoint: {" <<
@@ -1402,8 +1402,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMEndpoints> const& m)
 
             endpoints.emplace_back(
                 tm.hops() > 0 ?
-                    result.first :
-                    remote_address_.at_port(result.first.port()),
+                    result :
+                    remote_address_.at_port(result.port()),
                 tm.hops());
             JLOG(p_journal_.trace()) <<
                 "got v2 EP: " << endpoints.back().address <<
@@ -2277,16 +2277,18 @@ PeerImp::checkTransaction (int flags,
         if (checkSignature)
         {
             // Check the signature before handing off to the job queue.
-            auto valid = checkValidity(app_.getHashRouter(), *stx,
-                app_.getLedgerMaster().getValidatedRules(),
+            if (auto [valid, validReason] = checkValidity(
+                    app_.getHashRouter(),
+                    *stx,
+                    app_.getLedgerMaster().getValidatedRules(),
                     app_.config());
-            if (valid.first != Validity::Valid)
+                valid != Validity::Valid)
             {
-                if (!valid.second.empty())
+                if (!validReason.empty())
                 {
                     JLOG(p_journal_.trace()) <<
                         "Exception checking transaction: " <<
-                            valid.second;
+                            validReason;
                 }
 
                 // Probably not necessary to set SF_BAD, but doesn't hurt.

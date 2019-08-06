@@ -447,9 +447,7 @@ public:
     void
     insert(Ledger const& ledger, std::uint32_t count = 1)
     {
-        Node* loc;
-        Seq diffSeq;
-        std::tie(loc, diffSeq) = find(ledger);
+        auto const [loc, diffSeq] = find(ledger);
 
         // There is always a place to insert
         assert(loc);
@@ -795,8 +793,8 @@ public:
         Json::Value res;
         res["trie"] = root->getJson();
         res["seq_support"] = Json::objectValue;
-        for (auto const& mit : seqSupport)
-            res["seq_support"][to_string(mit.first)] = mit.second;
+        for (auto const& [seq, sup] : seqSupport)
+            res["seq_support"][to_string(seq)] = sup;
         return res;
     }
 

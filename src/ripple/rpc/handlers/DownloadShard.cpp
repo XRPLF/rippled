@@ -138,13 +138,13 @@ doDownloadShard(RPC::Context& context)
     // Begin downloading. The handler keeps itself alive while downloading.
     auto handler {
         std::make_shared<RPC::ShardArchiveHandler>(context.app, validate)};
-    for (auto& ar : archives)
+    for (auto& [index, url] : archives)
     {
-        if (!handler->add(ar.first, std::move(ar.second)))
+        if (!handler->add(index, std::move(url)))
         {
             return RPC::make_param_error("Invalid field '" +
                 std::string(jss::index) + "', shard id " +
-                std::to_string(ar.first) + " exists or being acquired");
+                std::to_string(index) + " exists or being acquired");
         }
     }
     if (!handler->start())

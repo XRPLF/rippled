@@ -91,9 +91,9 @@ public:
             return tmp;
         // Since counts are sorted, shouldn't need to worry much about numerical
         // error
-        for (auto const& it : counts_)
+        for (auto const& [bin, count] : counts_)
         {
-            tmp += it.first * it.second;
+            tmp += bin * count;
         }
         return tmp/samples;
     }

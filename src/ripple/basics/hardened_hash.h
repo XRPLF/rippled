@@ -98,9 +98,7 @@ public:
     result_type
     operator()(T const& t) const noexcept
     {
-        std::uint64_t seed0;
-        std::uint64_t seed1;
-        std::tie(seed0, seed1) = init_seed_pair();
+        auto const [seed0, seed1] = init_seed_pair();
         HashAlgorithm h(seed0, seed1);
         hash_append(h, t);
         return static_cast<result_type>(h);

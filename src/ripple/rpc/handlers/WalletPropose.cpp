@@ -48,9 +48,9 @@ estimate_entropy (std::string const& input)
 
     double se = 0.0;
 
-    for (auto const& f : freq)
+    for (auto const& [_,f] : freq)
     {
-        auto x = f.second / input.length();
+        auto x = f / input.length();
         se += (x) * log2(x);
     }
 

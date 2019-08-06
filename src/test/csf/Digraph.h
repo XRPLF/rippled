@@ -226,10 +226,10 @@ public:
     saveDot(std::ostream & out, VertexName&& vertexName) const
     {
         out << "digraph {\n";
-        for (auto const& vData : graph_)
+        for (auto const& [vertex, links] : graph_)
         {
-            auto const fromName = vertexName(vData.first);
-            for (auto const& eData : vData.second)
+            auto const fromName = vertexName(vertex);
+            for (auto const& eData : links)
             {
                 auto const toName = vertexName(eData.first);
                 out << fromName << " -> " << toName << ";\n";

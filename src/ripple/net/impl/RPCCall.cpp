@@ -78,8 +78,8 @@ std::string createHTTPPost (
       << "Content-Length: " << strMsg.size () << "\r\n"
       << "Accept: application/json\r\n";
 
-    for (auto const& item : mapRequestHeaders)
-        s << item.first << ": " << item.second << "\r\n";
+    for (auto const& [k,v] : mapRequestHeaders)
+        s << k << ": " << v << "\r\n";
 
     s << "\r\n" << strMsg;
 
@@ -745,11 +745,11 @@ private:
             if (parseBase58<PublicKey> (TokenType::AccountPublic, strPk))
                 return true;
 
-            std::pair<Blob, bool> pkHex(strUnHex (strPk));
-            if (!pkHex.second)
+            auto [pkHex, pkHexValid] = strUnHex (strPk);
+            if (!pkHexValid)
                 return false;
 
-            if (!publicKeyType(makeSlice(pkHex.first)))
+            if (!publicKeyType(makeSlice(pkHex)))
                 return false;
 
             return true;

@@ -68,15 +68,15 @@ VotableInteger <Integer>::getVotes() const
 {
     Integer ourVote = mCurrent;
     int weight = 0;
-    for (auto const& e : mVoteMap)
+    for (auto const& [key, val] : mVoteMap)
     {
         // Take most voted value between current and target, inclusive
-        if ((e.first <= std::max (mTarget, mCurrent)) &&
-                (e.first >= std::min (mTarget, mCurrent)) &&
-                (e.second > weight))
+        if ((key <= std::max (mTarget, mCurrent)) &&
+                (key >= std::min (mTarget, mCurrent)) &&
+                (val > weight))
         {
-            ourVote = e.first;
-            weight = e.second;
+            ourVote = key;
+            weight = val;
         }
     }
 

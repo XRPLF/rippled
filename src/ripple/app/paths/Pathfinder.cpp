@@ -701,11 +701,11 @@ int Pathfinder::getPathsOut (
 {
     Issue const issue (currency, account);
 
-    auto it = mPathsOutCountMap.emplace (issue, 0);
+    auto [it, inserted] = mPathsOutCountMap.emplace (issue, 0);
 
     // If it was already present, return the stored number of paths
-    if (!it.second)
-        return it.first->second;
+    if (!inserted)
+        return it->second;
 
     auto sleAccount = mLedger->read(keylet::account (account));
 
@@ -754,7 +754,7 @@ int Pathfinder::getPathsOut (
             }
         }
     }
-    it.first->second = count;
+    it->second = count;
     return count;
 }
 

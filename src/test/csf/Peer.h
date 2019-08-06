@@ -801,11 +801,11 @@ struct Peer
     bool
     handle(TxSet const& txs)
     {
-        auto const it = txSets.insert(std::make_pair(txs.id(), txs));
-        if (it.second)
+        bool const inserted = txSets.insert(std::make_pair(txs.id(), txs)).second;
+        if (inserted)
             consensus.gotTxSet(now(), txs);
         // relay only if new
-        return it.second;
+        return inserted;
     }
 
     bool

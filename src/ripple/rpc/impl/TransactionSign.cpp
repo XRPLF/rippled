@@ -351,7 +351,7 @@ transactionPreProcessImpl (
     auto j = app.journal ("RPCHandler");
 
     Json::Value jvResult;
-    auto const keypair = keypairForSignature (params, jvResult);
+    auto const [pk, sk] = keypairForSignature (params, jvResult);
     if (contains_error (jvResult))
         return std::move (jvResult);
 
@@ -364,14 +364,12 @@ transactionPreProcessImpl (
     Json::Value& tx_json (params [jss::tx_json]);
 
     // Check tx_json fields, but don't add any.
-    auto txJsonResult = checkTxJsonFields (
+    auto [txJsonResult, srcAddressID] = checkTxJsonFields (
         tx_json, role, verify, validatedLedgerAge,
         app.config(), app.getFeeTrack());
 
-    if (RPC::contains_error (txJsonResult.first))
-        return std::move (txJsonResult.first);
-
-    auto const srcAddressID = txJsonResult.second;
+    if (RPC::contains_error (txJsonResult))
+        return std::move (txJsonResult);
 
     // This test covers the case where we're offline so the sequence number
     // cannot be determined locally.  If we're offline then the caller must
@@ -459,7 +457,7 @@ transactionPreProcessImpl (
             return rpcError (rpcALREADY_SINGLE_SIG);
 
         // If multisigning then we need to return the public key.
-        signingArgs.setPublicKey (keypair.first);
+        signingArgs.setPublicKey (pk);
     }
     else if (signingArgs.isSingleSigning())
     {
@@ -474,7 +472,7 @@ transactionPreProcessImpl (
             return rpcError (rpcSRC_ACT_NOT_FOUND);
 
         JLOG (j.trace())
-            << "verify: " << toBase58(calcAccountID(keypair.first))
+            << "verify: " << toBase58(calcAccountID(pk))
             << " : " << toBase58(srcAddressID);
 
         // Don't do this test if multisigning since the account and secret
@@ -483,7 +481,7 @@ transactionPreProcessImpl (
         {
             // Make sure the account and secret belong together.
             auto const err = acctMatchesPubKey (
-                sle, srcAddressID, keypair.first);
+                sle, srcAddressID, pk);
 
             if (err != rpcSUCCESS)
                 return rpcError (err);
@@ -508,7 +506,7 @@ transactionPreProcessImpl (
         parsed.object->setFieldVL (sfSigningPubKey,
             signingArgs.isMultiSigning()
                 ? Slice (nullptr, 0)
-                : keypair.first.slice());
+                : pk.slice());
 
         stpTrans = std::make_shared<STTx> (
             std::move (parsed.object.get()));
@@ -534,15 +532,15 @@ transactionPreProcessImpl (
             signingArgs.getSigner ());
 
         auto multisig = ripple::sign (
-            keypair.first,
-            keypair.second,
+            pk,
+            sk,
             s.slice());
 
         signingArgs.moveMultiSignature (std::move (multisig));
     }
     else if (signingArgs.isSingleSigning())
     {
-        stpTrans->sign (keypair.first, keypair.second);
+        stpTrans->sign (pk, sk);
     }
 
     return transactionPreProcessResult {std::move (stpTrans)};
@@ -1057,14 +1055,12 @@ Json::Value transactionSubmitMultiSigned (
 
     Json::Value& tx_json (jvRequest ["tx_json"]);
 
-    auto const txJsonResult = checkTxJsonFields (
+    auto [txJsonResult, srcAddressID] = checkTxJsonFields (
         tx_json, role, true, validatedLedgerAge,
         app.config(), app.getFeeTrack());
 
-    if (RPC::contains_error (txJsonResult.first))
-        return std::move (txJsonResult.first);
-
-    auto const srcAddressID = txJsonResult.second;
+    if (RPC::contains_error (txJsonResult))
+        return std::move (txJsonResult);
 
     std::shared_ptr<SLE const> sle = ledger->read(
             keylet::account(srcAddressID));

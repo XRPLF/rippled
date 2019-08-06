@@ -103,8 +103,8 @@ class TxQ_test : public beast::unit_test::suite
         section.set("zero_basefee_transaction_feelevel", "100000000000");
         section.set("normal_consensus_increase_percent", "0");
 
-        for (auto const& value : extraTxQ)
-            section.set(value.first, value.second);
+        for (auto const& [k, v] : extraTxQ)
+            section.set(k, v);
 
         // Some tests specify different fee settings that are enabled by
         // a FeeVote
@@ -112,9 +112,9 @@ class TxQ_test : public beast::unit_test::suite
         {
 
             auto& votingSection = p->section("voting");
-            for (auto const & value : extraVoting)
+            for (auto const& [k, v] : extraVoting)
             {
-                votingSection.set(value.first, value.second);
+                votingSection.set(k, v);
             }
 
             // In order for the vote to occur, we must run as a validator
@@ -836,16 +836,16 @@ public:
             std::int64_t fee = 20;
             auto seq = env.seq(alice);
             BEAST_EXPECT(aliceStat.size() == 7);
-            for (auto const& tx : aliceStat)
+            for (auto const& [txSeq, details] : aliceStat)
             {
-                BEAST_EXPECT(tx.first == seq);
-                BEAST_EXPECT(tx.second.feeLevel == mulDiv(fee, 256, 10).second);
-                BEAST_EXPECT(tx.second.lastValid);
-                BEAST_EXPECT((tx.second.consequences &&
-                    tx.second.consequences->fee == drops(fee) &&
-                    tx.second.consequences->potentialSpend == drops(0) &&
-                    tx.second.consequences->category == TxConsequences::normal) ||
-                    tx.first == env.seq(alice) + 6);
+                BEAST_EXPECT(txSeq == seq);
+                BEAST_EXPECT(details.feeLevel == mulDiv(fee, 256, 10).second);
+                BEAST_EXPECT(details.lastValid);
+                BEAST_EXPECT((details.consequences &&
+                    details.consequences->fee == drops(fee) &&
+                    details.consequences->potentialSpend == drops(0) &&
+                    details.consequences->category == TxConsequences::normal) ||
+                    txSeq == env.seq(alice) + 6);
                 ++seq;
             }
         }

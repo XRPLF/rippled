@@ -133,12 +133,12 @@ private:
                 }
                 else
                 {
-                    std::pair<int, Json::Value> pEvent  = mDeque.front ();
+                    auto const [seq, env] = mDeque.front ();
 
                     mDeque.pop_front ();
 
-                    jvEvent     = pEvent.second;
-                    jvEvent["seq"]  = pEvent.first;
+                    jvEvent     = env;
+                    jvEvent["seq"]  = seq;
 
                     bSend       = true;
                 }

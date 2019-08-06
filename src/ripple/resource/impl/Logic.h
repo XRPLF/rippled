@@ -113,17 +113,17 @@ public:
 
         {
             std::lock_guard _(lock_);
-            auto result =
+            auto [resultIt, resultInserted] =
                 table_.emplace (std::piecewise_construct,
                     std::make_tuple (kindInbound, address.at_port (0)), // Key
                     std::make_tuple (m_clock.now()));                   // Entry
 
-            entry = &result.first->second;
-            entry->key = &result.first->first;
+            entry = &resultIt->second;
+            entry->key = &resultIt->first;
             ++entry->refcount;
             if (entry->refcount == 1)
             {
-                if (! result.second)
+                if (! resultInserted)
                 {
                     inactive_.erase (
                         inactive_.iterator_to (*entry));
@@ -144,17 +144,17 @@ public:
 
         {
             std::lock_guard _(lock_);
-            auto result =
+            auto [resultIt, resultInserted] =
                 table_.emplace (std::piecewise_construct,
                     std::make_tuple (kindOutbound, address),            // Key
                     std::make_tuple (m_clock.now()));                   // Entry
 
-            entry = &result.first->second;
-            entry->key = &result.first->first;
+            entry = &resultIt->second;
+            entry->key = &resultIt->first;
             ++entry->refcount;
             if (entry->refcount == 1)
             {
-                if (! result.second)
+                if (! resultInserted)
                     inactive_.erase (
                         inactive_.iterator_to (*entry));
                 outbound_.push_back (*entry);
@@ -178,17 +178,17 @@ public:
 
         {
             std::lock_guard _(lock_);
-            auto result =
+            auto [resultIt, resultInserted] =
                 table_.emplace (std::piecewise_construct,
                     std::make_tuple (kindUnlimited, address.at_port(1)),// Key
                     std::make_tuple (m_clock.now()));                   // Entry
 
-            entry = &result.first->second;
-            entry->key = &result.first->first;
+            entry = &resultIt->second;
+            entry->key = &resultIt->first;
             ++entry->refcount;
             if (entry->refcount == 1)
             {
-                if (! result.second)
+                if (! resultInserted)
                     inactive_.erase (
                         inactive_.iterator_to (*entry));
                 admin_.push_back (*entry);
@@ -284,15 +284,15 @@ public:
         auto const elapsed = m_clock.now();
         {
             std::lock_guard _(lock_);
-            auto result =
+            auto [resultIt, resultInserted] =
                 importTable_.emplace (std::piecewise_construct,
                     std::make_tuple(origin),                  // Key
                     std::make_tuple(m_clock.now().time_since_epoch().count()));     // Import
 
-            if (result.second)
+            if (resultInserted)
             {
                 // This is a new import
-                Import& next (result.first->second);
+                Import& next (resultIt->second);
                 next.whenExpires = elapsed + gossipExpirationSeconds;
                 next.items.reserve (gossip.items.size());
 
@@ -322,7 +322,7 @@ public:
                     next.items.push_back (item);
                 }
 
-                Import& prev (result.first->second);
+                Import& prev (resultIt->second);
                 for (auto& item : prev.items)
                 {
                     item.consumer.entry().remote_balance -= item.balance;

@@ -237,11 +237,9 @@ void
 Door<Handler>::Detector::
 do_detect(boost::asio::yield_context do_yield)
 {
-    bool ssl;
-    error_code ec;
     boost::beast::multi_buffer buf(16);
     timer_.expires_from_now(std::chrono::seconds(15));
-    std::tie(ec, ssl) = detect_ssl(socket_, buf, do_yield);
+    auto const [ec, ssl] = detect_ssl(socket_, buf, do_yield);
     error_code unused;
     timer_.cancel(unused);
     if (! ec)

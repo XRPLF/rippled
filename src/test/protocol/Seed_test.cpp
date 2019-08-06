@@ -216,23 +216,23 @@ public:
         {
             testcase ("Account keypair generation & signing (secp256k1)");
 
-            auto const keyPair = generateKeyPair (
+            auto const [pk, sk] = generateKeyPair (
                 KeyType::secp256k1,
                 generateSeed ("masterpassphrase"));
 
-            BEAST_EXPECT(toBase58(calcAccountID(keyPair.first)) ==
+            BEAST_EXPECT(toBase58(calcAccountID(pk)) ==
                 "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
-            BEAST_EXPECT(toBase58(TokenType::AccountPublic, keyPair.first) ==
+            BEAST_EXPECT(toBase58(TokenType::AccountPublic, pk) ==
                 "aBQG8RQAzjs1eTKFEAQXr2gS4utcDiEC9wmi7pfUPTi27VCahwgw");
-            BEAST_EXPECT(toBase58(TokenType::AccountSecret, keyPair.second) ==
+            BEAST_EXPECT(toBase58(TokenType::AccountSecret, sk) ==
                 "p9JfM6HHi64m6mvB6v5k7G2b1cXzGmYiCNJf6GHPKvFTWdeRVjh");
 
-            auto sig = sign (keyPair.first, keyPair.second, makeSlice(message1));
+            auto sig = sign (pk, sk, makeSlice(message1));
             BEAST_EXPECT(sig.size() != 0);
-            BEAST_EXPECT(verify (keyPair.first, makeSlice(message1), sig));
+            BEAST_EXPECT(verify (pk, makeSlice(message1), sig));
 
             // Correct public key but wrong message
-            BEAST_EXPECT(!verify (keyPair.first, makeSlice(message2), sig));
+            BEAST_EXPECT(!verify (pk, makeSlice(message2), sig));
 
             // Verify with incorrect public key
             {
@@ -249,30 +249,30 @@ public:
                 if (auto ptr = sig.data())
                     ptr[sig.size() / 2]++;
 
-                BEAST_EXPECT(!verify (keyPair.first, makeSlice(message1), sig));
+                BEAST_EXPECT(!verify (pk, makeSlice(message1), sig));
             }
         }
 
         {
             testcase ("Account keypair generation & signing (ed25519)");
 
-            auto const keyPair = generateKeyPair (
+            auto const [pk, sk] = generateKeyPair (
                 KeyType::ed25519,
                 generateSeed ("masterpassphrase"));
 
-            BEAST_EXPECT(to_string(calcAccountID(keyPair.first)) ==
+            BEAST_EXPECT(to_string(calcAccountID(pk)) ==
                 "rGWrZyQqhTp9Xu7G5Pkayo7bXjH4k4QYpf");
-            BEAST_EXPECT(toBase58(TokenType::AccountPublic, keyPair.first) ==
+            BEAST_EXPECT(toBase58(TokenType::AccountPublic, pk) ==
                 "aKGheSBjmCsKJVuLNKRAKpZXT6wpk2FCuEZAXJupXgdAxX5THCqR");
-            BEAST_EXPECT(toBase58(TokenType::AccountSecret, keyPair.second) ==
+            BEAST_EXPECT(toBase58(TokenType::AccountSecret, sk) ==
                 "pwDQjwEhbUBmPuEjFpEG75bFhv2obkCB7NxQsfFxM7xGHBMVPu9");
 
-            auto sig = sign (keyPair.first, keyPair.second, makeSlice(message1));
+            auto sig = sign (pk, sk, makeSlice(message1));
             BEAST_EXPECT(sig.size() != 0);
-            BEAST_EXPECT(verify (keyPair.first, makeSlice(message1), sig));
+            BEAST_EXPECT(verify (pk, makeSlice(message1), sig));
 
             // Correct public key but wrong message
-            BEAST_EXPECT(!verify (keyPair.first, makeSlice(message2), sig));
+            BEAST_EXPECT(!verify (pk, makeSlice(message2), sig));
 
             // Verify with incorrect public key
             {
@@ -289,7 +289,7 @@ public:
                 if (auto ptr = sig.data())
                     ptr[sig.size() / 2]++;
 
-                BEAST_EXPECT(!verify (keyPair.first, makeSlice(message1), sig));
+                BEAST_EXPECT(!verify (pk, makeSlice(message1), sig));
             }
         }
     }

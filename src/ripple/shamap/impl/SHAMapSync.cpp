@@ -133,9 +133,7 @@ SHAMap::visitDifferences(SHAMap const* have,
 
     while (! stack.empty())
     {
-        SHAMapInnerNode* node;
-        SHAMapNodeID nodeID;
-        std::tie (node, nodeID) = stack.top ();
+        auto const [node, nodeID] = stack.top ();
         stack.pop ();
 
         // 1) Add this node to the pack
@@ -388,10 +386,10 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
             if (mn.stack_.empty() && ! mn.resumes_.empty())
             {
                 // Recheck nodes we could not finish before
-                for (auto& r : mn.resumes_)
-                    if (! r.first->isFullBelow (mn.generation_))
+                for (auto const& [innerNode, nodeId] : mn.resumes_)
+                    if (! innerNode->isFullBelow (mn.generation_))
                         mn.stack_.push (std::make_tuple (
-                            r.first, r.second, rand_int(255), 0, true));
+                            innerNode, nodeId, rand_int(255), 0, true));
 
                 mn.resumes_.clear();
             }
@@ -675,9 +673,7 @@ bool SHAMap::deepCompare (SHAMap& other) const
 
     while (!stack.empty ())
     {
-        SHAMapAbstractNode* node;
-        SHAMapAbstractNode* otherNode;
-        std::tie(node, otherNode) = stack.top ();
+        auto const [node, otherNode] = stack.top ();
         stack.pop ();
 
         if (!node || !otherNode)

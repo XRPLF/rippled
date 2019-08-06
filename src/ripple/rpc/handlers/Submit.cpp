@@ -67,12 +67,12 @@ Json::Value doSubmit (RPC::Context& context)
 
     Json::Value jvResult;
 
-    std::pair<Blob, bool> ret(strUnHex (context.params[jss::tx_blob].asString ()));
+    auto [ret, validRet] = strUnHex (context.params[jss::tx_blob].asString ());
 
-    if (!ret.second || !ret.first.size ())
+    if (!validRet || !ret.size ())
         return rpcError (rpcINVALID_PARAMS);
 
-    SerialIter sitTrans (makeSlice(ret.first));
+    SerialIter sitTrans (makeSlice(ret));
 
     std::shared_ptr<STTx const> stpTrans;
 
@@ -93,13 +93,13 @@ Json::Value doSubmit (RPC::Context& context)
         if (!context.app.checkSigs())
             forceValidity(context.app.getHashRouter(),
                 stpTrans->getTransactionID(), Validity::SigGoodOnly);
-        auto validity = checkValidity(context.app.getHashRouter(),
+        auto [validity, reason] = checkValidity(context.app.getHashRouter(),
             *stpTrans, context.ledgerMaster.getCurrentLedger()->rules(),
                 context.app.config());
-        if (validity.first != Validity::Valid)
+        if (validity != Validity::Valid)
         {
             jvResult[jss::error] = "invalidTransaction";
-            jvResult[jss::error_exception] = "fails local checks: " + validity.second;
+            jvResult[jss::error_exception] = "fails local checks: " + reason;
 
             return jvResult;
         }

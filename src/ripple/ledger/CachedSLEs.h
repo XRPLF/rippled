@@ -84,12 +84,10 @@ public:
             return nullptr;
         std::lock_guard lock(mutex_);
         ++miss_;
-        auto const result =
-            map_.emplace(
-                digest, std::move(sle));
-        if (! result.second)
-            map_.touch(result.first);
-        return  result.first->second;
+        auto const [it, inserted] = map_.emplace(digest, std::move(sle));
+        if (!inserted)
+            map_.touch(it);
+        return it->second;
     }
 
     /** Returns the fraction of cache hits. */

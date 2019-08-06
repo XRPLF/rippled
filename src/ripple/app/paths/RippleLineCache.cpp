@@ -38,14 +38,14 @@ RippleLineCache::getRippleLines (AccountID const& accountID)
 
     std::lock_guard sl (mLock);
 
-    auto it = lines_.emplace (key,
+    auto [it, inserted] = lines_.emplace (key,
         std::vector<RippleState::pointer>());
 
-    if (it.second)
-        it.first->second = getRippleStateItems (
+    if (inserted)
+        it->second = getRippleStateItems (
             accountID, *mLedger);
 
-    return it.first->second;
+    return it->second;
 }
 
 } // ripple

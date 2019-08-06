@@ -140,10 +140,10 @@ template <class Tx_t, class NodeID_t>
 void
 DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
 {
-    auto res = votes_.insert(std::make_pair(peer, votesYes));
+    auto const [it, inserted] = votes_.insert(std::make_pair(peer, votesYes));
 
     // new vote
-    if (res.second)
+    if (inserted)
     {
         if (votesYes)
         {
@@ -157,20 +157,20 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
         }
     }
     // changes vote to yes
-    else if (votesYes && !res.first->second)
+    else if (votesYes && !it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes YES on " << tx_.id();
         --nays_;
         ++yays_;
-        res.first->second = true;
+        it->second = true;
     }
     // changes vote to no
-    else if (!votesYes && res.first->second)
+    else if (!votesYes && it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes NO on " << tx_.id();
         ++nays_;
         --yays_;
-        res.first->second = false;
+        it->second = false;
     }
 }
 
@@ -262,8 +262,8 @@ DisputedTx<Tx_t, NodeID_t>::getJson() const
     if (!votes_.empty())
     {
         Json::Value votesj(Json::objectValue);
-        for (auto& vote : votes_)
-            votesj[to_string(vote.first)] = vote.second;
+        for (auto const& [nodeId, vote] : votes_)
+            votesj[to_string(nodeId)] = vote;
         ret["votes"] = std::move(votesj);
     }
 

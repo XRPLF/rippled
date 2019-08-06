@@ -132,8 +132,7 @@ SHAMap::compare (SHAMap const& otherMap,
     nodeStack.push ({root_.get(), otherMap.root_.get()});
     while (!nodeStack.empty ())
     {
-        SHAMapAbstractNode* ourNode = nodeStack.top().first;
-        SHAMapAbstractNode* otherNode = nodeStack.top().second;
+        auto [ourNode, otherNode] = nodeStack.top();
         nodeStack.pop ();
 
         if (!ourNode || !otherNode)

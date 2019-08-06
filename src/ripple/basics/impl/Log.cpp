@@ -163,9 +163,8 @@ Logs::partition_severities() const
     std::vector<std::pair<std::string, std::string>> list;
     std::lock_guard lock (mutex_);
     list.reserve (sinks_.size());
-    for (auto const& e : sinks_)
-        list.push_back(std::make_pair(e.first,
-            toString(fromSeverity(e.second->threshold()))));
+    for (auto const& [name, sink] : sinks_)
+        list.emplace_back(name, toString(fromSeverity(sink->threshold())));
     return list;
 }
 

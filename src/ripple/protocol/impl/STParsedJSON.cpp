@@ -477,13 +477,12 @@ static boost::optional<detail::STVar> parseLeaf (
 
         try
         {
-            std::pair<Blob, bool> vBlob (strUnHex (value.asString ()));
+            auto [vBlob, validVBlob] = strUnHex (value.asString ());
 
-            if (! vBlob.second)
+            if (! validVBlob)
                 Throw<std::invalid_argument> ("invalid data");
 
-            ret = detail::make_stvar <STBlob> (field, vBlob.first.data (),
-                                             vBlob.first.size ());
+            ret = detail::make_stvar<STBlob>(field, vBlob.data(), vBlob.size());
         }
         catch (std::exception const&)
         {

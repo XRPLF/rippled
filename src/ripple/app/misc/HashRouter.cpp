@@ -63,11 +63,10 @@ bool HashRouter::addSuppressionPeer (uint256 const& key, PeerShortID peer, int& 
 {
     std::lock_guard lock (mutex_);
 
-    auto result = emplace(key);
-    auto& s = result.first;
+    auto [s, created] = emplace(key);
     s.addPeer (peer);
     flags = s.getFlags ();
-    return result.second;
+    return created;
 }
 
 bool HashRouter::shouldProcess (uint256 const& key, PeerShortID peer,

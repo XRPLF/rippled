@@ -138,14 +138,13 @@ private:
     {
         assert (m_map.find (jt) == m_map.end ());
 
-        std::pair<Map::iterator,bool> result (m_map.emplace (
+        auto const [_, inserted] = m_map.emplace (
             std::piecewise_construct,
             std::forward_as_tuple (jt),
             std::forward_as_tuple (jt, name, limit, special,
-                avgLatency, peakLatency)));
+                avgLatency, peakLatency));
 
-        assert (result.second == true);
-        (void) result.second;
+        assert (inserted == true);
     }
 
     JobTypeInfo m_unknown;
