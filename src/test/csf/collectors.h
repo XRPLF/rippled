@@ -70,10 +70,7 @@ class Collectors
         E e,
         std::index_sequence<Is...>)
     {
-        // Sean Parent for_each_argument trick (C++ fold expressions would be
-        // nice here)
-        (void)std::array<int, sizeof...(Cs)>{
-            {((apply(std::get<Is>(cs), who, when, e)), 0)...}};
+        (..., apply(std::get<Is>(cs), who, when, e));
     }
 
 public:
