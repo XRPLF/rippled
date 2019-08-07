@@ -475,7 +475,7 @@ void InboundLedger::done ()
         {
         case Reason::SHARD:
             app_.getShardStore()->setStored(mLedger);
-            // TODO c++17: [[fallthrough]]
+            [[fallthrough]];
         case Reason::HISTORY:
             app_.getInboundLedgers().onLedgerFetched();
             break;
