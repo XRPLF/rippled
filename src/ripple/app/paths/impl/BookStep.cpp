@@ -583,9 +583,9 @@ BookStep<TIn, TOut, TDerived>::forEachOffer (
                 prevStep_, offer, strandDst_, trOut);
 
         auto ofrAmt = offer.amount ();
-        auto stpAmt = make_Amounts (
+        TAmounts stpAmt{
             mulRatio (ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true),
-            ofrAmt.out);
+            ofrAmt.out};
 
         // owner pays the transfer fee.
         auto ownerGives =
