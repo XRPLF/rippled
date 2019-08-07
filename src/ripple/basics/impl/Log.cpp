@@ -216,6 +216,7 @@ Logs::fromSeverity (beast::severities::Severity level)
 
     default:
         assert(false);
+        [[fallthrough]];
     case kFatal:
         break;
     }
@@ -236,6 +237,7 @@ Logs::toSeverity (LogSeverity level)
     case lsERROR:   return kError;
     default:
         assert(false);
+        [[fallthrough]];
     case lsFATAL:
         break;
     }
@@ -306,6 +308,7 @@ Logs::format (std::string& output, std::string const& message,
     case kError:    output += "ERR "; break;
     default:
         assert(false);
+        [[fallthrough]];
     case kFatal:    output += "FTL "; break;
     }
 

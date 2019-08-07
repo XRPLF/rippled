@@ -215,7 +215,7 @@ invoke_calculateConsequences(STTx const& tx)
     case ttTRUST_SET:            return invoke_calculateConsequences<SetTrust>(tx);
     case ttAMENDMENT:
     case ttFEE:
-        // fall through to default
+        [[fallthrough]];
     default:
         assert(false);
         return { TxConsequences::blocker, Transactor::calculateFeePaid(tx),

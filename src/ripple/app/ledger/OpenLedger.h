@@ -248,6 +248,7 @@ OpenLedger::apply (Application& app, OpenView& view,
             {
             case Result::success:
                 ++changes;
+                [[fallthrough]];
             case Result::failure:
                 iter = retries.erase (iter);
                 break;

@@ -90,10 +90,10 @@ forceValidity(HashRouter& router, uint256 const& txid,
     {
     case Validity::Valid:
         flags |= SF_LOCALGOOD;
-        // fall through
+        [[fallthrough]];
     case Validity::SigGoodOnly:
         flags |= SF_SIGGOOD;
-        // fall through
+        [[fallthrough]];
     case Validity::SigBad:
         // would be silly to call directly
         break;
