@@ -81,12 +81,6 @@ struct TAmounts
     Out out;
 };
 
-template<class In, class Out>
-TAmounts<In, Out> make_Amounts(In const& in, Out const& out)
-{
-    return TAmounts<In, Out>(in, out);
-}
-
 using Amounts = TAmounts<STAmount, STAmount>;
 
 template<class In, class Out>
