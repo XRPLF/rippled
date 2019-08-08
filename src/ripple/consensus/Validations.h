@@ -593,10 +593,7 @@ public:
             if (!enforcer(now, val.seq(), parms_))
                 return ValStatus::badSeq;
 
-            // Use insert_or_assign when C++17 supported
-            auto byLedgerIt = byLedger_[val.ledgerID()].emplace(nodeID, val);
-            if (!byLedgerIt.second)
-                byLedgerIt.first->second = val;
+            byLedger_[val.ledgerID()].insert_or_assign(nodeID, val);
 
             auto const ins = current_.emplace(nodeID, val);
             if (!ins.second)
