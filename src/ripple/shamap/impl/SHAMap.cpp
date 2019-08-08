@@ -74,7 +74,7 @@ SHAMap::snapShot (bool isMutable) const
     newMap.root_ = root_;
     newMap.backed_ = backed_;
 
-    if ((state_ != SHAMapState::Immutable) || !isMutable)
+    if ((state_ != SHAMapState::Immutable) || isMutable)
     {
         // If either map may change, they cannot share nodes
         newMap.unshare ();
