@@ -181,6 +181,7 @@ LedgerFormats::LedgerFormats ()
             { sfOwnerNode,           soeREQUIRED },
             { sfPreviousTxnID,       soeREQUIRED },
             { sfPreviousTxnLgrSeq,   soeREQUIRED },
+            { sfDestinationNode,     soeOPTIONAL },
         },
         commonFields);
 
