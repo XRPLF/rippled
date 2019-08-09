@@ -171,7 +171,7 @@ private:
     std::unique_ptr<nudb::context> ctx_;
 
     // Complete shards
-    std::map<std::uint32_t, std::unique_ptr<Shard>> complete_;
+    std::map<std::uint32_t, std::shared_ptr<Shard>> complete_;
 
     // A shard being acquired from the peer network
     std::unique_ptr<Shard> incomplete_;
@@ -226,7 +226,8 @@ private:
     // Finds a random shard index that is not stored
     // Lock must be held
     boost::optional<std::uint32_t>
-    findShardIndexToAdd(std::uint32_t validLedgerSeq,
+    findShardIndexToAdd(
+        std::uint32_t validLedgerSeq,
         std::lock_guard<std::mutex>&);
 
     // Set storage and file descriptor usage stats
