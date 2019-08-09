@@ -86,6 +86,7 @@ class FeatureCollections
         "fixTakerDryOfferRemoval",
         "fixMasterKeyAsRegularKey",
         "fixCheckThreading",
+        "fixPayChanRecipientOwnerDir",
     };
 
     std::vector<uint256> features;
@@ -373,6 +374,7 @@ extern uint256 const featureMultiSignReserve;
 extern uint256 const fixTakerDryOfferRemoval;
 extern uint256 const fixMasterKeyAsRegularKey;
 extern uint256 const fixCheckThreading;
+extern uint256 const fixPayChanRecipientOwnerDir;
 
 } // ripple
 

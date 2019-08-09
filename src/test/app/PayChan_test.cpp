@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/chrono.h>
+#include <ripple/ledger/Directory.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/jss.h>
@@ -44,6 +45,20 @@ struct PayChan_test : public beast::unit_test::suite
             return beast::zero;
         auto const k = keylet::payChan (account, dst, (*sle)[sfSequence] - 1);
         return k.key;
+    }
+
+
+    static
+    std::pair<uint256, std::shared_ptr<SLE const>>
+    channelKeyAndSle(ReadView const& view,
+               jtx::Account const& account,
+               jtx::Account const& dst)
+    {
+        auto const sle = view.read (keylet::account (account));
+        if (!sle)
+            return {};
+        auto const k = keylet::payChan (account, dst, (*sle)[sfSequence] - 1);
+        return {k.key, view.read(k)};
     }
 
     static Buffer
@@ -1137,6 +1152,111 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
+    testMetaAndOwnership()
+    {
+        testcase("Metadata & Ownership");
+
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const settleDelay = 100s;
+        auto const pk = alice.pk();
+
+        auto inOwnerDir = [](ReadView const& view,
+                             Account const& acc,
+                             std::shared_ptr<SLE const> const& chan) -> bool {
+            ripple::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
+            return std::find(ownerDir.begin(), ownerDir.end(), chan) != ownerDir.end();
+        };
+
+        auto ownerDirCount = [](ReadView const& view,
+                                Account const& acc) -> std::size_t
+        {
+            ripple::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
+            return std::distance(ownerDir.begin(), ownerDir.end());
+        };
+
+        {
+            // Test without adding the paychan to the recipient's owner
+            // directory
+            Env env(
+                *this, supported_amendments() - fixPayChanRecipientOwnerDir);
+            env.fund (XRP (10000), alice, bob);
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+            auto const [chan, chanSle] = channelKeyAndSle(*env.current(), alice, bob);
+            BEAST_EXPECT(inOwnerDir(*env.current(), alice, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 1);
+            BEAST_EXPECT(!inOwnerDir(*env.current(), bob, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 0);
+            // close the channel
+            env(claim(bob, chan), txflags(tfClose));
+            BEAST_EXPECT(!channelExists(*env.current(), chan));
+            BEAST_EXPECT(!inOwnerDir(*env.current(), alice, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 0);
+            BEAST_EXPECT(!inOwnerDir(*env.current(), bob, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 0);
+        }
+
+        {
+            // Test with adding the paychan to the recipient's owner directory
+            Env env(*this, supported_amendments());
+            env.fund (XRP (10000), alice, bob);
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+            auto const [chan, chanSle] = channelKeyAndSle(*env.current(), alice, bob);
+            BEAST_EXPECT(inOwnerDir(*env.current(), alice, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 1);
+            BEAST_EXPECT(inOwnerDir(*env.current(), bob, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 1);
+            // close the channel
+            env(claim(bob, chan), txflags(tfClose));
+            BEAST_EXPECT(!channelExists(*env.current(), chan));
+            BEAST_EXPECT(!inOwnerDir(*env.current(), alice, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 0);
+            BEAST_EXPECT(!inOwnerDir(*env.current(), bob, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 0);
+        }
+
+        {
+            // Test removing paychans created before adding to the recipient's
+            // owner directory
+            Env env(
+                *this, supported_amendments() - fixPayChanRecipientOwnerDir);
+            env.fund (XRP (10000), alice, bob);
+            // create the channel before the amendment activates
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+            auto const [chan, chanSle] = channelKeyAndSle(*env.current(), alice, bob);
+            BEAST_EXPECT(inOwnerDir(*env.current(), alice, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 1);
+            BEAST_EXPECT(!inOwnerDir(*env.current(), bob, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 0);
+            env.enableFeature(fixPayChanRecipientOwnerDir);
+            env.close();
+            BEAST_EXPECT(
+                env.current()->rules().enabled(fixPayChanRecipientOwnerDir));
+            // These checks look redundant, but if you don't `close` after the
+            // `create` these checks will fail. I believe this is due to the
+            // create running with one set of amendments initially, then with a
+            // different set with the ledger closes (tho I haven't dug into it)
+            BEAST_EXPECT(inOwnerDir(*env.current(), alice, chanSle));
+            BEAST_EXPECT(!inOwnerDir(*env.current(), bob, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 0);
+
+            // close the channel after the amendment activates
+            env(claim(bob, chan), txflags(tfClose));
+            BEAST_EXPECT(!channelExists(*env.current(), chan));
+            BEAST_EXPECT(!inOwnerDir(*env.current(), alice, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 0);
+            BEAST_EXPECT(!inOwnerDir(*env.current(), bob, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 0);
+        }
+    }
+
+    void
     run () override
     {
         testSimple ();
@@ -1152,6 +1272,7 @@ struct PayChan_test : public beast::unit_test::suite
         testRPC ();
         testOptionalFields ();
         testMalformedPK ();
+        testMetaAndOwnership ();
     }
 };
 
