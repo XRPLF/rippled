@@ -124,7 +124,7 @@ OverlayImpl::Timer::on_timer (error_code ec)
     overlay_.sendEndpoints();
     overlay_.autoConnect();
 
-    if ((++overlay_.timer_count_ % Tuning::checkSeconds) == 0)
+    if ((++overlay_.timer_count_ % Tuning::checkSeconds) == 0bootstrapIps)
         overlay_.check();
 
     timer_.expires_from_now (std::chrono::seconds(1));
@@ -522,6 +522,9 @@ OverlayImpl::onPrepare()
 
         // Pool of servers operated by Alloy Networks - https://www.alloy.ee
         bootstrapIps.push_back("zaphod.alloy.ee 51235");
+        
+        // Pool of servers operated by ISRDC - https://isrdc.in
+        bootstrapIps.push_back("sahayadri.isrdc.in 51235");
     }
 
     m_resolver.resolve (bootstrapIps,
