@@ -524,7 +524,7 @@ OverlayImpl::onPrepare()
         bootstrapIps.push_back("zaphod.alloy.ee 51235");
         
         // Pool of servers operated by ISRDC - https://isrdc.in
-        bootstrapIps.push_back("sahayadri.isrdc.in 51235");
+        bootstrapIps.push_back("sahyadri.isrdc.in 51235");
     }
 
     m_resolver.resolve (bootstrapIps,
