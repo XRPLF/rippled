@@ -189,7 +189,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
     {
         auto const lim = get (section, "limit", "unlimited");
 
-        if (!boost::beast::detail::iequals (lim, "unlimited"))
+        if (!boost::iequals (lim, "unlimited"))
         {
             try
             {

@@ -118,13 +118,18 @@ forwardedFor(http_request_type const& request)
     it = request.find("Forwarded");
     if (it != request.end())
     {
+        auto ascii_tolower = [](char c) -> char
+        {
+            return ((static_cast<unsigned>(c) - 65U) < 26) ?
+                    c + 'a' - 'A' : c;
+        };
+
         static std::string const forStr{"for="};
         auto found = std::search(it->value().begin(), it->value().end(),
             forStr.begin(), forStr.end(),
-            [](char c1, char c2)
+            [&ascii_tolower](char c1, char c2)
             {
-                return boost::beast::detail::ascii_tolower(c1) ==
-                       boost::beast::detail::ascii_tolower(c2);
+                return ascii_tolower(c1) == ascii_tolower(c2);
             }
         );
 

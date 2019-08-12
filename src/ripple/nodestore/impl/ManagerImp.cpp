@@ -102,7 +102,7 @@ ManagerImp::find (std::string const& name)
     auto const iter = std::find_if(list_.begin(), list_.end(),
         [&name](Factory* other)
         {
-            return boost::beast::detail::iequals(name, other->getName());
+            return boost::iequals(name, other->getName());
         } );
     if (iter == list_.end())
         return nullptr;

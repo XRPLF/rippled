@@ -25,7 +25,7 @@
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/impl/DatabaseRotatingImp.h>
 
-#include <boost/beast/core/string.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {
 void SHAMapStoreImp::SavedStateDB::init (BasicConfig const& config,
@@ -184,7 +184,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     }
 
     // RocksDB only. Use sensible defaults if no values specified.
-    if (boost::beast::detail::iequals(
+    if (boost::iequals(
         get<std::string>(section, "type"), "RocksDB"))
     {
         if (!section.exists("cache_mb"))

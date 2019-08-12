@@ -42,6 +42,8 @@
 #include <boost/algorithm/clamp.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/beast/core/ostream.hpp>
+
 #include <algorithm>
 #include <memory>
 #include <sstream>
@@ -252,7 +254,7 @@ PeerImp::crawl() const
     auto const iter = headers_.find("Crawl");
     if (iter == headers_.end())
         return false;
-    return boost::beast::detail::iequals(iter->value(), "public");
+    return boost::iequals(iter->value(), "public");
 }
 
 bool

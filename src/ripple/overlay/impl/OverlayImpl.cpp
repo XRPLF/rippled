@@ -36,6 +36,7 @@
 #include <ripple/rpc/handlers/GetCounts.h>
 #include <ripple/server/SimpleWriter.h>
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 namespace ripple {
@@ -226,7 +227,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         if (std::find_if(types.begin(), types.end(),
                 [](std::string const& s)
                 {
-                    return boost::beast::detail::iequals(s, "peer");
+                    return boost::iequals(s, "peer");
                 }) == types.end())
         {
             handoff.moved = false;
