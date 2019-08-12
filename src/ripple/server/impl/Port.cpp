@@ -22,6 +22,8 @@
 #include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
 
+#include <boost/algorithm/string/predicate.hpp>
+
 namespace ripple {
 
 bool
@@ -189,7 +191,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
     {
         auto const lim = get (section, "limit", "unlimited");
 
-        if (!boost::beast::detail::iequals (lim, "unlimited"))
+        if (!boost::iequals (lim, "unlimited"))
         {
             try
             {

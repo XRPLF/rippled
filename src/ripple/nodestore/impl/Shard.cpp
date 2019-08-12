@@ -57,6 +57,7 @@ Shard::Shard(
 bool
 Shard::open(Scheduler& scheduler, nudb::context& ctx)
 {
+    using namespace boost::filesystem;
     std::lock_guard lock(mutex_);
     assert(!backend_);
 

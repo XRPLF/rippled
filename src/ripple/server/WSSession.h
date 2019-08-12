@@ -23,10 +23,13 @@
 #include <ripple/server/Handoff.h>
 #include <ripple/server/Port.h>
 #include <ripple/server/Writer.h>
+
+#include <boost/beast/websocket/rfc6455.hpp>
 #include <boost/beast/core/buffers_prefix.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/logic/tribool.hpp>
+
 #include <algorithm>
 #include <functional>
 #include <memory>

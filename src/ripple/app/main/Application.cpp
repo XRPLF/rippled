@@ -63,8 +63,11 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
+
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/system/error_code.hpp>
+
 #include <condition_variable>
 #include <cstring>
 #include <fstream>
@@ -1912,7 +1915,7 @@ bool ApplicationImp::loadOldLedger (
                 }
             }
         }
-        else if (ledgerID.empty () || boost::beast::detail::iequals(ledgerID, "latest"))
+        else if (ledgerID.empty () || boost::iequals(ledgerID, "latest"))
         {
             loadLedger = getLastFullLedger ();
         }
