@@ -749,7 +749,7 @@ class ServerStatus_test :
             Json::Reader jr;
             if(! BEAST_EXPECT(jr.parse(
                 boost::lexical_cast<std::string>(
-                    boost::beast::buffers(sb.data())), resp)))
+                    boost::beast::make_printable(sb.data())), resp)))
                 return Json::objectValue;
             sb.consume(sb.size());
             return resp;

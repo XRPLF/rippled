@@ -30,6 +30,8 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/HashPrefix.h>
 
+#include <boost/algorithm/string/predicate.hpp>
+
 namespace ripple {
 namespace NodeStore {
 
@@ -72,7 +74,6 @@ bool
 DatabaseShardImp::init()
 {
     using namespace boost::filesystem;
-    using namespace boost::beast::detail;
 
     std::lock_guard lock(m_);
     auto fail = [j = j_](std::string const& msg)
@@ -149,9 +150,9 @@ DatabaseShardImp::init()
     // NuDB is the default and only supported permanent storage backend
     // "Memory" and "none" types are supported for tests
     backendName_ = get<std::string>(section, "type", "nudb");
-    if (!iequals(backendName_, "NuDB") &&
-        !iequals(backendName_, "Memory") &&
-        !iequals(backendName_, "none"))
+    if (!boost::iequals(backendName_, "NuDB") &&
+        !boost::iequals(backendName_, "Memory") &&
+        !boost::iequals(backendName_, "none"))
     {
         return fail("'type' value unsupported");
     }
