@@ -246,9 +246,11 @@ BasicNetwork<Peer>::send(Peer const& from, Peer const& to, Function&& f)
         [ from, to, sent, f = std::forward<Function>(f), this ] {
             // only process if still connected and connection was
             // not broken since the message was sent
-            auto link = links_.edge(from, to);
-            if (link && link->established <= sent)
+            if (auto l = links_.edge(from, to);
+                l && l->established <= sent)
+            {
                 f();
+            }
         });
 }
 

@@ -178,8 +178,8 @@ private:
         {
         }
 
-        ValueHash (Hash const& hash)
-            : beast::detail::empty_base_optimization <Hash> (hash)
+        ValueHash (Hash const& h)
+            : beast::detail::empty_base_optimization <Hash> (h)
         {
         }
 

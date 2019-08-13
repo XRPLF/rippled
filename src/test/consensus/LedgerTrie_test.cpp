@@ -630,7 +630,7 @@ class LedgerTrie_test : public beast::unit_test::suite
         // from a branching history.
 
         // Ledgers have sequence 1,2,3,4
-        std::uint32_t const depth = 4;
+        std::uint32_t const depthConst = 4;
         // Each ledger has 4 possible children
         std::uint32_t const width = 4;
 
@@ -638,7 +638,7 @@ class LedgerTrie_test : public beast::unit_test::suite
 
         // Use explicit seed to have same results for CI
         std::mt19937 gen{42};
-        std::uniform_int_distribution<> depthDist(0, depth - 1);
+        std::uniform_int_distribution<> depthDist(0, depthConst - 1);
         std::uniform_int_distribution<> widthDist(0, width - 1);
         std::uniform_int_distribution<> flip(0, 1);
         for (std::uint32_t i = 0; i < iterations; ++i)

@@ -77,20 +77,20 @@ void
 msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
-    jt.signer = [mySigners, &env](Env&, JTx& jt)
+    jt.signer = [mySigners, &env](Env&, JTx& jtx)
     {
-        jt[sfSigningPubKey.getJsonName()] = "";
+        jtx[sfSigningPubKey.getJsonName()] = "";
         boost::optional<STObject> st;
         try
         {
-            st = parse(jt.jv);
+            st = parse(jtx.jv);
         }
         catch(parse_error const&)
         {
-            env.test.log << pretty(jt.jv) << std::endl;
+            env.test.log << pretty(jtx.jv) << std::endl;
             Rethrow();
         }
-        auto& js = jt[sfSigners.getJsonName()];
+        auto& js = jtx[sfSigners.getJsonName()];
         js.resize(mySigners.size());
         for(std::size_t i = 0; i < mySigners.size(); ++i)
         {

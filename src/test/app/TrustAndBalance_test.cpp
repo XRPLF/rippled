@@ -267,15 +267,15 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
             using namespace std::chrono_literals;
             BEAST_EXPECT(wsc->findMsg(5s,
-                [](auto const& jv)
+                [](auto const& jval)
                 {
-                    auto const& t = jv[jss::transaction];
+                    auto const& t = jval[jss::transaction];
                     return t[jss::TransactionType] == jss::Payment;
                 }));
             BEAST_EXPECT(wsc->findMsg(5s,
-                [](auto const& jv)
+                [](auto const& jval)
                 {
-                    return jv[jss::type] == "ledgerClosed";
+                    return jval[jss::type] == "ledgerClosed";
                 }));
 
             BEAST_EXPECT(wsc->invoke("unsubscribe",jv)[jss::status] == "success");
@@ -473,9 +473,9 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         using namespace std::chrono_literals;
         BEAST_EXPECT(wsc->findMsg(2s,
-            [](auto const& jv)
+            [](auto const& jval)
             {
-                auto const& t = jv[jss::transaction];
+                auto const& t = jval[jss::transaction];
                 return
                     t[jss::TransactionType] == jss::Payment &&
                     t[sfInvoiceID.fieldName] ==

@@ -981,8 +981,8 @@ LedgerMaster::consensusBuilt(
             // If we still don't know the sequence, get it
             if (v.second.ledgerSeq_ == 0)
             {
-                if (auto ledger = getLedgerByHash (v.first))
-                    v.second.ledgerSeq_ = ledger->info().seq;
+                if (auto l = getLedgerByHash (v.first))
+                    v.second.ledgerSeq_ = l->info().seq;
             }
 
             if (v.second.ledgerSeq_ > maxSeq)
@@ -1464,11 +1464,10 @@ LedgerMaster::walkHashBySeq (
         // Try to acquire the complete ledger
         if (!ledger)
         {
-            auto const ledger = app_.getInboundLedgers().acquire (
-                *refHash, refIndex, InboundLedger::Reason::GENERIC);
-            if (ledger)
+            if (auto const l = app_.getInboundLedgers().acquire (
+                    *refHash, refIndex, InboundLedger::Reason::GENERIC))
             {
-                ledgerHash = hashOfSeq(*ledger, index, m_journal);
+                ledgerHash = hashOfSeq(*l, index, m_journal);
                 assert (ledgerHash);
             }
         }
@@ -1755,7 +1754,7 @@ void LedgerMaster::doAdvance (ScopedLockType& sl)
                 InboundLedger::Reason reason = InboundLedger::Reason::HISTORY;
                 boost::optional<std::uint32_t> missing;
                 {
-                    ScopedLockType sl(mCompleteLock);
+                    ScopedLockType sll(mCompleteLock);
                     missing = prevMissing(mCompleteLedgers,
                         mPubLedger->info().seq,
                         app_.getNodeStore().earliestSeq());

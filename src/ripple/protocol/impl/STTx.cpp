@@ -119,15 +119,15 @@ STTx::getMentionedAccounts () const
 
     for (auto const& it : *this)
     {
-        if (auto sa = dynamic_cast<STAccount const*> (&it))
+        if (auto sacc = dynamic_cast<STAccount const*> (&it))
         {
-            assert(! sa->isDefault());
-            if (! sa->isDefault())
-                list.insert(sa->value());
+            assert(! sacc->isDefault());
+            if (! sacc->isDefault())
+                list.insert(sacc->value());
         }
-        else if (auto sa = dynamic_cast<STAmount const*> (&it))
+        else if (auto samt = dynamic_cast<STAmount const*> (&it))
         {
-            auto const& issuer = sa->getIssuer ();
+            auto const& issuer = samt->getIssuer ();
             if (! isXRP (issuer))
                 list.insert(issuer);
         }

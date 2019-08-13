@@ -64,13 +64,17 @@ public:
         Json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary]       = false;
-        auto const jrr = env.rpc ( "json", "ledger_data",
-            boost::lexical_cast<std::string>(jvParams)) [jss::result];
-        BEAST_EXPECT(
-            jrr[jss::ledger_current_index].isIntegral() &&
-            jrr[jss::ledger_current_index].asInt() > 0 );
-        BEAST_EXPECT( checkMarker(jrr) );
-        BEAST_EXPECT( checkArraySize(jrr[jss::state], max_limit) );
+        {
+            auto const jrr = env.rpc(
+                "json",
+                "ledger_data",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::ledger_current_index].isIntegral() &&
+                jrr[jss::ledger_current_index].asInt() > 0);
+            BEAST_EXPECT(checkMarker(jrr));
+            BEAST_EXPECT(checkArraySize(jrr[jss::state], max_limit));
+        }
 
         // check limits values around the max_limit (+/- 1)
         for (auto delta = -1; delta <= 1; delta++)

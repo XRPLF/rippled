@@ -117,9 +117,9 @@ populate (Section const& section, std::string const& field, std::ostream& log,
 
             auto const& address = addr.first.address();
             if (std::find_if (admin_ip.begin(), admin_ip.end(),
-                [&address] (beast::IP::Address const& ip)
+                [&address] (beast::IP::Address const& a)
                 {
-                    return address == ip;
+                    return address == a;
                 }
                 ) != admin_ip.end())
             {

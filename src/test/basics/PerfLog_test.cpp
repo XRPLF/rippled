@@ -537,9 +537,9 @@ public:
             // Verify that.
 
             // Get the last line of the log.
-            std::ifstream log (fullPath.c_str());
+            std::ifstream logStream (fullPath.c_str());
             std::string lastLine;
-            for (std::string line; std::getline (log, line); )
+            for (std::string line; std::getline (logStream, line); )
             {
                 if (! line.empty())
                     lastLine = std::move (line);
@@ -849,9 +849,9 @@ public:
             [this] (Json::Value const& currentJson)
         {
             {
-                Json::Value const& jobs = currentJson[jss::jobs];
-                BEAST_EXPECT(jobs.isArray());
-                BEAST_EXPECT(jobs.size() == 0);
+                Json::Value const& j = currentJson[jss::jobs];
+                BEAST_EXPECT(j.isArray());
+                BEAST_EXPECT(j.size() == 0);
             }
 
             Json::Value const& methods = currentJson[jss::methods];
@@ -884,9 +884,9 @@ public:
             // Verify that.
 
             // Get the last line of the log.
-            std::ifstream log (fullPath.c_str());
+            std::ifstream logStream (fullPath.c_str());
             std::string lastLine;
-            for (std::string line; std::getline (log, line); )
+            for (std::string line; std::getline (logStream, line); )
             {
                 if (! line.empty())
                     lastLine = std::move (line);
@@ -1024,9 +1024,9 @@ public:
             // Verify that.
 
             // Get the last line of the log.
-            std::ifstream log (fullPath.c_str());
+            std::ifstream logStream (fullPath.c_str());
             std::string lastLine;
-            for (std::string line; std::getline (log, line); )
+            for (std::string line; std::getline (logStream, line); )
             {
                 if (! line.empty())
                     lastLine = std::move (line);

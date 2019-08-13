@@ -30,8 +30,8 @@ template <typename Node>
 class is_remote_node_pred
 {
 public:
-    is_remote_node_pred (Node const& node)
-        : node (node)
+    is_remote_node_pred (Node const& n)
+        : node (n)
         { }
     template <typename Link>
     bool operator() (Link const& l) const

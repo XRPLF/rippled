@@ -110,10 +110,10 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
 TER
 DepositPreauth::doApply ()
 {
-    auto const sleOwner = view().peek (keylet::account (account_));
-
     if (ctx_.tx.isFieldPresent (sfAuthorize))
     {
+        auto const sleOwner = view().peek (keylet::account (account_));
+
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.

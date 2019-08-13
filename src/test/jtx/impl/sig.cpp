@@ -34,9 +34,9 @@ sig::operator()(Env&, JTx& jt) const
     {
         // VFALCO Inefficient pre-C++14
         auto const account = *account_;
-        jt.signer = [account](Env&, JTx& jt)
+        jt.signer = [account](Env&, JTx& jtx)
         {
-            jtx::sign(jt.jv, account);
+            jtx::sign(jtx.jv, account);
         };
     }
 }

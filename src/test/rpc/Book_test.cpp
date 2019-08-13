@@ -1053,9 +1053,9 @@ public:
 
         using namespace std::chrono_literals;
         BEAST_EXPECT(wsc->findMsg(5s,
-            [&](auto const& jv)
+            [&](auto const& jval)
             {
-                auto const& t = jv[jss::transaction];
+                auto const& t = jval[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
                        t[jss::TakerGets] ==
                        USD(10).value().getJson(JsonOptions::none) &&
@@ -1068,9 +1068,9 @@ public:
         env.close();
 
         BEAST_EXPECT(wsc->findMsg(5s,
-            [&](auto const& jv)
+            [&](auto const& jval)
             {
-                auto const& t = jv[jss::transaction];
+                auto const& t = jval[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
                        t[jss::TakerGets] ==
                        USD(5).value().getJson(JsonOptions::none) &&

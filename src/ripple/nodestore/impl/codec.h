@@ -301,13 +301,7 @@ template <class = void>
 void const*
 zero32()
 {
-    static std::array<char, 32> v =
-        []
-        {
-            std::array<char, 32> v;
-            v.fill(0);
-            return v;
-        }();
+    static std::array<char, 32> v{};
     return v.data();
 }
 
@@ -319,7 +313,6 @@ nodeobject_compress (void const* in,
     using std::runtime_error;
     using namespace nudb::detail;
 
-    std::size_t type = 1;
     // Check for inner node v1
     if (in_size == 525)
     {
@@ -469,10 +462,12 @@ nodeobject_compress (void const* in,
 
     std::array<std::uint8_t, varint_traits<
         std::size_t>::max> vi;
+
+    constexpr std::size_t codecType = 1;
     auto const vn = write_varint(
-        vi.data(), type);
+        vi.data(), codecType);
     std::pair<void const*, std::size_t> result;
-    switch(type)
+    switch(codecType)
     {
     // case 0 was uncompressed data; we always compress now.
     case 1: // lz4
@@ -495,7 +490,7 @@ nodeobject_compress (void const* in,
     default:
         Throw<std::logic_error> (
             "nodeobject codec: unknown=" +
-                std::to_string(type));
+                std::to_string(codecType));
     };
     return result;
 }

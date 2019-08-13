@@ -278,11 +278,11 @@ PaymentSandbox::apply (PaymentSandbox& to)
 std::map<std::tuple<AccountID, AccountID, Currency>, STAmount>
 PaymentSandbox::balanceChanges (ReadView const& view) const
 {
-    using key = std::tuple<AccountID, AccountID, Currency>;
+    using key_t = std::tuple<AccountID, AccountID, Currency>;
     // Map of delta trust lines. As a special case, when both ends of the trust
     // line are the same currency, then it's delta currency for that issuer. To
     // get the change in XRP balance, Account == root, issuer == root, currency == XRP
-    std::map<key, STAmount> result;
+    std::map<key_t, STAmount> result;
 
     // populate a dictionary with low/high/currency/delta. This can be
     // compared with the other versions payment code.

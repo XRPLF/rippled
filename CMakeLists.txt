@@ -547,6 +547,12 @@ if (MSVC)
 else ()
   # HACK : because these need to come first, before any warning demotion
   string (APPEND CMAKE_CXX_FLAGS " -Wall -Wdeprecated")
+  if (is_clang OR (is_gcc AND NOT unity))
+    # gcc flags many more instances with `-Wshadow` than clang. Many incouous
+    # shadowings are flagged in unity mode. Only turn on gcc warnings in nonunity
+    # builds
+    string (APPEND CMAKE_CXX_FLAGS " -Wshadow")
+  endif()
   # not MSVC
   target_compile_options (common
     INTERFACE

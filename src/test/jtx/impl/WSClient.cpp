@@ -190,9 +190,9 @@ public:
         }
 
         auto jv = findMsg(5s,
-            [&](Json::Value const& jv)
+            [&](Json::Value const& jval)
             {
-                return jv[jss::type] == jss::response;
+                return jval[jss::type] == jss::response;
             });
         if (jv)
         {

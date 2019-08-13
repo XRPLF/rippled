@@ -830,12 +830,13 @@ public:
 
     void remove (SlotImp::ptr const& slot)
     {
-        auto const iter = slots_.find (
-            slot->remote_endpoint ());
-        // The slot must exist in the table
-        assert (iter != slots_.end ());
-        // Remove from slot by IP table
-        slots_.erase (iter);
+        {
+            auto const iter = slots_.find(slot->remote_endpoint());
+            // The slot must exist in the table
+            assert(iter != slots_.end());
+            // Remove from slot by IP table
+            slots_.erase(iter);
+        }
         // Remove the key if present
         if (slot->public_key () != boost::none)
         {

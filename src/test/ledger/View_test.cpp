@@ -301,9 +301,9 @@ class View_test
             BEAST_EXPECT(seq(v1.read(k(4))) == 5);
             {
                 Sandbox v2(&v1);
-                auto s = v2.peek(k(3));
-                seq(s, 6);
-                v2.update(s);
+                auto s2 = v2.peek(k(3));
+                seq(s2, 6);
+                v2.update(s2);
                 v2.erase(v2.peek(k(4)));
                 BEAST_EXPECT(seq(v2.read(k(1))) == 1);
                 BEAST_EXPECT(! v2.exists(k(2)));
@@ -318,9 +318,9 @@ class View_test
 
             {
                 Sandbox v2(&v1);
-                auto s = v2.peek(k(3));
-                seq(s, 6);
-                v2.update(s);
+                auto s2 = v2.peek(k(3));
+                seq(s2, 6);
+                v2.update(s2);
                 v2.erase(v2.peek(k(4)));
                 BEAST_EXPECT(seq(v2.read(k(1))) == 1);
                 BEAST_EXPECT(! v2.exists(k(2)));

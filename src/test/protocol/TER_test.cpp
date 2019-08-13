@@ -91,32 +91,32 @@ struct TER_test : public beast::unit_test::suite
     template<std::size_t I1, std::size_t I2,
         template<std::size_t, std::size_t> class Func, typename Tup>
     std::enable_if_t<I1 != 0>
-    testIterate (Tup const& tup, beast::unit_test::suite& suite)
+    testIterate (Tup const& tup, beast::unit_test::suite& s)
     {
         Func<I1, I2> func;
-        func (tup, suite);
-        testIterate<I1 - 1, I2, Func>(tup, suite);
+        func (tup, s);
+        testIterate<I1 - 1, I2, Func>(tup, s);
     }
 
     // Slow iteration over the tuple.
     template<std::size_t I1, std::size_t I2,
         template<std::size_t, std::size_t> class Func, typename Tup>
     std::enable_if_t<I1 == 0 && I2 != 0>
-    testIterate (Tup const& tup, beast::unit_test::suite& suite)
+    testIterate (Tup const& tup, beast::unit_test::suite& s)
     {
         Func<I1, I2> func;
-        func (tup, suite);
-        testIterate<std::tuple_size<Tup>::value - 1, I2 - 1, Func>(tup, suite);
+        func (tup, s);
+        testIterate<std::tuple_size<Tup>::value - 1, I2 - 1, Func>(tup, s);
     }
 
     // Finish iteration over the tuple.
     template<std::size_t I1, std::size_t I2,
         template<std::size_t, std::size_t> class Func, typename Tup>
     std::enable_if_t<I1 == 0 && I2 == 0>
-    testIterate (Tup const& tup, beast::unit_test::suite& suite)
+    testIterate (Tup const& tup, beast::unit_test::suite& s)
     {
         Func<I1, I2> func;
-        func (tup, suite);
+        func (tup, s);
     }
 
     void testConversion()
@@ -200,7 +200,7 @@ struct TER_test : public beast::unit_test::suite
     {
     public:
         template<typename Tup>
-        void operator()(Tup const& tup, beast::unit_test::suite& suite) const
+        void operator()(Tup const& tup, beast::unit_test::suite& s) const
         {
             // All entries in the tuple should be comparable one to the other.
             auto const lhs = std::get<I1>(tup);
@@ -226,12 +226,12 @@ struct TER_test : public beast::unit_test::suite
 
             // Make sure a sampling of TER types exhibit the expected behavior
             // for all comparison operators.
-            suite.expect ((lhs == rhs) == (TERtoInt (lhs) == TERtoInt (rhs)));
-            suite.expect ((lhs != rhs) == (TERtoInt (lhs) != TERtoInt (rhs)));
-            suite.expect ((lhs <  rhs) == (TERtoInt (lhs) <  TERtoInt (rhs)));
-            suite.expect ((lhs <= rhs) == (TERtoInt (lhs) <= TERtoInt (rhs)));
-            suite.expect ((lhs >  rhs) == (TERtoInt (lhs) >  TERtoInt (rhs)));
-            suite.expect ((lhs >= rhs) == (TERtoInt (lhs) >= TERtoInt (rhs)));
+            s.expect ((lhs == rhs) == (TERtoInt (lhs) == TERtoInt (rhs)));
+            s.expect ((lhs != rhs) == (TERtoInt (lhs) != TERtoInt (rhs)));
+            s.expect ((lhs <  rhs) == (TERtoInt (lhs) <  TERtoInt (rhs)));
+            s.expect ((lhs <= rhs) == (TERtoInt (lhs) <= TERtoInt (rhs)));
+            s.expect ((lhs >  rhs) == (TERtoInt (lhs) >  TERtoInt (rhs)));
+            s.expect ((lhs >= rhs) == (TERtoInt (lhs) >= TERtoInt (rhs)));
         }
     };
 

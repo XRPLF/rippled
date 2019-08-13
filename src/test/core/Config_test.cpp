@@ -634,8 +634,8 @@ trustthesevalidators.gov
                 vtg.validatorsFile ();
             std::ofstream o (vtg.validatorsFile ());
             try {
-                Config c;
-                c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
+                Config c2;
+                c2.loadFromString (boost::str (cc % vtg.validatorsFile ()));
             } catch (std::runtime_error& e) {
                 error = e.what();
             }

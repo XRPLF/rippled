@@ -103,26 +103,26 @@ public:
         env(offer(bob, XRP(10),  USD_gw(2)));
 
         // make the RPC call
-        auto const jro = env.rpc("account_offers", bob.human())[jss::result][jss::offers];
-        if(BEAST_EXPECT(checkArraySize(jro, 3u)))
+        auto const jroOuter = env.rpc("account_offers", bob.human())[jss::result][jss::offers];
+        if(BEAST_EXPECT(checkArraySize(jroOuter, 3u)))
         {
-            BEAST_EXPECT(jro[0u][jss::quality]                   == "100000000");
-            BEAST_EXPECT(jro[0u][jss::taker_gets][jss::currency] == "USD");
-            BEAST_EXPECT(jro[0u][jss::taker_gets][jss::issuer]   == gw.human());
-            BEAST_EXPECT(jro[0u][jss::taker_gets][jss::value]    == "1");
-            BEAST_EXPECT(jro[0u][jss::taker_pays]                == "100000000");
+            BEAST_EXPECT(jroOuter[0u][jss::quality]                   == "100000000");
+            BEAST_EXPECT(jroOuter[0u][jss::taker_gets][jss::currency] == "USD");
+            BEAST_EXPECT(jroOuter[0u][jss::taker_gets][jss::issuer]   == gw.human());
+            BEAST_EXPECT(jroOuter[0u][jss::taker_gets][jss::value]    == "1");
+            BEAST_EXPECT(jroOuter[0u][jss::taker_pays]                == "100000000");
 
-            BEAST_EXPECT(jro[1u][jss::quality]                   == "5000000");
-            BEAST_EXPECT(jro[1u][jss::taker_gets][jss::currency] == "USD");
-            BEAST_EXPECT(jro[1u][jss::taker_gets][jss::issuer]   == gw.human());
-            BEAST_EXPECT(jro[1u][jss::taker_gets][jss::value]    == "2");
-            BEAST_EXPECT(jro[1u][jss::taker_pays]                == "10000000");
+            BEAST_EXPECT(jroOuter[1u][jss::quality]                   == "5000000");
+            BEAST_EXPECT(jroOuter[1u][jss::taker_gets][jss::currency] == "USD");
+            BEAST_EXPECT(jroOuter[1u][jss::taker_gets][jss::issuer]   == gw.human());
+            BEAST_EXPECT(jroOuter[1u][jss::taker_gets][jss::value]    == "2");
+            BEAST_EXPECT(jroOuter[1u][jss::taker_pays]                == "10000000");
 
-            BEAST_EXPECT(jro[2u][jss::quality]                   == "100000000");
-            BEAST_EXPECT(jro[2u][jss::taker_gets][jss::currency] == "USD");
-            BEAST_EXPECT(jro[2u][jss::taker_gets][jss::issuer]   == bob.human());
-            BEAST_EXPECT(jro[2u][jss::taker_gets][jss::value]    == "1");
-            BEAST_EXPECT(jro[2u][jss::taker_pays]                == "100000000");
+            BEAST_EXPECT(jroOuter[2u][jss::quality]                   == "100000000");
+            BEAST_EXPECT(jroOuter[2u][jss::taker_gets][jss::currency] == "USD");
+            BEAST_EXPECT(jroOuter[2u][jss::taker_gets][jss::issuer]   == bob.human());
+            BEAST_EXPECT(jroOuter[2u][jss::taker_gets][jss::value]    == "1");
+            BEAST_EXPECT(jroOuter[2u][jss::taker_pays]                == "100000000");
         }
 
         {
@@ -141,7 +141,7 @@ public:
             BEAST_EXPECT(asAdmin ? checkMarker(jrr_l_1) : (! jrr_l_1.isMember(jss::marker)));
             if (asAdmin)
             {
-                BEAST_EXPECT(jro[0u] == jro_l_1[0u]);
+                BEAST_EXPECT(jroOuter[0u] == jro_l_1[0u]);
 
                 // second item...with previous marker passed
                 jvParams[jss::marker] = jrr_l_1[jss::marker];
@@ -149,7 +149,7 @@ public:
                 auto const& jro_l_2 = jrr_l_2[jss::offers];
                 BEAST_EXPECT(checkMarker(jrr_l_2));
                 BEAST_EXPECT(checkArraySize(jro_l_2, 1u));
-                BEAST_EXPECT(jro[1u] == jro_l_2[0u]);
+                BEAST_EXPECT(jroOuter[1u] == jro_l_2[0u]);
 
                 // last item...with previous marker passed
                 jvParams[jss::marker] = jrr_l_2[jss::marker];
@@ -157,11 +157,11 @@ public:
                 auto const& jro_l_3 = jrr_l_3[jss::offers];
                 BEAST_EXPECT(! jrr_l_3.isMember(jss::marker));
                 BEAST_EXPECT(checkArraySize(jro_l_3, 1u));
-                BEAST_EXPECT(jro[2u] == jro_l_3[0u]);
+                BEAST_EXPECT(jroOuter[2u] == jro_l_3[0u]);
             }
             else
             {
-                BEAST_EXPECT(jro == jro_l_1);
+                BEAST_EXPECT(jroOuter == jro_l_1);
             }
         }
 

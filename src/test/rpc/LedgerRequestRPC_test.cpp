@@ -99,14 +99,13 @@ public:
                 [jss::ledger][jss::ledger_hash].asString();
 
             {
-                // Intentionally shadow `result` here to avoid reuing it.
-                auto const result = env.rpc("ledger_request", ledgerHash);
-                BEAST_EXPECT(!RPC::contains_error(result[jss::result]) &&
-                    result[jss::result][jss::ledger_index] == 3 &&
-                        result[jss::result].isMember(jss::ledger));
-                BEAST_EXPECT(result[jss::result][jss::ledger].
+                auto const r = env.rpc("ledger_request", ledgerHash);
+                BEAST_EXPECT(!RPC::contains_error(r[jss::result]) &&
+                    r[jss::result][jss::ledger_index] == 3 &&
+                        r[jss::result].isMember(jss::ledger));
+                BEAST_EXPECT(r[jss::result][jss::ledger].
                     isMember(jss::ledger_hash) &&
-                        result[jss::result][jss::ledger]
+                        r[jss::result][jss::ledger]
                             [jss::ledger_hash] == ledgerHash);
             }
         }

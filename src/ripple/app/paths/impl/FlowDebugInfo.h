@@ -89,11 +89,11 @@ struct FlowDebugInfo
         }
 
         void
-        pushLiquiditySrc (EitherAmount const& in, EitherAmount const& out)
+        pushLiquiditySrc (EitherAmount const& eIn, EitherAmount const& eOut)
         {
             assert(!liquiditySrcIn.empty());
-            liquiditySrcIn.back().push_back(in);
-            liquiditySrcOut.back().push_back(out);
+            liquiditySrcIn.back().push_back(eIn);
+            liquiditySrcOut.back().push_back(eOut);
         }
 
         void
