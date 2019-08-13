@@ -235,7 +235,7 @@ public:
                     std::vector<Manifest const*> result;
                     result.reserve (32);
                     cache.for_each_manifest (
-                        [&result](Manifest const& m) {result.push_back (&m);});
+                        [&result](Manifest const& man) {result.push_back (&man);});
                     return result;
                 };
             auto sort =

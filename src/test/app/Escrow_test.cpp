@@ -121,8 +121,8 @@ struct Escrow_test : public beast::unit_test::suite
 
     public:
         explicit
-        condition (Slice condition)
-            : value_ (strHex(condition))
+        condition (Slice cond)
+            : value_ (strHex(cond))
         {
         }
 

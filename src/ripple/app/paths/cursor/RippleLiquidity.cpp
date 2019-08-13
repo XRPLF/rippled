@@ -136,10 +136,10 @@ void rippleLiquidity (
         if (!uRateMax || uRate <= uRateMax)
         {
             // current actual = current request * (quality out / quality in).
-            auto numerator = multiplyRound (saCur, qualityOut, true);
+            auto n = multiplyRound (saCur, qualityOut, true);
             // True means "round up" to get best flow.
 
-            STAmount saCurIn = divideRound (numerator, qualityIn, true);
+            STAmount saCurIn = divideRound (n, qualityIn, true);
 
             JLOG (rippleCalc.j_.trace())
                 << "rippleLiquidity:"

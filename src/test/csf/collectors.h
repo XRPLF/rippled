@@ -81,7 +81,7 @@ public:
 
         @param cs References to the collectors to call together
     */
-    Collectors(Cs&... cs) : cs(std::tie(cs...))
+    Collectors(Cs&... cs_) : cs(std::tie(cs_...))
     {
     }
 

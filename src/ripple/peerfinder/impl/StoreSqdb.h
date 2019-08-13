@@ -296,7 +296,7 @@ public:
         }
 
         {
-            int const version (currentSchemaVersion);
+            int const v(currentSchemaVersion);
             m_session <<
                 "INSERT OR REPLACE INTO SchemaVersion ("
                 "   name "
@@ -304,7 +304,7 @@ public:
                 ") VALUES ( "
                 "  'PeerFinder', :version "
                 ");"
-                , soci::use (version);
+                , soci::use (v);
         }
 
         tr.commit ();

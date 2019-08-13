@@ -388,9 +388,9 @@ public:
     {
         testcase ("fields");
 
-        auto const& sf1 = sfSequence;
-        auto const& sf2 = sfExpiration;
-        auto const& sf3 = sfQualityIn;
+        auto const& sf1Outer = sfSequence;
+        auto const& sf2Outer = sfExpiration;
+        auto const& sf3Outer = sfQualityIn;
         auto const& sf4 = sfSignature;
         auto const& sf5 = sfPublicKey;
 
@@ -399,32 +399,32 @@ public:
         {
             auto const st = [&]()
             {
-                STObject st(sfGeneric);
-                st.setFieldU32(sf1, 1);
-                st.setFieldU32(sf2, 2);
-                return st;
+                STObject s(sfGeneric);
+                s.setFieldU32(sf1Outer, 1);
+                s.setFieldU32(sf2Outer, 2);
+                return s;
             }();
 
-            BEAST_EXPECT(st[sf1] == 1);
-            BEAST_EXPECT(st[sf2] == 2);
+            BEAST_EXPECT(st[sf1Outer] == 1);
+            BEAST_EXPECT(st[sf2Outer] == 2);
             except<STObject::FieldErr>([&]()
-                { st[sf3]; });
-            BEAST_EXPECT(*st[~sf1] == 1);
-            BEAST_EXPECT(*st[~sf2] == 2);
-            BEAST_EXPECT(st[~sf3] == boost::none);
-            BEAST_EXPECT(!! st[~sf1]);
-            BEAST_EXPECT(!! st[~sf2]);
-            BEAST_EXPECT(! st[~sf3]);
-            BEAST_EXPECT(st[sf1] != st[sf2]);
-            BEAST_EXPECT(st[~sf1] != st[~sf2]);
+                { st[sf3Outer]; });
+            BEAST_EXPECT(*st[~sf1Outer] == 1);
+            BEAST_EXPECT(*st[~sf2Outer] == 2);
+            BEAST_EXPECT(st[~sf3Outer] == boost::none);
+            BEAST_EXPECT(!! st[~sf1Outer]);
+            BEAST_EXPECT(!! st[~sf2Outer]);
+            BEAST_EXPECT(! st[~sf3Outer]);
+            BEAST_EXPECT(st[sf1Outer] != st[sf2Outer]);
+            BEAST_EXPECT(st[~sf1Outer] != st[~sf2Outer]);
         }
 
         // read templated object
-        SOTemplate const sot
+        SOTemplate const sotOuter
             {
-                { sf1, soeREQUIRED },
-                { sf2, soeOPTIONAL },
-                { sf3, soeDEFAULT },
+                { sf1Outer, soeREQUIRED },
+                { sf2Outer, soeOPTIONAL },
+                { sf3Outer, soeDEFAULT },
                 { sf4, soeOPTIONAL },
                 { sf5, soeDEFAULT },
             };
@@ -432,122 +432,122 @@ public:
         {
             auto const st = [&]()
             {
-                STObject st(sot, sfGeneric);
-                st.setFieldU32(sf1, 1);
-                st.setFieldU32(sf2, 2);
-                return st;
+                STObject s(sotOuter, sfGeneric);
+                s.setFieldU32(sf1Outer, 1);
+                s.setFieldU32(sf2Outer, 2);
+                return s;
             }();
 
-            BEAST_EXPECT(st[sf1] == 1);
-            BEAST_EXPECT(st[sf2] == 2);
-            BEAST_EXPECT(st[sf3] == 0);
-            BEAST_EXPECT(*st[~sf1] == 1);
-            BEAST_EXPECT(*st[~sf2] == 2);
-            BEAST_EXPECT(*st[~sf3] == 0);
-            BEAST_EXPECT(!! st[~sf1]);
-            BEAST_EXPECT(!! st[~sf2]);
-            BEAST_EXPECT(!! st[~sf3]);
+            BEAST_EXPECT(st[sf1Outer] == 1);
+            BEAST_EXPECT(st[sf2Outer] == 2);
+            BEAST_EXPECT(st[sf3Outer] == 0);
+            BEAST_EXPECT(*st[~sf1Outer] == 1);
+            BEAST_EXPECT(*st[~sf2Outer] == 2);
+            BEAST_EXPECT(*st[~sf3Outer] == 0);
+            BEAST_EXPECT(!! st[~sf1Outer]);
+            BEAST_EXPECT(!! st[~sf2Outer]);
+            BEAST_EXPECT(!! st[~sf3Outer]);
         }
 
         // write free object
 
         {
             STObject st(sfGeneric);
-            unexcept([&]() { st[sf1]; });
-            except([&](){ return st[sf1] == 0; });
-            BEAST_EXPECT(st[~sf1] == boost::none);
-            BEAST_EXPECT(st[~sf1] == boost::optional<std::uint32_t>{});
-            BEAST_EXPECT(st[~sf1] != boost::optional<std::uint32_t>(1));
-            BEAST_EXPECT(! st[~sf1]);
-            st[sf1] = 2;
-            BEAST_EXPECT(st[sf1] == 2);
-            BEAST_EXPECT(st[~sf1] != boost::none);
-            BEAST_EXPECT(st[~sf1] == boost::optional<std::uint32_t>(2));
-            BEAST_EXPECT(!! st[~sf1]);
-            st[sf1] = 1;
-            BEAST_EXPECT(st[sf1] == 1);
-            BEAST_EXPECT(!! st[sf1]);
-            BEAST_EXPECT(!! st[~sf1]);
-            st[sf1] = 0;
-            BEAST_EXPECT(! st[sf1]);
-            BEAST_EXPECT(!! st[~sf1]);
-            st[~sf1] = boost::none;
-            BEAST_EXPECT(! st[~sf1]);
-            BEAST_EXPECT(st[~sf1] == boost::none);
-            BEAST_EXPECT(st[~sf1] == boost::optional<std::uint32_t>{});
-            st[~sf1] = boost::none;
-            BEAST_EXPECT(! st[~sf1]);
-            except([&]() { return st[sf1] == 0; });
-            except([&]() { return *st[~sf1]; });
-            st[sf1] = 1;
-            BEAST_EXPECT(st[sf1] == 1);
-            BEAST_EXPECT(!! st[sf1]);
-            BEAST_EXPECT(!! st[~sf1]);
-            st[sf1] = 3;
-            st[sf2] = st[sf1];
-            BEAST_EXPECT(st[sf1] == 3);
-            BEAST_EXPECT(st[sf2] == 3);
-            BEAST_EXPECT(st[sf2] == st[sf1]);
-            st[sf1] = 4;
-            st[sf2] = st[sf1];
-            BEAST_EXPECT(st[sf1] == 4);
-            BEAST_EXPECT(st[sf2] == 4);
-            BEAST_EXPECT(st[sf2] == st[sf1]);
+            unexcept([&]() { st[sf1Outer]; });
+            except([&](){ return st[sf1Outer] == 0; });
+            BEAST_EXPECT(st[~sf1Outer] == boost::none);
+            BEAST_EXPECT(st[~sf1Outer] == boost::optional<std::uint32_t>{});
+            BEAST_EXPECT(st[~sf1Outer] != boost::optional<std::uint32_t>(1));
+            BEAST_EXPECT(! st[~sf1Outer]);
+            st[sf1Outer] = 2;
+            BEAST_EXPECT(st[sf1Outer] == 2);
+            BEAST_EXPECT(st[~sf1Outer] != boost::none);
+            BEAST_EXPECT(st[~sf1Outer] == boost::optional<std::uint32_t>(2));
+            BEAST_EXPECT(!! st[~sf1Outer]);
+            st[sf1Outer] = 1;
+            BEAST_EXPECT(st[sf1Outer] == 1);
+            BEAST_EXPECT(!! st[sf1Outer]);
+            BEAST_EXPECT(!! st[~sf1Outer]);
+            st[sf1Outer] = 0;
+            BEAST_EXPECT(! st[sf1Outer]);
+            BEAST_EXPECT(!! st[~sf1Outer]);
+            st[~sf1Outer] = boost::none;
+            BEAST_EXPECT(! st[~sf1Outer]);
+            BEAST_EXPECT(st[~sf1Outer] == boost::none);
+            BEAST_EXPECT(st[~sf1Outer] == boost::optional<std::uint32_t>{});
+            st[~sf1Outer] = boost::none;
+            BEAST_EXPECT(! st[~sf1Outer]);
+            except([&]() { return st[sf1Outer] == 0; });
+            except([&]() { return *st[~sf1Outer]; });
+            st[sf1Outer] = 1;
+            BEAST_EXPECT(st[sf1Outer] == 1);
+            BEAST_EXPECT(!! st[sf1Outer]);
+            BEAST_EXPECT(!! st[~sf1Outer]);
+            st[sf1Outer] = 3;
+            st[sf2Outer] = st[sf1Outer];
+            BEAST_EXPECT(st[sf1Outer] == 3);
+            BEAST_EXPECT(st[sf2Outer] == 3);
+            BEAST_EXPECT(st[sf2Outer] == st[sf1Outer]);
+            st[sf1Outer] = 4;
+            st[sf2Outer] = st[sf1Outer];
+            BEAST_EXPECT(st[sf1Outer] == 4);
+            BEAST_EXPECT(st[sf2Outer] == 4);
+            BEAST_EXPECT(st[sf2Outer] == st[sf1Outer]);
         }
 
         // Write templated object
 
         {
-            STObject st(sot, sfGeneric);
-            BEAST_EXPECT(!! st[~sf1]);
-            BEAST_EXPECT(st[~sf1] != boost::none);
-            BEAST_EXPECT(st[sf1] == 0);
-            BEAST_EXPECT(*st[~sf1] == 0);
-            BEAST_EXPECT(! st[~sf2]);
-            BEAST_EXPECT(st[~sf2] == boost::none);
-            except([&]() { return st[sf2] == 0; });
-            BEAST_EXPECT(!! st[~sf3]);
-            BEAST_EXPECT(st[~sf3] != boost::none);
-            BEAST_EXPECT(st[sf3] == 0);
-            except([&]() { st[~sf1] = boost::none; });
-            st[sf1] = 1;
-            BEAST_EXPECT(st[sf1] == 1);
-            BEAST_EXPECT(*st[~sf1] == 1);
-            BEAST_EXPECT(!! st[~sf1]);
-            st[sf1] = 0;
-            BEAST_EXPECT(st[sf1] == 0);
-            BEAST_EXPECT(*st[~sf1] == 0);
-            BEAST_EXPECT(!! st[~sf1]);
-            st[sf2] = 2;
-            BEAST_EXPECT(st[sf2] == 2);
-            BEAST_EXPECT(*st[~sf2] == 2);
-            BEAST_EXPECT(!! st[~sf2]);
-            st[~sf2] = boost::none;
-            except([&]() { return *st[~sf2]; });
-            BEAST_EXPECT(! st[~sf2]);
-            st[sf3] = 3;
-            BEAST_EXPECT(st[sf3] == 3);
-            BEAST_EXPECT(*st[~sf3] == 3);
-            BEAST_EXPECT(!! st[~sf3]);
-            st[sf3] = 2;
-            BEAST_EXPECT(st[sf3] == 2);
-            BEAST_EXPECT(*st[~sf3] == 2);
-            BEAST_EXPECT(!! st[~sf3]);
-            st[sf3] = 0;
-            BEAST_EXPECT(st[sf3] == 0);
-            BEAST_EXPECT(*st[~sf3] == 0);
-            BEAST_EXPECT(!! st[~sf3]);
-            except([&]() { st[~sf3] = boost::none; });
-            BEAST_EXPECT(st[sf3] == 0);
-            BEAST_EXPECT(*st[~sf3] == 0);
-            BEAST_EXPECT(!! st[~sf3]);
+            STObject st(sotOuter, sfGeneric);
+            BEAST_EXPECT(!! st[~sf1Outer]);
+            BEAST_EXPECT(st[~sf1Outer] != boost::none);
+            BEAST_EXPECT(st[sf1Outer] == 0);
+            BEAST_EXPECT(*st[~sf1Outer] == 0);
+            BEAST_EXPECT(! st[~sf2Outer]);
+            BEAST_EXPECT(st[~sf2Outer] == boost::none);
+            except([&]() { return st[sf2Outer] == 0; });
+            BEAST_EXPECT(!! st[~sf3Outer]);
+            BEAST_EXPECT(st[~sf3Outer] != boost::none);
+            BEAST_EXPECT(st[sf3Outer] == 0);
+            except([&]() { st[~sf1Outer] = boost::none; });
+            st[sf1Outer] = 1;
+            BEAST_EXPECT(st[sf1Outer] == 1);
+            BEAST_EXPECT(*st[~sf1Outer] == 1);
+            BEAST_EXPECT(!! st[~sf1Outer]);
+            st[sf1Outer] = 0;
+            BEAST_EXPECT(st[sf1Outer] == 0);
+            BEAST_EXPECT(*st[~sf1Outer] == 0);
+            BEAST_EXPECT(!! st[~sf1Outer]);
+            st[sf2Outer] = 2;
+            BEAST_EXPECT(st[sf2Outer] == 2);
+            BEAST_EXPECT(*st[~sf2Outer] == 2);
+            BEAST_EXPECT(!! st[~sf2Outer]);
+            st[~sf2Outer] = boost::none;
+            except([&]() { return *st[~sf2Outer]; });
+            BEAST_EXPECT(! st[~sf2Outer]);
+            st[sf3Outer] = 3;
+            BEAST_EXPECT(st[sf3Outer] == 3);
+            BEAST_EXPECT(*st[~sf3Outer] == 3);
+            BEAST_EXPECT(!! st[~sf3Outer]);
+            st[sf3Outer] = 2;
+            BEAST_EXPECT(st[sf3Outer] == 2);
+            BEAST_EXPECT(*st[~sf3Outer] == 2);
+            BEAST_EXPECT(!! st[~sf3Outer]);
+            st[sf3Outer] = 0;
+            BEAST_EXPECT(st[sf3Outer] == 0);
+            BEAST_EXPECT(*st[~sf3Outer] == 0);
+            BEAST_EXPECT(!! st[~sf3Outer]);
+            except([&]() { st[~sf3Outer] = boost::none; });
+            BEAST_EXPECT(st[sf3Outer] == 0);
+            BEAST_EXPECT(*st[~sf3Outer] == 0);
+            BEAST_EXPECT(!! st[~sf3Outer]);
         }
 
         // coercion operator to boost::optional
 
         {
             STObject st(sfGeneric);
-            auto const v = ~st[~sf1];
+            auto const v = ~st[~sf1Outer];
             static_assert(std::is_same<
                 std::decay_t<decltype(v)>,
                     boost::optional<std::uint32_t>>::value, "");
@@ -586,7 +586,7 @@ public:
                 BEAST_EXPECT(Slice(st[sf5]).size() == 2);
             }
             {
-                STObject st(sot, sfGeneric);
+                STObject st(sotOuter, sfGeneric);
                 BEAST_EXPECT(st[sf5] == Slice{});
                 BEAST_EXPECT(!! st[~sf5]);
                 BEAST_EXPECT(!! ~st[~sf5]);

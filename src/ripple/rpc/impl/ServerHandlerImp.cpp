@@ -247,9 +247,9 @@ build_map(boost::beast::http::fields const& h)
         auto key (e.name_string().to_string());
         // TODO Replace with safe C++14 version
         std::transform (key.begin(), key.end(), key.begin(),
-                        [](auto c)
+                        [](auto kc)
                         {
-                            return ::tolower(static_cast<unsigned char>(c));
+                            return ::tolower(static_cast<unsigned char>(kc));
                         });
         c [key] = e.value().to_string();
     }

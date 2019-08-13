@@ -36,7 +36,7 @@ public:
     void testBackend (
         std::string const& type,
         std::uint64_t const seedValue,
-        int numObjectsToTest = 2000)
+        int numObjsToTest = 2000)
     {
         DummyScheduler scheduler;
 
@@ -51,7 +51,7 @@ public:
 
         // Create a batch
         auto batch = createPredictableBatch (
-            numObjectsToTest, rng());
+            numObjsToTest, rng());
 
         using namespace beast::severities;
         test::SuiteJournal journal ("Backend_test", *this);

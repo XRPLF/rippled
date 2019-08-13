@@ -538,14 +538,14 @@ Livecache <Allocator>::hops_t::insert (Element& e)
 
 template <class Allocator>
 void
-Livecache <Allocator>::hops_t::reinsert (Element& e, int hops)
+Livecache <Allocator>::hops_t::reinsert (Element& e, int numHops)
 {
-    assert (hops >= 0 && hops <= Tuning::maxHops + 1);
+    assert (numHops >= 0 && numHops <= Tuning::maxHops + 1);
     list_type& list (m_lists [e.endpoint.hops]);
     list.erase (list.iterator_to (e));
     --m_hist [e.endpoint.hops];
 
-    e.endpoint.hops = hops;
+    e.endpoint.hops = numHops;
     insert (e);
 }
 

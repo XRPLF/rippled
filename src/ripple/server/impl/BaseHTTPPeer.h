@@ -439,14 +439,14 @@ template<class Handler, class Impl>
 void
 BaseHTTPPeer<Handler, Impl>::
 write(
-    void const* buffer, std::size_t bytes)
+    void const* buf, std::size_t bytes)
 {
     if(bytes == 0)
         return;
     if([&]
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            wq_.emplace_back(buffer, bytes);
+            wq_.emplace_back(buf, bytes);
             return wq_.size() == 1 && wq2_.size() == 0;
         }())
     {

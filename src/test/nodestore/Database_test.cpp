@@ -94,7 +94,7 @@ public:
     void testNodeStore (std::string const& type,
                         bool const testPersistence,
                         std::int64_t const seedValue,
-                        int numObjectsToTest = 2000)
+                        int numObjsToTest = 2000)
     {
         DummyScheduler scheduler;
         RootStoppable parent ("TestRootStoppable");
@@ -112,7 +112,7 @@ public:
 
         // Create a batch
         auto batch = createPredictableBatch (
-            numObjectsToTest, rng());
+            numObjsToTest, rng());
 
         {
             // Open the database

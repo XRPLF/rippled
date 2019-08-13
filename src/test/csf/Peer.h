@@ -145,9 +145,9 @@ struct Peer
         }
 
         boost::optional<Ledger>
-        acquire(Ledger::ID const & id)
+        acquire(Ledger::ID const & lId)
         {
-            if(Ledger const * ledger = p_.acquireLedger(id))
+            if(Ledger const * ledger = p_.acquireLedger(lId))
                 return *ledger;
             return boost::none;
         }
@@ -385,9 +385,11 @@ struct Peer
     Ledger const*
     acquireLedger(Ledger::ID const& ledgerID)
     {
-        auto it = ledgers.find(ledgerID);
-        if (it != ledgers.end())
+        if (auto it = ledgers.find(ledgerID);
+            it != ledgers.end())
+        {
             return &(it->second);
+        }
 
         // No peers
         if(net.links(this).empty())
@@ -410,8 +412,8 @@ struct Peer
             // Send a messsage to neighbors to find the ledger
             net.send(
                 this, link.target, [ to = link.target, from = this, ledgerID ]() {
-                    auto it = to->ledgers.find(ledgerID);
-                    if (it != to->ledgers.end())
+                    if (auto it = to->ledgers.find(ledgerID);
+                        it != to->ledgers.end())
                     {
                         // if the ledger is found, send it back to the original
                         // requesting peer where it is added to the available
@@ -431,9 +433,11 @@ struct Peer
     TxSet const*
     acquireTxSet(TxSet::ID const& setId)
     {
-        auto it = txSets.find(setId);
-        if (it != txSets.end())
+        if (auto it = txSets.find(setId);
+            it != txSets.end())
+        {
             return &(it->second);
+        }
 
         // No peers
         if(net.links(this).empty())
@@ -455,8 +459,8 @@ struct Peer
             // Send a message to neighbors to find the tx set
             net.send(
                 this, link.target, [ to = link.target, from = this, setId ]() {
-                    auto it = to->txSets.find(setId);
-                    if (it != to->txSets.end())
+                    if (auto it = to->txSets.find(setId);
+                        it != to->txSets.end())
                     {
                         // If the txSet is found, send it back to the original
                         // requesting peer, where it is handled like a TxSet
@@ -850,9 +854,9 @@ struct Peer
     }
 
     std::size_t
-    laggards(Ledger::Seq const seq, hash_set<NodeKey_t>& trustedKeys)
+    laggards(Ledger::Seq const seq, hash_set<NodeKey_t>& trusted)
     {
-        return validations.laggards(seq, trustedKeys);
+        return validations.laggards(seq, trusted);
     }
 
     bool

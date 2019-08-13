@@ -125,9 +125,9 @@ public:
             {
                 Json::Value jv;
                 jv[jss::account] = acct.human();
-                auto const resp =
+                auto const r =
                     env.rpc("json", "account_lines", to_string(jv));
-                return resp[jss::result][jss::lines];
+                return r[jss::result][jss::lines];
             };
             {
                 auto const aliceLines = getAccountLines (alice);

@@ -189,11 +189,11 @@ qalloc_impl<_>::block::allocate(
 {
     align = std::max(align,
         std::alignment_of<block*>::value);
-    auto pad = [](void const* p, std::size_t align)
+    auto pad = [](void const* p, std::size_t a)
     {
         auto const i = reinterpret_cast<
             std::uintptr_t>(p);
-        return (align - (i % align)) % align;
+        return (a - (i % a)) % a;
     };
 
     auto const n0 =

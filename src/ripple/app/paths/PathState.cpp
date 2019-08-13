@@ -176,7 +176,7 @@ TER PathState::pushNode (
     // TODO(tom): if pathIsEmpty, we probably don't need to do ANYTHING below.
     // Indeed, we might just not even call pushNode in the first place!
 
-    auto const& backNode = pathIsEmpty ? path::Node () : nodes_.back ();
+    auto const& backNodeOuter = pathIsEmpty ? path::Node () : nodes_.back ();
 
     // true, iff node is a ripple account. false, iff node is an offer node.
     const bool hasAccount = (iType & STPathElement::typeAccount);
@@ -197,7 +197,7 @@ TER PathState::pushNode (
 
     node.uFlags = iType;
     node.issue_.currency = hasCurrency ?
-            currency : backNode.issue_.currency;
+            currency : backNodeOuter.issue_.currency;
 
     // TODO(tom): we can probably just return immediately whenever we hit an
     // error in these next pages.
@@ -263,7 +263,7 @@ TER PathState::pushNode (
                 node.issue_.currency,
                 isXRP(node.issue_.currency) ? xrpAccount() : account);
 
-            // Note: backNode may no longer be the immediately previous node.
+            // Note: backNodeOuter may no longer be the immediately previous node.
         }
 
         if (resultCode == tesSUCCESS && !nodes_.empty ())
@@ -360,10 +360,10 @@ TER PathState::pushNode (
             node.issue_.account = issuer;
         else if (isXRP (node.issue_.currency))
             node.issue_.account = xrpAccount();
-        else if (isXRP (backNode.issue_.account))
-            node.issue_.account = backNode.account_;
+        else if (isXRP (backNodeOuter.issue_.account))
+            node.issue_.account = backNodeOuter.account_;
         else
-            node.issue_.account = backNode.issue_.account;
+            node.issue_.account = backNodeOuter.issue_.account;
 
         node.saRevDeliver = STAmount (node.issue_);
         node.saFwdDeliver = node.saRevDeliver;
@@ -375,7 +375,7 @@ TER PathState::pushNode (
 
             resultCode = temBAD_PATH;
         }
-        else if (backNode.issue_ == node.issue_)
+        else if (backNodeOuter.issue_ == node.issue_)
         {
             JLOG (j_.debug()) <<
                 "pushNode: bad path: offer to same currency and issuer";
@@ -387,8 +387,8 @@ TER PathState::pushNode (
             // Insert intermediary issuer account if needed.
             resultCode   = pushImpliedNodes (
                 xrpAccount(), // Rippling, but offers don't have an account.
-                backNode.issue_.currency,
-                backNode.issue_.account);
+                backNodeOuter.issue_.currency,
+                backNodeOuter.issue_.account);
         }
 
         if (resultCode == tesSUCCESS)

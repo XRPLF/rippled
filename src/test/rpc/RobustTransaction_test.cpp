@@ -299,9 +299,9 @@ public:
                 env.app().getJobQueue().rendezvous();
 
                 BEAST_EXPECT(wsc->findMsg(5s,
-                    [&](auto const& jv)
+                    [&](auto const& jval)
                     {
-                        return jv[jss::type] == "ledgerClosed";
+                        return jval[jss::type] == "ledgerClosed";
                     }));
             }
 
@@ -356,9 +356,9 @@ public:
                 env.app().getJobQueue().rendezvous();
 
                 BEAST_EXPECT(wsc->findMsg(5s,
-                    [&](auto const& jv)
+                    [&](auto const& jval)
                     {
-                        return jv[jss::type] == "ledgerClosed";
+                        return jval[jss::type] == "ledgerClosed";
                     }));
             }
 

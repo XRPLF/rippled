@@ -90,7 +90,7 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT (sumCounter.count() == 0);
 
             // Make sure sumCounter.wrap works with a const lvalue closure.
-            auto const sum = [] (int i, int j) { return i + j; };
+            auto const sum = [] (int ii, int jj) { return ii + jj; };
             auto wrapped = sumCounter.wrap (sum);
 
             BEAST_EXPECT (sumCounter.count() == 1);
@@ -142,9 +142,9 @@ class ClosureCounter_test : public beast::unit_test::suite
         }
 
         friend
-        TrackedString operator+(TrackedString const& str, char const* rhs)
+        TrackedString operator+(TrackedString const& s, char const* rhs)
         {
-            TrackedString ret {str};
+            TrackedString ret {s};
             ret.str += rhs;
             return ret;
         }

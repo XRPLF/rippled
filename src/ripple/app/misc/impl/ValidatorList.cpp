@@ -301,8 +301,8 @@ ValidatorList::applyList (
             continue;
         }
 
-        auto const result = validatorManifests_.applyManifest (std::move(*m));
-        if (result == ManifestDisposition::invalid)
+        if (auto const r = validatorManifests_.applyManifest (std::move(*m));
+            r == ManifestDisposition::invalid)
         {
             JLOG (j_.warn()) <<
                 "List for " << strHex(pubKey) <<
@@ -526,8 +526,8 @@ ValidatorList::getJson() const
     PublicKey local;
     Json::Value& jLocalStaticKeys =
         (res[jss::local_static_keys] = Json::arrayValue);
-    auto it = publisherLists_.find(local);
-    if (it != publisherLists_.end())
+    if (auto it = publisherLists_.find(local);
+        it != publisherLists_.end())
     {
         for (auto const& key : it->second.list)
             jLocalStaticKeys.append(

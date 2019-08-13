@@ -641,8 +641,8 @@ toStrandV2 (
             return std::make_pair(xrpAccount(), xrpAccount());
         };
 
-        auto curAccount = src;
-        auto curIssue = [&] {
+        auto curAcc = src;
+        auto curIss = [&] {
             auto& currency =
                 sendMaxIssue ? sendMaxIssue->currency : deliver.currency;
             if (isXRP(currency))
@@ -653,28 +653,28 @@ toStrandV2 (
         for (auto const& s : result)
         {
             auto const accts = stepAccts(*s);
-            if (accts.first != curAccount)
+            if (accts.first != curAcc)
                 return false;
 
             if (auto const b = s->bookStepBook())
             {
-                if (curIssue != b->in)
+                if (curIss != b->in)
                     return false;
-                curIssue = b->out;
+                curIss = b->out;
             }
             else
             {
-                curIssue.account = accts.second;
+                curIss.account = accts.second;
             }
 
-            curAccount = accts.second;
+            curAcc = accts.second;
         }
-        if (curAccount != dst)
+        if (curAcc != dst)
             return false;
-        if (curIssue.currency != deliver.currency)
+        if (curIss.currency != deliver.currency)
             return false;
-        if (curIssue.account != deliver.account &&
-            curIssue.account != dst)
+        if (curIss.account != deliver.account &&
+            curIss.account != dst)
             return false;
         return true;
     };

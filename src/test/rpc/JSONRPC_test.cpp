@@ -2023,7 +2023,7 @@ public:
                     .set("minimum_txn_in_ledger_standalone", "3");
                 return cfg;
             })};
-        LoadFeeTrack const& feeTrack = env.app().getFeeTrack();
+        LoadFeeTrack const& feeTrackOuter = env.app().getFeeTrack();
 
         {
             // high mult, no tx
@@ -2034,7 +2034,7 @@ public:
             })", req);
             Json::Value result =
                 checkFee (req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
+                    env.app().config(), feeTrackOuter,
                         env.app().getTxQ(), env.current());
 
             BEAST_EXPECT(! RPC::contains_error (result));
@@ -2051,7 +2051,7 @@ public:
             })", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
+                    env.app().config(), feeTrackOuter,
                     env.app().getTxQ(), env.current());
 
             BEAST_EXPECT(!RPC::contains_error(result));
@@ -2074,7 +2074,7 @@ public:
             })", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
+                    env.app().config(), feeTrackOuter,
                         env.app().getTxQ(), env.current());
 
             BEAST_EXPECT(!RPC::contains_error(result));
@@ -2091,7 +2091,7 @@ public:
             })", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
+                    env.app().config(), feeTrackOuter,
                       env.app().getTxQ(), env.current());
 
             BEAST_EXPECT(RPC::contains_error(result));
@@ -2108,7 +2108,7 @@ public:
             })", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
+                    env.app().config(), feeTrackOuter,
                     env.app().getTxQ(), env.current());
 
             BEAST_EXPECT(RPC::contains_error(result));
@@ -2125,7 +2125,7 @@ public:
             })", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
+                    env.app().config(), feeTrackOuter,
                     env.app().getTxQ(), env.current());
 
             BEAST_EXPECT(!RPC::contains_error(result));
@@ -2142,7 +2142,7 @@ public:
             })", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
+                    env.app().config(), feeTrackOuter,
                       env.app().getTxQ(), env.current());
 
             BEAST_EXPECT(RPC::contains_error(result));
@@ -2157,7 +2157,7 @@ public:
             })", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
+                    env.app().config(), feeTrackOuter,
                       env.app().getTxQ(), env.current());
 
             BEAST_EXPECT(RPC::contains_error(result));
@@ -2173,7 +2173,7 @@ public:
             })", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
+                    env.app().config(), feeTrackOuter,
                       env.app().getTxQ(), env.current());
 
             BEAST_EXPECT(RPC::contains_error(result));
@@ -2253,7 +2253,7 @@ public:
         {
             // Call "sign" with higher server load and
             // enough transactions to escalate the fee
-            BEAST_EXPECT(feeTrack.getLoadFactor() == 1220);
+            BEAST_EXPECT(feeTrackOuter.getLoadFactor() == 1220);
 
             for (;;)
             {

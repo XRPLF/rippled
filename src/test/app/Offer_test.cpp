@@ -274,10 +274,10 @@ public:
         for (int i=0;i<101;++i)
             env (offer (carol, USD (1), EUR (2)));
 
-        auto hasFeature = [](Env& env, uint256 const& f)
+        auto hasFeature = [](Env& e, uint256 const& f)
         {
-            return (env.app().config().features.find(f) !=
-                env.app().config().features.end());
+            return (e.app().config().features.find(f) !=
+                e.app().config().features.end());
         };
 
         for (auto d : {-1, 1})
@@ -2321,10 +2321,12 @@ public:
 
             env.close();
 
-            // Acct creates an offer.  This is the heart of the test.
-            auto const acctOffer = t.offerAmount;
-            env (offer (acct, USD (acctOffer), XRP (acctOffer)), ter (t.tec));
-            env.close();
+            {
+                // Acct creates an offer.  This is the heart of the test.
+                auto const acctOffer = t.offerAmount;
+                env(offer(acct, USD(acctOffer), XRP(acctOffer)), ter(t.tec));
+                env.close();
+            }
             std::uint32_t const acctOfferSeq = env.seq (acct) - 1;
 
             BEAST_EXPECT (env.balance (acct, USD.issue()) == t.balanceUsd);

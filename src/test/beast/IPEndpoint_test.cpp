@@ -66,12 +66,15 @@ public:
         testcase ("AddressV4");
 
         BEAST_EXPECT(AddressV4{}.to_ulong() == 0);
-        BEAST_EXPECT(is_unspecified (AddressV4{}));
+        BEAST_EXPECT(is_unspecified(AddressV4{}));
         BEAST_EXPECT(AddressV4{0x01020304}.to_ulong() == 0x01020304);
-        AddressV4::bytes_type d = {{1,2,3,4}};
-        BEAST_EXPECT(AddressV4{d}.to_ulong() == 0x01020304);
 
-        unexpected (is_unspecified (AddressV4{d}));
+        {
+            AddressV4::bytes_type d = {{1, 2, 3, 4}};
+            BEAST_EXPECT(AddressV4{d}.to_ulong() == 0x01020304);
+
+            unexpected(is_unspecified(AddressV4{d}));
+        }
 
         AddressV4 const v1 {1};
         BEAST_EXPECT(AddressV4{v1}.to_ulong() == 1);

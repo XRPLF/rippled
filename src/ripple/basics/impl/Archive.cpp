@@ -36,9 +36,9 @@ extractTarLz4(
     using archive_ptr =
         std::unique_ptr<struct archive, void(*)(struct archive*)>;
     archive_ptr ar {archive_read_new(),
-        [](struct archive* ar)
+        [](struct archive* a)
         {
-            archive_read_free(ar);
+            archive_read_free(a);
         }};
     if (!ar)
         Throw<std::runtime_error>("Failed to allocate archive");
@@ -57,9 +57,9 @@ extractTarLz4(
     }
 
     archive_ptr aw {archive_write_disk_new(),
-        [](struct archive* aw)
+        [](struct archive* a)
         {
-            archive_write_free(aw);
+            archive_write_free(a);
         }};
     if (!aw)
         Throw<std::runtime_error>("Failed to allocate archive");

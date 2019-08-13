@@ -202,9 +202,8 @@ Json::Value doGatewayBalances (RPC::Context& context)
         result [jss::obligations] = std::move (j);
     }
 
-    auto populate = [](
+    auto populateResult = [&result](
         std::map <AccountID, std::vector <STAmount>> const& array,
-        Json::Value& result,
         Json::StaticString const& name)
         {
             if (!array.empty())
@@ -226,9 +225,9 @@ Json::Value doGatewayBalances (RPC::Context& context)
             }
         };
 
-    populate (hotBalances, result, jss::balances);
-    populate (frozenBalances, result, jss::frozen_balances);
-    populate (assets, result, jss::assets);
+    populateResult (hotBalances, jss::balances);
+    populateResult (frozenBalances, jss::frozen_balances);
+    populateResult (assets, jss::assets);
 
     return result;
 }
