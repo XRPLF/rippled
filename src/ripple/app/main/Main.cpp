@@ -760,15 +760,6 @@ int main (int argc, char** argv)
     ripple::sha512_deprecatedMSVCWorkaround();
 #endif
 
-#if defined(__GNUC__) && !defined(__clang__)
-    auto constexpr gccver = (__GNUC__ * 100 * 100) +
-                            (__GNUC_MINOR__ * 100) +
-                            __GNUC_PATCHLEVEL__;
-
-    static_assert (gccver >= 50100,
-        "GCC version 5.1.0 or later is required to compile rippled.");
-#endif
-
     atexit(&google::protobuf::ShutdownProtobufLibrary);
 
     auto const result (ripple::run (argc, argv));

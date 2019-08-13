@@ -61,10 +61,15 @@ endif ()
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang") # both Clang and AppleClang
   set (is_clang TRUE)
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND
+         CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
+    message (FATAL_ERROR "This project requires clang 7 or later")
+  endif ()
+  # TODO min AppleClang version check ?
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   set (is_gcc TRUE)
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.1)
-    message (FATAL_ERROR "This project requires GCC 5.1 or later")
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
+    message (FATAL_ERROR "This project requires GCC 7 or later")
   endif ()
 endif ()
 if (CMAKE_GENERATOR STREQUAL "Xcode")

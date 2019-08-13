@@ -70,10 +70,6 @@
 #ifdef __GNUC__
 # pragma GCC diagnostic push
 # pragma GCC diagnostic ignored "-Wpedantic"
-# if __GNUC__ < 5
-   // GCC 4.9 Bug 61489 Wrong warning with -Wmissing-field-initializers
-#  pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-# endif
 #endif
 
 namespace date
