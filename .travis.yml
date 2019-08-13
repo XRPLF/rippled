@@ -214,11 +214,6 @@ matrix:
         - BUILD_TYPE=Debug
         - NINJA_BUILD=false
     # misc alternative compilers
-    - compiler: gcc-6
-      name: gcc-6
-      env:
-        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
-        - BUILD_TYPE=Debug
     - compiler: gcc-7
       name: gcc-7
       env:
@@ -228,11 +223,6 @@ matrix:
       name: gcc-9
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
-        - BUILD_TYPE=Debug
-    - compiler: clang-6.0
-      name: clang-6
-      env:
-        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
         - BUILD_TYPE=Debug
     - compiler: clang-7
       name: clang-7
