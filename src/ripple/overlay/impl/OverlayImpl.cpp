@@ -534,7 +534,7 @@ OverlayImpl::onPrepare()
             {
                 if (addr.port () == 0)
                 {
-                    ips.push_back (to_string (addr.at_port(51235)));
+                    ips.push_back (to_string (addr.at_port(2459)));
                 }
                 else
                 {
