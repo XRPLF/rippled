@@ -30,7 +30,7 @@
 
 namespace ripple {
 
-std::pair<Blob, bool> strUnHex (std::string const& strSrc)
+boost::optional<Blob> strUnHex (std::string const& strSrc)
 {
     Blob out;
 
@@ -43,7 +43,7 @@ std::pair<Blob, bool> strUnHex (std::string const& strSrc)
         int c = charUnHex (*iter);
 
         if (c < 0)
-            return std::make_pair (Blob (), false);
+            return {};
 
         out.push_back(c);
         ++iter;
@@ -55,18 +55,18 @@ std::pair<Blob, bool> strUnHex (std::string const& strSrc)
         ++iter;
 
         if (cHigh < 0)
-            return std::make_pair (Blob (), false);
+            return {};
 
         int cLow = charUnHex (*iter);
         ++iter;
 
         if (cLow < 0)
-            return std::make_pair (Blob (), false);
+            return {};
 
         out.push_back (static_cast<unsigned char>((cHigh << 4) | cLow));
     }
 
-    return std::make_pair(std::move(out), true);
+    return {std::move(out)};
 }
 
 uint64_t uintFromHex (std::string const& strSrc)

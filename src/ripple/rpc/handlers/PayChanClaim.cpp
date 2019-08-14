@@ -102,13 +102,13 @@ Json::Value doChannelVerify (RPC::Context& context)
 
         if (!pk)
         {
-            auto [pkHex, pkHexValid] = strUnHex (strPk);
-            if (!pkHexValid)
+            auto pkHex = strUnHex (strPk);
+            if (!pkHex)
                 return rpcError(rpcPUBLIC_MALFORMED);
-            auto const pkType = publicKeyType(makeSlice(pkHex));
+            auto const pkType = publicKeyType(makeSlice(*pkHex));
             if (!pkType)
                 return rpcError(rpcPUBLIC_MALFORMED);
-            pk.emplace(makeSlice(pkHex));
+            pk.emplace(makeSlice(*pkHex));
         }
     }
 
@@ -126,8 +126,8 @@ Json::Value doChannelVerify (RPC::Context& context)
 
     std::uint64_t const drops = *optDrops;
 
-    auto [sig, sigHexValid] = strUnHex (params[jss::signature].asString ());
-    if (!sigHexValid || !sig.size ())
+    auto sig = strUnHex (params[jss::signature].asString ());
+    if (!sig || !sig->size ())
         return rpcError (rpcINVALID_PARAMS);
 
     Serializer msg;
@@ -135,7 +135,7 @@ Json::Value doChannelVerify (RPC::Context& context)
 
     Json::Value result;
     result[jss::signature_verified] =
-        verify (*pk, msg.slice (), makeSlice (sig), /*canonical*/ true);
+        verify (*pk, msg.slice (), makeSlice (*sig), /*canonical*/ true);
     return result;
 }
 

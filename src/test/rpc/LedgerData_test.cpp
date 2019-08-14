@@ -246,9 +246,9 @@ public:
             {
                 auto data = strUnHex(
                     jrr[jss::ledger][jss::ledger_data].asString());
-                if (BEAST_EXPECT(data.second))
+                if (BEAST_EXPECT(data))
                 {
-                    Serializer s(data.first.data(), data.first.size());
+                    Serializer s(data->data(), data->size());
                     std::uint32_t seq = 0;
                     BEAST_EXPECT(s.getInteger<std::uint32_t>(seq, 0));
                     BEAST_EXPECT(seq == 3);

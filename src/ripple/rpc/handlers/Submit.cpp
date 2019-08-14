@@ -67,12 +67,12 @@ Json::Value doSubmit (RPC::Context& context)
 
     Json::Value jvResult;
 
-    auto [ret, validRet] = strUnHex (context.params[jss::tx_blob].asString ());
+    auto ret = strUnHex (context.params[jss::tx_blob].asString ());
 
-    if (!validRet || !ret.size ())
+    if (!ret || !ret->size ())
         return rpcError (rpcINVALID_PARAMS);
 
-    SerialIter sitTrans (makeSlice(ret));
+    SerialIter sitTrans (makeSlice(*ret));
 
     std::shared_ptr<STTx const> stpTrans;
 

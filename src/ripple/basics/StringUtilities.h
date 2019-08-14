@@ -63,7 +63,7 @@ inline static std::string sqlEscape (Blob const& vecSrc)
 
 uint64_t uintFromHex (std::string const& strSrc);
 
-std::pair<Blob, bool> strUnHex (std::string const& strSrc);
+boost::optional<Blob> strUnHex (std::string const& strSrc);
 
 struct parsedURL
 {

@@ -30,15 +30,14 @@ public:
     void testUnHexSuccess (std::string const& strIn, std::string const& strExpected)
     {
         auto rv = strUnHex (strIn);
-        BEAST_EXPECT(rv.second);
-        BEAST_EXPECT(makeSlice(rv.first) == makeSlice(strExpected));
+        BEAST_EXPECT(rv);
+        BEAST_EXPECT(makeSlice(*rv) == makeSlice(strExpected));
     }
 
     void testUnHexFailure (std::string const& strIn)
     {
         auto rv = strUnHex (strIn);
-        BEAST_EXPECT(! rv.second);
-        BEAST_EXPECT(rv.first.empty());
+        BEAST_EXPECT(! rv);
     }
 
     void testUnHex ()
