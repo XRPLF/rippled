@@ -745,11 +745,11 @@ private:
             if (parseBase58<PublicKey> (TokenType::AccountPublic, strPk))
                 return true;
 
-            auto [pkHex, pkHexValid] = strUnHex (strPk);
-            if (!pkHexValid)
+            auto pkHex = strUnHex (strPk);
+            if (!pkHex)
                 return false;
 
-            if (!publicKeyType(makeSlice(pkHex)))
+            if (!publicKeyType(makeSlice(*pkHex)))
                 return false;
 
             return true;

@@ -267,12 +267,12 @@ ValidatorToken::make_ValidatorToken(std::vector<std::string> const& tokenBlob)
             token["validation_secret_key"].isString())
         {
             auto const ret = strUnHex (token["validation_secret_key"].asString());
-            if (! ret.second || ret.first.empty())
+            if (! ret || ret->empty())
                 return boost::none;
 
             return ValidatorToken(
                 token["manifest"].asString(),
-                SecretKey(Slice{ret.first.data(), ret.first.size()}));
+                SecretKey(Slice{ret->data(), ret->size()}));
         }
         else
         {

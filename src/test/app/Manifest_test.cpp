@@ -531,11 +531,11 @@ public:
 
         // public key with invalid type
         auto const ret = strUnHex("9930E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020");
-        auto const badKey = Slice{ret.first.data(), ret.first.size()};
+        auto const badKey = Slice{ret->data(), ret->size()};
 
         // short public key
         auto const retShort = strUnHex("0330");
-        auto const shortKey = Slice{retShort.first.data(), retShort.first.size()};
+        auto const shortKey = Slice{retShort->data(), retShort->size()};
 
         auto toString = [](STObject const& st)
         {

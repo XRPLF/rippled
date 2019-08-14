@@ -143,9 +143,9 @@ struct Regression_test : public beast::unit_test::suite
             // Set the same key in the STTx.
             auto secp256r1Sig = std::make_unique<STTx>(*(jt.stx));
             auto pubKeyBlob = strUnHex (secp256r1PubKey);
-            assert (pubKeyBlob.second); // Hex for public key must be valid
+            assert (pubKeyBlob); // Hex for public key must be valid
             secp256r1Sig->setFieldVL
-                (sfSigningPubKey, std::move(pubKeyBlob.first));
+                (sfSigningPubKey, std::move(*pubKeyBlob));
             jt.stx.reset (secp256r1Sig.release());
 
             env (jt, ter (temINVALID));

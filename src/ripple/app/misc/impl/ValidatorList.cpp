@@ -98,14 +98,14 @@ ValidatorList::load (
 
         auto const ret = strUnHex (key);
 
-        if (! ret.second || ! publicKeyType(makeSlice(ret.first)))
+        if (! ret || ! publicKeyType(makeSlice(*ret)))
         {
             JLOG (j_.error()) <<
                 "Invalid validator list publisher key: " << key;
             return false;
         }
 
-        auto id = PublicKey(makeSlice(ret.first));
+        auto id = PublicKey(makeSlice(*ret));
 
         if (publisherManifests_.revoked (id))
         {
@@ -228,10 +228,9 @@ ValidatorList::applyList (
             val.isMember ("validation_public_key") &&
             val["validation_public_key"].isString ())
         {
-            std::pair<Blob, bool> ret (strUnHex (
-                val["validation_public_key"].asString ()));
+            boost::optional<Blob> const ret = strUnHex(val["validation_public_key"].asString());
 
-            if (! ret.second || ! publicKeyType(makeSlice(ret.first)))
+            if (! ret || ! publicKeyType(makeSlice(*ret)))
             {
                 JLOG (j_.error()) <<
                     "Invalid node identity: " <<
@@ -240,7 +239,7 @@ ValidatorList::applyList (
             else
             {
                 publisherList.push_back (
-                    PublicKey(Slice{ ret.first.data (), ret.first.size() }));
+                    PublicKey(Slice{ ret->data (), ret->size() }));
             }
 
             if (val.isMember ("manifest") && val["manifest"].isString ())
@@ -343,11 +342,11 @@ ValidatorList::verify (
 
     auto const sig = strUnHex(signature);
     auto const data = base64_decode (blob);
-    if (! sig.second ||
+    if (! sig ||
         ! ripple::verify (
             publisherManifests_.getSigningKey(pubKey),
             makeSlice(data),
-            makeSlice(sig.first)))
+            makeSlice(*sig)))
         return ListDisposition::invalid;
 
     Json::Reader r;
