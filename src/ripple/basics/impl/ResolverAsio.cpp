@@ -274,13 +274,11 @@ public:
         // first attempt to parse as an endpoint (IP addr + port).
         // If that doesn't succeed, fall back to generic name + port parsing
 
-        if (auto const [result, validResult] =
-                beast::IP::Endpoint::from_string_checked(str);
-            validResult)
+        if (auto const result = beast::IP::Endpoint::from_string_checked(str))
         {
             return make_pair (
-                result.address().to_string(),
-                std::to_string(result.port()));
+                result->address().to_string(),
+                std::to_string(result->port()));
         }
 
         // generic name/port parsing, which doesn't work for

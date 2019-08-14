@@ -34,23 +34,21 @@ Endpoint::Endpoint (Address const& addr, Port port)
 {
 }
 
-std::pair <Endpoint, bool> Endpoint::from_string_checked (std::string const& s)
+boost::optional<Endpoint> Endpoint::from_string_checked (std::string const& s)
 {
     std::stringstream is (boost::trim_copy(s));
     Endpoint endpoint;
     is >> endpoint;
     if (! is.fail() && is.rdbuf()->in_avail() == 0)
-        return std::make_pair (endpoint, true);
-    return std::make_pair (Endpoint {}, false);
+        return endpoint;
+    return {};
 }
 
 Endpoint Endpoint::from_string (std::string const& s)
 {
-    std::pair <Endpoint, bool> const result (
-        from_string_checked (s));
-    if (result.second)
-        return result.first;
-    return Endpoint {};
+    if (boost::optional<Endpoint> const result = from_string_checked(s))
+        return *result;
+    return Endpoint{};
 }
 
 std::string Endpoint::to_string () const

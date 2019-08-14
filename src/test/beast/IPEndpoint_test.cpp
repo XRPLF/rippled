@@ -169,16 +169,16 @@ public:
         std::uint16_t p,
         std::string const& normal = "")
     {
-        auto result {Endpoint::from_string_checked (s)};
-        if (! BEAST_EXPECT(result.second))
+        auto const result = Endpoint::from_string_checked (s);
+        if (! BEAST_EXPECT(result))
             return;
-        if (! BEAST_EXPECT(result.first.address().is_v4 ()))
+        if (! BEAST_EXPECT(result->address().is_v4 ()))
             return;
-        if (! BEAST_EXPECT(result.first.address().to_v4() == AddressV4 {value}))
+        if (! BEAST_EXPECT(result->address().to_v4() == AddressV4 {value}))
             return;
 
-        BEAST_EXPECT(result.first.port() == p);
-        BEAST_EXPECT(to_string (result.first) == (normal.empty() ? s : normal));
+        BEAST_EXPECT(result->port() == p);
+        BEAST_EXPECT(to_string (*result) == (normal.empty() ? s : normal));
     }
 
     void shouldParseEPV6 (
@@ -187,16 +187,16 @@ public:
         std::uint16_t p,
         std::string const& normal = "")
     {
-        auto result {Endpoint::from_string_checked (s)};
-        if (! BEAST_EXPECT(result.second))
+        auto result = Endpoint::from_string_checked (s);
+        if (! BEAST_EXPECT(result))
             return;
-        if (! BEAST_EXPECT(result.first.address().is_v6 ()))
+        if (! BEAST_EXPECT(result->address().is_v6 ()))
             return;
-        if (! BEAST_EXPECT(result.first.address().to_v6() == AddressV6 {value}))
+        if (! BEAST_EXPECT(result->address().to_v6() == AddressV6 {value}))
             return;
 
-        BEAST_EXPECT(result.first.port() == p);
-        BEAST_EXPECT(to_string (result.first) == (normal.empty() ? s : normal));
+        BEAST_EXPECT(result->port() == p);
+        BEAST_EXPECT(to_string (*result) == (normal.empty() ? s : normal));
     }
 
     void failParseEP (std::string s)
