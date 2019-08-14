@@ -23,6 +23,9 @@
 #include <ripple/beast/net/IPAddress.h>
 #include <ripple/beast/hash/hash_append.h>
 #include <ripple/beast/hash/uhash.h>
+
+#include <boost/optional.hpp>
+
 #include <cstdint>
 #include <ios>
 #include <string>
@@ -44,9 +47,9 @@ public:
 
     /** Create an Endpoint from a string.
         If the port is omitted, the endpoint will have a zero port.
-        @return A pair with the endpoint, and bool set to `true` on success.
+        @return An optional endpoint; will be `boost::none` on failure
     */
-    static std::pair <Endpoint, bool> from_string_checked (std::string const& s);
+    static boost::optional<Endpoint> from_string_checked (std::string const& s);
     static Endpoint from_string (std::string const& s);
 
     /** Returns a string representing the endpoint. */

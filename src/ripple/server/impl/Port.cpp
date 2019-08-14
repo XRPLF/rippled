@@ -85,18 +85,18 @@ populate (Section const& section, std::string const& field, std::ostream& log,
         while (std::getline (ss, ip, ','))
         {
             auto const addr = beast::IP::Endpoint::from_string_checked (ip);
-            if (! addr.second)
+            if (! addr)
             {
                 log << "Invalid value '" << ip << "' for key '" << field <<
                     "' in [" << section.name () << "]";
                 Throw<std::exception> ();
             }
 
-            if (is_unspecified (addr.first))
+            if (is_unspecified (*addr))
             {
                 if (! allowAllIps)
                 {
-                    log << addr.first.address() << " not allowed'" <<
+                    log << addr->address() << " not allowed'" <<
                         "' for key '" << field << "' in [" <<
                         section.name () << "]";
                     Throw<std::exception> ();
@@ -109,13 +109,13 @@ populate (Section const& section, std::string const& field, std::ostream& log,
 
             if (has_any && ! ips->empty ())
             {
-                log << "IP specified along with " << addr.first.address() <<
+                log << "IP specified along with " << addr->address() <<
                     " '" << ip << "' for key '" << field << "' in [" <<
                     section.name () << "]";
                 Throw<std::exception> ();
             }
 
-            auto const& address = addr.first.address();
+            auto const& address = addr->address();
             if (std::find_if (admin_ip.begin(), admin_ip.end(),
                 [&address] (beast::IP::Address const& a)
                 {
@@ -128,7 +128,7 @@ populate (Section const& section, std::string const& field, std::ostream& log,
                 Throw<std::exception> ();
             }
 
-            ips->emplace_back (addr.first.address ());
+            ips->emplace_back (addr->address ());
         }
     }
 }
