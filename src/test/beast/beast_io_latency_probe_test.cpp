@@ -62,22 +62,27 @@ class io_latency_probe_test :
             std::thread worker { [&]{ ios.run(); } };
             boost::asio::basic_waitable_timer<Clock> timer {ios};
             elapsed_times_.reserve (num_samples);
-            std::mutex gate;
+            std::mutex mtx;
+            std::unique_lock<std::mutex> mainlock{mtx};
+            std::condition_variable cv;
+            bool done = false;
             boost::system::error_code wait_err;
 
             while (--num_samples)
             {
                 auto const start {MeasureClock::now()};
+                done = false;
                 timer.expires_after (interval);
-                gate.lock ();
                 timer.async_wait ( [&] (boost::system::error_code const& ec) {
                     if (ec)
                         wait_err = ec;
                     auto const end {MeasureClock::now()};
                     elapsed_times_.emplace_back (end-start);
-                    gate.unlock ();
+                    std::lock_guard<std::mutex> lk{mtx};
+                    done = true;
+                    cv.notify_one();
                 });
-                std::unique_lock <std::mutex> waithere {gate};
+                cv.wait(mainlock, [&done]{return done;});
             }
             work = boost::none;
             worker.join();
