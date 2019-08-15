@@ -69,9 +69,8 @@ public:
     Path& push_back (STPathElement const& pe);
     Json::Value json () const;
  private:
-    Path& addHelper (){return *this;}
     template <class First, class... Rest>
-    Path& addHelper (First&& first, Rest&&... rest);
+    void addHelper (First&& first, Rest&&... rest);
 };
 
 inline Path& Path::push_back (STPathElement const& pe)
@@ -95,10 +94,11 @@ Path& Path::push_back (jtx::Account const& account)
 }
 
 template <class First, class... Rest>
-Path& Path::addHelper (First&& first, Rest&&... rest)
+void Path::addHelper (First&& first, Rest&&... rest)
 {
     push_back (std::forward<First> (first));
-    return addHelper (std::forward<Rest> (rest)...);
+    if constexpr (sizeof...(rest) > 0)
+        addHelper(std::forward<Rest>(rest)...);
 }
 
 inline
@@ -130,15 +130,12 @@ public:
         return v;
     }
 private:
-    PathSet& addHelper ()
-    {
-        return *this;
-    }
     template <class First, class... Rest>
-    PathSet& addHelper (First first, Rest... rest)
+    void addHelper (First first, Rest... rest)
     {
         paths.emplace_back (std::move (first.path));
-        return addHelper (std::move (rest)...);
+        if constexpr (sizeof...(rest) > 0)
+            addHelper(std::move(rest)...);
     }
 };
 

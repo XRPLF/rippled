@@ -53,12 +53,6 @@ protected:
     std::uint32_t mask_;
 
 private:
-    inline
-    void
-    set_args()
-    {
-    }
-
     void
     set_args (std::uint32_t flag)
     {
@@ -85,7 +79,9 @@ private:
     set_args (std::uint32_t flag,
         Args... args)
     {
-        set_args(flag, args...);
+        set_args(flag);
+        if constexpr (sizeof...(args))
+            set_args(args...);
     }
 
 protected:

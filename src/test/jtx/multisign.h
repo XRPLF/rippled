@@ -96,48 +96,14 @@ public:
     msig (std::vector<Reg> signers_);
 
     template <class AccountType, class... Accounts>
-    msig (AccountType&& a0, Accounts&&... aN)
-        : msig(make_vector(
-            std::forward<AccountType>(a0),
-                std::forward<Accounts>(aN)...))
+    explicit msig(AccountType&& a0, Accounts&&... aN)
+        : msig{std::vector<Reg>{std::forward<AccountType>(a0),
+                                std::forward<Accounts>(aN)...}}
     {
     }
 
     void
     operator()(Env&, JTx& jt) const;
-
-private:
-    template <class AccountType>
-    static
-    void
-    helper (std::vector<Reg>& v,
-        AccountType&& account)
-    {
-        v.emplace_back(std::forward<
-            Reg>(account));
-    }
-
-    template <class AccountType, class... Accounts>
-    static
-    void
-    helper (std::vector<Reg>& v,
-        AccountType&& a0, Accounts&&... aN)
-    {
-        helper(v, std::forward<AccountType>(a0));
-        helper(v, std::forward<Accounts>(aN)...);
-    }
-
-    template <class... Accounts>
-    static
-    std::vector<Reg>
-    make_vector(Accounts&&... signers)
-    {
-        std::vector<Reg> v;
-        v.reserve(sizeof...(signers));
-        helper(v, std::forward<
-            Accounts>(signers)...);
-        return v;
-    }
 };
 
 //------------------------------------------------------------------------------

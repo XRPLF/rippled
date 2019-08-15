@@ -129,15 +129,12 @@ class FeatureBitset
 {
     using base = std::bitset<detail::FeatureCollections::numFeatures()>;
 
-    void initFromFeatures()
-    {
-    }
-
     template<class... Fs>
     void initFromFeatures(uint256 const& f, Fs&&... fs)
     {
         set(f);
-        initFromFeatures(std::forward<Fs>(fs)...);
+        if constexpr (sizeof...(fs) > 0)
+            initFromFeatures(std::forward<Fs>(fs)...);
     }
 
 public:

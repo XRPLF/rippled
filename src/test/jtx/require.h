@@ -30,12 +30,6 @@ namespace jtx {
 
 namespace detail {
 
-inline
-void
-require_args (requires_t& vec)
-{
-}
-
 template <class Cond, class... Args>
 inline
 void
@@ -43,7 +37,8 @@ require_args (requires_t& vec,
     Cond const& cond, Args const&... args)
 {
     vec.push_back(cond);
-    require_args(vec, args...);
+    if constexpr (sizeof...(args) > 0)
+        require_args(vec, args...);
 }
 
 } // detail

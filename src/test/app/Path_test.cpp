@@ -83,25 +83,14 @@ stpath_append_one (STPath& st,
         boost::none, book.currency, book.account }));
 }
 
-inline
-void
-stpath_append (STPath& st)
-{
-}
-
 template <class T, class... Args>
 void
 stpath_append (STPath& st,
     T const& t, Args const&... args)
 {
     stpath_append_one(st, t);
-    stpath_append(st, args...);
-}
-
-inline
-void
-stpathset_append (STPathSet& st)
-{
+    if constexpr (sizeof...(args) > 0)
+        stpath_append(st, args...);
 }
 
 template <class... Args>
@@ -110,7 +99,8 @@ stpathset_append(STPathSet& st,
     STPath const& p, Args const&... args)
 {
     st.push_back(p);
-    stpathset_append(st, args...);
+    if constexpr (sizeof...(args) > 0)
+        stpathset_append(st, args...);
 }
 
 } // detail
