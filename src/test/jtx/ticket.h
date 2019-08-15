@@ -64,13 +64,6 @@ create_arg (boost::optional<Account>&,
     opt = value;
 }
 
-inline
-void
-create_args (boost::optional<Account>&,
-    boost::optional<std::uint32_t>&)
-{
-}
-
 template<class Arg, class... Args>
 void
 create_args(boost::optional<Account>& account_opt,
@@ -78,7 +71,8 @@ create_args(boost::optional<Account>& account_opt,
         Arg const& arg, Args const&... args)
 {
     create_arg(account_opt, expire_opt, arg);
-    create_args(account_opt, expire_opt, args...);
+    if constexpr (sizeof...(args))
+        create_args(account_opt, expire_opt, args...);
 }
 
 } // detail
@@ -91,7 +85,8 @@ create (Account const& account,
 {
     boost::optional<Account> target;
     boost::optional<std::uint32_t> expire;
-    detail::create_args(target, expire, args...);
+    if constexpr (sizeof...(args) > 0)
+        detail::create_args(target, expire, args...);
     return detail::create(
         account, target, expire);
 }

@@ -548,14 +548,6 @@ private:
         STAmount const& amount,
             Account const& account);
 
-    // If you get an error here it means
-    // you're calling fund with no accounts
-    inline
-    void
-    fund (STAmount const&)
-    {
-    }
-
     void
     fund_arg (STAmount const& amount,
         Account const& account)
@@ -605,7 +597,8 @@ public:
         Arg const& arg, Args const&... args)
     {
         fund_arg (amount, arg);
-        fund (amount, args...);
+        if constexpr (sizeof...(args) > 0)
+            fund(amount, args...);
     }
 
     /** Establish trust lines.

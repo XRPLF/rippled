@@ -91,12 +91,6 @@ private:
     void
     append_one(BookSpec const& book);
 
-    inline
-    void
-    append()
-    {
-    }
-
     template <class T, class... Args>
     void
     append (T const& t, Args const&... args);
@@ -114,7 +108,8 @@ void
 path::append (T const& t, Args const&... args)
 {
     append_one(t);
-    append(args...);
+    if constexpr (sizeof...(args) > 0)
+        append(args...);
 }
 
 } // jtx
