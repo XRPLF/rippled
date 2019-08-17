@@ -97,6 +97,10 @@ Json::Value doUnsubscribe (RPC::Context& context)
             {
                 context.netOps.unsubPeerStatus (ispSub->getSeq ());
             }
+            else if (streamName == "consensus")
+            {
+                context.netOps.unsubConsensus (ispSub->getSeq());
+            }
             else
             {
                 return rpcError(rpcSTREAM_MALFORMED);
