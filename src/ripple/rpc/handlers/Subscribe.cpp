@@ -152,6 +152,10 @@ Json::Value doSubscribe (RPC::Context& context)
                     return rpcError(rpcNO_PERMISSION);
                 context.netOps.subPeerStatus (ispSub);
             }
+            else if (streamName == "consensus")
+            {
+                context.netOps.subConsensus (ispSub);
+            }
             else
             {
                 return rpcError(rpcSTREAM_MALFORMED);

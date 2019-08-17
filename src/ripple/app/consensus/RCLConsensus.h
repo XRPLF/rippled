@@ -455,6 +455,12 @@ public:
         return adaptor_.mode();
     }
 
+    ConsensusPhase
+    phase() const
+    {
+        return consensus_.phase();
+    }
+
     //! @see Consensus::getJson
     Json::Value
     getJson(bool full) const;
