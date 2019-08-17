@@ -64,6 +64,7 @@ InfoSub::~InfoSub ()
     m_source.unsubServer (mSeq);
     m_source.unsubValidations (mSeq);
     m_source.unsubPeerStatus (mSeq);
+    m_source.unsubConsensus (mSeq);
 
     // Use the internal unsubscribe so that it won't call
     // back to us and modify its own parameter
