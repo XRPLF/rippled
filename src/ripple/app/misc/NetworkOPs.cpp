@@ -385,6 +385,7 @@ public:
         boost::optional<std::chrono::milliseconds> consensusDelay) override;
     uint256 getConsensusLCL () override;
     void reportFeeChange () override;
+    void reportConsensusStateChange(ConsensusPhase phase);
 
     void updateLocalTx (ReadView const& view) override
     {
@@ -543,6 +544,7 @@ private:
         bool isAccepted);
 
     void pubServer ();
+    void pubConsensus (ConsensusPhase phase);
 
     std::string getHostId (bool forAdmin);
 
@@ -569,6 +571,8 @@ private:
     boost::asio::steady_timer clusterTimer_;
 
     RCLConsensus mConsensus;
+
+    ConsensusPhase mLastConsensusPhase;
 
     LedgerMaster& m_ledgerMaster;
     std::shared_ptr<InboundLedger> mAcquiringLedger;
@@ -768,6 +772,12 @@ void NetworkOPsImp::processHeartbeatTimer ()
     }
 
     mConsensus.timerEntry (app_.timeKeeper().closeTime());
+
+    ConsensusPhase nPhase = mConsensus.phase();
+    if(mLastConsensusPhase != nPhase){
+        reportConsensusStateChange(nPhase);
+        mLastConsensusPhase = nPhase;
+    }
 
     setHeartbeatTimer ();
 }
@@ -1711,6 +1721,34 @@ void NetworkOPsImp::pubServer ()
     }
 }
 
+void NetworkOPsImp::pubConsensus (ConsensusPhase phase)
+{
+    ScopedLockType sl (mSubLock);
+
+    if (!mStreamMaps[sServer].empty ())
+    {
+        Json::Value jvObj (Json::objectValue);
+        jvObj [jss::type] = "serverStatus";
+        jvObj [jss::consensus] = to_string(phase);
+
+        for (auto i = mStreamMaps[sServer].begin ();
+            i != mStreamMaps[sServer].end (); )
+        {
+            InfoSub::pointer p = i->second.lock ();
+
+            if (p)
+            {
+                p->send (jvObj, true);
+                ++i;
+            }
+            else
+            {
+                i = mStreamMaps[sServer].erase (i);
+            }
+        }
+    }
+}
+
 
 void NetworkOPsImp::pubValidation (STValidation::ref val)
 {
@@ -2508,6 +2546,13 @@ void NetworkOPsImp::reportFeeChange ()
             jtCLIENT, "reportFeeChange->pubServer",
             [this] (Job&) { pubServer(); });
     }
+}
+
+void NetworkOPsImp::reportConsensusStateChange (ConsensusPhase phase)
+{
+  m_job_queue.addJob (
+      jtCLIENT, "reportConsensusStateChange->pubConsensus",
+      [this, phase] (Job&) { pubConsensus(phase); });
 }
 
 // This routine should only be used to publish accepted or validated

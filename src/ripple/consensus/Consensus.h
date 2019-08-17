@@ -413,6 +413,12 @@ public:
         return prevLedgerID_;
     }
 
+    ConsensusPhase
+    phase() const
+    {
+        return phase_;
+    }
+
     /** Get the Json state of the consensus process.
 
         Called by the consensus_info RPC.
