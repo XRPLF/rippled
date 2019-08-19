@@ -225,9 +225,9 @@ class AccountTx_test : public beast::unit_test::suite
             };
 
             NetClock::time_point const nextTime {env.now() + 2s};
-            
+
             Json::Value escrowWithFinish {escrow (alice, alice, XRP (500))};
-            escrowWithFinish[sfFinishAfter.jsonName] = 
+            escrowWithFinish[sfFinishAfter.jsonName] =
                 nextTime.time_since_epoch().count();
 
             std::uint32_t const escrowFinishSeq {env.seq(alice)};
@@ -279,10 +279,10 @@ class AccountTx_test : public beast::unit_test::suite
             payChanCreate[sfPublicKey.jsonName] = strHex (alice.pk().slice());
             env (payChanCreate, sig (alie));
             env.close();
-            
+
             std::string const payChanIndex {
                 strHex (keylet::payChan (alice, gw, payChanSeq).key)};
-            
+
             {
                 Json::Value payChanFund;
                 payChanFund[jss::TransactionType] = jss::PaymentChannelFund;
@@ -356,7 +356,7 @@ class AccountTx_test : public beast::unit_test::suite
         {
             BEAST_EXPECT(txNode[jss::validated].asBool() == true);
             BEAST_EXPECT(
-                txNode[jss::tx][sfTransactionType.jsonName].asString() == 
+                txNode[jss::tx][sfTransactionType.jsonName].asString() ==
                 sane.txType);
 
             // Make sure all of the expected node types are present.
@@ -415,13 +415,13 @@ class AccountTx_test : public beast::unit_test::suite
         {
             //    txType,                    created,                                                    deleted,                          modified
             {  0, jss::DepositPreauth,       {jss::DepositPreauth},                                      {},                               {jss::AccountRoot, jss::DirectoryNode}},
-            {  1, jss::CheckCancel,          {},                                                         {jss::Check},                     {jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
-            {  2, jss::CheckCash,            {},                                                         {jss::Check},                     {jss::AccountRoot, jss::AccountRoot,   jss::DirectoryNode, jss::DirectoryNode}},
-            {  3, jss::CheckCreate,          {jss::Check},                                               {},                               {jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
-            {  4, jss::CheckCreate,          {jss::Check},                                               {},                               {jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
-            {  5, jss::PaymentChannelClaim,  {},                                                         {jss::PayChannel},                {jss::AccountRoot, jss::AccountRoot,   jss::DirectoryNode}},
+            {  1, jss::CheckCancel,          {},                                                         {jss::Check},                     {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
+            {  2, jss::CheckCash,            {},                                                         {jss::Check},                     {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
+            {  3, jss::CheckCreate,          {jss::Check},                                               {},                               {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
+            {  4, jss::CheckCreate,          {jss::Check},                                               {},                               {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
+            {  5, jss::PaymentChannelClaim,  {},                                                         {jss::PayChannel},                {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode}},
             {  6, jss::PaymentChannelFund,   {},                                                         {},                               {jss::AccountRoot, jss::PayChannel   }},
-            {  7, jss::PaymentChannelCreate, {jss::PayChannel},                                          {},                               {jss::AccountRoot, jss::AccountRoot,   jss::DirectoryNode}},
+            {  7, jss::PaymentChannelCreate, {jss::PayChannel},                                          {},                               {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode}},
             {  8, jss::EscrowCancel,         {},                                                         {jss::Escrow},                    {jss::AccountRoot, jss::DirectoryNode}},
             {  9, jss::EscrowFinish,         {},                                                         {jss::Escrow},                    {jss::AccountRoot, jss::DirectoryNode}},
             { 10, jss::EscrowCreate,         {jss::Escrow},                                              {},                               {jss::AccountRoot, jss::DirectoryNode}},
