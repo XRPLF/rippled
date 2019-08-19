@@ -118,25 +118,17 @@ try {
     stage ('Parallel Build') {
         String[][] variants = [
             ['gcc.Release'    ,'-Dassert=ON'     ,'MANUAL_TESTS=true'     ],
-            ['gcc.Debug'      ,'-Dcoverage=ON'   ,'TARGET=coverage_report', 'SKIP_TESTS=true'],
             ['docs'           ,''                ,'TARGET=docs'           ],
             ['msvc.Debug'                                                 ],
             ['msvc.Debug'     ,''                ,'NINJA_BUILD=true'      ],
             ['msvc.Debug'     ,'-Dunity=OFF'                              ],
             ['msvc.Release'                                               ],
-            ['clang.Debug'                                                ],
-            ['clang.Debug'    ,'-Dunity=OFF'                              ],
             ['gcc.Debug'                                                  ],
             ['gcc.Debug'      ,'-Dunity=OFF'                              ],
-            ['clang.Release'  ,'-Dassert=ON'                              ],
             ['gcc.Release'    ,'-Dassert=ON'                              ],
             ['gcc.Debug'      ,'-Dstatic=OFF'                             ],
             ['gcc.Debug'      ,'-Dstatic=OFF -DBUILD_SHARED_LIBS=ON'      ],
             ['gcc.Debug'      ,''                ,'NINJA_BUILD=true'      ],
-            ['clang.Debug'      ,'-Dunity=OFF -Dsan=address'   ,'PARALLEL_TESTS=false', 'DEBUGGER=false'],
-            ['clang.Debug'      ,'-Dunity=OFF -Dsan=undefined' ,'PARALLEL_TESTS=false'],
-            // TODO - tsan runs currently fail/hang
-            //['clang.Debug'      ,'-Dunity=OFF -Dsan=thread'    ,'PARALLEL_TESTS=false'],
         ]
 
         // create a map of all builds
@@ -163,10 +155,8 @@ try {
                 config = 'Release'
                 target = 'docs'
             }
-            def cc =
-                (compiler == 'clang') ? '/opt/llvm-5.0.1/bin/clang' : 'gcc'
-            def cxx =
-                (compiler == 'clang') ? '/opt/llvm-5.0.1/bin/clang++' : 'g++'
+            def cc = 'gcc'
+            def cxx = 'g++'
             def ucc = isNoUnity(cmake_extra) ? 'true' : 'false'
             def node_type =
                 (compiler == 'msvc') ? 'rippled-win' : 'rippled-dev'

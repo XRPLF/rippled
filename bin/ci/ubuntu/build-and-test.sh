@@ -58,18 +58,16 @@ fi
 # dir, otherwise default to the compiler.build_type
 #
 : "${BUILD_DIR:=${COMPNAME}.${BUILD_TYPE}}"
-BUILDARGS=""
+BUILDARGS="--target ${TARGET} --parallel"
+if [[ ${NINJA_BUILD:-} == false ]]; then
+    BUILDARGS+=" ${JOBS}"
+fi
+
 if [[ ${VERBOSE_BUILD:-} == true ]]; then
     CMAKE_EXTRA_ARGS+=" -DCMAKE_VERBOSE_MAKEFILE=ON"
-
-    # TODO: if we use a different generator, this
-    # option to build verbose would need to change:
-    if [[ ${NINJA_BUILD:-} == true ]]; then
-        BUILDARGS+=" -v"
-    else
-        BUILDARGS+=" verbose=1"
-    fi
+    BUILDARGS+=" --verbose"
 fi
+
 if [[ ${USE_CCACHE:-} == true ]]; then
     echo "using ccache with basedir [${CCACHE_BASEDIR:-}]"
     CMAKE_EXTRA_ARGS+=" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
@@ -84,7 +82,7 @@ pushd "build/${BUILD_DIR}"
 ${time} cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS}
 # build
 export DESTDIR=$(pwd)/_INSTALLED_
-time ${timeout_cmd} cmake --build . --target ${TARGET} --parallel -- $BUILDARGS
+time eval ${timeout_cmd} cmake --build . ${BUILDARGS}
 if [[ ${TARGET} == "docs" ]]; then
     ## mimic the standard test output for docs build
     ## to make controlling processes like jenkins happy

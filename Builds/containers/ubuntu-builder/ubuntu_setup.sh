@@ -110,6 +110,8 @@ deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-7 main
 deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic-7 main
 deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main
 deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main
+deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main
+deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main
 EOF
 elif [[ ${VERSION_ID} =~ ^16\. ]] ; then
     cat << EOF > /etc/apt/sources.list.d/llvm.list
@@ -119,6 +121,8 @@ deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main
 deb-src http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main
 deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main
 deb-src http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main
+deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main
+deb-src http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main
 EOF
 fi
 apt-get -y update

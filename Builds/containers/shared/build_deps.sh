@@ -38,17 +38,17 @@ LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}:/opt/local/openssl/lib /opt/local/openssl/b
 
 if [ "${CI_USE}" = true ] ; then
     cd /tmp
-    wget https://github.com/doxygen/doxygen/archive/Release_1_8_14.tar.gz
-    tar xf Release_1_8_14.tar.gz
-    cd doxygen-Release_1_8_14
+    wget https://github.com/doxygen/doxygen/archive/Release_1_8_16.tar.gz
+    tar xf Release_1_8_16.tar.gz
+    cd doxygen-Release_1_8_16
     mkdir build
     cd build
     cmake -G "Unix Makefiles" ..
     make -j$(nproc)
     make install
     cd ../..
-    rm -f Release_1_8_14.tar.gz
-    rm -rf doxygen-Release_1_8_14
+    rm -f Release_1_8_16.tar.gz
+    rm -rf doxygen-Release_1_8_16
 
     mkdir -p /opt/plantuml
     wget -O /opt/plantuml/plantuml.jar https://downloads.sourceforge.net/project/plantuml/plantuml.jar
@@ -62,15 +62,15 @@ if [ "${CI_USE}" = true ] ; then
     rm -r lcov-1.14 lcov-1.14.tar.gz
 
     cd /tmp
-    wget https://github.com/ccache/ccache/releases/download/v3.7.1/ccache-3.7.1.tar.gz
-    tar xf ccache-3.7.1.tar.gz
-    cd ccache-3.7.1
+    wget https://github.com/ccache/ccache/releases/download/v3.7.3/ccache-3.7.3.tar.gz
+    tar xf ccache-3.7.3.tar.gz
+    cd ccache-3.7.3
     ./configure --prefix=/usr/local
     make
     make install
     cd ..
-    rm -f ccache-3.7.1.tar.gz
-    rm -rf ccache-3.7.1
+    rm -f ccache-3.7.3.tar.gz
+    rm -rf ccache-3.7.3
 
     pip install requests
     pip install https://github.com/codecov/codecov-python/archive/master.zip

@@ -6,7 +6,7 @@ services:
 
 env:
   global:
-    - DOCKER_IMAGE="mellery451/rippled-ci-builder:2019-07-18"
+    - DOCKER_IMAGE="mellery451/rippled-ci-builder:2019-08-19"
     - CMAKE_EXTRA_ARGS="-Dwerr=ON"
     - NINJA_BUILD=true
     # change this if we get more VM capacity
@@ -40,90 +40,8 @@ matrix:
     - name: tsan, clang-8
     # there are a number of UBs caught currently that need triage
     - name: ubsan, clang-8
-    # all of the windows builds are unreliable
-    # because the travis VMs are currently slow and unreliable
-    - name: windows, debug
-    - name: windows, release
-    - name: windows, visual studio, debug
 
-  # these builds are ordered approximately by
-  # descending build time so that the longest
-  # builds start first
   include:
-    # windows
-    - &windows
-      os: windows
-      name: windows, debug
-      env:
-        # caching is pretty flakey on windows...
-        # put NIH in a non-cached location until
-        # we come up with a way to stabilize that
-        # cache on windows (minimize incremental changes)
-        - NIH_CACHE_ROOT=${TRAVIS_BUILD_DIR}/nih_c
-        - VCPKG_DEFAULT_TRIPLET="x64-windows-static"
-        - BOOST_ROOT=${CACHE_DIR}/boost_1_70_0
-        - MATRIX_EVAL="CC=cl.exe && CXX=cl.exe"
-        - >-
-          CMAKE_ADD="
-          -DBOOST_ROOT=${BOOST_ROOT}/_INSTALLED_
-          -DCMAKE_VERBOSE_MAKEFILE=ON
-          -DCMAKE_TOOLCHAIN_FILE=${VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake
-          -DVCPKG_TARGET_TRIPLET=x64-windows-static"
-      install:
-        - choco upgrade cmake.install
-        - choco install ninja visualstudio2017-workload-vctools -y
-        - travis_wait 30 bin/sh/install-vcpkg.sh
-        - travis_wait ${MAX_TIME_MIN} Builds/containers/shared/install_boost.sh
-      before_script:
-        - export BLD_CONFIG=Debug
-      script:
-        - . ./bin/sh/setup-msvc.sh
-        - mkdir -p build.ms && cd build.ms
-        - cmake -G Ninja ${CMAKE_EXTRA_ARGS} -DCMAKE_BUILD_TYPE=${BLD_CONFIG} ..
-        - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel ${NUM_PROCESSORS} --verbose
-        - ./rippled.exe --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
-    - <<: *windows
-      name: windows, release
-      before_script:
-        - export BLD_CONFIG=Release
-    - <<: *windows
-      name: windows, visual studio, debug
-      script:
-        - mkdir -p build.ms && cd build.ms
-        - cmake -G "Visual Studio 15 2017 Win64" ${CMAKE_EXTRA_ARGS} ..
-        - export DESTDIR=${PWD}/_installed_
-        - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel ${NUM_PROCESSORS} --verbose --config ${BLD_CONFIG} --target install
-        - >-
-          "./_installed_/Program Files/rippled/bin/rippled.exe" --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
-    # asan
-    - compiler: clang-8
-      name: asan, clang-8
-      env:
-        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
-        - BUILD_TYPE=Release
-        - CMAKE_ADD="-Dsan=address"
-        - ASAN_OPTIONS="print_stats=true:atexit=true"
-        #- LSAN_OPTIONS="verbosity=1:log_threads=1"
-        - PARALLEL_TESTS=false
-    # ubsan
-    - compiler: clang-8
-      name: ubsan, clang-8
-      env:
-        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
-        - BUILD_TYPE=Release
-        - CMAKE_ADD="-Dsan=undefined"
-        # once we can run clean under ubsan, add halt_on_error=1 to options below
-        - UBSAN_OPTIONS="print_stacktrace=1:report_error_type=1"
-        - PARALLEL_TESTS=false
-    # tsan
-    - compiler: clang-8
-      name: tsan, clang-8
-      env:
-        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
-        - BUILD_TYPE=Release
-        - CMAKE_ADD="-Dsan=thread"
-        - TSAN_OPTIONS="history_size=3 external_symbolizer_path=/usr/bin/llvm-symbolizer verbosity=1"
-        - PARALLEL_TESTS=false
     # coverage builds
     - compiler: gcc-8
       name: coverage, gcc-8
@@ -193,6 +111,35 @@ matrix:
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
         - BUILD_TYPE=Debug
+    # asan
+    - compiler: clang-8
+      name: asan, clang-8
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Release
+        - CMAKE_ADD="-Dsan=address"
+        - ASAN_OPTIONS="print_stats=true:atexit=true"
+        #- LSAN_OPTIONS="verbosity=1:log_threads=1"
+        - PARALLEL_TESTS=false
+    # ubsan
+    - compiler: clang-8
+      name: ubsan, clang-8
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Release
+        - CMAKE_ADD="-Dsan=undefined"
+        # once we can run clean under ubsan, add halt_on_error=1 to options below
+        - UBSAN_OPTIONS="print_stacktrace=1:report_error_type=1"
+        - PARALLEL_TESTS=false
+    # tsan
+    - compiler: clang-8
+      name: tsan, clang-8
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Release
+        - CMAKE_ADD="-Dsan=thread"
+        - TSAN_OPTIONS="history_size=3 external_symbolizer_path=/usr/bin/llvm-symbolizer verbosity=1"
+        - PARALLEL_TESTS=false
     # dynamic lib builds
     - compiler: gcc-8
       name: non-static, gcc-8
@@ -223,6 +170,16 @@ matrix:
       name: gcc-9
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+        - BUILD_TYPE=Debug
+    - compiler: clang-5.0
+      name: clang-5
+      env:
+        - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
+        - BUILD_TYPE=Debug
+    - compiler: clang-6.0
+      name: clang-6
+      env:
+        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
         - BUILD_TYPE=Debug
     - compiler: clang-7
       name: clang-7
@@ -262,7 +219,7 @@ matrix:
       script:
         - mkdir -p build.macos && cd build.macos
         - cmake -G Ninja ${CMAKE_EXTRA_ARGS} -DCMAKE_BUILD_TYPE=${BLD_CONFIG} ..
-        - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel ${NUM_PROCESSORS} --verbose
+        - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose
         - ./rippled --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
     - <<: *macos
       name: xcode10, release
@@ -277,6 +234,52 @@ matrix:
     - <<: *macos
       osx_image: xcode11
       name: xcode11, debug
+    # windows
+    - &windows
+      # caching is unreliable on windows...disable for now
+      cache: false
+      os: windows
+      name: windows, debug
+      env:
+        # put NIH in a non-cached location until
+        # we come up with a way to stabilize that
+        # cache on windows (minimize incremental changes)
+        - NIH_CACHE_ROOT=${TRAVIS_BUILD_DIR}/nih_c
+        - VCPKG_DEFAULT_TRIPLET="x64-windows-static"
+        - BOOST_ROOT=${CACHE_DIR}/boost_1_70_0
+        - MATRIX_EVAL="CC=cl.exe && CXX=cl.exe"
+        - >-
+          CMAKE_ADD="
+          -DBOOST_ROOT=${BOOST_ROOT}/_INSTALLED_
+          -DCMAKE_VERBOSE_MAKEFILE=ON
+          -DCMAKE_TOOLCHAIN_FILE=${VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake
+          -DVCPKG_TARGET_TRIPLET=x64-windows-static"
+      install:
+        - choco upgrade cmake.install
+        - choco install ninja visualstudio2017-workload-vctools -y
+        - travis_wait 30 bin/sh/install-vcpkg.sh
+        - travis_wait ${MAX_TIME_MIN} Builds/containers/shared/install_boost.sh
+      before_script:
+        - export BLD_CONFIG=Debug
+      script:
+        - . ./bin/sh/setup-msvc.sh
+        - mkdir -p build.ms && cd build.ms
+        - cmake -G Ninja ${CMAKE_EXTRA_ARGS} -DCMAKE_BUILD_TYPE=${BLD_CONFIG} ..
+        - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose
+        - ./rippled.exe --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
+    - <<: *windows
+      name: windows, release
+      before_script:
+        - export BLD_CONFIG=Release
+    - <<: *windows
+      name: windows, visual studio, debug
+      script:
+        - mkdir -p build.ms && cd build.ms
+        - cmake -G "Visual Studio 15 2017 Win64" ${CMAKE_EXTRA_ARGS} ..
+        - export DESTDIR=${PWD}/_installed_
+        - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose --config ${BLD_CONFIG} --target install
+        - >-
+          "./_installed_/Program Files/rippled/bin/rippled.exe" --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
 
 cache:
   timeout: 900

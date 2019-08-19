@@ -61,7 +61,6 @@ endif ()
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang") # both Clang and AppleClang
   set (is_clang TRUE)
-  # TODO enable this version check
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND
          CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
     message (FATAL_ERROR "This project requires clang 5 or later")
