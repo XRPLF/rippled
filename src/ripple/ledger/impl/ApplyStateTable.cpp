@@ -20,6 +20,7 @@
 #include <ripple/ledger/detail/ApplyStateTable.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/st.h>
 #include <cassert>
 
@@ -614,25 +615,14 @@ ApplyStateTable::threadOwners (ReadView const& base,
         SLE const> const& sle, Mods& mods,
             beast::Journal j)
 {
-    switch(sle->getType())
+    LedgerEntryType const ledgerType {sle->getType()};
+    switch(ledgerType)
     {
     case ltACCOUNT_ROOT:
     {
         // Nothing to do
         break;
     }
-    case ltESCROW:
-    {
-        threadTx (base, meta, (*sle)[sfAccount], mods, j);
-        threadTx (base, meta, (*sle)[sfDestination], mods, j);
-        break;
-    }
-    case ltPAYCHAN:
-        {
-            threadTx (base, meta, (*sle)[sfAccount], mods, j);
-            threadTx (base, meta, (*sle)[sfDestination], mods, j);
-            break;
-        }
     case ltRIPPLE_STATE:
     {
         threadTx (base, meta, (*sle)[sfLowLimit].getIssuer(), mods, j);
@@ -642,9 +632,16 @@ ApplyStateTable::threadOwners (ReadView const& base,
     default:
     {
         // If sfAccount is present, thread to that account
-        if ((*sle)[~sfAccount])
-            threadTx (base, meta, (*sle)[sfAccount], mods, j);
-        break;
+        if (auto const optSleAcct {(*sle)[~sfAccount]})
+            threadTx (base, meta, *optSleAcct, mods, j);
+
+        // Don't thread a check's sfDestination unless the amendment is enabled
+        if (ledgerType == ltCHECK && !base.rules().enabled(fixCheckThreading))
+            break;
+
+        // If sfDestination is present, thread to that account
+        if (auto const optSleDest {(*sle)[~sfDestination]})
+            threadTx (base, meta, *optSleDest, mods, j);
     }
     }
 }
