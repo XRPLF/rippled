@@ -483,78 +483,61 @@ int run (int argc, char** argv)
 
     if (vm.count("vacuum"))
     {
-        DatabaseCon::Setup dbSetup = setup_DatabaseCon(*config);
-        if (dbSetup.standAlone)
+        if (config->standalone())
         {
             std::cerr << "vacuum not applicable in standalone mode.\n";
             return -1;
         }
-        boost::filesystem::path dbPath = dbSetup.dataDir / TxDBName;
-        auto txnDB = std::make_unique<DatabaseCon>(
-            dbSetup,
-            TxDBName,
-            TxDBPragma,
-            TxDBInit);
-        if (txnDB.get() == nullptr)
-        {
-            std::cerr << "Cannot create connection to " << dbPath.string() <<
-                '\n';
-            return -1;
-        }
-        boost::system::error_code ec;
-        uintmax_t dbSize = boost::filesystem::file_size(dbPath, ec);
-        if (ec)
-        {
-            std::cerr << "Error checking size of " << dbPath.string() << ": "
-                << ec.message() << '\n';
-            return -1;
-        }
 
-        assert(dbSize != static_cast<uintmax_t>(-1));
+        using namespace boost::filesystem;
+        DatabaseCon::Setup dbSetup = setup_DatabaseCon(*config);
+        path dbPath = dbSetup.dataDir / TxDBName;
+        path tmpPath = vm["vacuum"].as<std::string>();
 
-        std::string tmpDir = vm["vacuum"].as<std::string>();
-        boost::filesystem::path tmpPath = tmpDir;
-        if (boost::filesystem::space(tmpPath, ec).available < dbSize)
+        try
         {
-            if (ec)
-            {
-                std::cerr << "Error checking status of " << tmpPath.string()
-                    << ": " << ec.message() << '\n';
-            }
-            else
+            uintmax_t const dbSize = file_size(dbPath);
+            assert(dbSize != static_cast<uintmax_t>(-1));
+
+            if (space(tmpPath).available < dbSize)
             {
                 std::cerr << "A valid directory for vacuuming must be "
                              "specified on a filesystem with at least "
-                             "as much free space as the size of " <<
-                             dbPath.string() << ", which is " <<
-                             dbSize << " bytes. The filesystem for " <<
-                             tmpPath.string() << " only has " <<
-                             boost::filesystem::space(tmpPath, ec).available
-                             << " bytes.\n";
+                             "as much free space as the size of "
+                          << dbPath.string() << ", which is " << dbSize
+                          << " bytes. The filesystem for " << tmpPath.string()
+                          << " only has "
+                          << space(tmpPath).available
+                          << " bytes.\n";
+                return -1;
             }
+
+            auto txnDB = std::make_unique<DatabaseCon>(
+                dbSetup, TxDBName, TxDBPragma, TxDBInit);
+            auto& session = txnDB->getSession();
+            std::uint32_t pageSize;
+
+            session << "PRAGMA page_size;", soci::into(pageSize);
+
+            std::cout << "VACUUM beginning. page_size: " <<
+                pageSize << std::endl;
+
+            session << "PRAGMA journal_mode=OFF;";
+            session << "PRAGMA temp_store_directory=\"" <<
+                tmpPath.string() << "\";";
+            session << "VACUUM;";
+            session << "PRAGMA journal_mode=WAL;";
+            session << "PRAGMA page_size;", soci::into(pageSize);
+
+            std::cout << "VACUUM finished. page_size: " <<
+                pageSize << std::endl;
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "exception " << e.what() <<
+                " in function " << __func__ << std::endl;
             return -1;
         }
-
-        auto db = txnDB->checkoutDb();
-        std::uint32_t pageSize;
-        try
-        {
-            *db << "PRAGMA page_size;", soci::into(pageSize);
-            std::cout << "VACUUM beginning. page_size: " << pageSize
-                << std::endl;
-            *db << "PRAGMA journal_mode=OFF;";
-            *db << "PRAGMA temp_store_directory=\"" << tmpPath.string()
-                << "\";";
-            *db << "VACUUM;";
-            *db << "PRAGMA journal_mode=WAL;";
-            *db << "PRAGMA page_size;", soci::into(pageSize);
-        }
-        catch (soci::soci_error const& e)
-        {
-            std::cerr << "SQLite error: " << e.what() << '\n';
-            return 1;
-        }
-        std::cout << "VACUUM finished. page_size: " << pageSize << std::endl;
 
         return 0;
     }
