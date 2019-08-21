@@ -104,23 +104,15 @@ public:
 
         open(session_, "sqlite", pPath.string());
 
-        try
+        for (auto const& p : pragma)
         {
-            for (auto const& p : pragma)
-            {
-                soci::statement st = session_.prepare << p;
-                st.execute(true);
-            }
-            for (auto const& sql : initSQL)
-            {
-                soci::statement st = session_.prepare << sql;
-                st.execute(true);
-            }
+            soci::statement st = session_.prepare << p;
+            st.execute(true);
         }
-        catch (soci::soci_error&)
+        for (auto const& sql : initSQL)
         {
-            // TODO: We should at least log this error. It is annoying to wire
-            // a logger into every context, but there are other solutions.
+            soci::statement st = session_.prepare << sql;
+            st.execute(true);
         }
     }
 
