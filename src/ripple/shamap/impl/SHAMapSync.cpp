@@ -220,10 +220,7 @@ void SHAMap::gmn_ProcessNodes (MissingNodes& mn, MissingNodes::StackEntry& se)
 
                 // Switch to processing the child node
                 node = static_cast<SHAMapInnerNode*>(d);
-                if (auto v2Node = dynamic_cast<SHAMapInnerNodeV2*>(node))
-                    nodeID = SHAMapNodeID{v2Node->depth(), v2Node->key()};
-                else
-                    nodeID = childID;
+                nodeID = childID;
                 firstChild = rand_int(255);
                 currentChild = 0;
                 fullBelow = true;
@@ -447,16 +444,10 @@ bool SHAMap::getNodeFat (SHAMapNodeID wanted,
             return false;
 
         node = descendThrow(inner, branch);
-        if (auto v2Node = dynamic_cast<SHAMapInnerNodeV2*>(node))
-            nodeID = SHAMapNodeID{v2Node->depth(), v2Node->key()};
-        else
-            nodeID = nodeID.getChildNodeID (branch);
+        nodeID = nodeID.getChildNodeID (branch);
     }
 
-    if (node == nullptr ||
-           (dynamic_cast<SHAMapInnerNodeV2*>(node) != nullptr &&
-                !wanted.has_common_prefix(nodeID)) ||
-           (dynamic_cast<SHAMapInnerNodeV2*>(node) == nullptr && wanted != nodeID))
+    if (node == nullptr || wanted != nodeID)
     {
         JLOG(journal_.warn())
             << "peer requested node that is not in the map:\n"
@@ -497,12 +488,8 @@ bool SHAMap::getNodeFat (SHAMapNodeID wanted,
                 {
                     if (! inner->isEmptyBranch (i))
                     {
-                        auto childNode = descendThrow (inner, i);
-                        SHAMapNodeID childID;
-                        if (auto v2Node = dynamic_cast<SHAMapInnerNodeV2*>(childNode))
-                            childID = SHAMapNodeID{v2Node->depth(), v2Node->key()};
-                        else
-                            childID = nodeID.getChildNodeID (i);
+                        auto const childNode = descendThrow (inner, i);
+                        SHAMapNodeID const childID = nodeID.getChildNodeID (i);
 
                         if (childNode->isInner () &&
                             ((depth > 1) || (bc == 1)))
@@ -625,14 +612,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Slice const& rawNode,
                 return SHAMapAddNode::useful ();
             }
 
-            if (newNode && isInconsistentNode(newNode))
-            {
-                state_ = SHAMapState::Invalid;
-                return SHAMapAddNode::useful();
-            }
-
-            if ((std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) && !iNodeID.has_common_prefix(node)) ||
-               (!std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) && iNodeID != node))
+            if (iNodeID != node)
             {
                 // Either this node is broken or we didn't request it (yet)
                 JLOG(journal_.warn()) << "unable to hook node " << node;
@@ -796,11 +776,6 @@ There's no point in including the leaves of transaction trees.
 void SHAMap::getFetchPack (SHAMap const* have, bool includeLeaves, int max,
                            std::function<void (SHAMapHash const&, const Blob&)> func) const
 {
-    if (have != nullptr && have->is_v2() != is_v2())
-    {
-        JLOG(journal_.info()) << "Can not get fetch pack when versions are different.";
-        return;
-    }
     visitDifferences (have,
         [includeLeaves, &max, &func] (SHAMapAbstractNode& smn) -> bool
         {

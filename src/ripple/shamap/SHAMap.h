@@ -90,18 +90,6 @@ private:
     bool                            full_ = false; // Map is believed complete in database
 
 public:
-    class version
-    {
-        int v_;
-    public:
-        explicit version(int v) : v_(v) {}
-
-        friend bool operator==(version const& x, version const& y)
-            {return x.v_ == y.v_;}
-        friend bool operator!=(version const& x, version const& y)
-            {return !(x == y);}
-    };
-
     using DeltaItem = std::pair<std::shared_ptr<SHAMapItem const>,
                                 std::shared_ptr<SHAMapItem const>>;
     using Delta     = std::map<uint256, DeltaItem>;
@@ -113,15 +101,13 @@ public:
     // build new map
     SHAMap (
         SHAMapType t,
-        Family& f,
-        version v
+        Family& f
         );
 
     SHAMap (
         SHAMapType t,
         uint256 const& hash,
-        Family& f,
-        version v);
+        Family& f);
 
     Family const&
     family() const
@@ -259,10 +245,6 @@ public:
         std::function<void (SHAMapHash const&, const Blob&)>) const;
 
     void setUnbacked ();
-    bool is_v2() const;
-    version get_version() const;
-    std::shared_ptr<SHAMap> make_v1() const;
-    std::shared_ptr<SHAMap> make_v2() const;
     int unshare ();
 
     void dump (bool withHashes = false) const;
@@ -350,7 +332,6 @@ private:
                      std::shared_ptr<SHAMapItem const> const& otherMapItem,
                      bool isFirstMap, Delta & differences, int & maxCount) const;
     int walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq);
-    bool isInconsistentNode(std::shared_ptr<SHAMapAbstractNode> const& node) const;
 
     // Structure to track information about call to
     // getMissingNodes while it's in progress
@@ -462,14 +443,6 @@ void
 SHAMap::setUnbacked ()
 {
     backed_ = false;
-}
-
-inline
-bool
-SHAMap::is_v2() const
-{
-    assert (root_);
-    return std::dynamic_pointer_cast<SHAMapInnerNodeV2>(root_) != nullptr;
 }
 
 //------------------------------------------------------------------------------

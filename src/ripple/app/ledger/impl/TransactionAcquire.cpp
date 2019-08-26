@@ -47,7 +47,7 @@ TransactionAcquire::TransactionAcquire (Application& app, uint256 const& hash, c
     , j_(app.journal("TransactionAcquire"))
 {
     mMap = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, hash,
-        app_.family(), SHAMap::version{1});
+        app_.family());
     mMap->setUnbacked ();
 }
 

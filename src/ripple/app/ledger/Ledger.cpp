@@ -184,9 +184,9 @@ Ledger::Ledger (
         Family& family)
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
-        family, SHAMap::version{1}))
+        family))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
-        family, SHAMap::version{1}))
+        family))
     , rules_{config.features}
 {
     info_.seq = 1;
@@ -224,11 +224,9 @@ Ledger::Ledger (
         beast::Journal j)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
-        info.txHash, family,
-        SHAMap::version{getSHAMapV2(info) ? 2 : 1}))
+        info.txHash, family))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
-        info.accountHash, family,
-        SHAMap::version{getSHAMapV2(info) ? 2 : 1}))
+        info.accountHash, family))
     , rules_ (config.features)
     , info_ (info)
 {
@@ -268,8 +266,7 @@ Ledger::Ledger (Ledger const& prevLedger,
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (
         SHAMapType::TRANSACTION,
-        prevLedger.stateMap_->family(),
-        prevLedger.stateMap_->get_version()))
+        prevLedger.stateMap_->family()))
     , stateMap_ (prevLedger.stateMap_->snapShot (true))
     , fees_(prevLedger.fees_)
     , rules_(prevLedger.rules_)
@@ -284,11 +281,6 @@ Ledger::Ledger (Ledger const& prevLedger,
     info_.closeTimeResolution = getNextLedgerTimeResolution(
         prevLedger.info_.closeTimeResolution,
         getCloseAgree(prevLedger.info()), info_.seq);
-
-    if (stateMap_->is_v2())
-    {
-        info_.closeFlags |= sLCF_SHAMapV2;
-    }
 
     if (prevLedger.info_.closeTime == NetClock::time_point{})
     {
@@ -307,11 +299,9 @@ Ledger::Ledger (
         Family& family)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
-        info.txHash, family,
-        SHAMap::version{getSHAMapV2(info) ? 2 : 1}))
+        info.txHash, family))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
-        info.accountHash, family,
-        SHAMap::version{getSHAMapV2(info) ? 2 : 1}))
+        info.accountHash, family))
     , rules_{config.features}
     , info_ (info)
 {
@@ -323,9 +313,9 @@ Ledger::Ledger (std::uint32_t ledgerSeq,
             Family& family)
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (
-          SHAMapType::TRANSACTION, family, SHAMap::version{1}))
+          SHAMapType::TRANSACTION, family))
     , stateMap_ (std::make_shared <SHAMap> (
-          SHAMapType::STATE, family, SHAMap::version{1}))
+          SHAMapType::STATE, family))
     , rules_{config.features}
 {
     info_.seq = ledgerSeq;
@@ -1043,19 +1033,6 @@ bool pendSaveValidated (
 
     // The JobQueue won't do the Job.  Do the save synchronously.
     return saveValidatedLedger(app, ledger, isCurrent);
-}
-
-void
-Ledger::make_v2()
-{
-    assert (! mImmutable);
-    stateMap_ = stateMap_->make_v2();
-    txMap_ = txMap_->make_v2();
-    info_.validated = false;
-    info_.accountHash = stateMap_->getHash ().as_uint256();
-    info_.txHash = txMap_->getHash ().as_uint256();
-    info_.hash = calculateLedgerHash (info_);
-    info_.closeFlags |= sLCF_SHAMapV2;
 }
 
 void

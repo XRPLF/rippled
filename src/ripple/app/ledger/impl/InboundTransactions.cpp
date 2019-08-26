@@ -80,7 +80,7 @@ public:
     {
         m_zeroSet.mSet = std::make_shared<SHAMap> (
             SHAMapType::TRANSACTION, uint256(),
-            app_.family(), SHAMap::version{1});
+            app_.family());
         m_zeroSet.mSet->setUnbacked();
     }
 

@@ -314,7 +314,6 @@ public:
 
     bool assertSane (beast::Journal ledgerJ) const;
 
-    void make_v2();
     void invariants() const;
     void unshare() const;
 private:

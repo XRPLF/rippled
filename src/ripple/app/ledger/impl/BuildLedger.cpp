@@ -47,9 +47,6 @@ buildLedgerImpl(
 {
     auto built = std::make_shared<Ledger>(*parent, closeTime);
 
-    if (built->rules().enabled(featureSHAMapV2) && !built->stateMap().is_v2())
-        built->make_v2();
-
     // Set up to write SHAMap changes to our database,
     //   perform updates, extract changes
 

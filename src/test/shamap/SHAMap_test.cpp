@@ -36,13 +36,6 @@ static_assert(!std::is_copy_assignable      <SHAMap>{}, "");
 static_assert(!std::is_move_constructible   <SHAMap>{}, "");
 static_assert(!std::is_move_assignable      <SHAMap>{}, "");
 
-static_assert( std::is_nothrow_destructible        <SHAMap::version>{}, "");
-static_assert(!std::is_default_constructible       <SHAMap::version>{}, "");
-static_assert( std::is_trivially_copy_constructible<SHAMap::version>{}, "");
-static_assert( std::is_trivially_copy_assignable   <SHAMap::version>{}, "");
-static_assert( std::is_trivially_move_constructible<SHAMap::version>{}, "");
-static_assert( std::is_trivially_move_assignable   <SHAMap::version>{}, "");
-
 static_assert( std::is_nothrow_destructible <SHAMap::const_iterator>{}, "");
 static_assert( std::is_default_constructible<SHAMap::const_iterator>{}, "");
 static_assert( std::is_copy_constructible   <SHAMap::const_iterator>{}, "");
@@ -85,13 +78,6 @@ static_assert(!std::is_copy_assignable      <SHAMapInnerNode>{}, "");
 static_assert(!std::is_move_constructible   <SHAMapInnerNode>{}, "");
 static_assert(!std::is_move_assignable      <SHAMapInnerNode>{}, "");
 
-static_assert( std::is_nothrow_destructible <SHAMapInnerNodeV2>{}, "");
-static_assert(!std::is_default_constructible<SHAMapInnerNodeV2>{}, "");
-static_assert(!std::is_copy_constructible   <SHAMapInnerNodeV2>{}, "");
-static_assert(!std::is_copy_assignable      <SHAMapInnerNodeV2>{}, "");
-static_assert(!std::is_move_constructible   <SHAMapInnerNodeV2>{}, "");
-static_assert(!std::is_move_assignable      <SHAMapInnerNodeV2>{}, "");
-
 static_assert( std::is_nothrow_destructible <SHAMapTreeNode>{}, "");
 static_assert(!std::is_default_constructible<SHAMapTreeNode>{}, "");
 static_assert(!std::is_copy_constructible   <SHAMapTreeNode>{}, "");
@@ -123,13 +109,11 @@ public:
         using namespace beast::severities;
         test::SuiteJournal journal ("SHAMap_test", *this);
 
-        run (true,  SHAMap::version{1}, journal);
-        run (false, SHAMap::version{1}, journal);
-        run (true,  SHAMap::version{2}, journal);
-        run (false, SHAMap::version{2}, journal);
+        run (true,  journal);
+        run (false, journal);
     }
 
-    void run (bool backed, SHAMap::version v, beast::Journal const& journal)
+    void run (bool backed, beast::Journal const& journal)
     {
         if (backed)
             testcase ("add/traverse backed");
@@ -146,7 +130,7 @@ public:
         h4.SetHex ("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
         h5.SetHex ("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
-        SHAMap sMap (SHAMapType::FREE, f, v);
+        SHAMap sMap (SHAMapType::FREE, f);
         sMap.invariants();
         if (! backed)
             sMap.setUnbacked ();
@@ -208,8 +192,6 @@ public:
 
         sMap.dump();
 
-        auto const is_v2 = sMap.is_v2();
-
         if (backed)
             testcase ("build/tear backed");
         else
@@ -226,30 +208,16 @@ public:
             keys[7].SetHex ("292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
 
             std::vector<uint256> hashes(8);
-            if (is_v2)
-            {
-                hashes[0].SetHex ("90F77DA53895E34042DC8048518CC98AD24276D0A96CCA2C515A83FDAF9F9FC9");
-                hashes[1].SetHex ("425A3B6A68FAD9CB43B9981C7D0D39B942FE62110B437201057EE703F5E76390");
-                hashes[2].SetHex ("1B4BE72DD18F90F367D64C0147D2414329149724339F79958D6470E7C99E3F4A");
-                hashes[3].SetHex ("CCC18ED9B0C353278F02465E2E2F3A8A07427B458CF74C51D87ABE9C1B2ECAD8");
-                hashes[4].SetHex ("24AF98675227F387CE0E4932B71B099FE8BC66E5F07BE2DA70D7E7D98E16C8BC");
-                hashes[5].SetHex ("EAA373271474A9BF18F1CC240B40C7B5C83C7017977F1388771E56D5943F2B9B");
-                hashes[6].SetHex ("C7968A323A06BD46769B402B2A85A7FE7F37FCE99C0004A6197AD8E5D76F200D");
-                hashes[7].SetHex ("0A2412DBB16308706211E5FA5B0160817D54757B4DDC0CB105391A79D06B47BA");
-            }
-            else
-            {
-                hashes[0].SetHex ("B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C64B6281F7F");
-                hashes[1].SetHex ("FBC195A9592A54AB44010274163CB6BA95F497EC5BA0A8831845467FB2ECE266");
-                hashes[2].SetHex ("4E7D2684B65DFD48937FFB775E20175C43AF0C94066F7D5679F51AE756795B75");
-                hashes[3].SetHex ("7A2F312EB203695FFD164E038E281839EEF06A1B99BFC263F3CECC6C74F93E07");
-                hashes[4].SetHex ("395A6691A372387A703FB0F2C6D2C405DAF307D0817F8F0E207596462B0E3A3E");
-                hashes[5].SetHex ("D044C0A696DE3169CC70AE216A1564D69DE96582865796142CE7D98A84D9DDE4");
-                hashes[6].SetHex ("76DCC77C4027309B5A91AD164083264D70B77B5E43E08AEDA5EBF94361143615");
-                hashes[7].SetHex ("DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA02BBE7230E5");
-            }
+            hashes[0].SetHex ("B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C64B6281F7F");
+            hashes[1].SetHex ("FBC195A9592A54AB44010274163CB6BA95F497EC5BA0A8831845467FB2ECE266");
+            hashes[2].SetHex ("4E7D2684B65DFD48937FFB775E20175C43AF0C94066F7D5679F51AE756795B75");
+            hashes[3].SetHex ("7A2F312EB203695FFD164E038E281839EEF06A1B99BFC263F3CECC6C74F93E07");
+            hashes[4].SetHex ("395A6691A372387A703FB0F2C6D2C405DAF307D0817F8F0E207596462B0E3A3E");
+            hashes[5].SetHex ("D044C0A696DE3169CC70AE216A1564D69DE96582865796142CE7D98A84D9DDE4");
+            hashes[6].SetHex ("76DCC77C4027309B5A91AD164083264D70B77B5E43E08AEDA5EBF94361143615");
+            hashes[7].SetHex ("DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA02BBE7230E5");
 
-           SHAMap map (SHAMapType::FREE, f, v);
+           SHAMap map (SHAMapType::FREE, f);
             if (! backed)
                 map.setUnbacked ();
 
@@ -260,24 +228,6 @@ public:
                 BEAST_EXPECT(map.addItem (std::move(item), true, false));
                 BEAST_EXPECT(map.getHash().as_uint256() == hashes[k]);
                 map.invariants();
-            }
-            if (v == SHAMap::version{1})
-            {
-                BEAST_EXPECT(!map.is_v2());
-                auto map_v2 = map.make_v2();
-                BEAST_EXPECT(map_v2 != nullptr);
-                BEAST_EXPECT(map_v2->is_v2());
-                map_v2->invariants();
-                auto m1 = map.begin();
-                auto e1 = map.end();
-                auto m2 = map_v2->begin();
-                auto e2 = map_v2->end();
-                for (; m1 != e1; ++m1, ++m2)
-                {
-                    BEAST_EXPECT(m2 != e2);
-                    BEAST_EXPECT(*m1 == *m2);
-                }
-                BEAST_EXPECT(m2 == e2);
             }
             for (int k = keys.size() - 1; k >= 0; --k)
             {
@@ -305,7 +255,7 @@ public:
             keys[7].SetHex ("292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
 
             tests::TestFamily tf{journal};
-            SHAMap map{SHAMapType::FREE, tf, v};
+            SHAMap map{SHAMapType::FREE, tf};
             if (! backed)
                 map.setUnbacked ();
             for (auto const& k : keys)

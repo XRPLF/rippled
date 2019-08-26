@@ -421,19 +421,10 @@ public:
 static
 std::uint32_t const sLCF_NoConsensusTime = 0x01;
 
-static
-std::uint32_t const sLCF_SHAMapV2 = 0x02;
-
 inline
 bool getCloseAgree (LedgerInfo const& info)
 {
     return (info.closeFlags & sLCF_NoConsensusTime) == 0;
-}
-
-inline
-bool getSHAMapV2 (LedgerInfo const& info)
-{
-    return (info.closeFlags & sLCF_SHAMapV2) != 0;
 }
 
 void addRaw (LedgerInfo const&, Serializer&);

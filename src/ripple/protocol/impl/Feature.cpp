@@ -84,7 +84,6 @@ detail::supportedAmendments ()
     // uncommented at that time).
     static std::vector<std::string> const supported
     {
-//        "SHAMapV2",
         "MultiSign",
 //        "Tickets",
         "TrustSetAuth",
@@ -147,7 +146,6 @@ uint256 const featureTickets = *getRegisteredFeature("Tickets");
 uint256 const featureTrustSetAuth = *getRegisteredFeature("TrustSetAuth");
 uint256 const featureOwnerPaysFee = *getRegisteredFeature("OwnerPaysFee");
 uint256 const featureCompareFlowV1V2 = *getRegisteredFeature("CompareFlowV1V2");
-uint256 const featureSHAMapV2 = *getRegisteredFeature("SHAMapV2");
 uint256 const featurePayChan = *getRegisteredFeature("PayChan");
 uint256 const featureFlow = *getRegisteredFeature("Flow");
 uint256 const featureCompareTakerFlowCross = *getRegisteredFeature("CompareTakerFlowCross");

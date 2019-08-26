@@ -79,9 +79,6 @@ public:
     /** inner node in V1 tree */
     static HashPrefix const innerNode;
 
-    /** inner node in V2 tree */
-    static HashPrefix const innerNodeV2;
-
     /** ledger master data for signing */
     static HashPrefix const ledgerMaster;
 
