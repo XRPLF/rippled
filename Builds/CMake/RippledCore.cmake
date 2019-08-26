@@ -895,7 +895,6 @@ else ()
     src/test/ledger/Invariants_test.cpp
     src/test/ledger/PaymentSandbox_test.cpp
     src/test/ledger/PendingSaves_test.cpp
-    src/test/ledger/SHAMapV2_test.cpp
     src/test/ledger/SkipList_test.cpp
     src/test/ledger/View_test.cpp
     #[===============================[

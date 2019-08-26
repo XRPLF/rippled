@@ -29,7 +29,7 @@
 namespace ripple {
 namespace tests {
 
-class sync_test : public beast::unit_test::suite
+class SHAMapSync_test : public beast::unit_test::suite
 {
 public:
     beast::xor_shift_engine eng_;
@@ -90,18 +90,9 @@ public:
         using namespace beast::severities;
         test::SuiteJournal journal ("SHAMapSync_test", *this);
 
-        log << "Run, version 1\n" << std::endl;
-        run(SHAMap::version{1}, journal);
-
-        log << "Run, version 2\n" << std::endl;
-        run(SHAMap::version{2}, journal);
-    }
-
-    void run(SHAMap::version v, beast::Journal const& journal)
-    {
         TestFamily f(journal), f2(journal);
-        SHAMap source (SHAMapType::FREE, f, v);
-        SHAMap destination (SHAMapType::FREE, f2, v);
+        SHAMap source (SHAMapType::FREE, f);
+        SHAMap destination (SHAMapType::FREE, f2);
 
         int items = 10000;
         for (int i = 0; i < items; ++i)
@@ -207,9 +198,10 @@ public:
         log << "Checking destination invariants..." << std::endl;
         destination.invariants();
     }
+
 };
 
-BEAST_DEFINE_TESTSUITE(sync,shamap,ripple);
+BEAST_DEFINE_TESTSUITE(SHAMapSync,shamap,ripple);
 
 } // tests
 } // ripple

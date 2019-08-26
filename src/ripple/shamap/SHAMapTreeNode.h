@@ -129,15 +129,13 @@ public:
     virtual std::string getString (SHAMapNodeID const&) const;
     virtual std::shared_ptr<SHAMapAbstractNode> clone(std::uint32_t seq) const = 0;
     virtual uint256 const& key() const = 0;
-    virtual void invariants(bool is_v2, bool is_root = false) const = 0;
+    virtual void invariants(bool is_root = false) const = 0;
 
     static std::shared_ptr<SHAMapAbstractNode>
         make(Slice const& rawNode, std::uint32_t seq, SHANodeFormat format,
              SHAMapHash const& hash, bool hashValid, beast::Journal j,
              SHAMapNodeID const& id = SHAMapNodeID{});
 };
-
-class SHAMapInnerNodeV2;
 
 class SHAMapInnerNode
     : public SHAMapAbstractNode
@@ -173,44 +171,7 @@ public:
     void addRaw (Serializer&, SHANodeFormat format) const override;
     std::string getString (SHAMapNodeID const&) const override;
     uint256 const& key() const override;
-    void invariants(bool is_v2, bool is_root = false) const override;
-
-    friend std::shared_ptr<SHAMapAbstractNode>
-        SHAMapAbstractNode::make(Slice const& rawNode, std::uint32_t seq,
-             SHANodeFormat format, SHAMapHash const& hash, bool hashValid,
-                 beast::Journal j, SHAMapNodeID const& id);
-
-    friend class SHAMapInnerNodeV2;
-};
-
-class SHAMapTreeNode;
-
-// SHAMapInnerNodeV2 is a "version 2" inner node.  It always has at least two children
-//   unless it is the root node and there is only one leaf in the tree, in which case
-//   that leaf is a direct child of the root.
-class SHAMapInnerNodeV2
-    : public SHAMapInnerNode
-{
-    uint256 common_ = {};
-    int     depth_ = 64;
-public:
-    explicit SHAMapInnerNodeV2(std::uint32_t seq);
-    SHAMapInnerNodeV2(std::uint32_t seq, int depth);
-    std::shared_ptr<SHAMapAbstractNode> clone(std::uint32_t seq) const override;
-
-    uint256 const& common() const;
-    int depth() const;
-    bool has_common_prefix(uint256 const& key) const;
-    int get_common_prefix(uint256 const& key) const;
-    void set_common(int depth, uint256 const& key);
-    bool updateHash () override;
-    void addRaw(Serializer& s, SHANodeFormat format) const override;
-    uint256 const& key() const override;
-    void setChildren(std::shared_ptr<SHAMapTreeNode> const& child1,
-                     std::shared_ptr<SHAMapTreeNode> const& child2);
-    std::shared_ptr<SHAMapAbstractNode>
-        canonicalizeChild (int branch, std::shared_ptr<SHAMapAbstractNode> node) override;
-    void invariants(bool is_v2, bool is_root = false) const override;
+    void invariants(bool is_root = false) const override;
 
     friend std::shared_ptr<SHAMapAbstractNode>
         SHAMapAbstractNode::make(Slice const& rawNode, std::uint32_t seq,
@@ -237,7 +198,7 @@ public:
 
     void addRaw (Serializer&, SHANodeFormat format) const override;
     uint256 const& key() const override;
-    void invariants(bool is_v2, bool is_root = false) const override;
+    void invariants(bool is_root = false) const override;
 
 public:  // public only to SHAMap
 
@@ -364,35 +325,6 @@ void
 SHAMapInnerNode::setFullBelowGen (std::uint32_t gen)
 {
     mFullBelowGen = gen;
-}
-
-// SHAMapInnerNodeV2
-
-inline
-SHAMapInnerNodeV2::SHAMapInnerNodeV2(std::uint32_t seq)
-    : SHAMapInnerNode(seq)
-{
-}
-
-inline
-SHAMapInnerNodeV2::SHAMapInnerNodeV2(std::uint32_t seq, int depth)
-    : SHAMapInnerNode(seq)
-    , depth_(depth)
-{
-}
-
-inline
-uint256 const&
-SHAMapInnerNodeV2::common() const
-{
-    return common_;
-}
-
-inline
-int
-SHAMapInnerNodeV2::depth() const
-{
-    return depth_;
 }
 
 // SHAMapTreeNode

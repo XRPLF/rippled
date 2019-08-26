@@ -122,7 +122,7 @@ public:
 
         TestFamily f(journal);
         std::shared_ptr <Table> t1 (std::make_shared <Table> (
-            SHAMapType::FREE, f, SHAMap::version{2}));
+            SHAMapType::FREE, f));
 
         pass ();
 
