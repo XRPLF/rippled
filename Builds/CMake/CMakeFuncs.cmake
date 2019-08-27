@@ -259,7 +259,7 @@ function (git_hash hash_val)
   if (NOT GIT_FOUND)
     return ()
   endif ()
-  set (_hash "unknown")
+  set (_hash "")
   set (_format "%H")
   if (ARGC GREATER_EQUAL 2)
     string (TOLOWER ${ARGV1} _short)
@@ -278,3 +278,21 @@ function (git_hash hash_val)
   endif ()
   set (${hash_val} "${_hash}" PARENT_SCOPE)
 endfunction ()
+
+function (git_branch branch_val)
+  if (NOT GIT_FOUND)
+    return ()
+  endif ()
+  set (_branch "")
+  execute_process (COMMAND ${GIT_EXECUTABLE} "rev-parse" "--abbrev-ref" "HEAD"
+                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                   RESULT_VARIABLE _git_exit_code
+                   OUTPUT_VARIABLE _temp_branch
+                   OUTPUT_STRIP_TRAILING_WHITESPACE
+                   ERROR_QUIET)
+  if (_git_exit_code EQUAL 0)
+    set (_branch ${_temp_branch})
+  endif ()
+  set (${branch_val} "${_branch}" PARENT_SCOPE)
+endfunction ()
+

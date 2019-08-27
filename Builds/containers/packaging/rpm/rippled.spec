@@ -11,7 +11,6 @@ Summary:        rippled daemon
 License:        MIT
 URL:            http://ripple.com/
 Source0:        rippled.tar.gz
-Source1:        validator-keys.tar.gz
 
 BuildRequires:  protobuf-static openssl-static cmake zlib-static ninja-build
 
@@ -27,26 +26,14 @@ Requires: openssl-static, zlib-static
 core library for development of standalone applications that sign transactions.
 
 %prep
-%setup -c -n rippled -a 1
+%setup -c -n rippled
 
 %build
 cd rippled
 mkdir -p bld.release
 cd bld.release
 cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_BUILD_TYPE=Release -Dstatic=true -DCMAKE_VERBOSE_MAKEFILE=ON -Dlocal_protobuf=ON
-# build VK
-cd ../../validator-keys-tool
-mkdir -p bld.release
-cd bld.release
-# Install a copy of the rippled artifacts into a local VK build dir so that it
-# can use them to build against (VK needs xrpl_core lib to build). We install
-# into a local build dir instead of buildroot because we want VK to have
-# relative paths embedded in debug info, otherwise check-buildroot (rpmbuild)
-# will complain
-mkdir xrpl_dir
-DESTDIR="%{_builddir}/validator-keys-tool/bld.release/xrpl_dir"  cmake --build ../../rippled/bld.release --target install -- -v
-cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=%{_builddir}/validator-keys-tool/bld.release/xrpl_dir/opt/ripple -Dstatic=true -DCMAKE_VERBOSE_MAKEFILE=ON
-cmake --build . --parallel -- -v
+cmake --build . --parallel --target rippled --target validator-keys -- -v
 
 %pre
 test -e /etc/pki/tls || { mkdir -p /etc/pki; ln -s /usr/lib/ssl /etc/pki/tls; }
@@ -59,7 +46,7 @@ install -d ${RPM_BUILD_ROOT}/usr/local/bin
 ln -s %{_prefix}/etc/rippled.cfg ${RPM_BUILD_ROOT}/etc/opt/ripple/rippled.cfg
 ln -s %{_prefix}/etc/validators.txt ${RPM_BUILD_ROOT}/etc/opt/ripple/validators.txt
 ln -s %{_prefix}/bin/rippled ${RPM_BUILD_ROOT}/usr/local/bin/rippled
-install -D validator-keys-tool/bld.release/validator-keys ${RPM_BUILD_ROOT}%{_bindir}/validator-keys
+install -D rippled/bld.release/validator-keys/validator-keys ${RPM_BUILD_ROOT}%{_bindir}/validator-keys
 install -D ./rippled/Builds/containers/shared/rippled.service ${RPM_BUILD_ROOT}/usr/lib/systemd/system/rippled.service
 install -D ./rippled/Builds/containers/packaging/rpm/50-rippled.preset ${RPM_BUILD_ROOT}/usr/lib/systemd/system-preset/50-rippled.preset
 install -D ./rippled/Builds/containers/shared/update-rippled.sh ${RPM_BUILD_ROOT}%{_bindir}/update-rippled.sh
@@ -109,6 +96,9 @@ chown -R root:$GROUP_NAME %{_prefix}/etc/update-rippled-cron
 %{_prefix}/lib/cmake/ripple
 
 %changelog
+* Wed Aug 28 2019 Mike Ellery <mellery451@gmail.com>
+- Switch to subproject build for validator-keys
+
 * Wed May 15 2019 Mike Ellery <mellery451@gmail.com>
 - Make validator-keys use local rippled build for core lib
 

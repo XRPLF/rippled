@@ -14,8 +14,13 @@ RUN chmod +x /tmp/ubuntu_setup.sh && \
     chmod +x /tmp/install_boost.sh && \
     chmod +x /tmp/install_cmake.sh
 RUN /tmp/ubuntu_setup.sh
-RUN /tmp/install_cmake.sh
+
+RUN /tmp/install_cmake.sh 3.15.2 /opt/local/cmake-3.15
+RUN ln -s /opt/local/cmake-3.15 /opt/local/cmake
 ENV PATH="/opt/local/cmake/bin:$PATH"
+# also install min supported cmake for testing
+RUN if [ "${CI_USE}" = true ] ; then /tmp/install_cmake.sh 3.9.0 /opt/local/cmake-3.9; fi
+
 RUN /tmp/build_deps.sh
 ENV PLANTUML_JAR="/opt/plantuml/plantuml.jar"
 ENV BOOST_ROOT="/opt/local/boost/_INSTALLED_"

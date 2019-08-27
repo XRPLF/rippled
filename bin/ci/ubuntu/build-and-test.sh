@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -ex
 
+function version_ge() { test "$(echo "$@" | tr " " "\n" | sort -rV | head -n 1)" == "$1"; }
+
 __dirname=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 echo "using CC: ${CC}"
 "${CC}" --version
@@ -18,13 +20,13 @@ echo "BUILD TYPE: ${BUILD_TYPE}"
 : ${TARGET:=install}
 echo "BUILD TARGET: ${TARGET}"
 
-# Ensure APP defaults to rippled if it's not set.
-: ${APP:=rippled}
-echo "using APP: ${APP}"
-
 JOBS=${NUM_PROCESSORS:-2}
 if [[ ${TRAVIS:-false} != "true" ]]; then
     JOBS=$((JOBS+1))
+fi
+
+if [[ ! -z "${CMAKE_EXE:-}" ]] ; then
+    export PATH="$(dirname ${CMAKE_EXE}):$PATH"
 fi
 
 if [ -x /usr/bin/time ] ; then
@@ -35,13 +37,7 @@ else
     time=
 fi
 
-if [[ -z "${MAX_TIME:-}" ]] ; then
-    timeout_cmd=""
-else
-    timeout_cmd="timeout ${MAX_TIME}"
-fi
-
-echo "cmake building ${APP}"
+echo "Building rippled"
 : ${CMAKE_EXTRA_ARGS:=""}
 if [[ ${NINJA_BUILD:-} == true ]]; then
     CMAKE_EXTRA_ARGS+=" -G Ninja"
@@ -53,19 +49,39 @@ if [[ "${TARGET}" == "coverage_report" ]] ; then
     coverage=true
 fi
 
+cmake --version
+CMAKE_VER=$(cmake --version | cut -d " " -f 3 | head -1)
+
 #
 # allow explicit setting of the name of the build
 # dir, otherwise default to the compiler.build_type
 #
 : "${BUILD_DIR:=${COMPNAME}.${BUILD_TYPE}}"
-BUILDARGS="--target ${TARGET} --parallel"
+BUILDARGS="--target ${TARGET}"
+BUILDTOOLARGS=""
+if version_ge $CMAKE_VER "3.12.0" ; then
+    BUILDARGS+=" --parallel"
+fi
+
 if [[ ${NINJA_BUILD:-} == false ]]; then
-    BUILDARGS+=" ${JOBS}"
+    if version_ge $CMAKE_VER "3.12.0" ; then
+        BUILDARGS+=" ${JOBS}"
+    else
+        BUILDTOOLARGS+=" -j ${JOBS}"
+    fi
 fi
 
 if [[ ${VERBOSE_BUILD:-} == true ]]; then
     CMAKE_EXTRA_ARGS+=" -DCMAKE_VERBOSE_MAKEFILE=ON"
-    BUILDARGS+=" --verbose"
+    if version_ge $CMAKE_VER "3.14.0" ; then
+        BUILDARGS+=" --verbose"
+    else
+        if [[ ${NINJA_BUILD:-} == false ]]; then
+            BUILDTOOLARGS+=" verbose=1"
+        else
+            BUILDTOOLARGS+=" -v"
+        fi
+    fi
 fi
 
 if [[ ${USE_CCACHE:-} == true ]]; then
@@ -78,11 +94,14 @@ fi
 
 mkdir -p "build/${BUILD_DIR}"
 pushd "build/${BUILD_DIR}"
+
 # generate
 ${time} cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS}
 # build
 export DESTDIR=$(pwd)/_INSTALLED_
-time eval ${timeout_cmd} cmake --build . ${BUILDARGS}
+
+${time} eval cmake --build . ${BUILDARGS} -- ${BUILDTOOLARGS}
+
 if [[ ${TARGET} == "docs" ]]; then
     ## mimic the standard test output for docs build
     ## to make controlling processes like jenkins happy
@@ -94,45 +113,53 @@ if [[ ${TARGET} == "docs" ]]; then
     exit
 fi
 popd
-export APP_PATH="$PWD/build/${BUILD_DIR}/${APP}"
+
+if [[ "${TARGET}" == "validator-keys" ]] ; then
+    export APP_PATH="$PWD/build/${BUILD_DIR}/validator-keys/validator-keys"
+else
+    export APP_PATH="$PWD/build/${BUILD_DIR}/rippled"
+fi
 echo "using APP_PATH: ${APP_PATH}"
 
 # See what we've actually built
 ldd ${APP_PATH}
 
-function join_by { local IFS="$1"; shift; echo "$*"; }
-
-# This is a list of manual tests
-# in rippled that we want to run
-# ORDER matters here...sorted in approximately
-# descending execution time (longest running tests at top)
-declare -a manual_tests=(
-    'ripple.ripple_data.digest'
-    'ripple.tx.Offer_manual'
-    'ripple.app.PayStrandAllPairs'
-    'ripple.tx.CrossingLimits'
-    'ripple.tx.PlumpBook'
-    'ripple.app.Flow_manual'
-    'ripple.tx.OversizeMeta'
-    'ripple.consensus.DistributedValidators'
-    'ripple.app.NoRippleCheckLimits'
-    'ripple.NodeStore.Timing'
-    'ripple.consensus.ByzantineFailureSim'
-    'beast.chrono.abstract_clock'
-    'beast.unit_test.print'
-)
-if [[ ${TRAVIS:-false} != "true" ]]; then
-    # these two tests cause travis CI to run out of memory.
-    # TODO: investigate possible workarounds.
-    manual_tests=(
-        'ripple.consensus.ScaleFreeSim'
-        'ripple.tx.FindOversizeCross'
-        "${manual_tests[@]}"
-    )
-fi
-
 : ${APP_ARGS:=}
-if [[ ${APP} == "rippled" ]]; then
+
+if [[ "${TARGET}" == "validator-keys" ]] ; then
+    APP_ARGS="--unittest"
+else
+    function join_by { local IFS="$1"; shift; echo "$*"; }
+
+    # This is a list of manual tests
+    # in rippled that we want to run
+    # ORDER matters here...sorted in approximately
+    # descending execution time (longest running tests at top)
+    declare -a manual_tests=(
+        'ripple.ripple_data.digest'
+        'ripple.tx.Offer_manual'
+        'ripple.app.PayStrandAllPairs'
+        'ripple.tx.CrossingLimits'
+        'ripple.tx.PlumpBook'
+        'ripple.app.Flow_manual'
+        'ripple.tx.OversizeMeta'
+        'ripple.consensus.DistributedValidators'
+        'ripple.app.NoRippleCheckLimits'
+        'ripple.NodeStore.Timing'
+        'ripple.consensus.ByzantineFailureSim'
+        'beast.chrono.abstract_clock'
+        'beast.unit_test.print'
+    )
+    if [[ ${TRAVIS:-false} != "true" ]]; then
+        # these two tests cause travis CI to run out of memory.
+        # TODO: investigate possible workarounds.
+        manual_tests=(
+            'ripple.consensus.ScaleFreeSim'
+            'ripple.tx.FindOversizeCross'
+            "${manual_tests[@]}"
+        )
+    fi
+
     if [[ ${MANUAL_TESTS:-} == true ]]; then
         APP_ARGS+=" --unittest=$(join_by , "${manual_tests[@]}")"
     else
@@ -140,6 +167,10 @@ if [[ ${APP} == "rippled" ]]; then
     fi
     if [[ ${coverage} == false && ${PARALLEL_TESTS:-} == true ]]; then
         APP_ARGS+=" --unittest-jobs ${JOBS}"
+    fi
+
+    if [[ ${IPV6_TESTS:-} == true ]]; then
+        APP_ARGS+=" --unittest-ipv6"
     fi
 fi
 
@@ -171,14 +202,14 @@ set +e
 echo "Running tests for ${APP_PATH}"
 if [[ ${MANUAL_TESTS:-} == true && ${PARALLEL_TESTS:-} != true ]]; then
     for t in "${manual_tests[@]}" ; do
-        ${timeout_cmd} ${APP_PATH} --unittest=${t}
+        ${APP_PATH} --unittest=${t}
         TEST_STAT=$?
         if [[ $TEST_STAT -ne 0 ]] ; then
             break
         fi
     done
 else
-    ${timeout_cmd} ${APP_PATH} ${APP_ARGS}
+    ${APP_PATH} ${APP_ARGS}
     TEST_STAT=$?
 fi
 set -e
