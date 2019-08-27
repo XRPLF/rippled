@@ -1019,31 +1019,48 @@ boost::optional<std::uint32_t>
 DatabaseShardImp::findShardIndexToAdd(
     std::uint32_t validLedgerSeq, std::lock_guard<std::mutex>&)
 {
-    auto maxShardIndex {seqToShardIndex(validLedgerSeq)};
-    if (validLedgerSeq != lastLedgerSeq(maxShardIndex))
-        --maxShardIndex;
+    auto const maxShardIndex {[this, validLedgerSeq]()
+    {
+        auto shardIndex {seqToShardIndex(validLedgerSeq)};
+        if (validLedgerSeq != lastLedgerSeq(shardIndex))
+            --shardIndex;
+        return shardIndex;
+    }()};
+    auto const numShards {complete_.size() +
+        (incomplete_ ? 1 : 0) + preShards_.size()};
 
-    auto const numShards {complete_.size() + (incomplete_ ? 1 : 0)};
-    // If equal, have all the shards
-    if (numShards >= maxShardIndex + 1)
+    // Check if the shard store has all shards
+    if (numShards >= maxShardIndex)
         return boost::none;
 
-    if (maxShardIndex < 1024 || float(numShards) / maxShardIndex > 0.5f)
+    if (maxShardIndex < 1024 ||
+        static_cast<float>(numShards) / maxShardIndex > 0.5f)
     {
         // Small or mostly full index space to sample
         // Find the available indexes and select one at random
         std::vector<std::uint32_t> available;
         available.reserve(maxShardIndex - numShards + 1);
-        for (std::uint32_t i = earliestShardIndex(); i <= maxShardIndex; ++i)
+
+        for (auto shardIndex = earliestShardIndex();
+            shardIndex <= maxShardIndex;
+            ++shardIndex)
         {
-            if (complete_.find(i) == complete_.end() &&
-                (!incomplete_ || incomplete_->index() != i) &&
-                preShards_.find(i) == preShards_.end())
-                    available.push_back(i);
+            if (complete_.find(shardIndex) == complete_.end() &&
+                (!incomplete_ || incomplete_->index() != shardIndex) &&
+                preShards_.find(shardIndex) == preShards_.end())
+            {
+                available.push_back(shardIndex);
+            }
         }
-        if (!available.empty())
-            return available[rand_int(0u,
-                static_cast<std::uint32_t>(available.size() - 1))];
+
+        if (available.empty())
+            return boost::none;
+
+        if (available.size() == 1)
+            return available.front();
+
+        return available[rand_int(0u,
+            static_cast<std::uint32_t>(available.size() - 1))];
     }
 
     // Large, sparse index space to sample
@@ -1051,13 +1068,16 @@ DatabaseShardImp::findShardIndexToAdd(
     // chances of running more than 30 times is less than 1 in a billion
     for (int i = 0; i < 40; ++i)
     {
-        auto const r {rand_int(earliestShardIndex(), maxShardIndex)};
-        if (complete_.find(r) == complete_.end() &&
-            (!incomplete_ || incomplete_->index() != r) &&
-            preShards_.find(r) == preShards_.end())
-                return r;
+        auto const shardIndex {rand_int(earliestShardIndex(), maxShardIndex)};
+        if (complete_.find(shardIndex) == complete_.end() &&
+            (!incomplete_ || incomplete_->index() != shardIndex) &&
+            preShards_.find(shardIndex) == preShards_.end())
+        {
+            return shardIndex;
+        }
     }
-    assert(0);
+
+    assert(false);
     return boost::none;
 }
 
