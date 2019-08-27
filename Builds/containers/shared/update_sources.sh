@@ -8,13 +8,6 @@ function error {
 cd /opt/rippled_bld/pkg/rippled
 export RIPPLED_VERSION=$(egrep -i -o "\b(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9a-z\-]+(\.[0-9a-z\-]+)*)?(\+[0-9a-z\-]+(\.[0-9a-z\-]+)*)?\b" src/ripple/protocol/impl/BuildInfo.cpp)
 
-cd ..
-git clone https://github.com/ripple/validator-keys-tool.git
-cd validator-keys-tool
-git checkout origin/master
-git submodule update --init --recursive
-cd ..
-
 : ${PKG_OUTDIR:=/opt/rippled_bld/pkg/out}
 export PKG_OUTDIR
 if [ ! -d ${PKG_OUTDIR} ]; then

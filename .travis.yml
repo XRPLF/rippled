@@ -6,7 +6,7 @@ services:
 
 env:
   global:
-    - DOCKER_IMAGE="mellery451/rippled-ci-builder:2019-08-19"
+    - DOCKER_IMAGE="mellery451/rippled-ci-builder:2019-08-26"
     - CMAKE_EXTRA_ARGS="-Dwerr=ON"
     - NINJA_BUILD=true
     # change this if we get more VM capacity
@@ -191,6 +191,21 @@ matrix:
       env:
         - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
         - BUILD_TYPE=Debug
+    # verify build with min version of cmake
+    - compiler: gcc-8
+      name: min cmake version
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_EXE=/opt/local/cmake-3.9/bin/cmake
+        - SKIP_TESTS=true
+    # validator keys project as subproj of rippled
+    - compiler: gcc-8
+      name: validator-keys
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Debug
+        - TARGET=validator-keys
     # macos
     - &macos
       os: osx
@@ -198,6 +213,7 @@ matrix:
       name: xcode10, debug
       env:
         - BLD_CONFIG=Debug
+        - TEST_EXTRA_ARGS=""
         - BOOST_ROOT=${CACHE_DIR}/boost_1_70_0
         - >-
           CMAKE_ADD="
@@ -220,11 +236,16 @@ matrix:
         - mkdir -p build.macos && cd build.macos
         - cmake -G Ninja ${CMAKE_EXTRA_ARGS} -DCMAKE_BUILD_TYPE=${BLD_CONFIG} ..
         - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose
-        - ./rippled --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
+        - ./rippled --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS} ${TEST_EXTRA_ARGS}
     - <<: *macos
       name: xcode10, release
       before_script:
         - export BLD_CONFIG=Release
+        - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -Dassert=ON"
+    - <<: *macos
+      name: ipv6 (macos)
+      before_script:
+        - export TEST_EXTRA_ARGS="--unittest-ipv6"
     - <<: *macos
       osx_image: xcode9.4
       name: xcode9, debug

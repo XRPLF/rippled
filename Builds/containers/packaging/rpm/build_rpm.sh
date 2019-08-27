@@ -25,14 +25,14 @@ if [[ $RPM_PATCH ]]; then
     export RPM_PATCH
 fi
 
-cd rippled
+cd /opt/rippled_bld/pkg/rippled
 if [[ -n $(git status --porcelain) ]]; then
     git status
     error "Unstaged changes in this repo - please commit first"
 fi
 git archive --format tar.gz --prefix rippled/ -o ../rpmbuild/SOURCES/rippled.tar.gz HEAD
+# TODO include validator-keys sources
 cd ..
-tar -zc --exclude-vcs -f ./rpmbuild/SOURCES/validator-keys.tar.gz validator-keys-tool/
 
 source /opt/rh/devtoolset-8/enable
 
