@@ -73,7 +73,7 @@ ExternalProject_Add (libarchive
       >
   TEST_COMMAND ""
   INSTALL_COMMAND ""
-  DEPENDS lz4
+  DEPENDS lz4_lib
   BUILD_BYPRODUCTS
     <BINARY_DIR>/libarchive/${ep_lib_prefix}archive${lib_post}${ep_lib_suffix}
     <BINARY_DIR>/libarchive/${ep_lib_prefix}archive${lib_post}_d${ep_lib_suffix}
