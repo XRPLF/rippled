@@ -1154,7 +1154,7 @@ Json::Value transactionSubmitMultiSigned (
                 << " field.  Fees must be specified in XRP.";
             return RPC::make_error (rpcINVALID_PARAMS, err.str ());
         }
-        if (fee <= 0)
+        if (fee <= STAmount{0})
         {
             std::ostringstream err;
             err << "Invalid " << sfFee.fieldName

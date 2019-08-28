@@ -35,9 +35,9 @@ std::atomic<bool> envUseIPv4 {false};
 void
 setupConfigForUnitTests (Config& cfg)
 {
-    std::string const port_peer = to_string(port_base);
-    std::string port_rpc = to_string(port_base + 1);
-    std::string port_ws = to_string(port_base + 2);
+    std::string const port_peer = std::to_string(port_base);
+    std::string port_rpc = std::to_string(port_base + 1);
+    std::string port_ws = std::to_string(port_base + 2);
 
     cfg.overwrite (ConfigSection::nodeDatabase (), "type", "memory");
     cfg.overwrite (ConfigSection::nodeDatabase (), "path", "main");

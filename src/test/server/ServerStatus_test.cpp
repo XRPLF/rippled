@@ -593,7 +593,7 @@ class ServerStatus_test :
         using namespace boost::asio;
         using namespace boost::beast::http;
         Env env {*this, envconfig([&](std::unique_ptr<Config> cfg) {
-            (*cfg)["port_rpc"].set("limit", to_string(limit));
+            (*cfg)["port_rpc"].set("limit", std::to_string(limit));
             return cfg;
         })};
 
@@ -612,7 +612,7 @@ class ServerStatus_test :
 
         auto it =
             r.async_resolve(
-                ip::tcp::resolver::query{ip, to_string(port)}, yield[ec]);
+                ip::tcp::resolver::query{ip, std::to_string(port)}, yield[ec]);
         BEAST_EXPECT(! ec);
 
         std::vector<std::pair<ip::tcp::socket, boost::beast::multi_buffer>> clients;
@@ -721,7 +721,7 @@ class ServerStatus_test :
 
         auto it =
             r.async_resolve(
-                ip::tcp::resolver::query{ip, to_string(port)}, yield[ec]);
+                ip::tcp::resolver::query{ip, std::to_string(port)}, yield[ec]);
         if(! BEAST_EXPECT(! ec))
             return;
 
@@ -731,7 +731,7 @@ class ServerStatus_test :
             return;
 
         boost::beast::websocket::stream<boost::asio::ip::tcp::socket&> ws{sock};
-        ws.handshake(ip + ":" + to_string(port), "/");
+        ws.handshake(ip + ":" + std::to_string(port), "/");
 
         // helper lambda, used below
         auto sendAndParse = [&](std::string const& req) -> Json::Value

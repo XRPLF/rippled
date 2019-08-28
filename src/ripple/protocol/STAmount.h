@@ -105,6 +105,7 @@ public:
     STAmount (SField const& name, Issue const& issue,
         std::uint64_t mantissa = 0, int exponent = 0, bool negative = false);
 
+    explicit
     STAmount (std::uint64_t mantissa = 0, bool negative = false);
 
     STAmount (Issue const& issue, std::uint64_t mantissa = 0, int exponent = 0,

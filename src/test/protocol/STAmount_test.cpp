@@ -78,7 +78,7 @@ public:
         STAmount num (noIssue(), n);
         STAmount den (noIssue(), d);
         STAmount mul (noIssue(), m);
-        STAmount quot = divide (n, d, noIssue());
+        STAmount quot = divide(STAmount(n), STAmount(d), noIssue());
         STAmount res = roundSelf (multiply (quot, mul, noIssue()));
 
         BEAST_EXPECT(! res.native ());

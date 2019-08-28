@@ -132,8 +132,7 @@ public:
     {
         // Explicitly test every defined function for the XRPAmount class
         // since some of them are templated, but not used anywhere else.
-        auto make = [&](auto x) -> XRPAmount {
-            return x; };
+        auto make = [&](auto x) -> XRPAmount { return XRPAmount{x}; };
 
         XRPAmount defaulted;
         (void)defaulted;
@@ -156,8 +155,8 @@ public:
         test = make(targetSame);
         BEAST_EXPECT(test.drops() == 200);
         BEAST_EXPECT(test == targetSame);
-        BEAST_EXPECT(test < XRPAmount{ 1000 });
-        BEAST_EXPECT(test > XRPAmount{ 100 });
+        BEAST_EXPECT(test < XRPAmount{1000});
+        BEAST_EXPECT(test > XRPAmount{100});
 
         test = std::int64_t(200);
         BEAST_EXPECT(test.drops() == 200);

@@ -35,6 +35,7 @@ class Transaction_test : public beast::unit_test::suite
         testcase("Test Range Request");
 
         using namespace test::jtx;
+        using std::to_string;
 
         const char* COMMAND   = jss::tx.c_str();
         const char* BINARY    = jss::binary.c_str();

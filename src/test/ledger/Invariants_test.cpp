@@ -137,7 +137,7 @@ class Invariants_test : public beast::unit_test::suite
                 if(! sle)
                     return false;
                 auto amt = sle->getFieldAmount (sfBalance);
-                sle->setFieldAmount (sfBalance, amt + 500);
+                sle->setFieldAmount (sfBalance, amt + STAmount{500});
                 ac.view().update (sle);
                 return true;
             });
@@ -299,7 +299,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sle = ac.view().peek (keylet::account(A1.id()));
                 if(! sle)
                     return false;
-                sle->setFieldAmount (sfBalance, {1, true});
+                sle->setFieldAmount (sfBalance, STAmount{1, true});
                 BEAST_EXPECT(sle->getFieldAmount(sfBalance).negative());
                 ac.view().update (sle);
                 return true;
@@ -328,9 +328,10 @@ class Invariants_test : public beast::unit_test::suite
             [](Account const&, Account const&, ApplyContext&) { return true; },
             XRPAmount{INITIAL_XRP});
 
-         doInvariantCheck (enabled,
-            {{ "fee paid is 20 exceeds fee specified in transaction." },
-             { "XRP net change of 0 doesn't match fee 20" }},
+        doInvariantCheck(
+            enabled,
+            {{"fee paid is 20 exceeds fee specified in transaction."},
+             {"XRP net change of 0 doesn't match fee 20"}},
             [](Account const&, Account const&, ApplyContext&) { return true; },
             XRPAmount{20},
             STTx { ttACCOUNT_SET,

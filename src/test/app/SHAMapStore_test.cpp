@@ -39,7 +39,7 @@ class SHAMapStore_test : public beast::unit_test::suite
     {
         cfg->LEDGER_HISTORY = deleteInterval;
         auto& section = cfg->section(ConfigSection::nodeDatabase());
-        section.set("online_delete", to_string(deleteInterval));
+        section.set("online_delete", std::to_string(deleteInterval));
         return cfg;
     }
 
@@ -182,7 +182,7 @@ class SHAMapStore_test : public beast::unit_test::suite
         store.rendezvous();
 
         auto ledger = env.rpc("ledger", "validated");
-        BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq++)));
+        BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++)));
 
         BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
         return ledgerSeq;
@@ -230,19 +230,19 @@ public:
 
         for (auto i = firstSeq + 1; i < deleteInterval + firstSeq; ++i)
         {
-            env.fund(XRP(10000), noripple("test" + to_string(i)));
+            env.fund(XRP(10000), noripple("test" + std::to_string(i)));
             env.close();
 
             ledgerTmp = env.rpc("ledger", "current");
-            BEAST_EXPECT(goodLedger(env, ledgerTmp, to_string(i)));
+            BEAST_EXPECT(goodLedger(env, ledgerTmp, std::to_string(i)));
         }
         BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
         for (auto i = 3; i < deleteInterval + lastRotated; ++i)
         {
-            ledgers.emplace(std::make_pair(i,
-                env.rpc("ledger", to_string(i))));
-            BEAST_EXPECT(goodLedger(env, ledgers[i], to_string(i), true) &&
+            ledgers.emplace(
+                std::make_pair(i, env.rpc("ledger", std::to_string(i))));
+            BEAST_EXPECT(goodLedger(env, ledgers[i], std::to_string(i), true) &&
                 getHash(ledgers[i]).length());
         }
 
@@ -255,7 +255,7 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "current");
-            BEAST_EXPECT(goodLedger(env, ledger, to_string(deleteInterval + 4)));
+            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(deleteInterval + 4)));
         }
 
         store.rendezvous();
@@ -275,13 +275,13 @@ public:
             env.close();
 
             ledgerTmp = env.rpc("ledger", "current");
-            BEAST_EXPECT(goodLedger(env, ledgerTmp, to_string(i + 3)));
+            BEAST_EXPECT(goodLedger(env, ledgerTmp, std::to_string(i + 3)));
 
-            ledgers.emplace(std::make_pair(i,
-                env.rpc("ledger", to_string(i))));
+            ledgers.emplace(
+                std::make_pair(i, env.rpc("ledger", std::to_string(i))));
             BEAST_EXPECT(store.getLastRotated() == lastRotated ||
                 i == lastRotated + deleteInterval - 2);
-            BEAST_EXPECT(goodLedger(env, ledgers[i], to_string(i), true) &&
+            BEAST_EXPECT(goodLedger(env, ledgers[i], std::to_string(i), true) &&
                 getHash(ledgers[i]).length());
         }
 
@@ -320,7 +320,7 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq), true));
+            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
         store.rendezvous();
@@ -335,7 +335,7 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq++), true));
+            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
         store.rendezvous();
@@ -351,7 +351,7 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq), true));
+            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
         store.rendezvous();
@@ -389,7 +389,7 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq), true));
+            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
         store.rendezvous();
@@ -398,7 +398,7 @@ public:
         BEAST_EXPECT(lastRotated == store.getLastRotated());
 
         // This does not kick off a cleanup
-        canDelete = env.rpc("can_delete", to_string(
+        canDelete = env.rpc("can_delete", std::to_string(
             ledgerSeq + deleteInterval / 2));
         BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] ==
@@ -414,7 +414,7 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq++), true));
+            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
         store.rendezvous();
@@ -430,7 +430,7 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq), true));
+            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
         store.rendezvous();
@@ -442,7 +442,7 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq++), true));
+            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
         store.rendezvous();
@@ -464,7 +464,7 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq), true));
+            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
         store.rendezvous();
@@ -476,7 +476,7 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq++), true));
+            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
         store.rendezvous();
@@ -497,7 +497,7 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq), true));
+            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
         store.rendezvous();
@@ -509,7 +509,7 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq++), true));
+            BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
         store.rendezvous();

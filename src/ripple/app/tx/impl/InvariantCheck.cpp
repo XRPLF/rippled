@@ -174,7 +174,7 @@ XRPBalanceChecks::visitEntry(
             return true;
 
         // Can't have a negative balance (0 is OK)
-        if (drops < 0)
+        if (drops < XRPAmount{0})
             return true;
 
         return false;
@@ -262,7 +262,7 @@ NoZeroEscrow::visitEntry(
         if (!amount.native())
             return true;
 
-        if (amount.xrp() <= 0)
+        if (amount.xrp() <= XRPAmount{0})
             return true;
 
         if (amount.xrp() >= INITIAL_XRP)

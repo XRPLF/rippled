@@ -344,8 +344,7 @@ public:
     void run() override
     {
         BEAST_EXPECT(INITIAL_XRP.drops() == 100'000'000'000'000'000);
-        BEAST_EXPECT(INITIAL_XRP ==
-            XRPAmount{ 100'000'000'000'000'000 });
+        BEAST_EXPECT(INITIAL_XRP == XRPAmount{100'000'000'000'000'000});
 
         testTypes();
         testJson();

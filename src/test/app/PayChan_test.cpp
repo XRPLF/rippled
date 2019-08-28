@@ -299,7 +299,7 @@ struct PayChan_test : public beast::unit_test::suite
             // Try to claim more than authorized
             auto const preBob = env.balance (bob);
             STAmount const authAmt = chanBal + XRP (500);
-            STAmount const reqAmt = authAmt + 1;
+            STAmount const reqAmt = authAmt + STAmount{1};
             assert (reqAmt <= chanAmt);
             auto const sig =
                 signClaimAuth (alice.pk (), alice.sk (), chan, authAmt);

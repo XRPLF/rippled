@@ -41,12 +41,10 @@ public:
                 return f;
             }();
 
-            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{ 0 }, l, fees, false) ==
-                XRPAmount{ 0 });
-            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{ 10000 }, l, fees, false) ==
-                XRPAmount{ 10000 });
-            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{ 1 }, l, fees, false) ==
-                XRPAmount{ 1 });
+            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{0}, l, fees, false) == XRPAmount{0});
+            BEAST_EXPECT(
+                scaleFeeLoad(FeeUnit64{10000}, l, fees, false) == XRPAmount{10000});
+            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{1}, l, fees, false) == XRPAmount{1});
         }
         {
             Fees const fees = [&]() {
@@ -58,12 +56,10 @@ public:
                 return f;
             }();
 
-            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{ 0 }, l, fees, false) ==
-                XRPAmount{ 0 });
-            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{ 10000 }, l, fees, false) ==
-                XRPAmount{ 100000 });
-            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{ 1 }, l, fees, false) ==
-                XRPAmount{ 10 });
+            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{0}, l, fees, false) == XRPAmount{0});
+            BEAST_EXPECT(
+                scaleFeeLoad(FeeUnit64{10000}, l, fees, false) == XRPAmount{100000});
+            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{1}, l, fees, false) == XRPAmount{10});
         }
         {
             Fees const fees = [&]()
@@ -76,12 +72,10 @@ public:
                 return f;
             }();
 
-            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{ 0 }, l, fees, false) ==
-                XRPAmount{ 0 });
-            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{ 10000 }, l, fees, false) ==
-                XRPAmount{ 1000 });
-            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{ 1 }, l, fees, false) ==
-                XRPAmount{ 0 });
+            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{0}, l, fees, false) == XRPAmount{0});
+            BEAST_EXPECT(
+                scaleFeeLoad(FeeUnit64{10000}, l, fees, false) == XRPAmount{1000});
+            BEAST_EXPECT(scaleFeeLoad(FeeUnit64{1}, l, fees, false) == XRPAmount{0});
         }
     }
 };

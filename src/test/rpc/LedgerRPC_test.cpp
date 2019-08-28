@@ -83,7 +83,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             // using current identifier
             auto const jrr = env.rpc("ledger", "current") [jss::result];
             BEAST_EXPECT(jrr[jss::ledger][jss::closed] == false);
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == to_string(env.current()->info().seq));
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == std::to_string(env.current()->info().seq));
             BEAST_EXPECT(jrr[jss::ledger_current_index] == env.current()->info().seq);
         }
     }

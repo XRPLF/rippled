@@ -370,7 +370,7 @@ public:
                         jv[jss::ledger_hash] ==
                             to_string(env.closed()->info().hash) &&
                         jv[jss::ledger_index] ==
-                            to_string(env.closed()->info().seq) &&
+                            std::to_string(env.closed()->info().seq) &&
                         jv[jss::flags] ==
                             (vfFullyCanonicalSig | STValidation::kFullFlag) &&
                         jv[jss::full] == true &&

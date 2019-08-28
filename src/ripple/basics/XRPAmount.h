@@ -75,6 +75,7 @@ public:
     }
 
     constexpr
+    explicit
     XRPAmount (value_type drops)
         : drops_ (drops)
     {

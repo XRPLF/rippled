@@ -958,7 +958,7 @@ TxQ::apply(Application& app, OpenView& view,
                 auto const potentialTotalSpend = multiTxn->fee +
                     std::min(balance - std::min(balance, reserve),
                     multiTxn->potentialSpend);
-                assert(potentialTotalSpend > 0);
+                assert(potentialTotalSpend > XRPAmount{0});
                 sleBump->setFieldAmount(sfBalance,
                     balance - potentialTotalSpend);
                 sleBump->setFieldU32(sfSequence, tSeq);
@@ -1516,11 +1516,11 @@ TxQ::doRPC(Application& app) const
     auto& levels = ret[jss::levels] = Json::objectValue;
 
     ret[jss::ledger_current_index] = view->info().seq;
-    ret[jss::expected_ledger_size] = to_string(metrics.txPerLedger);
-    ret[jss::current_ledger_size] = to_string(metrics.txInLedger);
-    ret[jss::current_queue_size] = to_string(metrics.txCount);
+    ret[jss::expected_ledger_size] = std::to_string(metrics.txPerLedger);
+    ret[jss::current_ledger_size] = std::to_string(metrics.txInLedger);
+    ret[jss::current_queue_size] = std::to_string(metrics.txCount);
     if (metrics.txQMaxSize)
-        ret[jss::max_queue_size] = to_string(*metrics.txQMaxSize);
+        ret[jss::max_queue_size] = std::to_string(*metrics.txQMaxSize);
 
     levels[jss::reference_level] = to_string(metrics.referenceFeeLevel);
     levels[jss::minimum_level] = to_string(metrics.minProcessingFeeLevel);

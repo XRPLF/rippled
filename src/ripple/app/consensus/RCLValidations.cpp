@@ -198,7 +198,7 @@ handleNewValidation(Application& app,
         {
             auto const seq = val->getFieldU32(sfLedgerSequence);
             dmp(j.warn(),
-                "already validated sequence at or past " + to_string(seq));
+                "already validated sequence at or past " + std::to_string(seq));
         }
 
         if (val->isTrusted() && outcome == ValStatus::current)

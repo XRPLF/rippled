@@ -42,7 +42,7 @@ systemName ()
 /** Number of drops in the genesis account. */
 constexpr
 XRPAmount
-INITIAL_XRP{ 100'000'000'000 * DROPS_PER_XRP };
+INITIAL_XRP{100'000'000'000 * DROPS_PER_XRP };
 
 /** Returns true if the amount does not exceed the initial XRP in existence. */
 inline

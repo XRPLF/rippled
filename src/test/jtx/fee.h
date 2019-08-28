@@ -58,6 +58,12 @@ public:
                 "fee: not XRP");
     }
 
+    explicit
+    fee(std::uint64_t amount)
+        : fee{STAmount{amount}}
+    {
+    }
+
     void
     operator()(Env&, JTx& jt) const;
 };

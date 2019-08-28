@@ -208,7 +208,7 @@ InboundLedger::~InboundLedger ()
             "Acquire " << mHash << " abort " <<
             ((getTimeouts () == 0) ? std::string() :
                 (std::string ("timeouts:") +
-                to_string (getTimeouts ()) + " ")) <<
+                 std::to_string (getTimeouts ()) + " ")) <<
             mStats.get ();
     }
 }
@@ -463,7 +463,7 @@ void InboundLedger::done ()
         (mFailed ? " fail " : " ") <<
         ((getTimeouts () == 0) ? std::string() :
             (std::string ("timeouts:") +
-            to_string (getTimeouts ()) + " ")) <<
+             std::to_string (getTimeouts ()) + " ")) <<
         mStats.get ();
 
     assert (mComplete || mFailed);
