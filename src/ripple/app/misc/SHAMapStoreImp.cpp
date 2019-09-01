@@ -488,6 +488,30 @@ SHAMapStoreImp::dbPaths()
     }
 
     SavedState state = state_db_.getState();
+
+    {
+        auto update = [&dbPath](std::string& sPath)
+        {
+            if (sPath.empty())
+                return false;
+
+            // Check if configured "path" matches stored directory path
+            using namespace boost::filesystem;
+            auto const stored {path(sPath)};
+            if (stored.parent_path() == dbPath)
+                return false;
+
+            sPath = (dbPath / stored.filename()).string();
+            return true;
+        };
+
+        if (update(state.writableDb))
+        {
+            update(state.archiveDb);
+            state_db_.setState(state);
+        }
+    }
+
     bool writableDbExists = false;
     bool archiveDbExists = false;
 
