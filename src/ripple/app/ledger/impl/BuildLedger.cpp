@@ -151,6 +151,9 @@ applyTransactions(
             << (certainRetry ? "Pass: " : "Final pass: ") << pass
             << " completed (" << changes << " changes)";
 
+        // Accumulate changes.
+        count += changes;
+
         // A non-retry pass made no changes
         if (!changes && !certainRetry)
             break;
@@ -193,7 +196,7 @@ buildLedger(
             auto const applied = applyTransactions(app, built, txns,
                 failedTxns, accum, j);
 
-            if (txns.size() || txns.size())
+            if (!txns.empty() || !failedTxns.empty())
                 JLOG(j.debug())
                     << "Applied " << applied << " transactions; "
                     << failedTxns.size() << " failed and "
