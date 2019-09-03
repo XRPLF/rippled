@@ -773,10 +773,11 @@ void NetworkOPsImp::processHeartbeatTimer ()
 
     mConsensus.timerEntry (app_.timeKeeper().closeTime());
 
-    ConsensusPhase nPhase = mConsensus.phase();
-    if(mLastConsensusPhase != nPhase){
-        reportConsensusStateChange(nPhase);
-        mLastConsensusPhase = nPhase;
+    const ConsensusPhase currPhase = mConsensus.phase();
+    if (mLastConsensusPhase != currPhase)
+    {
+        reportConsensusStateChange(currPhase);
+        mLastConsensusPhase = currPhase;
     }
 
     setHeartbeatTimer ();
@@ -1725,25 +1726,24 @@ void NetworkOPsImp::pubConsensus (ConsensusPhase phase)
 {
     ScopedLockType sl (mSubLock);
 
-    if (!mStreamMaps[sServer].empty ())
+    auto& streamMap = mStreamMaps[sServer];
+    if (!streamMap.empty ())
     {
         Json::Value jvObj (Json::objectValue);
         jvObj [jss::type] = "serverStatus";
         jvObj [jss::consensus] = to_string(phase);
 
-        for (auto i = mStreamMaps[sServer].begin ();
-            i != mStreamMaps[sServer].end (); )
+        for (auto i = streamMap.begin ();
+            i != streamMap.end (); )
         {
-            InfoSub::pointer p = i->second.lock ();
-
-            if (p)
+            if (auto p = i->second.lock())
             {
                 p->send (jvObj, true);
                 ++i;
             }
             else
             {
-                i = mStreamMaps[sServer].erase (i);
+                i = streamMap.erase (i);
             }
         }
     }
@@ -2550,9 +2550,9 @@ void NetworkOPsImp::reportFeeChange ()
 
 void NetworkOPsImp::reportConsensusStateChange (ConsensusPhase phase)
 {
-  m_job_queue.addJob (
-      jtCLIENT, "reportConsensusStateChange->pubConsensus",
-      [this, phase] (Job&) { pubConsensus(phase); });
+    m_job_queue.addJob (
+        jtCLIENT, "reportConsensusStateChange->pubConsensus",
+        [this, phase] (Job&) { pubConsensus(phase); });
 }
 
 // This routine should only be used to publish accepted or validated
