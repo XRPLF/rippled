@@ -21,7 +21,6 @@
 #define RIPPLE_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/basics/ScopedLock.h>
 #include <ripple/consensus/Validations.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/RippleLedgerHash.h>
@@ -222,8 +221,6 @@ public:
     }
 
 private:
-    using ScopedUnlockType = GenericScopedUnlock<Mutex>;
-
     Application& app_;
     beast::Journal j_;
 };

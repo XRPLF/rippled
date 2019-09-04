@@ -31,17 +31,16 @@
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/RangeSet.h>
-#include <ripple/basics/ScopedLock.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/beast/insight/Collector.h>
+#include <ripple/beast/utility/PropertyStream.h>
+#include <ripple/core/Stoppable.h>
+#include <ripple/protocol/messages.h>
+#include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
-#include <ripple/beast/insight/Collector.h>
-#include <ripple/core/Stoppable.h>
-#include <ripple/protocol/Protocol.h>
-#include <ripple/beast/utility/PropertyStream.h>
-#include <mutex>
 
-#include <ripple/protocol/messages.h>
+#include <mutex>
 
 namespace ripple {
 
@@ -256,8 +255,6 @@ public:
     }
 
 private:
-    using ScopedUnlockType = GenericScopedUnlock <std::recursive_mutex>;
-
     void setValidLedger(
         std::shared_ptr<Ledger const> const& l);
     void setPubLedger(
@@ -278,10 +275,11 @@ private:
     void fetchForHistory(
         std::uint32_t missing,
         bool& progress,
-        InboundLedger::Reason reason);
+        InboundLedger::Reason reason,
+        std::unique_lock<std::recursive_mutex>&);
     // Try to publish ledgers, acquire missing ledgers.  Always called with
     // m_mutex locked.  The passed lock is a reminder to callers.
-    void doAdvance(std::lock_guard<std::recursive_mutex>&);
+    void doAdvance(std::unique_lock<std::recursive_mutex>&);
     bool shouldAcquire(
         std::uint32_t const currentLedger,
         std::uint32_t const ledgerHistory,
@@ -289,13 +287,13 @@ private:
         std::uint32_t const candidateLedger) const;
 
     std::vector<std::shared_ptr<Ledger const>>
-    findNewLedgersToPublish();
+    findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>&);
 
     void updatePaths(Job& job);
 
     // Returns true if work started.  Always called with m_mutex locked.
     // The passed lock is a reminder to callers.
-    bool newPFWork(const char *name, std::lock_guard<std::recursive_mutex>&);
+    bool newPFWork(const char *name, std::unique_lock<std::recursive_mutex>&);
 
 private:
     Application& app_;
