@@ -51,16 +51,93 @@
 
 namespace ripple {
 
-using namespace std::chrono_literals;
+namespace {
+
+//==============================================================================
+/**
+    Automatically unlocks and re-locks a unique_lock object.
+
+    This is the reverse of a std::unique_lock object - instead of locking the mutex
+    for the lifetime of this object, it unlocks it.
+
+    Make sure you don't try to unlock mutexes that aren't actually locked!
+
+    This is essentially a less-versatile boost::reverse_lock.
+
+    e.g. @code
+
+    std::mutex mut;
+
+    for (;;)
+    {
+        std::unique_lock myScopedLock{mut};
+        // mut is now locked
+
+        ... do some stuff with it locked ..
+
+        while (xyz)
+        {
+            ... do some stuff with it locked ..
+
+            ScopedUnlock unlocker{myScopedLock};
+
+            // mut is now unlocked for the remainder of this block,
+            // and re-locked at the end.
+
+            ...do some stuff with it unlocked ...
+        }  // mut gets locked here.
+
+    }  // mut gets unlocked here
+    @endcode
+*/
+template <class MutexType>
+class ScopedUnlock
+{
+    std::unique_lock<MutexType>& lock_;
+public:
+    /** Creates a ScopedUnlock.
+
+        As soon as it is created, this will unlock the unique_lock, and
+        when the ScopedLock object is deleted, the unique_lock will
+        be re-locked.
+
+        Make sure this object is created and deleted by the same thread,
+        otherwise there are no guarantees what will happen! Best just to use it
+        as a local stack object, rather than creating on the heap.
+    */
+    explicit ScopedUnlock (std::unique_lock<MutexType>& lock)
+        : lock_ (lock)
+    {
+        assert(lock_.owns_lock());
+        lock_.unlock();
+    }
+
+    ScopedUnlock (ScopedUnlock const&) = delete;
+    ScopedUnlock& operator= (ScopedUnlock const&) = delete;
+
+    /** Destructor.
+
+        The unique_lock will be locked after the destructor is called.
+
+        Make sure this object is created and deleted by the same thread,
+        otherwise there are no guarantees what will happen!
+    */
+    ~ScopedUnlock() noexcept(false)
+    {
+        lock_.lock();
+    }
+};
+
+}
 
 // Don't catch up more than 100 ledgers (cannot exceed 256)
-#define MAX_LEDGER_GAP          100
+static constexpr int MAX_LEDGER_GAP {100};
 
 // Don't acquire history if ledger is too old
-auto constexpr MAX_LEDGER_AGE_ACQUIRE = 1min;
+static constexpr std::chrono::minutes MAX_LEDGER_AGE_ACQUIRE {1};
 
 // Don't acquire history if write load is too high
-auto constexpr MAX_WRITE_LOAD_ACQUIRE = 8192;
+static constexpr int MAX_WRITE_LOAD_ACQUIRE {8192};
 
 LedgerMaster::LedgerMaster (Application& app, Stopwatch& stopwatch,
     Stoppable& parent,
@@ -76,7 +153,7 @@ LedgerMaster::LedgerMaster (Application& app, Stopwatch& stopwatch,
         app_.config().FETCH_DEPTH))
     , ledger_history_ (app_.config().LEDGER_HISTORY)
     , ledger_fetch_size_ (app_.config().getSize (siLedgerFetch))
-    , fetch_packs_ ("FetchPack", 65536, 45s, stopwatch,
+    , fetch_packs_ ("FetchPack", 65536, std::chrono::seconds {45}, stopwatch,
         app_.journal("TaggedCache"))
 {
 }
@@ -124,6 +201,7 @@ LedgerMaster::isCompatible (
 std::chrono::seconds
 LedgerMaster::getPublishedLedgerAge()
 {
+    using namespace std::chrono_literals;
     std::chrono::seconds pubClose{mPubLedgerClose.load()};
     if (pubClose == 0s)
     {
@@ -142,6 +220,7 @@ LedgerMaster::getPublishedLedgerAge()
 std::chrono::seconds
 LedgerMaster::getValidatedLedgerAge()
 {
+    using namespace std::chrono_literals;
     std::chrono::seconds valClose{mValidLedgerSign.load()};
     if (valClose == 0s)
     {
@@ -160,6 +239,7 @@ LedgerMaster::getValidatedLedgerAge()
 bool
 LedgerMaster::isCaughtUp(std::string& reason)
 {
+    using namespace std::chrono_literals;
     if (getPublishedLedgerAge() > 3min)
     {
         reason = "No recently-published ledger";
@@ -281,6 +361,7 @@ LedgerMaster::canBeCurrent (std::shared_ptr<Ledger const> const& ledger)
     auto closeTime = app_.timeKeeper().closeTime();
     auto ledgerClose = ledger->info().parentCloseTime;
 
+    using namespace std::chrono_literals;
     if ((validLedger || (ledger->info().seq > 10)) &&
         ((std::max (closeTime, ledgerClose) - std::min (closeTime, ledgerClose))
             > 5min))
@@ -1004,7 +1085,7 @@ LedgerMaster::consensusBuilt(
 void
 LedgerMaster::advanceThread()
 {
-    std::lock_guard sl (m_mutex);
+    std::unique_lock sl (m_mutex);
     assert (!mValidLedger.empty () && mAdvanceThread);
 
     JLOG (m_journal.trace()) << "advanceThread<";
@@ -1045,7 +1126,7 @@ LedgerMaster::getLedgerHashForHistory(
 }
 
 std::vector<std::shared_ptr<Ledger const>>
-LedgerMaster::findNewLedgersToPublish ()
+LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl)
 {
     std::vector<std::shared_ptr<Ledger const>> ret;
 
@@ -1093,7 +1174,7 @@ LedgerMaster::findNewLedgersToPublish ()
     auto valLedger = mValidLedger.get ();
     std::uint32_t valSeq = valLedger->info().seq;
 
-    ScopedUnlockType sul(m_mutex);
+    ScopedUnlock sul{sl};
     try
     {
         for (std::uint32_t seq = pubSeq; seq <= valSeq; ++seq)
@@ -1286,7 +1367,7 @@ LedgerMaster::updatePaths (Job& job)
 bool
 LedgerMaster::newPathRequest ()
 {
-    std::lock_guard ml (m_mutex);
+    std::unique_lock ml (m_mutex);
     mPathFindNewRequest = newPFWork("pf:newRequest", ml);
     return mPathFindNewRequest;
 }
@@ -1305,7 +1386,7 @@ LedgerMaster::isNewPathRequest ()
 bool
 LedgerMaster::newOrderBookDB ()
 {
-    std::lock_guard ml (m_mutex);
+    std::unique_lock ml (m_mutex);
     mPathLedger.reset();
 
     return newPFWork("pf:newOBDB", ml);
@@ -1314,7 +1395,7 @@ LedgerMaster::newOrderBookDB ()
 /** A thread needs to be dispatched to handle pathfinding work of some kind.
 */
 bool
-LedgerMaster::newPFWork (const char *name, std::lock_guard<std::recursive_mutex>&)
+LedgerMaster::newPFWork (const char *name, std::unique_lock<std::recursive_mutex>&)
 {
     if (mPathFindThread < 2)
     {
@@ -1617,9 +1698,10 @@ void
 LedgerMaster::fetchForHistory(
     std::uint32_t missing,
     bool& progress,
-    InboundLedger::Reason reason)
+    InboundLedger::Reason reason,
+    std::unique_lock<std::recursive_mutex>& sl)
 {
-    ScopedUnlockType sl(m_mutex);
+    ScopedUnlock sul{sl};
     if (auto hash = getLedgerHashForHistory(missing, reason))
     {
         assert(hash->isNonZero());
@@ -1734,14 +1816,14 @@ LedgerMaster::fetchForHistory(
 }
 
 // Try to publish ledgers, acquire missing ledgers
-void LedgerMaster::doAdvance (std::lock_guard<std::recursive_mutex>& sl)
+void LedgerMaster::doAdvance (std::unique_lock<std::recursive_mutex>& sl)
 {
     do
     {
         mAdvanceWork = false; // If there's work to do, we'll make progress
         bool progress = false;
 
-        auto const pubLedgers = findNewLedgersToPublish ();
+        auto const pubLedgers = findNewLedgersToPublish (sl);
         if (pubLedgers.empty())
         {
             if (!standalone_ && !app_.getFeeTrack().isLoadedLocal() &&
@@ -1784,7 +1866,7 @@ void LedgerMaster::doAdvance (std::lock_guard<std::recursive_mutex>& sl)
                 }
                 if(missing)
                 {
-                    fetchForHistory(*missing, progress, reason);
+                    fetchForHistory(*missing, progress, reason, sl);
                     if (mValidLedgerSeq != mPubLedgerSeq)
                     {
                         JLOG (m_journal.debug()) <<
@@ -1809,7 +1891,7 @@ void LedgerMaster::doAdvance (std::lock_guard<std::recursive_mutex>& sl)
             for(auto ledger : pubLedgers)
             {
                 {
-                    ScopedUnlockType sul (m_mutex);
+                    ScopedUnlock sul{sl};
                     JLOG (m_journal.debug()) <<
                         "tryAdvance publishing seq " << ledger->info().seq;
                     setFullLedger(ledger, true, true);
@@ -1818,7 +1900,7 @@ void LedgerMaster::doAdvance (std::lock_guard<std::recursive_mutex>& sl)
                 setPubLedger(ledger);
 
                 {
-                    ScopedUnlockType sul(m_mutex);
+                    ScopedUnlock sul{sl};
                     app_.getOPs().pubLedger(ledger);
                 }
             }
@@ -1877,6 +1959,7 @@ LedgerMaster::makeFetchPack (
     uint256 haveLedgerHash,
      UptimeClock::time_point uptime)
 {
+    using namespace std::chrono_literals;
     if (UptimeClock::now() > uptime + 1s)
     {
         JLOG(m_journal.info()) << "Fetch pack request got stale";
