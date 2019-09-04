@@ -19,6 +19,9 @@
 
 #include <ripple/rpc/Role.h>
 #include <boost/beast/core/string.hpp>
+#include <boost/beast/http/field.hpp>
+#include <boost/beast/http/rfc7230.hpp>
+#include <boost/utility/string_view.hpp>
 #include <algorithm>
 
 namespace ripple {
@@ -108,14 +111,7 @@ requestInboundEndpoint (Resource::Manager& manager,
 boost::string_view
 forwardedFor(http_request_type const& request)
 {
-    auto it = request.find("X-Forwarded-For");
-    if (it != request.end())
-    {
-        return boost::beast::http::ext_list{
-            it->value()}.begin()->first;
-    }
-
-    it = request.find("Forwarded");
+    auto it = request.find(boost::beast::http::field::forwarded);
     if (it != request.end())
     {
         auto ascii_tolower = [](char c) -> char
@@ -137,10 +133,23 @@ forwardedFor(http_request_type const& request)
             return {};
 
         found += forStr.size();
-        auto pos{it->value().find(';', forStr.size())};
-        if (pos != boost::string_view::npos)
-            return {found, pos + 1};
-        return {found, it->value().size() - forStr.size()};
+        std::size_t const pos ([&]()
+        {
+            std::size_t const pos{boost::string_view(
+                found, it->value().end() - found).find(';')};
+            if (pos == boost::string_view::npos)
+                return it->value().size() - forStr.size();
+            return pos;
+        }());
+
+        return *boost::beast::http::token_list(
+            boost::string_view(found, pos)).begin();
+    }
+
+    it = request.find("X-Forwarded-For");
+    if (it != request.end())
+    {
+        return *boost::beast::http::token_list(it->value()).begin();
     }
 
     return {};

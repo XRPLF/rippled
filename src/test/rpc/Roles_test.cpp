@@ -82,6 +82,11 @@ class Roles_test : public beast::unit_test::suite
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["ip"] == "55.66.77.88");
 
+            headers["Forwarded"] = "what=where;for=55.66.77.88, 99.00.11.22;"
+                                   "who=3";
+            rpcRes = env.rpc(headers, "ping")["result"];
+            BEAST_EXPECT(rpcRes["ip"] == "55.66.77.88");
+
             wsRes = makeWSClient(
                 env.app().config(), true, 2, headers)->invoke("ping")["result"];
             BEAST_EXPECT(
