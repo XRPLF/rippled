@@ -20,6 +20,7 @@
 #include <ripple/overlay/impl/ProtocolVersion.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/rfc2616.h>
+#include <boost/function_output_iterator.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
 
@@ -44,7 +45,7 @@ to_string(ProtocolVersion const& p)
 {
     // The legacy protocol uses a different name. This can be removed when we
     // migrate away from it and require 2.0 or later.
-    if (p == { 1, 2 })
+    if (p == ProtocolVersion{ 1, 2 })
         return "RTXP/1.2";
 
     return "XRPL/" + std::to_string(p.first) + "." + std::to_string(p.second);
@@ -54,16 +55,16 @@ std::vector<ProtocolVersion>
 parseProtocolVersions(boost::beast::string_view const& value)
 {
     static boost::regex re(
-        "^"                  // start of line
-        "(?:"                // Alternative #1: old-style
-        "RTXP/(1)\\.(2)"     // The string "RTXP/1.2"
-        "|"                  // Alternative #2: new-style
-        "XRPL/"              // the string "XRPL/"
-        "([2-9][0-9]*)"      // a number (greater than 2 with no leading zeroes)
-        "\\."                // a period
-        "(0|[1-9][0-9]*)"    // a number (no leading zeroes unless exactly zero)
+        "^"                   // start of line
+        "(?:"                 // Alternative #1: old-style
+        "RTXP/(1)\\.(2)"      // The string "RTXP/1.2"
+        "|"                   // Alternative #2: new-style
+        "XRPL/"               // the string "XRPL/"
+        "([2-9]|[1-9][0-9]+)" // a number (greater than 2 with no leading zeroes)
+        "\\."                 // a period
+        "(0|[1-9][0-9]*)"     // a number (no leading zeroes unless exactly zero)
         ")"
-        "$"                  // The end of the string
+        "$"                   // The end of the string
         , boost::regex_constants::optimize);
 
     std::vector<ProtocolVersion> result;
@@ -82,6 +83,7 @@ parseProtocolVersions(boost::beast::string_view const& value)
             result.push_back(make_protocol(major, minor));
         }
     }
+
     // We guarantee that the returned list is sorted and contains no duplicates:
     std::sort(result.begin(), result.end());
     result.erase(std::unique(result.begin(), result.end()), result.end());
@@ -94,23 +96,21 @@ negotiateProtocolVersion(boost::beast::string_view const& versions)
 {
     auto const them = parseProtocolVersions(versions);
 
-    std::vector<ProtocolVersion> common;
-    common.reserve(
-        std::distance(
-            std::begin(supportedProtocolList),
-            std::end(supportedProtocolList)));
+    boost::optional<ProtocolVersion> result;
+
+    // The protocol version we want to negotiate is the largest item in the
+    // intersection of the versions supported by us and the peer. Since the
+    // output of std::set_intersection is sorted, that item is always going
+    // to be the last one. So we get a little clever and avoid the need for
+    // a container:
     std::set_intersection(
         them.begin(), them.end(),
         std::begin(supportedProtocolList),
         std::end(supportedProtocolList),
-        std::back_inserter(common));
+        boost::make_function_output_iterator(
+            [&result](auto const& e) { result = e; }));
 
-    auto x = std::max_element(common.begin(), common.end());
-
-    if (x != common.end())
-        return *x;
-
-    return boost::none;
+    return result;
 }
 
 std::string const&
