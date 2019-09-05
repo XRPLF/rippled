@@ -33,14 +33,19 @@ ProtocolVersion const supportedProtocolList[]
     { 2, 0 }
 };
 
-constexpr
-ProtocolVersion const legacyProtocol { 1, 2 };
+#if __cplusplus > 201703L
+static_assert(
+    std::is_sorted(supportedProtocolList.begin(), supportedProtocolList.end()),
+        "The list of supported protocols must be in sorted order.");
+#endif
 
 std::string
 to_string(ProtocolVersion const& p)
 {
-    if (p == legacyProtocol)
-        return "RTXP/" + std::to_string(p.first) + "." + std::to_string(p.second);
+    // The legacy protocol uses a different name. This can be removed when we
+    // migrate away from it and require 2.0 or later.
+    if (p == { 1, 2 })
+        return "RTXP/1.2";
 
     return "XRPL/" + std::to_string(p.first) + "." + std::to_string(p.second);
 }
@@ -61,19 +66,10 @@ parseProtocolVersions(boost::beast::string_view const& value)
         "$"                  // The end of the string
         , boost::regex_constants::optimize);
 
-    static std::string const legacy = to_string(legacyProtocol);
-
     std::vector<ProtocolVersion> result;
 
     for (auto const& s : beast::rfc2616::split_commas(value))
     {
-        // Legacy
-        if (s == legacy)
-        {
-            result.push_back(legacyProtocol);
-            continue;
-        }
-
         boost::smatch m;
         if (boost::regex_match(s, m, re))
         {
@@ -86,8 +82,10 @@ parseProtocolVersions(boost::beast::string_view const& value)
             result.push_back(make_protocol(major, minor));
         }
     }
+    // We guarantee that the returned list is sorted and contains no duplicates:
     std::sort(result.begin(), result.end());
     result.erase(std::unique(result.begin(), result.end()), result.end());
+
     return result;
 }
 
@@ -97,6 +95,10 @@ negotiateProtocolVersion(boost::beast::string_view const& versions)
     auto const them = parseProtocolVersions(versions);
 
     std::vector<ProtocolVersion> common;
+    common.reserve(
+        std::distance(
+            std::begin(supportedProtocolList),
+            std::end(supportedProtocolList)));
     std::set_intersection(
         them.begin(), them.end(),
         std::begin(supportedProtocolList),

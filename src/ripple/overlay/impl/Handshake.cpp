@@ -105,7 +105,7 @@ makeSharedValue (beast::asio::ssl_bundle& ssl, beast::Journal journal)
 void
 buildHandshake(
     boost::beast::http::fields& h,
-    const ripple::uint256& sharedValue,
+    ripple::uint256 const& sharedValue,
     boost::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
@@ -151,7 +151,7 @@ buildHandshake(
 PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
-    const ripple::uint256& sharedValue,
+    ripple::uint256 const& sharedValue,
     boost::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote,
@@ -159,9 +159,7 @@ verifyHandshake(
 {
     if (networkID)
     {
-        auto const iter = headers.find("Network-ID");
-
-        if (iter != headers.end())
+        if (auto const iter = headers.find("Network-ID"); iter != headers.end())
         {
             std::uint32_t nid;
 
@@ -173,68 +171,64 @@ verifyHandshake(
         }
     }
 
+    if (auto const iter = headers.find("Network-Time"); iter != headers.end())
     {
-        auto const iter = headers.find("Network-Time");
-
-        if (iter != headers.end())
+        auto const netTime =
+            [str = iter->value().to_string()]() -> TimeKeeper::time_point
         {
-            auto const netTime = [str=iter->value().to_string()]()
-            {
-                boost::optional<TimeKeeper::time_point> ret;
+            TimeKeeper::duration::rep val;
 
-                TimeKeeper::duration::rep val;
-
-                if (beast::lexicalCastChecked(val, str))
-                    ret.emplace(TimeKeeper::duration{val});
-
-                return ret;
-            }();
+            if (beast::lexicalCastChecked(val, str))
+                return TimeKeeper::time_point{TimeKeeper::duration{val}};
 
             // It's not an error for the header field to not be present but if
             // it is present and it contains junk data, that is an error.
-            if (!netTime)
-                throw std::runtime_error("Invalid peer clock timestamp");
+            throw std::runtime_error("Invalid peer clock timestamp");
+        }();
 
-            using namespace std::chrono;
+        using namespace std::chrono;
 
-            auto const ourTime = app.timeKeeper().now();
-            auto const tolerance = 20s;
+        auto const ourTime = app.timeKeeper().now();
+        auto const tolerance = 20s;
 
-            // We can't blindly "return a-b;" because TimeKeeper::time_point
-            // uses an unsigned integer for representing durations, which is
-            // a problem when trying to subtract time points.
-            // FIXME: @HowardHinnant, should we migrate to using std::int64_t?
-            auto calculateOffset = [](
-                TimeKeeper::time_point a, TimeKeeper::time_point b)
-            {
-                if (a > b)
-                    return duration_cast<std::chrono::seconds>(a - b);
-                return - duration_cast<std::chrono::seconds>(b - a);
-            };
+        // We can't blindly "return a-b;" because TimeKeeper::time_point
+        // uses an unsigned integer for representing durations, which is
+        // a problem when trying to subtract time points.
+        // FIXME: @HowardHinnant, should we migrate to using std::int64_t?
+        auto calculateOffset = [](
+            TimeKeeper::time_point a, TimeKeeper::time_point b)
+        {
+            if (a > b)
+                return duration_cast<std::chrono::seconds>(a - b);
+            return - duration_cast<std::chrono::seconds>(b - a);
+        };
 
-            auto const offset = calculateOffset(*netTime, ourTime);
+        auto const offset = calculateOffset(netTime, ourTime);
 
-            if (date::abs(offset) > tolerance)
-                throw std::runtime_error("Peer clock is too far off");
-        }
+        if (date::abs(offset) > tolerance)
+            throw std::runtime_error("Peer clock is too far off");
     }
 
-    boost::optional<PublicKey> publicKey;
-
+    PublicKey const publicKey = [&headers]
     {
-        auto const iter = headers.find ("Public-Key");
+        if (auto const iter = headers.find ("Public-Key"); iter != headers.end())
+        {
+            auto pk = parseBase58<PublicKey>(
+                TokenType::NodePublic, iter->value().to_string());
 
-        if (iter != headers.end())
-            publicKey = parseBase58<PublicKey>(TokenType::NodePublic, iter->value().to_string());
-    }
+            if(pk)
+            {
+                if (publicKeyType(*pk) != KeyType::secp256k1)
+                    throw std::runtime_error("Unsupported public key type");
 
-    if (!publicKey)
+                return *pk;
+            }
+        }
+
         throw std::runtime_error("Bad node public key");
+    }();
 
-    if (publicKeyType(*publicKey) != KeyType::secp256k1)
-        throw std::runtime_error("Unsupported public key type");
-
-    if (*publicKey == app.nodeIdentity().first)
+    if (publicKey == app.nodeIdentity().first)
         throw std::runtime_error("Self connection");
 
     // This check gets two birds with one stone:
@@ -251,52 +245,44 @@ verifyHandshake(
 
         auto sig = base64_decode(iter->value().to_string());
 
-        if (! verifyDigest(*publicKey, sharedValue, makeSlice(sig), false))
+        if (! verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
             throw std::runtime_error("Failed to verify session");
     }
 
+    if (auto const iter = headers.find ("Local-IP"); iter != headers.end())
     {
-        auto const iter = headers.find ("Local-IP");
+        boost::system::error_code ec;
+        auto const local_ip = boost::asio::ip::address::from_string(
+            iter->value().to_string(), ec);
 
-        if (iter != headers.end())
+        if (ec)
+            throw std::runtime_error("Invalid Local-IP");
+
+        if (beast::IP::is_public(remote) && remote != local_ip)
+            throw std::runtime_error("Incorrect Local-IP: " +
+                remote.to_string() + " instead of " + local_ip.to_string());
+    }
+
+    if (auto const iter = headers.find("Remote-IP"); iter != headers.end())
+    {
+        boost::system::error_code ec;
+        auto const remote_ip = boost::asio::ip::address::from_string(
+            iter->value().to_string(), ec);
+
+        if (ec)
+            throw std::runtime_error("Invalid Remote-IP");
+
+        if (beast::IP::is_public(remote) && !beast::IP::is_unspecified(public_ip))
         {
-            boost::system::error_code ec;
-            auto const local_ip = boost::asio::ip::address::from_string(
-                iter->value().to_string(), ec);
-
-            if (ec)
-                throw std::runtime_error("Invalid Local-IP");
-
-            if (beast::IP::is_public(remote) && remote != local_ip)
-                throw std::runtime_error("Incorrect Local-IP: " +
-                    remote.to_string() + " instead of " + local_ip.to_string());
+            // We know our public IP and peer reports our connection came
+            // from some other IP.
+            if (remote_ip != public_ip)
+                throw std::runtime_error("Incorrect Remote-IP: " +
+                    public_ip.to_string() + " instead of " + remote_ip.to_string());
         }
     }
 
-    {
-        auto const iter = headers.find("Remote-IP");
-
-        if (iter != headers.end())
-        {
-            boost::system::error_code ec;
-            auto const remote_ip = boost::asio::ip::address::from_string(
-                iter->value().to_string(), ec);
-
-            if (ec)
-                throw std::runtime_error("Invalid Remote-IP");
-
-            if (beast::IP::is_public(remote) && !beast::IP::is_unspecified(public_ip))
-            {
-                // We know our public IP and peer reports our connection came
-                // from some other IP.
-                if (remote_ip != public_ip)
-                    throw std::runtime_error("Incorrect Remote-IP: " +
-                        public_ip.to_string() + " instead of " + remote_ip.to_string());
-            }
-        }
-    }
-
-    return *publicKey;
+    return publicKey;
 }
 
 }

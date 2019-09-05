@@ -238,7 +238,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         }
     }
 
-    auto negotiatedVersion = negotiateProtocolVersion(request["Upgrade"]);
+    auto const negotiatedVersion = negotiateProtocolVersion(request["Upgrade"]);
     if (!negotiatedVersion)
     {
         m_peerFinder->on_closed(slot);
@@ -249,7 +249,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         return handoff;
     }
 
-    auto sharedValue = makeSharedValue(*ssl_bundle, journal);
+    auto const sharedValue = makeSharedValue(*ssl_bundle, journal);
     if(! sharedValue)
     {
         m_peerFinder->on_closed(slot);

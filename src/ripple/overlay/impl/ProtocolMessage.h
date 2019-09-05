@@ -190,49 +190,49 @@ invokeProtocolMessage (Buffers const& buffers, Handler& handler)
     case protocol::mtMANIFESTS:
         success = detail::invoke<protocol::TMManifests>(*header, buffers, handler);
         break;
-    case protocol::mtPING:                  
+    case protocol::mtPING:
         success = detail::invoke<protocol::TMPing>(*header, buffers, handler);
         break;
-    case protocol::mtCLUSTER:               
+    case protocol::mtCLUSTER:
         success = detail::invoke<protocol::TMCluster>(*header, buffers, handler);
         break;
-    case protocol::mtGET_SHARD_INFO:        
+    case protocol::mtGET_SHARD_INFO:
         success = detail::invoke<protocol::TMGetShardInfo>(*header, buffers, handler);
         break;
-    case protocol::mtSHARD_INFO:            
+    case protocol::mtSHARD_INFO:
         success = detail::invoke<protocol::TMShardInfo>(*header, buffers, handler);
         break;
-    case protocol::mtGET_PEER_SHARD_INFO:   
+    case protocol::mtGET_PEER_SHARD_INFO:
         success = detail::invoke<protocol::TMGetPeerShardInfo>(*header, buffers, handler);
         break;
-    case protocol::mtPEER_SHARD_INFO:       
+    case protocol::mtPEER_SHARD_INFO:
         success = detail::invoke<protocol::TMPeerShardInfo>(*header, buffers, handler);
         break;
-    case protocol::mtENDPOINTS:             
+    case protocol::mtENDPOINTS:
         success = detail::invoke<protocol::TMEndpoints>(*header, buffers, handler);
         break;
-    case protocol::mtTRANSACTION:           
+    case protocol::mtTRANSACTION:
         success = detail::invoke<protocol::TMTransaction>(*header, buffers, handler);
         break;
-    case protocol::mtGET_LEDGER:            
+    case protocol::mtGET_LEDGER:
         success = detail::invoke<protocol::TMGetLedger>(*header, buffers, handler);
         break;
-    case protocol::mtLEDGER_DATA:           
+    case protocol::mtLEDGER_DATA:
         success = detail::invoke<protocol::TMLedgerData>(*header, buffers, handler);
         break;
-    case protocol::mtPROPOSE_LEDGER:        
+    case protocol::mtPROPOSE_LEDGER:
         success = detail::invoke<protocol::TMProposeSet>(*header, buffers, handler);
         break;
-    case protocol::mtSTATUS_CHANGE:         
+    case protocol::mtSTATUS_CHANGE:
         success = detail::invoke<protocol::TMStatusChange>(*header, buffers, handler);
         break;
-    case protocol::mtHAVE_SET:              
+    case protocol::mtHAVE_SET:
         success = detail::invoke<protocol::TMHaveTransactionSet>(*header, buffers, handler);
         break;
-    case protocol::mtVALIDATION:            
+    case protocol::mtVALIDATION:
         success = detail::invoke<protocol::TMValidation>(*header, buffers, handler);
         break;
-    case protocol::mtGET_OBJECTS:           
+    case protocol::mtGET_OBJECTS:
         success = detail::invoke<protocol::TMGetObjectByHash>(*header, buffers, handler);
         break;
     default:

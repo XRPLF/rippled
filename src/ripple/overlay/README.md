@@ -118,7 +118,7 @@ See [RFC2616 &sect;14.43](https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.htm
 | `Server`            	|                   	| :heavy_check_mark: 	|
 
 The `Server` field indicates the version of the software that the
-peer that is processig the HTTP request is using. No semantic meaning is
+peer that is processing the HTTP request is using. No semantic meaning is
 assigned to the value in this field but it is recommended that implementations
 specify the version of the software that is used.
 
@@ -191,7 +191,7 @@ servers, a peer making outgoing connections can deduce its own IP address.
 
 | Field Name          	|  Request          	| Response          	|
 |---------------------	|:-----------------:	|:-----------------:	|
-| `Local-IP`          	| :heavy_check_mark: 	| :heavy_check_mark: 	|
+| `Local-IP`          	| :white_check_mark: 	| :white_check_mark: 	|
 
 The optional `Local-IP` field contains the string representation of the IP
 address that the peer sending the field believes to be its own.
@@ -221,9 +221,9 @@ appropriate HTTP error code (e.g. by sending an HTTP 400 "Bad Request" response)
 
 | Field Name          	|  Request          	| Response          	|
 |---------------------	|:-----------------:	|:-----------------:	|
-| `Network-Time`      	| :heavy_check_mark: 	| :heavy_check_mark: 	|
+| `Network-Time`      	| :white_check_mark: 	| :white_check_mark: 	|
 
-The mandatory `Network-Time` field reports the current [time](https://xrpl.org/basic-data-types.html#specifying-time)
+The optional `Network-Time` field reports the current [time](https://xrpl.org/basic-data-types.html#specifying-time)
 according to sender's internal clock.
 
 Servers should fail a connection if their clocks are not within 20 seconds of

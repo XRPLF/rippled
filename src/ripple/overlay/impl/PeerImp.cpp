@@ -134,28 +134,20 @@ PeerImp::run()
     boost::optional<uint256> closed;
     boost::optional<uint256> previous;
 
+    if (auto const iter = headers_.find("Closed-Ledger"); iter != headers_.end())
     {
-        auto const iter = headers_.find("Closed-Ledger");
+        closed = parseLedgerHash(iter->value().to_string());
 
-        if (iter != headers_.end())
-        {
-            closed = parseLedgerHash(iter->value().to_string());
-
-            if (!closed)
-                fail("Malformed handshake data (1)");
-        }
+        if (!closed)
+            fail("Malformed handshake data (1)");
     }
 
+    if (auto const iter = headers_.find("Previous-Ledger"); iter != headers_.end())
     {
-        auto const iter = headers_.find("Previous-Ledger");
+        previous = parseLedgerHash(iter->value().to_string());
 
-        if (iter != headers_.end())
-        {
-            previous = parseLedgerHash(iter->value().to_string());
-
-            if (!previous)
-                fail("Malformed handshake data (2)");
-        }
+        if (!previous)
+            fail("Malformed handshake data (2)");
     }
 
     if (previous && !closed)
@@ -705,7 +697,7 @@ void PeerImp::doAccept()
 
     JLOG(journal_.debug()) << "doAccept: " << remote_address_;
 
-    auto sharedValue = makeSharedValue(*ssl_bundle_, journal_);
+    auto const sharedValue = makeSharedValue(*ssl_bundle_, journal_);
 
     // This shouldn't fail since we already computed
     // the shared value successfully in OverlayImpl

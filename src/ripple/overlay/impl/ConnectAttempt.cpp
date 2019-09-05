@@ -193,7 +193,7 @@ ConnectAttempt::onHandshake (error_code ec)
             beast::IPAddressConversion::from_asio (local_endpoint)))
         return fail("Duplicate connection");
 
-    auto sharedValue = makeSharedValue(*ssl_bundle_, journal_);
+    auto const sharedValue = makeSharedValue(*ssl_bundle_, journal_);
     if (! sharedValue)
         return close(); // makeSharedValue logs
 
@@ -338,7 +338,7 @@ ConnectAttempt::processResponse()
             return fail("processResponse: Unable to negotiate protocol version");
     }
 
-    auto sharedValue = makeSharedValue(*ssl_bundle_, journal_);
+    auto const sharedValue = makeSharedValue(*ssl_bundle_, journal_);
     if(! sharedValue)
         return close(); // makeSharedValue logs
 
