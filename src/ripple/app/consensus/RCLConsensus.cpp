@@ -895,7 +895,8 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const & prevLgr)
         }
     }
 
-    const bool synced = app_.getOPs().getOperatingMode() == NetworkOPs::omFULL;
+    const bool synced = app_.getOPs().getOperatingMode() ==
+        OperatingMode::FULL;
 
     if (validating_)
     {
@@ -948,6 +949,13 @@ bool
 RCLConsensus::Adaptor::validator() const
 {
     return !valPublic_.empty();
+}
+
+void
+RCLConsensus::Adaptor::updateOperatingMode(std::size_t const positions) const
+{
+    if (! positions && app_.getOPs().isFull())
+        app_.getOPs().setMode(OperatingMode::CONNECTED);
 }
 
 void

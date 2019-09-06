@@ -150,7 +150,7 @@ error_code_i fillHandler (Context& context,
         return rpcNO_PERMISSION;
 
     if ((handler->condition_ & NEEDS_NETWORK_CONNECTION) &&
-        (context.netOps.getOperatingMode () < NetworkOPs::omSYNCING))
+        (context.netOps.getOperatingMode () < OperatingMode::SYNCING))
     {
         JLOG (context.j.info())
             << "Insufficient network mode for RPC: "

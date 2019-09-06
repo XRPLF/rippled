@@ -152,6 +152,15 @@ class RCLConsensus
         bool
         validator() const;
 
+        /** Update operating mode based on current peer positions.
+         *
+         * If our current ledger has no agreement from the network,
+         * then we cannot be in the omFULL mode.
+         *
+         * @param positions Number of current peer positions.
+         */
+        void updateOperatingMode(std::size_t const positions) const;
+
         /** Consensus simulation parameters
          */
         ConsensusParms const&
