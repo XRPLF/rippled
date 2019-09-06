@@ -212,11 +212,12 @@ ShardArchiveHandler::complete(path dstPath)
         {
             // If validating and not synced then defer and retry
             auto const mode {ptr->app_.getOPs().getOperatingMode()};
-            if (ptr->validate_ && mode != NetworkOPs::omFULL)
+            if (ptr->validate_ && mode != OperatingMode::FULL)
             {
                 std::lock_guard lock(m_);
                 timer_.expires_from_now(static_cast<std::chrono::seconds>(
-                    (NetworkOPs::omFULL - mode) * 10));
+                    (static_cast<std::size_t>(OperatingMode::FULL)
+                        - static_cast<std::size_t>(mode)) * 10));
                 timer_.async_wait(
                     [=, dstPath = std::move(dstPath), ptr = std::move(ptr)]
                     (boost::system::error_code const& ec)

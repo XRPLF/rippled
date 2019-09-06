@@ -1285,6 +1285,7 @@ Consensus<Adaptor>::phaseEstablish()
 
     JLOG(j_.info()) << "Converge cutoff (" << currPeerPositions_.size()
                     << " participants)";
+    adaptor_.updateOperatingMode(currPeerPositions_.size());
     prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
     phase_ = ConsensusPhase::accepted;

@@ -650,17 +650,17 @@ SHAMapStoreImp::health()
         if (stop_)
             return Health::stopping;
     }
-    if (!netOPs_)
+    if (! netOPs_)
         return Health::ok;
 
-    NetworkOPs::OperatingMode mode = netOPs_->getOperatingMode();
-
+    constexpr static std::chrono::seconds age_threshold(60);
     auto age = ledgerMaster_->getValidatedLedgerAge();
-    if (mode != NetworkOPs::omFULL || age.count() >= ageThreshold_)
+    OperatingMode mode = netOPs_->getOperatingMode();
+    if (mode != OperatingMode::FULL || age > age_threshold)
     {
-        JLOG(journal_.warn()) << "Not deleting. state: " << mode
-                               << " age " << age.count()
-                               << " age threshold " << ageThreshold_;
+        JLOG(journal_.warn()) << "Not deleting. state: "
+                              << app_.getOPs().strOperatingMode(mode, false)
+                              << ". age " << age.count() << 's';
         healthy_ = false;
     }
 

@@ -865,6 +865,10 @@ struct Peer
         return runAsValidator;
     }
 
+    void
+    updateOperatingMode(std::size_t const positions) const
+    {}
+
     //--------------------------------------------------------------------------
     //  A locally submitted transaction
     void

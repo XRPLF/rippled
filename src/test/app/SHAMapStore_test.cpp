@@ -40,7 +40,6 @@ class SHAMapStore_test : public beast::unit_test::suite
         cfg->LEDGER_HISTORY = deleteInterval;
         auto& section = cfg->section(ConfigSection::nodeDatabase());
         section.set("online_delete", to_string(deleteInterval));
-        //section.set("age_threshold", "60");
         return cfg;
     }
 

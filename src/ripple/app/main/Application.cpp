@@ -2048,7 +2048,7 @@ bool ApplicationImp::serverOkay (std::string& reason)
         return false;
     }
 
-    if (getOPs ().getOperatingMode () < NetworkOPs::omSYNCING)
+    if (getOPs ().getOperatingMode () < OperatingMode::SYNCING)
     {
         reason = "Not synchronized with network";
         return false;

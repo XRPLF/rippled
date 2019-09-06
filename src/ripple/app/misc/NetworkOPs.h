@@ -55,6 +55,25 @@ class ValidatorKeys;
 // code assumes this node is synched (and will continue to do so until
 // there's a functional network.
 //
+
+/** Specifies the mode under which the server believes it's operating.
+
+    This has implications about how the server processes transactions and
+    how it responds to requests (e.g. account balance request).
+
+    @note Other code relies on the numerical values of these constants; do
+          not change them without verifying each use and ensuring that it is
+          not a breaking change.
+*/
+enum class OperatingMode
+{
+    DISCONNECTED  = 0,    //!< not ready to process requests
+    CONNECTED     = 1,    //!< convinced we are talking to the network
+    SYNCING       = 2,    //!< fallen slightly behind
+    TRACKING      = 3,    //!< convinced we agree with the network
+    FULL          = 4     //!< we have the ledger and can even validate
+};
+
 /** Provides server functionality for clients.
 
     Clients include backend applications, local commands, and connected
@@ -76,16 +95,6 @@ protected:
 public:
     using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
 
-    enum OperatingMode
-    {
-        // how we process transactions or account balance requests
-        omDISCONNECTED  = 0,    // not ready to process requests
-        omCONNECTED     = 1,    // convinced we are talking to the network
-        omSYNCING       = 2,    // fallen slightly behind
-        omTRACKING      = 3,    // convinced we agree with the network
-        omFULL          = 4     // we have the ledger and can even validate
-    };
-
     enum class FailHard : unsigned char
     {
         no,
@@ -105,7 +114,9 @@ public:
     //
 
     virtual OperatingMode getOperatingMode () const = 0;
-    virtual std::string strOperatingMode (bool admin = false) const = 0;
+    virtual std::string strOperatingMode (
+        OperatingMode const mode, bool const admin = false) const = 0;
+    virtual std::string strOperatingMode (bool const admin = false) const = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -171,6 +182,7 @@ public:
     virtual void clearNeedNetworkLedger () = 0;
     virtual bool isNeedNetworkLedger () = 0;
     virtual bool isFull () = 0;
+    virtual void setMode(OperatingMode om) = 0;
     virtual bool isAmendmentBlocked () = 0;
     virtual void setAmendmentBlocked () = 0;
     virtual void consensusViewChange () = 0;
