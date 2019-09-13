@@ -38,7 +38,7 @@ public:
         Scheduler& scheduler,
         int readThreads,
         Stoppable& parent,
-        std::unique_ptr<Backend> backend,
+        std::shared_ptr<Backend> backend,
         Section const& config,
         beast::Journal j)
         : Database(name, parent, scheduler, readThreads, config, j)
@@ -91,10 +91,10 @@ public:
         std::shared_ptr<NodeObject>& object) override;
 
     bool
-    copyLedger(std::shared_ptr<Ledger const> const& ledger) override
+    storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override
     {
-        return Database::copyLedger(
-            *backend_, *ledger, pCache_, nCache_, nullptr);
+        return Database::storeLedger(
+            *srcLedger, backend_, pCache_, nCache_, nullptr);
     }
 
     int
@@ -123,12 +123,12 @@ private:
     std::shared_ptr<KeyCache<uint256>> nCache_;
 
     // Persistent key/value storage
-    std::unique_ptr<Backend> backend_;
+    std::shared_ptr<Backend> backend_;
 
     std::shared_ptr<NodeObject>
     fetchFrom(uint256 const& hash, std::uint32_t seq) override
     {
-        return fetchInternal(hash, *backend_);
+        return fetchInternal(hash, backend_);
     }
 
     void

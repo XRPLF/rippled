@@ -112,24 +112,6 @@ SHAMapNodeID SHAMapNodeID::getChildNodeID (int m) const
 // Which branch would contain the specified hash
 int SHAMapNodeID::selectBranch (uint256 const& hash) const
 {
-#if RIPPLE_VERIFY_NODEOBJECT_KEYS
-
-    if (mDepth >= 64)
-    {
-        assert (false);
-        return -1;
-    }
-
-    if ((hash & Masks(mDepth)) != mNodeID)
-    {
-        std::cerr << "selectBranch(" << getString () << std::endl;
-        std::cerr << "  " << hash << " off branch" << std::endl;
-        assert (false);
-        return -1;  // does not go under this node
-    }
-
-#endif
-
     int branch = * (hash.begin () + (mDepth / 2));
 
     if (mDepth & 1)

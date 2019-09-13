@@ -149,7 +149,7 @@ public:
     */
     virtual
     bool
-    copyLedger(std::shared_ptr<Ledger const> const& ledger) = 0;
+    storeLedger(std::shared_ptr<Ledger const> const& srcLedger) = 0;
 
     /** Wait for all currently pending async reads to complete.
     */
@@ -211,12 +211,15 @@ public:
     void
     onStop() override;
 
+    void
+    onChildrenStopped() override;
+
     /** @return The earliest ledger sequence allowed
     */
     std::uint32_t
-    earliestSeq() const
+    earliestLedgerSeq() const
     {
-        return earliestSeq_;
+        return earliestLedgerSeq_;
     }
 
 protected:
@@ -234,14 +237,17 @@ protected:
         storeSz_ += sz;
     }
 
+    // Called by the public asyncFetch function
     void
     asyncFetch(uint256 const& hash, std::uint32_t seq,
         std::shared_ptr<TaggedCache<uint256, NodeObject>> const& pCache,
             std::shared_ptr<KeyCache<uint256>> const& nCache);
 
+    // Called by the public fetch function
     std::shared_ptr<NodeObject>
-    fetchInternal(uint256 const& hash, Backend& srcBackend);
+    fetchInternal(uint256 const& hash, std::shared_ptr<Backend> backend);
 
+    // Called by the public import function
     void
     importInternal(Backend& dstBackend, Database& srcDB);
 
@@ -250,11 +256,14 @@ protected:
         TaggedCache<uint256, NodeObject>& pCache,
             KeyCache<uint256>& nCache, bool isAsync);
 
+    // Called by the public storeLedger function
     bool
-    copyLedger(Backend& dstBackend, Ledger const& srcLedger,
-        std::shared_ptr<TaggedCache<uint256, NodeObject>> const& pCache,
-            std::shared_ptr<KeyCache<uint256>> const& nCache,
-                std::shared_ptr<Ledger const> const& srcNext);
+    storeLedger(
+        Ledger const& srcLedger,
+        std::shared_ptr<Backend> dstBackend,
+        std::shared_ptr<TaggedCache<uint256, NodeObject>> dstPCache,
+        std::shared_ptr<KeyCache<uint256>> dstNCache,
+        std::shared_ptr<Ledger const> next);
 
 private:
     std::atomic<std::uint32_t> storeCount_ {0};
@@ -283,7 +292,7 @@ private:
 
     // The default is 32570 to match the XRP ledger network's earliest
     // allowed sequence. Alternate networks may set this value.
-    std::uint32_t const earliestSeq_;
+    std::uint32_t const earliestLedgerSeq_;
 
     virtual
     std::shared_ptr<NodeObject>

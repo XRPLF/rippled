@@ -34,7 +34,6 @@ namespace ripple {
 /** RPC command that downloads and import shard archives.
     {
       shards: [{index: <integer>, url: <string>}]
-      validate: <bool> // optional, default is true
     }
 
     example:
@@ -124,20 +123,9 @@ doDownloadShard(RPC::JsonContext& context)
         }
     }
 
-    bool validate {true};
-    if (context.params.isMember(jss::validate))
-    {
-        if (!context.params[jss::validate].isBool())
-        {
-            return RPC::expected_field_error(
-                std::string(jss::validate), "a bool");
-        }
-        validate = context.params[jss::validate].asBool();
-    }
-
     // Begin downloading. The handler keeps itself alive while downloading.
     auto handler {
-        std::make_shared<RPC::ShardArchiveHandler>(context.app, validate)};
+        std::make_shared<RPC::ShardArchiveHandler>(context.app)};
     for (auto& [index, url] : archives)
     {
         if (!handler->add(index, std::move(url)))

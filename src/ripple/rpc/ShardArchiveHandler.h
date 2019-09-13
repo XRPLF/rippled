@@ -41,8 +41,7 @@ public:
     ShardArchiveHandler& operator= (ShardArchiveHandler&&) = delete;
     ShardArchiveHandler& operator= (ShardArchiveHandler const&) = delete;
 
-    /** @param validate if shard data should be verified with network. */
-    ShardArchiveHandler(Application& app, bool validate);
+    ShardArchiveHandler(Application& app);
 
     ~ShardArchiveHandler();
 
@@ -80,7 +79,6 @@ private:
     Application& app_;
     std::shared_ptr<SSLHTTPDownloader> downloader_;
     boost::filesystem::path const downloadDir_;
-    bool const validate_;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
     bool process_;
     std::map<std::uint32_t, parsedURL> archives_;

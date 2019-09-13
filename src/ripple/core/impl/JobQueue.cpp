@@ -31,7 +31,7 @@ JobQueue::JobQueue (beast::insight::Collector::ptr const& collector,
     , m_lastJob (0)
     , m_invalidJobData (JobTypes::instance().getInvalid (), collector, logs)
     , m_processCount (0)
-    , m_workers (*this, perfLog, "JobQueue", 0)
+    , m_workers (*this, &perfLog, "JobQueue", 0)
     , m_cancelCallback (std::bind (&Stoppable::isStopping, this))
     , perfLog_ (perfLog)
     , m_collector (collector)

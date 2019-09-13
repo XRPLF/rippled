@@ -95,9 +95,9 @@ public:
     Blob const& getData () const;
 
 private:
-    NodeObjectType mType;
-    uint256 mHash;
-    Blob mData;
+    NodeObjectType const mType;
+    uint256 const mHash;
+    Blob const mData;
 };
 
 }

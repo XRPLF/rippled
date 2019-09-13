@@ -47,7 +47,6 @@ find_package (Boost 1.70 REQUIRED
     filesystem
     program_options
     regex
-    serialization
     system
     thread)
 
@@ -69,7 +68,6 @@ target_link_libraries (ripple_boost
     Boost::filesystem
     Boost::program_options
     Boost::regex
-    Boost::serialization
     Boost::system
     Boost::thread)
 if (Boost_COMPILER)

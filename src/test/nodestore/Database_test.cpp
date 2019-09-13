@@ -165,7 +165,7 @@ public:
                 std::unique_ptr<Database> db =
                     Manager::instance().make_Database(
                         "test", scheduler, 2, parent, nodeParams, journal_);
-                BEAST_EXPECT(db->earliestSeq() == XRP_LEDGER_EARLIEST_SEQ);
+                BEAST_EXPECT(db->earliestLedgerSeq() == XRP_LEDGER_EARLIEST_SEQ);
             }
 
             // Set an invalid earliest ledger sequence
@@ -190,7 +190,7 @@ public:
                         "test", scheduler, 2, parent, nodeParams, journal_);
 
                 // Verify database uses the earliest ledger sequence setting
-                BEAST_EXPECT(db->earliestSeq() == 1);
+                BEAST_EXPECT(db->earliestLedgerSeq() == 1);
             }
 
 

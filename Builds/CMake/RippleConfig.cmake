@@ -21,7 +21,6 @@ find_dependency (Boost 1.70
     filesystem
     program_options
     regex
-    serialization
     system
     thread)
 #[=========================================================[

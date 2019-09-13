@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012, 2019 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,50 +17,50 @@
 */
 //==============================================================================
 
-#include <ripple/nodestore/NodeObject.h>
-#include <memory>
+#include <ripple/nodestore/impl/TaskQueue.h>
+
+#include <cassert>
 
 namespace ripple {
+namespace NodeStore {
 
-//------------------------------------------------------------------------------
-
-NodeObject::NodeObject (
-    NodeObjectType type,
-    Blob&& data,
-    uint256 const& hash,
-    PrivateAccess)
-    : mType (type)
-    , mHash (hash)
-    , mData (std::move(data))
+TaskQueue::TaskQueue(Stoppable& parent)
+    : Stoppable("TaskQueue", parent)
+    , workers_(*this, nullptr, "Shard store taskQueue", 1)
 {
 }
 
-std::shared_ptr<NodeObject>
-NodeObject::createObject (
-    NodeObjectType type,
-    Blob&& data,
-    uint256 const& hash)
+void
+TaskQueue::onStop()
 {
-    return std::make_shared <NodeObject> (
-        type, std::move (data), hash, PrivateAccess ());
+    workers_.pauseAllThreadsAndWait();
+    stopped();
 }
 
-NodeObjectType
-NodeObject::getType () const
+void
+TaskQueue::addTask(std::function<void()> task)
 {
-    return mType;
+    std::lock_guard lock {mutex_};
+
+    tasks_.emplace(std::move(task));
+    workers_.addTask();
 }
 
-uint256 const&
-NodeObject::getHash () const
+void
+TaskQueue::processTask(int instance)
 {
-    return mHash;
+    std::function<void()> task;
+
+    {
+        std::lock_guard lock {mutex_};
+        assert(!tasks_.empty());
+
+        task = std::move(tasks_.front());
+        tasks_.pop();
+    }
+
+    task();
 }
 
-Blob const&
-NodeObject::getData () const
-{
-    return mData;
-}
-
-}
+} // NodeStore
+} // ripple

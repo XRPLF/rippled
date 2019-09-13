@@ -19,8 +19,6 @@
 
 #include <ripple/basics/RangeSet.h>
 #include <ripple/beast/unit_test.h>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
 
 namespace ripple
 {
@@ -78,39 +76,73 @@ public:
     }
 
     void
-    testSerialization()
+    testFromString()
     {
+        testcase("fromString");
 
-        auto works = [](RangeSet<std::uint32_t> const & orig)
-        {
-            std::stringstream ss;
-            boost::archive::binary_oarchive oa(ss);
-            oa << orig;
+        RangeSet<std::uint32_t> set;
 
-            boost::archive::binary_iarchive ia(ss);
-            RangeSet<std::uint32_t> deser;
-            ia >> deser;
+        BEAST_EXPECT(!from_string(set, ""));
+        BEAST_EXPECT(boost::icl::length(set) == 0);
 
-            return orig == deser;
-        };
+        BEAST_EXPECT(!from_string(set, "#"));
+        BEAST_EXPECT(boost::icl::length(set) == 0);
 
-        RangeSet<std::uint32_t> rs;
+        BEAST_EXPECT(!from_string(set, ","));
+        BEAST_EXPECT(boost::icl::length(set) == 0);
 
-        BEAST_EXPECT(works(rs));
+        BEAST_EXPECT(!from_string(set, ",-"));
+        BEAST_EXPECT(boost::icl::length(set) == 0);
 
-        rs.insert(3);
-        BEAST_EXPECT(works(rs));
+        BEAST_EXPECT(!from_string(set, "1,,2"));
+        BEAST_EXPECT(boost::icl::length(set) == 0);
 
-        rs.insert(range(7u, 10u));
-        BEAST_EXPECT(works(rs));
+        set.clear();
+        BEAST_EXPECT(from_string(set, "1"));
+        BEAST_EXPECT(boost::icl::length(set) == 1);
+        BEAST_EXPECT(boost::icl::first(set) == 1);
 
+        set.clear();
+        BEAST_EXPECT(from_string(set, "1,1"));
+        BEAST_EXPECT(boost::icl::length(set) == 1);
+        BEAST_EXPECT(boost::icl::first(set) == 1);
+
+        set.clear();
+        BEAST_EXPECT(from_string(set, "1-1"));
+        BEAST_EXPECT(boost::icl::length(set) == 1);
+        BEAST_EXPECT(boost::icl::first(set) == 1);
+
+        set.clear();
+        BEAST_EXPECT(from_string(set, "1,4-6"));
+        BEAST_EXPECT(boost::icl::length(set) == 4);
+        BEAST_EXPECT(boost::icl::first(set) == 1);
+        BEAST_EXPECT(!boost::icl::contains(set, 2));
+        BEAST_EXPECT(!boost::icl::contains(set, 3));
+        BEAST_EXPECT(boost::icl::contains(set, 4));
+        BEAST_EXPECT(boost::icl::contains(set, 5));
+        BEAST_EXPECT(boost::icl::last(set) == 6);
+
+        set.clear();
+        BEAST_EXPECT(from_string(set, "1-2,4-6"));
+        BEAST_EXPECT(boost::icl::length(set) == 5);
+        BEAST_EXPECT(boost::icl::first(set) == 1);
+        BEAST_EXPECT(boost::icl::contains(set, 2));
+        BEAST_EXPECT(boost::icl::contains(set, 4));
+        BEAST_EXPECT(boost::icl::last(set) == 6);
+
+        set.clear();
+        BEAST_EXPECT(from_string(set, "1-2,6"));
+        BEAST_EXPECT(boost::icl::length(set) == 3);
+        BEAST_EXPECT(boost::icl::first(set) == 1);
+        BEAST_EXPECT(boost::icl::contains(set, 2));
+        BEAST_EXPECT(boost::icl::last(set) == 6);
     }
     void
     run() override
     {
         testPrevMissing();
         testToString();
-        testSerialization();
+        testFromString();
     }
 };
 

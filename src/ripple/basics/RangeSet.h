@@ -20,11 +20,14 @@
 #ifndef RIPPLE_BASICS_RANGESET_H_INCLUDED
 #define RIPPLE_BASICS_RANGESET_H_INCLUDED
 
-#include <string>
-#include <boost/optional.hpp>
+#include <ripple/beast/core/LexicalCast.h>
+
+#include <boost/algorithm/string.hpp>
 #include <boost/icl/closed_interval.hpp>
 #include <boost/icl/interval_set.hpp>
-#include <boost/serialization/split_free.hpp>
+#include <boost/optional.hpp>
+
+#include <string>
 
 namespace ripple
 {
@@ -86,8 +89,8 @@ std::string to_string(ClosedInterval<T> const & ci)
 
 /** Convert the given RangeSet to a styled string.
 
-    The styled string represention is the set of disjoint intervals joined by
-    commas.  The string "empty" is returned if the set is empty.
+    The styled string representation is the set of disjoint intervals joined
+    by commas.  The string "empty" is returned if the set is empty.
 
     @param rs The rangeset to convert
     @return The styled string
@@ -107,6 +110,67 @@ std::string to_string(RangeSet<T> const & rs)
         res += to_string(interval);
     }
     return res;
+}
+
+/** Convert the given styled string to a RangeSet.
+
+    The styled string representation is the set
+    of disjoint intervals joined by commas.
+
+    @param rs The set to be populated
+    @param s The styled string to convert
+    @return True on successfully converting styled string
+*/
+template <class T>
+bool
+from_string(RangeSet<T>& rs, std::string const& s)
+{
+    std::vector<std::string> intervals;
+    std::vector<std::string> tokens;
+    bool result {true};
+
+    boost::split(tokens, s, boost::algorithm::is_any_of(","));
+    for (auto const& t : tokens)
+    {
+        boost::split(intervals, t, boost::algorithm::is_any_of("-"));
+        switch (intervals.size())
+        {
+        case 1:
+        {
+            T front;
+            if (!beast::lexicalCastChecked(front, intervals.front()))
+                result = false;
+            else
+                rs.insert(front);
+            break;
+        }
+        case 2:
+        {
+            T front;
+            if (!beast::lexicalCastChecked(front, intervals.front()))
+                result = false;
+            else
+            {
+                T back;
+                if (!beast::lexicalCastChecked(back, intervals.back()))
+                    result = false;
+                else
+                    rs.insert(range(front, back));
+            }
+            break;
+        }
+        default:
+            result = false;
+        }
+
+        if (!result)
+            break;
+        intervals.clear();
+    }
+
+    if (!result)
+        rs.clear();
+    return result;
 }
 
 /** Find the largest value not in the set that is less than a given value.
@@ -129,75 +193,8 @@ prevMissing(RangeSet<T> const & rs, T t, T minVal = 0)
         return boost::none;
     return boost::icl::last(tgt);
 }
+
 }  // namespace ripple
 
 
-// The boost serialization documents recommended putting free-function helpers
-// in the boost serialization namespace
-
-namespace boost {
-namespace serialization {
-template <class Archive, class T>
-void
-save(Archive& ar,
-    ripple::ClosedInterval<T> const& ci,
-    const unsigned int version)
-{
-    auto l = ci.lower();
-    auto u = ci.upper();
-    ar << l << u;
-}
-
-template <class Archive, class T>
-void
-load(Archive& ar, ripple::ClosedInterval<T>& ci, const unsigned int version)
-{
-    T low, up;
-    ar >> low >> up;
-    ci = ripple::ClosedInterval<T>{low, up};
-}
-
-template <class Archive, class T>
-void
-serialize(Archive& ar,
-    ripple::ClosedInterval<T>& ci,
-    const unsigned int version)
-{
-    split_free(ar, ci, version);
-}
-
-template <class Archive, class T>
-void
-save(Archive& ar, ripple::RangeSet<T> const& rs, const unsigned int version)
-{
-    auto s = rs.iterative_size();
-    ar << s;
-    for (auto const& r : rs)
-        ar << r;
-}
-
-template <class Archive, class T>
-void
-load(Archive& ar, ripple::RangeSet<T>& rs, const unsigned int version)
-{
-    rs.clear();
-    std::size_t intervals;
-    ar >> intervals;
-    for (std::size_t i = 0; i < intervals; ++i)
-    {
-        ripple::ClosedInterval<T> ci;
-        ar >> ci;
-        rs.insert(ci);
-    }
-}
-
-template <class Archive, class T>
-void
-serialize(Archive& ar, ripple::RangeSet<T>& rs, const unsigned int version)
-{
-    split_free(ar, rs, version);
-}
-
-}  // serialization
-}  // boost
 #endif

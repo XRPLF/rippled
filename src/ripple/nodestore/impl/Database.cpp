@@ -36,12 +36,12 @@ Database::Database(
     : Stoppable(name, parent.getRoot())
     , j_(journal)
     , scheduler_(scheduler)
-    , earliestSeq_(get<std::uint32_t>(
+    , earliestLedgerSeq_(get<std::uint32_t>(
         config,
         "earliest_seq",
         XRP_LEDGER_EARLIEST_SEQ))
 {
-    if (earliestSeq_ < 1)
+    if (earliestLedgerSeq_ < 1)
         Throw<std::runtime_error>("Invalid earliest_seq");
 
     while (readThreads-- > 0)
@@ -83,6 +83,11 @@ Database::onStop()
     // After stop time we can no longer use the JobQueue for background
     // reads.  Join the background read threads.
     stopThreads();
+}
+
+void
+Database::onChildrenStopped()
+{
     stopped();
 }
 
@@ -115,13 +120,13 @@ Database::asyncFetch(uint256 const& hash, std::uint32_t seq,
 }
 
 std::shared_ptr<NodeObject>
-Database::fetchInternal(uint256 const& hash, Backend& srcBackend)
+Database::fetchInternal(uint256 const& hash, std::shared_ptr<Backend> backend)
 {
     std::shared_ptr<NodeObject> nObj;
     Status status;
     try
     {
-        status = srcBackend.fetch(hash.begin(), &nObj);
+        status = backend->fetch(hash.begin(), &nObj);
     }
     catch (std::exception const& e)
     {
@@ -226,12 +231,14 @@ Database::doFetch(uint256 const& hash, std::uint32_t seq,
 }
 
 bool
-Database::copyLedger(Backend& dstBackend, Ledger const& srcLedger,
-    std::shared_ptr<TaggedCache<uint256, NodeObject>> const& pCache,
-        std::shared_ptr<KeyCache<uint256>> const& nCache,
-            std::shared_ptr<Ledger const> const& srcNext)
+Database::storeLedger(
+    Ledger const& srcLedger,
+    std::shared_ptr<Backend> dstBackend,
+    std::shared_ptr<TaggedCache<uint256, NodeObject>> dstPCache,
+    std::shared_ptr<KeyCache<uint256>> dstNCache,
+    std::shared_ptr<Ledger const> next)
 {
-    assert(static_cast<bool>(pCache) == static_cast<bool>(nCache));
+    assert(static_cast<bool>(dstPCache) == static_cast<bool>(dstNCache));
     if (srcLedger.info().hash.isZero() ||
         srcLedger.info().accountHash.isZero())
     {
@@ -254,48 +261,42 @@ Database::copyLedger(Backend& dstBackend, Ledger const& srcLedger,
     Batch batch;
     batch.reserve(batchWritePreallocationSize);
     auto storeBatch = [&]() {
-#if RIPPLE_VERIFY_NODEOBJECT_KEYS
-        for (auto& nObj : batch)
+        if (dstPCache && dstNCache)
         {
-            assert(nObj->getHash() ==
-                sha512Hash(makeSlice(nObj->getData())));
-            if (pCache && nCache)
+            for (auto& nObj : batch)
             {
-                pCache->canonicalize(nObj->getHash(), nObj, true);
-                nCache->erase(nObj->getHash());
+                dstPCache->canonicalize(nObj->getHash(), nObj, true);
+                dstNCache->erase(nObj->getHash());
                 storeStats(nObj->getData().size());
             }
         }
-#else
-        if (pCache && nCache)
-            for (auto& nObj : batch)
-            {
-                pCache->canonicalize(nObj->getHash(), nObj, true);
-                nCache->erase(nObj->getHash());
-                storeStats(nObj->getData().size());
-            }
-#endif
-        dstBackend.storeBatch(batch);
+        dstBackend->storeBatch(batch);
         batch.clear();
         batch.reserve(batchWritePreallocationSize);
     };
     bool error = false;
-    auto f = [&](SHAMapAbstractNode& node) {
+    auto visit = [&](SHAMapAbstractNode& node)
+    {
         if (auto nObj = srcDB.fetch(
             node.getNodeHash().as_uint256(), srcLedger.info().seq))
         {
             batch.emplace_back(std::move(nObj));
-            if (batch.size() >= batchWritePreallocationSize)
-                storeBatch();
+            if (batch.size() < batchWritePreallocationSize)
+                return true;
+
+            storeBatch();
+
+            if (!isStopping())
+                return true;
         }
-        else
-            error = true;
-        return !error;
+
+        error = true;
+        return false;
     };
 
     // Store ledger header
     {
-        Serializer s(1024);
+        Serializer s(sizeof(std::uint32_t) + sizeof(LedgerInfo));
         s.add32(HashPrefix::ledgerMaster);
         addRaw(srcLedger.info(), s);
         auto nObj = NodeObject::createObject(hotLEDGER,
@@ -313,14 +314,14 @@ Database::copyLedger(Backend& dstBackend, Ledger const& srcLedger,
                 " state map invalid";
             return false;
         }
-        if (srcNext && srcNext->info().parentHash == srcLedger.info().hash)
+        if (next && next->info().parentHash == srcLedger.info().hash)
         {
-            auto have = srcNext->stateMap().snapShot(false);
+            auto have = next->stateMap().snapShot(false);
             srcLedger.stateMap().snapShot(
-                false)->visitDifferences(&(*have), f);
+                false)->visitDifferences(&(*have), visit);
         }
         else
-            srcLedger.stateMap().snapShot(false)->visitNodes(f);
+            srcLedger.stateMap().snapShot(false)->visitNodes(visit);
         if (error)
             return false;
     }
@@ -335,7 +336,7 @@ Database::copyLedger(Backend& dstBackend, Ledger const& srcLedger,
                 " transaction map invalid";
             return false;
         }
-        srcLedger.txMap().snapShot(false)->visitNodes(f);
+        srcLedger.txMap().snapShot(false)->visitNodes(visit);
         if (error)
             return false;
     }

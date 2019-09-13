@@ -449,7 +449,7 @@ SHAMapStoreImp::run()
             std::string nextArchiveDir =
                 dbRotating_->getWritableBackend()->getName();
             lastRotated = validatedSeq;
-            std::unique_ptr<NodeStore::Backend> oldBackend;
+            std::shared_ptr<NodeStore::Backend> oldBackend;
             {
                 std::lock_guard lock (dbRotating_->peekMutex());
 
@@ -457,7 +457,8 @@ SHAMapStoreImp::run()
                         nextArchiveDir, lastRotated});
                 clearCaches (validatedSeq);
                 oldBackend = dbRotating_->rotateBackends(
-                    std::move(newBackend));
+                    std::move(newBackend),
+                    lock);
             }
             JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
 
