@@ -50,12 +50,14 @@ public:
     virtual std::mutex& peekMutex() const = 0;
 
     virtual
-    std::unique_ptr<Backend> const&
+    std::shared_ptr<Backend> const&
     getWritableBackend() const = 0;
 
     virtual
-    std::unique_ptr<Backend>
-    rotateBackends(std::unique_ptr<Backend> newBackend) = 0;
+    std::shared_ptr<Backend>
+    rotateBackends(
+        std::shared_ptr<Backend> newBackend,
+        std::lock_guard<std::mutex> const&) = 0;
 };
 
 }

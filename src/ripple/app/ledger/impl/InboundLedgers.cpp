@@ -106,7 +106,7 @@ public:
         if (reason == InboundLedger::Reason::HISTORY)
         {
             if (inbound->getLedger()->stateMap().family().isShardBacked())
-                app_.getNodeStore().copyLedger(inbound->getLedger());
+                app_.getNodeStore().storeLedger(inbound->getLedger());
         }
         else if (reason == InboundLedger::Reason::SHARD)
         {
@@ -120,7 +120,7 @@ public:
             if (inbound->getLedger()->stateMap().family().isShardBacked())
                 shardStore->setStored(inbound->getLedger());
             else
-                shardStore->copyLedger(inbound->getLedger());
+                shardStore->storeLedger(inbound->getLedger());
         }
         return inbound->getLedger();
     }

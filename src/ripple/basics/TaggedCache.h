@@ -31,9 +31,6 @@
 
 namespace ripple {
 
-// VFALCO NOTE Deprecated
-struct TaggedCacheLog;
-
 /** Map/cache combination.
     This class implements a cache and a map. The cache keeps objects alive
     in the map. The map allows multiple code paths that reference objects

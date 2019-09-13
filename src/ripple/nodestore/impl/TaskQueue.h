@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012, 2019 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,50 +17,46 @@
 */
 //==============================================================================
 
-#include <ripple/nodestore/NodeObject.h>
-#include <memory>
+#ifndef RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
+#define RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
+
+#include <ripple/core/impl/Workers.h>
+#include <ripple/core/Stoppable.h>
+
+#include <functional>
+#include <queue>
 
 namespace ripple {
+namespace NodeStore {
 
-//------------------------------------------------------------------------------
-
-NodeObject::NodeObject (
-    NodeObjectType type,
-    Blob&& data,
-    uint256 const& hash,
-    PrivateAccess)
-    : mType (type)
-    , mHash (hash)
-    , mData (std::move(data))
+class TaskQueue
+    : public Stoppable
+    , private Workers::Callback
 {
-}
+public:
+    explicit
+    TaskQueue(Stoppable& parent);
 
-std::shared_ptr<NodeObject>
-NodeObject::createObject (
-    NodeObjectType type,
-    Blob&& data,
-    uint256 const& hash)
-{
-    return std::make_shared <NodeObject> (
-        type, std::move (data), hash, PrivateAccess ());
-}
+    void
+    onStop() override;
 
-NodeObjectType
-NodeObject::getType () const
-{
-    return mType;
-}
+    /** Adds a task to the queue
 
-uint256 const&
-NodeObject::getHash () const
-{
-    return mHash;
-}
+        @param task std::function with signature void()
+    */
+    void
+    addTask(std::function<void()> task);
 
-Blob const&
-NodeObject::getData () const
-{
-    return mData;
-}
+private:
+    std::mutex mutex_;
+    Workers workers_;
+    std::queue<std::function<void()>> tasks_;
 
-}
+    void
+    processTask(int instance) override;
+};
+
+} // NodeStore
+} // ripple
+
+#endif

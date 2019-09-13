@@ -31,11 +31,10 @@ namespace RPC {
 using namespace boost::filesystem;
 using namespace std::chrono_literals;
 
-ShardArchiveHandler::ShardArchiveHandler(Application& app, bool validate)
+ShardArchiveHandler::ShardArchiveHandler(Application& app)
     : app_(app)
     , downloadDir_(get(app_.config().section(
         ConfigSection::shardDatabase()), "path", "") + "/download")
-    , validate_(validate)
     , timer_(app_.getIOService())
     , process_(false)
     , j_(app.journal("ShardArchiveHandler"))
@@ -209,7 +208,7 @@ ShardArchiveHandler::complete(path dstPath)
         {
             // If validating and not synced then defer and retry
             auto const mode {ptr->app_.getOPs().getOperatingMode()};
-            if (ptr->validate_ && mode != OperatingMode::FULL)
+            if (mode != OperatingMode::FULL)
             {
                 std::lock_guard lock(m_);
                 timer_.expires_from_now(static_cast<std::chrono::seconds>(
@@ -265,7 +264,7 @@ ShardArchiveHandler::process(path const& dstPath)
     }
 
     // Import the shard into the shard store
-    if (!app_.getShardStore()->importShard(shardIndex, shardDir, validate_))
+    if (!app_.getShardStore()->importShard(shardIndex, shardDir))
     {
         JLOG(j_.error()) <<
             "Importing shard " << shardIndex;

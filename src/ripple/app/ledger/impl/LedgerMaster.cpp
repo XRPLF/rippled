@@ -1742,7 +1742,7 @@ LedgerMaster::fetchForHistory(
                     *hash, missing, reason);
                 if (!ledger &&
                     missing != fetch_seq_ &&
-                    missing > app_.getNodeStore().earliestSeq())
+                    missing > app_.getNodeStore().earliestLedgerSeq())
                 {
                     JLOG(m_journal.trace())
                         << "fetchForHistory want fetch pack " << missing;
@@ -1771,7 +1771,7 @@ LedgerMaster::fetchForHistory(
                     mShardLedger = ledger;
                 }
                 if (!ledger->stateMap().family().isShardBacked())
-                    app_.getShardStore()->copyLedger(ledger);
+                    app_.getShardStore()->storeLedger(ledger);
             }
             else
             {
@@ -1807,7 +1807,7 @@ LedgerMaster::fetchForHistory(
             else
                 // Do not fetch ledger sequences lower
                 // than the earliest ledger sequence
-                fetchSz = app_.getNodeStore().earliestSeq();
+                fetchSz = app_.getNodeStore().earliestLedgerSeq();
             fetchSz = missing >= fetchSz ?
                 std::min(ledger_fetch_size_, (missing - fetchSz) + 1) : 0;
             try
@@ -1867,7 +1867,7 @@ void LedgerMaster::doAdvance (std::unique_lock<std::recursive_mutex>& sl)
                     std::lock_guard sll(mCompleteLock);
                     missing = prevMissing(mCompleteLedgers,
                         mPubLedger->info().seq,
-                        app_.getNodeStore().earliestSeq());
+                        app_.getNodeStore().earliestLedgerSeq());
                 }
                 if (missing)
                 {

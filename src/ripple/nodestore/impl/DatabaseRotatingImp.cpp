@@ -29,8 +29,8 @@ DatabaseRotatingImp::DatabaseRotatingImp(
     Scheduler& scheduler,
     int readThreads,
     Stoppable& parent,
-    std::unique_ptr<Backend> writableBackend,
-    std::unique_ptr<Backend> archiveBackend,
+    std::shared_ptr<Backend> writableBackend,
+    std::shared_ptr<Backend> archiveBackend,
     Section const& config,
     beast::Journal j)
     : DatabaseRotating(name, parent, scheduler, readThreads, config, j)
@@ -48,10 +48,10 @@ DatabaseRotatingImp::DatabaseRotatingImp(
     setParent(parent);
 }
 
-// Make sure to call it already locked!
-std::unique_ptr<Backend>
+std::shared_ptr<Backend>
 DatabaseRotatingImp::rotateBackends(
-    std::unique_ptr<Backend> newBackend)
+    std::shared_ptr<Backend> newBackend,
+    std::lock_guard<std::mutex> const&)
 {
     auto oldBackend {std::move(archiveBackend_)};
     archiveBackend_ = std::move(writableBackend_);
@@ -63,9 +63,6 @@ void
 DatabaseRotatingImp::store(NodeObjectType type, Blob&& data,
     uint256 const& hash, std::uint32_t seq)
 {
-#if RIPPLE_VERIFY_NODEOBJECT_KEYS
-    assert(hash == sha512Hash(makeSlice(data)));
-#endif
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
     pCache_->canonicalize(hash, nObj, true);
     getWritableBackend()->store(nObj);
@@ -106,10 +103,10 @@ std::shared_ptr<NodeObject>
 DatabaseRotatingImp::fetchFrom(uint256 const& hash, std::uint32_t seq)
 {
     Backends b = getBackends();
-    auto nObj = fetchInternal(hash, *b.writableBackend);
+    auto nObj = fetchInternal(hash, b.writableBackend);
     if (! nObj)
     {
-        nObj = fetchInternal(hash, *b.archiveBackend);
+        nObj = fetchInternal(hash, b.archiveBackend);
         if (nObj)
         {
             getWritableBackend()->store(nObj);

@@ -37,8 +37,8 @@ public:
         Scheduler& scheduler,
         int readThreads,
         Stoppable& parent,
-        std::unique_ptr<Backend> writableBackend,
-        std::unique_ptr<Backend> archiveBackend,
+        std::shared_ptr<Backend> writableBackend,
+        std::shared_ptr<Backend> archiveBackend,
         Section const& config,
         beast::Journal j);
 
@@ -48,15 +48,17 @@ public:
         stopThreads();
     }
 
-    std::unique_ptr<Backend> const&
+    std::shared_ptr<Backend> const&
     getWritableBackend() const override
     {
         std::lock_guard lock (rotateMutex_);
         return writableBackend_;
     }
 
-    std::unique_ptr<Backend>
-    rotateBackends(std::unique_ptr<Backend> newBackend) override;
+    std::shared_ptr<Backend>
+    rotateBackends(
+        std::shared_ptr<Backend> newBackend,
+        std::lock_guard<std::mutex> const&) override;
 
     std::mutex& peekMutex() const override
     {
@@ -92,10 +94,10 @@ public:
         std::shared_ptr<NodeObject>& object) override;
 
     bool
-    copyLedger(std::shared_ptr<Ledger const> const& ledger) override
+    storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override
     {
-        return Database::copyLedger(
-            *getWritableBackend(), *ledger, pCache_, nCache_, nullptr);
+        return Database::storeLedger(
+            *srcLedger, getWritableBackend(), pCache_, nCache_, nullptr);
     }
 
     int
@@ -126,13 +128,13 @@ private:
     // Negative cache
     std::shared_ptr<KeyCache<uint256>> nCache_;
 
-    std::unique_ptr<Backend> writableBackend_;
-    std::unique_ptr<Backend> archiveBackend_;
+    std::shared_ptr<Backend> writableBackend_;
+    std::shared_ptr<Backend> archiveBackend_;
     mutable std::mutex rotateMutex_;
 
     struct Backends {
-        std::unique_ptr<Backend> const& writableBackend;
-        std::unique_ptr<Backend> const& archiveBackend;
+        std::shared_ptr<Backend> const& writableBackend;
+        std::shared_ptr<Backend> const& archiveBackend;
     };
 
     Backends getBackends() const

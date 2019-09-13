@@ -186,13 +186,13 @@ class RootStoppable;
                                                              |
                                                          JobQueue
                                                              |
-        +-----------+-----------+-----------+-----------+----+--------+
-        |           |           |           |           |             |
-        |       NetworkOPs      |     InboundLedgers    |        OrderbookDB
-        |                       |                       |
-     Overlay           InboundTransactions        LedgerMaster
-        |                                               |
-    PeerFinder                                   LedgerCleaner
+        +--------+-----------+-----------+-----------+-------+---+----------+
+        |        |           |           |           |           |          |
+        |    NetworkOPs      |     InboundLedgers    |      OrderbookDB     |
+        |                    |                       |                      |
+     Overlay        InboundTransactions        LedgerMaster             Database
+        |                                            |                      |
+    PeerFinder                                LedgerCleaner            TaskQueue
 
     @endcode
 */

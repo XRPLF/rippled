@@ -186,7 +186,6 @@ private:
                 ++i;
             else if (!boost::iequals(jvParams[--sz].asString(), "novalidate"))
                 return rpcError(rpcINVALID_PARAMS);
-            jvResult[jss::validate] = false;
         }
 
         // Create the 'shards' array

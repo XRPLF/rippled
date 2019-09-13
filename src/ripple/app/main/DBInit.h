@@ -27,16 +27,16 @@ namespace ripple {
 ////////////////////////////////////////////////////////////////////////////////
 
 // Ledger database holds ledgers and ledger confirmations
-static constexpr auto LgrDBName {"ledger.db"};
+inline constexpr auto LgrDBName {"ledger.db"};
 
-static constexpr
+inline constexpr
 std::array<char const*, 3> LgrDBPragma {{
     "PRAGMA synchronous=NORMAL;",
     "PRAGMA journal_mode=WAL;",
     "PRAGMA journal_size_limit=1582080;"
 }};
 
-static constexpr
+inline constexpr
 std::array<char const*, 5> LgrDBInit {{
     "BEGIN TRANSACTION;",
 
@@ -63,9 +63,9 @@ std::array<char const*, 5> LgrDBInit {{
 ////////////////////////////////////////////////////////////////////////////////
 
 // Transaction database holds transactions and public keys
-static constexpr auto TxDBName {"transaction.db"};
+inline constexpr auto TxDBName {"transaction.db"};
 
-static constexpr
+inline constexpr
 #if (ULONG_MAX > UINT_MAX) && !defined (NO_SQLITE_MMAP)
     std::array<char const*, 6> TxDBPragma {{
 #else
@@ -81,7 +81,7 @@ static constexpr
 #endif
 }};
 
-static constexpr
+inline constexpr
 std::array<char const*, 8> TxDBInit {{
     "BEGIN TRANSACTION;",
 
@@ -116,18 +116,39 @@ std::array<char const*, 8> TxDBInit {{
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// Temporary database used with an incomplete shard that is being acquired
+inline constexpr auto AcquireShardDBName {"acquire.db"};
+
+inline constexpr
+std::array<char const*, 3> AcquireShardDBPragma {{
+    "PRAGMA synchronous=NORMAL;",
+    "PRAGMA journal_mode=WAL;",
+    "PRAGMA journal_size_limit=1582080;"
+}};
+
+inline constexpr
+std::array<char const*, 1> AcquireShardDBInit {{
+    "CREATE TABLE IF NOT EXISTS Shard (             \
+        ShardIndex          INTEGER PRIMARY KEY,    \
+        LastLedgerHash      CHARACTER(64),          \
+        StoredLedgerSeqs    BLOB                    \
+    );"
+}};
+
+////////////////////////////////////////////////////////////////////////////////
+
 // Pragma for Ledger and Transaction databases with complete shards
-static constexpr
-std::array<char const*, 2> CompleteShardDBPragma {{
+inline constexpr
+std::array<char const*, 2> CompleteShardDBPragma{{
     "PRAGMA synchronous=OFF;",
     "PRAGMA journal_mode=OFF;"
 }};
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static constexpr auto WalletDBName {"wallet.db"};
+inline constexpr auto WalletDBName {"wallet.db"};
 
-static constexpr
+inline constexpr
 std::array<char const*, 6> WalletDBInit {{
     "BEGIN TRANSACTION;",
 

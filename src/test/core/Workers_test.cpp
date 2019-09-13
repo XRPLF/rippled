@@ -109,7 +109,7 @@ public:
         std::unique_ptr<perf::PerfLog> perfLog =
             std::make_unique<perf::PerfLogTest>();
 
-        Workers w(cb, *perfLog, "Test", tc1);
+        Workers w(cb, perfLog.get(), "Test", tc1);
         BEAST_EXPECT(w.getNumberOfThreads() == tc1);
 
         auto testForThreadCount = [this, &cb, &w] (int const threadCount)

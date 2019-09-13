@@ -17,50 +17,21 @@
 */
 //==============================================================================
 
-#include <ripple/nodestore/NodeObject.h>
-#include <memory>
 
-namespace ripple {
+#include <ripple/nodestore/backend/MemoryFactory.cpp>
+#include <ripple/nodestore/backend/NuDBFactory.cpp>
+#include <ripple/nodestore/backend/NullFactory.cpp>
+#include <ripple/nodestore/backend/RocksDBFactory.cpp>
 
-//------------------------------------------------------------------------------
-
-NodeObject::NodeObject (
-    NodeObjectType type,
-    Blob&& data,
-    uint256 const& hash,
-    PrivateAccess)
-    : mType (type)
-    , mHash (hash)
-    , mData (std::move(data))
-{
-}
-
-std::shared_ptr<NodeObject>
-NodeObject::createObject (
-    NodeObjectType type,
-    Blob&& data,
-    uint256 const& hash)
-{
-    return std::make_shared <NodeObject> (
-        type, std::move (data), hash, PrivateAccess ());
-}
-
-NodeObjectType
-NodeObject::getType () const
-{
-    return mType;
-}
-
-uint256 const&
-NodeObject::getHash () const
-{
-    return mHash;
-}
-
-Blob const&
-NodeObject::getData () const
-{
-    return mData;
-}
-
-}
+#include <ripple/nodestore/impl/BatchWriter.cpp>
+#include <ripple/nodestore/impl/Database.cpp>
+#include <ripple/nodestore/impl/DatabaseNodeImp.cpp>
+#include <ripple/nodestore/impl/DatabaseRotatingImp.cpp>
+#include <ripple/nodestore/impl/DatabaseShardImp.cpp>
+#include <ripple/nodestore/impl/DecodedBlob.cpp>
+#include <ripple/nodestore/impl/DummyScheduler.cpp>
+#include <ripple/nodestore/impl/EncodedBlob.cpp>
+#include <ripple/nodestore/impl/ManagerImp.cpp>
+#include <ripple/nodestore/impl/NodeObject.cpp>
+#include <ripple/nodestore/impl/Shard.cpp>
+#include <ripple/nodestore/impl/TaskQueue.cpp>
