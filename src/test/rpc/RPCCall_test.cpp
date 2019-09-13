@@ -2998,10 +2998,9 @@ static RPCCallTestData const rpcCallTestArray [] =
     })"
 },
 {
-    "download_shard: novalidate.", __LINE__,
+    "download_shard:", __LINE__,
     {
         "download_shard",
-        "novalidate",
         "20",
         "url_NotValidated",
     },
@@ -3016,8 +3015,7 @@ static RPCCallTestData const rpcCallTestArray [] =
                "index" : 20,
                "url" : "url_NotValidated"
             }
-         ],
-         "validate" : false
+         ]
       }
     ]
     })"
@@ -3064,10 +3062,9 @@ static RPCCallTestData const rpcCallTestArray [] =
     })"
 },
 {
-    "download_shard: novalidate many shards.", __LINE__,
+    "download_shard: many shards.", __LINE__,
     {
         "download_shard",
-        "novalidate",
         "2000000",
         "url_NotValidated0",
         "2000001",
@@ -3106,8 +3103,7 @@ static RPCCallTestData const rpcCallTestArray [] =
                "index" : 2000004,
                "url" : "url_NotValidated4"
             }
-         ],
-         "validate" : false
+         ]
       }
     ]
     })"
@@ -3160,8 +3156,7 @@ static RPCCallTestData const rpcCallTestArray [] =
                "index" : 20,
                "url" : "url_NotValidated"
             }
-         ],
-         "validate" : false
+         ]
       }
     ]
     })"

@@ -554,7 +554,6 @@ JSS ( url_password );               // in: Subscribe
 JSS ( url_username );               // in: Subscribe
 JSS ( urlgravatar );                //
 JSS ( username );                   // in: Subscribe
-JSS ( validate );                   // in: DownloadShard
 JSS ( validated );                  // out: NetworkOPs, RPCHelpers, AccountTx*
                                     //      Tx
 JSS ( validator_list_expires );     // out: NetworkOps, ValidatorList

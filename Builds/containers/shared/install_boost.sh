@@ -39,7 +39,6 @@ else
     BLDARGS+=(--with-filesystem)
     BLDARGS+=(--with-program_options)
     BLDARGS+=(--with-regex)
-    BLDARGS+=(--with-serialization)
     BLDARGS+=(--with-system)
     BLDARGS+=(--with-atomic)
     BLDARGS+=(--with-thread)

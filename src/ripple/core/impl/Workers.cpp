@@ -26,7 +26,7 @@ namespace ripple {
 
 Workers::Workers (
     Callback& callback,
-    perf::PerfLog& perfLog,
+    perf::PerfLog* perfLog,
     std::string const& threadNames,
     int numberOfThreads)
         : m_callback (callback)
@@ -63,7 +63,8 @@ void Workers::setNumberOfThreads (int numberOfThreads)
     static int instance {0};
     if (m_numberOfThreads != numberOfThreads)
     {
-        perfLog_.resizeJobs(numberOfThreads);
+        if (perfLog_)
+            perfLog_->resizeJobs(numberOfThreads);
 
         if (numberOfThreads > m_numberOfThreads)
         {

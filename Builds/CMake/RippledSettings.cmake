@@ -100,12 +100,6 @@ option (have_package_container
 option (beast_no_unit_test_inline
   "Prevents unit test definitions from being inserted into global table"
   OFF)
-# NOTE - THIS OPTION CURRENTLY DOES NOT COMPILE :
-# TODO: fix or remove
-option (verify_nodeobject_keys
-  "This verifies that the hash of node objects matches the payload. \
-  This check is expensive - use with caution."
-  OFF)
 option (single_io_service_thread
   "Restricts the number of threads calling io_service::run to one. \
   This can be useful when debugging."

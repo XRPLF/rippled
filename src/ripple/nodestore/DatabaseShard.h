@@ -109,14 +109,14 @@ public:
 
         @param shardIndex Shard index to import
         @param srcDir The directory to import from
-        @param validate If true validate shard ledger data
         @return true If the shard was successfully imported
         @implNote if successful, srcDir is moved to the database directory
     */
     virtual
     bool
-    importShard(std::uint32_t shardIndex,
-        boost::filesystem::path const& srcDir, bool validate) = 0;
+    importShard(
+        std::uint32_t shardIndex,
+        boost::filesystem::path const& srcDir) = 0;
 
     /** Fetch a ledger from the shard store
 
@@ -136,15 +136,6 @@ public:
     virtual
     void
     setStored(std::shared_ptr<Ledger const> const& ledger) = 0;
-
-    /** Query if a ledger with the given sequence is stored
-
-        @param seq The ledger sequence to check if stored
-        @return `true` if the ledger is stored
-    */
-    virtual
-    bool
-    contains(std::uint32_t seq) = 0;
 
     /** Query which complete shards are stored
 

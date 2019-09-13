@@ -345,9 +345,9 @@ public:
     // These are Stoppable-related
     std::unique_ptr <JobQueue> m_jobQueue;
     std::unique_ptr <NodeStore::Database> m_nodeStore;
-    std::unique_ptr <NodeStore::DatabaseShard> shardStore_;
     detail::AppFamily family_;
-    std::unique_ptr <detail::AppFamily> sFamily_;
+    std::unique_ptr <NodeStore::DatabaseShard> shardStore_;
+    std::unique_ptr <detail::AppFamily> shardFamily_;
     // VFALCO TODO Make OrderBookDB abstract
     OrderBookDB m_orderBookDB;
     std::unique_ptr <PathRequests> m_pathRequests;
@@ -463,17 +463,17 @@ public:
             m_collectorManager->group ("jobq"), m_nodeStoreScheduler,
             logs_->journal("JobQueue"), *logs_, *perfLog_))
 
-        , m_nodeStore(m_shaMapStore->makeNodeStore("NodeStore.main", 4))
+        , m_nodeStore (m_shaMapStore->makeNodeStore ("NodeStore.main", 4))
+
+        , family_ (*this, *m_nodeStore, *m_collectorManager)
 
         // The shard store is optional and make_ShardStore can return null.
-        , shardStore_(make_ShardStore(
+        , shardStore_ (make_ShardStore (
             *this,
             *m_jobQueue,
             m_nodeStoreScheduler,
             4,
             logs_->journal("ShardStore")))
-
-        , family_ (*this, *m_nodeStore, *m_collectorManager)
 
         , m_orderBookDB (*this, *m_jobQueue)
 
@@ -558,14 +558,6 @@ public:
             logs_->journal("Application"), std::chrono::milliseconds (100), get_io_service())
         , grpcServer_(std::make_unique<GRPCServer>(*this))
     {
-        if (shardStore_)
-        {
-            sFamily_ = std::make_unique<detail::AppFamily>(
-                *this,
-                *shardStore_,
-                *m_collectorManager);
-        }
-
         add (m_resourceManager.get ());
 
         //
@@ -626,7 +618,7 @@ public:
 
     Family* shardFamily() override
     {
-        return sFamily_.get();
+        return shardFamily_.get();
     }
 
     TimeKeeper&
@@ -943,7 +935,7 @@ public:
     }
 
     bool
-    initNodeStoreDBs()
+    initNodeStore()
     {
         if (config_->doImport)
         {
@@ -961,12 +953,12 @@ public:
 
             JLOG(j.warn()) <<
                 "Starting node import from '" << source->getName() <<
-                "' to '" << getNodeStore().getName() << "'.";
+                "' to '" << m_nodeStore->getName() << "'.";
 
             using namespace std::chrono;
             auto const start = steady_clock::now();
 
-            getNodeStore().import(*source);
+            m_nodeStore->import(*source);
 
             auto const elapsed = duration_cast <seconds>
                 (steady_clock::now() - start);
@@ -989,14 +981,6 @@ public:
             config_->getValueFor(SizedItem::treeCacheSize));
         family().treecache().setTargetAge(
             seconds{config_->getValueFor(SizedItem::treeCacheAge)});
-
-        if (sFamily_)
-        {
-            sFamily_->treecache().setTargetSize(
-                config_->getValueFor(SizedItem::treeCacheSize));
-            sFamily_->treecache().setTargetAge(
-                seconds{config_->getValueFor(SizedItem::treeCacheAge)});
-        }
 
         return true;
     }
@@ -1252,8 +1236,8 @@ public:
         //         have listeners register for "onSweep ()" notification.
 
         family().fullbelow().sweep();
-        if (sFamily_)
-            sFamily_->fullbelow().sweep();
+        if (shardFamily_)
+            shardFamily_->fullbelow().sweep();
         getMasterTransaction().sweep();
         getNodeStore().sweep();
         if (shardStore_)
@@ -1264,8 +1248,8 @@ public:
         getInboundLedgers().sweep();
         m_acceptedLedgerCache.sweep();
         family().treecache().sweep();
-        if (sFamily_)
-            sFamily_->treecache().sweep();
+        if (shardFamily_)
+            shardFamily_->treecache().sweep();
         cachedSLEs_.expire();
 
         // Set timer to do another sweep later.
@@ -1350,8 +1334,25 @@ bool ApplicationImp::setup()
     if (!config_->standalone())
         timeKeeper_->run(config_->SNTP_SERVERS);
 
-    if (!initSQLiteDBs() || !initNodeStoreDBs())
+    if (!initSQLiteDBs() || !initNodeStore())
         return false;
+
+    if (shardStore_)
+    {
+        shardFamily_ = std::make_unique<detail::AppFamily>(
+            *this,
+            *shardStore_,
+            *m_collectorManager);
+
+        using namespace std::chrono;
+        shardFamily_->treecache().setTargetSize(
+            config_->getValueFor(SizedItem::treeCacheSize));
+        shardFamily_->treecache().setTargetAge(
+            seconds{config_->getValueFor(SizedItem::treeCacheAge)});
+
+        if (!shardStore_->init())
+            return false;
+    }
 
     if (!peerReservations_->load(getWalletDB()))
     {

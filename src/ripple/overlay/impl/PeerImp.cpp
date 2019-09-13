@@ -431,7 +431,7 @@ PeerImp::hasLedger (uint256 const& hash, std::uint32_t seq) const
             return true;
     }
 
-    return seq >= app_.getNodeStore().earliestSeq() &&
+    return seq >= app_.getNodeStore().earliestLedgerSeq() &&
         hasShard(NodeStore::seqToShardIndex(seq));
 }
 
@@ -1259,6 +1259,9 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMPeerShardInfo> const& m)
     // Parse the shard indexes received in the shard info
     RangeSet<std::uint32_t> shardIndexes;
     {
+        if (!from_string(shardIndexes, m->shardindexes()))
+            return badData("Invalid shard indexes");
+
         std::uint32_t earliestShard;
         boost::optional<std::uint32_t> latestShard;
         {
@@ -1267,70 +1270,23 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMPeerShardInfo> const& m)
             if (auto shardStore = app_.getShardStore())
             {
                 earliestShard = shardStore->earliestShardIndex();
-                if (curLedgerSeq >= shardStore->earliestSeq())
+                if (curLedgerSeq >= shardStore->earliestLedgerSeq())
                     latestShard = shardStore->seqToShardIndex(curLedgerSeq);
             }
             else
             {
-                auto const earliestSeq {app_.getNodeStore().earliestSeq()};
-                earliestShard = NodeStore::seqToShardIndex(earliestSeq);
-                if (curLedgerSeq >= earliestSeq)
+                auto const earliestLedgerSeq {
+                    app_.getNodeStore().earliestLedgerSeq()};
+                earliestShard = NodeStore::seqToShardIndex(earliestLedgerSeq);
+                if (curLedgerSeq >= earliestLedgerSeq)
                     latestShard = NodeStore::seqToShardIndex(curLedgerSeq);
             }
         }
 
-        auto getIndex = [this, &earliestShard, &latestShard]
-            (std::string const& s) -> boost::optional<std::uint32_t>
+        if (boost::icl::first(shardIndexes) < earliestShard ||
+            (latestShard && boost::icl::last(shardIndexes) > latestShard))
         {
-            std::uint32_t shardIndex;
-            if (!beast::lexicalCastChecked(shardIndex, s))
-            {
-                fee_ = Resource::feeBadData;
-                return boost::none;
-            }
-            if (shardIndex < earliestShard ||
-                (latestShard && shardIndex > latestShard))
-            {
-                fee_ = Resource::feeBadData;
-                JLOG(p_journal_.error()) <<
-                    "Invalid shard index " << shardIndex;
-                return boost::none;
-            }
-            return shardIndex;
-        };
-
-        std::vector<std::string> tokens;
-        boost::split(tokens, m->shardindexes(),
-            boost::algorithm::is_any_of(","));
-        std::vector<std::string> indexes;
-        for (auto const& t : tokens)
-        {
-            indexes.clear();
-            boost::split(indexes, t, boost::algorithm::is_any_of("-"));
-            switch (indexes.size())
-            {
-            case 1:
-            {
-                auto const first {getIndex(indexes.front())};
-                if (!first)
-                    return;
-                shardIndexes.insert(*first);
-                break;
-            }
-            case 2:
-            {
-                auto const first {getIndex(indexes.front())};
-                if (!first)
-                    return;
-                auto const second {getIndex(indexes.back())};
-                if (!second)
-                    return;
-                shardIndexes.insert(range(*first, *second));
-                break;
-            }
-            default:
-                return badData("Invalid shard indexes");
-            }
+            return badData("Invalid shard indexes");
         }
     }
 
@@ -1340,7 +1296,7 @@ PeerImp::onMessage(std::shared_ptr <protocol::TMPeerShardInfo> const& m)
     {
         if (m->endpoint() != "0")
         {
-            auto result = 
+            auto result =
                 beast::IP::Endpoint::from_string_checked(m->endpoint());
             if (!result)
                 return badData("Invalid incoming endpoint: " + m->endpoint());
@@ -2268,7 +2224,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
                 {
                     if (auto shardStore = app_.getShardStore())
                     {
-                        if (seq >= shardStore->earliestSeq())
+                        if (seq >= shardStore->earliestLedgerSeq())
                             hObj = shardStore->fetch(hash, seq);
                     }
                 }
@@ -2714,7 +2670,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
                 if (auto shardStore = app_.getShardStore())
                 {
                     auto seq = packet.ledgerseq();
-                    if (seq >= shardStore->earliestSeq())
+                    if (seq >= shardStore->earliestLedgerSeq())
                         ledger = shardStore->fetchLedger(ledgerhash, seq);
                 }
             }
