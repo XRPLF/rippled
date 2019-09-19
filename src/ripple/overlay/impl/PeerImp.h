@@ -33,6 +33,7 @@
 #include <ripple/protocol/STValidation.h>
 #include <ripple/resource/Fees.h>
 
+#include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/optional.hpp>
 #include <cstdint>
@@ -197,6 +198,32 @@ private:
     hash_map<PublicKey, ShardInfo> shardInfo_;
 
     friend class OverlayImpl;
+
+    class Metrics {
+    public:
+        Metrics() = default;
+        Metrics(Metrics const&) = delete;
+        Metrics& operator=(Metrics const&) = delete;
+        Metrics(Metrics&&) = delete;
+        Metrics& operator=(Metrics&&) = delete;
+
+        void add_message(std::uint64_t bytes);
+        std::uint64_t average_bytes() const;
+        std::uint64_t total_bytes() const;
+
+    private:
+        std::shared_mutex mutable mutex_;
+        boost::circular_buffer<std::uint64_t> rollingAvg_{ 30, 0ull };
+        clock_type::time_point intervalStart_{ clock_type::now() };
+        std::uint64_t totalBytes_{ 0 };
+        std::uint64_t accumBytes_{ 0 };
+        std::uint64_t rollingAvgBytes_{ 0 };
+    };
+
+    struct {
+        Metrics sent;
+        Metrics recv;
+    } metrics_;
 
 public:
     PeerImp (PeerImp const&) = delete;

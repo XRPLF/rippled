@@ -126,6 +126,8 @@ JSS ( authorized );                 // out: AccountLines
 JSS ( auth_change );                // out: AccountInfo
 JSS ( auth_change_queued );         // out: AccountInfo
 JSS ( available );                  // out: ValidatorList
+JSS ( avg_bps_recv );               // out: Peers
+JSS ( avg_bps_sent );               // out: Peers
 JSS ( balance );                    // out: AccountLines
 JSS ( balances );                   // out: GatewayBalances
 JSS ( base );                       // out: LogLevel
@@ -338,6 +340,7 @@ JSS ( metaData );
 JSS ( metadata );                   // out: TransactionEntry
 JSS ( method );                     // RPC
 JSS ( methods );
+JSS ( metrics );                    // out: Peers
 JSS ( min_count );                  // in: GetCounts
 JSS ( min_ledger );                 // in: LedgerCleaner
 JSS ( minimum_fee );                // out: TxQ
@@ -489,6 +492,8 @@ JSS ( timeouts );                   // out: InboundLedger
 JSS ( traffic );                    // out: Overlay
 JSS ( total );                      // out: counters
 JSS ( totalCoins );                 // out: LedgerToJson
+JSS ( total_bytes_recv );           // out: Peers
+JSS ( total_bytes_sent );           // out: Peers
 JSS ( total_coins );                // out: LedgerToJson
 JSS ( transTreeHash );              // out: ledger/Ledger.cpp
 JSS ( transaction );                // in: Tx

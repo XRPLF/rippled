@@ -45,6 +45,7 @@
 #include <algorithm>
 #include <memory>
 #include <sstream>
+#include <numeric>
 
 using namespace std::chrono_literals;
 
@@ -374,6 +375,12 @@ PeerImp::json()
                 "Unknown status: " << last_status.newstatus ();
         }
     }
+
+    ret[jss::metrics] = Json::Value(Json::objectValue);
+    ret[jss::metrics][jss::total_bytes_recv] = std::to_string(metrics_.recv.total_bytes());
+    ret[jss::metrics][jss::total_bytes_sent] = std::to_string(metrics_.sent.total_bytes());
+    ret[jss::metrics][jss::avg_bps_recv] = std::to_string(metrics_.recv.average_bytes());
+    ret[jss::metrics][jss::avg_bps_sent] = std::to_string(metrics_.sent.average_bytes());
 
     return ret;
 }
@@ -846,6 +853,8 @@ PeerImp::onReadMessage (error_code ec, std::size_t bytes_transferred)
             stream << "onReadMessage";
     }
 
+    metrics_.recv.add_message(bytes_transferred);
+
     read_buffer_.commit (bytes_transferred);
 
     while (read_buffer_.size() > 0)
@@ -892,6 +901,8 @@ PeerImp::onWriteMessage (error_code ec, std::size_t bytes_transferred)
         else
             stream << "onWriteMessage";
     }
+
+    metrics_.sent.add_message(bytes_transferred);
 
     assert(! send_queue_.empty());
     send_queue_.pop();
@@ -2850,5 +2861,42 @@ PeerImp::isHighLatency() const
     std::lock_guard sl (recentLock_);
     return latency_ >= Tuning::peerHighLatency;
 }
+
+void
+PeerImp::Metrics::add_message(std::uint64_t bytes)
+{
+    using namespace std::chrono_literals;
+    std::unique_lock lock{ mutex_ };
+
+    totalBytes_ += bytes;
+    accumBytes_ += bytes;
+    auto const timeElapsed = clock_type::now() - intervalStart_;
+    auto const timeElapsedInSecs = std::chrono::duration_cast<std::chrono::seconds>(timeElapsed);
+
+    if (timeElapsedInSecs >= 1s)
+    {
+        auto const avgBytes = accumBytes_ / timeElapsedInSecs.count();
+        rollingAvg_.push_back(avgBytes);
+
+        auto const totalBytes = std::accumulate(rollingAvg_.begin(), rollingAvg_.end(), 0ull);
+        rollingAvgBytes_ = totalBytes / rollingAvg_.size();
+
+        intervalStart_ = clock_type::now();
+        accumBytes_ = 0;
+    }
+}
+
+std::uint64_t
+PeerImp::Metrics::average_bytes() const {
+    std::shared_lock lock{ mutex_ };
+    return rollingAvgBytes_;
+}
+
+std::uint64_t
+PeerImp::Metrics::total_bytes() const {
+    std::shared_lock lock{ mutex_ };
+    return totalBytes_;
+}
+
 
 } // ripple
