@@ -494,6 +494,46 @@ public:
             BEAST_EXPECT (ticket[sfLedgerEntryType.jsonName] == jss::Ticket);
             BEAST_EXPECT (ticket[sfSequence.jsonName].asUInt() == 9);
         }
+        {
+            // See how "deletion_blockers_only" handles gw's directory.
+            Json::Value params;
+            params[jss::account] = gw.human();
+            params[jss::deletion_blockers_only] = true;
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+
+            constexpr Json::StaticString const expectedLedgerTypes[] = {
+                jss::Escrow, jss::Check, jss::RippleState, jss::PayChannel
+            };
+            constexpr auto expectedAccountObjects{
+                static_cast<std::uint32_t>(std::size(expectedLedgerTypes))
+            };
+
+            if (BEAST_EXPECT(acct_objs_is_size(resp, expectedAccountObjects)))
+            {
+                auto const& aobjs = resp[jss::result][jss::account_objects];
+                for (std::uint32_t i = 0; i < expectedAccountObjects; ++i)
+                {
+                    BEAST_EXPECT(
+                        aobjs[i]["LedgerEntryType"] == expectedLedgerTypes[i]);
+                }
+            }
+        }
+        {
+            // See how "deletion_blockers_only" with `type` handles gw's directory.
+            Json::Value params;
+            params[jss::account] = gw.human();
+            params[jss::deletion_blockers_only] = true;
+            params[jss::type] = jss::escrow;
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+
+            if (BEAST_EXPECT(acct_objs_is_size(resp, 1u)))
+            {
+                auto const& aobjs = resp[jss::result][jss::account_objects];
+                BEAST_EXPECT(
+                    aobjs[0u]["LedgerEntryType"] == jss::Escrow);
+            }
+        }
+
         // Run up the number of directory entries so gw has two
         // directory nodes.
         for (int d = 1'000'032; d >= 1'000'000; --d)

@@ -182,6 +182,7 @@ JSS ( dbKBLedger );                 // out: getCounts
 JSS ( dbKBTotal );                  // out: getCounts
 JSS ( dbKBTransaction );            // out: getCounts
 JSS ( debug_signing );              // in: TransactionSign
+JSS ( deletion_blockers_only );     // in: AccountObjects
 JSS ( delivered_amount );           // out: insertDeliveredAmount
 JSS ( deposit_authorized );         // out: deposit_authorized
 JSS ( deposit_preauth );            // in: AccountObjects, LedgerData

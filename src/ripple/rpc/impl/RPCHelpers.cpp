@@ -82,8 +82,8 @@ accountFromString(
 
 bool
 getAccountObjects(ReadView const& ledger, AccountID const& account,
-    LedgerEntryType const type, uint256 dirIndex, uint256 const& entryIndex,
-    std::uint32_t const limit, Json::Value& jvResult)
+    boost::optional<std::vector<LedgerEntryType>> const& typeFilter, uint256 dirIndex,
+    uint256 const& entryIndex, std::uint32_t const limit, Json::Value& jvResult)
 {
     auto const rootDirIndex = getOwnerDirIndex (account);
     auto found = false;
@@ -117,7 +117,18 @@ getAccountObjects(ReadView const& ledger, AccountID const& account,
         for (; iter != entries.end (); ++iter)
         {
             auto const sleNode = ledger.read(keylet::child(*iter));
-            if (type == ltINVALID || sleNode->getType () == type)
+
+            auto typeMatchesFilter = [] (
+                std::vector<LedgerEntryType> const& typeFilter,
+                LedgerEntryType ledgerType)
+            {
+                auto it = std::find(typeFilter.begin(), typeFilter.end(),
+                    ledgerType);
+                return it != typeFilter.end();
+            };
+
+            if (!typeFilter.has_value() ||
+                typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
                 jvObjects.append (sleNode->getJson (JsonOptions::none));
 
