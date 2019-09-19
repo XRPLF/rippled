@@ -39,6 +39,7 @@
 #include <deque>
 #include <queue>
 #include <shared_mutex>
+#include <numeric>
 
 namespace ripple {
 
@@ -197,6 +198,26 @@ private:
     hash_map<PublicKey, ShardInfo> shardInfo_;
 
     friend class OverlayImpl;
+
+    class Metrics {
+    public:
+        void add_message(std::uint64_t bytes);
+        std::uint64_t average_bytes() const;
+        std::uint64_t total_bytes() const;
+
+    private:
+        std::uint64_t totalBytes = 0;
+        std::uint64_t accumBytes = 0;
+        std::uint64_t rollingAvgBytes = 0;
+        std::array<std::uint64_t, 30> rollingAvg = {};
+        std::size_t currIndex = 0;
+        clock_type::time_point intervalStart = clock_type::now();
+    };
+
+    struct {
+        Metrics sent;
+        Metrics recv;
+    } metrics_;
 
 public:
     PeerImp (PeerImp const&) = delete;

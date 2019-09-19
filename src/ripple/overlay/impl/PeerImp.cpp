@@ -375,6 +375,12 @@ PeerImp::json()
         }
     }
 
+    ret[jss::metrics] = Json::Value(Json::objectValue);
+    ret[jss::metrics][jss::bytes_recv_total] = Json::UInt(metrics_.recv.total_bytes());
+    ret[jss::metrics][jss::bytes_sent_total] = Json::UInt(metrics_.sent.total_bytes());
+    ret[jss::metrics][jss::bytes_recv_avg] = Json::UInt(metrics_.recv.average_bytes());
+    ret[jss::metrics][jss::bytes_sent_avg] = Json::UInt(metrics_.sent.average_bytes());
+
     return ret;
 }
 
@@ -846,6 +852,8 @@ PeerImp::onReadMessage (error_code ec, std::size_t bytes_transferred)
             stream << "onReadMessage";
     }
 
+    metrics_.recv.add_message(bytes_transferred);
+
     read_buffer_.commit (bytes_transferred);
 
     while (read_buffer_.size() > 0)
@@ -892,6 +900,8 @@ PeerImp::onWriteMessage (error_code ec, std::size_t bytes_transferred)
         else
             stream << "onWriteMessage";
     }
+
+    metrics_.sent.add_message(bytes_transferred);
 
     assert(! send_queue_.empty());
     send_queue_.pop();
@@ -2850,5 +2860,37 @@ PeerImp::isHighLatency() const
     std::lock_guard sl (recentLock_);
     return latency_ >= Tuning::peerHighLatency;
 }
+
+void
+PeerImp::Metrics::add_message(std::uint64_t bytes)
+{
+    using namespace std::chrono_literals;
+
+    totalBytes += bytes;
+    accumBytes += bytes;
+    auto const actualInterval = clock_type::now() - intervalStart;
+
+    if (actualInterval >= 1s)
+    {
+        auto const avgBytes = accumBytes / std::chrono::duration_cast<std::chrono::seconds>(actualInterval).count();
+        rollingAvg[currIndex] = avgBytes;
+        rollingAvgBytes = std::accumulate(rollingAvg.begin(), rollingAvg.end(), 0ull) / rollingAvg.size();
+
+        currIndex = (currIndex + 1) % rollingAvg.size();
+        intervalStart = clock_type::now();
+        accumBytes = 0;
+    }
+}
+
+std::uint64_t
+PeerImp::Metrics::average_bytes() const {
+    return rollingAvgBytes;
+}
+
+std::uint64_t
+PeerImp::Metrics::total_bytes() const {
+    return totalBytes;
+}
+
 
 } // ripple

@@ -139,6 +139,10 @@ JSS ( both );                       // in: Subscribe, Unsubscribe
 JSS ( both_sides );                 // in: Subscribe, Unsubscribe
 JSS ( build_path );                 // in: TransactionSign
 JSS ( build_version );              // out: NetworkOPs
+JSS ( bytes_recv_avg );             // out: Peers
+JSS ( bytes_sent_avg );             // out: Peers
+JSS ( bytes_recv_total );           // out: Peers
+JSS ( bytes_sent_total );           // out: Peers
 JSS ( cancel_after );               // out: AccountChannels
 JSS ( can_delete );                 // out: CanDelete
 JSS ( channel_id );                 // out: AccountChannels
@@ -338,6 +342,7 @@ JSS ( metaData );
 JSS ( metadata );                   // out: TransactionEntry
 JSS ( method );                     // RPC
 JSS ( methods );
+JSS ( metrics );                    // out: Peers
 JSS ( min_count );                  // in: GetCounts
 JSS ( min_ledger );                 // in: LedgerCleaner
 JSS ( minimum_fee );                // out: TxQ
