@@ -72,12 +72,49 @@ Json::Value doAccountObjects (RPC::Context& context)
     if (! ledger->exists(keylet::account (accountID)))
         return rpcError (rpcACT_NOT_FOUND);
 
-    auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
-    if (rpcStatus)
+    std::optional<std::vector<LedgerEntryType>> typeFilter;
+
+    if (params.isMember(jss::deletion_blockers_only) &&
+        params[jss::deletion_blockers_only].asBool())
     {
-        result.clear();
-        rpcStatus.inject(result);
-        return result;
+        struct {
+            Json::StaticString name;
+            LedgerEntryType type;
+        } static constexpr deletionBlockers[] = {
+            { jss::check,           ltCHECK },
+            { jss::escrow,          ltESCROW },
+            { jss::payment_channel, ltPAYCHAN },
+            { jss::state,           ltRIPPLE_STATE }
+        };
+
+        typeFilter.emplace();
+        typeFilter->reserve(std::size(deletionBlockers));
+
+        for (auto [name, type] : deletionBlockers)
+        {
+            if (params.isMember(jss::type) &&
+                name != params[jss::type])
+            {
+                continue;
+            }
+
+            typeFilter->push_back(type);
+        }
+    }
+    else
+    {
+        auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
+
+        if (rpcStatus)
+        {
+            result.clear();
+            rpcStatus.inject(result);
+            return result;
+        }
+        else if (type != ltINVALID)
+        {
+            typeFilter.emplace({ type });
+        }
     }
 
     unsigned int limit;
@@ -107,7 +144,7 @@ Json::Value doAccountObjects (RPC::Context& context)
             return RPC::invalid_field_error (jss::marker);
     }
 
-    if (! RPC::getAccountObjects (*ledger, accountID, type,
+    if (! RPC::getAccountObjects (*ledger, accountID, typeFilter,
         dirIndex, entryIndex, limit, result))
     {
         result[jss::account_objects] = Json::arrayValue;

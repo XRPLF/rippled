@@ -55,7 +55,7 @@ accountFromString (AccountID& result, std::string const& strIdent,
 /** Gathers all objects for an account in a ledger.
     @param ledger Ledger to search account objects.
     @param account AccountID to find objects for.
-    @param type Gathers objects of this type. ltINVALID gathers all types.
+    @param typeFilter Gathers objects of these types. empty gathers all types.
     @param dirIndex Begin gathering account objects from this directory.
     @param entryIndex Begin gathering objects from this directory node.
     @param limit Maximum number of objects to find.
@@ -63,8 +63,8 @@ accountFromString (AccountID& result, std::string const& strIdent,
 */
 bool
 getAccountObjects (ReadView const& ledger, AccountID const& account,
-    LedgerEntryType const type, uint256 dirIndex, uint256 const& entryIndex,
-    std::uint32_t const limit, Json::Value& jvResult);
+    std::optional<std::vector<LedgerEntryType>> const& typeFilter, uint256 dirIndex,
+    uint256 const& entryIndex, std::uint32_t const limit, Json::Value& jvResult);
 
 /** Look up a ledger from a request and fill a Json::Result with either
     an error, or data representing a ledger.
