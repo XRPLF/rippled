@@ -1721,15 +1721,26 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
     {
         Json::Value jvObj (Json::objectValue);
 
+        auto signerPublic = val->getSignerPublic();
+
         jvObj [jss::type]                  = "validationReceived";
         jvObj [jss::validation_public_key] = toBase58(
             TokenType::NodePublic,
-            val->getSignerPublic());
+            signerPublic);
         jvObj [jss::ledger_hash]           = to_string (val->getLedgerHash ());
         jvObj [jss::signature]             = strHex (val->getSignature ());
         jvObj [jss::full]                  = val->isFull();
         jvObj [jss::flags]                 = val->getFlags();
         jvObj [jss::signing_time]          = *(*val)[~sfSigningTime];
+
+        // TODO: Should we prefer this approach versus
+        //       'app_.validators().getTrustedKey()'?
+        //       Requires information about the definition
+        //       of a 'trusted' key.
+        auto masterKey = app_.validatorManifests().getMasterKey(signerPublic);
+        jvObj [jss::master_key] = toBase58(
+            TokenType::NodePublic,
+            masterKey);
 
         if (auto const seq = (*val)[~sfLedgerSequence])
             jvObj [jss::ledger_index] = to_string (*seq);
