@@ -322,7 +322,7 @@ JSS ( marker );                     // in/out: AccountTx, AccountOffers,
                                     //         AccountLines, AccountObjects,
                                     //         LedgerData
                                     // in: BookOffers
-JSS ( master_key );                 // out: WalletPropose
+JSS ( master_key );                 // out: WalletPropose, NetworkOPs
 JSS ( master_seed );                // out: WalletPropose
 JSS ( master_seed_hex );            // out: WalletPropose
 JSS ( master_signature );           // out: pubManifest
