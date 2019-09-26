@@ -233,6 +233,7 @@ matrix:
       install:
         - export OPENSSL_ROOT=$(brew --prefix openssl@1.1)
         - travis_wait ${MAX_TIME_MIN} Builds/containers/shared/install_boost.sh
+        - brew uninstall --ignore-dependencies boost
       script:
         - mkdir -p build.macos && cd build.macos
         - cmake -G Ninja ${CMAKE_EXTRA_ARGS} -DCMAKE_BUILD_TYPE=${BLD_CONFIG} ..
