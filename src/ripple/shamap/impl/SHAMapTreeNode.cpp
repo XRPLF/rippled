@@ -46,7 +46,7 @@ SHAMapInnerNode::clone(std::uint32_t seq) const
     std::lock_guard lock(childLock);
     for (int i = 0; i < 16; ++i)
         p->mChildren[i] = mChildren[i];
-    return std::move(p);
+    return p;
 }
 
 std::shared_ptr<SHAMapAbstractNode>

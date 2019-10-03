@@ -112,7 +112,11 @@ inline
 bool
 is_char(char c)
 {
+#ifdef __CHAR_UNSIGNED__  /* -funsigned-char */
     return c >= 0 && c <= 127;
+#else
+    return c >= 0;
+#endif
 }
 
 template <class FwdIter>

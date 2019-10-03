@@ -353,7 +353,7 @@ transactionPreProcessImpl (
     Json::Value jvResult;
     auto const [pk, sk] = keypairForSignature (params, jvResult);
     if (contains_error (jvResult))
-        return std::move (jvResult);
+        return jvResult;
 
     bool const verify = !(params.isMember (jss::offline)
                           && params[jss::offline].asBool());
@@ -402,7 +402,7 @@ transactionPreProcessImpl (
             ledger);
 
         if (RPC::contains_error (err))
-            return std::move (err);
+            return err;
 
         err = checkPayment (
             params,
@@ -414,7 +414,7 @@ transactionPreProcessImpl (
             verify && signingArgs.editFields());
 
         if (RPC::contains_error(err))
-            return std::move (err);
+            return err;
     }
 
     if (signingArgs.editFields())
@@ -495,7 +495,7 @@ transactionPreProcessImpl (
         err [jss::error] = parsed.error [jss::error];
         err [jss::error_code] = parsed.error [jss::error_code];
         err [jss::error_message] = parsed.error [jss::error_message];
-        return std::move (err);
+        return err;
     }
 
     std::shared_ptr<STTx> stpTrans;
