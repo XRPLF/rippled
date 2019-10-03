@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/HashRouter.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <boost/optional.hpp>
@@ -63,7 +64,7 @@ void Transaction::setStatus (TransStatus ts, std::uint32_t lseq)
 TransStatus Transaction::sqlTransactionStatus(
     boost::optional<std::string> const& status)
 {
-    char const c = (status) ? (*status)[0] : txnSqlUnknown;
+    char const c = (status) ? (*status)[0] : safe_cast<char>(txnSqlUnknown);
 
     switch (c)
     {

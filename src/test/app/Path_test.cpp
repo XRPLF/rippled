@@ -220,8 +220,8 @@ public:
         auto& app = env.app();
         Resource::Charge loadType = Resource::feeReferenceRPC;
         Resource::Consumer c;
-        RPC::Context context {env.journal, {}, app, loadType,
-            app.getOPs(), app.getLedgerMaster(), c, Role::USER, {}};
+        RPC::Context context { env.journal, {}, app, loadType,
+            app.getOPs(), app.getLedgerMaster(), c, Role::USER};
 
         Json::Value params = Json::objectValue;
         params[jss::command] = "ripple_path_find";
@@ -320,7 +320,7 @@ public:
         Resource::Charge loadType = Resource::feeReferenceRPC;
         Resource::Consumer c;
         RPC::Context context {env.journal, {}, app, loadType,
-            app.getOPs(), app.getLedgerMaster(), c, Role::USER, {}};
+            app.getOPs(), app.getLedgerMaster(), c, Role::USER};
         Json::Value result;
         gate g;
         // Test RPC::Tuning::max_src_cur source currencies.

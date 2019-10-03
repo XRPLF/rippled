@@ -433,9 +433,7 @@ Ledger::read (Keylet const& k) const
             item->size()}, item->key());
     if (! k.check(*sle))
         return nullptr;
-    // need move otherwise makes a copy
-    // because return type is different
-    return std::move(sle);
+    return sle;
 }
 
 //------------------------------------------------------------------------------

@@ -44,7 +44,7 @@ struct PeerReservation final
 {
 public:
     PublicKey nodeId;
-    std::string description;
+    std::string description {};
 
     auto
     toJson() const -> Json::Value;

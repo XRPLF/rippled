@@ -48,9 +48,9 @@ class LedgerLoad_test : public beast::unit_test::suite
     struct SetupData
     {
         std::string const dbPath;
-        std::string ledgerFile;
-        Json::Value ledger;
-        Json::Value hashes;
+        std::string ledgerFile {};
+        Json::Value ledger {};
+        Json::Value hashes {};
     };
 
     SetupData
