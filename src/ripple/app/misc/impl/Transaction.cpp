@@ -63,7 +63,9 @@ void Transaction::setStatus (TransStatus ts, std::uint32_t lseq)
 TransStatus Transaction::sqlTransactionStatus(
     boost::optional<std::string> const& status)
 {
-    char const c = (status) ? (*status)[0] : txnSqlUnknown;
+    char const c = (status) ?
+        (*status)[0] :
+        static_cast<std::underlying_type<TxnSql>::type>(txnSqlUnknown);
 
     switch (c)
     {

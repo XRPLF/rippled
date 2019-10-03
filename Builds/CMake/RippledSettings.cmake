@@ -16,9 +16,11 @@ if (is_gcc OR is_clang)
     "Include only src/ripple files when generating coverage report. \
     Set to OFF to include all sources in coverage report."
     ON)
+  option (wextra "compile with extra gcc/clang warnings enabled" ON)
 else ()
   set (profile OFF CACHE BOOL "gcc/clang only" FORCE)
   set (coverage OFF CACHE BOOL "gcc/clang only" FORCE)
+  set (wextra OFF CACHE BOOL "gcc/clang only" FORCE)
 endif ()
 if (is_linux)
   option (BUILD_SHARED_LIBS "build shared ripple libraries" OFF)

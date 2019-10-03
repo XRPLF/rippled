@@ -89,7 +89,7 @@ public:
     contains(PublicKey const& nodeId)
     {
         std::lock_guard lock(this->mutex_);
-        return table_.find({nodeId}) != table_.end();
+        return table_.find({nodeId,{}}) != table_.end();
     }
 
     // Because `ApplicationImp` has two-phase initialization, so must we.
