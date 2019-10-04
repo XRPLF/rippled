@@ -21,6 +21,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <test/jtx/WSClient.h>
 #include <string>
 #include <unordered_map>
 
