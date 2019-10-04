@@ -819,7 +819,7 @@ static boost::optional <STObject> parseObject (
         // Some inner object types have templates.  Attempt to apply that.
         data.applyTemplateFromSField (inName);  // May throw
 
-        return std::move (data);
+        return data;
     }
     catch (STObject::FieldErr const&)
     {

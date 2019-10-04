@@ -146,7 +146,7 @@ boost::optional<Manifest> deserializeManifest(Slice s)
             m.signingKey = PublicKey(makeSlice(spk));
         }
 
-        return std::move(m);
+        return m;
     }
     catch (std::exception const&)
     {
