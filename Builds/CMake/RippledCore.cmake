@@ -392,6 +392,7 @@ if (unity)
     src/test/unity/crypto_test_unity.cpp
     src/test/unity/json_test_unity.cpp
     src/test/unity/ledger_test_unity.cpp
+    src/test/unity/net_test_unity.cpp
     src/test/unity/nodestore_test_unity.cpp
     src/test/unity/overlay_test_unity.cpp
     src/test/unity/peerfinder_test_unity.cpp
@@ -899,6 +900,11 @@ else ()
     src/test/ledger/View_test.cpp
     #[===============================[
        nounity, test sources:
+         subdir: net
+    #]===============================]
+    src/test/net/SSLHTTPDownloader_test.cpp
+    #[===============================[
+       nounity, test sources:
          subdir: nodestore
     #]===============================]
     src/test/nodestore/Backend_test.cpp
@@ -974,6 +980,7 @@ else ()
     src/test/rpc/NoRipple_test.cpp
     src/test/rpc/OwnerInfo_test.cpp
     src/test/rpc/Peers_test.cpp
+    src/test/rpc/Roles_test.cpp
     src/test/rpc/RPCCall_test.cpp
     src/test/rpc/RPCOverload_test.cpp
     src/test/rpc/RobustTransaction_test.cpp
