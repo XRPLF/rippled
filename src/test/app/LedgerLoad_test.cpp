@@ -48,16 +48,16 @@ class LedgerLoad_test : public beast::unit_test::suite
     struct SetupData
     {
         std::string const dbPath;
-        std::string ledgerFile;
-        Json::Value ledger;
-        Json::Value hashes;
+        std::string ledgerFile {};
+        Json::Value ledger {};
+        Json::Value hashes {};
     };
 
     SetupData
     setupLedger(beast::temp_dir const& td)
     {
         using namespace test::jtx;
-        SetupData retval = {td.path(),{},{},{}};
+        SetupData retval = {td.path()};
 
         retval.ledgerFile = td.file("ledgerdata.json");
 

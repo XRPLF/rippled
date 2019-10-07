@@ -55,9 +55,9 @@ struct Context
     LedgerMaster& ledgerMaster;
     Resource::Consumer& consumer;
     Role role;
-    std::shared_ptr<JobQueue::Coro> coro;
-    InfoSub::pointer infoSub;
-    Headers headers;
+    std::shared_ptr<JobQueue::Coro> coro {};
+    InfoSub::pointer infoSub {};
+    Headers headers {};
 };
 
 } // RPC

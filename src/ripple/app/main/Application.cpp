@@ -1566,19 +1566,8 @@ bool ApplicationImp::setup()
 
         Resource::Charge loadType = Resource::feeReferenceRPC;
         Resource::Consumer c;
-        RPC::Context context {
-            journal ("RPCHandler"),
-            jvCommand,
-            *this,
-            loadType,
-            getOPs (),
-            getLedgerMaster (),
-            c,
-            Role::ADMIN,
-            {},
-            {},
-            {{},{}}
-        };
+        RPC::Context context { journal ("RPCHandler"), jvCommand, *this,
+            loadType, getOPs (), getLedgerMaster (), c, Role::ADMIN};
 
         Json::Value jvResult;
         RPC::doCommand (context, jvResult);
