@@ -143,10 +143,11 @@ target_compile_options (xrpl_core
 target_link_libraries (xrpl_core
   PUBLIC
     OpenSSL::Crypto
+    Ripple::boost
+    Ripple::syslibs
     NIH::secp256k1
     NIH::ed25519-donna
-    Ripple::syslibs
-    Ripple::boost
+    date::date
     Ripple::opts)
 #[=================================[
    main/core headers installation
@@ -169,7 +170,6 @@ install (
     src/ripple/basics/base_uint.h
     src/ripple/basics/chrono.h
     src/ripple/basics/contract.h
-    src/ripple/basics/date.h
     src/ripple/basics/hardened_hash.h
     src/ripple/basics/strHex.h
   DESTINATION include/ripple/basics)
