@@ -1721,7 +1721,7 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
     {
         Json::Value jvObj (Json::objectValue);
 
-        auto signerPublic = val->getSignerPublic();
+        auto const signerPublic = val->getSignerPublic();
 
         jvObj [jss::type]                  = "validationReceived";
         jvObj [jss::validation_public_key] = toBase58(
@@ -1733,14 +1733,10 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
         jvObj [jss::flags]                 = val->getFlags();
         jvObj [jss::signing_time]          = *(*val)[~sfSigningTime];
 
-        // TODO: Should we prefer this approach versus
-        //       'app_.validators().getTrustedKey()'?
-        //       Requires information about the definition
-        //       of a 'trusted' key.
-        auto masterKey = app_.validatorManifests().getMasterKey(signerPublic);
-        jvObj [jss::master_key] = toBase58(
-            TokenType::NodePublic,
-            masterKey);
+        auto const masterKey = app_.validatorManifests().getMasterKey(signerPublic);
+
+        if(masterKey != signerPublic)
+            jvObj [jss::master_key] = toBase58(TokenType::NodePublic, masterKey);
 
         if (auto const seq = (*val)[~sfLedgerSequence])
             jvObj [jss::ledger_index] = to_string (*seq);
