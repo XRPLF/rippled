@@ -20,7 +20,7 @@
 #ifndef BEAST_CHRONO_BASIC_SECONDS_CLOCK_H_INCLUDED
 #define BEAST_CHRONO_BASIC_SECONDS_CLOCK_H_INCLUDED
 
-#include <ripple/basics/date.h>
+#include <date/date.h>
 
 #include <algorithm>
 #include <chrono>
