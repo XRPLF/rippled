@@ -377,10 +377,10 @@ PeerImp::json()
     }
 
     ret[jss::metrics] = Json::Value(Json::objectValue);
-    ret[jss::metrics][jss::total_bytes_recv] = Json::UInt(metrics_.recv.total_bytes());
-    ret[jss::metrics][jss::total_bytes_sent] = Json::UInt(metrics_.sent.total_bytes());
-    ret[jss::metrics][jss::avg_bps_recv] = Json::UInt(metrics_.recv.average_bytes());
-    ret[jss::metrics][jss::avg_bps_sent] = Json::UInt(metrics_.sent.average_bytes());
+    ret[jss::metrics][jss::total_bytes_recv] = std::to_string(metrics_.recv.total_bytes());
+    ret[jss::metrics][jss::total_bytes_sent] = std::to_string(metrics_.sent.total_bytes());
+    ret[jss::metrics][jss::avg_bps_recv] = std::to_string(metrics_.recv.average_bytes());
+    ret[jss::metrics][jss::avg_bps_sent] = std::to_string(metrics_.sent.average_bytes());
 
     return ret;
 }
