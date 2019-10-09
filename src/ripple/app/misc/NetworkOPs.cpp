@@ -487,6 +487,9 @@ public:
     bool unsubPeerStatus (std::uint64_t uListener) override;
     void pubPeerStatus (std::function<Json::Value(void)> const&) override;
 
+    bool subConsensus (InfoSub::ref ispListener) override;
+    bool unsubConsensus (std::uint64_t uListener) override;
+
     InfoSub::pointer findRpcSub (std::string const& strUrl) override;
     InfoSub::pointer addRpcSub (
         std::string const& strUrl, InfoSub::ref) override;
@@ -591,9 +594,10 @@ private:
         sRTTransactions,            // All proposed and accepted transactions.
         sValidations,               // Received validations.
         sPeerStatus,                // Peer status changes.
+        sConsensusPhase,            // Consensus phase
 
-        sLastEntry = sPeerStatus    // as this name implies, any new entry must
-                                    // be ADDED ABOVE this one
+        sLastEntry = sConsensusPhase // as this name implies, any new entry must
+                                     // be ADDED ABOVE this one
     };
     std::array<SubMapType, SubTypes::sLastEntry+1> mStreamMaps;
 
@@ -1475,6 +1479,13 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
         prevLedger,
         changes.removed);
 
+    const ConsensusPhase currPhase = mConsensus.phase();
+    if (mLastConsensusPhase != currPhase)
+    {
+        reportConsensusStateChange(currPhase);
+        mLastConsensusPhase = currPhase;
+    }
+
     JLOG(m_journal.debug()) << "Initiating consensus engine";
     return true;
 }
@@ -1724,13 +1735,13 @@ void NetworkOPsImp::pubServer ()
 
 void NetworkOPsImp::pubConsensus (ConsensusPhase phase)
 {
-    ScopedLockType sl (mSubLock);
+    std::lock_guard sl (mSubLock);
 
-    auto& streamMap = mStreamMaps[sServer];
+    auto& streamMap = mStreamMaps[sConsensusPhase];
     if (!streamMap.empty ())
     {
         Json::Value jvObj (Json::objectValue);
-        jvObj [jss::type] = "serverStatus";
+        jvObj [jss::type] = "consensusPhase";
         jvObj [jss::consensus] = to_string(phase);
 
         for (auto i = streamMap.begin ();
@@ -3009,6 +3020,21 @@ bool NetworkOPsImp::unsubPeerStatus (std::uint64_t uSeq)
 {
     std::lock_guard sl (mSubLock);
     return mStreamMaps[sPeerStatus].erase (uSeq);
+}
+
+// <-- bool: true=added, false=already there
+bool NetworkOPsImp::subConsensus (InfoSub::ref isrListener)
+{
+    std::lock_guard sl (mSubLock);
+    return mStreamMaps[sConsensusPhase].emplace (
+        isrListener->getSeq (), isrListener).second;
+}
+
+// <-- bool: true=erased, false=was not there
+bool NetworkOPsImp::unsubConsensus (std::uint64_t uSeq)
+{
+    std::lock_guard sl (mSubLock);
+    return mStreamMaps[sConsensusPhase].erase (uSeq);
 }
 
 InfoSub::pointer NetworkOPsImp::findRpcSub (std::string const& strUrl)
