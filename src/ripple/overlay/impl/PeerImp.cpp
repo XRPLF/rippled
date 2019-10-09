@@ -45,6 +45,7 @@
 #include <algorithm>
 #include <memory>
 #include <sstream>
+#include <numeric>
 
 using namespace std::chrono_literals;
 
@@ -376,10 +377,10 @@ PeerImp::json()
     }
 
     ret[jss::metrics] = Json::Value(Json::objectValue);
-    ret[jss::metrics][jss::bytes_recv_total] = Json::UInt(metrics_.recv.total_bytes());
-    ret[jss::metrics][jss::bytes_sent_total] = Json::UInt(metrics_.sent.total_bytes());
-    ret[jss::metrics][jss::bytes_recv_avg] = Json::UInt(metrics_.recv.average_bytes());
-    ret[jss::metrics][jss::bytes_sent_avg] = Json::UInt(metrics_.sent.average_bytes());
+    ret[jss::metrics][jss::total_bytes_recv] = Json::UInt(metrics_.recv.total_bytes());
+    ret[jss::metrics][jss::total_bytes_sent] = Json::UInt(metrics_.sent.total_bytes());
+    ret[jss::metrics][jss::avg_bps_recv] = Json::UInt(metrics_.recv.average_bytes());
+    ret[jss::metrics][jss::avg_bps_sent] = Json::UInt(metrics_.sent.average_bytes());
 
     return ret;
 }
@@ -2865,31 +2866,36 @@ void
 PeerImp::Metrics::add_message(std::uint64_t bytes)
 {
     using namespace std::chrono_literals;
+    std::unique_lock lock{ mutex_ };
 
-    totalBytes += bytes;
-    accumBytes += bytes;
-    auto const actualInterval = clock_type::now() - intervalStart;
+    totalBytes_ += bytes;
+    accumBytes_ += bytes;
+    auto const timeElapsed = clock_type::now() - intervalStart_;
+    auto const timeElapsedInSecs = std::chrono::duration_cast<std::chrono::seconds>(timeElapsed);
 
-    if (actualInterval >= 1s)
+    if (timeElapsedInSecs >= 1s)
     {
-        auto const avgBytes = accumBytes / std::chrono::duration_cast<std::chrono::seconds>(actualInterval).count();
-        rollingAvg[currIndex] = avgBytes;
-        rollingAvgBytes = std::accumulate(rollingAvg.begin(), rollingAvg.end(), 0ull) / rollingAvg.size();
+        auto const avgBytes = accumBytes_ / timeElapsedInSecs.count();
+        rollingAvg_.push_back(avgBytes);
 
-        currIndex = (currIndex + 1) % rollingAvg.size();
-        intervalStart = clock_type::now();
-        accumBytes = 0;
+        auto const totalBytes = std::accumulate(rollingAvg_.begin(), rollingAvg_.end(), 0ull);
+        rollingAvgBytes_ = totalBytes / rollingAvg_.size();
+
+        intervalStart_ = clock_type::now();
+        accumBytes_ = 0;
     }
 }
 
 std::uint64_t
 PeerImp::Metrics::average_bytes() const {
-    return rollingAvgBytes;
+    std::shared_lock lock{ mutex_ };
+    return rollingAvgBytes_;
 }
 
 std::uint64_t
 PeerImp::Metrics::total_bytes() const {
-    return totalBytes;
+    std::shared_lock lock{ mutex_ };
+    return totalBytes_;
 }
 
 

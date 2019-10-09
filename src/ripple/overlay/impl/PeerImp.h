@@ -33,13 +33,13 @@
 #include <ripple/protocol/STValidation.h>
 #include <ripple/resource/Fees.h>
 
+#include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/optional.hpp>
 #include <cstdint>
 #include <deque>
 #include <queue>
 #include <shared_mutex>
-#include <numeric>
 
 namespace ripple {
 
@@ -201,17 +201,23 @@ private:
 
     class Metrics {
     public:
+        Metrics() = default;
+        Metrics(Metrics const&) = delete;
+        Metrics& operator=(Metrics const&) = delete;
+        Metrics(Metrics&&) = delete;
+        Metrics& operator=(Metrics&&) = delete;
+
         void add_message(std::uint64_t bytes);
         std::uint64_t average_bytes() const;
         std::uint64_t total_bytes() const;
 
     private:
-        std::uint64_t totalBytes = 0;
-        std::uint64_t accumBytes = 0;
-        std::uint64_t rollingAvgBytes = 0;
-        std::array<std::uint64_t, 30> rollingAvg = {};
-        std::size_t currIndex = 0;
-        clock_type::time_point intervalStart = clock_type::now();
+        std::shared_mutex mutable mutex_;
+        boost::circular_buffer<std::uint64_t> rollingAvg_{ 30, 0ull };
+        clock_type::time_point intervalStart_{ clock_type::now() };
+        std::uint64_t totalBytes_{ 0 };
+        std::uint64_t accumBytes_{ 0 };
+        std::uint64_t rollingAvgBytes_{ 0 };
     };
 
     struct {

@@ -126,6 +126,8 @@ JSS ( authorized );                 // out: AccountLines
 JSS ( auth_change );                // out: AccountInfo
 JSS ( auth_change_queued );         // out: AccountInfo
 JSS ( available );                  // out: ValidatorList
+JSS ( avg_bps_recv );               // out: Peers
+JSS ( avg_bps_sent );               // out: Peers
 JSS ( balance );                    // out: AccountLines
 JSS ( balances );                   // out: GatewayBalances
 JSS ( base );                       // out: LogLevel
@@ -139,10 +141,6 @@ JSS ( both );                       // in: Subscribe, Unsubscribe
 JSS ( both_sides );                 // in: Subscribe, Unsubscribe
 JSS ( build_path );                 // in: TransactionSign
 JSS ( build_version );              // out: NetworkOPs
-JSS ( bytes_recv_avg );             // out: Peers
-JSS ( bytes_sent_avg );             // out: Peers
-JSS ( bytes_recv_total );           // out: Peers
-JSS ( bytes_sent_total );           // out: Peers
 JSS ( cancel_after );               // out: AccountChannels
 JSS ( can_delete );                 // out: CanDelete
 JSS ( channel_id );                 // out: AccountChannels
@@ -494,6 +492,8 @@ JSS ( timeouts );                   // out: InboundLedger
 JSS ( traffic );                    // out: Overlay
 JSS ( total );                      // out: counters
 JSS ( totalCoins );                 // out: LedgerToJson
+JSS ( total_bytes_recv );           // out: Peers
+JSS ( total_bytes_sent );           // out: Peers
 JSS ( total_coins );                // out: LedgerToJson
 JSS ( transTreeHash );              // out: ledger/Ledger.cpp
 JSS ( transaction );                // in: Tx
