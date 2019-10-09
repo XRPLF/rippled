@@ -61,13 +61,14 @@ void LoadManager::activateDeadlockDetector ()
 {
     std::lock_guard sl (mutex_);
     armed_ = true;
+    deadLock_ = std::chrono::steady_clock::now();
 }
 
 void LoadManager::resetDeadlockDetector ()
 {
-    auto const elapsedSeconds = UptimeClock::now();
+    auto const detector_start = std::chrono::steady_clock::now();
     std::lock_guard sl (mutex_);
-    deadLock_ = elapsedSeconds;
+    deadLock_ = detector_start;
 }
 
 //------------------------------------------------------------------------------
@@ -121,7 +122,9 @@ void LoadManager::run ()
             sl.unlock();
 
             // Measure the amount of time we have been deadlocked, in seconds.
-            auto const timeSpentDeadlocked = UptimeClock::now() - deadLock;
+            using namespace std::chrono;
+            auto const timeSpentDeadlocked =
+                duration_cast<seconds>(steady_clock::now() - deadLock);
 
             auto const reportingIntervalSeconds = 10s;
             if (armed && (timeSpentDeadlocked >= reportingIntervalSeconds))

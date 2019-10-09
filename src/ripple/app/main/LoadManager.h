@@ -95,7 +95,7 @@ private:
     std::thread thread_;
     std::mutex mutex_;          // Guards deadLock_, armed_, and stop_.
 
-    UptimeClock::time_point deadLock_;  // Detect server deadlocks.
+    std::chrono::steady_clock::time_point deadLock_;  // Detect server deadlocks.
     bool armed_;
     bool stop_;
 
