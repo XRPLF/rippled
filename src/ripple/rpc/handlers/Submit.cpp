@@ -142,12 +142,41 @@ Json::Value doSubmit (RPC::Context& context)
         {
             std::string sToken;
             std::string sHuman;
+            std::uint32_t mAccountSeqNext;
+            std::uint32_t mAccountSeqAvail;
+            bool mAccepted;
+            bool mApplied;
+            bool mBroadcast;
+            bool mQueued;
+            bool mKept;
 
             transResultInfo (tpTrans->getResult (), sToken, sHuman);
 
             jvResult[jss::engine_result]           = sToken;
             jvResult[jss::engine_result_code]      = tpTrans->getResult ();
             jvResult[jss::engine_result_message]   = sHuman;
+
+            mAccepted = tpTrans->getAccepted (mApplied, mBroadcast,
+                    mQueued, mKept);
+
+            jvResult[jss::accepted]                = mAccepted;
+            jvResult[jss::applied]                 = mApplied;
+            jvResult[jss::broadcast]               = mBroadcast;
+            jvResult[jss::queued]                  = mQueued;
+            jvResult[jss::kept]                    = mKept;
+
+            mAccountSeqNext = tpTrans->getAccountSequence (mAccountSeqAvail);
+
+            jvResult[jss::account_sequence_next]
+                    = (Json::Value::UInt)mAccountSeqNext;
+            jvResult[jss::account_sequence_available]
+                    = (Json::Value::UInt)mAccountSeqAvail;
+
+            jvResult[jss::open_ledger_cost] = (Json::Value::UInt)
+                    tpTrans->getMinimumFeeRequired ().drops ();
+            jvResult[jss::validated_ledger_index] = (Json::Value::UInt)
+                    tpTrans->getValidatedLedgerIndex ();
+
         }
 
         return jvResult;
