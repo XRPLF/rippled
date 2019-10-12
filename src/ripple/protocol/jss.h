@@ -100,7 +100,7 @@ JSS ( TransactionType );            // in: TransactionSign.
 JSS ( TransferRate );               // in: TransferRate.
 JSS ( TrustSet );                   // transaction type.
 JSS ( aborted );                    // out: InboundLedger
-JSS ( accepted );                   // out: LedgerToJson, OwnerInfo
+JSS ( accepted );                   // out: LedgerToJson, OwnerInfo, SubmitTransaction
 JSS ( account );                    // in/out: many
 JSS ( accountState );               // out: LedgerToJson
 JSS ( accountTreeHash );            // out: ledger/Ledger.cpp
@@ -109,6 +109,8 @@ JSS ( account_hash );               // out: LedgerToJson
 JSS ( account_id );                 // out: WalletPropose
 JSS ( account_objects );            // out: AccountObjects
 JSS ( account_root );               // in: LedgerEntry
+JSS ( account_sequence_next );      // out: SubmitTransaction
+JSS ( account_sequence_available ); // out: SubmitTransaction
 JSS ( accounts );                   // in: LedgerEntry, Subscribe,
                                     //     handlers/Ledger, Unsubscribe
 JSS ( accounts_proposed );          // in: Subscribe, Unsubscribe
@@ -121,6 +123,7 @@ JSS ( alternatives );               // out: PathRequest, RipplePathFind
 JSS ( amendment_blocked );          // out: NetworkOPs
 JSS ( amendments );                 // in: AccountObjects, out: NetworkOPs
 JSS ( amount );                     // out: AccountChannels
+JSS ( applied );                    // out: SubmitTransaction
 JSS ( asks );                       // out: Subscribe
 JSS ( assets );                     // out: GatewayBalances
 JSS ( authorized );                 // out: AccountLines
@@ -140,6 +143,7 @@ JSS ( binary );                     // in: AccountTX, LedgerEntry,
 JSS ( books );                      // in: Subscribe, Unsubscribe
 JSS ( both );                       // in: Subscribe, Unsubscribe
 JSS ( both_sides );                 // in: Subscribe, Unsubscribe
+JSS ( broadcast );                  // out: SubmitTransaction
 JSS ( build_path );                 // in: TransactionSign
 JSS ( build_version );              // out: NetworkOPs
 JSS ( cancel_after );               // out: AccountChannels
@@ -271,6 +275,7 @@ JSS ( job_queue );
 JSS ( jobs );
 JSS ( jsonrpc );                    // json version
 JSS ( jq_trans_overflow );          // JobQueue transaction limit overflow.
+JSS ( kept );                       // out: SubmitTransaction
 JSS ( key );                        // out
 JSS ( key_type );                   // in/out: WalletPropose, TransactionSign
 JSS ( latency );                    // out: PeerImp
@@ -371,6 +376,7 @@ JSS ( offers );                     // out: NetworkOPs, AccountOffers, Subscribe
 JSS ( offline );                    // in: TransactionSign
 JSS ( offset );                     // in/out: AccountTxOld
 JSS ( open );                       // out: handlers/Ledger
+JSS ( open_ledger_cost );           // out: SubmitTransaction
 JSS ( open_ledger_fee );            // out: TxQ
 JSS ( open_ledger_level );          // out: TxQ
 JSS ( owner );                      // in: LedgerEntry, out: NetworkOPs
@@ -412,7 +418,7 @@ JSS ( quality_in );                 // out: AccountLines
 JSS ( quality_out );                // out: AccountLines
 JSS ( queue );                      // in: AccountInfo
 JSS ( queue_data );                 // out: AccountInfo
-JSS ( queued );
+JSS ( queued );                     // out: SubmitTransaction
 JSS ( queued_duration_us );
 JSS ( random );                     // out: Random
 JSS ( raw_meta );                   // out: AcceptedLedgerTx
@@ -540,6 +546,7 @@ JSS ( validator_list_expires );     // out: NetworkOps, ValidatorList
 JSS ( validator_list );             // out: NetworkOps, ValidatorList
 JSS ( validators );
 JSS ( validated_ledger );           // out: NetworkOPs
+JSS ( validated_ledger_index );     // out: SubmitTransaction
 JSS ( validated_ledgers );          // out: NetworkOPs
 JSS ( validation_key );             // out: ValidationCreate, ValidationSeed
 JSS ( validation_private_key );     // out: ValidationCreate
