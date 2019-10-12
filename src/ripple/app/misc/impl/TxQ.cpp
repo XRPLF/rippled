@@ -1393,6 +1393,41 @@ TxQ::getMetrics(OpenView const& view) const
     return result;
 }
 
+TxQ::FeeAndSeq
+TxQ::getTxRequiredFeeAndSeq(OpenView const& view,
+    std::shared_ptr<STTx const> const& tx) const
+{
+    auto const account = (*tx)[sfAccount];
+
+    std::lock_guard lock(mutex_);
+
+    auto const snapshot = feeMetrics_.getSnapshot();
+    auto const baseFee = calculateBaseFee(view, *tx);
+    auto const fee = FeeMetrics::scaleFeeLevel(snapshot, view);
+
+    auto const accountSeq = [&view, &account]() -> std::uint32_t {
+        auto const sle = view.read(keylet::account(account));
+        if (sle)
+            return (*sle)[sfSequence];
+        return 0;
+    }();
+
+    auto availableSeq = accountSeq;
+
+    if (auto iter {byAccount_.find(account)}; iter != byAccount_.end())
+    {
+        auto& txQAcct = iter->second;
+        for (auto const& [seq, _] : txQAcct.transactions)
+        {
+            (void)_;
+            if (seq >= availableSeq)
+                availableSeq = seq + 1;
+        }
+    }
+
+    return {fee * baseFee / baseLevel, accountSeq, availableSeq};
+}
+
 auto
 TxQ::getAccountTxs(AccountID const& account, ReadView const& view) const
     -> std::map<TxSeq, AccountTxDetails const>

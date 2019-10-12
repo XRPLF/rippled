@@ -148,6 +148,26 @@ Json::Value doSubmit (RPC::Context& context)
             jvResult[jss::engine_result]           = sToken;
             jvResult[jss::engine_result_code]      = tpTrans->getResult ();
             jvResult[jss::engine_result_message]   = sHuman;
+
+            auto const submitResult = tpTrans->getSubmitResult();
+
+            jvResult[jss::accepted] = submitResult.any();
+            jvResult[jss::applied] = submitResult.applied;
+            jvResult[jss::broadcast] = submitResult.broadcast;
+            jvResult[jss::queued] = submitResult.queued;
+            jvResult[jss::kept] = submitResult.kept;
+
+            if (auto currentLedgerState = tpTrans->getCurrentLedgerState())
+            {
+                jvResult[jss::account_sequence_next]
+                    = safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqNext);
+                jvResult[jss::account_sequence_available]
+                    = safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqAvail);
+                jvResult[jss::open_ledger_cost]
+                    = to_string(currentLedgerState->minFeeRequired);
+                jvResult[jss::validated_ledger_index]
+                    = safe_cast<Json::Value::UInt>(currentLedgerState->validatedLedger);
+            }
         }
 
         return jvResult;

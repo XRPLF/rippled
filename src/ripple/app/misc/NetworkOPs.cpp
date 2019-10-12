@@ -1070,9 +1070,15 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
         if (changed)
             reportFeeChange();
 
+        boost::optional<LedgerIndex> validatedLedgerIndex;
+        if (auto const l = m_ledgerMaster.getValidatedLedger())
+            validatedLedgerIndex = l->info().seq;
+
         auto newOL = app_.openLedger().current();
         for (TransactionStatus& e : transactions)
         {
+            e.transaction->clearSubmitResult();
+
             if (e.applied)
             {
                 pubProposedTransaction (newOL,
@@ -1117,6 +1123,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                         t, false, false, FailHard::no);
                     t->setApplying();
                 }
+                e.transaction->setApplied();
             }
             else if (e.result == tefPAST_SEQ)
             {
@@ -1133,6 +1140,8 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 // kicked out of the queue, and this will try to
                 // put it back.
                 m_ledgerMaster.addHeldTransaction(e.transaction);
+                e.transaction->setQueued();
+                e.transaction->setKept();
             }
             else if (isTerRetry (e.result))
             {
@@ -1147,6 +1156,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                         << "Transaction should be held: " << e.result;
                     e.transaction->setStatus (HELD);
                     m_ledgerMaster.addHeldTransaction (e.transaction);
+                    e.transaction->setKept();
                 }
             }
             else
@@ -1161,6 +1171,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 m_localTX->push_back (
                     m_ledgerMaster.getCurrentLedgerIndex(),
                     e.transaction->getSTransaction());
+                e.transaction->setKept();
             }
 
             if (e.applied || ((mMode != OperatingMode::FULL) &&
@@ -1184,7 +1195,17 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                     app_.overlay().foreach (send_if_not (
                         std::make_shared<Message> (tx, protocol::mtTRANSACTION),
                         peer_in_set(*toSkip)));
+                    e.transaction->setBroadcast();
                 }
+            }
+
+            if (validatedLedgerIndex)
+            {
+                auto [fee, accountSeq, availableSeq] =
+                    app_.getTxQ().getTxRequiredFeeAndSeq(
+                        *newOL, e.transaction->getSTransaction());
+                e.transaction->setCurrentLedgerState(
+                    *validatedLedgerIndex, fee, accountSeq, availableSeq);
             }
         }
     }
