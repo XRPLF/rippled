@@ -61,6 +61,7 @@ void LoadManager::activateDeadlockDetector ()
 {
     std::lock_guard sl (mutex_);
     armed_ = true;
+    deadLock_ = std::chrono::steady_clock::now();
 }
 
 void LoadManager::resetDeadlockDetector ()
