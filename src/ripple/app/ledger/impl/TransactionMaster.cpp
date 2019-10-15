@@ -44,22 +44,24 @@ bool TransactionMaster::inLedger (uint256 const& hash, std::uint32_t ledger)
     return true;
 }
 
-std::shared_ptr<Transaction>
-TransactionMaster::fetch (uint256 const& txnID, bool checkDisk)
+auto
+TransactionMaster::fetch (uint256 const& txnID, bool checkDisk) -> TransactionEnvelope
 {
-    auto txn = mCache.fetch (txnID);
+    TransactionEnvelope ret;
 
-    if (!checkDisk || txn)
-        return txn;
+    ret.txn = mCache.fetch (txnID);
 
-    txn = Transaction::load (txnID, mApp);
+    if (!checkDisk || ret.txn)
+        return ret;
 
-    if (!txn)
-        return txn;
+    ret = Transaction::load (txnID, mApp);
 
-    mCache.canonicalize (txnID, txn);
+    if (!ret.txn)
+        return ret;
 
-    return txn;
+    mCache.canonicalize (txnID, ret.txn);
+
+    return ret;
 }
 
 std::shared_ptr<STTx const>
@@ -68,7 +70,7 @@ TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
         bool checkDisk, std::uint32_t uCommitLedger)
 {
     std::shared_ptr<STTx const>  txn;
-    auto iTx = fetch (item->key(), false);
+    auto iTx = fetch (item->key(), false).txn;
 
     if (!iTx)
     {

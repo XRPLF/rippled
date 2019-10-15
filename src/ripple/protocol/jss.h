@@ -162,7 +162,7 @@ JSS ( cluster );                    // out: PeerImp
 JSS ( code );                       // out: errors
 JSS ( command );                    // in: RPCHandler
 JSS ( complete );                   // out: NetworkOPs, InboundLedger
-JSS ( complete_ledgers );           // out: NetworkOPs, PeerImp
+JSS ( complete_ledgers );           // out: NetworkOPs, PeerImp, Tx
 JSS ( complete_shards );            // out: OverlayImpl, PeerImp
 JSS ( consensus );                  // out: NetworkOPs, LedgerConsensus
 JSS ( converge_time );              // out: NetworkOPs

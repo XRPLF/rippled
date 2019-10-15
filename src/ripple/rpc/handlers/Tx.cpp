@@ -97,18 +97,24 @@ Json::Value doTx (RPC::Context& context)
     if (!isHexTxID (txid))
         return rpcError (rpcNOT_IMPL);
 
-    auto txn = context.app.getMasterTransaction ().fetch (
+    auto te = context.app.getMasterTransaction ().fetch (
         from_hex_text<uint256>(txid), true);
 
-    if (!txn)
-        return rpcError (rpcTXN_NOT_FOUND);
+    if (!te.txn)
+    {
+        auto jvResult = Json::Value (Json::objectValue);
 
-    Json::Value ret = txn->getJson (JsonOptions::include_date, binary);
+        jvResult[jss::complete_ledgers] = te.completeLedgers;
 
-    if (txn->getLedger () == 0)
+        return rpcError (rpcTXN_NOT_FOUND, jvResult);
+    }
+
+    Json::Value ret = te.txn->getJson (JsonOptions::include_date, binary);
+
+    if (te.txn->getLedger () == 0)
         return ret;
 
-    if (auto lgr = context.ledgerMaster.getLedgerBySeq (txn->getLedger ()))
+    if (auto lgr = context.ledgerMaster.getLedgerBySeq (te.txn->getLedger ()))
     {
         bool okay = false;
 
@@ -116,7 +122,7 @@ Json::Value doTx (RPC::Context& context)
         {
             std::string meta;
 
-            if (getMetaHex (*lgr, txn->getID (), meta))
+            if (getMetaHex (*lgr, te.txn->getID (), meta))
             {
                 ret[jss::meta] = meta;
                 okay = true;
@@ -124,14 +130,14 @@ Json::Value doTx (RPC::Context& context)
         }
         else
         {
-            auto rawMeta = lgr->txRead (txn->getID()).second;
+            auto rawMeta = lgr->txRead (te.txn->getID()).second;
             if (rawMeta)
             {
                 auto txMeta = std::make_shared<TxMeta>(
-                    txn->getID(), lgr->seq(), *rawMeta);
+                    te.txn->getID(), lgr->seq(), *rawMeta);
                 okay = true;
                 auto meta = txMeta->getJson (JsonOptions::none);
-                insertDeliveredAmount (meta, context, txn, *txMeta);
+                insertDeliveredAmount (meta, context, te.txn, *txMeta);
                 ret[jss::meta] = std::move(meta);
             }
         }
