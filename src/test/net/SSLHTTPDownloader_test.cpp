@@ -169,22 +169,32 @@ class SSLHTTPDownloader_test : public beast::unit_test::suite
         }
         {
             // bad hostname
-            Downloader dl {env};
-            ripple::test::detail::FileDirGuard const datafile {
-                *this, "downloads", "data", "", false, false};
-            BEAST_EXPECT(dl->download(
-                "badhostname",
-                "443",
-                "",
-                11,
-                datafile.file(),
-                std::function<void(boost::filesystem::path)> {std::ref(cb)}));
-            BEAST_EXPECT(cb.waitComplete());
-            BEAST_EXPECT(!boost::filesystem::exists(datafile.file()));
-            BEAST_EXPECTS(
-                dl.sink_.messages().str().find("async_resolve")
-                    != std::string::npos,
-                dl.sink_.messages().str());
+            boost::system::error_code ec;
+            boost::asio::ip::tcp::resolver resolver {env.app().getIOService()};
+            auto const results = resolver.resolve("badhostname", "443", ec);
+            // we require an error in resolving this name in order
+            // for this test to pass. Some networks might have DNS hijacking
+            // that prevent NXDOMAIN, in which case the failure is not
+            // possible, so we skip the test.
+            if (ec)
+            {
+                Downloader dl {env};
+                ripple::test::detail::FileDirGuard const datafile {
+                    *this, "downloads", "data", "", false, false};
+                BEAST_EXPECT(dl->download(
+                    "badhostname",
+                    "443",
+                    "",
+                    11,
+                    datafile.file(),
+                    std::function<void(boost::filesystem::path)> {std::ref(cb)}));
+                BEAST_EXPECT(cb.waitComplete());
+                BEAST_EXPECT(!boost::filesystem::exists(datafile.file()));
+                BEAST_EXPECTS(
+                    dl.sink_.messages().str().find("async_resolve")
+                        != std::string::npos,
+                    dl.sink_.messages().str());
+            }
         }
         {
             // can't connect
