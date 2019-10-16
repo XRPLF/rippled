@@ -63,7 +63,7 @@ accountFromString (AccountID& result, std::string const& strIdent,
 */
 bool
 getAccountObjects (ReadView const& ledger, AccountID const& account,
-    std::optional<std::vector<LedgerEntryType>> const& typeFilter, uint256 dirIndex,
+    boost::optional<std::vector<LedgerEntryType>> const& typeFilter, uint256 dirIndex,
     uint256 const& entryIndex, std::uint32_t const limit, Json::Value& jvResult);
 
 /** Look up a ledger from a request and fill a Json::Result with either

@@ -529,7 +529,6 @@ public:
             if (BEAST_EXPECT(acct_objs_is_size(resp, 1u)))
             {
                 auto const& aobjs = resp[jss::result][jss::account_objects];
-                
                 BEAST_EXPECT(
                     aobjs[0u]["LedgerEntryType"] == jss::Escrow);
             }
