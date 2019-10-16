@@ -36,15 +36,22 @@ namespace ripple {
 
 // {
 //   secret_key: <signing_secret_key>
+//   key_type: optional; either ed25519 or secp256k1 (default to secp256k1)
 //   channel_id: 256-bit channel id
 //   drops: 64-bit uint (as string)
 // }
 Json::Value doChannelAuthorize (RPC::Context& context)
 {
     auto const& params (context.params);
-    for (auto const& p : {jss::secret, jss::channel_id, jss::amount})
+    for (auto const& p : {jss::channel_id, jss::amount})
         if (!params.isMember (p))
             return RPC::missing_field_error (p);
+
+    // Compatibility if a key type isn't specified. If it is, the
+    // keypairForSignature code will validate parameters and return
+    // the appropriate error.
+    if (!params.isMember(jss::key_type) && !params.isMember(jss::secret))
+        return RPC::missing_field_error (jss::secret);
 
     Json::Value result;
     auto const [pk, sk] = RPC::keypairForSignature (params, result);
