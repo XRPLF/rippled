@@ -72,7 +72,7 @@ Json::Value doAccountObjects (RPC::Context& context)
     if (! ledger->exists(keylet::account (accountID)))
         return rpcError (rpcACT_NOT_FOUND);
 
-    std::optional<std::vector<LedgerEntryType>> typeFilter;
+    boost::optional<std::vector<LedgerEntryType>> typeFilter;
 
     if (params.isMember(jss::deletion_blockers_only) &&
         params[jss::deletion_blockers_only].asBool())
@@ -113,7 +113,7 @@ Json::Value doAccountObjects (RPC::Context& context)
         }
         else if (type != ltINVALID)
         {
-            typeFilter.emplace({ type });
+            typeFilter = std::vector<LedgerEntryType>({ type });
         }
     }
 
