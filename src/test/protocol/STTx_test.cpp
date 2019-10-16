@@ -1419,16 +1419,16 @@ public:
         try
         {
             protocol::TMTransaction tx2;
-            tx2.ParseFromArray(payload1, sizeof(payload1));
+            BEAST_EXPECT(! tx2.ParseFromArray(payload1, sizeof(payload1)));
 
             ripple::SerialIter sit (ripple::makeSlice(tx2.rawtransaction()));
 
             auto stx = std::make_shared<ripple::STTx const>(sit);
             fail("An exception should have been thrown");
         }
-        catch (std::exception const& ex)
+        catch (std::exception const&)
         {
-            BEAST_EXPECT(strcmp(ex.what(), "Unknown field") == 0);
+            pass();
         }
 
         try
