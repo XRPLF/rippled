@@ -34,7 +34,7 @@ namespace ripple {
 // {
 //   start: <index>
 // }
-Json::Value doTxHistory (RPC::Context& context)
+Json::Value doTxHistory (RPC::JsonContext& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
 

@@ -28,7 +28,7 @@
 namespace ripple {
 
 // This interface is deprecated.
-Json::Value doRipplePathFind (RPC::Context& context)
+Json::Value doRipplePathFind (RPC::JsonContext& context)
 {
     if (context.app.config().PATH_SEARCH_MAX == 0)
         return rpcError (rpcNOT_SUPPORTED);

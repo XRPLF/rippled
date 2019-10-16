@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package rpc.v1;
+
+import "rpc/v1/account_info.proto";
+import "rpc/v1/fee.proto";
+import "rpc/v1/submit.proto";
+import "rpc/v1/tx.proto";
+
+
+// RPCs available to interact with the XRP Ledger.
+service XRPLedgerAPIService {
+
+  // Get account info for an account on the XRP Ledger.
+  rpc GetAccountInfo (GetAccountInfoRequest) returns (GetAccountInfoResponse);
+
+  // Get the fee for a transaction on the XRP Ledger.
+  rpc GetFee (GetFeeRequest) returns (GetFeeResponse);
+
+  // Submit a signed transaction to the XRP Ledger.
+  rpc SubmitTransaction (SubmitTransactionRequest) returns (SubmitTransactionResponse);
+
+  // Get the status of a transaction
+  rpc GetTx(GetTxRequest) returns (GetTxResponse);
+}

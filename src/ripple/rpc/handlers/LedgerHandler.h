@@ -38,7 +38,7 @@ class Object;
 namespace ripple {
 namespace RPC {
 
-struct Context;
+struct JsonContext;
 
 // ledger [id|index|current|closed] [full]
 // {
@@ -48,7 +48,7 @@ struct Context;
 
 class LedgerHandler {
 public:
-    explicit LedgerHandler (Context&);
+    explicit LedgerHandler (JsonContext&);
 
     Status check ();
 
@@ -71,7 +71,7 @@ public:
     }
 
 private:
-    Context& context_;
+    JsonContext& context_;
     std::shared_ptr<ReadView const> ledger_;
     std::vector<TxQ::TxDetails> queueTxs_;
     Json::Value result_;

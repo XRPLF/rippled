@@ -24,7 +24,7 @@
 namespace ripple {
 
 Json::Value
-doValidators(RPC::Context& context)
+doValidators(RPC::JsonContext& context)
 {
     return context.app.validators().getJson();
 }

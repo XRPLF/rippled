@@ -108,6 +108,15 @@ port_increment(std::unique_ptr<Config> cfg, int increment)
     return cfg;
 }
 
-} // jtx
-} // test
-} // ripple
+std::unique_ptr<Config>
+addGrpcConfig(std::unique_ptr<Config> cfg)
+{
+    std::string port_grpc = std::to_string(port_base + 3);
+    (*cfg)["port_grpc"].set("ip", getEnvLocalhostAddr());
+    (*cfg)["port_grpc"].set("port", port_grpc);
+    return cfg;
+}
+
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

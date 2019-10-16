@@ -43,7 +43,7 @@ namespace ripple {
 //   offset: integer,              // optional, defaults to 0
 //   limit: integer                // optional
 // }
-Json::Value doAccountTxOld (RPC::Context& context)
+Json::Value doAccountTxOld (RPC::JsonContext& context)
 {
     std::uint32_t offset
             = context.params.isMember (jss::offset)

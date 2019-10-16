@@ -47,7 +47,7 @@ namespace ripple {
     }
 */
 Json::Value
-doDownloadShard(RPC::Context& context)
+doDownloadShard(RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN)
         return rpcError(rpcNO_PERMISSION);

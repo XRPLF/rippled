@@ -28,14 +28,14 @@
 namespace ripple {
 
 namespace RPC {
-struct Context;
+struct JsonContext;
 }
 
 // Result:
 // {
 //   random: <uint256>
 // }
-Json::Value doRandom (RPC::Context& context)
+Json::Value doRandom (RPC::JsonContext& context)
 {
     // TODO(tom): the try/catch is almost certainly redundant, we catch at the
     // top level too.

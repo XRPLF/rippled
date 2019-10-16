@@ -111,7 +111,7 @@ namespace {
 
  */
 
-error_code_i fillHandler (Context& context,
+error_code_i fillHandler (JsonContext& context,
                           Handler const * & result)
 {
     if (! isUnlimited (context.role))
@@ -149,47 +149,10 @@ error_code_i fillHandler (Context& context,
     if (handler->role_ == Role::ADMIN && context.role != Role::ADMIN)
         return rpcNO_PERMISSION;
 
-    if ((handler->condition_ & NEEDS_NETWORK_CONNECTION) &&
-        (context.netOps.getOperatingMode () < OperatingMode::SYNCING))
+    error_code_i res = conditionMet(handler->condition_,context);
+    if(res != rpcSUCCESS)
     {
-        JLOG (context.j.info())
-            << "Insufficient network mode for RPC: "
-            << context.netOps.strOperatingMode ();
-
-        return rpcNO_NETWORK;
-    }
-
-    if (context.app.getOPs().isAmendmentBlocked() &&
-         (handler->condition_ & NEEDS_CURRENT_LEDGER ||
-          handler->condition_ & NEEDS_CLOSED_LEDGER))
-    {
-        return rpcAMENDMENT_BLOCKED;
-    }
-
-    if (!context.app.config().standalone() &&
-        handler->condition_ & NEEDS_CURRENT_LEDGER)
-    {
-        if (context.ledgerMaster.getValidatedLedgerAge () >
-            Tuning::maxValidatedLedgerAge)
-        {
-            return rpcNO_CURRENT;
-        }
-
-        auto const cID = context.ledgerMaster.getCurrentLedgerIndex ();
-        auto const vID = context.ledgerMaster.getValidLedgerIndex ();
-
-        if (cID + 10 < vID)
-        {
-            JLOG (context.j.debug()) << "Current ledger ID(" << cID <<
-                ") is less than validated ledger ID(" << vID << ")";
-            return rpcNO_CURRENT;
-        }
-    }
-
-    if ((handler->condition_ & NEEDS_CLOSED_LEDGER) &&
-        !context.ledgerMaster.getClosedLedger ())
-    {
-        return rpcNO_CLOSED;
+        return res;
     }
 
     result = handler;
@@ -198,7 +161,7 @@ error_code_i fillHandler (Context& context,
 
 template <class Object, class Method>
 Status callMethod (
-    Context& context, Method method, std::string const& name, Object& result)
+    JsonContext& context, Method method, std::string const& name, Object& result)
 {
     static std::atomic<std::uint64_t> requestId {0};
     auto& perfLog = context.app.getPerfLog();
@@ -228,7 +191,7 @@ Status callMethod (
 
 template <class Method, class Object>
 void getResult (
-    Context& context, Method method, Object& object, std::string const& name)
+    JsonContext& context, Method method, Object& object, std::string const& name)
 {
     auto&& result = Json::addObject (object, jss::result);
     if (auto status = callMethod (context, method, name, result))
@@ -261,7 +224,7 @@ void getResult (
 } // namespace
 
 Status doCommand (
-    RPC::Context& context, Json::Value& result)
+    RPC::JsonContext& context, Json::Value& result)
 {
     Handler const * handler = nullptr;
     if (auto error = fillHandler (context, handler))

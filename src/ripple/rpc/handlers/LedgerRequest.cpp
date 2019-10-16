@@ -34,7 +34,7 @@ namespace ripple {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value doLedgerRequest (RPC::Context& context)
+Json::Value doLedgerRequest (RPC::JsonContext& context)
 {
     auto const hasHash = context.params.isMember (jss::ledger_hash);
     auto const hasIndex = context.params.isMember (jss::ledger_index);

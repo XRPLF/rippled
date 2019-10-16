@@ -28,7 +28,7 @@
 
 namespace ripple {
 
-Json::Value doUnsubscribe (RPC::Context& context)
+Json::Value doUnsubscribe (RPC::JsonContext& context)
 {
 
     InfoSub::pointer ispSub;

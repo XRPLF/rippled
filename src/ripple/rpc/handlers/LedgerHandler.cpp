@@ -31,7 +31,7 @@
 namespace ripple {
 namespace RPC {
 
-LedgerHandler::LedgerHandler (Context& context) : context_ (context)
+LedgerHandler::LedgerHandler (JsonContext& context) : context_ (context)
 {
 }
 

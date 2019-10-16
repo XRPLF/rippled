@@ -22,10 +22,16 @@
 
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/ledger/TxMeta.h>
+
 #include <ripple/protocol/SecretKey.h>
+#include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/Status.h>
+#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/misc/TxQ.h>
+#include <rpc/v1/xrp_ledger.pb.h>
 #include <boost/optional.hpp>
+#include <rpc/v1/xrp_ledger.pb.h>
 
 namespace Json {
 class Value;
@@ -38,7 +44,7 @@ class Transaction;
 
 namespace RPC {
 
-struct Context;
+struct JsonContext;
 
 /** Get an AccountID from an account ID or public key. */
 boost::optional<AccountID>
@@ -50,6 +56,16 @@ accountFromStringStrict (std::string const&);
 // Returns a Json::objectValue, containing error information if there was one.
 Json::Value
 accountFromString (AccountID& result, std::string const& strIdent,
+    bool bStrict = false);
+
+/** Decode account ID from string
+    @param[out] result account ID decoded from string
+    @param strIdent public key, account ID, or regular seed.
+    @param bStrict Only allow account id or public key.
+    @return code representing error, or rpcSUCCES on success
+*/
+error_code_i
+accountFromStringWithCode (AccountID& result, std::string const& strIdent,
     bool bStrict = false);
 
 /** Gathers all objects for an account in a ledger.
@@ -73,7 +89,7 @@ getAccountObjects (ReadView const& ledger, AccountID const& account,
     been filled.
 */
 Json::Value
-lookupLedger (std::shared_ptr<ReadView const>&, Context&);
+lookupLedger (std::shared_ptr<ReadView const>&, JsonContext&);
 
 /** Look up a ledger from a request and fill a Json::Result with the data
     representing a ledger.
@@ -81,7 +97,17 @@ lookupLedger (std::shared_ptr<ReadView const>&, Context&);
     If the returned Status is OK, the ledger pointer will have been filled.
 */
 Status
-lookupLedger (std::shared_ptr<ReadView const>&, Context&, Json::Value& result);
+lookupLedger (std::shared_ptr<ReadView const>&, JsonContext&, Json::Value& result);
+
+template <class T>
+Status
+ledgerFromRequest(
+    T& ledger,
+    GRPCContext<rpc::v1::GetAccountInfoRequest>& context);
+
+bool
+isValidated(LedgerMaster& ledgerMaster, ReadView const& ledger,
+    Application& app);
 
 hash_set <AccountID>
 parseAccountIds(Json::Value const& jvArray);
@@ -97,13 +123,13 @@ parseAccountIds(Json::Value const& jvArray);
 void
 injectSLE(Json::Value& jv, SLE const& sle);
 
-/** Retrieve the limit value from a Context, or set a default -
+/** Retrieve the limit value from a JsonContext, or set a default -
     then restrict the limit by max and min if not an ADMIN request.
 
     If there is an error, return it as JSON.
 */
 boost::optional<Json::Value>
-readLimitField(unsigned int& limit, Tuning::LimitRange const&, Context const&);
+readLimitField(unsigned int& limit, Tuning::LimitRange const&, JsonContext const&);
 
 boost::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error);
@@ -177,6 +203,46 @@ std::pair<RPC::Status, LedgerEntryType>
  * @return the api version number
  */
 unsigned int getAPIVersionNumber(const Json::Value & value);
+
+/*
+ * For all of the below populate* functions, the proto argument is an
+ * output parameter, and is populated with the data stored in the
+ * serialized object
+ */
+void
+populateAccountRoot(rpc::v1::AccountRoot& proto, STObject const& obj);
+
+void
+populateRippleState(rpc::v1::RippleState& proto, STObject const& obj);
+
+void
+populateOffer(rpc::v1::Offer& proto, STObject const& obj);
+
+void
+populateSignerList(rpc::v1::SignerList& proto, STObject const& obj);
+
+void
+populateQueueData(
+    rpc::v1::QueueData& proto,
+    std::map<TxSeq, TxQ::AccountTxDetails const> const& txs);
+
+void
+populateDirectoryNode(rpc::v1::DirectoryNode& proto, STObject const& obj);
+
+void
+populateMeta(rpc::v1::Meta& proto, std::shared_ptr<TxMeta> txMeta);
+
+void
+populateTransaction(
+    rpc::v1::Transaction& proto,
+    std::shared_ptr<STTx const> txnSt);
+
+void
+populateAmount(rpc::v1::CurrencyAmount& proto, STAmount const& amount);
+
+void
+populateTransactionResultType(rpc::v1::TransactionResult& proto, TER result);
+
 } // RPC
 } // ripple
 

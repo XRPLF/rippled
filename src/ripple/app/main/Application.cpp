@@ -66,6 +66,7 @@
 #include <ripple/beast/core/LexicalCast.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <ripple/app/main/GRPCServer.h>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/system/error_code.hpp>
 
@@ -391,6 +392,8 @@ public:
 
     io_latency_sampler m_io_latency_sampler;
 
+    std::unique_ptr<GRPCServer> grpcServer_;
+
     //--------------------------------------------------------------------------
 
     static
@@ -552,6 +555,7 @@ public:
 
         , m_io_latency_sampler (m_collectorManager->collector()->make_event ("ios_latency"),
             logs_->journal("Application"), std::chrono::milliseconds (100), get_io_service())
+        , grpcServer_(std::make_unique<GRPCServer>(*this))
     {
         if (shardStore_)
         {
@@ -1339,6 +1343,7 @@ bool ApplicationImp::setup()
     logs_->silent (config_->silent());
 
     m_jobQueue->setThreadCount (config_->WORKERS, config_->standalone());
+    grpcServer_->run();
 
     if (!config_->standalone())
         timeKeeper_->run(config_->SNTP_SERVERS);
@@ -1583,9 +1588,15 @@ bool ApplicationImp::setup()
 
         Resource::Charge loadType = Resource::feeReferenceRPC;
         Resource::Consumer c;
-        RPC::Context context { journal ("RPCHandler"), jvCommand, *this,
-            loadType, getOPs (), getLedgerMaster(), c, Role::ADMIN,
-            RPC::ApiMaximumSupportedVersion};
+        RPC::JsonContext context{{journal("RPCHandler"),
+                                  *this,
+                                  loadType,
+                                  getOPs(),
+                                  getLedgerMaster(),
+                                  c,
+                                  Role::ADMIN},
+                                 jvCommand,
+                                 RPC::ApiMaximumSupportedVersion};
 
         Json::Value jvResult;
         RPC::doCommand (context, jvResult);

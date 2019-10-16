@@ -20,7 +20,6 @@ override_dh_auto_configure:
 		-DCMAKE_INSTALL_PREFIX=/opt/ripple \
 		-DCMAKE_BUILD_TYPE=Release \
 		-Dstatic=true \
-		-Dlocal_protobuf=ON \
 		-Dvalidator_keys=ON \
 		-DCMAKE_VERBOSE_MAKEFILE=ON
 

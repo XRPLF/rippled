@@ -44,7 +44,9 @@ endif ()
 option (jemalloc "Enables jemalloc for heap profiling" OFF)
 option (werr "treat warnings as errors" OFF)
 option (local_protobuf
-  "Force use of a local build of protobuf instead of system version." OFF)
+  "Force a local build of protobuf instead of looking for an installed version." OFF)
+option (local_grpc
+  "Force a local build of gRPC instead of looking for an installed version." OFF)
 
 # this one is a string and therefore can't be an option
 set (san "" CACHE STRING "On gcc & clang, add sanitizer instrumentation")

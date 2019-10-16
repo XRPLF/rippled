@@ -30,8 +30,8 @@ apt-get -y clean
 apt-get -y update
 
 apt-get -y --fix-missing install \
-    make cmake ninja-build \
-    protobuf-compiler libprotobuf-dev openssl libssl-dev \
+    make cmake ninja-build autoconf libtool pkg-config \
+    openssl libssl-dev \
     liblzma-dev libbz2-dev zlib1g-dev \
     libjemalloc-dev \
     python-pip \

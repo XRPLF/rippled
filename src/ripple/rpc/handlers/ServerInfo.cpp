@@ -27,7 +27,7 @@
 
 namespace ripple {
 
-Json::Value doServerInfo (RPC::Context& context)
+Json::Value doServerInfo (RPC::JsonContext& context)
 {
     Json::Value ret (Json::objectValue);
 

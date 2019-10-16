@@ -49,7 +49,7 @@ namespace ripple {
 
 // gateway_balances [<ledger>] <account> [<howallet> [<hotwallet [...
 
-Json::Value doGatewayBalances (RPC::Context& context)
+Json::Value doGatewayBalances (RPC::JsonContext& context)
 {
     auto& params = context.params;
 

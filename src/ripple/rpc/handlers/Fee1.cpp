@@ -21,12 +21,14 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/basics/mulDiv.h>
 
 namespace ripple
 {
-    Json::Value doFee(RPC::Context& context)
+    Json::Value doFee(RPC::JsonContext& context)
     {
         auto result = context.app.getTxQ().doRPC(context.app);
         if (result.type() == Json::objectValue)
@@ -35,4 +37,51 @@ namespace ripple
         RPC::inject_error(rpcINTERNAL, context.params);
         return context.params;
     }
-} // ripple
+
+std::pair<rpc::v1::GetFeeResponse, grpc::Status>
+doFeeGrpc(RPC::GRPCContext<rpc::v1::GetFeeRequest>& context)
+{
+    rpc::v1::GetFeeResponse reply;
+    grpc::Status status = grpc::Status::OK;
+
+    Application& app = context.app;
+    auto const view = app.openLedger().current();
+    if (!view)
+    {
+        BOOST_ASSERT(false);
+        return {reply, status};
+    }
+
+    auto const metrics = app.getTxQ().getMetrics(*view);
+
+    // current ledger data
+    reply.set_current_ledger_size(metrics.txInLedger);
+    reply.set_current_queue_size(metrics.txCount);
+    reply.set_expected_ledger_size(metrics.txPerLedger);
+    reply.set_ledger_current_index(view->info().seq);
+    reply.set_max_queue_size(*metrics.txQMaxSize);
+
+    // fee levels data
+    rpc::v1::FeeLevels& levels = *reply.mutable_levels();
+    levels.set_median_level(metrics.medFeeLevel.fee());
+    levels.set_minimum_level(metrics.minProcessingFeeLevel.fee());
+    levels.set_open_ledger_level(metrics.openLedgerFeeLevel.fee());
+    levels.set_reference_level(metrics.referenceFeeLevel.fee());
+
+    // fee data
+    rpc::v1::Fee& drops = *reply.mutable_drops();
+    auto const baseFee = view->fees().base;
+    drops.mutable_base_fee()->set_drops(
+        toDrops(metrics.referenceFeeLevel, baseFee).second.drops());
+    drops.mutable_minimum_fee()->set_drops(
+        toDrops(metrics.minProcessingFeeLevel, baseFee).second.drops());
+    drops.mutable_median_fee()->set_drops(
+        toDrops(metrics.medFeeLevel, baseFee).second.drops());
+
+    drops.mutable_open_ledger_fee()->set_drops(
+        (toDrops(metrics.openLedgerFeeLevel - FeeLevel64{1}, baseFee).second +
+         1)
+            .drops());
+    return {reply, status};
+}
+}  // namespace ripple

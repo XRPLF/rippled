@@ -23,6 +23,9 @@
 #include <ripple/core/Config.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/Status.h>
+#include <ripple/rpc/impl/Tuning.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <vector>
 
 namespace Json {
@@ -43,7 +46,7 @@ enum Condition {
 struct Handler
 {
     template <class JsonValue>
-    using Method = std::function <Status (Context&, JsonValue&)>;
+    using Method = std::function <Status (JsonContext&, JsonValue&)>;
 
     const char* name_;
     Method<Json::Value> valueMethod_;
@@ -65,6 +68,55 @@ Json::Value makeObjectValue (
 
 /** Return names of all methods. */
 std::vector<char const*> getHandlerNames();
+
+template <class T>
+error_code_i conditionMet(Condition condition_required, T& context)
+{
+  if ((condition_required & NEEDS_NETWORK_CONNECTION) &&
+      (context.netOps.getOperatingMode () < OperatingMode::SYNCING))
+  {
+      JLOG (context.j.info())
+          << "Insufficient network mode for RPC: "
+          << context.netOps.strOperatingMode ();
+
+      return rpcNO_NETWORK;
+  }
+
+  if (context.app.getOPs().isAmendmentBlocked() &&
+       (condition_required & NEEDS_CURRENT_LEDGER ||
+        condition_required & NEEDS_CLOSED_LEDGER))
+  {
+      return rpcAMENDMENT_BLOCKED;
+  }
+
+  if (!context.app.config().standalone() &&
+      condition_required & NEEDS_CURRENT_LEDGER)
+  {
+      if (context.ledgerMaster.getValidatedLedgerAge () >
+          Tuning::maxValidatedLedgerAge)
+      {
+          return rpcNO_CURRENT;
+      }
+
+      auto const cID = context.ledgerMaster.getCurrentLedgerIndex ();
+      auto const vID = context.ledgerMaster.getValidLedgerIndex ();
+
+      if (cID + 10 < vID)
+      {
+          JLOG (context.j.debug()) << "Current ledger ID(" << cID <<
+              ") is less than validated ledger ID(" << vID << ")";
+          return rpcNO_CURRENT;
+      }
+  }
+
+  if ((condition_required & NEEDS_CLOSED_LEDGER) &&
+      !context.ledgerMaster.getClosedLedger ())
+  {
+      return rpcNO_CLOSED;
+  }
+
+  return rpcSUCCESS;
+}
 
 } // RPC
 } // ripple

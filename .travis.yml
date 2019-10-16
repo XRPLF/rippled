@@ -6,7 +6,7 @@ services:
 
 env:
   global:
-    - DOCKER_IMAGE="mellery451/rippled-ci-builder:2019-08-26"
+    - DOCKER_IMAGE="mellery451/rippled-ci-builder:2019-11-27_grpc"
     - CMAKE_EXTRA_ARGS="-Dwerr=ON -Dwextra=ON"
     - NINJA_BUILD=true
     # change this if we get more VM capacity
@@ -225,6 +225,8 @@ matrix:
       addons:
         homebrew:
           packages:
+            - protobuf
+            - grpc
             - bash
             - ninja
             - cmake

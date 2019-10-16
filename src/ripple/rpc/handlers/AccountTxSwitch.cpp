@@ -25,11 +25,11 @@
 
 namespace ripple {
 
-Json::Value doAccountTxOld (RPC::Context& context);
-        Json::Value doAccountTx (RPC::Context& context);
+Json::Value doAccountTxOld (RPC::JsonContext& context);
+        Json::Value doAccountTx (RPC::JsonContext& context);
 
 // Temporary switching code until the old account_tx is removed
-Json::Value doAccountTxSwitch (RPC::Context& context)
+Json::Value doAccountTxSwitch (RPC::JsonContext& context)
 {
     if (context.params.isMember(jss::offset) ||
         context.params.isMember(jss::count) ||

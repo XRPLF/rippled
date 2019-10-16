@@ -30,7 +30,7 @@
 namespace ripple {
 
 // can_delete [<ledgerid>|<ledgerhash>|now|always|never]
-Json::Value doCanDelete (RPC::Context& context)
+Json::Value doCanDelete (RPC::JsonContext& context)
 {
     if (! context.app.getSHAMapStore().advisoryDelete())
         return RPC::make_error(rpcNOT_ENABLED);

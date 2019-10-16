@@ -34,7 +34,7 @@ namespace ripple {
 //   ledger_index : <ledger_index>
 // }
 
-Json::Value doDepositAuthorized (RPC::Context& context)
+Json::Value doDepositAuthorized (RPC::JsonContext& context)
 {
     Json::Value const& params = context.params;
 

@@ -33,7 +33,7 @@
 
 namespace ripple {
 
-Json::Value doSubscribe (RPC::Context& context)
+Json::Value doSubscribe (RPC::JsonContext& context)
 {
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);

@@ -32,7 +32,7 @@ namespace ripple {
 //
 // XXX In this case, not specify either ledger does not mean ledger current. It
 // means any ledger.
-Json::Value doTransactionEntry (RPC::Context& context)
+Json::Value doTransactionEntry (RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
     Json::Value jvResult = RPC::lookupLedger (lpLedger, context);

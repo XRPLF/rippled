@@ -25,6 +25,9 @@ build
 .nih_c
 tags
 TAGS
+GTAGS
+GRTAGS
+GPATH
 bin/rippled
 Debug/*.*
 Release/*.*

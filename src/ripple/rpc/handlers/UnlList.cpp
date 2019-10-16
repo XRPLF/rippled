@@ -24,7 +24,7 @@
 
 namespace ripple {
 
-Json::Value doUnlList (RPC::Context& context)
+Json::Value doUnlList (RPC::JsonContext& context)
 {
     Json::Value obj (Json::objectValue);
 

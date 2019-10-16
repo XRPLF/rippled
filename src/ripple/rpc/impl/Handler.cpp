@@ -30,7 +30,7 @@ namespace {
 template <typename Function>
 Handler::Method<Json::Value> byRef (Function const& f)
 {
-    return [f] (Context& context, Json::Value& result)
+    return [f] (JsonContext& context, Json::Value& result)
     {
         result = f (context);
         if (result.type() != Json::objectValue)
@@ -44,7 +44,7 @@ Handler::Method<Json::Value> byRef (Function const& f)
 }
 
 template <class Object, class HandlerImpl>
-Status handle (Context& context, Object& object)
+Status handle (JsonContext& context, Object& object)
 {
     HandlerImpl handler (context);
 

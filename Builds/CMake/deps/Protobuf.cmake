@@ -8,8 +8,8 @@
 if (static)
   set (Protobuf_USE_STATIC_LIBS ON)
 endif ()
-find_package (Protobuf)
-if (local_protobuf OR NOT TARGET protobuf::libprotobuf)
+find_package (Protobuf 3.8)
+if (local_protobuf OR NOT Protobuf_FOUND)
   message (STATUS "using local protobuf build.")
   if (WIN32)
     # protobuf prepends lib even on windows
@@ -25,11 +25,12 @@ if (local_protobuf OR NOT TARGET protobuf::libprotobuf)
   ExternalProject_Add (protobuf_src
     PREFIX ${nih_cache_path}
     GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-    GIT_TAG v3.6.1
+    GIT_TAG v3.8.0
     SOURCE_SUBDIR cmake
     CMAKE_ARGS
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_INSTALL_PREFIX=<BINARY_DIR>/_installed_
       -Dprotobuf_BUILD_TESTS=OFF
       -Dprotobuf_BUILD_EXAMPLES=OFF
       -Dprotobuf_BUILD_PROTOC_BINARIES=ON
@@ -51,51 +52,67 @@ if (local_protobuf OR NOT TARGET protobuf::libprotobuf)
       --build .
       --config $<CONFIG>
       $<$<VERSION_GREATER_EQUAL:${CMAKE_VERSION},3.12>:--parallel ${ep_procs}>
-      $<$<BOOL:${is_multiconfig}>:
-        COMMAND
-          ${CMAKE_COMMAND} -E copy
-          <BINARY_DIR>/$<CONFIG>/${pbuf_lib_pre}protobuf$<$<CONFIG:Debug>:_d>${ep_lib_suffix}
-          <BINARY_DIR>
-        COMMAND
-          ${CMAKE_COMMAND} -E copy
-          <BINARY_DIR>/$<CONFIG>/protoc${CMAKE_EXECUTABLE_SUFFIX}
-          <BINARY_DIR>
-        >
     TEST_COMMAND ""
-    INSTALL_COMMAND ""
+    INSTALL_COMMAND
+      ${CMAKE_COMMAND} -E env --unset=DESTDIR ${CMAKE_COMMAND} --build . --config $<CONFIG> --target install
     BUILD_BYPRODUCTS
-      <BINARY_DIR>/${pbuf_lib_pre}protobuf${ep_lib_suffix}
-      <BINARY_DIR>/${pbuf_lib_pre}protobuf_d${ep_lib_suffix}
-      <BINARY_DIR>/protoc${CMAKE_EXECUTABLE_SUFFIX}
+      <BINARY_DIR>/_installed_/lib/${pbuf_lib_pre}protobuf${ep_lib_suffix}
+      <BINARY_DIR>/_installed_/lib/${pbuf_lib_pre}protobuf_d${ep_lib_suffix}
+      <BINARY_DIR>/_installed_/lib/${pbuf_lib_pre}protoc${ep_lib_suffix}
+      <BINARY_DIR>/_installed_/lib/${pbuf_lib_pre}protoc_d${ep_lib_suffix}
+      <BINARY_DIR>/_installed_/bin/protoc${CMAKE_EXECUTABLE_SUFFIX}
   )
   ExternalProject_Get_Property (protobuf_src BINARY_DIR)
   ExternalProject_Get_Property (protobuf_src SOURCE_DIR)
   if (CMAKE_VERBOSE_MAKEFILE)
     print_ep_logs (protobuf_src)
   endif ()
+  exclude_if_included (protobuf_src)
 
   if (NOT TARGET protobuf::libprotobuf)
     add_library (protobuf::libprotobuf STATIC IMPORTED GLOBAL)
   endif ()
-  file (MAKE_DIRECTORY ${SOURCE_DIR}/src)
+  file (MAKE_DIRECTORY ${BINARY_DIR}/_installed_/include)
   set_target_properties (protobuf::libprotobuf PROPERTIES
     IMPORTED_LOCATION_DEBUG
-      ${BINARY_DIR}/${pbuf_lib_pre}protobuf_d${ep_lib_suffix}
+      ${BINARY_DIR}/_installed_/lib/${pbuf_lib_pre}protobuf_d${ep_lib_suffix}
     IMPORTED_LOCATION_RELEASE
-      ${BINARY_DIR}/${pbuf_lib_pre}protobuf${ep_lib_suffix}
+      ${BINARY_DIR}/_installed_/lib/${pbuf_lib_pre}protobuf${ep_lib_suffix}
     INTERFACE_INCLUDE_DIRECTORIES
-      ${SOURCE_DIR}/src)
+      ${BINARY_DIR}/_installed_/include)
   add_dependencies (protobuf::libprotobuf protobuf_src)
-  exclude_if_included (protobuf_src)
   exclude_if_included (protobuf::libprotobuf)
+
+  if (NOT TARGET protobuf::libprotoc)
+    add_library (protobuf::libprotoc STATIC IMPORTED GLOBAL)
+  endif ()
+  set_target_properties (protobuf::libprotoc PROPERTIES
+    IMPORTED_LOCATION_DEBUG
+      ${BINARY_DIR}/_installed_/lib/${pbuf_lib_pre}protoc_d${ep_lib_suffix}
+    IMPORTED_LOCATION_RELEASE
+      ${BINARY_DIR}/_installed_/lib/${pbuf_lib_pre}protoc${ep_lib_suffix}
+    INTERFACE_INCLUDE_DIRECTORIES
+      ${BINARY_DIR}/_installed_/include)
+  add_dependencies (protobuf::libprotoc protobuf_src)
+  exclude_if_included (protobuf::libprotoc)
 
   if (NOT TARGET protobuf::protoc)
     add_executable (protobuf::protoc IMPORTED)
     exclude_if_included (protobuf::protoc)
   endif ()
   set_target_properties (protobuf::protoc PROPERTIES
-    IMPORTED_LOCATION "${BINARY_DIR}/protoc${CMAKE_EXECUTABLE_SUFFIX}")
+    IMPORTED_LOCATION "${BINARY_DIR}/_installed_/bin/protoc${CMAKE_EXECUTABLE_SUFFIX}")
   add_dependencies (protobuf::protoc protobuf_src)
+else ()
+  if (NOT TARGET protobuf::protoc)
+    if (EXISTS "${Protobuf_PROTOC_EXECUTABLE}")
+      add_executable (protobuf::protoc IMPORTED)
+      set_target_properties (protobuf::protoc PROPERTIES
+        IMPORTED_LOCATION "${Protobuf_PROTOC_EXECUTABLE}")
+    else ()
+      message (FATAL_ERROR "Protobuf import failed")
+    endif ()
+  endif ()
 endif ()
 
 file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/proto_gen)

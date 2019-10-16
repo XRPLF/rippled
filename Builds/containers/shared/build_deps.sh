@@ -36,6 +36,40 @@ rm -f openssl-${OPENSSL_VER}.tar.gz
 rm -rf openssl-${OPENSSL_VER}
 LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}:/opt/local/openssl/lib /opt/local/openssl/bin/openssl version -a
 
+cd /tmp
+wget https://github.com/protocolbuffers/protobuf/releases/download/v3.10.1/protobuf-all-3.10.1.tar.gz
+tar xf protobuf-all-3.10.1.tar.gz
+cd protobuf-3.10.1
+./autogen.sh
+./configure
+make -j$(nproc)
+make install
+ldconfig
+cd ..
+rm -f protobuf-all-3.10.1.tar.gz
+rm -rf protobuf-3.10.1
+
+cd /tmp
+wget https://github.com/c-ares/c-ares/releases/download/cares-1_15_0/c-ares-1.15.0.tar.gz
+tar xf c-ares-1.15.0.tar.gz
+cd c-ares-1.15.0
+./configure
+make -j$(nproc)
+make install
+cd ..
+rm -f c-ares-1.15.0.tar.gz
+rm -rf c-ares-1.15.0
+
+cd /tmp
+wget https://github.com/grpc/grpc/archive/v1.25.0.tar.gz
+tar xf v1.25.0.tar.gz
+cd grpc-1.25.0
+make -j$(nproc)
+make install
+cd ..
+rm -f xf v1.25.0.tar.gz
+rm -rf grpc-1.25.0
+
 if [ "${CI_USE}" = true ] ; then
     cd /tmp
     wget https://github.com/doxygen/doxygen/archive/Release_1_8_16.tar.gz

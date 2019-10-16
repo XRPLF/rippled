@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package rpc.v1;
+
+import "rpc/v1/ledger_objects.proto";
+import "rpc/v1/amount.proto";
+
+// A request to get info about an account.
+message GetAccountInfoRequest {
+    // The address to get info about.
+    AccountAddress account = 1;
+
+    bool strict = 2;
+
+    LedgerSpecifier ledger = 3;
+
+    bool queue = 4;
+
+    bool signer_lists = 5;
+}
+
+message LedgerSpecifier {
+    enum Shortcut {
+        SHORTCUT_UNSPECIFIED = 0;
+        SHORTCUT_VALIDATED   = 1;
+        SHORTCUT_CLOSED      = 2;
+        SHORTCUT_CURRENT     = 3;
+    }
+
+    oneof ledger {
+        Shortcut shortcut = 1;
+        uint32 sequence = 2;
+        // 32 bytes
+        bytes hash = 3;
+    }
+}
+
+// Response to GetAccountInfo RPC
+message GetAccountInfoResponse {
+
+    AccountRoot account_data = 1;
+
+    SignerList signer_list = 2;
+
+    uint32 ledger_index = 3;
+
+    QueueData queue_data = 4;
+
+    bool validated = 5;
+}
+
+// Aggregate data about queued transactions
+message QueueData {
+
+    uint32 txn_count = 1;
+
+    bool auth_change_queued = 2;
+
+    uint32 lowest_sequence = 3;
+
+    uint32 highest_sequence = 4;
+
+    XRPDropsAmount max_spend_drops_total = 5;
+
+    repeated QueuedTransaction transactions = 6;
+}
+
+// Data about a single queued transaction
+message QueuedTransaction {
+    bool auth_change = 1;
+
+    XRPDropsAmount fee = 2;
+
+    uint64 fee_level = 3;
+
+    XRPDropsAmount max_spend_drops = 4;
+
+    uint32 sequence = 5;
+
+    uint32 last_ledger_sequence = 6;
+}

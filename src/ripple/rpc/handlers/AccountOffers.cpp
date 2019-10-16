@@ -53,7 +53,7 @@ void appendOfferJson (std::shared_ptr<SLE const> const& offer,
 //   limit: integer                 // optional
 //   marker: opaque                 // optional, resume previous query
 // }
-Json::Value doAccountOffers (RPC::Context& context)
+Json::Value doAccountOffers (RPC::JsonContext& context)
 {
     auto const& params (context.params);
     if (! params.isMember (jss::account))

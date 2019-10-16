@@ -28,7 +28,7 @@
 
 namespace ripple {
 
-Json::Value doLogLevel (RPC::Context& context)
+Json::Value doLogLevel (RPC::JsonContext& context)
 {
     // log_level
     if (!context.params.isMember (jss::severity))

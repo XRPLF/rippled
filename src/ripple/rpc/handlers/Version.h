@@ -28,7 +28,7 @@ namespace RPC {
 class VersionHandler
 {
 public:
-    explicit VersionHandler (Context&) {}
+    explicit VersionHandler (JsonContext&) {}
 
     Status check()
     {

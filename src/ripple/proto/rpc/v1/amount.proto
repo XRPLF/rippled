@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package rpc.v1;
+
+message CurrencyAmount {
+    oneof amount {
+        XRPDropsAmount xrp_amount = 1;
+        IssuedCurrencyAmount issued_currency_amount = 2;
+    }
+}
+
+// A representation of an amount of XRP.
+message XRPDropsAmount {
+
+    uint64 drops = 1;
+}
+
+// A representation of an account address
+message AccountAddress {
+
+    //base58 encoding of an account
+    string address = 1;
+}
+
+// A representation of an amount of issued currency.
+message IssuedCurrencyAmount {
+    // The currency used to value the amount.
+    Currency currency = 1;
+
+    // The value of the amount. 8 bytes
+    string value = 2;
+
+    // Unique account address of the entity issuing the currency.
+    AccountAddress issuer = 3;
+}
+
+message Currency {
+
+    // 3 character ASCII code
+    string name = 1;
+
+    // 160 bit currency code. 20 bytes
+    bytes code = 2;
+}

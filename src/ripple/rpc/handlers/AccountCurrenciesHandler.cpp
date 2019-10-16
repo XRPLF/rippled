@@ -28,7 +28,7 @@
 
 namespace ripple {
 
-Json::Value doAccountCurrencies (RPC::Context& context)
+Json::Value doAccountCurrencies (RPC::JsonContext& context)
 {
     auto& params = context.params;
 

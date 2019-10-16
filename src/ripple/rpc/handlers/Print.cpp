@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-Json::Value doPrint (RPC::Context& context)
+Json::Value doPrint (RPC::JsonContext& context)
 {
     JsonPropertyStream stream;
     if (context.params.isObject()

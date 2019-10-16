@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package rpc.v1;
+
+import "rpc/v1/amount.proto";
+import "rpc/v1/ledger_objects.proto";
+
+message Meta {
+    // index in ledger
+    uint64 transaction_index = 1;
+
+    // result code indicating whether the transaction succeeded or failed
+    TransactionResult transaction_result = 2;
+
+   repeated AffectedNode affected_nodes = 3;
+
+   CurrencyAmount delivered_amount = 4;
+}
+
+message TransactionResult {
+
+    enum ResultType {
+        RESULT_TYPE_UNSPECIFIED = 0;
+        // Claimed cost only
+        RESULT_TYPE_TEC         = 1;
+        // Failure
+        RESULT_TYPE_TEF         = 2;
+        // Local error
+        RESULT_TYPE_TEL         = 3;
+        // Malformed transaction
+        RESULT_TYPE_TEM         = 4;
+        // Retry
+        RESULT_TYPE_TER         = 5;
+        // Success
+        RESULT_TYPE_TES         = 6;
+    }
+
+    // category of the transaction result
+    ResultType result_type = 1;
+
+    // full result string, i.e. tesSUCCESS
+    string result = 2;
+}
+
+message AffectedNode {
+
+    LedgerEntryType ledger_entry_type = 1;
+
+    // 32 bytes
+    bytes ledger_index = 2;
+
+    oneof node {
+        CreatedNode created_node = 3;
+        DeletedNode deleted_node = 4;
+        ModifiedNode modified_node = 5;
+    }
+}
+
+message CreatedNode {
+
+    LedgerObject new_fields = 1;
+
+}
+
+message DeletedNode {
+
+    LedgerObject final_fields = 1;
+
+}
+
+message ModifiedNode {
+
+    LedgerObject final_fields = 1;
+
+    LedgerObject previous_fields = 2;
+
+    // 32 bytes
+    bytes previous_transaction_id = 3;
+
+    uint32 previous_transaction_ledger_sequence = 4;
+
+}

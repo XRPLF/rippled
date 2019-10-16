@@ -46,7 +46,7 @@ namespace ripple {
     }
 */
 
-Json::Value doAccountObjects (RPC::Context& context)
+Json::Value doAccountObjects (RPC::JsonContext& context)
 {
     auto const& params = context.params;
     if (! params.isMember (jss::account))

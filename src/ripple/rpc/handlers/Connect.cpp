@@ -33,7 +33,7 @@ namespace ripple {
 //   port: <number>
 // }
 // XXX Might allow domain for manual connections.
-Json::Value doConnect (RPC::Context& context)
+Json::Value doConnect (RPC::JsonContext& context)
 {
     if (context.app.config().standalone())
         return "cannot connect in standalone mode";

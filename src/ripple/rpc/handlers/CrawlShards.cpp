@@ -40,7 +40,7 @@ namespace ripple {
     }
 */
 Json::Value
-doCrawlShards(RPC::Context& context)
+doCrawlShards(RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN)
         return rpcError(rpcNO_PERMISSION);

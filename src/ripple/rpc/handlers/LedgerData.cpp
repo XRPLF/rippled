@@ -40,7 +40,7 @@ namespace ripple {
 //     ledger_index: chosen ledger's index
 //     state:        array of state nodes
 //     marker:       resume point, if any
-Json::Value doLedgerData (RPC::Context& context)
+Json::Value doLedgerData (RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
     auto const& params = context.params;

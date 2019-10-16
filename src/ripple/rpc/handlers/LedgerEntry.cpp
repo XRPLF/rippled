@@ -35,7 +35,7 @@ namespace ripple {
 //   ledger_index : <ledger_index>
 //   ...
 // }
-Json::Value doLedgerEntry (RPC::Context& context)
+Json::Value doLedgerEntry (RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
     auto jvResult = RPC::lookupLedger (lpLedger, context);

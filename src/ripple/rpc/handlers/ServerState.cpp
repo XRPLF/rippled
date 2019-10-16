@@ -27,7 +27,7 @@
 
 namespace ripple {
 
-Json::Value doServerState (RPC::Context& context)
+Json::Value doServerState (RPC::JsonContext& context)
 {
     Json::Value ret (Json::objectValue);
 

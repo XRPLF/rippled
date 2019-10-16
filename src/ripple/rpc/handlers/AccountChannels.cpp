@@ -63,7 +63,7 @@ void addChannel (Json::Value& jsonLines, SLE const& line)
 //   limit: integer                 // optional
 //   marker: opaque                 // optional, resume previous query
 // }
-Json::Value doAccountChannels (RPC::Context& context)
+Json::Value doAccountChannels (RPC::JsonContext& context)
 {
     auto const& params (context.params);
     if (! params.isMember (jss::account))

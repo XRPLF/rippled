@@ -29,7 +29,7 @@
 
 namespace ripple {
 
-Json::Value doPathFind (RPC::Context& context)
+Json::Value doPathFind (RPC::JsonContext& context)
 {
     if (context.app.config().PATH_SEARCH_MAX == 0)
         return rpcError (rpcNOT_SUPPORTED);

@@ -29,7 +29,7 @@ namespace ripple {
 //   tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value doSign (RPC::Context& context)
+Json::Value doSign (RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())
     {

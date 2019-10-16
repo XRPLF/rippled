@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-Json::Value doLedgerClosed (RPC::Context& context)
+Json::Value doLedgerClosed (RPC::JsonContext& context)
 {
     auto ledger = context.ledgerMaster.getClosedLedger ();
     assert (ledger);

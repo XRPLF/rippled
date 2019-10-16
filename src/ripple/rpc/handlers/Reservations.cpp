@@ -33,7 +33,7 @@
 namespace ripple {
 
 Json::Value
-doPeerReservationsAdd(RPC::Context& context)
+doPeerReservationsAdd(RPC::JsonContext& context)
 {
     auto const& params = context.params;
 
@@ -86,7 +86,7 @@ doPeerReservationsAdd(RPC::Context& context)
 }
 
 Json::Value
-doPeerReservationsDel(RPC::Context& context)
+doPeerReservationsDel(RPC::JsonContext& context)
 {
     auto const& params = context.params;
 
@@ -113,7 +113,7 @@ doPeerReservationsDel(RPC::Context& context)
 }
 
 Json::Value
-doPeerReservationsList(RPC::Context& context)
+doPeerReservationsList(RPC::JsonContext& context)
 {
     auto const& reservations = context.app.peerReservations().list();
     // Enumerate the reservations in context.app.peerReservations()

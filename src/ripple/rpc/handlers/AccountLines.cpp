@@ -78,7 +78,7 @@ void addLine (Json::Value& jsonLines, RippleState const& line)
 //   limit: integer                 // optional
 //   marker: opaque                 // optional, resume previous query
 // }
-Json::Value doAccountLines (RPC::Context& context)
+Json::Value doAccountLines (RPC::JsonContext& context)
 {
     auto const& params (context.params);
     if (! params.isMember (jss::account))

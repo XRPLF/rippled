@@ -442,20 +442,19 @@ ServerHandlerImp::processSession(
         }
         else
         {
-            RPC::Context context{
-                app_.journal("RPCHandler"),
-                jv,
-                app_,
-                loadType,
-                app_.getOPs(),
-                app_.getLedgerMaster(),
-                is->getConsumer(),
-                role,
-                apiVersion,
-                coro,
-                is,
-                {is->user(), is->forwarded_for()}
-                };
+            RPC::JsonContext context{{app_.journal("RPCHandler"),
+                                      app_,
+                                      loadType,
+                                      app_.getOPs(),
+                                      app_.getLedgerMaster(),
+                                      is->getConsumer(),
+                                      role,
+                                      coro,
+                                      is},
+                                     jv,
+                                     apiVersion,
+                                     {is->user(), is->forwarded_for()}};
+
             RPC::doCommand(context, jr[jss::result]);
         }
     }
@@ -818,9 +817,18 @@ ServerHandlerImp::processRequest (Port const& port,
 
         Resource::Charge loadType = Resource::feeReferenceRPC;
 
-        RPC::Context context {m_journal, params, app_, loadType, m_networkOPs,
-            app_.getLedgerMaster(), usage, role, apiVersion, coro, InfoSub::pointer(),
-            {user, forwardedFor}};
+        RPC::JsonContext context{{m_journal,
+                                  app_,
+                                  loadType,
+                                  m_networkOPs,
+                                  app_.getLedgerMaster(),
+                                  usage,
+                                  role,
+                                  coro,
+                                  InfoSub::pointer()},
+                                 params,
+                                 apiVersion,
+                                 {user, forwardedFor}};
         Json::Value result;
         RPC::doCommand (context, result);
         usage.charge (loadType);

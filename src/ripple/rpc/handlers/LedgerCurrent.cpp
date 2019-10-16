@@ -26,7 +26,7 @@
 
 namespace ripple {
 
-Json::Value doLedgerCurrent (RPC::Context& context)
+Json::Value doLedgerCurrent (RPC::JsonContext& context)
 {
     Json::Value jvResult;
     jvResult[jss::ledger_current_index] =

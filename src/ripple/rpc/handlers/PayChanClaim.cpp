@@ -40,7 +40,7 @@ namespace ripple {
 //   channel_id: 256-bit channel id
 //   drops: 64-bit uint (as string)
 // }
-Json::Value doChannelAuthorize (RPC::Context& context)
+Json::Value doChannelAuthorize (RPC::JsonContext& context)
 {
     auto const& params (context.params);
     for (auto const& p : {jss::channel_id, jss::amount})
@@ -94,7 +94,7 @@ Json::Value doChannelAuthorize (RPC::Context& context)
 //   drops: 64-bit uint (as string)
 //   signature: signature to verify
 // }
-Json::Value doChannelVerify (RPC::Context& context)
+Json::Value doChannelVerify (RPC::JsonContext& context)
 {
     auto const& params (context.params);
     for (auto const& p :

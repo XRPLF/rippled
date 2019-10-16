@@ -33,7 +33,7 @@ namespace ripple {
 //   feature : <feature>
 //   vetoed : true/false
 // }
-Json::Value doFeature (RPC::Context& context)
+Json::Value doFeature (RPC::JsonContext& context)
 {
 
     // Get majority amendment status

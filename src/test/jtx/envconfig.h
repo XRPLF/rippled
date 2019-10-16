@@ -115,9 +115,18 @@ validator(std::unique_ptr<Config>, std::string const&);
 std::unique_ptr<Config>
 port_increment(std::unique_ptr<Config>, int);
 
-} // jtx
-} // test
-} // ripple
+/// @brief add a grpc address and port to config
+///
+/// This is intended for use with envconfig, for tests that require a grpc
+/// server. If this function is not called, grpc server will not start
+///
+///
+/// @param cfg config instance to be modified
+std::unique_ptr<Config> addGrpcConfig(std::unique_ptr<Config>);
+
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif
 

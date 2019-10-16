@@ -30,7 +30,7 @@ namespace ripple {
 //   SigningAccounts <array>,
 //   tx_json: <object>,
 // }
-Json::Value doSubmitMultiSigned (RPC::Context& context)
+Json::Value doSubmitMultiSigned (RPC::JsonContext& context)
 {
     // Bail if multisign is not enabled.
     if (! context.app.getLedgerMaster().getValidatedRules().

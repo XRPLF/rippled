@@ -54,6 +54,7 @@ include(deps/Rocksdb)
 include(deps/Nudb)
 include(deps/date)
 include(deps/Protobuf)
+include(deps/gRPC)
 
 ###
 

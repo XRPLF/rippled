@@ -7,7 +7,7 @@ yum -y upgrade
 yum -y update
 yum -y install epel-release centos-release-scl
 yum -y install \
-    wget curl time gcc-c++ time yum-utils \
+    wget curl time gcc-c++ time yum-utils autoconf pkgconfig \
     libstdc++-static rpm-build gnupg which make cmake \
     devtoolset-7 devtoolset-7-gdb devtoolset-7-libasan-devel devtoolset-7-libtsan-devel devtoolset-7-libubsan-devel \
     devtoolset-8 devtoolset-8-gdb devtoolset-8-binutils devtoolset-8-libstdc++-devel \
@@ -22,8 +22,6 @@ yum -y install \
     python-devel python27-python-devel rh-python35-python-devel \
     python27 rh-python35 \
     ninja-build git svn \
-    protobuf protobuf-static protobuf-c-devel \
-    protobuf-compiler protobuf-devel \
     swig perl-Digest-MD5 python2-pip
 
 if [ "${CI_USE}" = true ] ; then

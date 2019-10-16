@@ -26,10 +26,12 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/TransactionSign.h>
+#include <ripple/rpc/GRPCHandlers.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 
-static NetworkOPs::FailHard getFailHard (RPC::Context const& context)
+static NetworkOPs::FailHard getFailHard (RPC::JsonContext const& context)
 {
     return NetworkOPs::doFailHard (
         context.params.isMember ("fail_hard")
@@ -40,7 +42,7 @@ static NetworkOPs::FailHard getFailHard (RPC::Context const& context)
 //   tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value doSubmit (RPC::Context& context)
+Json::Value doSubmit (RPC::JsonContext& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
 
@@ -181,4 +183,100 @@ Json::Value doSubmit (RPC::Context& context)
     }
 }
 
-} // ripple
+std::pair<rpc::v1::SubmitTransactionResponse, grpc::Status>
+doSubmitGrpc(RPC::GRPCContext<rpc::v1::SubmitTransactionRequest>& context)
+{
+    // return values
+    rpc::v1::SubmitTransactionResponse result;
+    grpc::Status status = grpc::Status::OK;
+
+    // input
+    auto request = context.params;
+
+    std::string const& tx = request.signed_transaction();
+
+    // convert to blob
+    Blob blob{tx.begin(), tx.end()};
+
+    // serialize
+    SerialIter sitTrans(makeSlice(blob));
+    std::shared_ptr<STTx const> stpTrans;
+    try
+    {
+        stpTrans = std::make_shared<STTx const>(std::ref(sitTrans));
+    }
+    catch (std::exception& e)
+    {
+        grpc::Status errorStatus{
+            grpc::StatusCode::INVALID_ARGUMENT,
+            "invalid transaction: " + std::string(e.what())};
+        return {result, errorStatus};
+    }
+
+    // check validity
+    {
+        if (!context.app.checkSigs())
+            forceValidity(
+                context.app.getHashRouter(),
+                stpTrans->getTransactionID(),
+                Validity::SigGoodOnly);
+        auto [validity, reason] = checkValidity(
+            context.app.getHashRouter(),
+            *stpTrans,
+            context.ledgerMaster.getCurrentLedger()->rules(),
+            context.app.config());
+        if (validity != Validity::Valid)
+        {
+            grpc::Status errorStatus{grpc::StatusCode::INVALID_ARGUMENT,
+                                     "invalid transaction: " + reason};
+            return {result, errorStatus};
+        }
+    }
+
+    std::string reason;
+    auto tpTrans = std::make_shared<Transaction>(stpTrans, reason, context.app);
+    if (tpTrans->getStatus() != NEW)
+    {
+        grpc::Status errorStatus{grpc::StatusCode::INVALID_ARGUMENT,
+                                 "invalid transaction: " + reason};
+        return {result, errorStatus};
+    }
+
+    try
+    {
+        auto const failType = NetworkOPs::doFailHard(request.fail_hard());
+
+        // submit to network
+        context.netOps.processTransaction(
+            tpTrans, isUnlimited(context.role), true, failType);
+    }
+    catch (std::exception& e)
+    {
+        grpc::Status errorStatus{
+            grpc::StatusCode::INVALID_ARGUMENT,
+            "invalid transaction : " + std::string(e.what())};
+        return {result, errorStatus};
+    }
+
+    // return preliminary result
+    if (temUNCERTAIN != tpTrans->getResult())
+    {
+        RPC::populateTransactionResultType(
+            *result.mutable_engine_result(), tpTrans->getResult());
+
+        std::string sToken;
+        std::string sHuman;
+
+        transResultInfo(tpTrans->getResult(), sToken, sHuman);
+
+        result.mutable_engine_result()->set_result(sToken);
+        result.set_engine_result_code(TERtoInt(tpTrans->getResult()));
+        result.set_engine_result_message(sHuman);
+
+        uint256 hash = tpTrans->getID();
+        result.set_hash(hash.data(), hash.size());
+    }
+    return {result, status};
+}
+
+}  // namespace ripple

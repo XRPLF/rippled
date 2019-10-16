@@ -31,7 +31,7 @@ namespace ripple {
 //   account: <signing account>
 //   secret: <secret of signing account>
 // }
-Json::Value doSignFor (RPC::Context& context)
+Json::Value doSignFor (RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())
     {

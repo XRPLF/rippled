@@ -30,7 +30,7 @@ namespace ripple {
 // {
 //   'ident' : <indent>,
 // }
-Json::Value doOwnerInfo (RPC::Context& context)
+Json::Value doOwnerInfo (RPC::JsonContext& context)
 {
     if (!context.params.isMember (jss::account) &&
         !context.params.isMember (jss::ident))

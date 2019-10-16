@@ -435,6 +435,7 @@ else ()
     src/ripple/app/main/Application.cpp
     src/ripple/app/main/BasicApp.cpp
     src/ripple/app/main/CollectorManager.cpp
+    src/ripple/app/main/GRPCServer.cpp
     src/ripple/app/main/LoadManager.cpp
     src/ripple/app/main/Main.cpp
     src/ripple/app/main/NodeIdentity.cpp
@@ -969,6 +970,7 @@ else ()
     src/test/rpc/DepositAuthorized_test.cpp
     src/test/rpc/DeliveredAmount_test.cpp
     src/test/rpc/Feature_test.cpp
+    src/test/rpc/Fee_test.cpp
     src/test/rpc/GatewayBalances_test.cpp
     src/test/rpc/GetCounts_test.cpp
     src/test/rpc/JSONRPC_test.cpp
@@ -987,10 +989,12 @@ else ()
     src/test/rpc/RobustTransaction_test.cpp
     src/test/rpc/ServerInfo_test.cpp
     src/test/rpc/Status_test.cpp
+    src/test/rpc/Submit_test.cpp
     src/test/rpc/Subscribe_test.cpp
     src/test/rpc/Transaction_test.cpp
     src/test/rpc/TransactionEntry_test.cpp
     src/test/rpc/TransactionHistory_test.cpp
+    src/test/rpc/Tx_test.cpp
     src/test/rpc/ValidatorRPC_test.cpp
     src/test/rpc/Version_test.cpp
     #[===============================[
@@ -1016,10 +1020,12 @@ target_link_libraries (rippled
   Ripple::boost
   Ripple::opts
   Ripple::libs
-  Ripple::xrpl_core)
+  Ripple::xrpl_core
+  )
 exclude_if_included (rippled)
 # define a macro for tests that might need to
 # be exluded or run differently in CI environment
 if (is_ci)
   target_compile_definitions(rippled PRIVATE RIPPLED_RUNNING_IN_CI)
 endif ()
+

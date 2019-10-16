@@ -21,6 +21,12 @@
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 
+#include <ripple/resource/Charge.h>
+#include <ripple/resource/Fees.h>
+#include <ripple/rpc/GRPCHandlers.h>
+#include <test/jtx/WSClient.h>
+#include <test/rpc/GRPCTestClientBase.h>
+
 namespace ripple {
 namespace test {
 
@@ -314,16 +320,232 @@ public:
         }
     }
 
-    void run() override
+    // gRPC stuff
+    class GetAccountInfoClient : public GRPCTestClientBase
+    {
+    public:
+        rpc::v1::GetAccountInfoRequest request;
+        rpc::v1::GetAccountInfoResponse reply;
+
+        explicit GetAccountInfoClient(std::string const& port)
+            : GRPCTestClientBase(port)
+        {
+        }
+
+        void
+        GetAccountInfo()
+        {
+            status = stub_->GetAccountInfo(&context, request, &reply);
+        }
+    };
+
+    void
+    testSimpleGrpc()
+    {
+        testcase("gRPC simple");
+
+        using namespace jtx;
+        std::unique_ptr<Config> config = envconfig(addGrpcConfig);
+        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
+        Env env(*this, std::move(config));
+        Account const alice{"alice"};
+        env.fund(drops(1000 * 1000 * 1000), alice);
+
+        {
+            // most simple case
+            GetAccountInfoClient client(grpcPort);
+            client.request.mutable_account()->set_address(alice.human());
+            client.GetAccountInfo();
+            if (!BEAST_EXPECT(client.status.ok()))
+            {
+                std::cout << client.reply.DebugString() << std::endl;
+                return;
+            }
+            BEAST_EXPECT(
+                client.reply.account_data().account().address() ==
+                alice.human());
+        }
+        {
+            GetAccountInfoClient client(grpcPort);
+            client.request.mutable_account()->set_address(alice.human());
+            client.request.set_queue(true);
+            client.request.mutable_ledger()->set_sequence(3);
+            client.GetAccountInfo();
+            if (!BEAST_EXPECT(client.status.ok()))
+                return;
+            BEAST_EXPECT(
+                client.reply.account_data().balance().drops() ==
+                1000 * 1000 * 1000);
+            BEAST_EXPECT(
+                client.reply.account_data().account().address() ==
+                alice.human());
+            BEAST_EXPECT(
+                client.reply.account_data().sequence() == env.seq(alice));
+            BEAST_EXPECT(client.reply.queue_data().txn_count() == 0);
+        }
+    }
+
+    void
+    testErrorsGrpc()
+    {
+        testcase("gRPC errors");
+
+        using namespace jtx;
+        std::unique_ptr<Config> config = envconfig(addGrpcConfig);
+        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
+        Env env(*this, std::move(config));
+        auto getClient = [&grpcPort]() {
+            return GetAccountInfoClient(grpcPort);
+        };
+        Account const alice{"alice"};
+        env.fund(drops(1000 * 1000 * 1000), alice);
+
+        {
+            // bad address
+            auto client = getClient();
+            client.request.mutable_account()->set_address("deadbeef");
+            client.GetAccountInfo();
+            BEAST_EXPECT(!client.status.ok());
+        }
+        {
+            // no account
+            Account const bogie{"bogie"};
+            auto client = getClient();
+            client.request.mutable_account()->set_address(bogie.human());
+            client.GetAccountInfo();
+            BEAST_EXPECT(!client.status.ok());
+        }
+        {
+            // bad ledger_index
+            auto client = getClient();
+            client.request.mutable_account()->set_address(alice.human());
+            client.request.mutable_ledger()->set_sequence(0);
+            client.GetAccountInfo();
+            BEAST_EXPECT(!client.status.ok());
+        }
+    }
+
+    void
+    testSignerListsGrpc()
+    {
+        testcase("gRPC singer lists");
+
+        using namespace jtx;
+        std::unique_ptr<Config> config = envconfig(addGrpcConfig);
+        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
+        Env env(*this, std::move(config));
+        auto getClient = [&grpcPort]() {
+            return GetAccountInfoClient(grpcPort);
+        };
+
+        Account const alice{"alice"};
+        env.fund(drops(1000 * 1000 * 1000), alice);
+
+        {
+            auto client = getClient();
+            client.request.mutable_account()->set_address(alice.human());
+            client.request.set_signer_lists(true);
+            client.GetAccountInfo();
+            if (!BEAST_EXPECT(client.status.ok()))
+                return;
+            BEAST_EXPECT(client.reply.signer_list().signer_entries_size() == 0);
+        }
+
+        // Give alice a SignerList.
+        Account const bogie{"bogie"};
+        Json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
+        env(smallSigners);
+        {
+            auto client = getClient();
+            client.request.mutable_account()->set_address(alice.human());
+            client.request.set_signer_lists(false);
+            client.GetAccountInfo();
+            if (!BEAST_EXPECT(client.status.ok()))
+                return;
+            BEAST_EXPECT(client.reply.signer_list().signer_entries_size() == 0);
+        }
+        {
+            auto client = getClient();
+            client.request.mutable_account()->set_address(alice.human());
+            client.request.set_signer_lists(true);
+            client.GetAccountInfo();
+            if (!BEAST_EXPECT(client.status.ok()))
+            {
+                return;
+            }
+            BEAST_EXPECT(client.reply.account_data().owner_count() == 1);
+            BEAST_EXPECT(client.reply.signer_list().signer_entries_size() == 1);
+        }
+
+        // Give alice a big signer list
+        Account const demon{"demon"};
+        Account const ghost{"ghost"};
+        Account const haunt{"haunt"};
+        Account const jinni{"jinni"};
+        Account const phase{"phase"};
+        Account const shade{"shade"};
+        Account const spook{"spook"};
+        Json::Value const bigSigners = signers(
+            alice,
+            4,
+            {
+                {bogie, 1},
+                {demon, 1},
+                {ghost, 1},
+                {haunt, 1},
+                {jinni, 1},
+                {phase, 1},
+                {shade, 1},
+                {spook, 1},
+            });
+        env(bigSigners);
+
+        std::set<std::string> accounts;
+        accounts.insert(bogie.human());
+        accounts.insert(demon.human());
+        accounts.insert(ghost.human());
+        accounts.insert(haunt.human());
+        accounts.insert(jinni.human());
+        accounts.insert(phase.human());
+        accounts.insert(shade.human());
+        accounts.insert(spook.human());
+        {
+            auto client = getClient();
+            client.request.mutable_account()->set_address(alice.human());
+            client.request.set_signer_lists(true);
+            client.GetAccountInfo();
+            if (!BEAST_EXPECT(client.status.ok()))
+            {
+                return;
+            }
+            BEAST_EXPECT(client.reply.account_data().owner_count() == 1);
+            auto& signerList = client.reply.signer_list();
+            BEAST_EXPECT(signerList.signer_quorum() == 4);
+            BEAST_EXPECT(signerList.signer_entries_size() == 8);
+            for (int i = 0; i < 8; ++i)
+            {
+                BEAST_EXPECT(signerList.signer_entries(i).signer_weight() == 1);
+                BEAST_EXPECT(
+                    accounts.erase(
+                        signerList.signer_entries(i).account().address()) == 1);
+            }
+            BEAST_EXPECT(accounts.size() == 0);
+        }
+    }
+
+    void
+    run() override
     {
         testErrors();
         testSignerLists();
         testSignerListsV2();
+        testSimpleGrpc();
+        testErrorsGrpc();
+        testSignerListsGrpc();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountInfo,app,ripple);
+BEAST_DEFINE_TESTSUITE(AccountInfo, app, ripple);
 
-}
-}
-
+}  // namespace test
+}  // namespace ripple

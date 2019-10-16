@@ -44,7 +44,7 @@ namespace ripple {
 //   limit: integer,                 // optional
 //   marker: opaque                  // optional, resume previous query
 // }
-Json::Value doAccountTx (RPC::Context& context)
+Json::Value doAccountTx (RPC::JsonContext& context)
 {
     auto& params = context.params;
 

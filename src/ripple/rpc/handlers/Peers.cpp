@@ -27,7 +27,7 @@
 
 namespace ripple {
 
-Json::Value doPeers (RPC::Context& context)
+Json::Value doPeers (RPC::JsonContext& context)
 {
     Json::Value jvResult (Json::objectValue);
 

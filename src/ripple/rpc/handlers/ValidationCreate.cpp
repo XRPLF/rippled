@@ -42,7 +42,7 @@ validationSeed (Json::Value const& params)
 //
 // This command requires Role::ADMIN access because it makes
 // no sense to ask an untrusted server for this.
-Json::Value doValidationCreate (RPC::Context& context)
+Json::Value doValidationCreate (RPC::JsonContext& context)
 {
     Json::Value     obj (Json::objectValue);
 

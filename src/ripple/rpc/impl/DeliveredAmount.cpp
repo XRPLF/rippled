@@ -137,7 +137,7 @@ insertDeliveredAmount(
 void
 insertDeliveredAmount(
     Json::Value& meta,
-    RPC::Context& context,
+    RPC::JsonContext& context,
     std::shared_ptr<Transaction> transaction,
     TxMeta const& transactionMeta)
 {
@@ -172,5 +172,80 @@ insertDeliveredAmount(
         std::move(serializedTx),
         transactionMeta);
 }
-} // RPC
-} // ripple
+
+// TODO get rid of the code duplication between this function and the preceding
+// function
+void
+insertDeliveredAmount(
+    rpc::v1::CurrencyAmount& proto,
+    RPC::Context& context,
+    std::shared_ptr<Transaction> transaction,
+    TxMeta const& transactionMeta)
+{
+    if (!transaction)
+        return;
+
+    auto const serializedTx = transaction->getSTransaction();
+    if (!serializedTx)
+        return;
+
+    // These lambdas are used to compute the values lazily
+    auto const getFix1623Enabled = [&context]() -> bool {
+        auto const view = context.app.openLedger().current();
+        if (!view)
+            return false;
+        return view->rules().enabled(fix1623);
+    };
+    auto const getLedgerIndex = [&transaction]() -> LedgerIndex {
+        return transaction->getLedger();
+    };
+    auto const getCloseTime =
+        [&context, &transaction]() -> boost::optional<NetClock::time_point> {
+        return context.ledgerMaster.getCloseTimeBySeq(transaction->getLedger());
+    };
+
+    {
+        TxType const tt{serializedTx->getTxnType()};
+        if (tt != ttPAYMENT &&
+            tt != ttCHECK_CASH &&
+            tt != ttACCOUNT_DELETE)
+            return;
+
+        if (tt == ttCHECK_CASH &&
+            !getFix1623Enabled())
+            return;
+    }
+
+    // if the transaction failed nothing could have been delivered.
+    if (transactionMeta.getResultTER() != tesSUCCESS)
+        return;
+
+    if (transactionMeta.hasDeliveredAmount())
+    {
+        populateAmount(proto, transactionMeta.getDeliveredAmount());
+        return;
+    }
+
+    if (serializedTx->isFieldPresent(sfAmount))
+    {
+        using namespace std::chrono_literals;
+
+        // Ledger 4594095 is the first ledger in which the DeliveredAmount field
+        // was present when a partial payment was made and its absence indicates
+        // that the amount delivered is listed in the Amount field.
+        //
+        // If the ledger closed long after the DeliveredAmount code was deployed
+        // then its absence indicates that the amount delivered is listed in the
+        // Amount field. DeliveredAmount went live January 24, 2014.
+        // 446000000 is in Feb 2014, well after DeliveredAmount went live
+        if (getLedgerIndex() >= 4594095 ||
+            getCloseTime() > NetClock::time_point{446000000s})
+        {
+            populateAmount(proto, serializedTx->getFieldAmount(sfAmount));
+            return;
+        }
+    }
+}
+
+}  // namespace RPC
+}  // namespace ripple

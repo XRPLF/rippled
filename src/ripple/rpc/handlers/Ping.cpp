@@ -25,10 +25,10 @@
 namespace ripple {
 
 namespace RPC {
-struct Context;
+struct JsonContext;
 } // RPC
 
-Json::Value doPing (RPC::Context& context)
+Json::Value doPing (RPC::JsonContext& context)
 {
     Json::Value ret(Json::objectValue);
     switch (context.role)

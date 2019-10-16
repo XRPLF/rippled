@@ -64,7 +64,7 @@ estimate_entropy (std::string const& input)
 // {
 //  passphrase: <string>
 // }
-Json::Value doWalletPropose (RPC::Context& context)
+Json::Value doWalletPropose (RPC::JsonContext& context)
 {
     return walletPropose (context.params);
 }

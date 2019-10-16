@@ -32,7 +32,7 @@
 namespace ripple {
 
 static void fillTransaction (
-    RPC::Context& context,
+    RPC::JsonContext& context,
     Json::Value& txArray,
     AccountID const& accountID,
     std::uint32_t& sequence,
@@ -55,7 +55,7 @@ static void fillTransaction (
 //   role: gateway|user             // account role to assume
 //   transactions: true             // optional, reccommend transactions
 // }
-Json::Value doNoRippleCheck (RPC::Context& context)
+Json::Value doNoRippleCheck (RPC::JsonContext& context)
 {
     auto const& params (context.params);
     if (! params.isMember (jss::account))

@@ -28,10 +28,10 @@
 namespace ripple {
 namespace RPC {
 
-struct Context;
+struct JsonContext;
 
 /** Execute an RPC command and store the results in a Json::Value. */
-Status doCommand (RPC::Context&, Json::Value&);
+Status doCommand (RPC::JsonContext&, Json::Value&);
 
 Role roleRequired (unsigned int version, std::string const& method );
 

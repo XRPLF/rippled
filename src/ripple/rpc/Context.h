@@ -38,6 +38,19 @@ namespace RPC {
 /** The context of information needed to call an RPC. */
 struct Context
 {
+    beast::Journal const j;
+    Application& app;
+    Resource::Charge& loadType;
+    NetworkOPs& netOps;
+    LedgerMaster& ledgerMaster;
+    Resource::Consumer& consumer;
+    Role role;
+    std::shared_ptr<JobQueue::Coro> coro{};
+    InfoSub::pointer infoSub{};
+};
+
+struct JsonContext : public Context
+{
     /**
      * Data passed in from HTTP headers.
      */
@@ -47,18 +60,16 @@ struct Context
         boost::string_view forwardedFor;
     };
 
-    beast::Journal const j;
     Json::Value params;
-    Application& app;
-    Resource::Charge& loadType;
-    NetworkOPs& netOps;
-    LedgerMaster& ledgerMaster;
-    Resource::Consumer& consumer;
-    Role role;
+
     unsigned int apiVersion;
-    std::shared_ptr<JobQueue::Coro> coro {};
-    InfoSub::pointer infoSub {};
     Headers headers {};
+};
+
+template <class RequestType>
+struct GRPCContext : public Context
+{
+    RequestType params;
 };
 
 } // RPC
