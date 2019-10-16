@@ -92,7 +92,7 @@ enum error_code_i
     rpcALREADY_MULTISIG      = 36,
     rpcALREADY_SINGLE_SIG    = 37,
     // unused                  38,
-    // unused                  39,
+    rpcBAD_KEY_TYPE          = 39,
     rpcBAD_FEATURE           = 40,
     rpcBAD_ISSUER            = 41,
     rpcBAD_MARKET            = 42,
