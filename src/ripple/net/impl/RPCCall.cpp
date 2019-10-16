@@ -717,23 +717,43 @@ private:
         return parseAccountRaw2 (jvParams, jss::destination_account);
     }
 
-    // channel_authorize <private_key> <channel_id> <drops>
+    // channel_authorize: <private_key> [<key_type>] <channel_id> <drops>
     Json::Value parseChannelAuthorize (Json::Value const& jvParams)
     {
         Json::Value jvRequest (Json::objectValue);
 
-        jvRequest[jss::secret] = jvParams[0u];
+        unsigned int index = 0;
+
+        if (jvParams.size() == 4)
+        {
+            jvRequest[jss::passphrase] = jvParams[index];
+            index++;
+
+            if (!keyTypeFromString(jvParams[index].asString()))
+                return rpcError (rpcBAD_KEY_TYPE);
+            jvRequest[jss::key_type] = jvParams[index];
+            index++;
+        }
+        else
+        {
+            jvRequest[jss::secret] = jvParams[index];
+            index++;
+        }
+
         {
             // verify the channel id is a valid 256 bit number
             uint256 channelId;
-            if (!channelId.SetHexExact (jvParams[1u].asString ()))
+            if (!channelId.SetHexExact (jvParams[index].asString()))
                 return rpcError (rpcCHANNEL_MALFORMED);
+            jvRequest[jss::channel_id] = to_string(channelId);
+            index++;
         }
-        jvRequest[jss::channel_id] = jvParams[1u].asString ();
 
-        if (!jvParams[2u].isString() || !to_uint64(jvParams[2u].asString()))
+        if (!jvParams[index].isString() || !to_uint64(jvParams[index].asString()))
             return rpcError(rpcCHANNEL_AMT_MALFORMED);
-        jvRequest[jss::amount] = jvParams[2u];
+        jvRequest[jss::amount] = jvParams[index];
+
+        // If additional parameters are appended, be sure to increment index here
 
         return jvRequest;
     }
@@ -1122,7 +1142,7 @@ public:
             {   "account_tx",           &RPCParser::parseAccountTransactions,   1,  8   },
             {   "book_offers",          &RPCParser::parseBookOffers,            2,  7   },
             {   "can_delete",           &RPCParser::parseCanDelete,             0,  1   },
-            {   "channel_authorize",    &RPCParser::parseChannelAuthorize,      3,  3   },
+            {   "channel_authorize",    &RPCParser::parseChannelAuthorize,      3,  4   },
             {   "channel_verify",       &RPCParser::parseChannelVerify,         4,  4   },
             {   "connect",              &RPCParser::parseConnect,               1,  2   },
             {   "consensus_info",       &RPCParser::parseAsIs,                  0,  0   },

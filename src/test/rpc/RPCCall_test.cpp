@@ -2222,10 +2222,11 @@ static RPCCallTestData const rpcCallTestArray [] =
     "channel_authorize: too many arguments.", __LINE__,
     {
         "channel_authorize",
-        "secret_can_be_anything",
+        "secp256k1",
         "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
         "2000",
-        "whatever"
+        "whatever",
+        "whenever"
     },
     RPCCallTestData::no_exception,
     R"({
@@ -2235,6 +2236,27 @@ static RPCCallTestData const rpcCallTestArray [] =
          "error" : "badSyntax",
          "error_code" : 1,
          "error_message" : "Syntax error."
+      }
+    ]
+    })"
+},
+{
+    "channel_authorize: bad key type.", __LINE__,
+    {
+        "channel_authorize",
+        "secp257k1",
+        "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+        "2000",
+        "whatever"
+    },
+    RPCCallTestData::no_exception,
+    R"({
+    "method" : "channel_authorize",
+    "params" : [
+      {
+         "error" : "badKeyType",
+         "error_code" : 1,
+         "error_message" : "Bad key type."
       }
     ]
     })"

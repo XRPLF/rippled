@@ -39,6 +39,7 @@ constexpr static ErrorInfo unorderedErrorInfos[]
     {rpcALREADY_SINGLE_SIG,    "alreadySingleSig",    "Already single-signed."},
     {rpcAMENDMENT_BLOCKED,     "amendmentBlocked",    "Amendment blocked, need upgrade."},
     {rpcATX_DEPRECATED,        "deprecated",          "Use the new API or specify a ledger range."},
+    {rpcBAD_KEY_TYPE,          "badKeyType",          "Bad key type."},
     {rpcBAD_FEATURE,           "badFeature",          "Feature unknown or invalid."},
     {rpcBAD_ISSUER,            "badIssuer",           "Issuer account malformed."},
     {rpcBAD_MARKET,            "badMarket",           "No such market."},

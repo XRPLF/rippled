@@ -131,7 +131,8 @@ enum error_code_i
     rpcINTERNAL              = 73,  // Generic internal error.
     rpcNOT_IMPL              = 74,
     rpcNOT_SUPPORTED         = 75,
-    rpcLAST = rpcNOT_SUPPORTED   // rpcLAST should always equal the last code.
+    rpcBAD_KEY_TYPE          = 76,
+    rpcLAST = rpcBAD_KEY_TYPE      // rpcLAST should always equal the last code.
 };
 
 //------------------------------------------------------------------------------
