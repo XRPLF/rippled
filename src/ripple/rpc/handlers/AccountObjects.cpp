@@ -77,7 +77,7 @@ Json::Value doAccountObjects (RPC::Context& context)
     if (params.isMember(jss::deletion_blockers_only) &&
         params[jss::deletion_blockers_only].asBool())
     {
-        struct NameType {
+        struct {
             Json::StaticString name;
             LedgerEntryType type;
         } static constexpr deletionBlockers[] = {
