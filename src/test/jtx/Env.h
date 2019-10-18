@@ -124,12 +124,13 @@ public:
 private:
     struct AppBundle
     {
-        Application* app;
+        Application* app = nullptr;
         std::unique_ptr<Application> owned;
-        ManualTimeKeeper* timeKeeper;
+        ManualTimeKeeper* timeKeeper = nullptr;
         std::thread thread;
         std::unique_ptr<AbstractClient> client;
 
+        AppBundle() = default;
         AppBundle (beast::unit_test::suite& suite,
             std::unique_ptr<Config> config,
             std::unique_ptr<Logs> logs);
