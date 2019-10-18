@@ -59,6 +59,7 @@ namespace jtx {
 Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
     std::unique_ptr<Config> config,
     std::unique_ptr<Logs> logs)
+    : AppBundle()
 {
     using namespace beast::severities;
     // Use kFatal threshold to reduce noise from STObject.
@@ -89,9 +90,13 @@ Env::AppBundle::~AppBundle()
     client.reset();
     // Make sure all jobs finish, otherwise tests
     // might not get the coverage they expect.
-    app->getJobQueue().rendezvous();
-    app->signalStop();
-    thread.join();
+    if (app)
+    {
+        app->getJobQueue().rendezvous();
+        app->signalStop();
+    }
+    if (thread.joinable())
+        thread.join();
 
     // Remove the debugLogSink before the suite goes out of scope.
     setDebugLogSink (nullptr);
