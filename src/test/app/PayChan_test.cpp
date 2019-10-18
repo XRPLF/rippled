@@ -1102,6 +1102,81 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
             rs = env.rpc("channel_authorize", "alice", chan1Str, "x");
             BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
+            {
+                // Missing channel_id
+                Json::Value args {Json::objectValue};
+                args[jss::amount] = "2000";
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                rs = env.rpc ("json",
+                    "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "invalidParams");
+            }
+            {
+                // Missing amount
+                Json::Value args {Json::objectValue};
+                args[jss::channel_id] = chan1Str;
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                rs = env.rpc ("json",
+                    "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "invalidParams");
+            }
+            {
+                // Missing key_type and no secret.
+                Json::Value args {Json::objectValue};
+                args[jss::amount] = "2000";
+                args[jss::channel_id] = chan1Str;
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                rs = env.rpc ("json",
+                    "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "invalidParams");
+            }
+            {
+                // Both passphrase and seed specified.
+                Json::Value args {Json::objectValue};
+                args[jss::amount] = "2000";
+                args[jss::channel_id] = chan1Str;
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                args[jss::seed] = "seed can be anything";
+                rs = env.rpc ("json",
+                    "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "invalidParams");
+            }
+            {
+                // channel_id is not exact hex.
+                Json::Value args {Json::objectValue};
+                args[jss::amount] = "2000";
+                args[jss::channel_id] = chan1Str + "1";
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                rs = env.rpc ("json",
+                    "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "channelMalformed");
+            }
+            {
+                //amount is not a string
+                Json::Value args {Json::objectValue};
+                args[jss::amount] = 2000;
+                args[jss::channel_id] = chan1Str;
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                rs = env.rpc ("json",
+                    "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
+            }
+            {
+                // Amount is not a decimal string.
+                Json::Value args {Json::objectValue};
+                args[jss::amount] = "TwoThousand";
+                args[jss::channel_id] = chan1Str;
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+                rs = env.rpc ("json",
+                    "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rs[jss::error] == "channelAmtMalformed");
+            }
         }
     }
 
