@@ -1419,6 +1419,17 @@ public:
         try
         {
             protocol::TMTransaction tx2;
+            // In all versions of protobuf, the parsing of this payload fails.
+            // However, different versions of protobuf will leave the parsed
+            // message (tx2) in different states. Versions 3.10+ seem to clear
+            // the message, whereas earlier versions would leave the message
+            // in a partial state. The varying nature of the failed-parsed
+            // message means that the STTx constructor will throw slightly
+            // different exceptions: for version 3.10+ we get
+            // "Transaction length invalid" whereas the half-parsed message
+            // from earlier versions results in "Unknown field". Either way,
+            // we expect an exception from STTx, but the specific message will
+            // vary.
             BEAST_EXPECT(! tx2.ParseFromArray(payload1, sizeof(payload1)));
 
             ripple::SerialIter sit (ripple::makeSlice(tx2.rawtransaction()));
