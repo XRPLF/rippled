@@ -92,7 +92,7 @@ enum error_code_i
     rpcALREADY_MULTISIG      = 36,
     rpcALREADY_SINGLE_SIG    = 37,
     // unused                  38,
-    rpcBAD_KEY_TYPE          = 39,
+    // unused                  39,
     rpcBAD_FEATURE           = 40,
     rpcBAD_ISSUER            = 41,
     rpcBAD_MARKET            = 42,
@@ -131,7 +131,8 @@ enum error_code_i
     rpcINTERNAL              = 73,  // Generic internal error.
     rpcNOT_IMPL              = 74,
     rpcNOT_SUPPORTED         = 75,
-    rpcLAST = rpcNOT_SUPPORTED   // rpcLAST should always equal the last code.
+    rpcBAD_KEY_TYPE          = 76,
+    rpcLAST = rpcBAD_KEY_TYPE      // rpcLAST should always equal the last code.
 };
 
 //------------------------------------------------------------------------------
