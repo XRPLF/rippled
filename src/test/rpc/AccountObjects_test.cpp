@@ -25,7 +25,7 @@
 
 #include <boost/utility/string_ref.hpp>
 
-#include <set>
+#include <algorithm>
 
 namespace ripple {
 namespace test {
@@ -502,11 +502,14 @@ public:
             params[jss::deletion_blockers_only] = true;
             auto resp = env.rpc("json", "account_objects", to_string(params));
 
-            std::set<std::string> const expectedLedgerTypes{
-                {jss::Escrow.c_str(),
-                 jss::Check.c_str(),
-                 jss::RippleState.c_str(),
-                 jss::PayChannel.c_str()}};
+            std::vector<std::string> const expectedLedgerTypes = [] {
+                std::vector<std::string> v{jss::Escrow.c_str(),
+                                           jss::Check.c_str(),
+                                           jss::RippleState.c_str(),
+                                           jss::PayChannel.c_str()};
+                std::sort(v.begin(), v.end());
+                return v;
+            }();
 
             std::uint32_t const expectedAccountObjects{
                 static_cast<std::uint32_t>(std::size(expectedLedgerTypes))
@@ -515,11 +518,14 @@ public:
             if (BEAST_EXPECT(acct_objs_is_size(resp, expectedAccountObjects)))
             {
                 auto const& aobjs = resp[jss::result][jss::account_objects];
-                std::set<std::string> gotLedgerTypes;
+                std::vector<std::string> gotLedgerTypes;
+                gotLedgerTypes.reserve(expectedAccountObjects);
                 for (std::uint32_t i = 0; i < expectedAccountObjects; ++i)
                 {
-                    gotLedgerTypes.insert(aobjs[i]["LedgerEntryType"].asString());
+                    gotLedgerTypes.push_back(
+                        aobjs[i]["LedgerEntryType"].asString());
                 }
+                std::sort(gotLedgerTypes.begin(), gotLedgerTypes.end());
                 BEAST_EXPECT(gotLedgerTypes == expectedLedgerTypes);
             }
         }
