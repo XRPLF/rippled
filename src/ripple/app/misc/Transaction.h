@@ -33,7 +33,6 @@ namespace ripple {
 // obtain a binary version.
 //
 
-class TransactionEnvelope;
 class Application;
 class Database;
 class Rules;
@@ -157,7 +156,7 @@ public:
 
     Json::Value getJson (JsonOptions options, bool binary = false) const;
 
-    static TransactionEnvelope load (uint256 const& id, Application& app);
+    static Transaction::pointer load (uint256 const& id, Application& app);
 
 private:
     uint256         mTransactionID;
@@ -170,21 +169,6 @@ private:
     std::shared_ptr<STTx const>   mTransaction;
     Application&    mApp;
     beast::Journal  j_;
-};
-
-struct TransactionEnvelope
-{
-public:
-    TransactionEnvelope (std::shared_ptr<Transaction> txn,
-                         std::string const& completeLedgers)
-        : txn (txn)
-        , completeLedgers (completeLedgers)
-    {}
-
-    TransactionEnvelope () = default;
-
-    std::shared_ptr<Transaction> txn;
-    std::string                  completeLedgers;
 };
 
 } // ripple

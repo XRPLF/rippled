@@ -57,6 +57,141 @@ public:
     }
 
     void
+    testIntersection()
+    {
+        testcase("testIntersection");
+
+        RangeSet<std::uint32_t> a;
+        RangeSet<std::uint32_t> b;
+        RangeSet<std::uint32_t> expected;
+
+        auto clear = [&]()
+        {
+            a.clear();
+            b.clear();
+            expected.clear();
+        };
+
+        // Test 1
+        a.insert(range<std::uint32_t>(1, 100));
+        a.insert(range<std::uint32_t>(110, 150));
+        a.insert(range<std::uint32_t>(160, 200));
+
+        b.insert(range<std::uint32_t>(5, 105));
+        b.insert(range<std::uint32_t>(110, 150));
+        b.insert(range<std::uint32_t>(160, 210));
+
+        auto intersection = getIntersection<std::uint32_t>({a,b});
+
+        expected.insert(range<std::uint32_t>(5, 100));
+        expected.insert(range<std::uint32_t>(110, 150));
+        expected.insert(range<std::uint32_t>(160, 200));
+
+        BEAST_EXPECT(intersection == expected);
+        clear();
+
+        // Test 2
+        a.insert(range<std::uint32_t>(1000, 2000));
+        b.insert(range<std::uint32_t>(1001, 2001));
+
+        intersection = getIntersection<std::uint32_t>({a,b});
+
+        expected.insert(range<std::uint32_t>(1001, 2000));
+
+        BEAST_EXPECT(intersection == expected);
+        clear();
+
+        // Test 3
+        a.insert(range<std::uint32_t>(1000, 2000));
+        b.insert(range<std::uint32_t>(2000, 3000));
+
+        intersection = getIntersection<std::uint32_t>({a,b});
+
+        expected.insert(range<std::uint32_t>(2000, 2000));
+
+        BEAST_EXPECT(intersection == expected);
+        clear();
+
+        // Test 4
+        a.insert(range<std::uint32_t>(1, 100));
+        a.insert(range<std::uint32_t>(110, 150));
+        a.insert(range<std::uint32_t>(160, 200));
+
+        b.insert(range<std::uint32_t>(5, 170));
+
+        intersection = getIntersection<std::uint32_t>({a,b});
+
+        expected.insert(range<std::uint32_t>(5, 100));
+        expected.insert(range<std::uint32_t>(110, 150));
+        expected.insert(range<std::uint32_t>(160, 170));
+
+        BEAST_EXPECT(intersection == expected);
+        clear();
+
+        // Test 5
+        a.insert(range<std::uint32_t>(1, 100));
+        a.insert(range<std::uint32_t>(110, 150));
+        a.insert(range<std::uint32_t>(160, 200));
+
+        b.insert(range<std::uint32_t>(1000, 3000));
+
+        intersection = getIntersection<std::uint32_t>({a,b});
+
+        expected.clear();
+
+        BEAST_EXPECT(intersection == expected);
+        clear();
+
+        // Test 6
+        a.insert(range<std::uint32_t>(100, 1000));
+        b.insert(range<std::uint32_t>(100, 1000));
+
+        intersection = getIntersection<std::uint32_t>({a,b});
+
+        expected.insert(range<std::uint32_t>(100, 1000));
+
+        BEAST_EXPECT(intersection == expected);
+        clear();
+
+        // Test 7
+        a.insert(range<std::uint32_t>(1, 100));
+        a.insert(range<std::uint32_t>(110, 150));
+        a.insert(range<std::uint32_t>(160, 200));
+        a.insert(range<std::uint32_t>(240, 300));
+        a.insert(range<std::uint32_t>(340, 400));
+
+        b.insert(range<std::uint32_t>(120, 150));
+        b.insert(range<std::uint32_t>(155, 220));
+        b.insert(range<std::uint32_t>(240, 300));
+        b.insert(range<std::uint32_t>(340, 400));
+
+        intersection = getIntersection<std::uint32_t>({a,b});
+
+        expected.insert(range<std::uint32_t>(120, 150));
+        expected.insert(range<std::uint32_t>(160, 200));
+        expected.insert(range<std::uint32_t>(240, 300));
+        expected.insert(range<std::uint32_t>(340, 400));
+
+        BEAST_EXPECT(intersection == expected);
+        clear();
+
+        // Test 8
+        a.insert(range<std::uint32_t>(1, 100));
+        a.insert(range<std::uint32_t>(200, 300));
+
+        b.insert(range<std::uint32_t>(50, 150));
+        b.insert(range<std::uint32_t>(250, 350));
+
+        intersection = getIntersection<std::uint32_t>({a,b});
+
+        expected.insert(range<std::uint32_t>(50, 100));
+        expected.insert(range<std::uint32_t>(250, 300));
+
+        BEAST_EXPECT(intersection == expected);
+        clear();
+    }
+
+    void
     testToString()
     {
         testcase("toString");
@@ -105,10 +240,12 @@ public:
         BEAST_EXPECT(works(rs));
 
     }
+
     void
     run() override
     {
         testPrevMissing();
+        testIntersection();
         testToString();
         testSerialization();
     }

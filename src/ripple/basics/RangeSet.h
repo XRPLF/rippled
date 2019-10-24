@@ -24,6 +24,7 @@
 #include <boost/optional.hpp>
 #include <boost/icl/closed_interval.hpp>
 #include <boost/icl/interval_set.hpp>
+#include <boost/icl/interval_map.hpp>
 #include <boost/serialization/split_free.hpp>
 
 namespace ripple
@@ -129,6 +130,49 @@ prevMissing(RangeSet<T> const & rs, T t, T minVal = 0)
         return boost::none;
     return boost::icl::last(tgt);
 }
+
+template <class T>
+RangeSet<T>
+getIntersection(std::array<RangeSet<T>, 2> const& sets)
+{
+    using I = boost::icl::closed_interval<T>;
+    using M = boost::icl::interval_map
+        <
+            T,
+            std::set<bool>,
+            boost::icl::partial_absorber,
+            std::less,
+            boost::icl::inplace_plus,
+            boost::icl::inter_section,
+            I
+        >;
+
+    M intervals;
+    bool val = true;
+
+    for(auto const& l : sets)
+    {
+        for(auto const& interval : l)
+        {
+            intervals += make_pair(interval,
+                                   std::set<bool>({val}));
+        }
+
+        val = false;
+    }
+
+    RangeSet<T> intersection;
+    for (auto const& entry : intervals)
+    {
+        if(entry.second.size() > 1)
+        {
+            intersection.insert(entry.first);
+        }
+    }
+
+    return intersection;
+}
+
 }  // namespace ripple
 
 

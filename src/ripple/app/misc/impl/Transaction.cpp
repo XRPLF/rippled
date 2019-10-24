@@ -117,13 +117,10 @@ Transaction::pointer Transaction::transactionFromSQLValidated(
     return ret;
 }
 
-TransactionEnvelope Transaction::load(uint256 const& id, Application& app)
+Transaction::pointer Transaction::load(uint256 const& id, Application& app)
 {
-    TransactionEnvelope ret;
-
     std::string sql = "SELECT LedgerSeq,Status,RawTxn "
-                      "FROM Transactions WHERE TransID='";
-
+            "FROM Transactions WHERE TransID='";
     sql.append (to_string (id));
     sql.append ("';");
 
@@ -135,21 +132,16 @@ TransactionEnvelope Transaction::load(uint256 const& id, Application& app)
         soci::blob sociRawTxnBlob (*db);
         soci::indicator rti;
 
-        ret.completeLedgers = app.getLedgerMaster ().getCompleteLedgers ();
-
         *db << sql, soci::into (ledgerSeq), soci::into (status),
-               soci::into (sociRawTxnBlob, rti);
-
+                soci::into (sociRawTxnBlob, rti);
         if (!db->got_data () || rti != soci::i_ok)
-            return ret;
+            return {};
 
         convert(sociRawTxnBlob, rawTxn);
     }
 
-    ret.txn = Transaction::transactionFromSQLValidated (
+    return Transaction::transactionFromSQLValidated (
         ledgerSeq, status, rawTxn, app);
-
-    return ret;
 }
 
 // options 1 to include the date of the transaction

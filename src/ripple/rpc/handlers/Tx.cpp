@@ -19,7 +19,6 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/TransactionMaster.h>
-#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/net/RPCErr.h>
@@ -97,24 +96,32 @@ Json::Value doTx (RPC::Context& context)
     if (!isHexTxID (txid))
         return rpcError (rpcNOT_IMPL);
 
-    auto te = context.app.getMasterTransaction ().fetch (
+    std::array<RangeSet<std::uint32_t>, 2> ledgers;
+
+    ledgers[0] = context.app.getLedgerMaster ().getCompleteLedgersRange ();
+
+    auto txn = context.app.getMasterTransaction ().fetch (
         from_hex_text<uint256>(txid), true);
 
-    if (!te.txn)
+    ledgers[1] = context.app.getLedgerMaster ().getCompleteLedgersRange ();
+
+    if (!txn)
     {
         auto jvResult = Json::Value (Json::objectValue);
 
-        jvResult[jss::complete_ledgers] = te.completeLedgers;
+        jvResult[jss::complete_ledgers] = ledgers[0] != ledgers[1] ?
+                                          to_string(getIntersection(ledgers)) :
+                                          to_string(ledgers[0]);
 
         return rpcError (rpcTXN_NOT_FOUND, jvResult);
     }
 
-    Json::Value ret = te.txn->getJson (JsonOptions::include_date, binary);
+    Json::Value ret = txn->getJson (JsonOptions::include_date, binary);
 
-    if (te.txn->getLedger () == 0)
+    if (txn->getLedger () == 0)
         return ret;
 
-    if (auto lgr = context.ledgerMaster.getLedgerBySeq (te.txn->getLedger ()))
+    if (auto lgr = context.ledgerMaster.getLedgerBySeq (txn->getLedger ()))
     {
         bool okay = false;
 
@@ -122,7 +129,7 @@ Json::Value doTx (RPC::Context& context)
         {
             std::string meta;
 
-            if (getMetaHex (*lgr, te.txn->getID (), meta))
+            if (getMetaHex (*lgr, txn->getID (), meta))
             {
                 ret[jss::meta] = meta;
                 okay = true;
@@ -130,14 +137,14 @@ Json::Value doTx (RPC::Context& context)
         }
         else
         {
-            auto rawMeta = lgr->txRead (te.txn->getID()).second;
+            auto rawMeta = lgr->txRead (txn->getID()).second;
             if (rawMeta)
             {
                 auto txMeta = std::make_shared<TxMeta>(
-                    te.txn->getID(), lgr->seq(), *rawMeta);
+                    txn->getID(), lgr->seq(), *rawMeta);
                 okay = true;
                 auto meta = txMeta->getJson (JsonOptions::none);
-                insertDeliveredAmount (meta, context, te.txn, *txMeta);
+                insertDeliveredAmount (meta, context, txn, *txMeta);
                 ret[jss::meta] = std::move(meta);
             }
         }

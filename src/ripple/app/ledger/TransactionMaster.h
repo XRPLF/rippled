@@ -25,7 +25,6 @@
 
 namespace ripple {
 
-class TransactionEnvelope;
 class Application;
 class Transaction;
 class STTx;
@@ -39,7 +38,7 @@ public:
     TransactionMaster (TransactionMaster const&) = delete;
     TransactionMaster& operator= (TransactionMaster const&) = delete;
 
-    TransactionEnvelope
+    std::shared_ptr<Transaction>
     fetch (uint256 const& , bool checkDisk);
 
     std::shared_ptr<STTx const>

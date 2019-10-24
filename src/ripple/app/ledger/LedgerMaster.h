@@ -128,6 +128,7 @@ public:
     void failedSave(std::uint32_t seq, uint256 const& hash);
 
     std::string getCompleteLedgers ();
+    RangeSet<std::uint32_t> getCompleteLedgersRange ();
 
     /** Apply held transactions to the open ledger
         This is normally called as we close the ledger.
