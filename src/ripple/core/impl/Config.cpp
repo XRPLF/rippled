@@ -149,7 +149,7 @@ getIniFileSection (IniFileSections& secSource, std::string const& strSection)
     IniFileSections::mapped_type* smtResult;
     it  = secSource.find (strSection);
     if (it == secSource.end ())
-        smtResult   = 0;
+        smtResult   = nullptr;
     else
         smtResult   = & (it->second);
     return smtResult;
