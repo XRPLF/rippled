@@ -505,7 +505,7 @@ struct StrandContext
         than once
     */
     boost::container::flat_set<Issue>& seenBookOuts;
-    beast::Journal j;                    ///< Journal for logging
+    beast::Journal const j;
 
     /** StrandContext constructor. */
     StrandContext (ReadView const& view_,

@@ -128,7 +128,7 @@ private:
     static std::uint32_t constexpr lftFeeDecFraction = 4;     // decrease fee by 1/4
     static std::uint32_t constexpr lftFeeMax = lftNormalFee * 1000000;
 
-    beast::Journal j_;
+    beast::Journal const j_;
     std::mutex mutable lock_;
 
     std::uint32_t localTxnLoadFee_;        // Scale factor, lftNormalFee = normal fee

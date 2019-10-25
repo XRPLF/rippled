@@ -81,7 +81,7 @@ private:
     using Map = std::map <uint256 const, std::shared_ptr<NodeObject>>;
 
     std::string name_;
-    beast::Journal journal_;
+    beast::Journal const journal_;
     MemoryDB* db_ {nullptr};
 
 public:

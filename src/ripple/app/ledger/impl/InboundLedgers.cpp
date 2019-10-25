@@ -42,7 +42,7 @@ private:
     std::mutex fetchRateMutex_;
     // measures ledgers per second, constants are important
     DecayWindow<30, clock_type> fetchRate_;
-    beast::Journal j_;
+    beast::Journal const j_;
 
 public:
     using u256_acq_pair = std::pair<

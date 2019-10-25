@@ -220,7 +220,7 @@ public:
     }
 
 protected:
-    beast::Journal j_;
+    beast::Journal const j_;
     Scheduler& scheduler_;
     int fdRequired_ {0};
 

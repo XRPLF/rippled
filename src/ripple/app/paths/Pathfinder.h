@@ -194,7 +194,7 @@ private:
     hash_map<Issue, int> mPathsOutCountMap;
 
     Application& app_;
-    beast::Journal j_;
+    beast::Journal const j_;
 
     // Add ripple paths
     static std::uint32_t const afADD_ACCOUNTS = 0x001;

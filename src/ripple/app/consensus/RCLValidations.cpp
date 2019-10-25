@@ -167,7 +167,7 @@ handleNewValidation(Application& app,
 
     bool shouldRelay = false;
     RCLValidations& validations = app.getValidations();
-    beast::Journal j = validations.adaptor().journal();
+    beast::Journal const j = validations.adaptor().journal();
 
     auto dmp = [&](beast::Journal::Stream s, std::string const& msg) {
         s << "Val for " << hash

@@ -41,7 +41,7 @@ class XRPEndpointStep : public StepImp<
 private:
     AccountID acc_;
     bool const isLast_;
-    beast::Journal j_;
+    beast::Journal const j_;
 
     // Since this step will always be an endpoint in a strand
     // (either the first or last step) the same cache is used

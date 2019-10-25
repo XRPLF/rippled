@@ -133,7 +133,7 @@ class PerfLogImp
     };
 
     Setup const setup_;
-    beast::Journal j_;
+    beast::Journal const j_;
     std::function<void()> const signalStop_;
     Counters counters_ {ripple::RPC::getHandlerNames(), JobTypes::instance()};
     std::ofstream logFile_;

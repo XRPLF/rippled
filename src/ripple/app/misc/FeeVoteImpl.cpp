@@ -91,7 +91,7 @@ class FeeVoteImpl : public FeeVote
 {
 private:
     Setup target_;
-    beast::Journal journal_;
+    beast::Journal const journal_;
 
 public:
     FeeVoteImpl (Setup const& setup, beast::Journal journal);

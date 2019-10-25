@@ -591,7 +591,7 @@ private:
     hash_set<NodeID_t> deadNodes_;
 
     // Journal for debugging
-    beast::Journal j_;
+    beast::Journal const j_;
 };
 
 template <class Adaptor>

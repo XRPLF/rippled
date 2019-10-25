@@ -36,7 +36,7 @@ public:
     STTx const& tx;
     Rules const rules;
     ApplyFlags flags;
-    beast::Journal j;
+    beast::Journal const j;
 
     PreflightContext(Application& app_, STTx const& tx_,
         Rules const& rules_, ApplyFlags flags_,
@@ -54,7 +54,7 @@ public:
     TER preflightResult;
     STTx const& tx;
     ApplyFlags flags;
-    beast::Journal j;
+    beast::Journal const j;
 
     PreclaimContext(Application& app_, ReadView const& view_,
         TER preflightResult_, STTx const& tx_,
@@ -79,7 +79,7 @@ class Transactor
 {
 protected:
     ApplyContext& ctx_;
-    beast::Journal j_;
+    beast::Journal const j_;
 
     AccountID     account_;
     XRPAmount     mPriorBalance;  // Balance before fees.

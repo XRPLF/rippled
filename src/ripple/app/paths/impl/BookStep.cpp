@@ -52,7 +52,7 @@ protected:
     bool const ownerPaysTransferFee_;
     // Mark as inactive (dry) if too many offers are consumed
     bool inactive_ = false;
-    beast::Journal j_;
+    beast::Journal const j_;
 
     struct Cache
     {

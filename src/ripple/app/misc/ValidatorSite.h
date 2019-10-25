@@ -110,7 +110,7 @@ private:
     };
 
     Application& app_;
-    beast::Journal j_;
+    beast::Journal const j_;
 
     std::mutex mutable sites_mutex_;
     std::mutex mutable state_mutex_;

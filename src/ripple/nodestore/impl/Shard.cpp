@@ -39,7 +39,7 @@ Shard::Shard(
     Application& app,
     DatabaseShard const& db,
     std::uint32_t index,
-    beast::Journal& j)
+    beast::Journal j)
     : app_(app)
     , index_(index)
     , firstSeq_(db.firstLedgerSeq(index))

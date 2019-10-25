@@ -70,7 +70,7 @@ private:
         timer_type timer_;
         endpoint_type remote_address_;
         boost::asio::io_context::strand strand_;
-        beast::Journal j_;
+        beast::Journal const j_;
 
     public:
         Detector(
@@ -88,7 +88,7 @@ private:
         void do_detect (yield_context yield);
     };
 
-    beast::Journal j_;
+    beast::Journal const j_;
     Port const& port_;
     Handler& handler_;
     boost::asio::io_context& ioc_;

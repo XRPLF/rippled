@@ -106,8 +106,8 @@ private:
     id_t const id_;
     beast::WrappedSink sink_;
     beast::WrappedSink p_sink_;
-    beast::Journal journal_;
-    beast::Journal p_journal_;
+    beast::Journal const journal_;
+    beast::Journal const p_journal_;
     std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
     socket_type& socket_;
     stream_type& stream_;

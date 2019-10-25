@@ -69,7 +69,7 @@ private:
     CrossType cross_type_;
 
 protected:
-    beast::Journal journal_;
+    beast::Journal const journal_;
 
     struct Flow
     {

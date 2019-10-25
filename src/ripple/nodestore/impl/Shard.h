@@ -36,7 +36,9 @@ namespace NodeStore {
 // Removes a path in its entirety
 inline static
 bool
-removeAll(boost::filesystem::path const& path, beast::Journal& j)
+removeAll(
+    boost::filesystem::path const& path,
+    beast::Journal const& j)
 {
     try
     {
@@ -70,7 +72,7 @@ public:
         Application& app,
         DatabaseShard const& db,
         std::uint32_t index,
-        beast::Journal& j);
+        beast::Journal j);
 
     bool
     open(Scheduler& scheduler, nudb::context& ctx);
@@ -164,7 +166,7 @@ private:
     // Transaction SQLite database used for indexes
     std::unique_ptr<DatabaseCon> txSQLiteDB_;
 
-    beast::Journal j_;
+    beast::Journal const j_;
 
     // True if shard has its entire ledger range stored
     bool complete_ {false};

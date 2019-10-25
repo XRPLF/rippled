@@ -127,7 +127,7 @@ public:
 
     // Map of currency, issuer to node index.
     AccountIssueToNodeIndex mumSource_;
-    beast::Journal j_;
+    beast::Journal const j_;
     Logs& logs_;
 
 private:

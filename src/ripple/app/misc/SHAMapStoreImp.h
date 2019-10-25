@@ -54,7 +54,7 @@ private:
     public:
         soci::session session_;
         std::mutex mutex_;
-        beast::Journal journal_;
+        beast::Journal const journal_;
 
         // Just instantiate without any logic in case online delete is not
         // configured
@@ -86,7 +86,7 @@ private:
     static std::uint32_t const minimumDeletionIntervalSA_ = 8;
 
     NodeStore::Scheduler& scheduler_;
-    beast::Journal journal_;
+    beast::Journal const journal_;
     NodeStore::DatabaseRotating* dbRotating_ = nullptr;
     SavedStateDB state_db_;
     std::thread thread_;

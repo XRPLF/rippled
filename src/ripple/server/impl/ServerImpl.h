@@ -88,7 +88,7 @@ private:
     };
 
     Handler& handler_;
-    beast::Journal j_;
+    beast::Journal const j_;
     boost::asio::io_service& io_service_;
     boost::asio::io_service::strand strand_;
     boost::optional <boost::asio::io_service::work> work_;

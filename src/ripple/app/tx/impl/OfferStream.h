@@ -69,7 +69,7 @@ public:
     };
 
 protected:
-    beast::Journal j_;
+    beast::Journal const j_;
     ApplyView& view_;
     ApplyView& cancelView_;
     Book book_;

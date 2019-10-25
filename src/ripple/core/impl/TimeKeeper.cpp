@@ -28,7 +28,7 @@ namespace ripple {
 class TimeKeeperImpl : public TimeKeeper
 {
 private:
-    beast::Journal j_;
+    beast::Journal const j_;
     std::mutex mutable mutex_;
     std::chrono::duration<std::int32_t> closeOffset_;
     std::unique_ptr<SNTPClock> clock_;

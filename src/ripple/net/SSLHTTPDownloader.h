@@ -67,7 +67,7 @@ private:
     boost::optional<
         boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> stream_;
     boost::beast::flat_buffer read_buf_;
-    beast::Journal j_;
+    beast::Journal const j_;
 
     void
     do_session(

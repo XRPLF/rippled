@@ -142,7 +142,7 @@ private:
     PathState& pathState_;
     bool multiQuality_;
     NodeIndex nodeIndex_;
-    beast::Journal j_;
+    beast::Journal const j_;
 };
 
 } // path

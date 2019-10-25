@@ -45,7 +45,7 @@ private:
     Application& app_;
     std::uint32_t const id_;
     beast::WrappedSink sink_;
-    beast::Journal journal_;
+    beast::Journal const journal_;
     endpoint_type remote_endpoint_;
     Resource::Consumer usage_;
     boost::asio::io_service::strand strand_;

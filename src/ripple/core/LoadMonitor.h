@@ -75,7 +75,7 @@ private:
     std::chrono::milliseconds mTargetLatencyAvg;
     std::chrono::milliseconds mTargetLatencyPk;
     UptimeClock::time_point   mLastUpdate;
-    beast::Journal j_;
+    beast::Journal const j_;
 };
 
 } // ripple

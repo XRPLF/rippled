@@ -36,7 +36,7 @@ namespace Resource {
 class ManagerImp : public Manager
 {
 private:
-    beast::Journal journal_;
+    beast::Journal const journal_;
     Logic logic_;
     std::thread thread_;
     bool stop_ = false;

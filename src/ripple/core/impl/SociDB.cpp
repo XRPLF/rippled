@@ -205,7 +205,7 @@ private:
     JobQueue& jobQueue_;
 
     bool running_ = false;
-    beast::Journal j_;
+    beast::Journal const j_;
 
     static
     int sqliteWALHook (

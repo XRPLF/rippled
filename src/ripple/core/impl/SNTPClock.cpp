@@ -87,7 +87,7 @@ private:
         }
     };
 
-    beast::Journal j_;
+    beast::Journal const j_;
     std::mutex mutable mutex_;
     std::thread thread_;
     boost::asio::io_service io_service_;
