@@ -25,6 +25,7 @@
 #include <boost/beast/core/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
+#include <algorithm>
 #include <map>
 #include <ostream>
 #include <string>
@@ -47,6 +48,7 @@ private:
     std::string name_;
     std::vector <std::string> lines_;
     std::vector <std::string> values_;
+    bool had_trailing_comments_ = false;
 
 public:
     /** Create an empty section. */
@@ -153,11 +155,13 @@ public:
     T
     value_or(std::string const& name, T const& other) const
     {
-        auto const iter = cont().find(name);
-        if (iter == cont().end())
-            return other;
-        return boost::lexical_cast<T>(iter->second);
+        auto const v = get<T>(name);
+        return v.is_initialized() ? *v : other;
     }
+
+    // indicates if trailing comments were seen
+    // during the appending of any lines/values
+    bool had_trailing_comments() const { return had_trailing_comments_; }
 
     friend
     std::ostream&
@@ -243,6 +247,13 @@ public:
     std::ostream&
     operator<< (std::ostream& ss, BasicConfig const& c);
 
+    // indicates if trailing comments were seen
+    // in any loaded Sections
+    bool had_trailing_comments() const {
+        return std::any_of(map_.cbegin(), map_.cend(),
+            [](auto s){ return s.second.had_trailing_comments(); });
+    }
+
 protected:
     void
     build (IniFileSections const& ifs);
@@ -251,50 +262,41 @@ protected:
 //------------------------------------------------------------------------------
 
 /** Set a value from a configuration Section
-    If the named value is not found, the variable is unchanged.
+    If the named value is not found or doesn't parse as a T,
+    the variable is unchanged.
     @return `true` if value was set.
 */
 template <class T>
 bool
 set (T& target, std::string const& name, Section const& section)
 {
-    auto const [val, found] = section.find (name);
-    if (! found)
-        return false;
+    bool found_and_valid = false;
     try
     {
-        target = boost::lexical_cast <T> (val);
-        return true;
+        auto const val = section.get<T> (name);
+        if ((found_and_valid = val.is_initialized()))
+            target = *val;
     }
     catch (boost::bad_lexical_cast&)
     {
     }
-    return false;
+    return found_and_valid;
 }
 
 /** Set a value from a configuration Section
-    If the named value is not found, the variable is assigned the default.
-    @return `true` if named value was found in the Section.
+    If the named value is not found or doesn't cast to T,
+    the variable is assigned the default.
+    @return `true` if the named value was found and is valid.
 */
 template <class T>
 bool
 set (T& target, T const& defaultValue,
     std::string const& name, Section const& section)
 {
-    auto const [val, found] = section.find (name);
-    if (! found)
-        return false;
-    try
-    {
-        // VFALCO TODO Use try_lexical_convert (boost 1.56.0)
-        target = boost::lexical_cast <T> (val);
-        return true;
-    }
-    catch (boost::bad_lexical_cast&)
-    {
+    bool found_and_valid = set<T>(target, name, section);
+    if (!found_and_valid)
         target = defaultValue;
-    }
-    return false;
+    return found_and_valid;
 }
 
 /** Retrieve a key/value pair from a section.
@@ -307,12 +309,9 @@ T
 get (Section const& section,
     std::string const& name, T const& defaultValue = T{})
 {
-    auto const [val, found] = section.find (name);
-    if (!found)
-        return defaultValue;
     try
     {
-        return boost::lexical_cast <T> (val);
+        return section.value_or<T> (name, defaultValue);
     }
     catch (boost::bad_lexical_cast&)
     {
@@ -325,14 +324,14 @@ std::string
 get (Section const& section,
     std::string const& name, const char* defaultValue)
 {
-    auto const [val, found] = section.find (name);
-    if (!found)
-        return defaultValue;
+    bool found_and_valid = false;
     try
     {
-        return boost::lexical_cast <std::string> (val);
+        auto const val = section.get<std::string> (name);
+        if ((found_and_valid = val.is_initialized()))
+            return *val;
     }
-    catch(std::exception const&)
+    catch (boost::bad_lexical_cast&)
     {
     }
     return defaultValue;
@@ -343,18 +342,7 @@ bool
 get_if_exists (Section const& section,
     std::string const& name, T& v)
 {
-    auto const [val, found] = section.find (name);
-    if (!found)
-        return false;
-    try
-    {
-        v = boost::lexical_cast <T> (val);
-        return true;
-    }
-    catch (boost::bad_lexical_cast&)
-    {
-    }
-    return false;
+    return set<T>(v, name, section);
 }
 
 template <>
@@ -364,12 +352,10 @@ get_if_exists<bool> (Section const& section,
     std::string const& name, bool& v)
 {
     int intVal = 0;
-    if (get_if_exists (section, name, intVal))
-    {
+    auto stat = get_if_exists(section, name, intVal);
+    if (stat)
         v = bool (intVal);
-        return true;
-    }
-    return false;
+    return stat;
 }
 
 } // ripple

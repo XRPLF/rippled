@@ -786,6 +786,159 @@ r.ripple.com 51235
 
     }
 
+    void testComments()
+    {
+        struct TestCommentData
+        {
+            std::string_view line;
+            std::string_view field;
+            std::string_view expect;
+            bool had_comment;
+        };
+
+        std::array< TestCommentData, 13> tests = {{
+            { "password = aaaa\\#bbbb",   "password", "aaaa#bbbb", false},
+            { "password = aaaa#bbbb",     "password", "aaaa", true},
+            { "password = aaaa #bbbb",    "password", "aaaa", true},
+            // since the value is all comment, this doesn't parse as k=v :
+            { "password = #aaaa #bbbb",   "", "password =", true},
+            { "password = aaaa\\# #bbbb", "password", "aaaa#", true},
+            { "password = aaaa\\##bbbb",  "password", "aaaa#", true},
+            { "aaaa#bbbb",    "", "aaaa", true},
+            { "aaaa\\#bbbb",  "", "aaaa#bbbb", false},
+            { "aaaa\\##bbbb", "", "aaaa#", true},
+            { "aaaa #bbbb",   "", "aaaa", true},
+            { "1 #comment",   "", "1", true},
+            { "#whole thing is comment",   "", "", false},
+            { "  #whole comment with space",   "", "", false}
+        }};
+
+        for (auto const& t : tests)
+        {
+            Section s;
+            s.append(t.line.data());
+            BEAST_EXPECT(s.had_trailing_comments() == t.had_comment);
+            if (t.field.empty())
+            {
+                BEAST_EXPECTS(s.legacy() == t.expect, s.legacy());
+            }
+            else
+            {
+                std::string field;
+                BEAST_EXPECTS(set(field, t.field.data(), s), t.line);
+                BEAST_EXPECTS(field == t.expect, t.line);
+            }
+        }
+
+        {
+            Section s;
+            s.append("online_delete = 3000");
+            std::uint32_t od = 0;
+            BEAST_EXPECT(set(od, "online_delete", s));
+            BEAST_EXPECTS(od == 3000, *(s.get<std::string>("online_delete")));
+        }
+
+        {
+            Section s;
+            s.append("online_delete = 2000 #my comment on this");
+            std::uint32_t od = 0;
+            BEAST_EXPECT(set(od, "online_delete", s));
+            BEAST_EXPECTS(od == 2000, *(s.get<std::string>("online_delete")));
+        }
+    }
+
+    void testGetters()
+    {
+        using namespace std::string_literals;
+        Section s {"MySection"};
+        s.append("a_string = mystring");
+        s.append("positive_int = 2");
+        s.append("negative_int = -3");
+        s.append("bool_ish = 1");
+
+        {
+            auto val_1 = "value 1"s;
+            BEAST_EXPECT(set(val_1, "a_string", s));
+            BEAST_EXPECT(val_1 == "mystring");
+
+            auto val_2 = "value 2"s;
+            BEAST_EXPECT(!set(val_2, "not_a_key", s));
+            BEAST_EXPECT(val_2 == "value 2");
+            BEAST_EXPECT(!set(val_2, "default"s, "not_a_key", s));
+            BEAST_EXPECT(val_2 == "default");
+
+            auto val_3 = get<std::string>(s, "a_string");
+            BEAST_EXPECT(val_3 == "mystring");
+            auto val_4 = get<std::string>(s, "not_a_key");
+            BEAST_EXPECT(val_4 == "");
+            auto val_5 = get<std::string>(s, "not_a_key", "default");
+            BEAST_EXPECT(val_5 == "default");
+
+            auto val_6 = "value 6"s;
+            BEAST_EXPECT(get_if_exists(s, "a_string", val_6));
+            BEAST_EXPECT(val_6 == "mystring");
+
+            auto val_7 = "value 7"s;
+            BEAST_EXPECT(!get_if_exists(s, "not_a_key", val_7));
+            BEAST_EXPECT(val_7 == "value 7");
+        }
+
+        {
+            int val_1 = 1;
+            BEAST_EXPECT(set(val_1, "positive_int", s));
+            BEAST_EXPECT(val_1 == 2);
+
+            int val_2 = 2;
+            BEAST_EXPECT(set(val_2, "negative_int", s));
+            BEAST_EXPECT(val_2 == -3);
+
+            int val_3 = 3;
+            BEAST_EXPECT(!set(val_3, "a_string", s));
+            BEAST_EXPECT(val_3 == 3);
+
+            auto val_4 = get<int>(s, "positive_int");
+            BEAST_EXPECT(val_4 == 2);
+            auto val_5 = get<int>(s, "not_a_key");
+            BEAST_EXPECT(val_5 == 0);
+            auto val_6 = get<int>(s, "not_a_key", 5);
+            BEAST_EXPECT(val_6 == 5);
+            auto val_7 = get<int>(s, "a_string", 6);
+            BEAST_EXPECT(val_7 == 6);
+
+            int val_8 = 8;
+            BEAST_EXPECT(get_if_exists(s, "positive_int", val_8));
+            BEAST_EXPECT(val_8 == 2);
+
+            auto val_9 = 9;
+            BEAST_EXPECT(!get_if_exists(s, "not_a_key", val_9));
+            BEAST_EXPECT(val_9 == 9);
+
+            auto val_10 = 10;
+            BEAST_EXPECT(!get_if_exists(s, "a_string", val_10));
+            BEAST_EXPECT(val_10 == 10);
+
+            BEAST_EXPECT(s.get<int>("not_a_key") == boost::none);
+            try
+            {
+                s.get<int>("a_string");
+                fail();
+            }
+            catch(boost::bad_lexical_cast&)
+            {
+                pass();
+            }
+        }
+
+        {
+            bool flag_1 = false;
+            BEAST_EXPECT(get_if_exists(s, "bool_ish", flag_1));
+            BEAST_EXPECT(flag_1 == true);
+
+            bool flag_2 = false;
+            BEAST_EXPECT(!get_if_exists(s, "not_a_key", flag_2));
+            BEAST_EXPECT(flag_2 == false);
+        }
+    }
 
     void run () override
     {
@@ -797,6 +950,8 @@ r.ripple.com 51235
         testSetup (true);
         testPort ();
         testWhitespace ();
+        testComments ();
+        testGetters ();
     }
 };
 

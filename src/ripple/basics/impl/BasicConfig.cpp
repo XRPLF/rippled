@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/BasicConfig.h>
+#include <ripple/basics/StringUtilities.h>
 #include <boost/regex.hpp>
 #include <algorithm>
 
@@ -53,14 +54,54 @@ Section::append (std::vector <std::string> const& lines)
     );
 
     lines_.reserve (lines_.size() + lines.size());
-    for (auto const& line : lines)
+    for (auto line : lines)
     {
+        auto remove_comment = [](std::string& val)->bool
+        {
+            bool removed_trailing = false;
+            auto comment = val.find('#');
+            while(comment != std::string::npos)
+            {
+                if (comment == 0)
+                {
+                    // entire value is a comment. In most cases, this
+                    // would have already been handled by the file reader
+                    val = "";
+                    break;
+                }
+                else if (val.at(comment-1) == '\\')
+                {
+                    // we have an escaped comment char. Erase the escape char
+                    // and keep looking
+                    val.erase(comment-1,1);
+                }
+                else
+                {
+                    // this must be a real comment. Extract the value
+                    // as a substring and stop looking.
+                    val = trim_whitespace(val.substr(0, comment));
+                    removed_trailing = true;
+                    break;
+                }
+
+                comment = val.find('#', comment);
+            }
+            return removed_trailing;
+        };
+
+        if (remove_comment(line) && !line.empty())
+            had_trailing_comments_ = true;
+
+        if (line.empty())
+            continue;
+
         boost::smatch match;
-        lines_.push_back (line);
         if (boost::regex_match (line, match, re1))
             set (match[1], match[2]);
         else
             values_.push_back (line);
+
+        lines_.push_back (std::move(line));
     }
 }
 
