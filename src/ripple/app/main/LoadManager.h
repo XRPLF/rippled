@@ -90,7 +90,7 @@ private:
 
 private:
     Application& app_;
-    beast::Journal journal_;
+    beast::Journal const journal_;
 
     std::thread thread_;
     std::mutex mutex_;          // Guards deadLock_, armed_, and stop_.

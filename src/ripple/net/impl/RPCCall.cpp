@@ -92,7 +92,7 @@ std::string createHTTPPost (
 class RPCParser
 {
 private:
-    beast::Journal j_;
+    beast::Journal const j_;
 
     // TODO New routine for parsing ledger parameters, other routines should standardize on this.
     static bool jvParseLedger (Json::Value& jvRequest, std::string const& strLedger)

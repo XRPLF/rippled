@@ -194,7 +194,7 @@ private:
 
     std::deque<std::pair<int, Json::Value> >    mDeque;
 
-    beast::Journal j_;
+    beast::Journal const j_;
     Logs& logs_;
 };
 

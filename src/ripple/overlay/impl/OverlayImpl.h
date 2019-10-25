@@ -106,7 +106,7 @@ private:
     boost::container::flat_map<
         Child*, std::weak_ptr<Child>> list_;
     Setup setup_;
-    beast::Journal journal_;
+    beast::Journal const journal_;
     ServerHandler& serverHandler_;
     Resource::Manager& m_resourceManager;
     std::unique_ptr <PeerFinder::Manager> m_peerFinder;

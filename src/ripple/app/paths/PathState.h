@@ -169,7 +169,7 @@ private:
     // Source may only be used there if not mentioned by an account.
     AccountIssueToNodeIndex umReverse;
 
-    beast::Journal j_;
+    beast::Journal const j_;
 };
 
 } // ripple

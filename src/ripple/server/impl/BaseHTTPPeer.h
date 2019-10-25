@@ -88,7 +88,7 @@ protected:
     boost::asio::strand<boost::asio::executor> strand_;
     waitable_timer timer_;
     endpoint_type remote_address_;
-    beast::Journal journal_;
+    beast::Journal const journal_;
 
     std::string id_;
     std::size_t nid_;

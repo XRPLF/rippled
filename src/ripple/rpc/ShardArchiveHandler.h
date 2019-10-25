@@ -84,7 +84,7 @@ private:
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
     bool process_;
     std::map<std::uint32_t, parsedURL> archives_;
-    beast::Journal j_;
+    beast::Journal const j_;
 };
 
 } // RPC

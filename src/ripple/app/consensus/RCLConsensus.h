@@ -59,7 +59,7 @@ class RCLConsensus
         LedgerMaster& ledgerMaster_;
         LocalTxs& localTxs_;
         InboundTransactions& inboundTransactions_;
-        beast::Journal j_;
+        beast::Journal const j_;
 
         NodeID const nodeID_;
         PublicKey const valPublic_;
@@ -389,7 +389,7 @@ class RCLConsensus
             std::chrono::milliseconds roundTime,
             std::set<TxID>& failedTxs);
 
-        /** Validate the given ledger and share with peers as necessary 
+        /** Validate the given ledger and share with peers as necessary
 
             @param ledger The ledger to validate
             @param txns The consensus transaction set
@@ -515,7 +515,7 @@ private:
 
     Adaptor adaptor_;
     Consensus<Adaptor> consensus_;
-    beast::Journal j_;
+    beast::Journal const j_;
 };
 }
 

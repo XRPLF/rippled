@@ -47,7 +47,7 @@ protected:
     Handler& handler_;
     endpoint_type remote_address_;
     beast::WrappedSink sink_;
-    beast::Journal j_;
+    beast::Journal const j_;
 
     boost::asio::executor_work_guard<boost::asio::executor> work_;
     boost::asio::strand<boost::asio::executor> strand_;

@@ -92,7 +92,7 @@ private:
     FullBelowCache fullbelow_;
     NodeStore::Database& db_;
     bool const shardBacked_;
-    beast::Journal j_;
+    beast::Journal const j_;
 
     // missing node handler
     LedgerIndex maxSeq = 0;

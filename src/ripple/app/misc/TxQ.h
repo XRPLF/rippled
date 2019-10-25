@@ -371,7 +371,7 @@ private:
         /// when fee escalation kicks in.
         std::uint64_t escalationMultiplier_;
         /// Journal
-        beast::Journal j_;
+        beast::Journal const j_;
 
     public:
         /// Constructor
@@ -655,7 +655,7 @@ private:
     /// Setup parameters used to control the behavior of the queue
     Setup const setup_;
     /// Journal
-    beast::Journal j_;
+    beast::Journal const j_;
 
     /** Tracks the current state of the queue.
         @note This member must always and only be accessed under

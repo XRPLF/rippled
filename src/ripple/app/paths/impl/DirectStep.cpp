@@ -44,7 +44,7 @@ protected:
     // Charge transfer fees when the prev step redeems
     Step const* const prevStep_ = nullptr;
     bool const isLast_;
-    beast::Journal j_;
+    beast::Journal const j_;
 
     struct Cache
     {

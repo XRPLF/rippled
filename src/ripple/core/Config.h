@@ -107,7 +107,7 @@ private:
     boost::filesystem::path DEBUG_LOGFILE;
 
     void load ();
-    beast::Journal j_;
+    beast::Journal const j_;
 
     bool QUIET = false;          // Minimize logging verbosity.
     bool SILENT = false;         // No output to console after startup.

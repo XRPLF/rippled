@@ -132,7 +132,7 @@ private:
     bool ourVote_;  //< Our vote (true is yes)
     Tx_t tx_;       //< Transaction under dispute
     Map_t votes_;   //< Map from NodeID to vote
-    beast::Journal j_;
+    beast::Journal const j_;
 };
 
 // Track a peer's yes/no vote on a particular disputed tx_

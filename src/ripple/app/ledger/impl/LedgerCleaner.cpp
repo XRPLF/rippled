@@ -44,7 +44,7 @@ Cleans up the ledger. Specifically, resolves these issues:
 class LedgerCleanerImp : public LedgerCleaner
 {
     Application& app_;
-    beast::Journal j_;
+    beast::Journal const j_;
     mutable std::mutex mutex_;
 
     mutable std::condition_variable wakeup_;

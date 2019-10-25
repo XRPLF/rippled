@@ -128,7 +128,7 @@ class ValidatorList
     ManifestCache& validatorManifests_;
     ManifestCache& publisherManifests_;
     TimeKeeper& timeKeeper_;
-    beast::Journal j_;
+    beast::Journal const j_;
     std::shared_timed_mutex mutable mutex_;
 
     std::atomic<std::size_t> quorum_;

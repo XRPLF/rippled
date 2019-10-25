@@ -159,7 +159,7 @@ protected:
     // True if an unsupported amendment is enabled
     bool unsupportedEnabled_;
 
-    beast::Journal j_;
+    beast::Journal const j_;
 
     // Finds or creates state
     AmendmentState* add (uint256 const& amendment);

@@ -49,7 +49,7 @@ using OrderedTxs = CanonicalTXSet;
 class OpenLedger
 {
 private:
-    beast::Journal j_;
+    beast::Journal const j_;
     CachedSLEs& cache_;
     std::mutex mutable modify_mutex_;
     std::mutex mutable current_mutex_;

@@ -47,7 +47,7 @@ struct Request
     }
 
     // [in] The Journal for logging
-    beast::Journal journal;
+    beast::Journal const journal;
 
     // [in] The JSON-RPC method
     std::string method;

@@ -182,7 +182,7 @@ public:
 
 private:
     boost::asio::ssl::context ssl_context_;
-    beast::Journal j_;
+    beast::Journal const j_;
     const bool verify_;
 };
 
