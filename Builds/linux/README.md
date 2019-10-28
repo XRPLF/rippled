@@ -6,11 +6,14 @@ builds, including docker based builds for those distributions, please consult
 the [rippled-package-builder](https://github.com/ripple/rippled-package-builder)
 repository. 
 
-Development is regularly done on Ubuntu 16.04 or later. For non Ubuntu
-distributions, the steps below should work be installing the appropriate
-dependencies using that distribution's package management tools.
+Note: Ubuntu 16.04 users may need to update their compiler (see the dependencies
+section). For non Ubuntu distributions, the steps below should work be
+installing the appropriate dependencies using that distribution's package
+management tools.
 
 ## Dependencies
+
+gcc-7 or later is required.
 
 Use `apt-get` to install the dependencies provided by the distribution
 
