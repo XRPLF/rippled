@@ -32,17 +32,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-// When set to 1, makes the seed per-process instead
-// of per default-constructed instance of hardened_hash
-//
-#ifndef RIPPLE_NO_HARDENED_HASH_INSTANCE_SEED
-# ifdef __GLIBCXX__
-#  define RIPPLE_NO_HARDENED_HASH_INSTANCE_SEED 1
-# else
-#  define RIPPLE_NO_HARDENED_HASH_INSTANCE_SEED 0
-# endif
-#endif
-
 namespace ripple {
 
 namespace detail {
@@ -159,13 +148,8 @@ public:
     template parameter (the hashing algorithm).  For details
     see https://131002.net/siphash/#at
 */
-#if RIPPLE_NO_HARDENED_HASH_INSTANCE_SEED
-template <class HashAlgorithm = beast::xxhasher>
-    using hardened_hash = basic_hardened_hash<HashAlgorithm, true>;
-#else
 template <class HashAlgorithm = beast::xxhasher>
     using hardened_hash = basic_hardened_hash<HashAlgorithm, false>;
-#endif
 
 } // ripple
 
