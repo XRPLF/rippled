@@ -21,6 +21,7 @@ variables:
 stages:
   - build_containers
   - build_packages
+  - sign_packages
   - smoketest
   - verify_sig
   - tag_images
@@ -131,6 +132,65 @@ dpkg_build:
   script:
     - . ./Builds/containers/gitlab-ci/build_package.sh dpkg
 
+#########################################################################
+##                                                                     ##
+##  stage: sign_packages                                               ##
+##                                                                     ##
+##  build packages using containers from previous stage.               ##
+##                                                                     ##
+#########################################################################
+
+rpm_sign:
+  stage: sign_packages
+  dependencies:
+    - build_centos_container
+  <<: *dind_param
+  before_script:
+  - |
+    # checking GPG signing support
+    if [ -n "$GPG_KEY_B64" ]; then
+      echo "$GPG_KEY_B64" | gpg --batch --no-tty --allow-secret-key-import --import -
+      unset GPG_KEY_B64
+      export GPG_KEYID=$(gpg --with-colon --list-secret-keys | head -n1 | cut -d : -f 5)
+    else
+      echo -e "\033[0;31m****** GPG signing disabled ******\033[0m"
+      exit
+    fi
+  artifacts:
+    paths:
+      - build/rpm/packages/
+  cache:
+    key: rpm
+    paths:
+      - .nih_c/pkgbuild
+  script:
+    - . ./Builds/containers/gitlab-ci/sign_package.sh rpm
+
+dpkg_sign:
+  stage: sign_packages
+  dependencies:
+    - build_ubuntu_container
+  <<: *dind_param
+  before_script:
+  - |
+    # checking GPG signing support
+    if [ -n "$GPG_KEY_B64" ]; then
+      echo "$GPG_KEY_B64"| base64 -d | gpg --batch --no-tty --allow-secret-key-import --import -
+      unset GPG_KEY_B64
+      export GPG_KEYID=$(gpg --with-colon --list-secret-keys | head -n1 | cut -d : -f 5)
+    else
+      echo -e "\033[0;31m****** GPG signing disabled ******\033[0m"
+      exit
+  artifacts:
+    paths:
+      - build/dpkg/packages/
+  cache:
+    key: dpkg
+    paths:
+      - .nih_c/pkgbuild
+  script:
+    - . ./Builds/containers/gitlab-ci/sign_package.sh dpkg
+     
 #########################################################################
 ##                                                                     ##
 ##  stage: smoketest                                                   ##
