@@ -52,13 +52,13 @@ class HTTPClientImp
 public:
     HTTPClientImp (boost::asio::io_service& io_service,
         const unsigned short port,
-        std::size_t responseSize,
+        std::size_t maxResponseSize,
         beast::Journal& j)
         : mSocket (io_service, httpClientSSLContext->context ())
         , mResolver (io_service)
         , mHeader (maxClientHeaderBytes)
         , mPort (port)
-        , mResponseSize (responseSize)
+        , maxResponseSize_ (maxResponseSize)
         , mDeadline (io_service)
         , j_ (j)
     {
@@ -386,16 +386,29 @@ public:
         if (boost::regex_match (strHeader, smMatch, reBody)) // we got some body
             mBody = smMatch[1];
 
-        if (boost::regex_match (strHeader, smMatch, reSize))
-            mResponseSize =
-                beast::lexicalCastThrow <int> (std::string(smMatch[1]));
+        std::size_t const responseSize = [&] {
+            if (boost::regex_match(strHeader, smMatch, reSize))
+                return beast::lexicalCast <std::size_t>(
+                    std::string(smMatch[1]), maxResponseSize_);
+            return maxResponseSize_;
+        }();
 
-        if (mResponseSize == 0)
+        if (responseSize > maxResponseSize_)
+        {
+            JLOG (j_.trace()) << "Response field too large";
+            invokeComplete (
+                boost::system::error_code {
+                    boost::system::errc::value_too_large,
+                    boost::system::system_category ()});
+            return;
+        }
+
+        if (responseSize == 0)
         {
             // no body wanted or available
             invokeComplete (ecResult, mStatus);
         }
-        else if (mBody.size () >= mResponseSize)
+        else if (mBody.size () >= responseSize)
         {
             // we got the whole thing
             invokeComplete (ecResult, mStatus, mBody);
@@ -403,7 +416,7 @@ public:
         else
         {
             mSocket.async_read (
-                mResponse.prepare (mResponseSize - mBody.size ()),
+                mResponse.prepare (responseSize - mBody.size ()),
                 boost::asio::transfer_all (),
                 std::bind (&HTTPClientImp::handleData,
                              shared_from_this (),
@@ -495,7 +508,7 @@ private:
     boost::asio::streambuf                                      mResponse;
     std::string                                                 mBody;
     const unsigned short                                        mPort;
-    int                                                         mResponseSize;
+    std::size_t const                                           maxResponseSize_;
     int                                                         mStatus;
     std::function<void (boost::asio::streambuf& sb, std::string const& strHost)>
                                                                 mBuild;
