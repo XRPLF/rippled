@@ -20,9 +20,9 @@
 #ifndef RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
 #define RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
 
+#include <ripple/protocol/KeyType.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/UintTypes.h>
-#include <ripple/crypto/KeyType.h>
 #include <ripple/beast/hash/uhash.h>
 #include <unordered_map>
 #include <string>

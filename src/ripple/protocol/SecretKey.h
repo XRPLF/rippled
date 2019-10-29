@@ -22,7 +22,7 @@
 
 #include <ripple/basics/Buffer.h>
 #include <ripple/basics/Slice.h>
-#include <ripple/crypto/KeyType.h> // move to protocol/
+#include <ripple/protocol/KeyType.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Seed.h>
 #include <ripple/protocol/tokens.h>

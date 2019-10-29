@@ -18,10 +18,10 @@
 //==============================================================================
 
 #include <ripple/basics/strHex.h>
-#include <ripple/crypto/KeyType.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/protocol/KeyType.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Seed.h>
