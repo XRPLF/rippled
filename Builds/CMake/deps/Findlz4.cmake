@@ -4,7 +4,7 @@ pkg_search_module (lz4_PC QUIET liblz4>=1.8)
 if(static)
   set(LZ4_LIB liblz4.a)
 else()
-  set(LZ4_LIB lz4)
+  set(LZ4_LIB lz4.so)
 endif()
 
 find_library (lz4
