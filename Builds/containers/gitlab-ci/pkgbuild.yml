@@ -154,7 +154,7 @@ rpm_sign:
       export GPG_KEYID=$(gpg --with-colon --list-secret-keys | head -n1 | cut -d : -f 5)
     else
       echo -e "\033[0;31m****** GPG signing disabled ******\033[0m"
-      exit
+      exit 1
     fi
   artifacts:
     paths:
@@ -180,7 +180,7 @@ dpkg_sign:
       export GPG_KEYID=$(gpg --with-colon --list-secret-keys | head -n1 | cut -d : -f 5)
     else
       echo -e "\033[0;31m****** GPG signing disabled ******\033[0m"
-      exit
+      exit 1
   artifacts:
     paths:
       - build/dpkg/packages/
