@@ -84,7 +84,7 @@ ExternalProject_Add (rocksdb
   LIST_SEPARATOR ::
   TEST_COMMAND ""
   INSTALL_COMMAND ""
-  DEPENDS snappy lz4_lib
+  DEPENDS snappy_lib lz4_lib
   BUILD_BYPRODUCTS
     <BINARY_DIR>/${ep_lib_prefix}rocksdb${ep_lib_suffix}
     <BINARY_DIR>/${ep_lib_prefix}rocksdb_d${ep_lib_suffix}
