@@ -86,7 +86,7 @@ ExternalProject_Add (soci
       >
   TEST_COMMAND ""
   INSTALL_COMMAND ""
-  DEPENDS sqlite3
+  DEPENDS sqlite
   BUILD_BYPRODUCTS
     <BINARY_DIR>/lib/${soci_lib_pre}soci_core${soci_lib_post}${ep_lib_suffix}
     <BINARY_DIR>/lib/${soci_lib_pre}soci_core${soci_lib_post}_d${ep_lib_suffix}
