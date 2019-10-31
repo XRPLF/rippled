@@ -172,7 +172,7 @@ dpkg_sign:
   before_script:
   - |
     # make sure we have GnuPG
-    apt-get install -y gnupg
+    apt-get install -y gpgv2
     # checking GPG signing support
     if [ -n "$GPG_KEY_B64" ]; then
       echo "$GPG_KEY_B64"| base64 -d | gpg --batch --no-tty --allow-secret-key-import --import -
