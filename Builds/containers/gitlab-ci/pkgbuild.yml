@@ -144,9 +144,13 @@ rpm_sign:
   stage: sign_packages
   dependencies:
     - rpm_build
-  <<: *dind_param
+  image:
+    name: centos:7
+    # <<: *dind_param
   before_script:
   - |
+    # Make sure GnuPG is installed
+    yum -y install gnupg
     # checking GPG signing support
     if [ -n "$GPG_KEY_B64" ]; then
       echo "$GPG_KEY_B64" | gpg --batch --no-tty --allow-secret-key-import --import -
