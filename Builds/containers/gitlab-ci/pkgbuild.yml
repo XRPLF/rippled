@@ -143,7 +143,7 @@ dpkg_build:
 rpm_sign:
   stage: sign_packages
   dependencies:
-    - build_centos_container
+    - rpm_build
   <<: *dind_param
   before_script:
   - |
@@ -159,20 +159,20 @@ rpm_sign:
   artifacts:
     paths:
       - build/rpm/packages/
-  cache:
-    key: rpm
-    paths:
-      - .nih_c/pkgbuild
   script:
     - . ./Builds/containers/gitlab-ci/sign_package.sh rpm
 
 dpkg_sign:
   stage: sign_packages
   dependencies:
-    - build_ubuntu_container
-  <<: *dind_param
+    - dpkg_build
+  image:
+    name: ubuntu:19.04
+    # <<: *dind_param
   before_script:
   - |
+    # make sure we have GnuPG
+    apt-get install -y gnupg
     # checking GPG signing support
     if [ -n "$GPG_KEY_B64" ]; then
       echo "$GPG_KEY_B64"| base64 -d | gpg --batch --no-tty --allow-secret-key-import --import -
@@ -181,13 +181,10 @@ dpkg_sign:
     else
       echo -e "\033[0;31m****** GPG signing disabled ******\033[0m"
       exit 1
+    fi
   artifacts:
     paths:
       - build/dpkg/packages/
-  cache:
-    key: dpkg
-    paths:
-      - .nih_c/pkgbuild
   script:
     - . ./Builds/containers/gitlab-ci/sign_package.sh dpkg
      
