@@ -153,7 +153,7 @@ rpm_sign:
     yum -y install gnupg
     # checking GPG signing support
     if [ -n "$GPG_KEY_B64" ]; then
-      echo "$GPG_KEY_B64" | gpg --batch --no-tty --allow-secret-key-import --import -
+      echo "$GPG_KEY_B64"| base64 -d | gpg --batch --no-tty --allow-secret-key-import --import -
       unset GPG_KEY_B64
       export GPG_KEYID=$(gpg --with-colon --list-secret-keys | head -n1 | cut -d : -f 5)
     else
