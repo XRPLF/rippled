@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_TRANSACTIONMASTER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_TRANSACTIONMASTER_H_INCLUDED
 
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/shamap/SHAMapItem.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 
@@ -39,7 +40,10 @@ public:
     TransactionMaster& operator= (TransactionMaster const&) = delete;
 
     std::shared_ptr<Transaction>
-    fetch (uint256 const& , bool checkDisk);
+    fetch_from_cache (uint256 const&);
+
+    std::shared_ptr<Transaction>
+    fetch (uint256 const& , error_code_i& ec);
 
     std::shared_ptr<STTx const>
     fetch (std::shared_ptr<SHAMapItem> const& item,
