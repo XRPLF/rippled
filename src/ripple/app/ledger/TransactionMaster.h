@@ -23,11 +23,12 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/shamap/SHAMapItem.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
+#include <ripple/basics/RangeSet.h>
+#include <ripple/app/misc/Transaction.h>
 
 namespace ripple {
 
 class Application;
-class Transaction;
 class STTx;
 
 // Tracks all transactions in memory
@@ -45,10 +46,21 @@ public:
     std::shared_ptr<Transaction>
     fetch (uint256 const& , error_code_i& ec);
 
+    /**
+     * Fetch transaction from the cache or database.
+     *
+     * @return A boost::variant that contains either a
+     *         shared_pointer to the retrieved transaction or a
+     *         bool indicating whether or not the all ledgers in
+     *         the provided range were present in the database
+     *         while the search was conducted.
+     */
+    boost::variant<Transaction::pointer, bool>
+    fetch (uint256 const& , ClosedInterval<uint32_t> const& range, error_code_i& ec);
+
     std::shared_ptr<STTx const>
     fetch (std::shared_ptr<SHAMapItem> const& item,
-        SHAMapTreeNode::TNType type, bool checkDisk,
-            std::uint32_t uCommitLedger);
+        SHAMapTreeNode::TNType type, std::uint32_t uCommitLedger);
 
     // return value: true = we had the transaction already
     bool inLedger (uint256 const& hash, std::uint32_t ledger);

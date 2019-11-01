@@ -21,7 +21,6 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/protocol/STTx.h>
-#include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
 
 namespace ripple {
@@ -68,10 +67,29 @@ TransactionMaster::fetch (uint256 const& txnID, error_code_i& ec)
     return txn;
 }
 
+boost::variant<Transaction::pointer, bool>
+TransactionMaster::fetch (uint256 const& txnID, ClosedInterval<uint32_t> const& range,
+    error_code_i& ec)
+{
+    using pointer = Transaction::pointer;
+
+    auto txn = mCache.fetch (txnID);
+
+    if (txn)
+        return txn;
+
+    boost::variant<Transaction::pointer, bool> v = Transaction::load (
+        txnID, mApp, range, ec);
+
+    if (v.which () == 0 && boost::get<pointer> (v))
+        mCache.canonicalize (txnID, boost::get<pointer> (v));
+
+    return v;
+}
+
 std::shared_ptr<STTx const>
 TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
-    SHAMapTreeNode::TNType type,
-        bool checkDisk, std::uint32_t uCommitLedger)
+    SHAMapTreeNode::TNType type, std::uint32_t uCommitLedger)
 {
     std::shared_ptr<STTx const>  txn;
     auto iTx = fetch_from_cache (item->key());

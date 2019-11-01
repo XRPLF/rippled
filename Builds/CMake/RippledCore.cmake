@@ -990,6 +990,7 @@ else ()
     src/test/rpc/ServerInfo_test.cpp
     src/test/rpc/Status_test.cpp
     src/test/rpc/Subscribe_test.cpp
+    src/test/rpc/Transaction_test.cpp
     src/test/rpc/TransactionEntry_test.cpp
     src/test/rpc/TransactionHistory_test.cpp
     src/test/rpc/ValidatorRPC_test.cpp

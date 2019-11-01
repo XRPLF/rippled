@@ -996,19 +996,26 @@ private:
         return jvRequest;
     }
 
-
     // tx <transaction_id>
     Json::Value parseTx (Json::Value const& jvParams)
     {
         Json::Value jvRequest{Json::objectValue};
 
-        if (jvParams.size () > 1)
+        if (jvParams.size () == 2 || jvParams.size () == 4)
         {
             if (jvParams[1u].asString () == jss::binary)
                 jvRequest[jss::binary] = true;
         }
 
-        jvRequest["transaction"]    = jvParams[0u].asString ();
+        if (jvParams.size () >= 3)
+        {
+            const auto offset = jvParams.size () == 3 ? 0 : 1;
+
+            jvRequest[jss::min_ledger] = jvParams[1u + offset].asString ();
+            jvRequest[jss::max_ledger] = jvParams[2u + offset].asString ();
+        }
+
+        jvRequest[jss::transaction] = jvParams[0u].asString ();
         return jvRequest;
     }
 
@@ -1182,7 +1189,7 @@ public:
             {   "crawl_shards",         &RPCParser::parseAsIs,                  0,  2   },
             {   "stop",                 &RPCParser::parseAsIs,                  0,  0   },
             {   "transaction_entry",    &RPCParser::parseTransactionEntry,      2,  2   },
-            {   "tx",                   &RPCParser::parseTx,                    1,  2   },
+            {   "tx",                   &RPCParser::parseTx,                    1,  4   },
             {   "tx_account",           &RPCParser::parseTxAccount,             1,  7   },
             {   "tx_history",           &RPCParser::parseTxHistory,             1,  1   },
             {   "unl_list",             &RPCParser::parseAsIs,                  0,  0   },

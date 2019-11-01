@@ -100,10 +100,27 @@ Transaction::pointer Transaction::transactionFromSQL (
     return tr;
 }
 
-Transaction::pointer Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
+Transaction::pointer Transaction::load (uint256 const& id, Application& app, error_code_i& ec)
+{
+    return boost::get<pointer> (load (id, app, boost::none, ec));
+}
+
+boost::variant<Transaction::pointer, bool>
+Transaction::load (uint256 const& id, Application& app, ClosedInterval<uint32_t> const& range,
+    error_code_i& ec)
+{
+    using op = boost::optional<ClosedInterval<uint32_t>>;
+
+    return load (id, app, op {range}, ec);
+}
+
+boost::variant<Transaction::pointer, bool>
+Transaction::load (uint256 const& id, Application& app, boost::optional<ClosedInterval<uint32_t>> const& range,
+    error_code_i& ec)
 {
     std::string sql = "SELECT LedgerSeq,Status,RawTxn "
-            "FROM Transactions WHERE TransID='";
+                      "FROM Transactions WHERE TransID='";
+
     sql.append (to_string (id));
     sql.append ("';");
 
@@ -117,30 +134,48 @@ Transaction::pointer Transaction::load(uint256 const& id, Application& app, erro
 
         *db << sql, soci::into (ledgerSeq), soci::into (status),
                 soci::into (sociRawTxnBlob, rti);
-        if (!db->got_data () || rti != soci::i_ok)
+
+        auto const got_data = db->got_data ();
+
+        if ((!got_data || rti != soci::i_ok) && !range)
+            return nullptr;
+
+        if (!got_data)
         {
-            ec = rpcTXN_NOT_FOUND;
-            return {};
+            uint64_t count = 0;
+
+            *db << "SELECT COUNT(DISTINCT LedgerSeq) FROM Transactions WHERE LedgerSeq BETWEEN "
+                << range->first ()
+                << " AND "
+                << range->last ()
+                << ";",
+                soci::into (count, rti);
+
+            if (!db->got_data () || rti != soci::i_ok)
+                return false;
+
+            return count == (range->last () - range->first () + 1);
         }
 
-        convert(sociRawTxnBlob, rawTxn);
+        convert (sociRawTxnBlob, rawTxn);
     }
 
-    std::shared_ptr<Transaction> txn;
     try
     {
-        txn = Transaction::transactionFromSQL(
-                ledgerSeq, status, rawTxn, app);
+        return Transaction::transactionFromSQL(
+            ledgerSeq, status,
+                rawTxn, app);
     }
     catch (std::exception& e)
     {
         JLOG(app.journal("Ledger").warn())
-        << "Unable to deserialize transaction from raw SQL value. Error: "
-        << e.what();
+            << "Unable to deserialize transaction from raw SQL value. Error: "
+            << e.what();
+
         ec = rpcDB_DESERIALIZATION;
     }
 
-    return txn;
+    return nullptr;
 }
 
 // options 1 to include the date of the transaction

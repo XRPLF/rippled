@@ -19,7 +19,6 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/TransactionMaster.h>
-#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/net/RPCErr.h>
@@ -97,12 +96,66 @@ Json::Value doTx (RPC::Context& context)
     if (!isHexTxID (txid))
         return rpcError (rpcNOT_IMPL);
 
-    error_code_i ec = rpcSUCCESS;
-    auto txn = context.app.getMasterTransaction ().fetch (
-        from_hex_text<uint256>(txid), ec);
+    ClosedInterval<uint32_t> range;
+
+    auto rangeProvided = context.params.isMember (jss::min_ledger) &&
+        context.params.isMember (jss::max_ledger);
+
+    if (rangeProvided)
+    {
+        try
+        {
+            auto const& min = context.params[jss::min_ledger].asUInt ();
+            auto const& max = context.params[jss::max_ledger].asUInt ();
+
+            constexpr uint16_t MAX_RANGE = 1000;
+
+            if (max < min)
+                return rpcError (rpcINVALID_LGR_RANGE);
+
+            if (max - min > MAX_RANGE)
+                return rpcError (rpcEXCESSIVE_LGR_RANGE);
+
+            range = ClosedInterval<uint32_t> (min, max);
+        }
+        catch (...)
+        {
+            // One of the calls to `asUInt ()` failed.
+            return rpcError (rpcINVALID_LGR_RANGE);
+        }
+    }
+
+    using pointer = Transaction::pointer;
+
+    auto ec {rpcSUCCESS};
+    pointer txn;
+
+    if (rangeProvided)
+    {
+        boost::variant<pointer, bool> v =
+            context.app.getMasterTransaction().fetch(
+                from_hex_text<uint256>(txid), range, ec);
+
+        if (v.which () == 1)
+        {
+            auto jvResult = Json::Value (Json::objectValue);
+
+            jvResult[jss::searched_all] = boost::get<bool> (v);
+
+            return rpcError (rpcTXN_NOT_FOUND, jvResult);
+        }
+        else
+            txn = boost::get<pointer> (v);
+    }
+    else
+        txn = context.app.getMasterTransaction().fetch(
+            from_hex_text<uint256>(txid), ec);
+
+    if (ec == rpcDB_DESERIALIZATION)
+        return rpcError (ec);
 
     if (!txn)
-        return rpcError (ec);
+        return rpcError (rpcTXN_NOT_FOUND);
 
     Json::Value ret = txn->getJson (JsonOptions::include_date, binary);
 
