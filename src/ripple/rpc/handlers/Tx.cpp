@@ -97,11 +97,12 @@ Json::Value doTx (RPC::Context& context)
     if (!isHexTxID (txid))
         return rpcError (rpcNOT_IMPL);
 
+    error_code_i ec = rpcSUCCESS;
     auto txn = context.app.getMasterTransaction ().fetch (
-        from_hex_text<uint256>(txid), true);
+        from_hex_text<uint256>(txid), ec);
 
     if (!txn)
-        return rpcError (rpcTXN_NOT_FOUND);
+        return rpcError (ec);
 
     Json::Value ret = txn->getJson (JsonOptions::include_date, binary);
 
