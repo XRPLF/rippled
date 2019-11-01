@@ -88,6 +88,7 @@ constexpr static ErrorInfo unorderedErrorInfos[]
     {rpcTXN_NOT_FOUND,         "txnNotFound",         "Transaction not found."},
     {rpcUNKNOWN_COMMAND,       "unknownCmd",          "Unknown method."},
     {rpcSENDMAX_MALFORMED,     "sendMaxMalformed",    "SendMax amount malformed."},
+    {rpcDB_DESERIALIZATION,    "dbDeserialization",   "Database deserialization error."},
 };
 
 // C++ does not allow you to return an array from a function.  You must

@@ -45,14 +45,20 @@ bool TransactionMaster::inLedger (uint256 const& hash, std::uint32_t ledger)
 }
 
 std::shared_ptr<Transaction>
-TransactionMaster::fetch (uint256 const& txnID, bool checkDisk)
+TransactionMaster::fetch_from_cache (uint256 const& txnID)
 {
-    auto txn = mCache.fetch (txnID);
+    return mCache.fetch (txnID);
+}
 
-    if (!checkDisk || txn)
+std::shared_ptr<Transaction>
+TransactionMaster::fetch (uint256 const& txnID, error_code_i& ec)
+{
+    auto txn = fetch_from_cache (txnID);
+
+    if (txn)
         return txn;
 
-    txn = Transaction::load (txnID, mApp);
+    txn = Transaction::load (txnID, mApp, ec);
 
     if (!txn)
         return txn;
@@ -68,7 +74,7 @@ TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
         bool checkDisk, std::uint32_t uCommitLedger)
 {
     std::shared_ptr<STTx const>  txn;
-    auto iTx = fetch (item->key(), false);
+    auto iTx = fetch_from_cache (item->key());
 
     if (!iTx)
     {

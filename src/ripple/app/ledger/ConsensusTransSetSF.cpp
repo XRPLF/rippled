@@ -81,7 +81,7 @@ ConsensusTransSetSF::getNode (SHAMapHash const& nodeHash) const
     if (m_nodeCache.retrieve (nodeHash, nodeData))
         return nodeData;
 
-    auto txn = app_.getMasterTransaction().fetch(nodeHash.as_uint256(), false);
+    auto txn = app_.getMasterTransaction().fetch_from_cache (nodeHash.as_uint256());
 
     if (txn)
     {

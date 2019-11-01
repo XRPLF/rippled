@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_MISC_TRANSACTION_H_INCLUDED
 #define RIPPLE_APP_MISC_TRANSACTION_H_INCLUDED
 
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
@@ -69,14 +70,6 @@ public:
     static
     Transaction::pointer
     transactionFromSQL (
-        boost::optional<std::uint64_t> const& ledgerSeq,
-        boost::optional<std::string> const& status,
-        Blob const& rawTxn,
-        Application& app);
-
-    static
-    Transaction::pointer
-    transactionFromSQLValidated (
         boost::optional<std::uint64_t> const& ledgerSeq,
         boost::optional<std::string> const& status,
         Blob const& rawTxn,
@@ -156,7 +149,7 @@ public:
 
     Json::Value getJson (JsonOptions options, bool binary = false) const;
 
-    static Transaction::pointer load (uint256 const& id, Application& app);
+    static Transaction::pointer load (uint256 const& id, Application& app, error_code_i& ec);
 
 private:
     uint256         mTransactionID;

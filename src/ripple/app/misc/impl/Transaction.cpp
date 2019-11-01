@@ -25,6 +25,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/basics/safe_cast.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <boost/optional.hpp>
@@ -99,25 +100,7 @@ Transaction::pointer Transaction::transactionFromSQL (
     return tr;
 }
 
-Transaction::pointer Transaction::transactionFromSQLValidated(
-    boost::optional<std::uint64_t> const& ledgerSeq,
-    boost::optional<std::string> const& status,
-    Blob const& rawTxn,
-    Application& app)
-{
-    auto ret = transactionFromSQL(ledgerSeq, status, rawTxn, app);
-
-    if (checkValidity(app.getHashRouter(),
-            *ret->getSTransaction(), app.
-                getLedgerMaster().getValidatedRules(),
-                    app.config()).first !=
-                        Validity::Valid)
-        return {};
-
-    return ret;
-}
-
-Transaction::pointer Transaction::load(uint256 const& id, Application& app)
+Transaction::pointer Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
 {
     std::string sql = "SELECT LedgerSeq,Status,RawTxn "
             "FROM Transactions WHERE TransID='";
@@ -135,13 +118,29 @@ Transaction::pointer Transaction::load(uint256 const& id, Application& app)
         *db << sql, soci::into (ledgerSeq), soci::into (status),
                 soci::into (sociRawTxnBlob, rti);
         if (!db->got_data () || rti != soci::i_ok)
+        {
+            ec = rpcTXN_NOT_FOUND;
             return {};
+        }
 
         convert(sociRawTxnBlob, rawTxn);
     }
 
-    return Transaction::transactionFromSQLValidated (
-        ledgerSeq, status, rawTxn, app);
+    std::shared_ptr<Transaction> txn;
+    try
+    {
+        txn = Transaction::transactionFromSQL(
+                ledgerSeq, status, rawTxn, app);
+    }
+    catch (std::exception& e)
+    {
+        JLOG(app.journal("Ledger").warn())
+        << "Unable to deserialize transaction from raw SQL value. Error: "
+        << e.what();
+        ec = rpcDB_DESERIALIZATION;
+    }
+
+    return txn;
 }
 
 // options 1 to include the date of the transaction
