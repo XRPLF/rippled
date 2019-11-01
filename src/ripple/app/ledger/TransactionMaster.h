@@ -23,6 +23,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/shamap/SHAMapItem.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
+#include <ripple/basics/RangeSet.h>
 
 namespace ripple {
 
@@ -43,7 +44,9 @@ public:
     fetch_from_cache (uint256 const&);
 
     std::shared_ptr<Transaction>
-    fetch (uint256 const& , error_code_i& ec);
+    fetch (uint256 const& , error_code_i& ec,
+               ClosedInterval<uint32_t> const& range = {},
+                   bool* searchedAll = nullptr);
 
     std::shared_ptr<STTx const>
     fetch (std::shared_ptr<SHAMapItem> const& item,

@@ -51,14 +51,15 @@ TransactionMaster::fetch_from_cache (uint256 const& txnID)
 }
 
 std::shared_ptr<Transaction>
-TransactionMaster::fetch (uint256 const& txnID, error_code_i& ec)
+TransactionMaster::fetch (uint256 const& txnID, error_code_i& ec,
+    ClosedInterval<uint32_t> const& range, bool* searchedAll)
 {
     auto txn = fetch_from_cache (txnID);
 
     if (txn)
         return txn;
 
-    txn = Transaction::load (txnID, mApp, ec);
+    txn = Transaction::load (txnID, mApp, ec, range, searchedAll);
 
     if (!txn)
         return txn;

@@ -19,7 +19,6 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/TransactionMaster.h>
-#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/net/RPCErr.h>
@@ -97,12 +96,37 @@ Json::Value doTx (RPC::Context& context)
     if (!isHexTxID (txid))
         return rpcError (rpcNOT_IMPL);
 
-    error_code_i ec = rpcSUCCESS;
+    ClosedInterval<uint32_t> range;
+
+    auto rangeProvided = context.params.isMember (jss::min_ledger) &&
+        context.params.isMember (jss::max_ledger);
+
+    if (rangeProvided)
+    {
+        auto const& min = context.params[jss::min_ledger].asUInt ();
+        auto const& max = context.params[jss::max_ledger].asUInt ();
+
+        if ((rangeProvided = max >= min))
+            range = ClosedInterval<uint32_t> (min, max);
+    }
+
+    auto ec = rpcSUCCESS;
+    auto searchedAll = false;
     auto txn = context.app.getMasterTransaction ().fetch (
-        from_hex_text<uint256>(txid), ec);
+        from_hex_text<uint256> (txid), ec, range, rangeProvided ? &searchedAll : nullptr);
+
+    if (ec == rpcDB_DESERIALIZATION)
+        return rpcError (ec);
 
     if (!txn)
-        return rpcError (ec);
+    {
+        auto jvResult = Json::Value (Json::objectValue);
+
+        if(rangeProvided)
+            jvResult[jss::searched_all] = searchedAll;
+
+        return rpcError (rpcTXN_NOT_FOUND, jvResult);
+    }
 
     Json::Value ret = txn->getJson (JsonOptions::include_date, binary);
 

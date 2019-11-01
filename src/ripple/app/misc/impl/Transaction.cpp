@@ -100,10 +100,12 @@ Transaction::pointer Transaction::transactionFromSQL (
     return tr;
 }
 
-Transaction::pointer Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
+Transaction::pointer Transaction::load(uint256 const& id, Application& app,
+    error_code_i& ec, ClosedInterval<uint32_t> const& range, bool* searchedAll)
 {
     std::string sql = "SELECT LedgerSeq,Status,RawTxn "
-            "FROM Transactions WHERE TransID='";
+                      "FROM Transactions WHERE TransID='";
+
     sql.append (to_string (id));
     sql.append ("';");
 
@@ -115,18 +117,34 @@ Transaction::pointer Transaction::load(uint256 const& id, Application& app, erro
         soci::blob sociRawTxnBlob (*db);
         soci::indicator rti;
 
+        if(searchedAll)
+        {
+            uint64_t count = 0;
+
+            *db << "SELECT COUNT(DISTINCT LedgerSeq) FROM Transactions WHERE LedgerSeq BETWEEN "
+                << range.first ()
+                << " AND "
+                << range.last ()
+                << ";",
+                soci::into (count, rti);
+
+            if (!db->got_data () || rti != soci::i_ok)
+                return {};
+
+            *searchedAll = count == (range.last () - range.first () + 1);
+        }
+
         *db << sql, soci::into (ledgerSeq), soci::into (status),
                 soci::into (sociRawTxnBlob, rti);
+
         if (!db->got_data () || rti != soci::i_ok)
-        {
-            ec = rpcTXN_NOT_FOUND;
             return {};
-        }
 
         convert(sociRawTxnBlob, rawTxn);
     }
 
     std::shared_ptr<Transaction> txn;
+
     try
     {
         txn = Transaction::transactionFromSQL(
@@ -135,8 +153,9 @@ Transaction::pointer Transaction::load(uint256 const& id, Application& app, erro
     catch (std::exception& e)
     {
         JLOG(app.journal("Ledger").warn())
-        << "Unable to deserialize transaction from raw SQL value. Error: "
-        << e.what();
+            << "Unable to deserialize transaction from raw SQL value. Error: "
+            << e.what();
+
         ec = rpcDB_DESERIALIZATION;
     }
 

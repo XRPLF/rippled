@@ -6138,6 +6138,8 @@ static RPCCallTestData const rpcCallTestArray [] =
         "tx",
         "transaction_hash_is_not_validated",
         "binary",
+        "1",
+        "2",
         "extra"
     },
     RPCCallTestData::no_exception,

@@ -25,6 +25,7 @@
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/basics/RangeSet.h>
 #include <boost/optional.hpp>
 
 namespace ripple {
@@ -149,7 +150,9 @@ public:
 
     Json::Value getJson (JsonOptions options, bool binary = false) const;
 
-    static Transaction::pointer load (uint256 const& id, Application& app, error_code_i& ec);
+    static Transaction::pointer load (uint256 const& id, Application& app,
+        error_code_i& ec, ClosedInterval<uint32_t> const& range = {},
+            bool* searchedAll = nullptr);
 
 private:
     uint256         mTransactionID;

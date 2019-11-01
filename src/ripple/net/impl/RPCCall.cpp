@@ -1008,7 +1008,13 @@ private:
                 jvRequest[jss::binary] = true;
         }
 
-        jvRequest["transaction"]    = jvParams[0u].asString ();
+        if (jvParams.size () > 3)
+        {
+            jvRequest[jss::min_ledger] = jvParams[2u].asString ();
+            jvRequest[jss::max_ledger] = jvParams[3u].asString ();
+        }
+
+        jvRequest[jss::transaction] = jvParams[0u].asString ();
         return jvRequest;
     }
 
@@ -1182,7 +1188,7 @@ public:
             {   "crawl_shards",         &RPCParser::parseAsIs,                  0,  2   },
             {   "stop",                 &RPCParser::parseAsIs,                  0,  0   },
             {   "transaction_entry",    &RPCParser::parseTransactionEntry,      2,  2   },
-            {   "tx",                   &RPCParser::parseTx,                    1,  2   },
+            {   "tx",                   &RPCParser::parseTx,                    1,  4   },
             {   "tx_account",           &RPCParser::parseTxAccount,             1,  7   },
             {   "tx_history",           &RPCParser::parseTxHistory,             1,  1   },
             {   "unl_list",             &RPCParser::parseAsIs,                  0,  0   },

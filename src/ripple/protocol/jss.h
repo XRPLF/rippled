@@ -437,6 +437,7 @@ JSS ( rt_accounts );                // in: Subscribe, Unsubscribe
 JSS ( running_duration_us );
 JSS ( sanity );                     // out: PeerImp
 JSS ( search_depth );               // in: RipplePathFind
+JSS ( searched_all );               // out: Tx
 JSS ( secret );                     // in: TransactionSign,
                                     //     ValidationCreate, ValidationSeed,
                                     //     channel_authorize
