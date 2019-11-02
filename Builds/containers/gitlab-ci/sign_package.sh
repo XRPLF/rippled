@@ -8,7 +8,7 @@ sign_dpkg() {
       -g "--no-tty --digest-algo 'sha512' --passphrase '${GPG_PASSPHRASE}' --pinentry-mode=loopback" \
 			-k "${GPG_KEYID}" \
 			--sign builder \
-			"out/deb/${PACKAGE_NAME}_${PACKAGE_ARCH}.deb"
+			"build/dpkg/packages/*.deb"
 	fi
 }
 
