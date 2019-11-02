@@ -164,6 +164,7 @@ rpm_sign:
     paths:
       - build/rpm/packages/
   script:
+    - ls -alh build/rpm/packages
     - . ./Builds/containers/gitlab-ci/sign_package.sh rpm
 
 dpkg_sign:
@@ -191,6 +192,7 @@ dpkg_sign:
     paths:
       - build/dpkg/packages/
   script:
+    - ls -alh build/dpkg/packages
     - . ./Builds/containers/gitlab-ci/sign_package.sh dpkg
      
 #########################################################################
