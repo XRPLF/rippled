@@ -23,10 +23,15 @@
 #include <boost/function_output_iterator.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
+#include <functional>
 
 namespace ripple {
 
-/** The list of protocol versions we speak and we prefer to use. */
+/** The list of protocol versions we speak and we prefer to use.
+
+    @note The list must be sorted in strictly ascending order (and so
+          it may not contain any duplicates!)
+*/
 constexpr
 ProtocolVersion const supportedProtocolList[]
 {
@@ -34,11 +39,28 @@ ProtocolVersion const supportedProtocolList[]
     { 2, 0 }
 };
 
-#if __cplusplus > 201703L
+// This ugly construct ensures that supportedProtocolList is sorted in strictly
+// ascending order and doesn't contain any duplicates.
+// FIXME: With C++20 we can use std::is_sorted with an appropriate comparator
 static_assert(
-    std::is_sorted(supportedProtocolList.begin(), supportedProtocolList.end()),
-        "The list of supported protocols must be in sorted order.");
-#endif
+    []() constexpr -> bool
+    {
+        auto len = std::distance(
+            std::begin(supportedProtocolList),
+            std::end(supportedProtocolList));
+
+        if (len > 2)
+        {
+            for (auto i = 0; i != len - 1; ++i)
+            {
+                if (supportedProtocolList[i+1] <= supportedProtocolList[i])
+                    return false;
+            }
+        }
+
+        return true;
+    }(), "The list of supported protocols isn't properly sorted.");
+
 
 std::string
 to_string(ProtocolVersion const& p)
@@ -103,12 +125,16 @@ negotiateProtocolVersion(boost::beast::string_view const& versions)
     // output of std::set_intersection is sorted, that item is always going
     // to be the last one. So we get a little clever and avoid the need for
     // a container:
+    std::function<void(ProtocolVersion const&)> pickVersion =
+        [&result](ProtocolVersion const& v)
+        {
+            result = v;
+        };
+
     std::set_intersection(
-        them.begin(), them.end(),
-        std::begin(supportedProtocolList),
-        std::end(supportedProtocolList),
-        boost::make_function_output_iterator(
-            [&result](auto const& e) { result = e; }));
+        std::begin(them), std::end(them),
+        std::begin(supportedProtocolList), std::end(supportedProtocolList),
+        boost::make_function_output_iterator(pickVersion));
 
     return result;
 }
