@@ -247,7 +247,7 @@ split(FwdIt first, FwdIt last, Char delim)
         }
         else if (*iter == delim)
         {
-            e = trim_right (e);
+            e = trim (e);
             if (! e.empty())
             {
                 result.emplace_back(std::move(e));
@@ -257,7 +257,10 @@ split(FwdIt first, FwdIt last, Char delim)
         }
         else if (is_lws (*iter))
         {
-            ++iter;
+            e.append (1, ' ');
+            do
+                iter++;
+            while (iter != last && is_lws (*iter));
         }
         else
         {
@@ -267,7 +270,7 @@ split(FwdIt first, FwdIt last, Char delim)
 
     if (! e.empty())
     {
-        e = trim_right (e);
+        e = trim (e);
         if (! e.empty())
             result.emplace_back(std::move(e));
     }

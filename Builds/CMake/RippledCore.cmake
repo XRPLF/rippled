@@ -799,6 +799,7 @@ else ()
     src/test/beast/beast_asio_error_test.cpp
     src/test/beast/beast_basic_seconds_clock_test.cpp
     src/test/beast/beast_io_latency_probe_test.cpp
+    src/test/beast/beast_rfc2616_test.cpp
     src/test/beast/define_print.cpp
     #[===============================[
        nounity, test sources:

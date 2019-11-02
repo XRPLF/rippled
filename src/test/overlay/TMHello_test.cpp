@@ -28,14 +28,14 @@ private:
     template <class FwdIt>
     static
     std::string
-    join (FwdIt first, FwdIt last, char c = ',')
+    join (FwdIt first, FwdIt last, char const *sep = ",")
     {
         std::string result;
         if (first == last)
             return result;
         result = to_string(*first++);
         while(first != last)
-            result += "," + to_string(*first++);
+            result += sep + to_string(*first++);
         return result;
     }
 
