@@ -185,6 +185,8 @@ dpkg_sign:
     if [ -n "$GPG_KEY_B64" ]; then
       echo "$GPG_KEY_B64"| base64 -d | gpg --batch --no-tty --allow-secret-key-import --import -
       unset GPG_KEY_B64
+      export GPG_PASSPHRASE=$(echo $GPG_KEY_PASS_B64 | base64 -di)
+      unset GPG_KEY_PASS_B64
       export GPG_KEYID=$(gpg --with-colon --list-secret-keys | head -n1 | cut -d : -f 5)
     else
       echo -e "\033[0;31m****** GPG signing disabled ******\033[0m"
