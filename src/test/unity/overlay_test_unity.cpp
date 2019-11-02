@@ -18,5 +18,6 @@
 */
 //==============================================================================
 
+#include <test/overlay/ProtocolVersion_test.cpp>
 #include <test/overlay/cluster_test.cpp>
 #include <test/overlay/short_read_test.cpp>

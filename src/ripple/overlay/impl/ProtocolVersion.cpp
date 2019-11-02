@@ -77,32 +77,42 @@ std::vector<ProtocolVersion>
 parseProtocolVersions(boost::beast::string_view const& value)
 {
     static boost::regex re(
-        "^"                   // start of line
-        "(?:"                 // Alternative #1: old-style
-        "RTXP/(1)\\.(2)"      // The string "RTXP/1.2"
-        "|"                   // Alternative #2: new-style
-        "XRPL/"               // the string "XRPL/"
-        "([2-9]|[1-9][0-9]+)" // a number (greater than 2 with no leading zeroes)
-        "\\."                 // a period
-        "(0|[1-9][0-9]*)"     // a number (no leading zeroes unless exactly zero)
-        ")"
-        "$"                   // The end of the string
+        "^"                        // start of line
+        "XRPL/"                    // The string "XRPL/"
+        "([2-9]|(?:[1-9][0-9]+))"  // a number (greater than 2 with no leading zeroes)
+        "\\."                      // a period
+        "(0|(?:[1-9][0-9]*))"      // a number (no leading zeroes unless exactly zero)
+        "$"                        // The end of the string
         , boost::regex_constants::optimize);
 
     std::vector<ProtocolVersion> result;
 
     for (auto const& s : beast::rfc2616::split_commas(value))
     {
+        if (s == "RTXP/1.2")
+        {
+            result.push_back(make_protocol(1, 2));
+            continue;
+        }
+
         boost::smatch m;
+
         if (boost::regex_match(s, m, re))
         {
             std::uint16_t major;
             std::uint16_t minor;
             if (!beast::lexicalCastChecked(major, std::string(m[1])))
                 continue;
+
             if (!beast::lexicalCastChecked(minor, std::string(m[2])))
                 continue;
-            result.push_back(make_protocol(major, minor));
+
+            auto const proto = make_protocol(major, minor);
+
+            // This is an extra sanity check: we check that the protocol we just
+            // parsed corresponds to the token we parsed.
+            if (to_string(proto) == s)
+                result.push_back(make_protocol(major, minor));
         }
     }
 
