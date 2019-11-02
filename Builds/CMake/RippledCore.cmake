@@ -176,7 +176,6 @@ install (
 install (
   FILES
     src/ripple/crypto/GenerateDeterministicKey.h
-    src/ripple/crypto/KeyType.h
     src/ripple/crypto/RFC1751.h
     src/ripple/crypto/csprng.h
   DESTINATION include/ripple/crypto)
@@ -214,6 +213,7 @@ install (
     src/ripple/protocol/Indexes.h
     src/ripple/protocol/InnerObjectFormats.h
     src/ripple/protocol/Issue.h
+    src/ripple/protocol/KeyType.h
     src/ripple/protocol/Keylet.h
     src/ripple/protocol/KnownFormats.h
     src/ripple/protocol/LedgerFormats.h
