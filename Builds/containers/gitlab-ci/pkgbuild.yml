@@ -21,6 +21,7 @@ variables:
 stages:
   - build_containers
   - build_packages
+  - sign_packages
   - smoketest
   - verify_sig
   - tag_images
@@ -131,6 +132,73 @@ dpkg_build:
   script:
     - . ./Builds/containers/gitlab-ci/build_package.sh dpkg
 
+#########################################################################
+##                                                                     ##
+##  stage: sign_packages                                               ##
+##                                                                     ##
+##  build packages using containers from previous stage.               ##
+##                                                                     ##
+#########################################################################
+
+rpm_sign:
+  stage: sign_packages
+  dependencies:
+    - rpm_build
+  image:
+    name: centos:7
+    # <<: *dind_param
+  before_script:
+  - |
+    # Make sure GnuPG is installed
+    yum -y install gnupg rpm-sign
+    # checking GPG signing support
+    if [ -n "$GPG_KEY_B64" ]; then
+      echo "$GPG_KEY_B64"| base64 -d | gpg --batch --no-tty --allow-secret-key-import --import -
+      unset GPG_KEY_B64
+      export GPG_PASSPHRASE=$(echo $GPG_KEY_PASS_B64 | base64 -di)
+      unset GPG_KEY_PASS_B64
+      export GPG_KEYID=$(gpg --with-colon --list-secret-keys | head -n1 | cut -d : -f 5)
+    else
+      echo -e "\033[0;31m****** GPG signing disabled ******\033[0m"
+      exit 1
+    fi
+  artifacts:
+    paths:
+      - build/rpm/packages/
+  script:
+    - ls -alh build/rpm/packages
+    - . ./Builds/containers/gitlab-ci/sign_package.sh rpm
+
+dpkg_sign:
+  stage: sign_packages
+  dependencies:
+    - dpkg_build
+  image:
+    name: ubuntu:19.04
+    # <<: *dind_param
+  before_script:
+  - |
+    # make sure we have GnuPG
+    apt update
+    apt install -y gpg dpkg-sig
+    # checking GPG signing support
+    if [ -n "$GPG_KEY_B64" ]; then
+      echo "$GPG_KEY_B64"| base64 -d | gpg --batch --no-tty --allow-secret-key-import --import -
+      unset GPG_KEY_B64
+      export GPG_PASSPHRASE=$(echo $GPG_KEY_PASS_B64 | base64 -di)
+      unset GPG_KEY_PASS_B64
+      export GPG_KEYID=$(gpg --with-colon --list-secret-keys | head -n1 | cut -d : -f 5)
+    else
+      echo -e "\033[0;31m****** GPG signing disabled ******\033[0m"
+      exit 1
+    fi
+  artifacts:
+    paths:
+      - build/dpkg/packages/
+  script:
+    - ls -alh build/dpkg/packages
+    - . ./Builds/containers/gitlab-ci/sign_package.sh dpkg
+     
 #########################################################################
 ##                                                                     ##
 ##  stage: smoketest                                                   ##

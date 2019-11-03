@@ -8,8 +8,8 @@ if git verify-commit HEAD; then
     echo "git commit signature check passed"
 else
     echo "git commit signature check failed"
-    git log -n 5 --color
-        --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an> [%G?]%Creset'
+    git log -n 5 --color \
+        --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an> [%G?]%Creset' \
         --abbrev-commit
     exit 1
 fi
