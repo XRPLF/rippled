@@ -150,7 +150,7 @@ rpm_sign:
   before_script:
   - |
     # Make sure GnuPG is installed
-    yum -y install gnupg
+    yum -y install gnupg rpm-sign
     # checking GPG signing support
     if [ -n "$GPG_KEY_B64" ]; then
       echo "$GPG_KEY_B64"| base64 -d | gpg --batch --no-tty --allow-secret-key-import --import -
