@@ -19,7 +19,7 @@ sign_rpm() {
 			--define "_signature gpg" \
 			--define "__gpg_check_password_cmd /bin/true" \
 			--define "__gpg_sign_cmd %{__gpg} gpg --batch --no-armor --digest-algo 'sha512' --passphrase '${GPG_PASSPHRASE}' --pinentry-mode=loopback --no-secmem-warning -u '%{_gpg_name}' --sign --detach-sign --output %{__signature_filename} %{__plaintext_filename}" \
-			--addsign "out/rpm/${PACKAGE_NAME}_${PACKAGE_ARCH}.rpm"
+			--addsign "build/rpm/packages/*.rpm"
 	fi
 }
 
