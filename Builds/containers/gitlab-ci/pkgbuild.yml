@@ -174,7 +174,7 @@ dpkg_sign:
   dependencies:
     - dpkg_build
   image:
-    name: ubuntu:19.04
+    name: ubuntu:18.04
     # <<: *dind_param
   before_script:
   - |
