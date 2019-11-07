@@ -1,5 +1,7 @@
-find_package (PkgConfig REQUIRED)
-pkg_search_module (sqlite_PC QUIET sqlite3>=3.26.0)
+find_package (PkgConfig)
+if (PKG_CONFIG_FOUND)
+  pkg_search_module (sqlite_PC QUIET sqlite3>=3.26.0)
+endif ()
 
 if(static)
   set(SQLITE_LIB libsqlite3.a)

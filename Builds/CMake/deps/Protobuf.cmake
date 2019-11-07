@@ -96,6 +96,16 @@ if (local_protobuf OR NOT TARGET protobuf::libprotobuf)
   set_target_properties (protobuf::protoc PROPERTIES
     IMPORTED_LOCATION "${BINARY_DIR}/protoc${CMAKE_EXECUTABLE_SUFFIX}")
   add_dependencies (protobuf::protoc protobuf_src)
+else ()
+  if (NOT TARGET protobuf::protoc)
+    if (EXISTS "${Protobuf_PROTOC_EXECUTABLE}")
+      add_executable (protobuf::protoc IMPORTED)
+      set_target_properties (protobuf::protoc PROPERTIES
+        IMPORTED_LOCATION "${Protobuf_PROTOC_EXECUTABLE}")
+    else ()
+      message (FATAL_ERROR "Protobuf import failed")
+    endif ()
+  endif ()
 endif ()
 
 file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/proto_gen)

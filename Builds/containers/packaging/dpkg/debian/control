@@ -2,7 +2,7 @@ Source: rippled
 Section: misc
 Priority: extra
 Maintainer: Ripple Labs Inc. <support@ripple.com>
-Build-Depends: cmake, debhelper (>=9), libprotobuf-dev, libssl-dev, zlib1g-dev, dh-systemd, ninja-build
+Build-Depends: cmake, debhelper (>=9), zlib1g-dev, dh-systemd, ninja-build
 Standards-Version: 3.9.7
 Homepage: http://ripple.com/
 

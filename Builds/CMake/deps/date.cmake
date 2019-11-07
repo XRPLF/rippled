@@ -13,14 +13,14 @@ if (NOT TARGET date::date)
     FetchContent_Declare(
       hh_date_src
       GIT_REPOSITORY https://github.com/HowardHinnant/date.git
-      GIT_TAG        48f1455cd255df2fe73b5f293b47203ad0988199
+      GIT_TAG        fc4cf092f9674f2670fb9177edcdee870399b829
     )
     FetchContent_MakeAvailable(hh_date_src)
   else ()
     ExternalProject_Add (hh_date_src
       PREFIX ${nih_cache_path}
       GIT_REPOSITORY https://github.com/HowardHinnant/date.git
-      GIT_TAG        48f1455cd255df2fe73b5f293b47203ad0988199
+      GIT_TAG        fc4cf092f9674f2670fb9177edcdee870399b829
       CONFIGURE_COMMAND ""
       BUILD_COMMAND ""
       TEST_COMMAND ""

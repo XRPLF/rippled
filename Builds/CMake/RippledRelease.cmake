@@ -141,17 +141,25 @@ if (is_root_project)
     # now use the same ubuntu image for our travis-ci docker images,
     # but we use a newer distro (18.04 vs 16.04).
     #
+    # the following steps assume the github pkg repo, but it's possible to
+    # adapt these for other docker hub repositories.
+    #
     # steps for publishing a new CI image when you make changes:
     #
     #   mkdir bld.ci && cd bld.ci && cmake -Dpackages_only=ON -Dcontainer_label=CI_LATEST
     #   cmake --build . --target ci_container --verbose
-    #   docker tag rippled-ci-builder:CI_LATEST <DOCKERHUB_USER>/rippled-ci-builder:YYYY-MM-DD
-    #       (change YYYY-MM-DD to match current date..or use a different
-    #        tag/label scheme if you prefer)
-    #   docker push <DOCKERHUB_USER>/rippled-ci-builder:YYYY-MM-DD
+    #   docker tag rippled-ci-builder:CI_LATEST <HUB REPO PATH>/rippled-ci-builder:YYYY-MM-DD
+    #      (NOTE: change YYYY-MM-DD to match current date, or use a different
+    #             tag/version scheme if you prefer)
+    #   docker push <HUB REPO PATH>/rippled-ci-builder:YYYY-MM-DD
+    #      (NOTE: <HUB REPO PATH> is probably your user or org name if using
+    #             docker hub, or it might be something like
+    #             docker.pkg.github.com/ripple/rippled if using the github pkg
+    #             registry. for any registry, you will need to be logged-in via
+    #             docker and have push access.)
     #
     # ...then change the DOCKER_IMAGE line in .travis.yml :
-    #     - DOCKER_IMAGE="<DOCKERHUB_USER>/rippled-ci-builder:YYYY-MM-DD"
+    #     - DOCKER_IMAGE="<HUB REPO PATH>/rippled-ci-builder:YYYY-MM-DD"
     add_custom_target (ci_container
       docker build
         --pull

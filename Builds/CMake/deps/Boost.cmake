@@ -70,7 +70,9 @@ target_link_libraries (ripple_boost
     Boost::serialization
     Boost::system
     Boost::thread)
-if (san)
+if (san AND is_clang)
+  # TODO: gcc does not support -fsanitize-blacklist...can we do something else 
+  # for gcc ?
   if (NOT Boost_INCLUDE_DIRS AND TARGET Boost::headers)
     get_target_property (Boost_INCLUDE_DIRS Boost::headers INTERFACE_INCLUDE_DIRECTORIES)
   endif ()

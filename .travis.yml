@@ -6,7 +6,7 @@ services:
 
 env:
   global:
-    - DOCKER_IMAGE="mellery451/rippled-ci-builder:2019-08-26"
+    - DOCKER_IMAGE="rippleci/rippled-ci-builder:2020-01-02"
     - CMAKE_EXTRA_ARGS="-Dwerr=ON -Dwextra=ON"
     - NINJA_BUILD=true
     # change this if we get more VM capacity
@@ -35,15 +35,15 @@ matrix:
   allow_failures:
     # TODO these all need more investigation
     #
-    # current tsan failure might be related to:
-    # https://github.com/google/sanitizers/issues/1104
-    - name: tsan, clang-8
     # there are a number of UBs caught currently that need triage
     - name: ubsan, clang-8
 
   include:
     # coverage builds
-    - compiler: gcc-8
+    - &linux
+      # TODO document this filter
+      if: commit_message !~ /travis_run_only/ OR commit_message =~ /travis_run_only_linux/
+      compiler: gcc-8
       name: coverage, gcc-8
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
@@ -51,7 +51,8 @@ matrix:
         - CMAKE_ADD="-Dcoverage=ON"
         - TARGET=coverage_report
         - SKIP_TESTS=true
-    - compiler: clang-8
+    - <<: *linux
+      compiler: clang-8
       name: coverage, clang-8
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
@@ -60,27 +61,31 @@ matrix:
         - TARGET=coverage_report
         - SKIP_TESTS=true
     # nounity
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: non-unity, gcc-8
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Debug
         - CMAKE_ADD="-Dunity=OFF"
-    - compiler: clang-8
+    - <<: *linux
+      compiler: clang-8
       name: non-unity, clang-8
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
         - BUILD_TYPE=Debug
         - CMAKE_ADD="-Dunity=OFF"
     # manual tests
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: manual tests, gcc-8, debug
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Debug
         - MANUAL_TESTS=true
     # manual tests
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: manual tests, gcc-8, release
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
@@ -88,31 +93,36 @@ matrix:
         - CMAKE_ADD="-Dassert=ON"
         - MANUAL_TESTS=true
     # release builds
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: gcc-8, release
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Release
         - CMAKE_ADD="-Dassert=ON"
-    - compiler: clang-8
+    - <<: *linux
+      compiler: clang-8
       name: clang-8, release
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
         - BUILD_TYPE=Release
         - CMAKE_ADD="-Dassert=ON"
     # debug builds
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: gcc-8, debug
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Debug
-    - compiler: clang-8
+    - <<: *linux
+      compiler: clang-8
       name: clang-8, debug
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
         - BUILD_TYPE=Debug
     # asan
-    - compiler: clang-8
+    - <<: *linux
+      compiler: clang-8
       name: asan, clang-8
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
@@ -122,7 +132,8 @@ matrix:
         #- LSAN_OPTIONS="verbosity=1:log_threads=1"
         - PARALLEL_TESTS=false
     # ubsan
-    - compiler: clang-8
+    - <<: *linux
+      compiler: clang-8
       name: ubsan, clang-8
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
@@ -132,67 +143,70 @@ matrix:
         - UBSAN_OPTIONS="print_stacktrace=1:report_error_type=1"
         - PARALLEL_TESTS=false
     # tsan
-    - compiler: clang-8
-      name: tsan, clang-8
-      env:
-        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
-        - BUILD_TYPE=Release
-        - CMAKE_ADD="-Dsan=thread"
-        - TSAN_OPTIONS="history_size=3 external_symbolizer_path=/usr/bin/llvm-symbolizer verbosity=1"
-        - PARALLEL_TESTS=false
+    # current tsan failure *might* be related to:
+    # https://github.com/google/sanitizers/issues/1104
+    #  but we can't get it to run, so leave it disabled for now
+    #    - <<: *linux
+    #      compiler: clang-8
+    #      name: tsan, clang-8
+    #      env:
+    #        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+    #        - BUILD_TYPE=Release
+    #        - CMAKE_ADD="-Dsan=thread"
+    #        - TSAN_OPTIONS="history_size=3 external_symbolizer_path=/usr/bin/llvm-symbolizer verbosity=1"
+    #        - PARALLEL_TESTS=false
+
     # dynamic lib builds
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: non-static, gcc-8
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Debug
         - CMAKE_ADD="-Dstatic=OFF"
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: non-static + BUILD_SHARED_LIBS, gcc-8
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Debug
         - CMAKE_ADD="-Dstatic=OFF -DBUILD_SHARED_LIBS=ON"
     # makefile
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: makefile generator, gcc-8
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Debug
         - NINJA_BUILD=false
     # misc alternative compilers
-    - compiler: gcc-7
+    - <<: *linux
+      compiler: gcc-7
       name: gcc-7
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
         - BUILD_TYPE=Debug
-    - compiler: gcc-9
+    - <<: *linux
+      compiler: gcc-9
       name: gcc-9
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
         - BUILD_TYPE=Debug
-    - compiler: clang-5.0
-      name: clang-5
-      env:
-        - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
-        - BUILD_TYPE=Debug
-    - compiler: clang-6.0
-      name: clang-6
-      env:
-        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
-        - BUILD_TYPE=Debug
-    - compiler: clang-7
+    - <<: *linux
+      compiler: clang-7
       name: clang-7
       env:
         - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
         - BUILD_TYPE=Debug
-    - compiler: clang-9
+    - <<: *linux
+      compiler: clang-9
       name: clang-9
       env:
         - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
         - BUILD_TYPE=Debug
     # verify build with min version of cmake
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: min cmake version
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
@@ -200,7 +214,8 @@ matrix:
         - CMAKE_EXE=/opt/local/cmake-3.9/bin/cmake
         - SKIP_TESTS=true
     # validator keys project as subproj of rippled
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: validator-keys
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
@@ -209,10 +224,14 @@ matrix:
         - TARGET=validator-keys
     # macos
     - &macos
+      if: commit_message !~ /travis_run_only/ OR commit_message =~ /travis_run_only_mac/
       os: osx
-      osx_image: xcode10.2
+      osx_image: xcode10.3
       name: xcode10, debug
       env:
+        # put NIH in non-cache location since it seems to
+        # cause failures when homebrew updates
+        - NIH_CACHE_ROOT=${TRAVIS_BUILD_DIR}/nih_c
         - BLD_CONFIG=Debug
         - TEST_EXTRA_ARGS=""
         - BOOST_ROOT=${CACHE_DIR}/boost_1_70_0
@@ -225,10 +244,14 @@ matrix:
       addons:
         homebrew:
           packages:
+            - pkg-config
             - bash
             - ninja
             - cmake
             - wget
+            - zstd
+            - protobuf
+            - libarchive
             - openssl@1.1
           update: true
       install:
@@ -250,18 +273,13 @@ matrix:
       before_script:
         - export TEST_EXTRA_ARGS="--unittest-ipv6"
     - <<: *macos
-      osx_image: xcode9.4
-      name: xcode9, debug
-      before_script:
-        # turn off warnings as err for this build
-        - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -Dwerr=OFF"
-    - <<: *macos
-      osx_image: xcode11
+      osx_image: xcode11.2
       name: xcode11, debug
     # windows
     - &windows
       # caching is unreliable on windows...disable for now
       cache: false
+      if: commit_message !~ /travis_run_only/ OR commit_message =~ /travis_run_only_win/
       os: windows
       name: windows, debug
       env:
@@ -280,7 +298,8 @@ matrix:
           -DVCPKG_TARGET_TRIPLET=x64-windows-static"
       install:
         - choco upgrade cmake.install
-        - choco install ninja visualstudio2017-workload-vctools -y
+        - choco install ninja -y
+        - choco install visualstudio2017-workload-vctools -y
         - travis_wait 30 bin/sh/install-vcpkg.sh
         - travis_wait ${MAX_TIME_MIN} Builds/containers/shared/install_boost.sh
       before_script:
@@ -293,6 +312,17 @@ matrix:
         - ./rippled.exe --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
     - <<: *windows
       name: windows, release
+      before_script:
+        - export BLD_CONFIG=Release
+    - <<: *windows
+      name: windows, vc2019
+      install:
+        - choco upgrade cmake.install
+        - choco install ninja -y
+        - choco install visualstudio2019buildtools visualstudio2019community visualstudio2019-workload-vctools -y
+        - travis_wait 30 bin/sh/install-vcpkg.sh
+        - export BOOST_TOOLSET=msvc-14.2
+        - travis_wait ${MAX_TIME_MIN} Builds/containers/shared/install_boost.sh
       before_script:
         - export BLD_CONFIG=Release
     - <<: *windows

@@ -12,7 +12,7 @@ License:        MIT
 URL:            http://ripple.com/
 Source0:        rippled.tar.gz
 
-BuildRequires:  protobuf-static openssl-static cmake zlib-static ninja-build
+BuildRequires:  cmake zlib-static ninja-build
 
 %description
 rippled
@@ -32,7 +32,7 @@ core library for development of standalone applications that sign transactions.
 cd rippled
 mkdir -p bld.release
 cd bld.release
-cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_BUILD_TYPE=Release -Dstatic=true -DCMAKE_VERBOSE_MAKEFILE=ON -Dlocal_protobuf=ON -Dvalidator_keys=ON
+cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_BUILD_TYPE=Release -Dstatic=true -DCMAKE_VERBOSE_MAKEFILE=ON -Dvalidator_keys=ON
 cmake --build . --parallel --target rippled --target validator-keys -- -v
 
 %pre
@@ -41,6 +41,7 @@ test -e /etc/pki/tls || { mkdir -p /etc/pki; ln -s /usr/lib/ssl /etc/pki/tls; }
 %install
 rm -rf $RPM_BUILD_ROOT
 DESTDIR=$RPM_BUILD_ROOT cmake --build rippled/bld.release --target install -- -v
+rm -rf ${RPM_BUILD_ROOT}/%{_prefix}/lib64/cmake/date
 install -d ${RPM_BUILD_ROOT}/etc/opt/ripple
 install -d ${RPM_BUILD_ROOT}/usr/local/bin
 ln -s %{_prefix}/etc/rippled.cfg ${RPM_BUILD_ROOT}/etc/opt/ripple/rippled.cfg
