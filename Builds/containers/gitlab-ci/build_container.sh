@@ -9,24 +9,15 @@ else
     echo "invalid package type"
     exit 1
 fi
-if docker pull "${ARTIFACTORY_HUB}/${container_name}:${CI_COMMIT_SHA}"; then
-    echo "${pkgtype} container for ${CI_COMMIT_SHA} already exists" \
-        "- skipping container build!"
-    exit 0
-else
-    echo "no existing ${pkgtype} container for this branch - searching history."
-    for CID_PREV in $(git log --pretty=%H -n30) ; do
-        if docker pull "${ARTIFACTORY_HUB}/${container_name}:${CID_PREV}"; then
-            echo "found container for previous commit ${CID_PREV}" \
-                "- using as cache."
-            docker tag \
-               "${ARTIFACTORY_HUB}/${container_name}:${CID_PREV}" \
-               "${container_name}:${CID_PREV}"
-            CMAKE_EXTRA="-D${pkgtype}_cache_from=${container_name}:${CID_PREV}"
-            break
-        fi
-    done
+
+if docker pull "${ARTIFACTORY_HUB}/${container_name}:latest_${CI_COMMIT_REF_SLUG}"; then
+    echo "found container for latest - using as cache."
+    docker tag \
+       "${ARTIFACTORY_HUB}/${container_name}:latest_${CI_COMMIT_REF_SLUG}" \
+       "${container_name}:latest_${CI_COMMIT_REF_SLUG}"
+    CMAKE_EXTRA="-D${pkgtype}_cache_from=${container_name}:latest_${CI_COMMIT_REF_SLUG}"
 fi
+
 cmake --version
 test -d build && rm -rf build
 mkdir -p build/container && cd build/container
@@ -34,8 +25,4 @@ eval time \
     cmake -Dpackages_only=ON -DCMAKE_VERBOSE_MAKEFILE=ON ${CMAKE_EXTRA} \
     -G Ninja ../..
 time cmake --build . --target "${pkgtype}_container" -- -v
-docker tag \
-    "${container_name}:${CI_COMMIT_SHA}" \
-    "${ARTIFACTORY_HUB}/${container_name}:${CI_COMMIT_SHA}"
-time docker push "${ARTIFACTORY_HUB}/${container_name}:${CI_COMMIT_SHA}"
 

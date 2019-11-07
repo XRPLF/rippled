@@ -41,6 +41,7 @@ test -e /etc/pki/tls || { mkdir -p /etc/pki; ln -s /usr/lib/ssl /etc/pki/tls; }
 %install
 rm -rf $RPM_BUILD_ROOT
 DESTDIR=$RPM_BUILD_ROOT cmake --build rippled/bld.release --target install -- -v
+rm -rf ${RPM_BUILD_ROOT}/%{_prefix}/lib64/cmake/date
 install -d ${RPM_BUILD_ROOT}/etc/opt/ripple
 install -d ${RPM_BUILD_ROOT}/usr/local/bin
 ln -s %{_prefix}/etc/rippled.cfg ${RPM_BUILD_ROOT}/etc/opt/ripple/rippled.cfg

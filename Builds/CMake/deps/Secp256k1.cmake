@@ -8,7 +8,6 @@ if (NOT WIN32)
   find_package(secp256k1)
 endif()
 
-
 if(secp256k1)
   set_target_properties (secp256k1_lib PROPERTIES
     IMPORTED_LOCATION_DEBUG

@@ -1,5 +1,7 @@
-find_package (PkgConfig REQUIRED)
-pkg_search_module (snappy_PC QUIET snappy>=1.1.7)
+find_package (PkgConfig)
+if (PKG_CONFIG_FOUND)
+  pkg_search_module (snappy_PC QUIET snappy>=1.1.7)
+endif ()
 
 if(static)
   set(SNAPPY_LIB libsnappy.a)

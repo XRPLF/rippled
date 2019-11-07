@@ -31,6 +31,14 @@ else()
     set (soci_lib_post "_4_0")
   endif ()
   get_target_property (_boost_incs Boost::date_time INTERFACE_INCLUDE_DIRECTORIES)
+  get_target_property (_boost_dt Boost::date_time IMPORTED_LOCATION)
+  if (NOT _boost_dt)
+    get_target_property (_boost_dt Boost::date_time IMPORTED_LOCATION_RELEASE)
+  endif ()
+  if (NOT _boost_dt)
+    get_target_property (_boost_dt Boost::date_time IMPORTED_LOCATION_DEBUG)
+  endif ()
+
   ExternalProject_Add (soci
     PREFIX ${nih_cache_path}
     GIT_REPOSITORY https://github.com/SOCI/soci.git
@@ -59,13 +67,18 @@ else()
       -DSOCI_LIBDIR=lib
       -DSOCI_SHARED=OFF
       -DSOCI_TESTS=OFF
-      # hack to workaround the fact that soci doesn't currently use
+      # hacks to workaround the fact that soci doesn't currently use
       # boost imported targets in its cmake. If they switch to
       # proper imported targets, this next line can be removed
       # (as well as the get_property above that sets _boost_incs)
       -DBoost_INCLUDE_DIRS=$<JOIN:${_boost_incs},::>
       -DBOOST_ROOT=${BOOST_ROOT}
       -DWITH_BOOST=ON
+      -DBoost_FOUND=ON
+      -DBoost_DATE_TIME_FOUND=ON
+      -DSOCI_HAVE_BOOST=ON
+      -DSOCI_HAVE_BOOST_DATE_TIME=ON
+      -DBoost_DATE_TIME_LIBRARY=${_boost_dt}
       -DSOCI_DB2=OFF
       -DSOCI_FIREBIRD=OFF
       -DSOCI_MYSQL=OFF

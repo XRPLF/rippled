@@ -36,6 +36,8 @@ if (static AND NOT APPLE)
 else ()
   set (Boost_USE_STATIC_RUNTIME OFF)
 endif ()
+# TBD:
+# Boost_USE_DEBUG_RUNTIME:  When ON, uses Boost libraries linked against the
 find_package (Boost 1.70 REQUIRED
   COMPONENTS
     chrono
@@ -70,7 +72,12 @@ target_link_libraries (ripple_boost
     Boost::serialization
     Boost::system
     Boost::thread)
-if (san)
+if (Boost_COMPILER)
+  target_link_libraries (ripple_boost INTERFACE Boost::disable_autolinking)
+endif ()
+if (san AND is_clang)
+  # TODO: gcc does not support -fsanitize-blacklist...can we do something else 
+  # for gcc ?
   if (NOT Boost_INCLUDE_DIRS AND TARGET Boost::headers)
     get_target_property (Boost_INCLUDE_DIRS Boost::headers INTERFACE_INCLUDE_DIRECTORIES)
   endif ()

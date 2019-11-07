@@ -16,8 +16,8 @@ RUN chmod +x /tmp/centos_setup.sh && \
     chmod +x /tmp/extras.sh
 RUN /tmp/centos_setup.sh
 
-RUN /tmp/install_cmake.sh 3.15.2 /opt/local/cmake-3.15
-RUN ln -s /opt/local/cmake-3.15 /opt/local/cmake
+RUN /tmp/install_cmake.sh 3.16.1 /opt/local/cmake-3.16
+RUN ln -s /opt/local/cmake-3.16 /opt/local/cmake
 ENV PATH="/opt/local/cmake/bin:$PATH"
 # also install min supported cmake for testing
 RUN if [ "${CI_USE}" = true ] ; then /tmp/install_cmake.sh 3.9.0 /opt/local/cmake-3.9; fi

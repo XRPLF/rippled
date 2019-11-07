@@ -1,5 +1,7 @@
-find_package (PkgConfig REQUIRED)
-pkg_search_module (lz4_PC QUIET liblz4>=1.8)
+find_package (PkgConfig)
+if (PKG_CONFIG_FOUND)
+  pkg_search_module (lz4_PC QUIET liblz4>=1.8)
+endif ()
 
 if(static)
   set(LZ4_LIB liblz4.a)

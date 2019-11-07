@@ -7,7 +7,6 @@ else()
   set(LIBARCHIVE_LIB archive)
 endif()
 
-
 find_library (archive
   NAMES ${LIBARCHIVE_LIB}
   HINTS

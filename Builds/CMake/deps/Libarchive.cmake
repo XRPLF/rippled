@@ -2,22 +2,58 @@
    NIH dep: libarchive
 #]===================================================================]
 
+option (local_libarchive "use local build of libarchive." OFF)
 add_library (archive_lib STATIC IMPORTED GLOBAL)
 
-if (NOT WIN32)
-  find_package(libarchive REQUIRED)
+if (NOT local_libarchive)
+  if (NOT WIN32)
+    find_package(libarchive_pc REQUIRED)
+  endif ()
+  if (archive)
+    message (STATUS "Found libarchive using pkg-config. Using ${archive}.")
+    set_target_properties (archive_lib PROPERTIES
+      IMPORTED_LOCATION_DEBUG
+        ${archive}
+      IMPORTED_LOCATION_RELEASE
+        ${archive}
+      INTERFACE_INCLUDE_DIRECTORIES
+        ${LIBARCHIVE_INCLUDE_DIR})
+  else ()
+    ## now try searching using the minimal find module that cmake provides
+    find_package(LibArchive 3.3.3 QUIET)
+    if (LibArchive_FOUND)
+      if (static)
+        # find module doesn't find static libs currently, so we re-search
+        get_filename_component(_loc ${LibArchive_LIBRARY} DIRECTORY)
+        find_library(_la_static
+          NAMES libarchive.a archive_static.lib
+          PATHS ${_loc})
+        if (_la_static)
+          set (_la_lib ${_la_static})
+        else ()
+          message (WARNING "unable to find libarchive static lib - switching to local build")
+          set (local_libarchive ON CACHE BOOL "" FORCE)
+        endif ()
+      else ()
+        set (_la_lib ${LibArchive_LIBRARY})
+      endif ()
+      if (NOT local_libarchive)
+        message (STATUS "Found libarchive using module/config. Using ${_la_lib}.")
+        set_target_properties (archive_lib PROPERTIES
+          IMPORTED_LOCATION_DEBUG
+            ${_la_lib}
+          IMPORTED_LOCATION_RELEASE
+            ${_la_lib}
+          INTERFACE_INCLUDE_DIRECTORIES
+            ${LibArchive_INCLUDE_DIRS})
+      endif ()
+    else ()
+      set (local_libarchive ON CACHE BOOL "" FORCE)
+    endif ()
+  endif ()
 endif()
 
-if(libarchive)
-  set_target_properties (archive_lib PROPERTIES
-    IMPORTED_LOCATION_DEBUG
-      ${archive}
-    IMPORTED_LOCATION_RELEASE
-      ${archive}
-    INTERFACE_INCLUDE_DIRECTORIES
-      ${LIBARCHIVE_INCLUDE_DIR})
-
-else()
+if (local_libarchive)
   set (lib_post "")
   if (MSVC)
     set (lib_post "_static")

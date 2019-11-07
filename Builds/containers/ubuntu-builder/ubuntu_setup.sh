@@ -30,7 +30,7 @@ apt-get -y clean
 apt-get -y update
 
 apt-get -y --fix-missing install \
-    make cmake ninja-build autoconf libtool pkg-config \
+    make cmake ninja-build autoconf automake libtool pkg-config libtool \
     openssl libssl-dev \
     liblzma-dev libbz2-dev zlib1g-dev \
     libjemalloc-dev \
@@ -158,36 +158,6 @@ update-alternatives --install \
 update-alternatives --auto clang
 
 if [ "${CI_USE}" = true ] ; then
-    apt-get -y install \
-        clang-5.0 libclang-common-5.0-dev libclang-5.0-dev libllvm5.0 llvm-5.0 \
-        llvm-5.0-dev llvm-5.0-runtime clang-format-5.0 python-clang-5.0 \
-        lld-5.0 libfuzzer-5.0-dev
-    update-alternatives --install \
-        /usr/bin/clang clang /usr/bin/clang-5.0 10 \
-        --slave /usr/bin/clang++ clang++ /usr/bin/clang++-5.0 \
-        --slave /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-5.0 \
-        --slave /usr/bin/asan-symbolize asan-symbolize /usr/bin/asan_symbolize-5.0 \
-        --slave /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-5.0 \
-        --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-5.0 \
-        --slave /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-5.0 \
-        --slave /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-5.0 \
-        --slave /usr/bin/llvm-nm llvm-nm /usr/bin/llvm-nm-5.0
-
-    apt-get -y install \
-        clang-6.0 libclang-common-6.0-dev libclang-6.0-dev libllvm6.0 llvm-6.0 \
-        llvm-6.0-dev llvm-6.0-runtime clang-format-6.0 python-clang-6.0 \
-        lld-6.0 libfuzzer-6.0-dev
-    update-alternatives --install \
-        /usr/bin/clang clang /usr/bin/clang-6.0 12 \
-        --slave /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 \
-        --slave /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-6.0 \
-        --slave /usr/bin/asan-symbolize asan-symbolize /usr/bin/asan_symbolize-6.0 \
-        --slave /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-6.0 \
-        --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-6.0 \
-        --slave /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-6.0 \
-        --slave /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-6.0 \
-        --slave /usr/bin/llvm-nm llvm-nm /usr/bin/llvm-nm-6.0
-
     apt-get -y install \
         clang-9 libclang-common-9-dev libclang-9-dev libllvm9 llvm-9 \
         llvm-9-dev llvm-9-runtime clang-format-9 python-clang-9 \

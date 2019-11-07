@@ -38,6 +38,11 @@ if (MSVC)
 
     # /ZI (Edit & Continue debugging information) is incompatible with Gy-
     string (REPLACE "/ZI" "/Zi" ${var_} "${${var_}}")
+
+    # omit debug info completely under CI (not needed)
+    if (is_ci)
+      string (REPLACE "/Zi" " " ${var_} "${${var_}}")
+    endif ()
   endforeach ()
 
   target_compile_options (common
