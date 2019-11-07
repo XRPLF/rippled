@@ -9,6 +9,7 @@
 set -exu
 
 odir=$(pwd)
+: ${BOOST_TOOLSET:=msvc-14.1}
 
 if [[ -d "$BOOST_ROOT/lib" || -d "${BOOST_ROOT}/stage/lib" ]] ; then
     echo "Using cached boost at $BOOST_ROOT"
@@ -60,7 +61,7 @@ if [[ -z ${COMSPEC:-} ]]; then
 else
     BLDARGS+=(runtime-link="static,shared")
     BLDARGS+=(--layout=versioned)
-    BLDARGS+=(--toolset="msvc-14.1")
+    BLDARGS+=(--toolset="${BOOST_TOOLSET}")
     BLDARGS+=(address-model=64)
     BLDARGS+=(architecture=x86)
     BLDARGS+=(link=static)

@@ -20,7 +20,6 @@ override_dh_auto_configure:
 		-DCMAKE_INSTALL_PREFIX=/opt/ripple \
 		-DCMAKE_BUILD_TYPE=Release \
 		-Dstatic=true \
-		-Dlocal_protobuf=ON \
 		-Dvalidator_keys=ON \
 		-DCMAKE_VERBOSE_MAKEFILE=ON
 
@@ -34,5 +33,8 @@ override_dh_auto_install:
 	install -D Builds/containers/shared/update-rippled.sh debian/tmp/opt/ripple/bin/update-rippled.sh
 	install -D Builds/containers/shared/update-rippled-cron debian/tmp/opt/ripple/etc/update-rippled-cron
 	install -D Builds/containers/shared/rippled-logrotate debian/tmp/etc/logrotate.d/rippled
+    rm -f debian/tmp/opt/ripple/lib64/cmake/date/dateConfig.cmake
 	rm -rf bld
 	rm -rf bld_vl
+
+

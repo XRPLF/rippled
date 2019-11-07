@@ -6,7 +6,7 @@ services:
 
 env:
   global:
-    - DOCKER_IMAGE="mellery451/rippled-ci-builder:2019-08-26"
+    - DOCKER_IMAGE="mellery451/rippled-ci-builder:2019-12-06"
     - CMAKE_EXTRA_ARGS="-Dwerr=ON -Dwextra=ON"
     - NINJA_BUILD=true
     # change this if we get more VM capacity
@@ -35,9 +35,6 @@ matrix:
   allow_failures:
     # TODO these all need more investigation
     #
-    # current tsan failure might be related to:
-    # https://github.com/google/sanitizers/issues/1104
-    - name: tsan, clang-8
     # there are a number of UBs caught currently that need triage
     - name: ubsan, clang-8
 
@@ -132,14 +129,18 @@ matrix:
         - UBSAN_OPTIONS="print_stacktrace=1:report_error_type=1"
         - PARALLEL_TESTS=false
     # tsan
-    - compiler: clang-8
-      name: tsan, clang-8
-      env:
-        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
-        - BUILD_TYPE=Release
-        - CMAKE_ADD="-Dsan=thread"
-        - TSAN_OPTIONS="history_size=3 external_symbolizer_path=/usr/bin/llvm-symbolizer verbosity=1"
-        - PARALLEL_TESTS=false
+    # current tsan failure *might* be related to:
+    # https://github.com/google/sanitizers/issues/1104
+    #  but we can't get it to run, so leave it disabled for now
+    #    - compiler: clang-8
+    #      name: tsan, clang-8
+    #      env:
+    #        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+    #        - BUILD_TYPE=Release
+    #        - CMAKE_ADD="-Dsan=thread"
+    #        - TSAN_OPTIONS="history_size=3 external_symbolizer_path=/usr/bin/llvm-symbolizer verbosity=1"
+    #        - PARALLEL_TESTS=false
+
     # dynamic lib builds
     - compiler: gcc-8
       name: non-static, gcc-8
@@ -210,9 +211,12 @@ matrix:
     # macos
     - &macos
       os: osx
-      osx_image: xcode10.2
+      osx_image: xcode10.3
       name: xcode10, debug
       env:
+        # put NIH in non-cache location since it seems to
+        # cause failures when homebrew updates
+        - NIH_CACHE_ROOT=${TRAVIS_BUILD_DIR}/nih_c
         - BLD_CONFIG=Debug
         - TEST_EXTRA_ARGS=""
         - BOOST_ROOT=${CACHE_DIR}/boost_1_70_0
@@ -225,10 +229,14 @@ matrix:
       addons:
         homebrew:
           packages:
+            - pkg-config
             - bash
             - ninja
             - cmake
             - wget
+            - zstd
+            - protobuf
+            - libarchive
             - openssl@1.1
           update: true
       install:
@@ -250,13 +258,7 @@ matrix:
       before_script:
         - export TEST_EXTRA_ARGS="--unittest-ipv6"
     - <<: *macos
-      osx_image: xcode9.4
-      name: xcode9, debug
-      before_script:
-        # turn off warnings as err for this build
-        - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -Dwerr=OFF"
-    - <<: *macos
-      osx_image: xcode11
+      osx_image: xcode11.2
       name: xcode11, debug
     # windows
     - &windows
@@ -280,7 +282,8 @@ matrix:
           -DVCPKG_TARGET_TRIPLET=x64-windows-static"
       install:
         - choco upgrade cmake.install
-        - choco install ninja visualstudio2017-workload-vctools -y
+        - choco install ninja -y
+        - choco install visualstudio2017-workload-vctools -y
         - travis_wait 30 bin/sh/install-vcpkg.sh
         - travis_wait ${MAX_TIME_MIN} Builds/containers/shared/install_boost.sh
       before_script:
@@ -293,6 +296,17 @@ matrix:
         - ./rippled.exe --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
     - <<: *windows
       name: windows, release
+      before_script:
+        - export BLD_CONFIG=Release
+    - <<: *windows
+      name: windows, vc2019
+      install:
+        - choco upgrade cmake.install
+        - choco install ninja -y
+        - choco install visualstudio2019buildtools visualstudio2019community visualstudio2019-workload-vctools -y
+        - travis_wait 30 bin/sh/install-vcpkg.sh
+        - export BOOST_TOOLSET=msvc-14.2
+        - travis_wait ${MAX_TIME_MIN} Builds/containers/shared/install_boost.sh
       before_script:
         - export BLD_CONFIG=Release
     - <<: *windows

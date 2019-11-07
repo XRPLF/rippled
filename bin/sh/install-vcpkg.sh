@@ -17,7 +17,7 @@ if [[ -d "${VCPKG_DIR}" ]] ; then
     rm -rf "${VCPKG_DIR}"
 fi
 
-git clone --branch 2019.06 https://github.com/Microsoft/vcpkg.git ${VCPKG_DIR}
+git clone --branch 2019.10 https://github.com/Microsoft/vcpkg.git ${VCPKG_DIR}
 pushd ${VCPKG_DIR}
 if [[ -z ${COMSPEC:-} ]]; then
     chmod +x ./bootstrap-vcpkg.sh

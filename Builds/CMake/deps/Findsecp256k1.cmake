@@ -1,5 +1,7 @@
-find_package (PkgConfig REQUIRED)
-pkg_search_module (secp256k1_PC QUIET libsecp256k1)
+find_package (PkgConfig)
+if (PKG_CONFIG_FOUND)
+  pkg_search_module (secp256k1_PC QUIET libsecp256k1)
+endif ()
 
 if(static)
   set(SECP256K1_LIB libsecp256k1.a)
