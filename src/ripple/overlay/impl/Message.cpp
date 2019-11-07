@@ -27,7 +27,13 @@ namespace ripple {
 Message::Message (::google::protobuf::Message const& message, int type)
     : mCategory(TrafficCount::categorize(message, type, false))
 {
+
+#if defined(GOOGLE_PROTOBUF_VERSION) && (GOOGLE_PROTOBUF_VERSION >= 3011000)
+    auto const messageBytes = message.ByteSizeLong ();
+#else
     unsigned const messageBytes = message.ByteSize ();
+#endif
+
     assert (messageBytes != 0);
 
     /** Number of bytes in a message header. */

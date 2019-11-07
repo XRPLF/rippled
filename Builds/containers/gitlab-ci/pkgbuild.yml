@@ -8,8 +8,15 @@
 # NOTE: these are sensible defaults for Ripple pipelines. These
 # can be overridden by project or group variables as needed.
 variables:
+  # these containers are built manually using the rippled
+  # cmake build (container targets) and tagged/pushed so they 
+  # can be used here
+  RPM_CONTAINER_TAG: "2019-12-06"
   RPM_CONTAINER_NAME: "rippled-rpm-builder"
+  RPM_CONTAINER_FULLNAME: "${RPM_CONTAINER_NAME}:${RPM_CONTAINER_TAG}"
+  DPKG_CONTAINER_TAG: "2019-12-06"
   DPKG_CONTAINER_NAME: "rippled-dpkg-builder"
+  DPKG_CONTAINER_FULLNAME: "${DPKG_CONTAINER_NAME}:${DPKG_CONTAINER_TAG}"
   ARTIFACTORY_HOST: "artifactory.ops.ripple.com"
   ARTIFACTORY_HUB: "${ARTIFACTORY_HOST}:6555"
   GIT_SIGN_PUBKEYS_URL: "https://gitlab.ops.ripple.com/snippets/11/raw"
@@ -19,7 +26,6 @@ variables:
   #   IS_PRIMARY_REPO = "true"
 
 stages:
-  - build_containers
   - build_packages
   - sign_packages
   - smoketest
@@ -31,6 +37,7 @@ stages:
   - push_to_prod
   - verify_from_prod
   - get_final_hashes
+  - build_containers
 
 .dind_template: &dind_param
   before_script:
@@ -67,35 +74,6 @@ stages:
 
 #########################################################################
 ##                                                                     ##
-##  stage: build_containers                                            ##
-##                                                                     ##
-##  build containers from docker definitions. These containers are     ##
-##  subsequently used to build the rpm and deb packages.               ##
-##                                                                     ##
-#########################################################################
-
-build_centos_container:
-  stage: build_containers
-  <<: *dind_param
-  cache:
-    key: containers
-    paths:
-      - .nih_c
-  script:
-    - . ./Builds/containers/gitlab-ci/build_container.sh rpm
-
-build_ubuntu_container:
-  stage: build_containers
-  <<: *dind_param
-  cache:
-    key: containers
-    paths:
-      - .nih_c
-  script:
-    - . ./Builds/containers/gitlab-ci/build_container.sh dpkg
-
-#########################################################################
-##                                                                     ##
 ##  stage: build_packages                                              ##
 ##                                                                     ##
 ##  build packages using containers from previous stage.               ##
@@ -104,31 +82,19 @@ build_ubuntu_container:
 
 rpm_build:
   stage: build_packages
-  dependencies:
-    - build_centos_container
   <<: *dind_param
   artifacts:
     paths:
       - build/rpm/packages/
-  cache:
-    key: rpm
-    paths:
-      - .nih_c/pkgbuild
   script:
     - . ./Builds/containers/gitlab-ci/build_package.sh rpm
 
 dpkg_build:
   stage: build_packages
-  dependencies:
-    - build_ubuntu_container
   <<: *dind_param
   artifacts:
     paths:
       - build/dpkg/packages/
-  cache:
-    key: dpkg
-    paths:
-      - .nih_c/pkgbuild
   script:
     - . ./Builds/containers/gitlab-ci/build_package.sh dpkg
 
@@ -146,7 +112,7 @@ rpm_sign:
     - rpm_build
   image:
     name: centos:7
-    # <<: *dind_param
+  <<: *only_primary
   before_script:
   - |
     # Make sure GnuPG is installed
@@ -175,7 +141,7 @@ dpkg_sign:
     - dpkg_build
   image:
     name: ubuntu:18.04
-    # <<: *dind_param
+  <<: *only_primary
   before_script:
   - |
     # make sure we have GnuPG
@@ -620,4 +586,29 @@ get_prod_hashes:
   <<: *only_primary
   script:
     - . ./Builds/containers/gitlab-ci/push_to_artifactory.sh "GET" ".checksums"
+
+#########################################################################
+##                                                                     ##
+##  stage: build_containers                                            ##
+##                                                                     ##
+##  build containers from docker definitions. These containers are NOT ##
+##  used for the package build. This step is only used to ensure that  ##
+##  the package build targets and files are still working properly.    ##
+##                                                                     ##
+#########################################################################
+
+build_centos_container:
+  stage: build_containers
+  <<: *dind_param
+  script:
+    - . ./Builds/containers/gitlab-ci/build_container.sh rpm
+  allow_failure: true
+
+build_ubuntu_container:
+  stage: build_containers
+  <<: *dind_param
+  script:
+    - . ./Builds/containers/gitlab-ci/build_container.sh dpkg
+  allow_failure: true
+
 

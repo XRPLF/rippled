@@ -4,9 +4,16 @@ dist: xenial
 services:
   - docker
 
+stages:
+  - one
+  - two
+  - three
+  - four
+  - five
+
 env:
   global:
-    - DOCKER_IMAGE="mellery451/rippled-ci-builder:2019-08-26"
+    - DOCKER_IMAGE="rippleci/rippled-ci-builder:2020-01-02"
     - CMAKE_EXTRA_ARGS="-Dwerr=ON -Dwextra=ON"
     - NINJA_BUILD=true
     # change this if we get more VM capacity
@@ -22,28 +29,39 @@ env:
     - CCACHE_NOHASHDIR=true
     - CCACHE_DIR=${CACHE_DIR}/ccache
 
-before_install:
-  - if [ "$(uname)" = "Darwin" ] ; then export NUM_PROCESSORS=$(sysctl -n hw.physicalcpu); else export NUM_PROCESSORS=$(nproc); fi
-  - echo "NUM PROC is ${NUM_PROCESSORS}"
-  - if [ "$(uname)" = "Linux" ] ; then docker pull ${DOCKER_IMAGE}; fi
-  - if [ "${MATRIX_EVAL}" != "" ] ; then eval "${MATRIX_EVAL}"; fi
-  - if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} ${CMAKE_ADD}"; fi
-  - bin/ci/ubuntu/travis-cache-start.sh
-
 matrix:
   fast_finish: true
   allow_failures:
-    # TODO these all need more investigation
+    # TODO these need more investigation
     #
-    # current tsan failure might be related to:
-    # https://github.com/google/sanitizers/issues/1104
-    - name: tsan, clang-8
     # there are a number of UBs caught currently that need triage
     - name: ubsan, clang-8
 
   include:
+    # debug builds
+    - &linux
+      stage: one
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
+      compiler: gcc-8
+      name: gcc-8, debug
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - BUILD_TYPE=Debug
+      script:
+        - sudo chmod -R a+rw ${CACHE_DIR}
+        - ccache -s
+        - travis_wait ${MAX_TIME_MIN} bin/ci/ubuntu/build-in-docker.sh
+        - ccache -s
+    - <<: *linux
+      compiler: clang-8
+      name: clang-8, debug
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Debug
     # coverage builds
-    - compiler: gcc-8
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_cov/
+      compiler: gcc-8
       name: coverage, gcc-8
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
@@ -51,7 +69,9 @@ matrix:
         - CMAKE_ADD="-Dcoverage=ON"
         - TARGET=coverage_report
         - SKIP_TESTS=true
-    - compiler: clang-8
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_cov/
+      compiler: clang-8
       name: coverage, clang-8
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
@@ -60,27 +80,35 @@ matrix:
         - TARGET=coverage_report
         - SKIP_TESTS=true
     # nounity
-    - compiler: gcc-8
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_nounity/
+      compiler: gcc-8
       name: non-unity, gcc-8
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Debug
         - CMAKE_ADD="-Dunity=OFF"
-    - compiler: clang-8
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_nounity/
+      compiler: clang-8
       name: non-unity, clang-8
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
         - BUILD_TYPE=Debug
         - CMAKE_ADD="-Dunity=OFF"
     # manual tests
-    - compiler: gcc-8
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_man/
+      compiler: gcc-8
       name: manual tests, gcc-8, debug
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Debug
         - MANUAL_TESTS=true
     # manual tests
-    - compiler: gcc-8
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_man/
+      compiler: gcc-8
       name: manual tests, gcc-8, release
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
@@ -88,31 +116,26 @@ matrix:
         - CMAKE_ADD="-Dassert=ON"
         - MANUAL_TESTS=true
     # release builds
-    - compiler: gcc-8
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_release/
+      compiler: gcc-8
       name: gcc-8, release
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Release
         - CMAKE_ADD="-Dassert=ON"
-    - compiler: clang-8
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_release/
+      compiler: clang-8
       name: clang-8, release
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
         - BUILD_TYPE=Release
         - CMAKE_ADD="-Dassert=ON"
-    # debug builds
-    - compiler: gcc-8
-      name: gcc-8, debug
-      env:
-        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
-        - BUILD_TYPE=Debug
-    - compiler: clang-8
-      name: clang-8, debug
-      env:
-        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
-        - BUILD_TYPE=Debug
     # asan
-    - compiler: clang-8
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_san/
+      compiler: clang-8
       name: asan, clang-8
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
@@ -122,7 +145,9 @@ matrix:
         #- LSAN_OPTIONS="verbosity=1:log_threads=1"
         - PARALLEL_TESTS=false
     # ubsan
-    - compiler: clang-8
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_san/
+      compiler: clang-8
       name: ubsan, clang-8
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
@@ -132,67 +157,70 @@ matrix:
         - UBSAN_OPTIONS="print_stacktrace=1:report_error_type=1"
         - PARALLEL_TESTS=false
     # tsan
-    - compiler: clang-8
-      name: tsan, clang-8
-      env:
-        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
-        - BUILD_TYPE=Release
-        - CMAKE_ADD="-Dsan=thread"
-        - TSAN_OPTIONS="history_size=3 external_symbolizer_path=/usr/bin/llvm-symbolizer verbosity=1"
-        - PARALLEL_TESTS=false
+    # current tsan failure *might* be related to:
+    # https://github.com/google/sanitizers/issues/1104
+    #  but we can't get it to run, so leave it disabled for now
+    #    - <<: *linux
+    #      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_san/
+    #      compiler: clang-8
+    #      name: tsan, clang-8
+    #      env:
+    #        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+    #        - BUILD_TYPE=Release
+    #        - CMAKE_ADD="-Dsan=thread"
+    #        - TSAN_OPTIONS="history_size=3 external_symbolizer_path=/usr/bin/llvm-symbolizer verbosity=1"
+    #        - PARALLEL_TESTS=false
     # dynamic lib builds
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: non-static, gcc-8
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Debug
         - CMAKE_ADD="-Dstatic=OFF"
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: non-static + BUILD_SHARED_LIBS, gcc-8
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Debug
         - CMAKE_ADD="-Dstatic=OFF -DBUILD_SHARED_LIBS=ON"
     # makefile
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: makefile generator, gcc-8
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Debug
         - NINJA_BUILD=false
     # misc alternative compilers
-    - compiler: gcc-7
+    - <<: *linux
+      compiler: gcc-7
       name: gcc-7
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
         - BUILD_TYPE=Debug
-    - compiler: gcc-9
+    - <<: *linux
+      compiler: gcc-9
       name: gcc-9
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
         - BUILD_TYPE=Debug
-    - compiler: clang-5.0
-      name: clang-5
-      env:
-        - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
-        - BUILD_TYPE=Debug
-    - compiler: clang-6.0
-      name: clang-6
-      env:
-        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
-        - BUILD_TYPE=Debug
-    - compiler: clang-7
+    - <<: *linux
+      compiler: clang-7
       name: clang-7
       env:
         - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
         - BUILD_TYPE=Debug
-    - compiler: clang-9
+    - <<: *linux
+      compiler: clang-9
       name: clang-9
       env:
         - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
         - BUILD_TYPE=Debug
     # verify build with min version of cmake
-    - compiler: gcc-8
+    - <<: *linux
+      compiler: gcc-8
       name: min cmake version
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
@@ -200,7 +228,9 @@ matrix:
         - CMAKE_EXE=/opt/local/cmake-3.9/bin/cmake
         - SKIP_TESTS=true
     # validator keys project as subproj of rippled
-    - compiler: gcc-8
+    - <<: *linux
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_vkeys/
+      compiler: gcc-8
       name: validator-keys
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
@@ -209,10 +239,15 @@ matrix:
         - TARGET=validator-keys
     # macos
     - &macos
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_mac/
+      stage: one
       os: osx
-      osx_image: xcode10.2
+      osx_image: xcode10.3
       name: xcode10, debug
       env:
+        # put NIH in non-cache location since it seems to
+        # cause failures when homebrew updates
+        - NIH_CACHE_ROOT=${TRAVIS_BUILD_DIR}/nih_c
         - BLD_CONFIG=Debug
         - TEST_EXTRA_ARGS=""
         - BOOST_ROOT=${CACHE_DIR}/boost_1_70_0
@@ -225,10 +260,14 @@ matrix:
       addons:
         homebrew:
           packages:
+            - pkg-config
             - bash
             - ninja
             - cmake
             - wget
+            - zstd
+            - protobuf
+            - libarchive
             - openssl@1.1
           update: true
       install:
@@ -250,76 +289,128 @@ matrix:
       before_script:
         - export TEST_EXTRA_ARGS="--unittest-ipv6"
     - <<: *macos
-      osx_image: xcode9.4
-      name: xcode9, debug
-      before_script:
-        # turn off warnings as err for this build
-        - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -Dwerr=OFF"
-    - <<: *macos
-      osx_image: xcode11
+      osx_image: xcode11.2
       name: xcode11, debug
     # windows
     - &windows
-      # caching is unreliable on windows...disable for now
-      cache: false
+      if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_win/
       os: windows
-      name: windows, debug
       env:
         # put NIH in a non-cached location until
         # we come up with a way to stabilize that
         # cache on windows (minimize incremental changes)
+        - CACHE_NAME=win_01
         - NIH_CACHE_ROOT=${TRAVIS_BUILD_DIR}/nih_c
         - VCPKG_DEFAULT_TRIPLET="x64-windows-static"
-        - BOOST_ROOT=${CACHE_DIR}/boost_1_70_0
         - MATRIX_EVAL="CC=cl.exe && CXX=cl.exe"
+        - BOOST_ROOT=${CACHE_DIR}/boost_1_70
         - >-
           CMAKE_ADD="
+          -DCMAKE_PREFIX_PATH=${BOOST_ROOT}/_INSTALLED_
           -DBOOST_ROOT=${BOOST_ROOT}/_INSTALLED_
+          -DBoost_ROOT=${BOOST_ROOT}/_INSTALLED_
+          -DBoost_DIR=${BOOST_ROOT}/_INSTALLED_/lib/cmake/Boost-1.70.0
+          -DBoost_COMPILER=vc141
           -DCMAKE_VERBOSE_MAKEFILE=ON
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake
           -DVCPKG_TARGET_TRIPLET=x64-windows-static"
+      stage: one
+      name: prereq-ssl
       install:
         - choco upgrade cmake.install
         - choco install ninja visualstudio2017-workload-vctools -y
-        - travis_wait 30 bin/sh/install-vcpkg.sh
+      script:
+        - df -h
+        - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh openssl
+    - <<: *windows
+      stage: two
+      name: prereq-proto
+      script:
+        - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh protobuf
+        # TODO - change to the following when we need grpc:
+        # - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh grpc
+    - <<: *windows
+      stage: three
+      name: prereq-libarchive-rocks
+      script:
+        - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh libarchive[lz4]
+        # - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh rocksdb[snappy,lz4,zlib]
+    - <<: *windows
+      stage: four
+      name: prereq-boost
+      install:
+        - choco upgrade cmake.install
+        - choco install ninja visualstudio2017-workload-vctools -y
+        - choco install visualstudio2019buildtools visualstudio2019community visualstudio2019-workload-vctools -y
+      script:
+        - export BOOST_TOOLSET=msvc-14.1
         - travis_wait ${MAX_TIME_MIN} Builds/containers/shared/install_boost.sh
+    - &windows-bld
+      <<: *windows
+      stage: five
+      name: windows, debug
       before_script:
         - export BLD_CONFIG=Debug
       script:
+        - df -h
         - . ./bin/sh/setup-msvc.sh
         - mkdir -p build.ms && cd build.ms
         - cmake -G Ninja ${CMAKE_EXTRA_ARGS} -DCMAKE_BUILD_TYPE=${BLD_CONFIG} ..
         - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose
-        - ./rippled.exe --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
-    - <<: *windows
+        # override num procs to force single unit test job
+        - export NUM_PROCESSORS=1
+        - travis_wait ${MAX_TIME_MIN} ./rippled.exe --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
+    - <<: *windows-bld
       name: windows, release
       before_script:
         - export BLD_CONFIG=Release
-    - <<: *windows
+    - <<: *windows-bld
       name: windows, visual studio, debug
       script:
         - mkdir -p build.ms && cd build.ms
         - cmake -G "Visual Studio 15 2017 Win64" ${CMAKE_EXTRA_ARGS} ..
         - export DESTDIR=${PWD}/_installed_
         - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose --config ${BLD_CONFIG} --target install
+        # override num procs to force single unit test job
+        - export NUM_PROCESSORS=1
         - >-
-          "./_installed_/Program Files/rippled/bin/rippled.exe" --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
+          travis_wait ${MAX_TIME_MIN} "./_installed_/Program Files/rippled/bin/rippled.exe" --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
+    - <<: *windows-bld
+      name: windows, vc2019
+      install:
+        - choco upgrade cmake.install
+        - choco install ninja -y
+        - choco install visualstudio2019buildtools visualstudio2019community visualstudio2019-workload-vctools -y
+      before_script:
+        - export BLD_CONFIG=Release
+        # we want to use the boost build from cache, which was built using the
+        # vs2017 compiler so we need to specify the Boost_COMPILER. BUT, we
+        # can't use the cmake config files generated by boost b/c they are
+        # broken for Boost_COMPILER override, so we need to specify both
+        # Boost_NO_BOOST_CMAKE and a slightly different Boost_COMPILER string
+        # to make the legacy find module work for us. If the cmake configs are
+        # fixed in the future, it should be possible to remove these
+        # workarounds.
+        - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -DBoost_NO_BOOST_CMAKE=ON -DBoost_COMPILER=-vc141"
 
-cache:
-  timeout: 900
-  directories:
-    - $CACHE_DIR
 before_cache:
   - if [ $(uname) = "Linux" ] ; then SUDO="sudo"; else SUDO=""; fi
   - cd ${TRAVIS_HOME}
   - if [ -f cache_ignore.tar ] ; then $SUDO tar xvf cache_ignore.tar; fi
   - cd ${TRAVIS_BUILD_DIR}
 
-script:
-  - sudo chmod -R a+rw ${CACHE_DIR}
-  - ccache -s
-  - travis_wait ${MAX_TIME_MIN} bin/ci/ubuntu/build-in-docker.sh
-  - ccache -s
+cache:
+  timeout: 900
+  directories:
+    - $CACHE_DIR
+
+before_install:
+  - if [ "$(uname)" = "Darwin" ] ; then export NUM_PROCESSORS=$(sysctl -n hw.physicalcpu); else export NUM_PROCESSORS=$(nproc); fi
+  - echo "NUM PROC is ${NUM_PROCESSORS}"
+  - if [ "$(uname)" = "Linux" ] ; then docker pull ${DOCKER_IMAGE}; fi
+  - if [ "${MATRIX_EVAL}" != "" ] ; then eval "${MATRIX_EVAL}"; fi
+  - if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} ${CMAKE_ADD}"; fi
+  - bin/ci/ubuntu/travis-cache-start.sh
 
 notifications:
   email: false

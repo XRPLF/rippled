@@ -1,4 +1,9 @@
 cmake_minimum_required (VERSION 3.9.0)
+
+if (POLICY CMP0074)
+  cmake_policy(SET CMP0074 NEW)
+endif ()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/deps")
 
@@ -18,10 +23,6 @@ if (target)
   parse_target()
 endif ()
 project (rippled)
-
-if (POLICY CMP0074)
-  cmake_policy(SET CMP0074 NEW)
-endif ()
 
 include(RippledSanity)
 include(RippledVersion)
