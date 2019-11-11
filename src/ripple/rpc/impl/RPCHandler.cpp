@@ -141,7 +141,7 @@ error_code_i fillHandler (Context& context,
 
     JLOG (context.j.trace()) << "COMMAND:" << strCommand;
     JLOG (context.j.trace()) << "REQUEST:" << context.params;
-    auto handler = getHandler(strCommand);
+    auto handler = getHandler(context.apiVersion, strCommand);
 
     if (!handler)
         return rpcUNKNOWN_COMMAND;
@@ -296,9 +296,9 @@ Status doCommand (
     return rpcUNKNOWN_COMMAND;
 }
 
-Role roleRequired (std::string const& method)
+Role roleRequired (unsigned version, std::string const& method)
 {
-    auto handler = RPC::getHandler(method);
+    auto handler = RPC::getHandler(version, method);
 
     if (!handler)
         return Role::FORBID;

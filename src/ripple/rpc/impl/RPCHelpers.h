@@ -114,9 +114,32 @@ parseRippleLibSeed(Json::Value const& params);
 std::pair<PublicKey, SecretKey>
 keypairForSignature(Json::Value const& params, Json::Value& error);
 
+/**
+ * API version numbers used in API version 1
+ */
 extern beast::SemanticVersion const firstVersion;
 extern beast::SemanticVersion const goodVersion;
 extern beast::SemanticVersion const lastVersion;
+
+/**
+ * API version numbers used in later API versions
+ * Requests with a version number in the range
+ * [APIVersionRangeLow, APIVersionRangeHigh] are supported.
+ *
+ * Network Requests without explicit version number use APIFirstVersion.
+ * Command line Requests without explicit version number use
+ * APIVersionCommandLine.
+ */
+
+constexpr unsigned APIInvalidVersion = 0;
+constexpr unsigned APIFirstVersion = 1;
+constexpr unsigned APIVersionSupportedRangeLow = 1;
+constexpr unsigned APIVersionSupportedRangeHigh = 1;
+constexpr unsigned APIVersionIfUnspecified = APIFirstVersion;
+constexpr unsigned APIVersionCommandLine = APIVersionSupportedRangeHigh;
+constexpr unsigned APIVersionRippledStartUp = APIVersionSupportedRangeHigh;
+constexpr unsigned APINumberVersionSupported = APIVersionSupportedRangeHigh -
+                                               APIVersionSupportedRangeLow + 1;
 
 template <class Object>
 void
@@ -130,6 +153,17 @@ setVersion(Object& parent)
 
 std::pair<RPC::Status, LedgerEntryType>
     chooseLedgerEntryType(Json::Value const& params);
+
+template <class Object>
+void
+setVersionV2(Object& parent)
+{
+    auto&& object = addObject (parent, jss::version);
+    object[jss::api_version_low] = APIVersionSupportedRangeLow;
+    object[jss::api_version] = APIVersionSupportedRangeHigh;
+}
+
+unsigned getAPIVersionNumber(const Json::Value & value);
 
 } // RPC
 } // ripple

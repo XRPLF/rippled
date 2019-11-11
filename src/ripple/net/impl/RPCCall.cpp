@@ -36,6 +36,7 @@
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/rpc/ServerHandler.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/beast/core/LexicalCast.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -1352,8 +1353,20 @@ rpcCmdLineToJson (std::vector<std::string> const& args,
     retParams[jss::params] = jvRpcParams;
 
     jvRequest   = rpParser.parseCommand (args[0], jvRpcParams, true);
-
+    if(jvRequest.isObject())
+    {
+        if(!jvRequest.isMember(jss::error))
+            jvRequest["api_version"] = RPC::APIVersionCommandLine;
+    }
+    else if(jvRequest.isArray()) {
+        for (Json::UInt j = 0; j < jvRequest.size(); ++j) {
+            if (jvRequest[j].isObject())
+                jvRequest[j]["api_version"] = RPC::APIVersionCommandLine;
+        }
+    }
     JLOG (j.trace()) << "RPC Request: " << jvRequest << std::endl;
+    //std::cout << "RPC Request: " << jvRequest << std::endl;//TODO Peng
+
     return jvRequest;
 }
 
@@ -1441,9 +1454,13 @@ rpcClient(std::vector<std::string> const& args,
                 jvRequest["admin_password"] = setup.client.admin_password;
 
             if (jvRequest.isObject())
+            //{
+                //jvRequest["api_version"] = RPC::APIVersionCommandLine;
                 jvParams.append (jvRequest);
+            //}
             else if (jvRequest.isArray())
             {
+                //jvParams.append(RPC::getAPIVersionString());
                 for (Json::UInt i = 0; i < jvRequest.size(); ++i)
                     jvParams.append(jvRequest[i]);
             }

@@ -57,6 +57,20 @@ public:
     }
 };
 
+class VersionHandlerV2Plus: public VersionHandler
+{
+public:
+    explicit VersionHandlerV2Plus (Context & c)
+    : VersionHandler(c)
+    {}
+
+    template <class Object>
+    void writeResult (Object& obj)
+    {
+        setVersionV2 (obj);
+    }
+};
+
 } // RPC
 } // ripple
 

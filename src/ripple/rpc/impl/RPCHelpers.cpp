@@ -716,5 +716,23 @@ beast::SemanticVersion const firstVersion("1.0.0");
 beast::SemanticVersion const goodVersion("1.0.0");
 beast::SemanticVersion const lastVersion("1.0.0");
 
+unsigned getAPIVersionNumber(const Json::Value & jv)
+{
+    if (jv.isMember(jss::api_version))
+    {
+        if(jv[jss::api_version].isInt())
+        {
+            unsigned apiVersion = jv[jss::api_version].asInt();
+            if(apiVersion >= RPC::APIVersionSupportedRangeLow &&
+               apiVersion <= RPC::APIVersionSupportedRangeHigh)
+            {
+                return apiVersion;
+            }
+        }
+        return RPC::APIInvalidVersion;
+    } else
+        return RPC::APIVersionIfUnspecified;
+}
+
 } // RPC
 } // ripple
