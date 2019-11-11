@@ -61,6 +61,7 @@
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/resource/Fees.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
 
@@ -1583,7 +1584,8 @@ bool ApplicationImp::setup()
         Resource::Charge loadType = Resource::feeReferenceRPC;
         Resource::Consumer c;
         RPC::Context context { journal ("RPCHandler"), jvCommand, *this,
-            loadType, getOPs (), getLedgerMaster (), c, Role::ADMIN};
+            loadType, getOPs (), getLedgerMaster(), c, Role::ADMIN,
+            RPC::ApiMaximumSupportedVersion};
 
         Json::Value jvResult;
         RPC::doCommand (context, jvResult);

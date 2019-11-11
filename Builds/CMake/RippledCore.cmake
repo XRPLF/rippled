@@ -989,6 +989,7 @@ else ()
     src/test/rpc/TransactionEntry_test.cpp
     src/test/rpc/TransactionHistory_test.cpp
     src/test/rpc/ValidatorRPC_test.cpp
+    src/test/rpc/Version_test.cpp
     #[===============================[
        nounity, test sources:
          subdir: server

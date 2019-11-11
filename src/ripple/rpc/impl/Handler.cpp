@@ -20,6 +20,7 @@
 #include <ripple/rpc/impl/Handler.h>
 #include <ripple/rpc/handlers/Handlers.h>
 #include <ripple/rpc/handlers/Version.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 namespace RPC {
@@ -129,16 +130,21 @@ class HandlerTable {
     explicit
     HandlerTable (const Handler(&entries)[N])
     {
-        for (std::size_t i = 0; i < N; ++i)
+        for(auto v = RPC::ApiMinimumSupportedVersion; v <= RPC::ApiMaximumSupportedVersion; ++v)
         {
-            auto const& entry = entries[i];
-            assert (table_.find(entry.name_) == table_.end());
-            table_[entry.name_] = entry;
-        }
+            for (std::size_t i = 0; i < N; ++i)
+            {
+                auto & innerTable = table_[versionToIndex(v)];
+                auto const& entry = entries[i];
+                assert (innerTable.find(entry.name_) == innerTable.end());
+                innerTable[entry.name_] = entry;
+            }
 
-        // This is where the new-style handlers are added.
-        addHandler<LedgerHandler>();
-        addHandler<VersionHandler>();
+            // This is where the new-style handlers are added.
+            // This is also where different versions of handlers are added.
+            addHandler<LedgerHandler>(v);
+            addHandler<VersionHandler>(v);
+        }
     }
 
   public:
@@ -148,29 +154,38 @@ class HandlerTable {
         return handlerTable;
     }
 
-    Handler const* getHandler(std::string name) const
+    Handler const* getHandler(unsigned version, std::string name) const
     {
-        auto i = table_.find(name);
-        return i == table_.end() ? nullptr : &i->second;
+        if(version > RPC::ApiMaximumSupportedVersion || version < RPC::ApiMinimumSupportedVersion)
+            return nullptr;
+        auto & innerTable = table_[versionToIndex(version)];
+        auto i = innerTable.find(name);
+        return i == innerTable.end() ? nullptr : &i->second;
     }
 
     std::vector<char const*>
     getHandlerNames() const
     {
-        std::vector<char const*> ret;
-        ret.reserve(table_.size());
-        for (auto const& i : table_)
-            ret.push_back(i.second.name_);
-        return ret;
+        std::unordered_set<char const*> name_set;
+        for ( int index = 0; index < table_.size(); ++index)
+        {
+            for(auto const& h : table_[index])
+            {
+                name_set.insert(h.second.name_);
+            }
+        }
+        return std::vector<char const*>(name_set.begin(), name_set.end());
     }
 
   private:
-    std::map<std::string, Handler> table_;
+    std::array<std::map<std::string, Handler>, APINumberVersionSupported> table_;
 
     template <class HandlerImpl>
-    void addHandler()
+    void addHandler(unsigned version)
     {
-        assert (table_.find(HandlerImpl::name()) == table_.end());
+        assert (version >= RPC::ApiMinimumSupportedVersion && version <= RPC::ApiMaximumSupportedVersion);
+        auto & innerTable = table_[versionToIndex(version)];
+        assert (innerTable.find(HandlerImpl::name()) == innerTable.end());
 
         Handler h;
         h.name_ = HandlerImpl::name();
@@ -178,15 +193,20 @@ class HandlerTable {
         h.role_ = HandlerImpl::role();
         h.condition_ = HandlerImpl::condition();
 
-        table_[HandlerImpl::name()] = h;
+        innerTable[HandlerImpl::name()] = h;
+    }
+
+    inline unsigned versionToIndex(unsigned version) const
+    {
+        return version - RPC::ApiMinimumSupportedVersion;
     }
 };
 
 } // namespace
 
-Handler const* getHandler(std::string const& name)
+Handler const* getHandler(unsigned version, std::string const& name)
 {
-    return HandlerTable::instance().getHandler(name);
+    return HandlerTable::instance().getHandler(version, name);
 }
 
 std::vector<char const*>
