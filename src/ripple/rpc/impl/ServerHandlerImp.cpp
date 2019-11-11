@@ -28,6 +28,7 @@
 #include <ripple/server/Server.h>
 #include <ripple/server/impl/JSONRPCUtil.h>
 #include <ripple/rpc/impl/ServerHandlerImp.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/make_SSLContext.h>
@@ -398,7 +399,9 @@ ServerHandlerImp::processSession(
     Resource::Charge loadType = Resource::feeReferenceRPC;
     try
     {
-        if ((!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
+        auto apiVersion = RPC::getAPIVersionNumber(jv);
+        if (apiVersion == RPC::APIInvalidVersion ||
+            (!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
             (jv.isMember(jss::command) && !jv[jss::command].isString()) ||
             (jv.isMember(jss::method) && !jv[jss::method].isString()) ||
             (jv.isMember(jss::command) && jv.isMember(jss::method) &&
@@ -406,7 +409,8 @@ ServerHandlerImp::processSession(
         {
             jr[jss::type] = jss::response;
             jr[jss::status] = jss::error;
-            jr[jss::error] = jss::missingCommand;
+            jr[jss::error] = apiVersion == RPC::APIInvalidVersion ?
+                             jss::invalid_API_version : jss::missingCommand;
             jr[jss::request] = jv;
             if (jv.isMember (jss::id))
                 jr[jss::id]  = jv[jss::id];
@@ -414,12 +418,15 @@ ServerHandlerImp::processSession(
                 jr[jss::jsonrpc] = jv[jss::jsonrpc];
             if (jv.isMember(jss::ripplerpc))
                 jr[jss::ripplerpc] = jv[jss::ripplerpc];
+            if (jv.isMember(jss::api_version))
+                jr[jss::api_version] = jv[jss::api_version];
 
             is->getConsumer().charge(Resource::feeInvalidRPC);
             return jr;
         }
 
-        auto required = RPC::roleRequired(jv.isMember(jss::command) ?
+        auto required = RPC::roleRequired(apiVersion,
+                                          jv.isMember(jss::command) ?
                                           jv[jss::command].asString() :
                                           jv[jss::method].asString());
         auto role = requestRole(
@@ -444,6 +451,7 @@ ServerHandlerImp::processSession(
                 app_.getLedgerMaster(),
                 is->getConsumer(),
                 role,
+                apiVersion,
                 coro,
                 is,
                 {is->user(), is->forwarded_for()}
@@ -500,6 +508,9 @@ ServerHandlerImp::processSession(
         jr[jss::jsonrpc] = jv[jss::jsonrpc];
     if (jv.isMember(jss::ripplerpc))
         jr[jss::ripplerpc] = jv[jss::ripplerpc];
+    if (jv.isMember(jss::api_version))
+        jr[jss::api_version] = jv[jss::api_version];
+
     jr[jss::type] = jss::response;
     return jr;
 }
@@ -545,6 +556,7 @@ make_json_error(Json::Int code, Json::Value&& message)
 Json::Int constexpr method_not_found  = -32601;
 Json::Int constexpr server_overloaded = -32604;
 Json::Int constexpr forbidden         = -32605;
+Json::Int constexpr wrong_version     = -32606;
 
 void
 ServerHandlerImp::processRequest (Port const& port,
@@ -597,11 +609,40 @@ ServerHandlerImp::processRequest (Port const& port,
             continue;
         }
 
+        auto apiVersion = RPC::APIVersionIfUnspecified;
+        if (jsonRPC.isMember(jss::params) &&
+            jsonRPC[jss::params].isArray() &&
+            jsonRPC[jss::params].size() > 0 &&
+            jsonRPC[jss::params][0u].isObject())
+        {
+            apiVersion = RPC::getAPIVersionNumber(jsonRPC[jss::params][Json::UInt(0)]);
+        }
+
+        if ( apiVersion == RPC::APIVersionIfUnspecified && batch)
+        {
+            // for batch request, api_version may be at a different level
+            apiVersion = RPC::getAPIVersionNumber(jsonRPC);
+        }
+
+        if(apiVersion == RPC::APIInvalidVersion)
+        {
+            if (!batch)
+            {
+                HTTPReply (400, jss::invalid_API_version.c_str(), output, rpcJ);
+                return;
+            }
+            Json::Value r(Json::objectValue);
+            r[jss::request] = jsonRPC;
+            r[jss::error] = make_json_error(wrong_version, jss::invalid_API_version.c_str());
+            reply.append(r);
+            continue;
+        }
+
         /* ------------------------------------------------------------------ */
         auto role = Role::FORBID;
         auto required = Role::FORBID;
         if (jsonRPC.isMember(jss::method) && jsonRPC[jss::method].isString())
-            required = RPC::roleRequired(jsonRPC[jss::method].asString());
+            required = RPC::roleRequired(apiVersion, jsonRPC[jss::method].asString());
 
         if (jsonRPC.isMember(jss::params) &&
             jsonRPC[jss::params].isArray() &&
@@ -778,7 +819,7 @@ ServerHandlerImp::processRequest (Port const& port,
         Resource::Charge loadType = Resource::feeReferenceRPC;
 
         RPC::Context context {m_journal, params, app_, loadType, m_networkOPs,
-            app_.getLedgerMaster(), usage, role, coro, InfoSub::pointer(),
+            app_.getLedgerMaster(), usage, role, apiVersion, coro, InfoSub::pointer(),
             {user, forwardedFor}};
         Json::Value result;
         RPC::doCommand (context, result);

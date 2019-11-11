@@ -36,6 +36,7 @@
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/rpc/ServerHandler.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/beast/core/LexicalCast.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -1359,6 +1360,20 @@ rpcCmdLineToJson (std::vector<std::string> const& args,
     retParams[jss::params] = jvRpcParams;
 
     jvRequest   = rpParser.parseCommand (args[0], jvRpcParams, true);
+
+    auto insert_api_version = [](Json::Value & jr){
+        if( jr.isObject() &&
+            !jr.isMember(jss::error) &&
+            !jr.isMember(jss::api_version))
+        {
+            jr[jss::api_version] = RPC::ApiMaximumSupportedVersion;
+        }
+    };
+
+    if(jvRequest.isObject())
+        insert_api_version(jvRequest);
+    else if(jvRequest.isArray())
+        std::for_each(jvRequest.begin(), jvRequest.end(), insert_api_version);
 
     JLOG (j.trace()) << "RPC Request: " << jvRequest << std::endl;
     return jvRequest;

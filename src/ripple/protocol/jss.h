@@ -123,6 +123,8 @@ JSS ( alternatives );               // out: PathRequest, RipplePathFind
 JSS ( amendment_blocked );          // out: NetworkOPs
 JSS ( amendments );                 // in: AccountObjects, out: NetworkOPs
 JSS ( amount );                     // out: AccountChannels
+JSS ( api_version);                 // in: many, out: Version
+JSS ( api_version_low);             // out: Version
 JSS ( applied );                    // out: SubmitTransaction
 JSS ( asks );                       // out: Subscribe
 JSS ( assets );                     // out: GatewayBalances
@@ -265,6 +267,8 @@ JSS ( index );                      // in: LedgerEntry, DownloadShard
                                     // field
 JSS ( info );                       // out: ServerInfo, ConsensusInfo, FetchInfo
 JSS ( internal_command );           // in: Internal
+JSS ( invalid_API_version );        // out: Many, when a request has an invalid
+                                    //      version
 JSS ( io_latency_ms );              // out: NetworkOPs
 JSS ( ip );                         // in: Connect, out: OverlayImpl
 JSS ( issuer );                     // in: RipplePathFind, Subscribe,

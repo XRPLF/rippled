@@ -114,9 +114,41 @@ parseRippleLibSeed(Json::Value const& params);
 std::pair<PublicKey, SecretKey>
 keypairForSignature(Json::Value const& params, Json::Value& error);
 
+/**
+ * API version numbers used in API version 1
+ */
 extern beast::SemanticVersion const firstVersion;
 extern beast::SemanticVersion const goodVersion;
 extern beast::SemanticVersion const lastVersion;
+
+/**
+ * API version numbers used in later API versions
+ *
+ * Requests with a version number in the range
+ * [ApiMinimumSupportedVersion, ApiMaximumSupportedVersion]
+ * are supported.
+ *
+ * Network Requests without explicit version numbers use
+ * APIVersionIfUnspecified. APIVersionIfUnspecified is 1,
+ * because all the RPC requests with a version >= 2 must
+ * explicitly specify the version in the requests.
+ * Note that APIVersionIfUnspecified will be lower than
+ * ApiMinimumSupportedVersion when we stop supporting API
+ * version 1.
+ *
+ * Command line Requests use ApiMaximumSupportedVersion.
+ */
+
+constexpr unsigned int APIInvalidVersion = 0;
+constexpr unsigned int APIVersionIfUnspecified = 1;
+constexpr unsigned int ApiMinimumSupportedVersion = 1;
+constexpr unsigned int ApiMaximumSupportedVersion = 1;
+constexpr unsigned int APINumberVersionSupported = ApiMaximumSupportedVersion -
+                                                   ApiMinimumSupportedVersion + 1;
+
+static_assert (ApiMinimumSupportedVersion >= APIVersionIfUnspecified);
+static_assert (ApiMaximumSupportedVersion >= ApiMinimumSupportedVersion);
+
 
 template <class Object>
 void
@@ -131,6 +163,20 @@ setVersion(Object& parent)
 std::pair<RPC::Status, LedgerEntryType>
     chooseLedgerEntryType(Json::Value const& params);
 
+/**
+ * Retrieve the api version number from the json value
+ *
+ * Note that APIInvalidVersion will be returned if
+ * 1) the version number field has a wrong format
+ * 2) the version number retrieved is out of the supported range
+ * 3) the version number is unspecified and
+ *    APIVersionIfUnspecified is out of the supported range
+ *
+ * @param value a Json value that may or may not specifies
+ *        the api version number
+ * @return the api version number
+ */
+unsigned int getAPIVersionNumber(const Json::Value & value);
 } // RPC
 } // ripple
 
