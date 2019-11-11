@@ -996,22 +996,23 @@ private:
         return jvRequest;
     }
 
-
     // tx <transaction_id>
     Json::Value parseTx (Json::Value const& jvParams)
     {
         Json::Value jvRequest{Json::objectValue};
 
-        if (jvParams.size () > 1)
+        if (jvParams.size () == 2 || jvParams.size () == 4)
         {
             if (jvParams[1u].asString () == jss::binary)
                 jvRequest[jss::binary] = true;
         }
 
-        if (jvParams.size () > 3)
+        if (jvParams.size () >= 3)
         {
-            jvRequest[jss::min_ledger] = jvParams[2u].asString ();
-            jvRequest[jss::max_ledger] = jvParams[3u].asString ();
+            const auto offset = jvParams.size () == 3 ? 0 : 1;
+
+            jvRequest[jss::min_ledger] = jvParams[1u + offset].asString ();
+            jvRequest[jss::max_ledger] = jvParams[2u + offset].asString ();
         }
 
         jvRequest[jss::transaction] = jvParams[0u].asString ();

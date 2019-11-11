@@ -100,8 +100,21 @@ Transaction::pointer Transaction::transactionFromSQL (
     return tr;
 }
 
-Transaction::pointer Transaction::load(uint256 const& id, Application& app,
-    error_code_i& ec, ClosedInterval<uint32_t> const& range, bool* searchedAll)
+Transaction::pointer Transaction::load (uint256 const& id, Application& app, error_code_i& ec)
+{
+    return std::get<0> (load (id, app, ec, {}, false));
+}
+
+auto
+Transaction::load (uint256 const& id, Application& app, error_code_i& ec,
+    ClosedInterval<uint32_t> const& range) -> variant
+{
+    return load (id, app, ec, range, true);
+}
+
+auto
+Transaction::load (uint256 const& id, Application& app, error_code_i& ec,
+    ClosedInterval<uint32_t> const& range,  bool useRange) -> variant
 {
     std::string sql = "SELECT LedgerSeq,Status,RawTxn "
                       "FROM Transactions WHERE TransID='";
@@ -117,7 +130,15 @@ Transaction::pointer Transaction::load(uint256 const& id, Application& app,
         soci::blob sociRawTxnBlob (*db);
         soci::indicator rti;
 
-        if(searchedAll)
+        *db << sql, soci::into (ledgerSeq), soci::into (status),
+                soci::into (sociRawTxnBlob, rti);
+
+        auto const got_data = db->got_data ();
+
+        if ((!got_data || rti != soci::i_ok) && !useRange)
+            return nullptr;
+
+        if (!got_data)
         {
             uint64_t count = 0;
 
@@ -129,26 +150,19 @@ Transaction::pointer Transaction::load(uint256 const& id, Application& app,
                 soci::into (count, rti);
 
             if (!db->got_data () || rti != soci::i_ok)
-                return {};
+                return false;
 
-            *searchedAll = count == (range.last () - range.first () + 1);
+            return count == (range.last () - range.first () + 1);
         }
 
-        *db << sql, soci::into (ledgerSeq), soci::into (status),
-                soci::into (sociRawTxnBlob, rti);
-
-        if (!db->got_data () || rti != soci::i_ok)
-            return {};
-
-        convert(sociRawTxnBlob, rawTxn);
+        convert (sociRawTxnBlob, rawTxn);
     }
-
-    std::shared_ptr<Transaction> txn;
 
     try
     {
-        txn = Transaction::transactionFromSQL(
-                ledgerSeq, status, rawTxn, app);
+        return Transaction::transactionFromSQL(
+            ledgerSeq, status,
+                rawTxn, app);
     }
     catch (std::exception& e)
     {
@@ -159,7 +173,7 @@ Transaction::pointer Transaction::load(uint256 const& id, Application& app,
         ec = rpcDB_DESERIALIZATION;
     }
 
-    return txn;
+    return nullptr;
 }
 
 // options 1 to include the date of the transaction

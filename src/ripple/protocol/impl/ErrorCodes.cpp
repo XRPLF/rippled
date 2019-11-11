@@ -49,15 +49,18 @@ constexpr static ErrorInfo unorderedErrorInfos[]
     {rpcCHANNEL_MALFORMED,     "channelMalformed",    "Payment channel is malformed."},
     {rpcCHANNEL_AMT_MALFORMED, "channelAmtMalformed", "Payment channel amount is malformed."},
     {rpcCOMMAND_MISSING,       "commandMissing",      "Missing command entry."},
+    {rpcDB_DESERIALIZATION,    "dbDeserialization",   "Database deserialization error."},
     {rpcDST_ACT_MALFORMED,     "dstActMalformed",     "Destination account is malformed."},
     {rpcDST_ACT_MISSING,       "dstActMissing",       "Destination account not provided."},
     {rpcDST_ACT_NOT_FOUND,     "dstActNotFound",      "Destination account not found."},
     {rpcDST_AMT_MALFORMED,     "dstAmtMalformed",     "Destination amount/currency/issuer is malformed."},
     {rpcDST_AMT_MISSING,       "dstAmtMissing",       "Destination amount/currency/issuer is missing."},
     {rpcDST_ISR_MALFORMED,     "dstIsrMalformed",     "Destination issuer is malformed."},
+    {rpcEXCESSIVE_LGR_RANGE,   "excessiveLgrRange",   "Ledger range exceeds 1000."},
     {rpcFORBIDDEN,             "forbidden",           "Bad credentials."},
     {rpcHIGH_FEE,              "highFee",             "Current transaction fee exceeds your limit."},
     {rpcINTERNAL,              "internal",            "Internal error."},
+    {rpcINVALID_LGR_RANGE,     "invalidLgrRange",     "Ledger range is invalid."},
     {rpcINVALID_PARAMS,        "invalidParams",       "Invalid parameters."},
     {rpcJSON_RPC,              "json_rpc",            "JSON-RPC transport error."},
     {rpcLGR_IDXS_INVALID,      "lgrIdxsInvalid",      "Ledger indexes invalid."},
@@ -87,8 +90,7 @@ constexpr static ErrorInfo unorderedErrorInfos[]
     {rpcTOO_BUSY,              "tooBusy",             "The server is too busy to help you now."},
     {rpcTXN_NOT_FOUND,         "txnNotFound",         "Transaction not found."},
     {rpcUNKNOWN_COMMAND,       "unknownCmd",          "Unknown method."},
-    {rpcSENDMAX_MALFORMED,     "sendMaxMalformed",    "SendMax amount malformed."},
-    {rpcDB_DESERIALIZATION,    "dbDeserialization",   "Database deserialization error."},
+    {rpcSENDMAX_MALFORMED,     "sendMaxMalformed",    "SendMax amount malformed."}
 };
 
 // C++ does not allow you to return an array from a function.  You must

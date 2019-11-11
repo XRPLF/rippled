@@ -103,37 +103,57 @@ Json::Value doTx (RPC::Context& context)
 
     if (rangeProvided)
     {
-        auto const& min = context.params[jss::min_ledger].asUInt ();
-        auto const& max = context.params[jss::max_ledger].asUInt ();
+        try
+        {
+            auto const& min = context.params[jss::min_ledger].asUInt ();
+            auto const& max = context.params[jss::max_ledger].asUInt ();
 
-        if ((rangeProvided = max >= min))
+            constexpr uint16_t MAX_RANGE = 1000;
+
+            if (max < min)
+                return rpcError (rpcINVALID_LGR_RANGE);
+
+            if (max - min > MAX_RANGE)
+                return rpcError (rpcEXCESSIVE_LGR_RANGE);
+
             range = ClosedInterval<uint32_t> (min, max);
+        }
+        catch (...)
+        {
+            // One of the calls to `asUInt ()` failed.
+            return rpcError (rpcINVALID_LGR_RANGE);
+        }
     }
 
     auto ec = rpcSUCCESS;
-    auto searchedAll = false;
-    auto txn = context.app.getMasterTransaction ().fetch (
-        from_hex_text<uint256> (txid), ec, range, rangeProvided ? &searchedAll : nullptr);
+    Transaction::variant v;
+
+    if (rangeProvided)
+        v = context.app.getMasterTransaction().fetch(
+            from_hex_text<uint256>(txid), ec, range);
+    else
+        v = context.app.getMasterTransaction().fetch(
+            from_hex_text<uint256>(txid), ec);
 
     if (ec == rpcDB_DESERIALIZATION)
         return rpcError (ec);
 
-    if (!txn)
+    if (v.index () != 0 || !std::get<0> (v))
     {
         auto jvResult = Json::Value (Json::objectValue);
 
-        if(rangeProvided)
-            jvResult[jss::searched_all] = searchedAll;
+        if (rangeProvided)
+            jvResult[jss::searched_all] = std::get<1> (v);
 
         return rpcError (rpcTXN_NOT_FOUND, jvResult);
     }
 
-    Json::Value ret = txn->getJson (JsonOptions::include_date, binary);
+    Json::Value ret = std::get<0> (v)->getJson (JsonOptions::include_date, binary);
 
-    if (txn->getLedger () == 0)
+    if (std::get<0> (v)->getLedger () == 0)
         return ret;
 
-    if (auto lgr = context.ledgerMaster.getLedgerBySeq (txn->getLedger ()))
+    if (auto lgr = context.ledgerMaster.getLedgerBySeq (std::get<0> (v)->getLedger ()))
     {
         bool okay = false;
 
@@ -141,7 +161,7 @@ Json::Value doTx (RPC::Context& context)
         {
             std::string meta;
 
-            if (getMetaHex (*lgr, txn->getID (), meta))
+            if (getMetaHex (*lgr, std::get<0> (v)->getID (), meta))
             {
                 ret[jss::meta] = meta;
                 okay = true;
@@ -149,14 +169,14 @@ Json::Value doTx (RPC::Context& context)
         }
         else
         {
-            auto rawMeta = lgr->txRead (txn->getID()).second;
+            auto rawMeta = lgr->txRead (std::get<0> (v)->getID()).second;
             if (rawMeta)
             {
                 auto txMeta = std::make_shared<TxMeta>(
-                    txn->getID(), lgr->seq(), *rawMeta);
+                    std::get<0> (v)->getID(), lgr->seq(), *rawMeta);
                 okay = true;
                 auto meta = txMeta->getJson (JsonOptions::none);
-                insertDeliveredAmount (meta, context, txn, *txMeta);
+                insertDeliveredAmount (meta, context, std::get<0> (v), *txMeta);
                 ret[jss::meta] = std::move(meta);
             }
         }

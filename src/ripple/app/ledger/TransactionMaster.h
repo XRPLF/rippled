@@ -24,11 +24,11 @@
 #include <ripple/shamap/SHAMapItem.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 #include <ripple/basics/RangeSet.h>
+#include <ripple/app/misc/Transaction.h>
 
 namespace ripple {
 
 class Application;
-class Transaction;
 class STTx;
 
 // Tracks all transactions in memory
@@ -44,14 +44,14 @@ public:
     fetch_from_cache (uint256 const&);
 
     std::shared_ptr<Transaction>
-    fetch (uint256 const& , error_code_i& ec,
-               ClosedInterval<uint32_t> const& range = {},
-                   bool* searchedAll = nullptr);
+    fetch (uint256 const& , error_code_i& ec);
+
+    Transaction::variant
+    fetch (uint256 const& , error_code_i& ec, ClosedInterval<uint32_t> const& range);
 
     std::shared_ptr<STTx const>
     fetch (std::shared_ptr<SHAMapItem> const& item,
-        SHAMapTreeNode::TNType type, bool checkDisk,
-            std::uint32_t uCommitLedger);
+        SHAMapTreeNode::TNType type, std::uint32_t uCommitLedger);
 
     // return value: true = we had the transaction already
     bool inLedger (uint256 const& hash, std::uint32_t ledger);

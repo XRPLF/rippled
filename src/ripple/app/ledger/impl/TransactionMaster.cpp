@@ -21,7 +21,6 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/protocol/STTx.h>
-#include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
 
 namespace ripple {
@@ -51,15 +50,14 @@ TransactionMaster::fetch_from_cache (uint256 const& txnID)
 }
 
 std::shared_ptr<Transaction>
-TransactionMaster::fetch (uint256 const& txnID, error_code_i& ec,
-    ClosedInterval<uint32_t> const& range, bool* searchedAll)
+TransactionMaster::fetch (uint256 const& txnID, error_code_i& ec)
 {
     auto txn = fetch_from_cache (txnID);
 
     if (txn)
         return txn;
 
-    txn = Transaction::load (txnID, mApp, ec, range, searchedAll);
+    txn = Transaction::load (txnID, mApp, ec);
 
     if (!txn)
         return txn;
@@ -69,10 +67,26 @@ TransactionMaster::fetch (uint256 const& txnID, error_code_i& ec,
     return txn;
 }
 
+Transaction::variant
+TransactionMaster::fetch (uint256 const& txnID, error_code_i& ec,
+    ClosedInterval<uint32_t> const& range)
+{
+    auto txn = mCache.fetch (txnID);
+
+    if (txn)
+        return txn;
+
+    auto v = Transaction::load (txnID, mApp, ec, range);
+
+    if (v.index () == 0 && std::get<0> (v))
+        mCache.canonicalize (txnID, std::get<0> (v));
+
+    return v;
+}
+
 std::shared_ptr<STTx const>
 TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
-    SHAMapTreeNode::TNType type,
-        bool checkDisk, std::uint32_t uCommitLedger)
+    SHAMapTreeNode::TNType type, std::uint32_t uCommitLedger)
 {
     std::shared_ptr<STTx const>  txn;
     auto iTx = fetch_from_cache (item->key());

@@ -27,6 +27,7 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/basics/RangeSet.h>
 #include <boost/optional.hpp>
+#include <variant>
 
 namespace ripple {
 
@@ -63,8 +64,8 @@ public:
 
     using pointer = std::shared_ptr<Transaction>;
     using ref = const pointer&;
+    using variant = std::variant<Transaction::pointer, bool>;
 
-public:
     Transaction (
         std::shared_ptr<STTx const> const&, std::string&, Application&) noexcept;
 
@@ -150,11 +151,18 @@ public:
 
     Json::Value getJson (JsonOptions options, bool binary = false) const;
 
-    static Transaction::pointer load (uint256 const& id, Application& app,
-        error_code_i& ec, ClosedInterval<uint32_t> const& range = {},
-            bool* searchedAll = nullptr);
+    static pointer
+    load (uint256 const& id, Application& app, error_code_i& ec);
+
+    static variant
+    load (uint256 const& id, Application& app, error_code_i& ec, ClosedInterval<uint32_t> const& range);
 
 private:
+
+    static variant
+    load (uint256 const& id, Application& app, error_code_i& ec, ClosedInterval<uint32_t> const& range,
+        bool useRange);
+
     uint256         mTransactionID;
 
     LedgerIndex     mInLedger = 0;

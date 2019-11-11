@@ -133,7 +133,9 @@ enum error_code_i
     rpcNOT_SUPPORTED         = 75,
     rpcBAD_KEY_TYPE          = 76,
     rpcDB_DESERIALIZATION    = 77,
-    rpcLAST = rpcDB_DESERIALIZATION   // rpcLAST should always equal the last code.
+    rpcEXCESSIVE_LGR_RANGE   = 78,
+    rpcINVALID_LGR_RANGE     = 79,
+    rpcLAST = rpcINVALID_LGR_RANGE // rpcLAST should always equal the last code.=
 };
 
 //------------------------------------------------------------------------------
