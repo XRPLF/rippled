@@ -126,9 +126,9 @@ extern beast::SemanticVersion const lastVersion;
  * Requests with a version number in the range
  * [APIVersionRangeLow, APIVersionRangeHigh] are supported.
  *
- * Network Requests without explicit version number use APIFirstVersion.
- * Command line Requests without explicit version number use
- * APIVersionCommandLine.
+ * Network Requests without explicit version number use
+ * APIVersionIfUnspecified.
+ * Command line Requests use APIVersionCommandLine.
  */
 
 constexpr unsigned APIInvalidVersion = 0;
@@ -154,17 +154,7 @@ setVersion(Object& parent)
 std::pair<RPC::Status, LedgerEntryType>
     chooseLedgerEntryType(Json::Value const& params);
 
-template <class Object>
-void
-setVersionV2(Object& parent)
-{
-    auto&& object = addObject (parent, jss::version);
-    object[jss::api_version_low] = APIVersionSupportedRangeLow;
-    object[jss::api_version] = APIVersionSupportedRangeHigh;
-}
-
 unsigned getAPIVersionNumber(const Json::Value & value);
-
 } // RPC
 } // ripple
 

@@ -7315,9 +7315,6 @@ public:
             rmErrorCode (got);
             rmErrorCode (exp);
 
-//            std::cout << "got " << got << std::endl;
-//            std::cout << "exp " << exp << std::endl;
-
             // Pass if we didn't expect a throw and we got what we expected.
             if ((rpcCallTest.throwsWhat == RPCCallTestData::no_exception) &&
                 (got == exp))

@@ -133,22 +133,19 @@ class HandlerTable {
         {
             for (std::size_t i = 0; i < N; ++i)
             {
-                auto & innerTable = table_[v - RPC::APIVersionSupportedRangeLow];
+                auto & innerTable = table_[versionToIndex(v)];
                 auto const& entry = entries[i];
                 assert (innerTable.find(entry.name_) == innerTable.end());
                 innerTable[entry.name_] = entry;
             }
 
             // This is where the new-style handlers are added.
+            // This is also where different versions of handlers are added.
             addHandler<LedgerHandler>(v);
-
-            if(v == RPC::APIFirstVersion)
-                addHandler<VersionHandler>(v);
-            else
-                addHandler<VersionHandlerV2Plus>(v);
+            addHandler<VersionHandler>(v);
         }
     }
-//TODO remove RPC::
+
   public:
     static HandlerTable const& instance()
     {
@@ -160,7 +157,7 @@ class HandlerTable {
     {
         if(version > RPC::APIVersionSupportedRangeHigh || version < RPC::APIVersionSupportedRangeLow)
             return nullptr;
-        auto & innerTable = table_[version - RPC::APIVersionSupportedRangeLow];
+        auto & innerTable = table_[versionToIndex(version)];
         auto i = innerTable.find(name);
         return i == innerTable.end() ? nullptr : &i->second;
     }
@@ -179,20 +176,6 @@ class HandlerTable {
         return std::vector<char const*>(name_set.begin(), name_set.end());
     }
 
-    std::array<std::vector<char const*>, APINumberVersionSupported>
-    getVersionedHandlerNames() const
-    {
-        std::array<std::vector<char const*>, APINumberVersionSupported> ret;
-        for ( int index = 0; index < table_.size(); ++index)
-        {
-            ret[index].reserve(table_[index].size());
-            for (auto const& i : table_[index])
-            {
-                ret[index].push_back(i.second.name_);
-            }
-        }
-        return ret;
-    }
   private:
     std::array<std::map<std::string, Handler>, APINumberVersionSupported> table_;
 
@@ -200,7 +183,7 @@ class HandlerTable {
     void addHandler(unsigned version)
     {
         assert (version >= RPC::APIVersionSupportedRangeLow && version <= RPC::APIVersionSupportedRangeHigh);
-        auto & innerTable = table_[version - RPC::APIVersionSupportedRangeLow];
+        auto & innerTable = table_[versionToIndex(version)];
         assert (innerTable.find(HandlerImpl::name()) == innerTable.end());
 
         Handler h;
@@ -210,6 +193,11 @@ class HandlerTable {
         h.condition_ = HandlerImpl::condition();
 
         innerTable[HandlerImpl::name()] = h;
+    }
+
+    inline unsigned versionToIndex(unsigned version) const
+    {
+        return version - RPC::APIVersionSupportedRangeLow;
     }
 };
 
@@ -224,12 +212,6 @@ std::vector<char const*>
 getHandlerNames()
 {
     return HandlerTable::instance().getHandlerNames();
-};
-
-std::array<std::vector<char const*>, APINumberVersionSupported>
-getVersionedHandlerNames()
-{
-    return HandlerTable::instance().getVersionedHandlerNames();
 };
 
 } // RPC

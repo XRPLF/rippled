@@ -1353,19 +1353,22 @@ rpcCmdLineToJson (std::vector<std::string> const& args,
     retParams[jss::params] = jvRpcParams;
 
     jvRequest   = rpParser.parseCommand (args[0], jvRpcParams, true);
+
+    auto insert_api_version = [](Json::Value & jr){
+        if(!jr.isMember(jss::error) && !jr.isMember(jss::api_version))
+            jr[jss::api_version] = RPC::APIVersionCommandLine;
+    };
+
     if(jvRequest.isObject())
-    {
-        if(!jvRequest.isMember(jss::error))
-            jvRequest["api_version"] = RPC::APIVersionCommandLine;
-    }
+        insert_api_version(jvRequest);
     else if(jvRequest.isArray()) {
         for (Json::UInt j = 0; j < jvRequest.size(); ++j) {
             if (jvRequest[j].isObject())
-                jvRequest[j]["api_version"] = RPC::APIVersionCommandLine;
+                insert_api_version(jvRequest[j]);
         }
     }
+
     JLOG (j.trace()) << "RPC Request: " << jvRequest << std::endl;
-    //std::cout << "RPC Request: " << jvRequest << std::endl;//TODO Peng
 
     return jvRequest;
 }
@@ -1454,13 +1457,11 @@ rpcClient(std::vector<std::string> const& args,
                 jvRequest["admin_password"] = setup.client.admin_password;
 
             if (jvRequest.isObject())
-            //{
-                //jvRequest["api_version"] = RPC::APIVersionCommandLine;
+            {
                 jvParams.append (jvRequest);
-            //}
+            }
             else if (jvRequest.isArray())
             {
-                //jvParams.append(RPC::getAPIVersionString());
                 for (Json::UInt i = 0; i < jvRequest.size(); ++i)
                     jvParams.append(jvRequest[i]);
             }

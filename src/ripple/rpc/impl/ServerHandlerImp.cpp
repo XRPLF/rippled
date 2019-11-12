@@ -425,9 +425,9 @@ ServerHandlerImp::processSession(
         }
 
         auto required = RPC::roleRequired(apiVersion,
-                jv.isMember(jss::command) ?
-                jv[jss::command].asString() :
-                jv[jss::method].asString());
+                                          jv.isMember(jss::command) ?
+                                          jv[jss::command].asString() :
+                                          jv[jss::method].asString());
         auto role = requestRole(
             required,
             session->port(),
@@ -555,7 +555,7 @@ make_json_error(Json::Int code, Json::Value&& message)
 Json::Int constexpr method_not_found  = -32601;
 Json::Int constexpr server_overloaded = -32604;
 Json::Int constexpr forbidden         = -32605;
-Json::Int constexpr wrong_version     = -32606;//TODO Peng
+Json::Int constexpr wrong_version     = -32606;
 
 void
 ServerHandlerImp::processRequest (Port const& port,
@@ -596,41 +596,6 @@ ServerHandlerImp::processRequest (Port const& port,
     auto const start (std::chrono::high_resolution_clock::now ());
     for (unsigned i = 0; i < size; ++i)
     {
-//        auto apiVersion = RPC::APIVersionIfUnspecified;
-//        if(batch && i == 0)
-//        {
-//            Json::Value const& jsonRPC = jsonOrig[jss::params][i];
-//            if(jsonRPC.isString())
-//            {
-//                std::string s = jsonRPC.asString();
-//                // the version field's format is "api_version=x" where x is the version number
-//                // sizeof(jss::api_version) is the same as the number of chars in "api_version="
-//                auto pos = s.find('=');
-//                if(pos != std::string::npos &&
-//                   0 == s.compare(0, pos, jss::api_version))
-//                {
-//                    bool goodApiVersion = false;
-//                    try {
-//                        std::stringstream version_stream(s.substr(pos));
-//                        version_stream >> apiVersion;
-//                        if(apiVersion >= RPC::APIFirstVersion)
-//                            goodApiVersion = true;
-//                    } catch (...) {
-//
-//                    }
-//                    //merge below
-//                    if(!goodApiVersion)
-//                    {
-//                        Json::Value r(Json::objectValue);
-//                        r[jss::request] = jsonRPC;
-//                        r[jss::error] = make_json_error(wrong_version, "Wrong version number format");
-//                        reply.append(r);
-//                        continue;
-//                    }
-//                }
-//            }
-//        }
-
         Json::Value const& jsonRPC =
             batch ? jsonOrig[jss::params][i] : jsonOrig;
 
@@ -643,8 +608,6 @@ ServerHandlerImp::processRequest (Port const& port,
             continue;
         }
 
-//        std::cout << "rpc request received: " << jsonRPC << std::endl;
-
         auto apiVersion = RPC::APIVersionIfUnspecified;
         if (jsonRPC.isMember(jss::params) &&
             jsonRPC[jss::params].isArray() &&
@@ -652,15 +615,27 @@ ServerHandlerImp::processRequest (Port const& port,
             jsonRPC[jss::params][Json::UInt(0)].isObject())
         {
             apiVersion = RPC::getAPIVersionNumber(jsonRPC[jss::params][Json::UInt(0)]);
-//            std::cout << "rpc request received: after version " << apiVersion << std::endl;
-            if(apiVersion == RPC::APIInvalidVersion)
+        }
+
+        if ( apiVersion == RPC::APIVersionIfUnspecified && batch)
+        {
+            // for batch request, api_version may be at a different level
+            apiVersion = RPC::getAPIVersionNumber(jsonRPC);
+        }
+
+        if(apiVersion == RPC::APIInvalidVersion)
+        {
+            if (!batch)
             {
-                Json::Value r(Json::objectValue);
-                r[jss::request] = jsonRPC;
-                r[jss::error] = make_json_error(wrong_version, "Wrong version number format");
-                reply.append(r);
-                continue;
+                HTTPReply (400, "Unable to parse request: "
+                                "invalid version", output, rpcJ);
+                return;
             }
+            Json::Value r(Json::objectValue);
+            r[jss::request] = jsonRPC;
+            r[jss::error] = make_json_error(wrong_version, "invalid version");
+            reply.append(r);
+            continue;
         }
 
         /* ------------------------------------------------------------------ */

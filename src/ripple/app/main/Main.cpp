@@ -33,7 +33,6 @@
 #include <ripple/net/RPCCall.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/RPCHandler.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/beast/clock/basic_seconds_clock.h>
 #include <ripple/beast/core/CurrentThreadName.h>
@@ -629,22 +628,6 @@ int run (int argc, char** argv)
 
         config->rpc_ip = std::move(*endpoint);
     }
-
-//    auto rpc_version_number = RPC::APIVersionCommandLine;
-//    if (vm.count ("rpc_version"))
-//    {
-//        try
-//        {
-//            rpc_version_number = vm["rpc_version"].as<unsigned>();
-//            if (rpc_version_number > RPC::APIVersionSupportedRangeHigh)
-//                throw std::domain_error(std::to_string(rpc_version_number));
-//        }
-//        catch(std::exception const& e)
-//        {
-//            std::cerr << "Invalid rpc_version = " << e.what() << "\n";
-//            return -1;
-//        }
-//    }
 
     if (vm.count ("quorum"))
     {
