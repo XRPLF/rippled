@@ -125,35 +125,45 @@ Json::Value doTx (RPC::Context& context)
         }
     }
 
-    auto ec = rpcSUCCESS;
-    Transaction::variant v;
+    using pointer = Transaction::pointer;
+
+    auto searchedAll = false;
+    auto ec {rpcSUCCESS};
+    pointer txn;
 
     if (rangeProvided)
-        v = context.app.getMasterTransaction().fetch(
-            from_hex_text<uint256>(txid), ec, range);
+    {
+        Transaction::variant v = context.app.getMasterTransaction().fetch(
+            from_hex_text<uint256>(txid), range, ec);
+
+        if (v.which () != 0 || !boost::get<pointer> (v))
+            searchedAll = boost::get<bool> (v);
+        else
+            txn = boost::get<pointer> (v);
+    }
     else
-        v = context.app.getMasterTransaction().fetch(
+        txn = context.app.getMasterTransaction().fetch(
             from_hex_text<uint256>(txid), ec);
 
     if (ec == rpcDB_DESERIALIZATION)
         return rpcError (ec);
 
-    if (v.index () != 0 || !std::get<0> (v))
+    if (!txn)
     {
         auto jvResult = Json::Value (Json::objectValue);
 
         if (rangeProvided)
-            jvResult[jss::searched_all] = std::get<1> (v);
+            jvResult[jss::searched_all] = searchedAll;
 
         return rpcError (rpcTXN_NOT_FOUND, jvResult);
     }
 
-    Json::Value ret = std::get<0> (v)->getJson (JsonOptions::include_date, binary);
+    Json::Value ret = txn->getJson (JsonOptions::include_date, binary);
 
-    if (std::get<0> (v)->getLedger () == 0)
+    if (txn->getLedger () == 0)
         return ret;
 
-    if (auto lgr = context.ledgerMaster.getLedgerBySeq (std::get<0> (v)->getLedger ()))
+    if (auto lgr = context.ledgerMaster.getLedgerBySeq (txn->getLedger ()))
     {
         bool okay = false;
 
@@ -161,7 +171,7 @@ Json::Value doTx (RPC::Context& context)
         {
             std::string meta;
 
-            if (getMetaHex (*lgr, std::get<0> (v)->getID (), meta))
+            if (getMetaHex (*lgr, txn->getID (), meta))
             {
                 ret[jss::meta] = meta;
                 okay = true;
@@ -169,14 +179,14 @@ Json::Value doTx (RPC::Context& context)
         }
         else
         {
-            auto rawMeta = lgr->txRead (std::get<0> (v)->getID()).second;
+            auto rawMeta = lgr->txRead (txn->getID()).second;
             if (rawMeta)
             {
                 auto txMeta = std::make_shared<TxMeta>(
-                    std::get<0> (v)->getID(), lgr->seq(), *rawMeta);
+                    txn->getID(), lgr->seq(), *rawMeta);
                 okay = true;
                 auto meta = txMeta->getJson (JsonOptions::none);
-                insertDeliveredAmount (meta, context, std::get<0> (v), *txMeta);
+                insertDeliveredAmount (meta, context, txn, *txMeta);
                 ret[jss::meta] = std::move(meta);
             }
         }

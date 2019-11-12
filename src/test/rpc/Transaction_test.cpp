@@ -46,7 +46,6 @@ class Transaction_test : public beast::unit_test::suite
         auto const alice = Account("alice");
         env.fund(XRP(1000), alice);
         env.close();
-        
         std::vector<std::shared_ptr<STTx const>> txns;
         auto const startLegSeq = env.current()->info().seq;
         for (int i = 0; i < 750; ++i)

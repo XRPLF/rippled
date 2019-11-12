@@ -102,19 +102,23 @@ Transaction::pointer Transaction::transactionFromSQL (
 
 Transaction::pointer Transaction::load (uint256 const& id, Application& app, error_code_i& ec)
 {
-    return std::get<0> (load (id, app, ec, {}, false));
+    using op = boost::optional<ClosedInterval<uint32_t>>;
+
+    return boost::get<pointer> (load (id, app, op {}, ec));
 }
 
 auto
-Transaction::load (uint256 const& id, Application& app, error_code_i& ec,
-    ClosedInterval<uint32_t> const& range) -> variant
+Transaction::load (uint256 const& id, Application& app, ClosedInterval<uint32_t> const& range,
+    error_code_i& ec) -> variant
 {
-    return load (id, app, ec, range, true);
+    using op = boost::optional<ClosedInterval<uint32_t>>;
+
+    return load (id, app, op {range}, ec);
 }
 
 auto
-Transaction::load (uint256 const& id, Application& app, error_code_i& ec,
-    ClosedInterval<uint32_t> const& range,  bool useRange) -> variant
+Transaction::load (uint256 const& id, Application& app, boost::optional<ClosedInterval<uint32_t>> const& range,
+    error_code_i& ec) -> variant
 {
     std::string sql = "SELECT LedgerSeq,Status,RawTxn "
                       "FROM Transactions WHERE TransID='";
@@ -135,7 +139,7 @@ Transaction::load (uint256 const& id, Application& app, error_code_i& ec,
 
         auto const got_data = db->got_data ();
 
-        if ((!got_data || rti != soci::i_ok) && !useRange)
+        if ((!got_data || rti != soci::i_ok) && !range)
             return nullptr;
 
         if (!got_data)
@@ -143,16 +147,16 @@ Transaction::load (uint256 const& id, Application& app, error_code_i& ec,
             uint64_t count = 0;
 
             *db << "SELECT COUNT(DISTINCT LedgerSeq) FROM Transactions WHERE LedgerSeq BETWEEN "
-                << range.first ()
+                << range->first ()
                 << " AND "
-                << range.last ()
+                << range->last ()
                 << ";",
                 soci::into (count, rti);
 
             if (!db->got_data () || rti != soci::i_ok)
                 return false;
 
-            return count == (range.last () - range.first () + 1);
+            return count == (range->last () - range->first () + 1);
         }
 
         convert (sociRawTxnBlob, rawTxn);

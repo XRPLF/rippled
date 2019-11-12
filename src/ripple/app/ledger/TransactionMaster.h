@@ -46,8 +46,17 @@ public:
     std::shared_ptr<Transaction>
     fetch (uint256 const& , error_code_i& ec);
 
+    /**
+     * Fetch transaction from the cache or database.
+     *
+     * @return A boost::variant that contains either a
+     *         shared_pointer to the retrieved transaction or a
+     *         bool indicating whether or not the all ledgers in
+     *         the provided range were present in the database
+     *         while the search was conducted.
+     */
     Transaction::variant
-    fetch (uint256 const& , error_code_i& ec, ClosedInterval<uint32_t> const& range);
+    fetch (uint256 const& , ClosedInterval<uint32_t> const& range, error_code_i& ec);
 
     std::shared_ptr<STTx const>
     fetch (std::shared_ptr<SHAMapItem> const& item,

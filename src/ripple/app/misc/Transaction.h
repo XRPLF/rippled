@@ -27,7 +27,7 @@
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/basics/RangeSet.h>
 #include <boost/optional.hpp>
-#include <variant>
+#include <boost/variant.hpp>
 
 namespace ripple {
 
@@ -64,7 +64,7 @@ public:
 
     using pointer = std::shared_ptr<Transaction>;
     using ref = const pointer&;
-    using variant = std::variant<Transaction::pointer, bool>;
+    using variant = boost::variant<Transaction::pointer, bool>;
 
     Transaction (
         std::shared_ptr<STTx const> const&, std::string&, Application&) noexcept;
@@ -155,13 +155,13 @@ public:
     load (uint256 const& id, Application& app, error_code_i& ec);
 
     static variant
-    load (uint256 const& id, Application& app, error_code_i& ec, ClosedInterval<uint32_t> const& range);
+    load (uint256 const& id, Application& app, ClosedInterval<uint32_t> const& range, error_code_i& ec);
 
 private:
 
     static variant
-    load (uint256 const& id, Application& app, error_code_i& ec, ClosedInterval<uint32_t> const& range,
-        bool useRange);
+    load (uint256 const& id, Application& app, boost::optional<ClosedInterval<uint32_t>> const& range,
+        error_code_i& ec);
 
     uint256         mTransactionID;
 
