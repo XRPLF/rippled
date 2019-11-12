@@ -22,6 +22,7 @@
 #include <test/jtx/envconfig.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/protocol/ErrorCodes.h>
 
 namespace ripple {
 
@@ -243,10 +244,10 @@ class Transaction_test : public beast::unit_test::suite
 
             // Since we only provided one value for the range,
             // the interface parses it as a false binary flag,
-            // since single-value ranges are not accepted.
-            BEAST_EXPECT(
-                result[jss::result][jss::status] == jss::error &&
-                result[jss::result][jss::error] == NOT_FOUND);
+            // as single-value ranges are not accepted. Since
+            // the error this causes differs depending on the platform
+            // we don't call out a specific error here.
+            BEAST_EXPECT(result[jss::result][jss::status] == jss::error);
 
             BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));
         }
