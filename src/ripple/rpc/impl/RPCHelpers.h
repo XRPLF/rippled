@@ -123,10 +123,11 @@ extern beast::SemanticVersion const lastVersion;
 
 /**
  * API version numbers used in later API versions
+ *
  * Requests with a version number in the range
  * [APIVersionRangeLow, APIVersionRangeHigh] are supported.
  *
- * Network Requests without explicit version number use
+ * Network Requests without explicit version numbers use
  * APIVersionIfUnspecified.
  * Command line Requests use APIVersionCommandLine.
  */

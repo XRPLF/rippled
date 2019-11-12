@@ -139,8 +139,6 @@ class Version_test : public beast::unit_test::suite
         auto re = env.rpc("json2", '[' + without_api_verion + ", " +
                                    with_wrong_api_verion + ']');
 
-        std::cout << re << std::endl;
-
         if( !BEAST_EXPECT( re.isArray() ))
             return;
         if( !BEAST_EXPECT( re.size() == 2 ))

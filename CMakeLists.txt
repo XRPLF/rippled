@@ -1,9 +1,6 @@
 cmake_minimum_required (VERSION 3.9.0)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/Builds/CMake)
 
-set (BOOST_ROOT  /home/pwang/Install/boost_1_70_0)
-set (BOOST_LIBRARYDIR /home/pwang/Install/boost_1_70_0)
-
 set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake ${CMAKE_MODULE_PATH})
 include (CheckCXXCompilerFlag)
 if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.11)

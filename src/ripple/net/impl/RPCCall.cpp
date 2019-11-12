@@ -1369,7 +1369,6 @@ rpcCmdLineToJson (std::vector<std::string> const& args,
     }
 
     JLOG (j.trace()) << "RPC Request: " << jvRequest << std::endl;
-
     return jvRequest;
 }
 
@@ -1457,9 +1456,7 @@ rpcClient(std::vector<std::string> const& args,
                 jvRequest["admin_password"] = setup.client.admin_password;
 
             if (jvRequest.isObject())
-            {
                 jvParams.append (jvRequest);
-            }
             else if (jvRequest.isArray())
             {
                 for (Json::UInt i = 0; i < jvRequest.size(); ++i)
