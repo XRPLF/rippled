@@ -28,6 +28,7 @@
 #include <ripple/server/Server.h>
 #include <ripple/server/impl/JSONRPCUtil.h>
 #include <ripple/rpc/impl/ServerHandlerImp.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/make_SSLContext.h>
