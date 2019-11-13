@@ -429,9 +429,9 @@ JobQueue::processTask (int instance)
             
             job.doJob ();
 
-            //The amount of time it took to dequeue and execute the job
+            //The amount of time it took to execute the job
             auto const x_time = date::ceil<microseconds>(
-                Job::clock_type::now() - job.queue_time());
+                Job::clock_type::now() - start_time);
 
             if (x_time >= 10ms || q_time >= 10ms)
             {
