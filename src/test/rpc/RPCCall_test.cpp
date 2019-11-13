@@ -20,6 +20,7 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
 
 #include <initializer_list>

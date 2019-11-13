@@ -20,6 +20,7 @@
 #include <ripple/rpc/impl/Handler.h>
 #include <ripple/rpc/handlers/Handlers.h>
 #include <ripple/rpc/handlers/Version.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 namespace RPC {
