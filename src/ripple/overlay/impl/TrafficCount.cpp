@@ -34,9 +34,7 @@ TrafficCount::category TrafficCount::categorize (
     if (type == protocol::mtMANIFESTS)
         return TrafficCount::category::manifests;
 
-    if ((type == protocol::mtENDPOINTS) ||
-            (type == protocol::mtPEERS) ||
-            (type == protocol::mtGET_PEERS))
+    if (type == protocol::mtENDPOINTS)
         return TrafficCount::category::overlay;
 
     if ((type == protocol::mtGET_SHARD_INFO) ||

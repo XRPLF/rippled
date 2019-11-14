@@ -45,15 +45,21 @@ ProtocolVersion const supportedProtocolList[]
 static_assert(
     []() constexpr -> bool
     {
-        auto len = std::distance(
+        auto const len = std::distance(
             std::begin(supportedProtocolList),
             std::end(supportedProtocolList));
 
-        if (len > 2)
+        // There should be at least one protocol we're willing to speak.
+        if (len == 0)
+            return false;
+
+        // A list with only one entry is, by definition, sorted so we don't
+        // need to check it.
+        if (len != 1)
         {
             for (auto i = 0; i != len - 1; ++i)
             {
-                if (supportedProtocolList[i+1] <= supportedProtocolList[i])
+                if (supportedProtocolList[i] >= supportedProtocolList[i+1])
                     return false;
             }
         }
@@ -110,7 +116,7 @@ parseProtocolVersions(boost::beast::string_view const& value)
             auto const proto = make_protocol(major, minor);
 
             // This is an extra sanity check: we check that the protocol we just
-            // parsed corresponds to the token we parsed.
+            // decoded corresponds to the token we were parsing.
             if (to_string(proto) == s)
                 result.push_back(make_protocol(major, minor));
         }

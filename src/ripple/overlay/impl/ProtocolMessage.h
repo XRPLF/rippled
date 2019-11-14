@@ -49,8 +49,6 @@ protocolMessageName (int type)
     case protocol::mtSHARD_INFO:            return "shard_info";
     case protocol::mtGET_PEER_SHARD_INFO:   return "get_peer_shard_info";
     case protocol::mtPEER_SHARD_INFO:       return "peer_shard_info";
-    case protocol::mtGET_PEERS:             return "get_peers";
-    case protocol::mtPEERS:                 return "peers";
     case protocol::mtENDPOINTS:             return "endpoints";
     case protocol::mtTRANSACTION:           return "tx";
     case protocol::mtGET_LEDGER:            return "get_ledger";

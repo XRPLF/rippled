@@ -1,15 +1,14 @@
 syntax = "proto2";
 package protocol;
 
-// Unused numbers were previously reused. Please don't reuse unless 100% certain
-// that there won't be a conflict.
+// Unused numbers in the list below may have been used previously. Please don't
+// reassign them for reuse unless you are 100% certain that there won't be a
+// conflict. Even if you're sure, it's probably best to assign a new type.
 enum MessageType
 {
     mtMANIFESTS             = 2;
     mtPING                  = 3;
     mtCLUSTER               = 5;
-    mtGET_PEERS             = 12;
-    mtPEERS                 = 13;
     mtENDPOINTS             = 15;
     mtTRANSACTION           = 30;
     mtGET_LEDGER            = 31;
@@ -23,14 +22,6 @@ enum MessageType
     mtSHARD_INFO            = 51;
     mtGET_PEER_SHARD_INFO   = 52;
     mtPEER_SHARD_INFO       = 53;
-
-    // <available>          = 10;
-    // <available>          = 11;
-    // <available>          = 14;
-    // <available>          = 20;
-    // <available>          = 21;
-    // <available>          = 22;
-    // <available>          = 40;
 }
 
 // token, iterations, target, challenge = issue demand for proof of work
