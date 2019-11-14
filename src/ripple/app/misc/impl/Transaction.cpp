@@ -107,18 +107,18 @@ Transaction::pointer Transaction::load (uint256 const& id, Application& app, err
     return boost::get<pointer> (load (id, app, op {}, ec));
 }
 
-auto
+boost::variant<Transaction::pointer, bool>
 Transaction::load (uint256 const& id, Application& app, ClosedInterval<uint32_t> const& range,
-    error_code_i& ec) -> variant
+    error_code_i& ec)
 {
     using op = boost::optional<ClosedInterval<uint32_t>>;
 
     return load (id, app, op {range}, ec);
 }
 
-auto
+boost::variant<Transaction::pointer, bool>
 Transaction::load (uint256 const& id, Application& app, boost::optional<ClosedInterval<uint32_t>> const& range,
-    error_code_i& ec) -> variant
+    error_code_i& ec)
 {
     std::string sql = "SELECT LedgerSeq,Status,RawTxn "
                       "FROM Transactions WHERE TransID='";

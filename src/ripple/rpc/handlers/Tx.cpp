@@ -133,8 +133,9 @@ Json::Value doTx (RPC::Context& context)
 
     if (rangeProvided)
     {
-        Transaction::variant v = context.app.getMasterTransaction().fetch(
-            from_hex_text<uint256>(txid), range, ec);
+        boost::variant<Transaction::pointer, bool> v =
+            context.app.getMasterTransaction().fetch(
+                from_hex_text<uint256>(txid), range, ec);
 
         if (v.which () != 0 || !boost::get<pointer> (v))
             searchedAll = boost::get<bool> (v);

@@ -64,7 +64,6 @@ public:
 
     using pointer = std::shared_ptr<Transaction>;
     using ref = const pointer&;
-    using variant = boost::variant<Transaction::pointer, bool>;
 
     Transaction (
         std::shared_ptr<STTx const> const&, std::string&, Application&) noexcept;
@@ -154,12 +153,12 @@ public:
     static pointer
     load (uint256 const& id, Application& app, error_code_i& ec);
 
-    static variant
+    static boost::variant<Transaction::pointer, bool>
     load (uint256 const& id, Application& app, ClosedInterval<uint32_t> const& range, error_code_i& ec);
 
 private:
 
-    static variant
+    static boost::variant<Transaction::pointer, bool>
     load (uint256 const& id, Application& app, boost::optional<ClosedInterval<uint32_t>> const& range,
         error_code_i& ec);
 

@@ -67,7 +67,7 @@ TransactionMaster::fetch (uint256 const& txnID, error_code_i& ec)
     return txn;
 }
 
-Transaction::variant
+boost::variant<Transaction::pointer, bool>
 TransactionMaster::fetch (uint256 const& txnID, ClosedInterval<uint32_t> const& range,
     error_code_i& ec)
 {
@@ -78,7 +78,8 @@ TransactionMaster::fetch (uint256 const& txnID, ClosedInterval<uint32_t> const& 
     if (txn)
         return txn;
 
-    Transaction::variant v = Transaction::load (txnID, mApp, range, ec);
+    boost::variant<Transaction::pointer, bool> v = Transaction::load (
+        txnID, mApp, range, ec);
 
     if (v.which () == 0 && boost::get<pointer> (v))
         mCache.canonicalize (txnID, boost::get<pointer> (v));

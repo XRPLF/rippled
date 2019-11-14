@@ -55,7 +55,7 @@ public:
      *         the provided range were present in the database
      *         while the search was conducted.
      */
-    Transaction::variant
+    boost::variant<Transaction::pointer, bool>
     fetch (uint256 const& , ClosedInterval<uint32_t> const& range, error_code_i& ec);
 
     std::shared_ptr<STTx const>
