@@ -127,18 +127,23 @@ Json::Value doTx (RPC::Context& context)
 
     using pointer = Transaction::pointer;
 
-    auto searchedAll = false;
     auto ec {rpcSUCCESS};
     pointer txn;
 
     if (rangeProvided)
     {
-        boost::variant<Transaction::pointer, bool> v =
+        boost::variant<pointer, bool> v =
             context.app.getMasterTransaction().fetch(
                 from_hex_text<uint256>(txid), range, ec);
 
-        if (v.which () != 0 || !boost::get<pointer> (v))
-            searchedAll = boost::get<bool> (v);
+        if (v.which () == 1)
+        {
+            auto jvResult = Json::Value (Json::objectValue);
+
+            jvResult[jss::searched_all] = boost::get<bool> (v);
+
+            return rpcError (rpcTXN_NOT_FOUND, jvResult);
+        }
         else
             txn = boost::get<pointer> (v);
     }
@@ -150,14 +155,7 @@ Json::Value doTx (RPC::Context& context)
         return rpcError (ec);
 
     if (!txn)
-    {
-        auto jvResult = Json::Value (Json::objectValue);
-
-        if (rangeProvided)
-            jvResult[jss::searched_all] = searchedAll;
-
-        return rpcError (rpcTXN_NOT_FOUND, jvResult);
-    }
+        return rpcError (rpcTXN_NOT_FOUND);
 
     Json::Value ret = txn->getJson (JsonOptions::include_date, binary);
 

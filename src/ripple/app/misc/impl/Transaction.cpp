@@ -102,9 +102,7 @@ Transaction::pointer Transaction::transactionFromSQL (
 
 Transaction::pointer Transaction::load (uint256 const& id, Application& app, error_code_i& ec)
 {
-    using op = boost::optional<ClosedInterval<uint32_t>>;
-
-    return boost::get<pointer> (load (id, app, op {}, ec));
+    return boost::get<pointer> (load (id, app, boost::none, ec));
 }
 
 boost::variant<Transaction::pointer, bool>
