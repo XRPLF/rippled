@@ -717,7 +717,7 @@ private:
     /** Checks if the indicated transaction fits the conditions
         for being stored in the queue.
     */
-    bool canBeHeld(STTx const&, OpenView const&,
+    bool canBeHeld(STTx const&, ApplyFlags const, OpenView const&,
         AccountMap::iterator,
             boost::optional<FeeMultiSet::iterator>);
 

@@ -360,16 +360,18 @@ TxQ::isFull() const
 }
 
 bool
-TxQ::canBeHeld(STTx const& tx, OpenView const& view,
+TxQ::canBeHeld(STTx const& tx, ApplyFlags const flags, OpenView const& view,
     AccountMap::iterator accountIter,
         boost::optional<FeeMultiSet::iterator> replacementIter)
 {
     // PreviousTxnID is deprecated and should never be used
     // AccountTxnID is not supported by the transaction
     // queue yet, but should be added in the future
+    // tapFAIL_HARD transactions are never held
     bool canBeHeld =
         ! tx.isFieldPresent(sfPreviousTxnID) &&
-        ! tx.isFieldPresent(sfAccountTxnID);
+        ! tx.isFieldPresent(sfAccountTxnID) &&
+        ! (flags & tapFAIL_HARD);
     if (canBeHeld)
     {
         /* To be queued and relayed, the transaction needs to
@@ -798,7 +800,7 @@ TxQ::apply(Application& app, OpenView& view,
                 // object to hold the info we need to adjust for
                 // prior txns. Otherwise, let preclaim fail as if
                 // we didn't have the queue at all.
-                if (canBeHeld(*tx, view, accountIter, replacedItemDeleteIter))
+                if (canBeHeld(*tx, flags, view, accountIter, replacedItemDeleteIter))
                     multiTxn.emplace();
             }
 
@@ -1048,7 +1050,7 @@ TxQ::apply(Application& app, OpenView& view,
 
     // If `multiTxn` has a value, then `canBeHeld` has already been verified
     if (! multiTxn &&
-        ! canBeHeld(*tx, view, accountIter, replacedItemDeleteIter))
+        ! canBeHeld(*tx, flags, view, accountIter, replacedItemDeleteIter))
     {
         // Bail, transaction cannot be held
         JLOG(j_.trace()) << "Transaction " <<

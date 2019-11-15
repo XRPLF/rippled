@@ -81,7 +81,7 @@ enum TEMcodes : TERUnderlyingType
     // - Not applied
     // - Not forwarded
     // - Reject
-    // - Can not succeed in any imagined ledger.
+    // - Cannot succeed in any imagined ledger.
     temMALFORMED    = -299,
 
     temBAD_AMOUNT,

@@ -670,7 +670,15 @@ Transactor::operator()()
     if (ctx_.size() > oversizeMetaDataCap)
         result = tecOVERSIZE;
 
-    if ((result == tecOVERSIZE) || (result == tecKILLED) ||
+    if (isTecClaim(result) && (view().flags() & tapFAIL_HARD))
+    {
+        // If the tapFAIL_HARD flag is set, a tec result
+        // must not do anything
+
+        ctx_.discard();
+        applied = false;
+    }
+    else if ((result == tecOVERSIZE) || (result == tecKILLED) ||
         (isTecClaimHardFail (result, view().flags())))
     {
         JLOG(j_.trace()) << "reapplying because of " << transToken(result);

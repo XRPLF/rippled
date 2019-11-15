@@ -32,6 +32,10 @@ enum ApplyFlags
 {
     tapNONE             = 0x00,
 
+    // This is a local transaction with the
+    // fail_hard flag set.
+    tapFAIL_HARD        = 0x10,
+
     // This is not the transaction's last pass
     // Transaction can be retried, soft failures allowed
     tapRETRY            = 0x20,
