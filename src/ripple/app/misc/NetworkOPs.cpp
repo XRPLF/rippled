@@ -1055,7 +1055,10 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                     // we check before adding to the batch
                     ApplyFlags flags = tapNONE;
                     if (e.admin)
-                        flags = flags | tapUNLIMITED;
+                        flags |= tapUNLIMITED;
+
+                    if (e.local && e.failType == FailHard::yes)
+                        flags |= tapFAIL_HARD;
 
                     auto const result = app_.getTxQ().apply(
                         app_, view, e.transaction->getSTransaction(),
@@ -1133,8 +1136,9 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             }
             else if (e.result == terQUEUED)
             {
-                JLOG(m_journal.debug()) << "Transaction is likely to claim a " <<
-                    "fee, but is queued until fee drops";
+                JLOG(m_journal.debug()) << "Transaction is likely to claim a "
+                                        << "fee, but is queued until fee drops";
+
                 e.transaction->setStatus(HELD);
                 // Add to held transactions, because it could get
                 // kicked out of the queue, and this will try to
@@ -1145,11 +1149,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             }
             else if (isTerRetry (e.result))
             {
-                if (e.failType == FailHard::yes)
-                {
-                    addLocal = false;
-                }
-                else
+                if (e.failType != FailHard::yes)
                 {
                     // transaction should be held
                     JLOG(m_journal.debug())
@@ -1166,7 +1166,9 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 e.transaction->setStatus (INVALID);
             }
 
-            if (addLocal)
+            auto const enforceFailHard = e.failType == FailHard::yes && e.result != tesSUCCESS;
+
+            if (addLocal && !enforceFailHard)
             {
                 m_localTX->push_back (
                     m_ledgerMaster.getCurrentLedgerIndex(),
@@ -1174,9 +1176,9 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 e.transaction->setKept();
             }
 
-            if (e.applied || ((mMode != OperatingMode::FULL) &&
+            if ((e.applied || ((mMode != OperatingMode::FULL) &&
                               (e.failType != FailHard::yes) && e.local) ||
-                    (e.result == terQUEUED))
+                    (e.result == terQUEUED)) && !enforceFailHard)
             {
                 auto const toSkip = app_.getHashRouter().shouldRelay(
                     e.transaction->getID());

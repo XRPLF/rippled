@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
 #include <test/jtx.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Feature.h>
@@ -25,6 +24,8 @@
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/misc/TxQ.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 #include <utility>
@@ -346,6 +347,79 @@ public:
         env(regkey("alice", disabled));
         env(noop("alice"), sig("eric"),                         ter(tefBAD_AUTH));
         env(noop("alice"));
+    }
+
+    // Rudimentary test to ensure fail_hard
+    // transactions are neither queued nor
+    // held.
+    void
+    testFailHard()
+    {
+        using namespace jtx;
+        Env env(*this);
+        auto const gw = Account("gateway");
+        auto const USD = gw["USD"];
+
+        auto const alice = Account {"alice"};
+        env.fund (XRP(10000), alice);
+
+        auto const localTxCnt = env.app().getOPs().getLocalTxCount();
+        auto const queueTxCount = env.app().getTxQ().getMetrics(*env.current()).txCount;
+
+        auto applyTxn = [&env](auto&& ...txnArgs)
+        {
+            auto jt = env.jt (txnArgs...);
+            Serializer s;
+            jt.stx->add (s);
+
+            Json::Value args {Json::objectValue};
+
+            args[jss::tx_blob] = strHex (s.slice ());
+            args[jss::fail_hard] = true;
+
+            return env.rpc ("json", "submit", args.toStyledString());
+        };
+
+        auto jr = applyTxn(noop (alice), fee (1));
+
+        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "telINSUF_FEE_P");
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
+        BEAST_EXPECT(env.app().getOPs().getLocalTxCount () == localTxCnt);
+
+        jr = applyTxn(noop (alice),  sig("bob"));
+
+        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tefBAD_AUTH");
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
+        BEAST_EXPECT(env.app().getOPs().getLocalTxCount () == localTxCnt);
+
+        jr = applyTxn(noop (alice),  seq(20));
+
+        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "terPRE_SEQ");
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
+        BEAST_EXPECT(env.app().getOPs().getLocalTxCount () == localTxCnt);
+
+        jr = applyTxn(offer(alice, XRP(1000), USD(1000)));
+
+        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tecUNFUNDED_OFFER");
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
+        BEAST_EXPECT(env.app().getOPs().getLocalTxCount () == localTxCnt);
+
+        jr = applyTxn(noop (alice), fee (drops (-10)));
+
+        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "temBAD_FEE");
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
+        BEAST_EXPECT(env.app().getOPs().getLocalTxCount () == localTxCnt);
+
+        jr = applyTxn(offer(alice, XRP(1000), USD(1000)));
+
+        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tecUNFUNDED_OFFER");
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
+        BEAST_EXPECT(env.app().getOPs().getLocalTxCount () == localTxCnt);
+
+        jr = applyTxn(noop (alice));
+
+        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tesSUCCESS");
+        BEAST_EXPECT(env.app().getOPs().getLocalTxCount () > localTxCnt);
     }
 
     // Multi-sign basics
@@ -774,6 +848,7 @@ public:
         testRequire();
         testKeyType();
         testPayments();
+        testFailHard();
         testMultiSign();
         testTicket();
         testJTxProperties();
