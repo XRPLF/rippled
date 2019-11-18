@@ -39,7 +39,6 @@ signers (Account const& account,
     jv[jss::TransactionType] = jss::SignerListSet;
     jv[sfSignerQuorum.getJsonName()] = quorum;
     auto& ja = jv[sfSignerEntries.getJsonName()];
-    ja.resize(v.size());
     for(std::size_t i = 0; i < v.size(); ++i)
     {
         auto const& e = v[i];
@@ -91,7 +90,6 @@ msig::operator()(Env& env, JTx& jt) const
             Rethrow();
         }
         auto& js = jtx[sfSigners.getJsonName()];
-        js.resize(mySigners.size());
         for(std::size_t i = 0; i < mySigners.size(); ++i)
         {
             auto const& e = mySigners[i];

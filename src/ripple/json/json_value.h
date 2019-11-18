@@ -46,17 +46,9 @@ enum ValueType
     objectValue    ///< object value (collection of name/value pairs).
 };
 
-enum CommentPlacement
-{
-    commentBefore = 0,        ///< a comment placed on the line before a value
-    commentAfterOnSameLine,   ///< a comment just after a value on the same line
-    commentAfter,             ///< a comment on the line after a value (only make sense for root value)
-    numberOfCommentPlacement
-};
-
 /** \brief Lightweight wrapper to tag static string.
  *
- * Value constructor and objectValue member assignement takes advantage of the
+ * Value constructor and objectValue member assignment takes advantage of the
  * StaticString and avoid the cost of string duplication when storing the
  * string or the member name.
  *
@@ -92,8 +84,6 @@ private:
 
 inline bool operator== (StaticString x, StaticString y)
 {
-    // TODO(tom): could I use x != y here because StaticStrings are supposed to
-    // be unique?
     return strcmp (x.c_str(), y.c_str()) == 0;
 }
 
@@ -180,14 +170,13 @@ private:
         CZString ( const char* cstr, DuplicationPolicy allocate );
         CZString ( const CZString& other );
         ~CZString ();
-        CZString& operator = ( const CZString& other );
+        CZString& operator = ( const CZString& other ) = delete;
         bool operator< ( const CZString& other ) const;
         bool operator== ( const CZString& other ) const;
         int index () const;
         const char* c_str () const;
         bool isStaticString () const;
     private:
-        void swap ( CZString& other ) noexcept;
         const char* cstr_;
         int index_;
     };
@@ -216,7 +205,6 @@ public:
     Value ( UInt value );
     Value ( double value );
     Value ( const char* value );
-    Value ( const char* beginValue, const char* endValue );
     /** \brief Constructs a value from a static string.
 
      * Like other value string constructor but do not duplicate the string for
@@ -239,8 +227,6 @@ public:
     Value ( Value&& other ) noexcept;
 
     /// Swap values.
-    /// \note Currently, comments are intentionally not swapped, for
-    /// both logic and efficiency.
     void swap ( Value& other ) noexcept;
 
     ValueType type () const;
@@ -284,13 +270,6 @@ public:
     /// \post type() is unchanged
     void clear ();
 
-    /// Resize the array to size elements.
-    /// New elements are initialized to null.
-    /// May only be called on nullValue or arrayValue.
-    /// \pre type() is arrayValue or nullValue
-    /// \post type() is arrayValue
-    void resize ( UInt size );
-
     /// Access an array element (zero based index ).
     /// If the array contains less than index element, then null value are inserted
     /// in the array so that its size is index+1.
@@ -311,6 +290,7 @@ public:
     ///
     /// Equivalent to jsonvalue[jsonvalue.size()] = value;
     Value& append ( const Value& value );
+    Value& append ( Value&& value );
 
     /// Access an object value by name, create a null member if it does not exist.
     Value& operator[] ( const char* key );
@@ -361,10 +341,6 @@ public:
     /// \pre type() is objectValue or nullValue
     /// \post if type() was nullValue, it remains nullValue
     Members getMemberNames () const;
-
-    bool hasComment ( CommentPlacement placement ) const;
-    /// Include delimiters and embedded newlines.
-    std::string getComment ( CommentPlacement placement ) const;
 
     std::string toStyledString () const;
 
@@ -466,11 +442,6 @@ public:
     bool operator != ( const SelfType& other ) const
     {
         return !isEqual ( other );
-    }
-
-    difference_type operator - ( const SelfType& other ) const
-    {
-        return computeDistance ( other );
     }
 
     /// Return either the index or the member name of the referenced value as a Value.

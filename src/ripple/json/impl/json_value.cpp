@@ -122,21 +122,6 @@ Value::CZString::~CZString ()
         valueAllocator ()->releaseMemberName ( const_cast<char*> ( cstr_ ) );
 }
 
-void
-Value::CZString::swap ( CZString& other ) noexcept
-{
-    std::swap ( cstr_, other.cstr_ );
-    std::swap ( index_, other.index_ );
-}
-
-Value::CZString&
-Value::CZString::operator = ( const CZString& other )
-{
-    CZString temp ( other );
-    swap ( temp );
-    return *this;
-}
-
 bool
 Value::CZString::operator< ( const CZString& other ) const
 {
@@ -250,24 +235,12 @@ Value::Value ( const char* value )
     value_.string_ = valueAllocator ()->duplicateStringValue ( value );
 }
 
-
-Value::Value ( const char* beginValue,
-               const char* endValue )
-    : type_ ( stringValue )
-    , allocated_ ( true )
-{
-    value_.string_ = valueAllocator ()->duplicateStringValue ( beginValue,
-                     UInt (endValue - beginValue) );
-}
-
-
 Value::Value ( std::string const& value )
     : type_ ( stringValue )
     , allocated_ ( true )
 {
     value_.string_ = valueAllocator ()->duplicateStringValue ( value.c_str (),
                      (unsigned int)value.length () );
-
 }
 
 Value::Value ( const StaticString& value )
@@ -562,7 +535,10 @@ Value::asInt () const
         return value_.bool_ ? 1 : 0;
 
     case stringValue:
-        return beast::lexicalCastThrow <int> (value_.string_);
+        {
+            char const* const str {value_.string_ ? value_.string_ : ""};
+            return beast::lexicalCastThrow <int> (str);
+        }
 
     case arrayValue:
     case objectValue:
@@ -598,7 +574,10 @@ Value::asUInt () const
         return value_.bool_ ? 1 : 0;
 
     case stringValue:
-        return beast::lexicalCastThrow <unsigned int> (value_.string_);
+        {
+            char const* const str {value_.string_ ? value_.string_ : ""};
+            return beast::lexicalCastThrow <unsigned int> (str);
+        }
 
     case arrayValue:
     case objectValue:
@@ -802,30 +781,6 @@ Value::clear ()
     }
 }
 
-void
-Value::resize ( UInt newSize )
-{
-    JSON_ASSERT ( type_ == nullValue  ||  type_ == arrayValue );
-
-    if ( type_ == nullValue )
-        *this = Value ( arrayValue );
-
-    UInt oldSize = size ();
-
-    if ( newSize == 0 )
-        clear ();
-    else if ( newSize > oldSize )
-        (*this)[ newSize - 1 ];
-    else
-    {
-        for ( UInt index = newSize; index < oldSize; ++index )
-            value_.map_->erase ( index );
-
-        assert ( size () == newSize );
-    }
-}
-
-
 Value&
 Value::operator[] ( UInt index )
 {
@@ -952,6 +907,12 @@ Value&
 Value::append ( const Value& value )
 {
     return (*this)[size ()] = value;
+}
+
+Value&
+Value::append ( Value&& value )
+{
+    return (*this)[size ()] = std::move(value);
 }
 
 
