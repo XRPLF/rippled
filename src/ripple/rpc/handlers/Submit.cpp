@@ -142,13 +142,6 @@ Json::Value doSubmit (RPC::Context& context)
         {
             std::string sToken;
             std::string sHuman;
-            std::uint32_t mAccountSeqNext;
-            std::uint32_t mAccountSeqAvail;
-            bool mAccepted;
-            bool mApplied;
-            bool mBroadcast;
-            bool mQueued;
-            bool mKept;
 
             transResultInfo (tpTrans->getResult (), sToken, sHuman);
 
@@ -156,27 +149,26 @@ Json::Value doSubmit (RPC::Context& context)
             jvResult[jss::engine_result_code]      = tpTrans->getResult ();
             jvResult[jss::engine_result_message]   = sHuman;
 
-            mAccepted = tpTrans->getAccepted (mApplied, mBroadcast,
-                    mQueued, mKept);
+            auto const accepted = tpTrans->getAccepted();
 
-            jvResult[jss::accepted]                = mAccepted;
-            jvResult[jss::applied]                 = mApplied;
-            jvResult[jss::broadcast]               = mBroadcast;
-            jvResult[jss::queued]                  = mQueued;
-            jvResult[jss::kept]                    = mKept;
+            jvResult[jss::accepted] = accepted.any();
+            jvResult[jss::applied] = accepted.applied;
+            jvResult[jss::broadcast] = accepted.broadcast;
+            jvResult[jss::queued] = accepted.queued;
+            jvResult[jss::kept] = accepted.kept;
 
-            mAccountSeqNext = tpTrans->getAccountSequence (mAccountSeqAvail);
+            if (auto currentLedgerState = tpTrans->getCurrentLedgerState())
+            {
+                jvResult[jss::account_sequence_next]
+                        = (Json::Value::UInt)currentLedgerState->accountSeqNext;
+                jvResult[jss::account_sequence_available]
+                        = (Json::Value::UInt)currentLedgerState->accountSeqAvail;
 
-            jvResult[jss::account_sequence_next]
-                    = (Json::Value::UInt)mAccountSeqNext;
-            jvResult[jss::account_sequence_available]
-                    = (Json::Value::UInt)mAccountSeqAvail;
-
-            jvResult[jss::open_ledger_cost] = (Json::Value::UInt)
-                    tpTrans->getMinimumFeeRequired ().drops ();
-            jvResult[jss::validated_ledger_index] = (Json::Value::UInt)
-                    tpTrans->getValidatedLedgerIndex ();
-
+                jvResult[jss::open_ledger_cost] = (Json::Value::UInt)
+                        currentLedgerState->minFeeRequired.drops ();
+                jvResult[jss::validated_ledger_index] = (Json::Value::UInt)
+                        currentLedgerState->validatedLedger;
+            }
         }
 
         return jvResult;

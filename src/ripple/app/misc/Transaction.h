@@ -154,116 +154,139 @@ public:
         mApplying = false;
     }
 
-    /**
-     * @brief Detect if transaction was accepted
-     * @param applied ref to store if transaction was appiled
-     * @param broadcast ref to store if transaction was appiled
-     * @param queued ref to store if transaction was appiled
-     * @param kept ref to store if transaction was appiled
-     * @return true if (applied|broadcast|queued|kept)
-     */
-    bool getAccepted(bool &applied, bool &broadcast,
-        bool &queued, bool &kept) const
+    struct AcceptedState
     {
-        applied = mApplied;
-        broadcast = mBroadcast;
-        queued = mQueued;
-        kept = mKept;
-        return mApplied || mBroadcast || mQueued || mKept;
-    }
+        AcceptedState()
+            : applied{false}
+            , broadcast{false}
+            , queued{false}
+            , kept{false}
+        {
+        }
+
+        /**
+         * @brief clear Clear all states
+         */
+        void clear()
+        {
+            applied = false;
+            broadcast = false;
+            queued = false;
+            kept = false;
+        }
+
+        /**
+         * @brief any Get true of any state is true
+         * @return True if any state if true
+         */
+        bool any() const
+        {
+            return applied || broadcast || queued || kept;
+        }
+
+        bool applied;
+        bool broadcast;
+        bool queued;
+        bool kept;
+    };
 
     /**
-     * Set this flag once was applied to open ledger.
+     * @brief getAccepted Return accepted state of transaction
+     * @return Accepted state
      */
-    void setApplied() {
-        mApplied = true;
-    }
-
-    /**
-     * Set this flag once was put into heldtxns queue.
-     */
-    void setQueued() {
-        mQueued = true;
-    }
-
-    /**
-     * Set this flag once was broadcasted via network.
-     */
-    void setBroadcast() {
-        mBroadcast = true;
-    }
-
-    /**
-     * Set this flag once was put to localtxns queue.
-     */
-    void setKept() {
-        mKept = true;
-    }
-
-    /**
-     * @brief clear all accepted-related flags
-     */
-    void clearAccepted() {
-        mApplied = false;
-        mBroadcast = false;
-        mQueued = false;
-        mKept = false;
-    }
-
-    /**
-     * Get last account sequence in current ledger and first available.
-     *
-     * @param available ref to save first available account sequence
-     * @return last account sequence in current ledger or early.
-     */
-    std::uint32_t getAccountSequence(std::uint32_t &available) const
+    AcceptedState getAccepted() const
     {
-        available = mAccountSeqAvail;
-        return mAccountSeqNext;
+        return mAcceptedState;
     }
 
     /**
-     * Returns minimum fee required at current moment.
-     *
-     * @return minimum fee measured in drops.
+     * @brief setApplied Set this flag once was applied to open ledger
      */
-    XRPAmount getMinimumFeeRequired() const
+    void setApplied()
     {
-        return mMinFeeRequired;
+        mAcceptedState.applied = true;
     }
 
     /**
-     * @brief Sets minimum required fee and sequences for the transaction
-     * @param fee minimum fee required for the transaction
-     * @param accountSeq first valid account sequence in current ledger
-     * @param availableSeq first available sequence for the transaction
+     * @brief setQueued Set this flag once was put into heldtxns queue
      */
-    void setRequiredFeeAndSeq(XRPAmount fee,
-        std::uint32_t accountSeq, std::uint32_t availableSeq)
+    void setQueued()
     {
-        mMinFeeRequired = fee;
-        mAccountSeqNext = accountSeq;
-        mAccountSeqAvail = availableSeq;
+        mAcceptedState.queued = true;
     }
 
     /**
-     * Sets last known index of validated ledger.
-     *
-     * @param index number of last validated ledger
+     * @brief setBroadcast Set this flag once was broadcasted via network
      */
-    void setValidatedLedgerIndex(LedgerIndex index)
+    void setBroadcast()
     {
-        mValidatedLedger = index;
+        mAcceptedState.broadcast = true;
     }
 
     /**
-     * Returns last known index of validated ledger.
-     *
-     * @return last index of validated ledger.
+     * @brief setKept Set this flag once was put to localtxns queue
      */
-    LedgerIndex getValidatedLedgerIndex() const
+    void setKept()
     {
-        return mValidatedLedger;
+        mAcceptedState.kept = true;
+    }
+
+    /**
+     * @brief Clear all flags in mAcceptedState
+     */
+    void clearAccepted()
+    {
+        mAcceptedState.clear();
+    }
+
+    struct CurrentLedgerState
+    {
+        CurrentLedgerState() = delete;
+
+        CurrentLedgerState(
+            LedgerIndex li,
+            XRPAmount fee,
+            std::uint32_t accSeqNext,
+            std::uint32_t accSeqAvail)
+            : validatedLedger{li}
+            , minFeeRequired{fee}
+            , accountSeqNext{accSeqNext}
+            , accountSeqAvail{accSeqAvail}
+        {
+        }
+
+        LedgerIndex validatedLedger;
+        XRPAmount minFeeRequired;
+        std::uint32_t accountSeqNext;
+        std::uint32_t accountSeqAvail;
+    };
+
+    /**
+     * @brief getCurrentLedgerState Get current ledger state of transaction
+     * @return Current ledger state
+     */
+    boost::optional<CurrentLedgerState>
+    getCurrentLedgerState() const
+    {
+        return mCurrentLedgetState;
+    }
+
+    /**
+     * @brief setCurrentLedgerState Set current ledger state of transaction
+     * @param validatedLedger Number of last validated ledger
+     * @param fee minimum Fee required for the transaction
+     * @param accountSeq First valid account sequence in current ledger
+     * @param availableSeq First available sequence for the transaction
+     */
+    void
+    setCurrentLedgerState(
+        LedgerIndex validatedLedger,
+        XRPAmount fee,
+        std::uint32_t accountSeq,
+        std::uint32_t availableSeq)
+    {
+        mCurrentLedgetState.emplace(
+            validatedLedger, fee, accountSeq, availableSeq);
     }
 
     Json::Value getJson (JsonOptions options, bool binary = false) const;
@@ -279,16 +302,10 @@ private:
     bool            mApplying = false;
 
     /** different ways for transaction to be accepted */
-    bool            mApplied = false;
-    bool            mQueued = false;
-    bool            mBroadcast = false;
-    bool            mKept = false;
+    AcceptedState   mAcceptedState;
 
-    /** tips on current state of the ledger */
-    LedgerIndex     mValidatedLedger = 0;
-    XRPAmount       mMinFeeRequired = 0;
-    std::uint32_t   mAccountSeqNext = 0;
-    std::uint32_t   mAccountSeqAvail = 0;
+    /** current ledger state */
+    boost::optional<CurrentLedgerState> mCurrentLedgetState;
 
     std::shared_ptr<STTx const>   mTransaction;
     Application&    mApp;

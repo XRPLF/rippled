@@ -937,11 +937,6 @@ void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transactio
         doTransactionSync (transaction, bUnlimited, failType);
     else
         doTransactionAsync (transaction, bUnlimited, failType);
-
-    auto const lpClosed = m_ledgerMaster.getValidatedLedger ();
-
-    if (lpClosed)
-        transaction->setValidatedLedgerIndex(lpClosed->info().seq);
 }
 
 void NetworkOPsImp::doTransactionAsync (std::shared_ptr<Transaction> transaction,
@@ -1059,6 +1054,10 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
         }
         if (changed)
             reportFeeChange();
+
+        boost::optional<LedgerIndex> validatedLedgerIndex;
+        if (auto const l = m_ledgerMaster.getValidatedLedger())
+            validatedLedgerIndex = l->info().seq;
 
         auto newOL = app_.openLedger().current();
         for (TransactionStatus& e : transactions)
@@ -1185,13 +1184,14 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 }
             }
 
-            std::uint32_t accountSeq;
-            std::uint32_t availableSeq;
-            XRPAmount fee = app_.getTxQ().getTxRequiredFeeAndSeq(
-                *newOL, e.transaction->getSTransaction(),
-                accountSeq, availableSeq);
-            e.transaction->setRequiredFeeAndSeq(
-                fee, accountSeq, availableSeq);
+            if (validatedLedgerIndex)
+            {
+                auto [fee, accountSeq, availableSeq] =
+                    app_.getTxQ().getTxRequiredFeeAndSeq(
+                        *newOL, e.transaction->getSTransaction());
+                e.transaction->setCurrentLedgerState(
+                    *validatedLedgerIndex, fee, accountSeq, availableSeq);
+            }
         }
     }
 

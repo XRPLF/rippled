@@ -331,11 +331,9 @@ public:
      *        of multi tx and in the case of replace existing tx
      * @return minimum required fee
      */
-    XRPAmount
+    std::tuple<XRPAmount, std::uint32_t, std::uint32_t>
     getTxRequiredFeeAndSeq(OpenView const& view,
         std::shared_ptr<STTx const> const& tx,
-        std::uint32_t &accountSeq,
-        std::uint32_t &availableSeq,
         bool useFeeIncrease = false) const;
 
     /** Returns information about the transactions currently
