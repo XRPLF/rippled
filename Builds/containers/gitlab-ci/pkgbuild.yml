@@ -198,7 +198,7 @@ dpkg_sign:
   script:
     - ls -alh build/dpkg/packages
     - . ./Builds/containers/gitlab-ci/sign_package.sh dpkg
-     
+
 #########################################################################
 ##                                                                     ##
 ##  stage: smoketest                                                   ##
@@ -210,7 +210,7 @@ dpkg_sign:
 centos_7_smoketest:
   stage: smoketest
   dependencies:
-    - rpm_build
+    - rpm_sign
   image:
     name: centos:7
   <<: *run_local_smoketest
@@ -218,7 +218,7 @@ centos_7_smoketest:
 fedora_29_smoketest:
   stage: smoketest
   dependencies:
-    - rpm_build
+    - rpm_sign
   image:
     name: fedora:29
   <<: *run_local_smoketest
@@ -226,7 +226,7 @@ fedora_29_smoketest:
 fedora_28_smoketest:
   stage: smoketest
   dependencies:
-    - rpm_build
+    - rpm_sign
   image:
     name: fedora:28
   <<: *run_local_smoketest
@@ -234,7 +234,7 @@ fedora_28_smoketest:
 fedora_27_smoketest:
   stage: smoketest
   dependencies:
-    - rpm_build
+    - rpm_sign
   image:
     name: fedora:27
   <<: *run_local_smoketest
@@ -245,7 +245,7 @@ fedora_27_smoketest:
 ubuntu_19_smoketest:
   stage: smoketest
   dependencies:
-    - dpkg_build
+    - dpkg_sign
   image:
     name: ubuntu:19.04
   <<: *run_local_smoketest
@@ -253,7 +253,7 @@ ubuntu_19_smoketest:
 ubuntu_18_smoketest:
   stage: smoketest
   dependencies:
-    - dpkg_build
+    - dpkg_sign
   image:
     name: ubuntu:18.04
   <<: *run_local_smoketest
@@ -261,7 +261,7 @@ ubuntu_18_smoketest:
 ubuntu_16_smoketest:
   stage: smoketest
   dependencies:
-    - dpkg_build
+    - dpkg_sign
   image:
     name: ubuntu:16.04
   <<: *run_local_smoketest
@@ -269,7 +269,7 @@ ubuntu_16_smoketest:
 debian_9_smoketest:
   stage: smoketest
   dependencies:
-    - dpkg_build
+    - dpkg_sign
   image:
     name: debian:9
   <<: *run_local_smoketest
@@ -316,8 +316,8 @@ tag_bld_images:
   tags:
     - docker-large
   dependencies:
-    - rpm_build
-    - dpkg_build
+    - rpm_sign
+    - dpkg_sign
   <<: *only_primary
   script:
     - . ./Builds/containers/gitlab-ci/tag_docker_image.sh
@@ -342,8 +342,8 @@ push_test:
     paths:
       - files.info
   dependencies:
-    - rpm_build
-    - dpkg_build
+    - rpm_sign
+    - dpkg_sign
   <<: *only_primary
   script:
     - . ./Builds/containers/gitlab-ci/push_to_artifactory.sh "PUT" "."
@@ -364,7 +364,7 @@ centos_7_verify_repo_test:
   image:
     name: centos:7
   dependencies:
-    - rpm_build
+    - rpm_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -375,7 +375,7 @@ fedora_29_verify_repo_test:
   image:
     name: fedora:29
   dependencies:
-    - rpm_build
+    - rpm_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -386,7 +386,7 @@ fedora_28_verify_repo_test:
   image:
     name: fedora:28
   dependencies:
-    - rpm_build
+    - rpm_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -397,7 +397,7 @@ fedora_27_verify_repo_test:
   image:
     name: fedora:27
   dependencies:
-    - rpm_build
+    - rpm_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -409,7 +409,7 @@ ubuntu_19_verify_repo_test:
   image:
     name: ubuntu:19.04
   dependencies:
-    - dpkg_build
+    - dpkg_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -421,7 +421,7 @@ ubuntu_18_verify_repo_test:
   image:
     name: ubuntu:18.04
   dependencies:
-    - dpkg_build
+    - dpkg_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -433,7 +433,7 @@ ubuntu_16_verify_repo_test:
   image:
     name: ubuntu:16.04
   dependencies:
-    - dpkg_build
+    - dpkg_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -445,7 +445,7 @@ debian_9_verify_repo_test:
   image:
     name: debian:9
   dependencies:
-    - dpkg_build
+    - dpkg_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -488,8 +488,8 @@ push_prod:
     paths:
       - files.info
   dependencies:
-    - rpm_build
-    - dpkg_build
+    - rpm_sign
+    - dpkg_sign
   <<: *only_primary
   script:
     - . ./Builds/containers/gitlab-ci/push_to_artifactory.sh "PUT" "."
@@ -510,7 +510,7 @@ centos_7_verify_repo_prod:
   image:
     name: centos:7
   dependencies:
-    - rpm_build
+    - rpm_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -521,7 +521,7 @@ fedora_29_verify_repo_prod:
   image:
     name: fedora:29
   dependencies:
-    - rpm_build
+    - rpm_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -532,7 +532,7 @@ fedora_28_verify_repo_prod:
   image:
     name: fedora:28
   dependencies:
-    - rpm_build
+    - rpm_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -543,7 +543,7 @@ fedora_27_verify_repo_prod:
   image:
     name: fedora:27
   dependencies:
-    - rpm_build
+    - rpm_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -555,7 +555,7 @@ ubuntu_19_verify_repo_prod:
   image:
     name: ubuntu:19.04
   dependencies:
-    - dpkg_build
+    - dpkg_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -567,7 +567,7 @@ ubuntu_18_verify_repo_prod:
   image:
     name: ubuntu:18.04
   dependencies:
-    - dpkg_build
+    - dpkg_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -579,7 +579,7 @@ ubuntu_16_verify_repo_prod:
   image:
     name: ubuntu:16.04
   dependencies:
-    - dpkg_build
+    - dpkg_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -591,7 +591,7 @@ debian_9_verify_repo_prod:
   image:
     name: debian:9
   dependencies:
-    - dpkg_build
+    - dpkg_sign
   <<: *only_primary
   <<: *run_repo_smoketest
 
@@ -615,8 +615,8 @@ get_prod_hashes:
     paths:
       - files.info
   dependencies:
-    - rpm_build
-    - dpkg_build
+    - rpm_sign
+    - dpkg_sign
   <<: *only_primary
   script:
     - . ./Builds/containers/gitlab-ci/push_to_artifactory.sh "GET" ".checksums"
