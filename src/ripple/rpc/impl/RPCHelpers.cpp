@@ -716,22 +716,23 @@ beast::SemanticVersion const firstVersion("1.0.0");
 beast::SemanticVersion const goodVersion("1.0.0");
 beast::SemanticVersion const lastVersion("1.0.0");
 
-unsigned getAPIVersionNumber(const Json::Value & jv)
+unsigned int getAPIVersionNumber(Json::Value const& jv)
 {
-    if (jv.isMember(jss::api_version))
+    static Json::Value const minVersion (RPC::ApiMinimumSupportedVersion);
+    static Json::Value const maxVersion (RPC::ApiMaximumSupportedVersion);
+    static Json::Value const invalidVersion (RPC::APIInvalidVersion);
+
+    Json::Value requestedVersion(RPC::APIVersionIfUnspecified);
+    if(jv.isObject())
     {
-        if(jv[jss::api_version].isInt())
-        {
-            unsigned apiVersion = jv[jss::api_version].asInt();
-            if(apiVersion >= RPC::APIVersionSupportedRangeLow &&
-               apiVersion <= RPC::APIVersionSupportedRangeHigh)
-            {
-                return apiVersion;
-            }
-        }
-        return RPC::APIInvalidVersion;
-    } else
-        return RPC::APIVersionIfUnspecified;
+        requestedVersion = jv.get (jss::api_version, requestedVersion);
+    }
+    if( !(requestedVersion.isInt() || requestedVersion.isUInt()) ||
+        requestedVersion < minVersion || requestedVersion > maxVersion)
+    {
+        requestedVersion = invalidVersion;
+    }
+    return requestedVersion.asUInt();
 }
 
 } // RPC

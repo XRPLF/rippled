@@ -1572,7 +1572,7 @@ bool ApplicationImp::setup()
         Resource::Consumer c;
         RPC::Context context { journal ("RPCHandler"), jvCommand, *this,
             loadType, getOPs (), getLedgerMaster(), c, Role::ADMIN,
-            RPC::APIVersionRippledStartUp};
+            RPC::ApiMaximumSupportedVersion};
 
         Json::Value jvResult;
         RPC::doCommand (context, jvResult);

@@ -263,6 +263,8 @@ JSS ( index );                      // in: LedgerEntry, DownloadShard
                                     // field
 JSS ( info );                       // out: ServerInfo, ConsensusInfo, FetchInfo
 JSS ( internal_command );           // in: Internal
+JSS ( invalid_API_version );        // out: Many, when a request has an invalid
+                                    //      version
 JSS ( io_latency_ms );              // out: NetworkOPs
 JSS ( ip );                         // in: Connect, out: OverlayImpl
 JSS ( issuer );                     // in: RipplePathFind, Subscribe,

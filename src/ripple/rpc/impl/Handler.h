@@ -51,7 +51,7 @@ struct Handler
     RPC::Condition condition_;
 };
 
-Handler const* getHandler (unsigned version, std::string const&);
+Handler const* getHandler (unsigned int version, std::string const&);
 
 /** Return a Json::objectValue with a single entry. */
 template <class Value>

@@ -1356,7 +1356,7 @@ rpcCmdLineToJson (std::vector<std::string> const& args,
 
     auto insert_api_version = [](Json::Value & jr){
         if(!jr.isMember(jss::error) && !jr.isMember(jss::api_version))
-            jr[jss::api_version] = RPC::APIVersionCommandLine;
+            jr[jss::api_version] = RPC::ApiMaximumSupportedVersion;
     };
 
     if(jvRequest.isObject())

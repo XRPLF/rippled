@@ -410,7 +410,8 @@ ServerHandlerImp::processSession(
         {
             jr[jss::type] = jss::response;
             jr[jss::status] = jss::error;
-            jr[jss::error] = jss::missingCommand;
+            jr[jss::error] = apiVersion == RPC::APIInvalidVersion ?
+                             jss::invalid_API_version : jss::missingCommand;
             jr[jss::request] = jv;
             if (jv.isMember (jss::id))
                 jr[jss::id]  = jv[jss::id];
@@ -628,13 +629,12 @@ ServerHandlerImp::processRequest (Port const& port,
         {
             if (!batch)
             {
-                HTTPReply (400, "Unable to parse request: "
-                                "invalid version", output, rpcJ);
+                HTTPReply (400, jss::invalid_API_version.c_str(), output, rpcJ);
                 return;
             }
             Json::Value r(Json::objectValue);
             r[jss::request] = jsonRPC;
-            r[jss::error] = make_json_error(wrong_version, "invalid version");
+            r[jss::error] = make_json_error(wrong_version, jss::invalid_API_version.c_str());
             reply.append(r);
             continue;
         }

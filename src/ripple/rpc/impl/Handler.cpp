@@ -130,7 +130,7 @@ class HandlerTable {
     explicit
     HandlerTable (const Handler(&entries)[N])
     {
-        for(auto v = RPC::APIVersionSupportedRangeLow; v <= RPC::APIVersionSupportedRangeHigh; ++v)
+        for(auto v = RPC::ApiMinimumSupportedVersion; v <= RPC::ApiMaximumSupportedVersion; ++v)
         {
             for (std::size_t i = 0; i < N; ++i)
             {
@@ -156,7 +156,7 @@ class HandlerTable {
 
     Handler const* getHandler(unsigned version, std::string name) const
     {
-        if(version > RPC::APIVersionSupportedRangeHigh || version < RPC::APIVersionSupportedRangeLow)
+        if(version > RPC::ApiMaximumSupportedVersion || version < RPC::ApiMinimumSupportedVersion)
             return nullptr;
         auto & innerTable = table_[versionToIndex(version)];
         auto i = innerTable.find(name);
@@ -183,7 +183,7 @@ class HandlerTable {
     template <class HandlerImpl>
     void addHandler(unsigned version)
     {
-        assert (version >= RPC::APIVersionSupportedRangeLow && version <= RPC::APIVersionSupportedRangeHigh);
+        assert (version >= RPC::ApiMinimumSupportedVersion && version <= RPC::ApiMaximumSupportedVersion);
         auto & innerTable = table_[versionToIndex(version)];
         assert (innerTable.find(HandlerImpl::name()) == innerTable.end());
 
@@ -198,7 +198,7 @@ class HandlerTable {
 
     inline unsigned versionToIndex(unsigned version) const
     {
-        return version - RPC::APIVersionSupportedRangeLow;
+        return version - RPC::ApiMinimumSupportedVersion;
     }
 };
 

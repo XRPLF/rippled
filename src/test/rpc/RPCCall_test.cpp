@@ -7253,8 +7253,8 @@ static RPCCallTestData const rpcCallTestArray [] =
 
 std::string updateAPIVersionString(const char * const req)
 {
-    static std::string version_str = "\"" + std::string(jss::api_version) + "\" : "
-                                     + std::to_string(RPC::APIVersionCommandLine);
+    static std::string version_str = "\"" + std::string(jss::api_version) + "\" : " +
+                                     std::to_string(RPC::ApiMaximumSupportedVersion);
     static auto place_holder = "\"api_version\" : 1";
     std::string jr(req);
     boost::replace_all(jr, place_holder, version_str);

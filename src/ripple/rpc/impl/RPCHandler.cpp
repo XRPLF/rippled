@@ -296,7 +296,7 @@ Status doCommand (
     return rpcUNKNOWN_COMMAND;
 }
 
-Role roleRequired (unsigned version, std::string const& method)
+Role roleRequired (unsigned int version, std::string const& method)
 {
     auto handler = RPC::getHandler(version, method);
 

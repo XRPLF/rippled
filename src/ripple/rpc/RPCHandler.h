@@ -33,7 +33,7 @@ struct Context;
 /** Execute an RPC command and store the results in a Json::Value. */
 Status doCommand (RPC::Context&, Json::Value&);
 
-Role roleRequired (unsigned version, std::string const& method );
+Role roleRequired (unsigned int version, std::string const& method );
 
 } // RPC
 } // ripple

@@ -41,7 +41,7 @@ class Version_test : public beast::unit_test::suite
         };
 
         auto jrr = env.rpc("json", "version", "{\"api_version\": " +
-                           std::to_string(RPC::APIVersionSupportedRangeHigh)
+                           std::to_string(RPC::ApiMaximumSupportedVersion)
                            + "}") [jss::result];
         BEAST_EXPECT(isCorrectReply(jrr));
 
@@ -57,26 +57,60 @@ class Version_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env {*this};
 
-        auto get_error_what = [](Json::Value const & re) -> std::string
+        auto get_error_what = [](Json::Value const &re) -> std::string
         {
-            if(re.isMember("error_what"))
-                if(re["error_what"].isString())
+            if (re.isMember("error_what"))
+                if (re["error_what"].isString())
                     return re["error_what"].asString();
             return {};
         };
 
         auto re = env.rpc("json", "version", "{\"api_version\": " +
-                          std::to_string(RPC::APIVersionSupportedRangeLow - 1)
-                          + "}");
-        BEAST_EXPECT(get_error_what(re).find("invalid version"));
+                                             std::to_string(RPC::ApiMinimumSupportedVersion - 1)
+                                             + "}");
+        BEAST_EXPECT(get_error_what(re).find(jss::invalid_API_version.c_str()));
 
         re = env.rpc("json", "version", "{\"api_version\": " +
-                     std::to_string(RPC::APIVersionSupportedRangeHigh + 1)
-                     + "}");
-        BEAST_EXPECT(get_error_what(re).find("invalid version"));
+                                        std::to_string(RPC::ApiMaximumSupportedVersion + 1)
+                                        + "}");
+        BEAST_EXPECT(get_error_what(re).find(jss::invalid_API_version.c_str()));
 
-        re = env.rpc("json", "version", "{\"api_version\": \"deadbeef\"}");
-        BEAST_EXPECT(get_error_what(re).find("invalid version"));
+        re = env.rpc("json", "version", "{\"api_version\": \"a\"}");
+        BEAST_EXPECT(get_error_what(re).find(jss::invalid_API_version.c_str()));
+    }
+
+    void testGetAPIVersionNumber()
+    {
+        testcase ("test getAPIVersionNumber function");
+
+        unsigned int versionIfUnspecified =
+                RPC::APIVersionIfUnspecified < RPC::ApiMinimumSupportedVersion ?
+                RPC::APIInvalidVersion : RPC::APIVersionIfUnspecified;
+
+        Json::Value j_array = Json::Value (Json::arrayValue);
+        Json::Value j_null = Json::Value (Json::nullValue);
+        BEAST_EXPECT(RPC::getAPIVersionNumber(j_array) == versionIfUnspecified);
+        BEAST_EXPECT(RPC::getAPIVersionNumber(j_null) == versionIfUnspecified);
+
+        Json::Value j_object = Json::Value (Json::objectValue);
+        BEAST_EXPECT(RPC::getAPIVersionNumber(j_object) == versionIfUnspecified);
+        j_object[jss::api_version] = RPC::APIVersionIfUnspecified;
+        BEAST_EXPECT(RPC::getAPIVersionNumber(j_object) == versionIfUnspecified);
+
+        j_object[jss::api_version] = RPC::ApiMinimumSupportedVersion;
+        BEAST_EXPECT(RPC::getAPIVersionNumber(j_object) == RPC::ApiMinimumSupportedVersion);
+        j_object[jss::api_version] = RPC::ApiMaximumSupportedVersion;
+        BEAST_EXPECT(RPC::getAPIVersionNumber(j_object) == RPC::ApiMaximumSupportedVersion);
+
+        j_object[jss::api_version] = RPC::ApiMinimumSupportedVersion - 1;
+        BEAST_EXPECT(RPC::getAPIVersionNumber(j_object) == RPC::APIInvalidVersion);
+        j_object[jss::api_version] = RPC::ApiMaximumSupportedVersion + 1;
+        BEAST_EXPECT(RPC::getAPIVersionNumber(j_object) == RPC::APIInvalidVersion);
+
+        j_object[jss::api_version] = RPC::APIInvalidVersion;
+        BEAST_EXPECT(RPC::getAPIVersionNumber(j_object) == RPC::APIInvalidVersion);
+        j_object[jss::api_version] = "a";
+        BEAST_EXPECT(RPC::getAPIVersionNumber(j_object) == RPC::APIInvalidVersion);
     }
 
     void
@@ -99,8 +133,8 @@ class Version_test : public beast::unit_test::suite
             "\"id\": 6, "
             "\"method\": \"version\", "
             "\"params\": { "
-            "\"api_version\": " + std::to_string(RPC::APIVersionSupportedRangeHigh) +
-            "}}";
+            "\"api_version\": " + std::to_string(RPC::ApiMaximumSupportedVersion) +
+                                     "}}";
         auto re = env.rpc("json2", '[' + without_api_verion + ", " +
                           with_api_verion + ']');
 
@@ -135,7 +169,7 @@ class Version_test : public beast::unit_test::suite
                                      "\"method\": \"version\", "
                                      "\"params\": { "
                                      "\"api_version\": " +
-                                     std::to_string(RPC::APIVersionSupportedRangeHigh+1) +
+                                     std::to_string(RPC::ApiMaximumSupportedVersion + 1) +
                                      "}}";
         auto re = env.rpc("json2", '[' + without_api_verion + ", " +
                                    with_wrong_api_verion + ']');
@@ -155,6 +189,7 @@ public:
     {
         testCorrectVersionNumber();
         testWrongVersionNumber();
+        testGetAPIVersionNumber();
         testBatch();
         testBatchFail();
     }
