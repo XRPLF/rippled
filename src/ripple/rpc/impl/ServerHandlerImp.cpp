@@ -614,7 +614,7 @@ ServerHandlerImp::processRequest (Port const& port,
         if (jsonRPC.isMember(jss::params) &&
             jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 &&
-            jsonRPC[jss::params][Json::UInt(0)].isObject())
+            jsonRPC[jss::params][0u].isObject())
         {
             apiVersion = RPC::getAPIVersionNumber(jsonRPC[jss::params][Json::UInt(0)]);
         }

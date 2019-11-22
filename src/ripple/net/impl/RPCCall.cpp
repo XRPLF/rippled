@@ -1355,18 +1355,18 @@ rpcCmdLineToJson (std::vector<std::string> const& args,
     jvRequest   = rpParser.parseCommand (args[0], jvRpcParams, true);
 
     auto insert_api_version = [](Json::Value & jr){
-        if(!jr.isMember(jss::error) && !jr.isMember(jss::api_version))
+        if( jr.isObject() &&
+            !jr.isMember(jss::error) &&
+            !jr.isMember(jss::api_version))
+        {
             jr[jss::api_version] = RPC::ApiMaximumSupportedVersion;
+        }
     };
 
     if(jvRequest.isObject())
         insert_api_version(jvRequest);
-    else if(jvRequest.isArray()) {
-        for (Json::UInt j = 0; j < jvRequest.size(); ++j) {
-            if (jvRequest[j].isObject())
-                insert_api_version(jvRequest[j]);
-        }
-    }
+    else if(jvRequest.isArray())
+        std::for_each(jvRequest.begin(), jvRequest.end(), insert_api_version);
 
     JLOG (j.trace()) << "RPC Request: " << jvRequest << std::endl;
     return jvRequest;
