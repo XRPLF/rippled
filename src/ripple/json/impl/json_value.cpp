@@ -909,6 +909,12 @@ Value::append ( const Value& value )
     return (*this)[size ()] = value;
 }
 
+Value&
+Value::append ( Value&& value )
+{
+    return (*this)[size ()] = std::move(value);
+}
+
 
 Value
 Value::get ( const char* key,

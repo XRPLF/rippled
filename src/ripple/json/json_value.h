@@ -290,6 +290,7 @@ public:
     ///
     /// Equivalent to jsonvalue[jsonvalue.size()] = value;
     Value& append ( const Value& value );
+    Value& append ( Value&& value );
 
     /// Access an object value by name, create a null member if it does not exist.
     Value& operator[] ( const char* key );

@@ -1327,11 +1327,32 @@ struct json_value_test : beast::unit_test::suite
     test_leak()
     {
         // When run with the address sanitizer, this test confirms there is no
-        // memory leak with the scenario below.
-        Json::Value a;
-        a[0u] = 1;
-        a = std::move(a[0u]);
-        pass();
+        // memory leak with the scenarios below.
+        {
+            Json::Value a;
+            a[0u] = 1;
+            BEAST_EXPECT (a.type() == Json::arrayValue);
+            BEAST_EXPECT (a[0u].type() == Json::intValue);
+            a = std::move(a[0u]);
+            BEAST_EXPECT (a.type() == Json::intValue);
+        }
+        {
+            Json::Value b;
+            Json::Value temp;
+            temp["a"] = "Probably avoids the small string optimization";
+            temp["b"] = "Also probably avoids the small string optimization";
+            BEAST_EXPECT (temp.type() == Json::objectValue);
+            b.append (temp);
+            BEAST_EXPECT (temp.type() == Json::objectValue);
+            BEAST_EXPECT (b.size() == 1);
+
+            b.append (std::move (temp));
+            BEAST_EXPECT (b.size() == 2);
+
+            // Note that the type() == nullValue check is implementation
+            // specific and not guaranteed to be valid in the future.
+            BEAST_EXPECT (temp.type() == Json::nullValue);
+        }
     }
 
     void run () override
