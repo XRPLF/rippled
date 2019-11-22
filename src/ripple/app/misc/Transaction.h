@@ -154,16 +154,8 @@ public:
         mApplying = false;
     }
 
-    struct AcceptedState
+    struct SubmitResult
     {
-        AcceptedState()
-            : applied{false}
-            , broadcast{false}
-            , queued{false}
-            , kept{false}
-        {
-        }
-
         /**
          * @brief clear Clear all states
          */
@@ -184,19 +176,27 @@ public:
             return applied || broadcast || queued || kept;
         }
 
-        bool applied;
-        bool broadcast;
-        bool queued;
-        bool kept;
+        bool applied = false;
+        bool broadcast = false;
+        bool queued = false;
+        bool kept = false;
     };
 
     /**
-     * @brief getAccepted Return accepted state of transaction
-     * @return Accepted state
+     * @brief getSubmitResult Return submit result
+     * @return SubmitResult struct
      */
-    AcceptedState getAccepted() const
+    SubmitResult getSubmitResult() const
     {
-        return mAcceptedState;
+        return submitResult_;
+    }
+
+    /**
+     * @brief clearSubmitResult Clear all flags in SubmitResult
+     */
+    void clearSubmitResult()
+    {
+        submitResult_.clear();
     }
 
     /**
@@ -204,7 +204,7 @@ public:
      */
     void setApplied()
     {
-        mAcceptedState.applied = true;
+        submitResult_.applied = true;
     }
 
     /**
@@ -212,7 +212,7 @@ public:
      */
     void setQueued()
     {
-        mAcceptedState.queued = true;
+        submitResult_.queued = true;
     }
 
     /**
@@ -220,7 +220,7 @@ public:
      */
     void setBroadcast()
     {
-        mAcceptedState.broadcast = true;
+        submitResult_.broadcast = true;
     }
 
     /**
@@ -228,15 +228,7 @@ public:
      */
     void setKept()
     {
-        mAcceptedState.kept = true;
-    }
-
-    /**
-     * @brief Clear all flags in mAcceptedState
-     */
-    void clearAccepted()
-    {
-        mAcceptedState.clear();
+        submitResult_.kept = true;
     }
 
     struct CurrentLedgerState
@@ -268,7 +260,7 @@ public:
     boost::optional<CurrentLedgerState>
     getCurrentLedgerState() const
     {
-        return mCurrentLedgetState;
+        return currentLedgerState_;
     }
 
     /**
@@ -285,7 +277,7 @@ public:
         std::uint32_t accountSeq,
         std::uint32_t availableSeq)
     {
-        mCurrentLedgetState.emplace(
+        currentLedgerState_.emplace(
             validatedLedger, fee, accountSeq, availableSeq);
     }
 
@@ -302,10 +294,10 @@ private:
     bool            mApplying = false;
 
     /** different ways for transaction to be accepted */
-    AcceptedState   mAcceptedState;
+    SubmitResult    submitResult_;
 
     /** current ledger state */
-    boost::optional<CurrentLedgerState> mCurrentLedgetState;
+    boost::optional<CurrentLedgerState> currentLedgerState_;
 
     std::shared_ptr<STTx const>   mTransaction;
     Application&    mApp;

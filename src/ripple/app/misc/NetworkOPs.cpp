@@ -1062,7 +1062,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
         auto newOL = app_.openLedger().current();
         for (TransactionStatus& e : transactions)
         {
-            e.transaction->clearAccepted();
+            e.transaction->clearSubmitResult();
 
             if (e.applied)
             {

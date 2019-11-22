@@ -325,16 +325,12 @@ public:
      *        and first available sequence for transaction
      * @param view current open ledger
      * @param tx the transaction
-     * @param accountSeq reference to save first sequence in the ledger
-     * @param availableSeq reference to save firts available sequence
-     * @param useFeeIncrease increase minimum required fee in the case
-     *        of multi tx and in the case of replace existing tx
-     * @return minimum required fee
+     * @return minimum required fee, first sequence in the ledger
+     *        and first available sequence
      */
     std::tuple<XRPAmount, std::uint32_t, std::uint32_t>
     getTxRequiredFeeAndSeq(OpenView const& view,
-        std::shared_ptr<STTx const> const& tx,
-        bool useFeeIncrease = false) const;
+        std::shared_ptr<STTx const> const& tx) const;
 
     /** Returns information about the transactions currently
         in the queue for the account.

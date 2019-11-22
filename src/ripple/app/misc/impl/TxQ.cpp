@@ -1395,11 +1395,9 @@ TxQ::getMetrics(OpenView const& view) const
 
 std::tuple<XRPAmount, std::uint32_t, std::uint32_t>
 TxQ::getTxRequiredFeeAndSeq(OpenView const& view,
-    std::shared_ptr<STTx const> const& tx,
-    bool useFeeIncrease) const
+    std::shared_ptr<STTx const> const& tx) const
 {
     auto const account = (*tx)[sfAccount];
-    auto const tSeq = tx->getSequence();
 
     std::lock_guard lock(mutex_);
 
@@ -1420,23 +1418,10 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view,
     if (auto accIter {byAccount_.find(account)}; accIter != byAccount_.end())
     {
         auto& txQAcct = accIter->second;
-        bool found = !useFeeIncrease;
         for (auto iter : txQAcct.transactions)
         {
-            auto seq = iter.first;
-            if (!found && seq == tSeq)
-            {
-                fee = increase(iter.second.feeLevel,
-                    setup_.retrySequencePercent);
-                found = true;
-            }
-            if (seq >= availableSeq)
-            {
-                if (!found)
-                    fee = increase(iter.second.feeLevel,
-                        setup_.multiTxnPercent);
+            if (auto seq {iter.first}; seq >= availableSeq)
                 availableSeq = seq + 1;
-            }
         }
     }
 
