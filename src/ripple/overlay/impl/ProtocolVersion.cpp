@@ -122,7 +122,7 @@ parseProtocolVersions(boost::beast::string_view const& value)
             // This is an extra sanity check: we check that the protocol we just
             // decoded corresponds to the token we were parsing.
             if (to_string(proto) == s)
-                result.push_back(make_protocol(major, minor));
+                result.push_back(proto);
         }
     }
 

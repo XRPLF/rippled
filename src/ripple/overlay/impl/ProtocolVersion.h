@@ -43,7 +43,7 @@ make_protocol(std::uint16_t major, std::uint16_t minor)
     return { major, minor };
 }
 
-/** Print a protocol version a human-readable string. */
+/** Convert a protocol version to a human-readable string. */
 std::string
 to_string(ProtocolVersion const& p);
 
