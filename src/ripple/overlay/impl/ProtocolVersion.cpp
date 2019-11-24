@@ -27,6 +27,10 @@
 
 namespace ripple {
 
+/** The "legacy" form of the current version of the protocol. */
+constexpr
+ProtocolVersion const legacyProtocol { 1, 2 };
+
 /** The list of protocol versions we speak and we prefer to use.
 
     @note The list must be sorted in strictly ascending order (and so
@@ -35,7 +39,7 @@ namespace ripple {
 constexpr
 ProtocolVersion const supportedProtocolList[]
 {
-    { 1, 2 },
+    legacyProtocol,
     { 2, 0 }
 };
 
@@ -73,7 +77,7 @@ to_string(ProtocolVersion const& p)
 {
     // The legacy protocol uses a different name. This can be removed when we
     // migrate away from it and require 2.0 or later.
-    if (p == ProtocolVersion{ 1, 2 })
+    if (p == legacyProtocol)
         return "RTXP/1.2";
 
     return "XRPL/" + std::to_string(p.first) + "." + std::to_string(p.second);
@@ -97,7 +101,7 @@ parseProtocolVersions(boost::beast::string_view const& value)
     {
         if (s == "RTXP/1.2")
         {
-            result.push_back(make_protocol(1, 2));
+            result.push_back(legacyProtocol);
             continue;
         }
 
