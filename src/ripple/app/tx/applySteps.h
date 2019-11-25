@@ -35,7 +35,7 @@ inline
 bool
 isTecClaimHardFail(TER ter, ApplyFlags flags)
 {
-    return isTecClaim(ter) && !(flags & tapRETRY);
+    return isTecClaim(ter) && (!(flags & tapRETRY) || (flags & tapFAIL_HARD));
 }
 
 /** Describes the results of the `preflight` check

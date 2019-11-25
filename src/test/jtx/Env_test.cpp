@@ -365,6 +365,8 @@ public:
 
         auto const localTxCnt = env.app().getOPs().getLocalTxCount();
         auto const queueTxCount = env.app().getTxQ().getMetrics(*env.current()).txCount;
+        auto const openTxCount = env.current()->txCount();
+        BEAST_EXPECT(localTxCnt == 2 && queueTxCount == 0 && openTxCount == 2);
 
         auto applyTxn = [&env](auto&& ...txnArgs)
         {
@@ -385,41 +387,41 @@ public:
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "telINSUF_FEE_P");
         BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount () == localTxCnt);
+        BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
         jr = applyTxn(noop (alice),  sig("bob"));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tefBAD_AUTH");
         BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount () == localTxCnt);
+        BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
         jr = applyTxn(noop (alice),  seq(20));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "terPRE_SEQ");
         BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount () == localTxCnt);
+        BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
         jr = applyTxn(offer(alice, XRP(1000), USD(1000)));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tecUNFUNDED_OFFER");
         BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount () == localTxCnt);
+        BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
         jr = applyTxn(noop (alice), fee (drops (-10)));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "temBAD_FEE");
         BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount () == localTxCnt);
-
-        jr = applyTxn(offer(alice, XRP(1000), USD(1000)));
-
-        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tecUNFUNDED_OFFER");
-        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
-        BEAST_EXPECT(env.app().getOPs().getLocalTxCount () == localTxCnt);
+        BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
         jr = applyTxn(noop (alice));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tesSUCCESS");
-        BEAST_EXPECT(env.app().getOPs().getLocalTxCount () > localTxCnt);
+        BEAST_EXPECT(env.app().getOPs().getLocalTxCount () == localTxCnt + 1);
+        BEAST_EXPECT(env.current()->txCount() == openTxCount + 1);
     }
 
     // Multi-sign basics
