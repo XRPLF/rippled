@@ -14,6 +14,37 @@ If you are using Red Hat Enterprise Linux 7 or CentOS 7, you can [update using `
 
 # Releases
 
+## Version 1.4.0
+
+The `rippled` 1.4.0 release introduces several improvements and new features, including support for deleting accounts, improved peer slot management, improved CI integration and package building and support for [C++17](https://en.wikipedia.org/wiki/C%2B%2B17) and [Boost 1.71](https://www.boost.org/users/history/version_1_71_0.html). Finally, this release removes the code for the `SHAMapV2` amendment which failed to gain majority support and has been obsoleted by other improvements.
+ 
+**New and Updated Features**
+- The `DeletableAccounts` amendment which, if enabled, will make it possible for users to delete unused or unneeded accounts, recovering the account's reserve.
+- Support for improved management of peer slots and the ability to add and removed reserved connections without requiring a restart of the server.
+- Tracking and reporting of cumulative and instantaneous peer bandwidth usage. 
+- Preliminary support for post-processing historical shards after downloading to index their contents.
+- Reporting the master public key alongside the ephemeral public key in the `validation` stream [subscriptions](https://xrpl.org/subscribe.html).
+- Reporting consensus phase changes in the `server` stream [subscription](https://xrpl.org/subscribe.html).
+
+**Bug Fixes**
+- The `fixPayChanRecipientOwnerDir` amendment which corrects a minor technical flaw that would cause a payment channel to not appear in the recipient's owner directory, which made it unnecessarily difficult for users to enumerate all their payment channels.
+- The `fixCheckThreading` amendment which corrects a minor technical flaw that caused checks to not be properly threaded against the account of the check's recipient.
+- Respect the `ssl_verify` configuration option in the `SSLHTTPDownloader` and `HTTPClient` classes.
+- Properly update the `server_state` when a server detects a disagreement between itself and the network.
+- Allow Ed25519 keys to be used with the `channel_authorize` command.
+
+## Version 1.3.1
+
+The `rippled` 1.3.1 release improves the built-in deadlock detection code, improves logging during process startup, changes the package build pipeline and improves the build documentation.
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+- Add a LogicError when a deadlock is detected (355a7b04)
+- Improve logging during process startup (7c24f7b1)
+
 ## Version 1.3.0
 The `rippled` 1.3.0 release introduces several new features and overall improvements to the codebase, including the `fixMasterKeyAsRegularKey` amendment, code to adjust the timing of the consensus process and support for decentralized validator domain verification. The release also includes miscellaneous improvements including in the transaction censorship detection code, transaction validation code, manifest parsing code, configuration file parsing code, log file rotation code, and in the build, continuous integration, testing and package building pipelines.
 
