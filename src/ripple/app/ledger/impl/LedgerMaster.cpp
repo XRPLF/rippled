@@ -155,6 +155,7 @@ LedgerMaster::LedgerMaster (Application& app, Stopwatch& stopwatch,
     , ledger_fetch_size_ (app_.config().getValueFor(SizedItem::ledgerFetch))
     , fetch_packs_ ("FetchPack", 65536, std::chrono::seconds {45}, stopwatch,
         app_.journal("TaggedCache"))
+    , m_stats(std::bind (&LedgerMaster::collect_metrics, this),collector)
 {
 }
 
