@@ -371,6 +371,35 @@ private:
     // without first wiping the database.
     LedgerIndex const max_ledger_difference_ {1000000};
 
+private:
+    struct Stats
+    {
+        template <class Handler>
+        Stats (Handler const& handler, beast::insight::Collector::ptr const& collector)
+            : hook (collector->make_hook (handler))
+            , validatedLedgerAge (collector->make_gauge ("LedgerMaster", "Validated_Ledger_Age"))
+            , publishedLedgerAge (collector->make_gauge ("LedgerMaster", "Published_Ledger_Age"))
+            { }
+
+        beast::insight::Hook hook;
+        beast::insight::Gauge validatedLedgerAge;
+        beast::insight::Gauge publishedLedgerAge;
+    };
+
+    Stats m_stats;
+
+private:
+    void collect_metrics()
+    {
+        std::lock_guard lock (m_mutex);
+        m_stats.validatedLedgerAge.set(getValidatedLedgerAge().count());
+        m_stats.publishedLedgerAge.set(getPublishedLedgerAge().count());
+    }
+
+    
+
+
+
 };
 
 } // ripple
