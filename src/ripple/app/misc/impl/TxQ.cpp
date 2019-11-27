@@ -1393,7 +1393,7 @@ TxQ::getMetrics(OpenView const& view) const
     return result;
 }
 
-std::tuple<XRPAmount, std::uint32_t, std::uint32_t>
+TxQ::FeeAndSeq
 TxQ::getTxRequiredFeeAndSeq(OpenView const& view,
     std::shared_ptr<STTx const> const& tx) const
 {
@@ -1403,24 +1403,23 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view,
 
     auto const snapshot = feeMetrics_.getSnapshot();
     auto const baseFee = calculateBaseFee(view, *tx);
-    auto fee = FeeMetrics::scaleFeeLevel(snapshot, view);
+    auto const fee = FeeMetrics::scaleFeeLevel(snapshot, view);
 
-    auto const sle = view.read(keylet::account(account));
-
-    std::uint32_t accountSeq;
-    if (sle)
-        accountSeq = (*sle)[sfSequence];
-    else
-        accountSeq = 0;
+    auto const accountSeq = [&view, &account]() -> std::uint32_t {
+        auto const sle = view.read(keylet::account(account));
+        if (sle)
+            return (*sle)[sfSequence];
+        return 0;
+    }();
 
     auto availableSeq = accountSeq;
 
-    if (auto accIter {byAccount_.find(account)}; accIter != byAccount_.end())
+    if (auto iter {byAccount_.find(account)}; iter != byAccount_.end())
     {
-        auto& txQAcct = accIter->second;
-        for (auto iter : txQAcct.transactions)
+        auto& txQAcct = iter->second;
+        for (auto const& [seq, _] : txQAcct.transactions)
         {
-            if (auto seq {iter.first}; seq >= availableSeq)
+            if (seq >= availableSeq)
                 availableSeq = seq + 1;
         }
     }

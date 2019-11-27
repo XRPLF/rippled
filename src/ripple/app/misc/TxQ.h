@@ -319,6 +319,13 @@ public:
     Metrics
     getMetrics(OpenView const& view) const;
 
+    struct FeeAndSeq
+    {
+        XRPAmount fee;
+        std::uint32_t accountSeq;
+        std::uint32_t availableSeq;
+    };
+
     /**
      * @brief Returns minimum required fee for tx and two sequences:
      *        first vaild sequence for this account in current ledger
@@ -328,7 +335,7 @@ public:
      * @return minimum required fee, first sequence in the ledger
      *        and first available sequence
      */
-    std::tuple<XRPAmount, std::uint32_t, std::uint32_t>
+    FeeAndSeq
     getTxRequiredFeeAndSeq(OpenView const& view,
         std::shared_ptr<STTx const> const& tx) const;
 

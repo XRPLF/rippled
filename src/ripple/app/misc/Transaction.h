@@ -296,7 +296,6 @@ private:
     /** different ways for transaction to be accepted */
     SubmitResult    submitResult_;
 
-    /** current ledger state */
     boost::optional<CurrentLedgerState> currentLedgerState_;
 
     std::shared_ptr<STTx const>   mTransaction;
