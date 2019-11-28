@@ -1419,6 +1419,7 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view,
         auto& txQAcct = iter->second;
         for (auto const& [seq, _] : txQAcct.transactions)
         {
+            (void)_;
             if (seq >= availableSeq)
                 availableSeq = seq + 1;
         }
