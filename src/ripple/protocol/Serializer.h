@@ -30,6 +30,7 @@
 #include <ripple/protocol/SField.h>
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 #include <iomanip>
 #include <sstream>
 #include <type_traits>

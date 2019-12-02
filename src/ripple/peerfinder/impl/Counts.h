@@ -25,6 +25,8 @@
 #include <ripple/peerfinder/Slot.h>
 #include <ripple/peerfinder/impl/Tuning.h>
 
+#include <cmath>
+
 namespace ripple {
 namespace PeerFinder {
 

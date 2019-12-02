@@ -79,14 +79,6 @@ int main(int ac, char const* av[])
     using namespace std;
     using namespace beast::unit_test;
 
-#if BOOST_MSVC
-    {
-        int flags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
-        flags |= _CRTDBG_LEAK_CHECK_DF;
-        _CrtSetDbgFlag(flags);
-    }
-#endif
-
     namespace po = boost::program_options;
     po::options_description desc("Options");
     desc.add_options()

@@ -18,9 +18,10 @@
 //==============================================================================
 
 #include <ripple/basics/contract.h>
-#include <ripple/beast/core/PlatformConfig.h>
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/protocol/BuildInfo.h>
+
+#include <boost/preprocessor/stringize.hpp>
 
 namespace ripple {
 
@@ -42,7 +43,7 @@ char const* const versionString = "1.5.0-b1"
 #endif
 
 #ifdef SANITIZER
-        BEAST_PP_STR1_(SANITIZER)
+        BOOST_PP_STRINGIZE(SANITIZER)
 #endif
 #endif
 

@@ -22,7 +22,6 @@
 
 #include <ripple/json/json_forwards.h>
 #include <cstring>
-#include <functional>
 #include <map>
 #include <string>
 #include <vector>

@@ -37,10 +37,7 @@
 #include <ripple/beast/clock/basic_seconds_clock.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 
-#include <beast/unit_test/dstream.hpp>
-#include <beast/unit_test/global_suites.hpp>
 #include <beast/unit_test/match.hpp>
-#include <beast/unit_test/reporter.hpp>
 #include <test/unit_test/multi_runner.h>
 
 #include <google/protobuf/stubs/common.h>
@@ -48,17 +45,29 @@
 #include <boost/filesystem.hpp>
 #include <boost/process.hpp>
 #include <boost/program_options.hpp>
-#include <boost/system/error_code.hpp>
-#include <boost/version.hpp>
+#include <boost/predef.h>
 
 #include <cstdlib>
 #include <iostream>
 #include <utility>
 #include <stdexcept>
 
-#ifdef _MSC_VER
+#if BOOST_OS_WINDOWS
 #include <sys/types.h>
 #include <sys/timeb.h>
+#endif
+
+// Do we know the plaform we're compiling on? If you're adding new platforms
+// modify this check accordingly.
+#if !BOOST_OS_LINUX && !BOOST_OS_WINDOWS && !BOOST_OS_MACOS
+#error Supported platforms are: Linux, Windows and MacOS
+#endif
+
+// Ensure that precisely one platform is detected.
+#if (BOOST_OS_LINUX   && (BOOST_OS_WINDOWS || BOOST_OS_MACOS)) || \
+    (BOOST_OS_MACOS   && (BOOST_OS_WINDOWS || BOOST_OS_LINUX)) || \
+    (BOOST_OS_WINDOWS && (BOOST_OS_LINUX   || BOOST_OS_MACOS))
+#error Multiple supported platforms appear active at once
 #endif
 
 namespace po = boost::program_options;
@@ -727,7 +736,7 @@ int run (int argc, char** argv)
 //
 int main (int argc, char** argv)
 {
-#ifdef _MSC_VER
+#if BOOST_OS_WINDOWS
     {
         // Work around for https://svn.boost.org/trac/boost/ticket/10657
         // Reported against boost version 1.56.0.  If an application's

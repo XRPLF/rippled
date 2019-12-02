@@ -19,6 +19,7 @@
 
 #include <ripple/protocol/ErrorCodes.h>
 #include <cassert>
+#include <stdexcept>
 
 namespace ripple {
 namespace RPC {

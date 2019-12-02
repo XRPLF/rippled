@@ -17,8 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/beast/core/Config.h>
-
 #include <ripple/beast/insight/Insight.h>
 
 #include <ripple/beast/insight/impl/Collector.cpp>

@@ -250,8 +250,7 @@ nodeobject_compress (void const* in,
                 bit; bit >>= 1)
             {
                 void const* const h = is(32);
-                if (std::memcmp(
-                        h, zero32(), 32) == 0)
+                if (std::memcmp(h, zero32(), 32) == 0)
                     continue;
                 std::memcpy(
                     vh.data() + 32 * n, h, 32);

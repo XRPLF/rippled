@@ -28,6 +28,7 @@
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/unordered_set.hpp>
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include <initializer_list>
 #include <iterator>

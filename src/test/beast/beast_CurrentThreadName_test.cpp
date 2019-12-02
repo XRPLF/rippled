@@ -41,7 +41,7 @@ private:
         *state = 1;
 
         // If there is an initial thread name then we failed.
-        if (initialThreadName)
+        if (!initialThreadName.empty())
             return;
 
         // Wait until all threads have their names.

@@ -132,7 +132,7 @@ Json::Value doAccountTxOld (RPC::Context& context)
 
     int count = 0;
 
-#ifndef BEAST_DEBUG
+#ifndef DEBUG
 
     try
     {
@@ -217,7 +217,7 @@ Json::Value doAccountTxOld (RPC::Context& context)
 
 
         return ret;
-#ifndef BEAST_DEBUG
+#ifndef DEBUG
     }
     catch (std::exception const&)
     {

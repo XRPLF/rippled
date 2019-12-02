@@ -27,6 +27,7 @@
 
 #include <date/date.h>
 
+#include <cmath>
 #include <mutex>
 #include <shared_mutex>
 

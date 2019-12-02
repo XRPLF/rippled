@@ -32,11 +32,11 @@ EncodedBlob::prepare (
     auto ret = m_data.alloc(object->getData ().size () + 9);
 
     // the first 8 bytes are unused
-    memset (ret, 0, 8);
+    std::memset (ret, 0, 8);
 
     ret[8] = static_cast<std::uint8_t> (object->getType ());
 
-    memcpy (ret + 9,
+    std::memcpy (ret + 9,
         object->getData ().data(),
         object->getData ().size());
 }

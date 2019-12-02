@@ -24,6 +24,5 @@
 #include <test/beast/beast_basic_seconds_clock_test.cpp>
 #include <test/beast/beast_io_latency_probe_test.cpp>
 #include <test/beast/beast_CurrentThreadName_test.cpp>
-#include <test/beast/beast_Debug_test.cpp>
 #include <test/beast/beast_Journal_test.cpp>
 #include <test/beast/beast_PropertyStream_test.cpp>

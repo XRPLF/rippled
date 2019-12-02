@@ -47,12 +47,10 @@ ValidatorSite::Site::Resource::Resource (std::string uri_)
         if (!pUrl.domain.empty())
             throw std::runtime_error("file URI cannot contain a hostname");
 
-#if _MSC_VER    // MSVC: Windows paths need the leading / removed
-        {
-            if (pUrl.path[0] == '/')
-                pUrl.path = pUrl.path.substr(1);
-
-        }
+#if BOOST_OS_WINDOWS
+        // Paths on Windows need the leading / removed
+        if (pUrl.path[0] == '/')
+            pUrl.path = pUrl.path.substr(1);
 #endif
 
         if (pUrl.path.empty())

@@ -19,6 +19,8 @@
 
 #include <ripple/protocol/STAccount.h>
 
+#include <cstring>
+
 namespace ripple {
 
 STAccount::STAccount ()

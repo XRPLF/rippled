@@ -21,7 +21,6 @@
 #define RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 
 #include <ripple/basics/LocalValue.h>
-#include <ripple/basics/win32_workaround.h>
 #include <ripple/core/JobTypes.h>
 #include <ripple/core/JobTypeData.h>
 #include <ripple/core/Stoppable.h>

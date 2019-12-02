@@ -1084,7 +1084,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             if (isTemMalformed (e.result))
                 app_.getHashRouter().setFlags (e.transaction->getID(), SF_BAD);
 
-    #ifdef BEAST_DEBUG
+    #ifdef DEBUG
             if (e.result != tesSUCCESS)
             {
                 std::string token, human;

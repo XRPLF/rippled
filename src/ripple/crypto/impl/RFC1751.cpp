@@ -393,25 +393,22 @@ int RFC1751::wsrch (std::string const& strWord, int iMin, int iMax)
 //        -2 words OK but parity is wrong
 int RFC1751::etob (std::string& strData, std::vector<std::string> vsHuman)
 {
-    int i, p, v, l;
-    char b[9];
-
     if (6 != vsHuman.size ())
         return -1;
 
-    memset (b, 0, sizeof (b));
+    int i, p = 0;
+    char b[9] = { 0 };
 
-    p = 0;
     for (auto& strWord : vsHuman)
     {
-        l = strWord.length ();
+        int l = strWord.length ();
 
         if (l > 4 || l < 1)
             return -1;
 
         standard (strWord);
 
-        v = wsrch (strWord,
+        auto v = wsrch (strWord,
                    l < 4 ? 0 : 571,
                    l < 4 ? 570 : 2048);
 

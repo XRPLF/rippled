@@ -635,7 +635,7 @@ Transactor::operator()()
 {
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID ();
 
-#ifdef BEAST_DEBUG
+#ifdef DEBUG
     {
         Serializer ser;
         ctx_.tx.add (ser);

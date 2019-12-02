@@ -18,6 +18,7 @@
 //==============================================================================
 #include <ripple/net/RegisterSSLCerts.h>
 #include <boost/predef.h>
+
 #if BOOST_OS_WINDOWS
 #include <boost/asio/ssl/error.hpp>
 #include <boost/system/error_code.hpp>
@@ -100,7 +101,6 @@ registerSSLCerts(
     SSL_CTX_set_cert_store(ctx.native_handle(), store.release());
 
 #else
-
     ctx.set_default_verify_paths(ec);
 #endif
 }

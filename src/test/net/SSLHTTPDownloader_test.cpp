@@ -23,6 +23,7 @@
 #include <test/unit_test/FileDirGuard.h>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/predef.h>
 #include <mutex>
 #include <condition_variable>
 
