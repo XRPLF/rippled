@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012 - 2018 Ripple Labs Inc.
+    Copyright (c) 2012 - 2019 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -29,7 +29,7 @@
 
 namespace ripple {
 
-// See https://ripple.com/wiki/Transaction_errors
+// See https://xrpl.org/transaction-results.html
 //
 // "Transaction Engine Result"
 // or Transaction ERror.
@@ -40,7 +40,10 @@ using TERUnderlyingType = int;
 
 enum TELcodes : TERUnderlyingType
 {
-    // Note: Range is stable.  Exact numbers are unstable.  Use tokens.
+    // Note: Range is stable.
+    // Exact numbers are used in ripple-binary-codec:
+    //     https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json
+    // Use tokens.
 
     // -399 .. -300: L Local error (transaction fee inadequate, exceeds local limit)
     // Only valid during non-consensus processing.
@@ -66,7 +69,10 @@ enum TELcodes : TERUnderlyingType
 
 enum TEMcodes : TERUnderlyingType
 {
-    // Note: Range is stable.  Exact numbers are unstable.  Use tokens.
+    // Note: Range is stable.
+    // Exact numbers are used in ripple-binary-codec:
+    //     https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json
+    // Use tokens.
 
     // -299 .. -200: M Malformed (bad signature)
     // Causes:
@@ -120,7 +126,10 @@ enum TEMcodes : TERUnderlyingType
 
 enum TEFcodes : TERUnderlyingType
 {
-    // Note: Range is stable.  Exact numbers are unstable.  Use tokens.
+    // Note: Range is stable.
+    // Exact numbers are used in ripple-binary-codec:
+    //     https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json
+    // Use tokens.
 
     // -199 .. -100: F
     //    Failure (sequence number previously used)
@@ -159,7 +168,10 @@ enum TEFcodes : TERUnderlyingType
 
 enum TERcodes : TERUnderlyingType
 {
-    // Note: Range is stable.  Exact numbers are unstable.  Use tokens.
+    // Note: Range is stable.
+    // Exact numbers are used in ripple-binary-codec:
+    //     https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json
+    // Use tokens.
 
     // -99 .. -1: R Retry
     //   sequence too high, no funds for txn fee, originating -account
@@ -227,7 +239,7 @@ enum TECcodes : TERUnderlyingType
     // - Applied
     // - Forwarded
     //
-    // Only allowed as a return code of appliedTransaction when !tapRetry.
+    // Only allowed as a return code of appliedTransaction when !tapRETRY.
     // Otherwise, treated as terRETRY.
     //
     // DO NOT CHANGE THESE NUMBERS: They appear in ledger meta data.
