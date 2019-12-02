@@ -27,6 +27,7 @@
 #include <ripple/protocol/Seed.h>
 #include <ripple/protocol/tokens.h>
 #include <array>
+#include <cstring>
 #include <string>
 
 namespace ripple {
@@ -100,8 +101,7 @@ operator== (SecretKey const& lhs,
     SecretKey const& rhs)
 {
     return lhs.size() == rhs.size() &&
-        std::memcmp(lhs.data(),
-            rhs.data(), rhs.size()) == 0;
+        std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
 }
 
 inline

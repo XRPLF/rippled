@@ -32,6 +32,7 @@
 #include <boost/endian/conversion.hpp>
 #include <boost/functional/hash.hpp>
 #include <array>
+#include <cstring>
 #include <functional>
 #include <type_traits>
 

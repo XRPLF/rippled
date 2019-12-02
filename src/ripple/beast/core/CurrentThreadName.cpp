@@ -22,111 +22,98 @@
 //==============================================================================
 
 #include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/beast/core/Config.h>
-#include <boost/thread/tss.hpp>
-#include <ripple/beast/core/BasicNativeHeaders.h>
-#include <ripple/beast/core/StandardIncludes.h>
-
-namespace beast {
-namespace detail {
-
-static boost::thread_specific_ptr<std::string> threadName;
-
-void saveThreadName (std::string name)
-{
-    threadName.reset (new std::string {std::move(name)});
-}
-
-} // detail
-
-boost::optional<std::string> getCurrentThreadName ()
-{
-    if (auto r = detail::threadName.get())
-        return *r;
-    return boost::none;
-}
-
-} // beast
+#include <boost/predef.h>
 
 //------------------------------------------------------------------------------
 
-#if BEAST_WINDOWS
-
+#if BOOST_OS_WINDOWS
 #include <windows.h>
 #include <process.h>
-#include <tchar.h>
 
-namespace beast {
-namespace detail {
+namespace beast::detail {
 
-void setCurrentThreadNameImpl (std::string const& name)
+inline void setCurrentThreadNameImpl (std::string_view name)
 {
-   #if BEAST_DEBUG && BEAST_MSVC
-    struct
+#if DEBUG && BOOST_COMP_MSVC
+    // This technique is documented by Microsoft and works for all versions
+    // of Windows and Visual Studio provided that the process is being run
+    // under the Visual Studio debugger. For more details, see:
+    // https://docs.microsoft.com/en-us/visualstudio/debugger/how-to-set-a-thread-name-in-native-code
+
+#pragma pack(push,8)
+    struct THREADNAME_INFO
     {
         DWORD dwType;
         LPCSTR szName;
         DWORD dwThreadID;
         DWORD dwFlags;
-    } info;
+    };
+#pragma pack(pop)
 
-    info.dwType = 0x1000;
-    info.szName = name.c_str ();
-    info.dwThreadID = GetCurrentThreadId();
-    info.dwFlags = 0;
+    THREADNAME_INFO ni;
 
+    ni.dwType = 0x1000;
+    ni.szName = name.data();
+    ni.dwThreadID = GetCurrentThreadId();
+    ni.dwFlags = 0;
+
+#pragma warning(push)
+#pragma warning(disable: 6320 6322)
     __try
     {
-        RaiseException (0x406d1388 /*MS_VC_EXCEPTION*/, 0, sizeof (info) / sizeof (ULONG_PTR), (ULONG_PTR*) &info);
+        RaiseException (0x406d1388, 0,
+            sizeof(ni) / sizeof(ULONG_PTR), (ULONG_PTR*)&ni);
     }
     __except (EXCEPTION_CONTINUE_EXECUTION)
     {}
-   #else
-    (void) name;
-   #endif
+#pragma warning(pop)
+#endif
 }
 
-} // detail
-} // beast
+} // beast::detail
+#endif // BOOST_OS_WINDOWS
 
-#elif BEAST_MAC
-
+#if BOOST_OS_MACOS
 #include <pthread.h>
 
-namespace beast {
-namespace detail {
+namespace beast::detail {
 
-void setCurrentThreadNameImpl (std::string const& name)
+inline void setCurrentThreadNameImpl (std::string_view name)
 {
-    pthread_setname_np(name.c_str());
+    pthread_setname_np(name.data());
 }
 
-} // detail
-} // beast
+} // beast::detail
+#endif // BOOST_OS_MACOS
 
-#else  // BEAST_LINUX
-
+#if BOOST_OS_LINUX
 #include <pthread.h>
 
-namespace beast {
-namespace detail {
+namespace beast::detail {
 
-void setCurrentThreadNameImpl (std::string const& name)
+inline void setCurrentThreadNameImpl (std::string_view name)
 {
-    pthread_setname_np(pthread_self(), name.c_str());
+    pthread_setname_np(pthread_self(), name.data());
 }
 
-} // detail
-} // beast
-
-#endif  // BEAST_LINUX
+} // beast::detail
+#endif // BOOST_OS_LINUX
 
 namespace beast {
 
-void setCurrentThreadName (std::string name)
+namespace detail {
+thread_local std::string threadName;
+} // detail
+
+std::string getCurrentThreadName ()
 {
-    detail::setCurrentThreadNameImpl (name);
-    detail::saveThreadName (std::move (name));
+    return detail::threadName;
+}
+
+void setCurrentThreadName (std::string_view name)
+{
+    detail::threadName = name;
+    detail::setCurrentThreadNameImpl(name);
 }
 
 } // beast

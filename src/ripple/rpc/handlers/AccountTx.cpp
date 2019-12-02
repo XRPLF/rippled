@@ -120,7 +120,7 @@ Json::Value doAccountTx (RPC::Context& context)
     if (params.isMember(jss::marker))
          resumeToken = params[jss::marker];
 
-#ifndef BEAST_DEBUG
+#ifndef DEBUG
 
     try
     {
@@ -189,7 +189,7 @@ Json::Value doAccountTx (RPC::Context& context)
             ret[jss::marker] = resumeToken;
 
         return ret;
-#ifndef BEAST_DEBUG
+#ifndef DEBUG
     }
     catch (std::exception const&)
     {

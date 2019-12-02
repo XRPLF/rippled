@@ -269,13 +269,9 @@ install (
   DESTINATION include/ripple/beast/clock)
 install (
   FILES
-    src/ripple/beast/core/Config.h
-    src/ripple/beast/core/ConfigCheck.h
     src/ripple/beast/core/LexicalCast.h
     src/ripple/beast/core/List.h
-    src/ripple/beast/core/PlatformConfig.h
     src/ripple/beast/core/SemanticVersion.h
-    src/ripple/beast/core/StandardConfig.h
   DESTINATION include/ripple/beast/core)
 install (
   FILES
@@ -792,7 +788,6 @@ else ()
     src/test/beast/SemanticVersion_test.cpp
     src/test/beast/aged_associative_container_test.cpp
     src/test/beast/beast_CurrentThreadName_test.cpp
-    src/test/beast/beast_Debug_test.cpp
     src/test/beast/beast_Journal_test.cpp
     src/test/beast/beast_PropertyStream_test.cpp
     src/test/beast/beast_Zero_test.cpp

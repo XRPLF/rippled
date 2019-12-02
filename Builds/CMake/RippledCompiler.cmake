@@ -76,6 +76,7 @@ if (MSVC)
       _SCL_SECURE_NO_WARNINGS
       _CRT_SECURE_NO_WARNINGS
       WIN32_CONSOLE
+      WIN32_LEAN_AND_MEAN
       NOMINMAX
       # TODO: Resolve these warnings, don't just silence them
       _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS

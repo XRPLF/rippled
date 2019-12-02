@@ -20,7 +20,6 @@
 #ifndef BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
 #define BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
 
-#include <ripple/beast/core/Config.h>
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
@@ -33,11 +32,13 @@
 #include <typeinfo>
 #include <utility>
 
+#include <boost/predef.h>
+
 namespace beast {
 
 namespace detail {
 
-#ifdef _MSC_VER
+#if BOOST_COMP_MSVC
 #pragma warning(push)
 #pragma warning(disable: 4800)
 #pragma warning(disable: 4804)
@@ -190,10 +191,10 @@ struct LexicalCast <Out, std::string>
     {
         // Convert the input to lowercase
         std::transform(in.begin (), in.end (), in.begin (),
-                       [](auto c)
-                       {
-                           return ::tolower(static_cast<unsigned char>(c));
-                       });
+            [](auto c)
+            {
+                return ::tolower(static_cast<unsigned char>(c));
+            });
 
         if (in == "1" || in == "true")
         {
@@ -238,7 +239,7 @@ struct LexicalCast <Out, char*>
     }
 };
 
-#ifdef _MSC_VER
+#if BOOST_COMP_MSVC
 #pragma warning(pop)
 #endif
 
