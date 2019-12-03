@@ -64,6 +64,7 @@
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
+#include <ripple/rpc/ShardArchiveHandler.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <ripple/app/main/GRPCServer.h>
@@ -1607,6 +1608,53 @@ bool ApplicationImp::setup()
         if (!config_->quiet())
         {
             JLOG(m_journal.fatal()) << "Result: " << jvResult << std::endl;
+        }
+    }
+
+    if (shardStore_)
+    {
+        using namespace boost::filesystem;
+
+        auto stateDb(
+            RPC::ShardArchiveHandler::getDownloadDirectory(*config_)
+            / stateDBName);
+
+        try
+        {
+            if (exists(stateDb) &&
+                is_regular_file(stateDb) &&
+                !RPC::ShardArchiveHandler::hasInstance())
+            {
+                auto handler = RPC::ShardArchiveHandler::recoverInstance(
+                    *this,
+                    *m_jobQueue);
+
+                assert(handler);
+
+                if (!handler->initFromDB())
+                {
+                    JLOG(m_journal.fatal())
+                        << "Failed to initialize ShardArchiveHandler.";
+
+                    return false;
+                }
+
+                if (!handler->start())
+                {
+                    JLOG(m_journal.fatal())
+                        << "Failed to start ShardArchiveHandler.";
+
+                    return false;
+                }
+            }
+        }
+        catch(std::exception const& e)
+        {
+            JLOG(m_journal.fatal())
+                << "Exception when starting ShardArchiveHandler from "
+                   "state database: " << e.what();
+
+            return false;
         }
     }
 

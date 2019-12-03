@@ -487,6 +487,7 @@ target_sources (rippled PRIVATE
      main sources:
        subdir: net
   #]===============================]
+  src/ripple/net/impl/DatabaseDownloader.cpp
   src/ripple/net/impl/HTTPClient.cpp
   src/ripple/net/impl/InfoSub.cpp
   src/ripple/net/impl/RPCCall.cpp
@@ -918,6 +919,7 @@ target_sources (rippled PRIVATE
   src/test/rpc/RPCOverload_test.cpp
   src/test/rpc/RobustTransaction_test.cpp
   src/test/rpc/ServerInfo_test.cpp
+  src/test/rpc/ShardArchiveHandler_test.cpp
   src/test/rpc/Status_test.cpp
   src/test/rpc/Submit_test.cpp
   src/test/rpc/Subscribe_test.cpp

@@ -23,27 +23,76 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/net/SSLHTTPDownloader.h>
+#include <ripple/net/DatabaseDownloader.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/filesystem.hpp>
 
 namespace ripple {
+namespace test { class ShardArchiveHandler_test; }
 namespace RPC {
 
 /** Handles the download and import one or more shard archives. */
 class ShardArchiveHandler
-    : public std::enable_shared_from_this <ShardArchiveHandler>
+    : public Stoppable
+    , public std::enable_shared_from_this <ShardArchiveHandler>
 {
 public:
+
+    using pointer = std::shared_ptr<ShardArchiveHandler>;
+    friend class test::ShardArchiveHandler_test;
+
+    static
+    boost::filesystem::path
+    getDownloadDirectory(Config const& config);
+
+    static
+    pointer
+    getInstance();
+
+    static
+    pointer
+    getInstance(Application& app, Stoppable& parent);
+
+    static
+    pointer
+    recoverInstance(Application& app, Stoppable& parent);
+
+    static
+    bool
+    hasInstance();
+
+    bool
+    init();
+
+    bool
+    initFromDB();
+
+    ~ShardArchiveHandler() = default;
+
+    bool
+    add(std::uint32_t shardIndex, std::pair<parsedURL, std::string>&& url);
+
+    /** Starts downloading and importing archives. */
+    bool
+    start();
+
+    void
+    release();
+
+private:
+
     ShardArchiveHandler() = delete;
     ShardArchiveHandler(ShardArchiveHandler const&) = delete;
     ShardArchiveHandler& operator= (ShardArchiveHandler&&) = delete;
     ShardArchiveHandler& operator= (ShardArchiveHandler const&) = delete;
 
-    ShardArchiveHandler(Application& app);
+    ShardArchiveHandler(
+        Application& app,
+        Stoppable& parent,
+        bool recovery = false);
 
-    ~ShardArchiveHandler();
+    void onStop () override;
 
     /** Add an archive to be downloaded and imported.
         @param shardIndex the index of the shard to be imported.
@@ -52,13 +101,9 @@ public:
         @note Returns false if called while downloading.
     */
     bool
-    add(std::uint32_t shardIndex, parsedURL&& url);
+    add(std::uint32_t shardIndex, parsedURL&& url,
+        std::lock_guard<std::mutex> const&);
 
-    /** Starts downloading and importing archives. */
-    bool
-    start();
-
-private:
     // Begins the download and import of the next archive.
     bool
     next(std::lock_guard<std::mutex>& l);
@@ -75,14 +120,21 @@ private:
     void
     remove(std::lock_guard<std::mutex>&);
 
+    void
+    doRelease(std::lock_guard<std::mutex> const&);
+
+    static std::mutex instance_mutex_;
+    static pointer instance_;
+
     std::mutex mutable m_;
     Application& app_;
-    std::shared_ptr<SSLHTTPDownloader> downloader_;
+    beast::Journal const j_;
+    std::unique_ptr<DatabaseCon> sqliteDB_;
+    std::shared_ptr<DatabaseDownloader> downloader_;
     boost::filesystem::path const downloadDir_;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
     bool process_;
     std::map<std::uint32_t, parsedURL> archives_;
-    beast::Journal const j_;
 };
 
 } // RPC

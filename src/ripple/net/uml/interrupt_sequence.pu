@@ -1,0 +1,233 @@
+@startuml
+
+
+skinparam shadowing false
+
+/'
+skinparam sequence {
+	ArrowColor #e1e4e8
+	ActorBorderColor #e1e4e8
+	DatabaseBorderColor #e1e4e8
+	LifeLineBorderColor Black
+	LifeLineBackgroundColor #d3d6d9
+
+	ParticipantBorderColor DeepSkyBlue
+	ParticipantBackgroundColor DodgerBlue
+	ParticipantFontName Impact
+	ParticipantFontSize 17
+	ParticipantFontColor #A9DCDF
+
+  NoteBackgroundColor #6a737d
+
+	ActorBackgroundColor #f6f8fa
+	ActorFontColor #6a737d
+	ActorFontSize 17
+	ActorFontName Aapex
+
+	EntityBackgroundColor #f6f8fa
+	EntityFontColor #6a737d
+	EntityFontSize 17
+	EntityFontName Aapex
+
+	DatabaseBackgroundColor #f6f8fa
+	DatabaseFontColor #6a737d
+	DatabaseFontSize 17
+	DatabaseFontName Aapex
+
+	CollectionsBackgroundColor #f6f8fa
+	ActorFontColor #6a737d
+	ActorFontSize 17
+	ActorFontName Aapex
+}
+
+skinparam note {
+  BackgroundColor #fafbfc
+  BorderColor #e1e4e8
+}
+'/
+
+'skinparam monochrome true
+
+actor Client as c
+entity RippleNode as rn
+entity ShardArchiveHandler as sa
+entity SSLHTTPDownloader as d
+database Database as db
+collections Fileserver as s
+
+c -> rn: Launch RippleNode
+activate rn
+
+c -> rn: Issue download request
+
+note right of c
+  **Download Request:**
+
+  {
+    "method": "download_shard",
+    "params":
+    [
+      {
+        "shards":
+        [
+            {"index": 1, "url": "https://example.com/1.tar.lz4"},
+            {"index": 2, "url": "https://example.com/2.tar.lz4"},
+            {"index": 5, "url": "https://example.com/5.tar.lz4"}
+        ]
+      }
+    ]
+  }
+end note
+
+rn -> sa: Create instance of Handler
+activate sa
+
+rn -> sa: Add three downloads
+sa -> sa: Validate requested downloads
+
+rn -> sa: Initiate Downloads
+sa -> rn: ACK: Initiating
+rn -> c: Initiating requested downloads
+
+sa -> db: Save state to the database\n(Processing three downloads)
+
+note right of db
+
+  **ArchiveHandler State (SQLite Table):**
+
+  | Index | URL                           |
+  | 1     | https://example.com/1.tar.lz4 |
+  | 2     | https://example.com/2.tar.lz4 |
+  | 5     | https://example.com/5.tar.lz4 |
+
+end note
+
+sa -> d: Create instance of Downloader
+activate d
+
+group Download 1
+
+  note over sa
+    **Download 1:**
+
+    This encapsulates the download of the first file
+    at URL "https://example.com/1.tar.lz4".
+
+  end note
+
+  sa -> d: Start download
+
+  d -> s: Connect and request file
+  s -> d: Send file
+  d -> sa: Invoke completion handler
+
+end
+
+sa -> sa: Import and validate shard
+
+sa -> db: Update persisted state\n(Remove download)
+
+note right of db
+  **ArchiveHandler State:**
+
+  | Index | URL                           |
+  | 2     | https://example.com/2.tar.lz4 |
+  | 5     | https://example.com/5.tar.lz4 |
+
+end note
+
+group Download 2
+
+  sa -> d: Start download
+
+  d -> s: Connect and request file
+
+end
+
+rn -> rn: **RippleNode crashes**
+
+deactivate sa
+deactivate rn
+deactivate d
+
+c -> rn: Restart RippleNode
+activate rn
+
+rn -> db: Detect non-empty state database
+
+rn -> sa: Create instance of Handler
+activate sa
+
+sa -> db: Load state
+
+note right of db
+  **ArchiveHandler State:**
+
+  | Index | URL                           |
+  | 2     | https://example.com/2.tar.lz4 |
+  | 5     | https://example.com/5.tar.lz4 |
+
+end note
+
+sa -> d: Create instance of Downloader
+activate d
+
+sa -> sa: Resume Download 2
+
+group Download 2
+
+  sa -> d: Start download
+
+  d -> s: Connect and request file
+  s -> d: Send file
+  d -> sa: Invoke completion handler
+
+end
+
+sa -> sa: Import and validate shard
+
+sa -> db: Update persisted state \n(Remove download)
+
+note right of db
+  **ArchiveHandler State:**
+
+  | Index | URL                           |
+  | 5     | https://example.com/5.tar.lz4 |
+
+end note
+
+group Download 3
+
+  sa -> d: Start download
+
+  d -> s: Connect and request file
+  s -> d: Send file
+  d -> sa: Invoke completion handler
+
+end
+
+sa -> sa: Import and validate shard
+
+sa -> db: Update persisted state \n(Remove download)
+
+note right of db
+  **ArchiveHandler State:**
+
+  ***empty***
+
+end note
+
+sa -> db: Remove empty database
+
+sa -> sa: Automatically destroyed
+deactivate sa
+
+d -> d: Destroyed via reference\ncounting
+deactivate d
+
+c -> rn: Poll RippleNode to verify successfull\nimport of all requested shards.
+c -> rn: Shutdown RippleNode
+
+deactivate rn
+
+@enduml
