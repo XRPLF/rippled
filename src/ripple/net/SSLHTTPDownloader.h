@@ -50,7 +50,8 @@ public:
     SSLHTTPDownloader(
         boost::asio::io_service& io_service,
         beast::Journal j,
-        Config const& config);
+        Config const& config,
+        bool isPaused = false);
 
     bool
     download(
@@ -61,13 +62,36 @@ public:
         boost::filesystem::path const& dstPath,
         std::function<void(boost::filesystem::path)> complete);
 
+    void
+    onStop();
+
+    virtual
+    ~SSLHTTPDownloader() = default;
+
+protected:
+
+    using parser = boost::beast::http::basic_parser<false>;
+
+    beast::Journal const j_;
+
+    bool
+    fail(
+        boost::filesystem::path dstPath,
+        std::function<void(boost::filesystem::path)> const& complete,
+        boost::system::error_code const& ec,
+        std::string const& errMsg,
+        std::shared_ptr<parser> parser = nullptr);
+
 private:
     HTTPClientSSLContext ssl_ctx_;
     boost::asio::io_service::strand strand_;
     boost::optional<
         boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> stream_;
     boost::beast::flat_buffer read_buf_;
-    beast::Journal const j_;
+    std::atomic<bool> isStopped_;
+    bool sessionActive_;
+    std::mutex m_;
+    std::condition_variable c_;
 
     void
     do_session(
@@ -79,12 +103,25 @@ private:
         std::function<void(boost::filesystem::path)> complete,
         boost::asio::yield_context yield);
 
-    void
-    fail(
+    virtual
+    std::shared_ptr<parser>
+    getParser(
         boost::filesystem::path dstPath,
-        std::function<void(boost::filesystem::path)> const& complete,
-        boost::system::error_code const& ec,
-        std::string const& errMsg);
+        std::function<void(boost::filesystem::path)> complete,
+        boost::system::error_code & ec) = 0;
+
+    virtual
+    bool
+    checkPath(
+        boost::filesystem::path const& dstPath) = 0;
+
+    virtual
+    void
+    closeBody(std::shared_ptr<parser> p) = 0;
+
+    virtual
+    uint64_t
+    size(std::shared_ptr<parser> p) = 0;
 };
 
 } // ripple

@@ -102,18 +102,17 @@ public:
         boost::filesystem::path pPath =
             useTempFiles ? "" : (setup.dataDir / DBName);
 
-        open(session_, "sqlite", pPath.string());
+        init(pPath, pragma, initSQL);
+    }
 
-        for (auto const& p : pragma)
-        {
-            soci::statement st = session_.prepare << p;
-            st.execute(true);
-        }
-        for (auto const& sql : initSQL)
-        {
-            soci::statement st = session_.prepare << sql;
-            st.execute(true);
-        }
+    template<std::size_t N, std::size_t M>
+    DatabaseCon(
+        boost::filesystem::path const& dataDir,
+        std::string const& DBName,
+        std::array<char const*, N> const& pragma,
+        std::array<char const*, M> const& initSQL)
+    {
+        init((dataDir / DBName), pragma, initSQL);
     }
 
     soci::session& getSession()
@@ -129,6 +128,27 @@ public:
     void setupCheckpointing (JobQueue*, Logs&);
 
 private:
+
+    template<std::size_t N, std::size_t M>
+    void
+    init(boost::filesystem::path const& pPath,
+        std::array<char const*, N> const& pragma,
+        std::array<char const*, M> const& initSQL)
+    {
+        open(session_, "sqlite", pPath.string());
+
+        for (auto const& p : pragma)
+        {
+            soci::statement st = session_.prepare << p;
+            st.execute(true);
+        }
+        for (auto const& sql : initSQL)
+        {
+            soci::statement st = session_.prepare << sql;
+            st.execute(true);
+        }
+    }
+
     LockedSociSession::mutex lock_;
 
     soci::session session_;

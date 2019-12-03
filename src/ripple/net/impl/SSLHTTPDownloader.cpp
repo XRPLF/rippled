@@ -25,10 +25,13 @@ namespace ripple {
 SSLHTTPDownloader::SSLHTTPDownloader(
     boost::asio::io_service& io_service,
     beast::Journal j,
-    Config const& config)
-    : ssl_ctx_(config, j, boost::asio::ssl::context::tlsv12_client)
+    Config const& config,
+    bool isPaused)
+    : j_(j)
+    , ssl_ctx_(config, j, boost::asio::ssl::context::tlsv12_client)
     , strand_(io_service)
-    , j_(j)
+    , isStopped_(false)
+    , sessionActive_(false)
 {
 }
 
@@ -41,21 +44,8 @@ SSLHTTPDownloader::download(
     boost::filesystem::path const& dstPath,
     std::function<void(boost::filesystem::path)> complete)
 {
-    try
-    {
-        if (exists(dstPath))
-        {
-            JLOG(j_.error()) <<
-                "Destination file exists";
-            return false;
-        }
-    }
-    catch (std::exception const& e)
-    {
-        JLOG(j_.error()) <<
-            "exception: " << e.what();
+    if (!checkPath(dstPath))
         return false;
-    }
 
     if (!strand_.running_in_this_thread())
         strand_.post(
@@ -85,6 +75,24 @@ SSLHTTPDownloader::download(
 }
 
 void
+SSLHTTPDownloader::onStop()
+{
+    std::unique_lock lock(m_);
+
+    isStopped_ = true;
+
+    if(sessionActive_)
+    {
+        // Wait for the handler to exit.
+        c_.wait(lock,
+            [this]()
+            {
+                return !sessionActive_;
+            });
+    }
+}
+
+void
 SSLHTTPDownloader::do_session(
     std::string const host,
     std::string const port,
@@ -98,126 +106,231 @@ SSLHTTPDownloader::do_session(
     using namespace boost::beast;
 
     boost::system::error_code ec;
-    ip::tcp::resolver resolver {strand_.context()};
-    auto const results = resolver.async_resolve(host, port, yield[ec]);
-    if (ec)
-        return fail(dstPath, complete, ec, "async_resolve");
+    bool skip = false;
 
-    try
+    //////////////////////////////////////////////
+    // Define lambdas for encapsulating download
+    // operations:
+    auto connect = [&](std::shared_ptr<parser> parser)
     {
-        stream_.emplace(strand_.context(), ssl_ctx_.context());
-    }
-    catch (std::exception const& e)
-    {
-        return fail(dstPath, complete, ec,
-            std::string("exception: ") + e.what());
-    }
+        uint64_t const rangeStart = size(parser);
 
-    ec = ssl_ctx_.preConnectVerify(*stream_, host);
-    if (ec)
-        return fail(dstPath, complete, ec, "preConnectVerify");
+        ip::tcp::resolver resolver {strand_.context()};
+        auto const results = resolver.async_resolve(host, port, yield[ec]);
+        if (ec)
+            return fail(dstPath, complete, ec, "async_resolve", parser);
 
-    boost::asio::async_connect(
-        stream_->next_layer(), results.begin(), results.end(), yield[ec]);
-    if (ec)
-        return fail(dstPath, complete, ec, "async_connect");
-
-    ec = ssl_ctx_.postConnectVerify(*stream_, host);
-    if (ec)
-        return fail(dstPath, complete, ec, "postConnectVerify");
-
-    stream_->async_handshake(ssl::stream_base::client, yield[ec]);
-    if (ec)
-        return fail(dstPath, complete, ec, "async_handshake");
-
-    // Set up an HTTP HEAD request message to find the file size
-    http::request<http::empty_body> req {http::verb::head, target, version};
-    req.set(http::field::host, host);
-    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-
-    http::async_write(*stream_, req, yield[ec]);
-    if(ec)
-        return fail(dstPath, complete, ec, "async_write");
-
-    {
-        // Check if available storage for file size
-        http::response_parser<http::empty_body> p;
-        p.skip(true);
-        http::async_read(*stream_, read_buf_, p, yield[ec]);
-        if(ec)
-            return fail(dstPath, complete, ec, "async_read");
-        if (auto len = p.content_length())
+        try
         {
-            try
+            stream_.emplace(strand_.context(), ssl_ctx_.context());
+        }
+        catch (std::exception const& e)
+        {
+            return fail(dstPath, complete, ec,
+                        std::string("exception: ") + e.what(), parser);
+        }
+
+        ec = ssl_ctx_.preConnectVerify(*stream_, host);
+        if (ec)
+            return fail(dstPath, complete, ec, "preConnectVerify", parser);
+
+        boost::asio::async_connect(
+            stream_->next_layer(), results.begin(), results.end(), yield[ec]);
+        if (ec)
+            return fail(dstPath, complete, ec, "async_connect", parser);
+
+        ec = ssl_ctx_.postConnectVerify(*stream_, host);
+        if (ec)
+            return fail(dstPath, complete, ec, "postConnectVerify", parser);
+
+        stream_->async_handshake(ssl::stream_base::client, yield[ec]);
+        if (ec)
+            return fail(dstPath, complete, ec, "async_handshake", parser);
+
+        // Set up an HTTP HEAD request message to find the file size
+        http::request<http::empty_body> req {http::verb::head, target, version};
+        req.set(http::field::host, host);
+        req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+
+        // Requesting a portion of the file
+        if (rangeStart)
+        {
+            req.set(http::field::range,
+                (boost::format("bytes=%llu-") % rangeStart).str());
+        }
+
+        http::async_write(*stream_, req, yield[ec]);
+        if(ec)
+            return fail(dstPath, complete, ec, "async_write", parser);
+
+        {
+            // Check if available storage for file size
+            http::response_parser<http::empty_body> p;
+            p.skip(true);
+            http::async_read(*stream_, read_buf_, p, yield[ec]);
+            if(ec)
+                return fail(dstPath, complete, ec, "async_read", parser);
+
+            // Range request was rejected
+            if(p.get().result() == http::status::range_not_satisfiable)
             {
-                if (*len > space(dstPath.parent_path()).available)
+                req.erase(http::field::range);
+
+                http::async_write(*stream_, req, yield[ec]);
+                if(ec)
+                    return fail(dstPath, complete, ec,
+                        "async_write_range_verify", parser);
+
+                http::response_parser<http::empty_body> p;
+                p.skip(true);
+
+                http::async_read(*stream_, read_buf_, p, yield[ec]);
+                if(ec)
+                    return fail(dstPath, complete, ec,
+                        "async_read_range_verify", parser);
+
+                // The entire file is downloaded already.
+                if(p.content_length() == rangeStart)
+                    skip = true;
+                else
+                    return fail(dstPath, complete, ec,
+                        "range_not_satisfiable", parser);
+            }
+            else if (rangeStart &&
+                p.get().result() != http::status::partial_content)
+            {
+                ec.assign(boost::system::errc::not_supported,
+                    boost::system::generic_category());
+
+                return fail(dstPath, complete, ec,
+                    "Range request ignored", parser);
+            }
+            else if (auto len = p.content_length())
+            {
+                try
+                {
+                    if (*len > space(dstPath.parent_path()).available)
+                    {
+                        return fail(dstPath, complete, ec,
+                            "Insufficient disk space for download", parser);
+                    }
+                }
+                catch (std::exception const& e)
                 {
                     return fail(dstPath, complete, ec,
-                        "Insufficient disk space for download");
+                        std::string("exception: ") + e.what(), parser);
                 }
             }
-            catch (std::exception const& e)
+        }
+
+        if(!skip)
+        {
+            // Set up an HTTP GET request message to download the file
+            req.method(http::verb::get);
+
+            if (rangeStart)
             {
-                return fail(dstPath, complete, ec,
-                    std::string("exception: ") + e.what());
+                req.set(http::field::range,
+                    (boost::format("bytes=%llu-") % rangeStart).str());
             }
         }
+
+        http::async_write(*stream_, req, yield[ec]);
+        if(ec)
+            return fail(dstPath, complete, ec, "async_write", parser);
+
+        return true;
+    };
+
+    auto close = [&](auto p)
+    {
+        closeBody(p);
+
+        // Gracefully close the stream
+        stream_->async_shutdown(yield[ec]);
+        if (ec == boost::asio::error::eof)
+            ec.assign(0, ec.category());
+        if (ec)
+        {
+            // Most web servers don't bother with performing
+            // the SSL shutdown handshake, for speed.
+            JLOG(j_.trace()) <<
+                             "async_shutdown: " << ec.message();
+        }
+        // The socket cannot be reused
+        stream_ = boost::none;
+    };
+
+    auto getParser = [&]
+    {
+        auto p = this->getParser(dstPath, complete, ec);
+        if (ec)
+            fail(dstPath, complete, ec, "getParser", p);
+
+        return p;
+    };
+
+    // When the downloader is being stopped
+    // because the server is shutting down,
+    // this method notifies a 'Stoppable'
+    // object that the session has ended.
+    auto exit = [this]()
+    {
+        std::lock_guard<std::mutex> lock(m_);
+        sessionActive_ = false;
+        c_.notify_one();
+    };
+
+    // end lambdas
+    ////////////////////////////////////////////////////////////
+
+    {
+        std::lock_guard<std::mutex> lock(m_);
+        sessionActive_ = true;
     }
 
-    // Set up an HTTP GET request message to download the file
-    req.method(http::verb::get);
-    http::async_write(*stream_, req, yield[ec]);
-    if(ec)
-        return fail(dstPath, complete, ec, "async_write");
+    if(isStopped_.load())
+        return exit();
+
+    auto p = getParser();
+    if (ec)
+        return exit();
+
+    if (!connect(p) || ec)
+        return exit();
+
+    if(skip)
+        p->skip(true);
 
     // Download the file
-    http::response_parser<http::file_body> p;
-    p.body_limit(std::numeric_limits<std::uint64_t>::max());
-    p.get().body().open(
-        dstPath.string().c_str(),
-        boost::beast::file_mode::write,
-        ec);
-    if (ec)
+    while (!p->is_done())
     {
-        p.get().body().close();
-        return fail(dstPath, complete, ec, "open");
-    }
+        if(isStopped_.load())
+        {
+            close(p);
+            return exit();
+        }
 
-    http::async_read(*stream_, read_buf_, p, yield[ec]);
-    if (ec)
-    {
-        p.get().body().close();
-        return fail(dstPath, complete, ec, "async_read");
+        http::async_read_some(*stream_, read_buf_, *p, yield[ec]);
     }
-    p.get().body().close();
-
-    // Gracefully close the stream
-    stream_->async_shutdown(yield[ec]);
-    if (ec == boost::asio::error::eof)
-        ec.assign(0, ec.category());
-    if (ec)
-    {
-        // Most web servers don't bother with performing
-        // the SSL shutdown handshake, for speed.
-        JLOG(j_.trace()) <<
-            "async_shutdown: " << ec.message();
-    }
-    // The socket cannot be reused
-    stream_ = boost::none;
 
     JLOG(j_.trace()) <<
         "download completed: " << dstPath.string();
+
+    close(p);
+    exit();
 
     // Notify the completion handler
     complete(std::move(dstPath));
 }
 
-void
+bool
 SSLHTTPDownloader::fail(
     boost::filesystem::path dstPath,
     std::function<void(boost::filesystem::path)> const& complete,
     boost::system::error_code const& ec,
-    std::string const& errMsg)
+    std::string const& errMsg,
+    std::shared_ptr<parser> parser)
 {
     if (!ec)
     {
@@ -230,18 +343,21 @@ SSLHTTPDownloader::fail(
             errMsg << ": " << ec.message();
     }
 
+    if (parser)
+        closeBody(parser);
+
     try
     {
         remove(dstPath);
     }
     catch (std::exception const& e)
     {
-        JLOG(j_.error()) <<
-            "exception: " << e.what();
+        JLOG(j_.error()) << "exception: " << e.what()
+            << " in function: " << __func__;
     }
     complete(std::move(dstPath));
+
+    return false;
 }
-
-
 
 }// ripple

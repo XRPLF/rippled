@@ -17,11 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/net/SSLHTTPDownloader.h>
+#include <ripple/net/DatabaseDownloader.h>
 #include <test/jtx.h>
 #include <test/jtx/TrustedPublisherServer.h>
 #include <test/unit_test/FileDirGuard.h>
-#include <boost/filesystem.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/predef.h>
 #include <mutex>
@@ -82,15 +81,15 @@ class SSLHTTPDownloader_test : public beast::unit_test::suite
         beast::Journal journal_;
         // The SSLHTTPDownloader must be created as shared_ptr
         // because it uses shared_from_this
-        std::shared_ptr<SSLHTTPDownloader> ptr_;
+        std::shared_ptr<DatabaseDownloader> ptr_;
 
         Downloader(jtx::Env& env)
         : journal_ {sink_}
-        , ptr_ {std::make_shared<SSLHTTPDownloader>(
+        , ptr_ {std::make_shared<DatabaseDownloader>(
               env.app().getIOService(), journal_, env.app().config())}
         {}
 
-        SSLHTTPDownloader* operator->()
+        DatabaseDownloader* operator->()
         {
             return ptr_.get();
         }
@@ -104,6 +103,7 @@ class SSLHTTPDownloader_test : public beast::unit_test::suite
             (verify ? "Verify" : "No Verify");
 
         using namespace jtx;
+
         ripple::test::detail::FileDirGuard cert {
             *this, "_cert", "ca.pem", TrustedPublisherServer::ca_cert()};
 
@@ -152,22 +152,11 @@ class SSLHTTPDownloader_test : public beast::unit_test::suite
     testFailures()
     {
         testcase("Error conditions");
+
         using namespace jtx;
+
         Env env {*this};
 
-        {
-            // file exists
-            Downloader dl {env};
-            ripple::test::detail::FileDirGuard const datafile {
-                *this, "downloads", "data", "file contents"};
-            BEAST_EXPECT(!dl->download(
-                "localhost",
-                "443",
-                "",
-                11,
-                datafile.file(),
-                std::function<void(boost::filesystem::path)> {std::ref(cb)}));
-        }
         {
             // bad hostname
             boost::system::error_code ec;

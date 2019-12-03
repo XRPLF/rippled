@@ -77,7 +77,7 @@ doDownloadShard(RPC::JsonContext& context)
 
     // Validate shards
     static const std::string ext {".tar.lz4"};
-    std::map<std::uint32_t, parsedURL> archives;
+    std::map<std::uint32_t, std::pair<parsedURL, std::string>> archives;
     for (auto& it : context.params[jss::shards])
     {
         // Validate the index
@@ -94,7 +94,8 @@ doDownloadShard(RPC::JsonContext& context)
         if (!it.isMember(jss::url))
             return RPC::missing_field_error(jss::url);
         parsedURL url;
-        if (!parseUrl(url, it[jss::url].asString()) ||
+        auto unparsedURL = it[jss::url].asString();
+        if (!parseUrl(url, unparsedURL) ||
             url.domain.empty() || url.path.empty())
         {
             return RPC::invalid_field_error(jss::url);
@@ -116,16 +117,39 @@ doDownloadShard(RPC::JsonContext& context)
         }
 
         // Check for duplicate indexes
-        if (!archives.emplace(jv.asUInt(), std::move(url)).second)
+        if (!archives.emplace(jv.asUInt(),
+            std::make_pair(std::move(url), unparsedURL)).second)
         {
             return RPC::make_param_error("Invalid field '" +
                 std::string(jss::index) + "', duplicate shard ids.");
         }
     }
 
-    // Begin downloading. The handler keeps itself alive while downloading.
-    auto handler {
-        std::make_shared<RPC::ShardArchiveHandler>(context.app)};
+    RPC::ShardArchiveHandler::pointer handler;
+
+    try
+    {
+        handler = RPC::ShardArchiveHandler::hasInstance() ?
+            RPC::ShardArchiveHandler::getInstance() :
+            RPC::ShardArchiveHandler::getInstance(
+                context.app,
+                context.app.getJobQueue());
+
+        if(!handler)
+            return RPC::make_error (rpcINTERNAL,
+                "Failed to create ShardArchiveHandler.");
+
+        if(!handler->init())
+            return RPC::make_error (rpcINTERNAL,
+                "Failed to initiate ShardArchiveHandler.");
+    }
+    catch (std::exception const& e)
+    {
+        return RPC::make_error (rpcINTERNAL,
+            std::string("Failed to start download: ") +
+            e.what());
+    }
+
     for (auto& [index, url] : archives)
     {
         if (!handler->add(index, std::move(url)))
@@ -135,8 +159,13 @@ doDownloadShard(RPC::JsonContext& context)
                 std::to_string(index) + " exists or being acquired");
         }
     }
+
+    // Begin downloading.
     if (!handler->start())
+    {
+        handler->release();
         return rpcError(rpcINTERNAL);
+    }
 
     std::string s {"Downloading shard"};
     preShards = shardStore->getPreShards();
