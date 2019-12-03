@@ -1,0 +1,69 @@
+@startuml
+
+state "Updating Database" as UD4 {
+  UD4: Update the database to reflect
+  UD4: the current state.
+}
+state "Initiating Download" as ID {
+  ID: Omit the range header to download
+  ID: the entire file.
+}
+
+state "Evaluate Database" as ED {
+  ED: Determine the current state
+  ED: based on the contents of the
+  ED: database from a previous run.
+}
+
+state "Remove Database" as RD {
+  RD: The database is destroyed when
+  RD: empty.
+}
+
+state "Download in Progress" as DP
+
+state "Download Completed" as DC {
+
+  state "Updating Database" as UD {
+    UD: Update the database to reflect
+    UD: the current state.
+  }
+
+  state "Queue Check" as QC {
+    QC: Check the queue for any reamining
+    QC: downloads.
+  }
+
+  [*] --> UD
+  UD --> QC
+}
+
+state "Check Resume" as CR {
+  CR: Determine whether we're resuming
+  CR: a previous download or starting a
+  CR: new one.
+}
+
+state "Resuming Download" as IPD {
+  IPD: Set the range header in the
+  IPD: HTTP request as needed.
+}
+
+[*] --> ED : State DB is present at\nnode launch
+ED --> RD : State DB is empty
+ED --> CR : There are downloads queued
+RD --> [*]
+
+[*] --> UD4 : Client invokes <<download_shard>>\ncommand
+UD4 --> ID : Database updated
+ID --> DP : Download started
+DP --> DC : Download completed
+DC --> ID : There **are** additional downloads\nqueued
+DP --> [*] : A graceful shutdown is\nin progress
+DC --> RD : There **are no** additional\ndownloads queued
+
+CR --> IPD : Resuming an interrupted\ndownload
+IPD --> DP: Download started
+CR --> ID : Initiating a new\ndownload
+
+@enduml
