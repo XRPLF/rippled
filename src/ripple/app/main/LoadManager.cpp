@@ -126,26 +126,49 @@ void LoadManager::run ()
             auto const timeSpentDeadlocked =
                 duration_cast<seconds>(steady_clock::now() - deadLock);
 
-            auto const reportingIntervalSeconds = 10s;
+            constexpr auto reportingIntervalSeconds = 10s;
+            constexpr auto deadlockFatalLogMessageTimeLimit = 90s;
+            constexpr auto deadlockLogicErrorTimeLimit = 600s;
             if (armed && (timeSpentDeadlocked >= reportingIntervalSeconds))
             {
-                // Report the deadlocked condition every 10 seconds
+
+                // Report the deadlocked condition every reportingIntervalSeconds
                 if ((timeSpentDeadlocked % reportingIntervalSeconds) == 0s)
                 {
-                    JLOG(journal_.warn())
-                        << "Server stalled for "
-                        << timeSpentDeadlocked.count() << " seconds.";
+                    if (timeSpentDeadlocked < deadlockFatalLogMessageTimeLimit)
+                    {
+                        JLOG(journal_.warn())
+                            << "Server stalled for "
+                            << timeSpentDeadlocked.count() << " seconds.";
+                    }
+                    else
+                    {
+                        JLOG(journal_.fatal())
+                            << "Deadlock detected. Deadlocked time: "
+                            << timeSpentDeadlocked.count() << "s";
+                        if (app_.getJobQueue().isOverloaded())
+                        {
+                            JLOG(journal_.fatal())
+                                << app_.getJobQueue().getJson(0);
+                        }
+                    }
                 }
 
-                // If we go over 90 seconds spent deadlocked, it means that
+                // If we go over the deadlockTimeLimit spent deadlocked, it means that
                 // the deadlock resolution code has failed, which qualifies
                 // as undefined behavior.
                 //
-                constexpr auto deadlockTimeLimit = 90s;
-                assert (timeSpentDeadlocked < deadlockTimeLimit);
-
-                if (timeSpentDeadlocked >= deadlockTimeLimit)
+                if (timeSpentDeadlocked >= deadlockLogicErrorTimeLimit)
+                {
+                    JLOG(journal_.fatal())
+                        << "LogicError: Deadlock detected. Deadlocked time: "
+                        << timeSpentDeadlocked.count() << "s";
+                    if (app_.getJobQueue().isOverloaded())
+                    {
+                        JLOG(journal_.fatal()) << app_.getJobQueue().getJson(0);
+                    }
                     LogicError("Deadlock detected");
+                }
             }
         }
 
