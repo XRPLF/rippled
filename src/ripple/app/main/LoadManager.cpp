@@ -145,9 +145,12 @@ void LoadManager::run ()
                     {
                         JLOG(journal_.fatal())
                             << "Deadlock detected. Deadlocked time: "
-                            << timeSpentDeadlocked.count()
-                            << "s JobQueue Overloaded: "
-                            << app_.getJobQueue().isOverloaded();
+                            << timeSpentDeadlocked.count() << "s";
+                        if (app_.getJobQueue().isOverloaded())
+                        {
+                            JLOG(journal_.fatal())
+                                << app_.getJobQueue().getJson(0);
+                        }
                     }
                 }
 
@@ -158,10 +161,12 @@ void LoadManager::run ()
                 if (timeSpentDeadlocked >= deadlockLogicErrorTimeLimit)
                 {
                     JLOG(journal_.fatal())
-                            << "LogicError: Deadlock detected. Deadlocked time: "
-                            << timeSpentDeadlocked.count()
-                            << "s JobQueue Overloaded: "
-                            << app_.getJobQueue().isOverloaded();
+                        << "LogicError: Deadlock detected. Deadlocked time: "
+                        << timeSpentDeadlocked.count() << "s";
+                    if (app_.getJobQueue().isOverloaded())
+                    {
+                        JLOG(journal_.fatal()) << app_.getJobQueue().getJson(0);
+                    }
                     LogicError("Deadlock detected");
                 }
             }
