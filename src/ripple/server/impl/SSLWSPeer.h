@@ -23,7 +23,6 @@
 #include <ripple/server/impl/BaseHTTPPeer.h>
 #include <ripple/server/WSSession.h>
 #include <ripple/beast/asio/ssl_bundle.h>
-#include <ripple/beast/asio/waitable_timer.h>
 #include <boost/beast/websocket/ssl.hpp>
 #include <memory>
 
@@ -74,7 +73,7 @@ SSLWSPeer<Handler>::SSLWSPeer(
           port,
           handler,
           ssl_bundle->socket.get_executor(),
-          beast::create_waitable_timer<waitable_timer>(ssl_bundle->socket),
+          waitable_timer{ssl_bundle->socket.get_executor()},
           remote_endpoint,
           std::move(request),
           journal)

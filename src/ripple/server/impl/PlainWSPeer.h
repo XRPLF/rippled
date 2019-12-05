@@ -21,7 +21,6 @@
 #define RIPPLE_SERVER_PLAINWSPEER_H_INCLUDED
 
 #include <ripple/server/impl/BaseWSPeer.h>
-#include <ripple/beast/asio/waitable_timer.h>
 #include <memory>
 
 namespace ripple {
@@ -68,7 +67,7 @@ PlainWSPeer<Handler>::PlainWSPeer(
           port,
           handler,
           socket.get_executor(),
-          beast::create_waitable_timer<waitable_timer>(socket),
+          waitable_timer{socket.get_executor()},
           remote_address,
           std::move(request),
           journal)
