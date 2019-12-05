@@ -137,7 +137,7 @@ public:
     OverlayImpl (Application& app, Setup const& setup, Stoppable& parent,
         ServerHandler& serverHandler, Resource::Manager& resourceManager,
         Resolver& resolver, boost::asio::io_service& io_service,
-        BasicConfig const& config);
+        BasicConfig const& config, beast::insight::Collector::ptr const& collector);
 
     ~OverlayImpl();
 
@@ -458,6 +458,62 @@ private:
 
     void
     sendEndpoints();
+
+private:
+
+    struct TrafficGauges{
+        TrafficGauges (char const* name, beast::insight::Collector::ptr const& collector)
+        : bytesIn(collector->make_gauge(name,"Bytes_In"))
+        , bytesOut(collector->make_gauge(name,"Bytes_Out"))
+        , messagesIn(collector->make_gauge(name,"Messages_In"))
+        , messagesOut(collector->make_gauge(name,"Messages_Out"))
+        {   
+        }
+        beast::insight::Gauge bytesIn;
+        beast::insight::Gauge bytesOut;
+        beast::insight::Gauge messagesIn;
+        beast::insight::Gauge messagesOut;
+    };
+
+    
+    struct Stats
+    {
+
+        template <class Handler>
+        Stats (
+                Handler const& handler, 
+                beast::insight::Collector::ptr const& collector,
+                std::vector<TrafficGauges>&& trafficGauges_)
+            : peerDisconnects (collector->make_gauge("Overlay","Peer_Disconnects"))
+            , trafficGauges (std::move(trafficGauges_))
+            , hook (collector->make_hook (handler))
+            { 
+            }
+            
+        beast::insight::Gauge peerDisconnects;
+        std::vector<TrafficGauges> trafficGauges;
+        beast::insight::Hook hook;
+    };
+    
+    Stats m_stats;
+    std::mutex m_statsMutex;
+
+private:
+    void collect_metrics()
+    {   
+        auto counts = m_traffic.getCounts();
+        std::lock_guard lock (m_statsMutex);
+        assert(counts.size() == m_stats.trafficGauges.size());
+        
+        for (std::size_t i = 0; i < counts.size(); ++i)
+        {
+            m_stats.trafficGauges[i].bytesIn = counts[i].bytesIn;
+            m_stats.trafficGauges[i].bytesOut = counts[i].bytesOut;
+            m_stats.trafficGauges[i].messagesIn = counts[i].messagesIn;
+            m_stats.trafficGauges[i].messagesOut = counts[i].messagesOut;
+        }
+        m_stats.peerDisconnects = getPeerDisconnect();
+    }
 };
 
 } // ripple

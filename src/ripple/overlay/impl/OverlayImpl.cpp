@@ -144,7 +144,8 @@ OverlayImpl::OverlayImpl (
     Resource::Manager& resourceManager,
     Resolver& resolver,
     boost::asio::io_service& io_service,
-    BasicConfig const& config)
+    BasicConfig const& config,
+    beast::insight::Collector::ptr const& collector)
     : Overlay (parent)
     , app_ (app)
     , io_service_ (io_service)
@@ -155,10 +156,25 @@ OverlayImpl::OverlayImpl (
     , serverHandler_(serverHandler)
     , m_resourceManager (resourceManager)
     , m_peerFinder (PeerFinder::make_Manager (*this, io_service,
-        stopwatch(), app_.journal("PeerFinder"), config))
+        stopwatch(), app_.journal("PeerFinder"), config, collector))
     , m_resolver (resolver)
     , next_id_(1)
     , timer_count_(0)
+    , m_stats (
+        std::bind(&OverlayImpl::collect_metrics, this),
+        collector,
+        [counts = m_traffic.getCounts(), collector]()
+        {
+            std::vector<TrafficGauges> ret;
+            ret.reserve(counts.size());
+
+            for (size_t i = 0; i < counts.size(); ++i)
+            {
+                ret.push_back(TrafficGauges(counts[i].name, collector));
+            }
+
+            return ret;
+        }())
 {
     beast::PropertyStream::Source::add (m_peerFinder.get());
 }
@@ -1353,10 +1369,11 @@ make_Overlay (
     Resource::Manager& resourceManager,
     Resolver& resolver,
     boost::asio::io_service& io_service,
-    BasicConfig const& config)
+    BasicConfig const& config,
+    beast::insight::Collector::ptr const& collector)
 {
     return std::make_unique<OverlayImpl>(app, setup, parent, serverHandler,
-        resourceManager, resolver, io_service, config);
+        resourceManager, resolver, io_service, config, collector);
 }
 
 }
