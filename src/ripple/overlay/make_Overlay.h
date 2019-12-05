@@ -43,7 +43,8 @@ make_Overlay (
     Resource::Manager& resourceManager,
     Resolver& resolver,
     boost::asio::io_service& io_service,
-    BasicConfig const& config);
+    BasicConfig const& config,
+    beast::insight::Collector::ptr const& collector);
 
 } // ripple
 
