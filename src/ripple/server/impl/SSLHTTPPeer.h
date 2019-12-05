@@ -23,7 +23,6 @@
 #include <ripple/server/impl/BaseHTTPPeer.h>
 #include <ripple/server/impl/SSLWSPeer.h>
 #include <ripple/beast/asio/ssl_bundle.h>
-#include <ripple/beast/asio/waitable_timer.h>
 #include <memory>
 
 namespace ripple {

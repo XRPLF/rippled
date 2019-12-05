@@ -23,7 +23,6 @@
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/RangeSet.h>
-#include <ripple/beast/asio/waitable_timer.h>
 #include <ripple/beast/utility/WrappedSink.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/ProtocolVersion.h>
@@ -558,7 +557,7 @@ PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& s
     , socket_ (ssl_bundle_->socket)
     , stream_ (ssl_bundle_->stream)
     , strand_ (socket_.get_executor())
-    , timer_ (beast::create_waitable_timer<waitable_timer>(socket_))
+    , timer_ (waitable_timer{socket_.get_executor()})
     , remote_address_ (slot->remote_endpoint())
     , overlay_ (overlay)
     , m_inbound (false)

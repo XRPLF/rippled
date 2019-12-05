@@ -71,7 +71,7 @@ PeerImp::PeerImp (Application& app, id_t id,
     , socket_ (ssl_bundle_->socket)
     , stream_ (ssl_bundle_->stream)
     , strand_ (socket_.get_executor())
-    , timer_ (beast::create_waitable_timer<waitable_timer>(socket_))
+    , timer_ (waitable_timer{socket_.get_executor()})
     , remote_address_ (slot->remote_endpoint())
     , overlay_ (overlay)
     , m_inbound (true)
