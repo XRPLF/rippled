@@ -1463,7 +1463,7 @@ bool ApplicationImp::setup()
     //             if (!config_.standalone())
     m_overlay = make_Overlay (*this, setup_Overlay(*config_), *m_jobQueue,
         *serverHandler_, *m_resourceManager, *m_resolver, get_io_service(),
-        *config_);
+        *config_, m_collectorManager->collector ());
     add (*m_overlay); // add to PropertyStream
 
     if (!config_->standalone())

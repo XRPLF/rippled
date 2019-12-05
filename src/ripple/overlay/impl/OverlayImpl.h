@@ -134,7 +134,7 @@ public:
     OverlayImpl (Application& app, Setup const& setup, Stoppable& parent,
         ServerHandler& serverHandler, Resource::Manager& resourceManager,
         Resolver& resolver, boost::asio::io_service& io_service,
-        BasicConfig const& config);
+        BasicConfig const& config, beast::insight::Collector::ptr const& collector);
 
     ~OverlayImpl();
 
@@ -456,6 +456,41 @@ private:
 
     void
     sendEndpoints();
+
+private:
+    struct Stats
+    {
+        template <class Handler>
+        Stats (Handler const& handler, beast::insight::Collector::ptr const& collector)
+            : hook (collector->make_hook (handler))
+            , bytesIn(collector->make_counter("Overlay","Bytes_In"))
+            , bytesOut(collector->make_counter("Overlay","Bytes_Out"))
+            , messagesIn(collector->make_counter("Overlay","Messages_In"))
+            , messagesOut(collector->make_counter("Overlay","Messages_Out"))
+            { }
+
+        beast::insight::Hook hook;
+        beast::insight::Counter bytesIn;
+        beast::insight::Counter bytesOut;
+        beast::insight::Counter messagesIn;
+        beast::insight::Counter messagesOut;
+    };
+
+    Stats m_stats;
+
+private:
+    void collect_metrics()
+    {   
+        std::lock_guard lock (mutex_);
+        auto const stats = m_traffic.getCounts();
+        for (auto const& i : stats)
+        {
+            m_stats.bytesIn += i.bytesIn;
+            m_stats.bytesOut += i.bytesOut;
+            m_stats.messagesIn += i.messagesIn;
+            m_stats.messagesOut += i.messagesOut;
+        }
+    }
 };
 
 } // ripple
