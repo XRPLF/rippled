@@ -1987,6 +1987,20 @@ bool ApplicationImp::loadOldLedger (
                 }
             }
         }
+        using namespace std::chrono_literals;
+        using namespace date;
+        static constexpr NetClock::time_point ledgerWarnTimePoint{
+                          sys_days{January/1/2018} - sys_days{January/1/2000}};
+        if (loadLedger->info().closeTime < ledgerWarnTimePoint)
+        {
+            JLOG(m_journal.fatal()) <<
+                "\n\n***  WARNING   ***\n"
+                "You are replaying a ledger from before " <<
+                to_string(ledgerWarnTimePoint) << " UTC.\n"
+                "This replay will not handle your ledger as it was originally "
+                "handled.\nConsider running an earlier version of rippled to "
+                "get the older rules.\n*** CONTINUING ***\n";
+        }
 
         JLOG(m_journal.info()) <<
             "Loading ledger " << loadLedger->info().hash <<
