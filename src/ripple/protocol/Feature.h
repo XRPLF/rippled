@@ -46,6 +46,27 @@ namespace ripple {
 
 namespace detail {
 
+// *NOTE*
+//
+// Features, or Amendments as they are called elsewhere, are enabled on the
+// network at some specific time based on Validator voting.  Features are
+// enabled using run-time conditionals based on the state of the amendment.
+// There is value in retaining that conditional code for some time after
+// the amendment is enabled to make it simple to replay old transactions.
+// However, once an Amendment has been enabled for, say, more than two years
+// then retaining that conditional code has less value since it is
+// uncommon to replay such old transactions.
+//
+// Starting in January of 2020 Amendment conditionals from before January
+// 2018 are being removed.  So replaying any ledger from before January
+// 2018 needs to happen on an older version of the server code.  There's
+// a log message in Application.cpp that warns about replaying old ledgers.
+//
+// At some point in the future someone may wish to remove Amendment
+// conditional code for Amendments that were enabled after January 2018.
+// When that happens then the log message in Application.cpp should be
+// updated.
+
 class FeatureCollections
 {
     static constexpr char const* const featureNames[] =
