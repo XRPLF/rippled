@@ -185,14 +185,6 @@ TER PathCursor::deliverNodeReverseImpl (
         // Compute portion of input needed to cover actual output.
         auto outputFee = mulRound (
             saOutPassAct, node().saOfrRate, node().saTakerPays.issue (), true);
-        if (*stAmountCalcSwitchover == false && ! outputFee)
-        {
-            JLOG (j_.fatal())
-                << "underflow computing outputFee "
-                << "saOutPassAct: " << saOutPassAct
-                << " saOfrRate: " << node ().saOfrRate;
-            return telFAILED_PROCESSING;
-        }
         STAmount saInPassReq = std::min (node().saTakerPays, outputFee);
         STAmount saInPassAct;
 
