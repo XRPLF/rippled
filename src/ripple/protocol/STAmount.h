@@ -20,15 +20,12 @@
 #ifndef RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
-#include <ripple/basics/chrono.h>
 #include <ripple/basics/IOUAmount.h>
-#include <ripple/basics/LocalValue.h>
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/Issue.h>
-#include <memory>
 
 namespace ripple {
 
@@ -405,38 +402,6 @@ inline bool isXRP(STAmount const& amount)
 {
     return isXRP (amount.issue().currency);
 }
-
-extern LocalValue<bool> stAmountCalcSwitchover;
-extern LocalValue<bool> stAmountCalcSwitchover2;
-
-/** RAII class to set and restore the STAmount calc switchover.*/
-class STAmountSO
-{
-public:
-    explicit STAmountSO(NetClock::time_point const closeTime)
-        : saved_(*stAmountCalcSwitchover)
-        , saved2_(*stAmountCalcSwitchover2)
-    {
-        *stAmountCalcSwitchover = closeTime > soTime;
-        *stAmountCalcSwitchover2 = closeTime > soTime2;
-    }
-
-    ~STAmountSO()
-    {
-        *stAmountCalcSwitchover = saved_;
-        *stAmountCalcSwitchover2 = saved2_;
-    }
-
-    // Mon Dec 28, 2015 18:00:00 UTC
-    static NetClock::time_point const soTime;
-
-    // Sat Feb 27, 2016 05:00:00 UTC
-    static NetClock::time_point const soTime2;
-
-private:
-    bool saved_;
-    bool saved2_;
-};
 
 } // ripple
 

@@ -274,25 +274,7 @@ public:
         for (int i=0;i<101;++i)
             env (offer (carol, USD (1), EUR (2)));
 
-        auto hasFeature = [](Env& e, uint256 const& f)
-        {
-            return (e.app().config().features.find(f) !=
-                e.app().config().features.end());
-        };
-
-        for (auto d : {-1, 1})
-        {
-            auto const closeTime = STAmountSO::soTime +
-                d * env.closed()->info().closeTimeResolution;
-            env.close (closeTime);
-            *stAmountCalcSwitchover = closeTime > STAmountSO::soTime ||
-                !hasFeature(env, fix1513);
-            // Will fail without the underflow fix
-            TER const expectedResult = *stAmountCalcSwitchover ?
-                TER {tesSUCCESS} : TER {tecPATH_PARTIAL};
-            env (pay (alice, bob, EUR (epsilon)), path (~EUR),
-                sendmax (USD (100)), ter (expectedResult));
-        }
+        env (pay (alice, bob, EUR (epsilon)), path (~EUR), sendmax (USD (100)));
     }
 
     void testXRPTinyPayment (FeatureBitset features)
@@ -324,74 +306,46 @@ public:
         auto const gw = Account {"gw"};
 
         auto const USD = gw["USD"];
+        Env env {*this, features};
 
-        for (auto withFix : {false, true})
-        {
-            if (!withFix)
-                continue;
+        env.fund (XRP (10000), alice, bob, carol, dan, erin, gw);
+        env.trust (USD (1000), alice, bob, carol, dan, erin);
+        env (pay (gw, carol, USD (0.99999)));
+        env (pay (gw, dan, USD (1)));
+        env (pay (gw, erin, USD (1)));
 
-            Env env {*this, features};
+        // Carol doesn't quite have enough funds for this offer
+        // The amount left after this offer is taken will cause
+        // STAmount to incorrectly round to zero when the next offer
+        // (at a good quality) is considered. (when the
+        // stAmountCalcSwitchover2 patch is inactive)
+        env (offer (carol, drops (1), USD (1)));
+        // Offer at a quality poor enough so when the input xrp is
+        // calculated  in the reverse pass, the amount is not zero.
+        env (offer (dan, XRP (100), USD (1)));
 
-            auto closeTime = [&]
-            {
-                auto const delta =
-                    100 * env.closed ()->info ().closeTimeResolution;
-                if (withFix)
-                    return STAmountSO::soTime2 + delta;
-                else
-                    return STAmountSO::soTime2 - delta;
-            }();
+        env.close ();
+        // This is the funded offer that will be incorrectly removed.
+        // It is considered after the offer from carol, which leaves a
+        // tiny amount left to pay. When calculating the amount of xrp
+        // needed for this offer, it will incorrectly compute zero in both
+        // the forward and reverse passes (when the stAmountCalcSwitchover2
+        // is inactive.)
+        env (offer (erin, drops (1), USD (1)));
 
-            env.fund (XRP (10000), alice, bob, carol, dan, erin, gw);
-            env.trust (USD (1000), alice, bob, carol, dan, erin);
-            env (pay (gw, carol, USD (0.99999)));
-            env (pay (gw, dan, USD (1)));
-            env (pay (gw, erin, USD (1)));
+        env (pay (alice, bob, USD (1)), path (~USD),
+            sendmax (XRP (102)),
+            txflags (tfNoRippleDirect | tfPartialPayment));
 
-            // Carol doesn't quite have enough funds for this offer
-            // The amount left after this offer is taken will cause
-            // STAmount to incorrectly round to zero when the next offer
-            // (at a good quality) is considered. (when the
-            // stAmountCalcSwitchover2 patch is inactive)
-            env (offer (carol, drops (1), USD (1)));
-            // Offer at a quality poor enough so when the input xrp is
-            // calculated  in the reverse pass, the amount is not zero.
-            env (offer (dan, XRP (100), USD (1)));
+        env.require (
+            offers (carol, 0),
+            offers (dan, 1));
 
-            env.close (closeTime);
-            // This is the funded offer that will be incorrectly removed.
-            // It is considered after the offer from carol, which leaves a
-            // tiny amount left to pay. When calculating the amount of xrp
-            // needed for this offer, it will incorrectly compute zero in both
-            // the forward and reverse passes (when the stAmountCalcSwitchover2
-            // is inactive.)
-            env (offer (erin, drops (1), USD (1)));
-
-            {
-                env (pay (alice, bob, USD (1)), path (~USD),
-                    sendmax (XRP (102)),
-                    txflags (tfNoRippleDirect | tfPartialPayment));
-
-                env.require (
-                    offers (carol, 0),
-                    offers (dan, 1));
-                if (!withFix)
-                {
-                    // funded offer was removed
-                    env.require (
-                        balance (erin, USD (1)),
-                        offers (erin, 0));
-                }
-                else
-                {
-                    // offer was correctly consumed. There is still some
-                    // liquidity left on that offer.
-                    env.require (
-                        balance (erin, USD (0.99999)),
-                        offers (erin, 1));
-                }
-            }
-        }
+        // offer was correctly consumed. There is still some
+        // liquidity left on that offer.
+        env.require (
+            balance (erin, USD (0.99999)),
+            offers (erin, 1));
     }
 
     void testEnforceNoRipple (FeatureBitset features)
