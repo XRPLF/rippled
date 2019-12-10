@@ -179,46 +179,33 @@ PaymentSandbox::balanceHook (AccountID const& account,
     */
 
     auto const currency = amount.getCurrency ();
-    auto const switchover = fix1141 (info ().parentCloseTime);
 
     auto adjustedAmt = amount;
-    if (switchover)
+    auto delta = amount.zeroed ();
+    auto lastBal = amount;
+    auto minBal = amount;
+    for (auto curSB = this; curSB; curSB = curSB->ps_)
     {
-        auto delta = amount.zeroed ();
-        auto lastBal = amount;
-        auto minBal = amount;
-        for (auto curSB = this; curSB; curSB = curSB->ps_)
+        if (auto adj = curSB->tab_.adjustments (account, issuer, currency))
         {
-            if (auto adj = curSB->tab_.adjustments (account, issuer, currency))
-            {
-                delta += adj->debits;
-                lastBal = adj->origBalance;
-                if (lastBal < minBal)
-                    minBal = lastBal;
-            }
-        }
-        adjustedAmt = std::min(amount, lastBal - delta);
-        if (rules().enabled(fix1368))
-        {
-            // The adjusted amount should never be larger than the balance. In
-            // some circumstances, it is possible for the deferred credits table
-            // to compute usable balance just slightly above what the ledger
-            // calculates (but always less than the actual balance).
-            adjustedAmt = std::min(adjustedAmt, minBal);
-        }
-        if (fix1274 (info ().parentCloseTime))
-            adjustedAmt.setIssuer(amount.getIssuer());
-    }
-    else
-    {
-        for (auto curSB = this; curSB; curSB = curSB->ps_)
-        {
-            if (auto adj = curSB->tab_.adjustments (account, issuer, currency))
-            {
-                adjustedAmt -= adj->credits;
-            }
+            delta += adj->debits;
+            lastBal = adj->origBalance;
+            if (lastBal < minBal)
+                minBal = lastBal;
         }
     }
+    adjustedAmt = std::min(amount, lastBal - delta);
+    if (rules().enabled(fix1368))
+    {
+        // The adjusted amount should never be larger than the balance. In
+        // some circumstances, it is possible for the deferred credits table
+        // to compute usable balance just slightly above what the ledger
+        // calculates (but always less than the actual balance).
+        adjustedAmt = std::min(adjustedAmt, minBal);
+    }
+
+    if (fix1274 (info ().parentCloseTime))
+        adjustedAmt.setIssuer(amount.getIssuer());
 
     if (isXRP(issuer) && adjustedAmt < beast::zero)
         // A calculated negative XRP balance is not an error case. Consider a

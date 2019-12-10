@@ -33,19 +33,6 @@
 
 namespace ripple {
 
-NetClock::time_point const& fix1141Time ()
-{
-    using namespace std::chrono_literals;
-    // Fri July 1, 2016 17:00:00 UTC
-    static NetClock::time_point const soTime{520707600s};
-    return soTime;
-}
-
-bool fix1141 (NetClock::time_point const closeTime)
-{
-    return closeTime > fix1141Time();
-}
-
 NetClock::time_point const& fix1274Time ()
 {
     using namespace std::chrono_literals;
@@ -281,59 +268,32 @@ xrpLiquid (ReadView const& view, AccountID const& id,
         return beast::zero;
 
     // Return balance minus reserve
-    if (fix1141 (view.info ().parentCloseTime))
-    {
-        std::uint32_t const ownerCount = confineOwnerCount (
-            view.ownerCountHook (id, sle->getFieldU32 (sfOwnerCount)),
-                ownerCountAdj);
+    std::uint32_t const ownerCount = confineOwnerCount (
+        view.ownerCountHook (id, sle->getFieldU32 (sfOwnerCount)),
+            ownerCountAdj);
 
-        auto const reserve =
-            view.fees().accountReserve(ownerCount);
+    auto const reserve =
+        view.fees().accountReserve(ownerCount);
 
-        auto const fullBalance =
-            sle->getFieldAmount(sfBalance);
+    auto const fullBalance =
+        sle->getFieldAmount(sfBalance);
 
-        auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
+    auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
 
-        STAmount amount = balance - reserve;
-        if (balance < reserve)
-            amount.clear ();
+    STAmount amount = balance - reserve;
+    if (balance < reserve)
+        amount.clear ();
 
-        JLOG (j.trace()) << "accountHolds:" <<
-            " account=" << to_string (id) <<
-            " amount=" << amount.getFullText() <<
-            " fullBalance=" << fullBalance.getFullText() <<
-            " balance=" << balance.getFullText() <<
-            " reserve=" << reserve <<
-            " ownerCount=" << ownerCount <<
-            " ownerCountAdj=" << ownerCountAdj;
+    JLOG (j.trace()) << "accountHolds:" <<
+        " account=" << to_string (id) <<
+        " amount=" << amount.getFullText() <<
+        " fullBalance=" << fullBalance.getFullText() <<
+        " balance=" << balance.getFullText() <<
+        " reserve=" << reserve <<
+        " ownerCount=" << ownerCount <<
+        " ownerCountAdj=" << ownerCountAdj;
 
-        return amount.xrp();
-    }
-    else
-    {
-        // pre-switchover
-        // XRP: return balance minus reserve
-        std::uint32_t const ownerCount =
-            confineOwnerCount (sle->getFieldU32 (sfOwnerCount), ownerCountAdj);
-        auto const reserve =
-            view.fees().accountReserve(sle->getFieldU32(sfOwnerCount));
-        auto const balance = sle->getFieldAmount(sfBalance);
-
-        STAmount amount = balance - reserve;
-        if (balance < reserve)
-            amount.clear ();
-
-        JLOG (j.trace()) << "accountHolds:" <<
-            " account=" << to_string (id) <<
-            " amount=" << amount.getFullText() <<
-            " balance=" << balance.getFullText() <<
-            " reserve=" << reserve <<
-            " ownerCount=" << ownerCount <<
-            " ownerCountAdj=" << ownerCountAdj;
-
-        return view.balanceHook(id, xrpAccount(), amount).xrp();
-    }
+    return amount.xrp();
 }
 
 void
@@ -1245,37 +1205,8 @@ rippleCredit (ApplyView& view,
     return terResult;
 }
 
-// Calculate the fee needed to transfer IOU assets between two parties.
-static
-STAmount
-rippleTransferFee (ReadView const& view,
-    AccountID const& from,
-    AccountID const& to,
-    AccountID const& issuer,
-    STAmount const& amount,
-    beast::Journal j)
-{
-    if (from != issuer && to != issuer)
-    {
-        Rate const rate = transferRate (view, issuer);
-
-        if (parityRate != rate)
-        {
-            auto const fee = multiply (amount, rate) - amount;
-
-            JLOG (j.debug()) << "rippleTransferFee:" <<
-                " amount=" << amount.getFullText () <<
-                " fee=" << fee.getFullText ();
-
-            return fee;
-        }
-    }
-
-    return amount.zeroed();
-}
-
 // Send regardless of limits.
-// --> saAmount: Amount/currency/issuer to deliver to reciever.
+// --> saAmount: Amount/currency/issuer to deliver to receiver.
 // <-- saActual: Amount actually cost.  Sender pays fees.
 static
 TER
@@ -1302,19 +1233,7 @@ rippleSend (ApplyView& view,
 
     // Calculate the amount to transfer accounting
     // for any transfer fees:
-    if (!fix1141 (view.info ().parentCloseTime))
-    {
-        STAmount const saTransitFee = rippleTransferFee (
-            view, uSenderID, uReceiverID, issuer, saAmount, j);
-
-        saActual = !saTransitFee ? saAmount : saAmount + saTransitFee;
-        saActual.setIssuer (issuer);  // XXX Make sure this done in + above.
-    }
-    else
-    {
-        saActual = multiply (saAmount,
-            transferRate (view, issuer));
-    }
+    saActual = multiply (saAmount, transferRate (view, issuer));
 
     JLOG (j.debug()) << "rippleSend> " <<
         to_string (uSenderID) <<
@@ -1354,19 +1273,11 @@ accountSend (ApplyView& view,
         return rippleSend (view, uSenderID, uReceiverID, saAmount, saActual, j);
     }
 
-    auto const fv2Switch = fix1141 (view.info ().parentCloseTime);
-    if (!fv2Switch)
-    {
-        auto const dummyBalance = saAmount.zeroed();
-        view.creditHook (uSenderID, uReceiverID, saAmount, dummyBalance);
-    }
-
     /* XRP send which does not check reserve and can do pure adjustment.
      * Note that sender or receiver may be null and this not a mistake; this
      * setup is used during pathfinding and it is carefully controlled to
      * ensure that transfers are balanced.
      */
-
     TER terResult (tesSUCCESS);
 
     SLE::pointer sender = uSenderID != beast::zero
@@ -1406,8 +1317,7 @@ accountSend (ApplyView& view,
         else
         {
             auto const sndBal = sender->getFieldAmount (sfBalance);
-            if (fv2Switch)
-                view.creditHook (uSenderID, xrpAccount (), saAmount, sndBal);
+            view.creditHook (uSenderID, xrpAccount (), saAmount, sndBal);
 
             // Decrement XRP balance.
             sender->setFieldAmount (sfBalance, sndBal - saAmount);
@@ -1420,9 +1330,7 @@ accountSend (ApplyView& view,
         // Increment XRP balance.
         auto const rcvBal = receiver->getFieldAmount (sfBalance);
         receiver->setFieldAmount (sfBalance, rcvBal + saAmount);
-
-        if (fv2Switch)
-            view.creditHook (xrpAccount (), uReceiverID, saAmount, -rcvBal);
+        view.creditHook (xrpAccount (), uReceiverID, saAmount, -rcvBal);
 
         view.update (receiver);
     }

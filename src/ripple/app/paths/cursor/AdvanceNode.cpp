@@ -26,9 +26,8 @@ namespace path {
 
 TER PathCursor::advanceNode (STAmount const& amount, bool reverse, bool callerHasLiquidity) const
 {
-    bool const multi = fix1141 (view ().info ().parentCloseTime)
-        ? (multiQuality_ || (!callerHasLiquidity && amount == beast::zero))
-        : (multiQuality_ || amount == beast::zero);
+    bool const multi =
+        (multiQuality_ || (!callerHasLiquidity && amount == beast::zero));
 
     // If the multiQuality_ is unchanged, use the PathCursor we're using now.
     if (multi == multiQuality_)

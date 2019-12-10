@@ -277,19 +277,10 @@ class PaymentSandbox_test : public beast::unit_test::suite
         STAmount hugeAmt (issue, STAmount::cMaxValue, STAmount::cMaxOffset - 1,
             false, false, STAmount::unchecked{});
 
-        for (auto d : {-1, 1})
-        {
-            auto const closeTime = fix1141Time () +
-                d * env.closed()->info().closeTimeResolution;
-            env.close (closeTime);
-            ApplyViewImpl av (&*env.current (), tapNONE);
-            PaymentSandbox pv (&av);
-            pv.creditHook (gw, alice, hugeAmt, -tinyAmt);
-            if (closeTime > fix1141Time ())
-                BEAST_EXPECT(pv.balanceHook (alice, gw, hugeAmt) == tinyAmt);
-            else
-                BEAST_EXPECT(pv.balanceHook (alice, gw, hugeAmt) != tinyAmt);
-        }
+        ApplyViewImpl av (&*env.current (), tapNONE);
+        PaymentSandbox pv (&av);
+        pv.creditHook (gw, alice, hugeAmt, -tinyAmt);
+        BEAST_EXPECT(pv.balanceHook (alice, gw, hugeAmt) == tinyAmt);
     }
 
     void testReserve(FeatureBitset features)
@@ -314,9 +305,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         Account const alice ("alice");
         env.fund (reserve(env, 1), alice);
 
-        auto const closeTime = fix1141Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
+        env.close();
         ApplyViewImpl av (&*env.current (), tapNONE);
         PaymentSandbox sb (&av);
         {
