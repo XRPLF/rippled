@@ -686,15 +686,10 @@ struct Flow_test : public beast::unit_test::suite
 
         Env env (*this, features);
 
-        auto const closeTime = fix1141Time() +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
-
         env.fund (XRP(10000), alice, carol, gw);
         env.fund (reserve(env, 5), bob);
         env.trust (USD (1000), alice, bob, carol);
         env.trust (EUR (1000), alice, bob, carol);
-
 
         env (pay (gw, alice, EUR (50)));
         env (pay (gw, bob, USD (50)));
@@ -702,7 +697,7 @@ struct Flow_test : public beast::unit_test::suite
         // Bob has _just_ slightly less than 50 xrp available
         // If his owner count changes, he will have more liquidity.
         // This is one error case to test (when Flow is used).
-        // Computing the incomming xrp to the XRP/USD offer will require two
+        // Computing the incoming xrp to the XRP/USD offer will require two
         // recursive calls to the EUR/XRP offer. The second call will return
         // tecPATH_DRY, but the entire path should not be marked as dry. This
         // is the second error case to test (when flowV1 is used).
@@ -733,31 +728,20 @@ struct Flow_test : public beast::unit_test::suite
         Account const bob ("bob");
         Account const carol ("carol");
 
-        auto const timeDelta = Env{*this}.closed ()->info ().closeTimeResolution;
+        Env env (*this, FeatureBitset{});
 
-        for (auto const& d : {-100 * timeDelta, +100 * timeDelta})
-        {
-            auto const closeTime = fix1141Time () + d ;
-            Env env (*this, FeatureBitset{});
-            env.close (closeTime);
+        env.fund (XRP(10000), alice, bob, carol, gw);
 
-            env.fund (XRP(10000), alice, bob, carol, gw);
+        env.trust (USD(100), alice, bob, carol);
+        env (pay (gw, bob, USD (100)));
+        env (offer (bob, XRP (50), USD (50)));
+        env (offer (bob, XRP (100), USD (50)));
 
-            env.trust (USD(100), alice, bob, carol);
-            env (pay (gw, bob, USD (100)));
-            env (offer (bob, XRP (50), USD (50)));
-            env (offer (bob, XRP (100), USD (50)));
+        env (pay (alice, carol, USD (100)), path (~USD), sendmax (XRP (100)),
+            txflags (tfNoRippleDirect | tfPartialPayment | tfLimitQuality),
+            ter (tesSUCCESS));
 
-            TER const expectedResult = closeTime < fix1141Time ()
-                ? TER {tecPATH_DRY}
-                : TER {tesSUCCESS};
-            env (pay (alice, carol, USD (100)), path (~USD), sendmax (XRP (100)),
-                txflags (tfNoRippleDirect | tfPartialPayment | tfLimitQuality),
-                ter (expectedResult));
-
-            if (expectedResult == tesSUCCESS)
-                env.require (balance (carol, USD (50)));
-        }
+        env.require (balance (carol, USD (50)));
     }
 
     // Helper function that returns the reserve on an account based on
@@ -800,10 +784,6 @@ struct Flow_test : public beast::unit_test::suite
         auto const EUR = gw2["EUR"];
 
         Env env (*this, features);
-
-        auto const closeTime =
-            fix1141Time () + 100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (XRP (1000000), gw1, gw2);
         env.close ();
@@ -875,10 +855,6 @@ struct Flow_test : public beast::unit_test::suite
 
         Env env (*this, features);
 
-        auto const closeTime =
-            fix1141Time () + 100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
-
         env.fund (XRP (1000000), gw1, gw2);
         env.close ();
 
@@ -942,11 +918,6 @@ struct Flow_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this, features);
-
-        // Need new behavior from `accountHolds`
-        auto const closeTime = fix1141Time() +
-            env.closed()->info().closeTimeResolution;
-        env.close(closeTime);
 
         auto const alice = Account("alice");
         auto const gw = Account("gw");

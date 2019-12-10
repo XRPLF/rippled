@@ -238,15 +238,12 @@ TER PathCursor::deliverNodeReverseImpl (
                 saInPassAct,
                 saOutAct > beast::zero);
 
-            if (fix1141(view().info().parentCloseTime))
+            // The recursive call is dry this time, but we have liquidity
+            // from previous calls
+            if (resultCode == tecPATH_DRY && saOutAct > beast::zero)
             {
-                // The recursive call is dry this time, but we have liquidity
-                // from previous calls
-                if (resultCode == tecPATH_DRY && saOutAct > beast::zero)
-                {
-                    resultCode = tesSUCCESS;
-                    break;
-                }
+                resultCode = tesSUCCESS;
+                break;
             }
 
             JLOG (j_.trace())
