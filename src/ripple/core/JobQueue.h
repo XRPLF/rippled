@@ -27,6 +27,8 @@
 #include <ripple/core/Stoppable.h>
 #include <ripple/core/impl/Workers.h>
 #include <ripple/json/json_value.h>
+#include <boost/range/begin.hpp>
+#include <boost/range/end.hpp>
 #include <boost/coroutine/all.hpp>
 
 namespace ripple {
