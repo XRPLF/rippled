@@ -204,8 +204,7 @@ PaymentSandbox::balanceHook (AccountID const& account,
         adjustedAmt = std::min(adjustedAmt, minBal);
     }
 
-    if (fix1274 (info ().parentCloseTime))
-        adjustedAmt.setIssuer(amount.getIssuer());
+    adjustedAmt.setIssuer(amount.getIssuer());
 
     if (isXRP(issuer) && adjustedAmt < beast::zero)
         // A calculated negative XRP balance is not an error case. Consider a
