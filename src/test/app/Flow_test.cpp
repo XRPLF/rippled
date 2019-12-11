@@ -1024,9 +1024,7 @@ struct Flow_test : public beast::unit_test::suite
         auto const usdC = USD.currency;
 
         env.fund(XRP(10000), alice, bob, gw);
-        // Need to be past this time to see the bug
-        env.close(fix1274Time() +
-            100 * env.closed()->info().closeTimeResolution);
+        env.close();
         env(trust(alice, USD(100)));
         env.close();
 

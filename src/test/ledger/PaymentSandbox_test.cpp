@@ -333,10 +333,6 @@ class PaymentSandbox_test : public beast::unit_test::suite
         auto const USD = gw["USD"];
         Account const alice ("alice");
 
-        auto const closeTime = fix1274Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
-
         ApplyViewImpl av (&*env.current (), tapNONE);
         PaymentSandbox sb (&av);
 
