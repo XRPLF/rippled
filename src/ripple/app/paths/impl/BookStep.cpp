@@ -1015,23 +1015,20 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
         return tecNO_ISSUER;
     }
 
-    if (fix1443(ctx.view.info().parentCloseTime))
+    if (ctx.prevStep)
     {
-        if (ctx.prevStep)
+        if (auto const prev = ctx.prevStep->directStepSrcAcct())
         {
-            if (auto const prev = ctx.prevStep->directStepSrcAcct())
-            {
-                auto const& view = ctx.view;
-                auto const& cur = book_.in.account;
+            auto const& view = ctx.view;
+            auto const& cur = book_.in.account;
 
-                auto sle =
-                    view.read(keylet::line(*prev, cur, book_.in.currency));
-                if (!sle)
-                    return terNO_LINE;
-                if ((*sle)[sfFlags] &
-                    ((cur > *prev) ? lsfHighNoRipple : lsfLowNoRipple))
-                    return terNO_RIPPLE;
-            }
+            auto sle =
+                view.read(keylet::line(*prev, cur, book_.in.currency));
+            if (!sle)
+                return terNO_LINE;
+            if ((*sle)[sfFlags] &
+                ((cur > *prev) ? lsfHighNoRipple : lsfLowNoRipple))
+                return terNO_RIPPLE;
         }
     }
 

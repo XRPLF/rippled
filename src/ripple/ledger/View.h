@@ -328,9 +328,6 @@ transferXRP (ApplyView& view,
             STAmount const& amount,
                 beast::Journal j);
 
-[[nodiscard]] NetClock::time_point const& fix1443Time ();
-[[nodiscard]] bool fix1443 (NetClock::time_point const closeTime);
-
 [[nodiscard]] NetClock::time_point const& fix1449Time ();
 [[nodiscard]] bool fix1449 (NetClock::time_point const closeTime);
 

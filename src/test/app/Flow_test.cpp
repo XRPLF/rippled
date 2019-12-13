@@ -1045,17 +1045,12 @@ struct Flow_test : public beast::unit_test::suite
     }
 
     void
-    testRIPD1443(bool withFix)
+    testRIPD1443()
     {
         testcase("ripd1443");
 
         using namespace jtx;
         Env env(*this);
-        auto const timeDelta = env.closed ()->info ().closeTimeResolution;
-        auto const d = withFix ? 100*timeDelta : -100*timeDelta;
-        auto closeTime = fix1443Time() + d;
-        env.close(closeTime);
-
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const carol = Account("carol");
@@ -1077,21 +1072,18 @@ struct Flow_test : public beast::unit_test::suite
 
         env(pay(alice, alice, XRP(1)), path(gw, bob, ~XRP),
             sendmax(gw["USD"](1000)), txflags(tfNoRippleDirect),
-            ter(withFix ? TER {tecPATH_DRY} : TER {tesSUCCESS}));
+            ter(tecPATH_DRY));
         env.close();
 
-        if (withFix)
-        {
-            env.trust(bob["USD"](10000), alice);
-            env(pay(bob, alice, bob["USD"](1000)));
-        }
+        env.trust(bob["USD"](10000), alice);
+        env(pay(bob, alice, bob["USD"](1000)));
 
         env(offer(alice, XRP(1000), bob["USD"](1000)));
         env.close();
 
         env(pay (carol, carol, gw["USD"](1000)), path(~bob["USD"], gw),
             sendmax(XRP(100000)), txflags(tfNoRippleDirect),
-            ter(withFix ? TER {tecPATH_DRY} : TER {tesSUCCESS}));
+            ter(tecPATH_DRY));
         env.close();
 
         pass();
@@ -1221,8 +1213,7 @@ struct Flow_test : public beast::unit_test::suite
     void run() override
     {
         testLimitQuality();
-        testRIPD1443(true);
-        testRIPD1443(false);
+        testRIPD1443();
         testRIPD1449(true);
         testRIPD1449(false);
 
