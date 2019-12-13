@@ -33,20 +33,6 @@
 
 namespace ripple {
 
-NetClock::time_point const& fix1298Time ()
-{
-    using namespace std::chrono_literals;
-    // Wed Dec 21, 2016 18:00:00 UTC
-    static NetClock::time_point const soTime{535658400s};
-
-    return soTime;
-}
-
-bool fix1298 (NetClock::time_point const closeTime)
-{
-    return closeTime > fix1298Time();
-}
-
 NetClock::time_point const& fix1443Time ()
 {
     using namespace std::chrono_literals;
