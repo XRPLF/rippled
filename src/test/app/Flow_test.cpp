@@ -935,21 +935,14 @@ struct Flow_test : public beast::unit_test::suite
             txflags(tfPartialPayment | tfNoRippleDirect));
     }
 
-    void testUnfundedOffer (bool withFix, FeatureBitset features)
+    void testUnfundedOffer (FeatureBitset features)
     {
-        testcase(std::string("Unfunded Offer ") +
-            (withFix ? "with fix" : "without fix"));
+        testcase("Unfunded Offer");
 
         using namespace jtx;
         {
             // Test reverse
             Env env(*this, features);
-            auto closeTime = fix1298Time();
-            if (withFix)
-                closeTime += env.closed()->info().closeTimeResolution;
-            else
-                closeTime -= env.closed()->info().closeTimeResolution;
-            env.close(closeTime);
 
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -968,20 +961,11 @@ struct Flow_test : public beast::unit_test::suite
             env(pay(alice, bob, tinyAmt1), path(~USD),
                 sendmax(drops(9000000000)), txflags(tfNoRippleDirect));
 
-            if (withFix)
-                BEAST_EXPECT(!isOffer(env, gw, XRP(0), USD(0)));
-            else
-                BEAST_EXPECT(isOffer(env, gw, XRP(0), USD(0)));
+            BEAST_EXPECT(!isOffer(env, gw, XRP(0), USD(0)));
         }
         {
             // Test forward
             Env env(*this, features);
-            auto closeTime = fix1298Time();
-            if (withFix)
-                closeTime += env.closed()->info().closeTimeResolution;
-            else
-                closeTime -= env.closed()->info().closeTimeResolution;
-            env.close(closeTime);
 
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -1002,10 +986,7 @@ struct Flow_test : public beast::unit_test::suite
             env(pay(alice, bob, drops(9000000000)), path(~XRP),
                 sendmax(USD(1)), txflags(tfNoRippleDirect));
 
-            if (withFix)
-                BEAST_EXPECT(!isOffer(env, gw, USD(0), XRP(0)));
-            else
-                BEAST_EXPECT(isOffer(env, gw, USD(0), XRP(0)));
+            BEAST_EXPECT(!isOffer(env, gw, USD(0), XRP(0)));
         }
     }
 
@@ -1232,8 +1213,7 @@ struct Flow_test : public beast::unit_test::suite
         testSelfPayment2(features);
         testSelfFundedXRPEndpoint(false, features);
         testSelfFundedXRPEndpoint(true, features);
-        testUnfundedOffer(true, features);
-        testUnfundedOffer(false, features);
+        testUnfundedOffer(features);
         testReexecuteDirectStep(features | fix1368);
         testSelfPayLowQualityOffer(features);
     }

@@ -331,7 +331,7 @@ public:
         // needed for this offer, it will incorrectly compute zero in both
         // the forward and reverse passes (when the stAmountCalcSwitchover2
         // is inactive.)
-        env (offer (erin, drops (1), USD (1)));
+        env (offer (erin, drops (2), USD (2)));
 
         env (pay (alice, bob, USD (1)), path (~USD),
             sendmax (XRP (102)),
