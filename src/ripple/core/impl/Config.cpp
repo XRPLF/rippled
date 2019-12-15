@@ -330,13 +330,13 @@ void Config::loadFromString (std::string const& fileContents)
             NODE_SIZE = 4;
         else
         {
-            NODE_SIZE = beast::lexicalCastThrow <int> (strTemp);
+            NODE_SIZE = beast::lexicalCastThrow <std::size_t>(strTemp);
 
-            if (NODE_SIZE < 0)
-                NODE_SIZE = 0;
-            else if (NODE_SIZE > 4)
+            if (NODE_SIZE > 4)
                 NODE_SIZE = 4;
         }
+
+        assert (NODE_SIZE <= 4);
     }
 
     if (getSingleSection (secConfig, SECTION_SIGNING_SUPPORT, strTemp, j_))

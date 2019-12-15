@@ -190,7 +190,7 @@ SHAMapStoreImp::SHAMapStoreImp(
         if (!section.exists("cache_mb"))
         {
             section.set("cache_mb", std::to_string(
-                config.getSize(siHashNodeDBCache)));
+                config.getValueFor(SizedItem::hashNodeDBCache)));
         }
 
         if (!section.exists("filter_bits") && (config.NODE_SIZE >= 2))

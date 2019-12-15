@@ -29,6 +29,7 @@
 #include <boost/filesystem.hpp> // VFALCO FIX: This include should not be here
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
+#include <algorithm>
 #include <cstdint>
 #include <map>
 #include <string>
@@ -42,46 +43,68 @@ class Rules;
 
 //------------------------------------------------------------------------------
 
-enum SizedItemName
+enum class SizedItem : std::size_t
 {
-    siSweepInterval = 0,
-    siNodeCacheSize,
-    siNodeCacheAge,
-    siTreeCacheSize,
-    siTreeCacheAge,
-    siSLECacheSize,
-    siSLECacheAge,
-    siLedgerSize,
-    siLedgerAge,
-    siLedgerFetch,
-    siHashNodeDBCache,
-    siTxnDBCache,
-    siLgrDBCache
+    sweepInterval = 0,
+    treeCacheSize,
+    treeCacheAge,
+    ledgerSize,
+    ledgerAge,
+    ledgerFetch,
+    nodeCacheSize,
+    nodeCacheAge,
+    hashNodeDBCache,
+    txnDBCache,
+    lgrDBCache
 };
 
-static constexpr
-std::array<std::array<int, 5>, 13> sizedItems
+inline constexpr
+std::array<std::pair<SizedItem, std::array<int, 5>>, 11>
+sizedItems
 {{
-    //  tiny      small   medium  large   huge
-    {{  10,       30,     60,     90,     120     }}, // siSweepInterval
-    {{  2,        3,      5,      5,      8       }}, // siLedgerFetch
-
-    {{  16384,    32768,  131072, 262144, 524288  }}, // siNodeCacheSize
-    {{  60,       90,     120,    900,    1800    }}, // siNodeCacheAge
-
-    {{  128000,   256000, 512000, 768000, 2048000 }}, // siTreeCacheSize
-    {{  30,       60,     90,     120,    900     }}, // siTreeCacheAge
-
-    {{  4096,     8192,   16384,  65536,  131072  }}, // siSLECacheSize
-    {{  30,       60,     90,     120,    300     }}, // siSLECacheAge
-
-    {{  32,       128,    256,    384,    768     }}, // siLedgerSize
-    {{  30,       90,     180,    240,    900     }}, // siLedgerAge
-
-    {{  4,        12,     24,     64,     128     }}, // siHashNodeDBCache
-    {{  4,        12,     24,     64,     128     }}, // siTxnDBCache
-    {{  4,        8,      16,     32,     128     }}  // siLgrDBCache
+    // FIXME: We should document each of these items, explaining exactly what
+    //        they control and whether there exists an explicit config option
+    //        that can be used to override the default.
+        { SizedItem::sweepInterval,
+            {{      10,      30,       60,       90,      120  }} },
+        { SizedItem::treeCacheSize,
+            {{  128000,  256000,   512000,   768000,  2048000  }} },
+        { SizedItem::treeCacheAge,
+            {{      30,      60,       90,      120,      900  }} },
+        { SizedItem::ledgerSize,
+            {{      32,     128,      256,      384,      768  }} },
+        { SizedItem::ledgerAge,
+            {{      30,      90,      180,      240,      900  }} },
+        { SizedItem::ledgerFetch,
+            {{       2,       3,        4,        5,        8  }} },
+        { SizedItem::nodeCacheSize,
+            {{   16384,   32768,   131072,   262144,   524288  }} },
+        { SizedItem::nodeCacheAge,
+            {{      60,      90,      120,      900,     1800  }} },
+        { SizedItem::hashNodeDBCache,
+            {{       4,      12,       24,       64,      128  }} },
+        { SizedItem::txnDBCache,
+            {{       4,      12,       24,       64,      128  }} },
+        { SizedItem::lgrDBCache,
+            {{       4,       8,       16,       32,      128  }} },
 }};
+
+// Ensure that the order of entries in the table corresponds to the
+// order of entries in the enum:
+static_assert([]() constexpr -> bool
+{
+    std::underlying_type_t<SizedItem> idx = 0;
+
+    for (auto const& i : sizedItems)
+    {
+        if (static_cast<std::underlying_type_t<SizedItem>>(i.first) != idx)
+            return false;
+
+        ++idx;
+    }
+
+    return true;
+}(), "Mismatch between sized item enum & array indices");
 
 //  This entire derived class is deprecated.
 //  For new config information use the style implied
@@ -185,7 +208,8 @@ public:
     // Node storage configuration
     std::uint32_t                      LEDGER_HISTORY = 256;
     std::uint32_t                      FETCH_DEPTH = 1000000000;
-    int                         NODE_SIZE = 0;
+
+    std::size_t                        NODE_SIZE = 0;
 
     bool                        SSL_VERIFY = true;
     std::string                 SSL_VERIFY_FILE;
@@ -202,19 +226,35 @@ public:
 public:
     Config() : j_ {beast::Journal::getNullSink()} {}
 
-    static
-    int
-    getSize(SizedItemName item, std::uint32_t nodeSize)
-    {
-        assert(item < sizedItems.size() && nodeSize < sizedItems[item].size());
-        return sizedItems[item][nodeSize];
-    }
+    /** Retrieve the default value for the item at the specified node size
 
+        @param item The item for which the default value is needed
+        @param node Optional value, used to adjust the result to match the
+                    size of a node (0: tiny, ..., 4: huge). If unseated,
+                    uses the configured size (NODE_SIZE).
+
+        @throw This method can throw std::out_of_range if you ask for values
+               that it does not recognize or request a non-default node-size.
+
+        @return The value for the requested item.
+
+        @note The defaults are selected so as to be reasonable, but the node
+              size is an imprecise metric that combines multiple aspects of
+              the underlying system; this means that we can't provide optimal
+              defaults in the code for every case.
+    */
     int
-    getSize(SizedItemName item) const
+    getValueFor(SizedItem item,
+        boost::optional<std::size_t> node = boost::none) const
     {
-        assert(item < sizedItems.size());
-        return getSize(item, NODE_SIZE);
+        auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
+        assert(index < sizedItems.size());
+
+        if (!node)
+            node = NODE_SIZE;
+
+        assert(*node <= 4);
+        return sizedItems.at(index).second.at(*node);
     }
 
     /* Be very careful to make sure these bool params
