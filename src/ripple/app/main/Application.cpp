@@ -866,7 +866,7 @@ public:
                 TxDBInit);
             mTxnDB->getSession() <<
                 boost::str(boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(config_->getSize(siTxnDBCache)));
+                kilobytes(config_->getValueFor(SizedItem::txnDBCache)));
             mTxnDB->setupCheckpointing(m_jobQueue.get(), logs());
 
             if (!setup.standAlone ||
@@ -908,7 +908,7 @@ public:
                 LgrDBInit);
             mLedgerDB->getSession() <<
                 boost::str(boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(config_->getSize(siLgrDBCache)));
+                kilobytes(config_->getValueFor(SizedItem::lgrDBCache)));
             mLedgerDB->setupCheckpointing(m_jobQueue.get(), logs());
 
             // wallet database
@@ -964,24 +964,24 @@ public:
         // tune caches
         using namespace std::chrono;
         m_nodeStore->tune(
-            config_->getSize(siNodeCacheSize),
-            seconds{config_->getSize(siNodeCacheAge)});
+            config_->getValueFor(SizedItem::nodeCacheSize),
+            seconds{config_->getValueFor(SizedItem::nodeCacheAge)});
 
         m_ledgerMaster->tune(
-            config_->getSize(siLedgerSize),
-            seconds{config_->getSize(siLedgerAge)});
+            config_->getValueFor(SizedItem::ledgerSize),
+            seconds{config_->getValueFor(SizedItem::ledgerAge)});
 
         family().treecache().setTargetSize(
-            config_->getSize (siTreeCacheSize));
+            config_->getValueFor(SizedItem::treeCacheSize));
         family().treecache().setTargetAge(
-            seconds{config_->getSize(siTreeCacheAge)});
+            seconds{config_->getValueFor(SizedItem::treeCacheAge)});
 
         if (sFamily_)
         {
             sFamily_->treecache().setTargetSize(
-                config_->getSize(siTreeCacheSize));
+                config_->getValueFor(SizedItem::treeCacheSize));
             sFamily_->treecache().setTargetAge(
-                seconds{config_->getSize(siTreeCacheAge)});
+                seconds{config_->getValueFor(SizedItem::treeCacheAge)});
         }
 
         return true;
@@ -1135,7 +1135,7 @@ public:
         {
             using namespace std::chrono;
             sweepTimer_.expires_from_now(
-                seconds{config_->getSize(siSweepInterval)});
+                seconds{config_->getValueFor(SizedItem::sweepInterval)});
             sweepTimer_.async_wait (std::move (*optionalCountedHandler));
         }
     }

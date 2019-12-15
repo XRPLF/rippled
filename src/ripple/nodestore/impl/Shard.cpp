@@ -422,24 +422,25 @@ Shard::setCache(std::lock_guard<std::mutex> const&)
     if (!pCache_)
     {
         auto const name {"shard " + std::to_string(index_)};
-        auto const sz {complete_ ?
-            Config::getSize(siNodeCacheSize, 0) :
-            app_.config().getSize(siNodeCacheSize)};
-        auto const age {std::chrono::seconds{complete_ ?
-            Config::getSize(siNodeCacheAge, 0) :
-            app_.config().getSize(siNodeCacheAge)}};
+        auto const sz = app_.config().getValueFor(SizedItem::nodeCacheSize,
+            complete_ ? boost::optional<std::size_t>(0) : boost::none);
+        auto const age = std::chrono::seconds{
+            app_.config().getValueFor(SizedItem::nodeCacheAge,
+                complete_ ? boost::optional<std::size_t>(0) : boost::none)};
 
         pCache_ = std::make_shared<PCache>(name, sz, age, stopwatch(), j_);
         nCache_ = std::make_shared<NCache>(name, stopwatch(), sz, age);
     }
     else
     {
-        auto const sz {Config::getSize(siNodeCacheSize, 0)};
+        auto const sz = app_.config().getValueFor(
+            SizedItem::nodeCacheSize, 0);
         pCache_->setTargetSize(sz);
         nCache_->setTargetSize(sz);
 
-        auto const age {std::chrono::seconds{
-            Config::getSize(siNodeCacheAge, 0)}};
+        auto const age = std::chrono::seconds{
+            app_.config().getValueFor(
+                SizedItem::nodeCacheAge, 0)};
         pCache_->setTargetAge(age);
         nCache_->setTargetAge(age);
     }
@@ -496,7 +497,7 @@ Shard::initSQLite(std::lock_guard<std::mutex> const&)
                 LgrDBInit);
             lgrSQLiteDB_->getSession() <<
                 boost::str(boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(Config::getSize(siLgrDBCache, 0)));
+                kilobytes(config.getValueFor(SizedItem::lgrDBCache, boost::none)));
 
             txSQLiteDB_ = std::make_unique <DatabaseCon>(
                 setup,
@@ -505,7 +506,7 @@ Shard::initSQLite(std::lock_guard<std::mutex> const&)
                 TxDBInit);
             txSQLiteDB_->getSession() <<
                 boost::str(boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(Config::getSize(siTxnDBCache, 0)));
+                kilobytes(config.getValueFor(SizedItem::txnDBCache, boost::none)));
         }
         else
         {
@@ -517,7 +518,7 @@ Shard::initSQLite(std::lock_guard<std::mutex> const&)
                 LgrDBInit);
             lgrSQLiteDB_->getSession() <<
                 boost::str(boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(config.getSize(siLgrDBCache)));
+                kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
             lgrSQLiteDB_->setupCheckpointing(&app_.getJobQueue(), app_.logs());
 
             txSQLiteDB_ = std::make_unique <DatabaseCon>(
@@ -527,7 +528,7 @@ Shard::initSQLite(std::lock_guard<std::mutex> const&)
                 TxDBInit);
             txSQLiteDB_->getSession() <<
                 boost::str(boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(config.getSize(siTxnDBCache)));
+                kilobytes(config.getValueFor(SizedItem::txnDBCache)));
             txSQLiteDB_->setupCheckpointing(&app_.getJobQueue(), app_.logs());
         }
     }

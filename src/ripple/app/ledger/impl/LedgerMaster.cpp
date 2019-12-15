@@ -152,7 +152,7 @@ LedgerMaster::LedgerMaster (Application& app, Stopwatch& stopwatch,
     , fetch_depth_ (app_.getSHAMapStore ().clampFetchDepth (
         app_.config().FETCH_DEPTH))
     , ledger_history_ (app_.config().LEDGER_HISTORY)
-    , ledger_fetch_size_ (app_.config().getSize (siLedgerFetch))
+    , ledger_fetch_size_ (app_.config().getValueFor(SizedItem::ledgerFetch))
     , fetch_packs_ ("FetchPack", 65536, std::chrono::seconds {45}, stopwatch,
         app_.journal("TaggedCache"))
 {
