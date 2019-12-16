@@ -399,7 +399,15 @@ public:
     #if RIPPLE_SINGLE_IO_SERVICE_THREAD
         return 1;
     #else
-        return (config.NODE_SIZE >= 2) ? 2 : 1;
+        auto const cores = std::thread::hardware_concurrency();
+
+        // Use a single thread when running on under-provisioned systems
+        // or if we are configured to use minimal resources.
+        if ((cores == 1) || ((config.NODE_SIZE == 0) && (cores == 2)))
+            return 1;
+
+        // Otherwise, prefer two threads.
+        return 2;
     #endif
     }
 
@@ -414,7 +422,6 @@ public:
         , config_ (std::move(config))
         , logs_ (std::move(logs))
         , timeKeeper_ (std::move(timeKeeper))
-
         , m_journal (logs_->journal("Application"))
 
         // PerfLog must be started before any other threads are launched.
@@ -1320,6 +1327,12 @@ bool ApplicationImp::setup()
     }
     JLOG(m_journal.info()) << "process starting: "
         << BuildInfo::getFullVersionString();
+
+    if (numberOfThreads(*config_) < 2)
+    {
+        JLOG (m_journal.warn()) <<
+            "Limited to a single I/O service thread by system configuration.";
+    }
 
     // Optionally turn off logging to console.
     logs_->silent (config_->silent());
