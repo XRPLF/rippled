@@ -203,7 +203,6 @@ public:
     std::uint64_t                      FEE_DEFAULT = 10;
     std::uint64_t                      FEE_ACCOUNT_RESERVE = 200*SYSTEM_CURRENCY_PARTS;
     std::uint64_t                      FEE_OWNER_RESERVE = 50*SYSTEM_CURRENCY_PARTS;
-    std::uint64_t                      FEE_OFFER = 10;
 
     // Node storage configuration
     std::uint32_t                      LEDGER_HISTORY = 256;
