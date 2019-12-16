@@ -411,9 +411,6 @@ void Config::loadFromString (std::string const& fileContents)
     if (getSingleSection (secConfig, SECTION_FEE_OWNER_RESERVE, strTemp, j_))
         FEE_OWNER_RESERVE   = beast::lexicalCastThrow <std::uint64_t> (strTemp);
 
-    if (getSingleSection (secConfig, SECTION_FEE_OFFER, strTemp, j_))
-        FEE_OFFER           = beast::lexicalCastThrow <int> (strTemp);
-
     if (getSingleSection (secConfig, SECTION_FEE_DEFAULT, strTemp, j_))
         FEE_DEFAULT         = beast::lexicalCastThrow <int> (strTemp);
 
