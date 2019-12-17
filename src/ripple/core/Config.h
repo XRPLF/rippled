@@ -58,54 +58,6 @@ enum class SizedItem : std::size_t
     lgrDBCache
 };
 
-inline constexpr
-std::array<std::pair<SizedItem, std::array<int, 5>>, 11>
-sizedItems
-{{
-    // FIXME: We should document each of these items, explaining exactly what
-    //        they control and whether there exists an explicit config option
-    //        that can be used to override the default.
-        { SizedItem::sweepInterval,
-            {{      10,      30,       60,       90,      120  }} },
-        { SizedItem::treeCacheSize,
-            {{  128000,  256000,   512000,   768000,  2048000  }} },
-        { SizedItem::treeCacheAge,
-            {{      30,      60,       90,      120,      900  }} },
-        { SizedItem::ledgerSize,
-            {{      32,     128,      256,      384,      768  }} },
-        { SizedItem::ledgerAge,
-            {{      30,      90,      180,      240,      900  }} },
-        { SizedItem::ledgerFetch,
-            {{       2,       3,        4,        5,        8  }} },
-        { SizedItem::nodeCacheSize,
-            {{   16384,   32768,   131072,   262144,   524288  }} },
-        { SizedItem::nodeCacheAge,
-            {{      60,      90,      120,      900,     1800  }} },
-        { SizedItem::hashNodeDBCache,
-            {{       4,      12,       24,       64,      128  }} },
-        { SizedItem::txnDBCache,
-            {{       4,      12,       24,       64,      128  }} },
-        { SizedItem::lgrDBCache,
-            {{       4,       8,       16,       32,      128  }} },
-}};
-
-// Ensure that the order of entries in the table corresponds to the
-// order of entries in the enum:
-static_assert([]() constexpr -> bool
-{
-    std::underlying_type_t<SizedItem> idx = 0;
-
-    for (auto const& i : sizedItems)
-    {
-        if (static_cast<std::underlying_type_t<SizedItem>>(i.first) != idx)
-            return false;
-
-        ++idx;
-    }
-
-    return true;
-}(), "Mismatch between sized item enum & array indices");
-
 //  This entire derived class is deprecated.
 //  For new config information use the style implied
 //  in the base class. For existing config information
@@ -225,37 +177,6 @@ public:
 public:
     Config() : j_ {beast::Journal::getNullSink()} {}
 
-    /** Retrieve the default value for the item at the specified node size
-
-        @param item The item for which the default value is needed
-        @param node Optional value, used to adjust the result to match the
-                    size of a node (0: tiny, ..., 4: huge). If unseated,
-                    uses the configured size (NODE_SIZE).
-
-        @throw This method can throw std::out_of_range if you ask for values
-               that it does not recognize or request a non-default node-size.
-
-        @return The value for the requested item.
-
-        @note The defaults are selected so as to be reasonable, but the node
-              size is an imprecise metric that combines multiple aspects of
-              the underlying system; this means that we can't provide optimal
-              defaults in the code for every case.
-    */
-    int
-    getValueFor(SizedItem item,
-        boost::optional<std::size_t> node = boost::none) const
-    {
-        auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
-        assert(index < sizedItems.size());
-
-        if (!node)
-            node = NODE_SIZE;
-
-        assert(*node <= 4);
-        return sizedItems.at(index).second.at(*node);
-    }
-
     /* Be very careful to make sure these bool params
         are in the right order. */
     void setup (std::string const& strConf, bool bQuiet,
@@ -275,6 +196,27 @@ public:
     bool standalone() const { return RUN_STANDALONE; }
 
     bool canSign() const { return signingEnabled_; }
+
+    /** Retrieve the default value for the item at the specified node size
+
+        @param item The item for which the default value is needed
+        @param node Optional value, used to adjust the result to match the
+                    size of a node (0: tiny, ..., 4: huge). If unseated,
+                    uses the configured size (NODE_SIZE).
+
+        @throw This method can throw std::out_of_range if you ask for values
+               that it does not recognize or request a non-default node-size.
+
+        @return The value for the requested item.
+
+        @note The defaults are selected so as to be reasonable, but the node
+              size is an imprecise metric that combines multiple aspects of
+              the underlying system; this means that we can't provide optimal
+              defaults in the code for every case.
+    */
+    int
+    getValueFor(SizedItem item,
+        boost::optional<std::size_t> node = boost::none) const;
 };
 
 } // ripple

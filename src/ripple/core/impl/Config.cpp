@@ -38,6 +38,54 @@
 
 namespace ripple {
 
+inline constexpr
+std::array<std::pair<SizedItem, std::array<int, 5>>, 11>
+sizedItems
+{{
+    // FIXME: We should document each of these items, explaining exactly what
+    //        they control and whether there exists an explicit config option
+    //        that can be used to override the default.
+    { SizedItem::sweepInterval,
+        {{      10,      30,       60,       90,      120  }} },
+    { SizedItem::treeCacheSize,
+        {{  128000,  256000,   512000,   768000,  2048000  }} },
+    { SizedItem::treeCacheAge,
+        {{      30,      60,       90,      120,      900  }} },
+    { SizedItem::ledgerSize,
+        {{      32,     128,      256,      384,      768  }} },
+    { SizedItem::ledgerAge,
+        {{      30,      90,      180,      240,      900  }} },
+    { SizedItem::ledgerFetch,
+        {{       2,       3,        4,        5,        8  }} },
+    { SizedItem::nodeCacheSize,
+        {{   16384,   32768,   131072,   262144,   524288  }} },
+    { SizedItem::nodeCacheAge,
+        {{      60,      90,      120,      900,     1800  }} },
+    { SizedItem::hashNodeDBCache,
+        {{       4,      12,       24,       64,      128  }} },
+    { SizedItem::txnDBCache,
+        {{       4,      12,       24,       64,      128  }} },
+    { SizedItem::lgrDBCache,
+        {{       4,       8,       16,       32,      128  }} },
+}};
+
+// Ensure that the order of entries in the table corresponds to the
+// order of entries in the enum:
+static_assert([]() constexpr -> bool
+{
+    std::underlying_type_t<SizedItem> idx = 0;
+
+    for (auto const& i : sizedItems)
+    {
+        if (static_cast<std::underlying_type_t<SizedItem>>(i.first) != idx)
+            return false;
+
+        ++idx;
+    }
+
+    return true;
+}(), "Mismatch between sized item enum & array indices");
+
 //
 // TODO: Check permissions on config file before using it.
 //
@@ -589,6 +637,20 @@ boost::filesystem::path Config::getDebugLogFile () const
     }
 
     return log_file;
+}
+
+int
+Config::getValueFor(SizedItem item,
+    boost::optional<std::size_t> node) const
+{
+    auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
+    assert(index < sizedItems.size());
+
+    if (!node)
+        node = NODE_SIZE;
+
+    assert(*node <= 4);
+    return sizedItems.at(index).second.at(*node);
 }
 
 } // ripple
