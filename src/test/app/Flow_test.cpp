@@ -1090,16 +1090,12 @@ struct Flow_test : public beast::unit_test::suite
     }
 
     void
-    testRIPD1449(bool withFix)
+    testRIPD1449()
     {
         testcase("ripd1449");
 
         using namespace jtx;
         Env env(*this);
-        auto const timeDelta = env.closed ()->info ().closeTimeResolution;
-        auto const d = withFix ? 100*timeDelta : -100*timeDelta;
-        auto closeTime = fix1449Time() + d;
-        env.close(closeTime);
 
         // pay alice -> xrp -> USD/bob -> bob -> gw -> alice
         // set no ripple on bob's side of the bob/gw trust line
@@ -1128,7 +1124,7 @@ struct Flow_test : public beast::unit_test::suite
 
         env(pay(alice, alice, USD(1000)), path(~bob["USD"], bob, gw),
             sendmax(XRP(1)), txflags(tfNoRippleDirect),
-            ter(withFix ? TER {tecPATH_DRY} : TER {tesSUCCESS}));
+            ter(tecPATH_DRY));
         env.close();
     }
 
@@ -1214,8 +1210,7 @@ struct Flow_test : public beast::unit_test::suite
     {
         testLimitQuality();
         testRIPD1443();
-        testRIPD1449(true);
-        testRIPD1449(false);
+        testRIPD1449();
 
         using namespace jtx;
         auto const sa = supported_amendments();

@@ -425,8 +425,7 @@ DirectIPaymentStep::check (
             return terNO_AUTH;
         }
 
-        if (ctx.prevStep &&
-            fix1449(ctx.view.info().parentCloseTime))
+        if (ctx.prevStep)
         {
             if (ctx.prevStep->bookStepBook())
             {

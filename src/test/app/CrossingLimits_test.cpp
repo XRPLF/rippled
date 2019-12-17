@@ -52,10 +52,6 @@ public:
 
         using namespace jtx;
         Env env(*this, features);
-        auto const closeTime =
-            fix1449Time() +
-                100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -96,10 +92,6 @@ public:
 
         using namespace jtx;
         Env env(*this, features);
-        auto const closeTime =
-            fix1449Time() +
-                100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -140,10 +132,6 @@ public:
 
         using namespace jtx;
         Env env(*this, features);
-        auto const closeTime =
-            fix1449Time() +
-                100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -208,10 +196,6 @@ public:
 
         using namespace jtx;
         Env env(*this, features);
-        auto const closeTime =
-            fix1449Time() +
-                100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -329,9 +313,6 @@ public:
         // strand dry until the liquidity is actually used)
         {
             Env env(*this, features);
-            auto const closeTime =
-                fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-            env.close(closeTime);
 
             env.fund(XRP(100000000), gw, alice, bob, carol);
 
@@ -400,9 +381,6 @@ public:
         }
         {
             Env env(*this, features);
-            auto const closeTime =
-                fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-            env.close(closeTime);
 
             env.fund(XRP(100000000), gw, alice, bob, carol);
 
@@ -508,9 +486,6 @@ public:
         auto const USD = gw["USD"];
 
         Env env(*this, features);
-        auto const closeTime =
-            fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-        env.close(closeTime);
 
         env.fund(XRP(100000000), gw, alice, bob);
 

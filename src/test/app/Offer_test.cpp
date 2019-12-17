@@ -112,10 +112,6 @@ public:
 
         using namespace jtx;
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account {"gateway"};
         auto const USD = gw["USD"];
@@ -163,10 +159,6 @@ public:
 
         using namespace jtx;
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
@@ -366,10 +358,6 @@ public:
         {
             // No ripple with an implied account step after an offer
             Env env {*this, features};
-            auto const closeTime =
-                fix1449Time () +
-                    100 * env.closed ()->info ().closeTimeResolution;
-            env.close (closeTime);
 
             auto const gw1 = Account {"gw1"};
             auto const USD1 = gw1["USD"];
@@ -395,10 +383,6 @@ public:
         {
             // Make sure payment works with default flags
             Env env {*this, features};
-            auto const closeTime =
-                fix1449Time () +
-                    100 * env.closed ()->info ().closeTimeResolution;
-            env.close (closeTime);
 
             auto const gw1 = Account {"gw1"};
             auto const USD1 = gw1["USD"];
@@ -450,10 +434,6 @@ public:
         // No crossing:
         {
             Env env {*this, features};
-            auto const closeTime =
-                fix1449Time () +
-                    100 * env.closed ()->info ().closeTimeResolution;
-            env.close (closeTime);
 
             env.fund (XRP (1000000), gw);
 
@@ -475,10 +455,6 @@ public:
         // Partial cross:
         {
             Env env {*this, features};
-            auto const closeTime =
-                fix1449Time () +
-                    100 * env.closed ()->info ().closeTimeResolution;
-            env.close (closeTime);
 
             env.fund (XRP (1000000), gw);
 
@@ -509,10 +485,6 @@ public:
         // buy XRP. If it fully crosses, we succeed.
         {
             Env env {*this, features};
-            auto const closeTime =
-                fix1449Time () +
-                    100 * env.closed ()->info ().closeTimeResolution;
-            env.close (closeTime);
 
             env.fund (XRP (1000000), gw);
 
@@ -581,10 +553,6 @@ public:
             {features - fix1578, features | fix1578})
         {
             Env env {*this, tweakedFeatures};
-            auto const closeTime =
-                fix1449Time () +
-                    100 * env.closed ()->info ().closeTimeResolution;
-            env.close (closeTime);
 
             auto const f = env.current ()->fees ().base;
 
@@ -647,10 +615,6 @@ public:
         // and add nothing on the books:
         {
             Env env {*this, features};
-            auto const closeTime =
-                fix1449Time () +
-                    100 * env.closed ()->info ().closeTimeResolution;
-            env.close (closeTime);
 
             auto const f = env.current ()->fees ().base;
 
@@ -703,10 +667,6 @@ public:
         // tfPassive -- place the offer without crossing it.
         {
             Env env (*this, features);
-            auto const closeTime =
-                fix1449Time () +
-                    100 * env.closed ()->info ().closeTimeResolution;
-            env.close (closeTime);
 
             env.fund (startBalance, gw, alice, bob);
             env.close();
@@ -760,10 +720,6 @@ public:
         // tfPassive -- cross only offers of better quality.
         {
             Env env (*this, features);
-            auto const closeTime =
-                fix1449Time () +
-                    100 * env.closed ()->info ().closeTimeResolution;
-            env.close (closeTime);
 
             env.fund (startBalance, gw, "alice", "bob");
             env.close();
@@ -812,10 +768,6 @@ public:
         auto const USD = gw["USD"];
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (startBalance, gw, alice);
 
@@ -913,10 +865,6 @@ public:
         auto const xrpOffer = XRP (1000);
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (startBalance, gw, alice, bob);
         env.close();
@@ -992,10 +940,6 @@ public:
         auto const xrpOffer = XRP (1000);
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (XRP(1000000), gw);
 
@@ -1058,10 +1002,7 @@ public:
         auto const BTC = gw["BTC"];
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
+        env.close();
 
         env.fund (XRP (10000), gw);
         if (use_partner)
@@ -1176,10 +1117,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
@@ -1262,10 +1199,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
@@ -1322,10 +1255,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
@@ -1372,10 +1301,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const USD = env.master["USD"];
 
@@ -1405,10 +1330,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const alice = Account {"alice"};
 
@@ -1439,10 +1360,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
@@ -1505,10 +1422,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const alice = Account {"alice"};
         auto const bob = Account {"bob"};
@@ -1538,10 +1451,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
@@ -1631,10 +1540,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
@@ -1676,10 +1581,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
@@ -1729,10 +1630,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw1 = Account {"gateway_1"};
         auto const gw2 = Account {"gateway_2"};
@@ -1802,10 +1699,6 @@ public:
 
         using namespace jtx;
         Env env(*this, features);
-        auto const closeTime =
-            fix1449Time() +
-                100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         Account const alice {"alice"};
         Account const bob {"bob"};
@@ -1875,10 +1768,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw1 = Account {"gateway_1"};
         auto const gw2 = Account {"gateway_2"};
@@ -1933,10 +1822,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
@@ -1973,10 +1858,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
@@ -2019,10 +1900,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
@@ -2067,10 +1944,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account {"gateway"};
         auto const alice = Account {"alice"};
@@ -2180,10 +2053,6 @@ public:
         auto const USD = gw["USD"];
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (XRP(10000000), gw);
 
@@ -2344,10 +2213,6 @@ public:
         auto const xrpOffer = XRP(1000);
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (XRP(1000000), gw, bob);
         env.close();
@@ -2429,10 +2294,6 @@ public:
         auto const eurOffer = EUR(1000);
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (XRP(1000000), gw);
         env.close();
@@ -2554,10 +2415,6 @@ public:
         auto const eurOffer = EUR(1000);
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (XRP(1000000), gw, alice, bob, carol);
         env.close();
@@ -2652,10 +2509,6 @@ public:
         auto const USD = gw["USD"];
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (XRP(10000000), gw);
 
@@ -2829,10 +2682,6 @@ public:
         auto const USD   = gw["USD"];
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (XRP(10000000), gw, alice, bob);
 
@@ -2914,10 +2763,6 @@ public:
         auto const USD = gw1["USD"];
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         // The fee that's charged for transactions.
         auto const fee = env.current ()->fees ().base;
@@ -3239,10 +3084,6 @@ public:
         auto const USD = gw["USD"];
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         // The fee that's charged for transactions.
         auto const fee = env.current ()->fees ().base;
@@ -3302,10 +3143,6 @@ public:
         auto const EUR = gw2["EUR"];
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (XRP(1000000), gw1, gw2);
         env.close();
@@ -3423,10 +3260,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const alice = Account("alice");
         auto const bob = Account("bob");
@@ -3475,10 +3308,6 @@ public:
         // The problem was identified when featureOwnerPaysFee was enabled,
         // so make sure that gets included.
         Env env {*this, features | featureOwnerPaysFee};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         // The fee that's charged for transactions.
         auto const fee = env.current ()->fees ().base;
@@ -3553,10 +3382,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const ann = Account("ann");
         auto const bob = Account("bob");
@@ -3608,10 +3433,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const ann = Account("ann");
         auto const gw = Account("gateway");
@@ -3648,10 +3469,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account("gateway");
         auto const alice = Account("alice");
@@ -3697,10 +3514,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account("gateway");
         auto const alice = Account("alice");
@@ -3751,10 +3564,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time () +
-                100 * env.closed ()->info ().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw1 = Account("gw1");
         auto const gw2 = Account("gw2");
@@ -3810,10 +3619,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time() +
-                100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account("gw");
         auto const alice = Account("alice");
@@ -3893,10 +3698,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time() +
-                100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account("gw");
         auto const BTC = gw["BTC"];
@@ -4045,10 +3846,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time() +
-                100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account("gw");
         auto const BTC = gw["BTC"];
@@ -4173,10 +3970,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time() +
-                100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account("gw");
         auto const alice = Account("alice");
@@ -4245,10 +4038,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time() +
-                100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account("gw");
         auto const alice = Account("alice");
@@ -4367,10 +4156,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time() +
-                100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         // This test mimics the payment flow used in the Ripple Connect
         // smoke test.  The players:
@@ -4460,10 +4245,6 @@ public:
         using namespace jtx;
 
         Env env {*this, features};
-        auto const closeTime =
-            fix1449Time() +
-                100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         auto const gw = Account("gw");
         auto const alice = Account("alice");
