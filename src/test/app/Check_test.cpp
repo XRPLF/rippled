@@ -166,9 +166,6 @@ class Check_test : public beast::unit_test::suite
             // If the Checks amendment is not enabled, you should not be able
             // to create, cash, or cancel checks.
             Env env {*this, supported_amendments() - featureChecks};
-            auto const closeTime =
-                fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-            env.close (closeTime);
 
             env.fund (XRP(1000), alice);
 
@@ -189,9 +186,6 @@ class Check_test : public beast::unit_test::suite
             // If the Checks amendment is enabled all check-related
             // facilities should be available.
             Env env {*this};
-            auto const closeTime =
-                fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-            env.close (closeTime);
 
             env.fund (XRP(1000), alice);
 
@@ -226,9 +220,6 @@ class Check_test : public beast::unit_test::suite
         IOU const USD {gw["USD"]};
 
         Env env {*this};
-        auto const closeTime =
-            fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         STAmount const startBalance {XRP(1000).value()};
         env.fund (startBalance, gw, alice, bob);
@@ -327,9 +318,6 @@ class Check_test : public beast::unit_test::suite
         IOU const USD {gw1["USD"]};
 
         Env env {*this};
-        auto const closeTime =
-            fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         STAmount const startBalance {XRP(1000).value()};
         env.fund (startBalance, gw1, gwF, alice, bob);
@@ -507,9 +495,6 @@ class Check_test : public beast::unit_test::suite
         Account const bob {"bob"};
 
         Env env {*this};
-        auto const closeTime =
-            fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         XRPAmount const baseFeeDrops {env.current()->fees().base};
         STAmount const startBalance {XRP(300).value()};
@@ -632,9 +617,6 @@ class Check_test : public beast::unit_test::suite
         {
             // Simple IOU check cashed with Amount (with failures).
             Env env {*this};
-            auto const closeTime =
-                fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-            env.close (closeTime);
 
             env.fund (XRP(1000), gw, alice, bob);
 
@@ -754,9 +736,6 @@ class Check_test : public beast::unit_test::suite
         {
             // Simple IOU check cashed with DeliverMin (with failures).
             Env env {*this};
-            auto const closeTime =
-                fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-            env.close (closeTime);
 
             env.fund (XRP(1000), gw, alice, bob);
 
@@ -840,9 +819,6 @@ class Check_test : public beast::unit_test::suite
         {
             // Examine the effects of the asfRequireAuth flag.
             Env env {*this};
-            auto const closeTime =
-                fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-            env.close (closeTime);
 
             env.fund (XRP(1000), gw, alice, bob);
             env (fset (gw, asfRequireAuth));
@@ -900,9 +876,6 @@ class Check_test : public beast::unit_test::suite
                 allSupported | featureMultiSignReserve})
         {
             Env env {*this, features};
-            auto const closeTime =
-                fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-            env.close (closeTime);
 
             env.fund (XRP(1000), gw, alice, bob);
 
@@ -973,9 +946,6 @@ class Check_test : public beast::unit_test::suite
         IOU const USD {gw["USD"]};
 
         Env env {*this};
-        auto const closeTime =
-            fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (XRP(1000), gw, alice, bob);
 
@@ -1045,9 +1015,6 @@ class Check_test : public beast::unit_test::suite
         IOU const USD {gw["USD"]};
 
         Env env {*this};
-        auto const closeTime =
-            fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (XRP(1000), gw, alice, bob);
 
@@ -1245,9 +1212,6 @@ class Check_test : public beast::unit_test::suite
         IOU const USD {gw["USD"]};
 
         Env env {*this};
-        auto const closeTime =
-            fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (XRP(1000), gw, alice, bob, zoe);
 
@@ -1550,10 +1514,6 @@ class Check_test : public beast::unit_test::suite
         {
             Env env {*this, features};
 
-            auto const closeTime =
-                fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-            env.close (closeTime);
-
             env.fund (XRP(1000), gw, alice, bob, zoe);
 
             // alice creates her checks ahead of time.
@@ -1708,9 +1668,6 @@ class Check_test : public beast::unit_test::suite
         Account const bob {"bob"};
 
         Env env {*this};
-        auto const closeTime =
-            fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-        env.close (closeTime);
 
         env.fund (XRP(1000), alice, bob);
 
@@ -1745,9 +1702,6 @@ class Check_test : public beast::unit_test::suite
             Account const bob {"bob"};
 
             Env env {*this, features};
-            auto const closeTime =
-                fix1449Time() + 100 * env.closed()->info().closeTimeResolution;
-            env.close (closeTime);
 
             env.fund (XRP(1000), alice, bob);
             env.close();
