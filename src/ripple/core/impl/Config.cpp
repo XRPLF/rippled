@@ -640,17 +640,12 @@ boost::filesystem::path Config::getDebugLogFile () const
 }
 
 int
-Config::getValueFor(SizedItem item,
-    boost::optional<std::size_t> node) const
+Config::getValueFor(SizedItem item, boost::optional<std::size_t> node) const
 {
     auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
     assert(index < sizedItems.size());
-
-    if (!node)
-        node = NODE_SIZE;
-
-    assert(*node <= 4);
-    return sizedItems.at(index).second.at(*node);
+    assert(!node || *node <= 4);
+    return sizedItems.at(index).second.at(node.value_or(NODE_SIZE));
 }
 
 } // ripple
