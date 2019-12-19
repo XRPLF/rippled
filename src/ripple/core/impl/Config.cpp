@@ -32,6 +32,7 @@
 #include <boost/format.hpp>
 #include <boost/regex.hpp>
 #include <boost/system/error_code.hpp>
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -377,14 +378,8 @@ void Config::loadFromString (std::string const& fileContents)
         else if (boost::iequals(strTemp, "huge"))
             NODE_SIZE = 4;
         else
-        {
-            NODE_SIZE = beast::lexicalCastThrow <std::size_t>(strTemp);
-
-            if (NODE_SIZE > 4)
-                NODE_SIZE = 4;
-        }
-
-        assert (NODE_SIZE <= 4);
+            NODE_SIZE = std::min<std::size_t>(4,
+                beast::lexicalCastThrow<std::size_t>(strTemp));
     }
 
     if (getSingleSection (secConfig, SECTION_SIGNING_SUPPORT, strTemp, j_))
