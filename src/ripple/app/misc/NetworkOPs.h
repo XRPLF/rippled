@@ -244,6 +244,9 @@ public:
         std::shared_ptr<ReadView const> const& lpCurrent,
         std::shared_ptr<STTx const> const& stTxn, TER terResult) = 0;
     virtual void pubValidation (STValidation::ref val) = 0;
+
+
+
 };
 
 //------------------------------------------------------------------------------
@@ -253,7 +256,7 @@ make_NetworkOPs (Application& app, NetworkOPs::clock_type& clock,
     bool standalone, std::size_t minPeerCount, bool start_valid,
     JobQueue& job_queue, LedgerMaster& ledgerMaster, Stoppable& parent,
     ValidatorKeys const & validatorKeys, boost::asio::io_service& io_svc,
-    beast::Journal journal);
+    beast::Journal journal, beast::insight::Collector::ptr const& collector);
 
 } // ripple
 

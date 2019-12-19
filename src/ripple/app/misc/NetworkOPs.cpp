@@ -169,6 +169,25 @@ class NetworkOPsImp final
          * @return JSON object.
          */
         StateCountersJson json() const;
+
+        std::array<Counters, 5> getCounters(){
+            std::lock_guard lock(mutex_);
+            auto counters = counters_;
+            return counters;
+        }
+
+        OperatingMode getMode(){
+            std::lock_guard lock(mutex_);
+            auto mode = mode_;
+            return mode;
+        }
+
+        std::chrono::system_clock::time_point getStart(){
+            std::lock_guard lock(mutex_);
+            auto start = start_;
+            return start;
+        }
+
     };
 
     //! Server fees published on `server` subscription
@@ -200,7 +219,7 @@ public:
         bool standalone, std::size_t minPeerCount, bool start_valid,
         JobQueue& job_queue, LedgerMaster& ledgerMaster, Stoppable& parent,
         ValidatorKeys const & validatorKeys, boost::asio::io_service& io_svc,
-        beast::Journal journal)
+        beast::Journal journal, beast::insight::Collector::ptr const& collector)
         : NetworkOPs (parent)
         , app_ (app)
         , m_clock (clock)
@@ -223,6 +242,7 @@ public:
         , m_job_queue (job_queue)
         , m_standalone (standalone)
         , minPeerCount_ (start_valid ? 0 : minPeerCount)
+        , m_stats(std::bind (&NetworkOPsImp::collect_metrics, this),collector)
     {
     }
 
@@ -619,6 +639,63 @@ private:
     std::vector <TransactionStatus> mTransactions;
 
     StateAccounting accounting_ {};
+
+private:
+    struct Stats
+    {
+        template <class Handler>
+        Stats (Handler const& handler, beast::insight::Collector::ptr const& collector)
+            : hook (collector->make_hook (handler))
+            , disconnected_duration (collector->make_gauge("State_Accounting","Disconnected_duration"))
+            , connected_duration (collector->make_gauge("State_Accounting","Connected_duration"))
+            , syncing_duration(collector->make_gauge("State_Accounting", "Syncing_duration"))
+            , tracking_duration (collector->make_gauge("State_Accounting", "Tracking_duration"))
+            , full_duration (collector-> make_gauge("State_Accounting", "Full_duration"))
+            , disconnected_trasitions (collector->make_gauge("State_Accounting","Disconnected_trasitions"))
+            , connected_trasitions (collector->make_gauge("State_Accounting","Connected_trasitions"))
+            , syncing_trasitions(collector->make_gauge("State_Accounting", "Syncing_trasitions"))
+            , tracking_trasitions (collector->make_gauge("State_Accounting", "Tracking_trasitions"))
+            , full_trasitions (collector-> make_gauge("State_Accounting", "Full_trasitions"))
+            { }
+
+        beast::insight::Hook hook;
+        beast::insight::Gauge disconnected_duration;
+        beast::insight::Gauge connected_duration;
+        beast::insight::Gauge syncing_duration;
+        beast::insight::Gauge tracking_duration;
+        beast::insight::Gauge full_duration;
+
+        beast::insight::Gauge disconnected_trasitions;
+        beast::insight::Gauge connected_trasitions;
+        beast::insight::Gauge syncing_trasitions;
+        beast::insight::Gauge tracking_trasitions;
+        beast::insight::Gauge full_trasitions;
+    };
+
+    Stats m_stats;
+
+private:
+    void collect_metrics()
+    {   
+        auto counters = accounting_.getCounters();
+        auto start = accounting_.getStart();
+        auto mode = accounting_.getMode();
+
+        auto const current = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start);
+        counters[static_cast<std::size_t>(mode)].dur += current;
+
+        m_stats.disconnected_duration.set(counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)].dur.count());
+        m_stats.connected_duration.set(counters[static_cast<std::size_t>(OperatingMode::CONNECTED)].dur.count());
+        m_stats.syncing_duration.set(counters[static_cast<std::size_t>(OperatingMode::SYNCING)].dur.count());
+        m_stats.tracking_duration.set(counters[static_cast<std::size_t>(OperatingMode::TRACKING)].dur.count());
+        m_stats.full_duration.set(counters[static_cast<std::size_t>(OperatingMode::FULL)].dur.count());
+
+        m_stats.disconnected_trasitions.set(counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)].transitions);
+        m_stats.connected_trasitions.set(counters[static_cast<std::size_t>(OperatingMode::CONNECTED)].transitions);
+        m_stats.syncing_trasitions.set(counters[static_cast<std::size_t>(OperatingMode::SYNCING)].transitions);
+        m_stats.tracking_trasitions.set(counters[static_cast<std::size_t>(OperatingMode::TRACKING)].transitions);
+        m_stats.full_trasitions.set(counters[static_cast<std::size_t>(OperatingMode::FULL)].transitions);
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -3491,11 +3568,11 @@ make_NetworkOPs (Application& app, NetworkOPs::clock_type& clock,
     bool standalone, std::size_t minPeerCount, bool startvalid,
     JobQueue& job_queue, LedgerMaster& ledgerMaster, Stoppable& parent,
     ValidatorKeys const & validatorKeys, boost::asio::io_service& io_svc,
-    beast::Journal journal)
+    beast::Journal journal, beast::insight::Collector::ptr const& collector)
 {
     return std::make_unique<NetworkOPsImp> (app, clock, standalone,
         minPeerCount, startvalid, job_queue, ledgerMaster, parent,
-        validatorKeys, io_svc, journal);
+        validatorKeys, io_svc, journal, collector);
 }
 
 } // ripple
